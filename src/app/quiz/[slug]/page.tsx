@@ -35,6 +35,9 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
   const [loadingAI, setLoadingAI] = useState(false);
   const [aiError, setAIError] = useState('');
 
+  // Exit quiz states
+  const [showExitModal, setShowExitModal] = useState(false);
+
   // If user is logged in, skip email input
   useEffect(() => {
     if (session?.user?.email) {
@@ -214,9 +217,19 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
 
   const closeAIModal = () => {
     setShowAIModal(false);
-    setUserQuestion('');
-    setAIExplanation('');
-    setAIError('');
+  };
+
+  // Exit quiz functions
+  const openExitModal = () => {
+    setShowExitModal(true);
+  };
+
+  const closeExitModal = () => {
+    setShowExitModal(false);
+  };
+
+  const exitQuiz = () => {
+    router.push('/quizzes');
   };
 
   if (loading) {
@@ -297,9 +310,16 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
                 </p>
               </div>
 
-              <Button onClick={startQuiz} className="w-full">
-                Start Quiz
-              </Button>
+              <div className="flex gap-3">
+                <Link href="/quizzes" className="flex-1">
+                  <Button variant="outline" className="w-full">
+                    ← Back to Quizzes
+                  </Button>
+                </Link>
+                <Button onClick={startQuiz} className="flex-1">
+                  Start Quiz
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -325,15 +345,24 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-lg font-semibold text-gray-900">{quiz.title}</h1>
-              <p className="text-sm text-gray-600">
-                {session?.user?.email ? (
-                  <span className="text-green-600">👤 {session.user.email}</span>
-                ) : (
-                  <span className="text-gray-500">📧 {userEmail}</span>
-                )}
-              </p>
+            <div className="flex items-center space-x-4">
+              <Button
+                variant="outline"
+                onClick={openExitModal}
+                className="text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300"
+              >
+                ← Exit Quiz
+              </Button>
+              <div>
+                <h1 className="text-lg font-semibold text-gray-900">{quiz.title}</h1>
+                <p className="text-sm text-gray-600">
+                  {session?.user?.email ? (
+                    <span className="text-green-600">👤 {session.user.email}</span>
+                  ) : (
+                    <span className="text-gray-500">📧 {userEmail}</span>
+                  )}
+                </p>
+              </div>
             </div>
             <div className="text-right">
               <div className="text-sm text-gray-600">
@@ -530,6 +559,50 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
             </div>
           </CardContent>
         </Card>
+
+        {/* Exit Quiz Modal */}
+        <Modal
+          isOpen={showExitModal}
+          onClose={closeExitModal}
+          title="⚠️ Exit Quiz"
+          size="small"
+        >
+          <div className="space-y-4">
+            <p className="text-gray-700">
+              Are you sure you want to exit this quiz? Your progress will not be saved and you'll need to start over.
+            </p>
+            
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+              <div className="flex items-start">
+                <svg className="w-5 h-5 text-yellow-600 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+                <div>
+                  <h4 className="text-sm font-medium text-yellow-800">Warning</h4>
+                  <p className="text-sm text-yellow-700 mt-1">
+                    You have answered {answeredQuestions} out of {quiz.questions.length} questions. This progress will be lost if you exit.
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex gap-3 pt-2">
+              <Button
+                variant="outline"
+                onClick={closeExitModal}
+                className="flex-1"
+              >
+                Continue Quiz
+              </Button>
+              <Button
+                onClick={exitQuiz}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+              >
+                Exit Quiz
+              </Button>
+            </div>
+          </div>
+        </Modal>
 
         {/* Ask AI Modal */}
         <Modal

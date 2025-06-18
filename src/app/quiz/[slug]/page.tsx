@@ -316,6 +316,11 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
                     ← Back to Quizzes
                   </Button>
                 </Link>
+                <Link href={`/quiz/${params.slug}/flashcards`} className="flex-1">
+                  <Button variant="outline" className="w-full bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100">
+                    🗂️ Learn with Flashcards
+                  </Button>
+                </Link>
                 <Button onClick={startQuiz} className="flex-1">
                   Start Quiz
                 </Button>

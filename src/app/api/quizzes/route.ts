@@ -125,8 +125,9 @@ export async function POST(request: NextRequest) {
         hasOptions: !!question.options,
         isOptionsArray: Array.isArray(question.options),
         optionsLength: question.options?.length,
-        correctAnswer: question.correctAnswer,
-        correctAnswerType: typeof question.correctAnswer,
+        type: question.type,
+        correctIndex: question.correctIndex,
+        correctIndexes: question.correctIndexes,
         fullQuestion: question
       });
 
@@ -165,20 +166,60 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      if (typeof question.correctAnswer !== 'number') {
-        console.error(`❌ Question ${i + 1}: correctAnswer must be a number, got ${typeof question.correctAnswer}`);
+      // Validate question type
+      const questionType = question.type || 'single';
+      if (!['single', 'multiple'].includes(questionType)) {
+        console.error(`❌ Question ${i + 1}: Invalid type "${questionType}"`);
         return NextResponse.json(
-          { success: false, error: `Question ${i + 1}: correctAnswer must be a number` },
+          { success: false, error: `Question ${i + 1}: Type must be 'single' or 'multiple'` },
           { status: 400 }
         );
       }
 
-      if (question.correctAnswer < 0 || question.correctAnswer >= question.options.length) {
-        console.error(`❌ Question ${i + 1}: correctAnswer (${question.correctAnswer}) out of range (0-${question.options.length - 1})`);
-        return NextResponse.json(
-          { success: false, error: `Question ${i + 1}: correctAnswer out of range` },
-          { status: 400 }
-        );
+      // Validate based on question type
+      if (questionType === 'single') {
+        if (typeof question.correctIndex !== 'number') {
+          console.error(`❌ Question ${i + 1}: Single choice questions must have correctIndex as number, got ${typeof question.correctIndex}`);
+          return NextResponse.json(
+            { success: false, error: `Question ${i + 1}: Single choice questions must have correctIndex as number` },
+            { status: 400 }
+          );
+        }
+
+        if (question.correctIndex < 0 || question.correctIndex >= question.options.length) {
+          console.error(`❌ Question ${i + 1}: correctIndex (${question.correctIndex}) out of range (0-${question.options.length - 1})`);
+          return NextResponse.json(
+            { success: false, error: `Question ${i + 1}: correctIndex out of range` },
+            { status: 400 }
+          );
+        }
+      } else if (questionType === 'multiple') {
+        if (!Array.isArray(question.correctIndexes)) {
+          console.error(`❌ Question ${i + 1}: Multiple choice questions must have correctIndexes as array, got ${typeof question.correctIndexes}`);
+          return NextResponse.json(
+            { success: false, error: `Question ${i + 1}: Multiple choice questions must have correctIndexes as array` },
+            { status: 400 }
+          );
+        }
+
+        if (question.correctIndexes.length === 0) {
+          console.error(`❌ Question ${i + 1}: Multiple choice questions must have at least one correct answer`);
+          return NextResponse.json(
+            { success: false, error: `Question ${i + 1}: Multiple choice questions must have at least one correct answer` },
+            { status: 400 }
+          );
+        }
+
+        // Check each correctIndex is valid
+        for (const idx of question.correctIndexes) {
+          if (typeof idx !== 'number' || idx < 0 || idx >= question.options.length) {
+            console.error(`❌ Question ${i + 1}: Invalid correctIndex ${idx} (must be 0-${question.options.length - 1})`);
+            return NextResponse.json(
+              { success: false, error: `Question ${i + 1}: Invalid correctIndex ${idx}` },
+              { status: 400 }
+            );
+          }
+        }
       }
 
       console.log(`✅ Question ${i + 1}: Valid`);
@@ -186,7 +227,7 @@ export async function POST(request: NextRequest) {
 
     console.log('✅ All questions validated successfully');
 
-    // Convert questions to Mongoose schema format
+    // Convert questions to Mongoose schema format (already in correct format)
     const mongooseQuestions = questions.map((q: any, index: number) => {
       const mongooseQuestion: any = {
         question: q.question,
@@ -194,17 +235,13 @@ export async function POST(request: NextRequest) {
         type: q.type || 'single'
       };
 
-      // Convert correctAnswer back to Mongoose format
-      if (q.type === 'multiple' && q.originalCorrectIndexes) {
-        mongooseQuestion.correctIndexes = q.originalCorrectIndexes;
-      } else {
-        mongooseQuestion.correctIndex = q.correctAnswer;
+      if (q.type === 'single') {
+        mongooseQuestion.correctIndex = q.correctIndex;
+      } else if (q.type === 'multiple') {
+        mongooseQuestion.correctIndexes = q.correctIndexes;
       }
 
-      console.log(`🔄 Converting to Mongoose format Question ${index + 1}:`, {
-        original: q,
-        mongoose: mongooseQuestion
-      });
+      console.log(`🔄 Mongoose format Question ${index + 1}:`, mongooseQuestion);
 
       return mongooseQuestion;
     });

@@ -8,11 +8,16 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
+import { QuizPreviewModal } from '@/components/ui/QuizPreviewModal';
 
 interface Question {
   question: string;
   options: string[];
-  correctAnswer: number;
+  type: 'single' | 'multiple';
+  correctIndex?: number; // For single choice
+  correctIndexes?: number[]; // For multiple choice
+  // Legacy fields for backward compatibility during transition
+  correctAnswer?: number;
 }
 
 interface PreviewData {
@@ -41,6 +46,9 @@ export default function CreateQuizPage() {
   const [editableDescription, setEditableDescription] = useState('');
   const [editableQuestions, setEditableQuestions] = useState<Question[]>([]);
   const [creating, setCreating] = useState(false);
+  
+  // Preview modal state
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
   
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -136,25 +144,52 @@ export default function CreateQuizPage() {
 
         // Ensure correctAnswer is properly set for each question
         const processedQuestions = data.data.questions.map((q: any, index: number) => {
-          let finalCorrectAnswer = q.correctAnswer;
-          
-          // Fallback logic if correctAnswer is undefined
-          if (typeof finalCorrectAnswer === 'undefined') {
-            if (typeof q.correctIndex === 'number') {
-              finalCorrectAnswer = q.correctIndex;
-            } else if (typeof q.originalCorrectIndex === 'number') {
-              finalCorrectAnswer = q.originalCorrectIndex;
-            } else {
-              finalCorrectAnswer = 0; // Default to first option
+          // Initialize question with type detection
+          const questionType = q.type || 'single'; // Default to single if not specified
+          let processedQuestion: Question = {
+            question: q.question,
+            options: q.options,
+            type: questionType
+          };
+
+          if (questionType === 'single') {
+            let finalCorrectAnswer = q.correctAnswer;
+            
+            // Fallback logic if correctAnswer is undefined
+            if (typeof finalCorrectAnswer === 'undefined') {
+              if (typeof q.correctIndex === 'number') {
+                finalCorrectAnswer = q.correctIndex;
+              } else if (typeof q.originalCorrectIndex === 'number') {
+                finalCorrectAnswer = q.originalCorrectIndex;
+              } else {
+                finalCorrectAnswer = 0; // Default to first option
+              }
             }
             
-            console.log(`🔧 Fixed correctAnswer for Question ${index + 1}: ${finalCorrectAnswer}`);
+            processedQuestion.correctIndex = finalCorrectAnswer;
+            processedQuestion.correctAnswer = finalCorrectAnswer; // Keep for backward compatibility
+            
+            console.log(`🔧 Processed single choice Question ${index + 1}: correctIndex=${finalCorrectAnswer}`);
+          } else if (questionType === 'multiple') {
+            // Handle multiple choice questions - check multiple sources
+            let finalCorrectIndexes = [];
+            
+            // Priority order: correctIndexes -> originalCorrectIndexes -> empty array
+            if (Array.isArray(q.correctIndexes) && q.correctIndexes.length > 0) {
+              finalCorrectIndexes = q.correctIndexes;
+              console.log(`🔧 Using correctIndexes: ${JSON.stringify(finalCorrectIndexes)}`);
+            } else if (Array.isArray(q.originalCorrectIndexes) && q.originalCorrectIndexes.length > 0) {
+              finalCorrectIndexes = q.originalCorrectIndexes;
+              console.log(`🔧 Using originalCorrectIndexes: ${JSON.stringify(finalCorrectIndexes)}`);
+            } else {
+              console.warn(`⚠️ No correct indexes found for multiple choice Question ${index + 1}, defaulting to empty array`);
+            }
+            
+            processedQuestion.correctIndexes = finalCorrectIndexes;
+            console.log(`✅ Processed multiple choice Question ${index + 1}: correctIndexes=${JSON.stringify(finalCorrectIndexes)}`);
           }
           
-          return {
-            ...q,
-            correctAnswer: finalCorrectAnswer
-          };
+          return processedQuestion;
         });
         
         setPreviewData(data.data);
@@ -188,6 +223,32 @@ export default function CreateQuizPage() {
     setSuccess('');
 
     try {
+      // Convert questions to proper IQuestion format
+      const formattedQuestions = editableQuestions.map(q => {
+        if (q.type === 'single') {
+          return {
+            question: q.question,
+            options: q.options,
+            type: q.type,
+            correctIndex: q.correctIndex ?? 0
+          };
+        } else {
+          return {
+            question: q.question,
+            options: q.options,
+            type: q.type,
+            correctIndexes: q.correctIndexes || []
+          };
+        }
+      });
+
+      console.log('📤 Sending questions to API:', formattedQuestions.map((q, i) => ({
+        index: i + 1,
+        type: q.type,
+        correctIndex: 'correctIndex' in q ? q.correctIndex : undefined,
+        correctIndexes: 'correctIndexes' in q ? q.correctIndexes : undefined
+      })));
+
       const response = await fetch('/api/quizzes', {
         method: 'POST',
         headers: {
@@ -196,7 +257,7 @@ export default function CreateQuizPage() {
         body: JSON.stringify({
           title: editableTitle.trim(),
           description: editableDescription.trim(),
-          questions: editableQuestions,
+          questions: formattedQuestions,
         }),
       });
 
@@ -252,13 +313,48 @@ export default function CreateQuizPage() {
       {
         question: '',
         options: ['', '', '', ''],
-        correctAnswer: 0
+        type: 'single',
+        correctIndex: 0,
+        correctIndexes: []
       }
     ]);
   };
 
   const removeQuestion = (index: number) => {
     setEditableQuestions(editableQuestions.filter((_, i) => i !== index));
+  };
+
+  const updateQuestionType = (index: number, type: 'single' | 'multiple') => {
+    const updated = [...editableQuestions];
+    updated[index] = { 
+      ...updated[index], 
+      type,
+      correctIndex: type === 'single' ? (updated[index].correctIndex || 0) : undefined,
+      correctIndexes: type === 'multiple' ? (updated[index].correctIndexes || []) : undefined,
+      correctAnswer: undefined // Remove legacy field
+    };
+    setEditableQuestions(updated);
+  };
+
+  const updateSingleChoice = (questionIndex: number, optionIndex: number) => {
+    const updated = [...editableQuestions];
+    updated[questionIndex] = {
+      ...updated[questionIndex],
+      correctIndex: optionIndex
+    };
+    setEditableQuestions(updated);
+  };
+
+  const updateMultipleChoice = (questionIndex: number, optionIndex: number, checked: boolean) => {
+    const updated = [...editableQuestions];
+    const currentIndexes = updated[questionIndex].correctIndexes || [];
+    
+    if (checked) {
+      updated[questionIndex].correctIndexes = [...currentIndexes, optionIndex].sort();
+    } else {
+      updated[questionIndex].correctIndexes = currentIndexes.filter(idx => idx !== optionIndex);
+    }
+    setEditableQuestions(updated);
   };
 
   return (
@@ -597,56 +693,122 @@ export default function CreateQuizPage() {
                       />
                     </div>
 
-                                         <div>
-                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                         Answer Options * (Click radio button to mark correct answer)
-                       </label>
-                       <div className="space-y-2">
-                         {question.options.map((option, optionIndex) => (
-                           <div key={optionIndex} className={`flex items-center space-x-2 p-2 rounded-lg border ${
-                             question.correctAnswer === optionIndex 
-                               ? 'bg-green-50 border-green-200' 
-                               : 'bg-gray-50 border-gray-200'
-                           }`}>
-                             <input
-                               type="radio"
-                               name={`correct-${questionIndex}`}
-                               checked={question.correctAnswer === optionIndex}
-                               onChange={() => updateQuestion(questionIndex, 'correctAnswer', optionIndex)}
-                               className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                             />
-                             <div className="flex-1">
-                               <Input
-                                 value={option}
-                                 onChange={(e) => updateOption(questionIndex, optionIndex, e.target.value)}
-                                 placeholder={`Option ${optionIndex + 1}`}
-                                 required
-                                 className={question.correctAnswer === optionIndex ? 'border-green-300' : ''}
-                               />
-                             </div>
-                             <div className="flex items-center space-x-1">
-                               <span className="text-xs font-medium text-gray-600">
-                                 {String.fromCharCode(65 + optionIndex)}.
-                               </span>
-                               {question.correctAnswer === optionIndex && (
-                                 <span className="text-xs font-medium text-green-600 bg-green-100 px-2 py-1 rounded">
-                                   ✓ Correct Answer
-                                 </span>
-                               )}
-                             </div>
-                           </div>
-                         ))}
-                       </div>
-                       <div className="mt-2 text-xs text-gray-500">
-                         Current correct answer: {
-                           typeof question.correctAnswer === 'number' && 
-                           question.correctAnswer >= 0 && 
-                           question.correctAnswer < question.options.length
-                             ? `Option ${String.fromCharCode(65 + question.correctAnswer)} (${question.options[question.correctAnswer]})`
-                             : 'Not set or invalid'
-                         }
-                       </div>
-                     </div>
+                    {/* Question Type Selector */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Question Type *
+                      </label>
+                      <div className="flex space-x-4">
+                        <label className="flex items-center">
+                          <input
+                            type="radio"
+                            name={`type-${questionIndex}`}
+                            checked={question.type === 'single'}
+                            onChange={() => updateQuestionType(questionIndex, 'single')}
+                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                          />
+                          <span className="ml-2 text-sm text-gray-700">
+                            📝 Single Choice (one correct answer)
+                          </span>
+                        </label>
+                        <label className="flex items-center">
+                          <input
+                            type="radio"
+                            name={`type-${questionIndex}`}
+                            checked={question.type === 'multiple'}
+                            onChange={() => updateQuestionType(questionIndex, 'multiple')}
+                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                          />
+                          <span className="ml-2 text-sm text-gray-700">
+                            ☑️ Multiple Choice (multiple correct answers)
+                          </span>
+                        </label>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Answer Options * 
+                        {question.type === 'single' 
+                          ? '(Click radio button to mark correct answer)'
+                          : '(Check boxes to mark correct answers)'
+                        }
+                      </label>
+                      <div className="space-y-2">
+                        {question.options.map((option, optionIndex) => {
+                          let isSelected = false;
+                          
+                          if (question.type === 'single') {
+                            isSelected = question.correctIndex === optionIndex;
+                          } else {
+                            isSelected = (question.correctIndexes || []).includes(optionIndex);
+                          }
+
+                          return (
+                            <div key={optionIndex} className={`flex items-center space-x-2 p-2 rounded-lg border ${
+                              isSelected 
+                                ? 'bg-green-50 border-green-200' 
+                                : 'bg-gray-50 border-gray-200'
+                            }`}>
+                              {question.type === 'single' ? (
+                                <input
+                                  type="radio"
+                                  name={`correct-${questionIndex}`}
+                                  checked={isSelected}
+                                  onChange={() => updateSingleChoice(questionIndex, optionIndex)}
+                                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                                />
+                              ) : (
+                                <input
+                                  type="checkbox"
+                                  checked={isSelected}
+                                  onChange={(e) => updateMultipleChoice(questionIndex, optionIndex, e.target.checked)}
+                                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                />
+                              )}
+                              <div className="flex-1">
+                                <Input
+                                  value={option}
+                                  onChange={(e) => updateOption(questionIndex, optionIndex, e.target.value)}
+                                  placeholder={`Option ${optionIndex + 1}`}
+                                  required
+                                  className={isSelected ? 'border-green-300' : ''}
+                                />
+                              </div>
+                              <div className="flex items-center space-x-1">
+                                <span className="text-xs font-medium text-gray-600">
+                                  {String.fromCharCode(65 + optionIndex)}.
+                                </span>
+                                {isSelected && (
+                                  <span className="text-xs font-medium text-green-600 bg-green-100 px-2 py-1 rounded">
+                                    ✓ Correct
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <div className="mt-2 text-xs text-gray-500">
+                        {question.type === 'single' ? (
+                          `Current correct answer: ${
+                            typeof question.correctIndex === 'number' && 
+                            question.correctIndex >= 0 && 
+                            question.correctIndex < question.options.length
+                              ? `Option ${String.fromCharCode(65 + question.correctIndex)} (${question.options[question.correctIndex]})`
+                              : 'Not set or invalid'
+                          }`
+                        ) : (
+                          `Correct answers: ${
+                            (question.correctIndexes || []).length > 0
+                              ? (question.correctIndexes || [])
+                                  .map(idx => `${String.fromCharCode(65 + idx)} (${question.options[idx]})`)
+                                  .join(', ')
+                              : 'None selected'
+                          }`
+                        )}
+                      </div>
+                    </div>
                   </div>
                 ))}
 
@@ -664,6 +826,13 @@ export default function CreateQuizPage() {
                 Back to Upload
               </Button>
               <div className="space-x-4">
+                <Button 
+                  onClick={() => setShowPreviewModal(true)} 
+                  variant="outline"
+                  disabled={editableQuestions.length === 0}
+                >
+                  Preview Quiz
+                </Button>
                 <Link href="/">
                   <Button variant="outline">Cancel</Button>
                 </Link>
@@ -677,6 +846,22 @@ export default function CreateQuizPage() {
               </div>
             </div>
           </div>
+        )}
+
+        {/* Preview Modal */}
+        {showPreviewModal && (
+          <QuizPreviewModal
+            isOpen={showPreviewModal}
+            onClose={() => setShowPreviewModal(false)}
+            title={editableTitle}
+            questions={editableQuestions.map(q => ({
+              question: q.question,
+              options: q.options,
+              type: q.type,
+              correctIndex: q.type === 'single' ? q.correctIndex : undefined,
+              correctIndexes: q.type === 'multiple' ? (q.correctIndexes || []) : undefined
+            }))}
+          />
         )}
       </main>
     </div>

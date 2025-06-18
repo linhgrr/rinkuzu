@@ -121,6 +121,8 @@ export async function POST(request: NextRequest) {
         options: q.options,
         correctAnswer: correctAnswer,
         type: q.type || 'single', // Default to single if type missing
+        correctIndex: q.type === 'single' ? (q.correctIndex ?? correctAnswer) : undefined,
+        correctIndexes: q.type === 'multiple' ? q.correctIndexes : undefined,
         originalCorrectIndex: q.correctIndex,
         originalCorrectIndexes: q.correctIndexes
       };
@@ -129,7 +131,11 @@ export async function POST(request: NextRequest) {
         question: converted.question?.substring(0, 50) + '...',
         correctAnswer: converted.correctAnswer,
         correctAnswerType: typeof converted.correctAnswer,
-        type: converted.type
+        type: converted.type,
+        correctIndex: converted.correctIndex,
+        correctIndexes: converted.correctIndexes,
+        originalCorrectIndex: converted.originalCorrectIndex,
+        originalCorrectIndexes: converted.originalCorrectIndexes
       });
 
       return converted;

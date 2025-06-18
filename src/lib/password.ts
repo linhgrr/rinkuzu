@@ -1,9 +1,10 @@
-import * as argon2 from 'argon2';
+import * as bcrypt from 'bcryptjs';
 
 // Password hashing functions (SERVER-SIDE ONLY)
 export async function hashPassword(password: string): Promise<string> {
   try {
-    return await argon2.hash(password);
+    const saltRounds = 12;
+    return await bcrypt.hash(password, saltRounds);
   } catch (error) {
     throw new Error('Failed to hash password');
   }
@@ -11,7 +12,7 @@ export async function hashPassword(password: string): Promise<string> {
 
 export async function verifyPassword(password: string, hash: string): Promise<boolean> {
   try {
-    return await argon2.verify(hash, password);
+    return await bcrypt.compare(password, hash);
   } catch (error) {
     return false;
   }

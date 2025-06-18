@@ -22,7 +22,7 @@ export async function GET(
     }
 
     // Remove correct answers from questions for security
-    const safeQuestions = quiz.questions.map(q => ({
+    const safeQuestions = quiz.questions.map((q: any) => ({
       question: q.question,
       options: q.options,
       type: q.type, // Include type for frontend logic

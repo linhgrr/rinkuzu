@@ -47,7 +47,7 @@ export async function GET(
       };
     });
 
-    const correctAnswers = results.filter(r => r.isCorrect).length;
+    const correctAnswers = results.filter((r: any) => r.isCorrect).length;
 
     return NextResponse.json({
       success: true,

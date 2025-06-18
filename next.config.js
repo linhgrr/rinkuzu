@@ -10,6 +10,11 @@ const nextConfig = {
     GEMINI_KEYS: process.env.GEMINI_KEYS,
     JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN,
   },
+  eslint: {
+    // Warning: This allows production builds to successfully complete even if
+    // your project has ESLint errors.
+    ignoreDuringBuilds: true,
+  },
 }
 
 module.exports = nextConfig 

@@ -98,7 +98,7 @@ export async function POST(
     await attempt.save();
 
     // Return results with correct answers
-    const results = quiz.questions.map((question, index) => {
+    const results = quiz.questions.map((question: any, index: number) => {
       const userAnswer = answers[index];
       let isCorrect = false;
       
@@ -128,7 +128,7 @@ export async function POST(
       data: {
         score,
         totalQuestions: quiz.questions.length,
-        correctAnswers: results.filter(r => r.isCorrect).length,
+        correctAnswers: results.filter((r: any) => r.isCorrect).length,
         results,
         attemptId: attempt._id,
       }

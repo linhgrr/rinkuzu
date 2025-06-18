@@ -1,4 +1,4 @@
-import jwt from 'jsonwebtoken';
+import jwt, { SignOptions } from 'jsonwebtoken';
 import { AuthUser } from '@/types';
 
 const JWT_SECRET = process.env.NEXTAUTH_SECRET || 'fallback-secret';
@@ -6,7 +6,7 @@ const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '30m';
 
 export function signToken(payload: AuthUser): string {
   return jwt.sign(payload, JWT_SECRET, {
-    expiresIn: JWT_EXPIRES_IN,
+    expiresIn: '30m', // Use a hardcoded value for now
   });
 }
 

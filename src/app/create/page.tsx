@@ -1,0 +1,621 @@
+'use client';
+
+import { useState } from 'react';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import { useDropzone } from 'react-dropzone';
+import Link from 'next/link';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
+
+interface Question {
+  question: string;
+  options: string[];
+  correctAnswer: number;
+}
+
+interface PreviewData {
+  title: string;
+  description: string;
+  questions: Question[];
+  originalFileName: string;
+  fileSize: number;
+}
+
+export default function CreateQuizPage() {
+  const { data: session } = useSession();
+  const router = useRouter();
+  
+  // Step 1: Upload form
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [extracting, setExtracting] = useState(false);
+  
+  // Step 2: Preview and edit
+  const [previewData, setPreviewData] = useState<PreviewData | null>(null);
+  const [editableTitle, setEditableTitle] = useState('');
+  const [editableDescription, setEditableDescription] = useState('');
+  const [editableQuestions, setEditableQuestions] = useState<Question[]>([]);
+  const [creating, setCreating] = useState(false);
+  
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+
+  // Redirect if not authenticated
+  if (!session) {
+    router.push('/login');
+    return null;
+  }
+
+  const onDrop = (acceptedFiles: File[]) => {
+    const file = acceptedFiles[0];
+    if (file) {
+      if (file.type !== 'application/pdf') {
+        setError('Please upload a PDF file only');
+        return;
+      }
+      if (file.size > 20 * 1024 * 1024) {
+        setError('File size must be less than 20MB');
+        return;
+      }
+      setPdfFile(file);
+      setError('');
+    }
+  };
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: {
+      'application/pdf': ['.pdf']
+    },
+    maxFiles: 1,
+    maxSize: 20 * 1024 * 1024, // 20MB
+  });
+
+  // Step 1: Extract questions from PDF
+  const handleExtractQuestions = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!title.trim()) {
+      setError('Title is required');
+      return;
+    }
+    
+    if (!pdfFile) {
+      setError('Please upload a PDF file');
+      return;
+    }
+
+    setExtracting(true);
+    setError('');
+
+    try {
+      const formData = new FormData();
+      formData.append('title', title.trim());
+      formData.append('description', description.trim());
+      formData.append('pdfFile', pdfFile);
+
+      const response = await fetch('/api/quizzes/preview', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        console.log('🎯 Preview data received:', data.data);
+        console.log('📋 Questions from API:', data.data.questions);
+        
+        if (data.data.questions && data.data.questions.length > 0) {
+          data.data.questions.forEach((q: any, index: number) => {
+            console.log(`❓ Question ${index + 1}:`, {
+              question: q.question?.substring(0, 50) + '...',
+              options: q.options,
+              correctAnswer: q.correctAnswer,
+              correctAnswerType: typeof q.correctAnswer,
+              correctIndex: q.correctIndex,
+              originalCorrectIndex: q.originalCorrectIndex,
+              fullQuestion: q
+            });
+          });
+        }
+
+        // Ensure correctAnswer is properly set for each question
+        const processedQuestions = data.data.questions.map((q: any, index: number) => {
+          let finalCorrectAnswer = q.correctAnswer;
+          
+          // Fallback logic if correctAnswer is undefined
+          if (typeof finalCorrectAnswer === 'undefined') {
+            if (typeof q.correctIndex === 'number') {
+              finalCorrectAnswer = q.correctIndex;
+            } else if (typeof q.originalCorrectIndex === 'number') {
+              finalCorrectAnswer = q.originalCorrectIndex;
+            } else {
+              finalCorrectAnswer = 0; // Default to first option
+            }
+            
+            console.log(`🔧 Fixed correctAnswer for Question ${index + 1}: ${finalCorrectAnswer}`);
+          }
+          
+          return {
+            ...q,
+            correctAnswer: finalCorrectAnswer
+          };
+        });
+        
+        setPreviewData(data.data);
+        setEditableTitle(data.data.title);
+        setEditableDescription(data.data.description);
+        setEditableQuestions(processedQuestions);
+      } else {
+        setError(data.error || 'Failed to extract questions from PDF');
+      }
+    } catch (error) {
+      setError('An error occurred while processing the PDF');
+    } finally {
+      setExtracting(false);
+    }
+  };
+
+  // Step 2: Create quiz with edited data
+  const handleCreateQuiz = async () => {
+    if (!editableTitle.trim()) {
+      setError('Title is required');
+      return;
+    }
+
+    if (!editableQuestions || editableQuestions.length === 0) {
+      setError('At least one question is required');
+      return;
+    }
+
+    setCreating(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      const response = await fetch('/api/quizzes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: editableTitle.trim(),
+          description: editableDescription.trim(),
+          questions: editableQuestions,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setSuccess('Quiz created successfully and sent for admin approval!');
+        setTimeout(() => {
+          router.push('/pending');
+        }, 2000);
+      } else {
+        setError(data.error || 'Failed to create quiz');
+      }
+    } catch (error) {
+      setError('An error occurred while creating the quiz');
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const removeFile = () => {
+    setPdfFile(null);
+  };
+
+  const backToUpload = () => {
+    setPreviewData(null);
+    setEditableTitle('');
+    setEditableDescription('');
+    setEditableQuestions([]);
+    setError('');
+    setSuccess('');
+  };
+
+  const updateQuestion = (index: number, field: keyof Question, value: any) => {
+    const updated = [...editableQuestions];
+    updated[index] = { ...updated[index], [field]: value };
+    setEditableQuestions(updated);
+  };
+
+  const updateOption = (questionIndex: number, optionIndex: number, value: string) => {
+    const updated = [...editableQuestions];
+    updated[questionIndex].options[optionIndex] = value;
+    setEditableQuestions(updated);
+  };
+
+  const addQuestion = () => {
+    setEditableQuestions([
+      ...editableQuestions,
+      {
+        question: '',
+        options: ['', '', '', ''],
+        correctAnswer: 0
+      }
+    ]);
+  };
+
+  const removeQuestion = (index: number) => {
+    setEditableQuestions(editableQuestions.filter((_, i) => i !== index));
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Navigation */}
+      <nav className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between h-16">
+            <div className="flex items-center">
+              <Link href="/" className="text-xl font-bold text-blue-600">
+                Quiz Creator
+              </Link>
+            </div>
+            <div className="flex items-center space-x-4">
+              <Link href="/">
+                <Button variant="ghost">Home</Button>
+              </Link>
+              <Link href="/quizzes">
+                <Button variant="outline">All Quizzes</Button>
+              </Link>
+              <Link href="/pending">
+                <Button variant="outline">My Quizzes</Button>
+              </Link>
+              {(session.user as any)?.role === 'admin' && (
+                <Link href="/admin/queue">
+                  <Button variant="outline">Admin Queue</Button>
+                </Link>
+              )}
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900">Create New Quiz</h1>
+          <p className="mt-2 text-gray-600">
+            {!previewData 
+              ? 'Upload a PDF document and let AI extract questions automatically'
+              : 'Review and edit the questions before creating your quiz'
+            }
+          </p>
+        </div>
+
+        {error && (
+          <div className="rounded-md bg-red-50 p-4 mb-6">
+            <div className="text-sm text-red-700">{error}</div>
+          </div>
+        )}
+
+        {success && (
+          <div className="rounded-md bg-green-50 p-4 mb-6">
+            <div className="text-sm text-green-700">{success}</div>
+          </div>
+        )}
+
+        {!previewData ? (
+          // Step 1: Upload Form
+          <Card className="max-w-2xl">
+            <CardHeader>
+              <CardTitle>Upload PDF Document</CardTitle>
+              <CardDescription>
+                Provide basic information and upload the PDF file to extract questions
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleExtractQuestions} className="space-y-6">
+                <div>
+                  <label htmlFor="title" className="block text-sm font-medium text-gray-700">
+                    Quiz Title *
+                  </label>
+                  <div className="mt-1">
+                    <Input
+                      id="title"
+                      type="text"
+                      required
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      placeholder="Enter a descriptive title for your quiz"
+                      maxLength={200}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+                    Description (Optional)
+                  </label>
+                  <div className="mt-1">
+                    <textarea
+                      id="description"
+                      rows={3}
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      placeholder="Provide additional context about the quiz"
+                      maxLength={1000}
+                      className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    PDF Document *
+                  </label>
+                  
+                  {!pdfFile ? (
+                    <div
+                      {...getRootProps()}
+                      className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
+                        isDragActive
+                          ? 'border-blue-400 bg-blue-50'
+                          : 'border-gray-300 hover:border-gray-400'
+                      }`}
+                    >
+                      <input {...getInputProps()} />
+                      <div className="space-y-2">
+                        <svg
+                          className="mx-auto h-12 w-12 text-gray-400"
+                          stroke="currentColor"
+                          fill="none"
+                          viewBox="0 0 48 48"
+                        >
+                          <path
+                            d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
+                            strokeWidth={2}
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                        <div className="text-sm text-gray-600">
+                          {isDragActive ? (
+                            <p>Drop the PDF file here...</p>
+                          ) : (
+                            <p>
+                              <span className="font-medium text-blue-600">Click to upload</span> or
+                              drag and drop
+                            </p>
+                          )}
+                          <p className="text-xs">PDF files only, up to 20MB</p>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="border border-gray-300 rounded-lg p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <svg
+                            className="h-8 w-8 text-red-600"
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
+                          >
+                            <path
+                              fillRule="evenodd"
+                              d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z"
+                              clipRule="evenodd"
+                            />
+                          </svg>
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">{pdfFile.name}</p>
+                            <p className="text-xs text-gray-500">
+                              {(pdfFile.size / 1024 / 1024).toFixed(2)} MB
+                            </p>
+                          </div>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={removeFile}
+                        >
+                          Remove
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex justify-end space-x-4">
+                  <Link href="/">
+                    <Button type="button" variant="outline">
+                      Cancel
+                    </Button>
+                  </Link>
+                  <Button
+                    type="submit"
+                    loading={extracting}
+                    disabled={!title.trim() || !pdfFile}
+                  >
+                    {extracting ? 'Extracting Questions...' : 'Extract Questions'}
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        ) : (
+          // Step 2: Preview and Edit
+          <div className="space-y-6">
+            {/* Quiz Info */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Quiz Information</CardTitle>
+                <CardDescription>
+                  Edit the title and description for your quiz
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <label htmlFor="editTitle" className="block text-sm font-medium text-gray-700">
+                    Quiz Title *
+                  </label>
+                  <div className="mt-1">
+                    <Input
+                      id="editTitle"
+                      type="text"
+                      required
+                      value={editableTitle}
+                      onChange={(e) => setEditableTitle(e.target.value)}
+                      placeholder="Enter quiz title"
+                      maxLength={200}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="editDescription" className="block text-sm font-medium text-gray-700">
+                    Description
+                  </label>
+                  <div className="mt-1">
+                    <textarea
+                      id="editDescription"
+                      rows={3}
+                      value={editableDescription}
+                      onChange={(e) => setEditableDescription(e.target.value)}
+                      placeholder="Enter quiz description"
+                      maxLength={1000}
+                      className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+
+                <div className="text-sm text-gray-500">
+                  Original file: {previewData.originalFileName} ({(previewData.fileSize / 1024 / 1024).toFixed(2)} MB)
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Questions */}
+            <Card>
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle>Questions ({editableQuestions.length})</CardTitle>
+                    <CardDescription>
+                      Review and edit the questions extracted from your PDF
+                    </CardDescription>
+                  </div>
+                  <Button onClick={addQuestion} size="sm">
+                    Add Question
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {editableQuestions.map((question, questionIndex) => (
+                  <div key={questionIndex} className="border border-gray-200 rounded-lg p-4 space-y-4">
+                    <div className="flex justify-between items-start">
+                      <h4 className="font-medium text-gray-900">Question {questionIndex + 1}</h4>
+                      <Button
+                        onClick={() => removeQuestion(questionIndex)}
+                        variant="ghost"
+                        size="sm"
+                        className="text-red-600 hover:text-red-700"
+                      >
+                        Remove
+                      </Button>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Question Text *
+                      </label>
+                      <textarea
+                        value={question.question}
+                        onChange={(e) => updateQuestion(questionIndex, 'question', e.target.value)}
+                        className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        rows={2}
+                        placeholder="Enter the question"
+                        required
+                      />
+                    </div>
+
+                                         <div>
+                       <label className="block text-sm font-medium text-gray-700 mb-2">
+                         Answer Options * (Click radio button to mark correct answer)
+                       </label>
+                       <div className="space-y-2">
+                         {question.options.map((option, optionIndex) => (
+                           <div key={optionIndex} className={`flex items-center space-x-2 p-2 rounded-lg border ${
+                             question.correctAnswer === optionIndex 
+                               ? 'bg-green-50 border-green-200' 
+                               : 'bg-gray-50 border-gray-200'
+                           }`}>
+                             <input
+                               type="radio"
+                               name={`correct-${questionIndex}`}
+                               checked={question.correctAnswer === optionIndex}
+                               onChange={() => updateQuestion(questionIndex, 'correctAnswer', optionIndex)}
+                               className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                             />
+                             <div className="flex-1">
+                               <Input
+                                 value={option}
+                                 onChange={(e) => updateOption(questionIndex, optionIndex, e.target.value)}
+                                 placeholder={`Option ${optionIndex + 1}`}
+                                 required
+                                 className={question.correctAnswer === optionIndex ? 'border-green-300' : ''}
+                               />
+                             </div>
+                             <div className="flex items-center space-x-1">
+                               <span className="text-xs font-medium text-gray-600">
+                                 {String.fromCharCode(65 + optionIndex)}.
+                               </span>
+                               {question.correctAnswer === optionIndex && (
+                                 <span className="text-xs font-medium text-green-600 bg-green-100 px-2 py-1 rounded">
+                                   ✓ Correct Answer
+                                 </span>
+                               )}
+                             </div>
+                           </div>
+                         ))}
+                       </div>
+                       <div className="mt-2 text-xs text-gray-500">
+                         Current correct answer: {
+                           typeof question.correctAnswer === 'number' && 
+                           question.correctAnswer >= 0 && 
+                           question.correctAnswer < question.options.length
+                             ? `Option ${String.fromCharCode(65 + question.correctAnswer)} (${question.options[question.correctAnswer]})`
+                             : 'Not set or invalid'
+                         }
+                       </div>
+                     </div>
+                  </div>
+                ))}
+
+                {editableQuestions.length === 0 && (
+                  <div className="text-center py-8 text-gray-500">
+                    No questions found. Click "Add Question" to create one manually.
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Actions */}
+            <div className="flex justify-between">
+              <Button onClick={backToUpload} variant="outline">
+                Back to Upload
+              </Button>
+              <div className="space-x-4">
+                <Link href="/">
+                  <Button variant="outline">Cancel</Button>
+                </Link>
+                <Button
+                  onClick={handleCreateQuiz}
+                  loading={creating}
+                  disabled={!editableTitle.trim() || editableQuestions.length === 0}
+                >
+                  {creating ? 'Creating Quiz...' : 'Create Quiz'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+      </main>
+    </div>
+  );
+} 

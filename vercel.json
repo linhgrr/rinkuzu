@@ -1,0 +1,14 @@
+{
+  "functions": {
+    "src/app/api/**/*.ts": {
+      "maxDuration": 30
+    }
+  },
+  "regions": ["sfo1"],
+  "env": {
+    "MONGO_URL": "@mongo-url",
+    "NEXTAUTH_SECRET": "@nextauth-secret",
+    "GEMINI_KEYS": "@gemini-keys",
+    "JWT_EXPIRES_IN": "@jwt-expires-in"
+  }
+} 

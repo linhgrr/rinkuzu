@@ -17,35 +17,67 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData();
     const title = formData.get('title') as string;
     const description = formData.get('description') as string;
-    const pdfFile = formData.get('pdfFile') as File;
+    const fileCount = parseInt(formData.get('fileCount') as string) || 0;
 
-    if (!title || !pdfFile) {
+    if (!title || fileCount === 0) {
       return NextResponse.json(
-        { success: false, error: 'Title and PDF file are required' },
+        { success: false, error: 'Title and at least one PDF file are required' },
         { status: 400 }
       );
     }
 
-    // Validate file type and size
-    if (pdfFile.type !== 'application/pdf') {
-      return NextResponse.json(
-        { success: false, error: 'Only PDF files are allowed' },
-        { status: 400 }
-      );
+    // Get all PDF files
+    const pdfFiles: File[] = [];
+    for (let i = 0; i < fileCount; i++) {
+      const file = formData.get(`pdfFile_${i}`) as File;
+      if (file) {
+        pdfFiles.push(file);
+      }
     }
 
-    if (pdfFile.size > 20 * 1024 * 1024) { // 20MB limit
-      return NextResponse.json(
-        { success: false, error: 'File size must be less than 20MB' },
-        { status: 400 }
-      );
+    // Validate file types and sizes
+    for (const file of pdfFiles) {
+      if (file.type !== 'application/pdf') {
+        return NextResponse.json(
+          { success: false, error: `File "${file.name}" is not a PDF file` },
+          { status: 400 }
+        );
+      }
+
+      if (file.size > 20 * 1024 * 1024) { // 20MB limit
+        return NextResponse.json(
+          { success: false, error: `File "${file.name}" size must be less than 20MB` },
+          { status: 400 }
+        );
+      }
     }
 
-    // Convert file to buffer for Gemini API
-    const buffer = Buffer.from(await pdfFile.arrayBuffer());
+    // Extract questions from all PDF files
+    let allQuestions: any[] = [];
+    let totalFileSize = 0;
+    const fileNames: string[] = [];
 
-    // Extract questions using Gemini AI
-    const rawQuestions = await extractQuestionsFromPdf(buffer);
+    for (const file of pdfFiles) {
+      console.log(`📄 Processing file: ${file.name}`);
+      
+      // Convert file to buffer for Gemini API
+      const buffer = Buffer.from(await file.arrayBuffer());
+      
+      // Extract questions using Gemini AI (one file at a time)
+      const fileQuestions = await extractQuestionsFromPdf(buffer);
+      
+      if (fileQuestions && fileQuestions.length > 0) {
+        allQuestions = allQuestions.concat(fileQuestions);
+        console.log(`✅ Extracted ${fileQuestions.length} questions from ${file.name}`);
+      } else {
+        console.log(`⚠️ No questions extracted from ${file.name}`);
+      }
+      
+      totalFileSize += file.size;
+      fileNames.push(file.name);
+    }
+
+    const rawQuestions = allQuestions;
 
     // Log the raw questions data for debugging
     console.log('📋 Raw questions from Gemini:', JSON.stringify(rawQuestions, null, 2));
@@ -115,8 +147,10 @@ export async function POST(request: NextRequest) {
         title,
         description,
         questions,
-        originalFileName: pdfFile.name,
-        fileSize: pdfFile.size
+        originalFileName: fileNames.join(', '),
+        fileSize: totalFileSize,
+        fileCount: pdfFiles.length,
+        fileNames: fileNames
       }
     });
 

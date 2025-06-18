@@ -1,4 +1,4 @@
-# Quiz Creator App
+# RinKuzu App
 
 A modern web application built with Next.js 14 that allows teachers to create interactive quizzes from PDF files with an admin approval workflow.
 

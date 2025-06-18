@@ -38,7 +38,7 @@ export interface IAttempt {
 export interface CreateQuizRequest {
   title: string;
   description?: string;
-  pdfFile: File;
+  pdfFiles: File[];
 }
 
 export interface QuizAttemptRequest {
@@ -59,7 +59,6 @@ export interface LoginRequest {
 export interface RegisterRequest {
   email: string;
   password: string;
-  role?: 'admin' | 'user';
 }
 
 export interface ApiResponse<T = any> {
@@ -72,7 +71,7 @@ export interface ApiResponse<T = any> {
 export interface QuizFormData {
   title: string;
   description: string;
-  pdfFile: File | null;
+  pdfFiles: File[];
 }
 
 export interface PaginatedResponse<T> {

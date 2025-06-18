@@ -6,7 +6,8 @@ import { hashPassword } from '@/lib/password';
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, password, role = 'user' } = await request.json();
+    const { email, password } = await request.json();
+    const role = 'user'; // Always default to user
 
     // Validation
     if (!email || !password) {
@@ -26,13 +27,6 @@ export async function POST(request: NextRequest) {
     if (!validatePassword(password)) {
       return NextResponse.json(
         { success: false, error: 'Password must be at least 6 characters' },
-        { status: 400 }
-      );
-    }
-
-    if (!['admin', 'user'].includes(role)) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid role' },
         { status: 400 }
       );
     }

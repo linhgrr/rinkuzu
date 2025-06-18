@@ -194,7 +194,7 @@ export default function AdminQueuePage() {
           <div className="flex justify-between h-16">
             <div className="flex items-center">
               <Link href="/" className="text-xl font-bold text-blue-600">
-                Quiz Creator
+                RinKuzu
               </Link>
               <span className="ml-2 px-2 py-1 bg-red-100 text-red-800 text-xs font-medium rounded">
                 Admin
@@ -203,6 +203,9 @@ export default function AdminQueuePage() {
             <div className="flex items-center space-x-4">
               <Link href="/">
                 <Button variant="ghost">Home</Button>
+              </Link>
+              <Link href="/admin/users">
+                <Button variant="outline">Manage Users</Button>
               </Link>
               <Link href="/create">
                 <Button variant="outline">Create Quiz</Button>

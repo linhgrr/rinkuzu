@@ -21,6 +21,8 @@ interface PreviewData {
   questions: Question[];
   originalFileName: string;
   fileSize: number;
+  fileCount?: number;
+  fileNames?: string[];
 }
 
 export default function CreateQuizPage() {
@@ -30,7 +32,7 @@ export default function CreateQuizPage() {
   // Step 1: Upload form
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [pdfFiles, setPdfFiles] = useState<File[]>([]);
   const [extracting, setExtracting] = useState(false);
   
   // Step 2: Preview and edit
@@ -50,17 +52,22 @@ export default function CreateQuizPage() {
   }
 
   const onDrop = (acceptedFiles: File[]) => {
-    const file = acceptedFiles[0];
-    if (file) {
+    const validFiles: File[] = [];
+    
+    for (const file of acceptedFiles) {
       if (file.type !== 'application/pdf') {
-        setError('Please upload a PDF file only');
+        setError(`File "${file.name}" is not a PDF file`);
         return;
       }
       if (file.size > 20 * 1024 * 1024) {
-        setError('File size must be less than 20MB');
+        setError(`File "${file.name}" is larger than 20MB`);
         return;
       }
-      setPdfFile(file);
+      validFiles.push(file);
+    }
+    
+    if (validFiles.length > 0) {
+      setPdfFiles(prev => [...prev, ...validFiles]);
       setError('');
     }
   };
@@ -70,7 +77,7 @@ export default function CreateQuizPage() {
     accept: {
       'application/pdf': ['.pdf']
     },
-    maxFiles: 1,
+    multiple: true,
     maxSize: 20 * 1024 * 1024, // 20MB
   });
 
@@ -83,8 +90,8 @@ export default function CreateQuizPage() {
       return;
     }
     
-    if (!pdfFile) {
-      setError('Please upload a PDF file');
+    if (pdfFiles.length === 0) {
+      setError('Please upload at least one PDF file');
       return;
     }
 
@@ -95,7 +102,12 @@ export default function CreateQuizPage() {
       const formData = new FormData();
       formData.append('title', title.trim());
       formData.append('description', description.trim());
-      formData.append('pdfFile', pdfFile);
+      
+      // Append all PDF files
+      pdfFiles.forEach((file, index) => {
+        formData.append(`pdfFile_${index}`, file);
+      });
+      formData.append('fileCount', pdfFiles.length.toString());
 
       const response = await fetch('/api/quizzes/preview', {
         method: 'POST',
@@ -205,8 +217,12 @@ export default function CreateQuizPage() {
     }
   };
 
-  const removeFile = () => {
-    setPdfFile(null);
+  const removeFile = (index: number) => {
+    setPdfFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const removeAllFiles = () => {
+    setPdfFiles([]);
   };
 
   const backToUpload = () => {
@@ -253,7 +269,7 @@ export default function CreateQuizPage() {
           <div className="flex justify-between h-16">
             <div className="flex items-center">
               <Link href="/" className="text-xl font-bold text-blue-600">
-                Quiz Creator
+                RinKuzu
               </Link>
             </div>
             <div className="flex items-center space-x-4">
@@ -349,7 +365,7 @@ export default function CreateQuizPage() {
                     PDF Document *
                   </label>
                   
-                  {!pdfFile ? (
+                  <div>
                     <div
                       {...getRootProps()}
                       className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
@@ -375,50 +391,74 @@ export default function CreateQuizPage() {
                         </svg>
                         <div className="text-sm text-gray-600">
                           {isDragActive ? (
-                            <p>Drop the PDF file here...</p>
+                            <p>Drop PDF files here...</p>
                           ) : (
                             <p>
                               <span className="font-medium text-blue-600">Click to upload</span> or
                               drag and drop
                             </p>
                           )}
-                          <p className="text-xs">PDF files only, up to 20MB</p>
+                          <p className="text-xs">Multiple PDF files allowed, up to 20MB each</p>
                         </div>
                       </div>
                     </div>
-                  ) : (
-                    <div className="border border-gray-300 rounded-lg p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          <svg
-                            className="h-8 w-8 text-red-600"
-                            fill="currentColor"
-                            viewBox="0 0 20 20"
+                    
+                    {pdfFiles.length > 0 && (
+                      <div className="mt-4 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-sm font-medium text-gray-700">
+                            Selected Files ({pdfFiles.length})
+                          </h4>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={removeAllFiles}
+                            className="text-red-600"
                           >
-                            <path
-                              fillRule="evenodd"
-                              d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
-                          <div>
-                            <p className="text-sm font-medium text-gray-900">{pdfFile.name}</p>
-                            <p className="text-xs text-gray-500">
-                              {(pdfFile.size / 1024 / 1024).toFixed(2)} MB
-                            </p>
-                          </div>
+                            Remove All
+                          </Button>
                         </div>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={removeFile}
-                        >
-                          Remove
-                        </Button>
+                        
+                        <div className="space-y-2 max-h-60 overflow-y-auto">
+                          {pdfFiles.map((file, index) => (
+                            <div key={index} className="border border-gray-300 rounded-lg p-3">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center space-x-3">
+                                  <svg
+                                    className="h-6 w-6 text-red-600"
+                                    fill="currentColor"
+                                    viewBox="0 0 20 20"
+                                  >
+                                    <path
+                                      fillRule="evenodd"
+                                      d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z"
+                                      clipRule="evenodd"
+                                    />
+                                  </svg>
+                                  <div>
+                                    <p className="text-sm font-medium text-gray-900">{file.name}</p>
+                                    <p className="text-xs text-gray-500">
+                                      {(file.size / 1024 / 1024).toFixed(2)} MB
+                                    </p>
+                                  </div>
+                                </div>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => removeFile(index)}
+                                  className="text-red-600"
+                                >
+                                  Remove
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
 
                 <div className="flex justify-end space-x-4">
@@ -430,9 +470,9 @@ export default function CreateQuizPage() {
                   <Button
                     type="submit"
                     loading={extracting}
-                    disabled={!title.trim() || !pdfFile}
+                    disabled={!title.trim() || pdfFiles.length === 0}
                   >
-                    {extracting ? 'Extracting Questions...' : 'Extract Questions'}
+                    {extracting ? 'Extracting Questions...' : `Extract Questions from ${pdfFiles.length} file${pdfFiles.length !== 1 ? 's' : ''}`}
                   </Button>
                 </div>
               </form>
@@ -485,7 +525,27 @@ export default function CreateQuizPage() {
                 </div>
 
                 <div className="text-sm text-gray-500">
-                  Original file: {previewData.originalFileName} ({(previewData.fileSize / 1024 / 1024).toFixed(2)} MB)
+                  {previewData.fileCount && previewData.fileCount > 1 ? (
+                    <div>
+                      <div className="font-medium">
+                        Original files ({previewData.fileCount}): 
+                      </div>
+                      <div className="mt-1">
+                        {previewData.fileNames?.map((fileName, index) => (
+                          <div key={index} className="text-xs ml-2">
+                            • {fileName}
+                          </div>
+                        )) || previewData.originalFileName}
+                      </div>
+                      <div className="mt-1">
+                        Total size: {(previewData.fileSize / 1024 / 1024).toFixed(2)} MB
+                      </div>
+                    </div>
+                  ) : (
+                    <div>
+                      Original file: {previewData.originalFileName} ({(previewData.fileSize / 1024 / 1024).toFixed(2)} MB)
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -497,7 +557,7 @@ export default function CreateQuizPage() {
                   <div>
                     <CardTitle>Questions ({editableQuestions.length})</CardTitle>
                     <CardDescription>
-                      Review and edit the questions extracted from your PDF
+                      Review and edit the questions extracted from your PDF{previewData.fileCount && previewData.fileCount > 1 ? 's' : ''}
                     </CardDescription>
                   </div>
                   <Button onClick={addQuestion} size="sm">

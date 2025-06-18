@@ -6,10 +6,10 @@ import Providers from './providers';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Quiz Creator - Create Interactive Quizzes from PDFs',
+  title: 'RinKuzu - Create Interactive Quizzes from PDFs',
   description: 'A platform for teachers to create interactive quizzes from PDF files with AI-powered question extraction and admin approval workflow.',
   keywords: 'quiz, education, PDF, AI, teachers, students, assessment',
-  authors: [{ name: 'Quiz Creator Team' }],
+  authors: [{ name: 'RinKuzu Team' }],
   viewport: 'width=device-width, initial-scale=1',
 };
 

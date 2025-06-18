@@ -11,7 +11,6 @@ export default function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [role, setRole] = useState<'user' | 'admin'>('user');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -44,7 +43,6 @@ export default function RegisterPage() {
         body: JSON.stringify({
           email,
           password,
-          role,
         }),
       });
 
@@ -70,7 +68,7 @@ export default function RegisterPage() {
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="text-center">
           <Link href="/" className="text-2xl font-bold text-blue-600">
-            Quiz Creator
+            RinKuzu
           </Link>
         </div>
         <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
@@ -87,7 +85,7 @@ export default function RegisterPage() {
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <Card>
           <CardHeader>
-            <CardTitle>Join Quiz Creator</CardTitle>
+            <CardTitle>Join RinKuzu</CardTitle>
             <CardDescription>
               Create an account to start making quizzes from PDFs
             </CardDescription>
@@ -160,26 +158,7 @@ export default function RegisterPage() {
                 </div>
               </div>
 
-              <div>
-                <label htmlFor="role" className="block text-sm font-medium text-gray-700">
-                  Account Type
-                </label>
-                <div className="mt-1">
-                  <select
-                    id="role"
-                    name="role"
-                    value={role}
-                    onChange={(e) => setRole(e.target.value as 'user' | 'admin')}
-                    className="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="user">Teacher/User</option>
-                    <option value="admin">Administrator</option>
-                  </select>
-                </div>
-                <p className="mt-1 text-xs text-gray-500">
-                  Choose Administrator only if you need to approve quizzes
-                </p>
-              </div>
+
 
               <div>
                 <Button

@@ -224,11 +224,18 @@ export default function AllQuizzesPage() {
                     <span className="text-sm text-gray-500">
                       {quiz.questions?.length || 0} questions
                     </span>
-                    <Link href={`/quiz/${quiz.slug}`}>
-                      <Button size="sm">
-                        Take Quiz
-                      </Button>
-                    </Link>
+                    <div className="flex space-x-2">
+                      <Link href={`/quiz/${quiz.slug}/flashcards`}>
+                        <Button size="sm" variant="outline" className="bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100">
+                          🗂️ Flashcards
+                        </Button>
+                      </Link>
+                      <Link href={`/quiz/${quiz.slug}`}>
+                        <Button size="sm">
+                          Take Quiz
+                        </Button>
+                      </Link>
+                    </div>
                   </div>
                 </CardContent>
               </Card>

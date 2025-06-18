@@ -69,7 +69,7 @@ export async function PUT(
       );
     }
 
-    const { title, description } = await request.json();
+    const { title, description, questions } = await request.json();
 
     await connectDB();
 
@@ -100,10 +100,75 @@ export async function PUT(
       );
     }
 
-    // Update quiz
+    // If questions provided, validate similar to POST
+    let mongooseQuestions: any[] | undefined = undefined;
+    if (questions !== undefined) {
+      if (!Array.isArray(questions) || questions.length === 0) {
+        return NextResponse.json(
+          { success: false, error: 'Questions must be a non-empty array' },
+          { status: 400 }
+        );
+      }
+
+      // Validation loop copied from create API (simplified logs)
+      for (let i = 0; i < questions.length; i++) {
+        const q = questions[i];
+        if (!q.question || typeof q.question !== 'string') {
+          return NextResponse.json({ success: false, error: `Question ${i + 1}: missing text` }, { status: 400 });
+        }
+        if (!q.options || !Array.isArray(q.options) || q.options.length < 2) {
+          return NextResponse.json({ success: false, error: `Question ${i + 1}: need >=2 options` }, { status: 400 });
+        }
+        for (const opt of q.options) {
+          if (typeof opt !== 'string') {
+            return NextResponse.json({ success: false, error: `Question ${i + 1}: option must be string` }, { status: 400 });
+          }
+        }
+        const type = q.type || 'single';
+        if (!['single', 'multiple'].includes(type)) {
+          return NextResponse.json({ success: false, error: `Question ${i + 1}: invalid type` }, { status: 400 });
+        }
+        if (type === 'single') {
+          if (typeof q.correctIndex !== 'number' || q.correctIndex < 0 || q.correctIndex >= q.options.length) {
+            return NextResponse.json({ success: false, error: `Question ${i + 1}: invalid correctIndex` }, { status: 400 });
+          }
+        } else {
+          if (!Array.isArray(q.correctIndexes) || q.correctIndexes.length === 0) {
+            return NextResponse.json({ success: false, error: `Question ${i + 1}: invalid correctIndexes` }, { status: 400 });
+          }
+          for (const idx of q.correctIndexes) {
+            if (typeof idx !== 'number' || idx < 0 || idx >= q.options.length) {
+              return NextResponse.json({ success: false, error: `Question ${i + 1}: invalid correctIndexes value` }, { status: 400 });
+            }
+          }
+        }
+      }
+
+      // Build mongooseQuestions array with images passed through
+      mongooseQuestions = questions.map((q: any) => {
+        const out: any = {
+          question: q.question,
+          options: q.options,
+          type: q.type || 'single',
+        };
+        if (q.type === 'single') out.correctIndex = q.correctIndex;
+        else out.correctIndexes = q.correctIndexes;
+        if (q.questionImage) out.questionImage = q.questionImage;
+        if (q.optionImages) out.optionImages = q.optionImages;
+        return out;
+      });
+    }
+
+    // Update quiz basic fields
     if (title) quiz.title = title;
     if (description !== undefined) quiz.description = description;
-    
+
+    // If questions provided, replace and reset status to pending
+    if (mongooseQuestions) {
+      quiz.questions = mongooseQuestions as any;
+      quiz.status = 'pending';
+    }
+
     await quiz.save();
 
     return NextResponse.json({

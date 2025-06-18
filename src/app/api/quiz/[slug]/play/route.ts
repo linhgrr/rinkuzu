@@ -25,8 +25,10 @@ export async function GET(
     const safeQuestions = quiz.questions.map((q: any) => ({
       question: q.question,
       options: q.options,
-      type: q.type, // Include type for frontend logic
-      // Don't include correctIndex or correctIndexes
+      type: q.type,
+      questionImage: q.questionImage ?? null,
+      optionImages: q.optionImages ?? [],
+      // Exclude correct answers
     }));
 
     const safeQuiz = {

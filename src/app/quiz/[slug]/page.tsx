@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer';
+import { QuestionImage, OptionImage } from '@/components/ui/ImageDisplay';
 import { useQuizStore } from '@/store/useQuizStore';
 import { IQuiz } from '@/types';
 
@@ -191,6 +192,8 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
           question: currentQuestion.question,
           options: currentQuestion.options,
           userQuestion: userQuestion.trim() || undefined,
+          questionImage: currentQuestion.questionImage,
+          optionImages: currentQuestion.optionImages,
         }),
       });
 
@@ -415,6 +418,16 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
                 🤖 Ask AI
               </Button>
             </div>
+            
+            {/* Display question image if exists */}
+            {currentQuestion.questionImage && (
+              <div className="mt-4">
+                <QuestionImage 
+                  src={currentQuestion.questionImage} 
+                  alt={`Question ${currentQuestionIndex + 1} image`}
+                />
+              </div>
+            )}
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
@@ -463,7 +476,19 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
                         )
                       )}
                     </div>
-                    <span className="text-gray-900">{option}</span>
+                    <div className="flex-1">
+                      <span className="text-gray-900">{option}</span>
+                      
+                      {/* Display option image if exists */}
+                      {currentQuestion.optionImages?.[index] && (
+                        <div className="mt-2">
+                          <OptionImage 
+                            src={currentQuestion.optionImages[index]!} 
+                            alt={`Option ${String.fromCharCode(65 + index)} image`}
+                          />
+                        </div>
+                      )}
+                    </div>
                   </label>
                 );
               })}
@@ -618,11 +643,19 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
               <p className="text-sm text-gray-700">{quiz && currentQuestion.question}</p>
               <div className="mt-2 space-y-1">
                 {quiz && currentQuestion.options.map((option, index) => (
-                  <div key={index} className="text-xs text-gray-600">
-                    {String.fromCharCode(65 + index)}. {option}
+                  <div key={index} className="text-xs text-gray-600 flex items-start space-x-2">
+                    <span>{String.fromCharCode(65 + index)}. {option}</span>
+                    {currentQuestion.optionImages?.[index] && (
+                      <OptionImage src={currentQuestion.optionImages[index]!} alt={`Option ${index} image`} className="ml-1" />
+                    )}
                   </div>
                 ))}
               </div>
+              {currentQuestion.questionImage && (
+                <div className="mt-3">
+                  <QuestionImage src={currentQuestion.questionImage} alt="Question img" />
+                </div>
+              )}
             </div>
 
             {/* User Question Input */}

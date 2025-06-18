@@ -8,9 +8,21 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { IQuiz } from '@/types';
+import { QuestionImageUpload, OptionImageUpload } from '@/components/ui/ImageUpload';
+import { QuestionImage, OptionImage } from '@/components/ui/ImageDisplay';
 
 interface EditQuizPageProps {
   params: { id: string };
+}
+
+interface Question {
+  question: string;
+  options: string[];
+  type: 'single' | 'multiple';
+  correctIndex?: number;
+  correctIndexes?: number[];
+  questionImage?: string;
+  optionImages?: (string | undefined)[];
 }
 
 export default function EditQuizPage({ params }: EditQuizPageProps) {
@@ -24,6 +36,7 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
   const [success, setSuccess] = useState('');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [editableQuestions, setEditableQuestions] = useState<Question[]>([]);
 
   if (!session) {
     router.push('/login');
@@ -43,6 +56,7 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
         setQuiz(data.data);
         setTitle(data.data.title);
         setDescription(data.data.description || '');
+        setEditableQuestions(data.data.questions as Question[]);
       } else {
         setError(data.error || 'Quiz not found');
       }
@@ -51,6 +65,55 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
     } finally {
       setLoading(false);
     }
+  };
+
+  const updateQuestionField = (index: number, field: keyof Question, value: any) => {
+    const updated = [...editableQuestions];
+    updated[index] = { ...updated[index], [field]: value };
+    setEditableQuestions(updated);
+  };
+
+  const updateOption = (qIdx: number, optIdx: number, value: string) => {
+    const updated = [...editableQuestions];
+    updated[qIdx].options[optIdx] = value;
+    setEditableQuestions(updated);
+  };
+
+  const updateQuestionImage = (qIdx: number, url: string) => updateQuestionField(qIdx,'questionImage',url);
+  const removeQuestionImage = (qIdx: number) => updateQuestionField(qIdx,'questionImage',undefined);
+
+  const updateOptionImage = (qIdx:number,optIdx:number,url:string)=>{
+    const updated=[...editableQuestions];
+    if(!updated[qIdx].optionImages){updated[qIdx].optionImages=new Array(updated[qIdx].options.length).fill(undefined);} 
+    updated[qIdx].optionImages![optIdx]=url;
+    setEditableQuestions(updated);
+  };
+  const removeOptionImage=(qIdx:number,optIdx:number)=>{
+    const updated=[...editableQuestions];
+    if(updated[qIdx].optionImages) updated[qIdx].optionImages![optIdx]=undefined;
+    setEditableQuestions(updated);
+  };
+
+  const addQuestion=()=>{
+    setEditableQuestions([...editableQuestions,{question:'',options:['','','',''],type:'single',correctIndex:0,correctIndexes:[]}]);
+  };
+  const removeQuestion=(idx:number)=> setEditableQuestions(editableQuestions.filter((_,i)=>i!==idx));
+
+  const toggleQuestionType=(idx:number,type:'single'|'multiple')=>{
+    const updated=[...editableQuestions];
+    updated[idx]={...updated[idx],type,correctIndex:type==='single'? (updated[idx].correctIndex??0):undefined,correctIndexes:type==='multiple'? (updated[idx].correctIndexes||[]):undefined};
+    setEditableQuestions(updated);
+  };
+
+  const setSingleCorrect=(qIdx:number,optIdx:number)=>{
+    updateQuestionField(qIdx,'correctIndex',optIdx);
+  };
+
+  const toggleMultipleCorrect=(qIdx:number,optIdx:number,checked:boolean)=>{
+    const updated=[...editableQuestions];
+    const arr=updated[qIdx].correctIndexes||[];
+    updated[qIdx].correctIndexes=checked? [...arr,optIdx].sort(): arr.filter(i=>i!==optIdx);
+    setEditableQuestions(updated);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -66,6 +129,13 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
     setSuccess('');
 
     try {
+      const formattedQuestions = editableQuestions.map((q: Question)=>{
+        const base:any={question:q.question,options:q.options,type:q.type,
+          ...(q.questionImage?{questionImage:q.questionImage}:{}),
+          ...(q.optionImages&&q.optionImages.some(Boolean)?{optionImages:q.optionImages}:{})};
+        return q.type==='single'? {...base,correctIndex:q.correctIndex??0}:{...base,correctIndexes:q.correctIndexes||[]};
+      });
+
       const response = await fetch(`/api/quizzes/${params.id}`, {
         method: 'PUT',
         headers: {
@@ -74,6 +144,7 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
         body: JSON.stringify({
           title: title.trim(),
           description: description.trim(),
+          questions: formattedQuestions,
         }),
       });
 
@@ -328,6 +399,57 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
                   Note: Questions cannot be edited after creation. Create a new quiz to change questions.
                 </p>
               </div>
+
+              {/* Questions Edit */}
+              {canEdit && (
+                <Card className="mt-8">
+                  <CardHeader>
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <CardTitle>Questions ({editableQuestions.length})</CardTitle>
+                        <CardDescription>Edit questions below</CardDescription>
+                      </div>
+                      <Button onClick={addQuestion} size="sm">Add Question</Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    {editableQuestions.map((q,index)=>(
+                      <div key={index} className="border p-4 rounded-lg space-y-4">
+                        <div className="flex justify-between items-start">
+                          <h4 className="font-medium">Question {index+1}</h4>
+                          <Button variant="ghost" size="sm" onClick={()=>removeQuestion(index)} className="text-red-600">Remove</Button>
+                        </div>
+                        <textarea value={q.question} onChange={e=>updateQuestionField(index,'question',e.target.value)} className="w-full border rounded p-2" rows={2}/>
+                        <QuestionImageUpload currentImage={q.questionImage} onImageUploaded={url=>updateQuestionImage(index,url)} onImageRemoved={()=>removeQuestionImage(index)} />
+                        <div>
+                          <label className="text-sm font-medium mb-1">Question Type</label>
+                          <div className="flex space-x-4 mt-1">
+                            <label className="flex items-center">
+                              <input type="radio" checked={q.type==='single'} onChange={()=>toggleQuestionType(index,'single')} /> <span className="ml-2 text-sm">Single</span>
+                            </label>
+                            <label className="flex items-center">
+                              <input type="radio" checked={q.type==='multiple'} onChange={()=>toggleQuestionType(index,'multiple')} /> <span className="ml-2 text-sm">Multiple</span>
+                            </label>
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          {q.options.map((opt,optIdx)=>(
+                            <div key={optIdx} className="flex items-center space-x-2">
+                              {q.type==='single'? (
+                                <input type="radio" name={`correct-${index}`} checked={q.correctIndex===optIdx} onChange={()=>setSingleCorrect(index,optIdx)} />
+                              ):(
+                                <input type="checkbox" checked={q.correctIndexes?.includes(optIdx)} onChange={e=>toggleMultipleCorrect(index,optIdx,e.target.checked)} />
+                              )}
+                              <Input value={opt} onChange={e=>updateOption(index,optIdx,e.target.value)} className="flex-1" />
+                              <OptionImageUpload currentImage={q.optionImages?.[optIdx]} onImageUploaded={url=>updateOptionImage(index,optIdx,url)} onImageRemoved={()=>removeOptionImage(index,optIdx)} />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+              )}
 
               <div className="flex justify-between">
                 <div className="flex space-x-4">

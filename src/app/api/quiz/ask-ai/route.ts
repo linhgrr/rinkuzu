@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { question, options, userQuestion } = await request.json();
+    const { question, options, userQuestion, questionImage, optionImages } = await request.json();
 
     if (!question || !options || !Array.isArray(options)) {
       return NextResponse.json(
@@ -45,6 +45,16 @@ export async function POST(request: NextRequest) {
 
     const maxRetries = Math.min(keys.length, 3);
     
+    const fetchImageBase64 = async (url: string): Promise<string | null> => {
+      try {
+        const res = await fetch(url);
+        const buf = Buffer.from(await res.arrayBuffer());
+        return buf.toString('base64');
+      } catch {
+        return null;
+      }
+    };
+
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {
         const apiKey = getNextKey();
@@ -78,7 +88,22 @@ IMPORTANT:
 Response should be helpful for learning, not cheating.
         `;
 
-        const result = await model.generateContent(prompt);
+        const parts: any[] = [{ text: prompt }];
+
+        if (questionImage) {
+          const b64 = await fetchImageBase64(questionImage);
+          if (b64) parts.push({ inlineData: { mimeType: 'image/jpeg', data: b64 } });
+        }
+
+        if (Array.isArray(optionImages)) {
+          for (const img of optionImages) {
+            if (!img) continue;
+            const b64 = await fetchImageBase64(img);
+            if (b64) parts.push({ inlineData: { mimeType: 'image/jpeg', data: b64 } });
+          }
+        }
+
+        const result = await model.generateContent(parts);
         const response = await result.response;
         const explanation = response.text().trim();
 

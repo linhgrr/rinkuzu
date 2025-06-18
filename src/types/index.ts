@@ -13,6 +13,8 @@ export interface IQuestion {
   type: 'single' | 'multiple';
   correctIndex?: number; // For single choice
   correctIndexes?: number[]; // For multiple choice
+  questionImage?: string; // URL/path to question image
+  optionImages?: (string | undefined)[]; // Array of URLs/paths for option images (parallel to options array)
 }
 
 export interface IQuiz {

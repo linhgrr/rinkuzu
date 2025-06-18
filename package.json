@@ -1,5 +1,5 @@
 {
-  "name": "quiz-app",
+  "name": "kttpm-quiz-app",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -9,13 +9,15 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@google/generative-ai": "^0.17.1",
+    "@google/generative-ai": "^0.21.0",
+    "@next-auth/mongodb-adapter": "^1.1.3",
     "@tailwindcss/typography": "^0.5.16",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "autoprefixer": "^10.0.1",
-    "bcryptjs": "^3.0.2",
+    "axios": "^1.6.2",
+    "bcryptjs": "^2.4.3",
     "clsx": "^2.1.1",
     "eslint": "^8",
     "eslint-config-next": "14.2.5",
@@ -36,6 +38,7 @@
     "zustand": "^4.5.4"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
     "@types/jsonwebtoken": "^9.0.6"
   }
 }

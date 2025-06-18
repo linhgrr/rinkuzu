@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Modal } from './Modal';
 import { Button } from './Button';
 import { Card, CardContent, CardHeader, CardTitle } from './Card';
+import { QuestionImage, OptionImage } from './ImageDisplay';
 import { IQuestion } from '@/types';
 
 interface QuizPreviewModalProps {
@@ -74,6 +75,16 @@ export function QuizPreviewModal({ isOpen, onClose, title, questions }: QuizPrev
                 </span>
               )}
             </CardTitle>
+            
+            {/* Display question image if exists */}
+            {currentQuestion.questionImage && (
+              <div className="mt-4">
+                <QuestionImage 
+                  src={currentQuestion.questionImage} 
+                  alt={`Question ${currentQuestionIndex + 1} image`}
+                />
+              </div>
+            )}
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
@@ -112,9 +123,20 @@ export function QuizPreviewModal({ isOpen, onClose, title, questions }: QuizPrev
                           )
                         )}
                       </div>
+                      <div className="flex-1">
                       <span className={`${isCorrect ? 'font-medium text-green-800' : 'text-gray-700'}`}>
                         {option}
                       </span>
+                        {/* Display option image if exists */}
+                        {currentQuestion.optionImages?.[index] && (
+                          <div className="mt-2">
+                            <OptionImage 
+                              src={currentQuestion.optionImages[index]!} 
+                              alt={`Option ${String.fromCharCode(65 + index)} image`}
+                            />
+                          </div>
+                        )}
+                      </div>
                       {isCorrect && (
                         <span className="ml-auto text-green-600 text-sm font-medium">
                           ✓ Correct

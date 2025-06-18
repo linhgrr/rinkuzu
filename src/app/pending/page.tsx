@@ -346,6 +346,11 @@ export default function PendingQuizzesPage() {
                     </div>
                     
                     <div className="flex space-x-3">
+                        <Link href={`/edit/${quiz._id}`}>
+                          <Button size="sm" variant="outline">
+                            ✏️ Edit
+                          </Button>
+                        </Link>
                       {quiz.status === 'rejected' && (
                         <Link href="/create">
                           <Button size="sm" variant="outline">

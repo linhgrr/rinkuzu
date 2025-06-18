@@ -9,6 +9,9 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { QuizPreviewModal } from '@/components/ui/QuizPreviewModal';
+import { QuestionImage, OptionImage } from '@/components/ui/ImageDisplay';
+import { QuestionImageUpload, OptionImageUpload } from '@/components/ui/ImageUpload';
+
 
 interface Question {
   question: string;
@@ -16,6 +19,9 @@ interface Question {
   type: 'single' | 'multiple';
   correctIndex?: number; // For single choice
   correctIndexes?: number[]; // For multiple choice
+  // Image support
+  questionImage?: string; // URL/path to question image
+  optionImages?: (string | undefined)[]; // Array of URLs/paths for option images
   // Legacy fields for backward compatibility during transition
   correctAnswer?: number;
 }
@@ -49,6 +55,9 @@ export default function CreateQuizPage() {
   
   // Preview modal state
   const [showPreviewModal, setShowPreviewModal] = useState(false);
+  
+  // Image processing state
+
   
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -105,6 +114,8 @@ export default function CreateQuizPage() {
 
     setExtracting(true);
     setError('');
+    
+
 
     try {
       const formData = new FormData();
@@ -117,6 +128,8 @@ export default function CreateQuizPage() {
       });
       formData.append('fileCount', pdfFiles.length.toString());
 
+
+
       const response = await fetch('/api/quizzes/preview', {
         method: 'POST',
         body: formData,
@@ -125,6 +138,8 @@ export default function CreateQuizPage() {
       const data = await response.json();
 
       if (data.success) {
+
+        
         console.log('🎯 Preview data received:', data.data);
         console.log('📋 Questions from API:', data.data.questions);
         
@@ -224,22 +239,26 @@ export default function CreateQuizPage() {
 
     try {
       // Convert questions to proper IQuestion format
-      const formattedQuestions = editableQuestions.map(q => {
+      const formattedQuestions = editableQuestions.map((q: Question) => {
+        const base = {
+          question: q.question,
+          options: q.options,
+          type: q.type,
+          // include images only if at least one exists
+          ...(q.questionImage ? { questionImage: q.questionImage } : {}),
+          ...(q.optionImages && q.optionImages.some(Boolean) ? { optionImages: q.optionImages } : {})
+        } as any;
+
         if (q.type === 'single') {
           return {
-            question: q.question,
-            options: q.options,
-            type: q.type,
+            ...base,
             correctIndex: q.correctIndex ?? 0
           };
-        } else {
-          return {
-            question: q.question,
-            options: q.options,
-            type: q.type,
-            correctIndexes: q.correctIndexes || []
-          };
         }
+        return {
+          ...base,
+          correctIndexes: q.correctIndexes || []
+        };
       });
 
       console.log('📤 Sending questions to API:', formattedQuestions.map((q, i) => ({
@@ -304,6 +323,35 @@ export default function CreateQuizPage() {
   const updateOption = (questionIndex: number, optionIndex: number, value: string) => {
     const updated = [...editableQuestions];
     updated[questionIndex].options[optionIndex] = value;
+    setEditableQuestions(updated);
+  };
+
+  const updateQuestionImage = (questionIndex: number, imageUrl: string) => {
+    const updated = [...editableQuestions];
+    updated[questionIndex] = { ...updated[questionIndex], questionImage: imageUrl };
+    setEditableQuestions(updated);
+  };
+
+  const removeQuestionImage = (questionIndex: number) => {
+    const updated = [...editableQuestions];
+    updated[questionIndex] = { ...updated[questionIndex], questionImage: undefined };
+    setEditableQuestions(updated);
+  };
+
+  const updateOptionImage = (questionIndex: number, optionIndex: number, imageUrl: string) => {
+    const updated = [...editableQuestions];
+    if (!updated[questionIndex].optionImages) {
+      updated[questionIndex].optionImages = new Array(updated[questionIndex].options.length).fill(undefined);
+    }
+    updated[questionIndex].optionImages![optionIndex] = imageUrl;
+    setEditableQuestions(updated);
+  };
+
+  const removeOptionImage = (questionIndex: number, optionIndex: number) => {
+    const updated = [...editableQuestions];
+    if (updated[questionIndex].optionImages) {
+      updated[questionIndex].optionImages![optionIndex] = undefined;
+    }
     setEditableQuestions(updated);
   };
 
@@ -691,6 +739,16 @@ export default function CreateQuizPage() {
                         placeholder="Enter the question"
                         required
                       />
+                      
+                      {/* Question Image Upload */}
+                      <div className="mt-3">
+                        <div className="text-sm font-medium text-gray-700 mb-2">Question Image (Optional):</div>
+                        <QuestionImageUpload
+                          currentImage={question.questionImage}
+                          onImageUploaded={(imageUrl) => updateQuestionImage(questionIndex, imageUrl)}
+                          onImageRemoved={() => removeQuestionImage(questionIndex)}
+                        />
+                      </div>
                     </div>
 
                     {/* Question Type Selector */}
@@ -773,6 +831,13 @@ export default function CreateQuizPage() {
                                   placeholder={`Option ${optionIndex + 1}`}
                                   required
                                   className={isSelected ? 'border-green-300' : ''}
+                                />
+                                
+                                {/* Option Image Upload */}
+                                <OptionImageUpload
+                                  currentImage={question.optionImages?.[optionIndex]}
+                                  onImageUploaded={(imageUrl) => updateOptionImage(questionIndex, optionIndex, imageUrl)}
+                                  onImageRemoved={() => removeOptionImage(questionIndex, optionIndex)}
                                 />
                               </div>
                               <div className="flex items-center space-x-1">
@@ -863,6 +928,8 @@ export default function CreateQuizPage() {
             }))}
           />
         )}
+        
+
       </main>
     </div>
   );

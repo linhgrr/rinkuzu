@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { QuestionImage, OptionImage } from '@/components/ui/ImageDisplay';
 
 interface QuizResultPageProps {
   params: { slug: string };
@@ -24,6 +25,8 @@ interface QuizResult {
     correctAnswer: number | number[];
     isCorrect: boolean;
     isAnswered: boolean;
+    questionImage?: string;
+    optionImages?: (string | undefined)[];
   }[];
 }
 
@@ -324,6 +327,8 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
                             ? questionResult.correctAnswer === optIdx
                             : (questionResult.correctAnswer as number[]).includes(optIdx);
 
+                          const optionText = String.fromCharCode(65 + optIdx) + '. ' + option;
+
                           return (
                             <div
                               key={optIdx}
@@ -335,7 +340,19 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
                                     : 'bg-gray-50 border-gray-200 text-gray-700'
                               }`}
                             >
-                              <span className="font-medium">{String.fromCharCode(65 + optIdx)}.</span> {option}
+                              <div className="flex-1">
+                                <span className="text-gray-900">{optionText}</span>
+
+                                {questionResult.optionImages?.[optIdx] && (
+                                  <div className="mt-2">
+                                    <OptionImage
+                                      src={questionResult.optionImages[optIdx]!}
+                                      alt={`Option ${String.fromCharCode(65 + optIdx)} image`}
+                                    />
+                                  </div>
+                                )}
+                              </div>
+
                               {isCorrectAnswer && <span className="ml-2 text-green-600">✓</span>}
                               {isUserAnswer && !isCorrectAnswer && isAnswered && <span className="ml-2 text-red-600">✗</span>}
                             </div>
@@ -344,6 +361,15 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
                       </div>
                     </div>
                   </div>
+
+                  {questionResult.questionImage && (
+                    <div className="mt-3">
+                      <QuestionImage
+                        src={questionResult.questionImage}
+                        alt={`Question ${index + 1} image`}
+                      />
+                    </div>
+                  )}
                 </div>
                 );
               })}

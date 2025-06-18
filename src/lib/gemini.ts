@@ -23,32 +23,45 @@ export async function extractQuestionsFromPdf(buffer: Buffer | string): Promise<
       const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
 
       const prompt = `
-        Extract and generate questions from the provided content. Create both single-choice and multiple-choice questions when appropriate.
-        Return ONLY a valid JSON array in this exact format:
-        [
-            {
-                "question": "What is the capital of France?",
-                "type": "single",
-                "options": ["London", "Berlin", "Paris", "Madrid"],
-                "correctIndex": 2
-            },
-            {
-                "question": "Which of the following are programming languages?",
-                "type": "multiple", 
-                "options": ["JavaScript", "HTML", "Python", "CSS"],
-                "correctIndexes": [0, 2]
-            }
-        ]
-        Requirements:
-        - Extract questions exactly as written, or create logical questions from the content
-        - Use "type": "single" for questions with one correct answer
-        - Use "type": "multiple" for questions where multiple answers are correct
-        - For single choice: use "correctIndex" (0-3)
-        - For multiple choice: use "correctIndexes" (array of 0-3 indexes)
-        - Extract questions and options exactly as written in the source
-        - Questions must be clearly stated and unambiguous
-        - Return only the JSON array, no additional explanation or text
-      `;
+You are given educational content that may include questions, explanations, and references to images or diagrams.
+
+Your task is to extract or generate quiz questions (both single-choice and multiple-choice) from this content.
+
+Important Instructions:
+
+1. **DO NOT OMIT ANY TEXT.** Even if the text refers to or is adjacent to an image (e.g., "In the diagram above", "Refer to the image", etc.), you must extract the full surrounding question text exactly as it appears.
+2. **IGNORE IMAGES ENTIRELY.** Do not describe, summarize, or attempt to interpret any image content. Only process the visible text — even if it partially depends on an image.
+3. **PRESERVE ALL CONTEXTUAL TEXT.** If a question is written around or near an image, still extract the full question text as-is. Do not skip it.
+4. **NEVER DROP OR SKIP ANY QUESTION just because it involves an image.** Your job is to preserve every meaningful question or prompt in textual form.
+5. Do not fabricate or modify content. Extract exact original wording where possible.
+6. Reconstruct questions from visible text if they are implied or structured around diagrams or image references.
+7. Return ONLY a JSON array in the following format:
+
+[
+    {
+        "question": "What is the capital of France?",
+        "type": "single",
+        "options": ["London", "Berlin", "Paris", "Madrid"],
+        "correctIndex": 2
+    },
+    {
+        "question": "Which of the following are programming languages?",
+        "type": "multiple", 
+        "options": ["JavaScript", "HTML", "Python", "CSS"],
+        "correctIndexes": [0, 2]
+    }
+]
+
+Answer Formatting Rules:
+- Use "type": "single" for one correct answer, with "correctIndex" (0–3)
+- Use "type": "multiple" for multiple correct answers, with "correctIndexes" (array of indexes 0–3)
+- No explanation, no extra output, only the JSON array
+- Do NOT include any image fields (like questionImage or optionImages)
+
+Be strict: **If any part of the text refers to a question or a labeled figure, extract the full question text regardless of image context.**
+`;
+
+
 
       let result;
       
@@ -75,7 +88,7 @@ export async function extractQuestionsFromPdf(buffer: Buffer | string): Promise<
       const response = await result.response;
       const text = response.text();
 
-      console.log(text);
+      console.log('🤖 Gemini AI Response:', text);
       
       // Clean the response to extract JSON
       const jsonMatch = text.match(/\[[\s\S]*\]/);
@@ -90,9 +103,12 @@ export async function extractQuestionsFromPdf(buffer: Buffer | string): Promise<
         throw new Error('Invalid questions format');
       }
       
+      // No image processing needed - users will add images manually
+      const processedQuestions = questions;
+      
       // Validate each question with detailed logging
-      for (let i = 0; i < questions.length; i++) {
-        const q = questions[i];
+      for (let i = 0; i < processedQuestions.length; i++) {
+        const q = processedQuestions[i];
         
         console.log(`🔍 Gemini validating Question ${i + 1}:`, {
           hasQuestion: !!q.question,
@@ -100,7 +116,8 @@ export async function extractQuestionsFromPdf(buffer: Buffer | string): Promise<
           optionsLength: q.options?.length,
           type: q.type,
           correctIndex: q.correctIndex,
-          correctIndexes: q.correctIndexes
+          correctIndexes: q.correctIndexes,
+
         });
 
         if (!q.question || !Array.isArray(q.options) || 
@@ -129,7 +146,7 @@ export async function extractQuestionsFromPdf(buffer: Buffer | string): Promise<
       
       console.log('✅ All Gemini questions validated successfully');
       
-      return questions;
+      return processedQuestions;
       
     } catch (error: any) {
       console.error(`Attempt ${attempt + 1} failed:`, error.message);

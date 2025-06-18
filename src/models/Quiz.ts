@@ -6,6 +6,8 @@ export interface IQuestion {
   correctIndex?: number; // For single choice
   correctIndexes?: number[]; // For multiple choice
   type: 'single' | 'multiple'; // Question type
+  questionImage?: string; // URL/path to question image
+  optionImages?: (string | undefined)[]; // Array of URLs/paths for option images (parallel to options array)
 }
 
 export interface IQuiz extends Document {
@@ -63,6 +65,20 @@ const QuestionSchema = new Schema<IQuestion>({
         return true;
       },
       message: 'Multiple choice questions must have at least one valid correct index within options range',
+    },
+  },
+  questionImage: {
+    type: String,
+    trim: true,
+  },
+  optionImages: {
+    type: [String],
+    validate: {
+      validator: function(this: IQuestion, optionImages: (string | undefined)[]) {
+        // If optionImages exists, it should have same length as options
+        return !optionImages || optionImages.length === 0 || optionImages.length === this.options.length;
+      },
+      message: 'Option images array length must match options array length',
     },
   },
 });

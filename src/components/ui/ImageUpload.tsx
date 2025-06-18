@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { uploadImageToImgBB } from '@/services/imageUploadService';
 import { Button } from './Button';
 
@@ -24,6 +24,7 @@ export function ImageUpload({
   const [isUploading, setIsUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const hoverRef = useRef(false);
 
   const handleImageUpload = useCallback(async (file: File) => {
     if (!file.type.startsWith('image/')) {
@@ -93,6 +94,7 @@ export function ImageUpload({
 
   // --- Hover-based global paste listener ---
   const onWindowPaste = useCallback((e: ClipboardEvent) => {
+    if (!hoverRef.current) return; // only allow when this component is hovered
     const items = e.clipboardData?.items;
     if (!items) return;
     for (let i = 0; i < items.length; i++) {
@@ -109,12 +111,21 @@ export function ImageUpload({
   }, [handleImageUpload]);
 
   const handleMouseEnter = () => {
+    hoverRef.current = true;
     window.addEventListener('paste', onWindowPaste);
   };
 
   const handleMouseLeave = () => {
+    hoverRef.current = false;
     window.removeEventListener('paste', onWindowPaste);
   };
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      window.removeEventListener('paste', onWindowPaste);
+    };
+  }, [onWindowPaste]);
 
   const handleClick = useCallback(() => {
     fileInputRef.current?.click();

@@ -23,6 +23,7 @@ interface QuizResult {
     userAnswer: number | number[];
     correctAnswer: number | number[];
     isCorrect: boolean;
+    isAnswered: boolean;
   }[];
 }
 
@@ -75,7 +76,11 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
     return 'Keep studying! 💪';
   };
 
-  const formatAnswer = (answer: number | number[], options: string[], type: 'single' | 'multiple') => {
+  const formatAnswer = (answer: number | number[], options: string[], type: 'single' | 'multiple', isAnswered: boolean = true) => {
+    if (!isAnswered) {
+      return 'Not answered';
+    }
+    
     if (type === 'single') {
       return options[answer as number];
     } else {
@@ -156,8 +161,22 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
                   <div>Correct</div>
                 </div>
                 <div className="text-center">
-                  <div className="font-semibold text-lg text-gray-900">{result.totalQuestions - result.correctAnswers}</div>
+                  <div className="font-semibold text-lg text-gray-900">{result.results.filter(r => {
+                    const isAnswered = r.isAnswered !== undefined 
+                      ? r.isAnswered 
+                      : (r.type === 'single' ? r.userAnswer !== -1 : Array.isArray(r.userAnswer) && r.userAnswer.length > 0);
+                    return !r.isCorrect && isAnswered;
+                  }).length}</div>
                   <div>Incorrect</div>
+                </div>
+                <div className="text-center">
+                  <div className="font-semibold text-lg text-gray-900">{result.results.filter(r => {
+                    const isAnswered = r.isAnswered !== undefined 
+                      ? r.isAnswered 
+                      : (r.type === 'single' ? r.userAnswer !== -1 : Array.isArray(r.userAnswer) && r.userAnswer.length > 0);
+                    return !isAnswered;
+                  }).length}</div>
+                  <div>Unanswered</div>
                 </div>
                 <div className="text-center">
                   <div className="font-semibold text-lg text-gray-900">{result.totalQuestions}</div>
@@ -185,14 +204,28 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
             <CardTitle>Performance Summary</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               <div className="text-center p-4 bg-green-50 rounded-lg">
                 <div className="text-2xl font-bold text-green-600">{result.correctAnswers}</div>
                 <div className="text-sm text-green-700">Correct Answers</div>
               </div>
               <div className="text-center p-4 bg-red-50 rounded-lg">
-                <div className="text-2xl font-bold text-red-600">{result.totalQuestions - result.correctAnswers}</div>
+                <div className="text-2xl font-bold text-red-600">{result.results.filter(r => {
+                  const isAnswered = r.isAnswered !== undefined 
+                    ? r.isAnswered 
+                    : (r.type === 'single' ? r.userAnswer !== -1 : Array.isArray(r.userAnswer) && r.userAnswer.length > 0);
+                  return !r.isCorrect && isAnswered;
+                }).length}</div>
                 <div className="text-sm text-red-700">Incorrect Answers</div>
+              </div>
+              <div className="text-center p-4 bg-gray-50 rounded-lg">
+                <div className="text-2xl font-bold text-gray-600">{result.results.filter(r => {
+                  const isAnswered = r.isAnswered !== undefined 
+                    ? r.isAnswered 
+                    : (r.type === 'single' ? r.userAnswer !== -1 : Array.isArray(r.userAnswer) && r.userAnswer.length > 0);
+                  return !isAnswered;
+                }).length}</div>
+                <div className="text-sm text-gray-700">Unanswered</div>
               </div>
               <div className="text-center p-4 bg-blue-50 rounded-lg">
                 <div className="text-2xl font-bold text-blue-600">{result.score}%</div>
@@ -209,13 +242,23 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
           </CardHeader>
           <CardContent>
             <div className="space-y-6">
-              {result.results.map((questionResult, index) => (
+              {result.results.map((questionResult, index) => {
+                // Fallback logic for backward compatibility with old data
+                const isAnswered = questionResult.isAnswered !== undefined 
+                  ? questionResult.isAnswered 
+                  : (questionResult.type === 'single' 
+                      ? questionResult.userAnswer !== -1 
+                      : Array.isArray(questionResult.userAnswer) && questionResult.userAnswer.length > 0);
+                
+                return (
                 <div
                   key={index}
                   className={`border rounded-lg p-4 ${
                     questionResult.isCorrect 
                       ? 'border-green-200 bg-green-50' 
-                      : 'border-red-200 bg-red-50'
+                      : isAnswered
+                        ? 'border-red-200 bg-red-50'
+                        : 'border-gray-200 bg-gray-50'
                   }`}
                 >
                   <div className="flex items-start justify-between mb-3">
@@ -233,9 +276,16 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
                       <span className={`px-2 py-1 rounded text-xs font-medium ${
                         questionResult.isCorrect 
                           ? 'bg-green-100 text-green-800' 
-                          : 'bg-red-100 text-red-800'
+                          : isAnswered
+                            ? 'bg-red-100 text-red-800'
+                            : 'bg-gray-100 text-gray-600'
                       }`}>
-                        {questionResult.isCorrect ? '✓ Correct' : '✗ Incorrect'}
+                        {questionResult.isCorrect 
+                          ? '✓ Correct' 
+                          : isAnswered 
+                            ? '✗ Incorrect' 
+                            : '— Unanswered'
+                        }
                       </span>
                     </div>
                   </div>
@@ -243,8 +293,8 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
                   <div className="space-y-2">
                     <div className="text-sm">
                       <span className="font-medium text-gray-700">Your answer: </span>
-                      <span className={questionResult.isCorrect ? 'text-green-600' : 'text-red-600'}>
-                        {formatAnswer(questionResult.userAnswer, questionResult.options, questionResult.type)}
+                      <span className={questionResult.isCorrect ? 'text-green-600' : isAnswered ? 'text-red-600' : 'text-gray-500'}>
+                        {formatAnswer(questionResult.userAnswer, questionResult.options, questionResult.type, isAnswered)}
                       </span>
                     </div>
 
@@ -252,7 +302,7 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
                       <div className="text-sm">
                         <span className="font-medium text-gray-700">Correct answer: </span>
                         <span className="text-green-600">
-                          {formatAnswer(questionResult.correctAnswer, questionResult.options, questionResult.type)}
+                          {formatAnswer(questionResult.correctAnswer, questionResult.options, questionResult.type, true)}
                         </span>
                       </div>
                     )}
@@ -261,9 +311,14 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
                       <p className="text-sm text-gray-600 font-medium mb-2">All options:</p>
                       <div className="grid grid-cols-1 gap-1">
                         {questionResult.options.map((option, optIdx) => {
-                          const isUserAnswer = questionResult.type === 'single' 
-                            ? questionResult.userAnswer === optIdx
-                            : (questionResult.userAnswer as number[]).includes(optIdx);
+                          let isUserAnswer = false;
+                          
+                          // Only check for user answer if question was answered
+                          if (isAnswered) {
+                            isUserAnswer = questionResult.type === 'single' 
+                              ? questionResult.userAnswer === optIdx
+                              : (questionResult.userAnswer as number[]).includes(optIdx);
+                          }
                           
                           const isCorrectAnswer = questionResult.type === 'single'
                             ? questionResult.correctAnswer === optIdx
@@ -282,7 +337,7 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
                             >
                               <span className="font-medium">{String.fromCharCode(65 + optIdx)}.</span> {option}
                               {isCorrectAnswer && <span className="ml-2 text-green-600">✓</span>}
-                              {isUserAnswer && !isCorrectAnswer && <span className="ml-2 text-red-600">✗</span>}
+                              {isUserAnswer && !isCorrectAnswer && isAnswered && <span className="ml-2 text-red-600">✗</span>}
                             </div>
                           );
                         })}
@@ -290,7 +345,8 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
                     </div>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           </CardContent>
         </Card>

@@ -57,17 +57,19 @@ export async function POST(
       const question = quiz.questions[i];
       
       if (question.type === 'single') {
-        if (typeof answer !== 'number' || answer < 0 || answer > 3) {
+        // Allow -1 for unanswered questions, or valid option index 0-3
+        if (typeof answer !== 'number' || (answer !== -1 && (answer < 0 || answer > 3))) {
           return NextResponse.json(
-            { success: false, error: `Single choice answer ${i + 1} must be between 0 and 3` },
+            { success: false, error: `Single choice answer ${i + 1} must be -1 (unanswered) or between 0 and 3` },
             { status: 400 }
           );
         }
       } else if (question.type === 'multiple') {
-        if (!Array.isArray(answer) || answer.length === 0 || 
-            answer.some(a => typeof a !== 'number' || a < 0 || a > 3)) {
+        // Allow empty array for unanswered questions, or array of valid option indexes
+        if (!Array.isArray(answer) || 
+            (answer.length > 0 && answer.some(a => typeof a !== 'number' || a < 0 || a > 3))) {
           return NextResponse.json(
-            { success: false, error: `Multiple choice answer ${i + 1} must be an array of numbers between 0 and 3` },
+            { success: false, error: `Multiple choice answer ${i + 1} must be an empty array (unanswered) or an array of numbers between 0 and 3` },
             { status: 400 }
           );
         }
@@ -103,9 +105,11 @@ export async function POST(
       let isCorrect = false;
       
       if (question.type === 'single') {
-        isCorrect = userAnswer === question.correctIndex;
+        // Only mark as correct if answered and correct (not -1)
+        isCorrect = userAnswer !== -1 && userAnswer === question.correctIndex;
       } else if (question.type === 'multiple' && question.correctIndexes) {
-        if (Array.isArray(userAnswer)) {
+        // Only mark as correct if answered and correct (not empty array)
+        if (Array.isArray(userAnswer) && userAnswer.length > 0) {
           const userSet = new Set(userAnswer.sort());
           const correctSet = new Set(question.correctIndexes.sort());
           isCorrect = userSet.size === correctSet.size && 
@@ -120,6 +124,7 @@ export async function POST(
         userAnswer,
         correctAnswer: question.type === 'single' ? question.correctIndex : question.correctIndexes,
         isCorrect,
+        isAnswered: question.type === 'single' ? userAnswer !== -1 : (Array.isArray(userAnswer) && userAnswer.length > 0),
       };
     });
 

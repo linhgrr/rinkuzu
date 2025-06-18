@@ -25,11 +25,18 @@ export async function GET(
     const results = quiz.questions.map((question: any, index: number) => {
       const userAnswer = attempt.answers[index];
       let isCorrect = false;
+      let isAnswered = false;
       
       if (question.type === 'single') {
-        isCorrect = userAnswer === question.correctIndex;
+        // Check if answered (not -1)
+        isAnswered = userAnswer !== -1;
+        // Only mark as correct if answered and correct
+        isCorrect = isAnswered && userAnswer === question.correctIndex;
       } else if (question.type === 'multiple' && question.correctIndexes) {
-        if (Array.isArray(userAnswer)) {
+        // Check if answered (not empty array)
+        isAnswered = Array.isArray(userAnswer) && userAnswer.length > 0;
+        // Only mark as correct if answered and correct
+        if (isAnswered) {
           const userSet = new Set(userAnswer.sort());
           const correctSet = new Set(question.correctIndexes.sort());
           isCorrect = userSet.size === correctSet.size && 
@@ -44,6 +51,7 @@ export async function GET(
         userAnswer,
         correctAnswer: question.type === 'single' ? question.correctIndex : question.correctIndexes,
         isCorrect,
+        isAnswered,
       };
     });
 

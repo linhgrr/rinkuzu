@@ -30,19 +30,24 @@ export function calculateScore(
   questions: { type: 'single' | 'multiple'; correctIndex?: number; correctIndexes?: number[] }[]
 ): number {
   let correct = 0;
+  let answered = 0; // Track only answered questions for scoring
   
   for (let i = 0; i < userAnswers.length; i++) {
     const question = questions[i];
     const userAnswer = userAnswers[i];
     
     if (question.type === 'single') {
-      // Single choice: compare single answer with correctIndex
-      if (typeof userAnswer === 'number' && userAnswer === question.correctIndex) {
-        correct++;
+      // Skip unanswered questions (answer === -1)
+      if (typeof userAnswer === 'number' && userAnswer !== -1) {
+        answered++;
+        if (userAnswer === question.correctIndex) {
+          correct++;
+        }
       }
     } else if (question.type === 'multiple') {
-      // Multiple choice: compare arrays
-      if (Array.isArray(userAnswer) && question.correctIndexes) {
+      // Skip unanswered questions (empty array)
+      if (Array.isArray(userAnswer) && userAnswer.length > 0 && question.correctIndexes) {
+        answered++;
         const userSet = new Set(userAnswer.sort());
         const correctSet = new Set(question.correctIndexes.sort());
         
@@ -55,7 +60,13 @@ export function calculateScore(
     }
   }
   
-  return Math.round((correct / userAnswers.length) * 100);
+  // If no questions were answered, return 0
+  if (answered === 0) {
+    return 0;
+  }
+  
+  // Calculate percentage based on answered questions only
+  return Math.round((correct / answered) * 100);
 }
 
 export function validateEmail(email: string): boolean {

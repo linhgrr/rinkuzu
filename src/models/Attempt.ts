@@ -32,15 +32,15 @@ const AttemptSchema = new Schema<IAttempt>({
       validator: function(answers: (number | number[])[]) {
         return answers.every(answer => {
           if (Array.isArray(answer)) {
-            // Multiple choice answer
-            return answer.length > 0 && answer.every(a => a >= 0 && a <= 3);
+            // Multiple choice answer: allow empty array (unanswered) or valid indexes
+            return answer.length === 0 || answer.every(a => a >= 0 && a <= 3);
           } else {
-            // Single choice answer
-            return answer >= 0 && answer <= 3;
+            // Single choice answer: allow -1 (unanswered) or valid indexes
+            return answer === -1 || (answer >= 0 && answer <= 3);
           }
         });
       },
-      message: 'All answers must be between 0 and 3',
+      message: 'Single choice answers must be -1 (unanswered) or 0-3, multiple choice answers must be empty array (unanswered) or array of 0-3',
     },
   },
   takenAt: {

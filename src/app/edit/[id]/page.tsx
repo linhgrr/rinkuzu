@@ -381,20 +381,6 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
       <main className={`py-8 transition-all duration-300 ${
         session && isSidebarOpen ? 'ml-64' : session ? 'ml-16' : ''
       } max-w-none px-4 sm:px-6 lg:px-8`}>
-        {status === 'loading' ? (
-          <div className="flex justify-center py-12">
-            <div className="text-gray-500">Loading...</div>
-          </div>
-        ) : !session ? (
-          <div className="flex justify-center py-12">
-            <div className="text-gray-500">Redirecting to login...</div>
-          </div>
-        ) : !quiz ? (
-          <div className="flex justify-center py-12">
-            <div className="text-gray-500">Loading quiz...</div>
-          </div>
-        ) : (
-        <>
         <div className="max-w-4xl mx-auto">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Edit Quiz</h1>
@@ -628,8 +614,6 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
           </Card>
         )}
         </div>
-        </>
-        )}
       </main>
     </div>
   );

@@ -11,6 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { QuizPreviewModal } from '@/components/ui/QuizPreviewModal';
 import { QuestionImage, OptionImage } from '@/components/ui/ImageDisplay';
 import { QuestionImageUpload, OptionImageUpload } from '@/components/ui/ImageUpload';
+import { PDFViewer } from '@/components/ui/PDFViewer';
 
 
 interface Question {
@@ -56,6 +57,9 @@ export default function CreateQuizPage() {
   // Preview modal state
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   
+  // PDF viewer state
+  const [showPDFViewer, setShowPDFViewer] = useState(false);
+  
   // Image processing state
 
   
@@ -86,6 +90,8 @@ export default function CreateQuizPage() {
     if (validFiles.length > 0) {
       setPdfFiles(prev => [...prev, ...validFiles]);
       setError('');
+      // Auto-show PDF viewer when files are added
+      setShowPDFViewer(true);
     }
   };
 
@@ -441,7 +447,7 @@ export default function CreateQuizPage() {
         </div>
       </nav>
 
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className={`max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 transition-all duration-300 ${showPDFViewer ? 'lg:mr-[47vw]' : ''}`}>
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Create New Quiz</h1>
           <p className="mt-2 text-gray-600">
@@ -612,19 +618,33 @@ export default function CreateQuizPage() {
                   </div>
                 </div>
 
-                <div className="flex justify-end space-x-4">
-                  <Link href="/">
-                    <Button type="button" variant="outline">
-                      Cancel
+                <div className="flex justify-between">
+                  <div>
+                    {pdfFiles.length > 0 && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setShowPDFViewer(!showPDFViewer)}
+                        className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                      >
+                        📄 {showPDFViewer ? 'Hide' : 'Show'} PDF Preview
+                      </Button>
+                    )}
+                  </div>
+                  <div className="flex space-x-4">
+                    <Link href="/">
+                      <Button type="button" variant="outline">
+                        Cancel
+                      </Button>
+                    </Link>
+                    <Button
+                      type="submit"
+                      loading={extracting}
+                      disabled={!title.trim() || pdfFiles.length === 0}
+                    >
+                      {extracting ? 'Extracting Questions...' : `Extract Questions from ${pdfFiles.length} file${pdfFiles.length !== 1 ? 's' : ''}`}
                     </Button>
-                  </Link>
-                  <Button
-                    type="submit"
-                    loading={extracting}
-                    disabled={!title.trim() || pdfFiles.length === 0}
-                  >
-                    {extracting ? 'Extracting Questions...' : `Extract Questions from ${pdfFiles.length} file${pdfFiles.length !== 1 ? 's' : ''}`}
-                  </Button>
+                  </div>
                 </div>
               </form>
             </CardContent>
@@ -894,7 +914,16 @@ export default function CreateQuizPage() {
               <Button onClick={backToUpload} variant="outline">
                 Back to Upload
               </Button>
-              <div className="space-x-4">
+              <div className="flex items-center space-x-4">
+                {pdfFiles.length > 0 && (
+                  <Button
+                    onClick={() => setShowPDFViewer(!showPDFViewer)}
+                    variant="outline"
+                    className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                  >
+                    📄 {showPDFViewer ? 'Hide' : 'Show'} PDF Reference
+                  </Button>
+                )}
                 <Button 
                   onClick={() => setShowPreviewModal(true)} 
                   variant="outline"
@@ -932,7 +961,13 @@ export default function CreateQuizPage() {
             }))}
           />
         )}
-        
+
+        {/* PDF Viewer - Sticky on the right side */}
+        <PDFViewer
+          pdfFiles={pdfFiles}
+          isVisible={showPDFViewer}
+          onToggle={() => setShowPDFViewer(!showPDFViewer)}
+        />
 
       </main>
     </div>

@@ -447,7 +447,7 @@ export default function CreateQuizPage() {
         </div>
       </nav>
 
-      <main className={`max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 transition-all duration-300 ${showPDFViewer ? 'lg:mr-[47vw]' : ''}`}>
+      <main className={`max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 transition-all duration-300 ${showPDFViewer ? 'lg:mr-[30vw]' : ''}`}>
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Create New Quiz</h1>
           <p className="mt-2 text-gray-600">
@@ -651,7 +651,7 @@ export default function CreateQuizPage() {
           </Card>
         ) : (
           // Step 2: Preview and Edit
-          <div className="space-y-6">
+          <div className={`max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 transition-all duration-300 ${showPDFViewer ? 'lg:mr-[15vw]' : ''}`}>
             {/* Quiz Info */}
             <Card>
               <CardHeader>

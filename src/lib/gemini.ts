@@ -49,7 +49,9 @@ Important Instructions:
 4. **NEVER DROP OR SKIP ANY QUESTION just because it involves an image.** Your job is to preserve every meaningful question or prompt in textual form.
 5. Do not fabricate or modify content. Extract exact original wording where possible.
 6. Reconstruct questions from visible text if they are implied or structured around diagrams or image references.
-7. Return ONLY a JSON array in the following format:
+7. **REMOVE ANSWER CONTENT FROM QUESTIONS.** Ensure the extracted question text does *not* include any part of the answer options or explanatory answer content.
+8. **STRIP ENUMERATION MARKERS.** When capturing options, delete any leading letters or numbers such as "a)", "A.", "1.", "(b)", "II.", etc., so each option contains only the core answer text.
+9. Return ONLY a JSON array in the following format:
 
 [
     {
@@ -60,23 +62,21 @@ Important Instructions:
     },
     {
         "question": "Which of the following are programming languages?",
-        "type": "multiple", 
+        "type": "multiple",
         "options": ["JavaScript", "HTML", "Python", "CSS"],
         "correctIndexes": [0, 2]
     }
 ]
 
 Answer Formatting Rules:
-- Use "type": "single" for one correct answer, with "correctIndex" (0–3)
-- Use "type": "multiple" for multiple correct answers, with "correctIndexes" (array of indexes 0–3)
+- Use "type": "single" for one correct answer, with "correctIndex" 
+- Use "type": "multiple" for multiple correct answers, with "correctIndexes" (array of indexes)
+- Options must **not** contain any enumeration characters.
 - No explanation, no extra output, only the JSON array
 - Do NOT include any image fields (like questionImage or optionImages)
 
 Be strict: **If any part of the text refers to a question or a labeled figure, extract the full question text regardless of image context.**
 `;
-
-
-
       let result;
       
       if (typeof buffer === 'string') {
@@ -316,7 +316,7 @@ export async function extractQuestionsFromPdfOptimized(
 async function extractQuestionsWithSimpleParallel(buffer: Buffer): Promise<any[]> {
   console.log('🔄 Using simplified parallel processing with multiple API calls');
   
-  const maxRetries = Math.min(keys.length, 1); // Use max 1 parallel call
+  const maxRetries = Math.min(keys.length, 2); 
   
   const promises = Array.from({ length: maxRetries }, async (_, index) => {
     try {

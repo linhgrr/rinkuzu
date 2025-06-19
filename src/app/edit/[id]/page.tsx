@@ -228,7 +228,7 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
     );
   }
 
-  if (!quiz) return null;
+  if (!quiz || !session) return null;
 
   // Check if user can edit
   const isAdmin = (session.user as any)?.role === 'admin';

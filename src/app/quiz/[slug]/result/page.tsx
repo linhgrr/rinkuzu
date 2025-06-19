@@ -521,6 +521,9 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
                 {aiQuestionData.options.map((opt: string, idx: number) => (
                   <div key={idx} className="text-xs text-gray-600 flex items-start space-x-2">
                     <span>{String.fromCharCode(65+idx)}. {opt}</span>
+                    {aiQuestionData.optionImages?.[idx] && (
+                      <OptionImage src={aiQuestionData.optionImages[idx]!} alt={`Option ${idx} image`} className="ml-1" />
+                    )}
                   </div>
                 ))}
               </div>
@@ -534,6 +537,11 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
             {aiError && <div className="rounded-md bg-red-50 p-3 text-sm text-red-700">{aiError}</div>}
             {aiExplanation && <div className="rounded-md bg-green-50 p-4"><MarkdownRenderer content={aiExplanation} className="text-green-800"/></div>}
             <div className="text-xs text-gray-500 bg-yellow-50 p-3 rounded-md"><strong>📝 Note:</strong> AI explanation is for learning purposes. It won't reveal the correct answer directly but will help you understand concepts.</div>
+            {aiQuestionData.questionImage && (
+              <div className="mt-3">
+                <QuestionImage src={aiQuestionData.questionImage} alt="Question img" />
+              </div>
+            )}
           </div>
         )}
       </Modal>

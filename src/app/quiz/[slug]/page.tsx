@@ -57,7 +57,8 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
       const data = await response.json();
 
       if (data.success) {
-        setQuiz(data.data);
+        const shuffledQuestions = data.data.questions.map((q: any) => ({ ...q, options: q.options.sort(() => 0.5 - Math.random()) }));
+        setQuiz({ ...data.data, questions: shuffledQuestions });
         // Initialize answers based on question types
         const initialAnswers = data.data.questions.map((q: any, index: number) => {
           console.log(`Question ${index}:`, { type: q.type, question: q.question });
@@ -147,8 +148,20 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
 
     setSubmitting(true);
     try {
+      // Convert displayed indices to original indices via optionIndexMap
+      const convertedAnswers = userAnswers.map((ans, idx) => {
+        const mapArr: number[] = (quiz.questions[idx] as any).optionIndexMap;
+        if (quiz.questions[idx].type === 'single') {
+          const aNum = ans as number;
+          return aNum === -1 ? -1 : mapArr[aNum];
+        } else {
+          const arr = ans as number[];
+          return arr.map(a => mapArr[a]);
+        }
+      });
+
       const payload = {
-        answers: userAnswers,
+        answers: convertedAnswers,
         userEmail: session?.user?.email || userEmail.trim(),
       };
       

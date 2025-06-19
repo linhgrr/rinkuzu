@@ -121,6 +121,8 @@ export async function POST(
         question: question.question,
         options: question.options,
         type: question.type,
+        questionImage: question.questionImage ?? null,
+        optionImages: question.optionImages ?? [],
         userAnswer,
         correctAnswer: question.type === 'single' ? question.correctIndex : question.correctIndexes,
         isCorrect,

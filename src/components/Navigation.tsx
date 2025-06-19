@@ -31,7 +31,7 @@ export default function Navigation({ className = '' }: NavigationProps) {
           <div className="hidden md:flex items-center space-x-8">
             {session ? (
               <>
-                <Link href="/quizzes" className="text-gray-600 hover:text-gray-900 transition-colors">
+                <Link href="/" className="text-gray-600 hover:text-gray-900 transition-colors">
                   Explore
                 </Link>
                 <Link href="/create" className="text-gray-600 hover:text-gray-900 transition-colors">
@@ -118,7 +118,7 @@ export default function Navigation({ className = '' }: NavigationProps) {
             <div className="space-y-2">
               {session ? (
                 <>
-                  <Link href="/quizzes" className="block px-4 py-2 text-gray-600 hover:text-gray-900">
+                  <Link href="/" className="block px-4 py-2 text-gray-600 hover:text-gray-900">
                     Explore Quizzes
                   </Link>
                   <Link href="/create" className="block px-4 py-2 text-gray-600 hover:text-gray-900">

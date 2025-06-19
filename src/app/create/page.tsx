@@ -431,8 +431,8 @@ export default function CreateQuizPage() {
               <Link href="/">
                 <Button variant="ghost">Home</Button>
               </Link>
-              <Link href="/quizzes">
-                <Button variant="outline">All Quizzes</Button>
+              <Link href="/">
+                <Button variant="outline">Home</Button>
               </Link>
               <Link href="/pending">
                 <Button variant="outline">My Quizzes</Button>

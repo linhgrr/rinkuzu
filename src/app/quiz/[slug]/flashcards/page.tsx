@@ -151,8 +151,8 @@ export default function FlashcardPage() {
           <CardContent className="p-6 text-center">
             <h2 className="text-xl font-semibold text-red-600 mb-4">Error</h2>
             <p className="text-gray-600 mb-4">{error}</p>
-            <Link href="/quizzes">
-              <Button>Back to Quizzes</Button>
+            <Link href="/">
+              <Button>Back to Home</Button>
             </Link>
           </CardContent>
         </Card>
@@ -167,8 +167,8 @@ export default function FlashcardPage() {
           <CardContent className="p-6 text-center">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">Quiz Not Found</h2>
             <p className="text-gray-600 mb-4">The quiz you're looking for doesn't exist.</p>
-            <Link href="/quizzes">
-              <Button>Back to Quizzes</Button>
+            <Link href="/">
+              <Button>Back to Home</Button>
             </Link>
           </CardContent>
         </Card>
@@ -200,8 +200,8 @@ export default function FlashcardPage() {
                 <Link href={`/quiz/${quiz.slug}`}>
                   <Button variant="outline">Take Quiz</Button>
                 </Link>
-                <Link href="/quizzes">
-                  <Button variant="outline">All Quizzes</Button>
+                <Link href="/">
+                  <Button variant="outline">Home</Button>
                 </Link>
               </div>
             </div>
@@ -277,8 +277,8 @@ export default function FlashcardPage() {
             <Link href={`/quiz/${quiz.slug}`}>
               <Button variant="outline">Take Full Quiz</Button>
             </Link>
-            <Link href="/quizzes">
-              <Button variant="outline">Back to Quizzes</Button>
+            <Link href="/">
+              <Button variant="outline">Back to Home</Button>
             </Link>
           </div>
         </main>
@@ -335,8 +335,8 @@ export default function FlashcardPage() {
               <Link href={`/quiz/${quiz.slug}`}>
                 <Button variant="outline">Take Quiz</Button>
               </Link>
-              <Link href="/quizzes">
-                <Button variant="outline">All Quizzes</Button>
+              <Link href="/">
+                <Button variant="outline">Home</Button>
               </Link>
             </div>
           </div>

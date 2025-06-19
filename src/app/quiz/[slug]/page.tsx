@@ -362,7 +362,7 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
   };
 
   const exitQuiz = () => {
-    router.push('/quizzes');
+    router.push('/');
   };
 
   if (loading) {
@@ -444,9 +444,9 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
               </div>
 
               <div className="flex gap-3">
-                <Link href="/quizzes" className="flex-1">
+                <Link href="/" className="flex-1">
                   <Button variant="outline" className="w-full">
-                    ← Back to Quizzes
+                    ← Back to Home
                   </Button>
                 </Link>
                 <Link href={`/quiz/${params.slug}/flashcards`} className="flex-1">

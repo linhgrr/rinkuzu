@@ -55,21 +55,39 @@ export async function POST(
     for (let i = 0; i < answers.length; i++) {
       const answer = answers[i];
       const question = quiz.questions[i];
+      const maxOptionIndex = question.options.length - 1;
+      
+      console.log(`Validating question ${i + 1}:`, {
+        type: question.type,
+        answer,
+        optionsCount: question.options.length,
+        maxOptionIndex
+      });
       
       if (question.type === 'single') {
-        // Allow -1 for unanswered questions, or valid option index 0-3
-        if (typeof answer !== 'number' || (answer !== -1 && (answer < 0 || answer > 3))) {
+        // Allow -1 for unanswered questions, or valid option index based on actual options count
+        if (typeof answer !== 'number' || (answer !== -1 && (answer < 0 || answer > maxOptionIndex))) {
+          console.error(`Single choice validation failed for question ${i + 1}:`, {
+            answer,
+            expectedRange: `0-${maxOptionIndex} or -1`,
+            actualType: typeof answer
+          });
           return NextResponse.json(
-            { success: false, error: `Single choice answer ${i + 1} must be -1 (unanswered) or between 0 and 3` },
+            { success: false, error: `Single choice answer ${i + 1} must be -1 (unanswered) or between 0 and ${maxOptionIndex}` },
             { status: 400 }
           );
         }
       } else if (question.type === 'multiple') {
         // Allow empty array for unanswered questions, or array of valid option indexes
         if (!Array.isArray(answer) || 
-            (answer.length > 0 && answer.some(a => typeof a !== 'number' || a < 0 || a > 3))) {
+            (answer.length > 0 && answer.some(a => typeof a !== 'number' || a < 0 || a > maxOptionIndex))) {
+          console.error(`Multiple choice validation failed for question ${i + 1}:`, {
+            answer,
+            expectedRange: `0-${maxOptionIndex}`,
+            invalidItems: answer.length > 0 ? answer.filter((a: any) => typeof a !== 'number' || a < 0 || a > maxOptionIndex) : []
+          });
           return NextResponse.json(
-            { success: false, error: `Multiple choice answer ${i + 1} must be an empty array (unanswered) or an array of numbers between 0 and 3` },
+            { success: false, error: `Multiple choice answer ${i + 1} must be an empty array (unanswered) or an array of numbers between 0 and ${maxOptionIndex}` },
             { status: 400 }
           );
         }

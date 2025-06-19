@@ -57,15 +57,96 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
       const data = await response.json();
 
       if (data.success) {
-        const shuffledQuestions = data.data.questions.map((q: any) => ({ ...q, options: q.options.sort(() => 0.5 - Math.random()) }));
-        setQuiz({ ...data.data, questions: shuffledQuestions });
+        // Fisher-Yates shuffle function
+        function shuffleArray<T>(array: T[]): T[] {
+          const shuffled = [...array];
+          for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+          }
+          return shuffled;
+        }
+
+        console.log('\n=== SHUFFLING QUIZ ===');
+        console.log('Original questions count:', data.data.questions.length);
+        
+        // First, shuffle the order of questions
+        const questionsWithIndex = data.data.questions.map((question: any, index: number) => ({
+          question,
+          originalIndex: index
+        }));
+        
+        const shuffledQuestionsWithIndex = shuffleArray(questionsWithIndex);
+        console.log('Questions shuffled order:');
+        shuffledQuestionsWithIndex.forEach((item: any, newIndex: number) => {
+          console.log(`Position ${newIndex + 1}: Question ${item.originalIndex + 1}`);
+        });
+        
+        // Create mapping for question order (new position -> original position)
+        const questionIndexMap: number[] = [];
+        
+        // Then shuffle options within each question
+        const shuffledQuestions = shuffledQuestionsWithIndex.map((item: any, questionIndex: number) => {
+          const q = item.question;
+          questionIndexMap[questionIndex] = item.originalIndex;
+          
+                     console.log(`\n=== Processing Question ${questionIndex + 1} (originally Q${item.originalIndex + 1}) ===`);
+           console.log('Original options:', q.options);
+          
+          // Create array of options with their original indices
+          const optionsWithIndex = q.options.map((option: string, index: number) => ({
+            option,
+            originalIndex: index
+          }));
+          
+          console.log('Options with original indices:', optionsWithIndex);
+          
+                     // Shuffle the array
+           const shuffledOptionsWithIndex = shuffleArray(optionsWithIndex);
+           console.log('After shuffle:', shuffledOptionsWithIndex);
+           
+           // Extract shuffled options and create mapping
+           const shuffledOptions: string[] = [];
+           const optionIndexMap: number[] = [];
+           
+           for (let newIndex = 0; newIndex < shuffledOptionsWithIndex.length; newIndex++) {
+             const item = shuffledOptionsWithIndex[newIndex] as { option: string; originalIndex: number };
+             shuffledOptions[newIndex] = item.option;
+             optionIndexMap[newIndex] = item.originalIndex;
+           }
+          
+          console.log('Final shuffled options:', shuffledOptions);
+          console.log('Option index map (new -> original):', optionIndexMap);
+          
+          // Check if shuffle actually happened
+          const isShuffled = !q.options.every((option: string, index: number) => option === shuffledOptions[index]);
+          console.log('Was actually shuffled:', isShuffled);
+            
+                     return { 
+            ...q, 
+            options: shuffledOptions,
+            optionIndexMap, // Map from new option index to original option index
+            originalQuestionIndex: item.originalIndex // Store original question index
+          };
+        });
+        
+        setQuiz({ 
+          ...data.data, 
+          questions: shuffledQuestions,
+          questionIndexMap // Map from new question position to original question position
+        });
+        
         // Initialize answers based on question types
         const initialAnswers = data.data.questions.map((q: any, index: number) => {
           console.log(`Question ${index}:`, { type: q.type, question: q.question });
           return q.type === 'multiple' ? [] : -1;
         });
         setUserAnswers(initialAnswers);
-        console.log('Quiz initialized with answers:', initialAnswers);
+        console.log('\n=== QUIZ LOADED ===');
+        console.log('Total questions:', data.data.questions.length);
+        console.log('Questions shuffled:', shuffledQuestions.length);
+        console.log('Question order mapping:', questionIndexMap);
+        console.log('Quiz ready with both question and option shuffling!');
       } else {
         setError(data.error || 'Quiz not found');
       }
@@ -148,22 +229,58 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
 
     setSubmitting(true);
     try {
-      // Convert displayed indices to original indices via optionIndexMap
+      console.log('=== SUBMITTING QUIZ ===');
+      console.log('userAnswers:', userAnswers);
+      console.log('questionIndexMap:', (quiz as any).questionIndexMap);
+      console.log('quiz.questions:', quiz.questions.map((q, i) => ({
+        currentIndex: i,
+        originalQuestionIndex: (q as any).originalQuestionIndex,
+        type: q.type,
+        optionsCount: q.options.length,
+        optionIndexMap: (q as any).optionIndexMap
+      })));
+      
+      // First convert option indices, then reorder to match original question order
       const convertedAnswers = userAnswers.map((ans, idx) => {
-        const mapArr: number[] = (quiz.questions[idx] as any).optionIndexMap;
-        if (quiz.questions[idx].type === 'single') {
+        const question = quiz.questions[idx];
+        const mapArr: number[] = (question as any).optionIndexMap;
+        console.log(`Converting question ${idx} (originally Q${(question as any).originalQuestionIndex + 1}):`, {
+          userAnswer: ans,
+          optionIndexMap: mapArr,
+          questionType: question.type
+        });
+        
+        if (question.type === 'single') {
           const aNum = ans as number;
-          return aNum === -1 ? -1 : mapArr[aNum];
+          const converted = aNum === -1 ? -1 : mapArr[aNum];
+          console.log(`Single choice: ${aNum} -> ${converted}`);
+          return converted;
         } else {
           const arr = ans as number[];
-          return arr.map(a => mapArr[a]);
+          const converted = arr.map(a => mapArr[a]);
+          console.log(`Multiple choice: [${arr}] -> [${converted}]`);
+          return converted;
         }
       });
 
+      // Reorder answers to match original question order
+      const questionIndexMap: number[] = (quiz as any).questionIndexMap;
+      const originalOrderAnswers: (number | number[])[] = new Array(convertedAnswers.length);
+      
+      convertedAnswers.forEach((answer, shuffledIndex) => {
+        const originalIndex = questionIndexMap[shuffledIndex];
+        originalOrderAnswers[originalIndex] = answer;
+      });
+
+      console.log('convertedAnswers (shuffled order):', convertedAnswers);
+      console.log('originalOrderAnswers (original question order):', originalOrderAnswers);
+
       const payload = {
-        answers: convertedAnswers,
+        answers: originalOrderAnswers,
         userEmail: session?.user?.email || userEmail.trim(),
       };
+      
+      console.log('payload:', payload);
       
       const response = await fetch(`/api/quiz/${params.slug}/attempt`, {
         method: 'POST',

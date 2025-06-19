@@ -37,16 +37,22 @@ export async function GET(request: NextRequest) {
     } else {
       // For regular users
       if (status === 'published') {
-        // All users can see all published quizzes (public access)
-        filter.status = 'published';
+        // All users can see published quizzes that are not private
+        filter = {
+          status: 'published',
+          $or: [
+            { isPrivate: false },
+            { author: (session.user as any).id }
+          ]
+        };
       } else if (status === 'pending' || status === 'rejected') {
         // Only their own pending/rejected quizzes
         filter = { author: (session.user as any).id, status };
       } else {
-        // Default: published quizzes + their own quizzes
+        // Default: published non-private quizzes + their own quizzes
         filter = {
           $or: [
-            { status: 'published' },
+            { status: 'published', isPrivate: false },
             { author: (session.user as any).id }
           ]
         };
@@ -116,7 +122,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { title, description, category, questions } = await request.json();
+    const { title, description, category, questions, isPrivate } = await request.json();
 
     if (!title || !category || !questions || !Array.isArray(questions) || questions.length === 0) {
       return NextResponse.json(
@@ -291,7 +297,8 @@ export async function POST(request: NextRequest) {
       author: (session.user as any).id,
       slug,
       questions: mongooseQuestions,
-      status: 'pending'
+      status: 'pending',
+      isPrivate: isPrivate || false
     });
 
     await quiz.save();

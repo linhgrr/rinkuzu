@@ -61,6 +61,7 @@ export default function CreateQuizPage() {
   const [editableTitle, setEditableTitle] = useState('');
   const [editableDescription, setEditableDescription] = useState('');
   const [editableQuestions, setEditableQuestions] = useState<Question[]>([]);
+  const [isPrivate, setIsPrivate] = useState(false);
   const [creating, setCreating] = useState(false);
   
   // Preview modal state
@@ -311,6 +312,7 @@ export default function CreateQuizPage() {
           description: editableDescription.trim(),
           category: selectedCategory._id,
           questions: formattedQuestions,
+          isPrivate: isPrivate,
         }),
         signal: AbortSignal.timeout(60000), // 1 minute timeout
       });
@@ -345,6 +347,7 @@ export default function CreateQuizPage() {
     setEditableTitle('');
     setEditableDescription('');
     setEditableQuestions([]);
+    setIsPrivate(false);
     setError('');
     setSuccess('');
     // Keep category selection when going back
@@ -736,6 +739,22 @@ export default function CreateQuizPage() {
                       maxLength={1000}
                       className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="isPrivate"
+                    checked={isPrivate}
+                    onChange={(e) => setIsPrivate(e.target.checked)}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <label htmlFor="isPrivate" className="text-sm font-medium text-gray-700">
+                    🔒 Private Quiz
+                  </label>
+                  <div className="text-xs text-gray-500">
+                    (Only visible to you and admins)
                   </div>
                 </div>
 

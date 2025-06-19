@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import connectDB from '@/lib/mongoose';
 import Quiz from '@/models/Quiz';
 
@@ -7,6 +9,8 @@ export async function GET(
   { params }: { params: { slug: string } }
 ) {
   try {
+    const session = await getServerSession(authOptions);
+    
     await connectDB();
 
     const quiz = await Quiz.findOne({ 
@@ -19,6 +23,26 @@ export async function GET(
         { success: false, error: 'Quiz not found or not published' },
         { status: 404 }
       );
+    }
+
+    // Check if quiz is private and user has access
+    if (quiz.isPrivate) {
+      if (!session?.user) {
+        return NextResponse.json(
+          { success: false, error: 'Access denied. This quiz is private.' },
+          { status: 403 }
+        );
+      }
+
+      const isAdmin = (session.user as any).role === 'admin';
+      const isAuthor = quiz.author._id.toString() === (session.user as any).id;
+
+      if (!isAdmin && !isAuthor) {
+        return NextResponse.json(
+          { success: false, error: 'Access denied. This quiz is private.' },
+          { status: 403 }
+        );
+      }
     }
 
     // Return quiz with correct answers for flashcards

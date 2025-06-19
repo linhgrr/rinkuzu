@@ -378,6 +378,11 @@ export default function PendingQuizzesPage() {
                       <div className="flex items-center space-x-3">
                         <CardTitle className="text-xl">{quiz.title}</CardTitle>
                         <span className="text-2xl">{getStatusIcon(quiz.status)}</span>
+                        {quiz.isPrivate && (
+                          <span className="text-sm bg-gray-100 text-gray-600 px-2 py-1 rounded-full flex items-center">
+                            🔒 Private
+                          </span>
+                        )}
                       </div>
                       <CardDescription className="mt-2">
                         {quiz.description || 'No description provided'}

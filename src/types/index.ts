@@ -34,6 +34,7 @@ export interface IQuiz {
   author: string | IUser;
   slug: string;
   questions: IQuestion[];
+  isPrivate: boolean;
   createdAt: Date;
 }
 

@@ -35,13 +35,33 @@ export async function POST(
     const quiz = await Quiz.findOne({ 
       slug: params.slug, 
       status: 'published' 
-    });
+    }).populate('author', 'email');
 
     if (!quiz) {
       return NextResponse.json(
         { success: false, error: 'Quiz not found or not published' },
         { status: 404 }
       );
+    }
+
+    // Check if quiz is private and user has access
+    if (quiz.isPrivate) {
+      if (!session?.user) {
+        return NextResponse.json(
+          { success: false, error: 'Access denied. This quiz is private.' },
+          { status: 403 }
+        );
+      }
+
+      const isAdmin = (session.user as any).role === 'admin';
+      const isAuthor = quiz.author._id.toString() === (session.user as any).id;
+
+      if (!isAdmin && !isAuthor) {
+        return NextResponse.json(
+          { success: false, error: 'Access denied. This quiz is private.' },
+          { status: 403 }
+        );
+      }
     }
 
     if (answers.length !== quiz.questions.length) {

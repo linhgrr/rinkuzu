@@ -417,7 +417,14 @@ export default function AdminQueuePage() {
                 <CardHeader>
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
-                      <CardTitle className="text-xl">{quiz.title}</CardTitle>
+                      <div className="flex items-center space-x-3">
+                        <CardTitle className="text-xl">{quiz.title}</CardTitle>
+                        {quiz.isPrivate && (
+                          <span className="text-sm bg-gray-100 text-gray-600 px-2 py-1 rounded-full flex items-center">
+                            🔒 Private
+                          </span>
+                        )}
+                      </div>
                       <CardDescription className="mt-2">
                         {quiz.description || 'No description provided'}
                       </CardDescription>

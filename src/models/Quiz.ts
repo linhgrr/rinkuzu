@@ -18,6 +18,7 @@ export interface IQuiz extends Document {
   author: Types.ObjectId;
   slug: string;
   questions: IQuestion[];
+  isPrivate: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -126,6 +127,10 @@ const QuizSchema = new Schema<IQuiz>({
       },
       message: 'At least one question is required',
     },
+  },
+  isPrivate: {
+    type: Boolean,
+    default: false,
   },
 }, {
   timestamps: true,

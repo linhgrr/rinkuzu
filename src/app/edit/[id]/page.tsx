@@ -50,6 +50,7 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
   const [description, setDescription] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [editableQuestions, setEditableQuestions] = useState<Question[]>([]);
+  const [isPrivate, setIsPrivate] = useState(false);
 
   useEffect(() => {
     if (status === 'loading') return;
@@ -73,6 +74,7 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
         setDescription(data.data.description || '');
         setSelectedCategory(data.data.category as Category);
         setEditableQuestions(data.data.questions as Question[]);
+        setIsPrivate(data.data.isPrivate || false);
       } else {
         setError(data.error || 'Quiz not found');
       }
@@ -167,6 +169,7 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
           description: description.trim(),
           category: selectedCategory._id,
           questions: formattedQuestions,
+          isPrivate: isPrivate,
         }),
       });
 
@@ -512,6 +515,23 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
                   required
                   disabled={!canEdit}
                 />
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="isPrivate"
+                  checked={isPrivate}
+                  onChange={(e) => setIsPrivate(e.target.checked)}
+                  disabled={!canEdit}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded disabled:bg-gray-50"
+                />
+                <label htmlFor="isPrivate" className="text-sm font-medium text-gray-700">
+                  🔒 Private Quiz
+                </label>
+                <div className="text-xs text-gray-500">
+                  (Only visible to you and admins)
+                </div>
               </div>
 
               {/* Quiz Questions Info */}

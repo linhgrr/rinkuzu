@@ -25,6 +25,7 @@ interface Quiz {
   createdAt: string;
   questions: Array<any>;
   status: string;
+  isPrivate: boolean;
 }
 
 interface Category {
@@ -465,7 +466,14 @@ export default function HomePage() {
                             {quiz.category?.name}
                           </span>
                         </div>
-                        <CardTitle className="line-clamp-2">{quiz.title}</CardTitle>
+                        <div className="flex items-center space-x-2">
+                          <CardTitle className="line-clamp-2 flex-1">{quiz.title}</CardTitle>
+                          {quiz.isPrivate && (
+                            <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full flex items-center">
+                              🔒 Private
+                            </span>
+                          )}
+                        </div>
                         <CardDescription className="text-xs text-gray-500">
                           By {quiz.author.email} • {formatDate(quiz.createdAt)}
                         </CardDescription>

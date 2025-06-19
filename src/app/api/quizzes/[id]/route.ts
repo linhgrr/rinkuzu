@@ -37,11 +37,15 @@ export async function GET(
     const isAdmin = (session.user as any).role === 'admin';
     const isAuthor = quiz.author._id.toString() === (session.user as any).id;
 
-    if (!isAdmin && !isAuthor && quiz.status !== 'published') {
-      return NextResponse.json(
-        { success: false, error: 'Access denied' },
-        { status: 403 }
-      );
+    // Check if user can access this quiz
+    if (!isAdmin && !isAuthor) {
+      // For non-admin/non-author users, only allow access to published and non-private quizzes
+      if (quiz.status !== 'published' || quiz.isPrivate) {
+        return NextResponse.json(
+          { success: false, error: 'Access denied' },
+          { status: 403 }
+        );
+      }
     }
 
     return NextResponse.json({
@@ -72,7 +76,7 @@ export async function PUT(
       );
     }
 
-    const { title, description, category, questions } = await request.json();
+    const { title, description, category, questions, isPrivate } = await request.json();
 
     await connectDB();
 
@@ -177,6 +181,7 @@ export async function PUT(
     if (title) quiz.title = title;
     if (description !== undefined) quiz.description = description;
     if (category) quiz.category = category;
+    if (isPrivate !== undefined) quiz.isPrivate = isPrivate;
 
     // If questions provided, replace and reset status to pending
     if (mongooseQuestions) {

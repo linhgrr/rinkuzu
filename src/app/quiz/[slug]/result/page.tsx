@@ -6,6 +6,9 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { QuestionImage, OptionImage } from '@/components/ui/ImageDisplay';
+import { Modal } from '@/components/ui/Modal';
+import { Input } from '@/components/ui/Input';
+import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer';
 
 interface QuizResultPageProps {
   params: { slug: string };
@@ -35,6 +38,12 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
   const [result, setResult] = useState<QuizResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [showAIModal, setShowAIModal] = useState(false);
+  const [aiExplanation, setAIExplanation] = useState('');
+  const [loadingAI, setLoadingAI] = useState(false);
+  const [aiError, setAIError] = useState('');
+  const [userQuestion, setUserQuestion] = useState('');
+  const [aiQuestionData, setAIQuestionData] = useState<any>(null);
 
   const attemptId = searchParams.get('attemptId');
 
@@ -89,6 +98,46 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
     } else {
       const indices = answer as number[];
       return indices.map(idx => options[idx]).join(', ');
+    }
+  };
+
+  const openAIModal = (qData: any) => {
+    setAIQuestionData(qData);
+    setUserQuestion('');
+    setAIExplanation('');
+    setAIError('');
+    setShowAIModal(true);
+  };
+
+  const closeAIModal = () => setShowAIModal(false);
+
+  const askAI = async () => {
+    if (!aiQuestionData) return;
+    setLoadingAI(true);
+    setAIError('');
+    setAIExplanation('');
+    try {
+      const resp = await fetch('/api/quiz/ask-ai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          question: aiQuestionData.question,
+          options: aiQuestionData.options,
+          userQuestion: userQuestion.trim() || undefined,
+          questionImage: aiQuestionData.questionImage,
+          optionImages: aiQuestionData.optionImages,
+        })
+      });
+      const data = await resp.json();
+      if (data.success) {
+        setAIExplanation(data.data.explanation);
+      } else {
+        setAIError(data.error || 'Failed to get AI explanation');
+      }
+    } catch (err) {
+      setAIError('Failed to connect to AI service');
+    } finally {
+      setLoadingAI(false);
     }
   };
 
@@ -265,9 +314,12 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
                   }`}
                 >
                   <div className="flex items-start justify-between mb-3">
-                    <h3 className="font-semibold text-gray-900 flex-1">
-                      {index + 1}. {questionResult.question}
-                    </h3>
+                    <div className="flex justify-between items-center mb-4">
+                      <h3 className="font-semibold text-gray-900 flex-1">
+                        {index + 1}. {questionResult.question}
+                      </h3>
+                      <Button variant="outline" onClick={() => openAIModal(questionResult)} className="text-purple-600 border-purple-200 hover:bg-purple-50 hover:border-purple-300">🤖 Ask AI</Button>
+                    </div>
                     <div className="flex items-center space-x-2 ml-4">
                       <span className={`px-2 py-1 rounded text-xs font-medium ${
                         questionResult.type === 'single' 
@@ -456,6 +508,35 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
           </CardContent>
         </Card>
       </main>
+
+      {/* Ask AI Modal */}
+      <Modal isOpen={showAIModal} onClose={closeAIModal} title="🤖 Ask AI about this question" size="wide">
+        {aiQuestionData && (
+          <div className="space-y-4">
+            {/* Question snapshot */}
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <h4 className="font-medium text-gray-900 mb-2">Current Question:</h4>
+              <p className="text-sm text-gray-700">{aiQuestionData.question}</p>
+              <div className="mt-2 space-y-1">
+                {aiQuestionData.options.map((opt: string, idx: number) => (
+                  <div key={idx} className="text-xs text-gray-600 flex items-start space-x-2">
+                    <span>{String.fromCharCode(65+idx)}. {opt}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            {/* Input */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Ask a specific question (optional):</label>
+              <Input value={userQuestion} onChange={e=>setUserQuestion(e.target.value)} placeholder="e.g., Why is option B correct?" className="w-full"/>
+            </div>
+            <Button onClick={askAI} loading={loadingAI} disabled={loadingAI} className="w-full bg-purple-600 hover:bg-purple-700">{loadingAI?'Getting AI explanation...':'Get AI Explanation'}</Button>
+            {aiError && <div className="rounded-md bg-red-50 p-3 text-sm text-red-700">{aiError}</div>}
+            {aiExplanation && <div className="rounded-md bg-green-50 p-4"><MarkdownRenderer content={aiExplanation} className="text-green-800"/></div>}
+            <div className="text-xs text-gray-500 bg-yellow-50 p-3 rounded-md"><strong>📝 Note:</strong> AI explanation is for learning purposes. It won't reveal the correct answer directly but will help you understand concepts.</div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 } 

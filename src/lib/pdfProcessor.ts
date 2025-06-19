@@ -184,8 +184,8 @@ export function calculateOptimalChunkSize(pdfSizeBytes: number, totalPages: numb
   chunkSize: number;
   overlapPages: number;
 } {
-  // Always use fixed strategy: 10 pages per chunk with 1 page overlap
-  const fixedChunkSize = 10;
+  // Always use fixed strategy: 5 pages per chunk with 1 page overlap
+  const fixedChunkSize = 5;
   const overlapPages = 1;
 
   // If total pages less than fixed chunk size, just return total pages without overlap

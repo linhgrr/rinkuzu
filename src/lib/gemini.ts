@@ -1,4 +1,18 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { PDFChunk, ChunkResult, mergeChunkResults } from './pdfProcessor';
+import { PDFDocument } from 'pdf-lib';
+
+// Polyfill for Promise.withResolvers if not available (Node.js < v22)
+if (!(Promise as any).withResolvers) {
+  (Promise as any).withResolvers = function() {
+    let resolve: any, reject: any;
+    const promise = new Promise((res, rej) => {
+      resolve = res;
+      reject = rej;
+    });
+    return { promise, resolve, reject };
+  };
+}
 
 if (!process.env.GEMINI_KEYS) {
   throw new Error('Please add your GEMINI_KEYS to .env.local');
@@ -13,10 +27,10 @@ function getNextKey(): string {
   return key.trim();
 }
 
-export async function extractQuestionsFromPdf(buffer: Buffer | string): Promise<any[]> {
-  const maxRetries = Math.min(keys.length, 3);
+export async function extractQuestionsFromPdf(buffer: Buffer | string, maxRetries: number = 3): Promise<any[]> {
+  const maxAttempts = Math.min(keys.length, maxRetries);
   
-  for (let attempt = 0; attempt < maxRetries; attempt++) {
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
     try {
       const apiKey = getNextKey();
       const genAI = new GoogleGenerativeAI(apiKey);
@@ -98,61 +112,55 @@ Be strict: **If any part of the text refers to a question or a labeled figure, e
       
       const questions = JSON.parse(jsonMatch[0]);
       
-      // Validate the questions format
+      // Validate the questions array basic shape
       if (!Array.isArray(questions) || questions.length === 0) {
         throw new Error('Invalid questions format');
       }
-      
-      // No image processing needed - users will add images manually
-      const processedQuestions = questions;
-      
-      // Validate each question with detailed logging
-      for (let i = 0; i < processedQuestions.length; i++) {
-        const q = processedQuestions[i];
-        
-        console.log(`🔍 Gemini validating Question ${i + 1}:`, {
-          hasQuestion: !!q.question,
-          hasOptions: !!q.options,
-          optionsLength: q.options?.length,
-          type: q.type,
-          correctIndex: q.correctIndex,
-          correctIndexes: q.correctIndexes,
 
-        });
+      const validQuestions: any[] = [];
 
-        if (!q.question || !Array.isArray(q.options) || 
-            q.options.length < 2 || !q.type ||
-            !['single', 'multiple'].includes(q.type)) {
-          console.error(`❌ Gemini Question ${i + 1}: Invalid basic format`);
-          throw new Error(`Invalid question format at position ${i + 1}`);
-        }
-        
-        if (q.type === 'single') {
-          if (typeof q.correctIndex !== 'number' ||
-              q.correctIndex < 0 || q.correctIndex >= q.options.length) {
-            console.error(`❌ Gemini Question ${i + 1}: Invalid correctIndex ${q.correctIndex} for ${q.options.length} options`);
-            throw new Error(`Invalid single choice question at position ${i + 1}: correctIndex must be 0-${q.options.length - 1}`);
+      questions.forEach((q: any, i: number) => {
+        const logPrefix = `Question ${i + 1}`;
+        try {
+          // Basic checks
+          if (!q.question || !Array.isArray(q.options) || q.options.length < 2) {
+            throw new Error('Missing text or options');
           }
-        } else if (q.type === 'multiple') {
-          if (!Array.isArray(q.correctIndexes) || q.correctIndexes.length === 0 ||
-              q.correctIndexes.some((idx: number) => typeof idx !== 'number' || idx < 0 || idx >= q.options.length)) {
-            console.error(`❌ Gemini Question ${i + 1}: Invalid correctIndexes`, q.correctIndexes);
-            throw new Error(`Invalid multiple choice question at position ${i + 1}: correctIndexes must be valid array`);
+          if (!q.type || !['single', 'multiple'].includes(q.type)) {
+            throw new Error('Invalid type');
           }
+          if (q.type === 'single') {
+            if (typeof q.correctIndex !== 'number' || q.correctIndex < 0 || q.correctIndex >= q.options.length) {
+              throw new Error('Invalid correctIndex');
+            }
+          } else {
+            if (!Array.isArray(q.correctIndexes) || q.correctIndexes.length === 0 || q.correctIndexes.some((idx: number) => idx < 0 || idx >= q.options.length)) {
+              throw new Error('Invalid correctIndexes');
+            }
+          }
+          validQuestions.push(q);
+          console.log(`✅ ${logPrefix}: kept`);
+        } catch (vErr) {
+          console.warn(`⚠️ ${logPrefix}: dropped (${(vErr as Error).message})`);
         }
+      });
 
-        console.log(`✅ Gemini Question ${i + 1}: Valid`);
+      if (validQuestions.length === 0) {
+        throw new Error('No valid questions in chunk');
       }
-      
-      console.log('✅ All Gemini questions validated successfully');
-      
-      return processedQuestions;
+
+      return validQuestions;
       
     } catch (error: any) {
       console.error(`Attempt ${attempt + 1} failed:`, error.message);
       
-      if (attempt === maxRetries - 1) {
-        throw new Error(`Failed to extract questions after ${maxRetries} attempts: ${error.message}`);
+      // If the error is about invalid JSON or format, do not retry further
+      if (error.message?.includes('No valid JSON') || error.message?.includes('Invalid questions format')) {
+        throw error;
+      }
+      
+      if (attempt === maxAttempts - 1) {
+        throw new Error(`Failed to extract questions after ${maxAttempts} attempts: ${error.message}`);
       }
       
       // Wait a bit before retrying
@@ -187,4 +195,149 @@ export async function generateQuizTitle(content: string): Promise<string> {
   } catch (error) {
     return 'Generated Quiz';
   }
+}
+
+/**
+ * Process multiple PDF chunks in parallel using different Gemini keys
+ */
+export async function extractQuestionsFromPdfChunks(chunks: PDFChunk[]): Promise<any[]> {
+  console.log(`🚀 Starting parallel processing of ${chunks.length} chunks`);
+  const startTime = Date.now();
+  
+  try {
+    // Process chunks in parallel, each with a different key
+    const chunkPromises = chunks.map(async (chunk, index): Promise<ChunkResult> => {
+      console.log(`📋 Processing chunk ${chunk.chunkIndex} (pages ${chunk.startPage}-${chunk.endPage}) with key rotation...`);
+      
+      try {
+        const questions = await extractQuestionsFromPdf(chunk.buffer, 1);
+        
+        console.log(`✅ Chunk ${chunk.chunkIndex} completed: ${questions.length} questions extracted`);
+        
+        return {
+          questions,
+          chunkIndex: chunk.chunkIndex,
+          startPage: chunk.startPage,
+          endPage: chunk.endPage
+        };
+      } catch (error) {
+        console.error(`❌ Chunk ${chunk.chunkIndex} failed:`, error);
+        return {
+          questions: [],
+          chunkIndex: chunk.chunkIndex,
+          startPage: chunk.startPage,
+          endPage: chunk.endPage
+        };
+      }
+    });
+    
+    // Wait for all chunks to complete
+    const results = await Promise.all(chunkPromises);
+    
+    const processingTime = Date.now() - startTime;
+    console.log(`🎯 Parallel processing completed in ${processingTime}ms`);
+    
+    // Merge results and remove duplicates
+    const mergedQuestions = mergeChunkResults(results);
+    
+    console.log(`📊 Final result: ${mergedQuestions.length} unique questions from ${chunks.length} chunks`);
+    
+    return mergedQuestions;
+    
+  } catch (error) {
+    console.error('❌ Error in parallel processing:', error);
+    throw error;
+  }
+}
+
+/**
+ * Optimized extraction with automatic chunking for large PDFs
+ */
+export async function extractQuestionsFromPdfOptimized(
+  buffer: Buffer, 
+  forceParallel: boolean = false
+): Promise<any[]> {
+  const fileSize = buffer.length;
+  const fileSizeMB = fileSize / (1024 * 1024);
+  
+  console.log(`📄 Processing PDF: ${fileSizeMB.toFixed(2)}MB`);
+  
+  // Use parallel processing for files > 0.8MB or when forcing
+  // Since 1MB is already considered large, we start parallel at 0.8MB
+  const shouldUseParallel = fileSizeMB > 0.8 || forceParallel;
+  
+  if (!shouldUseParallel) {
+    console.log('📝 Using standard processing for small PDF');
+    return extractQuestionsFromPdf(buffer);
+  }
+  
+  // For larger files, try chunked parallel processing with fallback
+  console.log('🚀 Attempting parallel chunked processing for PDF');
+  
+  try {
+    const { splitPdfIntoChunks, calculateOptimalChunkSize } = await import('./pdfProcessor');
+    
+    // Get PDF page count using pdf-lib
+    const pdfDoc = await PDFDocument.load(buffer);
+    const totalPages = pdfDoc.getPageCount();
+    
+    // Calculate optimal chunk parameters - more aggressive for smaller files
+    const { chunkSize, overlapPages } = calculateOptimalChunkSize(fileSize, totalPages);
+    
+    // Split PDF into chunks
+    const chunks = await splitPdfIntoChunks(buffer, chunkSize, overlapPages);
+    
+    if (chunks.length === 1) {
+      console.log('📝 PDF too small to benefit from chunking, using standard processing');
+      return extractQuestionsFromPdf(buffer);
+    }
+    
+    // Process chunks in parallel
+    return await extractQuestionsFromPdfChunks(chunks);
+    
+  } catch (error) {
+    console.error('❌ Chunked processing failed, trying simplified parallel approach:', error);
+    
+    // Fallback: Try simple parallel processing with multiple API calls
+    try {
+      return await extractQuestionsWithSimpleParallel(buffer);
+    } catch (fallbackError) {
+      console.error('❌ Simplified parallel processing also failed, using standard processing:', fallbackError);
+      // Final fallback to standard processing
+      return extractQuestionsFromPdf(buffer);
+    }
+  }
+}
+
+/**
+ * Simplified parallel processing without PDF chunking
+ * Uses multiple API keys to process the same PDF with different prompts
+ */
+async function extractQuestionsWithSimpleParallel(buffer: Buffer): Promise<any[]> {
+  console.log('🔄 Using simplified parallel processing with multiple API calls');
+  
+  const maxRetries = Math.min(keys.length, 1); // Use max 1 parallel call
+  
+  const promises = Array.from({ length: maxRetries }, async (_, index) => {
+    try {
+      console.log(`📋 Starting parallel extraction ${index + 1}/${maxRetries}`);
+      const questions = await extractQuestionsFromPdf(buffer, 1);
+      console.log(`✅ Parallel extraction ${index + 1} completed: ${questions.length} questions`);
+      return questions;
+    } catch (error) {
+      console.error(`❌ Parallel extraction ${index + 1} failed:`, error);
+      return [];
+    }
+  });
+  
+  const results = await Promise.all(promises);
+  
+  // Find the result with most questions
+  const bestResult = results.reduce((best, current) => 
+    current.length > best.length ? current : best, []
+  );
+  
+  console.log(`📊 Simplified parallel processing completed. Best result: ${bestResult.length} questions`);
+  
+  return bestResult;
 } 

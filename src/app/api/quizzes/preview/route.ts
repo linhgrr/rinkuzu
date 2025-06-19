@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { extractQuestionsFromPdf } from '@/lib/gemini';
+import { extractQuestionsFromPdf, extractQuestionsFromPdfOptimized } from '@/lib/gemini';
 import { authOptions } from '@/lib/auth';
 
 // POST /api/quizzes/preview - Extract questions from PDF and return preview
@@ -52,40 +52,84 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Extract questions from all PDF files
+    // Extract questions from all PDF files using optimized processing
     let allQuestions: any[] = [];
     let totalFileSize = 0;
     const fileNames: string[] = [];
+    const processingStartTime = Date.now();
 
-    for (const file of pdfFiles) {
-      console.log(`📄 Processing file: ${file.name}`);
+    // Process files in parallel if we have multiple files
+    if (pdfFiles.length > 1) {
+      console.log(`🚀 Processing ${pdfFiles.length} files in parallel...`);
       
-      // Convert file to buffer for Gemini API
+      const filePromises = pdfFiles.map(async (file, index) => {
+        console.log(`📄 Processing file ${index + 1}/${pdfFiles.length}: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB)`);
+        
+        const buffer = Buffer.from(await file.arrayBuffer());
+        
+        try {
+          // Use optimized processing for each file
+          const fileQuestions = await extractQuestionsFromPdfOptimized(buffer, false);
+          
+          console.log(`✅ File ${file.name}: ${fileQuestions.length} questions extracted`);
+          
+          return {
+            questions: fileQuestions,
+            fileName: file.name,
+            fileSize: file.size
+          };
+        } catch (error) {
+          console.error(`❌ Failed to process ${file.name}:`, error);
+          return {
+            questions: [],
+            fileName: file.name,
+            fileSize: file.size
+          };
+        }
+      });
+      
+      const results = await Promise.all(filePromises);
+      
+      // Combine results
+      for (const result of results) {
+        allQuestions = allQuestions.concat(result.questions);
+        totalFileSize += result.fileSize;
+        fileNames.push(result.fileName);
+      }
+      
+    } else {
+      // Single file processing
+      const file = pdfFiles[0];
+      console.log(`📄 Processing single file: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB)`);
+      
       const buffer = Buffer.from(await file.arrayBuffer());
       
-      // Extract questions using Gemini AI (one file at a time)
-      const fileQuestions = await extractQuestionsFromPdf(buffer);
+      // Use optimized processing
+      const fileQuestions = await extractQuestionsFromPdfOptimized(buffer, false);
       
       if (fileQuestions && fileQuestions.length > 0) {
-        allQuestions = allQuestions.concat(fileQuestions);
+        allQuestions = fileQuestions;
         console.log(`✅ Extracted ${fileQuestions.length} questions from ${file.name}`);
       } else {
         console.log(`⚠️ No questions extracted from ${file.name}`);
       }
       
-      totalFileSize += file.size;
+      totalFileSize = file.size;
       fileNames.push(file.name);
     }
+
+    const processingTime = Date.now() - processingStartTime;
+    console.log(`🎯 Total processing time: ${processingTime}ms for ${pdfFiles.length} file(s)`);
 
     const rawQuestions = allQuestions;
 
     // Log the raw questions data for debugging
-    console.log('📋 Raw questions from Gemini:', JSON.stringify(rawQuestions, null, 2));
+    console.log('📋 Raw questions from Gemini:', JSON.stringify(rawQuestions.slice(0, 2), null, 2)); // Log first 2 questions only
     console.log('📊 Questions count:', rawQuestions?.length || 0);
 
     if (!rawQuestions || rawQuestions.length === 0) {
       return NextResponse.json(
-        { success: false, error: 'Could not extract questions from PDF' },
+        { success: false, error: 'Could not extract questions from PDF(s). The files may not contain recognizable question content.' },
         { status: 400 }
       );
     }
@@ -93,12 +137,12 @@ export async function POST(request: NextRequest) {
     // Convert Gemini format to frontend format
     const questions = rawQuestions.map((q, index) => {
       console.log(`🔄 Converting Question ${index + 1}:`, {
-        fullQuestion: q,
+        hasQuestion: !!q.question,
         type: q.type,
         correctIndex: q.correctIndex,
         correctIndexes: q.correctIndexes,
-        hasCorrectIndex: q.hasOwnProperty('correctIndex'),
-        hasCorrectIndexes: q.hasOwnProperty('correctIndexes')
+        sourceChunk: q.sourceChunk,
+        sourcePages: q.sourcePages
       });
 
       let correctAnswer;
@@ -124,28 +168,16 @@ export async function POST(request: NextRequest) {
         correctIndex: q.type === 'single' ? (q.correctIndex ?? correctAnswer) : undefined,
         correctIndexes: q.type === 'multiple' ? q.correctIndexes : undefined,
         originalCorrectIndex: q.correctIndex,
-        originalCorrectIndexes: q.correctIndexes
+        originalCorrectIndexes: q.correctIndexes,
+        // Include processing metadata
+        sourceChunk: q.sourceChunk,
+        sourcePages: q.sourcePages
       };
-
-      console.log(`✅ Converted Question ${index + 1}:`, {
-        question: converted.question?.substring(0, 50) + '...',
-        correctAnswer: converted.correctAnswer,
-        correctAnswerType: typeof converted.correctAnswer,
-        type: converted.type,
-        correctIndex: converted.correctIndex,
-        correctIndexes: converted.correctIndexes,
-        originalCorrectIndex: converted.originalCorrectIndex,
-        originalCorrectIndexes: converted.originalCorrectIndexes
-      });
 
       return converted;
     });
 
-    console.log('🎯 Final converted questions:', questions.map((q, i) => ({
-      index: i + 1,
-      correctAnswer: q.correctAnswer,
-      type: q.type
-    })));
+    console.log('🎯 Final converted questions:', questions.length);
 
     return NextResponse.json({
       success: true,
@@ -156,7 +188,9 @@ export async function POST(request: NextRequest) {
         originalFileName: fileNames.join(', '),
         fileSize: totalFileSize,
         fileCount: pdfFiles.length,
-        fileNames: fileNames
+        fileNames: fileNames,
+        processingTime: processingTime,
+        processingMethod: pdfFiles.length > 1 ? 'parallel-files' : (totalFileSize > 0.8 * 1024 * 1024 ? 'parallel-chunks' : 'standard')
       }
     });
 

@@ -133,6 +133,7 @@ export default function CreateQuizPage() {
       const response = await fetch('/api/quizzes/preview', {
         method: 'POST',
         body: formData,
+        signal: AbortSignal.timeout(300000), // 5 minutes timeout
       });
 
       const data = await response.json();
@@ -278,6 +279,7 @@ export default function CreateQuizPage() {
           description: editableDescription.trim(),
           questions: formattedQuestions,
         }),
+        signal: AbortSignal.timeout(60000), // 1 minute timeout
       });
 
       const data = await response.json();
@@ -511,6 +513,8 @@ export default function CreateQuizPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     PDF Document *
                   </label>
+                  
+
                   
                   <div>
                     <div

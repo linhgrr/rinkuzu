@@ -13,6 +13,7 @@ export interface IQuestion {
 export interface IQuiz extends Document {
   title: string;
   description?: string;
+  category: Types.ObjectId;
   status: 'pending' | 'published' | 'rejected';
   author: Types.ObjectId;
   slug: string;
@@ -94,6 +95,11 @@ const QuizSchema = new Schema<IQuiz>({
     type: String,
     trim: true,
     maxlength: [1000, 'Description cannot exceed 1000 characters'],
+  },
+  category: {
+    type: Schema.Types.ObjectId,
+    ref: 'Category',
+    required: [true, 'Category is required'],
   },
   status: {
     type: String,

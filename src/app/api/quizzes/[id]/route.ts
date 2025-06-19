@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import connectDB from '@/lib/mongoose';
 import Quiz from '@/models/Quiz';
+import Category from '@/models/Category';
 import Attempt from '@/models/Attempt';
 import { authOptions } from '@/lib/auth';
 
@@ -21,7 +22,9 @@ export async function GET(
 
     await connectDB();
 
-    const quiz = await Quiz.findById(params.id).populate('author', 'email');
+    const quiz = await Quiz.findById(params.id)
+      .populate('author', 'email')
+      .populate('category', 'name color');
 
     if (!quiz) {
       return NextResponse.json(
@@ -69,7 +72,7 @@ export async function PUT(
       );
     }
 
-    const { title, description, questions } = await request.json();
+    const { title, description, category, questions } = await request.json();
 
     await connectDB();
 
@@ -159,9 +162,21 @@ export async function PUT(
       });
     }
 
+    // Validate category if provided
+    if (category) {
+      const categoryDoc = await Category.findOne({ _id: category, isActive: true });
+      if (!categoryDoc) {
+        return NextResponse.json(
+          { success: false, error: 'Invalid or inactive category selected' },
+          { status: 400 }
+        );
+      }
+    }
+
     // Update quiz basic fields
     if (title) quiz.title = title;
     if (description !== undefined) quiz.description = description;
+    if (category) quiz.category = category;
 
     // If questions provided, replace and reset status to pending
     if (mongooseQuestions) {
@@ -170,6 +185,10 @@ export async function PUT(
     }
 
     await quiz.save();
+    await quiz.populate([
+      { path: 'author', select: 'email' },
+      { path: 'category', select: 'name color' }
+    ]);
 
     return NextResponse.json({
       success: true,

@@ -12,6 +12,7 @@ import { QuizPreviewModal } from '@/components/ui/QuizPreviewModal';
 import { QuestionImage, OptionImage } from '@/components/ui/ImageDisplay';
 import { QuestionImageUpload, OptionImageUpload } from '@/components/ui/ImageUpload';
 import { PDFViewer } from '@/components/ui/PDFViewer';
+import { CategorySelector } from '@/components/ui/CategorySelector';
 
 
 interface Question {
@@ -25,6 +26,13 @@ interface Question {
   optionImages?: (string | undefined)[]; // Array of URLs/paths for option images
   // Legacy fields for backward compatibility during transition
   correctAnswer?: number;
+}
+
+interface Category {
+  _id: string;
+  name: string;
+  description: string;
+  color: string;
 }
 
 interface PreviewData {
@@ -44,6 +52,7 @@ export default function CreateQuizPage() {
   // Step 1: Upload form
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [pdfFiles, setPdfFiles] = useState<File[]>([]);
   const [extracting, setExtracting] = useState(false);
   
@@ -110,6 +119,11 @@ export default function CreateQuizPage() {
     
     if (!title.trim()) {
       setError('Title is required');
+      return;
+    }
+    
+    if (!selectedCategory) {
+      setError('Please select a category');
       return;
     }
     
@@ -235,6 +249,11 @@ export default function CreateQuizPage() {
       return;
     }
 
+    if (!selectedCategory) {
+      setError('Please select a category');
+      return;
+    }
+
     if (!editableQuestions || editableQuestions.length === 0) {
       setError('At least one question is required');
       return;
@@ -246,7 +265,14 @@ export default function CreateQuizPage() {
 
     try {
       // Convert questions to proper IQuestion format
-      const formattedQuestions = editableQuestions.map((q: Question) => {
+      const formattedQuestions = editableQuestions.map((q: Question, idx: number) => {
+        console.log(`📝 Processing Question ${idx + 1}:`, {
+          hasQuestionImage: !!q.questionImage,
+          optionImagesCount: q.optionImages?.filter(Boolean).length || 0,
+          questionImage: q.questionImage,
+          optionImages: q.optionImages
+        });
+
         const base = {
           question: q.question,
           options: q.options,
@@ -283,6 +309,7 @@ export default function CreateQuizPage() {
         body: JSON.stringify({
           title: editableTitle.trim(),
           description: editableDescription.trim(),
+          category: selectedCategory._id,
           questions: formattedQuestions,
         }),
         signal: AbortSignal.timeout(60000), // 1 minute timeout
@@ -320,6 +347,7 @@ export default function CreateQuizPage() {
     setEditableQuestions([]);
     setError('');
     setSuccess('');
+    // Keep category selection when going back
   };
 
   const updateQuestion = (index: number, field: keyof Question, value: any) => {
@@ -335,9 +363,11 @@ export default function CreateQuizPage() {
   };
 
   const updateQuestionImage = (questionIndex: number, imageUrl: string) => {
+    console.log(`📸 Updating question ${questionIndex + 1} image:`, imageUrl);
     const updated = [...editableQuestions];
     updated[questionIndex] = { ...updated[questionIndex], questionImage: imageUrl };
     setEditableQuestions(updated);
+    console.log(`✅ Question ${questionIndex + 1} image updated in state`);
   };
 
   const removeQuestionImage = (questionIndex: number) => {
@@ -347,12 +377,14 @@ export default function CreateQuizPage() {
   };
 
   const updateOptionImage = (questionIndex: number, optionIndex: number, imageUrl: string) => {
+    console.log(`📸 Updating question ${questionIndex + 1}, option ${optionIndex + 1} image:`, imageUrl);
     const updated = [...editableQuestions];
     if (!updated[questionIndex].optionImages) {
       updated[questionIndex].optionImages = new Array(updated[questionIndex].options.length).fill(undefined);
     }
     updated[questionIndex].optionImages![optionIndex] = imageUrl;
     setEditableQuestions(updated);
+    console.log(`✅ Question ${questionIndex + 1}, option ${optionIndex + 1} image updated in state`);
   };
 
   const removeOptionImage = (questionIndex: number, optionIndex: number) => {
@@ -517,6 +549,18 @@ export default function CreateQuizPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Category *
+                  </label>
+                  <CategorySelector
+                    value={selectedCategory}
+                    onChange={setSelectedCategory}
+                    placeholder="Search and select a category..."
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     PDF Document *
                   </label>
                   
@@ -640,7 +684,7 @@ export default function CreateQuizPage() {
                     <Button
                       type="submit"
                       loading={extracting}
-                      disabled={!title.trim() || pdfFiles.length === 0}
+                      disabled={!title.trim() || !selectedCategory || pdfFiles.length === 0}
                     >
                       {extracting ? 'Extracting Questions...' : `Extract Questions from ${pdfFiles.length} file${pdfFiles.length !== 1 ? 's' : ''}`}
                     </Button>

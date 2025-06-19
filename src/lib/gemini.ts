@@ -34,12 +34,15 @@ export async function extractQuestionsFromPdf(buffer: Buffer | string, maxRetrie
     try {
       const apiKey = getNextKey();
       const genAI = new GoogleGenerativeAI(apiKey);
-      const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
+      const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
       const prompt = `
 You are given educational content that may include questions, explanations, and references to images or diagrams.
 
 Your task is to extract or generate quiz questions (both single-choice and multiple-choice) from this content.
+
+**IMPORTANT:**
+- Only if you don't see any questions, then generate questions from the content. Else, extract the questions from the content.
 
 Important Instructions:
 
@@ -210,7 +213,7 @@ export async function extractQuestionsFromPdfChunks(chunks: PDFChunk[]): Promise
       console.log(`📋 Processing chunk ${chunk.chunkIndex} (pages ${chunk.startPage}-${chunk.endPage}) with key rotation...`);
       
       try {
-        const questions = await extractQuestionsFromPdf(chunk.buffer, 1);
+        const questions = await extractQuestionsFromPdf(chunk.buffer, 2);
         
         console.log(`✅ Chunk ${chunk.chunkIndex} completed: ${questions.length} questions extracted`);
         

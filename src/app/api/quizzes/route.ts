@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import connectDB from '@/lib/mongoose';
 import Quiz from '@/models/Quiz';
+import Category from '@/models/Category';
 import { extractQuestionsFromPdf } from '@/lib/gemini';
 import { generateSlug, fileToBuffer } from '@/lib/utils';
 import { authOptions } from '@/lib/auth';
@@ -20,6 +21,7 @@ export async function GET(request: NextRequest) {
     const url = new URL(request.url);
     const status = url.searchParams.get('status');
     const search = url.searchParams.get('search');
+    const category = url.searchParams.get('category');
     const page = parseInt(url.searchParams.get('page') || '1');
     const limit = parseInt(url.searchParams.get('limit') || '10');
     const skip = (page - 1) * limit;
@@ -51,6 +53,11 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Add category filter
+    if (category && category.trim()) {
+      filter.category = category.trim();
+    }
+
     // Add search functionality
     if (search && search.trim()) {
       const searchRegex = new RegExp(search.trim(), 'i'); // Case-insensitive search
@@ -64,10 +71,12 @@ export async function GET(request: NextRequest) {
     }
 
     console.log('📋 Quiz filter:', JSON.stringify(filter, null, 2));
+    console.log('🏷️ Category parameter:', category);
 
     const [quizzes, total] = await Promise.all([
       Quiz.find(filter)
         .populate('author', 'email')
+        .populate('category', 'name color')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit),
@@ -107,11 +116,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { title, description, questions } = await request.json();
+    const { title, description, category, questions } = await request.json();
 
-    if (!title || !questions || !Array.isArray(questions) || questions.length === 0) {
+    if (!title || !category || !questions || !Array.isArray(questions) || questions.length === 0) {
       return NextResponse.json(
-        { success: false, error: 'Title and questions are required' },
+        { success: false, error: 'Title, category, and questions are required' },
+        { status: 400 }
+      );
+    }
+
+    // Validate category exists and is active
+    const categoryDoc = await Category.findOne({ _id: category, isActive: true });
+    if (!categoryDoc) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid or inactive category selected' },
         { status: 400 }
       );
     }
@@ -241,7 +259,21 @@ export async function POST(request: NextRequest) {
         mongooseQuestion.correctIndexes = q.correctIndexes;
       }
 
-      console.log(`🔄 Mongoose format Question ${index + 1}:`, mongooseQuestion);
+      // Include image fields if they exist
+      if (q.questionImage) {
+        mongooseQuestion.questionImage = q.questionImage;
+      }
+
+      if (q.optionImages && Array.isArray(q.optionImages)) {
+        mongooseQuestion.optionImages = q.optionImages;
+      }
+
+      console.log(`🔄 Mongoose format Question ${index + 1}:`, {
+        ...mongooseQuestion,
+        hasQuestionImage: !!mongooseQuestion.questionImage,
+        hasOptionImages: !!mongooseQuestion.optionImages,
+        optionImagesCount: mongooseQuestion.optionImages?.filter(Boolean).length || 0
+      });
 
       return mongooseQuestion;
     });
@@ -255,6 +287,7 @@ export async function POST(request: NextRequest) {
     const quiz = new Quiz({
       title,
       description,
+      category,
       author: (session.user as any).id,
       slug,
       questions: mongooseQuestions,
@@ -262,7 +295,10 @@ export async function POST(request: NextRequest) {
     });
 
     await quiz.save();
-    await quiz.populate('author', 'email');
+    await quiz.populate([
+      { path: 'author', select: 'email' },
+      { path: 'category', select: 'name color' }
+    ]);
 
     return NextResponse.json(
       {

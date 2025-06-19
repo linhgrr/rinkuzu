@@ -17,10 +17,19 @@ export interface IQuestion {
   optionImages?: (string | undefined)[]; // Array of URLs/paths for option images (parallel to options array)
 }
 
+export interface ICategory {
+  _id: string;
+  name: string;
+  description?: string;
+  color: string;
+  isActive: boolean;
+}
+
 export interface IQuiz {
   _id: string;
   title: string;
   description?: string;
+  category: string | ICategory;
   status: 'pending' | 'published' | 'rejected';
   author: string | IUser;
   slug: string;
@@ -40,6 +49,7 @@ export interface IAttempt {
 export interface CreateQuizRequest {
   title: string;
   description?: string;
+  category: string;
   pdfFiles: File[];
 }
 
@@ -73,6 +83,7 @@ export interface ApiResponse<T = any> {
 export interface QuizFormData {
   title: string;
   description: string;
+  category: string;
   pdfFiles: File[];
 }
 

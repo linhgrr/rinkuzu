@@ -12,99 +12,37 @@ interface PDFViewerProps {
 }
 
 export function PDFViewer({ pdfFiles, isVisible, onToggle }: PDFViewerProps) {
-  const desktopCanvasRef = useRef<HTMLCanvasElement>(null);
-  const mobileCanvasRef = useRef<HTMLCanvasElement>(null);
-  const [pdfDocs, setPdfDocs] = useState<any[]>([]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(0);
+  const [pdfUrl, setPdfUrl] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [scale, setScale] = useState(1.2);
-  const [pdfjs, setPdfjs] = useState<any>(null);
+  const [totalPages, setTotalPages] = useState(0);
 
-  // Initialize PDF.js
+  // Load and merge PDF files
   useEffect(() => {
-    const initPdfjs = async () => {
-      try {
-        // Dynamically import PDF.js
-        const pdfjsLib = await import('pdfjs-dist');
-        
-        // Set worker source to the one in public folder
-        pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdfjs/pdf.worker.min.mjs';
-        
-        setPdfjs(pdfjsLib);
-      } catch (err) {
-        console.error('Failed to load PDF.js:', err);
-        setError('Failed to load PDF viewer');
-      }
-    };
-
-    initPdfjs();
-  }, []);
-
-  // Load PDF files when they change
-  useEffect(() => {
-    if (!pdfjs || pdfFiles.length === 0) {
-      setPdfDocs([]);
+    if (pdfFiles.length === 0) {
+      setPdfUrl('');
       setTotalPages(0);
-      setCurrentPage(1);
       return;
     }
 
     loadPDFs();
-  }, [pdfFiles, pdfjs]);
-
-  // Handle window resize to re-render on correct canvas
-  useEffect(() => {
-    const handleResize = () => {
-      if (currentPage && totalPages > 0) {
-        const isMobile = window.innerWidth < 1024;
-        if (isMobile) {
-          renderPage(currentPage, mobileCanvasRef);
-        } else {
-          renderPage(currentPage, desktopCanvasRef);
-        }
-      }
-    };
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [currentPage, totalPages, scale, pdfDocs]);
+  }, [pdfFiles]);
 
   const loadPDFs = async () => {
-    if (!pdfjs) return;
-    
     setLoading(true);
     setError('');
     
     try {
-      const docs = [];
-      let totalPageCount = 0;
-      
-      for (const file of pdfFiles) {
-        const arrayBuffer = await file.arrayBuffer();
-        const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise;
-        docs.push({
-          doc: pdf,
-          fileName: file.name,
-          pageCount: pdf.numPages,
-          startPage: totalPageCount + 1
-        });
-        totalPageCount += pdf.numPages;
-      }
-      
-      setPdfDocs(docs);
-      setTotalPages(totalPageCount);
-      setCurrentPage(1);
-      
-      // Render first page on appropriate canvas
-      if (totalPageCount > 0) {
-        const isMobile = window.innerWidth < 1024; // lg breakpoint
-        if (isMobile) {
-          renderPage(1, mobileCanvasRef);
-        } else {
-          renderPage(1, desktopCanvasRef);
-        }
+      if (pdfFiles.length === 1) {
+        // Single file - create URL directly
+        const url = URL.createObjectURL(pdfFiles[0]);
+        setPdfUrl(url);
+        
+        // Count pages
+        await countPDFPages(pdfFiles[0]);
+      } else {
+        // Multiple files - merge them
+        await mergePDFs();
       }
     } catch (err) {
       console.error('Error loading PDFs:', err);
@@ -114,66 +52,62 @@ export function PDFViewer({ pdfFiles, isVisible, onToggle }: PDFViewerProps) {
     }
   };
 
-  const renderPage = async (pageNum: number, canvasRef?: React.RefObject<HTMLCanvasElement>) => {
-    const canvas = canvasRef?.current || desktopCanvasRef.current || mobileCanvasRef.current;
-    if (!pdfDocs.length || !canvas) return;
-    
-    // Find which document and page this corresponds to
-    let targetDoc = null;
-    let targetPageNum = pageNum;
-    
-    for (const docInfo of pdfDocs) {
-      if (pageNum <= docInfo.startPage + docInfo.pageCount - 1) {
-        targetDoc = docInfo.doc;
-        targetPageNum = pageNum - docInfo.startPage + 1;
-        break;
-      }
-    }
-    
-    if (!targetDoc) return;
-    
+  const countPDFPages = async (file: File) => {
     try {
-      const page = await targetDoc.getPage(targetPageNum);
-      const viewport = page.getViewport({ scale });
+      const pdfjsLib = await import('pdfjs-dist');
+      pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdfjs/pdf.worker.min.mjs';
       
-      const context = canvas.getContext('2d');
-      
-      canvas.height = viewport.height;
-      canvas.width = viewport.width;
-      
-      const renderContext = {
-        canvasContext: context,
-        viewport: viewport
-      };
-      
-      await page.render(renderContext).promise;
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      setTotalPages(pdf.numPages);
     } catch (err) {
-      console.error('Error rendering page:', err);
-      setError('Failed to render page');
+      console.error('Error counting pages:', err);
+      setTotalPages(0);
     }
   };
 
-  // Render page when currentPage or scale changes
-  useEffect(() => {
-    if (currentPage && totalPages > 0) {
-      // Render on the appropriate canvas based on screen size
-      const isMobile = window.innerWidth < 1024; // lg breakpoint
-      if (isMobile) {
-        renderPage(currentPage, mobileCanvasRef);
-      } else {
-        renderPage(currentPage, desktopCanvasRef);
+  const mergePDFs = async () => {
+    try {
+      const pdfjsLib = await import('pdfjs-dist');
+      pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdfjs/pdf.worker.min.mjs';
+      
+      // Import PDF-lib for merging
+      const { PDFDocument } = await import('pdf-lib');
+      
+      const mergedPdf = await PDFDocument.create();
+      let totalPageCount = 0;
+      
+      for (const file of pdfFiles) {
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await PDFDocument.load(arrayBuffer);
+        const pageIndices = pdf.getPageIndices();
+        
+        const pages = await mergedPdf.copyPages(pdf, pageIndices);
+        pages.forEach((page) => mergedPdf.addPage(page));
+        
+        totalPageCount += pageIndices.length;
       }
-    }
-  }, [currentPage, scale, pdfDocs, isVisible]);
-
-  const goToPage = (page: number) => {
-    if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
+      
+      const mergedPdfBytes = await mergedPdf.save();
+      const blob = new Blob([mergedPdfBytes], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      
+      setPdfUrl(url);
+      setTotalPages(totalPageCount);
+    } catch (err) {
+      console.error('Error merging PDFs:', err);
+      setError('Failed to merge PDF files');
     }
   };
 
-  const zoomIn = () => setScale(prev => Math.min(prev + 0.2, 3));
-  const zoomOut = () => setScale(prev => Math.max(prev - 0.2, 0.5));
+  // Cleanup URL when component unmounts
+  useEffect(() => {
+    return () => {
+      if (pdfUrl) {
+        URL.revokeObjectURL(pdfUrl);
+      }
+    };
+  }, [pdfUrl]);
 
   // Mobile view - show as modal
   const mobileView = (
@@ -188,7 +122,9 @@ export function PDFViewer({ pdfFiles, isVisible, onToggle }: PDFViewerProps) {
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-              <p className="mt-2 text-sm text-gray-600">Loading PDF...</p>
+              <p className="mt-2 text-sm text-gray-600">
+                {pdfFiles.length > 1 ? 'Merging PDFs...' : 'Loading PDF...'}
+              </p>
             </div>
           </div>
         )}
@@ -209,77 +145,31 @@ export function PDFViewer({ pdfFiles, isVisible, onToggle }: PDFViewerProps) {
           </div>
         )}
         
-        {!loading && !error && totalPages > 0 && (
+        {!loading && !error && pdfUrl && (
           <>
-            {/* Controls */}
-            <div className="flex-shrink-0 mb-3 space-y-2">
+            {/* Info */}
+            <div className="flex-shrink-0 mb-3">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-gray-600">
-                  Page {currentPage} of {totalPages}
+                  {pdfFiles.length} file{pdfFiles.length !== 1 ? 's' : ''} • {totalPages} pages
                 </span>
-                <div className="flex items-center space-x-1">
-                  <Button
-                    onClick={zoomOut}
-                    size="sm"
-                    variant="ghost"
-                    className="text-xs px-2"
-                  >
-                    −
-                  </Button>
-                  <span className="text-xs text-gray-600">
-                    {Math.round(scale * 100)}%
-                  </span>
-                  <Button
-                    onClick={zoomIn}
-                    size="sm"
-                    variant="ghost"
-                    className="text-xs px-2"
-                  >
-                    +
-                  </Button>
-                </div>
-              </div>
-              
-              <div className="flex items-center justify-between">
                 <Button
-                  onClick={() => goToPage(currentPage - 1)}
-                  disabled={currentPage <= 1}
+                  onClick={() => window.open(pdfUrl, '_blank')}
                   size="sm"
                   variant="outline"
                   className="text-xs"
                 >
-                  ← Prev
-                </Button>
-                
-                <div className="flex items-center space-x-1">
-                  <input
-                    type="number"
-                    min="1"
-                    max={totalPages}
-                    value={currentPage}
-                    onChange={(e) => goToPage(parseInt(e.target.value) || 1)}
-                    className="w-16 px-2 py-1 text-xs border border-gray-300 rounded text-center"
-                  />
-                </div>
-                
-                <Button
-                  onClick={() => goToPage(currentPage + 1)}
-                  disabled={currentPage >= totalPages}
-                  size="sm"
-                  variant="outline"
-                  className="text-xs"
-                >
-                  Next →
+                  🔗 Open in New Tab
                 </Button>
               </div>
             </div>
             
-            {/* PDF Canvas */}
-            <div className="flex-1 overflow-auto border border-gray-200 rounded bg-gray-50">
-              <canvas
-                ref={mobileCanvasRef}
-                className="max-w-full h-auto"
-                style={{ display: 'block', margin: '0 auto' }}
+            {/* PDF Viewer */}
+            <div className="flex-1 border border-gray-200 rounded overflow-hidden">
+              <iframe
+                src={`${pdfUrl}#toolbar=1&navpanes=1&scrollbar=1`}
+                className="w-full h-full"
+                title="PDF Viewer"
               />
             </div>
           </>
@@ -314,155 +204,105 @@ export function PDFViewer({ pdfFiles, isVisible, onToggle }: PDFViewerProps) {
       {/* Desktop sticky viewer */}
       <div className="fixed right-4 top-4 bottom-4 w-[45vw] z-40 lg:block hidden">
         <Card className="h-full flex flex-col shadow-2xl border-2 border-blue-200 bg-white">
-        <CardHeader className="flex-shrink-0 pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-lg">PDF Reference</CardTitle>
-            <Button
-              onClick={onToggle}
-              variant="ghost"
-              size="sm"
-              className="text-gray-500 hover:text-gray-700"
-            >
-              ✕
-            </Button>
-          </div>
-          
-          {pdfFiles.length > 0 && (
-            <div className="text-sm text-gray-600">
-              {pdfFiles.length} file{pdfFiles.length !== 1 ? 's' : ''} • {totalPages} pages total
+          <CardHeader className="flex-shrink-0 pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg">PDF Reference</CardTitle>
+              <Button
+                onClick={onToggle}
+                variant="ghost"
+                size="sm"
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ✕
+              </Button>
             </div>
-          )}
-        </CardHeader>
-        
-        <CardContent className="flex-1 flex flex-col p-4 min-h-0">
-          {loading && (
-            <div className="flex-1 flex items-center justify-center">
-              <div className="text-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                <p className="mt-2 text-sm text-gray-600">Loading PDF...</p>
+            
+            {pdfFiles.length > 0 && (
+              <div className="text-sm text-gray-600">
+                {pdfFiles.length} file{pdfFiles.length !== 1 ? 's' : ''} • {totalPages} pages total
               </div>
-            </div>
-          )}
+            )}
+          </CardHeader>
           
-          {error && (
-            <div className="flex-1 flex items-center justify-center">
-              <div className="text-center text-red-600">
-                <p className="text-sm">{error}</p>
+          <CardContent className="flex-1 flex flex-col p-4 min-h-0">
+            {loading && (
+              <div className="flex-1 flex items-center justify-center">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                  <p className="mt-2 text-sm text-gray-600">
+                    {pdfFiles.length > 1 ? 'Merging PDFs...' : 'Loading PDF...'}
+                  </p>
+                </div>
               </div>
-            </div>
-          )}
-          
-          {!loading && !error && pdfFiles.length === 0 && (
-            <div className="flex-1 flex items-center justify-center">
-              <div className="text-center text-gray-500">
-                <p className="text-sm">No PDF files uploaded</p>
+            )}
+            
+            {error && (
+              <div className="flex-1 flex items-center justify-center">
+                <div className="text-center text-red-600">
+                  <p className="text-sm">{error}</p>
+                </div>
               </div>
-            </div>
-          )}
-          
-          {!loading && !error && totalPages > 0 && (
-            <>
-              {/* Controls */}
-              <div className="flex-shrink-0 mb-3 space-y-2">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-600">
-                    Page {currentPage} of {totalPages}
-                  </span>
-                  <div className="flex items-center space-x-1">
-                    <Button
-                      onClick={zoomOut}
-                      size="sm"
-                      variant="ghost"
-                      className="text-xs px-2"
-                    >
-                      −
-                    </Button>
-                    <span className="text-xs text-gray-600">
-                      {Math.round(scale * 100)}%
+            )}
+            
+            {!loading && !error && pdfFiles.length === 0 && (
+              <div className="flex-1 flex items-center justify-center">
+                <div className="text-center text-gray-500">
+                  <p className="text-sm">No PDF files uploaded</p>
+                </div>
+              </div>
+            )}
+            
+            {!loading && !error && pdfUrl && (
+              <>
+                {/* Controls */}
+                <div className="flex-shrink-0 mb-3">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600">
+                      {totalPages} pages total
                     </span>
                     <Button
-                      onClick={zoomIn}
+                      onClick={() => window.open(pdfUrl, '_blank')}
                       size="sm"
-                      variant="ghost"
-                      className="text-xs px-2"
+                      variant="outline"
+                      className="text-xs"
                     >
-                      +
+                      🔗 Open in New Tab
                     </Button>
                   </div>
                 </div>
                 
-                <div className="flex items-center justify-between">
-                  <Button
-                    onClick={() => goToPage(currentPage - 1)}
-                    disabled={currentPage <= 1}
-                    size="sm"
-                    variant="outline"
-                    className="text-xs"
-                  >
-                    ← Prev
-                  </Button>
-                  
-                  <div className="flex items-center space-x-1">
-                    <input
-                      type="number"
-                      min="1"
-                      max={totalPages}
-                      value={currentPage}
-                      onChange={(e) => goToPage(parseInt(e.target.value) || 1)}
-                      className="w-16 px-2 py-1 text-xs border border-gray-300 rounded text-center"
-                    />
-                  </div>
-                  
-                  <Button
-                    onClick={() => goToPage(currentPage + 1)}
-                    disabled={currentPage >= totalPages}
-                    size="sm"
-                    variant="outline"
-                    className="text-xs"
-                  >
-                    Next →
-                  </Button>
+                {/* PDF Viewer */}
+                <div className="flex-1 border border-gray-200 rounded overflow-hidden">
+                  <iframe
+                    src={`${pdfUrl}#toolbar=1&navpanes=1&scrollbar=1`}
+                    className="w-full h-full"
+                    title="PDF Viewer"
+                  />
                 </div>
-              </div>
-              
-              {/* PDF Canvas */}
-              <div className="flex-1 overflow-auto border border-gray-200 rounded bg-gray-50">
-                <canvas
-                  ref={desktopCanvasRef}
-                  className="max-w-full h-auto"
-                  style={{ display: 'block', margin: '0 auto' }}
-                />
-              </div>
-              
-              {/* File info */}
-              {pdfDocs.length > 0 && (
-                <div className="flex-shrink-0 mt-2 text-xs text-gray-500">
-                  <div className="space-y-1">
-                    {pdfDocs.map((docInfo, index) => {
-                      const isCurrentFile = currentPage >= docInfo.startPage && 
-                                          currentPage <= docInfo.startPage + docInfo.pageCount - 1;
-                      return (
-                        <div 
-                          key={index}
-                          className={`truncate ${isCurrentFile ? 'font-medium text-blue-600' : ''}`}
-                        >
-                          {docInfo.fileName} ({docInfo.pageCount} pages)
+                
+                {/* File info */}
+                {pdfFiles.length > 1 && (
+                  <div className="flex-shrink-0 mt-2 text-xs text-gray-500">
+                    <div className="space-y-1">
+                      <div className="font-medium">Merged files:</div>
+                      {pdfFiles.map((file, index) => (
+                        <div key={index} className="truncate">
+                          📄 {file.name}
                         </div>
-                      );
-                    })}
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
-            </>
-          )}
-        </CardContent>
-      </Card>
-    </div>
-    
-    {/* Mobile modal */}
-    <div className="lg:hidden">
-      {mobileView}
-    </div>
+                )}
+              </>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+      
+      {/* Mobile modal */}
+      <div className="lg:hidden">
+        {mobileView}
+      </div>
     </>
   );
 } 

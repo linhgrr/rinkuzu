@@ -424,6 +424,16 @@ export default function AdminQueuePage() {
                       <div className="mt-3 flex items-center space-x-4 text-sm text-gray-600">
                         <span>By: {(quiz.author as any)?.email || 'Unknown'}</span>
                         <span>•</span>
+                        <span 
+                          className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full"
+                          style={{ 
+                            backgroundColor: (quiz.category as any)?.color + '20', 
+                            color: (quiz.category as any)?.color 
+                          }}
+                        >
+                          {(quiz.category as any)?.name || 'No Category'}
+                        </span>
+                        <span>•</span>
                         <span>{quiz.questions.length} questions</span>
                         <span>•</span>
                         <span>Created: {formatDate(new Date(quiz.createdAt))}</span>

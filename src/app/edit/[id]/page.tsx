@@ -7,9 +7,10 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
-import { IQuiz } from '@/types';
+import { IQuiz, ICategory } from '@/types';
 import { QuestionImageUpload, OptionImageUpload } from '@/components/ui/ImageUpload';
 import { QuestionImage, OptionImage } from '@/components/ui/ImageDisplay';
+import { CategorySelector } from '@/components/ui/CategorySelector';
 import Sidebar from '@/components/Sidebar';
 
 interface EditQuizPageProps {
@@ -26,6 +27,13 @@ interface Question {
   optionImages?: (string | undefined)[];
 }
 
+interface Category {
+  _id: string;
+  name: string;
+  description: string;
+  color: string;
+}
+
 export default function EditQuizPage({ params }: EditQuizPageProps) {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -40,6 +48,7 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
   const [success, setSuccess] = useState('');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [editableQuestions, setEditableQuestions] = useState<Question[]>([]);
 
   useEffect(() => {
@@ -62,6 +71,7 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
         setQuiz(data.data);
         setTitle(data.data.title);
         setDescription(data.data.description || '');
+        setSelectedCategory(data.data.category as Category);
         setEditableQuestions(data.data.questions as Question[]);
       } else {
         setError(data.error || 'Quiz not found');
@@ -130,6 +140,11 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
       return;
     }
 
+    if (!selectedCategory) {
+      setError('Please select a category');
+      return;
+    }
+
     setSaving(true);
     setError('');
     setSuccess('');
@@ -150,6 +165,7 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
         body: JSON.stringify({
           title: title.trim(),
           description: description.trim(),
+          category: selectedCategory._id,
           questions: formattedQuestions,
         }),
       });
@@ -483,6 +499,19 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
                     className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Category *
+                </label>
+                <CategorySelector
+                  value={selectedCategory}
+                  onChange={setSelectedCategory}
+                  placeholder="Search and select a category..."
+                  required
+                  disabled={!canEdit}
+                />
               </div>
 
               {/* Quiz Questions Info */}

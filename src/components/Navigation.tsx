@@ -68,9 +68,14 @@ export default function Navigation({ className = '' }: NavigationProps) {
                         Quiz History
                       </Link>
                       {(session.user as any)?.role === 'admin' && (
-                        <Link href="/admin/users" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                          Manage Users
-                        </Link>
+                        <>
+                          <Link href="/admin/users" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                            Manage Users
+                          </Link>
+                          <Link href="/admin/categories" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                            Manage Categories
+                          </Link>
+                        </>
                       )}
                       <hr className="my-1" />
                       <button 
@@ -137,6 +142,9 @@ export default function Navigation({ className = '' }: NavigationProps) {
                       </Link>
                       <Link href="/admin/users" className="block px-4 py-2 text-gray-600 hover:text-gray-900">
                         Manage Users
+                      </Link>
+                      <Link href="/admin/categories" className="block px-4 py-2 text-gray-600 hover:text-gray-900">
+                        Manage Categories
                       </Link>
                     </>
                   )}

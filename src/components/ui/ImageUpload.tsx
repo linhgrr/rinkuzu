@@ -37,12 +37,19 @@ export function ImageUpload({
       return;
     }
 
+    console.log('🔄 Starting image upload:', {
+      fileName: file.name,
+      fileSize: file.size,
+      fileType: file.type
+    });
+
     setIsUploading(true);
     try {
       const result = await uploadImageToImgBB(file, file.name);
+      console.log('✅ Image upload successful:', result.displayUrl);
       onImageUploaded(result.displayUrl);
     } catch (error: any) {
-      console.error('Failed to upload image:', error);
+      console.error('❌ Failed to upload image:', error);
       alert('Failed to upload image: ' + error.message);
     } finally {
       setIsUploading(false);

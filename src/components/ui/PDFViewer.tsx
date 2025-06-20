@@ -182,7 +182,7 @@ export function PDFViewer({ pdfFiles, isVisible, onToggle }: PDFViewerProps) {
     return (
       <>
         {/* Desktop toggle button */}
-        <div className="fixed right-[22.5vw] top-1/2 transform -translate-x-1/2 -translate-y-1/2 z-40 lg:block hidden">
+        <div className="fixed right-4 top-1/2 transform -translate-y-1/2 z-30 lg:block hidden">
           <Button
             onClick={onToggle}
             className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg"
@@ -202,7 +202,7 @@ export function PDFViewer({ pdfFiles, isVisible, onToggle }: PDFViewerProps) {
   return (
     <>
       {/* Desktop sticky viewer */}
-      <div className="fixed right-4 top-4 bottom-4 w-[45vw] z-40 lg:block hidden">
+      <div className="fixed right-4 top-24 bottom-4 w-[25vw] z-30 lg:block hidden">
         <Card className="h-full flex flex-col shadow-2xl border-2 border-blue-200 bg-white">
           <CardHeader className="flex-shrink-0 pb-3">
             <div className="flex items-center justify-between">

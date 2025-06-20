@@ -1,80 +1,270 @@
 'use client';
 
-import { useState } from 'react';
-import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
-import { useDropzone } from 'react-dropzone';
 import Link from 'next/link';
+import { useQuizCreation } from '@/hooks/useQuizCreation';
+import { extractQuestionsFromPDF, createQuiz } from '@/services/quizService';
+import Navigation from '@/components/Navigation';
 import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
+import { Input, Textarea } from '@/components/ui/Input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { QuizPreviewModal } from '@/components/ui/QuizPreviewModal';
-import { QuestionImage, OptionImage } from '@/components/ui/ImageDisplay';
+import { QuestionImage } from '@/components/ui/ImageDisplay';
 import { QuestionImageUpload, OptionImageUpload } from '@/components/ui/ImageUpload';
-import { PDFViewer } from '@/components/ui/PDFViewer';
 import { CategorySelector } from '@/components/ui/CategorySelector';
+import { useState, useEffect } from 'react';
 
+// Enhanced PDF Viewer Component with merge capability
+function PDFViewerComponent({ files }: { files: File[] }) {
+  const [pdfUrl, setPdfUrl] = useState<string>('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [totalPages, setTotalPages] = useState(0);
+  const [fileInfo, setFileInfo] = useState<string>('');
 
-interface Question {
-  question: string;
-  options: string[];
-  type: 'single' | 'multiple';
-  correctIndex?: number; // For single choice
-  correctIndexes?: number[]; // For multiple choice
-  // Image support
-  questionImage?: string; // URL/path to question image
-  optionImages?: (string | undefined)[]; // Array of URLs/paths for option images
-  // Legacy fields for backward compatibility during transition
-  correctAnswer?: number;
-}
+  useEffect(() => {
+    if (files.length === 0) {
+      setPdfUrl('');
+      setTotalPages(0);
+      setFileInfo('');
+      return;
+    }
 
-interface Category {
-  _id: string;
-  name: string;
-  description: string;
-  color: string;
-}
+    loadPDFs();
+  }, [files]);
 
-interface PreviewData {
-  title: string;
-  description: string;
-  questions: Question[];
-  originalFileName: string;
-  fileSize: number;
-  fileCount?: number;
-  fileNames?: string[];
+  const loadPDFs = async () => {
+    setLoading(true);
+    setError('');
+    
+    try {
+      if (files.length === 1) {
+        // Single file - create URL directly
+        const url = URL.createObjectURL(files[0]);
+        setPdfUrl(url);
+        setFileInfo(`1 file: ${files[0].name} (${(files[0].size / 1024 / 1024).toFixed(2)} MB)`);
+        
+        // Count pages for single file
+        await countPDFPages(files[0]);
+      } else {
+        // Multiple files - merge them
+        await mergePDFs();
+      }
+    } catch (err) {
+      console.error('Error loading PDFs:', err);
+      setError('Failed to load PDF files');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const countPDFPages = async (file: File) => {
+    try {
+      // Dynamic import for PDF.js
+      const pdfjsLib = await import('pdfjs-dist');
+      pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdfjs/pdf.worker.min.mjs';
+      
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      setTotalPages(pdf.numPages);
+    } catch (err) {
+      console.error('Error counting pages:', err);
+      setTotalPages(0);
+    }
+  };
+
+  const mergePDFs = async () => {
+    try {
+      // Dynamic import for PDF-lib
+      const { PDFDocument } = await import('pdf-lib');
+      
+      const mergedPdf = await PDFDocument.create();
+      let totalPageCount = 0;
+      const fileNames: string[] = [];
+      let totalSize = 0;
+      
+      console.log(`🔗 Merging ${files.length} PDF files...`);
+      
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        console.log(`📄 Processing file ${i + 1}/${files.length}: ${file.name}`);
+        
+        try {
+          const arrayBuffer = await file.arrayBuffer();
+          const pdf = await PDFDocument.load(arrayBuffer);
+          const pageIndices = pdf.getPageIndices();
+          
+          // Copy pages to merged document
+          const pages = await mergedPdf.copyPages(pdf, pageIndices);
+          pages.forEach((page) => mergedPdf.addPage(page));
+          
+          totalPageCount += pageIndices.length;
+          fileNames.push(file.name);
+          totalSize += file.size;
+          
+          console.log(`✅ Added ${pageIndices.length} pages from ${file.name}`);
+        } catch (fileError) {
+          console.error(`❌ Error processing ${file.name}:`, fileError);
+          // Continue with other files even if one fails
+        }
+      }
+      
+      if (totalPageCount === 0) {
+        throw new Error('No pages could be extracted from any PDF file');
+      }
+      
+      // Save merged PDF
+      console.log('💾 Saving merged PDF...');
+      const mergedPdfBytes = await mergedPdf.save();
+      const blob = new Blob([mergedPdfBytes], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      
+      setPdfUrl(url);
+      setTotalPages(totalPageCount);
+      setFileInfo(`${files.length} files merged: ${fileNames.join(', ')} (${(totalSize / 1024 / 1024).toFixed(2)} MB total)`);
+      
+      console.log(`✅ Successfully merged ${files.length} files into ${totalPageCount} pages`);
+      
+    } catch (err) {
+      console.error('Error merging PDFs:', err);
+      setError(`Failed to merge PDF files: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    }
+  };
+
+  // Cleanup URL when component unmounts or files change
+  useEffect(() => {
+    return () => {
+      if (pdfUrl) {
+        URL.revokeObjectURL(pdfUrl);
+      }
+    };
+  }, [pdfUrl]);
+
+  if (loading) {
+    return (
+      <div className="w-full h-full flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-violet-600 mx-auto mb-2"></div>
+          <p className="text-sm text-gray-600">
+            {files.length > 1 ? `Merging ${files.length} PDF files...` : 'Loading PDF...'}
+          </p>
+          <p className="text-xs text-gray-500 mt-1">This may take a moment</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="w-full h-full flex items-center justify-center bg-gray-50">
+        <div className="text-center text-red-600 max-w-sm">
+          <svg className="w-8 h-8 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <p className="text-sm font-medium mb-1">PDF Loading Error</p>
+          <p className="text-xs">{error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!pdfUrl) {
+    return (
+      <div className="w-full h-full flex items-center justify-center bg-gray-50">
+        <div className="text-center text-gray-500">
+          <svg className="w-8 h-8 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          <p className="text-sm">No PDF loaded</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full h-full flex flex-col">
+      {/* PDF Info Header */}
+      <div className="flex-shrink-0 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-blue-200">
+        <div className="flex items-center justify-between text-sm">
+          <div className="flex items-center space-x-2">
+            <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <span className="text-gray-700 font-medium">{totalPages} pages</span>
+          </div>
+          <button
+            onClick={() => window.open(pdfUrl, '_blank')}
+            className="px-2 py-1 text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 rounded transition-colors"
+            title="Open in new tab"
+          >
+            🔗 Open
+          </button>
+        </div>
+        <p className="text-xs text-gray-600 mt-1 truncate" title={fileInfo}>
+          {fileInfo}
+        </p>
+      </div>
+      
+      {/* PDF Viewer */}
+      <div className="flex-1 bg-white">
+        <iframe
+          src={`${pdfUrl}#toolbar=1&navpanes=1&scrollbar=1&view=FitH&zoom=page-width`}
+          className="w-full h-full border-0"
+          title="Merged PDF Viewer"
+          style={{ minHeight: '500px' }}
+        />
+      </div>
+    </div>
+  );
 }
 
 export default function CreateQuizPage() {
-  const { data: session } = useSession();
-  const router = useRouter();
-  
-  // Step 1: Upload form
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
-  const [pdfFiles, setPdfFiles] = useState<File[]>([]);
-  const [extracting, setExtracting] = useState(false);
-  
-  // Step 2: Preview and edit
-  const [previewData, setPreviewData] = useState<PreviewData | null>(null);
-  const [editableTitle, setEditableTitle] = useState('');
-  const [editableDescription, setEditableDescription] = useState('');
-  const [editableQuestions, setEditableQuestions] = useState<Question[]>([]);
-  const [isPrivate, setIsPrivate] = useState(false);
-  const [creating, setCreating] = useState(false);
-  
-  // Preview modal state
-  const [showPreviewModal, setShowPreviewModal] = useState(false);
-  
-  // PDF viewer state
-  const [showPDFViewer, setShowPDFViewer] = useState(false);
-  
-  // Image processing state
-
-  
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const {
+    // Session data
+    session,
+    router,
+    
+    // Form state
+    title, setTitle,
+    description, setDescription,
+    selectedCategory, setSelectedCategory,
+    pdfFiles,
+    extracting, setExtracting,
+    
+    // Preview state
+    previewData, setPreviewData,
+    editableTitle, setEditableTitle,
+    editableDescription, setEditableDescription,
+    editableQuestions, setEditableQuestions,
+    isPrivate, setIsPrivate,
+    creating, setCreating,
+    
+    // UI state
+    showPreviewModal, setShowPreviewModal,
+    showPDFViewer, setShowPDFViewer,
+    error, setError,
+    success, setSuccess,
+    
+    // File handling
+    getRootProps,
+    getInputProps,
+    isDragActive,
+    removeFile,
+    removeAllFiles,
+    
+    // Question management
+    updateQuestion,
+    updateOption,
+    updateQuestionImage,
+    removeQuestionImage,
+    updateOptionImage,
+    removeOptionImage,
+    addQuestion,
+    removeQuestion,
+    updateQuestionType,
+    updateSingleChoice,
+    updateMultipleChoice,
+    backToUpload
+  } = useQuizCreation();
 
   // Redirect if not authenticated
   if (!session) {
@@ -82,39 +272,7 @@ export default function CreateQuizPage() {
     return null;
   }
 
-  const onDrop = (acceptedFiles: File[]) => {
-    const validFiles: File[] = [];
-    
-    for (const file of acceptedFiles) {
-      if (file.type !== 'application/pdf') {
-        setError(`File "${file.name}" is not a PDF file`);
-        return;
-      }
-      if (file.size > 20 * 1024 * 1024) {
-        setError(`File "${file.name}" is larger than 20MB`);
-        return;
-      }
-      validFiles.push(file);
-    }
-    
-    if (validFiles.length > 0) {
-      setPdfFiles(prev => [...prev, ...validFiles]);
-      setError('');
-      // Auto-show PDF viewer when files are added
-      setShowPDFViewer(true);
-    }
-  };
-
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    accept: {
-      'application/pdf': ['.pdf']
-    },
-    multiple: true,
-    maxSize: 20 * 1024 * 1024, // 20MB
-  });
-
-  // Step 1: Extract questions from PDF
+  // Extract questions from PDF
   const handleExtractQuestions = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -135,393 +293,133 @@ export default function CreateQuizPage() {
 
     setExtracting(true);
     setError('');
-    
-
 
     try {
       const formData = new FormData();
       formData.append('title', title.trim());
       formData.append('description', description.trim());
       
-      // Append all PDF files
       pdfFiles.forEach((file, index) => {
         formData.append(`pdfFile_${index}`, file);
       });
       formData.append('fileCount', pdfFiles.length.toString());
 
-
-
-      const response = await fetch('/api/quizzes/preview', {
-        method: 'POST',
-        body: formData,
-        signal: AbortSignal.timeout(300000), // 5 minutes timeout
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-
-        
-        console.log('🎯 Preview data received:', data.data);
-        console.log('📋 Questions from API:', data.data.questions);
-        
-        if (data.data.questions && data.data.questions.length > 0) {
-          data.data.questions.forEach((q: any, index: number) => {
-            console.log(`❓ Question ${index + 1}:`, {
-              question: q.question?.substring(0, 50) + '...',
-              options: q.options,
-              correctAnswer: q.correctAnswer,
-              correctAnswerType: typeof q.correctAnswer,
-              correctIndex: q.correctIndex,
-              originalCorrectIndex: q.originalCorrectIndex,
-              fullQuestion: q
-            });
-          });
-        }
-
-        // Ensure correctAnswer is properly set for each question
-        const processedQuestions = data.data.questions.map((q: any, index: number) => {
-          // Initialize question with type detection
-          const questionType = q.type || 'single'; // Default to single if not specified
-          let processedQuestion: Question = {
-            question: q.question,
-            options: q.options,
-            type: questionType
-          };
-
-          if (questionType === 'single') {
-            let finalCorrectAnswer = q.correctAnswer;
-            
-            // Fallback logic if correctAnswer is undefined
-            if (typeof finalCorrectAnswer === 'undefined') {
-              if (typeof q.correctIndex === 'number') {
-                finalCorrectAnswer = q.correctIndex;
-              } else if (typeof q.originalCorrectIndex === 'number') {
-                finalCorrectAnswer = q.originalCorrectIndex;
-              } else {
-                finalCorrectAnswer = 0; // Default to first option
-              }
-            }
-            
-            processedQuestion.correctIndex = finalCorrectAnswer;
-            processedQuestion.correctAnswer = finalCorrectAnswer; // Keep for backward compatibility
-            
-            console.log(`🔧 Processed single choice Question ${index + 1}: correctIndex=${finalCorrectAnswer}`);
-          } else if (questionType === 'multiple') {
-            // Handle multiple choice questions - check multiple sources
-            let finalCorrectIndexes = [];
-            
-            // Priority order: correctIndexes -> originalCorrectIndexes -> empty array
-            if (Array.isArray(q.correctIndexes) && q.correctIndexes.length > 0) {
-              finalCorrectIndexes = q.correctIndexes;
-              console.log(`🔧 Using correctIndexes: ${JSON.stringify(finalCorrectIndexes)}`);
-            } else if (Array.isArray(q.originalCorrectIndexes) && q.originalCorrectIndexes.length > 0) {
-              finalCorrectIndexes = q.originalCorrectIndexes;
-              console.log(`🔧 Using originalCorrectIndexes: ${JSON.stringify(finalCorrectIndexes)}`);
-            } else {
-              console.warn(`⚠️ No correct indexes found for multiple choice Question ${index + 1}, defaulting to empty array`);
-            }
-            
-            processedQuestion.correctIndexes = finalCorrectIndexes;
-            console.log(`✅ Processed multiple choice Question ${index + 1}: correctIndexes=${JSON.stringify(finalCorrectIndexes)}`);
-          }
-          
-          return processedQuestion;
-        });
-        
-        setPreviewData(data.data);
-        setEditableTitle(data.data.title);
-        setEditableDescription(data.data.description);
-        setEditableQuestions(processedQuestions);
-      } else {
-        setError(data.error || 'Failed to extract questions from PDF');
-      }
-    } catch (error) {
-      setError('An error occurred while processing the PDF');
+      const data = await extractQuestionsFromPDF(formData);
+      
+      setPreviewData(data);
+      setEditableTitle(data.title);
+      setEditableDescription(data.description);
+      setEditableQuestions(data.questions);
+      
+    } catch (err: any) {
+      console.error('Error extracting questions:', err);
+      setError(err.message || 'Failed to extract questions from PDF');
     } finally {
       setExtracting(false);
     }
   };
 
-  // Step 2: Create quiz with edited data
+  // Create quiz
   const handleCreateQuiz = async () => {
     if (!editableTitle.trim()) {
-      setError('Title is required');
+      setError('Quiz title is required');
       return;
     }
 
-    if (!selectedCategory) {
-      setError('Please select a category');
-      return;
-    }
-
-    if (!editableQuestions || editableQuestions.length === 0) {
+    if (editableQuestions.length === 0) {
       setError('At least one question is required');
       return;
     }
 
     setCreating(true);
     setError('');
-    setSuccess('');
 
     try {
-      // Convert questions to proper IQuestion format
-      const formattedQuestions = editableQuestions.map((q: Question, idx: number) => {
-        console.log(`📝 Processing Question ${idx + 1}:`, {
-          hasQuestionImage: !!q.questionImage,
-          optionImagesCount: q.optionImages?.filter(Boolean).length || 0,
-          questionImage: q.questionImage,
-          optionImages: q.optionImages
-        });
-
-        const base = {
-          question: q.question,
-          options: q.options,
-          type: q.type,
-          // include images only if at least one exists
-          ...(q.questionImage ? { questionImage: q.questionImage } : {}),
-          ...(q.optionImages && q.optionImages.some(Boolean) ? { optionImages: q.optionImages } : {})
-        } as any;
-
-        if (q.type === 'single') {
-          return {
-            ...base,
-            correctIndex: q.correctIndex ?? 0
-          };
-        }
-        return {
-          ...base,
-          correctIndexes: q.correctIndexes || []
-        };
-      });
-
-      console.log('📤 Sending questions to API:', formattedQuestions.map((q, i) => ({
-        index: i + 1,
-        type: q.type,
-        correctIndex: 'correctIndex' in q ? q.correctIndex : undefined,
-        correctIndexes: 'correctIndexes' in q ? q.correctIndexes : undefined
-      })));
-
-      const response = await fetch('/api/quizzes', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+      await createQuiz({
           title: editableTitle.trim(),
           description: editableDescription.trim(),
-          category: selectedCategory._id,
-          questions: formattedQuestions,
-          isPrivate: isPrivate,
-        }),
-        signal: AbortSignal.timeout(60000), // 1 minute timeout
+        questions: editableQuestions,
+        category: selectedCategory!._id,
+        isPrivate
       });
 
-      const data = await response.json();
-
-      if (data.success) {
-        setSuccess('Quiz created successfully and sent for admin approval!');
+      setSuccess('Quiz created successfully!');
+      
         setTimeout(() => {
-          router.push('/pending');
+        router.push('/');
         }, 2000);
-      } else {
-        setError(data.error || 'Failed to create quiz');
-      }
-    } catch (error) {
-      setError('An error occurred while creating the quiz');
+      
+    } catch (err: any) {
+      console.error('Error creating quiz:', err);
+      setError(err.message || 'Failed to create quiz');
     } finally {
       setCreating(false);
     }
   };
 
-  const removeFile = (index: number) => {
-    setPdfFiles(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const removeAllFiles = () => {
-    setPdfFiles([]);
-  };
-
-  const backToUpload = () => {
-    setPreviewData(null);
-    setEditableTitle('');
-    setEditableDescription('');
-    setEditableQuestions([]);
-    setIsPrivate(false);
-    setError('');
-    setSuccess('');
-    // Keep category selection when going back
-  };
-
-  const updateQuestion = (index: number, field: keyof Question, value: any) => {
-    const updated = [...editableQuestions];
-    updated[index] = { ...updated[index], [field]: value };
-    setEditableQuestions(updated);
-  };
-
-  const updateOption = (questionIndex: number, optionIndex: number, value: string) => {
-    const updated = [...editableQuestions];
-    updated[questionIndex].options[optionIndex] = value;
-    setEditableQuestions(updated);
-  };
-
-  const updateQuestionImage = (questionIndex: number, imageUrl: string) => {
-    console.log(`📸 Updating question ${questionIndex + 1} image:`, imageUrl);
-    const updated = [...editableQuestions];
-    updated[questionIndex] = { ...updated[questionIndex], questionImage: imageUrl };
-    setEditableQuestions(updated);
-    console.log(`✅ Question ${questionIndex + 1} image updated in state`);
-  };
-
-  const removeQuestionImage = (questionIndex: number) => {
-    const updated = [...editableQuestions];
-    updated[questionIndex] = { ...updated[questionIndex], questionImage: undefined };
-    setEditableQuestions(updated);
-  };
-
-  const updateOptionImage = (questionIndex: number, optionIndex: number, imageUrl: string) => {
-    console.log(`📸 Updating question ${questionIndex + 1}, option ${optionIndex + 1} image:`, imageUrl);
-    const updated = [...editableQuestions];
-    if (!updated[questionIndex].optionImages) {
-      updated[questionIndex].optionImages = new Array(updated[questionIndex].options.length).fill(undefined);
-    }
-    updated[questionIndex].optionImages![optionIndex] = imageUrl;
-    setEditableQuestions(updated);
-    console.log(`✅ Question ${questionIndex + 1}, option ${optionIndex + 1} image updated in state`);
-  };
-
-  const removeOptionImage = (questionIndex: number, optionIndex: number) => {
-    const updated = [...editableQuestions];
-    if (updated[questionIndex].optionImages) {
-      updated[questionIndex].optionImages![optionIndex] = undefined;
-    }
-    setEditableQuestions(updated);
-  };
-
-  const addQuestion = () => {
-    setEditableQuestions([
-      ...editableQuestions,
-      {
-        question: '',
-        options: ['', '', '', ''],
-        type: 'single',
-        correctIndex: 0,
-        correctIndexes: []
-      }
-    ]);
-  };
-
-  const removeQuestion = (index: number) => {
-    setEditableQuestions(editableQuestions.filter((_, i) => i !== index));
-  };
-
-  const updateQuestionType = (index: number, type: 'single' | 'multiple') => {
-    const updated = [...editableQuestions];
-    updated[index] = { 
-      ...updated[index], 
-      type,
-      correctIndex: type === 'single' ? (updated[index].correctIndex || 0) : undefined,
-      correctIndexes: type === 'multiple' ? (updated[index].correctIndexes || []) : undefined,
-      correctAnswer: undefined // Remove legacy field
-    };
-    setEditableQuestions(updated);
-  };
-
-  const updateSingleChoice = (questionIndex: number, optionIndex: number) => {
-    const updated = [...editableQuestions];
-    updated[questionIndex] = {
-      ...updated[questionIndex],
-      correctIndex: optionIndex
-    };
-    setEditableQuestions(updated);
-  };
-
-  const updateMultipleChoice = (questionIndex: number, optionIndex: number, checked: boolean) => {
-    const updated = [...editableQuestions];
-    const currentIndexes = updated[questionIndex].correctIndexes || [];
-    
-    if (checked) {
-      updated[questionIndex].correctIndexes = [...currentIndexes, optionIndex].sort();
-    } else {
-      updated[questionIndex].correctIndexes = currentIndexes.filter(idx => idx !== optionIndex);
-    }
-    setEditableQuestions(updated);
-  };
-
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Navigation */}
-      <nav className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-                          <Link href="/" className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">R</span>
-              </div>
-              <span className="text-xl font-semibold text-gray-900">RinKuzu</span>
-            </Link>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Link href="/">
-                <Button variant="ghost">Home</Button>
-              </Link>
-              <Link href="/">
-                <Button variant="outline">Home</Button>
-              </Link>
-              <Link href="/pending">
-                <Button variant="outline">My Quizzes</Button>
-              </Link>
-              {(session.user as any)?.role === 'admin' && (
-                <Link href="/admin/queue">
-                  <Button variant="outline">Admin Queue</Button>
-                </Link>
-              )}
-            </div>
-          </div>
-        </div>
-      </nav>
+    <div className="min-h-screen">
+      <Navigation />
 
-      <main className={`max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 transition-all duration-300 ${showPDFViewer ? 'lg:mr-[30vw]' : ''}`}>
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Create New Quiz</h1>
-          <p className="mt-2 text-gray-600">
+      {/* Main Layout - 50/50 split when PDF is visible */}
+      <main className="pt-20">
+        <div className="flex min-h-screen transition-all duration-300">
+          {/* Left Side - Form Content (50% when PDF visible, full width when not) */}
+          <div className={`transition-all duration-300 ${showPDFViewer ? 'lg:w-1/2 lg:pr-4' : 'w-full'} px-4 sm:px-6 lg:px-8 pb-8`}>
+            
+            {/* Header Section */}
+            <div className="mb-8 text-center">
+              <div className="inline-flex items-center justify-center p-3 bg-gradient-to-br from-violet-500/10 to-purple-600/10 rounded-2xl mb-6">
+                <svg className="w-8 h-8 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+              </div>
+              <h1 className="text-4xl font-bold gradient-text mb-4">Create New Quiz</h1>
+              <p className="text-xl text-gray-600 max-w-2xl mx-auto">
             {!previewData 
-              ? 'Upload a PDF document and let AI extract questions automatically'
+                  ? 'Upload a PDF document and let our AI extract questions automatically'
               : 'Review and edit the questions before creating your quiz'
             }
           </p>
         </div>
 
+            {/* Error/Success Messages */}
         {error && (
-          <div className="rounded-md bg-red-50 p-4 mb-6">
-            <div className="text-sm text-red-700">{error}</div>
+              <Card variant="bordered" className="border-red-200 bg-red-50 p-4 mb-6 max-w-2xl mx-auto animate-fadeInUp">
+                <div className="flex items-center text-red-700">
+                  <svg className="w-5 h-5 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span className="text-sm font-medium">{error}</span>
           </div>
+              </Card>
         )}
 
         {success && (
-          <div className="rounded-md bg-green-50 p-4 mb-6">
-            <div className="text-sm text-green-700">{success}</div>
+              <Card variant="bordered" className="border-emerald-200 bg-emerald-50 p-4 mb-6 max-w-2xl mx-auto animate-fadeInUp">
+                <div className="flex items-center text-emerald-700">
+                  <svg className="w-5 h-5 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span className="text-sm font-medium">{success}</span>
           </div>
+              </Card>
         )}
 
         {!previewData ? (
-          // Step 1: Upload Form
-          <Card className="max-w-2xl">
-            <CardHeader>
-              <CardTitle>Upload PDF Document</CardTitle>
-              <CardDescription>
+              /* Step 1: Upload Form */
+              <Card variant="glass" className="max-w-2xl mx-auto backdrop-blur-xl border-white/30 shadow-xl animate-fadeInUp">
+                <CardHeader className="text-center">
+                  <CardTitle size="lg" className="text-gray-900">Upload PDF Document</CardTitle>
+                  <CardDescription className="text-base">
                 Provide basic information and upload the PDF file to extract questions
               </CardDescription>
             </CardHeader>
-            <CardContent>
+                <CardContent className="pt-0">
               <form onSubmit={handleExtractQuestions} className="space-y-6">
-                <div>
-                  <label htmlFor="title" className="block text-sm font-medium text-gray-700">
-                    Quiz Title *
-                  </label>
-                  <div className="mt-1">
+                    <div className="space-y-5">
                     <Input
+                        label="Quiz Title"
                       id="title"
                       type="text"
                       required
@@ -529,29 +427,27 @@ export default function CreateQuizPage() {
                       onChange={(e) => setTitle(e.target.value)}
                       placeholder="Enter a descriptive title for your quiz"
                       maxLength={200}
-                    />
-                  </div>
-                </div>
+                        variant="glass"
+                        icon={
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                          </svg>
+                        }
+                      />
 
-                <div>
-                  <label htmlFor="description" className="block text-sm font-medium text-gray-700">
-                    Description (Optional)
-                  </label>
-                  <div className="mt-1">
-                    <textarea
+                      <Textarea
+                        label="Description (Optional)"
                       id="description"
                       rows={3}
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
                       placeholder="Provide additional context about the quiz"
                       maxLength={1000}
-                      className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        variant="glass"
                     />
-                  </div>
-                </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-sm font-semibold text-gray-700 mb-3">
                     Category *
                   </label>
                   <CategorySelector
@@ -562,26 +458,55 @@ export default function CreateQuizPage() {
                   />
                 </div>
 
+                      {/* Privacy Setting */}
+                      <div className="bg-gradient-to-r from-violet-50 to-purple-50 p-4 rounded-xl border border-violet-200">
+                        <div className="flex items-start space-x-3">
+                          <div className="flex items-center h-5">
+                            <input
+                              type="checkbox"
+                              id="isPrivateUpload"
+                              checked={isPrivate}
+                              onChange={(e) => setIsPrivate(e.target.checked)}
+                              className="w-4 h-4 text-violet-600 bg-white border-gray-300 rounded focus:ring-violet-500 focus:ring-2"
+                            />
+                          </div>
+                          <div className="flex-1">
+                            <label htmlFor="isPrivateUpload" className="text-sm font-semibold text-gray-900 flex items-center">
+                              <svg className="w-4 h-4 mr-1 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                              </svg>
+                              Private Quiz
+                            </label>
+                            <p className="text-xs text-gray-600 mt-1">
+                              Private quizzes are only visible to you and administrators. Perfect for personal study or internal team assessments.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* PDF Upload Section */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-sm font-semibold text-gray-700 mb-3">
                     PDF Document *
                   </label>
-                  
-
                   
                   <div>
                     <div
                       {...getRootProps()}
-                      className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
+                          className={`border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all duration-300 ${
                         isDragActive
-                          ? 'border-blue-400 bg-blue-50'
-                          : 'border-gray-300 hover:border-gray-400'
+                              ? 'border-violet-400 bg-violet-50/50 backdrop-blur-sm scale-105'
+                              : 'border-gray-300 hover:border-violet-300 hover:bg-violet-50/30'
                       }`}
                     >
                       <input {...getInputProps()} />
-                      <div className="space-y-2">
+                          <div className="space-y-4">
+                            <div className={`inline-flex items-center justify-center p-4 rounded-2xl ${
+                              isDragActive ? 'bg-violet-500/20' : 'bg-gray-100'
+                            } transition-colors duration-300`}>
                         <svg
-                          className="mx-auto h-12 w-12 text-gray-400"
+                                className={`h-8 w-8 ${isDragActive ? 'text-violet-600' : 'text-gray-400'}`}
                           stroke="currentColor"
                           fill="none"
                           viewBox="0 0 48 48"
@@ -593,24 +518,27 @@ export default function CreateQuizPage() {
                             strokeLinejoin="round"
                           />
                         </svg>
-                        <div className="text-sm text-gray-600">
+                            </div>
+                            <div className="text-center">
                           {isDragActive ? (
-                            <p>Drop PDF files here...</p>
-                          ) : (
-                            <p>
-                              <span className="font-medium text-blue-600">Click to upload</span> or
-                              drag and drop
-                            </p>
-                          )}
-                          <p className="text-xs">Multiple PDF files allowed, up to 20MB each</p>
+                                <p className="text-lg font-semibold text-violet-700">Drop PDF files here!</p>
+                              ) : (
+                                <div>
+                                  <p className="text-lg font-semibold text-gray-700 mb-2">
+                                    <span className="text-violet-600 hover:text-violet-700 transition-colors">Click to upload</span> or drag and drop
+                                  </p>
+                                  <p className="text-sm text-gray-500">Multiple PDF files allowed, up to 20MB each</p>
+                                </div>
+                              )}
                         </div>
                       </div>
                     </div>
                     
+                        {/* File List */}
                     {pdfFiles.length > 0 && (
                       <div className="mt-4 space-y-2">
-                        <div className="flex items-center justify-between">
-                          <h4 className="text-sm font-medium text-gray-700">
+                            <div className="flex items-center justify-between mb-4">
+                              <h4 className="text-sm font-semibold text-gray-700">
                             Selected Files ({pdfFiles.length})
                           </h4>
                           <Button
@@ -618,30 +546,27 @@ export default function CreateQuizPage() {
                             variant="ghost"
                             size="sm"
                             onClick={removeAllFiles}
-                            className="text-red-600"
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
                           >
+                                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
                             Remove All
                           </Button>
                         </div>
                         
-                        <div className="space-y-2 max-h-60 overflow-y-auto">
+                            <div className="space-y-3 max-h-60 overflow-y-auto">
                           {pdfFiles.map((file, index) => (
-                            <div key={index} className="border border-gray-300 rounded-lg p-3">
+                                <Card key={index} variant="bordered" className="p-4 hover:shadow-md transition-shadow">
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center space-x-3">
-                                  <svg
-                                    className="h-6 w-6 text-red-600"
-                                    fill="currentColor"
-                                    viewBox="0 0 20 20"
-                                  >
-                                    <path
-                                      fillRule="evenodd"
-                                      d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z"
-                                      clipRule="evenodd"
-                                    />
+                                      <div className="p-2 bg-red-100 rounded-xl">
+                                        <svg className="h-6 w-6 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                                          <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
                                   </svg>
+                                      </div>
                                   <div>
-                                    <p className="text-sm font-medium text-gray-900">{file.name}</p>
+                                        <p className="text-sm font-semibold text-gray-900">{file.name}</p>
                                     <p className="text-xs text-gray-500">
                                       {(file.size / 1024 / 1024).toFixed(2)} MB
                                     </p>
@@ -652,12 +577,14 @@ export default function CreateQuizPage() {
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => removeFile(index)}
-                                  className="text-red-600"
+                                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
                                 >
-                                  Remove
+                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                      </svg>
                                 </Button>
                               </div>
-                            </div>
+                                </Card>
                           ))}
                         </div>
                       </div>
@@ -665,31 +592,59 @@ export default function CreateQuizPage() {
                   </div>
                 </div>
 
-                <div className="flex justify-between">
-                  <div>
+                    {/* Actions */}
+                    <div className="flex flex-col gap-4 pt-4">
+                      {/* PDF Preview Toggle */}
                     {pdfFiles.length > 0 && (
+                        <div className="flex justify-center">
                       <Button
                         type="button"
                         variant="outline"
                         onClick={() => setShowPDFViewer(!showPDFViewer)}
-                        className="text-blue-600 border-blue-200 hover:bg-blue-50"
-                      >
-                        📄 {showPDFViewer ? 'Hide' : 'Show'} PDF Preview
+                            className="text-violet-600 border-violet-200 hover:bg-violet-50"
+                          >
+                            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                            {showPDFViewer ? 'Hide' : 'Show'} PDF Preview
                       </Button>
-                    )}
                   </div>
-                  <div className="flex space-x-4">
+                      )}
+                      
+                      {/* Main Action Buttons */}
+                      <div className="flex flex-col sm:flex-row justify-between items-center gap-3">
                     <Link href="/">
-                      <Button type="button" variant="outline">
+                          <Button type="button" variant="outline" className="w-full sm:w-auto">
+                            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
                         Cancel
                       </Button>
                     </Link>
                     <Button
                       type="submit"
+                          variant="gradient"
+                          size="lg"
                       loading={extracting}
                       disabled={!title.trim() || !selectedCategory || pdfFiles.length === 0}
-                    >
-                      {extracting ? 'Extracting Questions...' : `Extract Questions from ${pdfFiles.length} file${pdfFiles.length !== 1 ? 's' : ''}`}
+                          className="w-full sm:w-auto"
+                        >
+                          {extracting ? (
+                            <>
+                              <svg className="w-4 h-4 mr-2 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                              </svg>
+                              Extracting Questions...
+                            </>
+                          ) : (
+                            <>
+                              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                              </svg>
+                              Extract Questions from {pdfFiles.length} file{pdfFiles.length !== 1 ? 's' : ''}
+                            </>
+                          )}
                     </Button>
                   </div>
                 </div>
@@ -697,8 +652,8 @@ export default function CreateQuizPage() {
             </CardContent>
           </Card>
         ) : (
-          // Step 2: Preview and Edit
-          <div className={`max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 transition-all duration-300 ${showPDFViewer ? 'lg:mr-[15vw]' : ''}`}>
+              /* Step 2: Preview and Edit - Questions will be rendered here */
+              <div className="space-y-6">
             {/* Quiz Info */}
             <Card>
               <CardHeader>
@@ -730,57 +685,19 @@ export default function CreateQuizPage() {
                     Description
                   </label>
                   <div className="mt-1">
-                    <textarea
+                        <Textarea
                       id="editDescription"
                       rows={3}
                       value={editableDescription}
                       onChange={(e) => setEditableDescription(e.target.value)}
                       placeholder="Enter quiz description"
                       maxLength={1000}
-                      className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          variant="glass"
                     />
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    id="isPrivate"
-                    checked={isPrivate}
-                    onChange={(e) => setIsPrivate(e.target.checked)}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                  />
-                  <label htmlFor="isPrivate" className="text-sm font-medium text-gray-700">
-                    🔒 Private Quiz
-                  </label>
-                  <div className="text-xs text-gray-500">
-                    (Only visible to you and admins)
-                  </div>
-                </div>
 
-                <div className="text-sm text-gray-500">
-                  {previewData.fileCount && previewData.fileCount > 1 ? (
-                    <div>
-                      <div className="font-medium">
-                        Original files ({previewData.fileCount}): 
-                      </div>
-                      <div className="mt-1">
-                        {previewData.fileNames?.map((fileName, index) => (
-                          <div key={index} className="text-xs ml-2">
-                            • {fileName}
-                          </div>
-                        )) || previewData.originalFileName}
-                      </div>
-                      <div className="mt-1">
-                        Total size: {(previewData.fileSize / 1024 / 1024).toFixed(2)} MB
-                      </div>
-                    </div>
-                  ) : (
-                    <div>
-                      Original file: {previewData.originalFileName} ({(previewData.fileSize / 1024 / 1024).toFixed(2)} MB)
-                    </div>
-                  )}
-                </div>
               </CardContent>
             </Card>
 
@@ -791,7 +708,7 @@ export default function CreateQuizPage() {
                   <div>
                     <CardTitle>Questions ({editableQuestions.length})</CardTitle>
                     <CardDescription>
-                      Review and edit the questions extracted from your PDF{previewData.fileCount && previewData.fileCount > 1 ? 's' : ''}
+                          Review and edit the questions extracted from your PDF
                     </CardDescription>
                   </div>
                   <Button onClick={addQuestion} size="sm">
@@ -941,25 +858,6 @@ export default function CreateQuizPage() {
                           );
                         })}
                       </div>
-                      <div className="mt-2 text-xs text-gray-500">
-                        {question.type === 'single' ? (
-                          `Current correct answer: ${
-                            typeof question.correctIndex === 'number' && 
-                            question.correctIndex >= 0 && 
-                            question.correctIndex < question.options.length
-                              ? `Option ${String.fromCharCode(65 + question.correctIndex)} (${question.options[question.correctIndex]})`
-                              : 'Not set or invalid'
-                          }`
-                        ) : (
-                          `Correct answers: ${
-                            (question.correctIndexes || []).length > 0
-                              ? (question.correctIndexes || [])
-                                  .map(idx => `${String.fromCharCode(65 + idx)} (${question.options[idx]})`)
-                                  .join(', ')
-                              : 'None selected'
-                          }`
-                        )}
-                      </div>
                     </div>
                   </div>
                 ))}
@@ -973,16 +871,16 @@ export default function CreateQuizPage() {
             </Card>
 
             {/* Actions */}
-            <div className="flex justify-between">
-              <Button onClick={backToUpload} variant="outline">
+                <div className="flex flex-col sm:flex-row justify-between gap-4">
+                  <Button onClick={backToUpload} variant="outline" className="w-full sm:w-auto">
                 Back to Upload
               </Button>
-              <div className="flex items-center space-x-4">
+                  <div className="flex flex-col sm:flex-row items-center gap-3">
                 {pdfFiles.length > 0 && (
                   <Button
                     onClick={() => setShowPDFViewer(!showPDFViewer)}
                     variant="outline"
-                    className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                        className="text-blue-600 border-blue-200 hover:bg-blue-50 w-full sm:w-auto"
                   >
                     📄 {showPDFViewer ? 'Hide' : 'Show'} PDF Reference
                   </Button>
@@ -991,16 +889,18 @@ export default function CreateQuizPage() {
                   onClick={() => setShowPreviewModal(true)} 
                   variant="outline"
                   disabled={editableQuestions.length === 0}
+                      className="w-full sm:w-auto"
                 >
                   Preview Quiz
                 </Button>
                 <Link href="/">
-                  <Button variant="outline">Cancel</Button>
+                      <Button variant="outline" className="w-full sm:w-auto">Cancel</Button>
                 </Link>
                 <Button
                   onClick={handleCreateQuiz}
                   loading={creating}
                   disabled={!editableTitle.trim() || editableQuestions.length === 0}
+                      className="w-full sm:w-auto"
                 >
                   {creating ? 'Creating Quiz...' : 'Create Quiz'}
                 </Button>
@@ -1008,6 +908,59 @@ export default function CreateQuizPage() {
             </div>
           </div>
         )}
+          </div>
+
+          {/* Right Side - PDF Viewer (50% when visible) */}
+          {showPDFViewer && (
+            <div className="hidden lg:block lg:w-1/2 lg:pl-4">
+              <div className="sticky top-24 h-[calc(100vh-6rem)]">
+                <Card className="h-full flex flex-col shadow-2xl border-2 border-blue-200 bg-white">
+                  <CardHeader className="flex-shrink-0 pb-3">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-lg">PDF Reference</CardTitle>
+                      <Button
+                        onClick={() => setShowPDFViewer(false)}
+                        variant="ghost"
+                        size="sm"
+                        className="text-gray-500 hover:text-gray-700"
+                      >
+                        ✕
+                      </Button>
+                    </div>
+                    
+                    {pdfFiles.length > 0 && (
+                      <div className="text-sm text-gray-600">
+                        {pdfFiles.length === 1 
+                          ? `${pdfFiles[0].name} (${(pdfFiles[0].size / 1024 / 1024).toFixed(2)} MB)`
+                          : `${pdfFiles.length} files to merge (${(pdfFiles.reduce((acc, file) => acc + file.size, 0) / 1024 / 1024).toFixed(2)} MB total)`
+                        }
+                      </div>
+                    )}
+                  </CardHeader>
+                  
+                  <CardContent className="flex-1 flex flex-col p-4 min-h-0">
+                    {pdfFiles.length === 0 ? (
+                      <div className="flex-1 flex items-center justify-center">
+                        <div className="text-center text-gray-500">
+                          <svg className="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                          <p className="text-sm">Upload PDF files to see preview here</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex-1 border border-gray-200 rounded overflow-hidden">
+                        <div className="w-full h-full">
+                          <PDFViewerComponent files={pdfFiles} />
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* Preview Modal */}
         {showPreviewModal && (
@@ -1024,14 +977,6 @@ export default function CreateQuizPage() {
             }))}
           />
         )}
-
-        {/* PDF Viewer - Sticky on the right side */}
-        <PDFViewer
-          pdfFiles={pdfFiles}
-          isVisible={showPDFViewer}
-          onToggle={() => setShowPDFViewer(!showPDFViewer)}
-        />
-
       </main>
     </div>
   );

@@ -4,8 +4,9 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Navigation from '@/components/Navigation';
 import { Button } from '@/components/ui/Button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Card, CardContent, CardHeader, CardTitle, Badge } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer';
@@ -367,10 +368,16 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading quiz...</p>
+      <div className="min-h-screen">
+        <Navigation />
+        <div className="flex items-center justify-center min-h-[70vh]">
+          <div className="text-center">
+            <div className="inline-flex items-center justify-center p-4 bg-gradient-to-br from-violet-500/10 to-purple-600/10 rounded-2xl mb-6">
+              <div className="animate-spin rounded-full h-8 w-8 border-2 border-violet-600 border-t-transparent"></div>
+            </div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">Loading Quiz</h2>
+            <p className="text-gray-600">Preparing your quiz experience...</p>
+          </div>
         </div>
       </div>
     );
@@ -378,18 +385,31 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
 
   if (error && !quiz) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Card className="max-w-md">
-          <CardHeader>
-            <CardTitle className="text-center text-red-600">Error</CardTitle>
-          </CardHeader>
-          <CardContent className="text-center">
-            <p className="text-gray-600 mb-4">{error}</p>
-            <Link href="/">
-              <Button>Go Home</Button>
-            </Link>
-          </CardContent>
-        </Card>
+      <div className="min-h-screen">
+        <Navigation />
+        <div className="flex items-center justify-center min-h-[70vh] px-4">
+          <Card variant="glass" className="max-w-md w-full backdrop-blur-xl border-white/30 shadow-xl">
+            <CardHeader className="text-center">
+              <div className="inline-flex items-center justify-center p-3 bg-red-100 rounded-2xl mb-4 mx-auto w-fit">
+                <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <CardTitle className="text-red-600 text-xl">Quiz Not Found</CardTitle>
+            </CardHeader>
+            <CardContent className="text-center">
+              <p className="text-gray-600 mb-6">{error}</p>
+              <Link href="/">
+                <Button variant="gradient" className="w-full">
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-1a1 1 0 011-1h2a1 1 0 011 1v1a1 1 0 001 1m-6 0h6" />
+                  </svg>
+                  Return Home
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }
@@ -399,68 +419,114 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
   // Email input screen (only for non-logged in users)
   if (showEmailInput && !session?.user?.email) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Card className="max-w-md w-full mx-4">
-          <CardHeader>
-            <CardTitle className="text-center">{quiz.title}</CardTitle>
-            {quiz.description && (
-              <p className="text-sm text-gray-600 text-center mt-2">{quiz.description}</p>
-            )}
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="text-center text-sm text-gray-600">
-                <p>📝 {quiz.questions.length} questions</p>
-                <p>⏱️ No time limit</p>
+      <div className="min-h-screen">
+        <Navigation />
+        <div className="flex items-center justify-center min-h-[80vh] px-4">
+          <Card variant="glass" className="max-w-lg w-full backdrop-blur-xl border-white/30 shadow-xl animate-fadeInUp">
+            <CardHeader className="text-center">
+              <div className="inline-flex items-center justify-center p-3 bg-gradient-to-br from-violet-500/10 to-purple-600/10 rounded-2xl mb-4 mx-auto w-fit">
+                <svg className="w-6 h-6 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
               </div>
-              
-              {error && (
-                <div className="rounded-md bg-red-50 p-3">
-                  <div className="text-sm text-red-700">{error}</div>
-                </div>
+              <CardTitle className="text-2xl gradient-text mb-2">{quiz.title}</CardTitle>
+              {quiz.description && (
+                <p className="text-gray-600">{quiz.description}</p>
               )}
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                {/* Quiz Info */}
+                <div className="flex justify-center space-x-8 py-4 bg-gray-50/50 rounded-xl">
+                  <div className="text-center">
+                    <Badge variant="purple" className="mb-1">
+                      {quiz.questions.length} Questions
+                    </Badge>
+                  </div>
+                  <div className="text-center">
+                    <Badge variant="info" className="mb-1">
+                      No Time Limit
+                    </Badge>
+                  </div>
+                </div>
+                
+                {error && (
+                  <Card variant="bordered" className="border-red-200 bg-red-50 p-4">
+                    <div className="flex items-center text-red-700">
+                      <svg className="w-5 h-5 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span className="text-sm font-medium">{error}</span>
+                    </div>
+                  </Card>
+                )}
 
-              <div className="text-center p-4 bg-blue-50 rounded-lg">
-                <p className="text-sm text-blue-700">
-                  💡 <Link href="/login" className="underline font-medium">Login</Link> to track your quiz history or continue as guest below.
-                </p>
-              </div>
+                {/* Login Suggestion */}
+                <Card variant="bordered" className="border-blue-200 bg-blue-50 p-4">
+                  <div className="text-center text-blue-700">
+                    <svg className="w-6 h-6 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <p className="text-sm font-medium">
+                      <Link href="/login" className="underline hover:text-blue-800">Login</Link> to track your quiz history or continue as guest below.
+                    </p>
+                  </div>
+                </Card>
 
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                  Your Email *
-                </label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={userEmail}
-                  onChange={(e) => setUserEmail(e.target.value)}
-                  placeholder="Enter your email address"
-                  required
-                />
-                <p className="mt-1 text-xs text-gray-500">
-                  We'll use this to track your quiz attempt
-                </p>
-              </div>
+                                 {/* Email Input */}
+                 <div>
+                   <Input
+                     label="Your Email"
+                     id="email"
+                     type="email"
+                     value={userEmail}
+                     onChange={(e) => setUserEmail(e.target.value)}
+                     placeholder="Enter your email address"
+                     required
+                     variant="glass"
+                     icon={
+                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
+                       </svg>
+                     }
+                   />
+                   <p className="mt-2 text-xs text-gray-500">
+                     We'll use this to track your quiz attempt
+                   </p>
+                 </div>
 
-              <div className="flex gap-3">
-                <Link href="/" className="flex-1">
-                  <Button variant="outline" className="w-full">
-                    ← Back to Home
+                {/* Action Buttons */}
+                <div className="space-y-3">
+                  <Button onClick={startQuiz} variant="gradient" size="lg" className="w-full">
+                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                    Start Quiz
                   </Button>
-                </Link>
-                <Link href={`/quiz/${params.slug}/flashcards`} className="flex-1">
-                  <Button variant="outline" className="w-full bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100">
-                    🗂️ Learn with Flashcards
-                  </Button>
-                </Link>
-                <Button onClick={startQuiz} className="flex-1">
-                  Start Quiz
-                </Button>
+                  
+                  <div className="grid grid-cols-2 gap-3">
+                    <Link href="/">
+                      <Button variant="outline" className="w-full">
+                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                        </svg>
+                        Back Home
+                      </Button>
+                    </Link>
+                    <Link href={`/quiz/${params.slug}/flashcards`}>
+                      <Button variant="accent" className="w-full">
+                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                        </svg>
+                        Flashcards
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }
@@ -478,9 +544,9 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
   }).length;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b">
+    <div className="min-h-screen">
+      {/* Quiz Header - Full screen experience without navigation */}
+      <div className="border-b border-gray-200/50 bg-white/80 backdrop-blur-sm sticky top-0 z-40">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
@@ -489,34 +555,51 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
                 onClick={openExitModal}
                 className="text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300"
               >
-                ← Exit Quiz
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                Exit Quiz
               </Button>
               <div>
                 <h1 className="text-lg font-semibold text-gray-900">{quiz.title}</h1>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm">
                   {session?.user?.email ? (
-                    <span className="text-green-600">👤 {session.user.email}</span>
+                    <Badge variant="success" className="text-xs">
+                      <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                      {session.user.email}
+                    </Badge>
                   ) : (
-                    <span className="text-gray-500">📧 {userEmail}</span>
+                    <Badge variant="default" className="text-xs">
+                      <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
+                      </svg>
+                      {userEmail}
+                    </Badge>
                   )}
                 </p>
               </div>
             </div>
             <div className="text-right">
-              <div className="text-sm text-gray-600">
+              <div className="text-sm font-semibold text-gray-700">
                 Question {currentQuestionIndex + 1} of {quiz.questions.length}
               </div>
               <div className="text-xs text-gray-500">
-                {answeredQuestions} answered
+                {answeredQuestions} of {quiz.questions.length} answered
               </div>
             </div>
           </div>
 
           {/* Progress bar */}
           <div className="mt-4">
-            <div className="bg-gray-200 rounded-full h-2">
+            <div className="flex items-center justify-between text-xs text-gray-600 mb-2">
+              <span>Progress</span>
+              <span>{progress}% Complete</span>
+            </div>
+            <div className="bg-gray-200 rounded-full h-3 overflow-hidden">
               <div
-                className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                className="bg-gradient-to-r from-violet-500 to-purple-600 h-3 rounded-full transition-all duration-500 ease-out"
                 style={{ width: `${progress}%` }}
               ></div>
             </div>

@@ -1,13 +1,12 @@
 'use client';
 
-import { useSession, signOut } from 'next-auth/react';
-import Link from 'next/link';
+import { useSession } from 'next-auth/react';
 import { useState, useEffect } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter } from 'next/navigation';
+import Navigation from '@/components/Navigation';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, Badge } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
-import Sidebar from '@/components/Sidebar';
 
 interface Quiz {
   _id: string;
@@ -46,9 +45,6 @@ interface PaginationData {
 export default function HomePage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const pathname = usePathname();
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [hotCategories, setHotCategories] = useState<Category[]>([]);
   const [allCategories, setAllCategories] = useState<Category[]>([]);
@@ -63,6 +59,19 @@ export default function HomePage() {
     total: 0,
     totalPages: 0
   });
+
+  // Check authentication
+  useEffect(() => {
+    if (status === 'loading') return;
+    
+    if (!session) {
+      router.push('/login');
+      return;
+    }
+    
+    fetchCategories();
+    fetchQuizzes();
+  }, [session, status, router]);
 
   const fetchCategories = async () => {
     try {
@@ -115,17 +124,6 @@ export default function HomePage() {
     }
   };
 
-  useEffect(() => {
-    if (status === 'loading') return; // Đợi session load xong
-    
-    if (session) {
-      fetchCategories();
-      fetchQuizzes();
-    } else {
-      router.push('/login');
-    }
-  }, [session, status, router]);
-
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setPagination(prev => ({ ...prev, page: 1 }));
@@ -143,10 +141,6 @@ export default function HomePage() {
     fetchQuizzes(newPage, searchTerm, selectedCategory);
   };
 
-  const getCategorySlug = (categoryName: string) => {
-    return categoryName.toLowerCase().replace(/\s+/g, '-');
-  };
-
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -155,507 +149,344 @@ export default function HomePage() {
     });
   };
 
+  const getCategoryColor = (color: string) => {
+    const colorMap: { [key: string]: string } = {
+      'blue': 'bg-blue-100 text-blue-700 border-blue-200',
+      'green': 'bg-emerald-100 text-emerald-700 border-emerald-200', 
+      'purple': 'bg-violet-100 text-violet-700 border-violet-200',
+      'red': 'bg-red-100 text-red-700 border-red-200',
+      'yellow': 'bg-yellow-100 text-yellow-700 border-yellow-200',
+      'indigo': 'bg-indigo-100 text-indigo-700 border-indigo-200',
+      'pink': 'bg-pink-100 text-pink-700 border-pink-200',
+      'gray': 'bg-gray-100 text-gray-700 border-gray-200',
+      'cyan': 'bg-cyan-100 text-cyan-700 border-cyan-200',
+      'orange': 'bg-orange-100 text-orange-700 border-orange-200',
+      'teal': 'bg-teal-100 text-teal-700 border-teal-200',
+    };
+    return colorMap[color?.toLowerCase()] || colorMap['purple'];
+  };
+
+  // Show loading state
+  if (status === 'loading') {
   return (
-    <div className="min-h-screen bg-white">
-      {/* Navigation */}
-      <nav className="bg-white/80 backdrop-blur-md border-b border-gray-100 sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            {/* Logo */}
-            <div className="flex items-center">
-              <Link href="/" className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">R</span>
-                </div>
-                <span className="text-xl font-semibold text-gray-900">RinKuzu</span>
-              </Link>
-            </div>
-
-            {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center space-x-8">
-              {session ? (
-                <>
-                  <Link href="/" className="text-gray-600 hover:text-gray-900 transition-colors">
-                    All Quizzes
-                  </Link>
-                  
-                  {/* User Menu */}
-                  <div className="relative">
-                    <button 
-                      onClick={() => setIsMenuOpen(!isMenuOpen)}
-                      className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors"
-                    >
-                      <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
-                        <span className="text-white text-sm font-medium">
-                          {session.user?.email?.charAt(0).toUpperCase()}
-                        </span>
-                      </div>
-                      <svg className={`w-4 h-4 transition-transform ${isMenuOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </button>
-                    
-                    {isMenuOpen && (
-                      <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-100 py-1">
-                        <button 
-                          onClick={() => signOut()}
-                          className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                        >
-                          Sign Out
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </>
-              ) : (
-                <div className="flex items-center space-x-4">
-                  <Link href="/login">
-                    <Button variant="ghost" className="text-gray-600 hover:text-gray-900">
-                      Sign In
-                    </Button>
-                  </Link>
-                  <Link href="/register">
-                    <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-0">
-                      Get Started
-                    </Button>
-                  </Link>
-                </div>
-              )}
-            </div>
-
-            {/* Mobile menu button */}
-            <div className="md:hidden">
-              <button 
-                onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className="text-gray-600 hover:text-gray-900"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
-              </button>
-            </div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 gradient-primary rounded-2xl flex items-center justify-center mx-auto mb-4 animate-pulse">
+            <span className="text-white font-bold text-xl">R</span>
           </div>
-
-          {/* Mobile Navigation */}
-          {isMenuOpen && (
-            <div className="md:hidden border-t border-gray-100 py-4">
-              <div className="space-y-2">
-                {session ? (
-                  <>
-                    <Link href="/" className="block px-4 py-2 text-gray-600 hover:text-gray-900">
-                      All Quizzes
-                    </Link>
-                    <button 
-                      onClick={() => signOut()}
-                      className="block w-full text-left px-4 py-2 text-gray-600 hover:text-gray-900"
-                    >
-                      Sign Out
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <Link href="/login" className="block px-4 py-2 text-gray-600 hover:text-gray-900">
-                      Sign In
-                    </Link>
-                    <Link href="/register" className="block px-4 py-2 text-gray-600 hover:text-gray-900">
-                      Get Started
-                    </Link>
-                  </>
-                )}
-              </div>
-            </div>
-          )}
+          <p className="text-gray-600">Loading RinKuzu...</p>
         </div>
-      </nav>
+      </div>
+    );
+  }
 
-      {/* Sidebar */}
-      <Sidebar 
-        isOpen={isSidebarOpen} 
-        onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
-        currentPath={pathname}
-      />
+  // Redirect if not authenticated
+  if (!session) {
+    return null;
+  }
+
+  return (
+    <div className="min-h-screen">
+      <Navigation />
 
       {/* Main Content */}
-      <main className={`py-8 transition-all duration-300 ${
-        session && isSidebarOpen ? 'ml-64' : session ? 'ml-16' : ''
-      } max-w-none px-4 sm:px-6 lg:px-8`}>
-        {status === 'loading' ? (
-          <div className="flex justify-center py-12">
-            <div className="text-gray-500">Loading...</div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-8">
+        {/* Header Section */}
+        <div className="mb-8">
+          <div className="text-center mb-8">
+            <h1 className="text-4xl md:text-5xl font-bold gradient-text mb-4">Discover Amazing Quizzes</h1>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+              Explore engaging educational content created by educators worldwide
+            </p>
           </div>
-        ) : !session ? (
-          <div className="flex justify-center py-12">
-            <div className="text-gray-500">Redirecting to login...</div>
+
+          {/* Quick Actions */}
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-8">
+            <Button
+              variant="gradient"
+              size="lg"
+              onClick={() => router.push('/create')}
+              className="min-w-[200px]"
+            >
+              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Create New Quiz
+            </Button>
+            
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={() => router.push('/pending')}
+              className="min-w-[200px]"
+            >
+              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+              My Quizzes
+            </Button>
           </div>
-        ) : (
-          <>
-            <div className="max-w-6xl mx-auto">
-              {/* Header */}
-              <div className="mb-8">
-                <h1 className="text-3xl font-bold text-gray-900">All Quizzes</h1>
-                <p className="mt-2 text-gray-600">
-                  Explore all published quizzes from the community
-                </p>
               </div>
 
-              {/* Hot Categories Section */}
-              {!categoriesLoading && hotCategories.length > 0 && (
+        {/* Search and Filter Section */}
                 <div className="mb-8">
-                  <h2 className="text-2xl font-bold text-gray-900 mb-4">🔥 Hot Subjects</h2>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                    {hotCategories.map((category) => (
-                      <Link
-                        key={category._id}
-                        href={`/category/${getCategorySlug(category.name)}`}
-                        className="group"
-                      >
-                        <Card className="hover:shadow-lg transition-all duration-200 group-hover:scale-105">
-                          <CardContent className="p-6">
-                            <div className="flex items-center space-x-4">
-                              <div 
-                                className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-xl"
-                                style={{ backgroundColor: category.color }}
-                              >
-                                {category.name.charAt(0)}
-                              </div>
+          <Card variant="glass" className="p-6 backdrop-blur-xl">
+            {/* Search Bar */}
+            <form onSubmit={handleSearch} className="mb-6">
+              <div className="flex gap-4">
                               <div className="flex-1">
-                                <h3 className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
-                                  {category.name}
-                                </h3>
-                                <p className="text-sm text-gray-600">
-                                  {category.quizCount} quiz{category.quizCount !== 1 ? 'es' : ''}
-                                </p>
-                              </div>
-                              <svg className="w-5 h-5 text-gray-400 group-hover:text-blue-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  <Input
+                    type="text"
+                    placeholder="Search quizzes by title or topic..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    icon={
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                               </svg>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      </Link>
-                    ))}
-                  </div>
+                    }
+                    className="w-full"
+                  />
                 </div>
-              )}
+                <Button type="submit" variant="gradient" className="px-8">
+                  Search
+                </Button>
+              </div>
+            </form>
 
-              {/* Category Filter & Search */}
-              <div className="mb-8 space-y-4">
                 {/* Category Filter */}
-                {!categoriesLoading && allCategories.length > 0 && (
+            {!categoriesLoading && hotCategories.length > 0 && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Filter by Subject:
-                    </label>
-                    <div className="flex flex-wrap gap-2">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Popular Categories</h3>
+                <div className="flex flex-wrap gap-3">
                       <button
                         onClick={() => handleCategoryChange('')}
-                        className={`px-3 py-2 rounded-full text-sm font-medium transition-colors ${
-                          selectedCategory === ''
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    className={`px-4 py-2 rounded-xl font-medium transition-all duration-300 ${
+                      !selectedCategory 
+                        ? 'bg-gradient-to-r from-violet-500 to-purple-600 text-white shadow-lg' 
+                        : 'bg-white/80 text-gray-600 hover:bg-white border border-gray-200'
                         }`}
                       >
-                        All Subjects
+                    All Categories
                       </button>
-                      {allCategories.map((category) => (
+                  {hotCategories.map((category) => (
                         <button
                           key={category._id}
                           onClick={() => handleCategoryChange(category._id)}
-                          className={`px-3 py-2 rounded-full text-sm font-medium transition-colors ${
+                      className={`px-4 py-2 rounded-xl font-medium transition-all duration-300 ${
                             selectedCategory === category._id
-                              ? 'text-white'
-                              : 'text-gray-700 hover:opacity-80'
-                          }`}
-                          style={{
-                            backgroundColor: selectedCategory === category._id 
-                              ? category.color 
-                              : category.color + '20',
-                            color: selectedCategory === category._id 
-                              ? 'white' 
-                              : category.color
-                          }}
+                          ? 'bg-gradient-to-r from-violet-500 to-purple-600 text-white shadow-lg'
+                          : `bg-white/80 text-gray-600 hover:bg-white border border-gray-200`
+                      }`}
                         >
-                          {category.name} ({category.quizCount})
+                      {category.name}
+                      <span className="ml-2 text-xs opacity-75">({category.quizCount})</span>
                         </button>
                       ))}
                     </div>
                   </div>
                 )}
-
-                {/* Search */}
-                <form onSubmit={handleSearch} className="flex gap-4">
-                  <div className="flex-1 max-w-2xl">
-                    <Input
-                      type="text"
-                      placeholder="Search quizzes by title or description..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full"
-                    />
-                  </div>
-                  <Button type="submit" disabled={loading}>
-                    {loading ? 'Searching...' : 'Search'}
-                  </Button>
-                  {searchTerm && (
-                    <Button 
-                      type="button" 
-                      variant="outline"
-                      onClick={() => {
-                        setSearchTerm('');
-                        setPagination(prev => ({ ...prev, page: 1 }));
-                        fetchQuizzes(1, '', selectedCategory);
-                      }}
-                    >
-                      Clear
-                    </Button>
-                  )}
-                  <Link href="/create">
-                    <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-0">
-                      + Create Quiz
-                    </Button>
-                  </Link>
-                </form>
+          </Card>
               </div>
 
-              {/* Error */}
+        {/* Error State */}
               {error && (
-                <div className="rounded-md bg-red-50 p-4 mb-6">
-                  <div className="text-sm text-red-700">{error}</div>
+          <Card variant="bordered" className="p-6 mb-8 border-red-200 bg-red-50">
+            <div className="flex items-center text-red-700">
+              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              {error}
                 </div>
+          </Card>
               )}
 
-              {/* Loading */}
-              {loading && (
-                <div className="flex justify-center py-12">
-                  <div className="text-gray-500">Loading quizzes...</div>
+        {/* Loading State */}
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {[...Array(6)].map((_, index) => (
+              <Card key={index} className="animate-pulse">
+                <div className="p-6">
+                  <div className="h-4 bg-gray-200 rounded mb-3"></div>
+                  <div className="h-3 bg-gray-200 rounded mb-2"></div>
+                  <div className="h-3 bg-gray-200 rounded w-3/4"></div>
                 </div>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <>
+            {/* Results Info */}
+            <div className="flex items-center justify-between mb-8">
+              <p className="text-gray-600">
+                Showing {quizzes.length} of {pagination.total} quizzes
+                {selectedCategory && (
+                  <span className="ml-2">
+                    in <strong>{allCategories.find(c => c._id === selectedCategory)?.name}</strong>
+                  </span>
+                )}
+              </p>
+              
+              {(searchTerm || selectedCategory) && (
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    setSearchTerm('');
+                    setSelectedCategory('');
+                    fetchQuizzes(1, '', '');
+                  }}
+                  className="text-violet-600 hover:text-violet-700"
+                >
+                  Clear filters
+                </Button>
               )}
+            </div>
 
-              {/* Results Info */}
-              {!loading && (
-                <div className="mb-6 text-sm text-gray-600">
-                  {searchTerm || selectedCategory ? (
-                    <p>
-                      Found {pagination.total} quiz{pagination.total !== 1 ? 'es' : ''} 
-                      {searchTerm && ` matching "${searchTerm}"`}
-                      {selectedCategory && allCategories.find(cat => cat._id === selectedCategory) && 
-                        ` in ${allCategories.find(cat => cat._id === selectedCategory)?.name}`}
-                    </p>
-                  ) : (
-                    <p>
-                      Showing {pagination.total} published quiz{pagination.total !== 1 ? 'es' : ''}
-                    </p>
-                  )}
+            {/* Quizzes Grid */}
+            {quizzes.length === 0 ? (
+              <Card variant="glass" className="p-12 text-center">
+                <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
                 </div>
-              )}
-
-              {/* Quizzes Grid */}
-              {!loading && quizzes.length > 0 && (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-                  {quizzes.map((quiz) => (
-                    <Card key={quiz._id} className="hover:shadow-lg transition-shadow">
+                <h3 className="text-xl font-semibold text-gray-900 mb-3">No quizzes found</h3>
+                <p className="text-gray-600 mb-6">
+                  {searchTerm || selectedCategory 
+                    ? "Try adjusting your search criteria or browse all quizzes." 
+                    : "Be the first to create a quiz for this platform!"
+                  }
+                </p>
+                <Button 
+                  variant="gradient" 
+                  onClick={() => router.push('/create')}
+                  className="mx-auto"
+                >
+                  Create Your First Quiz
+                </Button>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {quizzes.map((quiz, index) => (
+                  <Card
+                    key={quiz._id}
+                    variant="default"
+                    hover
+                    className="group animate-fadeInUp"
+                    style={{ animationDelay: `${index * 100}ms` }}
+                  >
                       <CardHeader>
-                        <div className="flex items-start justify-between mb-2">
-                          <span 
-                            className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full"
-                            style={{ 
-                              backgroundColor: quiz.category?.color + '20', 
-                              color: quiz.category?.color 
-                            }}
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <Badge 
+                            variant="purple" 
+                            size="sm"
+                            className={getCategoryColor(quiz.category?.color)}
                           >
                             {quiz.category?.name}
-                          </span>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <CardTitle className="line-clamp-2 flex-1">{quiz.title}</CardTitle>
+                          </Badge>
                           {quiz.isPrivate && (
-                            <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full flex items-center">
-                              🔒 Private
-                            </span>
+                            <Badge variant="warning" size="sm">
+                              <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                              </svg>
+                              Private
+                            </Badge>
                           )}
                         </div>
-                        <CardDescription className="text-xs text-gray-500">
-                          By {quiz.author.email} • {formatDate(quiz.createdAt)}
+                        <span className="text-xs text-gray-500">
+                          {quiz.questions.length} questions
+                        </span>
+                      </div>
+                      <CardTitle size="md" className="group-hover:text-violet-600 transition-colors">
+                        {quiz.title}
+                      </CardTitle>
+                      <CardDescription className="line-clamp-2">
+                        {quiz.description}
                         </CardDescription>
                       </CardHeader>
                       <CardContent>
-                        <p className="text-sm text-gray-600 mb-4 line-clamp-3">
-                          {quiz.description || 'No description available'}
-                        </p>
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-gray-500">
-                            {quiz.questions?.length || 0} questions
-                          </span>
-                          <div className="flex space-x-2">
-                            <Link href={`/quiz/${quiz.slug}/flashcards`}>
-                              <Button size="sm" variant="outline" className="bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100">
-                                🗂️ Flashcards
-                              </Button>
-                            </Link>
-                            <Link href={`/quiz/${quiz.slug}`}>
-                              <Button size="sm">
+                      <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
+                        <span>By {quiz.author.email.split('@')[0]}</span>
+                        <span>{formatDate(quiz.createdAt)}</span>
+                      </div>
+                      
+                      {/* Action Buttons */}
+                      <div className="flex gap-2">
+                        <Button
+                          variant="gradient"
+                          size="sm"
+                          className="flex-1"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            router.push(`/quiz/${quiz.slug}`);
+                          }}
+                        >
+                          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                          </svg>
                                 Take Quiz
                               </Button>
-                            </Link>
-                          </div>
-                        </div>
-                        
-                        {/* Admin controls */}
-                        {(session?.user as any)?.role === 'admin' && (
-                          <div className="mt-3 pt-3 border-t border-gray-100">
-                            <div className="flex space-x-2">
-                              <Link href={`/edit/${quiz._id}`}>
-                                <Button size="sm" variant="outline" className="text-blue-600 hover:text-blue-700 border-blue-300 hover:border-blue-400">
-                                  ✏️ Edit
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            router.push(`/quiz/${quiz.slug}/flashcards`);
+                          }}
+                          className="flex-1"
+                        >
+                          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                          </svg>
+                          Flashcards
                                 </Button>
-                              </Link>
-                              <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                                quiz.status === 'published' ? 'bg-green-100 text-green-800' : 
-                                quiz.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                                'bg-red-100 text-red-800'
-                              }`}>
-                                {quiz.status}
-                              </span>
-                            </div>
                           </div>
-                        )}
                       </CardContent>
                     </Card>
                   ))}
                 </div>
               )}
 
-              {/* No Results */}
-              {!loading && quizzes.length === 0 && (
-                <div className="text-center py-12">
-                  <svg
-                    className="mx-auto h-12 w-12 text-gray-400"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                    />
-                  </svg>
-                  <h3 className="mt-2 text-sm font-medium text-gray-900">No quizzes found</h3>
-                  <p className="mt-1 text-sm text-gray-500">
-                    {searchTerm || selectedCategory
-                      ? 'Try adjusting your search or filter criteria'
-                      : 'No published quizzes available yet'
-                    }
-                  </p>
-                  {(searchTerm || selectedCategory) && (
-                    <div className="mt-6">
-                      <Button
-                        onClick={() => {
-                          setSearchTerm('');
-                          setSelectedCategory('');
-                          setPagination(prev => ({ ...prev, page: 1 }));
-                          fetchQuizzes(1, '', '');
-                        }}
-                        variant="outline"
-                      >
-                        View All Quizzes
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              )}
-
               {/* Pagination */}
-              {!loading && pagination.totalPages > 1 && (
-                <div className="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6 rounded-lg">
-                  <div className="flex flex-1 justify-between sm:hidden">
+            {pagination.totalPages > 1 && (
+              <div className="flex justify-center mt-12">
+                <div className="flex items-center space-x-2">
                     <Button
-                      onClick={() => handlePageChange(pagination.page - 1)}
-                      disabled={pagination.page <= 1}
                       variant="outline"
-                    >
-                      Previous
-                    </Button>
-                    <Button
-                      onClick={() => handlePageChange(pagination.page + 1)}
-                      disabled={pagination.page >= pagination.totalPages}
-                      variant="outline"
-                    >
-                      Next
-                    </Button>
-                  </div>
-                  <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
-                    <div>
-                      <p className="text-sm text-gray-700">
-                        Showing{' '}
-                        <span className="font-medium">
-                          {((pagination.page - 1) * pagination.limit) + 1}
-                        </span>{' '}
-                        to{' '}
-                        <span className="font-medium">
-                          {Math.min(pagination.page * pagination.limit, pagination.total)}
-                        </span>{' '}
-                        of{' '}
-                        <span className="font-medium">{pagination.total}</span> results
-                      </p>
-                    </div>
-                    <div>
-                      <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
-                        <Button
+                    disabled={pagination.page === 1}
                           onClick={() => handlePageChange(pagination.page - 1)}
-                          disabled={pagination.page <= 1}
-                          variant="outline"
-                          size="sm"
-                          className="rounded-r-none"
                         >
                           Previous
                         </Button>
                         
-                        {/* Page Numbers */}
-                        {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
-                          let pageNum;
-                          if (pagination.totalPages <= 5) {
-                            pageNum = i + 1;
-                          } else if (pagination.page <= 3) {
-                            pageNum = i + 1;
-                          } else if (pagination.page >= pagination.totalPages - 2) {
-                            pageNum = pagination.totalPages - 4 + i;
-                          } else {
-                            pageNum = pagination.page - 2 + i;
-                          }
-                          
+                  {[...Array(pagination.totalPages)].map((_, index) => {
+                    const page = index + 1;
                           return (
                             <Button
-                              key={pageNum}
-                              onClick={() => handlePageChange(pageNum)}
-                              variant={pagination.page === pageNum ? "default" : "outline"}
-                              size="sm"
-                              className="rounded-none"
+                        key={page}
+                        variant={pagination.page === page ? "gradient" : "outline"}
+                        onClick={() => handlePageChange(page)}
+                        className="min-w-[40px]"
                             >
-                              {pageNum}
+                        {page}
                             </Button>
                           );
                         })}
                         
                         <Button
+                    variant="outline"
+                    disabled={pagination.page === pagination.totalPages}
                           onClick={() => handlePageChange(pagination.page + 1)}
-                          disabled={pagination.page >= pagination.totalPages}
-                          variant="outline"
-                          size="sm"
-                          className="rounded-l-none"
                         >
                           Next
                         </Button>
-                      </nav>
-                    </div>
                   </div>
                 </div>
               )}
-            </div>
           </>
         )}
-      </main>
+      </div>
     </div>
   );
 } 

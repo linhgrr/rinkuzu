@@ -335,7 +335,7 @@ export default function CreateQuizPage() {
     setError('');
 
     try {
-      await createQuiz({
+      const result = await createQuiz({
           title: editableTitle.trim(),
           description: editableDescription.trim(),
         questions: editableQuestions,
@@ -343,11 +343,11 @@ export default function CreateQuizPage() {
         isPrivate
       });
 
-      setSuccess('Quiz created successfully!');
+      setSuccess(result.message || 'Quiz created successfully and sent for approval! Admin will review and approve your quiz.');
       
         setTimeout(() => {
-        router.push('/');
-        }, 2000);
+        router.push('/pending');
+        }, 3000);
       
     } catch (err: any) {
       console.error('Error creating quiz:', err);

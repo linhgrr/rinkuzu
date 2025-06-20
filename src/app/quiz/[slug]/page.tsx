@@ -11,6 +11,8 @@ import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer';
 import { QuestionImage, OptionImage } from '@/components/ui/ImageDisplay';
+import { QuestionDiscussion } from '@/components/ui/QuestionDiscussion';
+import ReportQuiz from '@/components/ui/ReportQuiz';
 import { useQuizStore } from '@/store/useQuizStore';
 import { IQuiz } from '@/types';
 
@@ -39,6 +41,10 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
 
   // Exit quiz states
   const [showExitModal, setShowExitModal] = useState(false);
+  
+  // Discussion states
+  const [isDiscussionCollapsed, setIsDiscussionCollapsed] = useState(true);
+  const [showMobileDiscussion, setShowMobileDiscussion] = useState(false);
 
   // If user is logged in, skip email input
   useEffect(() => {
@@ -581,12 +587,15 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
                 </p>
               </div>
             </div>
-            <div className="text-right">
-              <div className="text-sm font-semibold text-gray-700">
-                Question {currentQuestionIndex + 1} of {quiz.questions.length}
-              </div>
-              <div className="text-xs text-gray-500">
-                {answeredQuestions} of {quiz.questions.length} answered
+            <div className="flex items-center space-x-4">
+              <ReportQuiz quizSlug={params.slug} quizTitle={quiz.title} />
+              <div className="text-right">
+                <div className="text-sm font-semibold text-gray-700">
+                  Question {currentQuestionIndex + 1} of {quiz.questions.length}
+                </div>
+                <div className="text-xs text-gray-500">
+                  {answeredQuestions} of {quiz.questions.length} answered
+                </div>
               </div>
             </div>
           </div>
@@ -607,9 +616,12 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
         </div>
       </div>
 
-      {/* Question */}
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Card>
+      {/* Question with Discussion Panel */}
+      <main className={`${isDiscussionCollapsed ? 'max-w-4xl' : 'max-w-7xl'} mx-auto px-4 sm:px-6 lg:px-8 py-8 transition-all duration-300`}>
+        <div className="flex">
+          {/* Question Card */}
+          <div className={`flex-1 ${!isDiscussionCollapsed ? 'pr-6' : ''}`}>
+            <Card>
           <CardHeader>
             <div className="flex justify-between items-start">
               <div className="flex-1">
@@ -628,13 +640,23 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
                   )}
                 </div>
               </div>
-              <Button
-                variant="outline"
-                onClick={openAIModal}
-                className="ml-4 text-purple-600 border-purple-200 hover:bg-purple-50 hover:border-purple-300"
-              >
-                🤖 Ask AI
-              </Button>
+              <div className="flex items-center space-x-2 ml-4">
+                <Button
+                  variant="outline"
+                  onClick={openAIModal}
+                  className="text-purple-600 border-purple-200 hover:bg-purple-50 hover:border-purple-300"
+                >
+                  🤖 Ask AI
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowMobileDiscussion(true)}
+                  className="md:hidden text-blue-600 border-blue-200 hover:bg-blue-50 hover:border-blue-300"
+                  title="Open Discussion"
+                >
+                  💬
+                </Button>
+              </div>
             </div>
             
             {/* Display question image if exists */}
@@ -802,6 +824,35 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
             </div>
           </CardContent>
         </Card>
+          </div>
+
+          {/* Discussion Panel */}
+          <QuestionDiscussion
+            quizSlug={params.slug}
+            questionIndex={currentQuestionIndex}
+            isCollapsed={isDiscussionCollapsed}
+            onToggleCollapse={() => setIsDiscussionCollapsed(!isDiscussionCollapsed)}
+          />
+        </div>
+
+        {/* Mobile Discussion Modal */}
+        <Modal
+          isOpen={showMobileDiscussion}
+          onClose={() => setShowMobileDiscussion(false)}
+          title="💬 Discussion"
+          size="large"
+          className="md:hidden"
+        >
+          <div className="h-96">
+            <QuestionDiscussion
+              quizSlug={params.slug}
+              questionIndex={currentQuestionIndex}
+              isCollapsed={false}
+              onToggleCollapse={() => setShowMobileDiscussion(false)}
+              isMobile={true}
+            />
+          </div>
+        </Modal>
 
         {/* Exit Quiz Modal */}
         <Modal

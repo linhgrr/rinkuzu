@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils';
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   variant?: 'default' | 'glass' | 'outlined' | 'filled';
-  size?: 'sm' | 'md' | 'lg';
+  inputSize?: 'sm' | 'md' | 'lg';
   error?: string;
   label?: string;
   icon?: React.ReactNode;
@@ -14,7 +14,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ({ 
     className, 
     variant = 'default', 
-    size = 'md', 
+    inputSize = 'md', 
     error, 
     label, 
     icon, 
@@ -57,7 +57,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         <div className="relative">
           {icon && iconPosition === 'left' && (
             <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
-              <div className={iconSizes[size]}>
+              <div className={iconSizes[inputSize]}>
                 {icon}
               </div>
             </div>
@@ -68,7 +68,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             className={cn(
               'w-full rounded-xl font-medium transition-all duration-300 focus:outline-none focus:ring-2 disabled:cursor-not-allowed disabled:opacity-50 placeholder:text-gray-400',
               variants[variant],
-              sizes[size],
+              sizes[inputSize],
               icon && iconPosition === 'left' && 'pl-10',
               icon && iconPosition === 'right' && 'pr-10',
               error && 'border-red-300 focus:border-red-500 focus:ring-red-200',
@@ -80,7 +80,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           
           {icon && iconPosition === 'right' && (
             <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400">
-              <div className={iconSizes[size]}>
+              <div className={iconSizes[inputSize]}>
                 {icon}
               </div>
             </div>

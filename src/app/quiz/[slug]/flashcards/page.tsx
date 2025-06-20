@@ -151,8 +151,8 @@ export default function FlashcardPage() {
           <CardContent className="p-6 text-center">
             <h2 className="text-xl font-semibold text-red-600 mb-4">Error</h2>
             <p className="text-gray-600 mb-4">{error}</p>
-            <Link href="/">
-              <Button>Back to Home</Button>
+            <Link href="/quizzes">
+              <Button>Back to Quizzes</Button>
             </Link>
           </CardContent>
         </Card>
@@ -167,8 +167,8 @@ export default function FlashcardPage() {
           <CardContent className="p-6 text-center">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">Quiz Not Found</h2>
             <p className="text-gray-600 mb-4">The quiz you're looking for doesn't exist.</p>
-            <Link href="/">
-              <Button>Back to Home</Button>
+            <Link href="/quizzes">
+              <Button>Back to Quizzes</Button>
             </Link>
           </CardContent>
         </Card>
@@ -189,7 +189,7 @@ export default function FlashcardPage() {
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between h-16">
               <div className="flex items-center">
-                <Link href="/" className="flex items-center space-x-2">
+                <Link href="/quizzes" className="flex items-center space-x-2">
                   <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
                     <span className="text-white font-bold text-sm">R</span>
                   </div>
@@ -200,8 +200,8 @@ export default function FlashcardPage() {
                 <Link href={`/quiz/${quiz.slug}`}>
                   <Button variant="outline">Take Quiz</Button>
                 </Link>
-                <Link href="/">
-                  <Button variant="outline">Home</Button>
+                <Link href="/quizzes">
+                  <Button variant="outline">All Quizzes</Button>
                 </Link>
               </div>
             </div>
@@ -277,8 +277,8 @@ export default function FlashcardPage() {
             <Link href={`/quiz/${quiz.slug}`}>
               <Button variant="outline">Take Full Quiz</Button>
             </Link>
-            <Link href="/">
-              <Button variant="outline">Back to Home</Button>
+            <Link href="/quizzes">
+              <Button variant="outline">Back to Quizzes</Button>
             </Link>
           </div>
         </main>
@@ -324,7 +324,7 @@ export default function FlashcardPage() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex items-center">
-              <Link href="/" className="flex items-center space-x-2">
+              <Link href="/quizzes" className="flex items-center space-x-2">
                 <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
                   <span className="text-white font-bold text-sm">R</span>
                 </div>
@@ -335,8 +335,8 @@ export default function FlashcardPage() {
               <Link href={`/quiz/${quiz.slug}`}>
                 <Button variant="outline">Take Quiz</Button>
               </Link>
-              <Link href="/">
-                <Button variant="outline">Home</Button>
+              <Link href="/quizzes">
+                <Button variant="outline">All Quizzes</Button>
               </Link>
             </div>
           </div>
@@ -348,6 +348,7 @@ export default function FlashcardPage() {
         <div className="flex flex-col items-center justify-center min-h-[420px] w-full" style={{ minHeight: '420px' }}>
           {currentQuestion && (
             <Flashcard
+              key={`${progress.currentIndex}-${currentQuestion.question.substring(0, 50)}`}
               question={currentQuestion.question}
               options={currentQuestion.options}
               correctIndex={currentQuestion.correctIndex}

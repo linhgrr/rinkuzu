@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 
@@ -28,55 +28,96 @@ export function Flashcard({
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [startPos, setStartPos] = useState({ x: 0, y: 0 });
   const [slideOut, setSlideOut] = useState<'left' | 'right' | null>(null);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [isNewCard, setIsNewCard] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
+
+  // Reset states when question changes (new card appears)
+  useEffect(() => {
+    setIsFlipped(false);
+    setSlideOut(null);
+    setIsTransitioning(false);
+    setDragOffset({ x: 0, y: 0 });
+    
+    // Mark as new card and animate in
+    setIsNewCard(true);
+    const timer = setTimeout(() => {
+      setIsNewCard(false);
+    }, 50); // Small delay to trigger animation
+    
+    return () => clearTimeout(timer);
+  }, [question]);
 
   // --- Swipe handlers ---
   const handleMouseDown = (e: React.MouseEvent) => {
+    if (isTransitioning) return;
     setIsDragging(true);
     setStartPos({ x: e.clientX, y: e.clientY });
     setDragOffset({ x: 0, y: 0 });
   };
+  
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging) return;
+    if (!isDragging || isTransitioning) return;
     setDragOffset({ x: e.clientX - startPos.x, y: e.clientY - startPos.y });
   };
+  
   const handleMouseUp = () => {
-    if (!isDragging) return;
+    if (!isDragging || isTransitioning) return;
     setIsDragging(false);
+    
     if (Math.abs(dragOffset.x) > 100) {
-      setSlideOut(dragOffset.x > 0 ? 'right' : 'left');
+      const direction = dragOffset.x > 0 ? 'right' : 'left';
+      setIsTransitioning(true);
+      setSlideOut(direction);
+      
+      // Call onSwipe immediately to start loading next card
+      onSwipe(direction);
+      
+      // Reset states after animation completes
       setTimeout(() => {
+        setIsTransitioning(false);
         setSlideOut(null);
         setIsFlipped(false);
-        onSwipe(dragOffset.x > 0 ? 'right' : 'left');
         setDragOffset({ x: 0, y: 0 });
-      }, 250);
+      }, 300);
     } else {
       setDragOffset({ x: 0, y: 0 });
     }
   };
+  
   const handleTouchStart = (e: React.TouchEvent) => {
+    if (isTransitioning) return;
     const touch = e.touches[0];
     setIsDragging(true);
     setStartPos({ x: touch.clientX, y: touch.clientY });
     setDragOffset({ x: 0, y: 0 });
   };
+  
   const handleTouchMove = (e: React.TouchEvent) => {
-    if (!isDragging) return;
+    if (!isDragging || isTransitioning) return;
     const touch = e.touches[0];
     setDragOffset({ x: touch.clientX - startPos.x, y: touch.clientY - startPos.y });
   };
+  
   const handleTouchEnd = () => {
-    if (!isDragging) return;
+    if (!isDragging || isTransitioning) return;
     setIsDragging(false);
+    
     if (Math.abs(dragOffset.x) > 100) {
-      setSlideOut(dragOffset.x > 0 ? 'right' : 'left');
+      const direction = dragOffset.x > 0 ? 'right' : 'left';
+      setIsTransitioning(true);
+      setSlideOut(direction);
+      
+      // Call onSwipe immediately to start loading next card
+      onSwipe(direction);
+      
+      // Reset states after animation completes
       setTimeout(() => {
+        setIsTransitioning(false);
         setSlideOut(null);
         setIsFlipped(false);
-        onSwipe(dragOffset.x > 0 ? 'right' : 'left');
         setDragOffset({ x: 0, y: 0 });
-      }, 250);
+      }, 300);
     } else {
       setDragOffset({ x: 0, y: 0 });
     }
@@ -109,12 +150,38 @@ export function Flashcard({
   };
 
   // --- Animation ---
-  const transform = slideOut
-    ? `translateX(${slideOut === 'right' ? '120vw' : '-120vw'})`
-    : isDragging
-      ? `translate(${dragOffset.x}px, ${dragOffset.y}px)`
-      : 'none';
-  const transition = slideOut ? 'transform 0.25s cubic-bezier(.4,2,.6,1)' : isDragging ? 'none' : 'transform 0.2s';
+  const getTransform = () => {
+    if (slideOut) {
+      return `translateX(${slideOut === 'right' ? '120vw' : '-120vw'})`;
+    } else if (isDragging) {
+      return `translate(${dragOffset.x}px, ${dragOffset.y}px)`;
+    } else if (isNewCard) {
+      // New card starts from center (no offset needed as it's mounting fresh)
+      return 'translateX(0) scale(0.95)';
+    } else {
+      return 'translateX(0) scale(1)';
+    }
+  };
+
+  const getOpacity = () => {
+    if (slideOut) {
+      return 0.8;
+    } else if (isNewCard) {
+      return 0.8;
+    } else {
+      return 1;
+    }
+  };
+
+  const transform = getTransform();
+  const opacity = getOpacity();
+  const transition = slideOut 
+    ? 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease-out' 
+    : isDragging 
+      ? 'none' 
+      : isNewCard
+        ? 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.4s ease-out'
+        : 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease-out';
 
   return (
     <div className="w-full flex flex-col items-center justify-center overflow-hidden">
@@ -131,6 +198,7 @@ export function Flashcard({
           margin: '0 auto',
           zIndex: 10,
           transform,
+          opacity,
           transition,
         }}
         onMouseDown={handleMouseDown}
@@ -142,7 +210,7 @@ export function Flashcard({
         onTouchEnd={handleTouchEnd}
       >
         <div 
-          className="w-full h-full cursor-pointer"
+          className="relative w-full h-full cursor-pointer"
           style={{ 
             perspective: '1000px',
             transformStyle: 'preserve-3d'
@@ -249,12 +317,20 @@ export function Flashcard({
           <>
             <Button
               onClick={() => {
+                if (isTransitioning) return;
+                setIsTransitioning(true);
                 setIsFlipped(false);
                 setSlideOut('left');
+                
+                // Call onSwipe immediately to start loading next card
+                onSwipe('left');
+                
+                // Reset states after animation completes
                 setTimeout(() => {
+                  setIsTransitioning(false);
                   setSlideOut(null);
-                  onSwipe('left');
-                }, 250);
+                  setDragOffset({ x: 0, y: 0 });
+                }, 300);
               }}
               variant="outline"
               className="border-red-300 text-red-600 hover:bg-red-50 px-8 py-3 text-lg rounded-full"
@@ -263,12 +339,20 @@ export function Flashcard({
             </Button>
             <Button
               onClick={() => {
+                if (isTransitioning) return;
+                setIsTransitioning(true);
                 setIsFlipped(false);
                 setSlideOut('right');
+                
+                // Call onSwipe immediately to start loading next card
+                onSwipe('right');
+                
+                // Reset states after animation completes
                 setTimeout(() => {
+                  setIsTransitioning(false);
                   setSlideOut(null);
-                  onSwipe('right');
-                }, 250);
+                  setDragOffset({ x: 0, y: 0 });
+                }, 300);
               }}
               className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 text-lg rounded-full"
             >

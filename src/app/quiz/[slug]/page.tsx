@@ -137,17 +137,46 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
           };
         });
         
+        // Validate that all questions have the required mapping data
+        const validationErrors = [];
+        shuffledQuestions.forEach((q, index) => {
+          if (!Array.isArray((q as any).optionIndexMap)) {
+            validationErrors.push(`Question ${index + 1}: missing optionIndexMap`);
+          }
+          if (typeof (q as any).originalQuestionIndex !== 'number') {
+            validationErrors.push(`Question ${index + 1}: missing originalQuestionIndex`);
+          }
+        });
+        
+        if (!Array.isArray(questionIndexMap) || questionIndexMap.length !== shuffledQuestions.length) {
+          validationErrors.push('Invalid questionIndexMap');
+        }
+        
+        if (validationErrors.length > 0) {
+          console.error('Quiz validation errors:', validationErrors);
+          throw new Error('Quiz data validation failed: ' + validationErrors.join(', '));
+        }
+        
         setQuiz({ 
           ...data.data, 
           questions: shuffledQuestions,
           questionIndexMap // Map from new question position to original question position
         });
         
-        // Initialize answers based on question types
-        const initialAnswers = data.data.questions.map((q: any, index: number) => {
-          console.log(`Question ${index}:`, { type: q.type, question: q.question });
+        // Initialize answers based on SHUFFLED question types (not original)
+        const initialAnswers = shuffledQuestions.map((q: any, index: number) => {
+          console.log(`Shuffled Question ${index}:`, { type: q.type, question: q.question });
           return q.type === 'multiple' ? [] : -1;
         });
+        
+        console.log('Initial answers (based on shuffled questions):', initialAnswers);
+        console.log('Initial answers with types:', initialAnswers.map((ans: any, idx: number) => ({
+          index: idx,
+          answer: ans,
+          answerType: typeof ans,
+          isArray: Array.isArray(ans)
+        })));
+        
         setUserAnswers(initialAnswers);
         console.log('\n=== QUIZ LOADED ===');
         console.log('Total questions:', data.data.questions.length);
@@ -238,6 +267,12 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
     try {
       console.log('=== SUBMITTING QUIZ ===');
       console.log('userAnswers:', userAnswers);
+              console.log('userAnswers with types:', userAnswers.map((ans: any, idx: number) => ({
+          index: idx,
+          answer: ans,
+          answerType: typeof ans,
+          isArray: Array.isArray(ans)
+        })));
       console.log('questionIndexMap:', (quiz as any).questionIndexMap);
       console.log('quiz.questions:', quiz.questions.map((q, i) => ({
         currentIndex: i,
@@ -251,6 +286,16 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
       const convertedAnswers = userAnswers.map((ans, idx) => {
         const question = quiz.questions[idx];
         const mapArr: number[] = (question as any).optionIndexMap;
+        
+        // Add validation for optionIndexMap
+        if (!mapArr || !Array.isArray(mapArr)) {
+          console.error(`Question ${idx}: optionIndexMap is missing or invalid`, {
+            optionIndexMap: mapArr,
+            question: question
+          });
+          throw new Error(`Option mapping is missing for question ${idx + 1}`);
+        }
+        
         console.log(`Converting question ${idx} (originally Q${(question as any).originalQuestionIndex + 1}):`, {
           userAnswer: ans,
           optionIndexMap: mapArr,
@@ -259,11 +304,42 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
         
         if (question.type === 'single') {
           const aNum = ans as number;
+          
+          // Validate that answer is a number for single choice
+          if (typeof aNum !== 'number') {
+            console.error(`Single choice question ${idx} has non-number answer:`, {
+              answer: ans,
+              answerType: typeof ans,
+              questionType: question.type
+            });
+            throw new Error(`Invalid answer type for single choice question ${idx + 1}`);
+          }
+          
+          if (aNum !== -1 && (aNum < 0 || aNum >= mapArr.length)) {
+            console.error(`Invalid answer index ${aNum} for question ${idx}, mapArr length: ${mapArr.length}`);
+            throw new Error(`Invalid answer for question ${idx + 1}`);
+          }
           const converted = aNum === -1 ? -1 : mapArr[aNum];
           console.log(`Single choice: ${aNum} -> ${converted}`);
           return converted;
         } else {
+          // Validate that answer is an array for multiple choice
+          if (!Array.isArray(ans)) {
+            console.error(`Multiple choice question ${idx} has non-array answer:`, {
+              answer: ans,
+              answerType: typeof ans,
+              questionType: question.type
+            });
+            throw new Error(`Invalid answer type for multiple choice question ${idx + 1}`);
+          }
+          
           const arr = ans as number[];
+          for (const a of arr) {
+            if (typeof a !== 'number' || a < 0 || a >= mapArr.length) {
+              console.error(`Invalid answer index ${a} for question ${idx}, mapArr length: ${mapArr.length}`);
+              throw new Error(`Invalid answer for question ${idx + 1}`);
+            }
+          }
           const converted = arr.map(a => mapArr[a]);
           console.log(`Multiple choice: [${arr}] -> [${converted}]`);
           return converted;
@@ -272,10 +348,32 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
 
       // Reorder answers to match original question order
       const questionIndexMap: number[] = (quiz as any).questionIndexMap;
+      
+      // Add validation for questionIndexMap
+      if (!questionIndexMap || !Array.isArray(questionIndexMap)) {
+        console.error('questionIndexMap is missing or invalid', {
+          questionIndexMap: questionIndexMap,
+          quiz: quiz
+        });
+        throw new Error('Question ordering mapping is missing');
+      }
+      
+      if (questionIndexMap.length !== convertedAnswers.length) {
+        console.error('questionIndexMap length mismatch', {
+          questionIndexMapLength: questionIndexMap.length,
+          convertedAnswersLength: convertedAnswers.length
+        });
+        throw new Error('Question mapping length mismatch');
+      }
+      
       const originalOrderAnswers: (number | number[])[] = new Array(convertedAnswers.length);
       
       convertedAnswers.forEach((answer, shuffledIndex) => {
         const originalIndex = questionIndexMap[shuffledIndex];
+        if (originalIndex < 0 || originalIndex >= convertedAnswers.length) {
+          console.error(`Invalid original index ${originalIndex} for shuffled index ${shuffledIndex}`);
+          throw new Error(`Invalid question mapping for question ${shuffledIndex + 1}`);
+        }
         originalOrderAnswers[originalIndex] = answer;
       });
 
@@ -305,7 +403,14 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
         setError(data.error || 'Failed to submit quiz');
       }
     } catch (error) {
-      setError('Failed to submit quiz');
+      console.error('Quiz submission error:', error);
+      
+      // Show more specific error message if available
+      if (error instanceof Error) {
+        setError(error.message);
+      } else {
+        setError('Failed to submit quiz');
+      }
     } finally {
       setSubmitting(false);
     }
@@ -650,11 +755,19 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
                 </Button>
                 <Button
                   variant="outline"
-                  onClick={() => setShowMobileDiscussion(true)}
-                  className="md:hidden text-blue-600 border-blue-200 hover:bg-blue-50 hover:border-blue-300"
-                  title="Open Discussion"
+                  onClick={() => {
+                    // On desktop, toggle the discussion panel
+                    if (window.innerWidth >= 768) {
+                      setIsDiscussionCollapsed(!isDiscussionCollapsed);
+                    } else {
+                      // On mobile, show the modal
+                      setShowMobileDiscussion(true);
+                    }
+                  }}
+                  className="text-blue-600 border-blue-200 hover:bg-blue-50 hover:border-blue-300"
+                  title="Discussion"
                 >
-                  💬
+                  💬 Discussion
                 </Button>
               </div>
             </div>

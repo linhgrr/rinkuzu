@@ -1,0 +1,32 @@
+
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="512" height="512" rx="64" fill="url(#grad)"/>
+  
+  <!-- Quiz document icon -->
+  <rect x="128" y="96" width="256" height="320" rx="16" fill="white" opacity="0.95"/>
+  
+  <!-- Lines representing quiz questions -->
+  <rect x="160" y="144" width="192" height="8" rx="4" fill="#667eea" opacity="0.8"/>
+  <rect x="160" y="176" width="160" height="8" rx="4" fill="#667eea" opacity="0.6"/>
+  <rect x="160" y="208" width="128" height="8" rx="4" fill="#667eea" opacity="0.6"/>
+  
+  <!-- Quiz bubbles -->
+  <circle cx="168" cy="256" r="8" fill="#667eea" opacity="0.7"/>
+  <circle cx="200" cy="256" r="8" fill="#667eea" opacity="0.5"/>
+  <circle cx="232" cy="256" r="8" fill="#667eea" opacity="0.5"/>
+  
+  <circle cx="168" cy="288" r="8" fill="#667eea" opacity="0.5"/>
+  <circle cx="200" cy="288" r="8" fill="#667eea" opacity="0.7"/>
+  <circle cx="232" cy="288" r="8" fill="#667eea" opacity="0.5"/>
+  
+  <!-- Check mark -->
+  <path d="M320 240 L340 260 L380 220" stroke="white" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+</svg>

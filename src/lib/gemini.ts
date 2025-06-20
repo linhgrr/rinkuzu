@@ -43,6 +43,8 @@ Your task is to extract or generate quiz questions (both single-choice and multi
 
 **IMPORTANT:**
 - Only if you don't see any questions, then generate questions from the content. Else, extract the questions from the content.
+- Only if you have to generate questions, then generate 10 questions. The generated questions should be in the same language as the content.
+- The difficulty of the generated questions should be based on the content and has easy to medium difficulty.
 
 Important Instructions:
 

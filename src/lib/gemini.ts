@@ -41,10 +41,20 @@ You are given educational content that may include questions, explanations, and 
 
 Your task is to extract or generate quiz questions (both single-choice and multiple-choice) from this content.
 
-**IMPORTANT:**
-- Only if you don't see any questions, then generate questions from the content. Else, extract the questions from the content.
-- Only if you have to generate questions, then generate 10 questions. The generated questions **must be in the same language as the content.**
-- The difficulty of the generated questions should be based on the content and has easy to medium difficulty.
+**CRITICAL RULE – READ CAREFULLY:**
+- Your FIRST and PRIMARY task is to **extract any and all questions** present in the content.
+- **ONLY IF AND ONLY IF** there are absolutely **no extractable questions** in the content, then and only then you may generate new questions.
+- DO NOT generate questions if even **one** question is already present — in that case, you must only extract.
+
+**If you extract a question that expects a free-text or input-based answer** (e.g., "Nhập kết quả", "Điền vào chỗ trống", "What is the result of...?", etc.), then you MUST:
+- Convert it into a **single-choice question** with exactly 4 plausible answer options.
+- Ensure 1 is the correct answer, and 3 are incorrect but plausible distractors.
+
+**If you generate questions (only when absolutely no extractable questions are present):**
+- You must generate **exactly 10** questions.
+- The questions must be based strictly on the ideas, facts, or definitions in the content — no outside knowledge.
+- The questions must be in the **same language** as the original content.
+- Difficulty should be easy to medium.
 
 Important Instructions:
 
@@ -56,7 +66,13 @@ Important Instructions:
 6. Reconstruct questions from visible text if they are implied or structured around diagrams or image references.
 7. **REMOVE ANSWER CONTENT FROM QUESTIONS.** Ensure the extracted question text does *not* include any part of the answer options or explanatory answer content.
 8. **STRIP ENUMERATION MARKERS.** When capturing options, delete any leading letters or numbers such as "a)", "A.", "1.", "(b)", "II.", etc., so each option contains only the core answer text.
-9. Return ONLY a JSON array in the following format:
+
+When generating (only if allowed):
+- Focus only on clear facts, definitions, comparisons, or causal relationships in the content.
+- Do not make assumptions or include anything not explicitly stated.
+- All questions and answer choices must be plausible, unambiguous, and fully supported by the original text.
+
+Return ONLY a JSON array in the following format:
 
 [
     {
@@ -74,14 +90,16 @@ Important Instructions:
 ]
 
 Answer Formatting Rules:
-- Use "type": "single" for one correct answer, with "correctIndex" 
+- Use "type": "single" for one correct answer, with "correctIndex"
 - Use "type": "multiple" for multiple correct answers, with "correctIndexes" (array of indexes)
 - Options must **not** contain any enumeration characters.
 - No explanation, no extra output, only the JSON array
 - Do NOT include any image fields (like questionImage or optionImages)
 
-Be strict: **If any part of the text refers to a question or a labeled figure, extract the full question text regardless of image context.**
+**REMEMBER:** Generating questions is allowed **only if and only if** there are absolutely **no questions to extract** from the original text.
 `;
+
+
       let result;
       
       if (typeof buffer === 'string') {

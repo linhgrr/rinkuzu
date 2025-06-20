@@ -67,6 +67,80 @@ export default function RootLayout({
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="msapplication-TileColor" content="#667eea" />
         <meta name="msapplication-tap-highlight" content="no" />
+        
+        {/* Prevent pull-to-refresh and overscroll */}
+        <meta name="overscroll-behavior" content="none" />
+        <meta name="format-detection" content="telephone=no" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+        
+        {/* Mobile overscroll prevention script */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                // Prevent pull-to-refresh and overscroll on mobile
+                function preventOverscroll() {
+                  // Prevent default touch behaviors that cause bouncing
+                  document.addEventListener('touchstart', function(e) {
+                    if (e.touches.length > 1) {
+                      e.preventDefault();
+                    }
+                  }, { passive: false });
+                  
+                  document.addEventListener('touchmove', function(e) {
+                    // Prevent pull-to-refresh
+                    if (e.touches.length > 1) {
+                      e.preventDefault();
+                      return;
+                    }
+                    
+                    var touch = e.touches[0];
+                    var target = e.target;
+                    
+                    // Find scrollable parent
+                    var scrollableParent = target;
+                    while (scrollableParent && scrollableParent !== document.body) {
+                      var style = window.getComputedStyle(scrollableParent);
+                      if (style.overflow === 'scroll' || style.overflow === 'auto' || 
+                          style.overflowY === 'scroll' || style.overflowY === 'auto') {
+                        break;
+                      }
+                      scrollableParent = scrollableParent.parentElement;
+                    }
+                    
+                    if (!scrollableParent || scrollableParent === document.body) {
+                      // No scrollable parent found, prevent default
+                      e.preventDefault();
+                    }
+                  }, { passive: false });
+                  
+                  // Additional iOS Safari fixes
+                  if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
+                    document.body.style.position = 'fixed';
+                    document.body.style.width = '100%';
+                    document.body.style.height = '100%';
+                    document.body.style.overflow = 'hidden';
+                    
+                    // Allow main content to scroll
+                    var main = document.querySelector('main');
+                    if (main) {
+                      main.style.height = '100vh';
+                      main.style.overflowY = 'auto';
+                      main.style.overscrollBehavior = 'none';
+                      main.style.webkitOverflowScrolling = 'touch';
+                    }
+                  }
+                }
+                
+                if (document.readyState === 'loading') {
+                  document.addEventListener('DOMContentLoaded', preventOverscroll);
+                } else {
+                  preventOverscroll();
+                }
+              })();
+            `,
+          }}
+        />
       </head>
       <body className={`${inter.className} ${plusJakarta.variable} min-h-screen antialiased`}>
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">

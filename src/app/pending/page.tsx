@@ -7,9 +7,17 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { QuizPreviewModal } from '@/components/ui/QuizPreviewModal';
+import Pagination from '@/components/ui/Pagination';
 import { formatDate } from '@/lib/utils';
 import { IQuiz } from '@/types';
 import Sidebar from '@/components/Sidebar';
+
+interface PaginationData {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
 
 export default function PendingQuizzesPage() {
   const { data: session, status } = useSession();
@@ -28,6 +36,12 @@ export default function PendingQuizzesPage() {
     show: false,
     quiz: null
   });
+  const [pagination, setPagination] = useState<PaginationData>({
+    page: 1,
+    limit: 12,
+    total: 0,
+    totalPages: 0
+  });
 
   useEffect(() => {
     if (status === 'loading') return;
@@ -39,16 +53,21 @@ export default function PendingQuizzesPage() {
     }
   }, [session, status, router, filter]);
 
-  const fetchMyQuizzes = async () => {
+  const fetchMyQuizzes = async (page: number = 1) => {
     if (!session) return;
     
     try {
-      let url = '/api/quizzes';
+      setLoading(true);
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: pagination.limit.toString()
+      });
+
       if (filter !== 'all') {
-        url += `?status=${filter}`;
+        params.append('status', filter);
       }
       
-      const response = await fetch(url);
+      const response = await fetch(`/api/quizzes?${params}`);
       const data = await response.json();
 
       if (data.success) {
@@ -59,6 +78,8 @@ export default function PendingQuizzesPage() {
             : (quiz.author as any)?._id === (session.user as any).id
         );
         setQuizzes(userQuizzes);
+        setPagination(data.data.pagination);
+        setError('');
       } else {
         setError(data.error || 'Failed to fetch quizzes');
       }
@@ -67,6 +88,11 @@ export default function PendingQuizzesPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handlePageChange = (newPage: number) => {
+    setPagination(prev => ({ ...prev, page: newPage }));
+    fetchMyQuizzes(newPage);
   };
 
   const getStatusColor = (status: string) => {
@@ -137,7 +163,7 @@ export default function PendingQuizzesPage() {
     }
   };
 
-  const filteredQuizzes = quizzes.filter(quiz => filter === 'all' || quiz.status === filter);
+
 
   return (
     <div className="min-h-screen bg-white">
@@ -285,7 +311,10 @@ export default function PendingQuizzesPage() {
           <div className="flex items-center space-x-4">
             <select
               value={filter}
-              onChange={(e) => setFilter(e.target.value as any)}
+              onChange={(e) => {
+                setFilter(e.target.value as any);
+                setPagination(prev => ({ ...prev, page: 1 }));
+              }}
               className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="all">All Status</option>
@@ -305,7 +334,7 @@ export default function PendingQuizzesPage() {
             <CardContent className="p-6">
               <div className="text-center">
                 <div className="text-2xl font-bold text-gray-900">
-                  {quizzes.length}
+                  {pagination.total}
                 </div>
                 <div className="text-sm text-gray-600">Total Quizzes</div>
               </div>
@@ -317,7 +346,7 @@ export default function PendingQuizzesPage() {
                 <div className="text-2xl font-bold text-yellow-600">
                   {quizzes.filter(q => q.status === 'pending').length}
                 </div>
-                <div className="text-sm text-gray-600">Pending</div>
+                <div className="text-sm text-gray-600">Pending (Current Page)</div>
               </div>
             </CardContent>
           </Card>
@@ -327,7 +356,7 @@ export default function PendingQuizzesPage() {
                 <div className="text-2xl font-bold text-green-600">
                   {quizzes.filter(q => q.status === 'published').length}
                 </div>
-                <div className="text-sm text-gray-600">Published</div>
+                <div className="text-sm text-gray-600">Published (Current Page)</div>
               </div>
             </CardContent>
           </Card>
@@ -337,10 +366,25 @@ export default function PendingQuizzesPage() {
                 <div className="text-2xl font-bold text-red-600">
                   {quizzes.filter(q => q.status === 'rejected').length}
                 </div>
-                <div className="text-sm text-gray-600">Rejected</div>
+                <div className="text-sm text-gray-600">Rejected (Current Page)</div>
               </div>
             </CardContent>
           </Card>
+        </div>
+
+        {/* Results Info */}
+        <div className="flex items-center justify-between mb-6">
+          <p className="text-gray-600">
+            Showing {quizzes.length} of {pagination.total} quizzes
+            {filter !== 'all' && (
+              <span className="ml-2 font-medium">
+                ({filter} only)
+              </span>
+            )}
+          </p>
+          <p className="text-sm text-gray-500">
+            Page {pagination.page} of {pagination.totalPages}
+          </p>
         </div>
 
         {error && (
@@ -351,7 +395,7 @@ export default function PendingQuizzesPage() {
 
         {/* Quiz List */}
         <div className="space-y-6">
-          {filteredQuizzes.length === 0 ? (
+          {quizzes.length === 0 ? (
             <Card>
               <CardContent className="text-center py-12">
                 <div className="text-4xl mb-4">📝</div>
@@ -370,7 +414,7 @@ export default function PendingQuizzesPage() {
               </CardContent>
             </Card>
           ) : (
-            filteredQuizzes.map((quiz) => (
+            quizzes.map((quiz) => (
               <Card key={quiz._id}>
                 <CardHeader>
                   <div className="flex justify-between items-start">
@@ -496,6 +540,18 @@ export default function PendingQuizzesPage() {
                 </CardContent>
               </Card>
             ))
+          )}
+
+          {/* Pagination */}
+          {pagination.totalPages > 1 && (
+            <div className="mt-8">
+              <Pagination
+                currentPage={pagination.page}
+                totalPages={pagination.totalPages}
+                onPageChange={handlePageChange}
+                className="justify-center"
+              />
+            </div>
           )}
         </div>
 

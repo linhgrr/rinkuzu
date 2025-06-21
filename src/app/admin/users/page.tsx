@@ -7,6 +7,8 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Modal } from '@/components/ui/Modal';
+import { Input } from '@/components/ui/Input';
+import Pagination from '@/components/ui/Pagination';
 import Sidebar from '@/components/Sidebar';
 
 interface User {
@@ -14,6 +16,13 @@ interface User {
   email: string;
   role: 'admin' | 'user';
   createdAt: string;
+}
+
+interface PaginationData {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
 }
 
 export default function AdminUsersPage() {
@@ -28,6 +37,13 @@ export default function AdminUsersPage() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [pagination, setPagination] = useState<PaginationData>({
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalPages: 0
+  });
   
   // Modal states
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -51,15 +67,27 @@ export default function AdminUsersPage() {
     fetchUsers();
   }, [session, status, router]);
 
-  const fetchUsers = async () => {
+  const fetchUsers = async (page: number = 1, search: string = '') => {
     if (!session) return;
     
     try {
-      const response = await fetch('/api/admin/users');
+      setLoading(true);
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: pagination.limit.toString()
+      });
+
+      if (search.trim()) {
+        params.append('search', search.trim());
+      }
+
+      const response = await fetch(`/api/admin/users?${params}`);
       const data = await response.json();
 
       if (data.success) {
         setUsers(data.data.users);
+        setPagination(data.data.pagination);
+        setError('');
       } else {
         setError(data.error || 'Failed to fetch users');
       }
@@ -68,6 +96,17 @@ export default function AdminUsersPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    setPagination(prev => ({ ...prev, page: 1 }));
+    fetchUsers(1, searchTerm);
+  };
+
+  const handlePageChange = (newPage: number) => {
+    setPagination(prev => ({ ...prev, page: newPage }));
+    fetchUsers(newPage, searchTerm);
   };
 
   const handleChangeRole = async () => {
@@ -297,6 +336,39 @@ export default function AdminUsersPage() {
           </div>
         </div>
 
+        {/* Search */}
+        <div className="mb-6">
+          <form onSubmit={handleSearch} className="flex gap-4">
+            <div className="flex-1 max-w-md">
+              <Input
+                type="text"
+                placeholder="Search users by email..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full"
+              />
+            </div>
+            <Button type="submit" variant="gradient">
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              Search
+            </Button>
+            {searchTerm && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setSearchTerm('');
+                  fetchUsers(1, '');
+                }}
+              >
+                Clear
+              </Button>
+            )}
+          </form>
+        </div>
+
         {error && (
           <div className="rounded-md bg-red-50 p-4 mb-6">
             <div className="text-sm text-red-700">{error}</div>
@@ -314,7 +386,7 @@ export default function AdminUsersPage() {
           <Card>
             <CardContent className="p-6">
               <div className="text-2xl font-bold text-gray-900">
-                {users.length}
+                {pagination.total}
               </div>
               <p className="text-gray-600">Total Users</p>
             </CardContent>
@@ -325,7 +397,7 @@ export default function AdminUsersPage() {
               <div className="text-2xl font-bold text-purple-600">
                 {users.filter(u => u.role === 'admin').length}
               </div>
-              <p className="text-gray-600">Administrators</p>
+              <p className="text-gray-600">Administrators (Current Page)</p>
             </CardContent>
           </Card>
           
@@ -334,9 +406,24 @@ export default function AdminUsersPage() {
               <div className="text-2xl font-bold text-blue-600">
                 {users.filter(u => u.role === 'user').length}
               </div>
-              <p className="text-gray-600">Regular Users</p>
+              <p className="text-gray-600">Regular Users (Current Page)</p>
             </CardContent>
           </Card>
+        </div>
+
+        {/* Results Info */}
+        <div className="flex items-center justify-between mb-6">
+          <p className="text-gray-600">
+            Showing {users.length} of {pagination.total} users
+            {searchTerm && (
+              <span className="ml-2">
+                matching "<strong>{searchTerm}</strong>"
+              </span>
+            )}
+          </p>
+          <p className="text-sm text-gray-500">
+            Page {pagination.page} of {pagination.totalPages}
+          </p>
         </div>
 
         {/* Users Table */}
@@ -417,12 +504,24 @@ export default function AdminUsersPage() {
 
               {users.length === 0 && (
                 <div className="text-center py-8 text-gray-500">
-                  No users found
+                  {searchTerm ? `No users found matching "${searchTerm}"` : 'No users found'}
                 </div>
               )}
             </div>
           </CardContent>
         </Card>
+
+        {/* Pagination */}
+        {pagination.totalPages > 1 && (
+          <div className="mt-8">
+            <Pagination
+              currentPage={pagination.page}
+              totalPages={pagination.totalPages}
+              onPageChange={handlePageChange}
+              className="justify-center"
+            />
+          </div>
+        )}
         </div>
         </>
         )}

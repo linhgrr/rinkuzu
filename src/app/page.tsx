@@ -7,6 +7,163 @@ import Navigation from '@/components/Navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Badge } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import CategorySearch from '@/components/ui/CategorySearch';
+
+// Interactive Anime Portal Component - WOW FACTOR! 🌸✨
+function WelcomeGif() {
+  const [gifUrl, setGifUrl] = useState<string>('');
+  const [loading, setLoading] = useState(true);
+  const [emotion, setEmotion] = useState<'happy' | 'wink' | 'smile' | 'wave' | 'dance'>('happy');
+  const [isHovered, setIsHovered] = useState(false);
+
+  const emotions = ['happy', 'wink', 'smile', 'wave', 'dance'] as const;
+  
+  const fetchRandomGif = async (currentEmotion = emotion) => {
+    try {
+      setLoading(true);
+      const response = await fetch(`https://nekos.best/api/v2/${currentEmotion}`);
+      const data = await response.json();
+      
+      if (data.results && data.results.length > 0) {
+        setGifUrl(data.results[0].url);
+      }
+    } catch (error) {
+      console.error('Failed to fetch GIF:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const changeEmotion = () => {
+    const currentIndex = emotions.indexOf(emotion);
+    const nextEmotion = emotions[(currentIndex + 1) % emotions.length];
+    setEmotion(nextEmotion);
+    fetchRandomGif(nextEmotion);
+  };
+
+  useEffect(() => {
+    fetchRandomGif();
+    // Auto change emotion every 8 seconds for dynamic feel
+    const interval = setInterval(() => {
+      const randomEmotion = emotions[Math.floor(Math.random() * emotions.length)];
+      setEmotion(randomEmotion);
+      fetchRandomGif(randomEmotion);
+    }, 8000);
+    
+    return () => clearInterval(interval);
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="relative w-40 h-40 mx-auto mb-6">
+        {/* Magic Circle Loading */}
+        <div className="absolute inset-0 rounded-full border-4 border-dashed border-purple-400 animate-spin"></div>
+        <div className="absolute inset-2 rounded-full border-2 border-blue-400 animate-ping"></div>
+        <div className="absolute inset-4 bg-gradient-to-br from-purple-200 to-blue-200 rounded-full flex items-center justify-center">
+          <div className="text-2xl">✨</div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative w-40 h-40 mx-auto mb-6 group">
+      {/* Floating Sakura Petals */}
+      <div className="absolute -inset-8 pointer-events-none">
+        {[...Array(6)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute text-pink-400 text-lg animate-pulse"
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              animationDelay: `${i * 0.5}s`,
+              animationDuration: `${3 + Math.random() * 2}s`
+            }}
+          >
+            🌸
+          </div>
+        ))}
+      </div>
+
+      {/* Magic Circle Background */}
+      <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 opacity-20 animate-pulse"></div>
+      <div className="absolute inset-1 rounded-full border-2 border-dashed border-purple-300 animate-spin" style={{ animationDuration: '20s' }}></div>
+      <div className="absolute inset-3 rounded-full border border-pink-300 animate-spin" style={{ animationDuration: '15s', animationDirection: 'reverse' }}></div>
+
+      {/* Glowing Orbs */}
+      <div className="absolute inset-0">
+        {[...Array(4)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute w-2 h-2 bg-gradient-to-r from-yellow-400 to-pink-400 rounded-full animate-ping"
+            style={{
+              left: `${20 + i * 20}%`,
+              top: `${20 + i * 20}%`,
+              animationDelay: `${i * 0.5}s`
+            }}
+          />
+        ))}
+      </div>
+
+      {/* Main Character Portal */}
+      <div 
+        className={`absolute inset-4 rounded-full overflow-hidden shadow-2xl cursor-pointer transform transition-all duration-500 ${
+          isHovered ? 'scale-110 shadow-purple-500/50' : ''
+        }`}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+        onClick={changeEmotion}
+      >
+        {/* Magical Glow Effect */}
+        <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-pink-500 opacity-30 animate-pulse"></div>
+        
+        {/* Character Image */}
+        <img 
+          src={gifUrl}
+          alt={`Anime Character - ${emotion}`}
+          className="w-full h-full object-cover relative z-10"
+          onError={(e) => {
+            e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='128' height='128' viewBox='0 0 24 24' fill='none' stroke='%23a855f7' stroke-width='2'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='M8 14s1.5 2 4 2 4-2 4-2'/%3E%3Cline x1='9' y1='9' x2='9.01' y2='9'/%3E%3Cline x1='15' y1='9' x2='15.01' y2='9'/%3E%3C/svg%3E";
+          }}
+        />
+      </div>
+
+      {/* Emotion Indicator */}
+      <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs px-3 py-1 rounded-full shadow-lg">
+        {emotion === 'happy' && '😊 Happy'}
+        {emotion === 'wink' && '😉 Wink'}
+        {emotion === 'smile' && '😄 Smile'}
+        {emotion === 'wave' && '👋 Wave'}
+        {emotion === 'dance' && '💃 Dance'}
+      </div>
+
+      {/* Sparkle Effects */}
+      {isHovered && (
+        <div className="absolute inset-0 pointer-events-none">
+          {[...Array(8)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute text-yellow-400 text-sm animate-bounce"
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+                animationDelay: `${i * 0.1}s`
+              }}
+            >
+              ✨
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Click hint */}
+      <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 text-xs text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity">
+        Click to change emotion! 🎭
+      </div>
+    </div>
+  );
+}
 
 interface Quiz {
   _id: string;
@@ -130,10 +287,10 @@ export default function HomePage() {
     fetchQuizzes(1, searchTerm, selectedCategory);
   };
 
-  const handleCategoryChange = (categoryId: string) => {
-    setSelectedCategory(categoryId);
+  const handleCategoryChange = (categoryId: string | null) => {
+    setSelectedCategory(categoryId || '');
     setPagination(prev => ({ ...prev, page: 1 }));
-    fetchQuizzes(1, searchTerm, categoryId);
+    fetchQuizzes(1, searchTerm, categoryId || '');
   };
 
   const handlePageChange = (newPage: number) => {
@@ -194,10 +351,7 @@ export default function HomePage() {
         {/* Header Section */}
         <div className="mb-8">
           <div className="text-center mb-8">
-            <h1 className="text-4xl md:text-5xl font-bold gradient-text mb-4">Discover Amazing Quizzes</h1>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Explore engaging educational content created by educators worldwide
-            </p>
+            <WelcomeGif />
           </div>
 
           {/* Quick Actions */}
@@ -225,25 +379,33 @@ export default function HomePage() {
               </svg>
               My Quizzes
             </Button>
+
+            {/* Quick Category Search */}
+            <div className="min-w-[250px]">
+              <CategorySearch 
+                showInHomepage={true} 
+                onCategorySelect={handleCategoryChange}
+              />
+            </div>
           </div>
               </div>
 
-        {/* Search and Filter Section */}
-                <div className="mb-8">
+        {/* Simplified Search Section */}
+        <div className="mb-8">
           <Card variant="glass" className="p-6 backdrop-blur-xl">
-            {/* Search Bar */}
-            <form onSubmit={handleSearch} className="mb-6">
+            {/* Main Search Bar */}
+            <form onSubmit={handleSearch} className="mb-4">
               <div className="flex gap-4">
-                              <div className="flex-1">
+                <div className="flex-1">
                   <Input
                     type="text"
-                    placeholder="Search quizzes by title or topic..."
+                    placeholder="Search quizzes by title, topic, or keyword..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     icon={
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                              </svg>
+                      </svg>
                     }
                     className="w-full"
                   />
@@ -254,40 +416,22 @@ export default function HomePage() {
               </div>
             </form>
 
-                {/* Category Filter */}
-            {!categoriesLoading && hotCategories.length > 0 && (
-                  <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Popular Categories</h3>
-                <div className="flex flex-wrap gap-3">
-                      <button
-                        onClick={() => handleCategoryChange('')}
-                    className={`px-4 py-2 rounded-xl font-medium transition-all duration-300 ${
-                      !selectedCategory 
-                        ? 'bg-gradient-to-r from-violet-500 to-purple-600 text-white shadow-lg' 
-                        : 'bg-white/80 text-gray-600 hover:bg-white border border-gray-200'
-                        }`}
-                      >
-                    All Categories
-                      </button>
-                  {hotCategories.map((category) => (
-                        <button
-                          key={category._id}
-                          onClick={() => handleCategoryChange(category._id)}
-                      className={`px-4 py-2 rounded-xl font-medium transition-all duration-300 ${
-                            selectedCategory === category._id
-                          ? 'bg-gradient-to-r from-violet-500 to-purple-600 text-white shadow-lg'
-                          : `bg-white/80 text-gray-600 hover:bg-white border border-gray-200`
-                      }`}
-                        >
-                      {category.name}
-                      <span className="ml-2 text-xs opacity-75">({category.quizCount})</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
+            {/* Search Tips */}
+            <div className="text-center text-sm text-gray-500">
+              {selectedCategory && (
+                <span className="ml-4 text-blue-600">
+                  Currently filtering: <strong>{allCategories.find(c => c._id === selectedCategory)?.name}</strong>
+                  <button 
+                    onClick={() => handleCategoryChange('')}
+                    className="ml-2 text-red-500 hover:text-red-700"
+                  >
+                    ✕
+                  </button>
+                </span>
+              )}
+            </div>
           </Card>
-              </div>
+        </div>
 
         {/* Error State */}
               {error && (

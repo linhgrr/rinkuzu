@@ -3,11 +3,9 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
-import { QuestionImage, OptionImage } from '@/components/ui/ImageDisplay';
 import { Modal } from '@/components/ui/Modal';
-import { Input } from '@/components/ui/Input';
 import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer';
 
 interface QuizResultPageProps {
@@ -15,37 +13,41 @@ interface QuizResultPageProps {
 }
 
 interface QuizResult {
+  _id: string;
   score: number;
-  totalQuestions: number;
-  correctAnswers: number;
-  quizTitle: string;
   takenAt: string;
-  results: {
-    question: string;
-    options: string[];
-    type: 'single' | 'multiple';
-    userAnswer: number | number[];
-    correctAnswer: number | number[];
-    isCorrect: boolean;
-    isAnswered: boolean;
-    questionImage?: string;
-    optionImages?: (string | undefined)[];
-  }[];
+  answers: (number | number[])[];
+  quiz: {
+    title: string;
+    slug: string;
+    description: string;
+    questions: {
+      question: string;
+      options: string[];
+      type: 'single' | 'multiple';
+      correctIndex?: number;
+      correctIndexes?: number[];
+      questionImage?: string;
+      optionImages?: (string | undefined)[];
+      userAnswer: number | number[];
+      isCorrect: boolean;
+    }[];
+  };
 }
 
 export default function QuizResultPage({ params }: QuizResultPageProps) {
   const searchParams = useSearchParams();
+  const attemptId = searchParams.get('attemptId');
+  
   const [result, setResult] = useState<QuizResult | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState<string | null>(null);
   const [showAIModal, setShowAIModal] = useState(false);
+  const [aiQuestionData, setAIQuestionData] = useState<any>(null);
+  const [userQuestion, setUserQuestion] = useState('');
   const [aiExplanation, setAIExplanation] = useState('');
   const [loadingAI, setLoadingAI] = useState(false);
   const [aiError, setAIError] = useState('');
-  const [userQuestion, setUserQuestion] = useState('');
-  const [aiQuestionData, setAIQuestionData] = useState<any>(null);
-
-  const attemptId = searchParams.get('attemptId');
 
   useEffect(() => {
     const fetchResults = async () => {
@@ -101,6 +103,14 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
     }
   };
 
+  const formatCorrectAnswer = (question: QuizResult['quiz']['questions'][0]) => {
+    if (question.type === 'single') {
+      return question.options[question.correctIndex!];
+    } else {
+      return question.correctIndexes!.map(idx => question.options[idx]).join(', ');
+    }
+  };
+
   const openAIModal = (qData: any) => {
     setAIQuestionData(qData);
     setUserQuestion('');
@@ -141,6 +151,22 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
     }
   };
 
+  // Calculate statistics
+  const correctCount = result?.quiz.questions.filter(q => q.isCorrect).length || 0;
+  const incorrectCount = result?.quiz.questions.filter(q => {
+    const isAnswered = q.type === 'single' 
+      ? q.userAnswer !== -1 
+      : Array.isArray(q.userAnswer) && q.userAnswer.length > 0;
+    return !q.isCorrect && isAnswered;
+  }).length || 0;
+  const unansweredCount = result?.quiz.questions.filter(q => {
+    const isAnswered = q.type === 'single' 
+      ? q.userAnswer !== -1 
+      : Array.isArray(q.userAnswer) && q.userAnswer.length > 0;
+    return !isAnswered;
+  }).length || 0;
+  const totalQuestions = result?.quiz.questions.length || 0;
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -170,6 +196,15 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
     );
   }
 
+  const OptionImage = ({ src, alt }: { src: string; alt: string }) => (
+    <img 
+      src={src} 
+      alt={alt} 
+      className="max-w-full h-auto rounded border"
+      style={{ maxHeight: '200px' }}
+    />
+  );
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -177,7 +212,7 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="text-center">
             <h1 className="text-2xl font-bold text-gray-900">Quiz Complete!</h1>
-            <p className="mt-2 text-gray-600">{result.quizTitle}</p>
+            <p className="mt-2 text-gray-600">{result.quiz.title}</p>
             <p className="text-sm text-gray-500">
               Completed on {new Date(result.takenAt).toLocaleDateString('vi-VN', {
                 year: 'numeric',
@@ -209,29 +244,19 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
 
               <div className="flex justify-center space-x-8 text-sm text-gray-600">
                 <div className="text-center">
-                  <div className="font-semibold text-lg text-gray-900">{result.correctAnswers}</div>
+                  <div className="font-semibold text-lg text-gray-900">{correctCount}</div>
                   <div>Correct</div>
                 </div>
                 <div className="text-center">
-                  <div className="font-semibold text-lg text-gray-900">{result.results.filter(r => {
-                    const isAnswered = r.isAnswered !== undefined 
-                      ? r.isAnswered 
-                      : (r.type === 'single' ? r.userAnswer !== -1 : Array.isArray(r.userAnswer) && r.userAnswer.length > 0);
-                    return !r.isCorrect && isAnswered;
-                  }).length}</div>
+                  <div className="font-semibold text-lg text-gray-900">{incorrectCount}</div>
                   <div>Incorrect</div>
                 </div>
                 <div className="text-center">
-                  <div className="font-semibold text-lg text-gray-900">{result.results.filter(r => {
-                    const isAnswered = r.isAnswered !== undefined 
-                      ? r.isAnswered 
-                      : (r.type === 'single' ? r.userAnswer !== -1 : Array.isArray(r.userAnswer) && r.userAnswer.length > 0);
-                    return !isAnswered;
-                  }).length}</div>
+                  <div className="font-semibold text-lg text-gray-900">{unansweredCount}</div>
                   <div>Unanswered</div>
                 </div>
                 <div className="text-center">
-                  <div className="font-semibold text-lg text-gray-900">{result.totalQuestions}</div>
+                  <div className="font-semibold text-lg text-gray-900">{totalQuestions}</div>
                   <div>Total</div>
                 </div>
               </div>
@@ -258,25 +283,15 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               <div className="text-center p-4 bg-green-50 rounded-lg">
-                <div className="text-2xl font-bold text-green-600">{result.correctAnswers}</div>
+                <div className="text-2xl font-bold text-green-600">{correctCount}</div>
                 <div className="text-sm text-green-700">Correct Answers</div>
               </div>
               <div className="text-center p-4 bg-red-50 rounded-lg">
-                <div className="text-2xl font-bold text-red-600">{result.results.filter(r => {
-                  const isAnswered = r.isAnswered !== undefined 
-                    ? r.isAnswered 
-                    : (r.type === 'single' ? r.userAnswer !== -1 : Array.isArray(r.userAnswer) && r.userAnswer.length > 0);
-                  return !r.isCorrect && isAnswered;
-                }).length}</div>
+                <div className="text-2xl font-bold text-red-600">{incorrectCount}</div>
                 <div className="text-sm text-red-700">Incorrect Answers</div>
               </div>
               <div className="text-center p-4 bg-gray-50 rounded-lg">
-                <div className="text-2xl font-bold text-gray-600">{result.results.filter(r => {
-                  const isAnswered = r.isAnswered !== undefined 
-                    ? r.isAnswered 
-                    : (r.type === 'single' ? r.userAnswer !== -1 : Array.isArray(r.userAnswer) && r.userAnswer.length > 0);
-                  return !isAnswered;
-                }).length}</div>
+                <div className="text-2xl font-bold text-gray-600">{unansweredCount}</div>
                 <div className="text-sm text-gray-700">Unanswered</div>
               </div>
               <div className="text-center p-4 bg-blue-50 rounded-lg">
@@ -294,13 +309,11 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
           </CardHeader>
           <CardContent>
             <div className="space-y-6">
-              {result.results.map((questionResult, index) => {
-                // Fallback logic for backward compatibility with old data
-                const isAnswered = questionResult.isAnswered !== undefined 
-                  ? questionResult.isAnswered 
-                  : (questionResult.type === 'single' 
-                      ? questionResult.userAnswer !== -1 
-                      : Array.isArray(questionResult.userAnswer) && questionResult.userAnswer.length > 0);
+              {result.quiz.questions.map((questionResult, index) => {
+                // Calculate if answered based on user answer
+                const isAnswered = questionResult.type === 'single' 
+                  ? questionResult.userAnswer !== -1 
+                  : Array.isArray(questionResult.userAnswer) && questionResult.userAnswer.length > 0;
                 
                 return (
                 <div
@@ -345,6 +358,12 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
                     </div>
                   </div>
 
+                  {questionResult.questionImage && (
+                    <div className="mb-4">
+                      <OptionImage src={questionResult.questionImage} alt="Question image" />
+                    </div>
+                  )}
+
                   <div className="space-y-2">
                     <div className="text-sm">
                       <span className="font-medium text-gray-700">Your answer: </span>
@@ -357,7 +376,7 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
                       <div className="text-sm">
                         <span className="font-medium text-gray-700">Correct answer: </span>
                         <span className="text-green-600">
-                          {formatAnswer(questionResult.correctAnswer, questionResult.options, questionResult.type, true)}
+                          {formatCorrectAnswer(questionResult)}
                         </span>
                       </div>
                     )}
@@ -376,8 +395,8 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
                           }
                           
                           const isCorrectAnswer = questionResult.type === 'single'
-                            ? questionResult.correctAnswer === optIdx
-                            : (questionResult.correctAnswer as number[]).includes(optIdx);
+                            ? questionResult.correctIndex === optIdx
+                            : questionResult.correctIndexes?.includes(optIdx);
 
                           const optionText = String.fromCharCode(65 + optIdx) + '. ' + option;
 
@@ -413,15 +432,6 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
                       </div>
                     </div>
                   </div>
-
-                  {questionResult.questionImage && (
-                    <div className="mt-3">
-                      <QuestionImage
-                        src={questionResult.questionImage}
-                        alt={`Question ${index + 1} image`}
-                      />
-                    </div>
-                  )}
                 </div>
                 );
               })}
@@ -429,123 +439,82 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
           </CardContent>
         </Card>
 
-        {/* Message based on performance */}
-        <Card className="mb-8">
-          <CardContent className="text-center py-8">
-            {result.score >= 80 ? (
-              <div className="space-y-2">
-                <div className="text-4xl">🏆</div>
-                <h3 className="text-xl font-semibold text-gray-900">Outstanding Performance!</h3>
-                <p className="text-gray-600">You've demonstrated excellent understanding of the material.</p>
-              </div>
-            ) : result.score >= 60 ? (
-              <div className="space-y-2">
-                <div className="text-4xl">📚</div>
-                <h3 className="text-xl font-semibold text-gray-900">Good Job!</h3>
-                <p className="text-gray-600">You're on the right track. Consider reviewing the topics you missed.</p>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                <div className="text-4xl">💪</div>
-                <h3 className="text-xl font-semibold text-gray-900">Keep Learning!</h3>
-                <p className="text-gray-600">Don't worry, learning takes time. Review the material and try again.</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Actions */}
-        <Card>
-          <CardContent className="text-center py-6">
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-900">What's Next?</h3>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link href={`/quiz/${params.slug}`}>
-                  <Button variant="outline" className="w-full sm:w-auto">
-                    Try Again
-                  </Button>
-                </Link>
-                <Link href="/">
-                  <Button className="w-full sm:w-auto">
-                    Find More Quizzes
-                  </Button>
-                </Link>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Share Results */}
-        <Card className="mt-6">
-          <CardHeader>
-            <CardTitle className="text-center">Share Your Achievement</CardTitle>
-          </CardHeader>
-          <CardContent className="text-center">
-            <p className="text-gray-600 mb-4">
-              Let others know about your quiz performance!
-            </p>
-            <div className="flex justify-center space-x-4">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  const text = `I just scored ${result.score}% on "${result.quizTitle}"! 🎯`;
-                  const url = window.location.href;
-                  navigator.share?.({ title: 'Quiz Result', text, url }) || 
-                  navigator.clipboard?.writeText(`${text} ${url}`);
-                }}
-              >
-                📤 Share
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => window.print()}
-              >
-                🖨️ Print
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Action Buttons */}
+        <div className="flex justify-center space-x-4">
+          <Link href={`/quiz/${params.slug}`}>
+            <Button variant="outline">Take Again</Button>
+          </Link>
+          <Link href="/">
+            <Button>Back to Home</Button>
+          </Link>
+        </div>
       </main>
 
-      {/* Ask AI Modal */}
-      <Modal isOpen={showAIModal} onClose={closeAIModal} title="🤖 Ask AI about this question" size="wide">
-        {aiQuestionData && (
+      {/* AI Modal */}
+      {showAIModal && (
+        <Modal 
+          isOpen={showAIModal} 
+          onClose={closeAIModal}
+          title="Ask AI About This Question"
+        >
           <div className="space-y-4">
-            {/* Question snapshot */}
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <h4 className="font-medium text-gray-900 mb-2">Current Question:</h4>
-              <p className="text-sm text-gray-700">{aiQuestionData.question}</p>
-              {aiQuestionData.questionImage && (
-                <div className="mt-3">
-                  <QuestionImage src={aiQuestionData.questionImage} alt="Question img" />
-                </div>
-              )}
-              <div className="mt-2 space-y-1">
-                {aiQuestionData.options.map((opt: string, idx: number) => (
-                  <div key={idx} className="text-xs text-gray-600 flex items-start space-x-2">
-                    <span>{String.fromCharCode(65+idx)}. {opt}</span>
-                    {aiQuestionData.optionImages?.[idx] && (
-                      <OptionImage src={aiQuestionData.optionImages[idx]!} alt={`Option ${idx} image`} className="ml-1" />
-                    )}
+            <div className="border rounded-lg p-4 bg-gray-50">
+              <h4 className="font-medium mb-2">{aiQuestionData?.question}</h4>
+              <div className="text-sm text-gray-600">
+                {aiQuestionData?.options?.map((opt: string, idx: number) => (
+                  <div key={idx} className="mb-1">
+                    {String.fromCharCode(65 + idx)}. {opt}
                   </div>
                 ))}
               </div>
             </div>
-            {/* Input */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Ask a specific question (optional):</label>
-              <Input value={userQuestion} onChange={e=>setUserQuestion(e.target.value)} placeholder="e.g., Why is option B correct?" className="w-full"/>
-            </div>
-            <Button onClick={askAI} loading={loadingAI} disabled={loadingAI} className="w-full bg-purple-600 hover:bg-purple-700">{loadingAI?'Getting AI explanation...':'Get AI Explanation'}</Button>
-            {aiError && <div className="rounded-md bg-red-50 p-3 text-sm text-red-700">{aiError}</div>}
-            {aiExplanation && <div className="rounded-md bg-green-50 p-4"><MarkdownRenderer content={aiExplanation} className="text-green-800"/></div>}
-            <div className="text-xs text-gray-500 bg-yellow-50 p-3 rounded-md"><strong>📝 Note:</strong> AI explanation is for learning purposes. It won't reveal the correct answer directly but will help you understand concepts.</div>
             
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Your Question (Optional - leave blank for general explanation):
+              </label>
+              <textarea
+                value={userQuestion}
+                onChange={(e) => setUserQuestion(e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg resize-none"
+                rows={3}
+                placeholder="Ask a specific question about this problem..."
+              />
+            </div>
+            
+            <div className="flex space-x-3">
+              <Button
+                onClick={askAI}
+                disabled={loadingAI}
+                className="flex-1"
+              >
+                {loadingAI ? 'Getting AI Response...' : '🤖 Ask AI'}
+              </Button>
+              <Button
+                onClick={closeAIModal}
+                variant="outline"
+              >
+                Close
+              </Button>
+            </div>
+            
+            {aiError && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                {aiError}
+              </div>
+            )}
+            
+            {aiExplanation && (
+              <div className="border rounded-lg p-4 bg-blue-50">
+                <h4 className="font-medium mb-2 text-blue-900">AI Explanation:</h4>
+                <div className="text-sm">
+                  <MarkdownRenderer content={aiExplanation} />
+                </div>
+              </div>
+            )}
           </div>
-        )}
-      </Modal>
+        </Modal>
+      )}
     </div>
   );
 } 

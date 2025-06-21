@@ -917,7 +917,6 @@ export default function CreateQuizPage() {
                 <Card className="h-full flex flex-col shadow-2xl border-2 border-blue-200 bg-white">
                   <CardHeader className="flex-shrink-0 pb-3">
                     <div className="flex items-center justify-between">
-                      <CardTitle className="text-lg">PDF Reference</CardTitle>
                       <Button
                         onClick={() => setShowPDFViewer(false)}
                         variant="ghost"
@@ -927,15 +926,6 @@ export default function CreateQuizPage() {
                         ✕
                       </Button>
                     </div>
-                    
-                    {pdfFiles.length > 0 && (
-                      <div className="text-sm text-gray-600">
-                        {pdfFiles.length === 1 
-                          ? `${pdfFiles[0].name} (${(pdfFiles[0].size / 1024 / 1024).toFixed(2)} MB)`
-                          : `${pdfFiles.length} files to merge (${(pdfFiles.reduce((acc, file) => acc + file.size, 0) / 1024 / 1024).toFixed(2)} MB total)`
-                        }
-                      </div>
-                    )}
                   </CardHeader>
                   
                   <CardContent className="flex-1 flex flex-col p-4 min-h-0">

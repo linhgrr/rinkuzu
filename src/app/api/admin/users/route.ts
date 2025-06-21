@@ -4,7 +4,7 @@ import { authOptions } from '@/lib/auth';
 import connectDB from '@/lib/mongoose';
 import User from '@/models/User';
 
-// GET /api/admin/users - Get all users
+// GET /api/admin/users - Get all users with pagination
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -16,9 +16,31 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const url = new URL(request.url);
+    const page = parseInt(url.searchParams.get('page') || '1');
+    const limit = parseInt(url.searchParams.get('limit') || '10');
+    const search = url.searchParams.get('search');
+    const skip = (page - 1) * limit;
+
     await connectDB();
 
-    const users = await User.find({}, { password: 0 }).sort({ createdAt: -1 });
+    let filter: any = {};
+
+    // Add search functionality
+    if (search && search.trim()) {
+      const searchRegex = new RegExp(search.trim(), 'i');
+      filter = {
+        email: searchRegex
+      };
+    }
+
+    const [users, total] = await Promise.all([
+      User.find(filter, { password: 0 })
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      User.countDocuments(filter)
+    ]);
 
     return NextResponse.json({
       success: true,
@@ -28,7 +50,13 @@ export async function GET(request: NextRequest) {
           email: user.email,
           role: user.role,
           createdAt: user.createdAt,
-        }))
+        })),
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit)
+        }
       }
     });
 

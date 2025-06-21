@@ -199,7 +199,11 @@ export default function HistoryPage() {
       {/* Main Content */}
       <main className={`py-8 transition-all duration-300 ${
         session && isSidebarOpen ? 'ml-64' : session ? 'ml-16' : ''
-      } max-w-none px-4 sm:px-6 lg:px-8`}>
+      } max-w-none px-4 sm:px-6 lg:px-8 ios-scroll-fix`} style={{
+        WebkitOverflowScrolling: 'touch',
+        overflowY: 'auto',
+        overscrollBehavior: 'none'
+      }}>
         {status === 'loading' ? (
           <div className="flex justify-center py-12">
             <div className="text-gray-500">Loading...</div>

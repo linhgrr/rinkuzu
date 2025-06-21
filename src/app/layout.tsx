@@ -73,69 +73,61 @@ export default function RootLayout({
         <meta name="format-detection" content="telephone=no" />
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
         
-        {/* Mobile overscroll prevention script */}
+        {/* iOS Safari scrolling fixes */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
-                // Prevent pull-to-refresh and overscroll on mobile
-                function preventOverscroll() {
-                  // Prevent default touch behaviors that cause bouncing
-                  document.addEventListener('touchstart', function(e) {
-                    if (e.touches.length > 1) {
-                      e.preventDefault();
-                    }
-                  }, { passive: false });
-                  
-                  document.addEventListener('touchmove', function(e) {
-                    // Prevent pull-to-refresh
-                    if (e.touches.length > 1) {
-                      e.preventDefault();
-                      return;
-                    }
-                    
-                    var touch = e.touches[0];
-                    var target = e.target;
-                    
-                    // Find scrollable parent
-                    var scrollableParent = target;
-                    while (scrollableParent && scrollableParent !== document.body) {
-                      var style = window.getComputedStyle(scrollableParent);
-                      if (style.overflow === 'scroll' || style.overflow === 'auto' || 
-                          style.overflowY === 'scroll' || style.overflowY === 'auto') {
-                        break;
-                      }
-                      scrollableParent = scrollableParent.parentElement;
-                    }
-                    
-                    if (!scrollableParent || scrollableParent === document.body) {
-                      // No scrollable parent found, prevent default
-                      e.preventDefault();
-                    }
-                  }, { passive: false });
-                  
-                  // Additional iOS Safari fixes
+                // iOS Safari specific scrolling fixes
+                function initIOSScrollFix() {
                   if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
-                    document.body.style.position = 'fixed';
-                    document.body.style.width = '100%';
-                    document.body.style.height = '100%';
-                    document.body.style.overflow = 'hidden';
+                    // Enable smooth scrolling on iOS
+                    document.documentElement.style.webkitOverflowScrolling = 'touch';
+                    document.body.style.webkitOverflowScrolling = 'touch';
                     
-                    // Allow main content to scroll
-                    var main = document.querySelector('main');
-                    if (main) {
-                      main.style.height = '100vh';
-                      main.style.overflowY = 'auto';
-                      main.style.overscrollBehavior = 'none';
-                      main.style.webkitOverflowScrolling = 'touch';
-                    }
+                    // Prevent zoom on double tap
+                    var lastTouchEnd = 0;
+                    document.addEventListener('touchend', function (event) {
+                      var now = (new Date()).getTime();
+                      if (now - lastTouchEnd <= 300) {
+                        event.preventDefault();
+                      }
+                      lastTouchEnd = now;
+                    }, false);
+                    
+                    // Prevent rubber band scrolling
+                    document.addEventListener('touchmove', function(e) {
+                      // Allow scrolling inside elements with overflow auto/scroll
+                      var el = e.target;
+                      while (el && el !== document.body) {
+                        var style = window.getComputedStyle(el);
+                        if (style.overflowY === 'auto' || style.overflowY === 'scroll' || 
+                            style.overflow === 'auto' || style.overflow === 'scroll') {
+                          return;
+                        }
+                        el = el.parentElement;
+                      }
+                      
+                      // Check if we're at the top or bottom of the page
+                      var scrollTop = document.documentElement.scrollTop || document.body.scrollTop;
+                      var scrollHeight = document.documentElement.scrollHeight || document.body.scrollHeight;
+                      var clientHeight = document.documentElement.clientHeight || window.innerHeight;
+                      
+                      if (scrollTop === 0 && e.touches[0].clientY > e.touches[0].clientY) {
+                        // At top, trying to scroll up
+                        e.preventDefault();
+                      } else if (scrollTop + clientHeight >= scrollHeight && e.touches[0].clientY < e.touches[0].clientY) {
+                        // At bottom, trying to scroll down
+                        e.preventDefault();
+                      }
+                    }, { passive: false });
                   }
                 }
                 
                 if (document.readyState === 'loading') {
-                  document.addEventListener('DOMContentLoaded', preventOverscroll);
+                  document.addEventListener('DOMContentLoaded', initIOSScrollFix);
                 } else {
-                  preventOverscroll();
+                  initIOSScrollFix();
                 }
               })();
             `,

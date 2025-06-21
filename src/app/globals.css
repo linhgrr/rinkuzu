@@ -199,10 +199,34 @@
     font-feature-settings: "rlig" 1, "calt" 1;
     background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
     min-height: 100vh;
+    /* iOS Safari scrolling fixes */
+    -webkit-overflow-scrolling: touch;
+    overflow-x: hidden;
+    overscroll-behavior-y: none;
   }
   
   html {
     scroll-behavior: smooth;
+    /* iOS Safari scrolling fixes */
+    -webkit-overflow-scrolling: touch;
+    overflow-x: hidden;
+    overscroll-behavior-y: none;
+  }
+  
+  /* iOS Safari specific fixes */
+  @supports (-webkit-touch-callout: none) {
+    body {
+      position: relative !important;
+      width: 100% !important;
+      height: auto !important;
+      overflow: visible !important;
+    }
+    
+    main {
+      -webkit-overflow-scrolling: touch !important;
+      overflow-y: auto !important;
+      overscroll-behavior: none !important;
+    }
   }
 }
 
@@ -258,5 +282,19 @@
   
   .gradient-text {
     @apply bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent;
+  }
+  
+  /* iOS Safari scrolling fix */
+  .ios-scroll-fix {
+    -webkit-overflow-scrolling: touch;
+    overflow-y: auto;
+    overscroll-behavior: none;
+    transform: translateZ(0);
+  }
+  
+  /* Force hardware acceleration for smooth scrolling */
+  .ios-scroll-fix * {
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
   }
 }

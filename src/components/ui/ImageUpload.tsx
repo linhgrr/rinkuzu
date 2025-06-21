@@ -23,8 +23,8 @@ export function ImageUpload({
 }: ImageUploadProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const hoverRef = useRef(false);
 
   const handleImageUpload = useCallback(async (file: File) => {
     if (!file.type.startsWith('image/')) {
@@ -99,40 +99,41 @@ export function ImageUpload({
     }
   }, [handleImageUpload]);
 
-  // --- Hover-based global paste listener ---
-  const onWindowPaste = useCallback((e: ClipboardEvent) => {
-    if (!hoverRef.current) return; // only allow when this component is hovered
-    const items = e.clipboardData?.items;
-    if (!items) return;
-    for (let i = 0; i < items.length; i++) {
-      const item = items[i];
-      if (item.type.startsWith('image/')) {
-        const file = item.getAsFile();
-        if (file) {
-          handleImageUpload(file);
-          e.preventDefault();
-          break;
+  // Fixed global paste handler - stable reference and proper cleanup
+  useEffect(() => {
+    const onWindowPaste = (e: ClipboardEvent) => {
+      if (!isHovered) return; // only allow when this component is hovered
+      
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (item.type.startsWith('image/')) {
+          const file = item.getAsFile();
+          if (file) {
+            handleImageUpload(file);
+            e.preventDefault();
+            break;
+          }
         }
       }
-    }
-  }, [handleImageUpload]);
+    };
 
-  const handleMouseEnter = () => {
-    hoverRef.current = true;
     window.addEventListener('paste', onWindowPaste);
-  };
-
-  const handleMouseLeave = () => {
-    hoverRef.current = false;
-    window.removeEventListener('paste', onWindowPaste);
-  };
-
-  // Cleanup on unmount
-  useEffect(() => {
+    
     return () => {
       window.removeEventListener('paste', onWindowPaste);
     };
-  }, [onWindowPaste]);
+  }, [isHovered, handleImageUpload]);
+
+  const handleMouseEnter = () => {
+    setIsHovered(true);
+  };
+
+  const handleMouseLeave = () => {
+    setIsHovered(false);
+  };
 
   const handleClick = useCallback(() => {
     fileInputRef.current?.click();
@@ -140,7 +141,9 @@ export function ImageUpload({
 
   if (currentImage) {
     return (
-      <div className={`relative group ${className}`}>
+      <div className={`relative group ${className}`}
+           onMouseEnter={handleMouseEnter}
+           onMouseLeave={handleMouseLeave}>
         <img
           src={currentImage}
           alt="Uploaded image"

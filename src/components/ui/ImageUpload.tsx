@@ -37,19 +37,12 @@ export function ImageUpload({
       return;
     }
 
-    console.log('🔄 Starting image upload:', {
-      fileName: file.name,
-      fileSize: file.size,
-      fileType: file.type
-    });
-
     setIsUploading(true);
     try {
       const result = await uploadImageToImgBB(file, file.name);
-      console.log('✅ Image upload successful:', result.displayUrl);
       onImageUploaded(result.displayUrl);
     } catch (error: any) {
-      console.error('❌ Failed to upload image:', error);
+      console.error('Failed to upload image:', error);
       alert('Failed to upload image: ' + error.message);
     } finally {
       setIsUploading(false);
@@ -99,25 +92,25 @@ export function ImageUpload({
     }
   }, [handleImageUpload]);
 
-  // Fixed global paste handler - stable reference and proper cleanup
+  // Global paste handler for hover-based pasting
   useEffect(() => {
     const onWindowPaste = (e: ClipboardEvent) => {
-      if (!isHovered) return; // only allow when this component is hovered
+      if (!isHovered) return;
       
-    const items = e.clipboardData?.items;
-    if (!items) return;
+      const items = e.clipboardData?.items;
+      if (!items) return;
       
-    for (let i = 0; i < items.length; i++) {
-      const item = items[i];
-      if (item.type.startsWith('image/')) {
-        const file = item.getAsFile();
-        if (file) {
-          handleImageUpload(file);
-          e.preventDefault();
-          break;
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (item.type.startsWith('image/')) {
+          const file = item.getAsFile();
+          if (file) {
+            handleImageUpload(file);
+            e.preventDefault();
+            break;
+          }
         }
       }
-    }
     };
 
     window.addEventListener('paste', onWindowPaste);
@@ -141,9 +134,11 @@ export function ImageUpload({
 
   if (currentImage) {
     return (
-      <div className={`relative group ${className}`}
-           onMouseEnter={handleMouseEnter}
-           onMouseLeave={handleMouseLeave}>
+      <div 
+        className={`relative group ${className}`}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+      >
         <img
           src={currentImage}
           alt="Uploaded image"

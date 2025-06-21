@@ -97,15 +97,23 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
     setEditableQuestions(updated);
   };
 
-  const updateQuestionImage = (qIdx: number, url: string) => updateQuestionField(qIdx,'questionImage',url);
-  const removeQuestionImage = (qIdx: number) => updateQuestionField(qIdx,'questionImage',undefined);
+  const updateQuestionImage = (qIdx: number, url: string) => {
+    updateQuestionField(qIdx,'questionImage',url);
+  };
+  
+  const removeQuestionImage = (qIdx: number) => {
+    updateQuestionField(qIdx,'questionImage',undefined);
+  };
 
   const updateOptionImage = (qIdx:number,optIdx:number,url:string)=>{
     const updated=[...editableQuestions];
-    if(!updated[qIdx].optionImages){updated[qIdx].optionImages=new Array(updated[qIdx].options.length).fill(undefined);} 
+    if(!updated[qIdx].optionImages){
+      updated[qIdx].optionImages=new Array(updated[qIdx].options.length).fill(undefined);
+    } 
     updated[qIdx].optionImages![optIdx]=url;
     setEditableQuestions(updated);
   };
+  
   const removeOptionImage=(qIdx:number,optIdx:number)=>{
     const updated=[...editableQuestions];
     if(updated[qIdx].optionImages) updated[qIdx].optionImages![optIdx]=undefined;

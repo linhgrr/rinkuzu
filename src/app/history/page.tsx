@@ -243,9 +243,9 @@ export default function HistoryPage() {
         <div className="mb-8">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Quiz History</h1>
-              <p className="mt-2 text-gray-600">
-                Your completed quiz attempts and scores
+          <h1 className="text-3xl font-bold text-gray-900">Quiz History</h1>
+          <p className="mt-2 text-gray-600">
+            Your completed quiz attempts and scores
                 {pagination && (
                   <span className="ml-2 text-sm">
                     ({pagination.totalItems} total attempts)

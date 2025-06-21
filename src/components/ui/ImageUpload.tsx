@@ -104,20 +104,20 @@ export function ImageUpload({
     const onWindowPaste = (e: ClipboardEvent) => {
       if (!isHovered) return; // only allow when this component is hovered
       
-      const items = e.clipboardData?.items;
-      if (!items) return;
+    const items = e.clipboardData?.items;
+    if (!items) return;
       
-      for (let i = 0; i < items.length; i++) {
-        const item = items[i];
-        if (item.type.startsWith('image/')) {
-          const file = item.getAsFile();
-          if (file) {
-            handleImageUpload(file);
-            e.preventDefault();
-            break;
-          }
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      if (item.type.startsWith('image/')) {
+        const file = item.getAsFile();
+        if (file) {
+          handleImageUpload(file);
+          e.preventDefault();
+          break;
         }
       }
+    }
     };
 
     window.addEventListener('paste', onWindowPaste);

@@ -331,7 +331,7 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
                       <h3 className="font-semibold text-gray-900 flex-1">
                         {index + 1}. {questionResult.question}
                       </h3>
-                      <Button variant="outline" onClick={() => openAIModal(questionResult)} className="text-purple-600 border-purple-200 hover:bg-purple-50 hover:border-purple-300">🤖 Ask AI</Button>
+                      <Button variant="outline" onClick={() => openAIModal(questionResult)} className="text-purple-600 border-purple-200 hover:bg-purple-50 hover:border-purple-300">Ask Rin-chan</Button>
                     </div>
                     <div className="flex items-center space-x-2 ml-4">
                       <span className={`px-2 py-1 rounded text-xs font-medium ${
@@ -455,7 +455,7 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
         <Modal 
           isOpen={showAIModal} 
           onClose={closeAIModal}
-          title="Ask AI About This Question"
+          title="Ask Rin-chan About This Question"
         >
           <div className="space-y-4">
             <div className="border rounded-lg p-4 bg-gray-50">
@@ -488,7 +488,7 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
                 disabled={loadingAI}
                 className="flex-1"
               >
-                {loadingAI ? 'Getting AI Response...' : '🤖 Ask AI'}
+                {loadingAI ? 'Rin-chan is thinking for you now ...' : 'Ask Rin-chan'}
               </Button>
               <Button
                 onClick={closeAIModal}

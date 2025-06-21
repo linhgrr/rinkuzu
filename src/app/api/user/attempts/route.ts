@@ -27,6 +27,15 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Get pagination parameters from URL
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '10');
+    const skip = (page - 1) * limit;
+
+    // Get total count for pagination
+    const totalAttempts = await Attempt.countDocuments({ user: user._id });
+
     // Get user's attempts with quiz details
     const attempts = await Attempt.find({ user: user._id })
       .populate({
@@ -34,7 +43,8 @@ export async function GET(request: NextRequest) {
         select: 'title slug description questions',
       })
       .sort({ takenAt: -1 })
-      .limit(50);
+      .skip(skip)
+      .limit(limit);
 
     const formattedAttempts = attempts.map(attempt => ({
       _id: attempt._id,
@@ -51,6 +61,14 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: formattedAttempts,
+      pagination: {
+        currentPage: page,
+        totalPages: Math.ceil(totalAttempts / limit),
+        totalItems: totalAttempts,
+        itemsPerPage: limit,
+        hasNextPage: page < Math.ceil(totalAttempts / limit),
+        hasPrevPage: page > 1,
+      },
     });
 
   } catch (error: any) {

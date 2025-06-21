@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { formatDate } from '@/lib/utils';
 import Sidebar from '@/components/Sidebar';
+import Pagination from '@/components/ui/Pagination';
 
 
 interface AttemptHistory {
@@ -22,6 +23,15 @@ interface AttemptHistory {
   };
 }
 
+interface PaginationInfo {
+  currentPage: number;
+  totalPages: number;
+  totalItems: number;
+  itemsPerPage: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
+}
+
 export default function HistoryPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -31,6 +41,9 @@ export default function HistoryPage() {
   const [attempts, setAttempts] = useState<AttemptHistory[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState<PaginationInfo | null>(null);
+  const itemsPerPage = 10;
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -41,15 +54,22 @@ export default function HistoryPage() {
     if (session?.user) {
       fetchAttempts();
     }
-  }, [session, status, router]);
+  }, [session, status, router, currentPage]);
 
   const fetchAttempts = async () => {
     try {
-      const response = await fetch('/api/user/attempts');
+      setLoading(true);
+      const params = new URLSearchParams({
+        page: currentPage.toString(),
+        limit: itemsPerPage.toString(),
+      });
+      
+      const response = await fetch(`/api/user/attempts?${params}`);
       const data = await response.json();
 
       if (data.success) {
         setAttempts(data.data);
+        setPagination(data.pagination);
       } else {
         setError(data.error || 'Failed to fetch quiz history');
       }
@@ -72,6 +92,11 @@ export default function HistoryPage() {
     if (score >= 70) return { text: 'Good', emoji: '👍' };
     if (score >= 60) return { text: 'Pass', emoji: '📚' };
     return { text: 'Needs Work', emoji: '💪' };
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    setError('');
   };
 
 
@@ -216,10 +241,25 @@ export default function HistoryPage() {
         <>
         <div className="max-w-6xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Quiz History</h1>
-          <p className="mt-2 text-gray-600">
-            Your completed quiz attempts and scores
-          </p>
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Quiz History</h1>
+              <p className="mt-2 text-gray-600">
+                Your completed quiz attempts and scores
+                {pagination && (
+                  <span className="ml-2 text-sm">
+                    ({pagination.totalItems} total attempts)
+                  </span>
+                )}
+              </p>
+            </div>
+            {loading && (
+              <div className="flex items-center space-x-2 text-blue-600">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                <span className="text-sm">Loading...</span>
+              </div>
+            )}
+          </div>
         </div>
 
         {error && (
@@ -228,7 +268,14 @@ export default function HistoryPage() {
           </div>
         )}
 
-        {attempts.length === 0 ? (
+        {loading && attempts.length === 0 ? (
+          <div className="flex justify-center py-12">
+            <div className="flex items-center space-x-2 text-gray-500">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+              <span>Loading quiz history...</span>
+            </div>
+          </div>
+        ) : attempts.length === 0 ? (
           <Card>
             <CardContent className="text-center py-12">
               <div className="text-6xl mb-4">📝</div>
@@ -245,12 +292,24 @@ export default function HistoryPage() {
           </Card>
         ) : (
           <div className="space-y-4">
+            {/* Page Info */}
+            {pagination && pagination.totalPages > 1 && (
+              <div className="text-center mb-6">
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-50 text-blue-700 border border-blue-200">
+                  📄 Page {pagination.currentPage} of {pagination.totalPages}
+                  <span className="ml-2 text-xs">
+                    ({Math.min((pagination.currentPage - 1) * pagination.itemsPerPage + 1, pagination.totalItems)}-{Math.min(pagination.currentPage * pagination.itemsPerPage, pagination.totalItems)} of {pagination.totalItems})
+                  </span>
+                </span>
+              </div>
+            )}
+
             {/* Stats Summary */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
               <Card>
                 <CardContent className="text-center py-6">
                   <div className="text-2xl font-bold text-blue-600">
-                    {attempts.length}
+                    {pagination?.totalItems || attempts.length}
                   </div>
                   <div className="text-sm text-gray-600">Total Attempts</div>
                 </CardContent>
@@ -258,17 +317,17 @@ export default function HistoryPage() {
               <Card>
                 <CardContent className="text-center py-6">
                   <div className="text-2xl font-bold text-green-600">
-                    {Math.round(attempts.reduce((sum, a) => sum + a.score, 0) / attempts.length)}%
+                    {attempts.length > 0 ? Math.round(attempts.reduce((sum, a) => sum + a.score, 0) / attempts.length) : 0}%
                   </div>
-                  <div className="text-sm text-gray-600">Average Score</div>
+                  <div className="text-sm text-gray-600">Avg Score (This Page)</div>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="text-center py-6">
                   <div className="text-2xl font-bold text-purple-600">
-                    {Math.max(...attempts.map(a => a.score))}%
+                    {attempts.length > 0 ? Math.max(...attempts.map(a => a.score)) : 0}%
                   </div>
-                  <div className="text-sm text-gray-600">Best Score</div>
+                  <div className="text-sm text-gray-600">Best Score (This Page)</div>
                 </CardContent>
               </Card>
               <Card>
@@ -276,7 +335,7 @@ export default function HistoryPage() {
                   <div className="text-2xl font-bold text-orange-600">
                     {attempts.filter(a => a.score >= 80).length}
                   </div>
-                  <div className="text-sm text-gray-600">High Scores (80%+)</div>
+                  <div className="text-sm text-gray-600">High Scores (This Page)</div>
                 </CardContent>
               </Card>
             </div>
@@ -341,6 +400,17 @@ export default function HistoryPage() {
                 );
               })}
             </div>
+
+            {/* Pagination */}
+            {pagination && pagination.totalPages > 1 && (
+              <div className="mt-8">
+                <Pagination
+                  currentPage={pagination.currentPage}
+                  totalPages={pagination.totalPages}
+                  onPageChange={handlePageChange}
+                />
+              </div>
+            )}
           </div>
         )}
         </div>

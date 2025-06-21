@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { useState, useEffect } from 'react';
+import CategorySearch from '@/components/ui/CategorySearch';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -137,83 +138,69 @@ export default function Sidebar({ isOpen, onToggle, currentPath }: SidebarProps)
             );
           })}
 
-          {/* Categories section */}
-          {categories.length > 0 && (
-            <div className="pt-4 border-t border-gray-200">
-              {/* Categories section header */}
-              {isOpen ? (
-                <div className="mb-2">
+          {/* Categories Search Section */}
+          <div className="pt-4 border-t border-gray-200">
+            {/* Categories section header */}
+            {isOpen ? (
+              <div className="mb-3">
+                <div className="flex items-center justify-between px-3 py-2 text-sm font-medium text-gray-600">
+                  <span>Browse by Subject</span>
                   <button
                     onClick={() => setCategoryMenuOpen(!categoryMenuOpen)}
-                    className="flex items-center justify-between w-full px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                    className="p-1 hover:bg-gray-100 rounded"
                   >
-                    <span>Browse by Subject</span>
                     <svg className={`w-4 h-4 transition-transform ${categoryMenuOpen ? 'rotate-90' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
                   </button>
                 </div>
-              ) : (
-                <div className="mb-2 flex justify-center">
-                  <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
-                    <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                    </svg>
+                
+                {/* Smart Category Search */}
+                {categoryMenuOpen && (
+                  <div className="mb-3">
+                    <CategorySearch isCollapsed={false} />
                   </div>
-                </div>
-              )}
+                )}
+              </div>
+            ) : (
+              <div className="mb-2">
+                <CategorySearch isCollapsed={true} />
+              </div>
+            )}
 
-              {/* Categories menu items */}
-              {(categoryMenuOpen || !isOpen) && (
-                <div className={`space-y-1 ${isOpen ? 'ml-3' : ''}`}>
-                  {categories.map((category) => {
-                    const categoryPath = `/category/${getCategorySlug(category.name)}`;
-                    const isActive = currentPath === categoryPath;
-                    return (
-                      <Link
-                        key={category._id}
-                        href={categoryPath}
-                        className={`flex items-center px-3 py-2 text-sm rounded-lg transition-colors ${
-                          !isOpen ? 'justify-center' : ''
-                        } ${
-                          isActive 
-                            ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700' 
-                            : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-                        }`}
-                        title={!isOpen ? category.name : ''}
-                      >
-                        <div 
-                          className={`${isOpen ? 'w-4 h-4 mr-3' : 'w-5 h-5'} rounded-full flex items-center justify-center text-white text-xs font-bold`}
-                          style={{ backgroundColor: category.color }}
-                        >
-                          {category.name.charAt(0)}
-                        </div>
-                        {isOpen && (
-                          <span className="flex-1 truncate">
-                            {category.name}
-                            <span className="text-xs text-gray-500 ml-1">({category.quizCount})</span>
-                          </span>
-                        )}
-                      </Link>
-                    );
-                  })}
-                  
-                  {/* View All Categories link */}
-                  {isOpen && (
-                    <Link
-                      href="/"
-                      className="flex items-center px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                    >
-                      <svg className="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <span>View All Subjects</span>
-                    </Link>
-                  )}
+            {/* Popular Categories (Quick Access) */}
+            {categoryMenuOpen && isOpen && categories.length > 0 && (
+              <div className="ml-3 space-y-1">
+                <div className="px-3 py-1">
+                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Popular</p>
                 </div>
-              )}
-            </div>
-          )}
+                {categories.slice(0, 4).map((category) => {
+                  const categoryPath = `/category/${getCategorySlug(category.name)}`;
+                  const isActive = currentPath === categoryPath;
+                  return (
+                    <Link
+                      key={category._id}
+                      href={categoryPath}
+                      className={`flex items-center px-3 py-2 text-sm rounded-lg transition-colors ${
+                        isActive 
+                          ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700' 
+                          : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                      }`}
+                    >
+                      <div 
+                        className="w-3 h-3 rounded-full mr-3"
+                        style={{ backgroundColor: category.color }}
+                      />
+                      <span className="flex-1 truncate text-xs">
+                        {category.name}
+                        <span className="text-gray-400 ml-1">({category.quizCount})</span>
+                      </span>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </div>
 
           {/* Admin menu section */}
           {(session.user as any)?.role === 'admin' && (

@@ -7,6 +7,7 @@ import Navigation from '@/components/Navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Badge } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import CategorySearch from '@/components/ui/CategorySearch';
 
 // Interactive Anime Portal Component - WOW FACTOR! 🌸✨
 function WelcomeGif() {
@@ -286,10 +287,10 @@ export default function HomePage() {
     fetchQuizzes(1, searchTerm, selectedCategory);
   };
 
-  const handleCategoryChange = (categoryId: string) => {
-    setSelectedCategory(categoryId);
+  const handleCategoryChange = (categoryId: string | null) => {
+    setSelectedCategory(categoryId || '');
     setPagination(prev => ({ ...prev, page: 1 }));
-    fetchQuizzes(1, searchTerm, categoryId);
+    fetchQuizzes(1, searchTerm, categoryId || '');
   };
 
   const handlePageChange = (newPage: number) => {
@@ -378,25 +379,33 @@ export default function HomePage() {
               </svg>
               My Quizzes
             </Button>
+
+            {/* Quick Category Search */}
+            <div className="min-w-[250px]">
+              <CategorySearch 
+                showInHomepage={true} 
+                onCategorySelect={handleCategoryChange}
+              />
+            </div>
           </div>
               </div>
 
-        {/* Search and Filter Section */}
-                <div className="mb-8">
+        {/* Simplified Search Section */}
+        <div className="mb-8">
           <Card variant="glass" className="p-6 backdrop-blur-xl">
-            {/* Search Bar */}
-            <form onSubmit={handleSearch} className="mb-6">
+            {/* Main Search Bar */}
+            <form onSubmit={handleSearch} className="mb-4">
               <div className="flex gap-4">
-                              <div className="flex-1">
+                <div className="flex-1">
                   <Input
                     type="text"
-                    placeholder="Search quizzes by title or topic..."
+                    placeholder="Search quizzes by title, topic, or keyword..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     icon={
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                              </svg>
+                      </svg>
                     }
                     className="w-full"
                   />
@@ -407,40 +416,22 @@ export default function HomePage() {
               </div>
             </form>
 
-                {/* Category Filter */}
-            {!categoriesLoading && hotCategories.length > 0 && (
-                  <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Popular Categories</h3>
-                <div className="flex flex-wrap gap-3">
-                      <button
-                        onClick={() => handleCategoryChange('')}
-                    className={`px-4 py-2 rounded-xl font-medium transition-all duration-300 ${
-                      !selectedCategory 
-                        ? 'bg-gradient-to-r from-violet-500 to-purple-600 text-white shadow-lg' 
-                        : 'bg-white/80 text-gray-600 hover:bg-white border border-gray-200'
-                        }`}
-                      >
-                    All Categories
-                      </button>
-                  {hotCategories.map((category) => (
-                        <button
-                          key={category._id}
-                          onClick={() => handleCategoryChange(category._id)}
-                      className={`px-4 py-2 rounded-xl font-medium transition-all duration-300 ${
-                            selectedCategory === category._id
-                          ? 'bg-gradient-to-r from-violet-500 to-purple-600 text-white shadow-lg'
-                          : `bg-white/80 text-gray-600 hover:bg-white border border-gray-200`
-                      }`}
-                        >
-                      {category.name}
-                      <span className="ml-2 text-xs opacity-75">({category.quizCount})</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
+            {/* Search Tips */}
+            <div className="text-center text-sm text-gray-500">
+              {selectedCategory && (
+                <span className="ml-4 text-blue-600">
+                  Currently filtering: <strong>{allCategories.find(c => c._id === selectedCategory)?.name}</strong>
+                  <button 
+                    onClick={() => handleCategoryChange('')}
+                    className="ml-2 text-red-500 hover:text-red-700"
+                  >
+                    ✕
+                  </button>
+                </span>
+              )}
+            </div>
           </Card>
-              </div>
+        </div>
 
         {/* Error State */}
               {error && (

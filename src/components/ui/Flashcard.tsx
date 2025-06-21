@@ -87,7 +87,6 @@ export function Flashcard({
   
   const handleTouchStart = (e: React.TouchEvent) => {
     if (isTransitioning) return;
-    e.preventDefault(); // Prevent default touch behaviors
     const touch = e.touches[0];
     setIsDragging(true);
     setStartPos({ x: touch.clientX, y: touch.clientY });
@@ -96,7 +95,6 @@ export function Flashcard({
   
   const handleTouchMove = (e: React.TouchEvent) => {
     if (!isDragging || isTransitioning) return;
-    e.preventDefault(); // Prevent default touch behaviors including scroll
     const touch = e.touches[0];
     setDragOffset({ x: touch.clientX - startPos.x, y: touch.clientY - startPos.y });
   };
@@ -186,13 +184,17 @@ export function Flashcard({
         : 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease-out';
 
   return (
-    <div className="w-full flex flex-col items-center justify-center overflow-hidden h-full">
+    <div className="w-full flex flex-col items-center justify-center overflow-hidden">
       <div
         ref={cardRef}
         className="relative select-none"
         style={{
-          width: 'min(90vw, 500px)',
-          height: 'min(65vh, 400px)',
+          width: '75vw',
+          maxWidth: '1000px',
+          minWidth: '500px',
+          height: '60vh',
+          maxHeight: '500px',
+          minHeight: '350px',
           margin: '0 auto',
           zIndex: 10,
           transform,

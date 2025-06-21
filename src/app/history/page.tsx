@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { formatDate } from '@/lib/utils';
 import Sidebar from '@/components/Sidebar';
 
+
 interface AttemptHistory {
   _id: string;
   score: number;
@@ -72,6 +73,8 @@ export default function HistoryPage() {
     if (score >= 60) return { text: 'Pass', emoji: '📚' };
     return { text: 'Needs Work', emoji: '💪' };
   };
+
+
 
   return (
     <div className="min-h-screen bg-white">
@@ -311,11 +314,22 @@ export default function HistoryPage() {
                             </div>
                           </div>
                           
-                          <Link href={`/quiz/${attempt.quiz.slug}`}>
-                            <Button variant="outline" size="sm">
-                              Retake
-                            </Button>
-                          </Link>
+                          <div className="flex flex-col space-y-2">
+                            <Link href={`/history/${attempt._id}`}>
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                className="bg-blue-50 hover:bg-blue-100 border-blue-300 text-blue-700 w-full"
+                              >
+                                📊 Xem Chi Tiết
+                              </Button>
+                            </Link>
+                            <Link href={`/quiz/${attempt.quiz.slug}`}>
+                              <Button variant="outline" size="sm" className="w-full">
+                                🔄 Làm Lại
+                              </Button>
+                            </Link>
+                          </div>
                         </div>
                       </div>
                     </CardContent>
@@ -329,6 +343,8 @@ export default function HistoryPage() {
         </>
         )}
       </main>
+
+
     </div>
   );
 } 

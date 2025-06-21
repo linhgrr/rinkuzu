@@ -1,16 +1,43 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import connectDB from '@/lib/mongoose';
 import Attempt from '@/models/Attempt';
-import Quiz from '@/models/Quiz';
+import User from '@/models/User';
 
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
+    const session = await getServerSession(authOptions);
+    
+    if (!session?.user?.email) {
+      return NextResponse.json(
+        { success: false, error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+
     await connectDB();
 
-    const attempt = await Attempt.findById(params.id).populate('quiz');
+    // Find user
+    const user = await User.findOne({ email: session.user.email });
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: 'User not found' },
+        { status: 404 }
+      );
+    }
+
+    // Get attempt with quiz details including questions
+    const attempt = await Attempt.findOne({ 
+      _id: params.id,
+      user: user._id 
+    }).populate({
+      path: 'quiz',
+      select: 'title slug description questions',
+    });
 
     if (!attempt) {
       return NextResponse.json(
@@ -19,60 +46,42 @@ export async function GET(
       );
     }
 
-    const quiz = attempt.quiz;
-
-    // Calculate detailed results
-    const results = quiz.questions.map((question: any, index: number) => {
-      const userAnswer = attempt.answers[index];
-      let isCorrect = false;
-      let isAnswered = false;
-      
-      if (question.type === 'single') {
-        // Check if answered (not -1)
-        isAnswered = userAnswer !== -1;
-        // Only mark as correct if answered and correct
-        isCorrect = isAnswered && userAnswer === question.correctIndex;
-      } else if (question.type === 'multiple' && question.correctIndexes) {
-        // Check if answered (not empty array)
-        isAnswered = Array.isArray(userAnswer) && userAnswer.length > 0;
-        // Only mark as correct if answered and correct
-        if (isAnswered) {
-          const userSet = new Set(userAnswer.sort());
-          const correctSet = new Set(question.correctIndexes.sort());
-          isCorrect = userSet.size === correctSet.size && 
-                     [...userSet].every(x => correctSet.has(x));
-        }
-      }
-      
-      return {
-        question: question.question,
-        options: question.options,
-        type: question.type,
-        questionImage: question.questionImage ?? null,
-        optionImages: question.optionImages ?? [],
-        userAnswer,
-        correctAnswer: question.type === 'single' ? question.correctIndex : question.correctIndexes,
-        isCorrect,
-        isAnswered,
-      };
-    });
-
-    const correctAnswers = results.filter((r: any) => r.isCorrect).length;
+    // Format the response with question details and user answers
+    const formattedAttempt = {
+      _id: attempt._id,
+      score: attempt.score,
+      takenAt: attempt.takenAt,
+      answers: attempt.answers,
+      quiz: {
+        title: attempt.quiz.title,
+        slug: attempt.quiz.slug,
+        description: attempt.quiz.description,
+        questions: attempt.quiz.questions.map((question: any, index: number) => ({
+          question: question.question,
+          options: question.options,
+          type: question.type,
+          correctIndex: question.correctIndex,
+          correctIndexes: question.correctIndexes,
+          questionImage: question.questionImage,
+          optionImages: question.optionImages,
+          userAnswer: attempt.answers[index],
+          isCorrect: question.type === 'single' 
+            ? attempt.answers[index] === question.correctIndex
+            : Array.isArray(attempt.answers[index]) && Array.isArray(question.correctIndexes)
+              ? question.correctIndexes.length === attempt.answers[index].length &&
+                question.correctIndexes.every((idx: number) => attempt.answers[index].includes(idx))
+              : false
+        }))
+      },
+    };
 
     return NextResponse.json({
       success: true,
-      data: {
-        score: attempt.score,
-        totalQuestions: quiz.questions.length,
-        correctAnswers,
-        results,
-        quizTitle: quiz.title,
-        takenAt: attempt.takenAt,
-      }
+      data: formattedAttempt,
     });
 
   } catch (error: any) {
-    console.error('Get attempt error:', error);
+    console.error('Get attempt details error:', error);
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }

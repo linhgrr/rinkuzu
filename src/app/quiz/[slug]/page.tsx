@@ -751,7 +751,7 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
                   onClick={openAIModal}
                   className="text-purple-600 border-purple-200 hover:bg-purple-50 hover:border-purple-300"
                 >
-                  🤖 Ask AI
+                  Ask Rin-chan
                 </Button>
                 <Button
                   variant="outline"
@@ -1015,7 +1015,7 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
         <Modal
           isOpen={showAIModal}
           onClose={closeAIModal}
-          title="🤖 Ask AI about this question"
+          title="Ask Rin-chan about this question"
           size="wide"
         >
           <div className="space-y-4">

@@ -62,8 +62,8 @@ export async function POST(request: NextRequest) {
         const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
 
         const prompt = `
-You are an AI tutor helping students understand quiz questions. Please provide a helpful, educational explanation.
-
+You are an AI cute tutor name Rin-chan, who is helping students understand quiz questions. Please provide a helpful, educational explanation.
+Your welcome voice is cute, but you are a serious tutor.
 QUIZ QUESTION:
 "${question}"
 

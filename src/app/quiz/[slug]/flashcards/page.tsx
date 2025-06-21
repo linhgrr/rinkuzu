@@ -47,6 +47,36 @@ export default function FlashcardPage() {
     fetchQuiz();
   }, [params.slug]);
 
+  // Prevent scroll on mobile for flashcard page
+  useEffect(() => {
+    // Check if it's a mobile device
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || window.innerWidth <= 768;
+    
+    if (isMobile) {
+      // Save original body style
+      const originalStyle = {
+        overflow: document.body.style.overflow,
+        position: document.body.style.position,
+        height: document.body.style.height,
+        width: document.body.style.width
+      };
+
+      // Apply mobile-specific styles to prevent scrolling
+      document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.height = '100vh';
+      document.body.style.width = '100vw';
+
+      // Cleanup function to restore original styles
+      return () => {
+        document.body.style.overflow = originalStyle.overflow;
+        document.body.style.position = originalStyle.position;
+        document.body.style.height = originalStyle.height;
+        document.body.style.width = originalStyle.width;
+      };
+    }
+  }, []);
+
   const fetchQuiz = async () => {
     try {
       const response = await fetch(`/api/quiz/${params.slug}/flashcards`);
@@ -289,7 +319,13 @@ export default function FlashcardPage() {
   const currentQuestion = getCurrentQuestion();
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center relative">
+    <div className="h-screen bg-gray-50 flex flex-col items-center relative overflow-hidden" 
+         style={{ 
+           touchAction: 'none', // Disable all default touch behaviors
+           WebkitTouchCallout: 'none', // Disable iOS callout
+           WebkitUserSelect: 'none', // Disable text selection
+           userSelect: 'none'
+         }}>
       {/* Fixed top bar with counters and progress */}
       <div className="fixed top-20 left-0 right-0 z-50 flex items-center justify-between px-4">
         <div className="bg-red-100 text-red-700 px-4 py-2 rounded-full shadow-lg text-sm font-medium">
@@ -343,9 +379,9 @@ export default function FlashcardPage() {
         </div>
       </nav>
 
-      <main className="w-full flex-1 flex flex-col items-center justify-center pt-20">
+      <main className="w-full flex-1 flex flex-col items-center justify-center pt-20 overflow-hidden">
         {/* Flashcard (centered) */}
-        <div className="flex flex-col items-center justify-center min-h-[420px] w-full" style={{ minHeight: '420px' }}>
+        <div className="flex flex-col items-center justify-center h-full w-full overflow-hidden">
           {currentQuestion && (
             <Flashcard
               key={`${progress.currentIndex}-${currentQuestion.question.substring(0, 50)}`}

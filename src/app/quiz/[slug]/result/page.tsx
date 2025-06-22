@@ -635,7 +635,7 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
 
             {/* Chat History */}
             {chatHistories[currentQuestionIndex] && chatHistories[currentQuestionIndex].length > 0 && (
-              <div className="border rounded-lg p-4 bg-white max-h-96 overflow-y-auto chat-history-container">
+              <div className="border rounded-lg p-4 bg-white max-h-[60vh] overflow-y-auto chat-history-container">
                 <div className="flex justify-between items-center mb-3">
                   <h4 className="font-medium text-gray-900">
                     Chat History 
@@ -662,7 +662,7 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
                     >
                       <div className="flex justify-between items-start mb-1">
                         <span className="text-sm font-medium text-gray-700">
-                          {message.role === 'user' ? '👤 You' : '🎓 Rin-chan'}
+                          {message.role === 'user' ? 'You' : '🎓 Rin-chan'}
                         </span>
                         <span className="text-xs text-gray-500">
                           {new Date(message.timestamp).toLocaleTimeString()}
@@ -717,20 +717,13 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
             </div>
             
             {/* Action Buttons */}
-            <div className="flex space-x-3">
+            <div className="flex">
               <Button
                 onClick={askAI}
                 disabled={loadingAI || !userQuestion.trim()}
-                className="flex-1"
+                className="w-full"
               >
                 {loadingAI ? 'Rin-chan is thinking...' : 'Ask Rin-chan'}
-              </Button>
-              <Button
-                onClick={closeAIModal}
-                variant="outline"
-                disabled={loadingAI}
-              >
-                Close
               </Button>
             </div>
             

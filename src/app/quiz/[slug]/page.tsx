@@ -46,6 +46,10 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
   const [isDiscussionCollapsed, setIsDiscussionCollapsed] = useState(true);
   const [showMobileDiscussion, setShowMobileDiscussion] = useState(false);
 
+  // Bookmark states
+  const [bookmarkLoading, setBookmarkLoading] = useState(false);
+  const [bookmarkedQuestions, setBookmarkedQuestions] = useState<Set<number>>(new Set());
+
   // If user is logged in, skip email input
   useEffect(() => {
     if (session?.user?.email) {
@@ -477,6 +481,61 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
     router.push('/');
   };
 
+  const bookmarkQuestion = async (questionIndex: number) => {
+    if (!quiz || !session?.user?.email) {
+      setError('Please log in to bookmark questions');
+      return;
+    }
+
+    setBookmarkLoading(true);
+    try {
+      const currentQuestion = quiz.questions[questionIndex];
+      const response = await fetch('/api/bookmarks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          quiz: {
+            title: quiz.title,
+            slug: quiz.slug,
+            description: quiz.description
+          },
+          question: {
+            text: currentQuestion.question,
+            options: currentQuestion.options,
+            type: currentQuestion.type,
+            correctIndex: currentQuestion.correctIndex,
+            correctIndexes: currentQuestion.correctIndexes,
+            questionImage: currentQuestion.questionImage,
+            optionImages: currentQuestion.optionImages
+          },
+          questionIndex
+        })
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        setBookmarkedQuestions(prev => new Set([...prev, questionIndex]));
+        // Show success message briefly
+        const originalError = error;
+        setError('Question bookmarked successfully! 📌');
+        setTimeout(() => setError(originalError), 2000);
+      } else {
+        if (data.error === 'Question already bookmarked') {
+          setError('This question is already bookmarked');
+        } else {
+          setError(data.error || 'Failed to bookmark question');
+        }
+        setTimeout(() => setError(''), 3000);
+      }
+    } catch (error) {
+      setError('Failed to bookmark question');
+      setTimeout(() => setError(''), 3000);
+    } finally {
+      setBookmarkLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen">
@@ -746,6 +805,27 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
                 </div>
               </div>
               <div className="flex items-center space-x-2 ml-4">
+                {session?.user?.email && (
+                  <Button
+                    variant="outline"
+                    onClick={() => bookmarkQuestion(currentQuestionIndex)}
+                    disabled={bookmarkLoading}
+                    className={`text-yellow-600 border-yellow-200 hover:bg-yellow-50 hover:border-yellow-300 ${
+                      bookmarkedQuestions.has(currentQuestionIndex) ? 'bg-yellow-50 border-yellow-300' : ''
+                    }`}
+                    title="Bookmark this question"
+                  >
+                    {bookmarkLoading ? (
+                      <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 2v10l4-4m-4 4l-4-4" />
+                      </svg>
+                    ) : bookmarkedQuestions.has(currentQuestionIndex) ? (
+                      '⭐ Bookmarked'
+                    ) : (
+                      '⭐ Bookmark'
+                    )}
+                  </Button>
+                )}
                 <Button
                   variant="outline"
                   onClick={openAIModal}

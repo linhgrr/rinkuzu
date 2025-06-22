@@ -64,6 +64,13 @@ export default function Sidebar({ isOpen, onToggle, currentPath }: SidebarProps)
       icon: (
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
       )
+    },
+    {
+      href: '/bookmarks',
+      label: 'Bookmarked Questions',
+      icon: (
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+      )
     }
   ];
 

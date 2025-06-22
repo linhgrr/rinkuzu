@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
     }
 
     const bookmark = new Bookmark({
-      userId: session.user.id || session.user.email,
+      userId: session.user.email,
       userEmail: session.user.email,
       quiz,
       question,

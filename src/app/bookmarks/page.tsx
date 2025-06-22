@@ -98,6 +98,8 @@ export default function BookmarksPage() {
   }, [chatHistories]);
 
   useEffect(() => {
+    if (status === 'loading') return;
+    
     if (status === 'unauthenticated') {
       router.push('/login');
       return;
@@ -171,12 +173,16 @@ export default function BookmarksPage() {
     setShowAIModal(true);
     
     // Initialize chat history for this bookmark if it doesn't exist
-    if (!chatHistories[bookmark._id]) {
-      setChatHistories(prev => ({
-        ...prev,
-        [bookmark._id]: []
-      }));
-    }
+    // Only update if it doesn't exist to avoid triggering useEffect unnecessarily
+    setChatHistories(prev => {
+      if (!prev[bookmark._id]) {
+        return {
+          ...prev,
+          [bookmark._id]: []
+        };
+      }
+      return prev;
+    });
     
     // Auto-scroll to bottom when modal opens
     scrollToBottom(300);

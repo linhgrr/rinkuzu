@@ -35,6 +35,18 @@ interface QuizResult {
   };
 }
 
+// Chat message interface
+interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: string;
+}
+
+// Chat history state for each question
+interface ChatHistoryState {
+  [questionIndex: number]: ChatMessage[];
+}
+
 export default function QuizResultPage({ params }: QuizResultPageProps) {
   const searchParams = useSearchParams();
   const attemptId = searchParams.get('attemptId');
@@ -44,10 +56,34 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
   const [error, setError] = useState<string | null>(null);
   const [showAIModal, setShowAIModal] = useState(false);
   const [aiQuestionData, setAIQuestionData] = useState<any>(null);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState<number>(-1);
   const [userQuestion, setUserQuestion] = useState('');
-  const [aiExplanation, setAIExplanation] = useState('');
   const [loadingAI, setLoadingAI] = useState(false);
   const [aiError, setAIError] = useState('');
+  
+  // Multi-turn chat state
+  const [chatHistories, setChatHistories] = useState<ChatHistoryState>({});
+
+  // Load chat histories from localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined' && attemptId) {
+      const savedChats = localStorage.getItem(`chat-histories-${attemptId}`);
+      if (savedChats) {
+        try {
+          setChatHistories(JSON.parse(savedChats));
+        } catch (error) {
+          console.error('Failed to load chat histories:', error);
+        }
+      }
+    }
+  }, [attemptId]);
+
+  // Save chat histories to localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined' && attemptId && Object.keys(chatHistories).length > 0) {
+      localStorage.setItem(`chat-histories-${attemptId}`, JSON.stringify(chatHistories));
+    }
+  }, [chatHistories, attemptId]);
 
   useEffect(() => {
     const fetchResults = async () => {
@@ -111,44 +147,139 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
     }
   };
 
-  const openAIModal = (qData: any) => {
+  const openAIModal = (qData: any, questionIndex: number) => {
     setAIQuestionData(qData);
+    setCurrentQuestionIndex(questionIndex);
     setUserQuestion('');
-    setAIExplanation('');
     setAIError('');
     setShowAIModal(true);
+    
+    // Initialize chat history for this question if it doesn't exist
+    if (!chatHistories[questionIndex]) {
+      setChatHistories(prev => ({
+        ...prev,
+        [questionIndex]: []
+      }));
+    }
+    
+    // Auto-scroll to bottom when modal opens (for existing chat history)
+    scrollToBottom(300); // Longer delay to ensure modal is fully rendered
   };
 
-  const closeAIModal = () => setShowAIModal(false);
+  const closeAIModal = () => {
+    setShowAIModal(false);
+    setCurrentQuestionIndex(-1);
+    setUserQuestion('');
+    setAIError('');
+  };
+
+  const addMessageToHistory = (questionIndex: number, message: ChatMessage) => {
+    setChatHistories(prev => ({
+      ...prev,
+      [questionIndex]: [...(prev[questionIndex] || []), message]
+    }));
+    
+    // Auto-scroll to bottom when new message is added
+    scrollToBottom();
+  };
 
   const askAI = async () => {
-    if (!aiQuestionData) return;
+    if (!aiQuestionData || currentQuestionIndex === -1) return;
+    
+    const trimmedQuestion = userQuestion.trim();
+    if (!trimmedQuestion) {
+      setAIError('Please enter a question to ask Rin-chan!');
+      return;
+    }
+
     setLoadingAI(true);
     setAIError('');
-    setAIExplanation('');
+    
     try {
+      // Add user message to chat history
+      const userMessage: ChatMessage = {
+        role: 'user',
+        content: trimmedQuestion,
+        timestamp: new Date().toISOString()
+      };
+      addMessageToHistory(currentQuestionIndex, userMessage);
+
+      // Get current chat history for this question
+      const currentHistory = chatHistories[currentQuestionIndex] || [];
+      
       const resp = await fetch('/api/quiz/ask-ai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           question: aiQuestionData.question,
           options: aiQuestionData.options,
-          userQuestion: userQuestion.trim() || undefined,
+          userQuestion: trimmedQuestion,
           questionImage: aiQuestionData.questionImage,
           optionImages: aiQuestionData.optionImages,
+          chatHistory: [...currentHistory, userMessage] // Include the new user message
         })
       });
+      
       const data = await resp.json();
+      
       if (data.success) {
-        setAIExplanation(data.data.explanation);
+        // Add assistant response to chat history
+        const assistantMessage: ChatMessage = {
+          role: 'assistant',
+          content: data.data.explanation,
+          timestamp: data.data.timestamp
+        };
+        addMessageToHistory(currentQuestionIndex, assistantMessage);
+        
+        // Clear input
+        setUserQuestion('');
       } else {
         setAIError(data.error || 'Failed to get AI explanation');
       }
     } catch (err) {
-      setAIError('Failed to connect to AI service');
+      setAIError('Failed to connect to AI service. Please try again.');
     } finally {
       setLoadingAI(false);
     }
+  };
+
+  // Handle keyboard shortcuts
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      if (!loadingAI && userQuestion.trim()) {
+        askAI();
+      }
+    }
+  };
+
+  // Scroll to bottom of chat
+  const scrollToBottom = (delay: number = 100) => {
+    setTimeout(() => {
+      const chatContainer = document.querySelector('.chat-history-container');
+      if (chatContainer) {
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+      }
+    }, delay);
+  };
+
+  const clearChatHistory = (questionIndex: number) => {
+    setChatHistories(prev => ({
+      ...prev,
+      [questionIndex]: []
+    }));
+  };
+
+  // Get chat statistics
+  const getChatStats = () => {
+    const totalTurns = Object.values(chatHistories).reduce((sum, history) => 
+      sum + Math.floor(history.length / 2), 0
+    );
+    const questionsWithChat = Object.keys(chatHistories).filter(key => 
+      chatHistories[parseInt(key)].length > 0
+    ).length;
+    
+    return { totalTurns, questionsWithChat };
   };
 
   // Calculate statistics
@@ -281,7 +412,7 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
             <CardTitle>Performance Summary</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
               <div className="text-center p-4 bg-green-50 rounded-lg">
                 <div className="text-2xl font-bold text-green-600">{correctCount}</div>
                 <div className="text-sm text-green-700">Correct Answers</div>
@@ -299,6 +430,26 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
                 <div className="text-sm text-blue-700">Overall Score</div>
               </div>
             </div>
+            
+            {/* Chat Statistics */}
+            {Object.keys(chatHistories).length > 0 && (() => {
+              const { totalTurns, questionsWithChat } = getChatStats();
+              return totalTurns > 0 ? (
+                <div className="border-t pt-4">
+                  <h4 className="text-sm font-medium text-gray-700 mb-3">💬 Chat with Rin-chan Statistics</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="text-center p-3 bg-purple-50 rounded-lg">
+                      <div className="text-xl font-bold text-purple-600">{totalTurns}</div>
+                      <div className="text-sm text-purple-700">Total Chat Turns</div>
+                    </div>
+                    <div className="text-center p-3 bg-indigo-50 rounded-lg">
+                      <div className="text-xl font-bold text-indigo-600">{questionsWithChat}</div>
+                      <div className="text-sm text-indigo-700">Questions Discussed</div>
+                    </div>
+                  </div>
+                </div>
+              ) : null;
+            })()}
           </CardContent>
         </Card>
 
@@ -331,7 +482,18 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
                       <h3 className="font-semibold text-gray-900 flex-1">
                         {index + 1}. {questionResult.question}
                       </h3>
-                      <Button variant="outline" onClick={() => openAIModal(questionResult)} className="text-purple-600 border-purple-200 hover:bg-purple-50 hover:border-purple-300">Ask Rin-chan</Button>
+                      <Button 
+                        variant="outline" 
+                        onClick={() => openAIModal(questionResult, index)} 
+                        className="text-purple-600 border-purple-200 hover:bg-purple-50 hover:border-purple-300"
+                      >
+                        Ask Rin-chan
+                        {chatHistories[index] && chatHistories[index].length > 0 && (
+                          <span className="ml-1 px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full text-xs">
+                            {Math.floor(chatHistories[index].length / 2)}
+                          </span>
+                        )}
+                      </Button>
                     </div>
                     <div className="flex items-center space-x-2 ml-4">
                       <span className={`px-2 py-1 rounded text-xs font-medium ${
@@ -450,14 +612,16 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
         </div>
       </main>
 
-      {/* AI Modal */}
+      {/* AI Chat Modal */}
       {showAIModal && (
         <Modal 
           isOpen={showAIModal} 
           onClose={closeAIModal}
-          title="Ask Rin-chan About This Question"
+          title="Chat with Rin-chan About This Question"
+          size="wide"
         >
           <div className="space-y-4">
+            {/* Question Context */}
             <div className="border rounded-lg p-4 bg-gray-50">
               <h4 className="font-medium mb-2">{aiQuestionData?.question}</h4>
               <div className="text-sm text-gray-600">
@@ -468,48 +632,112 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
                 ))}
               </div>
             </div>
-            
+
+            {/* Chat History */}
+            {chatHistories[currentQuestionIndex] && chatHistories[currentQuestionIndex].length > 0 && (
+              <div className="border rounded-lg p-4 bg-white max-h-96 overflow-y-auto chat-history-container">
+                <div className="flex justify-between items-center mb-3">
+                  <h4 className="font-medium text-gray-900">
+                    Chat History 
+                   
+                  </h4>
+                  <Button
+                    onClick={() => clearChatHistory(currentQuestionIndex)}
+                    variant="outline"
+                    size="sm"
+                    className="text-red-600 border-red-200 hover:bg-red-50"
+                  >
+                    Clear Chat
+                  </Button>
+                </div>
+                <div className="space-y-3">
+                  {chatHistories[currentQuestionIndex].map((message, idx) => (
+                    <div
+                      key={idx}
+                      className={`p-3 rounded-lg ${
+                        message.role === 'user'
+                          ? 'bg-blue-50 border-l-4 border-blue-400'
+                          : 'bg-purple-50 border-l-4 border-purple-400'
+                      }`}
+                    >
+                      <div className="flex justify-between items-start mb-1">
+                        <span className="text-sm font-medium text-gray-700">
+                          {message.role === 'user' ? '👤 You' : '🎓 Rin-chan'}
+                        </span>
+                        <span className="text-xs text-gray-500">
+                          {new Date(message.timestamp).toLocaleTimeString()}
+                        </span>
+                      </div>
+                      <div className="text-sm">
+                        {message.role === 'assistant' ? (
+                          <MarkdownRenderer content={message.content} />
+                        ) : (
+                          <p>{message.content}</p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  
+                  {/* Loading indicator when AI is thinking */}
+                  {loadingAI && (
+                    <div className="p-3 rounded-lg bg-purple-50 border-l-4 border-purple-400">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-sm font-medium text-gray-700">🎓 Rin-chan</span>
+                        <div className="flex space-x-1">
+                          <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce"></div>
+                          <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                          <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                        </div>
+                      </div>
+                      <div className="text-sm text-gray-600 mt-1">Thinking...</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* New Message Input */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Your Question (Optional - leave blank for general explanation):
+                Ask Rin-chan something about this question:
               </label>
               <textarea
                 value={userQuestion}
                 onChange={(e) => setUserQuestion(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-lg resize-none"
+                onKeyDown={handleKeyPress}
+                className="w-full p-3 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 rows={3}
-                placeholder="Ask a specific question about this problem..."
+                placeholder="Ask about concepts, explanations, or how to approach this type of question..."
+                disabled={loadingAI}
               />
+              <div className="flex justify-between text-xs text-gray-500 mt-1">
+                <span>💡 Tip: Be specific about what you want to understand!</span>
+                <span>Press Ctrl+Enter to send</span>
+              </div>
             </div>
             
+            {/* Action Buttons */}
             <div className="flex space-x-3">
               <Button
                 onClick={askAI}
-                disabled={loadingAI}
+                disabled={loadingAI || !userQuestion.trim()}
                 className="flex-1"
               >
-                {loadingAI ? 'Rin-chan is thinking for you now ...' : 'Ask Rin-chan'}
+                {loadingAI ? 'Rin-chan is thinking...' : 'Ask Rin-chan'}
               </Button>
               <Button
                 onClick={closeAIModal}
                 variant="outline"
+                disabled={loadingAI}
               >
                 Close
               </Button>
             </div>
             
+            {/* Error Display */}
             {aiError && (
               <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
                 {aiError}
-              </div>
-            )}
-            
-            {aiExplanation && (
-              <div className="border rounded-lg p-4 bg-blue-50">
-                <h4 className="font-medium mb-2 text-blue-900">AI Explanation:</h4>
-                <div className="text-sm">
-                  <MarkdownRenderer content={aiExplanation} />
-                </div>
               </div>
             )}
           </div>

@@ -21,7 +21,7 @@ export function Modal({ isOpen, onClose, children, title, description, className
     small: 'max-w-sm',
     medium: 'max-w-md',
     large: 'max-w-4xl',
-    wide: 'max-w-[66vw]',
+    wide: 'max-w-[85vw]',
     full: 'max-w-7xl'
   };
 

@@ -103,7 +103,7 @@ export async function GET(request: NextRequest) {
           type: 'attempt',
           data: {
             ...attempt.toObject(),
-            answeredQuestions: attempt.answers.filter(answer => 
+            answeredQuestions: attempt.answers.filter((answer: number | number[]) => 
               Array.isArray(answer) ? answer.length > 0 : answer !== -1
             ).length
           },
@@ -112,7 +112,7 @@ export async function GET(request: NextRequest) {
       } else if (type === 'all') {
         data.attempts = attempts.map(attempt => ({
           ...attempt.toObject(),
-          answeredQuestions: attempt.answers.filter(answer => 
+          answeredQuestions: attempt.answers.filter((answer: number | number[]) => 
             Array.isArray(answer) ? answer.length > 0 : answer !== -1
           ).length
         }));
@@ -173,7 +173,7 @@ export async function GET(request: NextRequest) {
           type: 'attempt',
           data: {
             ...attempt.toObject(),
-            answeredQuestions: attempt.answers.filter(answer => 
+            answeredQuestions: attempt.answers.filter((answer: number | number[]) => 
               Array.isArray(answer) ? answer.length > 0 : answer !== -1
             ).length
           },

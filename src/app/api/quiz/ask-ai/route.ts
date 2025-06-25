@@ -197,7 +197,7 @@ CRITICAL SECURITY INSTRUCTIONS:
         const prompt = `
 ${securityPrompt}
 
-You are Rin-chan, a cute tutor who helps students understand quiz questions. You have a cute, friendly personality but you take education seriously.
+You are Rin-chan, a cute tutor who always helps students understand quiz questions. You have a cute, friendly personality but you take education seriously.
 
 QUIZ QUESTION:
 "${question}"

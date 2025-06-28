@@ -268,7 +268,7 @@ export class SubscriptionService {
       
       // Convert to SubscriptionPlan format
       return plans.map(plan => ({
-        id: plan._id,
+        id: plan._id.toString(),
         name: plan.name,
         price: plan.price,
         duration: plan.duration,

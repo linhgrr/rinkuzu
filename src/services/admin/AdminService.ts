@@ -35,13 +35,13 @@ export class AdminService implements IAdminService {
       }
 
       const categories = await this.categoryRepository.findAll({
-        filter,
-        skip,
+        page,
         limit,
-        sort: { createdAt: -1 }
+        search,
+        isActive: filter.isActive
       });
 
-      const total = await this.categoryRepository.count(filter);
+      const total = await this.categoryRepository.count({ isActive: filter.isActive });
 
       return {
         success: true,
@@ -79,7 +79,7 @@ export class AdminService implements IAdminService {
 
       // Check if category exists
       const existing = await this.categoryRepository.findAll({
-        filter: { name: { $regex: `^${name.trim()}$`, $options: 'i' } }
+        search: name.trim()
       });
 
       if (existing.categories.length > 0) {
@@ -93,8 +93,7 @@ export class AdminService implements IAdminService {
       const category = await this.categoryRepository.create({
         name: name.trim(),
         description: description?.trim(),
-        color: color || '#3B82F6',
-        createdBy: adminId
+        color: color || '#3B82F6'
       });
 
       return {
@@ -189,7 +188,7 @@ export class AdminService implements IAdminService {
 
   async updateUserRole(userId: string, role: string, adminEmail: string): Promise<ServiceResult<any>> {
     try {
-      if (!['admin', 'user'].includes(role)) {
+      if (role !== 'admin' && role !== 'user') {
         return {
           success: false,
           error: 'Invalid role',
@@ -300,7 +299,7 @@ export class AdminService implements IAdminService {
   async getStats(): Promise<ServiceResult<any>> {
     try {
       // Basic stats implementation
-      const totalUsers = await this.userRepository.count({});
+      const totalUsers = await this.userRepository.count();
       const totalQuizzes = await this.quizRepository.count({});
       const totalAttempts = await this.attemptRepository.count({});
 

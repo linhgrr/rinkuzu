@@ -8,7 +8,7 @@ export class QuizRepository implements IQuizRepository {
     return await Quiz.findById(id)
       .populate('author', 'email')
       .populate('category', 'name color')
-      .lean()
+      .lean() as unknown as IQuiz | null
   }
 
   async findBySlug(slug: string): Promise<IQuiz | null> {
@@ -16,20 +16,20 @@ export class QuizRepository implements IQuizRepository {
     return await Quiz.findOne({ slug })
       .populate('author', 'email')
       .populate('category', 'name color')
-      .lean()
+      .lean() as unknown as IQuiz | null
   }
 
   async findBySlugAndStatus(slug: string, status: string): Promise<IQuiz | null> {
     await connectDB()
     return await Quiz.findOne({ slug, status })
       .populate('author', 'email')
-      .lean()
+      .lean() as unknown as IQuiz | null
   }
 
   async create(quizData: Partial<IQuiz>): Promise<IQuiz> {
     await connectDB()
     const quiz = new Quiz(quizData)
-    return await quiz.save()
+    return await quiz.save() as unknown as IQuiz
   }
 
   async update(id: string, quizData: Partial<IQuiz>): Promise<IQuiz | null> {
@@ -37,7 +37,7 @@ export class QuizRepository implements IQuizRepository {
     return await Quiz.findByIdAndUpdate(id, quizData, { new: true })
       .populate('author', 'email')
       .populate('category', 'name color')
-      .lean()
+      .lean() as unknown as IQuiz | null
   }
 
   async delete(id: string): Promise<boolean> {
@@ -77,7 +77,7 @@ export class QuizRepository implements IQuizRepository {
     }
 
     const [quizzes, total] = await Promise.all([
-      query.sort(sort).skip(skip).limit(limit).lean(),
+      query.sort(sort).skip(skip).limit(limit).lean() as unknown as IQuiz[],
       Quiz.countDocuments(filter)
     ])
 
@@ -97,7 +97,7 @@ export class QuizRepository implements IQuizRepository {
     return await Quiz.findOne({ 
       slug, 
       status: 'published' 
-    }).populate('author', 'email').lean()
+    }).populate('author', 'email').lean() as unknown as IQuiz | null
   }
 
   async findUserQuizzes(userId: string, options: {
@@ -130,7 +130,7 @@ export class QuizRepository implements IQuizRepository {
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
-        .lean(),
+        .lean() as unknown as IQuiz[],
       Quiz.countDocuments(filter)
     ])
 
@@ -189,7 +189,7 @@ export class QuizRepository implements IQuizRepository {
       .populate('category', 'name color')
       .sort({ createdAt: -1 })
       .limit(limit)
-      .lean()
+      .lean() as unknown as IQuiz[]
   }
 
   async updateStatus(id: string, status: string, reviewNote?: string): Promise<IQuiz | null> {
@@ -198,6 +198,6 @@ export class QuizRepository implements IQuizRepository {
     if (reviewNote) {
       updateData.reviewNote = reviewNote
     }
-    return await Quiz.findByIdAndUpdate(id, updateData, { new: true }).lean()
+    return await Quiz.findByIdAndUpdate(id, updateData, { new: true }).lean() as unknown as IQuiz | null
   }
 } 

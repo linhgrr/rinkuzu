@@ -6,23 +6,23 @@ import { IUserRepository } from '@/interfaces/repositories/IUserRepository'
 export class UserRepository implements IUserRepository {
   async findByEmail(email: string): Promise<IUser | null> {
     await connectDB()
-    return await User.findOne({ email }).lean()
+    return await User.findOne({ email }).lean() as unknown as IUser | null
   }
 
   async findById(id: string): Promise<IUser | null> {
     await connectDB()
-    return await User.findById(id).lean()
+    return await User.findById(id).lean() as unknown as IUser | null
   }
 
   async create(userData: Partial<IUser>): Promise<IUser> {
     await connectDB()
     const user = new User(userData)
-    return await user.save()
+    return await user.save() as unknown as IUser
   }
 
   async update(id: string, userData: Partial<IUser>): Promise<IUser | null> {
     await connectDB()
-    return await User.findByIdAndUpdate(id, userData, { new: true }).lean()
+    return await User.findByIdAndUpdate(id, userData, { new: true }).lean() as unknown as IUser | null
   }
 
   async delete(id: string): Promise<boolean> {
@@ -67,7 +67,7 @@ export class UserRepository implements IUserRepository {
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
-      .lean()
+      .lean() as unknown as IUser[]
 
     const totalItems = await User.countDocuments(query)
     const totalPages = Math.ceil(totalItems / limit)

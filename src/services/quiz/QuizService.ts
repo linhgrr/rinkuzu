@@ -12,7 +12,6 @@ import connectDB from '@/lib/mongoose'
 import Quiz from '@/models/Quiz'
 import User from '@/models/User'
 import Category from '@/models/Category'
-import { generateUniqueSlug } from '@/lib/utils'
 import { calculateScore } from '@/lib/utils'
 
 interface ServiceResult<T> {
@@ -188,7 +187,7 @@ export class QuizService implements IQuizService {
     try {
       const quiz = await this.quizRepository.findById(id);
       
-      if (!quiz) {
+      if (!quiz || !quiz._id) {
         return {
           success: false,
           error: 'Quiz not found',
@@ -207,7 +206,9 @@ export class QuizService implements IQuizService {
         }
 
         const isAdmin = userRole === 'admin';
-        const isAuthor = quiz.author._id.toString() === userEmail;
+        const isAuthor = (quiz.author as any)?._id 
+          ? (quiz.author as any)._id.toString() === userEmail
+          : quiz.author === userEmail;
 
         if (!isAdmin && !isAuthor) {
           return {
@@ -249,7 +250,9 @@ export class QuizService implements IQuizService {
       }
 
       const isAdmin = userRole === 'admin';
-      const isAuthor = quiz.author._id.toString() === userId;
+      const isAuthor = (quiz.author as any)?._id 
+        ? (quiz.author as any)._id.toString() === userId
+        : quiz.author === userId;
 
       if (!isAdmin && !isAuthor) {
         throw new Error('Access denied. This quiz is private.');
@@ -278,7 +281,7 @@ export class QuizService implements IQuizService {
     try {
       const quiz = await this.quizRepository.findById(id);
       
-      if (!quiz) {
+      if (!quiz || !quiz._id) {
         return {
           success: false,
           error: 'Quiz not found',
@@ -288,7 +291,9 @@ export class QuizService implements IQuizService {
 
       // Check permissions
       const isAdmin = userRole === 'admin';
-      const isAuthor = quiz.author._id.toString() === userEmail;
+      const isAuthor = (quiz.author as any)?._id 
+        ? (quiz.author as any)._id.toString() === userEmail
+        : quiz.author === userEmail;
 
       if (!isAdmin && !isAuthor) {
         return {
@@ -318,7 +323,7 @@ export class QuizService implements IQuizService {
     try {
       const quiz = await this.quizRepository.findById(id);
       
-      if (!quiz) {
+      if (!quiz || !quiz._id) {
         return {
           success: false,
           error: 'Quiz not found',
@@ -328,7 +333,9 @@ export class QuizService implements IQuizService {
 
       // Check permissions
       const isAdmin = userRole === 'admin';
-      const isAuthor = quiz.author._id.toString() === userEmail;
+      const isAuthor = (quiz.author as any)?._id 
+        ? (quiz.author as any)._id.toString() === userEmail
+        : quiz.author === userEmail;
 
       if (!isAdmin && !isAuthor) {
         return {
@@ -390,10 +397,6 @@ export class QuizService implements IQuizService {
     }
   }
 
-  async extractQuestionsFromPDF(formData: FormData): Promise<any> {
-    return await extractQuestionsFromPdf(formData);
-  }
-
   async previewFromPdf(title: string, description: string, pdfFiles: File[]): Promise<ServiceResult<any>> {
     try {
       // This would typically process PDF files and extract questions
@@ -407,7 +410,6 @@ export class QuizService implements IQuizService {
         }
       };
     } catch (error) {
-      console.error('Preview from PDF error:', error);
       return {
         success: false,
         error: 'Failed to preview from PDF',
@@ -420,12 +422,12 @@ export class QuizService implements IQuizService {
     try {
       const quiz = await this.quizRepository.findBySlug(slug);
       
-      if (!quiz) {
+      if (!quiz || !quiz._id) {
         return {
           success: false,
           error: 'Quiz not found',
           statusCode: 404
-        };
+        }
       }
 
       if (!content || content.trim().length === 0) {
@@ -443,6 +445,14 @@ export class QuizService implements IQuizService {
         description: reporterName,
         status: 'pending'
       });
+
+      if (!report || !report._id) {
+        return {
+          success: false,
+          error: 'Report not created',
+          statusCode: 500
+        }
+      }
 
       return {
         success: true,
@@ -466,7 +476,7 @@ export class QuizService implements IQuizService {
   ): Promise<ServiceResult<any>> {
     try {
       const quiz = await this.quizRepository.findBySlugAndStatus(slug, 'published')
-      if (!quiz) {
+      if (!quiz || !quiz._id) {
         return {
           success: false,
           error: 'Quiz not found or not published',
@@ -581,7 +591,7 @@ export class QuizService implements IQuizService {
     try {
       const quiz = await this.quizRepository.findBySlug(slug);
       
-      if (!quiz) {
+      if (!quiz || !quiz._id) {
         return {
           success: false,
           error: 'Quiz not found',
@@ -589,11 +599,31 @@ export class QuizService implements IQuizService {
         };
       }
 
-      const discussions = await this.discussionRepository.findByQuiz(quiz._id.toString());
+      const existingDiscussions = await this.discussionRepository.findByQuiz(quiz._id.toString());
+      
+      // Create discussions for all questions if they don't exist
+      const allDiscussions = [];
+      for (let i = 0; i < quiz.questions.length; i++) {
+        const existingDiscussion = existingDiscussions.find(d => d.questionIndex === i);
+        
+        if (existingDiscussion) {
+          allDiscussions.push(existingDiscussion);
+        } else {
+          // Create empty discussion for this question
+          const newDiscussion = await this.discussionRepository.create({
+            quiz: quiz._id.toString(),
+            user: quiz.author,
+            questionIndex: i,
+            content: `Discussion for question ${i + 1}`,
+            comments: []
+          });
+          allDiscussions.push(newDiscussion);
+        }
+      }
 
       return {
         success: true,
-        data: discussions
+        data: allDiscussions
       };
     } catch (error) {
       console.error('Get quiz discussions error:', error);
@@ -614,7 +644,7 @@ export class QuizService implements IQuizService {
     try {
       const quiz = await this.quizRepository.findBySlug(slug);
       
-      if (!quiz) {
+      if (!quiz || !quiz._id) {
         return {
           success: false,
           error: 'Quiz not found',
@@ -640,49 +670,48 @@ export class QuizService implements IQuizService {
       }
 
       // Find or create discussion for this question
-      let discussion = await this.discussionRepository.findByQuiz(quiz._id.toString());
-      const existingDiscussion = discussion.find(d => d.questionIndex === questionIndex);
+      let discussions = await this.discussionRepository.findByQuiz(quiz._id.toString());
+      let existingDiscussion = discussions.find(d => d.questionIndex === questionIndex);
 
-      if (existingDiscussion) {
-        // Add comment to existing discussion
-        const commentData = {
-          author: user._id,
-          authorEmail: user.email,
-          content,
-          isEdited: false,
-          createdAt: new Date()
-        };
-        
-        const updatedDiscussion = await this.discussionRepository.update(
-          existingDiscussion._id.toString(),
-          {
-            $push: { comments: commentData }
-          }
-        );
-        
-        return {
-          success: true,
-          data: updatedDiscussion
-        };
-      } else {
-        // Create new discussion
-        const newDiscussion = await this.discussionRepository.create({
-          quiz: quiz._id,
+      if (!existingDiscussion) {
+        // Create new discussion for this question
+        existingDiscussion = await this.discussionRepository.create({
+          quiz: quiz._id.toString(),
+          user: quiz.author,
           questionIndex,
-          comments: [{
-            author: user._id,
-            authorEmail: user.email,
-            content,
-            isEdited: false,
-            createdAt: new Date()
-          }]
+          content: `Discussion for question ${questionIndex + 1}`,
+          comments: []
         });
+      }
 
+      if (!existingDiscussion || !existingDiscussion._id) {
         return {
-          success: true,
-          data: newDiscussion
+          success: false,
+          error: 'Failed to create or find discussion',
+          statusCode: 500
         };
       }
+
+      // Add comment to existing discussion
+      const commentData = {
+        author: user._id,
+        authorEmail: user.email,
+        content,
+        isEdited: false,
+        createdAt: new Date()
+      };
+      
+      const updatedDiscussion = await this.discussionRepository.update(
+        existingDiscussion._id.toString(),
+        {
+          comments: [...(existingDiscussion.comments || []), commentData]
+        }
+      );
+      
+      return {
+        success: true,
+        data: updatedDiscussion
+      };
     } catch (error) {
       console.error('Add discussion comment error:', error);
       return {
@@ -742,7 +771,9 @@ export class QuizService implements IQuizService {
         }
 
         const isAdmin = (session.user as any).role === 'admin';
-        const isAuthor = quiz.author._id.toString() === (session.user as any).id;
+        const isAuthor = (quiz.author as any)?._id 
+          ? (quiz.author as any)._id.toString() === (session.user as any).id
+          : quiz.author === (session.user as any).id;
 
         if (!isAdmin && !isAuthor) {
           return {

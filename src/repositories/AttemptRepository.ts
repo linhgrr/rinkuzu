@@ -5,12 +5,13 @@ import { IAttempt, IAttemptRepository } from '@/interfaces/repositories/IAttempt
 export class AttemptRepository implements IAttemptRepository {
   async findById(id: string): Promise<IAttempt | null> {
     await connectDB()
-    return await Attempt.findById(id)
+    const attempt = await Attempt.findById(id)
       .populate({
         path: 'quiz',
         select: 'title slug description questions'
       })
       .lean()
+    return attempt as unknown as IAttempt | null
   }
 
   async findByUser(userId: string, options?: {
@@ -44,7 +45,7 @@ export class AttemptRepository implements IAttemptRepository {
       .sort({ takenAt: -1 })
       .skip(skip)
       .limit(limit)
-      .lean()
+      .lean() as unknown as IAttempt[]
 
     console.log('Found attempts with userId:', attempts.length);
 
@@ -59,7 +60,7 @@ export class AttemptRepository implements IAttemptRepository {
         .sort({ takenAt: -1 })
         .skip(skip)
         .limit(limit)
-        .lean()
+        .lean() as unknown as IAttempt[]
       console.log('Found attempts with email:', attempts.length);
     }
 
@@ -79,6 +80,28 @@ export class AttemptRepository implements IAttemptRepository {
         hasPrevPage: page > 1
       }
     }
+  }
+
+  async findByUserId(userId: string, page?: number, limit?: number): Promise<{ attempts: IAttempt[], total: number }> {
+    await connectDB()
+    
+    const pageNum = page || 1
+    const limitNum = limit || 10
+    const skip = (pageNum - 1) * limitNum
+
+    const attempts = await Attempt.find({ user: userId })
+      .populate({
+        path: 'quiz',
+        select: 'title slug description questions'
+      })
+      .sort({ takenAt: -1 })
+      .skip(skip)
+      .limit(limitNum)
+      .lean() as unknown as IAttempt[]
+
+    const total = await Attempt.countDocuments({ user: userId })
+    
+    return { attempts, total }
   }
 
   async create(attemptData: Partial<IAttempt>): Promise<IAttempt> {
@@ -104,7 +127,7 @@ export class AttemptRepository implements IAttemptRepository {
       .populate('quiz', 'title slug')
       .sort({ takenAt: -1 })
       .limit(limit)
-      .lean()
+      .lean() as unknown as IAttempt[]
   }
 
   async findByIdWithQuiz(attemptId: string, userId: string): Promise<any> {
@@ -120,7 +143,8 @@ export class AttemptRepository implements IAttemptRepository {
 
   async update(id: string, attemptData: Partial<IAttempt>): Promise<IAttempt | null> {
     await connectDB()
-    return await Attempt.findByIdAndUpdate(id, attemptData, { new: true }).lean()
+    const updated = await Attempt.findByIdAndUpdate(id, attemptData, { new: true }).lean()
+    return updated as unknown as IAttempt | null
   }
 
   async delete(id: string): Promise<boolean> {
@@ -133,4 +157,4 @@ export class AttemptRepository implements IAttemptRepository {
     await connectDB()
     return await Attempt.countDocuments(filter)
   }
-} 
+}

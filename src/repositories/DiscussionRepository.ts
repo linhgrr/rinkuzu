@@ -7,7 +7,7 @@ export class DiscussionRepository implements IDiscussionRepository {
     await connectDB()
     return await Discussion.findById(id)
       .populate('comments.author', 'email')
-      .lean()
+      .lean() as unknown as IDiscussion | null
   }
 
   async findByQuiz(quizId: string): Promise<IDiscussion[]> {
@@ -15,7 +15,7 @@ export class DiscussionRepository implements IDiscussionRepository {
     return await Discussion.find({ quiz: quizId })
       .populate('comments.author', 'email')
       .sort({ questionIndex: 1, createdAt: 1 })
-      .lean()
+      .lean() as unknown as IDiscussion[]
   }
 
   async create(discussionData: Partial<IDiscussion>): Promise<IDiscussion> {
@@ -24,14 +24,14 @@ export class DiscussionRepository implements IDiscussionRepository {
     const saved = await discussion.save()
     return await Discussion.findById(saved._id)
       .populate('comments.author', 'email')
-      .lean() as IDiscussion
+      .lean() as unknown as IDiscussion
   }
 
   async update(id: string, discussionData: Partial<IDiscussion>): Promise<IDiscussion | null> {
     await connectDB()
     return await Discussion.findByIdAndUpdate(id, discussionData, { new: true })
       .populate('comments.author', 'email')
-      .lean()
+      .lean() as unknown as IDiscussion | null
   }
 
   async delete(id: string): Promise<boolean> {

@@ -8,7 +8,7 @@ export class ReportRepository implements IReportRepository {
     return await Report.findById(id)
       .populate('quiz', 'title slug')
       .populate('reporter', 'email')
-      .lean()
+      .lean() as unknown as IReport | null
   }
 
   async findAll(options: {
@@ -44,7 +44,7 @@ export class ReportRepository implements IReportRepository {
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
-      .lean()
+      .lean() as unknown as IReport[]
 
     const totalItems = await Report.countDocuments(query)
     const totalPages = Math.ceil(totalItems / limit)
@@ -65,7 +65,7 @@ export class ReportRepository implements IReportRepository {
   async create(reportData: Partial<IReport>): Promise<IReport> {
     await connectDB()
     const report = new Report(reportData)
-    return await report.save()
+    return await report.save() as unknown as IReport
   }
 
   async update(id: string, reportData: Partial<IReport>): Promise<IReport | null> {
@@ -73,7 +73,7 @@ export class ReportRepository implements IReportRepository {
     return await Report.findByIdAndUpdate(id, reportData, { new: true })
       .populate('quiz', 'title slug')
       .populate('reporter', 'email')
-      .lean()
+      .lean() as unknown as IReport | null
   }
 
   async delete(id: string): Promise<boolean> {

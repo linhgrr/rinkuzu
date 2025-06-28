@@ -4,6 +4,13 @@ export interface IDiscussion {
   user: string
   questionIndex: number
   content: string
+  comments?: Array<{
+    author: string
+    authorEmail: string
+    content: string
+    isEdited: boolean
+    createdAt: Date
+  }>
   createdAt?: Date
   updatedAt?: Date
 }

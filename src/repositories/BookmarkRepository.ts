@@ -27,7 +27,7 @@ export class BookmarkRepository implements IBookmarkRepository {
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
-      .lean()
+      .lean() as unknown as IBookmark[]
 
     const totalItems = await Bookmark.countDocuments({ userEmail })
     const totalPages = Math.ceil(totalItems / limit)
@@ -51,13 +51,13 @@ export class BookmarkRepository implements IBookmarkRepository {
       userEmail,
       'quiz.slug': quizSlug,
       questionIndex
-    }).lean()
+    }).lean() as unknown as IBookmark | null
   }
 
   async create(bookmarkData: Partial<IBookmark>): Promise<IBookmark> {
     await connectDB()
     const bookmark = new Bookmark(bookmarkData)
-    return await bookmark.save()
+    return await bookmark.save() as unknown as IBookmark
   }
 
   async deleteById(id: string): Promise<boolean> {

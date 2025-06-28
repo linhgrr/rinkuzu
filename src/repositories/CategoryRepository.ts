@@ -6,7 +6,7 @@ import { ICategory, ICategoryRepository } from '@/interfaces/repositories/ICateg
 export class CategoryRepository implements ICategoryRepository {
   async findById(id: string): Promise<ICategory | null> {
     await connectDB()
-    return await Category.findById(id).lean()
+    return await Category.findById(id).lean() as unknown as ICategory | null
   }
 
   async findBySlug(slug: string): Promise<ICategory | null> {
@@ -19,7 +19,7 @@ export class CategoryRepository implements ICategoryRepository {
     console.log('Decoded slug:', decodedSlug);
     
     // Find all active categories and match by slug
-    const allCategories = await Category.find({ isActive: true }).lean();
+    const allCategories = await Category.find({ isActive: true }).lean() as unknown as ICategory[];
     console.log('All active categories:', allCategories.map(c => ({ name: c.name, _id: c._id })));
     
     const category = allCategories.find(cat => {
@@ -30,7 +30,7 @@ export class CategoryRepository implements ICategoryRepository {
     });
     
     console.log('Found category by slug matching:', category);
-    return category;
+    return category || null;
   }
 
   async findAll(options: {
@@ -68,7 +68,7 @@ export class CategoryRepository implements ICategoryRepository {
       .sort({ name: 1 })
       .skip(skip)
       .limit(limit)
-      .lean()
+      .lean() as unknown as ICategory[]
 
     const totalItems = await Category.countDocuments(query)
     const totalPages = Math.ceil(totalItems / limit)
@@ -90,7 +90,7 @@ export class CategoryRepository implements ICategoryRepository {
     await connectDB()
     return await Category.find({ isActive: true })
       .sort({ name: 1 })
-      .lean()
+      .lean() as unknown as ICategory[]
   }
 
   async search(query: string): Promise<ICategory[]> {
@@ -100,18 +100,18 @@ export class CategoryRepository implements ICategoryRepository {
       isActive: true
     })
       .sort({ name: 1 })
-      .lean()
+      .lean() as unknown as ICategory[]
   }
 
   async create(categoryData: Partial<ICategory>): Promise<ICategory> {
     await connectDB()
     const category = new Category(categoryData)
-    return await category.save()
+    return await category.save() as unknown as ICategory
   }
 
   async update(id: string, categoryData: Partial<ICategory>): Promise<ICategory | null> {
     await connectDB()
-    return await Category.findByIdAndUpdate(id, categoryData, { new: true }).lean()
+    return await Category.findByIdAndUpdate(id, categoryData, { new: true }).lean() as unknown as ICategory | null
   }
 
   async delete(id: string): Promise<boolean> {

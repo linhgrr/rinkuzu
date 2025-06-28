@@ -17,6 +17,13 @@ export async function GET(request: NextRequest) {
 
     // Transform the data to match expected format
     const categoriesWithStats = result.data;
+    if (!categoriesWithStats) {
+      return NextResponse.json(
+        { success: false, error: 'No category data found' },
+        { status: 404 }
+      );
+    }
+    
     const hotCategories = categoriesWithStats.slice(0, 3);
 
     return NextResponse.json({

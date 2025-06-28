@@ -52,8 +52,6 @@ export interface IQuizService {
   
   rejectQuiz(id: string, reason?: string): Promise<ServiceResult<any>>
   
-  extractQuestionsFromPDF(formData: FormData): Promise<any>
-  
   submitQuizAttempt(slug: string, answers: any[], session: any, userEmail?: string): Promise<ServiceResult<any>>
   
   getQuizDiscussions(slug: string): Promise<ServiceResult<any[]>>

@@ -1,15 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/mongoose';
-import Category from '@/models/Category';
+import { serviceFactory } from '@/lib/serviceFactory';
 
-// GET /api/categories/[slug] - Get category by slug
+// GET /api/categories/[slug] - Get category by slug with quizzes
 export async function GET(
   request: NextRequest,
   { params }: { params: { slug: string } }
 ) {
   try {
-    await connectDB();
-
     const slug = params.slug;
     if (!slug) {
       return NextResponse.json(
@@ -18,44 +15,26 @@ export async function GET(
       );
     }
 
-    // Convert slug back to category name (simple approach)
-    // slug format: "toan-hoc" -> "Toán học"
-    const categoryName = decodeURIComponent(slug)
-      .split('-')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
+    // Get query parameters
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '12');
+    const search = searchParams.get('search') || undefined;
 
-    console.log('🔍 Looking for category:', { slug, categoryName });
+    const categoryService = serviceFactory.getCategoryService();
+    
+    const result = await categoryService.getCategoryBySlug(slug, page, limit, search);
 
-    // Find category by name (case insensitive)
-    const category = await Category.findOne({ 
-      name: { $regex: new RegExp(`^${categoryName}$`, 'i') },
-      isActive: true 
-    });
-
-    if (!category) {
-      // Try alternative search - find all categories and match by slug
-      const allCategories = await Category.find({ isActive: true });
-      const foundCategory = allCategories.find(cat => 
-        cat.name.toLowerCase().replace(/\s+/g, '-') === slug.toLowerCase()
+    if (!result.success) {
+      return NextResponse.json(
+        { success: false, error: result.error },
+        { status: result.statusCode || 400 }
       );
-
-      if (!foundCategory) {
-        return NextResponse.json(
-          { success: false, error: 'Category not found' },
-          { status: 404 }
-        );
-      }
-
-      return NextResponse.json({
-        success: true,
-        data: foundCategory
-      });
     }
 
     return NextResponse.json({
       success: true,
-      data: category
+      data: result.data
     });
 
   } catch (error: any) {

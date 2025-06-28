@@ -23,7 +23,7 @@ interface Quiz {
     email: string;
   };
   createdAt: string;
-  questions: Array<any>;
+  questionCount: number;
   status: string;
 }
 
@@ -65,45 +65,35 @@ export default function CategoryPage({ params }: CategoryPageProps) {
     try {
       setLoading(true);
       
-      // Get category by slug using new API endpoint
-      const categoryResponse = await fetch(`/api/categories/${params.slug}`);
-      const categoryData = await categoryResponse.json();
-      
-      if (!categoryData.success) {
-        setError(categoryData.error || 'Category not found');
-        return;
-      }
-      
-      const foundCategory = categoryData.data;
-      setCategory(foundCategory);
-      
-      // Now fetch quizzes for this category
-      const quizParams = new URLSearchParams({
-        status: 'published',
-        category: foundCategory._id,
+      // Build query parameters for category API
+      const queryParams = new URLSearchParams({
         page: page.toString(),
         limit: pagination.limit.toString()
       });
 
       if (search.trim()) {
-        quizParams.append('search', search.trim());
+        queryParams.append('search', search.trim());
       }
 
-      console.log('🔍 Fetching quizzes with params:', quizParams.toString());
-      console.log('📂 Category ID:', foundCategory._id);
-      console.log('🎯 Category name:', foundCategory.name);
+      console.log('🔍 Fetching category with params:', queryParams.toString());
+      console.log('📂 Slug:', params.slug);
 
-      const quizResponse = await fetch(`/api/quizzes?${quizParams}`);
-      const quizData = await quizResponse.json();
-
-      if (quizData.success) {
-        setQuizzes(quizData.data.quizzes);
-        setPagination(quizData.data.pagination);
-        setError('');
-      } else {
-        setError(quizData.error || 'Failed to fetch quizzes');
+      // Get category and quizzes in one API call
+      const response = await fetch(`/api/categories/${params.slug}?${queryParams}`);
+      const data = await response.json();
+      
+      if (!data.success) {
+        setError(data.error || 'Category not found');
+        return;
       }
+      
+      const { category, quizzes, pagination: paginationData } = data.data;
+      setCategory(category);
+      setQuizzes(quizzes);
+      setPagination(paginationData);
+      setError('');
     } catch (error) {
+      console.error('Error fetching category data:', error);
       setError('An error occurred while fetching data');
     } finally {
       setLoading(false);
@@ -267,7 +257,7 @@ export default function CategoryPage({ params }: CategoryPageProps) {
                   </p>
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-gray-500">
-                      {quiz.questions?.length || 0} questions
+                      {quiz.questionCount} questions
                     </span>
                     <div className="flex space-x-2">
                       <Link href={`/quiz/${quiz.slug}/flashcards`}>

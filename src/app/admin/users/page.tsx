@@ -86,7 +86,12 @@ export default function AdminUsersPage() {
 
       if (data.success) {
         setUsers(data.data.users);
-        setPagination(data.data.pagination);
+        setPagination({
+          page: data.data.pagination.currentPage,
+          limit: data.data.pagination.itemsPerPage,
+          total: data.data.pagination.totalItems,
+          totalPages: data.data.pagination.totalPages
+        });
         setError('');
       } else {
         setError(data.error || 'Failed to fetch users');

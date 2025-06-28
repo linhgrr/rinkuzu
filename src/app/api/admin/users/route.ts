@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import connectDB from '@/lib/mongoose';
-import User from '@/models/User';
+import { serviceFactory } from '@/lib/serviceFactory';
 
 // GET /api/admin/users - Get all users with pagination
 export async function GET(request: NextRequest) {
@@ -17,47 +16,25 @@ export async function GET(request: NextRequest) {
     }
 
     const url = new URL(request.url);
-    const page = parseInt(url.searchParams.get('page') || '1');
-    const limit = parseInt(url.searchParams.get('limit') || '10');
-    const search = url.searchParams.get('search');
-    const skip = (page - 1) * limit;
+    const searchOptions = {
+      page: parseInt(url.searchParams.get('page') || '1'),
+      limit: parseInt(url.searchParams.get('limit') || '10'),
+      search: url.searchParams.get('search')
+    };
 
-    await connectDB();
+    const adminService = serviceFactory.getAdminService();
+    const result = await adminService.getUsers(searchOptions);
 
-    let filter: any = {};
-
-    // Add search functionality
-    if (search && search.trim()) {
-      const searchRegex = new RegExp(search.trim(), 'i');
-      filter = {
-        email: searchRegex
-      };
+    if (!result.success) {
+      return NextResponse.json(
+        { success: false, error: result.error },
+        { status: result.statusCode || 400 }
+      );
     }
-
-    const [users, total] = await Promise.all([
-      User.find(filter, { password: 0 })
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit),
-      User.countDocuments(filter)
-    ]);
 
     return NextResponse.json({
       success: true,
-      data: {
-        users: users.map(user => ({
-          _id: user._id,
-          email: user.email,
-          role: user.role,
-          createdAt: user.createdAt,
-        })),
-        pagination: {
-          page,
-          limit,
-          total,
-          totalPages: Math.ceil(total / limit)
-        }
-      }
+      data: result.data
     });
 
   } catch (error: any) {

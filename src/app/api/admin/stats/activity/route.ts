@@ -82,7 +82,6 @@ export async function GET(request: NextRequest) {
 
     if (type === 'all' || type === 'attempts') {
       const attempts = await Attempt.find({ takenAt: { $gte: daysAgo } })
-        .populate('user', 'email')
         .populate('quiz', 'title category')
         .populate({
           path: 'quiz',
@@ -156,7 +155,6 @@ export async function GET(request: NextRequest) {
 
       // Get attempts
       const attempts = await Attempt.find({ takenAt: { $gte: daysAgo } })
-        .populate('user', 'email')
         .populate('quiz', 'title category')
         .populate({
           path: 'quiz',

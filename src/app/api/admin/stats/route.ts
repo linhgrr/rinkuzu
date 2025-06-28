@@ -186,7 +186,6 @@ export async function GET(request: NextRequest) {
         .sort({ createdAt: -1 })
         .limit(10),
       Attempt.find({ takenAt: { $gte: thirtyDaysAgo } })
-        .populate('user', 'email')
         .populate('quiz', 'title')
         .select('score takenAt user quiz')
         .sort({ takenAt: -1 })

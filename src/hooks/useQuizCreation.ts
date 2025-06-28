@@ -28,28 +28,68 @@ export function useQuizCreation() {
   const [showPDFViewer, setShowPDFViewer] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [isUploading, setIsUploading] = useState(false);
 
   // File handling
   const onDrop = (acceptedFiles: File[]) => {
+    console.log('onDrop called with files:', acceptedFiles);
+    setIsUploading(true);
+    
+    if (!acceptedFiles || acceptedFiles.length === 0) {
+      console.log('No accepted files');
+      setIsUploading(false);
+      return;
+    }
+    
     const validFiles: File[] = [];
+    const errors: string[] = [];
     
     for (const file of acceptedFiles) {
-      if (file.type !== 'application/pdf') {
-        setError(`File "${file.name}" is not a PDF file`);
-        return;
+      console.log(`Processing file: ${file.name}, type: ${file.type}, size: ${file.size}`);
+      
+      // Double-check file type (some browsers might not set it correctly)
+      if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+        errors.push(`File "${file.name}" is not a PDF file`);
+        continue;
       }
-      if (file.size > 20 * 1024 * 1024) {
-        setError(`File "${file.name}" is larger than 20MB`);
-        return;
+      
+      if (file.size > 50 * 1024 * 1024) {
+        errors.push(`File "${file.name}" is larger than 50MB`);
+        continue;
       }
+      
+      if (file.size === 0) {
+        errors.push(`File "${file.name}" is empty`);
+        continue;
+      }
+      
       validFiles.push(file);
     }
     
+    // Handle errors
+    if (errors.length > 0) {
+      setError(errors.join('; '));
+      if (validFiles.length === 0) {
+        setIsUploading(false);
+        return;
+      }
+    }
+    
+    // Add valid files
     if (validFiles.length > 0) {
-      setPdfFiles(prev => [...prev, ...validFiles]);
+      console.log(`Adding ${validFiles.length} valid files`);
+      setPdfFiles(prev => {
+        const newFiles = [...prev, ...validFiles];
+        console.log('Updated file list:', newFiles.map(f => f.name));
+        return newFiles;
+      });
       setError('');
       setShowPDFViewer(true);
+    } else {
+      console.log('No valid files to add');
     }
+    
+    setIsUploading(false);
   };
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -58,7 +98,31 @@ export function useQuizCreation() {
       'application/pdf': ['.pdf']
     },
     multiple: true,
-    maxSize: 20 * 1024 * 1024, // 20MB
+    maxSize: 50 * 1024 * 1024, // 50MB
+    onDropRejected: (rejectedFiles) => {
+      console.log('Rejected files:', rejectedFiles);
+      const reasons = rejectedFiles.map(rejection => {
+        const file = rejection.file;
+        const errors = rejection.errors.map(error => {
+          switch (error.code) {
+            case 'file-invalid-type':
+              return `File "${file.name}" must be a PDF file`;
+            case 'file-too-large':
+              return `File "${file.name}" is too large (max 50MB)`;
+            case 'too-many-files':
+              return 'Too many files selected';
+            default:
+              return `File "${file.name}": ${error.message}`;
+          }
+        });
+        return errors.join(', ');
+      });
+      setError(reasons.join('; '));
+    },
+    onError: (error) => {
+      console.error('Dropzone error:', error);
+      setError(`Upload error: ${error.message}`);
+    }
   });
 
   const removeFile = (index: number) => {
@@ -203,6 +267,7 @@ export function useQuizCreation() {
     showPDFViewer, setShowPDFViewer,
     error, setError,
     success, setSuccess,
+    isUploading, setIsUploading,
     
     // File handling
     getRootProps,
@@ -225,4 +290,4 @@ export function useQuizCreation() {
     updateMultipleChoice,
     backToUpload
   };
-} 
+}

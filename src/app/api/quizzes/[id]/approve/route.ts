@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import connectDB from '@/lib/mongoose';
-import Quiz from '@/models/Quiz';
 import { authOptions } from '@/lib/auth';
+import { serviceFactory } from '@/lib/serviceFactory';
 
 export async function POST(
   request: NextRequest,
@@ -17,30 +16,21 @@ export async function POST(
       );
     }
 
-    await connectDB();
+    const quizService = serviceFactory.getQuizService();
+    
+    const result = await quizService.approveQuiz(params.id);
 
-    const quiz = await Quiz.findById(params.id);
-    if (!quiz) {
+    if (!result.success) {
       return NextResponse.json(
-        { success: false, error: 'Quiz not found' },
-        { status: 404 }
+        { success: false, error: result.error },
+        { status: result.statusCode || 400 }
       );
     }
-
-    if (quiz.status !== 'pending') {
-      return NextResponse.json(
-        { success: false, error: 'Only pending quizzes can be approved' },
-        { status: 400 }
-      );
-    }
-
-    quiz.status = 'published';
-    await quiz.save();
 
     return NextResponse.json({
       success: true,
       message: 'Quiz approved and published successfully',
-      data: quiz
+      data: result.data
     });
 
   } catch (error: any) {

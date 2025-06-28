@@ -2,6 +2,67 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { extractQuestionsFromPdf, extractQuestionsFromPdfOptimized } from '@/lib/gemini';
 import { authOptions } from '@/lib/auth';
+import crypto from 'crypto';
+
+// Route segment config for handling large files
+export const maxDuration = 300; // 5 minutes timeout
+export const dynamic = 'force-dynamic';
+
+// Function to remove duplicate questions using hash
+function removeDuplicateQuestions(questions: any[]) {
+  const seenHashes = new Set<string>();
+  const uniqueQuestions: any[] = [];
+  const duplicates: any[] = [];
+
+  console.log(`🔍 Checking for duplicates in ${questions.length} questions...`);
+
+  questions.forEach((question, index) => {
+    // Create a normalized hash based on question text and options
+    const questionText = question.question?.trim().toLowerCase().replace(/\s+/g, ' ').replace(/[^\w\s]/g, '');
+    const normalizedOptions = question.options?.map((opt: string) => 
+      opt?.trim().toLowerCase().replace(/\s+/g, ' ').replace(/[^\w\s]/g, '')
+    ).sort();
+    
+    const questionData = {
+      question: questionText,
+      options: normalizedOptions
+    };
+    
+    const hash = crypto
+      .createHash('md5')
+      .update(JSON.stringify(questionData))
+      .digest('hex');
+
+    if (seenHashes.has(hash)) {
+      console.log(`🔍 Found duplicate question ${index + 1}: "${question.question?.substring(0, 50)}..."`);
+      duplicates.push({
+        index: index + 1,
+        question: question.question?.substring(0, 100),
+        hash: hash.substring(0, 8),
+        originalIndex: question.originalIndex || index + 1
+      });
+    } else {
+      seenHashes.add(hash);
+      uniqueQuestions.push({
+        ...question,
+        originalIndex: index + 1,
+        uniqueHash: hash.substring(0, 8) // Include short hash for debugging
+      });
+    }
+  });
+
+  console.log(`✅ Duplicate check complete: ${uniqueQuestions.length} unique, ${duplicates.length} duplicates removed`);
+  
+  if (duplicates.length > 0) {
+    console.log(`🗑️ Removed duplicates:`, duplicates.map(d => `Q${d.index}: ${d.question}...`));
+  }
+
+  return {
+    uniqueQuestions,
+    duplicatesRemoved: duplicates.length,
+    duplicateDetails: duplicates
+  };
+}
 
 // POST /api/quizzes/preview - Extract questions from PDF and return preview
 export async function POST(request: NextRequest) {
@@ -44,9 +105,9 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      if (file.size > 20 * 1024 * 1024) { // 20MB limit
+      if (file.size > 50 * 1024 * 1024) { // 50MB limit
         return NextResponse.json(
-          { success: false, error: `File "${file.name}" size must be less than 20MB` },
+          { success: false, error: `File "${file.name}" size must be less than 50MB` },
           { status: 400 }
         );
       }
@@ -177,20 +238,40 @@ export async function POST(request: NextRequest) {
       return converted;
     });
 
-    console.log('🎯 Final converted questions:', questions.length);
+    console.log('🔄 Converting questions to frontend format...');
+    console.log(`📊 Raw questions count: ${questions.length}`);
+
+    // Remove duplicates from the questions
+    const { uniqueQuestions, duplicatesRemoved, duplicateDetails } = removeDuplicateQuestions(questions);
+
+    console.log('🎯 Final processing complete:');
+    console.log(`  📊 Total questions processed: ${questions.length}`);
+    console.log(`  ✅ Unique questions: ${uniqueQuestions.length}`);
+    console.log(`  🗑️ Duplicates removed: ${duplicatesRemoved}`);
+    console.log(`  ⏱️ Processing time: ${processingTime}ms`);
 
     return NextResponse.json({
       success: true,
       data: {
         title,
         description,
-        questions,
+        questions: uniqueQuestions,
         originalFileName: fileNames.join(', '),
         fileSize: totalFileSize,
         fileCount: pdfFiles.length,
         fileNames: fileNames,
         processingTime: processingTime,
-        processingMethod: pdfFiles.length > 1 ? 'parallel-files' : (totalFileSize > 0.8 * 1024 * 1024 ? 'parallel-chunks' : 'standard')
+        processingMethod: pdfFiles.length > 1 ? 'parallel-files' : (totalFileSize > 0.8 * 1024 * 1024 ? 'parallel-chunks' : 'standard'),
+        duplicatesInfo: {
+          duplicatesRemoved,
+          duplicateDetails: duplicateDetails.slice(0, 5) // Only include first 5 duplicate details to avoid large response
+        },
+        statistics: {
+          originalCount: questions.length,
+          uniqueCount: uniqueQuestions.length,
+          duplicatesRemoved,
+          processingTimeMs: processingTime
+        }
       }
     });
 
@@ -201,4 +282,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-} 
+}

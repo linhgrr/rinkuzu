@@ -34,9 +34,9 @@ const QuestionSchema = new Schema<IQuestion>({
     required: [true, 'Options are required'],
     validate: {
       validator: function(options: string[]) {
-        return options.length >= 2 && options.length <= 6;
+        return options.length >= 2 && options.length <= 10;
       },
-      message: 'Each question must have between 2 and 6 options',
+      message: 'Each question must have between 2 and 10 options',
     },
   },
   type: {

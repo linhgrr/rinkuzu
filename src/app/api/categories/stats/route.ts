@@ -1,70 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import connectDB from '@/lib/mongoose';
-import Category from '@/models/Category';
-import Quiz from '@/models/Quiz';
-import { authOptions } from '@/lib/auth';
+import { serviceFactory } from '@/lib/serviceFactory';
 
 // GET /api/categories/stats - Get category statistics for public display
 export async function GET(request: NextRequest) {
   try {
-    await connectDB();
+    const categoryService = serviceFactory.getCategoryService();
+    
+    const result = await categoryService.getCategoryStats();
 
-    // Get all active categories with quiz counts
-    const categoriesWithStats = await Category.aggregate([
-      // Match only active categories
-      { $match: { isActive: true } },
-      
-      // Lookup quizzes for each category
-      {
-        $lookup: {
-          from: 'quizzes',
-          localField: '_id',
-          foreignField: 'category',
-          as: 'quizzes',
-          pipeline: [
-            { $match: { status: 'published' } } // Only count published quizzes
-          ]
-        }
-      },
-      
-      // Add quiz count field
-      {
-        $addFields: {
-          quizCount: { $size: '$quizzes' }
-        }
-      },
-      
-      // Remove the quizzes array (we only need the count)
-      {
-        $project: {
-          _id: 1,
-          name: 1,
-          description: 1,
-          color: 1,
-          quizCount: 1,
-          createdAt: 1
-        }
-      },
-      
-      // Sort by quiz count (descending) then by name
-      {
-        $sort: { quizCount: -1, name: 1 }
-      }
-    ]);
+    if (!result.success) {
+      return NextResponse.json(
+        { success: false, error: result.error },
+        { status: result.statusCode || 400 }
+      );
+    }
 
-    // Get hot categories (top 3 with most quizzes)
+    // Transform the data to match expected format
+    const categoriesWithStats = result.data;
     const hotCategories = categoriesWithStats.slice(0, 3);
-
-    // Get all categories for navigation
-    const allCategories = categoriesWithStats;
 
     return NextResponse.json({
       success: true,
       data: {
         hotCategories,
-        allCategories,
-        totalCategories: allCategories.length
+        allCategories: categoriesWithStats,
+        totalCategories: categoriesWithStats.length
       }
     });
 

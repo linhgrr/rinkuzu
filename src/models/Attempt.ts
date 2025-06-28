@@ -1,16 +1,17 @@
 import mongoose, { Document, Schema, Types } from 'mongoose';
 
 export interface IAttempt extends Document {
-  user?: Types.ObjectId; // Optional for anonymous attempts
+  user?: Types.ObjectId | string; // Optional for anonymous attempts, can be ObjectId or email string
   quiz: Types.ObjectId;
   score: number;
+  totalQuestions: number;
   answers: (number | number[])[]; // Single choice: number, Multiple choice: number[]
   takenAt: Date;
 }
 
 const AttemptSchema = new Schema<IAttempt>({
   user: {
-    type: Schema.Types.ObjectId,
+    type: Schema.Types.Mixed, // Can be ObjectId or String
     ref: 'User',
     required: false, // Allow anonymous attempts
   },
@@ -25,6 +26,10 @@ const AttemptSchema = new Schema<IAttempt>({
     min: [0, 'Score cannot be negative'],
     max: [100, 'Score cannot exceed 100'],
   },
+  totalQuestions: {
+    type: Number,
+    required: [true, 'Total questions is required'],
+  },
   answers: {
     type: [Schema.Types.Mixed], // Can be number or array of numbers
     required: [true, 'Answers are required'],
@@ -32,15 +37,15 @@ const AttemptSchema = new Schema<IAttempt>({
       validator: function(answers: (number | number[])[]) {
         return answers.every(answer => {
           if (Array.isArray(answer)) {
-            // Multiple choice answer: allow empty array (unanswered) or valid indexes
-            return answer.length === 0 || answer.every(a => a >= 0 && a <= 3);
+            // Multiple choice answer: allow empty array (unanswered) or any valid indexes
+            return answer.length === 0 || answer.every(a => typeof a === 'number' && a >= 0);
           } else {
-            // Single choice answer: allow -1 (unanswered) or valid indexes
-            return answer === -1 || (answer >= 0 && answer <= 3);
+            // Single choice answer: allow -1 (unanswered) or any valid indexes
+            return answer === -1 || (typeof answer === 'number' && answer >= 0);
           }
         });
       },
-      message: 'Single choice answers must be -1 (unanswered) or 0-3, multiple choice answers must be empty array (unanswered) or array of 0-3',
+      message: 'Single choice answers must be -1 (unanswered) or >= 0, multiple choice answers must be empty array (unanswered) or array of >= 0',
     },
   },
   takenAt: {

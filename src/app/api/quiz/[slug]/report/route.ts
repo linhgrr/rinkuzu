@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/mongoose';
-import Report from '@/models/Report';
-import Quiz from '@/models/Quiz';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { serviceFactory } from '@/lib/serviceFactory';
 
 export async function POST(
   request: NextRequest,
@@ -16,8 +14,6 @@ export async function POST(
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
 
-    await connectDB();
-
     const { content } = await request.json();
     
     if (!content || content.trim().length === 0) {
@@ -28,28 +24,22 @@ export async function POST(
       return NextResponse.json({ error: 'Report content too long (max 2000 characters)' }, { status: 400 });
     }
 
-    // Find the quiz
-    const quiz = await Quiz.findOne({ slug: params.slug });
-    if (!quiz) {
-      return NextResponse.json({ error: 'Quiz not found' }, { status: 404 });
+    const quizService = serviceFactory.getQuizService();
+    
+    const result = await quizService.reportQuiz(
+      params.slug,
+      content.trim(),
+      session.user.email!,
+      session.user.name || session.user.email || 'Anonymous'
+    );
+
+    if (!result.success) {
+      return NextResponse.json({ error: result.error }, { status: result.statusCode || 400 });
     }
-
-    // Create the report
-    const report = new Report({
-      quizId: quiz._id.toString(),
-      quizTitle: quiz.title,
-      quizSlug: quiz.slug,
-      reporterEmail: session.user.email,
-      reporterName: session.user.name || session.user.email || 'Anonymous',
-      content: content.trim(),
-      status: 'pending'
-    });
-
-    await report.save();
 
     return NextResponse.json({ 
       message: 'Report submitted successfully',
-      reportId: report._id 
+      reportId: result.data 
     });
 
   } catch (error) {

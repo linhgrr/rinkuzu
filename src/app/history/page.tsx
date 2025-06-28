@@ -268,14 +268,14 @@ export default function HistoryPage() {
           </div>
         )}
 
-        {loading && attempts.length === 0 ? (
+        {loading && (!attempts || attempts.length === 0) ? (
           <div className="flex justify-center py-12">
             <div className="flex items-center space-x-2 text-gray-500">
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
               <span>Loading quiz history...</span>
             </div>
           </div>
-        ) : attempts.length === 0 ? (
+        ) : (!attempts || attempts.length === 0) ? (
           <Card>
             <CardContent className="text-center py-12">
               <div className="text-6xl mb-4">📝</div>
@@ -309,7 +309,7 @@ export default function HistoryPage() {
               <Card>
                 <CardContent className="text-center py-6">
                   <div className="text-2xl font-bold text-blue-600">
-                    {pagination?.totalItems || attempts.length}
+                    {pagination?.totalItems || (attempts ? attempts.length : 0)}
                   </div>
                   <div className="text-sm text-gray-600">Total Attempts</div>
                 </CardContent>
@@ -317,7 +317,7 @@ export default function HistoryPage() {
               <Card>
                 <CardContent className="text-center py-6">
                   <div className="text-2xl font-bold text-green-600">
-                    {attempts.length > 0 ? Math.round(attempts.reduce((sum, a) => sum + a.score, 0) / attempts.length) : 0}%
+                    {attempts && attempts.length > 0 ? Math.round(attempts.reduce((sum, a) => sum + a.score, 0) / attempts.length) : 0}%
                   </div>
                   <div className="text-sm text-gray-600">Avg Score (This Page)</div>
                 </CardContent>
@@ -325,7 +325,7 @@ export default function HistoryPage() {
               <Card>
                 <CardContent className="text-center py-6">
                   <div className="text-2xl font-bold text-purple-600">
-                    {attempts.length > 0 ? Math.max(...attempts.map(a => a.score)) : 0}%
+                    {attempts && attempts.length > 0 ? Math.max(...attempts.map(a => a.score)) : 0}%
                   </div>
                   <div className="text-sm text-gray-600">Best Score (This Page)</div>
                 </CardContent>
@@ -333,7 +333,7 @@ export default function HistoryPage() {
               <Card>
                 <CardContent className="text-center py-6">
                   <div className="text-2xl font-bold text-orange-600">
-                    {attempts.filter(a => a.score >= 80).length}
+                    {attempts ? attempts.filter(a => a.score >= 80).length : 0}
                   </div>
                   <div className="text-sm text-gray-600">High Scores (This Page)</div>
                 </CardContent>
@@ -342,7 +342,7 @@ export default function HistoryPage() {
 
             {/* Attempts List */}
             <div className="space-y-4">
-              {attempts.map((attempt) => {
+              {attempts && attempts.map((attempt) => {
                 const badge = getPerformanceBadge(attempt.score);
                 return (
                   <Card key={attempt._id} className="hover:shadow-md transition-shadow">

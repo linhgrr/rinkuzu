@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import connectDB from '@/lib/mongoose';
-import Attempt from '@/models/Attempt';
-import User from '@/models/User';
+import { serviceFactory } from '@/lib/serviceFactory';
 
 export async function GET(
   request: NextRequest,
@@ -11,73 +9,33 @@ export async function GET(
 ) {
   try {
     const session = await getServerSession(authOptions);
+    const { searchParams } = new URL(request.url);
+    const userEmail = searchParams.get('userEmail');
     
-    if (!session?.user?.email) {
+    // Check if user is authenticated or has userEmail
+    if (!session?.user?.email && !userEmail) {
       return NextResponse.json(
-        { success: false, error: 'Authentication required' },
+        { success: false, error: 'Authentication required or userEmail parameter' },
         { status: 401 }
       );
     }
 
-    await connectDB();
+    const userService = serviceFactory.getUserService();
+    
+    // Use session email if available, otherwise use userEmail from params
+    const email = session?.user?.email || userEmail!;
+    const result = await userService.getAttemptDetails(params.id, email);
 
-    // Find user
-    const user = await User.findOne({ email: session.user.email });
-    if (!user) {
+    if (!result.success) {
       return NextResponse.json(
-        { success: false, error: 'User not found' },
-        { status: 404 }
+        { success: false, error: result.error },
+        { status: result.statusCode || 400 }
       );
     }
-
-    // Get attempt with quiz details including questions
-    const attempt = await Attempt.findOne({ 
-      _id: params.id,
-      user: user._id 
-    }).populate({
-      path: 'quiz',
-      select: 'title slug description questions',
-    });
-
-    if (!attempt) {
-      return NextResponse.json(
-        { success: false, error: 'Attempt not found' },
-        { status: 404 }
-      );
-    }
-
-    // Format the response with question details and user answers
-    const formattedAttempt = {
-      _id: attempt._id,
-      score: attempt.score,
-      takenAt: attempt.takenAt,
-      answers: attempt.answers,
-      quiz: {
-        title: attempt.quiz.title,
-        slug: attempt.quiz.slug,
-        description: attempt.quiz.description,
-        questions: attempt.quiz.questions.map((question: any, index: number) => ({
-          question: question.question,
-          options: question.options,
-          type: question.type,
-          correctIndex: question.correctIndex,
-          correctIndexes: question.correctIndexes,
-          questionImage: question.questionImage,
-          optionImages: question.optionImages,
-          userAnswer: attempt.answers[index],
-          isCorrect: question.type === 'single' 
-            ? attempt.answers[index] === question.correctIndex
-            : Array.isArray(attempt.answers[index]) && Array.isArray(question.correctIndexes)
-              ? question.correctIndexes.length === attempt.answers[index].length &&
-                question.correctIndexes.every((idx: number) => attempt.answers[index].includes(idx))
-              : false
-        }))
-      },
-    };
 
     return NextResponse.json({
       success: true,
-      data: formattedAttempt,
+      data: result.data,
     });
 
   } catch (error: any) {

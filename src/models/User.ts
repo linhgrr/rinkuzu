@@ -2,8 +2,10 @@ import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IUser extends Document {
   email: string;
-  password: string;
+  password?: string;
+  name?: string;
   role: 'admin' | 'user';
+  isAnonymous?: boolean;
   createdAt: Date;
 }
 
@@ -17,13 +19,34 @@ const UserSchema = new Schema<IUser>({
   },
   password: {
     type: String,
-    required: [true, 'Password is required'],
+    required: function(this: IUser) {
+      return !this.isAnonymous;
+    },
     minlength: [6, 'Password must be at least 6 characters'],
+    validate: {
+      validator: function(this: IUser, password: string) {
+        // Skip validation for anonymous users
+        if (this.isAnonymous) {
+          return true;
+        }
+        // For non-anonymous users, password must be at least 6 characters
+        return password && password.length >= 6;
+      },
+      message: 'Password must be at least 6 characters'
+    }
+  },
+  name: {
+    type: String,
+    required: false,
   },
   role: {
     type: String,
     enum: ['admin', 'user'],
     default: 'user',
+  },
+  isAnonymous: {
+    type: Boolean,
+    default: false,
   },
   createdAt: {
     type: Date,

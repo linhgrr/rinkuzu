@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import connectDB from '@/lib/mongoose';
-import Quiz from '@/models/Quiz';
 import { authOptions } from '@/lib/auth';
+import { serviceFactory } from '@/lib/serviceFactory';
 
 export async function POST(
   request: NextRequest,
@@ -18,34 +17,21 @@ export async function POST(
     }
 
     const { reason } = await request.json();
+    const quizService = serviceFactory.getQuizService();
+    
+    const result = await quizService.rejectQuiz(params.id, reason);
 
-    await connectDB();
-
-    const quiz = await Quiz.findById(params.id);
-    if (!quiz) {
+    if (!result.success) {
       return NextResponse.json(
-        { success: false, error: 'Quiz not found' },
-        { status: 404 }
+        { success: false, error: result.error },
+        { status: result.statusCode || 400 }
       );
     }
-
-    if (quiz.status !== 'pending') {
-      return NextResponse.json(
-        { success: false, error: 'Only pending quizzes can be rejected' },
-        { status: 400 }
-      );
-    }
-
-    quiz.status = 'rejected';
-    if (reason) {
-      quiz.description = (quiz.description || '') + `\n\nRejection reason: ${reason}`;
-    }
-    await quiz.save();
 
     return NextResponse.json({
       success: true,
       message: 'Quiz rejected successfully',
-      data: quiz
+      data: result.data
     });
 
   } catch (error: any) {

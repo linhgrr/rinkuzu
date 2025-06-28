@@ -243,6 +243,7 @@ export default function CreateQuizPage() {
     showPDFViewer, setShowPDFViewer,
     error, setError,
     success, setSuccess,
+    isUploading,
     
     // File handling
     getRootProps,
@@ -520,14 +521,22 @@ export default function CreateQuizPage() {
                         </svg>
                             </div>
                             <div className="text-center">
-                          {isDragActive ? (
+                          {isUploading ? (
+                                <div className="flex items-center justify-center space-x-2">
+                                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-violet-600"></div>
+                                  <p className="text-sm font-semibold text-violet-700">Processing files...</p>
+                                </div>
+                              ) : isDragActive ? (
                                 <p className="text-lg font-semibold text-violet-700">Drop PDF files here!</p>
                               ) : (
                                 <div>
                                   <p className="text-lg font-semibold text-gray-700 mb-2">
                                     <span className="text-violet-600 hover:text-violet-700 transition-colors">Click to upload</span> or drag and drop
                                   </p>
-                                  <p className="text-sm text-gray-500">Multiple PDF files allowed, up to 20MB each</p>
+                                  <p className="text-sm text-gray-500">Multiple PDF files allowed, up to 50MB each</p>
+                                  <p className="text-xs text-gray-400 mt-1">
+                                    Supported formats: .pdf files only
+                                  </p>
                                 </div>
                               )}
                         </div>
@@ -970,4 +979,4 @@ export default function CreateQuizPage() {
       </main>
     </div>
   );
-} 
+}

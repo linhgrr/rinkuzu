@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import connectDB from '@/lib/mongoose';
-import Quiz from '@/models/Quiz';
-import Discussion from '@/models/Discussion';
-import User from '@/models/User';
+import { serviceFactory } from '@/lib/serviceFactory';
 
 // GET /api/quiz/[slug]/discussions - Get all discussions for a quiz
 export async function GET(
@@ -12,23 +9,20 @@ export async function GET(
   { params }: { params: { slug: string } }
 ) {
   try {
-    await connectDB();
+    const quizService = serviceFactory.getQuizService();
+    
+    const result = await quizService.getQuizDiscussions(params.slug);
 
-    const quiz = await Quiz.findOne({ slug: params.slug });
-    if (!quiz) {
+    if (!result.success) {
       return NextResponse.json(
-        { success: false, error: 'Quiz not found' },
-        { status: 404 }
+        { success: false, error: result.error },
+        { status: result.statusCode || 400 }
       );
     }
 
-    const discussions = await Discussion.find({ quiz: quiz._id })
-      .populate('comments.author', 'email')
-      .sort({ questionIndex: 1, 'comments.createdAt': 1 });
-
     return NextResponse.json({
       success: true,
-      data: discussions,
+      data: result.data,
     });
   } catch (error) {
     console.error('Error fetching discussions:', error);
@@ -53,8 +47,6 @@ export async function POST(
       );
     }
 
-    await connectDB();
-
     const { questionIndex, content } = await request.json();
 
     if (typeof questionIndex !== 'number' || !content?.trim()) {
@@ -64,59 +56,25 @@ export async function POST(
       );
     }
 
-    const quiz = await Quiz.findOne({ slug: params.slug });
-    if (!quiz) {
-      return NextResponse.json(
-        { success: false, error: 'Quiz not found' },
-        { status: 404 }
-      );
-    }
-
-    if (questionIndex < 0 || questionIndex >= quiz.questions.length) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid question index' },
-        { status: 400 }
-      );
-    }
-
-    const user = await User.findOne({ email: session.user.email });
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: 'User not found' },
-        { status: 404 }
-      );
-    }
-
-    // Find or create discussion for this question
-    let discussion = await Discussion.findOne({
-      quiz: quiz._id,
+    const quizService = serviceFactory.getQuizService();
+    
+    const result = await quizService.addDiscussionComment(
+      params.slug,
       questionIndex,
-    });
+      content.trim(),
+      session.user.email
+    );
 
-    if (!discussion) {
-      discussion = new Discussion({
-        quiz: quiz._id,
-        questionIndex,
-        comments: [],
-      });
+    if (!result.success) {
+      return NextResponse.json(
+        { success: false, error: result.error },
+        { status: result.statusCode || 400 }
+      );
     }
-
-    // Add the new comment
-    discussion.comments.push({
-      author: user._id,
-      authorEmail: user.email,
-      content: content.trim(),
-      isEdited: false,
-    } as any);
-
-    await discussion.save();
-
-    // Populate the author info for the response
-    await discussion.populate('comments.author', 'email');
 
     return NextResponse.json({
       success: true,
-      data: discussion,
+      data: result.data,
     });
   } catch (error) {
     console.error('Error adding comment:', error);

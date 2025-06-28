@@ -3,6 +3,8 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
 
+export const dynamic = 'force-dynamic';
+
 // GET /api/categories/search - Search categories for quiz creation
 export async function GET(request: NextRequest) {
   try {

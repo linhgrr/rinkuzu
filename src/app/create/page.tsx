@@ -196,7 +196,11 @@ function PDFViewerComponent({ files }: { files: File[] }) {
             <span className="text-gray-700 font-medium">{totalPages} pages</span>
           </div>
           <button
-            onClick={() => window.open(pdfUrl, '_blank')}
+            onClick={() => {
+              if (typeof window !== 'undefined') {
+                window.open(pdfUrl, '_blank')
+              }
+            }}
             className="px-2 py-1 text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 rounded transition-colors"
             title="Open in new tab"
           >

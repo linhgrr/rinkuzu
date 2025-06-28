@@ -251,7 +251,7 @@ export function useQuizCreation() {
     title, setTitle,
     description, setDescription,
     selectedCategory, setSelectedCategory,
-    pdfFiles,
+    pdfFiles, setPdfFiles,
     extracting, setExtracting,
     
     // Preview state

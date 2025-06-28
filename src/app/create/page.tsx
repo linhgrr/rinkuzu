@@ -8,10 +8,14 @@ import { Button } from '@/components/ui/Button';
 import { Input, Textarea } from '@/components/ui/Input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { QuizPreviewModal } from '@/components/ui/QuizPreviewModal';
-import { QuestionImage } from '@/components/ui/ImageDisplay';
 import { QuestionImageUpload, OptionImageUpload } from '@/components/ui/ImageUpload';
 import { CategorySelector } from '@/components/ui/CategorySelector';
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
+import { extractQuestionsFromLargePDF, UploadProgress } from '@/services/largeFileUploadService';
+import { LargeFileUploadProgress } from '@/components/ui/LargeFileUploadProgress';
+import { Question } from '@/types/quiz';
 
 // Enhanced PDF Viewer Component with merge capability
 function PDFViewerComponent({ files }: { files: File[] }) {
@@ -218,54 +222,57 @@ function PDFViewerComponent({ files }: { files: File[] }) {
 }
 
 export default function CreateQuizPage() {
-  const {
-    // Session data
-    session,
-    router,
-    
-    // Form state
-    title, setTitle,
-    description, setDescription,
-    selectedCategory, setSelectedCategory,
-    pdfFiles,
-    extracting, setExtracting,
-    
-    // Preview state
-    previewData, setPreviewData,
-    editableTitle, setEditableTitle,
-    editableDescription, setEditableDescription,
-    editableQuestions, setEditableQuestions,
-    isPrivate, setIsPrivate,
-    creating, setCreating,
-    
-    // UI state
-    showPreviewModal, setShowPreviewModal,
-    showPDFViewer, setShowPDFViewer,
-    error, setError,
-    success, setSuccess,
-    isUploading,
-    
-    // File handling
-    getRootProps,
-    getInputProps,
+  const { data: session } = useSession();
+  const router = useRouter();
+  
+  // Form state
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<any>(null);
+  const [isPrivate, setIsPrivate] = useState(false);
+  
+  // File upload state
+  const { 
+    pdfFiles, 
+    setPdfFiles, 
+    showPDFViewer, 
+    setShowPDFViewer,
+    getRootProps, 
+    getInputProps, 
     isDragActive,
     removeFile,
     removeAllFiles,
-    
-    // Question management
-    updateQuestion,
-    updateOption,
-    updateQuestionImage,
-    removeQuestionImage,
-    updateOptionImage,
-    removeOptionImage,
+    isUploading,
     addQuestion,
-    removeQuestion,
-    updateQuestionType,
-    updateSingleChoice,
-    updateMultipleChoice,
-    backToUpload
+    removeQuestion
   } = useQuizCreation();
+  
+  // Processing state
+  const [extracting, setExtracting] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  
+  // Preview state
+  const [previewData, setPreviewData] = useState<any>(null);
+  const [editableTitle, setEditableTitle] = useState('');
+  const [editableDescription, setEditableDescription] = useState('');
+  const [editableQuestions, setEditableQuestions] = useState<Question[]>([]);
+  
+  // Large file upload state
+  const [uploadProgress, setUploadProgress] = useState<UploadProgress>({
+    currentChunk: 0,
+    totalChunks: 0,
+    currentFile: 0,
+    totalFiles: 0,
+    fileName: '',
+    status: 'uploading',
+    message: ''
+  });
+  const [showLargeFileProgress, setShowLargeFileProgress] = useState(false);
+  
+  // UI state
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
 
   // Redirect if not authenticated
   if (!session) {
@@ -294,27 +301,58 @@ export default function CreateQuizPage() {
 
     setExtracting(true);
     setError('');
+    setShowLargeFileProgress(false);
 
     try {
-      const formData = new FormData();
-      formData.append('title', title.trim());
-      formData.append('description', description.trim());
+      // Check if any file is larger than 4MB
+      const hasLargeFile = pdfFiles.some(file => file.size > 4 * 1024 * 1024);
       
-      pdfFiles.forEach((file, index) => {
-        formData.append(`pdfFile_${index}`, file);
-      });
-      formData.append('fileCount', pdfFiles.length.toString());
+      if (hasLargeFile) {
+        // Use large file upload service
+        setShowLargeFileProgress(true);
+        
+        const data = await extractQuestionsFromLargePDF(
+          pdfFiles,
+          title.trim(),
+          description.trim(),
+          (progress) => {
+            setUploadProgress(progress);
+          }
+        );
+        
+        setPreviewData(data);
+        setEditableTitle(data.title);
+        setEditableDescription(data.description);
+        setEditableQuestions(data.questions);
+        
+        // Hide progress after a short delay
+        setTimeout(() => {
+          setShowLargeFileProgress(false);
+        }, 2000);
+        
+      } else {
+        // Use regular service for small files
+        const formData = new FormData();
+        formData.append('title', title.trim());
+        formData.append('description', description.trim());
+        
+        pdfFiles.forEach((file, index) => {
+          formData.append(`pdfFile_${index}`, file);
+        });
+        formData.append('fileCount', pdfFiles.length.toString());
 
-      const data = await extractQuestionsFromPDF(formData);
-      
-      setPreviewData(data);
-      setEditableTitle(data.title);
-      setEditableDescription(data.description);
-      setEditableQuestions(data.questions);
+        const data = await extractQuestionsFromPDF(formData);
+        
+        setPreviewData(data);
+        setEditableTitle(data.title);
+        setEditableDescription(data.description);
+        setEditableQuestions(data.questions);
+      }
       
     } catch (err: any) {
       console.error('Error extracting questions:', err);
       setError(err.message || 'Failed to extract questions from PDF');
+      setShowLargeFileProgress(false);
     } finally {
       setExtracting(false);
     }
@@ -357,6 +395,92 @@ export default function CreateQuizPage() {
       setCreating(false);
     }
   };
+
+  // Question management functions
+  const updateQuestion = (index: number, field: keyof Question, value: any) => {
+    const updated = [...editableQuestions]
+    updated[index] = { ...updated[index], [field]: value }
+    setEditableQuestions(updated)
+  }
+
+  const updateOption = (questionIndex: number, optionIndex: number, value: string) => {
+    const updated = [...editableQuestions]
+    updated[questionIndex].options[optionIndex] = value
+    setEditableQuestions(updated)
+  }
+
+  const updateQuestionType = (questionIndex: number, type: 'single' | 'multiple') => {
+    const updated = [...editableQuestions]
+    updated[questionIndex] = { ...updated[questionIndex], type }
+    
+    // Reset correct answers when changing type
+    if (type === 'single') {
+      updated[questionIndex].correctIndex = 0
+      delete updated[questionIndex].correctIndexes
+    } else {
+      updated[questionIndex].correctIndexes = []
+      delete updated[questionIndex].correctIndex
+    }
+    
+    setEditableQuestions(updated)
+  }
+
+  const updateSingleChoice = (questionIndex: number, optionIndex: number) => {
+    const updated = [...editableQuestions]
+    updated[questionIndex].correctIndex = optionIndex
+    setEditableQuestions(updated)
+  }
+
+  const updateMultipleChoice = (questionIndex: number, optionIndex: number, checked: boolean) => {
+    const updated = [...editableQuestions]
+    const currentIndexes = updated[questionIndex].correctIndexes || []
+    
+    if (checked) {
+      updated[questionIndex].correctIndexes = [...currentIndexes, optionIndex]
+    } else {
+      updated[questionIndex].correctIndexes = currentIndexes.filter(i => i !== optionIndex)
+    }
+    
+    setEditableQuestions(updated)
+  }
+
+  const updateQuestionImage = (questionIndex: number, imageUrl: string) => {
+    const updated = [...editableQuestions]
+    updated[questionIndex].questionImage = imageUrl
+    setEditableQuestions(updated)
+  }
+
+  const removeQuestionImage = (questionIndex: number) => {
+    const updated = [...editableQuestions]
+    delete updated[questionIndex].questionImage
+    setEditableQuestions(updated)
+  }
+
+  const updateOptionImage = (questionIndex: number, optionIndex: number, imageUrl: string) => {
+    const updated = [...editableQuestions]
+    if (!updated[questionIndex].optionImages) {
+      updated[questionIndex].optionImages = []
+    }
+    updated[questionIndex].optionImages![optionIndex] = imageUrl
+    setEditableQuestions(updated)
+  }
+
+  const removeOptionImage = (questionIndex: number, optionIndex: number) => {
+    const updated = [...editableQuestions]
+    if (updated[questionIndex].optionImages) {
+      updated[questionIndex].optionImages[optionIndex] = undefined
+    }
+    setEditableQuestions(updated)
+  }
+
+  const backToUpload = () => {
+    setPreviewData(null)
+    setEditableTitle('')
+    setEditableDescription('')
+    setEditableQuestions([])
+    setError('')
+    setSuccess('')
+  }
 
   return (
     <div className="min-h-screen">
@@ -828,6 +952,7 @@ export default function CreateQuizPage() {
                                   checked={isSelected}
                                   onChange={() => updateSingleChoice(questionIndex, optionIndex)}
                                   className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                                  title={`Mark option ${optionIndex + 1} as correct answer`}
                                 />
                               ) : (
                                 <input
@@ -835,6 +960,7 @@ export default function CreateQuizPage() {
                                   checked={isSelected}
                                   onChange={(e) => updateMultipleChoice(questionIndex, optionIndex, e.target.checked)}
                                   className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                  title={`Mark option ${optionIndex + 1} as correct answer`}
                                 />
                               )}
                               <div className="flex-1">
@@ -976,6 +1102,12 @@ export default function CreateQuizPage() {
             }))}
           />
         )}
+
+        {/* Large File Upload Progress Modal */}
+        <LargeFileUploadProgress 
+          progress={uploadProgress}
+          isVisible={showLargeFileProgress}
+        />
       </main>
     </div>
   );

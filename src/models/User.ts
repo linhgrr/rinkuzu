@@ -6,6 +6,14 @@ export interface IUser extends Document {
   name?: string;
   role: 'admin' | 'user';
   isAnonymous?: boolean;
+  subscription?: {
+    type: string;
+    startDate?: Date;
+    endDate?: Date;
+    isActive: boolean;
+    payosOrderId?: string;
+    payosTransactionId?: string;
+  };
   createdAt: Date;
 }
 
@@ -47,6 +55,27 @@ const UserSchema = new Schema<IUser>({
   isAnonymous: {
     type: Boolean,
     default: false,
+  },
+  subscription: {
+    type: {
+      type: String,
+    },
+    startDate: {
+      type: Date,
+    },
+    endDate: {
+      type: Date,
+    },
+    isActive: {
+      type: Boolean,
+      default: false,
+    },
+    payosOrderId: {
+      type: String,
+    },
+    payosTransactionId: {
+      type: String,
+    },
   },
   createdAt: {
     type: Date,

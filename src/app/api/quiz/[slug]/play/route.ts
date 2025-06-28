@@ -15,30 +15,22 @@ export async function GET(
     const userRole = (session?.user as any)?.role;
     const userId = (session?.user as any)?.id;
 
-    const quiz = await quizService.getQuizForPlay(params.slug, userRole, userId);
+    const result = await quizService.getQuizForPlay(params.slug, userRole, userId);
+
+    if (!result.success) {
+      return NextResponse.json(
+        { success: false, error: result.error },
+        { status: result.statusCode || 500 }
+      );
+    }
 
     return NextResponse.json({
       success: true,
-      data: quiz
+      data: result.data
     });
 
   } catch (error: any) {
     console.error('Get quiz for play error:', error);
-
-    if (error.message === 'Quiz not found or not published') {
-      return NextResponse.json(
-        { success: false, error: error.message },
-        { status: 404 }
-      );
-    }
-
-    if (error.message === 'Access denied. This quiz is private.') {
-        return NextResponse.json(
-        { success: false, error: error.message },
-          { status: 403 }
-        );
-      }
-
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }

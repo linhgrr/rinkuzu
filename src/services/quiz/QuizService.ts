@@ -6,13 +6,8 @@ import { IAttemptRepository } from '@/interfaces/repositories/IAttemptRepository
 import { IDiscussionRepository } from '@/interfaces/repositories/IDiscussionRepository'
 import { IReportRepository } from '@/interfaces/repositories/IReportRepository'
 import { generateSlug } from '@/lib/utils'
-import { extractQuestionsFromPdf } from '@/lib/gemini'
 import { IQuiz } from '@/interfaces/repositories/IQuizRepository'
-import connectDB from '@/lib/mongoose'
-import Quiz from '@/models/Quiz'
-import User from '@/models/User'
-import Category from '@/models/Category'
-import { calculateScore } from '@/lib/utils'
+import SubscriptionService from '@/services/subscription/SubscriptionService'
 
 interface ServiceResult<T> {
   success: boolean;
@@ -51,24 +46,53 @@ export class QuizService implements IQuizService {
     } else {
       // For regular users
       if (status === 'published') {
-        // All users can see published quizzes that are not private
-        filter = {
-          status: 'published',
-          $or: [
-            { isPrivate: false },
-            { author: userId }
-          ]
+        // Check if user has premium subscription for private quizzes
+        let isPremium = false
+        if (userId) {
+          const subscriptionService = new SubscriptionService()
+          isPremium = await subscriptionService.isUserPremium(userId)
+        }
+
+        if (isPremium) {
+          // Premium users can see all published quizzes (including private)
+          filter.status = 'published'
+        } else {
+          // Non-premium users can only see published non-private quizzes + their own
+          filter = {
+            status: 'published',
+            $or: [
+              { isPrivate: false },
+              { author: userId }
+            ]
+          }
         }
       } else if (status === 'pending' || status === 'rejected') {
         // Only their own pending/rejected quizzes
         filter = { author: userId, status }
       } else {
-        // Default: published non-private quizzes + their own quizzes
-        filter = {
-          $or: [
-            { status: 'published', isPrivate: false },
-            { author: userId }
-          ]
+        // Default: check premium status for private quizzes
+        let isPremium = false
+        if (userId) {
+          const subscriptionService = new SubscriptionService()
+          isPremium = await subscriptionService.isUserPremium(userId)
+        }
+
+        if (isPremium) {
+          // Premium users can see all published quizzes + their own
+          filter = {
+            $or: [
+              { status: 'published' },
+              { author: userId }
+            ]
+          }
+        } else {
+          // Non-premium users can only see published non-private quizzes + their own
+          filter = {
+            $or: [
+              { status: 'published', isPrivate: false },
+              { author: userId }
+            ]
+          }
         }
       }
     }
@@ -183,7 +207,7 @@ export class QuizService implements IQuizService {
     return quiz
   }
 
-  async getQuizById(id: string, userEmail?: string, userRole?: string): Promise<ServiceResult<any>> {
+  async getQuizById(id: string, userEmail?: string, userRole?: string, userId?: string): Promise<ServiceResult<any>> {
     try {
       const quiz = await this.quizRepository.findById(id);
       
@@ -200,34 +224,48 @@ export class QuizService implements IQuizService {
         if (!userEmail) {
           return {
             success: false,
-            error: 'Access denied. This quiz is private.',
-            statusCode: 403
+            error: 'Authentication required to access private quiz',
+            statusCode: 401
           };
         }
 
-        const isAdmin = userRole === 'admin';
-        const isAuthor = (quiz.author as any)?._id 
-          ? (quiz.author as any)._id.toString() === userEmail
-          : quiz.author === userEmail;
+        // Admin can access all private quizzes
+        if (userRole === 'admin') {
+          return { success: true, data: quiz };
+        }
 
-        if (!isAdmin && !isAuthor) {
+        // Author can access their own private quizzes
+        if (quiz.author.toString() === userId) {
+          return { success: true, data: quiz };
+        }
+
+        // Check if user has premium subscription
+        if (userId) {
+          const subscriptionService = new SubscriptionService();
+          const isPremium = await subscriptionService.isUserPremium(userId);
+
+          if (!isPremium) {
+            return {
+              success: false,
+              error: 'Premium subscription required to access private quizzes',
+              statusCode: 403
+            };
+          }
+        } else {
           return {
             success: false,
-            error: 'Access denied. This quiz is private.',
+            error: 'Premium subscription required to access private quizzes',
             statusCode: 403
           };
         }
       }
 
-      return {
-        success: true,
-        data: quiz
-      };
+      return { success: true, data: quiz };
     } catch (error) {
-      console.error('Get quiz by id error:', error);
+      console.error('Error in getQuizById:', error);
       return {
         success: false,
-        error: 'Failed to get quiz',
+        error: 'Internal server error',
         statusCode: 500
       };
     }
@@ -238,43 +276,88 @@ export class QuizService implements IQuizService {
   }
 
   async getQuizForPlay(slug: string, userRole?: string, userId?: string): Promise<any> {
-    const quiz = await this.quizRepository.findBySlugAndStatus(slug, 'published');
+    try {
+      const quiz = await this.quizRepository.findBySlug(slug);
+      
     if (!quiz) {
-      throw new Error('Quiz not found or not published');
-    }
-
-    // Check if quiz is private and user has access
-    if (quiz.isPrivate) {
-      if (!userId) {
-        throw new Error('Access denied. This quiz is private.');
+        return {
+          success: false,
+          error: 'Quiz not found',
+          statusCode: 404
+        };
       }
 
-      const isAdmin = userRole === 'admin';
-      const isAuthor = (quiz.author as any)?._id 
-        ? (quiz.author as any)._id.toString() === userId
-        : quiz.author === userId;
+      if (quiz.status !== 'published') {
+        return {
+          success: false,
+          error: 'Quiz is not available',
+          statusCode: 404
+        };
+    }
 
-      if (!isAdmin && !isAuthor) {
-        throw new Error('Access denied. This quiz is private.');
+      // Check permissions for private quizzes
+    if (quiz.isPrivate) {
+      if (!userId) {
+          return {
+            success: false,
+            error: 'Authentication required to access private quiz',
+            statusCode: 401
+          };
+      }
+
+        // Admin can access all private quizzes
+        if (userRole === 'admin') {
+          return { success: true, data: quiz };
+        }
+
+        // Author can access their own private quizzes
+        if (quiz.author.toString() === userId) {
+          return { success: true, data: quiz };
+        }
+
+        // Check if user has premium subscription
+        const subscriptionService = new SubscriptionService();
+        const isPremium = await subscriptionService.isUserPremium(userId);
+
+        if (!isPremium) {
+          return {
+            success: false,
+            error: 'Premium subscription required to access private quizzes',
+            statusCode: 403
+          };
       }
     }
 
     // Return quiz without correct answers for playing
-    return {
+      const quizForPlay = {
       _id: quiz._id,
       title: quiz.title,
       description: quiz.description,
       author: quiz.author,
       slug: quiz.slug,
+        category: quiz.category,
+        status: quiz.status,
+        isPrivate: quiz.isPrivate,
+        createdAt: quiz.createdAt,
+        updatedAt: quiz.updatedAt,
       questions: quiz.questions.map((q: any) => ({
         question: q.question,
         options: q.options,
         type: q.type,
-        questionImage: q.questionImage || null,
-        optionImages: q.optionImages || []
-      })),
-      createdAt: quiz.createdAt,
-    };
+          questionImage: q.questionImage,
+          optionImages: q.optionImages
+        }))
+      };
+
+      return { success: true, data: quizForPlay };
+    } catch (error) {
+      console.error('Error in getQuizForPlay:', error);
+      return {
+        success: false,
+        error: 'Internal server error',
+        statusCode: 500
+      };
+    }
   }
 
   async updateQuiz(id: string, quizData: any, userEmail: string, userRole?: string): Promise<ServiceResult<any>> {
@@ -722,10 +805,28 @@ export class QuizService implements IQuizService {
     }
   }
 
-  async getQuizFlashcards(slug: string): Promise<any> {
+  async getQuizFlashcards(slug: string, session?: any): Promise<any> {
     const quiz = await this.quizRepository.findBySlugAndStatus(slug, 'published')
     if (!quiz) {
       throw new Error('Quiz not found or not published')
+    }
+
+    // Check if quiz is private and user has access
+    if (quiz.isPrivate && session?.user) {
+      const isAdmin = (session.user as any).role === 'admin';
+      const isAuthor = (quiz.author as any)?._id 
+        ? (quiz.author as any)._id.toString() === (session.user as any).id
+        : quiz.author === (session.user as any).id;
+
+      if (!isAdmin && !isAuthor) {
+        // Check if user has premium subscription
+        const subscriptionService = new SubscriptionService();
+        const isPremium = await subscriptionService.isUserPremium((session.user as any).id);
+
+        if (!isPremium) {
+          throw new Error('Premium subscription required to access private quizzes');
+        }
+      }
     }
 
     const flashcards = quiz.questions.map((q: any, index: number) => ({
@@ -776,11 +877,17 @@ export class QuizService implements IQuizService {
           : quiz.author === (session.user as any).id;
 
         if (!isAdmin && !isAuthor) {
-          return {
-            success: false,
-            error: 'Access denied. This quiz is private.',
-            statusCode: 403
-          };
+          // Check if user has premium subscription
+          const subscriptionService = new SubscriptionService();
+          const isPremium = await subscriptionService.isUserPremium((session.user as any).id);
+
+          if (!isPremium) {
+            return {
+              success: false,
+              error: 'Premium subscription required to access private quizzes',
+              statusCode: 403
+            };
+          }
         }
       }
 

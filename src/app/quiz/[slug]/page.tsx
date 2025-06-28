@@ -13,6 +13,7 @@ import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer';
 import { QuestionImage, OptionImage } from '@/components/ui/ImageDisplay';
 import { QuestionDiscussion } from '@/components/ui/QuestionDiscussion';
 import ReportQuiz from '@/components/ui/ReportQuiz';
+import { PremiumRequiredModal } from '@/components/ui/PremiumRequiredModal';
 import { useQuizStore } from '@/store/useQuizStore';
 import { IQuiz } from '@/types';
 
@@ -49,6 +50,9 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
   // Bookmark states
   const [bookmarkLoading, setBookmarkLoading] = useState(false);
   const [bookmarkedQuestions, setBookmarkedQuestions] = useState<Set<number>>(new Set());
+
+  // Premium required modal
+  const [showPremiumModal, setShowPremiumModal] = useState(false);
 
   // If user is logged in, skip email input
   useEffect(() => {
@@ -188,7 +192,11 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
         console.log('Question order mapping:', questionIndexMap);
         console.log('Quiz ready with both question and option shuffling!');
       } else {
+        if (data.error === 'Premium subscription required to access private quizzes') {
+          setShowPremiumModal(true);
+      } else {
         setError(data.error || 'Quiz not found');
+        }
       }
     } catch (error) {
       setError('Failed to load quiz');
@@ -1171,6 +1179,12 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
             </div>
           </div>
         </Modal>
+
+        {/* Premium Required Modal */}
+        <PremiumRequiredModal
+          isOpen={showPremiumModal}
+          onClose={() => setShowPremiumModal(false)}
+        />
       </main>
     </div>
   );

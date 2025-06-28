@@ -8,7 +8,7 @@ import Plan from '@/models/Plan';
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    if (!session?.user) {
       return NextResponse.json(
         { success: false, message: 'Unauthorized' },
         { status: 401 }
@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
 
     const subscriptionService = new SubscriptionService();
     const paymentData = await subscriptionService.createPaymentRequest(
-      session.user.id,
+      (session.user as any).id,
       planId
     );
 

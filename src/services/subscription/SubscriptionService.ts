@@ -264,11 +264,11 @@ export class SubscriptionService {
     
     try {
       // Get plans from database
-      const plans = await Plan.find({}).lean();
+      const plans = await Plan.find({}).lean() as any[];
       
       // Convert to SubscriptionPlan format
       return plans.map(plan => ({
-        id: plan._id,
+        id: plan._id.toString(),
         name: plan.name,
         price: plan.price,
         duration: plan.duration,

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
+import connectDB from '@/lib/mongoose';
+import User from '@/models/User';
 
 // GET /api/admin/users - Get all users with pagination
 export async function GET(request: NextRequest) {

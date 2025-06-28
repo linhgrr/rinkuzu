@@ -14,8 +14,8 @@ export async function GET() {
     }
 
     const subscriptionService = new SubscriptionService();
-    const subscription = await subscriptionService.getUserSubscription(session.user.id);
-    const isPremium = await subscriptionService.isUserPremium(session.user.id);
+    const subscription = await subscriptionService.getUserSubscription((session.user as any).id);
+    const isPremium = await subscriptionService.isUserPremium((session.user as any).id);
 
     return NextResponse.json({ 
       success: true, 

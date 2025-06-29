@@ -16,6 +16,21 @@ interface User {
   email: string;
   role: 'admin' | 'user';
   createdAt: string;
+  subscription?: {
+    type: string;
+    startDate?: string;
+    endDate?: string;
+    isActive: boolean;
+  };
+}
+
+interface Plan {
+  _id: string;
+  name: string;
+  price: number;
+  duration: string;
+  features: string[];
+  isActive: boolean;
 }
 
 interface PaginationData {
@@ -33,6 +48,7 @@ export default function AdminUsersPage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   
   const [users, setUsers] = useState<User[]>([]);
+  const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [error, setError] = useState('');
@@ -50,6 +66,9 @@ export default function AdminUsersPage() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [showRoleModal, setShowRoleModal] = useState(false);
   const [newRole, setNewRole] = useState<'admin' | 'user'>('user');
+  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
+  const [selectedPlanId, setSelectedPlanId] = useState('');
+  const [subscriptionDuration, setSubscriptionDuration] = useState(180); // Default 6 months
 
   useEffect(() => {
     if (status === 'loading') return;
@@ -65,6 +84,7 @@ export default function AdminUsersPage() {
     }
 
     fetchUsers();
+    fetchPlans();
   }, [session, status, router]);
 
   const fetchUsers = async (page: number = 1, search: string = '') => {
@@ -100,6 +120,19 @@ export default function AdminUsersPage() {
       setError('Failed to fetch users');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchPlans = async () => {
+    try {
+      const response = await fetch('/api/admin/plans');
+      const data = await response.json();
+      
+      if (data.success) {
+        setPlans(data.data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch plans:', error);
     }
   };
 
@@ -175,6 +208,53 @@ export default function AdminUsersPage() {
     }
   };
 
+  const handleAddSubscription = async () => {
+    if (!selectedUser || !selectedPlanId) return;
+
+    setActionLoading(selectedUser._id);
+    try {
+      const response = await fetch('/api/admin/users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: selectedUser._id,
+          planId: selectedPlanId,
+          duration: subscriptionDuration,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Update user in the list with new subscription
+        setUsers(users.map(user => 
+          user._id === selectedUser._id ? { 
+            ...user, 
+            subscription: {
+              type: selectedPlanId,
+              startDate: new Date().toISOString(),
+              endDate: data.data.endDate,
+              isActive: true
+            }
+          } : user
+        ));
+        setSuccess(`Subscription added successfully for ${selectedUser.email}`);
+        setShowSubscriptionModal(false);
+        setSelectedUser(null);
+        setSelectedPlanId('');
+        setSubscriptionDuration(180);
+      } else {
+        setError(data.error || 'Failed to add subscription');
+      }
+    } catch (error) {
+      setError('Failed to add subscription');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   const openRoleModal = (user: User) => {
     setSelectedUser(user);
     setNewRole(user.role === 'admin' ? 'user' : 'admin');
@@ -186,8 +266,41 @@ export default function AdminUsersPage() {
     setShowDeleteModal(true);
   };
 
+  const openSubscriptionModal = (user: User) => {
+    setSelectedUser(user);
+    setSelectedPlanId('');
+    setSubscriptionDuration(180);
+    setShowSubscriptionModal(true);
+  };
+
   const getRoleBadgeColor = (role: string) => {
     return role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800';
+  };
+
+  const getSubscriptionBadgeColor = (subscription?: User['subscription']) => {
+    if (!subscription) return 'bg-gray-100 text-gray-800';
+    if (!subscription.isActive) return 'bg-red-100 text-red-800';
+    if (subscription.type === 'lifetime') return 'bg-purple-100 text-purple-800';
+    return 'bg-green-100 text-green-800';
+  };
+
+  const getSubscriptionText = (subscription?: User['subscription']) => {
+    if (!subscription) return 'No Subscription';
+    if (!subscription.isActive) return 'Inactive';
+    if (subscription.type === 'lifetime') return 'Lifetime';
+    return 'Active';
+  };
+
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleDateString();
+  };
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('vi-VN', {
+      style: 'currency',
+      currency: 'VND',
+    }).format(amount);
   };
 
   return (
@@ -266,6 +379,7 @@ export default function AdminUsersPage() {
               <button 
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
                 className="text-gray-600 hover:text-gray-900"
+                aria-label="Toggle mobile menu"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
@@ -451,6 +565,9 @@ export default function AdminUsersPage() {
                       Role
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Subscription
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Created
                     </th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -474,6 +591,18 @@ export default function AdminUsersPage() {
                           {user.role === 'admin' ? 'Administrator' : 'User'}
                         </span>
                       </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center space-x-2">
+                          <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getSubscriptionBadgeColor(user.subscription)}`}>
+                            {getSubscriptionText(user.subscription)}
+                          </span>
+                          {user.subscription?.startDate && (
+                            <span className="text-xs text-gray-500">
+                              {formatDate(user.subscription.startDate)}
+                            </span>
+                          )}
+                        </div>
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {new Date(user.createdAt).toLocaleDateString()}
                       </td>
@@ -481,6 +610,15 @@ export default function AdminUsersPage() {
                         <div className="flex justify-end space-x-2">
                           {user.email !== session.user?.email && (
                             <>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => openSubscriptionModal(user)}
+                                disabled={actionLoading === user._id}
+                                className="text-green-600 border-green-300 hover:bg-green-50"
+                              >
+                                Add Subscription
+                              </Button>
                               <Button
                                 variant="outline"
                                 size="sm"
@@ -586,6 +724,87 @@ export default function AdminUsersPage() {
               className="bg-red-600 hover:bg-red-700"
             >
               Delete User
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Add Subscription Modal */}
+      <Modal
+        isOpen={showSubscriptionModal}
+        onClose={() => setShowSubscriptionModal(false)}
+        title="Add Subscription"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600">
+            Select a subscription plan for <strong>{selectedUser?.email}</strong>:
+          </p>
+          
+          <div className="space-y-3">
+            {plans.map((plan) => (
+              <div
+                key={plan._id}
+                className={`p-4 border rounded-lg cursor-pointer transition-colors ${
+                  selectedPlanId === plan._id
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
+                onClick={() => {
+                  setSelectedPlanId(plan._id);
+                  setSubscriptionDuration(plan.duration === 'lifetime' ? 0 : plan.duration === 'monthly' ? 30 : 180);
+                }}
+              >
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h3 className="font-medium text-gray-900">{plan.name}</h3>
+                    <p className="text-sm text-gray-600">{formatCurrency(plan.price)}</p>
+                    <p className="text-xs text-gray-500">{plan.duration}</p>
+                  </div>
+                  {selectedPlanId === plan._id && (
+                    <div className="text-blue-600">
+                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {selectedPlanId && (
+            <div className="p-4 bg-gray-50 rounded-lg">
+              <h4 className="font-medium text-gray-900 mb-2">Selected Plan Details:</h4>
+              {plans.find(p => p._id === selectedPlanId) && (
+                <div className="text-sm text-gray-600">
+                  <p><strong>Plan:</strong> {plans.find(p => p._id === selectedPlanId)?.name}</p>
+                  <p><strong>Price:</strong> {formatCurrency(plans.find(p => p._id === selectedPlanId)?.price || 0)}</p>
+                  <p><strong>Duration:</strong> {plans.find(p => p._id === selectedPlanId)?.duration}</p>
+                  <p><strong>Features:</strong></p>
+                  <ul className="list-disc list-inside ml-2">
+                    {plans.find(p => p._id === selectedPlanId)?.features.map((feature, index) => (
+                      <li key={index}>{feature}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="flex justify-end space-x-3">
+            <Button
+              variant="outline"
+              onClick={() => setShowSubscriptionModal(false)}
+              disabled={actionLoading === selectedUser?._id}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleAddSubscription}
+              loading={actionLoading === selectedUser?._id}
+              disabled={!selectedPlanId}
+            >
+              Add Subscription
             </Button>
           </div>
         </div>

@@ -4,39 +4,36 @@ import { authOptions } from '@/lib/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
 import connectDB from '@/lib/mongoose';
 import User from '@/models/User';
+import Plan from '@/models/Plan';
 
-// GET /api/admin/users - Get all users with pagination
+const userService = serviceFactory.getUserService();
+const adminService = serviceFactory.getAdminService();
+
+// GET /api/admin/users - List users with filtering
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    
-    if (!session || (session.user as any)?.role !== 'admin') {
+    if (!session?.user || (session.user as any).role !== 'admin') {
       return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
+        { success: false, error: 'Admin access required' },
+        { status: 403 }
       );
     }
 
     const url = new URL(request.url);
-    const searchOptions = {
-      page: parseInt(url.searchParams.get('page') || '1'),
-      limit: parseInt(url.searchParams.get('limit') || '10'),
-      search: url.searchParams.get('search')
-    };
+    const page = parseInt(url.searchParams.get('page') || '1');
+    const limit = parseInt(url.searchParams.get('limit') || '10');
+    const search = url.searchParams.get('search') || '';
 
-    const adminService = serviceFactory.getAdminService();
-    const result = await adminService.getUsers(searchOptions);
-
-    if (!result.success) {
-      return NextResponse.json(
-        { success: false, error: result.error },
-        { status: result.statusCode || 400 }
-      );
-    }
+    const result = await userService.getAllUsers({
+      page,
+      limit,
+      search
+    });
 
     return NextResponse.json({
       success: true,
-      data: result.data
+      data: result
     });
 
   } catch (error: any) {
@@ -52,11 +49,10 @@ export async function GET(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    
-    if (!session || (session.user as any)?.role !== 'admin') {
+    if (!session?.user || (session.user as any).role !== 'admin') {
       return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
+        { success: false, error: 'Admin access required' },
+        { status: 403 }
       );
     }
 
@@ -69,37 +65,18 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    if (!['admin', 'user'].includes(role)) {
+    const result = await adminService.updateUserRole(userId, role, session.user.email!);
+
+    if (!result.success) {
       return NextResponse.json(
-        { success: false, error: 'Invalid role' },
-        { status: 400 }
+        { success: false, error: result.error },
+        { status: result.statusCode || 400 }
       );
     }
-
-    await connectDB();
-
-    const user = await User.findById(userId);
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: 'User not found' },
-        { status: 404 }
-      );
-    }
-
-    // Prevent admin from changing their own role
-    if (user.email === session.user?.email) {
-      return NextResponse.json(
-        { success: false, error: 'Cannot change your own role' },
-        { status: 400 }
-      );
-    }
-
-    user.role = role;
-    await user.save();
 
     return NextResponse.json({
       success: true,
-      message: `User role updated to ${role}`
+      data: result.data
     });
 
   } catch (error: any) {
@@ -115,16 +92,15 @@ export async function PUT(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    
-    if (!session || (session.user as any)?.role !== 'admin') {
+    if (!session?.user || (session.user as any).role !== 'admin') {
       return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
+        { success: false, error: 'Admin access required' },
+        { status: 403 }
       );
     }
 
-    const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId');
+    const url = new URL(request.url);
+    const userId = url.searchParams.get('userId');
 
     if (!userId) {
       return NextResponse.json(
@@ -133,25 +109,14 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    await connectDB();
+    const result = await adminService.deleteUser(userId, session.user.email!);
 
-    const user = await User.findById(userId);
-    if (!user) {
+    if (!result.success) {
       return NextResponse.json(
-        { success: false, error: 'User not found' },
-        { status: 404 }
+        { success: false, error: result.error },
+        { status: result.statusCode || 400 }
       );
     }
-
-    // Prevent admin from deleting themselves
-    if (user.email === session.user?.email) {
-      return NextResponse.json(
-        { success: false, error: 'Cannot delete your own account' },
-        { status: 400 }
-      );
-    }
-
-    await User.findByIdAndDelete(userId);
 
     return NextResponse.json({
       success: true,
@@ -160,6 +125,110 @@ export async function DELETE(request: NextRequest) {
 
   } catch (error: any) {
     console.error('Delete user error:', error);
+    return NextResponse.json(
+      { success: false, error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
+// POST /api/admin/users - Add subscription to user
+export async function POST(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user || (session.user as any).role !== 'admin') {
+      return NextResponse.json(
+        { success: false, error: 'Admin access required' },
+        { status: 403 }
+      );
+    }
+
+    const { userId, planId, duration } = await request.json();
+
+    if (!userId || !planId) {
+      return NextResponse.json(
+        { success: false, error: 'User ID and Plan ID are required' },
+        { status: 400 }
+      );
+    }
+
+    await connectDB();
+
+    // Check if user exists
+    const user = await User.findById(userId);
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: 'User not found' },
+        { status: 404 }
+      );
+    }
+
+    // Check if plan exists
+    const plan = await Plan.findById(planId);
+    if (!plan) {
+      return NextResponse.json(
+        { success: false, error: 'Plan not found' },
+        { status: 404 }
+      );
+    }
+
+    // Calculate subscription dates
+    const startDate = new Date();
+    let endDate: Date | undefined;
+
+    if (plan.name === 'lifetime') {
+      // Lifetime subscription - no end date
+      endDate = undefined;
+    } else {
+      // Time-limited subscription
+      const durationInDays = duration || 180; // Default to 6 months if not specified
+      endDate = new Date(startDate.getTime() + durationInDays * 24 * 60 * 60 * 1000);
+    }
+
+    // Update user subscription
+    await User.findByIdAndUpdate(userId, {
+      subscription: {
+        type: planId,
+        startDate,
+        endDate,
+        isActive: true,
+        payosOrderId: `admin_${Date.now()}`,
+        payosTransactionId: `admin_${Date.now()}`,
+      }
+    });
+
+    // Create subscription record
+    const Subscription = (await import('@/models/Subscription')).default;
+    const subscription = new Subscription({
+      user: userId,
+      userEmail: user.email,
+      type: planId,
+      amount: plan.price,
+      currency: 'VND',
+      status: 'completed',
+      payosOrderId: `admin_${Date.now()}`,
+      payosTransactionId: `admin_${Date.now()}`,
+      startDate,
+      endDate,
+      isActive: true,
+    });
+
+    await subscription.save();
+
+    return NextResponse.json({
+      success: true,
+      message: 'Subscription added successfully',
+      data: {
+        user: user.email,
+        plan: plan.name,
+        startDate,
+        endDate,
+        isActive: true
+      }
+    });
+
+  } catch (error: any) {
+    console.error('Add subscription error:', error);
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }

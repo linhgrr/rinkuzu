@@ -8,20 +8,40 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, Badge } from
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import CategorySearch from '@/components/ui/CategorySearch';
+import {
+  EMOTIONS,
+  EMOTION_LABELS,
+  MAGIC_EFFECTS,
+  ANIMATIONS,
+  COLORS,
+  LAYOUT,
+  API_ENDPOINTS,
+  QUERY_PARAMS,
+  QUIZ_STATUS,
+  EXTERNAL_APIS,
+  APP_CONFIG,
+  ROUTES,
+  type EmotionType
+} from '@/shared/constants';
+import {
+  getCategoryColorClass,
+  getRandomEmotion,
+  getNextEmotion,
+  formatDisplayDate,
+  createQuizSearchParams
+} from '@/shared/utils/constants';
 
 // Interactive Anime Portal Component - WOW FACTOR! 🌸✨
 function WelcomeGif() {
   const [gifUrl, setGifUrl] = useState<string>('');
   const [loading, setLoading] = useState(true);
-  const [emotion, setEmotion] = useState<'happy' | 'wink' | 'smile' | 'wave' | 'dance'>('happy');
+  const [emotion, setEmotion] = useState<EmotionType>('happy');
   const [isHovered, setIsHovered] = useState(false);
-
-  const emotions = ['happy', 'wink', 'smile', 'wave', 'dance'] as const;
   
   const fetchRandomGif = async (currentEmotion = emotion) => {
     try {
       setLoading(true);
-      const response = await fetch(`https://nekos.best/api/v2/${currentEmotion}`);
+      const response = await fetch(EXTERNAL_APIS.NEKOS_BEST.ENDPOINTS.EMOTION(currentEmotion));
       const data = await response.json();
       
       if (data.results && data.results.length > 0) {
@@ -35,20 +55,19 @@ function WelcomeGif() {
   };
 
   const changeEmotion = () => {
-    const currentIndex = emotions.indexOf(emotion);
-    const nextEmotion = emotions[(currentIndex + 1) % emotions.length];
+    const nextEmotion = getNextEmotion(emotion);
     setEmotion(nextEmotion);
     fetchRandomGif(nextEmotion);
   };
 
   useEffect(() => {
     fetchRandomGif();
-    // Auto change emotion every 8 seconds for dynamic feel
+    // Auto change emotion for dynamic feel
     const interval = setInterval(() => {
-      const randomEmotion = emotions[Math.floor(Math.random() * emotions.length)];
+      const randomEmotion = getRandomEmotion();
       setEmotion(randomEmotion);
       fetchRandomGif(randomEmotion);
-    }, 8000);
+    }, ANIMATIONS.EMOTION_CHANGE_INTERVAL);
     
     return () => clearInterval(interval);
   }, []);
@@ -70,7 +89,7 @@ function WelcomeGif() {
     <div className="relative w-40 h-40 mx-auto mb-6 group">
       {/* Floating Sakura Petals */}
       <div className="absolute -inset-8 pointer-events-none">
-        {[...Array(6)].map((_, i) => (
+        {[...Array(MAGIC_EFFECTS.SAKURA_COUNT)].map((_, i) => (
           <div
             key={i}
             className="absolute text-pink-400 text-lg animate-pulse"
@@ -93,7 +112,7 @@ function WelcomeGif() {
 
       {/* Glowing Orbs */}
       <div className="absolute inset-0">
-        {[...Array(4)].map((_, i) => (
+        {[...Array(MAGIC_EFFECTS.GLOWING_ORBS_COUNT)].map((_, i) => (
           <div
             key={i}
             className="absolute w-2 h-2 bg-gradient-to-r from-yellow-400 to-pink-400 rounded-full animate-ping"
@@ -131,17 +150,13 @@ function WelcomeGif() {
 
       {/* Emotion Indicator */}
       <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs px-3 py-1 rounded-full shadow-lg">
-        {emotion === 'happy' && '😊 Happy'}
-        {emotion === 'wink' && '😉 Wink'}
-        {emotion === 'smile' && '😄 Smile'}
-        {emotion === 'wave' && '👋 Wave'}
-        {emotion === 'dance' && '💃 Dance'}
+        {EMOTION_LABELS[emotion]}
       </div>
 
       {/* Sparkle Effects */}
       {isHovered && (
         <div className="absolute inset-0 pointer-events-none">
-          {[...Array(8)].map((_, i) => (
+          {[...Array(MAGIC_EFFECTS.SPARKLES_COUNT)].map((_, i) => (
             <div
               key={i}
               className="absolute text-yellow-400 text-sm animate-bounce"
@@ -211,8 +226,8 @@ export default function HomePage() {
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [pagination, setPagination] = useState<PaginationData>({
-    page: 1,
-    limit: 12,
+    page: LAYOUT.PAGINATION.DEFAULT_PAGE,
+    limit: LAYOUT.PAGINATION.DEFAULT_LIMIT,
     total: 0,
     totalPages: 0
   });
@@ -222,7 +237,7 @@ export default function HomePage() {
     if (status === 'loading') return;
     
     if (!session) {
-      router.push('/login');
+      router.push(ROUTES.LOGIN);
       return;
     }
     
@@ -233,7 +248,7 @@ export default function HomePage() {
   const fetchCategories = async () => {
     try {
       setCategoriesLoading(true);
-      const response = await fetch('/api/categories/stats');
+      const response = await fetch(API_ENDPOINTS.CATEGORY.STATS);
       const data = await response.json();
 
       if (data.success) {
@@ -250,21 +265,15 @@ export default function HomePage() {
   const fetchQuizzes = async (page: number = 1, search: string = '', categoryId: string = '') => {
     try {
       setLoading(true);
-      const params = new URLSearchParams({
-        status: 'published',
-        page: page.toString(),
-        limit: pagination.limit.toString()
-      });
+      const params = createQuizSearchParams(
+        page,
+        pagination.limit,
+        QUIZ_STATUS.PUBLISHED,
+        search,
+        categoryId
+      );
 
-      if (search.trim()) {
-        params.append('search', search.trim());
-      }
-
-      if (categoryId.trim()) {
-        params.append('category', categoryId.trim());
-      }
-
-      const response = await fetch(`/api/quizzes?${params}`);
+      const response = await fetch(`${API_ENDPOINTS.QUIZ.BASE}?${params}`);
       const data = await response.json();
 
       if (data.success) {
@@ -298,30 +307,9 @@ export default function HomePage() {
     fetchQuizzes(newPage, searchTerm, selectedCategory);
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
-  };
 
-  const getCategoryColor = (color: string) => {
-    const colorMap: { [key: string]: string } = {
-      'blue': 'bg-blue-100 text-blue-700 border-blue-200',
-      'green': 'bg-emerald-100 text-emerald-700 border-emerald-200', 
-      'purple': 'bg-violet-100 text-violet-700 border-violet-200',
-      'red': 'bg-red-100 text-red-700 border-red-200',
-      'yellow': 'bg-yellow-100 text-yellow-700 border-yellow-200',
-      'indigo': 'bg-indigo-100 text-indigo-700 border-indigo-200',
-      'pink': 'bg-pink-100 text-pink-700 border-pink-200',
-      'gray': 'bg-gray-100 text-gray-700 border-gray-200',
-      'cyan': 'bg-cyan-100 text-cyan-700 border-cyan-200',
-      'orange': 'bg-orange-100 text-orange-700 border-orange-200',
-      'teal': 'bg-teal-100 text-teal-700 border-teal-200',
-    };
-    return colorMap[color?.toLowerCase()] || colorMap['purple'];
-  };
+
+
 
   // Show loading state
   if (status === 'loading') {
@@ -331,7 +319,7 @@ export default function HomePage() {
           <div className="w-16 h-16 gradient-primary rounded-2xl flex items-center justify-center mx-auto mb-4 animate-pulse">
             <span className="text-white font-bold text-xl">R</span>
           </div>
-          <p className="text-gray-600">Loading RinKuzu...</p>
+          <p className="text-gray-600">Loading {APP_CONFIG.NAME}...</p>
         </div>
       </div>
     );
@@ -359,7 +347,7 @@ export default function HomePage() {
             <Button
               variant="gradient"
               size="lg"
-              onClick={() => router.push('/create')}
+              onClick={() => router.push(ROUTES.CREATE_QUIZ)}
               className="min-w-[200px]"
             >
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -371,7 +359,7 @@ export default function HomePage() {
             <Button
               variant="outline"
               size="lg"
-              onClick={() => router.push('/pending')}
+              onClick={() => router.push(ROUTES.PENDING_QUIZZES)}
               className="min-w-[200px]"
             >
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -383,7 +371,7 @@ export default function HomePage() {
             <Button
               variant="outline"
               size="lg"
-              onClick={() => router.push('/categories')}
+              onClick={() => router.push(ROUTES.CATEGORIES)}
               className="min-w-[200px]"
             >
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -515,7 +503,7 @@ export default function HomePage() {
                 </p>
                 <Button 
                   variant="gradient" 
-                  onClick={() => router.push('/create')}
+                  onClick={() => router.push(ROUTES.CREATE_QUIZ)}
                   className="mx-auto"
                 >
                   Create Your First Quiz
@@ -529,7 +517,7 @@ export default function HomePage() {
                     variant="default"
                     hover
                     className="group animate-fadeInUp"
-                    style={{ animationDelay: `${index * 100}ms` }}
+                    style={{ animationDelay: `${index * ANIMATIONS.CARD_STAGGER_DELAY}ms` }}
                   >
                       <CardHeader>
                       <div className="flex items-center justify-between mb-3">
@@ -537,7 +525,7 @@ export default function HomePage() {
                           <Badge 
                             variant="purple" 
                             size="sm"
-                            className={getCategoryColor(quiz.category?.color)}
+                            className={getCategoryColorClass(quiz.category?.color)}
                           >
                             {quiz.category?.name}
                           </Badge>
@@ -564,7 +552,7 @@ export default function HomePage() {
                       <CardContent>
                       <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
                         <span>By {quiz.author.email.split('@')[0]}</span>
-                        <span>{formatDate(quiz.createdAt)}</span>
+                        <span>{formatDisplayDate(quiz.createdAt)}</span>
                       </div>
                       
                       {/* Action Buttons */}
@@ -575,7 +563,7 @@ export default function HomePage() {
                           className="flex-1"
                           onClick={(e) => {
                             e.stopPropagation();
-                            router.push(`/quiz/${quiz.slug}`);
+                            router.push(ROUTES.QUIZ.VIEW(quiz.slug));
                           }}
                         >
                           <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -588,7 +576,7 @@ export default function HomePage() {
                           size="sm"
                           onClick={(e) => {
                             e.stopPropagation();
-                            router.push(`/quiz/${quiz.slug}/flashcards`);
+                            router.push(ROUTES.QUIZ.FLASHCARDS(quiz.slug));
                           }}
                           className="flex-1"
                         >

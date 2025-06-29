@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Flashcard } from '@/components/ui/Flashcard';
+import { PremiumRequiredModal } from '@/components/ui/PremiumRequiredModal';
 
 interface Question {
   question: string;
@@ -42,6 +43,9 @@ export default function FlashcardPage() {
   });
   const [showResults, setShowResults] = useState(false);
   const [currentQuestions, setCurrentQuestions] = useState<Question[]>([]);
+  
+  // Premium required modal
+  const [showPremiumModal, setShowPremiumModal] = useState(false);
 
   useEffect(() => {
     fetchQuiz();
@@ -56,7 +60,11 @@ export default function FlashcardPage() {
         setQuiz(data.data);
         setCurrentQuestions(data.data.questions);
       } else {
-        setError(data.error || 'Failed to load quiz');
+        if (data.error === 'Premium subscription required to access private quizzes') {
+          setShowPremiumModal(true);
+        } else {
+          setError(data.error || 'Failed to load quiz');
+        }
       }
     } catch (error) {
       setError('Failed to load quiz');
@@ -360,6 +368,12 @@ export default function FlashcardPage() {
           )}
         </div>
       </main>
+      
+      {/* Premium Required Modal */}
+      <PremiumRequiredModal
+        isOpen={showPremiumModal}
+        onClose={() => setShowPremiumModal(false)}
+      />
     </div>
   );
 } 

@@ -561,7 +561,7 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
     );
   }
 
-  if (error && !quiz) {
+  if (error && !quiz && !showPremiumModal) {
     return (
       <div className="min-h-screen">
         <Navigation />
@@ -592,10 +592,36 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
     );
   }
 
-  if (!quiz) return null;
+  // Show basic layout with premium modal when premium is required
+  if (showPremiumModal) {
+    return (
+      <div className="min-h-screen">
+        <Navigation />
+        <div className="flex items-center justify-center min-h-[70vh] px-4">
+          <Card variant="glass" className="max-w-md w-full backdrop-blur-xl border-white/30 shadow-xl">
+            <CardHeader className="text-center">
+              <div className="inline-flex items-center justify-center p-3 bg-gradient-to-br from-violet-500/10 to-purple-600/10 rounded-2xl mb-4 mx-auto w-fit">
+                <svg className="w-6 h-6 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+              <CardTitle className="text-2xl gradient-text mb-2">Quiz Access</CardTitle>
+              <p className="text-gray-600">Loading quiz information...</p>
+            </CardHeader>
+          </Card>
+        </div>
+        
+        {/* Premium Required Modal */}
+        <PremiumRequiredModal
+          isOpen={showPremiumModal}
+          onClose={() => setShowPremiumModal(false)}
+        />
+      </div>
+    );
+  }
 
   // Email input screen (only for non-logged in users)
-  if (showEmailInput && !session?.user?.email) {
+  if (showEmailInput && !session?.user?.email && quiz) {
     return (
       <div className="min-h-screen">
         <Navigation />
@@ -651,27 +677,27 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
                   </div>
                 </Card>
 
-                                 {/* Email Input */}
-                 <div>
-                   <Input
-                     label="Your Email"
-                     id="email"
-                     type="email"
-                     value={userEmail}
-                     onChange={(e) => setUserEmail(e.target.value)}
-                     placeholder="Enter your email address"
-                     required
-                     variant="glass"
-                     icon={
-                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
-                       </svg>
-                     }
-                   />
-                   <p className="mt-2 text-xs text-gray-500">
-                     We'll use this to track your quiz attempt
-                   </p>
-                 </div>
+                {/* Email Input */}
+                <div>
+                  <Input
+                    label="Your Email"
+                    id="email"
+                    type="email"
+                    value={userEmail}
+                    onChange={(e) => setUserEmail(e.target.value)}
+                    placeholder="Enter your email address"
+                    required
+                    variant="glass"
+                    icon={
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
+                      </svg>
+                    }
+                  />
+                  <p className="mt-2 text-xs text-gray-500">
+                    We'll use this to track your quiz attempt
+                  </p>
+                </div>
 
                 {/* Action Buttons */}
                 <div className="space-y-3">
@@ -710,6 +736,8 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
   }
 
   // Quiz interface
+  if (!quiz) return null;
+  
   const currentQuestion = quiz.questions[currentQuestionIndex];
   const progress = Math.round(((currentQuestionIndex + 1) / quiz.questions.length) * 100);
   const answeredQuestions = userAnswers.filter((answer, index) => {
@@ -1179,12 +1207,6 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
             </div>
           </div>
         </Modal>
-
-        {/* Premium Required Modal */}
-        <PremiumRequiredModal
-          isOpen={showPremiumModal}
-          onClose={() => setShowPremiumModal(false)}
-        />
       </main>
     </div>
   );

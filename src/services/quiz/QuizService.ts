@@ -39,63 +39,7 @@ export class QuizService implements IQuizService {
 
     let filter: any = {}
 
-    // Role-based filtering
-    if (userRole === 'admin') {
-      // Admin can see all quizzes, optionally filtered by status
-      if (status) filter.status = status
-    } else {
-      // For regular users
-      if (status === 'published') {
-        // Check if user has premium subscription for private quizzes
-        let isPremium = false
-        if (userId) {
-          const subscriptionService = new SubscriptionService()
-          isPremium = await subscriptionService.isUserPremium(userId)
-        }
-
-        if (isPremium) {
-          // Premium users can see all published quizzes (including private)
-          filter.status = 'published'
-        } else {
-          // Non-premium users can only see published non-private quizzes + their own
-          filter = {
-            status: 'published',
-            $or: [
-              { isPrivate: false },
-              { author: userId }
-            ]
-          }
-        }
-      } else if (status === 'pending' || status === 'rejected') {
-        // Only their own pending/rejected quizzes
-        filter = { author: userId, status }
-      } else {
-        // Default: check premium status for private quizzes
-        let isPremium = false
-        if (userId) {
-          const subscriptionService = new SubscriptionService()
-          isPremium = await subscriptionService.isUserPremium(userId)
-        }
-
-        if (isPremium) {
-          // Premium users can see all published quizzes + their own
-          filter = {
-            $or: [
-              { status: 'published' },
-              { author: userId }
-            ]
-          }
-        } else {
-          // Non-premium users can only see published non-private quizzes + their own
-          filter = {
-            $or: [
-              { status: 'published', isPrivate: false },
-              { author: userId }
-            ]
-          }
-        }
-      }
-    }
+    if (status) filter.status = status
 
     // Add category filter
     if (category && category.trim()) {

@@ -17,6 +17,11 @@ export function PremiumRequiredModal({ isOpen, onClose }: PremiumRequiredModalPr
     router.push('/subscription')
   }
 
+  const handleGoHome = () => {
+    onClose()
+    router.push('/')
+  }
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Premium Required">
       <div className="p-6">
@@ -74,12 +79,15 @@ export function PremiumRequiredModal({ isOpen, onClose }: PremiumRequiredModalPr
           </ul>
         </div>
 
-        <div className="flex space-x-3">
-          <Button onClick={onClose} variant="outline" className="flex-1">
-            Cancel
-          </Button>
-          <Button onClick={handleUpgrade} className="flex-1">
+        <div className="flex flex-col space-y-3">
+          <Button onClick={handleUpgrade} className="w-full">
             Upgrade to Premium
+          </Button>
+          <Button onClick={handleGoHome} variant="outline" className="w-full">
+            Go to Home
+          </Button>
+          <Button onClick={onClose} variant="ghost" className="w-full">
+            Cancel
           </Button>
         </div>
       </div>

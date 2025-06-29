@@ -18,7 +18,20 @@ export class CategoryService implements ICategoryService {
 
   async getCategories(): Promise<ServiceResult<any[]>> {
     try {
-      const categories = await this.categoryRepository.findActive();
+      const categoriesWithStats = await this.categoryRepository.getStatsWithQuizCount();
+      
+      // Transform the data to include slug
+      const categories = categoriesWithStats.map((cat: any) => ({
+        _id: cat._id,
+        name: cat.name,
+        description: cat.description,
+        color: cat.color,
+        quizCount: cat.quizCount,
+        slug: cat.slug || cat.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
+        isActive: cat.isActive,
+        createdAt: cat.createdAt,
+        updatedAt: cat.updatedAt
+      }));
       
       return {
         success: true,

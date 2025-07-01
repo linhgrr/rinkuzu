@@ -143,6 +143,7 @@ export class CategoryRepository implements ICategoryRepository {
           description: 1,
           color: 1,
           isActive: 1,
+          createdBy: 1,
           createdAt: 1,
           updatedAt: 1,
           quizCount: { $size: '$quizzes' }
@@ -161,6 +162,7 @@ export class CategoryRepository implements ICategoryRepository {
         description: item.description,
         color: item.color,
         isActive: item.isActive,
+        createdBy: item.createdBy,
         createdAt: item.createdAt,
         updatedAt: item.updatedAt
       },
@@ -207,6 +209,7 @@ export class CategoryRepository implements ICategoryRepository {
           },
           quizCount: { $size: '$quizzes' },
           isActive: 1,
+          createdBy: 1,
           createdAt: 1,
           updatedAt: 1
         }

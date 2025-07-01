@@ -773,17 +773,7 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
                 <CardTitle className="text-xl">
                   {currentQuestion.question}
                 </CardTitle>
-                <div className="text-sm text-gray-600 mt-2">
-                  {currentQuestion.type === 'single' ? (
-                    <span className="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-800 rounded-full">
-                      📝 Single Choice - Select one answer
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center px-2 py-1 bg-purple-100 text-purple-800 rounded-full">
-                      ☑️ Multiple Choice - Select all that apply
-                    </span>
-                  )}
-                </div>
+                
               </div>
               <div className="flex items-center space-x-2 ml-4">
                 <Button

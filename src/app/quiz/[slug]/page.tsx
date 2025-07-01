@@ -1101,9 +1101,9 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
               onClick={askAI}
               loading={loadingAI}
               disabled={loadingAI}
-              className="w-full bg-purple-600 hover:bg-purple-700"
+              className="w-full bg-purple-600 hover:bg-purple-700 text-white"
             >
-              {loadingAI ? 'Getting AI explanation...' : 'Get AI Explanation'}
+              {loadingAI ? 'Getting Rin-chan explanation...' : 'Get Rin-chan explanation'}
             </Button>
 
             {/* AI Response */}

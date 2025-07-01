@@ -23,6 +23,9 @@ export interface ICategory {
   description?: string;
   color: string;
   isActive: boolean;
+  createdBy: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface IQuiz {

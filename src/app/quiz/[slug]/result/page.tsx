@@ -63,6 +63,11 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
   
   // Multi-turn chat state
   const [chatHistories, setChatHistories] = useState<ChatHistoryState>({});
+  
+  // Bookmark states
+  const [bookmarkedQuestions, setBookmarkedQuestions] = useState<Set<number>>(new Set());
+  const [bookmarkLoading, setBookmarkLoading] = useState<Set<number>>(new Set());
+  const [bookmarkMessage, setBookmarkMessage] = useState<string>('');
 
   // Load chat histories from localStorage
   useEffect(() => {
@@ -85,6 +90,26 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
     }
   }, [chatHistories, attemptId]);
 
+  // Check which questions are already bookmarked
+  const checkBookmarkedQuestions = async (resultData: QuizResult) => {
+    try {
+      const response = await fetch('/api/bookmarks');
+      const data = await response.json();
+      
+      if (data.success) {
+        const bookmarkedSet = new Set<number>();
+        data.data.forEach((bookmark: any) => {
+          if (bookmark.quiz.slug === resultData.quiz.slug) {
+            bookmarkedSet.add(bookmark.questionIndex);
+          }
+        });
+        setBookmarkedQuestions(bookmarkedSet);
+      }
+    } catch (error) {
+      console.error('Failed to check bookmarked questions:', error);
+    }
+  };
+
   useEffect(() => {
     const fetchResults = async () => {
       if (!attemptId) {
@@ -99,6 +124,8 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
 
         if (data.success) {
           setResult(data.data);
+          // Check which questions are already bookmarked
+          await checkBookmarkedQuestions(data.data);
         } else {
           setError(data.error || 'Failed to load results');
         }
@@ -268,6 +295,75 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
       ...prev,
       [questionIndex]: []
     }));
+  };
+
+  // Bookmark functions
+  const toggleBookmark = async (questionIndex: number, questionData: any) => {
+    if (!result) return;
+    
+    setBookmarkLoading(prev => new Set(prev).add(questionIndex));
+    
+    try {
+      if (bookmarkedQuestions.has(questionIndex)) {
+        // Remove bookmark - we need to find the bookmark ID first
+        // For now, we'll skip this functionality as it requires a more complex implementation
+        console.log('Remove bookmark functionality not implemented yet');
+        return;
+      } else {
+        // Add bookmark
+        const bookmarkData = {
+          quiz: {
+            title: result.quiz.title,
+            slug: result.quiz.slug,
+            description: result.quiz.description
+          },
+          question: {
+            text: questionData.question,
+            options: questionData.options,
+            type: questionData.type,
+            correctIndex: questionData.correctIndex,
+            correctIndexes: questionData.correctIndexes,
+            questionImage: questionData.questionImage,
+            optionImages: questionData.optionImages
+          },
+          questionIndex: questionIndex
+        };
+
+        const response = await fetch('/api/bookmarks', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(bookmarkData)
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          setBookmarkedQuestions(prev => new Set(prev).add(questionIndex));
+          setBookmarkMessage('✅ Question bookmarked successfully!');
+        } else {
+          if (data.error === 'Question already bookmarked') {
+            setBookmarkMessage('⚠️ This question is already bookmarked');
+          } else {
+            setBookmarkMessage('❌ Failed to bookmark question');
+          }
+        }
+        
+        // Auto-hide message after 3 seconds
+        setTimeout(() => setBookmarkMessage(''), 3000);
+      }
+    } catch (error) {
+      console.error('Error toggling bookmark:', error);
+      setBookmarkMessage('❌ Network error, please try again');
+      setTimeout(() => setBookmarkMessage(''), 3000);
+    } finally {
+      setBookmarkLoading(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(questionIndex);
+        return newSet;
+      });
+    }
   };
 
   // Get chat statistics
@@ -453,6 +549,27 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
           </CardContent>
         </Card>
 
+        {/* Bookmark Message */}
+        {bookmarkMessage && (
+          <div className={`mb-4 p-4 rounded-lg border ${
+            bookmarkMessage.includes('✅') 
+              ? 'bg-green-50 border-green-200 text-green-800'
+              : bookmarkMessage.includes('⚠️')
+              ? 'bg-yellow-50 border-yellow-200 text-yellow-800'
+              : 'bg-red-50 border-red-200 text-red-800'
+          }`}>
+            <div className="flex items-center justify-between">
+              <span className="font-medium">{bookmarkMessage}</span>
+              <button 
+                onClick={() => setBookmarkMessage('')}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Detailed Results */}
         <Card className="mb-8">
           <CardHeader>
@@ -477,11 +594,27 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
                         : 'border-gray-200 bg-gray-50'
                   }`}
                 >
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex justify-between items-center mb-4">
-                      <h3 className="font-semibold text-gray-900 flex-1">
-                        {index + 1}. {questionResult.question}
-                      </h3>
+                  <div className="mb-3">
+                    <div className="mb-5 flex space-x-2">
+                      <Button 
+                        variant="outline" 
+                        onClick={() => toggleBookmark(index, questionResult)}
+                        disabled={bookmarkLoading.has(index)}
+                        className={`${
+                          bookmarkedQuestions.has(index)
+                            ? 'text-yellow-600 border-yellow-200 bg-yellow-50 hover:bg-yellow-100'
+                            : 'text-gray-600 border-gray-200 hover:bg-gray-50'
+                        }`}
+                        title={bookmarkedQuestions.has(index) ? 'Remove bookmark' : 'Bookmark this question'}
+                      >
+                        {bookmarkLoading.has(index) ? (
+                          <span className="animate-spin">⏳</span>
+                        ) : bookmarkedQuestions.has(index) ? (
+                          '⭐'
+                        ) : (
+                          '☆'
+                        )}
+                      </Button>
                       <Button 
                         variant="outline" 
                         onClick={() => openAIModal(questionResult, index)} 
@@ -495,28 +628,35 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
                         )}
                       </Button>
                     </div>
-                    <div className="flex items-center space-x-2 ml-4">
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${
-                        questionResult.type === 'single' 
-                          ? 'bg-blue-100 text-blue-800' 
-                          : 'bg-purple-100 text-purple-800'
-                      }`}>
-                        {questionResult.type === 'single' ? 'Single Choice' : 'Multiple Choice'}
-                      </span>
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${
-                        questionResult.isCorrect 
-                          ? 'bg-green-100 text-green-800' 
-                          : isAnswered
-                            ? 'bg-red-100 text-red-800'
-                            : 'bg-gray-100 text-gray-600'
-                      }`}>
-                        {questionResult.isCorrect 
-                          ? '✓ Correct' 
-                          : isAnswered 
-                            ? '✗ Incorrect' 
-                            : '— Unanswered'
-                        }
-                      </span>
+
+
+                    <div className="flex items-start justify-between mb-2">
+                      <h3 className="font-semibold text-gray-900 flex-1">
+                        {index + 1}. {questionResult.question}
+                      </h3>
+                      <div className="flex items-center space-x-2">
+                        <span className={`px-2 py-1 rounded text-xs font-medium ${
+                          questionResult.type === 'single' 
+                            ? 'bg-blue-100 text-blue-800' 
+                            : 'bg-purple-100 text-purple-800'
+                        }`}>
+                          {questionResult.type === 'single' ? 'Single Choice' : 'Multiple Choice'}
+                        </span>
+                        <span className={`px-2 py-1 rounded text-xs font-medium ${
+                          questionResult.isCorrect 
+                            ? 'bg-green-100 text-green-800' 
+                            : isAnswered
+                              ? 'bg-red-100 text-red-800'
+                              : 'bg-gray-100 text-gray-600'
+                        }`}>
+                          {questionResult.isCorrect 
+                            ? '✓ Correct' 
+                            : isAnswered 
+                              ? '✗ Incorrect' 
+                              : '— Unanswered'
+                          }
+                        </span>
+                      </div>
                     </div>
                   </div>
 

@@ -92,7 +92,10 @@ export default function AdminSubscriptionsPage() {
         params.append('status', status)
       }
 
-      const response = await fetch(`/api/admin/subscriptions?${params}`)
+      const response = await fetch(`/api/admin/subscriptions?${params}`, {
+        cache: 'no-store' // hoặc 'reload'
+      })      
+      
       const data = await response.json()
 
       if (data.success) {

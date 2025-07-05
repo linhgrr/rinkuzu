@@ -2,9 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
-import connectDB from '@/lib/mongoose';
-import Attempt from '@/models/Attempt';
-import Quiz from '@/models/Quiz';
 
 const userService = serviceFactory.getUserService();
 

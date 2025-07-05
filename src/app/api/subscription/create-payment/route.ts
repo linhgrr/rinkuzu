@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import SubscriptionService from '@/services/subscription/SubscriptionService';
+import { ServiceFactory } from '@/lib/serviceFactory';
 import connectDB from '@/lib/mongoose';
 import Plan from '@/models/Plan';
 
@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const subscriptionService = new SubscriptionService();
+    const subscriptionService = ServiceFactory.createSubscriptionService();
     const paymentData = await subscriptionService.createPaymentRequest(
       (session.user as any).id,
       planId

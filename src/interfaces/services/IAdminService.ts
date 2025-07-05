@@ -20,6 +20,7 @@ export interface IAdminService {
   // Reports management
   getReports(searchParams: any): Promise<ServiceResult<any>>;
   updateReportStatus(reportId: string, status: string): Promise<ServiceResult<any>>;
+  deleteReport(reportId: string): Promise<ServiceResult<boolean>>;
 
   // Statistics
   getStats(): Promise<ServiceResult<any>>;

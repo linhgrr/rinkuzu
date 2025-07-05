@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/Button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
 import Sidebar from '@/components/Sidebar'
+import { SubscriptionDurationType, PREDEFINED_DURATIONS, DurationUtils } from '@/types/subscription'
+import { Modal } from '@/components/ui/Modal'
 
 interface Plan {
   _id: string;
@@ -18,6 +20,20 @@ interface Plan {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+  durationInfo?: {
+    iso8601: string;
+    displayName: string;
+    months?: number;
+  };
+  isLifetime?: boolean;
+}
+
+interface NewPlanForm {
+  name: string;
+  price: number | '';
+  duration: string;
+  features: string[];
+  isActive: boolean;
 }
 
 export default function AdminPlansPage() {
@@ -33,6 +49,17 @@ export default function AdminPlansPage() {
   const [success, setSuccess] = useState('')
   const [editingPlan, setEditingPlan] = useState<string | null>(null)
   const [editForm, setEditForm] = useState<Partial<Plan>>({})
+  
+  // New plan creation state
+  const [showCreateForm, setShowCreateForm] = useState(false)
+  const [createForm, setCreateForm] = useState<NewPlanForm>({
+    name: '',
+    price: '',
+    duration: SubscriptionDurationType.MONTHLY,
+    features: [''],
+    isActive: true
+  })
+  const [createLoading, setCreateLoading] = useState(false)
 
   useEffect(() => {
     if (status === 'loading') return
@@ -107,6 +134,7 @@ export default function AdminPlansPage() {
         setSuccess('Plan updated successfully')
         setEditingPlan(null)
         setEditForm({})
+        setTimeout(() => setSuccess(''), 3000)
       } else {
         setError(data.error || 'Failed to update plan')
       }
@@ -115,23 +143,116 @@ export default function AdminPlansPage() {
     }
   }
 
-  const handleFeatureChange = (index: number, value: string) => {
+  const handleCreatePlan = async () => {
+    if (!createForm.name.trim() || !createForm.price || createForm.price <= 0) {
+      setError('Please fill in all required fields')
+      return
+    }
+
+    try {
+      setCreateLoading(true)
+      const response = await fetch('/api/admin/plans', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: createForm.name.trim(),
+          price: Number(createForm.price),
+          duration: createForm.duration,
+          features: createForm.features.filter(f => f.trim() !== ''),
+          isActive: createForm.isActive
+        }),
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        setSuccess('Plan created successfully')
+        setShowCreateForm(false)
+        setCreateForm({
+          name: '',
+          price: '',
+          duration: SubscriptionDurationType.MONTHLY,
+          features: [''],
+          isActive: true
+        })
+        fetchPlans() // Refresh plans list
+        setTimeout(() => setSuccess(''), 3000)
+      } else {
+        setError(data.error || 'Failed to create plan')
+      }
+    } catch (error) {
+      setError('Failed to create plan')
+    } finally {
+      setCreateLoading(false)
+    }
+  }
+
+  const handleDeletePlan = async (planId: string, planName: string) => {
+    if (!confirm(`Are you sure you want to delete the plan "${planName}"? This action cannot be undone.`)) {
+      return
+    }
+
+    try {
+      const response = await fetch('/api/admin/plans', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ id: planId }),
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        setPlans(plans.filter(plan => plan._id !== planId))
+        setSuccess('Plan deleted successfully')
+        setTimeout(() => setSuccess(''), 3000)
+      } else {
+        setError(data.error || 'Failed to delete plan')
+      }
+    } catch (error) {
+      setError('Failed to delete plan')
+    }
+  }
+
+  const handleFeatureChange = (index: number, value: string, isCreate = false) => {
+    if (isCreate) {
+      const newFeatures = [...createForm.features]
+      newFeatures[index] = value
+      setCreateForm({ ...createForm, features: newFeatures })
+    } else {
     const newFeatures = [...(editForm.features || [])]
     newFeatures[index] = value
     setEditForm({ ...editForm, features: newFeatures })
   }
+  }
 
-  const addFeature = () => {
+  const addFeature = (isCreate = false) => {
+    if (isCreate) {
+      setCreateForm({ 
+        ...createForm, 
+        features: [...createForm.features, ''] 
+      })
+    } else {
     setEditForm({ 
       ...editForm, 
       features: [...(editForm.features || []), ''] 
     })
   }
+  }
 
-  const removeFeature = (index: number) => {
+  const removeFeature = (index: number, isCreate = false) => {
+    if (isCreate) {
+      const newFeatures = [...createForm.features]
+      newFeatures.splice(index, 1)
+      setCreateForm({ ...createForm, features: newFeatures })
+    } else {
     const newFeatures = [...(editForm.features || [])]
     newFeatures.splice(index, 1)
     setEditForm({ ...editForm, features: newFeatures })
+    }
   }
 
   const formatCurrency = (amount: number) => {
@@ -141,11 +262,20 @@ export default function AdminPlansPage() {
     }).format(amount)
   }
 
-  const getDurationText = (duration: string) => {
+  const getDurationDisplay = (duration: string) => {
+    try {
+      if (DurationUtils.isValidISO8601Duration(duration)) {
+        const info = DurationUtils.getDurationInfo(duration)
+        return info.displayName
+      }
+      // Fallback for legacy durations
     if (duration === '0') return 'Lifetime'
     if (duration === '6') return '6 Months'
     if (duration === '12') return '1 Year'
     return `${duration} Months`
+    } catch {
+      return duration
+    }
   }
 
   return (
@@ -297,7 +427,151 @@ export default function AdminPlansPage() {
               Manage subscription plans and pricing
             </p>
           </div>
+          <Button
+            onClick={() => setShowCreateForm(true)}
+            variant="default"
+            className="rounded-full shadow-md flex items-center gap-2 px-4 py-2"
+            title="Create New Plan"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Add Plan
+          </Button>
         </div>
+
+        {/* Create Plan Modal */}
+        <Modal
+          isOpen={showCreateForm}
+          onClose={() => setShowCreateForm(false)}
+          title="Create New Subscription Plan"
+          description="Add a new subscription plan with ISO 8601 duration format"
+          size="medium"
+        >
+          <form
+            onSubmit={e => {
+              e.preventDefault()
+              handleCreatePlan()
+            }}
+          >
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Plan Name *
+                  </label>
+                  <Input
+                    type="text"
+                    value={createForm.name}
+                    onChange={e => setCreateForm({ ...createForm, name: e.target.value })}
+                    placeholder="e.g., Premium Monthly"
+                    className="w-full"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Price (VND) *
+                  </label>
+                  <Input
+                    type="number"
+                    value={createForm.price}
+                    onChange={e => setCreateForm({ ...createForm, price: e.target.value === '' ? '' : Number(e.target.value) })}
+                    placeholder="99000"
+                    min="0"
+                    className="w-full"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Duration *
+                  </label>
+                  <select
+                    value={createForm.duration}
+                    onChange={e => setCreateForm({ ...createForm, duration: e.target.value })}
+                    className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    title="Select plan duration"
+                  >
+                    {Object.entries(PREDEFINED_DURATIONS).map(([key, duration]) => (
+                      <option key={key} value={duration.iso8601}>
+                        {duration.displayName} ({duration.iso8601})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Status
+                  </label>
+                  <select
+                    value={createForm.isActive.toString()}
+                    onChange={e => setCreateForm({ ...createForm, isActive: e.target.value === 'true' })}
+                    className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    title="Select plan status"
+                  >
+                    <option value="true">Active</option>
+                    <option value="false">Inactive</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Features
+                </label>
+                {createForm.features.map((feature, index) => (
+                  <div key={index} className="flex items-center space-x-2 mb-2">
+                    <Input
+                      type="text"
+                      value={feature}
+                      onChange={e => handleFeatureChange(index, e.target.value, true)}
+                      placeholder="Enter feature"
+                      className="flex-1"
+                    />
+                    <Button
+                      type="button"
+                      onClick={() => removeFeature(index, true)}
+                      variant="outline"
+                      size="sm"
+                      className="text-red-600 hover:text-red-700"
+                      title="Remove this feature"
+                    >
+                      <span className="sr-only">Remove this feature</span>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                    </Button>
+                  </div>
+                ))}
+                <Button
+                  type="button"
+                  onClick={() => addFeature(true)}
+                  variant="outline"
+                  size="sm"
+                  className="mt-2"
+                >
+                  + Add Feature
+                </Button>
+              </div>
+              <div className="flex justify-end space-x-2 pt-4">
+                <Button
+                  type="button"
+                  onClick={() => setShowCreateForm(false)}
+                  variant="outline"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={createLoading}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  {createLoading ? 'Creating...' : 'Create Plan'}
+                </Button>
+              </div>
+            </div>
+          </form>
+        </Modal>
+
+        {/* End Create Plan Modal */}
 
         {error && (
           <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
@@ -337,7 +611,7 @@ export default function AdminPlansPage() {
                         <CardTitle className="text-xl">{plan.name}</CardTitle>
                       )}
                       <CardDescription className="mt-2">
-                        {getDurationText(plan.duration)}
+                        {getDurationDisplay(plan.duration)}
                       </CardDescription>
                     </div>
                     <div className="flex items-center space-x-2">
@@ -401,7 +675,7 @@ export default function AdminPlansPage() {
                           type="button"
                           variant="outline"
                           size="sm"
-                          onClick={addFeature}
+                          onClick={() => addFeature(false)}
                           className="w-full"
                         >
                           Add Feature

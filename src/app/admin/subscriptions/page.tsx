@@ -13,10 +13,8 @@ import Sidebar from '@/components/Sidebar'
 
 interface Subscription {
   _id: string
-  user: {
-    _id: string
-    email: string
-  }
+  userEmail: string
+  user: string
   type: 'monthly' | 'yearly' | 'lifetime'
   amount: number
   status: 'pending' | 'active' | 'cancelled' | 'expired'
@@ -473,7 +471,7 @@ export default function AdminSubscriptionsPage() {
                     {subscriptions.map((subscription) => (
                       <tr key={subscription._id} className="bg-white border-b hover:bg-gray-50">
                         <td className="px-6 py-4 font-medium text-gray-900">
-                          {subscription.user.email}
+                          {subscription.userEmail}
                         </td>
                         <td className="px-6 py-4">
                           <span className={`px-2 py-1 text-xs font-medium rounded-full capitalize ${getTypeBadgeColor(subscription.type)}`}>
@@ -541,7 +539,7 @@ export default function AdminSubscriptionsPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   User Email
                 </label>
-                <p className="text-sm text-gray-900">{selectedSubscription.user.email}</p>
+                <p className="text-sm text-gray-900">{selectedSubscription.userEmail}</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">

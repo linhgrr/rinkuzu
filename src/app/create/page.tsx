@@ -18,7 +18,7 @@ import { LargeFileUploadProgress } from '@/components/ui/LargeFileUploadProgress
 import { Question } from '@/types/quiz';
 
 // Enhanced PDF Viewer Component with merge capability
-function PDFViewerComponent({ files }: { files: File[] }) {
+function PDFViewerComponent({ files, onClose }: { files: File[]; onClose: () => void }) {
   const [pdfUrl, setPdfUrl] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -195,17 +195,27 @@ function PDFViewerComponent({ files }: { files: File[] }) {
             </svg>
             <span className="text-gray-700 font-medium">{totalPages} pages</span>
           </div>
-          <button
-            onClick={() => {
-              if (typeof window !== 'undefined') {
-                window.open(pdfUrl, '_blank')
-              }
-            }}
-            className="px-2 py-1 text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 rounded transition-colors"
-            title="Open in new tab"
-          >
-            🔗 Open
-          </button>
+          
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => {
+                if (typeof window !== 'undefined') {
+                  window.open(pdfUrl, '_blank')
+                }
+              }}
+              className="px-2 py-1 text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 rounded transition-colors"
+              title="Open in new tab"
+            >
+              🔗 Open in new tab
+            </button>
+            <button
+                onClick={onClose}
+                className="px-2 py-1 text-xs bg-red-100 hover:bg-red-200 text-red-700 rounded transition-colors"
+                title="Hide preview"
+              >
+                Close
+              </button>
+          </div>
         </div>
         <p className="text-xs text-gray-600 mt-1 truncate" title={fileInfo}>
           {fileInfo}
@@ -484,6 +494,10 @@ export default function CreateQuizPage() {
     setEditableQuestions([])
     setError('')
     setSuccess('')
+  }
+
+  const removeQuestionLocal = (index: number) => {
+    setEditableQuestions(prev => prev.filter((_, i) => i !== index))
   }
 
   return (
@@ -859,7 +873,7 @@ export default function CreateQuizPage() {
                     <div className="flex justify-between items-start">
                       <h4 className="font-medium text-gray-900">Question {questionIndex + 1}</h4>
                       <Button
-                        onClick={() => removeQuestion(questionIndex)}
+                        onClick={() => removeQuestionLocal(questionIndex)}
                         variant="ghost"
                         size="sm"
                         className="text-red-600 hover:text-red-700"
@@ -1054,7 +1068,7 @@ export default function CreateQuizPage() {
             <div className="hidden lg:block lg:w-1/2 lg:pl-4">
               <div className="sticky top-24 h-[calc(100vh-6rem)]">
                 <Card className="h-full flex flex-col shadow-2xl border-2 border-blue-200 bg-white">
-                  <CardHeader className="flex-shrink-0 pb-3">
+                  {/* <CardHeader className="flex-shrink-0 pb-3">
                     <div className="flex items-center justify-between">
                       <Button
                         onClick={() => setShowPDFViewer(false)}
@@ -1065,7 +1079,7 @@ export default function CreateQuizPage() {
                         ✕
                       </Button>
                     </div>
-                  </CardHeader>
+                  </CardHeader> */}
                   
                   <CardContent className="flex-1 flex flex-col p-4 min-h-0">
                     {pdfFiles.length === 0 ? (
@@ -1080,7 +1094,7 @@ export default function CreateQuizPage() {
                     ) : (
                       <div className="flex-1 border border-gray-200 rounded overflow-hidden">
                         <div className="w-full h-full">
-                          <PDFViewerComponent files={pdfFiles} />
+                          <PDFViewerComponent files={pdfFiles} onClose={() => setShowPDFViewer(false)} />
                         </div>
                       </div>
                     )}

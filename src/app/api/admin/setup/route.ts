@@ -1,77 +1,41 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/mongoose';
-import User from '@/models/User';
-import { hashPassword } from '@/lib/password';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { serviceFactory } from '@/lib/serviceFactory';
+
+export const dynamic = 'force-dynamic';
 
 // POST /api/admin/setup - Create default admin account (only if no admin exists)
 export async function POST(request: NextRequest) {
   try {
-    await connectDB();
+    const session = await getServerSession(authOptions);
 
-    // Check if any admin already exists
-    const existingAdmin = await User.findOne({ role: 'admin' });
-    if (existingAdmin) {
+    if (!session?.user || (session.user as any)?.role !== 'admin') {
       return NextResponse.json(
-        { success: false, error: 'Admin account already exists' },
-        { status: 400 }
+        { success: false, error: 'Admin access required' },
+        { status: 403 }
       );
     }
 
-    // Check if total users exceed limit (security measure)
-    const userCount = await User.countDocuments();
-    if (userCount > 10) {
+    const adminService = serviceFactory.getAdminService();
+    const result = await adminService.initializeSystem();
+
+    if (!result.success) {
       return NextResponse.json(
-        { success: false, error: 'Setup only allowed for new installations' },
-        { status: 400 }
+        { success: false, error: result.error },
+        { status: result.statusCode || 500 }
       );
     }
-
-    // Create default admin account
-    const defaultEmail = 'admin@quizcreator.com';
-    const defaultPassword = '***REMOVED***';
-
-    // Check if admin email already exists
-    const existingUser = await User.findOne({ email: defaultEmail });
-    if (existingUser) {
-      // Update existing user to admin role
-      existingUser.role = 'admin';
-      existingUser.password = await hashPassword(defaultPassword);
-      await existingUser.save();
-
-      return NextResponse.json({
-        success: true,
-        message: 'Existing user upgraded to admin',
-        data: {
-          email: defaultEmail,
-          role: 'admin'
-        }
-      });
-    }
-
-    // Create new admin user
-    const hashedPassword = await hashPassword(defaultPassword);
-    const adminUser = new User({
-      email: defaultEmail,
-      password: hashedPassword,
-      role: 'admin'
-    });
-
-    await adminUser.save();
 
     return NextResponse.json({
       success: true,
-      message: 'Default admin account created successfully',
-      data: {
-        email: defaultEmail,
-        role: 'admin',
-        note: 'Please change the default password after first login'
-      }
+      data: result.data
     });
 
-  } catch (error: any) {
+  } catch (error) {
     console.error('Admin setup error:', error);
     return NextResponse.json(
-      { success: false, error: 'Failed to create admin account' },
+      { success: false, error: 'Failed to initialize system' },
       { status: 500 }
     );
   }
@@ -80,17 +44,14 @@ export async function POST(request: NextRequest) {
 // GET /api/admin/setup - Check if admin setup is needed
 export async function GET() {
   try {
-    await connectDB();
-
-    const adminExists = await User.findOne({ role: 'admin' });
-    const userCount = await User.countDocuments();
+      const adminService = serviceFactory.getAdminService();
+      const result = await adminService.getStats();
 
     return NextResponse.json({
       success: true,
       data: {
-        adminExists: !!adminExists,
-        setupAllowed: userCount <= 10 && !adminExists,
-        userCount
+          setupComplete: result.success,
+          message: 'Setup status checked'
       }
     });
 

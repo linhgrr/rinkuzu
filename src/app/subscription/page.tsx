@@ -13,6 +13,7 @@ interface SubscriptionPlan {
   name: string;
   price: number;
   duration: string;
+  durationDisplay?: string;
   features: string[];
 }
 
@@ -204,7 +205,7 @@ export default function SubscriptionPage() {
                 <div className="text-4xl font-bold text-blue-600 mb-2">
                   {formatPrice(plan.price)}
                 </div>
-                <p className="text-gray-600">{plan.duration}</p>
+                <p className="text-gray-600">{plan.durationDisplay || plan.duration}</p>
               </div>
 
               <ul className="space-y-3 mb-8">

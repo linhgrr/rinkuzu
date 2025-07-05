@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import SubscriptionService from '@/services/subscription/SubscriptionService';
+import { ServiceFactory } from '@/lib/serviceFactory';
 import connectDB from '@/lib/mongoose';
 import User from '@/models/User';
 
@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const subscriptionService = new SubscriptionService();
+    const subscriptionService = ServiceFactory.createSubscriptionService();
     const subscription = await subscriptionService.getUserSubscription((session.user as any).id);
     const isPremium = await subscriptionService.isUserPremium((session.user as any).id);
 

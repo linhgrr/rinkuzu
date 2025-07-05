@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import SubscriptionService from '@/services/subscription/SubscriptionService';
+import { ServiceFactory } from '@/lib/serviceFactory';
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const subscriptionService = new SubscriptionService();
+    const subscriptionService = ServiceFactory.createSubscriptionService();
     const numericOrderCode = typeof orderCode === 'string' ? Number(orderCode) : orderCode;
     const result = await subscriptionService.verifyAndActivateSubscription(numericOrderCode);
 

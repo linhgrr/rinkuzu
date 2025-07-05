@@ -1,3 +1,4 @@
+import '@/schedulers/expiredSubscriptionScheduler'
 import { QuizService } from '@/services/quiz/QuizService'
 import { UserService } from '@/services/user/UserService'
 import { AuthService } from '@/services/auth/AuthService'
@@ -12,8 +13,11 @@ import { AttemptRepository } from '@/repositories/AttemptRepository'
 import { DiscussionRepository } from '@/repositories/DiscussionRepository'
 import { ReportRepository } from '@/repositories/ReportRepository'
 import { BookmarkRepository } from '@/repositories/BookmarkRepository'
+import { SubscriptionRepository } from '@/repositories/SubscriptionRepository'
+import { SubscriptionService } from '@/services/subscription/SubscriptionService'
+import { PayOSService } from '@/services/payment/PayOSService'
 
-class ServiceFactory {
+export class ServiceFactory {
   private static instance: ServiceFactory
   private repositories: {
     quiz: QuizRepository
@@ -129,6 +133,18 @@ class ServiceFactory {
 
   getReportRepository(): ReportRepository {
     return this.repositories.report
+  }
+
+  static createSubscriptionService(): SubscriptionService {
+    const subscriptionRepository = new SubscriptionRepository()
+    const userRepository = new UserRepository()
+    const payosService = new PayOSService()
+    
+    return new SubscriptionService(
+      subscriptionRepository,
+      userRepository,
+      payosService
+    )
   }
 }
 

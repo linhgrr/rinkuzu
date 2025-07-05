@@ -24,4 +24,5 @@ export interface IUserRepository {
   }>
   count(): Promise<number>
   countByRole(): Promise<{ _id: string; count: number }[]>
+  updateById(id: string, updateData: any): Promise<IUser | null>
 } 

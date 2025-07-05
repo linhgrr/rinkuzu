@@ -16,6 +16,7 @@ export interface QuizListOptions {
   limit?: number
   userRole?: string
   userId?: string
+  onlyMine?: boolean
 }
 
 interface ServiceResult<T> {

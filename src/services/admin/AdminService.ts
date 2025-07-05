@@ -384,4 +384,16 @@ export class AdminService implements IAdminService {
       };
     }
   }
+
+  async deleteReport(reportId: string): Promise<ServiceResult<boolean>> {
+    try {
+      const deleted = await this.reportRepository.delete(reportId)
+      if (!deleted) {
+        return { success: false, error: 'Report not found', statusCode: 404 }
+      }
+      return { success: true, data: true }
+    } catch (error) {
+      return { success: false, error: (error as any)?.message || 'Failed to delete report', statusCode: 500 }
+    }
+  }
 } 

@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/mongoose';
-import Report from '@/models/Report';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { serviceFactory } from '@/lib/serviceFactory';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,37 +13,26 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
     }
 
-    await connectDB();
-
     const { searchParams } = new URL(request.url);
-    const status = searchParams.get('status');
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '10');
-    const skip = (page - 1) * limit;
+    const searchParamsObj = {
+      status: searchParams.get('status'),
+      page: searchParams.get('page'),
+      limit: searchParams.get('limit')
+    };
 
-    // Build query
-    const query: any = {};
-    if (status && ['pending', 'resolved', 'dismissed'].includes(status)) {
-      query.status = status;
+    const adminService = serviceFactory.getAdminService();
+    const result = await adminService.getReports(searchParamsObj);
+
+    if (!result.success) {
+      return NextResponse.json(
+        { error: result.error },
+        { status: result.statusCode || 500 }
+      );
     }
-
-    // Get reports with pagination
-    const reports = await Report.find(query)
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit);
-
-    const total = await Report.countDocuments(query);
 
     return NextResponse.json({
       success: true,
-      data: reports,
-      pagination: {
-        page,
-        limit,
-        total,
-        pages: Math.ceil(total / limit)
-      }
+      data: result.data
     });
 
   } catch (error) {

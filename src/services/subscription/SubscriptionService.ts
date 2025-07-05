@@ -1,28 +1,22 @@
 import connectDB from '@/lib/mongoose';
 import User from '@/models/User';
-import Subscription from '@/models/Subscription';
 import Plan from '@/models/Plan';
-import PayOSService from '@/services/payment/PayOSService';
+import { ISubscriptionService, SubscriptionPlan, PaymentRequest, SubscriptionActivation } from '@/interfaces/services/ISubscriptionService';
+import { IPayOSService } from '@/interfaces/services/IPayOSService';
+import { ISubscriptionRepository } from '@/interfaces/repositories/ISubscriptionRepository';
+import { IUserRepository } from '@/interfaces/repositories/IUserRepository';
+import { DurationUtils } from '@/types/subscription'
 
-export interface SubscriptionPlan {
-  id: string;
-  name: string;
-  price: number;
-  duration: string;
-  features: string[];
-}
-
-export class SubscriptionService {
-  private payosService: PayOSService;
-
-  constructor() {
-    this.payosService = new PayOSService();
-  }
+export class SubscriptionService implements ISubscriptionService {
+  constructor(
+    private subscriptionRepository: ISubscriptionRepository,
+    private userRepository: IUserRepository,
+    private payosService: IPayOSService
+  ) {}
 
   async getUserSubscription(userId: string) {
-    await connectDB();
-    const user = await User.findById(userId).select('subscription');
-    return user?.subscription;
+    const user = await this.userRepository.findById(userId);
+    return (user as any)?.subscription;
   }
 
   async isUserPremium(userId: string): Promise<boolean> {
@@ -44,10 +38,10 @@ export class SubscriptionService {
   async createPaymentRequest(
     userId: string,
     planId: string
-  ) {
+  ): Promise<PaymentRequest> {
     await connectDB();
 
-    const user = await User.findById(userId);
+    const user = await this.userRepository.findById(userId);
     if (!user) {
       throw new Error('User not found');
     }
@@ -71,8 +65,8 @@ export class SubscriptionService {
     const payosDescription = plan.name.length > 25 ? plan.name.substring(0, 25) : plan.name;
 
     // Create subscription record
-    const subscription = new Subscription({
-      user: userId,
+    await this.subscriptionRepository.create({
+      user: userId as any,
       userEmail: user.email,
       type: planId,
       amount: plan.price,
@@ -80,8 +74,6 @@ export class SubscriptionService {
       status: 'pending',
       payosOrderId: orderCode.toString(),
     });
-
-    await subscription.save();
 
     // Create payment request with PayOS
     const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3001';
@@ -96,7 +88,7 @@ export class SubscriptionService {
         returnUrl,
         cancelUrl,
         buyerEmail: user.email,
-        buyerName: user.name
+        buyerName: (user as any).name
       });
 
       const paymentResponse = await this.payosService.createPayment(
@@ -106,7 +98,7 @@ export class SubscriptionService {
         returnUrl,
         cancelUrl,
         user.email,
-        user.name
+        (user as any).name
       );
 
       console.log('PayOS payment response:', paymentResponse);
@@ -122,8 +114,8 @@ export class SubscriptionService {
       }
 
       // Update subscription with payment URL
-      await Subscription.findOneAndUpdate(
-        { payosOrderId: orderCode.toString() },
+      await this.subscriptionRepository.updateByOrderId(
+        orderCode.toString(),
         { payosPaymentUrl: paymentResponse.data.checkoutUrl }
       );
 
@@ -139,7 +131,7 @@ export class SubscriptionService {
       
       // Clean up the subscription record if payment creation failed
       try {
-        await Subscription.findOneAndDelete({ payosOrderId: orderCode.toString() });
+        await this.subscriptionRepository.deleteByOrderId(orderCode.toString());
       } catch (cleanupError) {
         console.error('Failed to cleanup subscription record:', cleanupError);
       }
@@ -148,11 +140,11 @@ export class SubscriptionService {
     }
   }
 
-  async verifyAndActivateSubscription(orderCode: number) {
+  async verifyAndActivateSubscription(orderCode: number): Promise<SubscriptionActivation> {
     await connectDB();
 
     // Get subscription record
-    const subscription = await Subscription.findOne({ payosOrderId: orderCode.toString() });
+    const subscription = await this.subscriptionRepository.findByOrderId(orderCode.toString());
     if (!subscription) {
       throw new Error('Subscription not found');
     }
@@ -175,35 +167,40 @@ export class SubscriptionService {
       throw new Error('Payment not completed');
     }
 
-    // Calculate subscription dates
+    // Calculate subscription dates using new duration system
     const startDate = new Date();
     let endDate: Date | undefined;
 
-    // Parse duration from plan
+    try {
+      // Use new ISO 8601 duration system
+      endDate = DurationUtils.calculateEndDate(startDate, plan.durationInfo.iso8601);
+    } catch (error) {
+      console.warn('Using fallback duration calculation for plan:', plan.name, error);
+      
+      // Fallback to legacy parsing for existing plans
     const durationText = plan.duration.toLowerCase();
     if (durationText.includes('tháng') || durationText.includes('month')) {
       const months = parseInt(durationText.match(/\d+/)?.[0] || '0');
       if (months > 0) {
         endDate = new Date(startDate);
         endDate.setMonth(endDate.getMonth() + months);
+        }
+      } else if (durationText === 'lifetime') {
+        endDate = undefined; // Lifetime subscription
       }
     }
-    // For lifetime or other durations, endDate remains undefined
 
     // Update subscription status
-    await Subscription.findOneAndUpdate(
-      { payosOrderId: orderCode.toString() },
-      {
+    await this.subscriptionRepository.updateByOrderId(orderCode.toString(), {
         status: 'completed',
         payosTransactionId: paymentInfo.data?.reference,
         startDate,
         endDate,
         isActive: true,
-      }
-    );
+    });
 
     // Update user subscription
-    await User.findByIdAndUpdate(subscription.user, {
+    await this.userRepository.updateById(subscription.user.toString(), {
       subscription: {
         type: subscription.type,
         startDate,
@@ -226,37 +223,53 @@ export class SubscriptionService {
   }
 
   async getSubscriptionHistory(userId: string) {
-    await connectDB();
-    return await Subscription.find({ user: userId })
-      .sort({ createdAt: -1 })
-      .lean();
+    return await this.subscriptionRepository.findByUser(userId);
   }
 
-  async cancelSubscription(userId: string) {
-    await connectDB();
-    
-    const user = await User.findById(userId);
+  async cancelSubscription(userId: string): Promise<{ success: boolean }> {
+    const user = await this.userRepository.findById(userId);
     if (!user) {
       throw new Error('User not found');
     }
 
     // Check if user has an active subscription with end date (time-limited subscription)
-    if (!user.subscription?.endDate) {
+    if (!(user as any).subscription?.endDate) {
       throw new Error('Only time-limited subscriptions can be cancelled');
     }
 
     // Update user subscription to inactive
-    await User.findByIdAndUpdate(userId, {
+    await this.userRepository.updateById(userId, {
       'subscription.isActive': false,
     });
 
-    // Update subscription record
-    await Subscription.findOneAndUpdate(
-      { user: userId, status: 'completed' },
-      { isActive: false }
-    );
+    // Update subscription record - find the active subscription for this user
+    const subscriptions = await this.subscriptionRepository.findByUser(userId);
+    const activeSubscription = subscriptions.find(sub => sub.status === 'completed' && sub.isActive);
+    
+    if (activeSubscription) {
+      await this.subscriptionRepository.updateById((activeSubscription as any)._id.toString(), {
+        isActive: false
+      });
+    }
 
     return { success: true };
+  }
+
+  async checkAndUpdateExpiredSubscriptions(): Promise<void> {
+    const expiredSubscriptions = await this.subscriptionRepository.findExpiredSubscriptions();
+    
+    for (const subscription of expiredSubscriptions) {
+      // Update subscription to inactive
+      await this.subscriptionRepository.updateById((subscription as any)._id.toString(), {
+        isActive: false,
+        status: 'expired'
+      });
+      
+      // Update user subscription to inactive
+      await this.userRepository.updateById(subscription.user.toString(), {
+        'subscription.isActive': false
+      });
+    }
   }
 
   async getSubscriptionPlans(): Promise<SubscriptionPlan[]> {
@@ -264,7 +277,7 @@ export class SubscriptionService {
     
     try {
       // Get plans from database
-      const plans = await Plan.find({}).lean() as any[];
+      const plans = await Plan.find({ isActive: true }).lean() as any[];
       
       // Convert to SubscriptionPlan format
       return plans.map(plan => ({
@@ -278,6 +291,28 @@ export class SubscriptionService {
       console.error('Error fetching plans from database:', error);
       // Return empty array if database error
       return [];
+    }
+  }
+
+  async updateSubscriptionById(id: string, update: Partial<any>): Promise<{ success: boolean, data?: any, error?: string }> {
+    try {
+      const updated = await this.subscriptionRepository.updateById(id, update)
+      if (!updated) {
+        return { success: false, error: 'Subscription not found' }
+      }
+      // Nếu có userId, cập nhật luôn user.subscription
+      if (update.isActive !== undefined || update.status) {
+        const sub = await this.subscriptionRepository.findById(id)
+        if (sub && sub.user) {
+          await this.userRepository.updateById(sub.user.toString(), {
+            'subscription.isActive': update.isActive,
+            'subscription.status': update.status
+          })
+        }
+      }
+      return { success: true, data: updated }
+    } catch (error) {
+      return { success: false, error: (error as any)?.message || 'Failed to update subscription' }
     }
   }
 }

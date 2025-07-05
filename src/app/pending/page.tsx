@@ -60,7 +60,8 @@ export default function PendingQuizzesPage() {
       setLoading(true);
       const params = new URLSearchParams({
         page: page.toString(),
-        limit: pagination.limit.toString()
+        limit: pagination.limit.toString(),
+        mine: 'true'
       });
 
       if (filter !== 'all') {

@@ -91,7 +91,6 @@ export class CategoryService implements ICategoryService {
       const filter: any = {
         category: categoryObjectId,
         status: 'published',
-        isPrivate: { $ne: true }
       };
 
       // Add search filter if provided

@@ -6,7 +6,7 @@ export interface ISubscription extends Document {
   type: string;
   amount: number;
   currency: string;
-  status: 'pending' | 'completed' | 'failed' | 'cancelled';
+  status: 'pending' | 'completed' | 'failed' | 'cancelled' | 'expired';
   payosOrderId: string;
   payosTransactionId?: string;
   payosPaymentUrl?: string;
@@ -42,7 +42,7 @@ const SubscriptionSchema = new Schema<ISubscription>({
   },
   status: {
     type: String,
-    enum: ['pending', 'completed', 'failed', 'cancelled'],
+    enum: ['pending', 'completed', 'failed', 'cancelled', 'expired'],
     default: 'pending',
   },
   payosOrderId: {

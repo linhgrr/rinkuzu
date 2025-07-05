@@ -101,4 +101,9 @@ export class UserRepository implements IUserRepository {
       }
     ])
   }
+
+  async updateById(id: string, updateData: any): Promise<IUser | null> {
+    await connectDB()
+    return await User.findByIdAndUpdate(id, updateData, { new: true }).lean() as unknown as IUser | null
+  }
 } 

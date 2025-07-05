@@ -797,7 +797,7 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
                   className="text-blue-600 border-blue-200 hover:bg-blue-50 hover:border-blue-300"
                   title="Discussion"
                 >
-                  💬 Discussion
+                  Discussion
                 </Button>
               </div>
             </div>

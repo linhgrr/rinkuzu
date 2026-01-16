@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import connectDB from '@/lib/mongodb';
+import connectDB from '@/lib/mongoose';
 import DraftQuiz from '@/models/DraftQuiz';
 
 export async function GET(
@@ -11,7 +11,7 @@ export async function GET(
 ) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    if (!(session?.user as any)?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -19,7 +19,7 @@ export async function GET(
 
     const draft = await DraftQuiz.findOne({
       _id: params.id,
-      userId: session.user.id,
+      userId: ((session!.user as any) as any).id,
     }).select('-pdfData.base64'); // Exclude large base64 data
 
     if (!draft) {
@@ -43,7 +43,7 @@ export async function DELETE(
 ) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    if (!(session?.user as any)?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -51,7 +51,7 @@ export async function DELETE(
 
     const result = await DraftQuiz.deleteOne({
       _id: params.id,
-      userId: session.user.id,
+      userId: ((session!.user as any) as any).id,
     });
 
     if (result.deletedCount === 0) {

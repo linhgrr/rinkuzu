@@ -2,20 +2,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import connectDB from '@/lib/mongodb';
+import connectDB from '@/lib/mongoose';
 import DraftQuiz from '@/models/DraftQuiz';
 
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    if (!(session?.user as any)?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     await connectDB();
 
     const drafts = await DraftQuiz.find({
-      userId: session.user.id,
+      userId: ((session!.user as any) as any).id,
       status: { $ne: 'expired' },
     })
       .select('title status chunks.total chunks.processed questions createdAt expiresAt')

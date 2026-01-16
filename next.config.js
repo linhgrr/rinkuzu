@@ -110,6 +110,7 @@ const nextConfig = {
   // Server Actions are enabled by default in Next.js 14
   experimental: {
     serverComponentsExternalPackages: ['pdf-lib', 'pdfjs-dist'],
+    optimizePackageImports: ['react-icons', 'react-markdown', 'lucide-react'],
   },
   images: {
     domains: ['localhost'],

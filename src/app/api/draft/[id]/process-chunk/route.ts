@@ -1,0 +1,182 @@
+// /src/app/api/draft/[id]/process-chunk/route.ts
+import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import connectDB from '@/lib/mongodb';
+import DraftQuiz from '@/models/DraftQuiz';
+import { PDFDocument } from 'pdf-lib';
+import { extractQuestionsFromPdf } from '@/lib/gemini';
+
+export async function POST(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { chunkIndex } = await request.json();
+
+    if (typeof chunkIndex !== 'number' || chunkIndex < 0) {
+      return NextResponse.json(
+        { error: 'Valid chunkIndex is required' },
+        { status: 400 }
+      );
+    }
+
+    await connectDB();
+
+    const draft = await DraftQuiz.findOne({
+      _id: params.id,
+      userId: session.user.id,
+    });
+
+    if (!draft) {
+      return NextResponse.json({ error: 'Draft not found' }, { status: 404 });
+    }
+
+    if (!draft.pdfData.base64) {
+      return NextResponse.json(
+        { error: 'PDF data not available' },
+        { status: 400 }
+      );
+    }
+
+    const chunkDetail = draft.chunks.chunkDetails.find(
+      (c: any) => c.index === chunkIndex
+    );
+
+    if (!chunkDetail) {
+      return NextResponse.json(
+        { error: 'Chunk not found' },
+        { status: 404 }
+      );
+    }
+
+    if (chunkDetail.status === 'done') {
+      return NextResponse.json({
+        success: true,
+        message: 'Chunk already processed',
+        questions: [],
+        progress: {
+          processed: draft.chunks.processed,
+          total: draft.chunks.total,
+          isComplete: draft.chunks.processed >= draft.chunks.total,
+        },
+      });
+    }
+
+    // Update chunk status to processing
+    await DraftQuiz.updateOne(
+      { _id: params.id, 'chunks.chunkDetails.index': chunkIndex },
+      {
+        $set: {
+          'chunks.chunkDetails.$.status': 'processing',
+          'chunks.current': chunkIndex,
+        }
+      }
+    );
+
+    try {
+      // Extract pages for this chunk
+      const fullPdfBuffer = Buffer.from(draft.pdfData.base64, 'base64');
+      const fullPdfDoc = await PDFDocument.load(fullPdfBuffer);
+
+      const chunkPdfDoc = await PDFDocument.create();
+      for (let i = chunkDetail.startPage - 1; i < chunkDetail.endPage; i++) {
+        if (i < fullPdfDoc.getPageCount()) {
+          const [copiedPage] = await chunkPdfDoc.copyPages(fullPdfDoc, [i]);
+          chunkPdfDoc.addPage(copiedPage);
+        }
+      }
+
+      const chunkBuffer = Buffer.from(await chunkPdfDoc.save());
+
+      // Extract questions using AI
+      const extractedQuestions = await extractQuestionsFromPdf(chunkBuffer, 2);
+
+      // Remove duplicates with existing questions
+      const existingHashes = new Set(
+        draft.questions.map((q: any) => hashQuestion(q))
+      );
+
+      const newQuestions = extractedQuestions.filter(
+        (q: any) => !existingHashes.has(hashQuestion(q))
+      );
+
+      // Update draft with new questions
+      const updateResult = await DraftQuiz.findOneAndUpdate(
+        { _id: params.id, 'chunks.chunkDetails.index': chunkIndex },
+        {
+          $push: { questions: { $each: newQuestions } },
+          $set: { 'chunks.chunkDetails.$.status': 'done' },
+          $inc: { 'chunks.processed': 1 },
+        },
+        { new: true }
+      );
+
+      const isComplete = updateResult!.chunks.processed >= updateResult!.chunks.total;
+
+      // If complete, clean up base64 data and update status
+      if (isComplete) {
+        await DraftQuiz.updateOne(
+          { _id: params.id },
+          {
+            $set: { status: 'completed' },
+            $unset: { 'pdfData.base64': 1 },
+          }
+        );
+      }
+
+      return NextResponse.json({
+        success: true,
+        questions: newQuestions,
+        progress: {
+          processed: updateResult!.chunks.processed,
+          total: updateResult!.chunks.total,
+          isComplete,
+          totalQuestions: updateResult!.questions.length,
+        },
+      });
+
+    } catch (extractError: any) {
+      // Mark chunk as error
+      await DraftQuiz.updateOne(
+        { _id: params.id, 'chunks.chunkDetails.index': chunkIndex },
+        {
+          $set: {
+            'chunks.chunkDetails.$.status': 'error',
+            'chunks.chunkDetails.$.error': extractError.message,
+          },
+        }
+      );
+
+      return NextResponse.json({
+        success: false,
+        error: extractError.message,
+        progress: {
+          processed: draft.chunks.processed,
+          total: draft.chunks.total,
+          isComplete: false,
+        },
+      });
+    }
+
+  } catch (error) {
+    console.error('Process chunk error:', error);
+    return NextResponse.json(
+      { error: 'Failed to process chunk' },
+      { status: 500 }
+    );
+  }
+}
+
+function hashQuestion(q: any): string {
+  const normalizedQuestion = q.question?.toLowerCase().trim().replace(/\s+/g, ' ') || '';
+  const normalizedOptions = q.options?.map((opt: string) =>
+    opt.toLowerCase().trim().replace(/\s+/g, ' ')
+  ).join('|') || '';
+  return `${normalizedQuestion}:::${normalizedOptions}`;
+}

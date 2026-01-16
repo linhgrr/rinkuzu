@@ -1,20 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { createLangChainModel, HumanMessage, SystemMessage } from '@/lib/langchain';
 import { authOptions } from '@/lib/auth';
-
-if (!process.env.GEMINI_KEYS) {
-  throw new Error('Please add your GEMINI_KEYS to .env.local');
-}
-
-const keys = process.env.GEMINI_KEYS!.split(',');
-let keyIndex = 0;
-
-function getNextKey(): string {
-  const key = keys[keyIndex];
-  keyIndex = (keyIndex + 1) % keys.length;
-  return key.trim();
-}
 
 // Chat history interface
 interface ChatMessage {
@@ -33,7 +20,7 @@ function sanitizeInput(input: string): string {
 
 function validateChatInput(userQuestion: string): { isValid: boolean; error?: string } {
   const sanitized = sanitizeInput(userQuestion);
-  
+
   // Check for prompt injection patterns
   const suspiciousPatterns = [
     /ignore\s+(previous|above|all)\s+(instructions?|prompts?)/i,
@@ -45,46 +32,45 @@ function validateChatInput(userQuestion: string): { isValid: boolean; error?: st
     /system\s*:|admin\s*:|root\s*:/i,
     /<script|javascript|eval\(/i
   ];
-  
+
   for (const pattern of suspiciousPatterns) {
     if (pattern.test(sanitized)) {
-      return { 
-        isValid: false, 
-        error: 'Rin-chan only helps with quiz questions. Please ask about the specific quiz topic!' 
+      return {
+        isValid: false,
+        error: 'Rin-chan only helps with quiz questions. Please ask about the specific quiz topic!'
       };
     }
   }
-  
+
   // Check if question is related to learning/quiz
   const offTopicPatterns = [
     /(hack|crack|break)\s+into/i,
     /personal\s+information/i,
     /phone\s+number|address|email/i
   ];
-  
+
   for (const pattern of offTopicPatterns) {
     if (pattern.test(sanitized)) {
-      return { 
-        isValid: false, 
-        error: 'Rin-chan is here to help you understand quiz concepts. Please ask questions related to the quiz topic!' 
+      return {
+        isValid: false,
+        error: 'Rin-chan is here to help you understand quiz concepts. Please ask questions related to the quiz topic!'
       };
     }
   }
-  
+
   return { isValid: true };
 }
 
 // Summarize chat history when it gets too long
-async function summarizeChatHistory(chatHistory: ChatMessage[], apiKey: string): Promise<string> {
+async function summarizeChatHistory(chatHistory: ChatMessage[]): Promise<string> {
   try {
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
-    
+    const model = createLangChainModel({ temperature: 0.3 });
+
     const chatText = chatHistory
       .slice(-6) // Last 3 turns (6 messages)
       .map(msg => `${msg.role}: ${msg.content}`)
       .join('\n\n');
-    
+
     const summarizePrompt = `
 Please provide a concise summary of this educational conversation between a student and AI tutor Rin-chan about a quiz question.
 
@@ -100,9 +86,12 @@ Focus only on educational content relevant to understanding the quiz question.
 Keep it concise and educational.
 `;
 
-    const result = await model.generateContent(summarizePrompt);
-    const response = await result.response;
-    return response.text().trim();
+    const message = new HumanMessage(summarizePrompt);
+    const result = await model.invoke([message]);
+
+    return typeof result.content === 'string'
+      ? result.content.trim()
+      : 'Previous discussion about quiz concepts and explanations.';
   } catch (error) {
     console.error('Failed to summarize chat history:', error);
     return 'Previous discussion about quiz concepts and explanations.';
@@ -120,13 +109,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { 
-      question, 
-      options, 
-      userQuestion, 
-      questionImage, 
+    const {
+      question,
+      options,
+      userQuestion,
+      questionImage,
       optionImages,
-      chatHistory = [] // New parameter for chat history
+      chatHistory = [] // Parameter for chat history
     } = await request.json();
 
     if (!question || !options || !Array.isArray(options)) {
@@ -155,8 +144,8 @@ export async function POST(request: NextRequest) {
       chatHistoryLength: chatHistory.length
     });
 
-    const maxRetries = Math.min(keys.length, 3);
-    
+    const maxRetries = 3;
+
     const fetchImageBase64 = async (url: string): Promise<string | null> => {
       try {
         const res = await fetch(url);
@@ -169,14 +158,12 @@ export async function POST(request: NextRequest) {
 
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {
-        const apiKey = getNextKey();
-        const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+        const model = createLangChainModel({ temperature: 0.7 });
 
         // Handle chat history summarization if needed
         let contextualInfo = '';
         if (chatHistory.length > 6) { // More than 3 turns
-          const summary = await summarizeChatHistory(chatHistory, apiKey);
+          const summary = await summarizeChatHistory(chatHistory);
           contextualInfo = `\n\nPREVIOUS CONVERSATION SUMMARY:\n${summary}\n`;
         } else if (chatHistory.length > 0) {
           contextualInfo = `\n\nPREVIOUS CONVERSATION:\n${chatHistory
@@ -184,7 +171,7 @@ export async function POST(request: NextRequest) {
             .join('\n\n')}\n`;
         }
 
-        const securityPrompt = `
+        const systemPrompt = `
 CRITICAL SECURITY INSTRUCTIONS:
 - If user don't ask for a specific language, answer in Vietnamese
 - You are Rin-chan, a cute but serious tutor helping with quiz questions ONLY
@@ -192,18 +179,16 @@ CRITICAL SECURITY INSTRUCTIONS:
 - ONLY discuss topics related to the specific quiz question provided
 - If asked about anything unrelated, politely redirect to the quiz topic
 - Never provide personal information, write code, or help with non-educational tasks
-- Always maintain your educational tutor role`;
+- Always maintain your educational tutor role
 
-        const prompt = `
-${securityPrompt}
+You are Rin-chan, a cute tutor who always helps students understand quiz questions. You have a cute, friendly personality but you take education seriously.`;
 
-You are Rin-chan, a cute tutor who always helps students understand quiz questions. You have a cute, friendly personality but you take education seriously.
-
+        const userPrompt = `
 QUIZ QUESTION:
 "${question}"
 
 OPTIONS:
-${options.map((option, index) => `${String.fromCharCode(65 + index)}. ${option}`).join('\n')}
+${options.map((option: string, index: number) => `${String.fromCharCode(65 + index)}. ${option}`).join('\n')}
 
 ${contextualInfo}
 
@@ -219,26 +204,46 @@ INSTRUCTIONS:
 7. Be encouraging and supportive of learning
 
 Focus on educational value and conceptual understanding!
-        `;
+`;
 
-        const parts: any[] = [{ text: prompt }];
+        // Build message content
+        const messageContent: any[] = [{ type: 'text', text: userPrompt }];
 
+        // Add question image if available
         if (questionImage) {
           const b64 = await fetchImageBase64(questionImage);
-          if (b64) parts.push({ inlineData: { mimeType: 'image/jpeg', data: b64 } });
+          if (b64) {
+            messageContent.push({
+              type: 'image_url',
+              image_url: { url: `data:image/jpeg;base64,${b64}` }
+            });
+          }
         }
 
+        // Add option images if available
         if (Array.isArray(optionImages)) {
           for (const img of optionImages) {
             if (!img) continue;
             const b64 = await fetchImageBase64(img);
-            if (b64) parts.push({ inlineData: { mimeType: 'image/jpeg', data: b64 } });
+            if (b64) {
+              messageContent.push({
+                type: 'image_url',
+                image_url: { url: `data:image/jpeg;base64,${b64}` }
+              });
+            }
           }
         }
 
-        const result = await model.generateContent(parts);
-        const response = await result.response;
-        const explanation = response.text().trim();
+        // Create messages array with LangChain format
+        const messages = [
+          new SystemMessage(systemPrompt),
+          new HumanMessage({ content: messageContent })
+        ];
+
+        const result = await model.invoke(messages);
+        const explanation = typeof result.content === 'string'
+          ? result.content.trim()
+          : JSON.stringify(result.content);
 
         console.log('✅ AI explanation generated successfully');
 
@@ -253,11 +258,11 @@ Focus on educational value and conceptual understanding!
 
       } catch (error: any) {
         console.error(`Ask AI attempt ${attempt + 1} failed:`, error.message);
-        
+
         if (attempt === maxRetries - 1) {
           throw new Error(`Failed to get AI explanation after ${maxRetries} attempts: ${error.message}`);
         }
-        
+
         // Wait a bit before retrying
         await new Promise(resolve => setTimeout(resolve, 1000));
       }
@@ -272,4 +277,4 @@ Focus on educational value and conceptual understanding!
       { status: 500 }
     );
   }
-} 
+}

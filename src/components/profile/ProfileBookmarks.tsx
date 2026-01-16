@@ -176,6 +176,10 @@ export default function ProfileBookmarks() {
         scrollToBottom();
     };
 
+    // Streaming state
+    const [streamingContent, setStreamingContent] = useState('');
+    const [isStreaming, setIsStreaming] = useState(false);
+
     const askAI = async () => {
         if (!currentBookmark) return;
         const trimmedQuestion = userQuestion.trim();
@@ -186,6 +190,8 @@ export default function ProfileBookmarks() {
 
         setLoadingAI(true);
         setAIError('');
+        setStreamingContent('');
+        setIsStreaming(false);
 
         try {
             const userMessage: ChatMessage = {
@@ -194,6 +200,7 @@ export default function ProfileBookmarks() {
                 timestamp: new Date().toISOString()
             };
             addMessageToHistory(currentBookmark._id, userMessage);
+            setUserQuestion('');
 
             const currentHistory = chatHistories[currentBookmark._id] || [];
 
@@ -206,26 +213,85 @@ export default function ProfileBookmarks() {
                     userQuestion: trimmedQuestion,
                     questionImage: currentBookmark.question.questionImage,
                     optionImages: currentBookmark.question.optionImages,
-                    chatHistory: [...currentHistory, userMessage]
+                    chatHistory: [...currentHistory, userMessage],
+                    stream: true
                 })
             });
 
-            const data = await resp.json();
+            // Check if response is streaming
+            const contentType = resp.headers.get('Content-Type');
 
-            if (data.success) {
-                const assistantMessage: ChatMessage = {
-                    role: 'assistant',
-                    content: data.data.explanation,
-                    timestamp: data.data.timestamp
-                };
-                addMessageToHistory(currentBookmark._id, assistantMessage);
-                setUserQuestion('');
+            if (contentType?.includes('text/event-stream')) {
+                // Handle SSE streaming
+                if (!resp.body) {
+                    throw new Error('Response body is null');
+                }
+
+                setLoadingAI(false);
+                setIsStreaming(true);
+
+                const reader = resp.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+                let fullContent = '';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n\n');
+                    buffer = lines.pop() || '';
+
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            try {
+                                const data = JSON.parse(line.slice(6));
+                                if (data.done) {
+                                    // Stream finished - add complete message to history
+                                    const assistantMessage: ChatMessage = {
+                                        role: 'assistant',
+                                        content: fullContent,
+                                        timestamp: new Date().toISOString()
+                                    };
+                                    addMessageToHistory(currentBookmark._id, assistantMessage);
+                                    setStreamingContent('');
+                                    setIsStreaming(false);
+                                } else if (data.error) {
+                                    throw new Error(data.error);
+                                } else if (data.content) {
+                                    fullContent += data.content;
+                                    setStreamingContent(fullContent);
+                                    scrollToBottom();
+                                }
+                            } catch (parseError) {
+                                // Ignore parse errors
+                            }
+                        }
+                    }
+                }
+
+                setIsStreaming(false);
+
             } else {
-                setAIError(data.error || 'Failed to get AI explanation');
+                // Fallback to non-streaming response
+                const data = await resp.json();
+
+                if (data.success) {
+                    const assistantMessage: ChatMessage = {
+                        role: 'assistant',
+                        content: data.data.explanation,
+                        timestamp: data.data.timestamp
+                    };
+                    addMessageToHistory(currentBookmark._id, assistantMessage);
+                } else {
+                    setAIError(data.error || 'Failed to get AI explanation');
+                }
+                setLoadingAI(false);
             }
-        } catch (err) {
-            setAIError('Failed to connect to AI service.');
-        } finally {
+        } catch (err: any) {
+            setAIError(err.message || 'Failed to connect to AI service.');
+            setIsStreaming(false);
             setLoadingAI(false);
         }
     };
@@ -384,7 +450,15 @@ export default function ProfileBookmarks() {
                                     {msg.role === 'assistant' ? <MarkdownRenderer content={msg.content} /> : msg.content}
                                 </div>
                             ))}
-                            {loadingAI && <div className="text-xs text-gray-500 animate-pulse">Thinking...</div>}
+                            {/* Show streaming content */}
+                            {isStreaming && streamingContent && (
+                                <div className="p-2 rounded mb-2 text-sm bg-purple-50 mr-8">
+                                    <div className="font-bold text-xs mb-1">Rin-chan</div>
+                                    <MarkdownRenderer content={streamingContent} />
+                                    <span className="inline-block w-2 h-4 bg-purple-500 animate-pulse ml-1"></span>
+                                </div>
+                            )}
+                            {loadingAI && !isStreaming && <div className="text-xs text-gray-500 animate-pulse">Thinking...</div>}
                         </div>
 
                         <div className="flex gap-2">

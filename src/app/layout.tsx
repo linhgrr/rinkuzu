@@ -4,6 +4,7 @@ import './globals.css';
 import Providers from './providers';
 import PWAInstaller from '@/components/PWAInstaller';
 import BottomNav from '@/components/BottomNav';
+import { FloatingDraftProgress } from '@/components/FloatingDraftProgress';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -78,6 +79,7 @@ export default function RootLayout({
             {children}
           </main>
           <BottomNav />
+          <FloatingDraftProgress />
           <PWAInstaller />
         </Providers>
       </body>

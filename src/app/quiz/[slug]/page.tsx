@@ -857,10 +857,28 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
 
   // Show MobileQuizPlayer on mobile devices
   if (isMobile && !showEmailInput) {
+    // Convert Record<string, number | number[]> to (number | number[])[] for handleQuizComplete
+    const handleMobileComplete = (answers: Record<string, number | number[]>) => {
+      const orderedAnswers: (number | number[])[] = quiz.questions.map((q: any) => {
+        const answer = answers[q._id];
+        return answer !== undefined ? answer : -1;
+      });
+      handleQuizComplete(orderedAnswers);
+    };
+
+    // Map questions to include _id for MobileQuizPlayer
+    const questionsWithId = quiz.questions.map((q: any, idx: number) => ({
+      _id: q._id || `q-${idx}`,
+      question: q.question,
+      options: q.options,
+      type: q.type,
+      questionImage: q.questionImage,
+    }));
+
     return (
       <MobileQuizPlayer
-        questions={quiz.questions}
-        onComplete={handleQuizComplete}
+        questions={questionsWithId}
+        onComplete={handleMobileComplete}
         onExit={() => router.push('/')}
       />
     );

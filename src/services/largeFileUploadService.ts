@@ -1,31 +1,15 @@
 /**
- * Large File Upload Service with Parallel Processing
- * 
+ * Large File Upload Service with Sequential Processing
+ *
  * This service handles large PDF files by splitting them into manageable chunks
- * and processing them in parallel to improve performance.
- * 
+ * and processing them SEQUENTIALLY for reliability.
+ *
  * Features:
  * - Automatic PDF splitting by pages with configurable chunk size
- * - Parallel processing with configurable concurrency limits
+ * - Sequential processing (one chunk at a time)
  * - Retry mechanism with exponential backoff
  * - Duplicate question detection and removal
  * - Real-time progress tracking
- * 
- * Usage:
- * ```typescript
- * const result = await extractQuestionsFromLargePDF(
- *   files,
- *   'Quiz Title',
- *   'Quiz Description',
- *   (progress) => console.log(progress),
- *   {
- *     maxConcurrentChunks: 5,  // Process 5 chunks simultaneously
- *     chunkSize: 10,           // 10 pages per chunk
- *     overlapPages: 2,         // 2 pages overlap between chunks
- *     maxRetries: 3            // Retry failed chunks 3 times
- *   }
- * )
- * ```
  */
 
 import { Question } from '@/types/quiz'
@@ -53,17 +37,17 @@ const OVERLAP_PAGES = 1 // 1 page overlap
 const MAX_RETRIES = 3 // Maximum number of retries per chunk
 const INITIAL_RETRY_DELAY = 1000 // Initial delay in ms
 const RETRY_DELAY_MULTIPLIER = 2 // Multiply delay by this factor on each retry
-const MAX_CONCURRENT_CHUNKS = 3 // Maximum number of chunks to process in parallel
+const CHUNK_DELAY = 500 // Delay between chunks in ms
 
-export interface ParallelProcessingOptions {
-  maxConcurrentChunks?: number
+export interface ProcessingOptions {
   chunkSize?: number
   overlapPages?: number
   maxRetries?: number
+  chunkDelay?: number
 }
 
 /**
- * Sleep function for retry delays
+ * Sleep function for delays
  */
 function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms))
@@ -76,16 +60,16 @@ async function splitPdfIntoPageChunks(file: File, chunkSize: number, overlapPage
   try {
     // Dynamic import for pdf-lib
     const { PDFDocument } = await import('pdf-lib')
-    
+
     const arrayBuffer = await file.arrayBuffer()
     const pdfDoc = await PDFDocument.load(arrayBuffer)
     const totalPages = pdfDoc.getPageCount()
-    
+
     console.log(`📄 PDF has ${totalPages} pages, splitting into chunks of ${chunkSize} with ${overlapPages} overlap`)
-    
+
     const chunks: Blob[] = []
     const pageRanges: { start: number, end: number }[] = []
-    
+
     // If PDF is small, don't split
     if (totalPages <= chunkSize) {
       const chunk = new Blob([arrayBuffer], { type: 'application/pdf' })
@@ -93,17 +77,17 @@ async function splitPdfIntoPageChunks(file: File, chunkSize: number, overlapPage
       pageRanges.push({ start: 1, end: totalPages })
       return { chunks, pageRanges }
     }
-    
+
     // Create overlapping chunks by pages
     let startPage = 1
     let chunkIndex = 0
-    
+
     while (startPage <= totalPages) {
       const endPage = Math.min(startPage + chunkSize - 1, totalPages)
-      
+
       // Create new PDF with selected pages
       const newPdf = await PDFDocument.create()
-      
+
       // Copy pages (PDF pages are 0-indexed but our input is 1-indexed)
       for (let i = startPage - 1; i < endPage; i++) {
         if (i < pdfDoc.getPageCount()) {
@@ -111,25 +95,25 @@ async function splitPdfIntoPageChunks(file: File, chunkSize: number, overlapPage
           newPdf.addPage(copiedPage)
         }
       }
-      
+
       const newPdfBytes = await newPdf.save()
       const chunk = new Blob([newPdfBytes], { type: 'application/pdf' })
-      
+
       chunks.push(chunk)
       pageRanges.push({ start: startPage, end: endPage })
-      
+
       console.log(`📋 Created chunk ${chunkIndex + 1}: pages ${startPage}-${endPage}`)
-      
+
       // Move to next chunk with overlap
       startPage = endPage - overlapPages + 1
       chunkIndex++
-      
+
       // Break if we've reached the end
       if (endPage >= totalPages) break
     }
-    
+
     return { chunks, pageRanges }
-    
+
   } catch (error) {
     console.error('❌ Error splitting PDF by pages:', error)
     throw new Error(`Failed to split PDF by pages: ${error instanceof Error ? error.message : 'Unknown error'}`)
@@ -146,7 +130,7 @@ function createQuestionHash(question: Question): string {
     options: question.options.map(opt => opt.trim().toLowerCase()).sort(),
     type: question.type
   }
-  
+
   // Simple hash function
   const str = JSON.stringify(normalizedQuestion)
   let hash = 0
@@ -155,7 +139,7 @@ function createQuestionHash(question: Question): string {
     hash = ((hash << 5) - hash) + char
     hash = hash & hash // Convert to 32-bit integer
   }
-  
+
   return hash.toString()
 }
 
@@ -163,8 +147,8 @@ function createQuestionHash(question: Question): string {
  * Create FormData for a single chunk
  */
 function createChunkFormData(
-  chunk: Blob, 
-  chunkIndex: number, 
+  chunk: Blob,
+  chunkIndex: number,
   totalChunks: number,
   fileName: string,
   title: string,
@@ -172,12 +156,12 @@ function createChunkFormData(
   pageRange: { start: number, end: number }
 ): FormData {
   const formData = new FormData()
-  
+
   // Create a new File object from the chunk with proper name
   const chunkFile = new File([chunk], `${fileName}_chunk_${chunkIndex + 1}_pages_${pageRange.start}-${pageRange.end}.pdf`, {
     type: 'application/pdf'
   })
-  
+
   formData.append('pdfFile_0', chunkFile)
   formData.append('fileCount', '1')
   formData.append('title', title)
@@ -186,7 +170,7 @@ function createChunkFormData(
   formData.append('totalChunks', totalChunks.toString())
   formData.append('originalFileName', fileName)
   formData.append('pageRange', JSON.stringify(pageRange))
-  
+
   return formData
 }
 
@@ -201,9 +185,9 @@ async function uploadChunkWithRetry(
   const chunkIndex = parseInt(formData.get('chunkIndex') as string)
   const fileName = formData.get('originalFileName') as string
   const pageRange = JSON.parse(formData.get('pageRange') as string)
-  
+
   let lastError: string = ''
-  
+
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       onProgress?.({
@@ -213,7 +197,7 @@ async function uploadChunkWithRetry(
         totalFiles: 1,
         fileName,
         status: attempt === 0 ? 'uploading' : 'processing',
-        message: attempt === 0 
+        message: attempt === 0
           ? `Uploading chunk ${chunkIndex + 1} (pages ${pageRange.start}-${pageRange.end})...`
           : `Retrying chunk ${chunkIndex + 1} (attempt ${attempt + 1}/${maxRetries + 1})...`
       })
@@ -229,7 +213,7 @@ async function uploadChunkWithRetry(
       }
 
       const data = await response.json()
-      
+
       if (!data.success) {
         throw new Error(data.error || 'Failed to extract questions from chunk')
       }
@@ -255,7 +239,7 @@ async function uploadChunkWithRetry(
 
         if (questionType === 'single') {
           let finalCorrectAnswer = q.correctAnswer
-          
+
           if (typeof finalCorrectAnswer === 'undefined') {
             if (typeof q.correctIndex === 'number') {
               finalCorrectAnswer = q.correctIndex
@@ -265,7 +249,7 @@ async function uploadChunkWithRetry(
               finalCorrectAnswer = 0
             }
           }
-          
+
           processedQuestion.correctIndex = finalCorrectAnswer
         } else {
           processedQuestion.correctIndexes = q.correctIndexes || q.correctAnswers || []
@@ -275,7 +259,7 @@ async function uploadChunkWithRetry(
       })
 
       console.log(`✅ Chunk ${chunkIndex + 1} (pages ${pageRange.start}-${pageRange.end}) processed successfully`)
-      
+
       return {
         questions: processedQuestions,
         chunkIndex,
@@ -285,11 +269,11 @@ async function uploadChunkWithRetry(
 
     } catch (error) {
       lastError = error instanceof Error ? error.message : 'Unknown error'
-      
+
       if (attempt < maxRetries) {
         const delay = INITIAL_RETRY_DELAY * Math.pow(RETRY_DELAY_MULTIPLIER, attempt)
         console.warn(`⚠️ Chunk ${chunkIndex + 1} failed (attempt ${attempt + 1}/${maxRetries + 1}): ${lastError}. Retrying in ${delay}ms...`)
-        
+
         onProgress?.({
           currentChunk: chunkIndex + 1,
           totalChunks: parseInt(formData.get('totalChunks') as string),
@@ -299,7 +283,7 @@ async function uploadChunkWithRetry(
           status: 'error',
           message: `Chunk ${chunkIndex + 1} failed, retrying in ${delay/1000}s... (${lastError})`
         })
-        
+
         await sleep(delay)
       } else {
         console.error(`❌ Chunk ${chunkIndex + 1} failed after ${maxRetries + 1} attempts: ${lastError}`)
@@ -332,10 +316,10 @@ function mergeQuestionsFromChunks(chunkResults: ChunkResult[]): Question[] {
 
   for (const result of sortedResults) {
     console.log(`📋 Processing chunk ${result.chunkIndex + 1}: ${result.questions.length} questions`)
-    
+
     for (const question of result.questions) {
       const questionHash = createQuestionHash(question)
-      
+
       if (!seenHashes.has(questionHash)) {
         seenHashes.add(questionHash)
         allQuestions.push(question)
@@ -351,26 +335,24 @@ function mergeQuestionsFromChunks(chunkResults: ChunkResult[]): Question[] {
 }
 
 /**
- * Process chunks in parallel with concurrency control
+ * Process chunks SEQUENTIALLY (one at a time)
  */
-async function processChunksInParallel(
+async function processChunksSequentially(
   chunks: Blob[],
   pageRanges: { start: number, end: number }[],
   fileName: string,
   title: string,
   description: string,
   onProgress?: (progress: UploadProgress) => void,
-  maxConcurrentChunks: number = MAX_CONCURRENT_CHUNKS,
-  maxRetries: number = MAX_RETRIES
+  maxRetries: number = MAX_RETRIES,
+  chunkDelay: number = CHUNK_DELAY
 ): Promise<ChunkResult[]> {
   const results: ChunkResult[] = []
-  const activePromises = new Set<Promise<void>>()
-  let completedChunks = 0
   let successfulChunks = 0
   let failedChunks = 0
-  
-  console.log(`🚀 Starting parallel processing of ${chunks.length} chunks with max ${maxConcurrentChunks} concurrent`)
-  
+
+  console.log(`🔄 Starting SEQUENTIAL processing of ${chunks.length} chunks`)
+
   onProgress?.({
     currentChunk: 0,
     totalChunks: chunks.length,
@@ -378,18 +360,13 @@ async function processChunksInParallel(
     totalFiles: 1,
     fileName,
     status: 'uploading',
-    message: `Starting parallel processing of ${chunks.length} chunks (max ${maxConcurrentChunks} concurrent)...`
+    message: `Starting sequential processing of ${chunks.length} chunks...`
   })
-  
+
   for (let chunkIndex = 0; chunkIndex < chunks.length; chunkIndex++) {
-    // Wait if we've reached the concurrency limit
-    while (activePromises.size >= maxConcurrentChunks) {
-      await Promise.race(activePromises)
-    }
-    
     const chunk = chunks[chunkIndex]
     const pageRange = pageRanges[chunkIndex]
-    
+
     const formData = createChunkFormData(
       chunk,
       chunkIndex,
@@ -399,75 +376,66 @@ async function processChunksInParallel(
       description,
       pageRange
     )
-    
-    // Create promise for this chunk
-    const chunkPromise = (async () => {
-      try {
-        const result = await uploadChunkWithRetry(formData, (progress) => {
-          // Update progress for individual chunk
-          onProgress?.({
-            ...progress,
-            currentChunk: completedChunks + 1,
-            totalChunks: chunks.length,
-            message: `${progress.message} (${completedChunks + 1}/${chunks.length} chunks)`
-          })
-        }, maxRetries)
-        results[chunkIndex] = result
-        
-        completedChunks++
-        if (result.success) {
-          successfulChunks++
-        } else {
-          failedChunks++
-        }
-        
+
+    try {
+      const result = await uploadChunkWithRetry(formData, (progress) => {
         onProgress?.({
-          currentChunk: completedChunks,
+          ...progress,
+          currentChunk: chunkIndex + 1,
           totalChunks: chunks.length,
-          currentFile: 1,
-          totalFiles: 1,
-          fileName,
-          status: 'processing',
-          message: `Completed ${completedChunks}/${chunks.length} chunks (${successfulChunks} success, ${failedChunks} failed)`
+          message: `${progress.message} (${chunkIndex + 1}/${chunks.length} chunks)`
         })
-      } catch (error) {
-        console.error(`❌ Unexpected error processing chunk ${chunkIndex + 1}:`, error)
-        results[chunkIndex] = {
-          questions: [],
-          chunkIndex,
-          fileName,
-          success: false,
-          error: error instanceof Error ? error.message : 'Unknown error'
-        }
-        completedChunks++
+      }, maxRetries)
+
+      results.push(result)
+
+      if (result.success) {
+        successfulChunks++
+      } else {
         failedChunks++
       }
-    })()
-    
-    activePromises.add(chunkPromise)
-    
-    // Remove promise from set when it completes
-    chunkPromise.finally(() => {
-      activePromises.delete(chunkPromise)
-    })
+
+      onProgress?.({
+        currentChunk: chunkIndex + 1,
+        totalChunks: chunks.length,
+        currentFile: 1,
+        totalFiles: 1,
+        fileName,
+        status: 'processing',
+        message: `Completed ${chunkIndex + 1}/${chunks.length} chunks (${successfulChunks} success, ${failedChunks} failed)`
+      })
+
+      // Add delay between chunks to avoid rate limiting
+      if (chunkIndex < chunks.length - 1) {
+        await sleep(chunkDelay)
+      }
+
+    } catch (error) {
+      console.error(`❌ Unexpected error processing chunk ${chunkIndex + 1}:`, error)
+      results.push({
+        questions: [],
+        chunkIndex,
+        fileName,
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      })
+      failedChunks++
+    }
   }
-  
-  // Wait for all remaining promises to complete
-  await Promise.all(activePromises)
-  
-  console.log(`✅ All ${chunks.length} chunks processed in parallel: ${successfulChunks} success, ${failedChunks} failed`)
+
+  console.log(`✅ All ${chunks.length} chunks processed sequentially: ${successfulChunks} success, ${failedChunks} failed`)
   return results
 }
 
 /**
- * Upload large files by splitting them into page-based chunks and processing in parallel
+ * Upload large files by splitting them into page-based chunks and processing SEQUENTIALLY
  */
 export async function extractQuestionsFromLargePDF(
   files: File[],
   title: string,
   description: string,
   onProgress?: (progress: UploadProgress) => void,
-  options?: ParallelProcessingOptions
+  options?: ProcessingOptions
 ): Promise<{
   title: string
   description: string
@@ -476,21 +444,22 @@ export async function extractQuestionsFromLargePDF(
 }> {
   // Use provided options or defaults
   const config = {
-    maxConcurrentChunks: options?.maxConcurrentChunks ?? MAX_CONCURRENT_CHUNKS,
     chunkSize: options?.chunkSize ?? CHUNK_SIZE,
     overlapPages: options?.overlapPages ?? OVERLAP_PAGES,
-    maxRetries: options?.maxRetries ?? MAX_RETRIES
+    maxRetries: options?.maxRetries ?? MAX_RETRIES,
+    chunkDelay: options?.chunkDelay ?? CHUNK_DELAY
   }
-  
-  console.log(`⚙️ Processing configuration:`, config)
-  
+
+  console.log(`⚙️ Processing configuration (SEQUENTIAL):`, config)
+
   const allQuestions: Question[] = []
   const fileNames: string[] = []
 
+  // Process files one by one (sequential)
   for (let fileIndex = 0; fileIndex < files.length; fileIndex++) {
     const file = files[fileIndex]
     const fileName = file.name
-    
+
     onProgress?.({
       currentChunk: 0,
       totalChunks: 0,
@@ -511,7 +480,7 @@ export async function extractQuestionsFromLargePDF(
       formData.append('description', description)
 
       const result = await uploadChunkWithRetry(formData, onProgress, config.maxRetries)
-      
+
       if (result.success) {
         allQuestions.push(...result.questions)
         fileNames.push(fileName)
@@ -532,7 +501,7 @@ export async function extractQuestionsFromLargePDF(
       })
 
       const { chunks, pageRanges } = await splitPdfIntoPageChunks(file, config.chunkSize, config.overlapPages)
-      
+
       onProgress?.({
         currentChunk: 0,
         totalChunks: chunks.length,
@@ -543,27 +512,28 @@ export async function extractQuestionsFromLargePDF(
         message: `Created ${chunks.length} chunks for ${fileName}`
       })
 
-      const chunkResults = await processChunksInParallel(
+      // Process chunks SEQUENTIALLY
+      const chunkResults = await processChunksSequentially(
         chunks,
         pageRanges,
         fileName,
         title,
         description,
         onProgress,
-        config.maxConcurrentChunks,
-        config.maxRetries
+        config.maxRetries,
+        config.chunkDelay
       )
 
       // Check if all chunks were successful
       const failedChunks = chunkResults.filter(result => !result.success)
       if (failedChunks.length > 0) {
         // Log failed chunks but continue if we have some successful chunks
-        const errorMessages = failedChunks.map(result => 
+        const errorMessages = failedChunks.map(result =>
           `Chunk ${result.chunkIndex + 1}: ${result.error}`
         ).join('; ')
-        
+
         console.warn(`⚠️ ${failedChunks.length} chunks failed: ${errorMessages}`)
-        
+
         // Only throw error if ALL chunks failed
         if (failedChunks.length === chunkResults.length) {
           throw new Error(`Failed to process ${fileName}: All chunks failed. ${errorMessages}`)
@@ -588,6 +558,11 @@ export async function extractQuestionsFromLargePDF(
         message: `Completed processing ${fileName} (${mergedQuestions.length} unique questions extracted${failedChunks.length > 0 ? `, ${failedChunks.length} chunks skipped` : ''})`
       })
     }
+
+    // Add delay between files
+    if (fileIndex < files.length - 1) {
+      await sleep(config.chunkDelay)
+    }
   }
 
   onProgress?.({
@@ -606,4 +581,4 @@ export async function extractQuestionsFromLargePDF(
     questions: allQuestions,
     fileNames
   }
-} 
+}

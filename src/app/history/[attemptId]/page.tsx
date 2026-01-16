@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { ImageDisplay } from '@/components/ui/ImageDisplay';
-import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer';
+import { DynamicMarkdownRenderer as MarkdownRenderer } from '@/components/ui/DynamicMarkdownRenderer';
 import Sidebar from '@/components/Sidebar';
 
 interface AttemptDetail {

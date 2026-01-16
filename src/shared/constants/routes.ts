@@ -4,35 +4,36 @@ export const ROUTES = {
   LOGIN: '/login',
   REGISTER: '/register',
   CREATE_QUIZ: '/create',
-  PENDING_QUIZZES: '/pending',
+  PENDING_QUIZZES: '/profile', // Consolidated
   CATEGORIES: '/categories',
-  BOOKMARKS: '/bookmarks',
-  HISTORY: '/history',
+  BOOKMARKS: '/profile', // Consolidated
+  HISTORY: '/profile', // Consolidated
+  EXPLORE: '/explore',
   SUBSCRIPTION: '/subscription',
   SETUP: '/setup',
-  
+
   // Dynamic routes
   QUIZ: {
     VIEW: (slug: string) => `/quiz/${slug}`,
     FLASHCARDS: (slug: string) => `/quiz/${slug}/flashcards`,
     RESULT: (slug: string) => `/quiz/${slug}/result`
   },
-  
+
   CATEGORY: {
     VIEW: (slug: string) => `/category/${slug}`
   },
-  
+
   EDIT: {
     QUIZ: (id: string) => `/edit/${id}`
   },
-  
+
   HISTORY_DETAIL: (attemptId: string) => `/history/${attemptId}`,
-  
+
   PAYMENT: {
     SUCCESS: '/payment/success',
     CANCEL: '/payment/cancel'
   },
-  
+
   // Admin routes
   ADMIN: {
     CATEGORIES: '/admin/categories',

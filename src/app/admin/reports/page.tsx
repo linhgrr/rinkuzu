@@ -9,6 +9,14 @@ import Sidebar from '@/components/Sidebar';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Modal } from '@/components/ui/Modal';
+import {
+  HiOutlineInbox,
+  HiOutlineEye,
+  HiOutlinePencil,
+  HiOutlineTrash,
+  HiOutlineCheck,
+  HiOutlineX
+} from 'react-icons/hi';
 import { IReport } from '@/models/Report';
 
 export default function AdminReportsPage() {
@@ -25,7 +33,7 @@ export default function AdminReportsPage() {
 
   useEffect(() => {
     if (status === 'loading') return;
-    
+
     if (!session?.user || (session.user as any)?.role !== 'admin') {
       router.push('/');
       return;
@@ -41,10 +49,10 @@ export default function AdminReportsPage() {
       if (statusFilter !== 'all') {
         params.append('status', statusFilter);
       }
-      
+
       const response = await fetch(`/api/admin/reports?${params}`);
       const data = await response.json();
-      
+
       if (data.success) {
         setReports(data.data);
       }
@@ -162,131 +170,128 @@ export default function AdminReportsPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Navigation />
-      
+
       {/* Sidebar */}
       <Sidebar
         isOpen={isSidebarOpen}
         onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
         currentPath="/admin/reports"
       />
-      
+
       {/* Main content */}
-      <div className={`transition-all duration-300 ${
-        session && isSidebarOpen ? 'ml-64' : session ? 'ml-16' : ''
-      }`}>
+      <div className={`transition-all duration-300 ${session && isSidebarOpen ? 'ml-64' : session ? 'ml-16' : ''
+        }`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Quiz Reports Management</h1>
-          <p className="mt-2 text-gray-600">Manage and review user reports about quiz content</p>
-        </div>
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900">Quiz Reports Management</h1>
+            <p className="mt-2 text-gray-600">Manage and review user reports about quiz content</p>
+          </div>
 
-        {/* Filters */}
-        <div className="mb-6 flex flex-wrap gap-2">
-          {['all', 'pending', 'resolved', 'dismissed'].map((status) => (
-            <Button
-              key={status}
-              variant={statusFilter === status ? 'gradient' : 'outline'}
-              onClick={() => setStatusFilter(status)}
-              className="capitalize"
-            >
-              {status === 'all' ? 'All Reports' : status}
-            </Button>
-          ))}
-        </div>
+          {/* Filters */}
+          <div className="mb-6 flex flex-wrap gap-2">
+            {['all', 'pending', 'resolved', 'dismissed'].map((status) => (
+              <Button
+                key={status}
+                variant={statusFilter === status ? 'gradient' : 'outline'}
+                onClick={() => setStatusFilter(status)}
+                className="capitalize"
+              >
+                {status === 'all' ? 'All Reports' : status}
+              </Button>
+            ))}
+          </div>
 
-        {/* Reports List */}
-        <div className="space-y-4">
-          {reports.length === 0 ? (
-            <Card className="p-12 text-center">
-              <svg className="w-12 h-12 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-              </svg>
-              <h3 className="text-lg font-medium text-gray-900 mb-1">No Reports Found</h3>
-              <p className="text-gray-500">
-                {statusFilter === 'all' 
-                  ? 'No reports have been submitted yet.'
-                  : `No ${statusFilter} reports found.`
-                }
-              </p>
-            </Card>
-          ) : (
-            reports.map((report) => (
-              <Card key={report._id} className="hover:shadow-md transition-shadow">
-                <div className="p-6">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3 className="text-lg font-semibold text-gray-900">
-                          {report.quizTitle}
-                        </h3>
-                        {getStatusBadge(report.status)}
-                      </div>
-                      
-                      <div className="text-sm text-gray-600 mb-3">
-                        <div className="flex items-center gap-4 mb-1">
-                          <span>
-                            <strong>Reporter:</strong> {report.reporterName} ({report.reporterEmail})
-                          </span>
-                          <span>
-                            <strong>Date:</strong> {formatDate(report.createdAt)}
-                          </span>
+          {/* Reports List */}
+          <div className="space-y-4">
+            {reports.length === 0 ? (
+              <Card className="p-12 text-center">
+                <HiOutlineInbox className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-1">No Reports Found</h3>
+                <p className="text-gray-500">
+                  {statusFilter === 'all'
+                    ? 'No reports have been submitted yet.'
+                    : `No ${statusFilter} reports found.`
+                  }
+                </p>
+              </Card>
+            ) : (
+              reports.map((report) => (
+                <Card key={report._id} className="hover:shadow-md transition-shadow">
+                  <div className="p-6">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <h3 className="text-lg font-semibold text-gray-900">
+                            {report.quizTitle}
+                          </h3>
+                          {getStatusBadge(report.status)}
                         </div>
-                      </div>
 
-                      <div className="bg-gray-50 rounded-lg p-3 mb-4">
-                        <p className="text-sm text-gray-700 whitespace-pre-wrap">
-                          {report.content}
-                        </p>
-                      </div>
+                        <div className="text-sm text-gray-600 mb-3">
+                          <div className="flex items-center gap-4 mb-1">
+                            <span>
+                              <strong>Reporter:</strong> {report.reporterName} ({report.reporterEmail})
+                            </span>
+                            <span>
+                              <strong>Date:</strong> {formatDate(report.createdAt)}
+                            </span>
+                          </div>
+                        </div>
 
-                      {report.adminNotes && (
-                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
-                          <p className="text-sm font-medium text-blue-900 mb-1">Admin Notes:</p>
-                          <p className="text-sm text-blue-800 whitespace-pre-wrap">
-                            {report.adminNotes}
+                        <div className="bg-gray-50 rounded-lg p-3 mb-4">
+                          <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                            {report.content}
                           </p>
                         </div>
-                      )}
 
-                      {report.resolvedAt && report.resolvedBy && (
-                        <div className="text-xs text-gray-500">
-                          Resolved by {report.resolvedBy} on {formatDate(report.resolvedAt)}
-                        </div>
-                      )}
-                    </div>
+                        {report.adminNotes && (
+                          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+                            <p className="text-sm font-medium text-blue-900 mb-1">Admin Notes:</p>
+                            <p className="text-sm text-blue-800 whitespace-pre-wrap">
+                              {report.adminNotes}
+                            </p>
+                          </div>
+                        )}
 
-                    <div className="flex flex-col gap-2 ml-4">
-                      <Button
-                        variant="gradient"
-                        onClick={() => openReportModal(report)}
-                      >
-                        Review
-                      </Button>
-                      
-                      <Link href={`/edit/${report.quizId}`}>
+                        {report.resolvedAt && report.resolvedBy && (
+                          <div className="text-xs text-gray-500">
+                            Resolved by {report.resolvedBy} on {formatDate(report.resolvedAt)}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex flex-col gap-2 ml-4">
                         <Button
-                          variant="accent"
-                          className="w-full"
+                          variant="gradient"
+                          onClick={() => openReportModal(report)}
                         >
-                          Edit Quiz
+                          <HiOutlineEye className="w-4 h-4 mr-1" /> Review
                         </Button>
-                      </Link>
-                      
-                      <Button
-                        variant="outline"
-                        onClick={() => deleteReport(report._id!)}
-                        className="text-red-600 border-red-200 hover:bg-red-50"
-                      >
-                        Delete
-                      </Button>
+
+                        <Link href={`/edit/${report.quizId}`}>
+                          <Button
+                            variant="accent"
+                            className="w-full"
+                          >
+                            <HiOutlinePencil className="w-4 h-4 mr-1" /> Edit Quiz
+                          </Button>
+                        </Link>
+
+                        <Button
+                          variant="outline"
+                          onClick={() => deleteReport(report._id!)}
+                          className="text-red-600 border-red-200 hover:bg-red-50"
+                        >
+                          <HiOutlineTrash className="w-4 h-4 mr-1" /> Delete
+                        </Button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </Card>
-            ))
-          )}
+                </Card>
+              ))
+            )}
+          </div>
         </div>
-      </div>
       </div>
 
       {/* Report Review Modal */}
@@ -300,7 +305,7 @@ export default function AdminReportsPage() {
                 <div><strong>Date:</strong> {formatDate(selectedReport.createdAt)}</div>
                 <div><strong>Status:</strong> {getStatusBadge(selectedReport.status)}</div>
               </div>
-              
+
               <div className="bg-gray-50 rounded-lg p-3 mb-4">
                 <p className="text-sm font-medium text-gray-700 mb-1">Report Content:</p>
                 <p className="text-sm text-gray-600 whitespace-pre-wrap">
@@ -335,28 +340,28 @@ export default function AdminReportsPage() {
               >
                 Cancel
               </Button>
-              
+
               <Button
                 variant="gradient"
                 onClick={() => updateReportStatus('resolved')}
                 disabled={updating}
                 className="flex-1 bg-green-600 hover:bg-green-700"
               >
-                {updating ? 'Updating...' : 'Mark Resolved'}
+                {updating ? 'Updating...' : <><HiOutlineCheck className="w-4 h-4 mr-1" /> Mark Resolved</>}
               </Button>
-              
+
               <Button
                 variant="outline"
                 onClick={() => updateReportStatus('dismissed')}
                 disabled={updating}
                 className="flex-1"
               >
-                {updating ? 'Updating...' : 'Dismiss'}
+                {updating ? 'Updating...' : <><HiOutlineX className="w-4 h-4 mr-1" /> Dismiss</>}
               </Button>
             </div>
           </div>
         )}
       </Modal>
-    </div>
+    </div >
   );
 } 

@@ -12,6 +12,13 @@ import { QuestionImageUpload, OptionImageUpload } from '@/components/ui/ImageUpl
 import { QuestionImage, OptionImage } from '@/components/ui/ImageDisplay';
 import { CategorySelector } from '@/components/ui/CategorySelector';
 import Sidebar from '@/components/Sidebar';
+import {
+  HiChevronDown,
+  HiOutlineLogout,
+  HiOutlineMenu,
+  HiOutlineInformationCircle,
+  HiOutlineLockClosed
+} from 'react-icons/hi';
 
 interface EditQuizPageProps {
   params: { id: string };
@@ -54,7 +61,7 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
 
   useEffect(() => {
     if (status === 'loading') return;
-    
+
     if (!session) {
       router.push('/login');
       return;
@@ -98,53 +105,53 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
   };
 
   const updateQuestionImage = (qIdx: number, url: string) => {
-    updateQuestionField(qIdx,'questionImage',url);
+    updateQuestionField(qIdx, 'questionImage', url);
   };
-  
+
   const removeQuestionImage = (qIdx: number) => {
-    updateQuestionField(qIdx,'questionImage',undefined);
+    updateQuestionField(qIdx, 'questionImage', undefined);
   };
 
-  const updateOptionImage = (qIdx:number,optIdx:number,url:string)=>{
-    const updated=[...editableQuestions];
-    if(!updated[qIdx].optionImages){
-      updated[qIdx].optionImages=new Array(updated[qIdx].options.length).fill(undefined);
-    } 
-    updated[qIdx].optionImages![optIdx]=url;
-    setEditableQuestions(updated);
-  };
-  
-  const removeOptionImage=(qIdx:number,optIdx:number)=>{
-    const updated=[...editableQuestions];
-    if(updated[qIdx].optionImages) updated[qIdx].optionImages![optIdx]=undefined;
+  const updateOptionImage = (qIdx: number, optIdx: number, url: string) => {
+    const updated = [...editableQuestions];
+    if (!updated[qIdx].optionImages) {
+      updated[qIdx].optionImages = new Array(updated[qIdx].options.length).fill(undefined);
+    }
+    updated[qIdx].optionImages![optIdx] = url;
     setEditableQuestions(updated);
   };
 
-  const addQuestion=()=>{
-    setEditableQuestions([...editableQuestions,{question:'',options:['','','',''],type:'single',correctIndex:0,correctIndexes:[]}]);
-  };
-  const removeQuestion=(idx:number)=> setEditableQuestions(editableQuestions.filter((_,i)=>i!==idx));
-
-  const toggleQuestionType=(idx:number,type:'single'|'multiple')=>{
-    const updated=[...editableQuestions];
-    updated[idx]={...updated[idx],type,correctIndex:type==='single'? (updated[idx].correctIndex??0):undefined,correctIndexes:type==='multiple'? (updated[idx].correctIndexes||[]):undefined};
+  const removeOptionImage = (qIdx: number, optIdx: number) => {
+    const updated = [...editableQuestions];
+    if (updated[qIdx].optionImages) updated[qIdx].optionImages![optIdx] = undefined;
     setEditableQuestions(updated);
   };
 
-  const setSingleCorrect=(qIdx:number,optIdx:number)=>{
-    updateQuestionField(qIdx,'correctIndex',optIdx);
+  const addQuestion = () => {
+    setEditableQuestions([...editableQuestions, { question: '', options: ['', '', '', ''], type: 'single', correctIndex: 0, correctIndexes: [] }]);
+  };
+  const removeQuestion = (idx: number) => setEditableQuestions(editableQuestions.filter((_, i) => i !== idx));
+
+  const toggleQuestionType = (idx: number, type: 'single' | 'multiple') => {
+    const updated = [...editableQuestions];
+    updated[idx] = { ...updated[idx], type, correctIndex: type === 'single' ? (updated[idx].correctIndex ?? 0) : undefined, correctIndexes: type === 'multiple' ? (updated[idx].correctIndexes || []) : undefined };
+    setEditableQuestions(updated);
   };
 
-  const toggleMultipleCorrect=(qIdx:number,optIdx:number,checked:boolean)=>{
-    const updated=[...editableQuestions];
-    const arr=updated[qIdx].correctIndexes||[];
-    updated[qIdx].correctIndexes=checked? [...arr,optIdx].sort(): arr.filter(i=>i!==optIdx);
+  const setSingleCorrect = (qIdx: number, optIdx: number) => {
+    updateQuestionField(qIdx, 'correctIndex', optIdx);
+  };
+
+  const toggleMultipleCorrect = (qIdx: number, optIdx: number, checked: boolean) => {
+    const updated = [...editableQuestions];
+    const arr = updated[qIdx].correctIndexes || [];
+    updated[qIdx].correctIndexes = checked ? [...arr, optIdx].sort() : arr.filter(i => i !== optIdx);
     setEditableQuestions(updated);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!title.trim()) {
       setError('Title is required');
       return;
@@ -160,11 +167,13 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
     setSuccess('');
 
     try {
-      const formattedQuestions = editableQuestions.map((q: Question)=>{
-        const base:any={question:q.question,options:q.options,type:q.type,
-          ...(q.questionImage?{questionImage:q.questionImage}:{}),
-          ...(q.optionImages&&q.optionImages.some(Boolean)?{optionImages:q.optionImages}:{})};
-        return q.type==='single'? {...base,correctIndex:q.correctIndex??0}:{...base,correctIndexes:q.correctIndexes||[]};
+      const formattedQuestions = editableQuestions.map((q: Question) => {
+        const base: any = {
+          question: q.question, options: q.options, type: q.type,
+          ...(q.questionImage ? { questionImage: q.questionImage } : {}),
+          ...(q.optionImages && q.optionImages.some(Boolean) ? { optionImages: q.optionImages } : {})
+        };
+        return q.type === 'single' ? { ...base, correctIndex: q.correctIndex ?? 0 } : { ...base, correctIndexes: q.correctIndexes || [] };
       });
 
       const response = await fetch(`/api/quizzes/${params.id}`, {
@@ -259,10 +268,10 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
 
   // Check if user can edit
   const isAdmin = (session.user as any)?.role === 'admin';
-  const isAuthor = typeof quiz.author === 'string' 
+  const isAuthor = typeof quiz.author === 'string'
     ? quiz.author === (session.user as any).id
     : (quiz.author as any)?._id === (session.user as any).id;
-  
+
   if (!isAdmin && !isAuthor) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -307,10 +316,10 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
                   <Link href="/" className="text-gray-600 hover:text-gray-900 transition-colors">
                     All Quizzes
                   </Link>
-                  
+
                   {/* User Menu */}
                   <div className="relative">
-                    <button 
+                    <button
                       onClick={() => setIsMenuOpen(!isMenuOpen)}
                       className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors"
                     >
@@ -319,18 +328,16 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
                           {session.user?.email?.charAt(0).toUpperCase()}
                         </span>
                       </div>
-                      <svg className={`w-4 h-4 transition-transform ${isMenuOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
+                      <HiChevronDown className={`w-4 h-4 transition-transform ${isMenuOpen ? 'rotate-180' : ''}`} />
                     </button>
-                    
+
                     {isMenuOpen && (
                       <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-100 py-1">
-                        <button 
+                        <button
                           onClick={() => signOut()}
                           className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                         >
-                          Sign Out
+                          <HiOutlineLogout className="inline-block mr-2" /> Sign Out
                         </button>
                       </div>
                     )}
@@ -354,13 +361,11 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
 
             {/* Mobile menu button */}
             <div className="md:hidden">
-              <button 
+              <button
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
                 className="text-gray-600 hover:text-gray-900"
               >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
+                <HiOutlineMenu className="w-6 h-6" />
               </button>
             </div>
           </div>
@@ -374,7 +379,7 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
                     <Link href="/" className="block px-4 py-2 text-gray-600 hover:text-gray-900">
                       All Quizzes
                     </Link>
-                    <button 
+                    <button
                       onClick={() => signOut()}
                       className="block w-full text-left px-4 py-2 text-gray-600 hover:text-gray-900"
                     >
@@ -398,280 +403,276 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
       </nav>
 
       {/* Sidebar */}
-      <Sidebar 
-        isOpen={isSidebarOpen} 
+      <Sidebar
+        isOpen={isSidebarOpen}
         onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
         currentPath={pathname}
       />
 
       {/* Main Content */}
-      <main className={`py-8 transition-all duration-300 ${
-        session && isSidebarOpen ? 'ml-64' : session ? 'ml-16' : ''
-      } max-w-none px-4 sm:px-6 lg:px-8`}>
+      <main className={`py-8 transition-all duration-300 ${session && isSidebarOpen ? 'ml-64' : session ? 'ml-16' : ''
+        } max-w-none px-4 sm:px-6 lg:px-8`}>
         <div className="max-w-4xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Edit Quiz</h1>
-          <p className="mt-2 text-gray-600">
-            Make changes to your quiz information
-          </p>
-        </div>
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900">Edit Quiz</h1>
+            <p className="mt-2 text-gray-600">
+              Make changes to your quiz information
+            </p>
+          </div>
 
-        {/* Quiz Status */}
-        <Card className="mb-6">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">Quiz Status</h3>
-                <p className="text-sm text-gray-600">Current approval status</p>
-              </div>
-              <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                quiz.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                quiz.status === 'published' ? 'bg-green-100 text-green-800' :
-                'bg-red-100 text-red-800'
-              }`}>
-                {quiz.status.charAt(0).toUpperCase() + quiz.status.slice(1)}
-              </span>
-            </div>
-          </CardContent>
-        </Card>
-
-        {!canEdit && (
+          {/* Quiz Status */}
           <Card className="mb-6">
             <CardContent className="p-6">
-              <div className="flex items-start space-x-3">
-                <div className="text-blue-600">
-                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                  </svg>
-                </div>
+              <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900">Read Only</h3>
-                  <p className="text-sm text-gray-600">
-                    This quiz cannot be edited because it's already published. Only admins can edit published quizzes.
-                  </p>
+                  <h3 className="text-lg font-semibold text-gray-900">Quiz Status</h3>
+                  <p className="text-sm text-gray-600">Current approval status</p>
                 </div>
+                <span className={`px-3 py-1 rounded-full text-sm font-medium ${quiz.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                  quiz.status === 'published' ? 'bg-green-100 text-green-800' :
+                    'bg-red-100 text-red-800'
+                  }`}>
+                  {quiz.status.charAt(0).toUpperCase() + quiz.status.slice(1)}
+                </span>
               </div>
             </CardContent>
           </Card>
-        )}
 
-        <Card className="max-w-2xl">
-          <CardHeader>
-            <CardTitle>Quiz Information</CardTitle>
-            <CardDescription>
-              Update the basic information about your quiz
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {error && (
-                <div className="rounded-md bg-red-50 p-4">
-                  <div className="text-sm text-red-700">{error}</div>
-                </div>
-              )}
-
-              {success && (
-                <div className="rounded-md bg-green-50 p-4">
-                  <div className="text-sm text-green-700">{success}</div>
-                </div>
-              )}
-
-              <div>
-                <label htmlFor="title" className="block text-sm font-medium text-gray-700">
-                  Quiz Title *
-                </label>
-                <div className="mt-1">
-                  <Input
-                    id="title"
-                    type="text"
-                    required
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    placeholder="Enter a descriptive title for your quiz"
-                    maxLength={200}
-                    disabled={!canEdit}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label htmlFor="description" className="block text-sm font-medium text-gray-700">
-                  Description (Optional)
-                </label>
-                <div className="mt-1">
-                  <textarea
-                    id="description"
-                    rows={3}
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    placeholder="Provide additional context about the quiz"
-                    maxLength={1000}
-                    disabled={!canEdit}
-                    className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Category *
-                </label>
-                <CategorySelector
-                  value={selectedCategory}
-                  onChange={setSelectedCategory}
-                  placeholder="Search and select a category..."
-                  required
-                  disabled={!canEdit}
-                />
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="isPrivate"
-                  checked={isPrivate}
-                  onChange={(e) => setIsPrivate(e.target.checked)}
-                  disabled={!canEdit}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded disabled:bg-gray-50"
-                />
-                <label htmlFor="isPrivate" className="text-sm font-medium text-gray-700">
-                  🔒 Private Quiz
-                </label>
-                <div className="text-xs text-gray-500">
-                  (Only visible to you and admins)
-                </div>
-              </div>
-
-              {/* Quiz Questions Info */}
-              <div className="border-t pt-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Quiz Content</h3>
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="text-sm text-gray-600">
-                    <p><strong>Questions:</strong> {quiz.questions.length}</p>
-                    <p><strong>Created:</strong> {new Date(quiz.createdAt).toLocaleDateString()}</p>
-                    {quiz.status === 'published' && (
-                      <p><strong>Slug:</strong> {quiz.slug}</p>
-                    )}
+          {!canEdit && (
+            <Card className="mb-6">
+              <CardContent className="p-6">
+                <div className="flex items-start space-x-3">
+                  <div className="text-blue-600">
+                    <HiOutlineInformationCircle className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">Read Only</h3>
+                    <p className="text-sm text-gray-600">
+                      This quiz cannot be edited because it's already published. Only admins can edit published quizzes.
+                    </p>
                   </div>
                 </div>
-                <p className="mt-2 text-xs text-gray-500">
-                  Note: Questions cannot be edited after creation. Create a new quiz to change questions.
-                </p>
-              </div>
+              </CardContent>
+            </Card>
+          )}
 
-              {/* Questions Edit */}
-              {canEdit && (
-                <Card className="mt-8">
-                  <CardHeader>
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <CardTitle>Questions ({editableQuestions.length})</CardTitle>
-                        <CardDescription>Edit questions below</CardDescription>
-                      </div>
-                      <Button onClick={addQuestion} size="sm">Add Question</Button>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    {editableQuestions.map((q,index)=>(
-                      <div key={index} className="border p-4 rounded-lg space-y-4">
-                        <div className="flex justify-between items-start">
-                          <h4 className="font-medium">Question {index+1}</h4>
-                          <Button variant="ghost" size="sm" onClick={()=>removeQuestion(index)} className="text-red-600">Remove</Button>
-                        </div>
-                        <textarea value={q.question} onChange={e=>updateQuestionField(index,'question',e.target.value)} className="w-full border rounded p-2" rows={2}/>
-                        <QuestionImageUpload currentImage={q.questionImage} onImageUploaded={url=>updateQuestionImage(index,url)} onImageRemoved={()=>removeQuestionImage(index)} />
-                        <div>
-                          <label className="text-sm font-medium mb-1">Question Type</label>
-                          <div className="flex space-x-4 mt-1">
-                            <label className="flex items-center">
-                              <input type="radio" checked={q.type==='single'} onChange={()=>toggleQuestionType(index,'single')} /> <span className="ml-2 text-sm">Single</span>
-                            </label>
-                            <label className="flex items-center">
-                              <input type="radio" checked={q.type==='multiple'} onChange={()=>toggleQuestionType(index,'multiple')} /> <span className="ml-2 text-sm">Multiple</span>
-                            </label>
-                          </div>
-                        </div>
-                        <div className="space-y-2">
-                          {q.options.map((opt,optIdx)=>(
-                            <div key={optIdx} className="flex items-center space-x-2">
-                              {q.type==='single'? (
-                                <input type="radio" name={`correct-${index}`} checked={q.correctIndex===optIdx} onChange={()=>setSingleCorrect(index,optIdx)} />
-                              ):(
-                                <input type="checkbox" checked={q.correctIndexes?.includes(optIdx)} onChange={e=>toggleMultipleCorrect(index,optIdx,e.target.checked)} />
-                              )}
-                              <Input value={opt} onChange={e=>updateOption(index,optIdx,e.target.value)} className="flex-1" />
-                              <OptionImageUpload currentImage={q.optionImages?.[optIdx]} onImageUploaded={url=>updateOptionImage(index,optIdx,url)} onImageRemoved={()=>removeOptionImage(index,optIdx)} />
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </CardContent>
-                </Card>
-              )}
-
-              <div className="flex justify-between">
-                <div className="flex space-x-4">
-                  <Link href="/pending">
-                    <Button type="button" variant="outline">
-                      Cancel
-                    </Button>
-                  </Link>
-                  {canEdit && (
-                    <Button
-                      type="submit"
-                      loading={saving}
-                      disabled={!title.trim()}
-                    >
-                      {saving ? 'Saving...' : 'Save Changes'}
-                    </Button>
-                  )}
-                </div>
-                
-                {canEdit && (isAuthor || isAdmin) && (
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    onClick={handleDelete}
-                    loading={deleting}
-                  >
-                    {deleting ? 'Deleting...' : 'Delete Quiz'}
-                  </Button>
-                )}
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-
-        {quiz.status === 'published' && (
-          <Card className="mt-6">
+          <Card className="max-w-2xl">
             <CardHeader>
-              <CardTitle>Quiz Link</CardTitle>
+              <CardTitle>Quiz Information</CardTitle>
               <CardDescription>
-                Share this link with your students
+                Update the basic information about your quiz
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center space-x-4">
-                <code className="flex-1 bg-gray-100 px-3 py-2 rounded text-sm">
-                  {`${typeof window !== 'undefined' ? window.location.origin : ''}/quiz/${quiz.slug}`}
-                </code>
-                <Button
-                  size="sm"
-                  onClick={() => {
-                    const url = `${window.location.origin}/quiz/${quiz.slug}`;
-                    navigator.clipboard.writeText(url);
-                    alert('Quiz link copied to clipboard!');
-                  }}
-                >
-                  Copy
-                </Button>
-              </div>
+              <form onSubmit={handleSubmit} className="space-y-6">
+                {error && (
+                  <div className="rounded-md bg-red-50 p-4">
+                    <div className="text-sm text-red-700">{error}</div>
+                  </div>
+                )}
+
+                {success && (
+                  <div className="rounded-md bg-green-50 p-4">
+                    <div className="text-sm text-green-700">{success}</div>
+                  </div>
+                )}
+
+                <div>
+                  <label htmlFor="title" className="block text-sm font-medium text-gray-700">
+                    Quiz Title *
+                  </label>
+                  <div className="mt-1">
+                    <Input
+                      id="title"
+                      type="text"
+                      required
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      placeholder="Enter a descriptive title for your quiz"
+                      maxLength={200}
+                      disabled={!canEdit}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+                    Description (Optional)
+                  </label>
+                  <div className="mt-1">
+                    <textarea
+                      id="description"
+                      rows={3}
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      placeholder="Provide additional context about the quiz"
+                      maxLength={1000}
+                      disabled={!canEdit}
+                      className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Category *
+                  </label>
+                  <CategorySelector
+                    value={selectedCategory}
+                    onChange={setSelectedCategory}
+                    placeholder="Search and select a category..."
+                    required
+                    disabled={!canEdit}
+                  />
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="isPrivate"
+                    checked={isPrivate}
+                    onChange={(e) => setIsPrivate(e.target.checked)}
+                    disabled={!canEdit}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded disabled:bg-gray-50"
+                  />
+                  <label htmlFor="isPrivate" className="text-sm font-medium text-gray-700">
+                    <HiOutlineLockClosed className="inline-block mr-1" /> Private Quiz
+                  </label>
+                  <div className="text-xs text-gray-500">
+                    (Only visible to you and admins)
+                  </div>
+                </div>
+
+                {/* Quiz Questions Info */}
+                <div className="border-t pt-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Quiz Content</h3>
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <div className="text-sm text-gray-600">
+                      <p><strong>Questions:</strong> {quiz.questions.length}</p>
+                      <p><strong>Created:</strong> {new Date(quiz.createdAt).toLocaleDateString()}</p>
+                      {quiz.status === 'published' && (
+                        <p><strong>Slug:</strong> {quiz.slug}</p>
+                      )}
+                    </div>
+                  </div>
+                  <p className="mt-2 text-xs text-gray-500">
+                    Note: Questions cannot be edited after creation. Create a new quiz to change questions.
+                  </p>
+                </div>
+
+                {/* Questions Edit */}
+                {canEdit && (
+                  <Card className="mt-8">
+                    <CardHeader>
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <CardTitle>Questions ({editableQuestions.length})</CardTitle>
+                          <CardDescription>Edit questions below</CardDescription>
+                        </div>
+                        <Button onClick={addQuestion} size="sm">Add Question</Button>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                      {editableQuestions.map((q, index) => (
+                        <div key={index} className="border p-4 rounded-lg space-y-4">
+                          <div className="flex justify-between items-start">
+                            <h4 className="font-medium">Question {index + 1}</h4>
+                            <Button variant="ghost" size="sm" onClick={() => removeQuestion(index)} className="text-red-600">Remove</Button>
+                          </div>
+                          <textarea value={q.question} onChange={e => updateQuestionField(index, 'question', e.target.value)} className="w-full border rounded p-2" rows={2} />
+                          <QuestionImageUpload currentImage={q.questionImage} onImageUploaded={url => updateQuestionImage(index, url)} onImageRemoved={() => removeQuestionImage(index)} />
+                          <div>
+                            <label className="text-sm font-medium mb-1">Question Type</label>
+                            <div className="flex space-x-4 mt-1">
+                              <label className="flex items-center">
+                                <input type="radio" checked={q.type === 'single'} onChange={() => toggleQuestionType(index, 'single')} /> <span className="ml-2 text-sm">Single</span>
+                              </label>
+                              <label className="flex items-center">
+                                <input type="radio" checked={q.type === 'multiple'} onChange={() => toggleQuestionType(index, 'multiple')} /> <span className="ml-2 text-sm">Multiple</span>
+                              </label>
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            {q.options.map((opt, optIdx) => (
+                              <div key={optIdx} className="flex items-center space-x-2">
+                                {q.type === 'single' ? (
+                                  <input type="radio" name={`correct-${index}`} checked={q.correctIndex === optIdx} onChange={() => setSingleCorrect(index, optIdx)} />
+                                ) : (
+                                  <input type="checkbox" checked={q.correctIndexes?.includes(optIdx)} onChange={e => toggleMultipleCorrect(index, optIdx, e.target.checked)} />
+                                )}
+                                <Input value={opt} onChange={e => updateOption(index, optIdx, e.target.value)} className="flex-1" />
+                                <OptionImageUpload currentImage={q.optionImages?.[optIdx]} onImageUploaded={url => updateOptionImage(index, optIdx, url)} onImageRemoved={() => removeOptionImage(index, optIdx)} />
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </CardContent>
+                  </Card>
+                )}
+
+                <div className="flex justify-between">
+                  <div className="flex space-x-4">
+                    <Link href="/pending">
+                      <Button type="button" variant="outline">
+                        Cancel
+                      </Button>
+                    </Link>
+                    {canEdit && (
+                      <Button
+                        type="submit"
+                        loading={saving}
+                        disabled={!title.trim()}
+                      >
+                        {saving ? 'Saving...' : 'Save Changes'}
+                      </Button>
+                    )}
+                  </div>
+
+                  {canEdit && (isAuthor || isAdmin) && (
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      onClick={handleDelete}
+                      loading={deleting}
+                    >
+                      {deleting ? 'Deleting...' : 'Delete Quiz'}
+                    </Button>
+                  )}
+                </div>
+              </form>
             </CardContent>
           </Card>
-        )}
+
+          {quiz.status === 'published' && (
+            <Card className="mt-6">
+              <CardHeader>
+                <CardTitle>Quiz Link</CardTitle>
+                <CardDescription>
+                  Share this link with your students
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center space-x-4">
+                  <code className="flex-1 bg-gray-100 px-3 py-2 rounded text-sm">
+                    {`${typeof window !== 'undefined' ? window.location.origin : ''}/quiz/${quiz.slug}`}
+                  </code>
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      const url = `${window.location.origin}/quiz/${quiz.slug}`;
+                      navigator.clipboard.writeText(url);
+                      alert('Quiz link copied to clipboard!');
+                    }}
+                  >
+                    Copy
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
-      </main>
-    </div>
+      </main >
+    </div >
   );
 } 

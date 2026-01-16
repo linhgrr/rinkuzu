@@ -7,6 +7,13 @@ import Navigation from '@/components/Navigation'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
+import {
+  HiOutlineCheck,
+  HiOutlineShieldCheck,
+  HiOutlineClock,
+  HiOutlineStar,
+  HiOutlineLightBulb
+} from 'react-icons/hi'
 
 interface SubscriptionPlan {
   id: string;
@@ -137,142 +144,131 @@ export default function SubscriptionPage() {
       <Navigation />
       <div className="py-8">
         <div className="max-w-6xl mx-auto px-4">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">
-            Nâng Cấp Tài Khoản
-          </h1>
-          <p className="text-lg text-gray-600">
-            Truy cập tất cả quiz private và tính năng cao cấp
-          </p>
-        </div>
-
-        {/* Current Subscription Status */}
-        {subscriptionStatus?.subscription && (
-          <Card className="mb-8 p-6 bg-blue-50 border-blue-200">
-            <h2 className="text-xl font-semibold text-blue-900 mb-4">
-              Trạng Thái Gói Hiện Tại
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <p className="text-sm text-blue-700">Loại gói:</p>
-                <p className="font-medium text-blue-900">
-                  {subscriptionStatus.subscription.type}
-                </p>
-              </div>
-              <div>
-                <p className="text-sm text-blue-700">Ngày bắt đầu:</p>
-                <p className="font-medium text-blue-900">
-                  {formatDate(subscriptionStatus.subscription.startDate)}
-                </p>
-              </div>
-              <div>
-                <p className="text-sm text-blue-700">Ngày kết thúc:</p>
-                <p className="font-medium text-blue-900">
-                  {subscriptionStatus.subscription.endDate 
-                    ? formatDate(subscriptionStatus.subscription.endDate)
-                    : 'Không giới hạn'}
-                </p>
-              </div>
-            </div>
-            <div className="mt-4">
-              <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                subscriptionStatus.isPremium 
-                  ? 'bg-green-100 text-green-800' 
-                  : 'bg-red-100 text-red-800'
-              }`}>
-                {subscriptionStatus.isPremium ? 'Đang hoạt động' : 'Đã hết hạn'}
-              </span>
-            </div>
-          </Card>
-        )}
-
-        {/* Subscription Plans */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {plans.map((plan, index) => (
-            <Card key={plan.id} className="p-6 relative">
-              {index === 1 && (
-                <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                  <span className="bg-yellow-500 text-white px-4 py-1 rounded-full text-sm font-medium">
-                    Phổ Biến
-                  </span>
-                </div>
-              )}
-              
-              <div className="text-center mb-6">
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                  {plan.name}
-                </h3>
-                <div className="text-4xl font-bold text-blue-600 mb-2">
-                  {formatPrice(plan.price)}
-                </div>
-                <p className="text-gray-600">{plan.durationDisplay || plan.duration}</p>
-              </div>
-
-              <ul className="space-y-3 mb-8">
-                {plan.features.map((feature, index) => (
-                  <li key={index} className="flex items-start">
-                    <svg
-                      className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    <span className="text-gray-700">{feature}</span>
-                  </li>
-                ))}
-              </ul>
-
-              <Button
-                onClick={() => handlePurchase(plan)}
-                disabled={subscriptionStatus?.isPremium}
-                className="w-full"
-                variant={index === 1 ? 'default' : 'outline'}
-              >
-                {subscriptionStatus?.isPremium 
-                  ? 'Đã có gói Premium' 
-                  : `Mua ${plan.name}`}
-              </Button>
-            </Card>
-          ))}
-        </div>
-
-        {/* Payment Confirmation Modal */}
-        <Modal
-          isOpen={showPaymentModal}
-          onClose={() => setShowPaymentModal(false)}
-          title="Xác Nhận Thanh Toán"
-        >
-          <div className="p-6">
-            <p className="text-gray-700 mb-4">
-              Bạn sắp mua gói <strong>{selectedPlan?.name}</strong> với giá{' '}
-              <strong>{selectedPlan ? formatPrice(selectedPlan.price) : ''}</strong>
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-gray-900 mb-4">
+              Nâng Cấp Tài Khoản <HiOutlineStar className="inline-block text-yellow-500 mb-1" />
+            </h1>
+            <p className="text-lg text-gray-600">
+              Truy cập tất cả quiz private và tính năng cao cấp
             </p>
-            <p className="text-sm text-gray-600 mb-6">
-              Sau khi xác nhận, bạn sẽ được chuyển đến trang thanh toán PayOS để hoàn tất giao dịch.
-            </p>
-            <div className="flex space-x-3">
-              <Button
-                onClick={() => setShowPaymentModal(false)}
-                variant="outline"
-                className="flex-1"
-              >
-                Hủy
-              </Button>
-              <Button
-                onClick={confirmPurchase}
-                disabled={paymentLoading}
-                className="flex-1"
-              >
-                {paymentLoading ? 'Đang xử lý...' : 'Xác Nhận Thanh Toán'}
-              </Button>
-            </div>
           </div>
-        </Modal>
+
+          {/* Current Subscription Status */}
+          {subscriptionStatus?.subscription && (
+            <Card className="mb-8 p-6 bg-blue-50 border-blue-200">
+              <h2 className="text-xl font-semibold text-blue-900 mb-4">
+                Trạng Thái Gói Hiện Tại <HiOutlineShieldCheck className="inline-block ml-1" />
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <p className="text-sm text-blue-700">Loại gói:</p>
+                  <p className="font-medium text-blue-900">
+                    {subscriptionStatus.subscription.type}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-blue-700">Ngày bắt đầu:</p>
+                  <p className="font-medium text-blue-900">
+                    {formatDate(subscriptionStatus.subscription.startDate)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-blue-700">Ngày kết thúc:</p>
+                  <p className="font-medium text-blue-900">
+                    {subscriptionStatus.subscription.endDate
+                      ? formatDate(subscriptionStatus.subscription.endDate)
+                      : 'Không giới hạn'}
+                  </p>
+                </div>
+              </div>
+              <div className="mt-4">
+                <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${subscriptionStatus.isPremium
+                    ? 'bg-green-100 text-green-800'
+                    : 'bg-red-100 text-red-800'
+                  }`}>
+                  {subscriptionStatus.isPremium ? 'Đang hoạt động' : 'Đã hết hạn'}
+                </span>
+              </div>
+            </Card>
+          )}
+
+          {/* Subscription Plans */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {plans.map((plan, index) => (
+              <Card key={plan.id} className="p-6 relative">
+                {index === 1 && (
+                  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                    <span className="bg-yellow-500 text-white px-4 py-1 rounded-full text-sm font-medium">
+                      Phổ Biến
+                    </span>
+                  </div>
+                )}
+
+                <div className="text-center mb-6">
+                  <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                    {plan.name}
+                  </h3>
+                  <div className="text-4xl font-bold text-blue-600 mb-2">
+                    {formatPrice(plan.price)}
+                  </div>
+                  <p className="text-gray-600">{plan.durationDisplay || plan.duration}</p>
+                </div>
+
+                <ul className="space-y-3 mb-8">
+                  {plan.features.map((feature, index) => (
+                    <li key={index} className="flex items-start">
+                      <HiOutlineCheck className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
+                      <span className="text-gray-700">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                <Button
+                  onClick={() => handlePurchase(plan)}
+                  disabled={subscriptionStatus?.isPremium}
+                  className="w-full"
+                  variant={index === 1 ? 'default' : 'outline'}
+                >
+                  {subscriptionStatus?.isPremium
+                    ? 'Đã có gói Premium'
+                    : `Mua ${plan.name}`}
+                </Button>
+              </Card>
+            ))}
+          </div>
+
+          {/* Payment Confirmation Modal */}
+          <Modal
+            isOpen={showPaymentModal}
+            onClose={() => setShowPaymentModal(false)}
+            title="Xác Nhận Thanh Toán"
+          >
+            <div className="p-6">
+              <p className="text-gray-700 mb-4">
+                Bạn sắp mua gói <strong>{selectedPlan?.name}</strong> với giá{' '}
+                <strong>{selectedPlan ? formatPrice(selectedPlan.price) : ''}</strong>
+              </p>
+              <p className="text-sm text-gray-600 mb-6">
+                Sau khi xác nhận, bạn sẽ được chuyển đến trang thanh toán PayOS để hoàn tất giao dịch.
+              </p>
+              <div className="flex space-x-3">
+                <Button
+                  onClick={() => setShowPaymentModal(false)}
+                  variant="outline"
+                  className="flex-1"
+                >
+                  Hủy
+                </Button>
+                <Button
+                  onClick={confirmPurchase}
+                  disabled={paymentLoading}
+                  className="flex-1"
+                >
+                  {paymentLoading ? 'Đang xử lý...' : 'Xác Nhận Thanh Toán'}
+                </Button>
+              </div>
+            </div>
+          </Modal>
         </div>
       </div>
     </div>

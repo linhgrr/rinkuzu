@@ -9,6 +9,7 @@ import { Flashcard } from '@/components/ui/Flashcard';
 import { PremiumRequiredModal } from '@/components/ui/PremiumRequiredModal';
 
 interface Question {
+  _id: string;
   question: string;
   options: string[];
   type: 'single' | 'multiple';
@@ -43,7 +44,7 @@ export default function FlashcardPage() {
   });
   const [showResults, setShowResults] = useState(false);
   const [currentQuestions, setCurrentQuestions] = useState<Question[]>([]);
-  
+
   // Premium required modal
   const [showPremiumModal, setShowPremiumModal] = useState(false);
 
@@ -73,11 +74,13 @@ export default function FlashcardPage() {
     }
   };
 
-  const handleSwipe = (direction: 'left' | 'right') => {
+  const handleSwipe = async (direction: 'left' | 'right') => {
     if (!quiz) return;
 
     const currentQuestionIndex = progress.currentIndex;
-    
+    const currentQuestion = quiz.questions[currentQuestionIndex];
+
+    // Optimistic UI update
     if (direction === 'right') {
       // Known - add to known list
       setProgress(prev => ({
@@ -92,6 +95,27 @@ export default function FlashcardPage() {
         unknown: [...prev.unknown, currentQuestionIndex],
         currentIndex: prev.currentIndex + 1
       }));
+    }
+
+    // Submit SRS Review in background
+    try {
+      await fetch('/api/review/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          questionId: currentQuestion._id,
+          quizSlug: quiz.slug,
+          rating: direction === 'right' ? 'good' : 'hard',
+          // Pass questionRef to ensure QuestionProgress is created if missing
+          questionRef: {
+            text: currentQuestion.question,
+            options: currentQuestion.options,
+            correctIndexes: currentQuestion.correctIndexes || [currentQuestion.correctIndex]
+          }
+        })
+      });
+    } catch (error) {
+      console.error('Failed to submit SRS review from flashcard:', error);
     }
   };
 
@@ -111,10 +135,10 @@ export default function FlashcardPage() {
   const continuePractice = () => {
     // Tạo danh sách mới chỉ với các câu chưa biết
     const unknownQuestions = progress.unknown.map(index => quiz!.questions[index]);
-    
+
     // Cập nhật danh sách câu hỏi hiện tại để chỉ chứa câu chưa biết
     setCurrentQuestions(unknownQuestions);
-    
+
     // Reset progress để học lại các câu chưa biết
     setProgress({
       known: [],
@@ -190,10 +214,10 @@ export default function FlashcardPage() {
   }
 
   if (showResults) {
-      return (
-    <div className="min-h-screen bg-gray-50 overflow-hidden">
-      {/* Navigation */}
-      <nav className="bg-white shadow-sm border-b">
+    return (
+      <div className="min-h-screen bg-gray-50 overflow-hidden">
+        {/* Navigation */}
+        <nav className="bg-white shadow-sm border-b">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between h-16">
               <div className="flex items-center">
@@ -229,14 +253,14 @@ export default function FlashcardPage() {
                 <div className="text-sm text-gray-600">Questions You Know</div>
               </CardContent>
             </Card>
-            
+
             <Card>
               <CardContent className="p-6 text-center">
                 <div className="text-3xl font-bold text-red-600 mb-2">{getUnknownCount()}</div>
                 <div className="text-sm text-gray-600">Questions to Review</div>
               </CardContent>
             </Card>
-            
+
             <Card>
               <CardContent className="p-6 text-center">
                 <div className="text-3xl font-bold text-blue-600 mb-2">
@@ -303,7 +327,7 @@ export default function FlashcardPage() {
         <div className="bg-red-100 text-red-700 px-4 py-2 rounded-full shadow-lg text-sm font-medium">
           Chưa biết: {getUnknownCount()}
         </div>
-        
+
         {/* Progress Bar */}
         <div className="flex-1 mx-8">
           <div className="flex justify-between items-center mb-2">
@@ -315,13 +339,13 @@ export default function FlashcardPage() {
             </span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2">
-            <div 
+            <div
               className="bg-blue-600 h-2 rounded-full transition-all duration-300"
               style={{ width: `${getProgressPercentage()}%` }}
             ></div>
           </div>
         </div>
-        
+
         <div className="bg-green-100 text-green-700 px-4 py-2 rounded-full shadow-lg text-sm font-medium">
           Đã biết: {getKnownCount()}
         </div>
@@ -368,7 +392,7 @@ export default function FlashcardPage() {
           )}
         </div>
       </main>
-      
+
       {/* Premium Required Modal */}
       <PremiumRequiredModal
         isOpen={showPremiumModal}

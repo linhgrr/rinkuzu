@@ -8,6 +8,14 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Badge } from '@/components/ui/Card';
 import Navigation from '@/components/Navigation';
+import {
+  HiOutlineSearch,
+  HiOutlineExclamationCircle,
+  HiOutlineEmojiHappy,
+  HiOutlineInbox,
+  HiOutlineLightningBolt,
+  HiOutlineRefresh
+} from 'react-icons/hi';
 
 interface Quiz {
   _id: string;
@@ -64,7 +72,7 @@ export default function CategoryPage({ params }: CategoryPageProps) {
   const fetchCategoryAndQuizzes = async (page: number = 1, search: string = '') => {
     try {
       setLoading(true);
-      
+
       // Build query parameters for category API
       const queryParams = new URLSearchParams({
         page: page.toString(),
@@ -81,12 +89,12 @@ export default function CategoryPage({ params }: CategoryPageProps) {
       // Get category and quizzes in one API call
       const response = await fetch(`/api/categories/${params.slug}?${queryParams}`);
       const data = await response.json();
-      
+
       if (!data.success) {
         setError(data.error || 'Category not found');
         return;
       }
-      
+
       const { category, quizzes, pagination: paginationData } = data.data;
       setCategory(category);
       setQuizzes(quizzes);
@@ -102,7 +110,7 @@ export default function CategoryPage({ params }: CategoryPageProps) {
 
   useEffect(() => {
     if (status === 'loading') return;
-    
+
     if (session) {
       fetchCategoryAndQuizzes();
     } else {
@@ -132,7 +140,7 @@ export default function CategoryPage({ params }: CategoryPageProps) {
   const getCategoryColor = (color: string) => {
     const colorMap: { [key: string]: string } = {
       'blue': 'bg-blue-100 text-blue-700 border-blue-200',
-      'green': 'bg-emerald-100 text-emerald-700 border-emerald-200', 
+      'green': 'bg-emerald-100 text-emerald-700 border-emerald-200',
       'purple': 'bg-violet-100 text-violet-700 border-violet-200',
       'red': 'bg-red-100 text-red-700 border-red-200',
       'yellow': 'bg-yellow-100 text-yellow-700 border-yellow-200',
@@ -168,9 +176,7 @@ export default function CategoryPage({ params }: CategoryPageProps) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-8">
           <Card variant="bordered" className="p-6 mb-8 border-red-200 bg-red-50">
             <div className="flex items-center text-red-700">
-              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
+              <HiOutlineExclamationCircle className="w-5 h-5 mr-2" />
               {error}
             </div>
           </Card>
@@ -182,7 +188,7 @@ export default function CategoryPage({ params }: CategoryPageProps) {
   return (
     <div className="min-h-screen">
       <Navigation />
-      
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-8">
         {/* Breadcrumb */}
         <nav className="flex items-center space-x-2 text-sm text-gray-500 mb-6">
@@ -197,7 +203,7 @@ export default function CategoryPage({ params }: CategoryPageProps) {
         {category && (
           <div className="mb-8">
             <div className="flex items-center space-x-4 mb-4">
-              <div 
+              <div
                 className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-xl"
                 style={{ backgroundColor: category.color }}
               >
@@ -224,9 +230,7 @@ export default function CategoryPage({ params }: CategoryPageProps) {
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   icon={
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
+                    <HiOutlineSearch className="w-5 h-5" />
                   }
                   className="w-full"
                 />
@@ -235,8 +239,8 @@ export default function CategoryPage({ params }: CategoryPageProps) {
                 Search
               </Button>
               {searchTerm && (
-                <Button 
-                  type="button" 
+                <Button
+                  type="button"
                   variant="outline"
                   onClick={() => {
                     setSearchTerm('');
@@ -266,7 +270,7 @@ export default function CategoryPage({ params }: CategoryPageProps) {
               </span>
             )}
           </p>
-          
+
           {(searchTerm) && (
             <Button
               variant="ghost"
@@ -286,20 +290,18 @@ export default function CategoryPage({ params }: CategoryPageProps) {
         {quizzes.length === 0 ? (
           <Card variant="glass" className="p-12 text-center">
             <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mx-auto mb-6">
-              <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
+              <HiOutlineInbox className="w-8 h-8 text-gray-400" />
             </div>
             <h3 className="text-xl font-semibold text-gray-900 mb-3">No quizzes found</h3>
             <p className="text-gray-600 mb-6">
-              {searchTerm 
-                ? `No quizzes match "${searchTerm}" in ${category?.name}` 
+              {searchTerm
+                ? `No quizzes match "${searchTerm}" in ${category?.name}`
                 : `No quizzes available in ${category?.name} yet`
               }
             </p>
             {searchTerm && (
-              <Button 
-                variant="gradient" 
+              <Button
+                variant="gradient"
                 onClick={() => {
                   setSearchTerm('');
                   setPagination(prev => ({ ...prev, page: 1 }));
@@ -324,8 +326,8 @@ export default function CategoryPage({ params }: CategoryPageProps) {
                 <CardHeader>
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
-                      <Badge 
-                        variant="purple" 
+                      <Badge
+                        variant="purple"
                         size="sm"
                         className={getCategoryColor(quiz.category?.color)}
                       >
@@ -348,7 +350,7 @@ export default function CategoryPage({ params }: CategoryPageProps) {
                     <span>By {quiz.author.email.split('@')[0]}</span>
                     <span>{formatDate(quiz.createdAt)}</span>
                   </div>
-                  
+
                   {/* Action Buttons */}
                   <div className="flex gap-2">
                     <Button
@@ -360,9 +362,7 @@ export default function CategoryPage({ params }: CategoryPageProps) {
                         router.push(`/quiz/${quiz.slug}`);
                       }}
                     >
-                      <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                      </svg>
+                      <HiOutlineLightningBolt className="w-4 h-4 mr-1" />
                       Take Quiz
                     </Button>
                     <Button
@@ -374,9 +374,7 @@ export default function CategoryPage({ params }: CategoryPageProps) {
                       }}
                       className="flex-1"
                     >
-                      <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                      </svg>
+                      <HiOutlineRefresh className="w-4 h-4 mr-1" />
                       Flashcards
                     </Button>
                   </div>
@@ -397,7 +395,7 @@ export default function CategoryPage({ params }: CategoryPageProps) {
               >
                 Previous
               </Button>
-              
+
               {[...Array(pagination.totalPages)].map((_, index) => {
                 const page = index + 1;
                 return (
@@ -411,7 +409,7 @@ export default function CategoryPage({ params }: CategoryPageProps) {
                   </Button>
                 );
               })}
-              
+
               <Button
                 variant="outline"
                 disabled={pagination.page === pagination.totalPages}

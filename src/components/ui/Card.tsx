@@ -4,25 +4,30 @@ import { cn } from '@/lib/utils';
 const Card = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement> & {
-    variant?: 'default' | 'glass' | 'elevated' | 'bordered' | 'gradient';
+    variant?: 'default' | 'elevated' | 'bordered' | 'interactive' | 'glass' | 'gradient';
     hover?: boolean;
   }
 >(({ className, variant = 'default', hover = false, ...props }, ref) => {
   const variants = {
-    default: 'bg-white/90 backdrop-blur-sm border border-white/20 shadow-soft',
-    glass: 'bg-white/20 backdrop-blur-md border border-white/30 shadow-medium',
-    elevated: 'bg-white shadow-strong border border-gray-100',
-    bordered: 'bg-white border-2 border-gray-200 shadow-sm',
-    gradient: 'bg-gradient-to-br from-white to-gray-50 border border-white/20 shadow-soft',
+    default: 'bg-white border border-gray-100 shadow-apple-sm',
+    elevated: 'bg-white shadow-apple-md',
+    bordered: 'bg-white border border-gray-200',
+    interactive: 'bg-white border border-gray-100 shadow-apple-sm cursor-pointer',
+    glass: 'bg-white/80 backdrop-blur-xl border border-gray-100 shadow-apple-sm',
+    gradient: 'bg-white border border-gray-100 shadow-apple-sm',
   };
 
-  const hoverEffects = hover ? 'hover:shadow-xl hover:transform hover:-translate-y-1 hover:scale-[1.02]' : '';
+  const hoverEffects = hover
+    ? 'hover:shadow-apple-lg hover:-translate-y-0.5 active:scale-[0.99]'
+    : variant === 'interactive'
+    ? 'hover:shadow-apple-lg hover:-translate-y-0.5 active:scale-[0.99]'
+    : '';
 
   return (
     <div
       ref={ref}
       className={cn(
-        'rounded-2xl text-gray-950 transition-all duration-300',
+        'rounded-2xl transition-all duration-300 ease-apple',
         variants[variant],
         hoverEffects,
         className
@@ -39,7 +44,7 @@ const CardHeader = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn('flex flex-col space-y-2 p-3', className)}
+    className={cn('flex flex-col gap-1.5 p-5 pb-0', className)}
     {...props}
   />
 ));
@@ -52,17 +57,17 @@ const CardTitle = React.forwardRef<
   }
 >(({ className, size = 'md', ...props }, ref) => {
   const sizes = {
-    sm: 'text-lg font-semibold',
-    md: 'text-xl font-semibold',
-    lg: 'text-2xl font-bold',
-    xl: 'text-3xl font-bold',
+    sm: 'text-base font-semibold',
+    md: 'text-lg font-semibold',
+    lg: 'text-xl font-semibold',
+    xl: 'text-2xl font-semibold',
   };
 
   return (
     <h3
       ref={ref}
       className={cn(
-        'leading-tight tracking-tight text-gray-900',
+        'text-[#1d1d1f] tracking-tight',
         sizes[size],
         className
       )}
@@ -78,7 +83,7 @@ const CardDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <p
     ref={ref}
-    className={cn('text-sm text-gray-600 leading-relaxed', className)}
+    className={cn('text-sm text-[#86868b] leading-relaxed', className)}
     {...props}
   />
 ));
@@ -88,7 +93,7 @@ const CardContent = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => (
-  <div ref={ref} className={cn('p-6 pt-0', className)} {...props} />
+  <div ref={ref} className={cn('p-5 pt-3', className)} {...props} />
 ));
 CardContent.displayName = 'CardContent';
 
@@ -98,13 +103,13 @@ const CardFooter = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn('flex items-center p-6 pt-0', className)}
+    className={cn('flex items-center p-5 pt-0', className)}
     {...props}
   />
 ));
 CardFooter.displayName = 'CardFooter';
 
-// Badge component for status indicators
+// Apple-like Badge component
 const Badge = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement> & {
@@ -113,25 +118,25 @@ const Badge = React.forwardRef<
   }
 >(({ className, variant = 'default', size = 'sm', children, ...props }, ref) => {
   const variants = {
-    default: 'bg-gray-100 text-gray-700 border border-gray-200',
-    success: 'bg-emerald-100 text-emerald-700 border border-emerald-200',
-    warning: 'bg-amber-100 text-amber-700 border border-amber-200',
-    danger: 'bg-red-100 text-red-700 border border-red-200',
-    info: 'bg-blue-100 text-blue-700 border border-blue-200',
-    purple: 'bg-violet-100 text-violet-700 border border-violet-200',
+    default: 'bg-gray-100 text-[#86868b]',
+    success: 'bg-[#34c759]/10 text-[#248a3d]',
+    warning: 'bg-[#ff9500]/10 text-[#c93400]',
+    danger: 'bg-[#ff3b30]/10 text-[#ff3b30]',
+    info: 'bg-[#0071e3]/10 text-[#0071e3]',
+    purple: 'bg-[#af52de]/10 text-[#8944ab]',
   };
 
   const sizes = {
-    sm: 'px-2 py-1 text-xs',
+    sm: 'px-2.5 py-1 text-xs',
     md: 'px-3 py-1.5 text-sm',
-    lg: 'px-4 py-2 text-base',
+    lg: 'px-4 py-2 text-sm',
   };
 
   return (
     <div
       ref={ref}
       className={cn(
-        'inline-flex items-center rounded-full font-medium transition-colors',
+        'inline-flex items-center rounded-full font-medium',
         variants[variant],
         sizes[size],
         className
@@ -144,4 +149,4 @@ const Badge = React.forwardRef<
 });
 Badge.displayName = 'Badge';
 
-export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent, Badge }; 
+export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent, Badge };

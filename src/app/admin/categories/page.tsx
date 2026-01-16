@@ -9,6 +9,15 @@ import { Input } from '@/components/ui/Input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Modal } from '@/components/ui/Modal';
 import Sidebar from '@/components/Sidebar';
+import {
+  HiChevronDown,
+  HiOutlineMenu,
+  HiOutlineLogout,
+  HiOutlinePlus,
+  HiOutlineSearch,
+  HiOutlinePencil,
+  HiOutlineTrash
+} from 'react-icons/hi';
 
 interface Category {
   _id: string;
@@ -64,7 +73,7 @@ export default function AdminCategoriesPage() {
   // Redirect if not admin
   useEffect(() => {
     if (status === 'loading') return;
-    
+
     if (!session) {
       router.push('/login');
       return;
@@ -156,7 +165,7 @@ export default function AdminCategoriesPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.name.trim()) {
       setError('Category name is required');
       return;
@@ -164,10 +173,10 @@ export default function AdminCategoriesPage() {
 
     setSubmitting(true);
     try {
-      const url = editingCategory 
+      const url = editingCategory
         ? `/api/admin/categories/${editingCategory._id}`
         : '/api/admin/categories';
-      
+
       const method = editingCategory ? 'PUT' : 'POST';
 
       const response = await fetch(url, {
@@ -270,10 +279,10 @@ export default function AdminCategoriesPage() {
               <Link href="/" className="text-gray-600 hover:text-gray-900 transition-colors">
                 All Quizzes
               </Link>
-              
+
               {/* User Menu */}
               <div className="relative">
-                <button 
+                <button
                   onClick={() => setIsMenuOpen(!isMenuOpen)}
                   className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors"
                 >
@@ -282,14 +291,12 @@ export default function AdminCategoriesPage() {
                       {session?.user?.email?.charAt(0).toUpperCase()}
                     </span>
                   </div>
-                  <svg className={`w-4 h-4 transition-transform ${isMenuOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
+                  <HiChevronDown className={`w-4 h-4 transition-transform ${isMenuOpen ? 'rotate-180' : ''}`} />
                 </button>
-                
+
                 {isMenuOpen && (
                   <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-100 py-1">
-                    <button 
+                    <button
                       onClick={() => signOut()}
                       className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                     >
@@ -302,13 +309,11 @@ export default function AdminCategoriesPage() {
 
             {/* Mobile menu button */}
             <div className="md:hidden">
-              <button 
+              <button
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
                 className="text-gray-600 hover:text-gray-900"
               >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
+                <HiOutlineMenu className="w-6 h-6" />
               </button>
             </div>
           </div>
@@ -320,7 +325,7 @@ export default function AdminCategoriesPage() {
                 <Link href="/" className="block px-4 py-2 text-gray-600 hover:text-gray-900">
                   All Quizzes
                 </Link>
-                <button 
+                <button
                   onClick={() => signOut()}
                   className="block w-full text-left px-4 py-2 text-gray-600 hover:text-gray-900"
                 >
@@ -333,358 +338,356 @@ export default function AdminCategoriesPage() {
       </nav>
 
       {/* Sidebar */}
-      <Sidebar 
-        isOpen={isSidebarOpen} 
+      <Sidebar
+        isOpen={isSidebarOpen}
         onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
         currentPath={pathname}
       />
 
       {/* Main Content */}
-      <main className={`py-8 transition-all duration-300 ${
-        session && isSidebarOpen ? 'ml-64' : session ? 'ml-16' : ''
-      } max-w-none px-4 sm:px-6 lg:px-8`}>
+      <main className={`py-8 transition-all duration-300 ${session && isSidebarOpen ? 'ml-64' : session ? 'ml-16' : ''
+        } max-w-none px-4 sm:px-6 lg:px-8`}>
         <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Categories</h1>
-            <p className="mt-2 text-gray-600">
-              Manage quiz categories
-            </p>
-          </div>
-          <Button onClick={openCreateModal}>
-            + Add Category
-          </Button>
-        </div>
-
-        {/* Search */}
-        <div className="mb-8">
-          <form onSubmit={handleSearch} className="flex gap-4 max-w-2xl">
-            <div className="flex-1">
-              <Input
-                type="text"
-                placeholder="Search categories..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full"
-              />
+          {/* Header */}
+          <div className="flex justify-between items-center mb-8">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Categories</h1>
+              <p className="mt-2 text-gray-600">
+                Manage quiz categories
+              </p>
             </div>
-            <Button type="submit" disabled={loading}>
-              {loading ? 'Searching...' : 'Search'}
+            <Button onClick={openCreateModal}>
+              <HiOutlinePlus className="w-4 h-4 mr-2" /> Add Category
             </Button>
-            {searchTerm && (
-              <Button 
-                type="button" 
-                variant="outline"
-                onClick={() => {
-                  setSearchTerm('');
-                  setPagination(prev => ({ ...prev, page: 1 }));
-                  fetchCategories(1, '');
-                }}
-              >
-                Clear
-              </Button>
-            )}
-          </form>
-        </div>
-
-        {/* Error */}
-        {error && (
-          <div className="rounded-md bg-red-50 p-4 mb-6">
-            <div className="text-sm text-red-700">{error}</div>
           </div>
-        )}
 
-        {/* Loading */}
-        {loading && (
-          <div className="flex justify-center py-12">
-            <div className="text-gray-500">Loading categories...</div>
-          </div>
-        )}
-
-        {/* Categories Table */}
-        {!loading && categories.length > 0 && (
-          <Card className="mb-8">
-            <CardContent className="p-0">
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Category
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Description
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Status
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Created
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {categories.map((category) => (
-                      <tr key={category._id}>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <div 
-                              className="w-4 h-4 rounded-full mr-3" 
-                              style={{ backgroundColor: category.color }}
-                            ></div>
-                            <div>
-                              <div className="text-sm font-medium text-gray-900">
-                                {category.name}
-                              </div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="text-sm text-gray-900">
-                            {category.description || 'No description'}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                            category.isActive 
-                              ? 'bg-green-100 text-green-800' 
-                              : 'bg-red-100 text-red-800'
-                          }`}>
-                            {category.isActive ? 'Active' : 'Inactive'}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          <div>{formatDate(category.createdAt)}</div>
-                          <div className="text-xs">by {category.createdBy.email}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm space-x-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => openEditModal(category)}
-                          >
-                            Edit
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleDelete(category)}
-                            className="text-red-600 hover:text-red-700"
-                          >
-                            Delete
-                          </Button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* No Results */}
-        {!loading && categories.length === 0 && (
-          <div className="text-center py-12">
-            <h3 className="mt-2 text-sm font-medium text-gray-900">No categories found</h3>
-            <p className="mt-1 text-sm text-gray-500">
-              {searchTerm 
-                ? 'Try adjusting your search terms'
-                : 'Get started by creating a new category'
-              }
-            </p>
-            {!searchTerm && (
-              <div className="mt-6">
-                <Button onClick={openCreateModal}>
-                  + Add Category
-                </Button>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Pagination */}
-        {!loading && pagination.totalPages > 1 && (
-          <div className="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6 rounded-lg">
-            <div className="flex flex-1 justify-between sm:hidden">
-              <Button
-                onClick={() => handlePageChange(pagination.page - 1)}
-                disabled={pagination.page <= 1}
-                variant="outline"
-              >
-                Previous
-              </Button>
-              <Button
-                onClick={() => handlePageChange(pagination.page + 1)}
-                disabled={pagination.page >= pagination.totalPages}
-                variant="outline"
-              >
-                Next
-              </Button>
-            </div>
-            <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
-              <div>
-                <p className="text-sm text-gray-700">
-                  Showing{' '}
-                  <span className="font-medium">
-                    {((pagination.page - 1) * pagination.limit) + 1}
-                  </span>{' '}
-                  to{' '}
-                  <span className="font-medium">
-                    {Math.min(pagination.page * pagination.limit, pagination.total)}
-                  </span>{' '}
-                  of{' '}
-                  <span className="font-medium">{pagination.total}</span> results
-                </p>
-              </div>
-              <div>
-                <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
-                  <Button
-                    onClick={() => handlePageChange(pagination.page - 1)}
-                    disabled={pagination.page <= 1}
-                    variant="outline"
-                    size="sm"
-                    className="rounded-r-none"
-                  >
-                    Previous
-                  </Button>
-                  
-                  {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
-                    let pageNum;
-                    if (pagination.totalPages <= 5) {
-                      pageNum = i + 1;
-                    } else if (pagination.page <= 3) {
-                      pageNum = i + 1;
-                    } else if (pagination.page >= pagination.totalPages - 2) {
-                      pageNum = pagination.totalPages - 4 + i;
-                    } else {
-                      pageNum = pagination.page - 2 + i;
-                    }
-                    
-                    return (
-                      <Button
-                        key={pageNum}
-                        onClick={() => handlePageChange(pageNum)}
-                        variant={pagination.page === pageNum ? "default" : "outline"}
-                        size="sm"
-                        className="rounded-none"
-                      >
-                        {pageNum}
-                      </Button>
-                    );
-                  })}
-                  
-                  <Button
-                    onClick={() => handlePageChange(pagination.page + 1)}
-                    disabled={pagination.page >= pagination.totalPages}
-                    variant="outline"
-                    size="sm"
-                    className="rounded-l-none"
-                  >
-                    Next
-                  </Button>
-                </nav>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Create/Edit Modal */}
-        <Modal
-          isOpen={showCreateModal || showEditModal}
-          onClose={closeModals}
-          title={editingCategory ? 'Edit Category' : 'Create Category'}
-          size="medium"
-        >
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-                Name *
-              </label>
-              <Input
-                id="name"
-                type="text"
-                value={formData.name}
-                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                placeholder="Enter category name"
-                required
-                maxLength={50}
-              />
-            </div>
-
-            <div>
-              <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
-                Description
-              </label>
-              <textarea
-                id="description"
-                value={formData.description}
-                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                placeholder="Enter category description"
-                maxLength={200}
-                rows={3}
-                className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="color" className="block text-sm font-medium text-gray-700 mb-1">
-                Color
-              </label>
-              <div className="flex items-center space-x-3">
-                <input
-                  id="color"
-                  type="color"
-                  value={formData.color}
-                  onChange={(e) => setFormData(prev => ({ ...prev, color: e.target.value }))}
-                  className="w-12 h-8 rounded border border-gray-300"
-                />
+          {/* Search */}
+          <div className="mb-8">
+            <form onSubmit={handleSearch} className="flex gap-4 max-w-2xl">
+              <div className="flex-1">
                 <Input
                   type="text"
-                  value={formData.color}
-                  onChange={(e) => setFormData(prev => ({ ...prev, color: e.target.value }))}
-                  placeholder="#3B82F6"
-                  className="flex-1"
+                  placeholder="Search categories..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full"
                 />
               </div>
-            </div>
-
-            <div className="flex items-center">
-              <input
-                id="isActive"
-                type="checkbox"
-                checked={formData.isActive}
-                onChange={(e) => setFormData(prev => ({ ...prev, isActive: e.target.checked }))}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-              />
-              <label htmlFor="isActive" className="ml-2 block text-sm text-gray-900">
-                Active
-              </label>
-            </div>
-
-            <div className="flex justify-end space-x-3 pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={closeModals}
-                disabled={submitting}
-              >
-                Cancel
+              <Button type="submit" disabled={loading}>
+                {loading ? 'Searching...' : 'Search'}
               </Button>
-              <Button
-                type="submit"
-                loading={submitting}
-                disabled={submitting}
-              >
-                {editingCategory ? 'Update' : 'Create'} Category
-              </Button>
+              {searchTerm && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setSearchTerm('');
+                    setPagination(prev => ({ ...prev, page: 1 }));
+                    fetchCategories(1, '');
+                  }}
+                >
+                  Clear
+                </Button>
+              )}
+            </form>
+          </div>
+
+          {/* Error */}
+          {error && (
+            <div className="rounded-md bg-red-50 p-4 mb-6">
+              <div className="text-sm text-red-700">{error}</div>
             </div>
-          </form>
-        </Modal>
+          )}
+
+          {/* Loading */}
+          {loading && (
+            <div className="flex justify-center py-12">
+              <div className="text-gray-500">Loading categories...</div>
+            </div>
+          )}
+
+          {/* Categories Table */}
+          {!loading && categories.length > 0 && (
+            <Card className="mb-8">
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Category
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Description
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Status
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Created
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {categories.map((category) => (
+                        <tr key={category._id}>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              <div
+                                className="w-4 h-4 rounded-full mr-3"
+                                style={{ backgroundColor: category.color }}
+                              ></div>
+                              <div>
+                                <div className="text-sm font-medium text-gray-900">
+                                  {category.name}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="text-sm text-gray-900">
+                              {category.description || 'No description'}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${category.isActive
+                                ? 'bg-green-100 text-green-800'
+                                : 'bg-red-100 text-red-800'
+                              }`}>
+                              {category.isActive ? 'Active' : 'Inactive'}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <div>{formatDate(category.createdAt)}</div>
+                            <div className="text-xs">by {category.createdBy.email}</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm space-x-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => openEditModal(category)}
+                            >
+                              <HiOutlinePencil className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleDelete(category)}
+                              className="text-red-600 hover:text-red-700"
+                            >
+                              <HiOutlineTrash className="w-4 h-4" />
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* No Results */}
+          {!loading && categories.length === 0 && (
+            <div className="text-center py-12">
+              <h3 className="mt-2 text-sm font-medium text-gray-900">No categories found</h3>
+              <p className="mt-1 text-sm text-gray-500">
+                {searchTerm
+                  ? 'Try adjusting your search terms'
+                  : 'Get started by creating a new category'
+                }
+              </p>
+              {!searchTerm && (
+                <div className="mt-6">
+                  <Button onClick={openCreateModal}>
+                    <HiOutlinePlus className="w-4 h-4 mr-2" /> Add Category
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Pagination */}
+          {!loading && pagination.totalPages > 1 && (
+            <div className="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6 rounded-lg">
+              <div className="flex flex-1 justify-between sm:hidden">
+                <Button
+                  onClick={() => handlePageChange(pagination.page - 1)}
+                  disabled={pagination.page <= 1}
+                  variant="outline"
+                >
+                  Previous
+                </Button>
+                <Button
+                  onClick={() => handlePageChange(pagination.page + 1)}
+                  disabled={pagination.page >= pagination.totalPages}
+                  variant="outline"
+                >
+                  Next
+                </Button>
+              </div>
+              <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm text-gray-700">
+                    Showing{' '}
+                    <span className="font-medium">
+                      {((pagination.page - 1) * pagination.limit) + 1}
+                    </span>{' '}
+                    to{' '}
+                    <span className="font-medium">
+                      {Math.min(pagination.page * pagination.limit, pagination.total)}
+                    </span>{' '}
+                    of{' '}
+                    <span className="font-medium">{pagination.total}</span> results
+                  </p>
+                </div>
+                <div>
+                  <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                    <Button
+                      onClick={() => handlePageChange(pagination.page - 1)}
+                      disabled={pagination.page <= 1}
+                      variant="outline"
+                      size="sm"
+                      className="rounded-r-none"
+                    >
+                      Previous
+                    </Button>
+
+                    {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
+                      let pageNum;
+                      if (pagination.totalPages <= 5) {
+                        pageNum = i + 1;
+                      } else if (pagination.page <= 3) {
+                        pageNum = i + 1;
+                      } else if (pagination.page >= pagination.totalPages - 2) {
+                        pageNum = pagination.totalPages - 4 + i;
+                      } else {
+                        pageNum = pagination.page - 2 + i;
+                      }
+
+                      return (
+                        <Button
+                          key={pageNum}
+                          onClick={() => handlePageChange(pageNum)}
+                          variant={pagination.page === pageNum ? "default" : "outline"}
+                          size="sm"
+                          className="rounded-none"
+                        >
+                          {pageNum}
+                        </Button>
+                      );
+                    })}
+
+                    <Button
+                      onClick={() => handlePageChange(pagination.page + 1)}
+                      disabled={pagination.page >= pagination.totalPages}
+                      variant="outline"
+                      size="sm"
+                      className="rounded-l-none"
+                    >
+                      Next
+                    </Button>
+                  </nav>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Create/Edit Modal */}
+          <Modal
+            isOpen={showCreateModal || showEditModal}
+            onClose={closeModals}
+            title={editingCategory ? 'Edit Category' : 'Create Category'}
+            size="medium"
+          >
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                  Name *
+                </label>
+                <Input
+                  id="name"
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder="Enter category name"
+                  required
+                  maxLength={50}
+                />
+              </div>
+
+              <div>
+                <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+                  Description
+                </label>
+                <textarea
+                  id="description"
+                  value={formData.description}
+                  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                  placeholder="Enter category description"
+                  maxLength={200}
+                  rows={3}
+                  className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="color" className="block text-sm font-medium text-gray-700 mb-1">
+                  Color
+                </label>
+                <div className="flex items-center space-x-3">
+                  <input
+                    id="color"
+                    type="color"
+                    value={formData.color}
+                    onChange={(e) => setFormData(prev => ({ ...prev, color: e.target.value }))}
+                    className="w-12 h-8 rounded border border-gray-300"
+                  />
+                  <Input
+                    type="text"
+                    value={formData.color}
+                    onChange={(e) => setFormData(prev => ({ ...prev, color: e.target.value }))}
+                    placeholder="#3B82F6"
+                    className="flex-1"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center">
+                <input
+                  id="isActive"
+                  type="checkbox"
+                  checked={formData.isActive}
+                  onChange={(e) => setFormData(prev => ({ ...prev, isActive: e.target.checked }))}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <label htmlFor="isActive" className="ml-2 block text-sm text-gray-900">
+                  Active
+                </label>
+              </div>
+
+              <div className="flex justify-end space-x-3 pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={closeModals}
+                  disabled={submitting}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  loading={submitting}
+                  disabled={submitting}
+                >
+                  {editingCategory ? 'Update' : 'Create'} Category
+                </Button>
+              </div>
+            </form>
+          </Modal>
         </div>
       </main>
     </div>

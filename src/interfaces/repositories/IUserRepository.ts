@@ -22,7 +22,7 @@ export interface IUserRepository {
       hasPrevPage: boolean
     }
   }>
-  count(): Promise<number>
+  count(filter?: any): Promise<number>
   countByRole(): Promise<{ _id: string; count: number }[]>
   updateById(id: string, updateData: any): Promise<IUser | null>
 } 

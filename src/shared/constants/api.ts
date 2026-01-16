@@ -2,7 +2,7 @@
 export const API_ENDPOINTS = {
   QUIZ: {
     BASE: '/api/quizzes',
-    BY_ID: (id: string) => `/api/quiz/${id}`,
+    BY_ID: (id: string) => `/api/quizzes/${id}`,
     BY_SLUG: (slug: string) => `/api/quiz/${slug}`,
     ATTEMPT: (slug: string) => `/api/quiz/${slug}/attempt`,
     FLASHCARDS: (slug: string) => `/api/quiz/${slug}/flashcards`,

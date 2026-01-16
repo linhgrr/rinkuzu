@@ -19,7 +19,7 @@ export class AdminService implements IAdminService {
     private reportRepository: IReportRepository,
     private quizRepository: IQuizRepository,
     private attemptRepository: IAttemptRepository
-  ) {}
+  ) { }
 
   async getCategories(searchParams: any): Promise<ServiceResult<any>> {
     try {
@@ -114,7 +114,7 @@ export class AdminService implements IAdminService {
   async updateCategory(id: string, categoryData: any): Promise<ServiceResult<any>> {
     try {
       const category = await this.categoryRepository.update(id, categoryData);
-      
+
       if (!category) {
         return {
           success: false,
@@ -140,7 +140,7 @@ export class AdminService implements IAdminService {
   async deleteCategory(id: string): Promise<ServiceResult<boolean>> {
     try {
       const deleted = await this.categoryRepository.delete(id);
-      
+
       if (!deleted) {
         return {
           success: false,
@@ -166,7 +166,7 @@ export class AdminService implements IAdminService {
   async getUsers(searchParams: any): Promise<ServiceResult<any>> {
     try {
       const { search, page = 1, limit = 10 } = searchParams;
-      
+
       const result = await this.userRepository.findAll({
         page,
         limit,
@@ -299,20 +299,44 @@ export class AdminService implements IAdminService {
 
   async getStats(): Promise<ServiceResult<any>> {
     try {
-      // Basic stats implementation
-      const totalUsers = await this.userRepository.count();
-      const totalQuizzes = await this.quizRepository.count({});
-      const totalAttempts = await this.attemptRepository.count({});
+      const [
+        totalUsers,
+        roleStats,
+        quizStats,
+        totalAttempts,
+        totalCategories,
+        activeCategories
+      ] = await Promise.all([
+        this.userRepository.count(),
+        this.userRepository.countByRole(),
+        this.quizRepository.countByStatus(),
+        this.attemptRepository.count({}),
+        this.categoryRepository.count({}),
+        this.categoryRepository.count({ isActive: true })
+      ]);
+
+      const totalAdmins = roleStats.find(r => r._id === 'admin')?.count || 0;
+      const publishedQuizzes = quizStats.find(s => s._id === 'published')?.count || 0;
+      const pendingQuizzes = quizStats.find(s => s._id === 'pending')?.count || 0;
+      const rejectedQuizzes = quizStats.find(s => s._id === 'rejected')?.count || 0;
+      const totalQuizzes = quizStats.reduce((sum, s) => sum + s.count, 0);
 
       return {
         success: true,
         data: {
           totalUsers,
+          totalAdmins,
           totalQuizzes,
-          totalAttempts
+          publishedQuizzes,
+          pendingQuizzes,
+          rejectedQuizzes,
+          totalAttempts,
+          totalCategories,
+          activeCategories
         }
       };
     } catch (error) {
+      console.error('getStats error:', error);
       return {
         success: false,
         error: 'Failed to get stats',
@@ -323,12 +347,48 @@ export class AdminService implements IAdminService {
 
   async getActivityStats(): Promise<ServiceResult<any>> {
     try {
-      // Implement activity stats if needed
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const thisWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+      const [
+        newUsersToday, newQuizzesToday, attemptsToday,
+        newUsersWeek, newQuizzesWeek, attemptsWeek,
+        newUsersMonth, newQuizzesMonth, attemptsMonth,
+        recentUsers, recentQuizzes, recentAttempts
+      ] = await Promise.all([
+        this.userRepository.count({ createdAt: { $gte: today } } as any),
+        this.quizRepository.count({ createdAt: { $gte: today } }),
+        this.attemptRepository.count({ takenAt: { $gte: today } }),
+        this.userRepository.count({ createdAt: { $gte: thisWeek } } as any),
+        this.quizRepository.count({ createdAt: { $gte: thisWeek } }),
+        this.attemptRepository.count({ takenAt: { $gte: thisWeek } }),
+        this.userRepository.count({ createdAt: { $gte: thisMonth } } as any),
+        this.quizRepository.count({ createdAt: { $gte: thisMonth } }),
+        this.attemptRepository.count({ takenAt: { $gte: thisMonth } }),
+        this.userRepository.findAll({ limit: 5 }),
+        this.quizRepository.findAll({}, { limit: 5, populate: ['author', 'category'] }),
+        this.attemptRepository.findRecentActivity(5)
+      ]);
+
       return {
         success: true,
-        data: []
+        data: {
+          timeBasedStats: {
+            today: { newUsers: newUsersToday, newQuizzes: newQuizzesToday, attempts: attemptsToday },
+            thisWeek: { newUsers: newUsersWeek, newQuizzes: newQuizzesWeek, attempts: attemptsWeek },
+            thisMonth: { newUsers: newUsersMonth, newQuizzes: newQuizzesMonth, attempts: attemptsMonth }
+          },
+          recentActivity: {
+            users: recentUsers.users.map((u: any) => ({ email: u.email, createdAt: u.createdAt })),
+            quizzes: recentQuizzes.quizzes,
+            attempts: recentAttempts
+          }
+        }
       };
     } catch (error) {
+      console.error('getActivityStats error:', error);
       return {
         success: false,
         error: 'Failed to get activity stats',

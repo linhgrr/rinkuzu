@@ -250,6 +250,13 @@ export default function CreateQuizPage() {
   const { data: session } = useSession();
   const router = useRouter();
 
+  // Mobile redirect
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+      router.replace('/create/mobile');
+    }
+  }, [router]);
+
   // Form state
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');

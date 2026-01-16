@@ -5,6 +5,7 @@ export interface IUser {
   email: string;
   password: string;
   role: 'admin' | 'user';
+  createdAt?: Date;
 }
 
 export interface IQuestion {

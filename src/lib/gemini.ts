@@ -34,7 +34,7 @@ export async function extractQuestionsFromPdf(buffer: Buffer | string, maxRetrie
     try {
       const apiKey = getNextKey();
       const genAI = new GoogleGenerativeAI(apiKey);
-      const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+      const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
       const prompt = `
 You are given educational content that may include questions, explanations, and references to images or diagrams.
@@ -198,7 +198,7 @@ export async function generateQuizTitle(content: string): Promise<string> {
   try {
     const apiKey = getNextKey();
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
     const prompt = `
       Generate a concise, descriptive title for a quiz based on this content.

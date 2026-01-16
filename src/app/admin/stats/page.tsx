@@ -8,6 +8,15 @@ import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import Sidebar from '@/components/Sidebar';
 import StatsModal from '@/components/ui/StatsModal';
+import {
+  HiChevronDown,
+  HiOutlineMenu,
+  HiOutlineLogout,
+  HiOutlineUsers,
+  HiOutlineDocumentText,
+  HiOutlineChartBar,
+  HiOutlineLightBulb
+} from 'react-icons/hi';
 
 interface AdminStats {
   overview: {
@@ -79,11 +88,11 @@ export default function AdminStatsPage() {
   const pathname = usePathname();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  
+
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  
+
   // Modal states
   const [showCategoriesModal, setShowCategoriesModal] = useState(false);
   const [showCreatorsModal, setShowCreatorsModal] = useState(false);
@@ -91,7 +100,7 @@ export default function AdminStatsPage() {
 
   useEffect(() => {
     if (status === 'loading') return;
-    
+
     if (!session) {
       router.push('/login');
       return;
@@ -225,9 +234,7 @@ export default function AdminStatsPage() {
                 <span className="text-gray-700 font-medium hidden sm:block">
                   {session?.user?.email}
                 </span>
-                <svg className={`w-4 h-4 text-gray-500 transition-transform ${isMenuOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
+                <HiChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${isMenuOpen ? 'rotate-180' : ''}`} />
               </button>
 
               {isMenuOpen && (
@@ -271,8 +278,8 @@ export default function AdminStatsPage() {
                       <CardTitle className="text-sm font-medium text-gray-600">Tổng người dùng</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="text-2xl font-bold text-blue-600">{stats.overview.totalUsers}</div>
-                      <p className="text-xs text-gray-500">+{stats.timeBasedStats.thisMonth.newUsers} tháng này</p>
+                      <div className="text-2xl font-bold text-blue-600">{stats?.overview?.totalUsers || 0}</div>
+                      <p className="text-xs text-gray-500">+{stats?.timeBasedStats?.thisMonth?.newUsers || 0} tháng này</p>
                     </CardContent>
                   </Card>
 
@@ -281,8 +288,8 @@ export default function AdminStatsPage() {
                       <CardTitle className="text-sm font-medium text-gray-600">Tổng quiz</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="text-2xl font-bold text-green-600">{stats.overview.totalQuizzes}</div>
-                      <p className="text-xs text-gray-500">{stats.overview.publishedQuizzes} đã xuất bản</p>
+                      <div className="text-2xl font-bold text-green-600">{stats?.overview?.totalQuizzes || 0}</div>
+                      <p className="text-xs text-gray-500">{stats?.overview?.publishedQuizzes || 0} đã xuất bản</p>
                     </CardContent>
                   </Card>
 
@@ -291,8 +298,8 @@ export default function AdminStatsPage() {
                       <CardTitle className="text-sm font-medium text-gray-600">Lượt làm bài</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="text-2xl font-bold text-purple-600">{stats.overview.totalAttempts}</div>
-                      <p className="text-xs text-gray-500">+{stats.timeBasedStats.thisMonth.attempts} tháng này</p>
+                      <div className="text-2xl font-bold text-purple-600">{stats?.overview?.totalAttempts || 0}</div>
+                      <p className="text-xs text-gray-500">+{stats?.timeBasedStats?.thisMonth?.attempts || 0} tháng này</p>
                     </CardContent>
                   </Card>
 
@@ -393,7 +400,7 @@ export default function AdminStatsPage() {
                           <div key={category.name} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                             <div className="flex items-center space-x-3">
                               <span className="text-sm font-medium text-gray-500">#{index + 1}</span>
-                              <div 
+                              <div
                                 className="w-4 h-4 rounded-full"
                                 style={{ backgroundColor: category.color }}
                               />
@@ -535,7 +542,7 @@ export default function AdminStatsPage() {
                             <tr key={category.name} className="border-b hover:bg-gray-50">
                               <td className="py-3 px-4">
                                 <div className="flex items-center space-x-3">
-                                  <div 
+                                  <div
                                     className="w-3 h-3 rounded-full"
                                     style={{ backgroundColor: category.color }}
                                   />
@@ -546,9 +553,8 @@ export default function AdminStatsPage() {
                               <td className="text-center py-3 px-4 text-green-600">{category.publishedQuizzes}</td>
                               <td className="text-center py-3 px-4 text-yellow-600">{category.pendingQuizzes}</td>
                               <td className="text-center py-3 px-4">
-                                <span className={`px-2 py-1 rounded text-xs ${
-                                  category.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                                }`}>
+                                <span className={`px-2 py-1 rounded text-xs ${category.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                                  }`}>
                                   {category.isActive ? 'Hoạt động' : 'Không hoạt động'}
                                 </span>
                               </td>

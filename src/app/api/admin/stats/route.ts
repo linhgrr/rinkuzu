@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user || (session.user as any).role !== 'admin') {
       return NextResponse.json(
         { success: false, error: 'Unauthorized - Admin access required' },
@@ -21,16 +21,16 @@ export async function GET(request: NextRequest) {
     // Get comprehensive stats from AdminService
     const [statsResult, activityResult, categoryResult, creatorResult] = await Promise.all([
       adminService.getStats(),
-      adminService.getActivityStats(), 
+      adminService.getActivityStats(),
       adminService.getCategoryStats(),
       adminService.getCreatorStats()
     ]);
 
     if (!statsResult.success || !activityResult.success || !categoryResult.success || !creatorResult.success) {
       return NextResponse.json(
-        { 
-          success: false, 
-          error: 'Failed to fetch statistics' 
+        {
+          success: false,
+          error: 'Failed to fetch statistics'
         },
         { status: 500 }
       );
@@ -39,9 +39,13 @@ export async function GET(request: NextRequest) {
     // Combine all stats data
     const combinedStats = {
       overview: statsResult.data,
-      activity: activityResult.data,
-      categories: categoryResult.data,
-      creators: creatorResult.data
+      ...activityResult.data,
+      topCategories: categoryResult.data,
+      categoryStats: categoryResult.data,
+      topCreators: creatorResult.data,
+      // Provide defaults for missing sections to prevent frontend crashes
+      scoreStats: { averageScore: 0, highestScore: 0, lowestScore: 0 },
+      growthTrends: { users: [], quizzes: [], attempts: [] }
     };
 
     return NextResponse.json({

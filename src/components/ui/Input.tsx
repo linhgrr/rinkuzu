@@ -1,4 +1,5 @@
 import React from 'react';
+import { HiOutlineExclamationCircle } from 'react-icons/hi';
 import { cn } from '@/lib/utils';
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
@@ -11,19 +12,19 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
 }
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ 
-    className, 
-    variant = 'default', 
-    inputSize = 'md', 
-    error, 
-    label, 
-    icon, 
+  ({
+    className,
+    variant = 'default',
+    inputSize = 'md',
+    error,
+    label,
+    icon,
     iconPosition = 'left',
     id,
-    ...props 
+    ...props
   }, ref) => {
     const inputId = id || label?.toLowerCase().replace(/\s+/g, '-');
-    
+
     const variants = {
       default: 'bg-white/80 backdrop-blur-sm border border-gray-200 hover:border-gray-300 focus:border-primary focus:ring-primary/20',
       glass: 'bg-white/20 backdrop-blur-md border border-white/30 hover:border-white/40 focus:border-white/60 focus:ring-white/20',
@@ -46,14 +47,14 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
     return (
       <div className="w-full">
         {label && (
-          <label 
+          <label
             htmlFor={inputId}
             className="block text-sm font-semibold text-gray-700 mb-2"
           >
             {label}
           </label>
         )}
-        
+
         <div className="relative">
           {icon && iconPosition === 'left' && (
             <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
@@ -62,7 +63,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
               </div>
             </div>
           )}
-          
+
           <input
             id={inputId}
             className={cn(
@@ -77,7 +78,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             ref={ref}
             {...props}
           />
-          
+
           {icon && iconPosition === 'right' && (
             <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400">
               <div className={iconSizes[inputSize]}>
@@ -86,12 +87,10 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             </div>
           )}
         </div>
-        
+
         {error && (
           <p className="mt-2 text-sm text-red-600 flex items-center">
-            <svg className="w-4 h-4 mr-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+            <HiOutlineExclamationCircle className="w-4 h-4 mr-1 flex-shrink-0" />
             {error}
           </p>
         )}
@@ -112,7 +111,7 @@ const Textarea = React.forwardRef<
   }
 >(({ className, variant = 'default', error, label, id, ...props }, ref) => {
   const textareaId = id || label?.toLowerCase().replace(/\s+/g, '-');
-  
+
   const variants = {
     default: 'bg-white/80 backdrop-blur-sm border border-gray-200 hover:border-gray-300 focus:border-primary focus:ring-primary/20',
     glass: 'bg-white/20 backdrop-blur-md border border-white/30 hover:border-white/40 focus:border-white/60 focus:ring-white/20',
@@ -123,14 +122,14 @@ const Textarea = React.forwardRef<
   return (
     <div className="w-full">
       {label && (
-        <label 
+        <label
           htmlFor={textareaId}
           className="block text-sm font-semibold text-gray-700 mb-2"
         >
           {label}
         </label>
       )}
-      
+
       <textarea
         id={textareaId}
         className={cn(
@@ -142,12 +141,10 @@ const Textarea = React.forwardRef<
         ref={ref}
         {...props}
       />
-      
+
       {error && (
         <p className="mt-2 text-sm text-red-600 flex items-center">
-          <svg className="w-4 h-4 mr-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
+          <HiOutlineExclamationCircle className="w-4 h-4 mr-1 flex-shrink-0" />
           {error}
         </p>
       )}

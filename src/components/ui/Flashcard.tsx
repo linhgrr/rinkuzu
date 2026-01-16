@@ -14,13 +14,13 @@ interface FlashcardProps {
   isLast: boolean;
 }
 
-export function Flashcard({ 
-  question, 
-  options, 
-  correctIndex, 
-  correctIndexes, 
-  type, 
-  onSwipe, 
+export function Flashcard({
+  question,
+  options,
+  correctIndex,
+  correctIndexes,
+  type,
+  onSwipe,
   isLast
 }: FlashcardProps) {
   const [isFlipped, setIsFlipped] = useState(false);
@@ -32,19 +32,78 @@ export function Flashcard({
   const [isNewCard, setIsNewCard] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
 
+  // Keyboard support
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (isTransitioning) return;
+
+      switch (e.code) {
+        case 'Space':
+          e.preventDefault();
+          setIsFlipped(prev => !prev);
+          break;
+        case 'ArrowLeft':
+          if (isFlipped) { // Only allow swipe if flipped? Or always? Design choice.
+            // Usually swipe is available anytime, but for Flashcard often you flip then swipe.
+            // Let's allow anytime for power users, matching drag behavior which works anytime?
+            // Actually drag works anytime.
+            // But buttons are only shown if isFlipped.
+            // For safety, let's allow swipe provided it's not transitioning.
+            setIsTransitioning(true);
+            setIsFlipped(false);
+            setSlideOut('left');
+            onSwipe('left');
+            setTimeout(() => {
+              setIsTransitioning(false);
+              setSlideOut(null);
+              setDragOffset({ x: 0, y: 0 });
+            }, 300);
+          } else {
+            // Should we force flip first? 
+            // If not flipped, "Don't Know" (Left) implies we don't know the answer. 
+            // "Know" (Right) implies we know it.
+            // So we can arguably allow swipe without flip.
+            // But let's stick to buttons visibility logic: Buttons only shown if flipped.
+            // So maybe shortcuts should only work if flipped?
+            // Or shortcuts flip the card if not flipped?
+            if (e.code === 'ArrowLeft') {
+              setIsFlipped(true); // Auto-flip on attempt to swipe?
+            }
+          }
+          break;
+        case 'ArrowRight':
+          if (isFlipped) {
+            setIsTransitioning(true);
+            setIsFlipped(false);
+            setSlideOut('right');
+            onSwipe('right');
+            setTimeout(() => {
+              setIsTransitioning(false);
+              setSlideOut(null);
+              setDragOffset({ x: 0, y: 0 });
+            }, 300);
+          }
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isFlipped, isTransitioning, onSwipe]);
+
   // Reset states when question changes (new card appears)
   useEffect(() => {
     setIsFlipped(false);
     setSlideOut(null);
     setIsTransitioning(false);
     setDragOffset({ x: 0, y: 0 });
-    
+
     // Mark as new card and animate in
     setIsNewCard(true);
     const timer = setTimeout(() => {
       setIsNewCard(false);
     }, 50); // Small delay to trigger animation
-    
+
     return () => clearTimeout(timer);
   }, [question]);
 
@@ -55,24 +114,24 @@ export function Flashcard({
     setStartPos({ x: e.clientX, y: e.clientY });
     setDragOffset({ x: 0, y: 0 });
   };
-  
+
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!isDragging || isTransitioning) return;
     setDragOffset({ x: e.clientX - startPos.x, y: e.clientY - startPos.y });
   };
-  
+
   const handleMouseUp = () => {
     if (!isDragging || isTransitioning) return;
     setIsDragging(false);
-    
+
     if (Math.abs(dragOffset.x) > 100) {
       const direction = dragOffset.x > 0 ? 'right' : 'left';
       setIsTransitioning(true);
       setSlideOut(direction);
-      
+
       // Call onSwipe immediately to start loading next card
       onSwipe(direction);
-      
+
       // Reset states after animation completes
       setTimeout(() => {
         setIsTransitioning(false);
@@ -84,7 +143,7 @@ export function Flashcard({
       setDragOffset({ x: 0, y: 0 });
     }
   };
-  
+
   const handleTouchStart = (e: React.TouchEvent) => {
     if (isTransitioning) return;
     const touch = e.touches[0];
@@ -92,25 +151,25 @@ export function Flashcard({
     setStartPos({ x: touch.clientX, y: touch.clientY });
     setDragOffset({ x: 0, y: 0 });
   };
-  
+
   const handleTouchMove = (e: React.TouchEvent) => {
     if (!isDragging || isTransitioning) return;
     const touch = e.touches[0];
     setDragOffset({ x: touch.clientX - startPos.x, y: touch.clientY - startPos.y });
   };
-  
+
   const handleTouchEnd = () => {
     if (!isDragging || isTransitioning) return;
     setIsDragging(false);
-    
+
     if (Math.abs(dragOffset.x) > 100) {
       const direction = dragOffset.x > 0 ? 'right' : 'left';
       setIsTransitioning(true);
       setSlideOut(direction);
-      
+
       // Call onSwipe immediately to start loading next card
       onSwipe(direction);
-      
+
       // Reset states after animation completes
       setTimeout(() => {
         setIsTransitioning(false);
@@ -175,10 +234,10 @@ export function Flashcard({
 
   const transform = getTransform();
   const opacity = getOpacity();
-  const transition = slideOut 
-    ? 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease-out' 
-    : isDragging 
-      ? 'none' 
+  const transition = slideOut
+    ? 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease-out'
+    : isDragging
+      ? 'none'
       : isNewCard
         ? 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.4s ease-out'
         : 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease-out';
@@ -209,25 +268,25 @@ export function Flashcard({
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
-        <div 
+        <div
           className="relative w-full h-full cursor-pointer"
-          style={{ 
+          style={{
             perspective: '1000px',
             transformStyle: 'preserve-3d'
           }}
           onClick={() => setIsFlipped(!isFlipped)}
         >
-          <div 
+          <div
             className="relative w-full h-full transition-transform duration-300 ease-in-out"
-            style={{ 
+            style={{
               transformStyle: 'preserve-3d',
               transform: isFlipped ? 'rotateX(180deg)' : 'rotateX(0deg)'
             }}
           >
             {/* Front Side */}
-            <Card 
+            <Card
               className="absolute w-full h-full flex flex-col justify-between items-center bg-white shadow-2xl rounded-2xl border-2 border-gray-100"
-              style={{ 
+              style={{
                 backfaceVisibility: 'hidden',
                 WebkitBackfaceVisibility: 'hidden'
               }}
@@ -256,9 +315,9 @@ export function Flashcard({
             </Card>
 
             {/* Back Side */}
-            <Card 
+            <Card
               className="absolute w-full h-full flex flex-col justify-between items-center bg-white shadow-2xl rounded-2xl border-2 border-green-200"
-              style={{ 
+              style={{
                 backfaceVisibility: 'hidden',
                 WebkitBackfaceVisibility: 'hidden',
                 transform: 'rotateX(180deg)'
@@ -275,26 +334,23 @@ export function Flashcard({
                   <div className="space-y-2">
                     <h4 className="font-medium text-gray-900">Tất cả đáp án:</h4>
                     {options.map((option, index) => {
-                      const isCorrect = type === 'single' 
+                      const isCorrect = type === 'single'
                         ? (typeof correctIndex === 'number' && index === correctIndex)
                         : (correctIndexes && correctIndexes.includes(index));
                       return (
                         <div
                           key={index}
-                          className={`flex items-center space-x-3 p-3 rounded-lg border text-base break-words ${
-                            isCorrect 
-                              ? 'bg-green-50 border-green-200' 
-                              : 'bg-gray-50 border-gray-200'
-                          }`}
+                          className={`flex items-center space-x-3 p-3 rounded-lg border text-base break-words ${isCorrect
+                            ? 'bg-green-50 border-green-200'
+                            : 'bg-gray-50 border-gray-200'
+                            }`}
                         >
-                          <span className={`text-base font-medium w-6 ${
-                            isCorrect ? 'text-green-600' : 'text-gray-600'
-                          }`}>
+                          <span className={`text-base font-medium w-6 ${isCorrect ? 'text-green-600' : 'text-gray-600'
+                            }`}>
                             {String.fromCharCode(65 + index)}.
                           </span>
-                          <span className={`flex-1 break-words ${
-                            isCorrect ? 'text-green-800 font-medium' : 'text-gray-700'
-                          }`}>
+                          <span className={`flex-1 break-words ${isCorrect ? 'text-green-800 font-medium' : 'text-gray-700'
+                            }`}>
                             {option}
                           </span>
                           {isCorrect && (
@@ -321,10 +377,10 @@ export function Flashcard({
                 setIsTransitioning(true);
                 setIsFlipped(false);
                 setSlideOut('left');
-                
+
                 // Call onSwipe immediately to start loading next card
                 onSwipe('left');
-                
+
                 // Reset states after animation completes
                 setTimeout(() => {
                   setIsTransitioning(false);
@@ -343,10 +399,10 @@ export function Flashcard({
                 setIsTransitioning(true);
                 setIsFlipped(false);
                 setSlideOut('right');
-                
+
                 // Call onSwipe immediately to start loading next card
                 onSwipe('right');
-                
+
                 // Reset states after animation completes
                 setTimeout(() => {
                   setIsTransitioning(false);

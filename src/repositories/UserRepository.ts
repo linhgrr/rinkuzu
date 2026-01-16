@@ -48,7 +48,7 @@ export class UserRepository implements IUserRepository {
     }
   }> {
     await connectDB()
-    
+
     const page = options?.page || 1
     const limit = options?.limit || 10
     const skip = (page - 1) * limit
@@ -85,9 +85,9 @@ export class UserRepository implements IUserRepository {
     }
   }
 
-  async count(): Promise<number> {
+  async count(filter: any = {}): Promise<number> {
     await connectDB()
-    return await User.countDocuments()
+    return await User.countDocuments(filter)
   }
 
   async countByRole(): Promise<{ _id: string; count: number }[]> {

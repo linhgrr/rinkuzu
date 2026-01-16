@@ -10,6 +10,13 @@ import { Modal } from '@/components/ui/Modal'
 import { Input } from '@/components/ui/Input'
 import Pagination from '@/components/ui/Pagination'
 import Sidebar from '@/components/Sidebar'
+import {
+  HiChevronDown,
+  HiOutlineMenu,
+  HiOutlineLogout,
+  HiOutlineSearch,
+  HiOutlineEye
+} from 'react-icons/hi'
 
 interface Subscription {
   _id: string
@@ -39,7 +46,7 @@ export default function AdminSubscriptionsPage() {
   const pathname = usePathname()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
-  
+
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([])
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
@@ -53,14 +60,14 @@ export default function AdminSubscriptionsPage() {
     total: 0,
     totalPages: 0
   })
-  
+
   // Modal states
   const [showDetailModal, setShowDetailModal] = useState(false)
   const [selectedSubscription, setSelectedSubscription] = useState<Subscription | null>(null)
 
   useEffect(() => {
     if (status === 'loading') return
-    
+
     if (!session) {
       router.push('/login')
       return
@@ -76,7 +83,7 @@ export default function AdminSubscriptionsPage() {
 
   const fetchSubscriptions = async (page: number = 1, search: string = '', status: string = '') => {
     if (!session) return
-    
+
     try {
       setLoading(true)
       const params = new URLSearchParams({
@@ -94,8 +101,8 @@ export default function AdminSubscriptionsPage() {
 
       const response = await fetch(`/api/admin/subscriptions?${params}`, {
         cache: 'no-store' // hoặc 'reload'
-      })      
-      
+      })
+
       const data = await response.json()
 
       if (data.success) {
@@ -148,7 +155,7 @@ export default function AdminSubscriptionsPage() {
       const data = await response.json()
 
       if (data.success) {
-        setSubscriptions(subscriptions.map(sub => 
+        setSubscriptions(subscriptions.map(sub =>
           sub._id === subscriptionId ? { ...sub, status: newStatus as any } : sub
         ))
         setSuccess(`Subscription status updated to ${newStatus}`)
@@ -239,10 +246,10 @@ export default function AdminSubscriptionsPage() {
                   <Link href="/" className="text-gray-600 hover:text-gray-900 transition-colors">
                     All Quizzes
                   </Link>
-                  
+
                   {/* User Menu */}
                   <div className="relative">
-                    <button 
+                    <button
                       onClick={() => setIsMenuOpen(!isMenuOpen)}
                       className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors"
                     >
@@ -251,14 +258,12 @@ export default function AdminSubscriptionsPage() {
                           {session.user?.email?.charAt(0).toUpperCase()}
                         </span>
                       </div>
-                      <svg className={`w-4 h-4 transition-transform ${isMenuOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
+                      <HiChevronDown className={`w-4 h-4 transition-transform ${isMenuOpen ? 'rotate-180' : ''}`} />
                     </button>
-                    
+
                     {isMenuOpen && (
                       <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-100 py-1">
-                        <button 
+                        <button
                           onClick={() => signOut()}
                           className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                         >
@@ -286,13 +291,11 @@ export default function AdminSubscriptionsPage() {
 
             {/* Mobile menu button */}
             <div className="md:hidden">
-              <button 
+              <button
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
                 className="text-gray-600 hover:text-gray-900"
               >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
+                <HiOutlineMenu className="w-6 h-6" />
               </button>
             </div>
           </div>
@@ -306,7 +309,7 @@ export default function AdminSubscriptionsPage() {
                     <Link href="/" className="block px-4 py-2 text-gray-600 hover:text-gray-900">
                       All Quizzes
                     </Link>
-                    <button 
+                    <button
                       onClick={() => signOut()}
                       className="block w-full text-left px-4 py-2 text-gray-600 hover:text-gray-900"
                     >
@@ -330,16 +333,15 @@ export default function AdminSubscriptionsPage() {
       </nav>
 
       {/* Sidebar */}
-      <Sidebar 
-        isOpen={isSidebarOpen} 
+      <Sidebar
+        isOpen={isSidebarOpen}
         onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
         currentPath={pathname}
       />
 
       {/* Main Content */}
-      <main className={`py-8 transition-all duration-300 ${
-        session && isSidebarOpen ? 'ml-64' : session ? 'ml-16' : ''
-      } max-w-none px-4 sm:px-6 lg:px-8`}>
+      <main className={`py-8 transition-all duration-300 ${session && isSidebarOpen ? 'ml-64' : session ? 'ml-16' : ''
+        } max-w-none px-4 sm:px-6 lg:px-8`}>
         {status === 'loading' ? (
           <div className="flex justify-center py-12">
             <div className="text-gray-500">Loading...</div>
@@ -353,179 +355,175 @@ export default function AdminSubscriptionsPage() {
             <div className="text-gray-500">Access denied. Admin privileges required.</div>
           </div>
         ) : (
-        <>
-        <div className="max-w-6xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Subscription Management</h1>
-            <p className="mt-2 text-gray-600">
-              Manage user subscriptions and payment statuses
-            </p>
-          </div>
-        </div>
+          <>
+            <div className="max-w-6xl mx-auto">
+              <div className="flex justify-between items-center mb-8">
+                <div>
+                  <h1 className="text-3xl font-bold text-gray-900">Subscription Management</h1>
+                  <p className="mt-2 text-gray-600">
+                    Manage user subscriptions and payment statuses
+                  </p>
+                </div>
+              </div>
 
-        {error && (
-          <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-            {error}
-          </div>
-        )}
+              {error && (
+                <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+                  {error}
+                </div>
+              )}
 
-        {success && (
-          <div className="mb-6 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg">
-            {success}
-          </div>
-        )}
+              {success && (
+                <div className="mb-6 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg">
+                  {success}
+                </div>
+              )}
 
-        {/* Search and Filters */}
-        <div className="mb-6 space-y-4">
-          <form onSubmit={handleSearch} className="flex gap-4">
-            <div className="flex-1 max-w-md">
-              <Input
-                type="text"
-                placeholder="Search by user email..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full"
-              />
+              {/* Search and Filters */}
+              <div className="mb-6 space-y-4">
+                <form onSubmit={handleSearch} className="flex gap-4">
+                  <div className="flex-1 max-w-md">
+                    <Input
+                      type="text"
+                      placeholder="Search by user email..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="w-full"
+                    />
+                  </div>
+                  <Button type="submit" variant="gradient">
+                    <HiOutlineSearch className="w-4 h-4 mr-2" />
+                    Search
+                  </Button>
+                  {(searchTerm || statusFilter) && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        setSearchTerm('')
+                        setStatusFilter('')
+                        fetchSubscriptions(1, '', '')
+                      }}
+                    >
+                      Clear
+                    </Button>
+                  )}
+                </form>
+
+                {/* Status Filter Tabs */}
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => handleStatusFilter('')}
+                    className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${!statusFilter
+                        ? 'bg-blue-100 text-blue-700 border border-blue-200'
+                        : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                      }`}
+                  >
+                    All Subscriptions
+                  </button>
+                  {['pending', 'active', 'cancelled', 'expired'].map((status) => (
+                    <button
+                      key={status}
+                      onClick={() => handleStatusFilter(status)}
+                      className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors capitalize ${statusFilter === status
+                          ? 'bg-blue-100 text-blue-700 border border-blue-200'
+                          : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                        }`}
+                    >
+                      {status}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Subscriptions Table */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Subscriptions</CardTitle>
+                  <CardDescription>
+                    {pagination.total > 0 &&
+                      `Showing ${((pagination.page - 1) * pagination.limit) + 1} to ${Math.min(pagination.page * pagination.limit, pagination.total)} of ${pagination.total} subscriptions`
+                    }
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {loading ? (
+                    <div className="flex justify-center py-8">
+                      <div className="text-gray-500">Loading subscriptions...</div>
+                    </div>
+                  ) : subscriptions.length === 0 ? (
+                    <div className="text-center py-8">
+                      <div className="text-gray-500">No subscriptions found</div>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm text-left">
+                        <thead className="text-xs text-gray-700 uppercase bg-gray-50">
+                          <tr>
+                            <th scope="col" className="px-6 py-3">User</th>
+                            <th scope="col" className="px-6 py-3">Type</th>
+                            <th scope="col" className="px-6 py-3">Amount</th>
+                            <th scope="col" className="px-6 py-3">Status</th>
+                            <th scope="col" className="px-6 py-3">Start Date</th>
+                            <th scope="col" className="px-6 py-3">End Date</th>
+                            <th scope="col" className="px-6 py-3">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {subscriptions.map((subscription) => (
+                            <tr key={subscription._id} className="bg-white border-b hover:bg-gray-50">
+                              <td className="px-6 py-4 font-medium text-gray-900">
+                                {subscription.userEmail}
+                              </td>
+                              <td className="px-6 py-4">
+                                <span className={`px-2 py-1 text-xs font-medium rounded-full capitalize ${getTypeBadgeColor(subscription.type)}`}>
+                                  {subscription.type}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4">
+                                {formatCurrency(subscription.amount)}
+                              </td>
+                              <td className="px-6 py-4">
+                                <span className={`px-2 py-1 text-xs font-medium rounded-full capitalize ${getStatusBadgeColor(subscription.status)}`}>
+                                  {subscription.status}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 text-gray-500">
+                                {formatDate(subscription.startDate)}
+                              </td>
+                              <td className="px-6 py-4 text-gray-500">
+                                {subscription.endDate ? formatDate(subscription.endDate) : 'N/A'}
+                              </td>
+                              <td className="px-6 py-4">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => openDetailModal(subscription)}
+                                  className="text-blue-600 hover:text-blue-700"
+                                >
+                                  <HiOutlineEye className="w-4 h-4 mr-1" /> View Details
+                                </Button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Pagination */}
+              {pagination.totalPages > 1 && (
+                <div className="mt-6">
+                  <Pagination
+                    currentPage={pagination.page}
+                    totalPages={pagination.totalPages}
+                    onPageChange={handlePageChange}
+                  />
+                </div>
+              )}
             </div>
-            <Button type="submit" variant="gradient">
-              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-              Search
-            </Button>
-            {(searchTerm || statusFilter) && (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  setSearchTerm('')
-                  setStatusFilter('')
-                  fetchSubscriptions(1, '', '')
-                }}
-              >
-                Clear
-              </Button>
-            )}
-          </form>
-
-          {/* Status Filter Tabs */}
-          <div className="flex space-x-2">
-            <button
-              onClick={() => handleStatusFilter('')}
-              className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                !statusFilter 
-                  ? 'bg-blue-100 text-blue-700 border border-blue-200' 
-                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
-              }`}
-            >
-              All Subscriptions
-            </button>
-            {['pending', 'active', 'cancelled', 'expired'].map((status) => (
-              <button
-                key={status}
-                onClick={() => handleStatusFilter(status)}
-                className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors capitalize ${
-                  statusFilter === status 
-                    ? 'bg-blue-100 text-blue-700 border border-blue-200' 
-                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
-                }`}
-              >
-                {status}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Subscriptions Table */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Subscriptions</CardTitle>
-            <CardDescription>
-              {pagination.total > 0 && 
-                `Showing ${((pagination.page - 1) * pagination.limit) + 1} to ${Math.min(pagination.page * pagination.limit, pagination.total)} of ${pagination.total} subscriptions`
-              }
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="flex justify-center py-8">
-                <div className="text-gray-500">Loading subscriptions...</div>
-              </div>
-            ) : subscriptions.length === 0 ? (
-              <div className="text-center py-8">
-                <div className="text-gray-500">No subscriptions found</div>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm text-left">
-                  <thead className="text-xs text-gray-700 uppercase bg-gray-50">
-                    <tr>
-                      <th scope="col" className="px-6 py-3">User</th>
-                      <th scope="col" className="px-6 py-3">Type</th>
-                      <th scope="col" className="px-6 py-3">Amount</th>
-                      <th scope="col" className="px-6 py-3">Status</th>
-                      <th scope="col" className="px-6 py-3">Start Date</th>
-                      <th scope="col" className="px-6 py-3">End Date</th>
-                      <th scope="col" className="px-6 py-3">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {subscriptions.map((subscription) => (
-                      <tr key={subscription._id} className="bg-white border-b hover:bg-gray-50">
-                        <td className="px-6 py-4 font-medium text-gray-900">
-                          {subscription.userEmail}
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className={`px-2 py-1 text-xs font-medium rounded-full capitalize ${getTypeBadgeColor(subscription.type)}`}>
-                            {subscription.type}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4">
-                          {formatCurrency(subscription.amount)}
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className={`px-2 py-1 text-xs font-medium rounded-full capitalize ${getStatusBadgeColor(subscription.status)}`}>
-                            {subscription.status}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-gray-500">
-                          {formatDate(subscription.startDate)}
-                        </td>
-                        <td className="px-6 py-4 text-gray-500">
-                          {subscription.endDate ? formatDate(subscription.endDate) : 'N/A'}
-                        </td>
-                        <td className="px-6 py-4">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => openDetailModal(subscription)}
-                            className="text-blue-600 hover:text-blue-700"
-                          >
-                            View Details
-                          </Button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Pagination */}
-        {pagination.totalPages > 1 && (
-          <div className="mt-6">
-            <Pagination
-              currentPage={pagination.page}
-              totalPages={pagination.totalPages}
-              onPageChange={handlePageChange}
-            />
-          </div>
-        )}
-        </div>
-        </>
+          </>
         )}
       </main>
 
@@ -621,11 +619,10 @@ export default function AdminSubscriptionsPage() {
                     size="sm"
                     disabled={selectedSubscription.status === status || actionLoading === selectedSubscription._id}
                     onClick={() => handleUpdateStatus(selectedSubscription._id, status)}
-                    className={`capitalize ${
-                      selectedSubscription.status === status 
-                        ? 'opacity-50 cursor-not-allowed' 
+                    className={`capitalize ${selectedSubscription.status === status
+                        ? 'opacity-50 cursor-not-allowed'
                         : ''
-                    }`}
+                      }`}
                   >
                     {actionLoading === selectedSubscription._id ? 'Updating...' : `Mark as ${status}`}
                   </Button>

@@ -78,7 +78,7 @@ function validateChatInput(userQuestion: string): { isValid: boolean; error?: st
 async function summarizeChatHistory(chatHistory: ChatMessage[], apiKey: string): Promise<string> {
   try {
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
     
     const chatText = chatHistory
       .slice(-6) // Last 3 turns (6 messages)
@@ -171,7 +171,7 @@ export async function POST(request: NextRequest) {
       try {
         const apiKey = getNextKey();
         const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
+        const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
         // Handle chat history summarization if needed
         let contextualInfo = '';

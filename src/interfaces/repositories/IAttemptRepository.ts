@@ -13,7 +13,7 @@ export interface IAttempt {
 
 export interface IAttemptRepository {
   findById(id: string): Promise<IAttempt | null>
-  
+
   findByUser(userId: string, options?: {
     page?: number
     limit?: number
@@ -28,22 +28,22 @@ export interface IAttemptRepository {
       hasPrevPage: boolean
     }
   }>
-  
+
   create(attemptData: Partial<IAttempt>): Promise<IAttempt>
-  
+
   countByUser(userId: string): Promise<number>
-  
+
   countByQuiz(quizId: string): Promise<number>
-  
+
   findRecentActivity(limit?: number): Promise<IAttempt[]>
-  
+
   findByUserId(userId: string, page?: number, limit?: number): Promise<{ attempts: IAttempt[], total: number }>
-  
+
   findByIdWithQuiz(attemptId: string, userId: string): Promise<any>
-  
+
   update(id: string, attemptData: Partial<IAttempt>): Promise<IAttempt | null>
-  
+
   delete(id: string): Promise<boolean>
-  
-  count(filter: any): Promise<number>
+
+  count(filter?: any): Promise<number>
 } 

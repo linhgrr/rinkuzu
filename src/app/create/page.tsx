@@ -16,6 +16,9 @@ import { useSession } from 'next-auth/react';
 import { extractQuestionsFromLargePDF, UploadProgress } from '@/services/largeFileUploadService';
 import { LargeFileUploadProgress } from '@/components/ui/LargeFileUploadProgress';
 import { Question } from '@/types/quiz';
+import { useDraftStore } from '@/store/useDraftStore';
+import { usePdfProcessor } from '@/hooks/usePdfProcessor';
+import { toast } from 'sonner';
 import {
   HiOutlinePlus,
   HiOutlineExclamationCircle,
@@ -249,6 +252,8 @@ function PDFViewerComponent({ files, onClose }: { files: File[]; onClose: () => 
 export default function CreateQuizPage() {
   const { data: session } = useSession();
   const router = useRouter();
+  const { addDraft } = useDraftStore();
+  const { startProcessing } = usePdfProcessor();
 
   // Mobile redirect
   useEffect(() => {
@@ -518,6 +523,112 @@ export default function CreateQuizPage() {
     setEditableQuestions(prev => prev.filter((_, i) => i !== index))
   }
 
+  // Helper function to convert file to base64
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
+  // Background processing handler
+  const handleBackgroundExtract = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!title.trim()) {
+      setError('Title is required');
+      return;
+    }
+
+    if (pdfFiles.length === 0) {
+      setError('Please upload at least one PDF file');
+      return;
+    }
+
+    setExtracting(true);
+    setError('');
+
+    try {
+      // For multiple files, we'll merge them first using pdf-lib
+      let base64Data: string;
+      let fileName: string;
+
+      if (pdfFiles.length === 1) {
+        // Single file - convert directly
+        base64Data = await fileToBase64(pdfFiles[0]);
+        fileName = pdfFiles[0].name;
+      } else {
+        // Multiple files - merge them first
+        const { PDFDocument } = await import('pdf-lib');
+        const mergedPdf = await PDFDocument.create();
+
+        for (let i = 0; i < pdfFiles.length; i++) {
+          const file = pdfFiles[i];
+          const arrayBuffer = await file.arrayBuffer();
+          const pdf = await PDFDocument.load(arrayBuffer);
+          const pageIndices = pdf.getPageIndices();
+          const pages = await mergedPdf.copyPages(pdf, pageIndices);
+          pages.forEach((page) => mergedPdf.addPage(page));
+        }
+
+        const mergedPdfBytes = await mergedPdf.save();
+        const blob = new Blob([mergedPdfBytes], { type: 'application/pdf' });
+        const mergedFile = new File([blob], 'merged.pdf', { type: 'application/pdf' });
+        base64Data = await fileToBase64(mergedFile);
+        fileName = `${pdfFiles.length} merged files`;
+      }
+
+      // Create draft via API
+      const response = await fetch('/api/draft/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: title.trim(),
+          pdfBase64: base64Data,
+          fileName: fileName,
+          category: selectedCategory?._id,
+          description: description.trim(),
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to create draft');
+      }
+
+      const { draftId, chunks, totalPages } = await response.json();
+
+      // Add to store
+      addDraft({
+        id: draftId,
+        title: title.trim(),
+        status: 'processing',
+        chunksTotal: chunks.total,
+        chunksProcessed: 0,
+        questionsCount: 0,
+        createdAt: new Date().toISOString(),
+      });
+
+      // Start background processing
+      startProcessing(draftId, chunks.chunkDetails, title.trim());
+
+      toast.success('Processing started', {
+        description: `${totalPages} pages, ${chunks.total} chunks`,
+      });
+
+      // Navigate to home
+      router.push('/');
+
+    } catch (err: any) {
+      console.error('Error starting background processing:', err);
+      setError(err.message || 'Failed to start background processing');
+    } finally {
+      setExtracting(false);
+    }
+  };
+
   return (
     <div className="min-h-screen">
       <Navigation />
@@ -553,7 +664,7 @@ export default function CreateQuizPage() {
                 <CardHeader className="text-center">
                   <CardTitle size="lg" className="text-gray-900">Upload PDF Document</CardTitle>
                   <CardDescription className="text-base">
-                    Provide basic information and upload the PDF file to extract questions
+                    Choose to process in the background (faster, navigate away) or preview questions first (wait for extraction)
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="pt-0">
@@ -744,26 +855,49 @@ export default function CreateQuizPage() {
                             Cancel
                           </Button>
                         </Link>
-                        <Button
-                          type="submit"
-                          variant="gradient"
-                          size="lg"
-                          loading={extracting}
-                          disabled={!title.trim() || !selectedCategory || pdfFiles.length === 0}
-                          className="w-full sm:w-auto"
-                        >
-                          {extracting ? (
-                            <>
-                              <HiOutlineRefresh className="w-4 h-4 mr-2 animate-spin" />
-                              Extracting Questions...
-                            </>
-                          ) : (
-                            <>
-                              <HiOutlineLightBulb className="w-4 h-4 mr-2" />
-                              Extract Questions from {pdfFiles.length} file{pdfFiles.length !== 1 ? 's' : ''}
-                            </>
-                          )}
-                        </Button>
+                        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="lg"
+                            loading={extracting}
+                            disabled={!title.trim() || pdfFiles.length === 0}
+                            onClick={handleBackgroundExtract}
+                            className="w-full sm:w-auto border-violet-200 text-violet-600 hover:bg-violet-50"
+                          >
+                            {extracting ? (
+                              <>
+                                <HiOutlineRefresh className="w-4 h-4 mr-2 animate-spin" />
+                                Creating Draft...
+                              </>
+                            ) : (
+                              <>
+                                <HiOutlineArrowRight className="w-4 h-4 mr-2" />
+                                Create Quiz (Background)
+                              </>
+                            )}
+                          </Button>
+                          <Button
+                            type="submit"
+                            variant="gradient"
+                            size="lg"
+                            loading={extracting}
+                            disabled={!title.trim() || !selectedCategory || pdfFiles.length === 0}
+                            className="w-full sm:w-auto"
+                          >
+                            {extracting ? (
+                              <>
+                                <HiOutlineRefresh className="w-4 h-4 mr-2 animate-spin" />
+                                Extracting Questions...
+                              </>
+                            ) : (
+                              <>
+                                <HiOutlineLightBulb className="w-4 h-4 mr-2" />
+                                Extract Questions (Preview)
+                              </>
+                            )}
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   </form>

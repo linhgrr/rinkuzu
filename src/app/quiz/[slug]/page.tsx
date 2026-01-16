@@ -28,6 +28,7 @@ import { QuestionImage, OptionImage } from '@/components/ui/ImageDisplay';
 import { QuestionDiscussion } from '@/components/ui/QuestionDiscussion';
 import ReportQuiz from '@/components/ui/ReportQuiz';
 import { PremiumRequiredModal } from '@/components/ui/PremiumRequiredModal';
+import { MobileQuizPlayer } from '@/components/quiz/MobileQuizPlayer';
 import { useQuizStore } from '@/store/useQuizStore';
 import { IQuiz } from '@/types';
 
@@ -47,6 +48,9 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
   const [userAnswers, setUserAnswers] = useState<(number | number[])[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
+  // Mobile detection state
+  const [isMobile, setIsMobile] = useState(false);
+
   // Ask AI states
   const [showAIModal, setShowAIModal] = useState(false);
   const [aiExplanation, setAIExplanation] = useState('');
@@ -65,6 +69,14 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
 
   // Premium required modal
   const [showPremiumModal, setShowPremiumModal] = useState(false);
+
+  // Mobile detection
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // If user is logged in, skip email input
   useEffect(() => {
@@ -687,6 +699,172 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
       return Array.isArray(answer) && answer.length > 0;
     }
   }).length;
+
+  // Handle quiz completion for mobile
+  const handleQuizComplete = async (answers: (number | number[])[]) => {
+    setSubmitting(true);
+    try {
+      console.log('=== SUBMITTING QUIZ (Mobile) ===');
+      console.log('userAnswers:', answers);
+      console.log('userAnswers with types:', answers.map((ans: any, idx: number) => ({
+        index: idx,
+        answer: ans,
+        answerType: typeof ans,
+        isArray: Array.isArray(ans)
+      })));
+      console.log('questionIndexMap:', (quiz as any).questionIndexMap);
+      console.log('quiz.questions:', quiz.questions.map((q, i) => ({
+        currentIndex: i,
+        originalQuestionIndex: (q as any).originalQuestionIndex,
+        type: q.type,
+        optionsCount: q.options.length,
+        optionIndexMap: (q as any).optionIndexMap
+      })));
+
+      // First convert option indices, then reorder to match original question order
+      const convertedAnswers = answers.map((ans, idx) => {
+        const question = quiz.questions[idx];
+        const mapArr: number[] = (question as any).optionIndexMap;
+
+        // Add validation for optionIndexMap
+        if (!mapArr || !Array.isArray(mapArr)) {
+          console.error(`Question ${idx}: optionIndexMap is missing or invalid`, {
+            optionIndexMap: mapArr,
+            question: question
+          });
+          throw new Error(`Option mapping is missing for question ${idx + 1}`);
+        }
+
+        console.log(`Converting question ${idx} (originally Q${(question as any).originalQuestionIndex + 1}):`, {
+          userAnswer: ans,
+          optionIndexMap: mapArr,
+          questionType: question.type
+        });
+
+        if (question.type === 'single') {
+          const aNum = ans as number;
+
+          // Validate that answer is a number for single choice
+          if (typeof aNum !== 'number') {
+            console.error(`Single choice question ${idx} has non-number answer:`, {
+              answer: ans,
+              answerType: typeof ans,
+              questionType: question.type
+            });
+            throw new Error(`Invalid answer type for single choice question ${idx + 1}`);
+          }
+
+          if (aNum !== -1 && (aNum < 0 || aNum >= mapArr.length)) {
+            console.error(`Invalid answer index ${aNum} for question ${idx}, mapArr length: ${mapArr.length}`);
+            throw new Error(`Invalid answer for question ${idx + 1}`);
+          }
+          const converted = aNum === -1 ? -1 : mapArr[aNum];
+          console.log(`Single choice: ${aNum} -> ${converted}`);
+          return converted;
+        } else {
+          // Validate that answer is an array for multiple choice
+          if (!Array.isArray(ans)) {
+            console.error(`Multiple choice question ${idx} has non-array answer:`, {
+              answer: ans,
+              answerType: typeof ans,
+              questionType: question.type
+            });
+            throw new Error(`Invalid answer type for multiple choice question ${idx + 1}`);
+          }
+
+          const arr = ans as number[];
+          for (const a of arr) {
+            if (typeof a !== 'number' || a < 0 || a >= mapArr.length) {
+              console.error(`Invalid answer index ${a} for question ${idx}, mapArr length: ${mapArr.length}`);
+              throw new Error(`Invalid answer for question ${idx + 1}`);
+            }
+          }
+          const converted = arr.map(a => mapArr[a]);
+          console.log(`Multiple choice: [${arr}] -> [${converted}]`);
+          return converted;
+        }
+      });
+
+      // Reorder answers to match original question order
+      const questionIndexMap: number[] = (quiz as any).questionIndexMap;
+
+      // Add validation for questionIndexMap
+      if (!questionIndexMap || !Array.isArray(questionIndexMap)) {
+        console.error('questionIndexMap is missing or invalid', {
+          questionIndexMap: questionIndexMap,
+          quiz: quiz
+        });
+        throw new Error('Question ordering mapping is missing');
+      }
+
+      if (questionIndexMap.length !== convertedAnswers.length) {
+        console.error('questionIndexMap length mismatch', {
+          questionIndexMapLength: questionIndexMap.length,
+          convertedAnswersLength: convertedAnswers.length
+        });
+        throw new Error('Question mapping length mismatch');
+      }
+
+      const originalOrderAnswers: (number | number[])[] = new Array(convertedAnswers.length);
+
+      convertedAnswers.forEach((answer, shuffledIndex) => {
+        const originalIndex = questionIndexMap[shuffledIndex];
+        if (originalIndex < 0 || originalIndex >= convertedAnswers.length) {
+          console.error(`Invalid original index ${originalIndex} for shuffled index ${shuffledIndex}`);
+          throw new Error(`Invalid question mapping for question ${shuffledIndex + 1}`);
+        }
+        originalOrderAnswers[originalIndex] = answer;
+      });
+
+      console.log('convertedAnswers (shuffled order):', convertedAnswers);
+      console.log('originalOrderAnswers (original question order):', originalOrderAnswers);
+
+      const payload = {
+        answers: originalOrderAnswers,
+        userEmail: session?.user?.email || userEmail.trim(),
+      };
+
+      console.log('payload:', payload);
+
+      const response = await fetch(`/api/quiz/${params.slug}/attempt`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        router.push(`/quiz/${params.slug}/result?attemptId=${data.data.attemptId}&score=${data.data.score}`);
+      } else {
+        setError(data.error || 'Failed to submit quiz');
+      }
+    } catch (error) {
+      console.error('Quiz submission error:', error);
+
+      // Show more specific error message if available
+      if (error instanceof Error) {
+        setError(error.message);
+      } else {
+        setError('Failed to submit quiz');
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Show MobileQuizPlayer on mobile devices
+  if (isMobile && !showEmailInput) {
+    return (
+      <MobileQuizPlayer
+        questions={quiz.questions}
+        onComplete={handleQuizComplete}
+        onExit={() => router.push('/')}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen">

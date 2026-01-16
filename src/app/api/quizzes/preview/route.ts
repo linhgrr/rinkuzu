@@ -119,64 +119,33 @@ export async function POST(request: NextRequest) {
     const fileNames: string[] = [];
     const processingStartTime = Date.now();
 
-    // Process files in parallel if we have multiple files
-    if (pdfFiles.length > 1) {
-      console.log(`🚀 Processing ${pdfFiles.length} files in parallel...`);
-      
-      const filePromises = pdfFiles.map(async (file, index) => {
-        console.log(`📄 Processing file ${index + 1}/${pdfFiles.length}: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB)`);
-        
-        const buffer = Buffer.from(await file.arrayBuffer());
-        
-        try {
-          // Use optimized processing for each file
-          const fileQuestions = await extractQuestionsFromPdfOptimized(buffer, false);
-          
-          console.log(`✅ File ${file.name}: ${fileQuestions.length} questions extracted`);
-          
-          return {
-            questions: fileQuestions,
-            fileName: file.name,
-            fileSize: file.size
-          };
-        } catch (error) {
-          console.error(`❌ Failed to process ${file.name}:`, error);
-          return {
-            questions: [],
-            fileName: file.name,
-            fileSize: file.size
-          };
-        }
-      });
-      
-      const results = await Promise.all(filePromises);
-      
-      // Combine results
-      for (const result of results) {
-        allQuestions = allQuestions.concat(result.questions);
-        totalFileSize += result.fileSize;
-        fileNames.push(result.fileName);
-      }
-      
-    } else {
-      // Single file processing
-      const file = pdfFiles[0];
-      console.log(`📄 Processing single file: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB)`);
-      
+    // Process files SEQUENTIALLY (one at a time)
+    console.log(`🔄 Processing ${pdfFiles.length} file(s) sequentially...`);
+
+    for (let index = 0; index < pdfFiles.length; index++) {
+      const file = pdfFiles[index];
+      console.log(`📄 Processing file ${index + 1}/${pdfFiles.length}: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB)`);
+
       const buffer = Buffer.from(await file.arrayBuffer());
-      
-      // Use optimized processing
-      const fileQuestions = await extractQuestionsFromPdfOptimized(buffer, false);
-      
-      if (fileQuestions && fileQuestions.length > 0) {
-        allQuestions = fileQuestions;
-        console.log(`✅ Extracted ${fileQuestions.length} questions from ${file.name}`);
-      } else {
-        console.log(`⚠️ No questions extracted from ${file.name}`);
+
+      try {
+        // Use optimized processing for each file
+        const fileQuestions = await extractQuestionsFromPdfOptimized(buffer, false);
+
+        console.log(`✅ File ${file.name}: ${fileQuestions.length} questions extracted`);
+
+        allQuestions = allQuestions.concat(fileQuestions);
+        totalFileSize += file.size;
+        fileNames.push(file.name);
+      } catch (error) {
+        console.error(`❌ Failed to process ${file.name}:`, error);
+        // Continue with other files instead of failing completely
       }
-      
-      totalFileSize = file.size;
-      fileNames.push(file.name);
+
+      // Small delay between files to avoid rate limiting
+      if (index < pdfFiles.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
     }
 
     const processingTime = Date.now() - processingStartTime;
@@ -261,7 +230,7 @@ export async function POST(request: NextRequest) {
         fileCount: pdfFiles.length,
         fileNames: fileNames,
         processingTime: processingTime,
-        processingMethod: pdfFiles.length > 1 ? 'parallel-files' : (totalFileSize > 0.8 * 1024 * 1024 ? 'parallel-chunks' : 'standard'),
+        processingMethod: 'sequential',
         duplicatesInfo: {
           duplicatesRemoved,
           duplicateDetails: duplicateDetails.slice(0, 5) // Only include first 5 duplicate details to avoid large response

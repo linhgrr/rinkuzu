@@ -9,7 +9,21 @@ import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle, Badge } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
-import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer';
+import {
+  HiOutlineLightBulb,
+  HiOutlineArrowLeft,
+  HiOutlineUser,
+  HiOutlineMail,
+  HiOutlineExclamationCircle,
+  HiOutlineClock,
+  HiOutlineDocumentText,
+  HiOutlineLightningBolt,
+  HiOutlineChatAlt,
+  HiOutlineChevronLeft,
+  HiOutlineChevronRight,
+  HiOutlineRefresh
+} from 'react-icons/hi';
+import { DynamicMarkdownRenderer as MarkdownRenderer } from '@/components/ui/DynamicMarkdownRenderer';
 import { QuestionImage, OptionImage } from '@/components/ui/ImageDisplay';
 import { QuestionDiscussion } from '@/components/ui/QuestionDiscussion';
 import ReportQuiz from '@/components/ui/ReportQuiz';
@@ -32,7 +46,7 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [userAnswers, setUserAnswers] = useState<(number | number[])[]>([]);
   const [submitting, setSubmitting] = useState(false);
-  
+
   // Ask AI states
   const [showAIModal, setShowAIModal] = useState(false);
   const [aiExplanation, setAIExplanation] = useState('');
@@ -42,7 +56,7 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
 
   // Exit quiz states
   const [showExitModal, setShowExitModal] = useState(false);
-  
+
   // Discussion states
   const [isDiscussionCollapsed, setIsDiscussionCollapsed] = useState(true);
   const [showMobileDiscussion, setShowMobileDiscussion] = useState(false);
@@ -82,67 +96,67 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
 
         console.log('\n=== SHUFFLING QUIZ ===');
         console.log('Original questions count:', data.data.questions.length);
-        
+
         // First, shuffle the order of questions
         const questionsWithIndex = data.data.questions.map((question: any, index: number) => ({
           question,
           originalIndex: index
         }));
-        
+
         const shuffledQuestionsWithIndex = shuffleArray(questionsWithIndex);
         console.log('Questions shuffled order:');
         shuffledQuestionsWithIndex.forEach((item: any, newIndex: number) => {
           console.log(`Position ${newIndex + 1}: Question ${item.originalIndex + 1}`);
         });
-        
+
         // Create mapping for question order (new position -> original position)
         const questionIndexMap: number[] = [];
-        
+
         // Then shuffle options within each question
         const shuffledQuestions = shuffledQuestionsWithIndex.map((item: any, questionIndex: number) => {
           const q = item.question;
           questionIndexMap[questionIndex] = item.originalIndex;
-          
-                     console.log(`\n=== Processing Question ${questionIndex + 1} (originally Q${item.originalIndex + 1}) ===`);
-           console.log('Original options:', q.options);
-          
+
+          console.log(`\n=== Processing Question ${questionIndex + 1} (originally Q${item.originalIndex + 1}) ===`);
+          console.log('Original options:', q.options);
+
           // Create array of options with their original indices
           const optionsWithIndex = q.options.map((option: string, index: number) => ({
             option,
             originalIndex: index
           }));
-          
+
           console.log('Options with original indices:', optionsWithIndex);
-          
-                     // Shuffle the array
-           const shuffledOptionsWithIndex = shuffleArray(optionsWithIndex);
-           console.log('After shuffle:', shuffledOptionsWithIndex);
-           
-           // Extract shuffled options and create mapping
-           const shuffledOptions: string[] = [];
-           const optionIndexMap: number[] = [];
-           
-           for (let newIndex = 0; newIndex < shuffledOptionsWithIndex.length; newIndex++) {
-             const item = shuffledOptionsWithIndex[newIndex] as { option: string; originalIndex: number };
-             shuffledOptions[newIndex] = item.option;
-             optionIndexMap[newIndex] = item.originalIndex;
-           }
-          
+
+          // Shuffle the array
+          const shuffledOptionsWithIndex = shuffleArray(optionsWithIndex);
+          console.log('After shuffle:', shuffledOptionsWithIndex);
+
+          // Extract shuffled options and create mapping
+          const shuffledOptions: string[] = [];
+          const optionIndexMap: number[] = [];
+
+          for (let newIndex = 0; newIndex < shuffledOptionsWithIndex.length; newIndex++) {
+            const item = shuffledOptionsWithIndex[newIndex] as { option: string; originalIndex: number };
+            shuffledOptions[newIndex] = item.option;
+            optionIndexMap[newIndex] = item.originalIndex;
+          }
+
           console.log('Final shuffled options:', shuffledOptions);
           console.log('Option index map (new -> original):', optionIndexMap);
-          
+
           // Check if shuffle actually happened
           const isShuffled = !q.options.every((option: string, index: number) => option === shuffledOptions[index]);
           console.log('Was actually shuffled:', isShuffled);
-            
-                     return { 
-            ...q, 
+
+          return {
+            ...q,
             options: shuffledOptions,
             optionIndexMap, // Map from new option index to original option index
             originalQuestionIndex: item.originalIndex // Store original question index
           };
         });
-        
+
         // Validate that all questions have the required mapping data
         const validationErrors = [];
         shuffledQuestions.forEach((q, index) => {
@@ -153,28 +167,28 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
             validationErrors.push(`Question ${index + 1}: missing originalQuestionIndex`);
           }
         });
-        
+
         if (!Array.isArray(questionIndexMap) || questionIndexMap.length !== shuffledQuestions.length) {
           validationErrors.push('Invalid questionIndexMap');
         }
-        
+
         if (validationErrors.length > 0) {
           console.error('Quiz validation errors:', validationErrors);
           throw new Error('Quiz data validation failed: ' + validationErrors.join(', '));
         }
-        
-        setQuiz({ 
-          ...data.data, 
+
+        setQuiz({
+          ...data.data,
           questions: shuffledQuestions,
           questionIndexMap // Map from new question position to original question position
         });
-        
+
         // Initialize answers based on SHUFFLED question types (not original)
         const initialAnswers = shuffledQuestions.map((q: any, index: number) => {
           console.log(`Shuffled Question ${index}:`, { type: q.type, question: q.question });
           return q.type === 'multiple' ? [] : -1;
         });
-        
+
         console.log('Initial answers (based on shuffled questions):', initialAnswers);
         console.log('Initial answers with types:', initialAnswers.map((ans: any, idx: number) => ({
           index: idx,
@@ -182,7 +196,7 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
           answerType: typeof ans,
           isArray: Array.isArray(ans)
         })));
-        
+
         setUserAnswers(initialAnswers);
         console.log('\n=== QUIZ LOADED ===');
         console.log('Total questions:', data.data.questions.length);
@@ -192,8 +206,8 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
       } else {
         if (data.error === 'Premium subscription required to access private quizzes') {
           setShowPremiumModal(true);
-      } else {
-        setError(data.error || 'Quiz not found');
+        } else {
+          setError(data.error || 'Quiz not found');
         }
       }
     } catch (error) {
@@ -214,24 +228,24 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
 
   const selectAnswer = (answerIndex: number) => {
     if (!quiz) return;
-    
+
     const currentQuestion = quiz.questions[currentQuestionIndex];
     const newAnswers = [...userAnswers];
-    
+
     if (currentQuestion.type === 'single') {
       // Single choice: replace answer
       newAnswers[currentQuestionIndex] = answerIndex;
     } else {
       // Multiple choice: toggle answer in array
       let currentAnswers = newAnswers[currentQuestionIndex];
-      
+
       // Ensure currentAnswers is an array for multiple choice
       if (!Array.isArray(currentAnswers)) {
         currentAnswers = [];
       }
-      
+
       const answerExists = currentAnswers.includes(answerIndex);
-      
+
       if (answerExists) {
         // Remove answer
         newAnswers[currentQuestionIndex] = currentAnswers.filter(a => a !== answerIndex);
@@ -257,7 +271,7 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
 
   const submitQuiz = async () => {
     if (!quiz) return;
-    
+
     const unanswered = userAnswers.filter((answer, index) => {
       const question = quiz.questions[index];
       if (question.type === 'single') {
@@ -266,7 +280,7 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
         return !Array.isArray(answer) || answer.length === 0;
       }
     }).length;
-    
+
     if (unanswered > 0) {
       if (!confirm(`You have ${unanswered} unanswered questions. Submit anyway?`)) {
         return;
@@ -277,12 +291,12 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
     try {
       console.log('=== SUBMITTING QUIZ ===');
       console.log('userAnswers:', userAnswers);
-              console.log('userAnswers with types:', userAnswers.map((ans: any, idx: number) => ({
-          index: idx,
-          answer: ans,
-          answerType: typeof ans,
-          isArray: Array.isArray(ans)
-        })));
+      console.log('userAnswers with types:', userAnswers.map((ans: any, idx: number) => ({
+        index: idx,
+        answer: ans,
+        answerType: typeof ans,
+        isArray: Array.isArray(ans)
+      })));
       console.log('questionIndexMap:', (quiz as any).questionIndexMap);
       console.log('quiz.questions:', quiz.questions.map((q, i) => ({
         currentIndex: i,
@@ -291,12 +305,12 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
         optionsCount: q.options.length,
         optionIndexMap: (q as any).optionIndexMap
       })));
-      
+
       // First convert option indices, then reorder to match original question order
       const convertedAnswers = userAnswers.map((ans, idx) => {
         const question = quiz.questions[idx];
         const mapArr: number[] = (question as any).optionIndexMap;
-        
+
         // Add validation for optionIndexMap
         if (!mapArr || !Array.isArray(mapArr)) {
           console.error(`Question ${idx}: optionIndexMap is missing or invalid`, {
@@ -305,16 +319,16 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
           });
           throw new Error(`Option mapping is missing for question ${idx + 1}`);
         }
-        
+
         console.log(`Converting question ${idx} (originally Q${(question as any).originalQuestionIndex + 1}):`, {
           userAnswer: ans,
           optionIndexMap: mapArr,
           questionType: question.type
         });
-        
+
         if (question.type === 'single') {
           const aNum = ans as number;
-          
+
           // Validate that answer is a number for single choice
           if (typeof aNum !== 'number') {
             console.error(`Single choice question ${idx} has non-number answer:`, {
@@ -324,7 +338,7 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
             });
             throw new Error(`Invalid answer type for single choice question ${idx + 1}`);
           }
-          
+
           if (aNum !== -1 && (aNum < 0 || aNum >= mapArr.length)) {
             console.error(`Invalid answer index ${aNum} for question ${idx}, mapArr length: ${mapArr.length}`);
             throw new Error(`Invalid answer for question ${idx + 1}`);
@@ -342,7 +356,7 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
             });
             throw new Error(`Invalid answer type for multiple choice question ${idx + 1}`);
           }
-          
+
           const arr = ans as number[];
           for (const a of arr) {
             if (typeof a !== 'number' || a < 0 || a >= mapArr.length) {
@@ -358,7 +372,7 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
 
       // Reorder answers to match original question order
       const questionIndexMap: number[] = (quiz as any).questionIndexMap;
-      
+
       // Add validation for questionIndexMap
       if (!questionIndexMap || !Array.isArray(questionIndexMap)) {
         console.error('questionIndexMap is missing or invalid', {
@@ -367,7 +381,7 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
         });
         throw new Error('Question ordering mapping is missing');
       }
-      
+
       if (questionIndexMap.length !== convertedAnswers.length) {
         console.error('questionIndexMap length mismatch', {
           questionIndexMapLength: questionIndexMap.length,
@@ -375,9 +389,9 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
         });
         throw new Error('Question mapping length mismatch');
       }
-      
+
       const originalOrderAnswers: (number | number[])[] = new Array(convertedAnswers.length);
-      
+
       convertedAnswers.forEach((answer, shuffledIndex) => {
         const originalIndex = questionIndexMap[shuffledIndex];
         if (originalIndex < 0 || originalIndex >= convertedAnswers.length) {
@@ -394,9 +408,9 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
         answers: originalOrderAnswers,
         userEmail: session?.user?.email || userEmail.trim(),
       };
-      
+
       console.log('payload:', payload);
-      
+
       const response = await fetch(`/api/quiz/${params.slug}/attempt`, {
         method: 'POST',
         headers: {
@@ -414,7 +428,7 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
       }
     } catch (error) {
       console.error('Quiz submission error:', error);
-      
+
       // Show more specific error message if available
       if (error instanceof Error) {
         setError(error.message);
@@ -428,11 +442,11 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
 
   const askAI = async () => {
     if (!quiz) return;
-    
+
     setLoadingAI(true);
     setAIError('');
     setAIExplanation('');
-    
+
     try {
       const currentQuestion = quiz.questions[currentQuestionIndex];
       const response = await fetch('/api/quiz/ask-ai', {
@@ -514,9 +528,7 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
           <Card variant="glass" className="max-w-md w-full backdrop-blur-xl border-white/30 shadow-xl">
             <CardHeader className="text-center">
               <div className="inline-flex items-center justify-center p-3 bg-red-100 rounded-2xl mb-4 mx-auto w-fit">
-                <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
+                <HiOutlineExclamationCircle className="w-6 h-6 text-red-600" />
               </div>
               <CardTitle className="text-red-600 text-xl">Quiz Not Found</CardTitle>
             </CardHeader>
@@ -524,9 +536,7 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
               <p className="text-gray-600 mb-6">{error}</p>
               <Link href="/">
                 <Button variant="gradient" className="w-full">
-                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-1a1 1 0 011-1h2a1 1 0 011 1v1a1 1 0 001 1m-6 0h6" />
-                  </svg>
+                  <HiOutlineArrowLeft className="w-4 h-4 mr-2" />
                   Return Home
                 </Button>
               </Link>
@@ -546,16 +556,14 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
           <Card variant="glass" className="max-w-md w-full backdrop-blur-xl border-white/30 shadow-xl">
             <CardHeader className="text-center">
               <div className="inline-flex items-center justify-center p-3 bg-gradient-to-br from-violet-500/10 to-purple-600/10 rounded-2xl mb-4 mx-auto w-fit">
-                <svg className="w-6 h-6 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
+                <HiOutlineDocumentText className="w-6 h-6 text-violet-600" />
               </div>
               <CardTitle className="text-2xl gradient-text mb-2">Quiz Access</CardTitle>
               <p className="text-gray-600">Loading quiz information...</p>
             </CardHeader>
           </Card>
         </div>
-        
+
         {/* Premium Required Modal */}
         <PremiumRequiredModal
           isOpen={showPremiumModal}
@@ -574,9 +582,7 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
           <Card variant="glass" className="max-w-lg w-full backdrop-blur-xl border-white/30 shadow-xl animate-fadeInUp">
             <CardHeader className="text-center">
               <div className="inline-flex items-center justify-center p-3 bg-gradient-to-br from-violet-500/10 to-purple-600/10 rounded-2xl mb-4 mx-auto w-fit">
-                <svg className="w-6 h-6 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
+                <HiOutlineDocumentText className="w-6 h-6 text-violet-600" />
               </div>
               <CardTitle className="text-2xl gradient-text mb-2">{quiz.title}</CardTitle>
               {quiz.description && (
@@ -598,13 +604,11 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
                     </Badge>
                   </div>
                 </div>
-                
+
                 {error && (
                   <Card variant="bordered" className="border-red-200 bg-red-50 p-4">
                     <div className="flex items-center text-red-700">
-                      <svg className="w-5 h-5 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
+                      <HiOutlineExclamationCircle className="w-5 h-5 mr-2 flex-shrink-0" />
                       <span className="text-sm font-medium">{error}</span>
                     </div>
                   </Card>
@@ -613,9 +617,7 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
                 {/* Login Suggestion */}
                 <Card variant="bordered" className="border-blue-200 bg-blue-50 p-4">
                   <div className="text-center text-blue-700">
-                    <svg className="w-6 h-6 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
+                    <HiOutlineLightBulb className="w-6 h-6 mx-auto mb-2 text-blue-600" />
                     <p className="text-sm font-medium">
                       <Link href="/login" className="underline hover:text-blue-800">Login</Link> to track your quiz history or continue as guest below.
                     </p>
@@ -634,9 +636,7 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
                     required
                     variant="glass"
                     icon={
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
-                      </svg>
+                      <HiOutlineMail className="w-5 h-5" />
                     }
                   />
                   <p className="mt-2 text-xs text-gray-500">
@@ -647,26 +647,20 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
                 {/* Action Buttons */}
                 <div className="space-y-3">
                   <Button onClick={startQuiz} variant="gradient" size="lg" className="w-full">
-                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                    </svg>
+                    <HiOutlineLightningBolt className="w-5 h-5 mr-2" />
                     Start Quiz
                   </Button>
-                  
+
                   <div className="grid grid-cols-2 gap-3">
                     <Link href="/">
                       <Button variant="outline" className="w-full">
-                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                        </svg>
+                        <HiOutlineArrowLeft className="w-4 h-4 mr-2" />
                         Back Home
                       </Button>
                     </Link>
                     <Link href={`/quiz/${params.slug}/flashcards`}>
                       <Button variant="accent" className="w-full">
-                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                        </svg>
+                        <HiOutlineRefresh className="w-4 h-4 mr-2" />
                         Flashcards
                       </Button>
                     </Link>
@@ -682,7 +676,7 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
 
   // Quiz interface
   if (!quiz) return null;
-  
+
   const currentQuestion = quiz.questions[currentQuestionIndex];
   const progress = Math.round(((currentQuestionIndex + 1) / quiz.questions.length) * 100);
   const answeredQuestions = userAnswers.filter((answer, index) => {
@@ -706,9 +700,7 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
                 onClick={openExitModal}
                 className="text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300"
               >
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
+                <HiOutlineArrowLeft className="w-4 h-4 mr-2" />
                 Exit Quiz
               </Button>
               <div>
@@ -716,16 +708,12 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
                 <p className="text-sm">
                   {session?.user?.email ? (
                     <Badge variant="success" className="text-xs">
-                      <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                      </svg>
+                      <HiOutlineUser className="w-3 h-3 mr-1" />
                       {session.user.email}
                     </Badge>
                   ) : (
                     <Badge variant="default" className="text-xs">
-                      <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
-                      </svg>
+                      <HiOutlineMail className="w-3 h-3 mr-1" />
                       {userEmail}
                     </Badge>
                   )}
@@ -767,206 +755,202 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
           {/* Question Card */}
           <div className={`flex-1 ${!isDiscussionCollapsed ? 'pr-6' : ''}`}>
             <Card>
-          <CardHeader>
-            <div className="flex justify-between items-start">
-              <div className="flex-1">
-                <CardTitle className="text-xl">
-                  {currentQuestion.question}
-                </CardTitle>
-                
-              </div>
-              <div className="flex items-center space-x-2 ml-4">
-                <Button
-                  variant="outline"
-                  onClick={openAIModal}
-                  className="text-purple-600 border-purple-200 hover:bg-purple-50 hover:border-purple-300"
-                >
-                  Ask Rin-chan
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    // On desktop, toggle the discussion panel
-                    if (window.innerWidth >= 768) {
-                      setIsDiscussionCollapsed(!isDiscussionCollapsed);
-                    } else {
-                      // On mobile, show the modal
-                      setShowMobileDiscussion(true);
-                    }
-                  }}
-                  className="text-blue-600 border-blue-200 hover:bg-blue-50 hover:border-blue-300"
-                  title="Discussion"
-                >
-                  Discussion
-                </Button>
-              </div>
-            </div>
-            
-            {/* Display question image if exists */}
-            {currentQuestion.questionImage && (
-              <div className="mt-4">
-                <QuestionImage 
-                  src={currentQuestion.questionImage} 
-                  alt={`Question ${currentQuestionIndex + 1} image`}
-                />
-              </div>
-            )}
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {currentQuestion.options.map((option, index) => {
-                const currentAnswer = userAnswers[currentQuestionIndex];
-                let isSelected = false;
-                
-                if (currentQuestion.type === 'single') {
-                  isSelected = currentAnswer === index;
-                } else {
-                  // For multiple choice, ensure we have an array
-                  isSelected = Array.isArray(currentAnswer) && currentAnswer.includes(index);
-                }
-                
-                return (
-                  <label
-                    key={index}
-                    className={`flex items-center p-4 rounded-lg border-2 cursor-pointer transition-colors ${
-                      isSelected
-                        ? 'border-blue-500 bg-blue-50'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
-                    <input
-                      type={currentQuestion.type === 'single' ? 'radio' : 'checkbox'}
-                      name={`question-${currentQuestionIndex}`}
-                      value={index}
-                      checked={isSelected}
-                      onChange={() => selectAnswer(index)}
-                      className="sr-only"
+              <CardHeader>
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <CardTitle className="text-xl">
+                      {currentQuestion.question}
+                    </CardTitle>
+
+                  </div>
+                  <div className="flex items-center space-x-2 ml-4">
+                    <Button
+                      variant="outline"
+                      onClick={openAIModal}
+                      className="text-purple-600 border-purple-200 hover:bg-purple-50 hover:border-purple-300"
+                    >
+                      Ask Rin-chan
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        // On desktop, toggle the discussion panel
+                        if (window.innerWidth >= 768) {
+                          setIsDiscussionCollapsed(!isDiscussionCollapsed);
+                        } else {
+                          // On mobile, show the modal
+                          setShowMobileDiscussion(true);
+                        }
+                      }}
+                      className="text-blue-600 border-blue-200 hover:bg-blue-50 hover:border-blue-300"
+                      title="Discussion"
+                    >
+                      Discussion
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Display question image if exists */}
+                {currentQuestion.questionImage && (
+                  <div className="mt-4">
+                    <QuestionImage
+                      src={currentQuestion.questionImage}
+                      alt={`Question ${currentQuestionIndex + 1} image`}
                     />
-                    <div className={`w-4 h-4 mr-3 flex items-center justify-center border-2 ${
-                      currentQuestion.type === 'single' ? 'rounded-full' : 'rounded'
-                    } ${
-                      isSelected
-                        ? 'border-blue-500 bg-blue-500'
-                        : 'border-gray-300'
-                    }`}>
-                      {isSelected && (
-                        currentQuestion.type === 'single' ? (
-                          <div className="w-2 h-2 rounded-full bg-white"></div>
-                        ) : (
-                          <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                          </svg>
-                        )
-                      )}
-                    </div>
-                    <div className="flex-1">
-                      <span className="text-gray-900">{option}</span>
-                      
-                      {/* Display option image if exists */}
-                      {currentQuestion.optionImages?.[index] && (
-                        <div className="mt-2">
-                          <OptionImage 
-                            src={currentQuestion.optionImages[index]!} 
-                            alt={`Option ${String.fromCharCode(65 + index)} image`}
-                          />
+                  </div>
+                )}
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {currentQuestion.options.map((option, index) => {
+                    const currentAnswer = userAnswers[currentQuestionIndex];
+                    let isSelected = false;
+
+                    if (currentQuestion.type === 'single') {
+                      isSelected = currentAnswer === index;
+                    } else {
+                      // For multiple choice, ensure we have an array
+                      isSelected = Array.isArray(currentAnswer) && currentAnswer.includes(index);
+                    }
+
+                    return (
+                      <label
+                        key={index}
+                        className={`flex items-center p-4 rounded-lg border-2 cursor-pointer transition-colors ${isSelected
+                          ? 'border-blue-500 bg-blue-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                          }`}
+                      >
+                        <input
+                          type={currentQuestion.type === 'single' ? 'radio' : 'checkbox'}
+                          name={`question-${currentQuestionIndex}`}
+                          value={index}
+                          checked={isSelected}
+                          onChange={() => selectAnswer(index)}
+                          className="sr-only"
+                        />
+                        <div className={`w-4 h-4 mr-3 flex items-center justify-center border-2 ${currentQuestion.type === 'single' ? 'rounded-full' : 'rounded'
+                          } ${isSelected
+                            ? 'border-blue-500 bg-blue-500'
+                            : 'border-gray-300'
+                          }`}>
+                          {isSelected && (
+                            currentQuestion.type === 'single' ? (
+                              <div className="w-2 h-2 rounded-full bg-white"></div>
+                            ) : (
+                              <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                            )
+                          )}
                         </div>
-                      )}
-                    </div>
-                  </label>
-                );
-              })}
-            </div>
+                        <div className="flex-1">
+                          <span className="text-gray-900">{option}</span>
 
-            {error && (
-              <div className="mt-4 rounded-md bg-red-50 p-3">
-                <div className="text-sm text-red-700">{error}</div>
-              </div>
-            )}
+                          {/* Display option image if exists */}
+                          {currentQuestion.optionImages?.[index] && (
+                            <div className="mt-2">
+                              <OptionImage
+                                src={currentQuestion.optionImages[index]!}
+                                alt={`Option ${String.fromCharCode(65 + index)} image`}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
 
-            {/* Navigation */}
-            <div className="flex justify-between items-center mt-8">
-              <Button
-                variant="outline"
-                onClick={previousQuestion}
-                disabled={currentQuestionIndex === 0}
-              >
-                Previous
-              </Button>
+                {error && (
+                  <div className="mt-4 rounded-md bg-red-50 p-3">
+                    <div className="text-sm text-red-700">{error}</div>
+                  </div>
+                )}
 
-              <div className="text-sm text-gray-600">
-                {currentQuestionIndex + 1} / {quiz.questions.length}
-              </div>
-
-              {currentQuestionIndex === quiz.questions.length - 1 ? (
-                <Button
-                  onClick={submitQuiz}
-                  loading={submitting}
-                  className="bg-green-600 hover:bg-green-700"
-                >
-                  Submit Quiz
-                </Button>
-              ) : (
-                <Button
-                  onClick={nextQuestion}
-                  disabled={currentQuestionIndex === quiz.questions.length - 1}
-                >
-                  Next
-                </Button>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Question overview */}
-        <Card className="mt-6">
-          <CardHeader>
-            <CardTitle className="text-lg">Question Overview</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-10 gap-2">
-              {quiz.questions.map((question, index) => {
-                let isAnswered = false;
-                const answer = userAnswers[index];
-                
-                if (question.type === 'single') {
-                  isAnswered = answer !== -1;
-                } else {
-                  isAnswered = Array.isArray(answer) && answer.length > 0;
-                }
-                
-                return (
-                  <button
-                    key={index}
-                    onClick={() => setCurrentQuestionIndex(index)}
-                    className={`w-8 h-8 rounded text-xs font-medium transition-colors ${
-                      index === currentQuestionIndex
-                        ? 'bg-blue-600 text-white'
-                        : isAnswered
-                        ? 'bg-green-100 text-green-800 border border-green-300'
-                        : 'bg-gray-100 text-gray-600 border border-gray-300'
-                    }`}
+                {/* Navigation */}
+                <div className="flex justify-between items-center mt-8">
+                  <Button
+                    variant="outline"
+                    onClick={previousQuestion}
+                    disabled={currentQuestionIndex === 0}
                   >
-                    {index + 1}
-                  </button>
-                );
-              })}
-            </div>
-            <div className="mt-4 flex items-center space-x-6 text-xs">
-              <div className="flex items-center">
-                <div className="w-3 h-3 bg-blue-600 rounded mr-2"></div>
-                <span>Current</span>
-              </div>
-              <div className="flex items-center">
-                <div className="w-3 h-3 bg-green-100 border border-green-300 rounded mr-2"></div>
-                <span>Answered</span>
-              </div>
-              <div className="flex items-center">
-                <div className="w-3 h-3 bg-gray-100 border border-gray-300 rounded mr-2"></div>
-                <span>Not answered</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+                    Previous
+                  </Button>
+
+                  <div className="text-sm text-gray-600">
+                    {currentQuestionIndex + 1} / {quiz.questions.length}
+                  </div>
+
+                  {currentQuestionIndex === quiz.questions.length - 1 ? (
+                    <Button
+                      onClick={submitQuiz}
+                      loading={submitting}
+                      className="bg-green-600 hover:bg-green-700"
+                    >
+                      Submit Quiz
+                    </Button>
+                  ) : (
+                    <Button
+                      onClick={nextQuestion}
+                      disabled={currentQuestionIndex === quiz.questions.length - 1}
+                    >
+                      Next
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Question overview */}
+            <Card className="mt-6">
+              <CardHeader>
+                <CardTitle className="text-lg">Question Overview</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-10 gap-2">
+                  {quiz.questions.map((question, index) => {
+                    let isAnswered = false;
+                    const answer = userAnswers[index];
+
+                    if (question.type === 'single') {
+                      isAnswered = answer !== -1;
+                    } else {
+                      isAnswered = Array.isArray(answer) && answer.length > 0;
+                    }
+
+                    return (
+                      <button
+                        key={index}
+                        onClick={() => setCurrentQuestionIndex(index)}
+                        className={`w-8 h-8 rounded text-xs font-medium transition-colors ${index === currentQuestionIndex
+                          ? 'bg-blue-600 text-white'
+                          : isAnswered
+                            ? 'bg-green-100 text-green-800 border border-green-300'
+                            : 'bg-gray-100 text-gray-600 border border-gray-300'
+                          }`}
+                      >
+                        {index + 1}
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="mt-4 flex items-center space-x-6 text-xs">
+                  <div className="flex items-center">
+                    <div className="w-3 h-3 bg-blue-600 rounded mr-2"></div>
+                    <span>Current</span>
+                  </div>
+                  <div className="flex items-center">
+                    <div className="w-3 h-3 bg-green-100 border border-green-300 rounded mr-2"></div>
+                    <span>Answered</span>
+                  </div>
+                  <div className="flex items-center">
+                    <div className="w-3 h-3 bg-gray-100 border border-gray-300 rounded mr-2"></div>
+                    <span>Not answered</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
           {/* Discussion Panel */}
@@ -1008,7 +992,7 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
             <p className="text-gray-700">
               Are you sure you want to exit this quiz? Your progress will not be saved and you'll need to start over.
             </p>
-            
+
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
               <div className="flex items-start">
                 <svg className="w-5 h-5 text-yellow-600 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
@@ -1022,7 +1006,7 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
                 </div>
               </div>
             </div>
-            
+
             <div className="flex gap-3 pt-2">
               <Button
                 variant="outline"
@@ -1106,8 +1090,8 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
             {aiExplanation && (
               <div className="rounded-md bg-green-50 p-4">
                 <h4 className="font-medium text-green-900 mb-3">🎓 AI Explanation:</h4>
-                <MarkdownRenderer 
-                  content={aiExplanation} 
+                <MarkdownRenderer
+                  content={aiExplanation}
                   className="text-green-800"
                 />
               </div>
@@ -1115,8 +1099,8 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
 
             {/* Disclaimer */}
             <div className="text-xs text-gray-500 bg-yellow-50 p-3 rounded-md">
-              <strong>📝 Note:</strong> This AI explanation is for learning purposes. 
-              It won't reveal the correct answer directly but will help you understand 
+              <strong>📝 Note:</strong> This AI explanation is for learning purposes.
+              It won't reveal the correct answer directly but will help you understand
               the concepts and approach to solve the question.
             </div>
           </div>

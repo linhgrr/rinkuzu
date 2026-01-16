@@ -5,7 +5,7 @@ import { Button } from './Button';
 import { Card, CardContent, CardHeader, CardTitle } from './Card';
 import { Modal } from './Modal';
 import { ImageDisplay } from './ImageDisplay';
-import { MarkdownRenderer } from './MarkdownRenderer';
+import { DynamicMarkdownRenderer as MarkdownRenderer } from './DynamicMarkdownRenderer';
 
 interface AttemptDetail {
   _id: string;

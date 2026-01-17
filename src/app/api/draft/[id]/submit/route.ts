@@ -5,6 +5,7 @@ import { authOptions } from '@/lib/auth';
 import connectDB from '@/lib/mongoose';
 import DraftQuiz from '@/models/DraftQuiz';
 import Quiz from '@/models/Quiz';
+import { deletePDF } from '@/lib/s3';
 
 // Simple slug generator (inline to avoid import issues)
 function generateSlug(title: string): string {
@@ -153,8 +154,19 @@ export async function POST(
       isPrivate: false,
     });
 
-    // Delete the draft
+    // Delete the draft from MongoDB
     await DraftQuiz.deleteOne({ _id: params.id });
+
+    // Cleanup S3 (best effort - don't fail if this fails)
+    if (draft.pdfData?.pdfKey) {
+      try {
+        await deletePDF(draft.pdfData.pdfKey);
+        console.log('Deleted PDF from S3 after submit:', draft.pdfData.pdfKey);
+      } catch (s3Error) {
+        console.error('Failed to delete PDF from S3 after submit:', s3Error);
+        // Don't fail the request - quiz was created successfully
+      }
+    }
 
     return NextResponse.json({
       success: true,

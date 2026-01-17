@@ -101,8 +101,8 @@ export default function CategoriesPage() {
         <Navigation />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-8">
           <div className="flex justify-center items-center h-64">
-            <div className="w-16 h-16 gradient-primary rounded-2xl flex items-center justify-center mx-auto mb-4 animate-pulse">
-              <span className="text-white font-bold text-xl">R</span>
+            <div className="h-16 flex items-center justify-center mx-auto mb-4 animate-pulse">
+              <img src="https://i.ibb.co/WWGXBZXm/image-removebg-preview.png" alt="RinKuzu Logo" className="h-16 w-auto object-contain" />
             </div>
           </div>
         </div>

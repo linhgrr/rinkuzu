@@ -321,13 +321,10 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
             <div className="flex items-center">
-              <Link href="/" className="flex items-center space-x-2 group">
-                <div className="w-8 h-8 bg-[#0071e3] rounded-lg flex items-center justify-center shadow-sm transition-transform group-hover:scale-105">
-                  <HiOutlineLightBulb className="w-5 h-5 text-white" />
+              <Link href="/" className="flex items-center group">
+                <div className="h-10 flex items-center justify-center transition-transform group-hover:scale-105">
+                  <img src="https://i.ibb.co/WWGXBZXm/image-removebg-preview.png" alt="RinKuzu Logo" className="h-10 w-auto object-contain" />
                 </div>
-                <span className="text-lg font-semibold text-[#1d1d1f] hidden sm:block">
-                  RinKuzu
-                </span>
               </Link>
             </div>
 

@@ -83,13 +83,11 @@ function PDFViewerComponent({ files, onClose }: { files: File[]; onClose: () => 
 
   const countPDFPages = async (file: File) => {
     try {
-      // Dynamic import for PDF.js
-      const pdfjsLib = await import('pdfjs-dist');
-      pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdfjs/pdf.worker.min.mjs';
-
+      // Use pdf-lib instead of pdfjs-dist for page counting (more compatible with Next.js)
+      const { PDFDocument } = await import('pdf-lib');
       const arrayBuffer = await file.arrayBuffer();
-      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-      setTotalPages(pdf.numPages);
+      const pdf = await PDFDocument.load(arrayBuffer);
+      setTotalPages(pdf.getPageCount());
     } catch (err) {
       console.error('Error counting pages:', err);
       setTotalPages(0);
@@ -598,7 +596,7 @@ export default function CreateQuizPage() {
         throw new Error(error.error || 'Failed to create draft');
       }
 
-      const { draftId, chunks, totalPages } = await response.json();
+      const { draftId, chunks, totalPages, expiresAt } = await response.json();
 
       // Add to store
       addDraft({
@@ -607,8 +605,10 @@ export default function CreateQuizPage() {
         status: 'processing',
         chunksTotal: chunks.total,
         chunksProcessed: 0,
+        chunksError: 0,
         questionsCount: 0,
         createdAt: new Date().toISOString(),
+        expiresAt: expiresAt,
       });
 
       // Start background processing

@@ -72,16 +72,9 @@ export default function LoginPage() {
         {/* Header */}
         <div className="sm:mx-auto sm:w-full sm:max-w-md mb-6 sm:mb-8">
           <div className="text-center">
-            <Link href="/" className="inline-flex items-center space-x-3 group">
-              <div className="relative">
-                <div className="w-12 h-12 sm:w-16 sm:h-16 gradient-primary rounded-2xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300">
-                  <span className="text-white font-bold text-xl sm:text-2xl">R</span>
-                </div>
-                <div className="absolute -inset-1 gradient-primary rounded-2xl opacity-30 group-hover:opacity-50 transition-opacity duration-300 blur-sm -z-10" />
-              </div>
-              <div>
-                <span className="text-2xl sm:text-3xl font-bold gradient-text">RinKuzu</span>
-                <p className="text-xs sm:text-sm text-gray-500 -mt-1">AI Quiz Platform</p>
+            <Link href="/" className="inline-flex items-center group">
+              <div className="h-16 sm:h-20 flex items-center justify-center transition-transform group-hover:scale-105">
+                <img src="https://i.ibb.co/WWGXBZXm/image-removebg-preview.png" alt="RinKuzu Logo" className="h-16 sm:h-20 w-auto object-contain" />
               </div>
             </Link>
           </div>

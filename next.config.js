@@ -109,7 +109,7 @@ const withPWA = require('next-pwa')({
 const nextConfig = {
   // Server Actions are enabled by default in Next.js 14
   experimental: {
-    serverComponentsExternalPackages: ['pdf-lib', 'pdfjs-dist'],
+    serverComponentsExternalPackages: ['pdf-lib'],
     optimizePackageImports: ['react-icons', 'react-markdown', 'lucide-react'],
   },
   images: {

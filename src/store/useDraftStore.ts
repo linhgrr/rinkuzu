@@ -8,9 +8,11 @@ export interface DraftProgress {
   status: 'uploading' | 'processing' | 'completed' | 'error';
   chunksTotal: number;
   chunksProcessed: number;
+  chunksError?: number;
   questionsCount: number;
   error?: string;
   createdAt: string;
+  expiresAt?: string;
 }
 
 interface DraftStore {
@@ -23,6 +25,8 @@ interface DraftStore {
   setDraftError: (id: string, error: string) => void;
   removeDraft: (id: string) => void;
   clearCompletedDrafts: () => void;
+  cleanupExpiredDrafts: () => void;
+  syncWithServer: (serverDrafts: Array<{ _id: string; status: string; expiresAt: string }>) => void;
 
   // Computed helpers
   getActiveDrafts: () => DraftProgress[];
@@ -95,6 +99,43 @@ export const useDraftStore = create<DraftStore>()(
               ([_, d]) => d.status !== 'completed'
             )
           );
+          return { activeDrafts };
+        }),
+
+      cleanupExpiredDrafts: () =>
+        set((state) => {
+          const now = new Date();
+          const activeDrafts = Object.fromEntries(
+            Object.entries(state.activeDrafts).filter(([_, d]) => {
+              if (!d.expiresAt) return true; // Keep if no expiry
+              return new Date(d.expiresAt) > now;
+            })
+          );
+          return { activeDrafts };
+        }),
+
+      syncWithServer: (serverDrafts) =>
+        set((state) => {
+          const serverIds = new Set(serverDrafts.map(d => d._id));
+
+          // Remove drafts that no longer exist on server
+          const activeDrafts = Object.fromEntries(
+            Object.entries(state.activeDrafts).filter(([id, _]) => {
+              return serverIds.has(id);
+            })
+          );
+
+          // Update status from server for existing drafts
+          serverDrafts.forEach(sd => {
+            if (activeDrafts[sd._id]) {
+              activeDrafts[sd._id] = {
+                ...activeDrafts[sd._id],
+                status: sd.status as any,
+                expiresAt: sd.expiresAt,
+              };
+            }
+          });
+
           return { activeDrafts };
         }),
 

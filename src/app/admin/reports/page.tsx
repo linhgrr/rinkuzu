@@ -9,6 +9,7 @@ import Navigation from '@/components/Navigation';
 import Sidebar from '@/components/Sidebar';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { Modal } from '@/components/ui/Modal';
 import {
   HiOutlineInbox,
@@ -31,6 +32,8 @@ export default function AdminReportsPage() {
   const [adminNotes, setAdminNotes] = useState('');
   const [updating, setUpdating] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [reportToDelete, setReportToDelete] = useState<IReport | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (status === 'loading') return;
@@ -108,9 +111,8 @@ export default function AdminReportsPage() {
   };
 
   const deleteReport = async (reportId: string) => {
-    if (!confirm('Are you sure you want to delete this report?')) return;
-
     try {
+      setDeleting(true);
       const response = await fetch(`/api/admin/reports/${reportId}`, {
         method: 'DELETE',
       });
@@ -127,7 +129,18 @@ export default function AdminReportsPage() {
     } catch (error) {
       console.error('Error deleting report:', error);
       toast.error('Failed to delete report');
+    } finally {
+      setDeleting(false);
     }
+  };
+
+  const confirmDeleteReport = async () => {
+    if (!reportToDelete?._id) return;
+    await deleteReport(reportToDelete._id);
+    if (selectedReport?._id === reportToDelete._id) {
+      closeReportModal();
+    }
+    setReportToDelete(null);
   };
 
   const formatDate = (date: Date) => {
@@ -280,7 +293,7 @@ export default function AdminReportsPage() {
 
                         <Button
                           variant="outline"
-                          onClick={() => deleteReport(report._id!)}
+                          onClick={() => setReportToDelete(report)}
                           className="text-red-600 border-red-200 hover:bg-red-50"
                         >
                           <HiOutlineTrash className="w-4 h-4 mr-1" /> Delete
@@ -363,6 +376,17 @@ export default function AdminReportsPage() {
           </div>
         )}
       </Modal>
+
+      <ConfirmModal
+        isOpen={!!reportToDelete}
+        title="Delete report?"
+        message="Are you sure you want to delete this report? This action cannot be undone."
+        confirmText="Delete"
+        confirmVariant="destructive"
+        isLoading={deleting}
+        onCancel={() => setReportToDelete(null)}
+        onConfirm={confirmDeleteReport}
+      />
     </div >
   );
-} 
+}

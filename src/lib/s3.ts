@@ -58,6 +58,31 @@ export async function uploadPDFFromBase64(
 }
 
 /**
+ * Get PDF buffer from S3
+ * @param key - The S3 object key
+ * @returns PDF as Buffer
+ */
+export async function getPDFBuffer(key: string): Promise<Buffer> {
+  const command = new GetObjectCommand({
+    Bucket: BUCKET_NAME,
+    Key: key,
+  });
+
+  const response = await s3Client.send(command);
+
+  if (!response.Body) {
+    throw new Error('Empty response from S3');
+  }
+
+  // Convert stream to buffer
+  const chunks: Uint8Array[] = [];
+  for await (const chunk of response.Body as any) {
+    chunks.push(chunk);
+  }
+  return Buffer.concat(chunks);
+}
+
+/**
  * Get a signed URL for accessing a PDF
  * @param key - The S3 object key
  * @param expiresIn - URL expiry time in seconds (default: 1 hour)

@@ -82,14 +82,12 @@ export default function MobileCreatePage() {
         expiresAt: expiresAt,
       });
 
-      // Start background processing
-      startProcessing(draftId, chunks.chunkDetails, title.trim());
-
       toast.success('Đang xử lý PDF', {
         description: `${totalPages} trang, ${chunks.total} phần`,
       });
 
-      // Navigate away
+      // Navigate away first, then DraftSyncProvider will resume processing
+      // This prevents the abort that happens when this component unmounts
       router.push('/');
 
     } catch (error: any) {

@@ -611,14 +611,12 @@ export default function CreateQuizPage() {
         expiresAt: expiresAt,
       });
 
-      // Start background processing
-      startProcessing(draftId, chunks.chunkDetails, title.trim());
-
       toast.success('Processing started', {
         description: `${totalPages} pages, ${chunks.total} chunks`,
       });
 
-      // Navigate to home
+      // Navigate to home - DraftSyncProvider will resume processing
+      // This prevents the abort that happens when this component unmounts
       router.push('/');
 
     } catch (err: any) {

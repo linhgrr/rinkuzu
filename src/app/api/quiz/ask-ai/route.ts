@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import {
-  createLangChainModel,
-  createStructuredModel,
+  createOpenAIModel,
+  createStructuredOpenAIModel,
   HumanMessage,
   SystemMessage,
   QuizExplanationSchema,
   formatQuizExplanation,
   type QuizExplanation
-} from '@/lib/langchain';
+} from '@/lib/langchain-openai';
 import { authOptions } from '@/lib/auth';
 
 // Chat history interface
@@ -72,7 +72,7 @@ function validateChatInput(userQuestion: string): { isValid: boolean; error?: st
 // Summarize chat history when it gets too long
 async function summarizeChatHistory(chatHistory: ChatMessage[]): Promise<string> {
   try {
-    const model = createLangChainModel({ temperature: 0.3 });
+    const model = createOpenAIModel({ temperature: 0.3 });
 
     const chatText = chatHistory
       .slice(-6) // Last 3 turns (6 messages)
@@ -270,7 +270,7 @@ export async function POST(request: NextRequest) {
       const readableStream = new ReadableStream({
         async start(controller) {
           try {
-            const model = createLangChainModel({ temperature: 0.7 });
+            const model = createOpenAIModel({ temperature: 0.7 });
 
             // Use LangChain's stream method
             const streamResponse = await model.stream(messages);
@@ -318,7 +318,7 @@ export async function POST(request: NextRequest) {
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {
         // Use structured model with schema constraint
-        const structuredModel = createStructuredModel(QuizExplanationSchema, {
+        const structuredModel = createStructuredOpenAIModel(QuizExplanationSchema, {
           temperature: 0.7
         });
 
@@ -359,7 +359,7 @@ export async function POST(request: NextRequest) {
         if (attempt === maxRetries - 1) {
           console.log('⚠️ Falling back to unstructured output...');
           try {
-            const model = createLangChainModel({ temperature: 0.7 });
+            const model = createOpenAIModel({ temperature: 0.7 });
             const result = await model.invoke(messages);
             const explanation = typeof result.content === 'string'
               ? result.content.trim()

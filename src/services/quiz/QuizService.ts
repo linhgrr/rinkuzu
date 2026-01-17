@@ -24,7 +24,7 @@ export class QuizService implements IQuizService {
     private attemptRepository: IAttemptRepository,
     private discussionRepository: IDiscussionRepository,
     private reportRepository: IReportRepository
-  ) {}
+  ) { }
 
   async getQuizzes(options: QuizListOptions): Promise<{
     quizzes: IQuiz[]
@@ -72,7 +72,7 @@ export class QuizService implements IQuizService {
   }
 
   async createQuiz(userId: string, quizData: CreateQuizRequest): Promise<IQuiz> {
-    const { title, description, category, questions, isPrivate } = quizData
+    const { title, description, category, questions, isPrivate, pdfUrl } = quizData
 
     if (!title || !category || !questions || !Array.isArray(questions) || questions.length === 0) {
       throw new Error('Title, category, and questions are required')
@@ -114,16 +114,16 @@ export class QuizService implements IQuizService {
       }
 
       if (questionType === 'single') {
-        if (typeof question.correctIndex !== 'number' || 
-            question.correctIndex < 0 || 
-            question.correctIndex >= question.options.length) {
+        if (typeof question.correctIndex !== 'number' ||
+          question.correctIndex < 0 ||
+          question.correctIndex >= question.options.length) {
           throw new Error(`Question ${i + 1}: Invalid correct answer index`)
         }
       } else {
         if (!Array.isArray(question.correctIndexes) || question.correctIndexes.length === 0) {
           throw new Error(`Question ${i + 1}: Multiple choice questions need at least one correct answer`)
         }
-        
+
         for (const idx of question.correctIndexes) {
           if (typeof idx !== 'number' || idx < 0 || idx >= question.options.length) {
             throw new Error(`Question ${i + 1}: Invalid correct answer index`)
@@ -136,7 +136,7 @@ export class QuizService implements IQuizService {
     const baseSlug = generateSlug(title)
     let slug = baseSlug
     let counter = 1
-    
+
     while (await this.quizRepository.findBySlug(slug)) {
       slug = `${baseSlug}-${counter}`
       counter++
@@ -150,7 +150,8 @@ export class QuizService implements IQuizService {
       category,
       questions,
       status: 'pending',
-      isPrivate: !!isPrivate
+      isPrivate: !!isPrivate,
+      pdfUrl
     })
 
     return quiz
@@ -159,7 +160,7 @@ export class QuizService implements IQuizService {
   async getQuizById(id: string, userEmail?: string, userRole?: string, userId?: string): Promise<ServiceResult<any>> {
     try {
       const quiz = await this.quizRepository.findById(id);
-      
+
       if (!quiz || !quiz._id) {
         return {
           success: false,
@@ -227,8 +228,8 @@ export class QuizService implements IQuizService {
   async getQuizForPlay(slug: string, userRole?: string, userId?: string): Promise<any> {
     try {
       const quiz = await this.quizRepository.findBySlug(slug);
-      
-    if (!quiz) {
+
+      if (!quiz) {
         return {
           success: false,
           error: 'Quiz not found',
@@ -242,17 +243,17 @@ export class QuizService implements IQuizService {
           error: 'Quiz is not available',
           statusCode: 404
         };
-    }
+      }
 
       // Check permissions for private quizzes
-    if (quiz.isPrivate) {
-      if (!userId) {
+      if (quiz.isPrivate) {
+        if (!userId) {
           return {
             success: false,
             error: 'Authentication required to access private quiz',
             statusCode: 401
           };
-      }
+        }
 
         // Admin can access all private quizzes
         if (userRole === 'admin') {
@@ -274,25 +275,25 @@ export class QuizService implements IQuizService {
             error: 'Premium subscription required to access private quizzes',
             statusCode: 403
           };
+        }
       }
-    }
 
-    // Return quiz without correct answers for playing
+      // Return quiz without correct answers for playing
       const quizForPlay = {
-      _id: quiz._id,
-      title: quiz.title,
-      description: quiz.description,
-      author: quiz.author,
-      slug: quiz.slug,
+        _id: quiz._id,
+        title: quiz.title,
+        description: quiz.description,
+        author: quiz.author,
+        slug: quiz.slug,
         category: quiz.category,
         status: quiz.status,
         isPrivate: quiz.isPrivate,
         createdAt: quiz.createdAt,
         updatedAt: quiz.updatedAt,
-      questions: quiz.questions.map((q: any) => ({
-        question: q.question,
-        options: q.options,
-        type: q.type,
+        questions: quiz.questions.map((q: any) => ({
+          question: q.question,
+          options: q.options,
+          type: q.type,
           questionImage: q.questionImage,
           optionImages: q.optionImages
         }))
@@ -312,7 +313,7 @@ export class QuizService implements IQuizService {
   async updateQuiz(id: string, quizData: any, userEmail: string, userRole?: string): Promise<ServiceResult<any>> {
     try {
       const quiz = await this.quizRepository.findById(id);
-      
+
       if (!quiz || !quiz._id) {
         return {
           success: false,
@@ -323,7 +324,7 @@ export class QuizService implements IQuizService {
 
       // Check permissions
       const isAdmin = userRole === 'admin';
-      const isAuthor = (quiz.author as any)?._id 
+      const isAuthor = (quiz.author as any)?._id
         ? (quiz.author as any)._id.toString() === userEmail
         : quiz.author === userEmail;
 
@@ -336,7 +337,7 @@ export class QuizService implements IQuizService {
       }
 
       const updatedQuiz = await this.quizRepository.update(id, quizData);
-      
+
       return {
         success: true,
         data: updatedQuiz
@@ -354,7 +355,7 @@ export class QuizService implements IQuizService {
   async deleteQuiz(id: string, userEmail: string, userRole?: string): Promise<ServiceResult<boolean>> {
     try {
       const quiz = await this.quizRepository.findById(id);
-      
+
       if (!quiz || !quiz._id) {
         return {
           success: false,
@@ -365,7 +366,7 @@ export class QuizService implements IQuizService {
 
       // Check permissions
       const isAdmin = userRole === 'admin';
-      const isAuthor = (quiz.author as any)?._id 
+      const isAuthor = (quiz.author as any)?._id
         ? (quiz.author as any)._id.toString() === userEmail
         : quiz.author === userEmail;
 
@@ -378,7 +379,7 @@ export class QuizService implements IQuizService {
       }
 
       const result = await this.quizRepository.delete(id);
-      
+
       return {
         success: true,
         data: result
@@ -396,7 +397,7 @@ export class QuizService implements IQuizService {
   async approveQuiz(id: string): Promise<ServiceResult<any>> {
     try {
       const quiz = await this.quizRepository.updateStatus(id, 'published');
-      
+
       return {
         success: true,
         data: quiz
@@ -414,7 +415,7 @@ export class QuizService implements IQuizService {
   async rejectQuiz(id: string, reason?: string): Promise<ServiceResult<any>> {
     try {
       const quiz = await this.quizRepository.updateStatus(id, 'rejected', reason);
-      
+
       return {
         success: true,
         data: quiz
@@ -453,7 +454,7 @@ export class QuizService implements IQuizService {
   async reportQuiz(slug: string, content: string, reporterEmail: string, reporterName: string): Promise<ServiceResult<string>> {
     try {
       const quiz = await this.quizRepository.findBySlug(slug);
-      
+
       if (!quiz || !quiz._id) {
         return {
           success: false,
@@ -501,9 +502,9 @@ export class QuizService implements IQuizService {
   }
 
   async submitQuizAttempt(
-    slug: string, 
-    answers: any[], 
-    session: any, 
+    slug: string,
+    answers: any[],
+    session: any,
     userEmail?: string
   ): Promise<ServiceResult<any>> {
     try {
@@ -552,7 +553,7 @@ export class QuizService implements IQuizService {
       // Format answers according to validation rules
       const formattedAnswers = answers.map((answer, index) => {
         const question = quiz.questions[index]
-        
+
         if (question.type === 'single') {
           // Single choice: -1 for unanswered, >= 0 for answered
           return answer === -1 ? -1 : (typeof answer === 'number' && answer >= 0 ? answer : -1)
@@ -581,7 +582,7 @@ export class QuizService implements IQuizService {
         } else if (question.type === 'multiple') {
           const userAnswers = Array.isArray(userAnswer) ? userAnswer.sort() : []
           const correctAnswers_q = Array.isArray(question.correctIndexes) ? question.correctIndexes.sort() : []
-          
+
           if (JSON.stringify(userAnswers) === JSON.stringify(correctAnswers_q)) {
             correctAnswers++
           }
@@ -602,11 +603,11 @@ export class QuizService implements IQuizService {
 
       return {
         success: true,
-        data: { 
-          score, 
-          correctAnswers, 
-          totalQuestions, 
-          attemptId: attempt._id 
+        data: {
+          score,
+          correctAnswers,
+          totalQuestions,
+          attemptId: attempt._id
         }
       }
     } catch (error: any) {
@@ -622,7 +623,7 @@ export class QuizService implements IQuizService {
   async getQuizDiscussions(slug: string): Promise<ServiceResult<any[]>> {
     try {
       const quiz = await this.quizRepository.findBySlug(slug);
-      
+
       if (!quiz || !quiz._id) {
         return {
           success: false,
@@ -632,12 +633,12 @@ export class QuizService implements IQuizService {
       }
 
       const existingDiscussions = await this.discussionRepository.findByQuiz(quiz._id.toString());
-      
+
       // Create discussions for all questions if they don't exist
       const allDiscussions = [];
       for (let i = 0; i < quiz.questions.length; i++) {
         const existingDiscussion = existingDiscussions.find(d => d.questionIndex === i);
-        
+
         if (existingDiscussion) {
           allDiscussions.push(existingDiscussion);
         } else {
@@ -668,14 +669,14 @@ export class QuizService implements IQuizService {
   }
 
   async addDiscussionComment(
-    slug: string, 
-    questionIndex: number, 
-    content: string, 
+    slug: string,
+    questionIndex: number,
+    content: string,
     userEmail: string
   ): Promise<ServiceResult<any>> {
     try {
       const quiz = await this.quizRepository.findBySlug(slug);
-      
+
       if (!quiz || !quiz._id) {
         return {
           success: false,
@@ -732,14 +733,14 @@ export class QuizService implements IQuizService {
         isEdited: false,
         createdAt: new Date()
       };
-      
+
       const updatedDiscussion = await this.discussionRepository.update(
         existingDiscussion._id.toString(),
         {
           comments: [...(existingDiscussion.comments || []), commentData]
         }
       );
-      
+
       return {
         success: true,
         data: updatedDiscussion
@@ -763,7 +764,7 @@ export class QuizService implements IQuizService {
     // Check if quiz is private and user has access
     if (quiz.isPrivate && session?.user) {
       const isAdmin = (session.user as any).role === 'admin';
-      const isAuthor = (quiz.author as any)?._id 
+      const isAuthor = (quiz.author as any)?._id
         ? (quiz.author as any)._id.toString() === (session.user as any).id
         : quiz.author === (session.user as any).id;
 
@@ -781,7 +782,7 @@ export class QuizService implements IQuizService {
     const flashcards = quiz.questions.map((q: any, index: number) => ({
       id: index,
       question: q.question,
-      answer: q.type === 'single' 
+      answer: q.type === 'single'
         ? q.options[q.correctIndex]
         : q.correctIndexes.map((idx: number) => q.options[idx]).join(', '),
       type: q.type,
@@ -801,7 +802,7 @@ export class QuizService implements IQuizService {
   async getQuizForFlashcards(slug: string, session: any): Promise<ServiceResult<any>> {
     try {
       const quiz = await this.quizRepository.findBySlug(slug);
-      
+
       if (!quiz || quiz.status !== 'published') {
         return {
           success: false,
@@ -821,7 +822,7 @@ export class QuizService implements IQuizService {
         }
 
         const isAdmin = (session.user as any).role === 'admin';
-        const isAuthor = (quiz.author as any)?._id 
+        const isAuthor = (quiz.author as any)?._id
           ? (quiz.author as any)._id.toString() === (session.user as any).id
           : quiz.author === (session.user as any).id;
 

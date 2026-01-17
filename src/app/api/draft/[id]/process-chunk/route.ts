@@ -17,7 +17,16 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { chunkIndex } = await request.json();
+    let chunkIndex: number;
+    try {
+      const body = await request.json();
+      chunkIndex = body.chunkIndex;
+    } catch (parseError) {
+      return NextResponse.json(
+        { error: 'Invalid or empty request body' },
+        { status: 400 }
+      );
+    }
 
     if (typeof chunkIndex !== 'number' || chunkIndex < 0) {
       return NextResponse.json(

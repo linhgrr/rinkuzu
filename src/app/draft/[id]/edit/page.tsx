@@ -6,6 +6,9 @@ import { useParams, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { useDraftStore } from '@/store/useDraftStore';
 import { toast } from 'sonner';
+import { CategorySelector } from '@/components/ui/CategorySelector';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
 import {
   HiOutlineTrash,
   HiOutlinePencil,
@@ -13,6 +16,13 @@ import {
   HiOutlineX,
   HiOutlineDesktopComputer,
   HiOutlineArrowLeft,
+  HiOutlineEye,
+  HiOutlineEyeOff,
+  HiOutlineDocumentText,
+  HiOutlineCloudUpload,
+  HiOutlineQuestionMarkCircle,
+  HiOutlinePencilAlt,
+  HiOutlineCollection
 } from '@/components/icons';
 import Link from 'next/link';
 
@@ -32,11 +42,17 @@ interface Draft {
   status: string;
   createdAt: string;
   expiresAt: string;
+  pdfData?: {
+    fileName: string;
+    pdfUrl?: string;
+  };
 }
 
 interface Category {
   _id: string;
   name: string;
+  description?: string;
+  color?: string;
 }
 
 export default function DraftEditPage() {
@@ -49,11 +65,13 @@ export default function DraftEditPage() {
   const [questions, setQuestions] = useState<DraftQuestion[]>([]);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [categoryId, setCategoryId] = useState('');
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  // PDF viewer state
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [showPDFViewer, setShowPDFViewer] = useState(false);
 
   // Mobile detection
   useEffect(() => {
@@ -61,14 +79,6 @@ export default function DraftEditPage() {
     checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
-  }, []);
-
-  // Fetch categories
-  useEffect(() => {
-    fetch('/api/categories')
-      .then(res => res.json())
-      .then(data => setCategories(data.categories || []))
-      .catch(() => {});
   }, []);
 
   // Fetch draft
@@ -90,7 +100,22 @@ export default function DraftEditPage() {
       setDraft(fetchedDraft);
       setQuestions(fetchedDraft.questions);
       setTitle(fetchedDraft.title);
-      setCategoryId(fetchedDraft.categoryId || '');
+      // Load PDF URL if available
+      if (fetchedDraft.pdfData?.pdfUrl) {
+        setPdfUrl(fetchedDraft.pdfData.pdfUrl);
+      }
+      // Fetch category if exists
+      if (fetchedDraft.categoryId) {
+        try {
+          const catRes = await fetch(`/api/categories/${fetchedDraft.categoryId}`);
+          if (catRes.ok) {
+            const catData = await catRes.json();
+            if (catData.success) {
+              setSelectedCategory(catData.data);
+            }
+          }
+        } catch { }
+      }
     } catch (error) {
       toast.error('Không tìm thấy draft');
       router.push('/');
@@ -110,7 +135,7 @@ export default function DraftEditPage() {
   };
 
   const handleSubmit = async () => {
-    if (!categoryId) {
+    if (!selectedCategory) {
       toast.error('Vui lòng chọn danh mục');
       return;
     }
@@ -128,9 +153,10 @@ export default function DraftEditPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title,
-          categoryId,
+          categoryId: selectedCategory._id,
           description,
           questions,
+          pdfUrl,
         }),
       });
 
@@ -190,113 +216,185 @@ export default function DraftEditPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-4xl mx-auto px-6 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-4"
-          >
-            <HiOutlineArrowLeft className="w-4 h-4" />
-            Quay lại
-          </Link>
-          <h1 className="text-2xl font-bold text-gray-900">Chỉnh sửa Quiz</h1>
-          <p className="text-gray-500 mt-1">
-            {questions.length} câu hỏi được trích xuất
-          </p>
-        </div>
-
-        {/* Basic Info */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
-          <h2 className="text-lg font-semibold mb-4">Thông tin cơ bản</h2>
-
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Tên Quiz *
-              </label>
-              <input
-                type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Nhập tên quiz..."
-                className="w-full px-4 py-3 rounded-xl border border-gray-200
-                         focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Mô tả
-              </label>
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Mô tả ngắn về quiz..."
-                rows={3}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200
-                         focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Danh mục *
-              </label>
-              <select
-                value={categoryId}
-                onChange={(e) => setCategoryId(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200
-                         focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+      <div className="flex">
+        {/* Left Side - Form Content (50% when PDF visible, full width when not) */}
+        <div className={`transition-all duration-300 ${showPDFViewer && pdfUrl ? 'w-1/2' : 'w-full'}`}>
+          <div className="max-w-4xl mx-auto px-6 py-8">
+            {/* Header */}
+            <div className="mb-8">
+              <Link
+                href="/"
+                className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-4"
               >
-                <option value="">Chọn danh mục...</option>
-                {categories.map((cat) => (
-                  <option key={cat._id} value={cat._id}>
-                    {cat.name}
-                  </option>
+                <HiOutlineArrowLeft className="w-4 h-4" />
+                Quay lại
+              </Link>
+              <h1 className="text-2xl font-bold text-gray-900">Chỉnh sửa Quiz</h1>
+              <p className="text-gray-500 mt-1 flex items-center gap-2">
+                <HiOutlineQuestionMarkCircle className="w-4 h-4" />
+                {questions.length} câu hỏi được trích xuất
+              </p>
+            </div>
+
+            {/* Basic Info */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
+              <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                <HiOutlinePencilAlt className="w-5 h-5 text-blue-500" />
+                Thông tin cơ bản
+              </h2>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Tên Quiz *
+                  </label>
+                  <input
+                    type="text"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="Nhập tên quiz..."
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200
+                         focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Mô tả
+                  </label>
+                  <textarea
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder="Mô tả ngắn về quiz..."
+                    rows={3}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200
+                         focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Danh mục *
+                  </label>
+                  <CategorySelector
+                    value={selectedCategory}
+                    onChange={setSelectedCategory}
+                    placeholder="Tìm và chọn danh mục..."
+                    required
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Questions */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
+              <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                <HiOutlineCollection className="w-5 h-5 text-blue-500" />
+                Câu hỏi ({questions.length})
+              </h2>
+
+              <div className="space-y-4">
+                {questions.map((q, index) => (
+                  <QuestionEditor
+                    key={index}
+                    index={index}
+                    question={q}
+                    onEdit={(updates) => handleQuestionEdit(index, updates)}
+                    onDelete={() => handleDeleteQuestion(index)}
+                  />
                 ))}
-              </select>
+              </div>
+            </div>
+
+            {/* Submit */}
+            <div className="flex items-center justify-between gap-3">
+              {/* PDF Viewer Toggle */}
+              {pdfUrl && (
+                <Button
+                  onClick={() => setShowPDFViewer(!showPDFViewer)}
+                  variant="outline"
+                  className="flex items-center gap-2 text-blue-600 border-blue-200 hover:bg-blue-50"
+                >
+                  {showPDFViewer ? (
+                    <><HiOutlineEyeOff className="w-4 h-4" /> Ẩn PDF</>
+                  ) : (
+                    <><HiOutlineDocumentText className="w-4 h-4" /> Xem PDF</>
+                  )}
+                </Button>
+              )}
+              <div className="flex gap-3 ml-auto">
+                <button
+                  onClick={() => router.push('/')}
+                  className="px-6 py-3 rounded-xl border border-gray-200 text-gray-700
+                       hover:bg-gray-50 transition-colors flex items-center gap-2"
+                >
+                  <HiOutlineX className="w-4 h-4" />
+                  Hủy
+                </button>
+                <button
+                  onClick={handleSubmit}
+                  disabled={isSubmitting || !selectedCategory || questions.length === 0}
+                  className="px-6 py-3 rounded-xl bg-blue-500 text-white font-medium
+                       hover:bg-blue-600 disabled:opacity-50 transition-colors flex items-center gap-2"
+                >
+                  {isSubmitting ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <HiOutlineCloudUpload className="w-5 h-5" />
+                  )}
+                  {isSubmitting ? 'Đang gửi...' : 'Gửi để duyệt'}
+                </button>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Questions */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
-          <h2 className="text-lg font-semibold mb-4">
-            Câu hỏi ({questions.length})
-          </h2>
-
-          <div className="space-y-4">
-            {questions.map((q, index) => (
-              <QuestionEditor
-                key={index}
-                index={index}
-                question={q}
-                onEdit={(updates) => handleQuestionEdit(index, updates)}
-                onDelete={() => handleDeleteQuestion(index)}
-              />
-            ))}
+        {/* Right Side - PDF Viewer (50% when visible) */}
+        {showPDFViewer && pdfUrl && (
+          <div className="w-1/2 h-screen sticky top-0 p-4 bg-white border-l border-gray-200">
+            <div className="h-full flex flex-col">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-semibold text-gray-900">PDF Reference</h3>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={() => window.open(pdfUrl, '_blank')}
+                    size="sm"
+                    variant="outline"
+                  >
+                    Mở tab mới
+                  </Button>
+                  <Button
+                    onClick={() => setShowPDFViewer(false)}
+                    size="sm"
+                    variant="ghost"
+                  >
+                    ✕
+                  </Button>
+                </div>
+              </div>
+              <div className="flex-1 border border-gray-200 rounded overflow-hidden">
+                <object
+                  data={`${pdfUrl}#toolbar=1&navpanes=1&scrollbar=1`}
+                  type="application/pdf"
+                  className="w-full h-full"
+                >
+                  <p className="p-4 text-center text-gray-500">
+                    Trình duyệt của bạn không hỗ trợ xem PDF trực tiếp.
+                    <br />
+                    <a
+                      href={pdfUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-500 hover:underline"
+                    >
+                      Bấm vào đây để tải xuống
+                    </a>
+                  </p>
+                </object>
+              </div>
+            </div>
           </div>
-        </div>
-
-        {/* Submit */}
-        <div className="flex justify-end gap-3">
-          <button
-            onClick={() => router.push('/')}
-            className="px-6 py-3 rounded-xl border border-gray-200 text-gray-700
-                     hover:bg-gray-50 transition-colors"
-          >
-            Hủy
-          </button>
-          <button
-            onClick={handleSubmit}
-            disabled={isSubmitting || !categoryId || questions.length === 0}
-            className="px-6 py-3 rounded-xl bg-blue-500 text-white font-medium
-                     hover:bg-blue-600 disabled:opacity-50 transition-colors"
-          >
-            {isSubmitting ? 'Đang gửi...' : 'Gửi để duyệt'}
-          </button>
-        </div>
+        )}
       </div>
     </div>
   );
@@ -326,7 +424,10 @@ function QuestionEditor({
     <div className="p-4 rounded-xl border border-gray-100 bg-gray-50">
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="flex-1">
-          <span className="text-xs font-medium text-gray-500 uppercase">
+          <span className="text-xs font-medium text-gray-500 uppercase flex items-center gap-1.5">
+            <div className="w-5 h-5 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-[10px]">
+              {index + 1}
+            </div>
             Câu {index + 1} • {question.type === 'single' ? 'Một đáp án' : 'Nhiều đáp án'}
           </span>
 
@@ -385,11 +486,10 @@ function QuestionEditor({
           return (
             <div
               key={optIdx}
-              className={`px-3 py-2 rounded-lg text-sm ${
-                isCorrect
-                  ? 'bg-green-100 text-green-800'
-                  : 'bg-white text-gray-600'
-              }`}
+              className={`px-3 py-2 rounded-lg text-sm ${isCorrect
+                ? 'bg-green-100 text-green-800'
+                : 'bg-white text-gray-600'
+                }`}
             >
               {opt}
             </div>

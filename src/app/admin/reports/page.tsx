@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import Link from 'next/link';
 import Navigation from '@/components/Navigation';
 import Sidebar from '@/components/Sidebar';
@@ -96,11 +97,11 @@ export default function AdminReportsPage() {
         closeReportModal();
       } else {
         const error = await response.json();
-        alert(error.error || 'Failed to update report');
+        toast.error(error.error || 'Failed to update report');
       }
     } catch (error) {
       console.error('Error updating report:', error);
-      alert('Failed to update report');
+      toast.error('Failed to update report');
     } finally {
       setUpdating(false);
     }
@@ -121,11 +122,11 @@ export default function AdminReportsPage() {
         }
       } else {
         const error = await response.json();
-        alert(error.error || 'Failed to delete report');
+        toast.error(error.error || 'Failed to delete report');
       }
     } catch (error) {
       console.error('Error deleting report:', error);
-      alert('Failed to delete report');
+      toast.error('Failed to delete report');
     }
   };
 

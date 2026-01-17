@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useSession } from 'next-auth/react';
+import { toast } from 'sonner';
 import { Modal } from './Modal';
 import { Button } from './Button';
 
@@ -42,11 +43,11 @@ export default function ReportQuiz({ quizSlug, quizTitle }: ReportQuizProps) {
         }, 2000);
       } else {
         const error = await response.json();
-        alert(error.error || 'Failed to submit report');
+        toast.error(error.error || 'Failed to submit report');
       }
     } catch (error) {
       console.error('Error submitting report:', error);
-      alert('Failed to submit report');
+      toast.error('Failed to submit report');
     } finally {
       setIsSubmitting(false);
     }

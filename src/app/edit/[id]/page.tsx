@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter, usePathname } from 'next/navigation';
+import { toast } from 'sonner';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -740,7 +741,7 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
                         onClick={() => {
                           const url = `${window.location.origin}/quiz/${quiz.slug}`;
                           navigator.clipboard.writeText(url);
-                          alert('Quiz link copied to clipboard!');
+                          toast.success('Quiz link copied to clipboard!');
                         }}
                       >
                         <HiOutlineClipboardCopy className="w-4 h-4" />

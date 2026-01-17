@@ -1,4 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
+import { toast } from 'sonner';
 import { uploadImageToImgBB } from '@/services/imageUploadService';
 import { Button } from './Button';
 
@@ -28,12 +29,12 @@ export function ImageUpload({
 
   const handleImageUpload = useCallback(async (file: File) => {
     if (!file.type.startsWith('image/')) {
-      alert('Please select an image file');
+      toast.error('Please select an image file');
       return;
     }
 
     if (file.size > 10 * 1024 * 1024) { // 10MB limit
-      alert('Image file size must be less than 10MB');
+      toast.error('Image file size must be less than 10MB');
       return;
     }
 
@@ -43,7 +44,7 @@ export function ImageUpload({
       onImageUploaded(result.displayUrl);
     } catch (error: any) {
       console.error('Failed to upload image:', error);
-      alert('Failed to upload image: ' + error.message);
+      toast.error('Failed to upload image: ' + error.message);
     } finally {
       setIsUploading(false);
     }

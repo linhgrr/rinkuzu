@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 import Navigation from '@/components/Navigation'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -105,11 +106,11 @@ export default function SubscriptionPage() {
         // Redirect to PayOS payment page
         window.location.href = data.data.paymentUrl
       } else {
-        alert(data.message || 'Failed to create payment request')
+        toast.error(data.message || 'Failed to create payment request')
       }
     } catch (error) {
       console.error('Error creating payment:', error)
-      alert('Failed to create payment request')
+      toast.error('Failed to create payment request')
     } finally {
       setPaymentLoading(false)
       setShowPaymentModal(false)

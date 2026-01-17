@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { QuizPreviewModal } from '@/components/ui/QuizPreviewModal';
@@ -145,7 +146,7 @@ export default function ProfileQuizzes() {
             if (data.success) {
                 setQuizzes(prev => prev.filter(q => q._id !== quizId));
                 setError('');
-                alert(data.message || 'Quiz deleted successfully');
+                toast.success(data.message || 'Quiz deleted successfully');
             } else {
                 setError(data.error || 'Failed to delete quiz');
             }

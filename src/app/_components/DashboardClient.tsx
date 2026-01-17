@@ -2,6 +2,7 @@
 
 import { useCallback, memo } from 'react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import Navigation from '@/components/Navigation';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -95,7 +96,7 @@ export function DashboardClient({ userEmail }: DashboardClientProps) {
       }).catch(console.error);
     } else {
       navigator.clipboard.writeText(text);
-      alert('Progress copied to clipboard!');
+      toast.success('Progress copied to clipboard!');
     }
   }, [stats?.streak, stats?.xp]);
 
@@ -103,11 +104,11 @@ export function DashboardClient({ userEmail }: DashboardClientProps) {
     try {
       const result = await buyFreeze();
       if (!result?.success) {
-        alert(result?.message || 'Failed to buy freeze');
+        toast.error(result?.message || 'Failed to buy freeze');
       }
     } catch (e) {
       console.error(e);
-      alert('Failed to connect to server');
+      toast.error('Failed to connect to server');
     }
   }, [buyFreeze]);
 

@@ -88,17 +88,20 @@ export async function POST(request: NextRequest) {
 
     await connectDB();
 
-    // Upload PDF to S3
+    // Upload PDF to S3 (REQUIRED)
     const userId = (session!.user as any).id;
     const pdfKey = generatePDFKey(userId, fileName);
-    let pdfUrl: string | undefined;
+    let pdfUrl: string;
 
     try {
       pdfUrl = await uploadPDF(buffer, pdfKey);
       console.log('PDF uploaded to S3:', pdfUrl);
     } catch (s3Error) {
       console.error('S3 upload error:', s3Error);
-      // Continue without S3 URL - fallback to base64 storage
+      return NextResponse.json(
+        { error: 'Failed to upload PDF to S3' },
+        { status: 500 }
+      );
     }
 
     // Create draft
@@ -112,8 +115,8 @@ export async function POST(request: NextRequest) {
         fileName,
         fileSize: buffer.length,
         totalPages,
-        base64: base64Data, // Store for chunk processing
-        pdfUrl, // S3 URL for PDF viewing
+        pdfKey, // S3 key for fetching PDF
+        pdfUrl, // Signed URL for PDF viewing
       },
       chunks: {
         total: chunkDetails.length,

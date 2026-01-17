@@ -26,8 +26,8 @@ export interface IDraftQuiz extends Document {
     fileName: string;
     fileSize: number;
     totalPages: number;
-    base64?: string;
-    pdfUrl?: string; // S3 URL for PDF viewing
+    pdfKey: string; // S3 key for fetching
+    pdfUrl?: string; // Signed URL, refreshed on access
   };
   chunks: {
     total: number;
@@ -71,7 +71,7 @@ const DraftQuizSchema = new Schema<IDraftQuiz>({
     fileName: { type: String, required: true },
     fileSize: { type: Number, required: true },
     totalPages: { type: Number, required: true },
-    base64: { type: String },
+    pdfKey: { type: String, required: true },
     pdfUrl: { type: String },
   },
   chunks: {

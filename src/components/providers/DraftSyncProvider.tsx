@@ -14,8 +14,9 @@ export function DraftSyncProvider({ children }: { children: React.ReactNode }) {
   const { resumeProcessing } = usePdfProcessor();
   const hasInitialized = useRef(false);
   const syncIntervalRef = useRef<NodeJS.Timeout>();
+  const processingDraftsRef = useRef<Set<string>>(new Set());
 
-  // Initial sync and resume on mount
+  // Initial sync on mount
   useEffect(() => {
     if (!session?.user || hasInitialized.current) return;
     hasInitialized.current = true;
@@ -24,24 +25,12 @@ export function DraftSyncProvider({ children }: { children: React.ReactNode }) {
       // Cleanup expired first
       cleanupExpiredDrafts();
 
-      // Fetch server state
+      // Fetch server state and sync
       try {
         const response = await fetch('/api/draft/list');
         if (response.ok) {
           const { drafts } = await response.json();
           syncWithServer(drafts);
-
-          // Resume processing drafts
-          const localDrafts = getActiveDrafts();
-          localDrafts
-            .filter(d => d.status === 'processing')
-            .forEach(d => {
-              // Check if server says it's still processing
-              const serverDraft = drafts.find((sd: any) => sd._id === d.id);
-              if (serverDraft && serverDraft.status === 'processing') {
-                resumeProcessing(d.id);
-              }
-            });
         }
       } catch (error) {
         console.error('Failed to sync drafts:', error);
@@ -50,7 +39,7 @@ export function DraftSyncProvider({ children }: { children: React.ReactNode }) {
 
     initSync();
 
-    // Periodic sync
+    // Periodic cleanup
     syncIntervalRef.current = setInterval(() => {
       cleanupExpiredDrafts();
     }, SYNC_INTERVAL);
@@ -60,7 +49,43 @@ export function DraftSyncProvider({ children }: { children: React.ReactNode }) {
         clearInterval(syncIntervalRef.current);
       }
     };
-  }, [session, cleanupExpiredDrafts, syncWithServer, getActiveDrafts, resumeProcessing]);
+  }, [session, cleanupExpiredDrafts, syncWithServer]);
+
+  // Watch for new processing drafts and resume them
+  useEffect(() => {
+    if (!session?.user) return;
+
+    const checkAndResume = async () => {
+      const drafts = getActiveDrafts();
+      const processingDrafts = drafts.filter(d => d.status === 'processing');
+
+      for (const draft of processingDrafts) {
+        // Only resume if not already being processed by this provider
+        if (!processingDraftsRef.current.has(draft.id)) {
+          processingDraftsRef.current.add(draft.id);
+          console.log(`DraftSyncProvider: Resuming processing for ${draft.id}`);
+
+          // Small delay to ensure navigation is complete
+          setTimeout(() => {
+            resumeProcessing(draft.id).finally(() => {
+              // Remove from tracking when done (success or error)
+              processingDraftsRef.current.delete(draft.id);
+            });
+          }, 500);
+        }
+      }
+    };
+
+    // Check immediately
+    checkAndResume();
+
+    // Also check periodically for any missed drafts
+    const checkInterval = setInterval(checkAndResume, 5000);
+
+    return () => {
+      clearInterval(checkInterval);
+    };
+  }, [session, getActiveDrafts, resumeProcessing]);
 
   return <>{children}</>;
 }

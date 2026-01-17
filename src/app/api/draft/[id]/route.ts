@@ -20,26 +20,17 @@ export async function GET(
     const draft = await DraftQuiz.findOne({
       _id: params.id,
       userId: ((session!.user as any) as any).id,
-    }).select('-pdfData.base64').lean() as any; // Cast to any to avoid TS error with lean()
+    }).lean() as any;
 
     if (!draft) {
       return NextResponse.json({ error: 'Draft not found' }, { status: 404 });
     }
 
     // Refresh signed URL if PDF exists
-    if (draft.pdfData?.pdfUrl) {
+    if (draft.pdfData?.pdfKey) {
       try {
-        const { getSignedPDFUrl, BUCKET_NAME } = await import('@/lib/s3');
-        const pdfUrl = draft.pdfData.pdfUrl;
-
-        // Extract key: everything after "bucket-name/"
-        const marker = `${BUCKET_NAME}/`;
-        if (pdfUrl.includes(marker)) {
-          const key = pdfUrl.split(marker)[1];
-          if (key) {
-            draft.pdfData.pdfUrl = await getSignedPDFUrl(key);
-          }
-        }
+        const { getSignedPDFUrl } = await import('@/lib/s3');
+        draft.pdfData.pdfUrl = await getSignedPDFUrl(draft.pdfData.pdfKey);
       } catch (error) {
         console.error('Failed to refresh signed URL:', error);
       }

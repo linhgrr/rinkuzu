@@ -6,6 +6,7 @@ import connectDB from '@/lib/mongoose';
 import DraftQuiz from '@/models/DraftQuiz';
 import { PDFDocument } from 'pdf-lib';
 import { extractQuestionsFromPdf } from '@/lib/gemini';
+import { getPDFBuffer } from '@/lib/s3';
 
 export async function POST(
   request: NextRequest,
@@ -52,9 +53,9 @@ export async function POST(
       return NextResponse.json({ error: 'Request aborted' }, { status: 499 });
     }
 
-    if (!draft.pdfData.base64) {
+    if (!draft.pdfData.pdfKey) {
       return NextResponse.json(
-        { error: 'PDF data not available' },
+        { error: 'PDF not available' },
         { status: 400 }
       );
     }
@@ -96,7 +97,13 @@ export async function POST(
 
     try {
       // Extract pages for this chunk
-      const fullPdfBuffer = Buffer.from(draft.pdfData.base64, 'base64');
+      let fullPdfBuffer: Buffer;
+      try {
+        fullPdfBuffer = await getPDFBuffer(draft.pdfData.pdfKey);
+      } catch (s3Error) {
+        console.error('Failed to fetch PDF from S3:', s3Error);
+        return NextResponse.json({ error: 'Failed to fetch PDF' }, { status: 500 });
+      }
       const fullPdfDoc = await PDFDocument.load(fullPdfBuffer);
 
       const chunkPdfDoc = await PDFDocument.create();
@@ -145,14 +152,11 @@ export async function POST(
 
       const isComplete = updateResult!.chunks.processed >= updateResult!.chunks.total;
 
-      // If complete, clean up base64 data and update status
+      // If complete, update status
       if (isComplete) {
         await DraftQuiz.updateOne(
           { _id: params.id },
-          {
-            $set: { status: 'completed' },
-            $unset: { 'pdfData.base64': 1 },
-          }
+          { $set: { status: 'completed' } }
         );
       }
 

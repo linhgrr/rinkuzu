@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, memo } from 'react';
+import { useCallback, memo, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import Navigation from '@/components/Navigation';
@@ -24,23 +24,70 @@ interface DashboardClientProps {
   userEmail: string;
 }
 
-const WeeklyProgress = memo(function WeeklyProgress() {
+type WeeklyActivityMap = Record<
+  string,
+  {
+    questionsReviewed: number;
+    xpEarned: number;
+    accuracy: number;
+  }
+>;
+
+const WEEKDAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+
+const WeeklyProgress = memo(function WeeklyProgress({
+  activity,
+}: {
+  activity?: WeeklyActivityMap;
+}) {
+  const weekDays = useMemo(() => {
+    const today = new Date();
+    const dayIndex = today.getDay();
+    const mondayOffset = (dayIndex + 6) % 7;
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - mondayOffset);
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    return WEEKDAY_LABELS.map((label, index) => {
+      const date = new Date(startOfWeek);
+      date.setDate(startOfWeek.getDate() + index);
+      const key = date.toISOString().split('T')[0];
+      const entry = activity?.[key];
+      return {
+        label,
+        key,
+        date,
+        entry,
+        isToday: key === today.toISOString().split('T')[0],
+      };
+    });
+  }, [activity]);
+
   return (
     <Card className="p-6">
       <h3 className="font-semibold mb-4">Weekly Progress</h3>
       <div className="grid grid-cols-7 gap-1 text-center">
-        {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day, i) => (
-          <div key={i} className="flex flex-col items-center gap-2">
-            <span className="text-xs text-[#86868b]">{day}</span>
-            <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium ${
-                i === 3 ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-400'
-              }`}
-            >
-              {i === 3 ? '✓' : ''}
+        {weekDays.map((day) => {
+          const hasActivity = (day.entry?.questionsReviewed ?? 0) > 0;
+          const tooltip = day.entry
+            ? `${day.entry.questionsReviewed} reviews • ${day.entry.xpEarned} XP`
+            : 'No activity yet';
+          return (
+            <div key={day.key} className="flex flex-col items-center gap-2">
+              <span className="text-xs text-[#86868b]">{day.label}</span>
+              <div
+                title={tooltip}
+                className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium transition-colors ${
+                  hasActivity
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-100 text-gray-400'
+                } ${day.isToday ? 'ring-2 ring-blue-200' : ''}`}
+              >
+                {hasActivity ? '✓' : ''}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </Card>
   );
@@ -238,7 +285,7 @@ export function DashboardClient({ userEmail }: DashboardClientProps) {
 
           {/* Right Column */}
           <div className="space-y-6">
-            <WeeklyProgress />
+            <WeeklyProgress activity={stats?.weeklyActivity} />
 
             {stats && (
               <StreakFreezeCard

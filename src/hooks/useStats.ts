@@ -10,7 +10,14 @@ interface UserStats {
   level: number;
   dueCount: number;
   streakFreezeCount: number;
-  weeklyActivity: unknown;
+  weeklyActivity: Record<
+    string,
+    {
+      questionsReviewed: number;
+      xpEarned: number;
+      accuracy: number;
+    }
+  >;
 }
 
 interface BuyFreezeResponse {

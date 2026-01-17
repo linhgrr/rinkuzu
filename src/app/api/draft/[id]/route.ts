@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import connectDB from '@/lib/mongoose';
 import DraftQuiz from '@/models/DraftQuiz';
+import { deletePDF } from '@/lib/s3';
 
 export async function GET(
   request: NextRequest,
@@ -59,13 +60,28 @@ export async function DELETE(
 
     await connectDB();
 
-    const result = await DraftQuiz.deleteOne({
+    // Find draft first to get pdfKey
+    const draft = await DraftQuiz.findOne({
       _id: params.id,
-      userId: ((session!.user as any) as any).id,
+      userId: (session!.user as any).id,
     });
 
-    if (result.deletedCount === 0) {
+    if (!draft) {
       return NextResponse.json({ error: 'Draft not found' }, { status: 404 });
+    }
+
+    // Delete from MongoDB
+    await DraftQuiz.deleteOne({ _id: params.id });
+
+    // Cleanup S3 (best effort, don't fail if this fails)
+    if (draft.pdfData?.pdfKey) {
+      try {
+        await deletePDF(draft.pdfData.pdfKey);
+        console.log('Deleted PDF from S3:', draft.pdfData.pdfKey);
+      } catch (s3Error) {
+        console.error('Failed to delete PDF from S3:', s3Error);
+        // Don't fail the request, S3 cleanup is best-effort
+      }
     }
 
     return NextResponse.json({ success: true });

@@ -189,13 +189,30 @@ export async function POST(
         { new: true }
       );
 
-      const isComplete = updateResult!.chunks.processed >= updateResult!.chunks.total;
+      // Count done + error as "attempted"
+      const doneCount = updateResult!.chunks.chunkDetails.filter(
+        (c: any) => c.status === 'done'
+      ).length;
 
-      // If complete, update status
+      const errorCount = updateResult!.chunks.chunkDetails.filter(
+        (c: any) => c.status === 'error'
+      ).length;
+
+      const allAttempted = (doneCount + errorCount) >= updateResult!.chunks.total;
+      const hasQuestions = updateResult!.questions.length > 0;
+
+      // Complete if all chunks attempted AND we have at least some questions
+      const isComplete = allAttempted && hasQuestions;
+
       if (isComplete) {
         await DraftQuiz.updateOne(
           { _id: params.id },
-          { $set: { status: 'completed' } }
+          {
+            $set: {
+              status: 'completed',
+              'chunks.processed': doneCount,
+            }
+          }
         );
       }
 
@@ -203,8 +220,9 @@ export async function POST(
         success: true,
         questions: newQuestions,
         progress: {
-          processed: updateResult!.chunks.processed,
+          processed: doneCount,
           total: updateResult!.chunks.total,
+          errors: errorCount,
           isComplete,
           totalQuestions: updateResult!.questions.length,
         },

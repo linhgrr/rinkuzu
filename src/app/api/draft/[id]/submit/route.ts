@@ -17,6 +17,72 @@ function generateSlug(title: string): string {
     .substring(0, 100);
 }
 
+interface ValidationResult {
+  isValid: boolean;
+  errors: string[];
+  warnings: string[];
+}
+
+function validateQuestions(questions: any[]): ValidationResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  if (!questions || questions.length === 0) {
+    errors.push('Cần ít nhất 1 câu hỏi');
+    return { isValid: false, errors, warnings };
+  }
+
+  questions.forEach((q, index) => {
+    const prefix = `Câu ${index + 1}`;
+
+    // Required fields
+    if (!q.question?.trim()) {
+      errors.push(`${prefix}: Thiếu nội dung câu hỏi`);
+    }
+
+    if (!Array.isArray(q.options) || q.options.length < 2) {
+      errors.push(`${prefix}: Cần ít nhất 2 đáp án`);
+    }
+
+    // Check for empty options
+    const emptyOptions = q.options?.filter((opt: string) => !opt?.trim());
+    if (emptyOptions?.length > 0) {
+      errors.push(`${prefix}: Có đáp án trống`);
+    }
+
+    // Validate correct answer
+    if (q.type === 'single') {
+      if (typeof q.correctIndex !== 'number' || q.correctIndex < 0 || q.correctIndex >= q.options?.length) {
+        errors.push(`${prefix}: Đáp án đúng không hợp lệ`);
+      }
+    } else if (q.type === 'multiple') {
+      if (!Array.isArray(q.correctIndexes) || q.correctIndexes.length === 0) {
+        errors.push(`${prefix}: Cần chọn ít nhất 1 đáp án đúng`);
+      } else {
+        const invalidIndexes = q.correctIndexes.filter(
+          (idx: number) => idx < 0 || idx >= q.options?.length
+        );
+        if (invalidIndexes.length > 0) {
+          errors.push(`${prefix}: Có đáp án đúng không hợp lệ`);
+        }
+      }
+    } else {
+      errors.push(`${prefix}: Loại câu hỏi không hợp lệ`);
+    }
+  });
+
+  // Warnings (non-blocking)
+  if (questions.length < 5) {
+    warnings.push('Quiz nên có ít nhất 5 câu hỏi');
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+    warnings,
+  };
+}
+
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -48,21 +114,17 @@ export async function POST(
       return NextResponse.json({ error: 'Draft not found' }, { status: 404 });
     }
 
-    if (draft.status !== 'completed') {
-      return NextResponse.json(
-        { error: 'Draft is not ready for submission' },
-        { status: 400 }
-      );
-    }
-
-    // Use edited questions if provided, otherwise use draft questions
+    // Allow submit if completed OR if has questions (partial completion)
     const questionsToUse = editedQuestions || draft.questions;
 
-    if (!questionsToUse || questionsToUse.length === 0) {
-      return NextResponse.json(
-        { error: 'No questions to submit' },
-        { status: 400 }
-      );
+    // Validate questions
+    const validation = validateQuestions(questionsToUse);
+
+    if (!validation.isValid) {
+      return NextResponse.json({
+        error: 'Validation failed',
+        details: validation.errors,
+      }, { status: 400 });
     }
 
     // Generate unique slug
@@ -98,6 +160,7 @@ export async function POST(
       success: true,
       quizId: quiz._id.toString(),
       slug: quiz.slug,
+      warnings: validation.warnings,
     });
 
   } catch (error) {

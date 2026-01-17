@@ -7,6 +7,8 @@ export interface IChunkDetail {
   endPage: number;
   status: 'pending' | 'processing' | 'done' | 'error';
   error?: string;
+  lockedAt?: Date;      // When processing started
+  lockedBy?: string;    // Unique request ID
 }
 
 export interface IDraftQuestion {
@@ -52,6 +54,8 @@ const ChunkDetailSchema = new Schema<IChunkDetail>({
     default: 'pending'
   },
   error: { type: String },
+  lockedAt: { type: Date },
+  lockedBy: { type: String },
 }, { _id: false });
 
 const DraftQuestionSchema = new Schema<IDraftQuestion>({

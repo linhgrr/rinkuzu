@@ -67,7 +67,7 @@ export default function MobileCreatePage() {
         throw new Error(error.error || 'Failed to create draft');
       }
 
-      const { draftId, chunks, totalPages } = await response.json();
+      const { draftId, chunks, totalPages, expiresAt } = await response.json();
 
       // Add to store
       addDraft({
@@ -76,8 +76,10 @@ export default function MobileCreatePage() {
         status: 'processing',
         chunksTotal: chunks.total,
         chunksProcessed: 0,
+        chunksError: 0,
         questionsCount: 0,
         createdAt: new Date().toISOString(),
+        expiresAt: expiresAt,
       });
 
       // Start background processing

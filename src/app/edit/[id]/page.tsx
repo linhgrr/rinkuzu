@@ -53,8 +53,8 @@ interface Question {
 interface Category {
   _id: string;
   name: string;
-  description: string;
-  color: string;
+  description?: string;
+  color?: string;
 }
 
 export default function EditQuizPage({ params }: EditQuizPageProps) {

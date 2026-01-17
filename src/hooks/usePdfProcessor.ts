@@ -10,6 +10,46 @@ interface ChunkInfo {
   status: string;
 }
 
+const MAX_RETRIES = 3;
+const INITIAL_RETRY_DELAY = 1000;
+
+async function fetchWithRetry(
+  url: string,
+  options: RequestInit,
+  retries: number = MAX_RETRIES
+): Promise<Response> {
+  let lastError: Error | null = null;
+
+  for (let attempt = 0; attempt < retries; attempt++) {
+    try {
+      const response = await fetch(url, options);
+
+      // If conflict (another request processing), wait and retry
+      if (response.status === 409) {
+        const data = await response.json();
+        const retryAfter = data.retryAfter || INITIAL_RETRY_DELAY * Math.pow(2, attempt);
+        await new Promise(r => setTimeout(r, retryAfter));
+        continue;
+      }
+
+      return response;
+    } catch (error: any) {
+      lastError = error;
+
+      // Don't retry on abort
+      if (error.name === 'AbortError') {
+        throw error;
+      }
+
+      // Exponential backoff
+      const delay = INITIAL_RETRY_DELAY * Math.pow(2, attempt);
+      await new Promise(r => setTimeout(r, delay));
+    }
+  }
+
+  throw lastError || new Error('All retries failed');
+}
+
 export function usePdfProcessor() {
   const { updateDraftProgress, completeDraft, setDraftError } = useDraftStore();
   const processingRef = useRef<Record<string, boolean>>({});
@@ -21,6 +61,9 @@ export function usePdfProcessor() {
       Object.values(abortControllersRef.current).forEach(controller => {
         controller.abort();
       });
+      // Clear refs completely
+      processingRef.current = {};
+      abortControllersRef.current = {};
     };
   }, []);
 
@@ -29,12 +72,15 @@ export function usePdfProcessor() {
     chunkIndex: number,
     signal?: AbortSignal
   ): Promise<{ success: boolean; questions: any[]; isComplete: boolean; totalQuestions: number }> => {
-    const response = await fetch(`/api/draft/${draftId}/process-chunk`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chunkIndex }),
-      signal,
-    });
+    const response = await fetchWithRetry(
+      `/api/draft/${draftId}/process-chunk`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chunkIndex }),
+        signal,
+      }
+    );
 
     if (!response.ok) {
       const error = await response.json();
@@ -43,7 +89,7 @@ export function usePdfProcessor() {
 
     const result = await response.json();
     return {
-      success: result.success,
+      success: result.success !== false,
       questions: result.questions || [],
       isComplete: result.progress?.isComplete || false,
       totalQuestions: result.progress?.totalQuestions || 0,
@@ -64,12 +110,15 @@ export function usePdfProcessor() {
     const abortController = new AbortController();
     abortControllersRef.current[draftId] = abortController;
 
+    // Also retry 'processing' chunks (might be stale locks)
     const pendingChunks = chunks
-      .filter(c => c.status === 'pending' || c.status === 'error')
+      .filter(c => c.status === 'pending' || c.status === 'error' || c.status === 'processing')
       .sort((a, b) => a.index - b.index);
 
     let processedCount = chunks.filter(c => c.status === 'done').length;
     let totalQuestions = 0;
+    let consecutiveErrors = 0;
+    const MAX_CONSECUTIVE_ERRORS = 3;
 
     try {
       for (const chunk of pendingChunks) {
@@ -84,25 +133,28 @@ export function usePdfProcessor() {
             abortController.signal
           );
 
-          processedCount++;
-          totalQuestions = result.totalQuestions;
+          if (result.success) {
+            consecutiveErrors = 0; // Reset on success
+            processedCount++;
+            totalQuestions = result.totalQuestions;
 
-          updateDraftProgress(draftId, {
-            chunksProcessed: processedCount,
-            questionsCount: totalQuestions,
-            status: 'processing',
-          });
-
-          if (result.isComplete) {
-            completeDraft(draftId, totalQuestions);
-            toast.success(`"${title}" đã sẵn sàng!`, {
-              description: `${totalQuestions} câu hỏi được trích xuất`,
-              action: {
-                label: 'Xem',
-                onClick: () => window.location.href = `/draft/${draftId}/edit`,
-              },
+            updateDraftProgress(draftId, {
+              chunksProcessed: processedCount,
+              questionsCount: totalQuestions,
+              status: 'processing',
             });
-            break;
+
+            if (result.isComplete) {
+              completeDraft(draftId, totalQuestions);
+              toast.success(`"${title}" đã sẵn sàng!`, {
+                description: `${totalQuestions} câu hỏi được trích xuất`,
+                action: {
+                  label: 'Xem',
+                  onClick: () => window.location.href = `/draft/${draftId}/edit`,
+                },
+              });
+              break;
+            }
           }
 
           // Small delay between chunks
@@ -112,8 +164,18 @@ export function usePdfProcessor() {
           if (chunkError.name === 'AbortError') {
             break;
           }
+
+          consecutiveErrors++;
           console.error(`Chunk ${chunk.index} failed:`, chunkError);
-          // Continue with next chunk on error
+
+          // Stop if too many consecutive errors
+          if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
+            setDraftError(draftId, `Quá nhiều lỗi liên tiếp: ${chunkError.message}`);
+            toast.error(`Lỗi xử lý "${title}"`, {
+              description: 'Vui lòng thử lại sau',
+            });
+            break;
+          }
         }
       }
     } catch (error: any) {
@@ -133,7 +195,9 @@ export function usePdfProcessor() {
     const controller = abortControllersRef.current[draftId];
     if (controller) {
       controller.abort();
+      delete abortControllersRef.current[draftId];
     }
+    delete processingRef.current[draftId];
   }, []);
 
   const resumeProcessing = useCallback(async (draftId: string) => {

@@ -25,6 +25,9 @@ import {
   HiOutlineCollection
 } from '@/components/icons';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
+
+const PDFViewer = dynamic(() => import('@/components/ui/PDFViewer'), { ssr: false });
 
 interface DraftQuestion {
   question: string;
@@ -72,6 +75,34 @@ export default function DraftEditPage() {
   // PDF viewer state
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [showPDFViewer, setShowPDFViewer] = useState(false);
+  const [pdfDataUrl, setPdfDataUrl] = useState<string | null>(null);
+
+  // Load PDF Data from URL
+  useEffect(() => {
+    const loadPdfData = async () => {
+      if (!pdfUrl) {
+        setPdfDataUrl(null);
+        return;
+      }
+
+      try {
+        const res = await fetch(pdfUrl);
+        const blob = await res.blob();
+
+        const reader = new FileReader();
+        reader.readAsDataURL(blob);
+        reader.onloadend = function () {
+          const base64data = reader.result as string;
+          setPdfDataUrl(base64data);
+        };
+      } catch (err) {
+        console.error("Error loading PDF data:", err);
+        setPdfDataUrl(null);
+      }
+    };
+
+    loadPdfData();
+  }, [pdfUrl]);
 
   // Mobile detection
   useEffect(() => {
@@ -218,7 +249,7 @@ export default function DraftEditPage() {
     <div className="min-h-screen bg-gray-50">
       <div className="flex">
         {/* Left Side - Form Content (50% when PDF visible, full width when not) */}
-        <div className={`transition-all duration-300 ${showPDFViewer && pdfUrl ? 'w-1/2' : 'w-full'}`}>
+        <div className={`transition-all duration-300 ${showPDFViewer && pdfDataUrl ? 'w-1/2' : 'w-full'}`}>
           <div className="max-w-4xl mx-auto px-6 py-8">
             {/* Header */}
             <div className="mb-8">
@@ -350,49 +381,13 @@ export default function DraftEditPage() {
         </div>
 
         {/* Right Side - PDF Viewer (50% when visible) */}
-        {showPDFViewer && pdfUrl && (
+        {showPDFViewer && (
           <div className="w-1/2 h-screen sticky top-0 p-4 bg-white border-l border-gray-200">
-            <div className="h-full flex flex-col">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="font-semibold text-gray-900">PDF Reference</h3>
-                <div className="flex gap-2">
-                  <Button
-                    onClick={() => window.open(pdfUrl, '_blank')}
-                    size="sm"
-                    variant="outline"
-                  >
-                    Mở tab mới
-                  </Button>
-                  <Button
-                    onClick={() => setShowPDFViewer(false)}
-                    size="sm"
-                    variant="ghost"
-                  >
-                    ✕
-                  </Button>
-                </div>
-              </div>
-              <div className="flex-1 border border-gray-200 rounded overflow-hidden">
-                <object
-                  data={`${pdfUrl}#toolbar=1&navpanes=1&scrollbar=1`}
-                  type="application/pdf"
-                  className="w-full h-full"
-                >
-                  <p className="p-4 text-center text-gray-500">
-                    Trình duyệt của bạn không hỗ trợ xem PDF trực tiếp.
-                    <br />
-                    <a
-                      href={pdfUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-500 hover:underline"
-                    >
-                      Bấm vào đây để tải xuống
-                    </a>
-                  </p>
-                </object>
-              </div>
-            </div>
+            <PDFViewer
+              pdfDataUrl={pdfDataUrl}
+              onClose={() => setShowPDFViewer(false)}
+              pdfUrl={pdfUrl}
+            />
           </div>
         )}
       </div>

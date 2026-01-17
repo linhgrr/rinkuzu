@@ -20,7 +20,7 @@ export async function GET(
     const draft = await DraftQuiz.findOne({
       _id: params.id,
       userId: ((session!.user as any) as any).id,
-    }).select('-pdfData.base64').lean(); // Use lean() for easier mutation
+    }).select('-pdfData.base64').lean() as any; // Cast to any to avoid TS error with lean()
 
     if (!draft) {
       return NextResponse.json({ error: 'Draft not found' }, { status: 404 });

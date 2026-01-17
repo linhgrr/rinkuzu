@@ -4,8 +4,8 @@ import { Input } from '@/components/ui/Input';
 interface Category {
   _id: string;
   name: string;
-  description: string;
-  color: string;
+  description?: string;
+  color?: string;
 }
 
 interface CategorySelectorProps {
@@ -17,9 +17,9 @@ interface CategorySelectorProps {
   disabled?: boolean;
 }
 
-export function CategorySelector({ 
-  value, 
-  onChange, 
+export function CategorySelector({
+  value,
+  onChange,
   placeholder = "Search and select category...",
   error,
   required = false,
@@ -30,7 +30,7 @@ export function CategorySelector({
   const [loading, setLoading] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [debounceTimer, setDebounceTimer] = useState<NodeJS.Timeout | null>(null);
-  
+
   const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -103,7 +103,7 @@ export function CategorySelector({
     setShowDropdown(false);
     onChange(category);
     setCategories([]);
-    
+
     // Clear search results
     if (debounceTimer) {
       clearTimeout(debounceTimer);
@@ -161,14 +161,14 @@ export function CategorySelector({
           disabled={disabled}
           className={`pr-20 ${error ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''} ${disabled ? 'bg-gray-50 text-gray-500' : ''}`}
         />
-        
+
         {/* Loading indicator */}
         {loading && (
           <div className="absolute right-12 top-1/2 transform -translate-y-1/2">
             <div className="animate-spin h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full"></div>
           </div>
         )}
-        
+
         {/* Clear button */}
         {(searchTerm || value) && (
           <button
@@ -186,8 +186,8 @@ export function CategorySelector({
       {/* Selected category indicator */}
       {value && (
         <div className="mt-2 flex items-center space-x-2 text-sm text-green-600">
-          <div 
-            className="w-3 h-3 rounded-full" 
+          <div
+            className="w-3 h-3 rounded-full"
             style={{ backgroundColor: value.color }}
           ></div>
           <span>Selected: {value.name}</span>
@@ -205,19 +205,19 @@ export function CategorySelector({
               Searching...
             </div>
           )}
-          
+
           {!loading && categories.length === 0 && searchTerm && (
             <div className="px-4 py-3 text-sm text-gray-500 text-center">
               No categories found for "{searchTerm}"
             </div>
           )}
-          
+
           {!loading && categories.length === 0 && !searchTerm && (
             <div className="px-4 py-3 text-sm text-gray-500 text-center">
               Start typing to search categories...
             </div>
           )}
-          
+
           {!loading && categories.length > 0 && (
             <div className="py-1">
               {categories.map((category) => (
@@ -228,8 +228,8 @@ export function CategorySelector({
                   className="w-full px-4 py-2 text-left hover:bg-gray-50 focus:bg-gray-50 focus:outline-none transition-colors"
                 >
                   <div className="flex items-center space-x-3">
-                    <div 
-                      className="w-3 h-3 rounded-full flex-shrink-0" 
+                    <div
+                      className="w-3 h-3 rounded-full flex-shrink-0"
                       style={{ backgroundColor: category.color }}
                     ></div>
                     <div className="flex-1 min-w-0">
@@ -254,7 +254,7 @@ export function CategorySelector({
       {error && (
         <p className="mt-1 text-sm text-red-600">{error}</p>
       )}
-      
+
       {/* Required indicator */}
       {required && (
         <p className="mt-1 text-xs text-gray-500">

@@ -6,6 +6,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { toast } from 'sonner';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
+import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { Input } from '@/components/ui/Input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { IQuiz, ICategory } from '@/types';
@@ -68,6 +69,7 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [title, setTitle] = useState('');
@@ -230,10 +232,6 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
   };
 
   const handleDelete = async () => {
-    if (!confirm('Are you sure you want to delete this quiz? This action cannot be undone.')) {
-      return;
-    }
-
     setDeleting(true);
     setError('');
 
@@ -254,6 +252,10 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
     } finally {
       setDeleting(false);
     }
+  };
+
+  const confirmDelete = () => {
+    setShowDeleteConfirm(true);
   };
 
   if (loading) {
@@ -704,7 +706,7 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
                         <Button
                           type="button"
                           variant="destructive"
-                          onClick={handleDelete}
+                          onClick={confirmDelete}
                           loading={deleting}
                           className="flex items-center gap-2"
                         >
@@ -799,6 +801,20 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
             </div>
           )}
         </div>
+
+        <ConfirmModal
+          isOpen={showDeleteConfirm}
+          title="Delete quiz?"
+          message="Are you sure you want to delete this quiz? This action cannot be undone."
+          confirmText="Delete"
+          confirmVariant="destructive"
+          isLoading={deleting}
+          onCancel={() => setShowDeleteConfirm(false)}
+          onConfirm={async () => {
+            setShowDeleteConfirm(false);
+            await handleDelete();
+          }}
+        />
       </main>
     </div>
   );

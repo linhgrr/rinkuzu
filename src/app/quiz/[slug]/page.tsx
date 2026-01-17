@@ -7,6 +7,7 @@ import Link from 'next/link';
 import Navigation from '@/components/Navigation';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle, Badge } from '@/components/ui/Card';
+import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import {
@@ -47,6 +48,8 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [userAnswers, setUserAnswers] = useState<(number | number[])[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
+  const [unansweredCount, setUnansweredCount] = useState(0);
 
   // Mobile detection state
   const [isMobile, setIsMobile] = useState(false);
@@ -281,23 +284,8 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
     }
   };
 
-  const submitQuiz = async () => {
+  const completeSubmit = async () => {
     if (!quiz) return;
-
-    const unanswered = userAnswers.filter((answer, index) => {
-      const question = quiz.questions[index];
-      if (question.type === 'single') {
-        return answer === -1;
-      } else {
-        return !Array.isArray(answer) || answer.length === 0;
-      }
-    }).length;
-
-    if (unanswered > 0) {
-      if (!confirm(`You have ${unanswered} unanswered questions. Submit anyway?`)) {
-        return;
-      }
-    }
 
     setSubmitting(true);
     try {
@@ -450,6 +438,27 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const submitQuiz = async () => {
+    if (!quiz) return;
+
+    const unanswered = userAnswers.filter((answer, index) => {
+      const question = quiz.questions[index];
+      if (question.type === 'single') {
+        return answer === -1;
+      } else {
+        return !Array.isArray(answer) || answer.length === 0;
+      }
+    }).length;
+
+    if (unanswered > 0) {
+      setUnansweredCount(unanswered);
+      setShowSubmitConfirm(true);
+      return;
+    }
+
+    await completeSubmit();
   };
 
   const askAI = async () => {
@@ -1301,6 +1310,18 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
             </div>
           </div>
         </Modal>
+
+        <ConfirmModal
+          isOpen={showSubmitConfirm}
+          title="Submit quiz?"
+          message={`You have ${unansweredCount} unanswered questions. Submit anyway?`}
+          confirmText="Submit"
+          onCancel={() => setShowSubmitConfirm(false)}
+          onConfirm={async () => {
+            setShowSubmitConfirm(false);
+            await completeSubmit();
+          }}
+        />
       </main>
     </div>
   );

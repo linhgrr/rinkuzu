@@ -18,7 +18,7 @@ import {
 
 export function FloatingDraftProgress() {
   const { getActiveDrafts, getProcessingCount, getCompletedCount, removeDraft, hasActiveDrafts } = useDraftStore();
-  const { resumeProcessing, stopProcessing } = usePdfProcessor();
+  const { stopProcessing } = usePdfProcessor();
   const [isExpanded, setIsExpanded] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -29,15 +29,6 @@ export function FloatingDraftProgress() {
   useEffect(() => {
     setMounted(true);
   }, []);
-
-  // Resume any interrupted processing on mount
-  useEffect(() => {
-    if (mounted) {
-      drafts
-        .filter(d => d.status === 'processing')
-        .forEach(d => resumeProcessing(d.id));
-    }
-  }, [mounted]); // Run when mounted
 
   if (!mounted || !hasActiveDrafts()) {
     return null;
@@ -84,7 +75,6 @@ export function FloatingDraftProgress() {
                   key={draft.id}
                   draft={draft}
                   onRemove={() => removeDraft(draft.id)}
-                  onRetry={() => resumeProcessing(draft.id)}
                   onCancel={() => handleCancel(draft.id, draft.title)}
                 />
               ))}
@@ -128,12 +118,10 @@ export function FloatingDraftProgress() {
 function DraftItem({
   draft,
   onRemove,
-  onRetry,
   onCancel,
 }: {
   draft: DraftProgress;
   onRemove: () => void;
-  onRetry: () => void;
   onCancel: () => void;
 }) {
   const progress = draft.chunksTotal > 0
@@ -181,18 +169,11 @@ function DraftItem({
               {draft.questionsCount} câu hỏi – Bấm để chỉnh sửa
             </Link>
           ) : draft.status === 'error' ? (
-            <div className="mt-1.5 flex items-center gap-2">
+            <div className="mt-1.5">
               <span className="text-xs text-red-500 flex items-center gap-1">
                 <HiOutlineExclamationCircle className="w-3.5 h-3.5" />
                 {draft.error || 'Lỗi xử lý'}
               </span>
-              <button
-                onClick={onRetry}
-                className="text-xs text-blue-600 hover:text-blue-700 flex items-center gap-1"
-              >
-                <HiOutlineRefresh className="w-3 h-3" />
-                Thử lại
-              </button>
             </div>
           ) : null}
         </div>

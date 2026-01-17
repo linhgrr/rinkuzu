@@ -115,6 +115,28 @@ export function FloatingDraftProgress() {
   );
 }
 
+function getTimeRemaining(expiresAt: string): string {
+  const now = new Date();
+  const expiry = new Date(expiresAt);
+  const diffMs = expiry.getTime() - now.getTime();
+
+  if (diffMs <= 0) return 'Hết hạn';
+
+  const hours = Math.floor(diffMs / (1000 * 60 * 60));
+  const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+
+  if (hours > 24) {
+    const days = Math.floor(hours / 24);
+    return `${days} ngày`;
+  }
+
+  if (hours > 0) {
+    return `${hours}h ${minutes}m`;
+  }
+
+  return `${minutes} phút`;
+}
+
 function DraftItem({
   draft,
   onRemove,
@@ -128,28 +150,50 @@ function DraftItem({
     ? (draft.chunksProcessed / draft.chunksTotal) * 100
     : 0;
 
+  const errorProgress = draft.chunksTotal > 0
+    ? ((draft.chunksError || 0) / draft.chunksTotal) * 100
+    : 0;
+
   return (
     <div className="px-4 py-3 border-b border-gray-50 last:border-0">
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
-          <p className="font-medium text-sm text-gray-900 truncate">
-            {draft.title}
-          </p>
+          <div className="flex items-center gap-2">
+            <p className="font-medium text-sm text-gray-900 truncate">
+              {draft.title}
+            </p>
+            {draft.expiresAt && (
+              <span className="text-xs text-gray-400 flex-shrink-0">
+                ⏱ {getTimeRemaining(draft.expiresAt)}
+              </span>
+            )}
+          </div>
 
           {draft.status === 'processing' || draft.status === 'uploading' ? (
             <>
-              <div className="mt-2 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+              <div className="mt-2 h-1.5 bg-gray-100 rounded-full overflow-hidden flex">
                 <motion.div
-                  className="h-full bg-blue-500 rounded-full"
+                  className="h-full bg-blue-500"
                   initial={{ width: 0 }}
                   animate={{ width: `${progress}%` }}
                   transition={{ duration: 0.3 }}
                 />
+                {errorProgress > 0 && (
+                  <motion.div
+                    className="h-full bg-red-400"
+                    initial={{ width: 0 }}
+                    animate={{ width: `${errorProgress}%` }}
+                    transition={{ duration: 0.3 }}
+                  />
+                )}
               </div>
               <div className="mt-1.5 flex items-center justify-between">
                 <p className="text-xs text-gray-500">
-                  {draft.chunksProcessed}/{draft.chunksTotal} phần •{' '}
-                  {draft.questionsCount} câu hỏi
+                  {draft.chunksProcessed}/{draft.chunksTotal} hoàn thành
+                  {(draft.chunksError || 0) > 0 && (
+                    <span className="text-red-500"> • {draft.chunksError} lỗi</span>
+                  )}
+                  {' • '}{draft.questionsCount} câu hỏi
                 </p>
                 <button
                   onClick={onCancel}

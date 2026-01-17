@@ -5,7 +5,7 @@ import { authOptions } from '@/lib/auth';
 import connectDB from '@/lib/mongoose';
 import DraftQuiz from '@/models/DraftQuiz';
 import { PDFDocument } from 'pdf-lib';
-import { uploadPDF, generatePDFKey } from '@/lib/s3';
+import { uploadPDF, generatePDFKey, deletePDF } from '@/lib/s3';
 
 const CHUNK_SIZE = 5; // pages per chunk
 const OVERLAP_PAGES = 1;
@@ -107,27 +107,39 @@ export async function POST(request: NextRequest) {
     // Create draft
     const expiresAt = new Date(Date.now() + EXPIRY_HOURS * 60 * 60 * 1000);
 
-    const draft = await DraftQuiz.create({
-      userId,
-      title: title.trim(),
-      categoryId: categoryId || undefined,
-      pdfData: {
-        fileName,
-        fileSize: buffer.length,
-        totalPages,
-        pdfKey, // S3 key for fetching PDF
-        pdfUrl, // Signed URL for PDF viewing
-      },
-      chunks: {
-        total: chunkDetails.length,
-        processed: 0,
-        current: 0,
-        chunkDetails,
-      },
-      questions: [],
-      status: 'processing',
-      expiresAt,
-    });
+    let draft;
+    try {
+      draft = await DraftQuiz.create({
+        userId,
+        title: title.trim(),
+        categoryId: categoryId || undefined,
+        pdfData: {
+          fileName,
+          fileSize: buffer.length,
+          totalPages,
+          pdfKey, // S3 key for fetching PDF
+          pdfUrl, // Signed URL for PDF viewing
+        },
+        chunks: {
+          total: chunkDetails.length,
+          processed: 0,
+          current: 0,
+          chunkDetails,
+        },
+        questions: [],
+        status: 'processing',
+        expiresAt,
+      });
+    } catch (dbError) {
+      // Rollback S3 upload
+      console.error('Draft creation failed, rolling back S3:', dbError);
+      try {
+        await deletePDF(pdfKey);
+      } catch (s3Error) {
+        console.error('S3 rollback failed:', s3Error);
+      }
+      throw dbError;
+    }
 
     return NextResponse.json({
       draftId: draft._id.toString(),

@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
+import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { Modal } from '@/components/ui/Modal';
 import Sidebar from '@/components/Sidebar';
 import {
@@ -61,6 +62,8 @@ export default function AdminCategoriesPage() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   // Form states
   const [formData, setFormData] = useState({
@@ -203,12 +206,9 @@ export default function AdminCategoriesPage() {
     }
   };
 
-  const handleDelete = async (category: Category) => {
-    if (!confirm(`Are you sure you want to delete "${category.name}"?`)) {
-      return;
-    }
-
+  const deleteCategory = async (category: Category) => {
     try {
+      setDeleting(true);
       const response = await fetch(`/api/admin/categories/${category._id}`, {
         method: 'DELETE',
       });
@@ -223,7 +223,15 @@ export default function AdminCategoriesPage() {
       }
     } catch (error) {
       setError('An error occurred while deleting category');
+    } finally {
+      setDeleting(false);
     }
+  };
+
+  const confirmDeleteCategory = async () => {
+    if (!categoryToDelete) return;
+    await deleteCategory(categoryToDelete);
+    setCategoryToDelete(null);
   };
 
   const formatDate = (dateString: string) => {
@@ -474,7 +482,7 @@ export default function AdminCategoriesPage() {
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => handleDelete(category)}
+                              onClick={() => setCategoryToDelete(category)}
                               className="text-red-600 hover:text-red-700"
                             >
                               <HiOutlineTrash className="w-4 h-4" />
@@ -687,8 +695,19 @@ export default function AdminCategoriesPage() {
               </div>
             </form>
           </Modal>
+
+          <ConfirmModal
+            isOpen={!!categoryToDelete}
+            title="Delete category?"
+            message={categoryToDelete ? `Are you sure you want to delete "${categoryToDelete.name}"?` : ''}
+            confirmText="Delete"
+            confirmVariant="destructive"
+            isLoading={deleting}
+            onCancel={() => setCategoryToDelete(null)}
+            onConfirm={confirmDeleteCategory}
+          />
         </div>
       </main>
     </div>
   );
-} 
+}

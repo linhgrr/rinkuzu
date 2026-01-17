@@ -7,7 +7,7 @@ import { toast } from 'sonner'
 import Navigation from '@/components/Navigation'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
-import { Modal } from '@/components/ui/Modal'
+import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import {
   HiOutlineCheck,
   HiOutlineShieldCheck,
@@ -238,40 +238,28 @@ export default function SubscriptionPage() {
             ))}
           </div>
 
-          {/* Payment Confirmation Modal */}
-          <Modal
+          <ConfirmModal
             isOpen={showPaymentModal}
-            onClose={() => setShowPaymentModal(false)}
             title="Xác Nhận Thanh Toán"
-          >
-            <div className="p-6">
-              <p className="text-gray-700 mb-4">
-                Bạn sắp mua gói <strong>{selectedPlan?.name}</strong> với giá{' '}
-                <strong>{selectedPlan ? formatPrice(selectedPlan.price) : ''}</strong>
-              </p>
-              <p className="text-sm text-gray-600 mb-6">
-                Sau khi xác nhận, bạn sẽ được chuyển đến trang thanh toán PayOS để hoàn tất giao dịch.
-              </p>
-              <div className="flex space-x-3">
-                <Button
-                  onClick={() => setShowPaymentModal(false)}
-                  variant="outline"
-                  className="flex-1"
-                >
-                  Hủy
-                </Button>
-                <Button
-                  onClick={confirmPurchase}
-                  disabled={paymentLoading}
-                  className="flex-1"
-                >
-                  {paymentLoading ? 'Đang xử lý...' : 'Xác Nhận Thanh Toán'}
-                </Button>
+            message={(
+              <div className="space-y-4">
+                <p className="text-gray-700">
+                  Bạn sắp mua gói <strong>{selectedPlan?.name}</strong> với giá{' '}
+                  <strong>{selectedPlan ? formatPrice(selectedPlan.price) : ''}</strong>
+                </p>
+                <p className="text-sm text-gray-600">
+                  Sau khi xác nhận, bạn sẽ được chuyển đến trang thanh toán PayOS để hoàn tất giao dịch.
+                </p>
               </div>
-            </div>
-          </Modal>
+            )}
+            confirmText="Xác Nhận Thanh Toán"
+            cancelText="Hủy"
+            isLoading={paymentLoading}
+            onCancel={() => setShowPaymentModal(false)}
+            onConfirm={confirmPurchase}
+          />
         </div>
       </div>
     </div>
   )
-} 
+}

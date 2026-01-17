@@ -18,7 +18,7 @@ import {
   HiOutlineTrash,
   HiOutlineCheck,
   HiOutlineX
-} from 'react-icons/hi'
+} from '@/components/icons'
 
 interface Plan {
   _id: string;

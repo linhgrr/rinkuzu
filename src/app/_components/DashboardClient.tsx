@@ -17,7 +17,7 @@ import {
   HiOutlineArrowRight,
   HiOutlineShare,
   HiOutlineLightBulb,
-} from 'react-icons/hi';
+} from '@/components/icons';
 
 interface DashboardClientProps {
   userEmail: string;
@@ -114,26 +114,27 @@ export function DashboardClient({ userEmail }: DashboardClientProps) {
   const userName = userEmail?.split('@')[0] || 'User';
 
   return (
-    <div className="min-h-screen bg-[#f5f5f7] pb-20">
+    <div className="min-h-screen bg-[#f5f5f7] pb-24 md:pb-8">
       <Navigation />
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
         {/* Welcome Header */}
-        <div className="mb-8 pt-4">
-          <div className="flex justify-between items-center">
+        <div className="mb-6 md:mb-8 pt-4">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
             <div>
-              <h1 className="text-3xl font-semibold text-[#1d1d1f]">
+              <h1 className="text-2xl md:text-3xl font-semibold text-[#1d1d1f]">
                 Welcome back, {userName}!{' '}
                 <HiOutlineLightBulb className="inline-block text-yellow-500" />
               </h1>
-              <p className="text-[#86868b]">
+              <p className="text-sm md:text-base text-[#86868b]">
                 Here&apos;s what you should focus on today.
               </p>
             </div>
             <Button
               variant="outline"
               onClick={handleShare}
-              className="flex items-center gap-2"
+              size="sm"
+              className="hidden sm:flex items-center gap-2"
             >
               Share Progress <HiOutlineShare className="w-4 h-4" />
             </Button>

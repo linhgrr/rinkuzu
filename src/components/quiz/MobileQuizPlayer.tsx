@@ -7,7 +7,7 @@ import {
   HiOutlineChevronLeft,
   HiOutlineChevronRight,
   HiOutlineCheck,
-} from 'react-icons/hi';
+} from '@/components/icons';
 
 interface Question {
   _id: string;

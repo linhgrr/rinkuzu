@@ -16,7 +16,7 @@ import {
   HiOutlineLogout,
   HiOutlineSearch,
   HiOutlineEye
-} from 'react-icons/hi'
+} from '@/components/icons'
 
 interface Subscription {
   _id: string

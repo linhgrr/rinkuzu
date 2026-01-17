@@ -12,7 +12,7 @@ import {
     HiOutlineDocumentText,
     HiOutlineChartBar,
     HiOutlineBookmark,
-} from 'react-icons/hi';
+} from '@/components/icons';
 
 type TabType = 'quizzes' | 'history' | 'bookmarks';
 
@@ -30,14 +30,14 @@ const TabButton = memo(function TabButton({ id, label, icon, isActive, onClick }
     return (
         <button
             onClick={handleClick}
-            className={`flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap flex-1 ${
-                isActive
+            className={`flex items-center justify-center gap-1.5 md:gap-2 px-3 md:px-6 py-2.5 min-h-[44px] rounded-lg text-xs md:text-sm font-medium transition-all duration-200 whitespace-nowrap flex-1 ${isActive
                     ? 'bg-white text-[#0071e3] shadow-sm'
                     : 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
-            }`}
+                }`}
         >
             {icon}
-            {label}
+            <span className="hidden sm:inline">{label}</span>
+            <span className="sm:hidden">{label.split(' ')[0]}</span>
         </button>
     );
 });
@@ -55,11 +55,13 @@ function ProfileContent() {
     const searchParams = useSearchParams();
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
-    const initialTab = searchParams.get('tab') as TabType | null;
-    const [activeTab, setActiveTab] = useState<TabType>(initialTab || 'quizzes');
+    const initialTab = (searchParams.get('tab') as TabType | null) || 'quizzes';
+    const [activeTab, setActiveTab] = useState<TabType>(initialTab);
+    const [visitedTabs, setVisitedTabs] = useState<Set<TabType>>(new Set([initialTab]));
 
     const handleTabChange = useCallback((tab: TabType) => {
         setActiveTab(tab);
+        setVisitedTabs(prev => new Set(prev).add(tab));
         const params = new URLSearchParams(searchParams.toString());
         params.set('tab', tab);
         router.push(`${pathname}?${params.toString()}`);
@@ -83,9 +85,9 @@ function ProfileContent() {
     }
 
     return (
-        <div className="min-h-screen bg-[#f5f5f7]">
+        <div className="min-h-screen bg-[#f5f5f7] pb-24 md:pb-8">
             {/* Navigation */}
-            <nav className="fixed top-0 left-0 right-0 h-16 bg-white/80 backdrop-blur-md border-b border-gray-200 z-50">
+            <nav className="fixed top-0 left-0 right-0 h-14 md:h-16 bg-white/80 backdrop-blur-md border-b border-gray-200 z-50">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full">
                     <div className="flex justify-between items-center h-full">
                         <div className="flex items-center gap-4">
@@ -104,23 +106,25 @@ function ProfileContent() {
                 </div>
             </nav>
 
-            <Sidebar
-                isOpen={isSidebarOpen}
-                onToggle={handleSidebarToggle}
-                currentPath={pathname}
-            />
+            {/* Sidebar - hidden on mobile */}
+            <div className="hidden md:block">
+                <Sidebar
+                    isOpen={isSidebarOpen}
+                    onToggle={handleSidebarToggle}
+                    currentPath={pathname}
+                />
+            </div>
 
             <main
-                className={`pt-20 pb-24 md:pb-8 px-4 sm:px-6 lg:px-8 transition-all duration-300 ${
-                    isSidebarOpen ? 'md:ml-64' : 'md:ml-16'
-                }`}
+                className={`pt-16 md:pt-20 pb-4 px-4 sm:px-6 lg:px-8 transition-all duration-300 ${isSidebarOpen ? 'md:ml-64' : 'md:ml-16'
+                    }`}
             >
                 <div className="max-w-5xl mx-auto">
                     {/* Header / Tabs */}
-                    <div className="mb-8">
-                        <h1 className="text-3xl font-bold text-[#1d1d1f] mb-6">Profile</h1>
+                    <div className="mb-6 md:mb-8">
+                        <h1 className="text-2xl md:text-3xl font-bold text-[#1d1d1f] mb-4 md:mb-6">Profile</h1>
 
-                        <div className="flex space-x-1 bg-gray-100 p-1 rounded-xl w-full max-w-2xl overflow-x-auto">
+                        <div className="flex space-x-1 bg-gray-100 p-1 rounded-xl w-full max-w-2xl overflow-x-auto scrollbar-hide">
                             {TABS.map((tab) => (
                                 <TabButton
                                     key={tab.id}
@@ -135,10 +139,22 @@ function ProfileContent() {
                     </div>
 
                     {/* Content */}
-                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 min-h-[500px]">
-                        {activeTab === 'quizzes' && <ProfileQuizzes />}
-                        {activeTab === 'history' && <ProfileHistory />}
-                        {activeTab === 'bookmarks' && <ProfileBookmarks />}
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 md:p-6 min-h-[400px] md:min-h-[500px]">
+                        {visitedTabs.has('quizzes') && (
+                            <div className={activeTab === 'quizzes' ? '' : 'hidden'}>
+                                <ProfileQuizzes />
+                            </div>
+                        )}
+                        {visitedTabs.has('history') && (
+                            <div className={activeTab === 'history' ? '' : 'hidden'}>
+                                <ProfileHistory />
+                            </div>
+                        )}
+                        {visitedTabs.has('bookmarks') && (
+                            <div className={activeTab === 'bookmarks' ? '' : 'hidden'}>
+                                <ProfileBookmarks />
+                            </div>
+                        )}
                     </div>
                 </div>
             </main>

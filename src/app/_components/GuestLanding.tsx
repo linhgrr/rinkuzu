@@ -6,7 +6,7 @@ import Navigation from '@/components/Navigation';
 import { Card, Badge } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { ROUTES } from '@/shared/constants';
-import { HiOutlineArrowRight } from 'react-icons/hi';
+import { HiOutlineArrowRight } from '@/components/icons';
 
 interface Quiz {
   _id: string;
@@ -52,19 +52,19 @@ export function GuestLanding({ quizzes }: GuestLandingProps) {
   return (
     <div className="min-h-screen bg-[#f5f5f7]">
       <Navigation />
-      <div className="max-w-6xl mx-auto px-4 py-16 text-center">
-        <h1 className="text-5xl font-semibold mb-6 tracking-tight">
+      <div className="max-w-6xl mx-auto px-4 py-10 md:py-16 text-center">
+        <h1 className="text-3xl sm:text-4xl md:text-5xl font-semibold mb-4 md:mb-6 tracking-tight">
           Master any subject.
         </h1>
-        <p className="text-xl text-[#86868b] mb-12 max-w-2xl mx-auto">
+        <p className="text-base sm:text-lg md:text-xl text-[#86868b] mb-8 md:mb-12 max-w-2xl mx-auto px-2">
           Create AI-powered quizzes from your study materials. Track progress
           with Spaced Repetition.
         </p>
-        <div className="flex justify-center gap-4 mb-20">
-          <Button size="lg" onClick={handleGetStarted}>
+        <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 mb-12 md:mb-20 px-4 sm:px-0">
+          <Button size="lg" onClick={handleGetStarted} className="w-full sm:w-auto">
             Get Started Free
           </Button>
-          <Button size="lg" variant="outline" onClick={handleLogin}>
+          <Button size="lg" variant="outline" onClick={handleLogin} className="w-full sm:w-auto">
             Log In
           </Button>
         </div>

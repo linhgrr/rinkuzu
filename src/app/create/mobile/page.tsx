@@ -13,7 +13,7 @@ import {
   HiOutlineArrowRight,
   HiOutlineDesktopComputer,
   HiOutlineX,
-} from 'react-icons/hi';
+} from '@/components/icons';
 import { toast } from 'sonner';
 
 export default function MobileCreatePage() {

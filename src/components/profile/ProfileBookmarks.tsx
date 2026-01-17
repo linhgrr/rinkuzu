@@ -8,7 +8,7 @@ import { Modal } from '@/components/ui/Modal';
 import { DynamicMarkdownRenderer as MarkdownRenderer } from '@/components/ui/DynamicMarkdownRenderer';
 import Pagination from '@/components/ui/Pagination';
 import { useSession } from 'next-auth/react';
-import { HiOutlineTag, HiOutlineChatAlt, HiOutlineTrash, HiOutlineExternalLink } from 'react-icons/hi';
+import { HiOutlineTag, HiOutlineChatAlt, HiOutlineTrash, HiOutlineExternalLink } from '@/components/icons';
 
 interface Bookmark {
     _id: string;

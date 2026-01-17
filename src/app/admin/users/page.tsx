@@ -16,7 +16,7 @@ import {
   HiOutlineSearch,
   HiOutlineCheck,
   HiOutlineLogout
-} from 'react-icons/hi';
+} from '@/components/icons';
 
 interface User {
   _id: string;

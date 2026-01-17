@@ -15,7 +15,7 @@ import {
   HiOutlineInbox,
   HiOutlineLightningBolt,
   HiOutlineRefresh
-} from 'react-icons/hi';
+} from '@/components/icons';
 
 interface Quiz {
   _id: string;

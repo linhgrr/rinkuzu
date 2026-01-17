@@ -16,7 +16,7 @@ import {
     HiOutlineStar,
     HiOutlineAcademicCap,
     HiOutlineLightningBolt
-} from 'react-icons/hi';
+} from '@/components/icons';
 
 interface AttemptHistory {
     _id: string;

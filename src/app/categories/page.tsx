@@ -14,7 +14,7 @@ import {
   HiOutlineEmojiHappy,
   HiOutlineInbox,
   HiOutlineArrowRight
-} from 'react-icons/hi';
+} from '@/components/icons';
 
 interface Category {
   _id: string;
@@ -127,33 +127,33 @@ export default function CategoriesPage() {
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen pb-24 md:pb-8">
       <Navigation />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 md:pt-20 pb-8">
         {/* Breadcrumb */}
-        <nav className="flex items-center space-x-2 text-sm text-gray-500 mb-6">
+        <nav className="flex items-center space-x-2 text-sm text-gray-500 mb-4 md:mb-6">
           <Link href="/" className="hover:text-gray-700">Home</Link>
           <span>›</span>
           <span className="text-gray-900 font-medium">All Categories</span>
         </nav>
 
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">All Categories</h1>
-          <p className="text-gray-600">
+        <div className="mb-6 md:mb-8">
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2 md:mb-4">All Categories</h1>
+          <p className="text-sm md:text-base text-gray-600">
             Explore quizzes by subject and find what interests you most
           </p>
         </div>
 
         {/* Search */}
-        <div className="mb-8">
-          <Card variant="glass" className="p-6 backdrop-blur-xl">
-            <div className="flex gap-4">
+        <div className="mb-6 md:mb-8">
+          <Card variant="glass" className="p-4 md:p-6 backdrop-blur-xl">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
               <div className="flex-1">
                 <Input
                   type="text"
-                  placeholder="Search categories by name or description..."
+                  placeholder="Search categories..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   icon={
@@ -166,7 +166,7 @@ export default function CategoriesPage() {
                 <Button
                   variant="ghost"
                   onClick={() => setSearchTerm('')}
-                  className="text-violet-600 hover:text-violet-700"
+                  className="text-violet-600 hover:text-violet-700 w-full sm:w-auto"
                 >
                   Clear
                 </Button>
@@ -176,8 +176,8 @@ export default function CategoriesPage() {
         </div>
 
         {/* Results Info */}
-        <div className="flex items-center justify-between mb-8">
-          <p className="text-gray-600">
+        <div className="flex items-center justify-between mb-6 md:mb-8">
+          <p className="text-sm md:text-base text-gray-600">
             Showing {filteredCategories.length} of {categories.length} categories
             {searchTerm && (
               <span className="ml-2">
@@ -211,7 +211,7 @@ export default function CategoriesPage() {
             )}
           </Card>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-8">
             {filteredCategories.map((category, index) => (
               <Card
                 key={category._id}

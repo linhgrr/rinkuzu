@@ -1,10 +1,23 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
+import dynamic from 'next/dynamic';
 import './globals.css';
 import Providers from './providers';
-import PWAInstaller from '@/components/PWAInstaller';
 import BottomNav from '@/components/BottomNav';
-import { FloatingDraftProgress } from '@/components/FloatingDraftProgress';
+
+/**
+ * Rule: bundle-defer-third-party
+ * Defer loading of non-critical components after hydration
+ * PWAInstaller and FloatingDraftProgress are not needed for initial render
+ */
+const PWAInstaller = dynamic(() => import('@/components/PWAInstaller'), {
+  ssr: false,
+});
+
+const FloatingDraftProgress = dynamic(
+  () => import('@/components/FloatingDraftProgress').then(mod => ({ default: mod.FloatingDraftProgress })),
+  { ssr: false }
+);
 
 const inter = Inter({
   subsets: ['latin'],

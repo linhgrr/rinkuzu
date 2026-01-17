@@ -13,7 +13,7 @@ import {
   HiOutlineLogout,
   HiOutlineMenu,
   HiOutlineX
-} from 'react-icons/hi';
+} from '@/components/icons';
 import { NavLogo } from './NavLogo';
 import { NavLinks } from './NavLinks';
 import { GuestLinks } from './GuestLinks';

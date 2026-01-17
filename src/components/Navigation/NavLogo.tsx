@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { HiOutlineLightBulb } from 'react-icons/hi';
+import { HiOutlineLightBulb } from '@/components/icons';
 
 /**
  * Static logo component - can be used in Server Components

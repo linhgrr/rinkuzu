@@ -28,13 +28,19 @@ export async function POST(
 
     await connectDB();
 
+    // 1. Initial check - does the draft still exist?
     const draft = await DraftQuiz.findOne({
       _id: params.id,
       userId: ((session!.user as any) as any).id,
     });
 
     if (!draft) {
-      return NextResponse.json({ error: 'Draft not found' }, { status: 404 });
+      return NextResponse.json({ error: 'Draft not found or cancelled' }, { status: 404 });
+    }
+
+    // 2. Initial check - is the client already gone?
+    if (request.signal.aborted) {
+      return NextResponse.json({ error: 'Request aborted' }, { status: 499 });
     }
 
     if (!draft.pdfData.base64) {
@@ -94,8 +100,19 @@ export async function POST(
 
       const chunkBuffer = Buffer.from(await chunkPdfDoc.save());
 
+      // 3. Pre-AI check - is the client still there?
+      if (request.signal.aborted) {
+        throw new Error('AbortError: Request was cancelled by user');
+      }
+
+      // 4. Pre-AI check - double check if draft was deleted while we were loading PDF
+      const stillExists = await DraftQuiz.exists({ _id: params.id });
+      if (!stillExists) {
+        throw new Error('Draft was deleted or cancelled');
+      }
+
       // Extract questions using AI
-      const extractedQuestions = await extractQuestionsFromPdf(chunkBuffer, 2);
+      const extractedQuestions = await extractQuestionsFromPdf(chunkBuffer, 2, request.signal);
 
       // Remove duplicates with existing questions
       const existingHashes = new Set(

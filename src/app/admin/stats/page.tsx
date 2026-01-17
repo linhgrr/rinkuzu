@@ -16,7 +16,7 @@ import {
   HiOutlineDocumentText,
   HiOutlineChartBar,
   HiOutlineLightBulb
-} from 'react-icons/hi';
+} from '@/components/icons';
 
 interface AdminStats {
   overview: {

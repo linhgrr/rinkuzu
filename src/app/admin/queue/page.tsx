@@ -21,7 +21,7 @@ import {
   HiOutlineTrash,
   HiOutlineExclamationCircle,
   HiOutlineLockClosed
-} from 'react-icons/hi';
+} from '@/components/icons';
 import Sidebar from '@/components/Sidebar';
 
 interface PaginationData {

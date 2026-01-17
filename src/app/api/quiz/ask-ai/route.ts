@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { createLangChainModel, HumanMessage, SystemMessage } from '@/lib/langchain';
+import {
+  createLangChainModel,
+  createStructuredModel,
+  HumanMessage,
+  SystemMessage,
+  QuizExplanationSchema,
+  formatQuizExplanation,
+  type QuizExplanation
+} from '@/lib/langchain';
 import { authOptions } from '@/lib/auth';
 
 // Chat history interface
@@ -303,33 +311,72 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Non-streaming response (fallback)
-    const maxRetries = 3;
+    // Non-streaming response with STRUCTURED OUTPUT (Best Practice 2025)
+    // Uses Zod schema for constrained, validated output
+    const maxRetries = 2; // Bounded repair loop
 
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {
-        const model = createLangChainModel({ temperature: 0.7 });
-        const result = await model.invoke(messages);
-        const explanation = typeof result.content === 'string'
-          ? result.content.trim()
-          : JSON.stringify(result.content);
+        // Use structured model with schema constraint
+        const structuredModel = createStructuredModel(QuizExplanationSchema, {
+          temperature: 0.7
+        });
 
-        console.log('✅ AI explanation generated successfully');
+        const result = await structuredModel.invoke(messages) as QuizExplanation;
+
+        // Validate output (semantic validation in app code)
+        if (!result.explanation || result.explanation.length < 20) {
+          throw new Error('Invalid explanation: too short');
+        }
+
+        if (!result.keyPoints || result.keyPoints.length < 1) {
+          throw new Error('Invalid keyPoints: missing');
+        }
+
+        // Format structured output to readable text
+        const formattedExplanation = formatQuizExplanation(result);
+
+        console.log('✅ AI structured explanation generated successfully', {
+          keyPointsCount: result.keyPoints.length,
+          hasHint: !!result.hint,
+          hasEncouragement: !!result.encouragement
+        });
 
         return NextResponse.json({
           success: true,
           data: {
-            explanation,
+            explanation: formattedExplanation,
+            structured: result, // Also return raw structured data
             timestamp: new Date().toISOString(),
             turnCount: Math.floor(chatHistory.length / 2) + 1
           }
         });
 
       } catch (error: any) {
-        console.error(`Ask AI attempt ${attempt + 1} failed:`, error.message);
+        console.error(`Ask AI structured attempt ${attempt + 1} failed:`, error.message);
 
+        // On last retry, fall back to unstructured output
         if (attempt === maxRetries - 1) {
-          throw new Error(`Failed to get AI explanation after ${maxRetries} attempts: ${error.message}`);
+          console.log('⚠️ Falling back to unstructured output...');
+          try {
+            const model = createLangChainModel({ temperature: 0.7 });
+            const result = await model.invoke(messages);
+            const explanation = typeof result.content === 'string'
+              ? result.content.trim()
+              : JSON.stringify(result.content);
+
+            return NextResponse.json({
+              success: true,
+              data: {
+                explanation,
+                structured: null, // Indicate fallback was used
+                timestamp: new Date().toISOString(),
+                turnCount: Math.floor(chatHistory.length / 2) + 1
+              }
+            });
+          } catch (fallbackError: any) {
+            throw new Error(`All attempts failed: ${fallbackError.message}`);
+          }
         }
 
         await new Promise(resolve => setTimeout(resolve, 1000));

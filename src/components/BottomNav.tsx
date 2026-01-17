@@ -12,7 +12,7 @@ import {
     HiPlus,
     HiOutlineSearch,
     HiSearch
-} from 'react-icons/hi';
+} from '@/components/icons';
 
 export default function BottomNav() {
     const pathname = usePathname();
@@ -63,8 +63,8 @@ export default function BottomNav() {
     ];
 
     return (
-        <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-2 z-50">
-            <div className="flex justify-between items-end">
+        <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-lg border-t border-gray-200/50 px-2 pt-2 z-50 safe-area-bottom">
+            <div className="flex justify-around items-end">
                 {navItems.map((item) => {
                     const isActive = pathname === item.href;
                     const isCreate = item.href === '/create';
@@ -73,7 +73,7 @@ export default function BottomNav() {
                         <Link
                             key={item.href}
                             href={item.href}
-                            className={`flex flex-col items-center justify-center w-full ${isCreate ? '' : 'gap-1'}`}
+                            className={`flex flex-col items-center justify-center min-w-[56px] min-h-[48px] px-3 py-1 rounded-xl transition-colors active:bg-gray-100 ${isCreate ? '' : 'gap-0.5'}`}
                         >
                             {typeof item.icon === 'function' ? item.icon(isActive) : null}
                             {!isCreate && (
@@ -86,7 +86,7 @@ export default function BottomNav() {
                 })}
             </div>
             {/* Safe Area for iPhone Home Indicator */}
-            <div className="h-1 lg:hidden"></div>
+            <div className="h-[env(safe-area-inset-bottom,8px)]"></div>
         </div>
     );
 }

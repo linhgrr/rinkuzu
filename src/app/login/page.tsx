@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
-import { HiOutlineMail, HiOutlineLockClosed, HiOutlineExclamationCircle, HiOutlineShieldCheck } from 'react-icons/hi';
+import { HiOutlineMail, HiOutlineLockClosed, HiOutlineExclamationCircle, HiOutlineShieldCheck } from '@/components/icons';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -68,27 +68,27 @@ export default function LoginPage() {
       <div className="absolute top-1/3 right-10 w-24 h-24 bg-gradient-to-br from-cyan-400/20 to-blue-500/20 rounded-full blur-xl animate-pulse delay-1000" />
       <div className="absolute bottom-10 left-1/3 w-40 h-40 bg-gradient-to-br from-emerald-400/20 to-teal-500/20 rounded-full blur-xl animate-pulse delay-2000" />
 
-      <div className="relative flex flex-col justify-center py-12 sm:px-6 lg:px-8 min-h-screen pt-20">
+      <div className="relative flex flex-col justify-center py-8 sm:py-12 px-4 sm:px-6 lg:px-8 min-h-screen pt-16 sm:pt-20">
         {/* Header */}
-        <div className="sm:mx-auto sm:w-full sm:max-w-md mb-8">
+        <div className="sm:mx-auto sm:w-full sm:max-w-md mb-6 sm:mb-8">
           <div className="text-center">
             <Link href="/" className="inline-flex items-center space-x-3 group">
               <div className="relative">
-                <div className="w-16 h-16 gradient-primary rounded-2xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300">
-                  <span className="text-white font-bold text-2xl">R</span>
+                <div className="w-12 h-12 sm:w-16 sm:h-16 gradient-primary rounded-2xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300">
+                  <span className="text-white font-bold text-xl sm:text-2xl">R</span>
                 </div>
                 <div className="absolute -inset-1 gradient-primary rounded-2xl opacity-30 group-hover:opacity-50 transition-opacity duration-300 blur-sm -z-10" />
               </div>
               <div>
-                <span className="text-3xl font-bold gradient-text">RinKuzu</span>
-                <p className="text-sm text-gray-500 -mt-1">AI Quiz Platform</p>
+                <span className="text-2xl sm:text-3xl font-bold gradient-text">RinKuzu</span>
+                <p className="text-xs sm:text-sm text-gray-500 -mt-1">AI Quiz Platform</p>
               </div>
             </Link>
           </div>
 
-          <div className="mt-8 text-center animate-fadeInUp">
-            <h1 className="text-4xl font-bold text-gray-900 mb-3">Welcome Back!</h1>
-            <p className="text-lg text-gray-600">
+          <div className="mt-6 sm:mt-8 text-center animate-fadeInUp">
+            <h1 className="text-2xl sm:text-4xl font-bold text-gray-900 mb-2 sm:mb-3">Welcome Back!</h1>
+            <p className="text-base sm:text-lg text-gray-600">
               Sign in to continue creating amazing quizzes
             </p>
           </div>

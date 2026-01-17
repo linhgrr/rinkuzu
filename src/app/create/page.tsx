@@ -35,7 +35,7 @@ import {
   HiOutlineTag,
   HiOutlineLockClosed,
   HiOutlineExternalLink
-} from 'react-icons/hi';
+} from '@/components/icons';
 
 // Enhanced PDF Viewer Component with merge capability
 function PDFViewerComponent({ files, onClose }: { files: File[]; onClose: () => void }) {

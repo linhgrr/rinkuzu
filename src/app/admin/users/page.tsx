@@ -318,11 +318,10 @@ export default function AdminUsersPage() {
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
             <div className="flex items-center">
-              <Link href="/" className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">R</span>
+              <Link href="/" className="flex items-center">
+                <div className="h-10 flex items-center justify-center">
+                  <img src="https://i.ibb.co/WWGXBZXm/image-removebg-preview.png" alt="RinKuzu Logo" className="h-10 w-auto object-contain" />
                 </div>
-                <span className="text-xl font-semibold text-gray-900">RinKuzu</span>
               </Link>
               <span className="ml-3 px-2 py-1 bg-red-100 text-red-800 text-xs font-medium rounded">
                 Admin

@@ -91,11 +91,10 @@ function ProfileContent() {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full">
                     <div className="flex justify-between items-center h-full">
                         <div className="flex items-center gap-4">
-                            <Link href="/" className="flex items-center gap-2">
-                                <div className="w-8 h-8 bg-[#0071e3] rounded-lg flex items-center justify-center">
-                                    <span className="text-white font-bold">R</span>
+                            <Link href="/" className="flex items-center">
+                                <div className="h-10 flex items-center justify-center">
+                                    <img src="https://i.ibb.co/WWGXBZXm/image-removebg-preview.png" alt="RinKuzu Logo" className="h-10 w-auto object-contain" />
                                 </div>
-                                <span className="text-xl font-semibold text-[#1d1d1f] hidden sm:block">RinKuzu</span>
                             </Link>
                         </div>
 

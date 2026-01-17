@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { HiOutlineLightBulb } from '@/components/icons';
+import Image from 'next/image';
 
 /**
  * Static logo component - can be used in Server Components
@@ -7,13 +7,16 @@ import { HiOutlineLightBulb } from '@/components/icons';
  */
 export function NavLogo() {
   return (
-    <Link href="/" className="flex items-center gap-2 group">
-      <div className="w-8 h-8 bg-[#0071e3] rounded-lg flex items-center justify-center shadow-sm transition-transform group-hover:scale-105">
-        <HiOutlineLightBulb className="w-5 h-5 text-white" />
+    <Link href="/" className="flex items-center group">
+      <div className="h-10 flex items-center justify-center transition-transform group-hover:scale-105">
+        <Image
+          src="https://i.ibb.co/WWGXBZXm/image-removebg-preview.png"
+          alt="RinKuzu Logo"
+          width={150}
+          height={40}
+          className="h-10 w-auto object-contain"
+        />
       </div>
-      <span className="text-lg font-semibold text-[#1d1d1f] hidden sm:block">
-        RinKuzu
-      </span>
     </Link>
   );
 }

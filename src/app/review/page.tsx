@@ -13,7 +13,7 @@ import {
     HiOutlineCheckCircle,
     HiOutlineHome,
     HiOutlineRefresh
-} from 'react-icons/hi';
+} from '@/components/icons';
 
 interface Question {
     _id: string; // QuestionProgress ID if needed, or we use questionId
@@ -111,15 +111,15 @@ export default function ReviewPage() {
                         <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
                             <HiOutlineEmojiHappy className="text-4xl text-green-600" />
                         </div>
-                        <h1 className="text-3xl font-bold text-[#1d1d1f] mb-4">Session Complete!</h1>
-                        <p className="text-xl text-[#86868b] mb-8">
+                        <h1 className="text-2xl md:text-3xl font-bold text-[#1d1d1f] mb-4">Session Complete!</h1>
+                        <p className="text-lg md:text-xl text-[#86868b] mb-8">
                             You reviewed {stats.reviewedCount} questions and earned {stats.xpGained} XP.
                         </p>
-                        <div className="flex gap-4 justify-center">
-                            <Button onClick={() => router.push('/')} variant="default" size="lg" className="flex items-center gap-2">
+                        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
+                            <Button onClick={() => router.push('/')} variant="default" size="lg" className="w-full sm:w-auto flex items-center justify-center gap-2">
                                 <HiOutlineHome className="w-5 h-5" /> Back to Dashboard
                             </Button>
-                            <Button onClick={() => window.location.reload()} variant="outline" size="lg" className="flex items-center gap-2">
+                            <Button onClick={() => window.location.reload()} variant="outline" size="lg" className="w-full sm:w-auto flex items-center justify-center gap-2">
                                 <HiOutlineRefresh className="w-5 h-5" /> Review More
                             </Button>
                         </div>

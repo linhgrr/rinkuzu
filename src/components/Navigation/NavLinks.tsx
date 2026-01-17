@@ -9,7 +9,7 @@ interface NavLink {
 const LINKS: NavLink[] = [
   { href: '/', label: 'Home' },
   { href: '/create', label: 'Create' },
-  { href: '/profile?tab=quizzes', label: 'My Quizzes' },
+  { href: '/profile', label: 'Profile' },
   { href: '/categories', label: 'Categories' },
   { href: '/explore', label: 'Explore' },
 ];

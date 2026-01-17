@@ -15,7 +15,7 @@ import {
   HiOutlineShieldCheck,
   HiOutlineInbox,
   HiOutlineHeart
-} from 'react-icons/hi';
+} from '@/components/icons';
 
 export default function RegisterPage() {
   const [email, setEmail] = useState('');

@@ -13,7 +13,7 @@ import {
   HiOutlineX,
   HiOutlineDesktopComputer,
   HiOutlineArrowLeft,
-} from 'react-icons/hi';
+} from '@/components/icons';
 import Link from 'next/link';
 
 interface DraftQuestion {

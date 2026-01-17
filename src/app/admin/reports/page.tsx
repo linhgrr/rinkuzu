@@ -16,7 +16,7 @@ import {
   HiOutlineTrash,
   HiOutlineCheck,
   HiOutlineX
-} from 'react-icons/hi';
+} from '@/components/icons';
 import { IReport } from '@/models/Report';
 
 export default function AdminReportsPage() {

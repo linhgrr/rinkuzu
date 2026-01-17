@@ -17,7 +17,7 @@ import {
   HiOutlineSearch,
   HiOutlinePencil,
   HiOutlineTrash
-} from 'react-icons/hi';
+} from '@/components/icons';
 
 interface Category {
   _id: string;

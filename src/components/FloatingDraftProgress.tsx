@@ -6,6 +6,7 @@ import { useDraftStore, DraftProgress } from '@/store/useDraftStore';
 import { usePdfProcessor } from '@/hooks/usePdfProcessor';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
+import { toast } from 'sonner';
 import {
   HiOutlineDocumentText,
   HiOutlineCheckCircle,
@@ -13,27 +14,48 @@ import {
   HiOutlineX,
   HiOutlineChevronUp,
   HiOutlineRefresh,
-} from 'react-icons/hi';
+} from '@/components/icons';
 
 export function FloatingDraftProgress() {
   const { getActiveDrafts, getProcessingCount, getCompletedCount, removeDraft, hasActiveDrafts } = useDraftStore();
-  const { resumeProcessing } = usePdfProcessor();
+  const { resumeProcessing, stopProcessing } = usePdfProcessor();
   const [isExpanded, setIsExpanded] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   const drafts = getActiveDrafts();
   const processingCount = getProcessingCount();
   const completedCount = getCompletedCount();
 
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   // Resume any interrupted processing on mount
   useEffect(() => {
-    drafts
-      .filter(d => d.status === 'processing')
-      .forEach(d => resumeProcessing(d.id));
-  }, []); // Only on mount
+    if (mounted) {
+      drafts
+        .filter(d => d.status === 'processing')
+        .forEach(d => resumeProcessing(d.id));
+    }
+  }, [mounted]); // Run when mounted
 
-  if (!hasActiveDrafts()) {
+  if (!mounted || !hasActiveDrafts()) {
     return null;
   }
+
+  const handleCancel = async (id: string, title: string) => {
+    stopProcessing(id);
+
+    // Notify server to delete the draft
+    try {
+      await fetch(`/api/draft/${id}`, { method: 'DELETE' });
+    } catch (error) {
+      console.error('Failed to delete draft on server:', error);
+    }
+
+    removeDraft(id);
+    toast.success(`Đã hủy xử lý "${title}"`);
+  };
 
   return (
     <div className="fixed bottom-20 right-4 z-50 md:bottom-6 md:right-6">
@@ -63,6 +85,7 @@ export function FloatingDraftProgress() {
                   draft={draft}
                   onRemove={() => removeDraft(draft.id)}
                   onRetry={() => resumeProcessing(draft.id)}
+                  onCancel={() => handleCancel(draft.id, draft.title)}
                 />
               ))}
             </div>
@@ -94,9 +117,8 @@ export function FloatingDraftProgress() {
         </span>
 
         <HiOutlineChevronUp
-          className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${
-            isExpanded ? '' : 'rotate-180'
-          }`}
+          className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isExpanded ? '' : 'rotate-180'
+            }`}
         />
       </motion.button>
     </div>
@@ -107,10 +129,12 @@ function DraftItem({
   draft,
   onRemove,
   onRetry,
+  onCancel,
 }: {
   draft: DraftProgress;
   onRemove: () => void;
   onRetry: () => void;
+  onCancel: () => void;
 }) {
   const progress = draft.chunksTotal > 0
     ? (draft.chunksProcessed / draft.chunksTotal) * 100
@@ -134,10 +158,18 @@ function DraftItem({
                   transition={{ duration: 0.3 }}
                 />
               </div>
-              <p className="mt-1.5 text-xs text-gray-500">
-                {draft.chunksProcessed}/{draft.chunksTotal} phần •{' '}
-                {draft.questionsCount} câu hỏi
-              </p>
+              <div className="mt-1.5 flex items-center justify-between">
+                <p className="text-xs text-gray-500">
+                  {draft.chunksProcessed}/{draft.chunksTotal} phần •{' '}
+                  {draft.questionsCount} câu hỏi
+                </p>
+                <button
+                  onClick={onCancel}
+                  className="text-xs text-red-600 hover:text-red-700 font-medium"
+                >
+                  Hủy
+                </button>
+              </div>
             </>
           ) : draft.status === 'completed' ? (
             <Link

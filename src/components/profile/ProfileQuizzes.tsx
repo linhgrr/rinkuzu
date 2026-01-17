@@ -18,7 +18,7 @@ import {
     HiOutlinePencil,
     HiOutlineTrash,
     HiOutlineLockClosed
-} from 'react-icons/hi';
+} from '@/components/icons';
 
 interface PaginationData {
     page: number;

@@ -18,7 +18,7 @@ import {
   HiOutlineMenu,
   HiOutlineInformationCircle,
   HiOutlineLockClosed
-} from 'react-icons/hi';
+} from '@/components/icons';
 
 interface EditQuizPageProps {
   params: { id: string };

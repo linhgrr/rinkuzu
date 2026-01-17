@@ -22,7 +22,7 @@ import {
   HiOutlineChevronLeft,
   HiOutlineChevronRight,
   HiOutlineRefresh
-} from 'react-icons/hi';
+} from '@/components/icons';
 import { DynamicMarkdownRenderer as MarkdownRenderer } from '@/components/ui/DynamicMarkdownRenderer';
 import { QuestionImage, OptionImage } from '@/components/ui/ImageDisplay';
 import { QuestionDiscussion } from '@/components/ui/QuestionDiscussion';

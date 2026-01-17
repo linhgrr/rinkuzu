@@ -22,11 +22,11 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     };
 
     const sizes = {
-      sm: 'h-9 px-4 text-sm rounded-full',
-      md: 'h-11 px-6 text-sm rounded-full',
-      lg: 'h-12 px-8 text-base rounded-full',
-      xl: 'h-14 px-10 text-base rounded-full',
-      icon: 'h-10 w-10 rounded-full',
+      sm: 'h-10 min-h-[44px] px-4 text-sm rounded-full',
+      md: 'h-11 min-h-[44px] px-6 text-sm rounded-full',
+      lg: 'h-12 min-h-[48px] px-8 text-base rounded-full',
+      xl: 'h-14 min-h-[48px] px-10 text-base rounded-full',
+      icon: 'h-11 w-11 min-h-[44px] min-w-[44px] rounded-full',
     };
 
     return (

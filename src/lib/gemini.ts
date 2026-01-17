@@ -5,7 +5,7 @@ import { PDFDocument } from 'pdf-lib';
 
 // Polyfill for Promise.withResolvers if not available (Node.js < v22)
 if (!(Promise as any).withResolvers) {
-  (Promise as any).withResolvers = function() {
+  (Promise as any).withResolvers = function () {
     let resolve: any, reject: any;
     const promise = new Promise((res, rej) => {
       resolve = res;
@@ -81,7 +81,11 @@ Answer Formatting Rules:
 /**
  * Extract questions from PDF using LangChain with retry logic
  */
-export async function extractQuestionsFromPdf(buffer: Buffer | string, maxRetries: number = 3): Promise<any[]> {
+export async function extractQuestionsFromPdf(
+  buffer: Buffer | string,
+  maxRetries: number = 3,
+  signal?: AbortSignal
+): Promise<any[]> {
   const maxAttempts = Math.min(getKeysCount(), maxRetries);
 
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
@@ -110,7 +114,7 @@ export async function extractQuestionsFromPdf(buffer: Buffer | string, maxRetrie
       }
 
       const message = new HumanMessage({ content: messageContent });
-      const result = await model.invoke([message]);
+      const result = await model.invoke([message], { signal });
 
       const text = typeof result.content === 'string'
         ? result.content

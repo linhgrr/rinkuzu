@@ -9,6 +9,7 @@ import {
   HiOutlineBookmark,
   HiOutlineSearch,
   HiOutlineCollection,
+  HiOutlineUser,
   HiOutlineUsers,
   HiOutlineTag,
   HiOutlineCreditCard,
@@ -19,7 +20,7 @@ import {
   HiChevronDoubleLeft,
   HiChevronDoubleRight,
   HiOutlineCog
-} from 'react-icons/hi';
+} from '@/components/icons';
 import CategorySearch from '@/components/ui/CategorySearch';
 
 interface SidebarProps {
@@ -70,18 +71,8 @@ export default function Sidebar({ isOpen, onToggle, currentPath }: SidebarProps)
   const menuItems = [
     {
       href: '/profile?tab=quizzes',
-      label: 'My Quizzes',
-      icon: <HiOutlineDocumentText className="w-full h-full" />
-    },
-    {
-      href: '/profile?tab=history',
-      label: 'Quiz History',
-      icon: <HiOutlineClock className="w-full h-full" />
-    },
-    {
-      href: '/profile?tab=bookmarks',
-      label: 'Bookmarked Questions',
-      icon: <HiOutlineBookmark className="w-full h-full" />
+      label: 'Profile',
+      icon: <HiOutlineUser className="w-full h-full" />
     },
     {
       href: '/explore',
@@ -146,11 +137,17 @@ export default function Sidebar({ isOpen, onToggle, currentPath }: SidebarProps)
         <nav className="space-y-2">
           {/* Regular menu items */}
           {menuItems.map((item) => {
-            const isActive = currentPath === item.href;
+            const isExactActive = currentPath === item.href;
+            const isPathActive = item.href.includes('?')
+              ? currentPath?.startsWith(item.href.split('?')[0])
+              : currentPath === item.href;
+
+            const isActive = isExactActive || (item.label === 'Profile' && isPathActive);
+
             return (
               <Link
                 key={item.href}
-                href={item.href}
+                href={item.label === 'Profile' && currentPath?.startsWith('/profile') ? currentPath : item.href}
                 className={`flex items-center px-3 py-2 text-sm rounded-lg transition-colors ${!isOpen ? 'justify-center' : ''
                   } ${isActive
                     ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700'

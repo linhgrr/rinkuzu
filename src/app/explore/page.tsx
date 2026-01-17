@@ -15,7 +15,7 @@ import {
     HiOutlineQuestionMarkCircle,
     HiOutlineArrowRight,
     HiOutlineX
-} from 'react-icons/hi';
+} from '@/components/icons';
 
 interface Quiz {
     _id: string;
@@ -201,19 +201,22 @@ function ExploreContent() {
     }, []);
 
     return (
-        <div className="min-h-screen bg-[#f5f5f7]">
+        <div className="min-h-screen bg-[#f5f5f7] pb-24 md:pb-8">
             <Navigation />
 
+            {/* Sidebar - hidden on mobile */}
             {session && (
-                <Sidebar
-                    isOpen={isSidebarOpen}
-                    onToggle={handleSidebarToggle}
-                    currentPath="/explore"
-                />
+                <div className="hidden md:block">
+                    <Sidebar
+                        isOpen={isSidebarOpen}
+                        onToggle={handleSidebarToggle}
+                        currentPath="/explore"
+                    />
+                </div>
             )}
 
-            <main className={`py-8 px-4 sm:px-6 lg:px-8 transition-all duration-300 ${
-                session && isSidebarOpen ? 'ml-64' : session ? 'ml-16' : 'max-w-6xl mx-auto'
+            <main className={`py-6 md:py-8 px-4 sm:px-6 lg:px-8 transition-all duration-300 ${
+                session && isSidebarOpen ? 'md:ml-64' : session ? 'md:ml-16' : 'max-w-6xl mx-auto'
             }`}>
                 <div className={session ? "max-w-6xl mx-auto" : ""}>
 

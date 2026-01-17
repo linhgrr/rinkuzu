@@ -13,7 +13,7 @@ import {
   HiOutlineClock,
   HiOutlineStar,
   HiOutlineLightBulb
-} from 'react-icons/hi'
+} from '@/components/icons'
 
 interface SubscriptionPlan {
   id: string;
@@ -140,26 +140,26 @@ export default function SubscriptionPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 pb-24 md:pb-8">
       <Navigation />
-      <div className="py-8">
+      <div className="py-6 md:py-8">
         <div className="max-w-6xl mx-auto px-4">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-4">
+          <div className="text-center mb-6 md:mb-8">
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2 md:mb-4">
               Nâng Cấp Tài Khoản <HiOutlineStar className="inline-block text-yellow-500 mb-1" />
             </h1>
-            <p className="text-lg text-gray-600">
+            <p className="text-base md:text-lg text-gray-600">
               Truy cập tất cả quiz private và tính năng cao cấp
             </p>
           </div>
 
           {/* Current Subscription Status */}
           {subscriptionStatus?.subscription && (
-            <Card className="mb-8 p-6 bg-blue-50 border-blue-200">
-              <h2 className="text-xl font-semibold text-blue-900 mb-4">
+            <Card className="mb-6 md:mb-8 p-4 md:p-6 bg-blue-50 border-blue-200">
+              <h2 className="text-lg md:text-xl font-semibold text-blue-900 mb-3 md:mb-4">
                 Trạng Thái Gói Hiện Tại <HiOutlineShieldCheck className="inline-block ml-1" />
               </h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
                 <div>
                   <p className="text-sm text-blue-700">Loại gói:</p>
                   <p className="font-medium text-blue-900">
@@ -193,28 +193,28 @@ export default function SubscriptionPage() {
           )}
 
           {/* Subscription Plans */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
             {plans.map((plan, index) => (
-              <Card key={plan.id} className="p-6 relative">
+              <Card key={plan.id} className="p-4 md:p-6 relative">
                 {index === 1 && (
                   <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                    <span className="bg-yellow-500 text-white px-4 py-1 rounded-full text-sm font-medium">
+                    <span className="bg-yellow-500 text-white px-3 md:px-4 py-1 rounded-full text-xs md:text-sm font-medium">
                       Phổ Biến
                     </span>
                   </div>
                 )}
 
-                <div className="text-center mb-6">
-                  <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                <div className="text-center mb-4 md:mb-6">
+                  <h3 className="text-xl md:text-2xl font-bold text-gray-900 mb-2">
                     {plan.name}
                   </h3>
-                  <div className="text-4xl font-bold text-blue-600 mb-2">
+                  <div className="text-2xl md:text-4xl font-bold text-blue-600 mb-2">
                     {formatPrice(plan.price)}
                   </div>
-                  <p className="text-gray-600">{plan.durationDisplay || plan.duration}</p>
+                  <p className="text-sm md:text-base text-gray-600">{plan.durationDisplay || plan.duration}</p>
                 </div>
 
-                <ul className="space-y-3 mb-8">
+                <ul className="space-y-2 md:space-y-3 mb-6 md:mb-8">
                   {plan.features.map((feature, index) => (
                     <li key={index} className="flex items-start">
                       <HiOutlineCheck className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />

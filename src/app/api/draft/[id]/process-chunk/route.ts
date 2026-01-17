@@ -174,9 +174,25 @@ export async function POST(
         draft.questions.map((q: any) => hashQuestion(q))
       );
 
-      const newQuestions = extractedQuestions.filter(
-        (q: any) => !existingHashes.has(hashQuestion(q))
-      );
+      const newQuestions = extractedQuestions.filter((newQ: any) => {
+        const hash = hashQuestion(newQ);
+
+        // Check exact hash match
+        if (existingHashes.has(hash)) {
+          console.log('Duplicate (exact hash):', newQ.question?.substring(0, 50));
+          return false;
+        }
+
+        // Check fuzzy similarity with existing questions
+        for (const existingQ of draft.questions) {
+          if (areSimilarQuestions(newQ, existingQ)) {
+            console.log('Duplicate (similar):', newQ.question?.substring(0, 50));
+            return false;
+          }
+        }
+
+        return true;
+      });
 
       // Update draft with new questions
       const updateResult = await DraftQuiz.findOneAndUpdate(
@@ -260,10 +276,57 @@ export async function POST(
   }
 }
 
+/**
+ * Normalize text for comparison
+ */
+function normalizeText(text: string): string {
+  return text
+    .toLowerCase()
+    .trim()
+    // Remove multiple spaces
+    .replace(/\s+/g, ' ')
+    // Remove common punctuation variations
+    .replace(/[.,;:!?'"()\[\]{}]/g, '')
+    // Remove leading/trailing option markers (a., A), 1., etc.)
+    .replace(/^[a-zA-Z0-9][.)\s]*/, '')
+    // Normalize unicode
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+}
+
+/**
+ * Create a robust hash of question content to detect duplicates
+ * Handles minor variations in formatting, punctuation, whitespace
+ */
 function hashQuestion(q: any): string {
-  const normalizedQuestion = q.question?.toLowerCase().trim().replace(/\s+/g, ' ') || '';
-  const normalizedOptions = q.options?.map((opt: string) =>
-    opt.toLowerCase().trim().replace(/\s+/g, ' ')
-  ).join('|') || '';
+  // Normalize question text
+  const normalizedQuestion = normalizeText(q.question || '');
+
+  // Normalize and sort options (order shouldn't matter for duplicate detection)
+  const normalizedOptions = (q.options || [])
+    .map((opt: string) => normalizeText(opt))
+    .sort()
+    .join('|||');
+
   return `${normalizedQuestion}:::${normalizedOptions}`;
+}
+
+/**
+ * Check if two questions are similar (fuzzy match)
+ */
+function areSimilarQuestions(q1: any, q2: any): boolean {
+  const text1 = normalizeText(q1.question || '');
+  const text2 = normalizeText(q2.question || '');
+
+  // If normalized texts are identical, they're duplicates
+  if (text1 === text2) return true;
+
+  // Check if one contains the other (for partial matches)
+  if (text1.length > 20 && text2.length > 20) {
+    if (text1.includes(text2) || text2.includes(text1)) {
+      return true;
+    }
+  }
+
+  return false;
 }

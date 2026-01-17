@@ -7,6 +7,7 @@ import DraftQuiz from '@/models/DraftQuiz';
 import { PDFDocument } from 'pdf-lib';
 import { extractQuestionsFromPdf } from '@/lib/gemini';
 import { getPDFBuffer } from '@/lib/s3';
+import { randomUUID } from 'crypto';
 
 export async function POST(
   request: NextRequest,
@@ -36,17 +37,79 @@ export async function POST(
       );
     }
 
+    const LOCK_TIMEOUT_MS = 60000; // 60 seconds - if locked longer, consider stale
+
+    // Generate unique request ID
+    const requestId = randomUUID();
+    const now = new Date();
+    const lockExpiry = new Date(now.getTime() - LOCK_TIMEOUT_MS);
+
     await connectDB();
 
-    // 1. Initial check - does the draft still exist?
-    const draft = await DraftQuiz.findOne({
-      _id: params.id,
-      userId: ((session!.user as any) as any).id,
-    });
+    // Atomic lock acquisition - only lock if:
+    // 1. status is 'pending' or 'error', OR
+    // 2. status is 'processing' but lock is stale (older than LOCK_TIMEOUT_MS)
+    const lockResult = await DraftQuiz.findOneAndUpdate(
+      {
+        _id: params.id,
+        userId: (session!.user as any).id,
+        'chunks.chunkDetails': {
+          $elemMatch: {
+            index: chunkIndex,
+            $or: [
+              { status: { $in: ['pending', 'error'] } },
+              { status: 'processing', lockedAt: { $lt: lockExpiry } }
+            ]
+          }
+        }
+      },
+      {
+        $set: {
+          'chunks.chunkDetails.$.status': 'processing',
+          'chunks.chunkDetails.$.lockedAt': now,
+          'chunks.chunkDetails.$.lockedBy': requestId,
+          'chunks.current': chunkIndex,
+        }
+      },
+      { new: true }
+    );
 
-    if (!draft) {
-      return NextResponse.json({ error: 'Draft not found or cancelled' }, { status: 404 });
+    if (!lockResult) {
+      // Could not acquire lock - check why
+      const draft = await DraftQuiz.findOne({
+        _id: params.id,
+        userId: (session!.user as any).id,
+      });
+
+      if (!draft) {
+        return NextResponse.json({ error: 'Draft not found' }, { status: 404 });
+      }
+
+      const chunk = draft.chunks.chunkDetails.find((c: any) => c.index === chunkIndex);
+
+      if (chunk?.status === 'done') {
+        return NextResponse.json({
+          success: true,
+          message: 'Chunk already processed',
+          questions: [],
+          progress: {
+            processed: draft.chunks.processed,
+            total: draft.chunks.total,
+            isComplete: draft.chunks.processed >= draft.chunks.total,
+          },
+        });
+      }
+
+      // Another request is processing it
+      return NextResponse.json({
+        success: false,
+        error: 'Chunk is being processed by another request',
+        retryAfter: 5000,
+      }, { status: 409 });
     }
+
+    // We have the lock, use lockResult as draft
+    const draft = lockResult;
 
     // 2. Initial check - is the client already gone?
     if (request.signal.aborted) {
@@ -70,30 +133,6 @@ export async function POST(
         { status: 404 }
       );
     }
-
-    if (chunkDetail.status === 'done') {
-      return NextResponse.json({
-        success: true,
-        message: 'Chunk already processed',
-        questions: [],
-        progress: {
-          processed: draft.chunks.processed,
-          total: draft.chunks.total,
-          isComplete: draft.chunks.processed >= draft.chunks.total,
-        },
-      });
-    }
-
-    // Update chunk status to processing
-    await DraftQuiz.updateOne(
-      { _id: params.id, 'chunks.chunkDetails.index': chunkIndex },
-      {
-        $set: {
-          'chunks.chunkDetails.$.status': 'processing',
-          'chunks.current': chunkIndex,
-        }
-      }
-    );
 
     try {
       // Extract pages for this chunk

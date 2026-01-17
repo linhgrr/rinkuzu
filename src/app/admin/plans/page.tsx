@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/Input'
 import Sidebar from '@/components/Sidebar'
 import { SubscriptionDurationType, PREDEFINED_DURATIONS, DurationUtils } from '@/types/subscription'
+import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { Modal } from '@/components/ui/Modal'
 import {
   HiChevronDown,
@@ -58,6 +59,8 @@ export default function AdminPlansPage() {
   const [success, setSuccess] = useState('')
   const [editingPlan, setEditingPlan] = useState<string | null>(null)
   const [editForm, setEditForm] = useState<Partial<Plan>>({})
+  const [planToDelete, setPlanToDelete] = useState<{ id: string; name: string } | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
   // New plan creation state
   const [showCreateForm, setShowCreateForm] = useState(false)
@@ -198,12 +201,9 @@ export default function AdminPlansPage() {
     }
   }
 
-  const handleDeletePlan = async (planId: string, planName: string) => {
-    if (!confirm(`Are you sure you want to delete the plan "${planName}"? This action cannot be undone.`)) {
-      return
-    }
-
+  const deletePlan = async (planId: string, planName: string) => {
     try {
+      setDeleting(true)
       const response = await fetch('/api/admin/plans', {
         method: 'DELETE',
         headers: {
@@ -223,7 +223,19 @@ export default function AdminPlansPage() {
       }
     } catch (error) {
       setError('Failed to delete plan')
+    } finally {
+      setDeleting(false)
     }
+  }
+
+  const confirmDeletePlan = async () => {
+    if (!planToDelete) return
+    await deletePlan(planToDelete.id, planToDelete.name)
+    setPlanToDelete(null)
+  }
+
+  const handleDeletePlan = (planId: string, planName: string) => {
+    setPlanToDelete({ id: planId, name: planName })
   }
 
   const handleFeatureChange = (index: number, value: string, isCreate = false) => {
@@ -754,6 +766,17 @@ export default function AdminPlansPage() {
           </>
         )}
       </main>
+
+      <ConfirmModal
+        isOpen={!!planToDelete}
+        title="Delete plan?"
+        message={planToDelete ? `Are you sure you want to delete the plan "${planToDelete.name}"? This action cannot be undone.` : ''}
+        confirmText="Delete"
+        confirmVariant="destructive"
+        isLoading={deleting}
+        onCancel={() => setPlanToDelete(null)}
+        onConfirm={confirmDeletePlan}
+      />
     </div>
   )
-} 
+}

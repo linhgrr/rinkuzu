@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
+import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { QuizPreviewModal } from '@/components/ui/QuizPreviewModal';
 import Pagination from '@/components/ui/Pagination';
 import { formatDate } from '@/lib/utils';
@@ -37,10 +38,7 @@ export default function ProfileQuizzes() {
     const [showPreviewModal, setShowPreviewModal] = useState(false);
     const [previewQuiz, setPreviewQuiz] = useState<IQuiz | null>(null);
     const [deletingQuizId, setDeletingQuizId] = useState<string | null>(null);
-    const [deleteConfirmModal, setDeleteConfirmModal] = useState<{ show: boolean; quiz: IQuiz | null }>({
-        show: false,
-        quiz: null
-    });
+    const [quizToDelete, setQuizToDelete] = useState<IQuiz | null>(null);
     const [pagination, setPagination] = useState<PaginationData>({
         page: 1,
         limit: 12,
@@ -126,11 +124,7 @@ export default function ProfileQuizzes() {
     };
 
     const openDeleteConfirm = (quiz: IQuiz) => {
-        setDeleteConfirmModal({ show: true, quiz });
-    };
-
-    const closeDeleteConfirm = () => {
-        setDeleteConfirmModal({ show: false, quiz: null });
+        setQuizToDelete(quiz);
     };
 
     const handleDeleteQuiz = async (quizId: string) => {
@@ -154,7 +148,7 @@ export default function ProfileQuizzes() {
             setError('An error occurred while deleting the quiz');
         } finally {
             setDeletingQuizId(null);
-            closeDeleteConfirm();
+            setQuizToDelete(null);
         }
     };
 
@@ -345,26 +339,16 @@ export default function ProfileQuizzes() {
                 />
             )}
 
-            {deleteConfirmModal.show && deleteConfirmModal.quiz && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-                    <div className="bg-white rounded-lg max-w-sm w-full p-6">
-                        <h3 className="text-lg font-bold mb-2">Delete Quiz?</h3>
-                        <p className="text-sm text-gray-600 mb-4">
-                            Are you sure you want to delete "{deleteConfirmModal.quiz.title}"? This cannot be undone.
-                        </p>
-                        <div className="flex justify-end gap-2">
-                            <Button variant="ghost" onClick={closeDeleteConfirm}>Cancel</Button>
-                            <Button
-                                className="bg-red-600 hover:bg-red-700 text-white"
-                                onClick={() => handleDeleteQuiz(deleteConfirmModal.quiz!._id)}
-                                disabled={deletingQuizId === deleteConfirmModal.quiz._id}
-                            >
-                                {deletingQuizId ? 'Deleting...' : 'Delete'}
-                            </Button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <ConfirmModal
+                isOpen={!!quizToDelete}
+                title="Delete quiz?"
+                message={quizToDelete ? `Are you sure you want to delete "${quizToDelete.title}"? This cannot be undone.` : ''}
+                confirmText="Delete"
+                confirmVariant="destructive"
+                isLoading={!!quizToDelete && deletingQuizId === quizToDelete._id}
+                onCancel={() => setQuizToDelete(null)}
+                onConfirm={() => quizToDelete && handleDeleteQuiz(quizToDelete._id)}
+            />
         </div>
     );
 }

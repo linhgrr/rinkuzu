@@ -19,6 +19,7 @@ export interface IQuiz extends Document {
   slug: string;
   questions: IQuestion[];
   isPrivate: boolean;
+  pdfUrl?: string; // S3 URL for source PDF
   createdAt: Date;
   updatedAt: Date;
 }
@@ -33,7 +34,7 @@ const QuestionSchema = new Schema<IQuestion>({
     type: [String],
     required: [true, 'Options are required'],
     validate: {
-      validator: function(options: string[]) {
+      validator: function (options: string[]) {
         return options.length >= 2 && options.length <= 10;
       },
       message: 'Each question must have between 2 and 10 options',
@@ -48,7 +49,7 @@ const QuestionSchema = new Schema<IQuestion>({
   correctIndex: {
     type: Number,
     validate: {
-      validator: function(this: IQuestion, value: number) {
+      validator: function (this: IQuestion, value: number) {
         if (this.type === 'single') {
           return value !== undefined && value >= 0 && value < this.options.length;
         }
@@ -60,7 +61,7 @@ const QuestionSchema = new Schema<IQuestion>({
   correctIndexes: {
     type: [Number],
     validate: {
-      validator: function(this: IQuestion, value: number[]) {
+      validator: function (this: IQuestion, value: number[]) {
         if (this.type === 'multiple') {
           return value && value.length > 0 && value.every(i => i >= 0 && i < this.options.length);
         }
@@ -76,7 +77,7 @@ const QuestionSchema = new Schema<IQuestion>({
   optionImages: {
     type: [String],
     validate: {
-      validator: function(this: IQuestion, optionImages: (string | undefined)[]) {
+      validator: function (this: IQuestion, optionImages: (string | undefined)[]) {
         // If optionImages exists, it should have same length as options
         return !optionImages || optionImages.length === 0 || optionImages.length === this.options.length;
       },
@@ -122,7 +123,7 @@ const QuizSchema = new Schema<IQuiz>({
     type: [QuestionSchema],
     required: [true, 'Questions are required'],
     validate: {
-      validator: function(questions: IQuestion[]) {
+      validator: function (questions: IQuestion[]) {
         return questions.length > 0;
       },
       message: 'At least one question is required',
@@ -131,6 +132,10 @@ const QuizSchema = new Schema<IQuiz>({
   isPrivate: {
     type: Boolean,
     default: false,
+  },
+  pdfUrl: {
+    type: String,
+    trim: true,
   },
 }, {
   timestamps: true,

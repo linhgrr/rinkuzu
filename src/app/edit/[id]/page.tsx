@@ -17,7 +17,23 @@ import {
   HiOutlineLogout,
   HiOutlineMenu,
   HiOutlineInformationCircle,
-  HiOutlineLockClosed
+  HiOutlineLockClosed,
+  HiOutlineEye,
+  HiOutlineEyeOff,
+  HiOutlineDocumentText,
+  HiOutlinePlus,
+  HiOutlineTrash,
+  HiOutlineSave,
+  HiOutlineArrowLeft,
+  HiOutlineCheck,
+  HiOutlineX,
+  HiOutlinePlusCircle,
+  HiOutlineExternalLink,
+  HiOutlineClipboardCopy,
+  HiOutlineLightBulb,
+  HiOutlineCollection,
+  HiOutlineTag,
+  HiOutlinePencilAlt
 } from '@/components/icons';
 
 interface EditQuizPageProps {
@@ -58,6 +74,9 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [editableQuestions, setEditableQuestions] = useState<Question[]>([]);
   const [isPrivate, setIsPrivate] = useState(false);
+  // PDF viewer state
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [showPDFViewer, setShowPDFViewer] = useState(false);
 
   useEffect(() => {
     if (status === 'loading') return;
@@ -82,6 +101,7 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
         setSelectedCategory(data.data.category as Category);
         setEditableQuestions(data.data.questions as Question[]);
         setIsPrivate(data.data.isPrivate || false);
+        setPdfUrl(data.data.pdfUrl || null);
       } else {
         setError(data.error || 'Quiz not found');
       }
@@ -301,11 +321,13 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
             <div className="flex items-center">
-              <Link href="/" className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">R</span>
+              <Link href="/" className="flex items-center space-x-2 group">
+                <div className="w-8 h-8 bg-[#0071e3] rounded-lg flex items-center justify-center shadow-sm transition-transform group-hover:scale-105">
+                  <HiOutlineLightBulb className="w-5 h-5 text-white" />
                 </div>
-                <span className="text-xl font-semibold text-gray-900">RinKuzu</span>
+                <span className="text-lg font-semibold text-[#1d1d1f] hidden sm:block">
+                  RinKuzu
+                </span>
               </Link>
             </div>
 
@@ -409,270 +431,377 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
         currentPath={pathname}
       />
 
-      {/* Main Content */}
+      {/* Main Content - with flex layout for PDF viewer */}
       <main className={`py-8 transition-all duration-300 ${session && isSidebarOpen ? 'ml-64' : session ? 'ml-16' : ''
         } max-w-none px-4 sm:px-6 lg:px-8`}>
-        <div className="max-w-4xl mx-auto">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">Edit Quiz</h1>
-            <p className="mt-2 text-gray-600">
-              Make changes to your quiz information
-            </p>
-          </div>
-
-          {/* Quiz Status */}
-          <Card className="mb-6">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
+        <div className="flex min-h-screen transition-all duration-300">
+          {/* Left Side - Form Content (50% when PDF visible, full width when not) */}
+          <div className={`transition-all duration-300 ${showPDFViewer && pdfUrl ? 'lg:w-1/2 lg:pr-4' : 'w-full'}`}>
+            <div className="max-w-4xl mx-auto">
+              <div className="mb-8 flex items-center justify-between">
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900">Quiz Status</h3>
-                  <p className="text-sm text-gray-600">Current approval status</p>
-                </div>
-                <span className={`px-3 py-1 rounded-full text-sm font-medium ${quiz.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                  quiz.status === 'published' ? 'bg-green-100 text-green-800' :
-                    'bg-red-100 text-red-800'
-                  }`}>
-                  {quiz.status.charAt(0).toUpperCase() + quiz.status.slice(1)}
-                </span>
-              </div>
-            </CardContent>
-          </Card>
-
-          {!canEdit && (
-            <Card className="mb-6">
-              <CardContent className="p-6">
-                <div className="flex items-start space-x-3">
-                  <div className="text-blue-600">
-                    <HiOutlineInformationCircle className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900">Read Only</h3>
-                    <p className="text-sm text-gray-600">
-                      This quiz cannot be edited because it's already published. Only admins can edit published quizzes.
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          <Card className="max-w-2xl">
-            <CardHeader>
-              <CardTitle>Quiz Information</CardTitle>
-              <CardDescription>
-                Update the basic information about your quiz
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-6">
-                {error && (
-                  <div className="rounded-md bg-red-50 p-4">
-                    <div className="text-sm text-red-700">{error}</div>
-                  </div>
-                )}
-
-                {success && (
-                  <div className="rounded-md bg-green-50 p-4">
-                    <div className="text-sm text-green-700">{success}</div>
-                  </div>
-                )}
-
-                <div>
-                  <label htmlFor="title" className="block text-sm font-medium text-gray-700">
-                    Quiz Title *
-                  </label>
-                  <div className="mt-1">
-                    <Input
-                      id="title"
-                      type="text"
-                      required
-                      value={title}
-                      onChange={(e) => setTitle(e.target.value)}
-                      placeholder="Enter a descriptive title for your quiz"
-                      maxLength={200}
-                      disabled={!canEdit}
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label htmlFor="description" className="block text-sm font-medium text-gray-700">
-                    Description (Optional)
-                  </label>
-                  <div className="mt-1">
-                    <textarea
-                      id="description"
-                      rows={3}
-                      value={description}
-                      onChange={(e) => setDescription(e.target.value)}
-                      placeholder="Provide additional context about the quiz"
-                      maxLength={1000}
-                      disabled={!canEdit}
-                      className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Category *
-                  </label>
-                  <CategorySelector
-                    value={selectedCategory}
-                    onChange={setSelectedCategory}
-                    placeholder="Search and select a category..."
-                    required
-                    disabled={!canEdit}
-                  />
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    id="isPrivate"
-                    checked={isPrivate}
-                    onChange={(e) => setIsPrivate(e.target.checked)}
-                    disabled={!canEdit}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded disabled:bg-gray-50"
-                  />
-                  <label htmlFor="isPrivate" className="text-sm font-medium text-gray-700">
-                    <HiOutlineLockClosed className="inline-block mr-1" /> Private Quiz
-                  </label>
-                  <div className="text-xs text-gray-500">
-                    (Only visible to you and admins)
-                  </div>
-                </div>
-
-                {/* Quiz Questions Info */}
-                <div className="border-t pt-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Quiz Content</h3>
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <div className="text-sm text-gray-600">
-                      <p><strong>Questions:</strong> {quiz.questions.length}</p>
-                      <p><strong>Created:</strong> {new Date(quiz.createdAt).toLocaleDateString()}</p>
-                      {quiz.status === 'published' && (
-                        <p><strong>Slug:</strong> {quiz.slug}</p>
-                      )}
-                    </div>
-                  </div>
-                  <p className="mt-2 text-xs text-gray-500">
-                    Note: Questions cannot be edited after creation. Create a new quiz to change questions.
+                  <h1 className="text-3xl font-bold text-gray-900">Edit Quiz</h1>
+                  <p className="mt-2 text-gray-600">
+                    Make changes to your quiz information
                   </p>
                 </div>
-
-                {/* Questions Edit */}
-                {canEdit && (
-                  <Card className="mt-8">
-                    <CardHeader>
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <CardTitle>Questions ({editableQuestions.length})</CardTitle>
-                          <CardDescription>Edit questions below</CardDescription>
-                        </div>
-                        <Button onClick={addQuestion} size="sm">Add Question</Button>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                      {editableQuestions.map((q, index) => (
-                        <div key={index} className="border p-4 rounded-lg space-y-4">
-                          <div className="flex justify-between items-start">
-                            <h4 className="font-medium">Question {index + 1}</h4>
-                            <Button variant="ghost" size="sm" onClick={() => removeQuestion(index)} className="text-red-600">Remove</Button>
-                          </div>
-                          <textarea value={q.question} onChange={e => updateQuestionField(index, 'question', e.target.value)} className="w-full border rounded p-2" rows={2} />
-                          <QuestionImageUpload currentImage={q.questionImage} onImageUploaded={url => updateQuestionImage(index, url)} onImageRemoved={() => removeQuestionImage(index)} />
-                          <div>
-                            <label className="text-sm font-medium mb-1">Question Type</label>
-                            <div className="flex space-x-4 mt-1">
-                              <label className="flex items-center">
-                                <input type="radio" checked={q.type === 'single'} onChange={() => toggleQuestionType(index, 'single')} /> <span className="ml-2 text-sm">Single</span>
-                              </label>
-                              <label className="flex items-center">
-                                <input type="radio" checked={q.type === 'multiple'} onChange={() => toggleQuestionType(index, 'multiple')} /> <span className="ml-2 text-sm">Multiple</span>
-                              </label>
-                            </div>
-                          </div>
-                          <div className="space-y-2">
-                            {q.options.map((opt, optIdx) => (
-                              <div key={optIdx} className="flex items-center space-x-2">
-                                {q.type === 'single' ? (
-                                  <input type="radio" name={`correct-${index}`} checked={q.correctIndex === optIdx} onChange={() => setSingleCorrect(index, optIdx)} />
-                                ) : (
-                                  <input type="checkbox" checked={q.correctIndexes?.includes(optIdx)} onChange={e => toggleMultipleCorrect(index, optIdx, e.target.checked)} />
-                                )}
-                                <Input value={opt} onChange={e => updateOption(index, optIdx, e.target.value)} className="flex-1" />
-                                <OptionImageUpload currentImage={q.optionImages?.[optIdx]} onImageUploaded={url => updateOptionImage(index, optIdx, url)} onImageRemoved={() => removeOptionImage(index, optIdx)} />
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                    </CardContent>
-                  </Card>
-                )}
-
-                <div className="flex justify-between">
-                  <div className="flex space-x-4">
-                    <Link href="/pending">
-                      <Button type="button" variant="outline">
-                        Cancel
-                      </Button>
-                    </Link>
-                    {canEdit && (
-                      <Button
-                        type="submit"
-                        loading={saving}
-                        disabled={!title.trim()}
-                      >
-                        {saving ? 'Saving...' : 'Save Changes'}
-                      </Button>
-                    )}
-                  </div>
-
-                  {canEdit && (isAuthor || isAdmin) && (
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      onClick={handleDelete}
-                      loading={deleting}
-                    >
-                      {deleting ? 'Deleting...' : 'Delete Quiz'}
-                    </Button>
-                  )}
-                </div>
-              </form>
-            </CardContent>
-          </Card>
-
-          {quiz.status === 'published' && (
-            <Card className="mt-6">
-              <CardHeader>
-                <CardTitle>Quiz Link</CardTitle>
-                <CardDescription>
-                  Share this link with your students
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center space-x-4">
-                  <code className="flex-1 bg-gray-100 px-3 py-2 rounded text-sm">
-                    {`${typeof window !== 'undefined' ? window.location.origin : ''}/quiz/${quiz.slug}`}
-                  </code>
+                {/* PDF Viewer Toggle Button */}
+                {pdfUrl && (
                   <Button
-                    size="sm"
-                    onClick={() => {
-                      const url = `${window.location.origin}/quiz/${quiz.slug}`;
-                      navigator.clipboard.writeText(url);
-                      alert('Quiz link copied to clipboard!');
-                    }}
+                    onClick={() => setShowPDFViewer(!showPDFViewer)}
+                    variant="outline"
+                    className="flex items-center gap-2 text-blue-600 border-blue-200 hover:bg-blue-50"
                   >
-                    Copy
+                    {showPDFViewer ? (
+                      <><HiOutlineEyeOff className="w-4 h-4" /> Hide PDF</>
+                    ) : (
+                      <><HiOutlineDocumentText className="w-4 h-4" /> Show PDF</>
+                    )}
                   </Button>
-                </div>
-              </CardContent>
-            </Card>
+                )}
+              </div>
+
+              {/* Quiz Status */}
+              <Card className="mb-6">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900">Quiz Status</h3>
+                      <p className="text-sm text-gray-600">Current approval status</p>
+                    </div>
+                    <span className={`px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1.5 ${quiz.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                      quiz.status === 'published' ? 'bg-green-100 text-green-800' :
+                        'bg-red-100 text-red-800'
+                      }`}>
+                      <div className={`w-2 h-2 rounded-full ${quiz.status === 'pending' ? 'bg-yellow-500' :
+                        quiz.status === 'published' ? 'bg-green-500' :
+                          'bg-red-500'
+                        }`} />
+                      {quiz.status.charAt(0).toUpperCase() + quiz.status.slice(1)}
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {!canEdit && (
+                <Card className="mb-6">
+                  <CardContent className="p-6">
+                    <div className="flex items-start space-x-3">
+                      <div className="text-blue-600">
+                        <HiOutlineInformationCircle className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900">Read Only</h3>
+                        <p className="text-sm text-gray-600">
+                          This quiz cannot be edited because it's already published. Only admins can edit published quizzes.
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              <Card className="max-w-2xl">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <HiOutlinePencilAlt className="w-5 h-5 text-blue-500" />
+                    Quiz Information
+                  </CardTitle>
+                  <CardDescription>
+                    Update the basic information about your quiz
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleSubmit} className="space-y-6">
+                    {error && (
+                      <div className="rounded-md bg-red-50 p-4">
+                        <div className="text-sm text-red-700">{error}</div>
+                      </div>
+                    )}
+
+                    {success && (
+                      <div className="rounded-md bg-green-50 p-4">
+                        <div className="text-sm text-green-700">{success}</div>
+                      </div>
+                    )}
+
+                    <div>
+                      <label htmlFor="title" className="block text-sm font-medium text-gray-700">
+                        Quiz Title *
+                      </label>
+                      <div className="mt-1">
+                        <Input
+                          id="title"
+                          type="text"
+                          required
+                          value={title}
+                          onChange={(e) => setTitle(e.target.value)}
+                          placeholder="Enter a descriptive title for your quiz"
+                          maxLength={200}
+                          disabled={!canEdit}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+                        Description (Optional)
+                      </label>
+                      <div className="mt-1">
+                        <textarea
+                          id="description"
+                          rows={3}
+                          value={description}
+                          onChange={(e) => setDescription(e.target.value)}
+                          placeholder="Provide additional context about the quiz"
+                          maxLength={1000}
+                          disabled={!canEdit}
+                          className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Category *
+                      </label>
+                      <CategorySelector
+                        value={selectedCategory}
+                        onChange={setSelectedCategory}
+                        placeholder="Search and select a category..."
+                        required
+                        disabled={!canEdit}
+                      />
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="isPrivate"
+                        checked={isPrivate}
+                        onChange={(e) => setIsPrivate(e.target.checked)}
+                        disabled={!canEdit}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded disabled:bg-gray-50"
+                      />
+                      <label htmlFor="isPrivate" className="text-sm font-medium text-gray-700">
+                        <HiOutlineLockClosed className="inline-block mr-1" /> Private Quiz
+                      </label>
+                      <div className="text-xs text-gray-500">
+                        (Only visible to you and admins)
+                      </div>
+                    </div>
+
+                    {/* Quiz Questions Info */}
+                    <div className="border-t pt-6">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Quiz Content</h3>
+                      <div className="bg-gray-50 rounded-lg p-4">
+                        <div className="text-sm text-gray-600">
+                          <p><strong>Questions:</strong> {quiz.questions.length}</p>
+                          <p><strong>Created:</strong> {new Date(quiz.createdAt).toLocaleDateString()}</p>
+                          {quiz.status === 'published' && (
+                            <p><strong>Slug:</strong> {quiz.slug}</p>
+                          )}
+                        </div>
+                      </div>
+                      <p className="mt-2 text-xs text-gray-500">
+                        Note: Questions cannot be edited after creation. Create a new quiz to change questions.
+                      </p>
+                    </div>
+
+                    {/* Questions Edit */}
+                    {canEdit && (
+                      <Card className="mt-8">
+                        <CardHeader>
+                          <div className="flex justify-between items-center">
+                            <div>
+                              <CardTitle className="text-lg flex items-center gap-2">
+                                <HiOutlineDocumentText className="w-5 h-5 text-blue-500" />
+                                Questions ({editableQuestions.length})
+                              </CardTitle>
+                              <CardDescription>Edit questions below</CardDescription>
+                            </div>
+                            <Button onClick={addQuestion} size="sm" variant="default" className="flex items-center gap-2">
+                              <HiOutlinePlus className="w-4 h-4" />
+                              Add Question
+                            </Button>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                          {editableQuestions.map((q, index) => (
+                            <div key={index} className="border p-4 rounded-lg space-y-4">
+                              <div className="flex justify-between items-start">
+                                <h4 className="font-medium flex items-center gap-2">
+                                  <div className="w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs">
+                                    {index + 1}
+                                  </div>
+                                  Question {index + 1}
+                                </h4>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => removeQuestion(index)}
+                                  className="text-red-500 hover:text-red-600 hover:bg-red-50 rounded-full px-3"
+                                >
+                                  <HiOutlineTrash className="w-4 h-4 mr-1" />
+                                  Remove
+                                </Button>
+                              </div>
+                              <textarea value={q.question} onChange={e => updateQuestionField(index, 'question', e.target.value)} className="w-full border rounded p-2" rows={2} />
+                              <QuestionImageUpload currentImage={q.questionImage} onImageUploaded={url => updateQuestionImage(index, url)} onImageRemoved={() => removeQuestionImage(index)} />
+                              <div>
+                                <label className="text-sm font-medium mb-1">Question Type</label>
+                                <div className="flex space-x-4 mt-1">
+                                  <label className="flex items-center">
+                                    <input type="radio" checked={q.type === 'single'} onChange={() => toggleQuestionType(index, 'single')} /> <span className="ml-2 text-sm">Single</span>
+                                  </label>
+                                  <label className="flex items-center">
+                                    <input type="radio" checked={q.type === 'multiple'} onChange={() => toggleQuestionType(index, 'multiple')} /> <span className="ml-2 text-sm">Multiple</span>
+                                  </label>
+                                </div>
+                              </div>
+                              <div className="space-y-2">
+                                {q.options.map((opt, optIdx) => (
+                                  <div key={optIdx} className="flex items-center space-x-2">
+                                    {q.type === 'single' ? (
+                                      <input type="radio" name={`correct-${index}`} checked={q.correctIndex === optIdx} onChange={() => setSingleCorrect(index, optIdx)} />
+                                    ) : (
+                                      <input type="checkbox" checked={q.correctIndexes?.includes(optIdx)} onChange={e => toggleMultipleCorrect(index, optIdx, e.target.checked)} />
+                                    )}
+                                    <Input value={opt} onChange={e => updateOption(index, optIdx, e.target.value)} className="flex-1" />
+                                    <OptionImageUpload currentImage={q.optionImages?.[optIdx]} onImageUploaded={url => updateOptionImage(index, optIdx, url)} onImageRemoved={() => removeOptionImage(index, optIdx)} />
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </CardContent>
+                      </Card>
+                    )}
+
+                    <div className="flex justify-between">
+                      <div className="flex space-x-4">
+                        <Link href="/pending">
+                          <Button type="button" variant="outline">
+                            Cancel
+                          </Button>
+                        </Link>
+                        {canEdit && (
+                          <Button
+                            type="submit"
+                            loading={saving}
+                            disabled={!title.trim()}
+                            className="flex items-center gap-2"
+                          >
+                            {saving ? 'Saving...' : (
+                              <>
+                                <HiOutlineSave className="w-4 h-4" />
+                                Save Changes
+                              </>
+                            )}
+                          </Button>
+                        )}
+                      </div>
+
+                      {canEdit && (isAuthor || isAdmin) && (
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          onClick={handleDelete}
+                          loading={deleting}
+                          className="flex items-center gap-2"
+                        >
+                          {deleting ? 'Deleting...' : (
+                            <>
+                              <HiOutlineTrash className="w-4 h-4" />
+                              Delete Quiz
+                            </>
+                          )}
+                        </Button>
+                      )}
+                    </div>
+                  </form>
+                </CardContent>
+              </Card>
+
+              {quiz.status === 'published' && (
+                <Card className="mt-6">
+                  <CardHeader>
+                    <CardTitle>Quiz Link</CardTitle>
+                    <CardDescription>
+                      Share this link with your students
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center space-x-4">
+                      <code className="flex-1 bg-gray-100 px-3 py-2 rounded text-sm">
+                        {`${typeof window !== 'undefined' ? window.location.origin : ''}/quiz/${quiz.slug}`}
+                      </code>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        className="flex items-center gap-2"
+                        onClick={() => {
+                          const url = `${window.location.origin}/quiz/${quiz.slug}`;
+                          navigator.clipboard.writeText(url);
+                          alert('Quiz link copied to clipboard!');
+                        }}
+                      >
+                        <HiOutlineClipboardCopy className="w-4 h-4" />
+                        Copy
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          </div>
+
+          {/* Right Side - PDF Viewer (50% when visible) */}
+          {showPDFViewer && pdfUrl && (
+            <div className="hidden lg:block lg:w-1/2 lg:pl-4">
+              <div className="sticky top-24 h-[calc(100vh-6rem)]">
+                <Card className="h-full flex flex-col shadow-2xl border-2 border-blue-200 bg-white">
+                  <CardHeader className="flex-shrink-0 pb-3">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-lg">PDF Reference</CardTitle>
+                      <Button
+                        onClick={() => setShowPDFViewer(false)}
+                        variant="ghost"
+                        size="sm"
+                        className="text-gray-500 hover:text-gray-700"
+                      >
+                        ✕
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="flex-1 flex flex-col p-4 min-h-0">
+                    <div className="flex-shrink-0 mb-3">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-600">Source PDF</span>
+                        <Button
+                          onClick={() => window.open(pdfUrl, '_blank')}
+                          size="sm"
+                          variant="outline"
+                          className="text-xs"
+                        >
+                          🔗 Open in New Tab
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="flex-1 border border-gray-200 rounded overflow-hidden">
+                      <iframe
+                        src={`${pdfUrl}#toolbar=1&navpanes=1&scrollbar=1`}
+                        className="w-full h-full"
+                        title="PDF Viewer"
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
           )}
         </div>
-      </main >
-    </div >
+      </main>
+    </div>
   );
 } 

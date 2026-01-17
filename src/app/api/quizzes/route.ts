@@ -63,14 +63,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { title, description, category, questions, isPrivate } = await request.json();
+    const { title, description, category, questions, isPrivate, pdfUrl } = await request.json();
 
     const quiz = await quizService.createQuiz((session.user as any).id, {
       title,
       description,
       category,
       questions,
-      isPrivate
+      isPrivate,
+      pdfUrl
     });
 
     return NextResponse.json(
@@ -84,11 +85,11 @@ export async function POST(request: NextRequest) {
 
   } catch (error: any) {
     console.error('Create quiz error:', error);
-    
+
     if (error.message.includes('Title, category, and questions are required') ||
-        error.message.includes('Invalid or inactive category selected') ||
-        error.message.includes('Question') ||
-        error.message.includes('Type must be')) {
+      error.message.includes('Invalid or inactive category selected') ||
+      error.message.includes('Question') ||
+      error.message.includes('Type must be')) {
       return NextResponse.json(
         { success: false, error: error.message },
         { status: 400 }

@@ -5,6 +5,7 @@ import { authOptions } from '@/lib/auth';
 import connectDB from '@/lib/mongoose';
 import DraftQuiz from '@/models/DraftQuiz';
 import { PDFDocument } from 'pdf-lib';
+import { uploadPDF, generatePDFKey } from '@/lib/s3';
 
 const CHUNK_SIZE = 5; // pages per chunk
 const OVERLAP_PAGES = 1;
@@ -87,11 +88,24 @@ export async function POST(request: NextRequest) {
 
     await connectDB();
 
+    // Upload PDF to S3
+    const userId = (session!.user as any).id;
+    const pdfKey = generatePDFKey(userId, fileName);
+    let pdfUrl: string | undefined;
+
+    try {
+      pdfUrl = await uploadPDF(buffer, pdfKey);
+      console.log('PDF uploaded to S3:', pdfUrl);
+    } catch (s3Error) {
+      console.error('S3 upload error:', s3Error);
+      // Continue without S3 URL - fallback to base64 storage
+    }
+
     // Create draft
     const expiresAt = new Date(Date.now() + EXPIRY_HOURS * 60 * 60 * 1000);
 
     const draft = await DraftQuiz.create({
-      userId: ((session!.user as any) as any).id,
+      userId,
       title: title.trim(),
       categoryId: categoryId || undefined,
       pdfData: {
@@ -99,6 +113,7 @@ export async function POST(request: NextRequest) {
         fileSize: buffer.length,
         totalPages,
         base64: base64Data, // Store for chunk processing
+        pdfUrl, // S3 URL for PDF viewing
       },
       chunks: {
         total: chunkDetails.length,

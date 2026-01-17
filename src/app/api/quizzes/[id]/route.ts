@@ -18,7 +18,7 @@ export async function GET(
     }
 
     const quizService = serviceFactory.getQuizService();
-    
+
     const result = await quizService.getQuizById(
       params.id,
       session.user.email!,
@@ -32,9 +32,31 @@ export async function GET(
       );
     }
 
+    const data = result.data;
+
+    // Refresh signed URL if PDF exists
+    if (data && (data as any).pdfUrl) {
+      try {
+        const { getSignedPDFUrl, BUCKET_NAME } = await import('@/lib/s3');
+        const pdfUrl = (data as any).pdfUrl;
+        const marker = `${BUCKET_NAME}/`;
+
+        if (pdfUrl.includes(marker)) {
+          const key = pdfUrl.split(marker)[1];
+          if (key) {
+            // Use a temporary variable to avoid mutating potentially frozen state if necessary, 
+            // but here we are constructing the response
+            (data as any).pdfUrl = await getSignedPDFUrl(key);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to refresh signed URL for quiz:', error);
+      }
+    }
+
     return NextResponse.json({
       success: true,
-      data: result.data
+      data: data
     });
 
   } catch (error: any) {
@@ -62,7 +84,7 @@ export async function PUT(
 
     const quizData = await request.json();
     const quizService = serviceFactory.getQuizService();
-    
+
     const result = await quizService.updateQuiz(
       params.id,
       quizData,
@@ -106,7 +128,7 @@ export async function DELETE(
     }
 
     const quizService = serviceFactory.getQuizService();
-    
+
     const result = await quizService.deleteQuiz(
       params.id,
       session.user.email!,

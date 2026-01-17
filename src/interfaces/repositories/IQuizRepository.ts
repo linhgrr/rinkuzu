@@ -8,6 +8,7 @@ export interface IQuiz {
   questions: any[]
   status: 'pending' | 'published' | 'rejected'
   isPrivate: boolean
+  pdfUrl?: string
   tags?: string[]
   createdAt?: Date
   updatedAt?: Date
@@ -15,17 +16,17 @@ export interface IQuiz {
 
 export interface IQuizRepository {
   findById(id: string): Promise<IQuiz | null>
-  
+
   findBySlug(slug: string): Promise<IQuiz | null>
-  
+
   findBySlugAndStatus(slug: string, status: string): Promise<IQuiz | null>
-  
+
   create(quizData: Partial<IQuiz>): Promise<IQuiz>
-  
+
   update(id: string, quizData: Partial<IQuiz>): Promise<IQuiz | null>
-  
+
   delete(id: string): Promise<boolean>
-  
+
   findAll(filter?: any, options?: {
     page?: number
     limit?: number
@@ -40,9 +41,9 @@ export interface IQuizRepository {
       totalPages: number
     }
   }>
-  
+
   findForPlay(slug: string): Promise<IQuiz | null>
-  
+
   findUserQuizzes(userId: string, options?: {
     page?: number
     limit?: number
@@ -56,14 +57,14 @@ export interface IQuizRepository {
       totalPages: number
     }
   }>
-  
+
   count(filter?: any): Promise<number>
-  
+
   countByStatus(): Promise<{ _id: string; count: number }[]>
-  
+
   countByCategory(): Promise<{ _id: string; count: number }[]>
-  
+
   findRecentQuizzes(limit?: number): Promise<IQuiz[]>
-  
+
   updateStatus(id: string, status: string, reviewNote?: string): Promise<IQuiz | null>
 } 

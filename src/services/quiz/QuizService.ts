@@ -8,6 +8,9 @@ import { IReportRepository } from '@/interfaces/repositories/IReportRepository'
 import { generateSlug } from '@/lib/utils'
 import { IQuiz } from '@/interfaces/repositories/IQuizRepository'
 import { ServiceFactory } from '@/lib/serviceFactory'
+import QuestionProgress from '@/models/QuestionProgress'
+import UserProgress from '@/models/UserProgress'
+import connectDB from '@/lib/mongoose'
 
 interface ServiceResult<T> {
   success: boolean;
@@ -600,6 +603,176 @@ export class QuizService implements IQuizService {
         totalQuestions,
         takenAt: new Date()
       })
+
+      // === NEW: Update gamification stats ===
+
+      // Only update stats for logged-in users (not anonymous)
+      if (session?.user?.email) {
+        await connectDB();
+
+        // 1. Create QuestionProgress for WRONG answers (add to review queue)
+        const wrongQuestions: Array<{
+          index: number;
+          question: any;
+          userAnswer: any;
+        }> = [];
+
+        for (let i = 0; i < totalQuestions; i++) {
+          const question = quiz.questions[i];
+          const userAnswer = formattedAnswers[i];
+          let isCorrect = false;
+
+          if (question.type === 'single') {
+            isCorrect = userAnswer === question.correctIndex;
+          } else if (question.type === 'multiple') {
+            const userAnswers = Array.isArray(userAnswer) ? userAnswer.sort() : [];
+            const correctAnswers_q = Array.isArray(question.correctIndexes) ? question.correctIndexes.sort() : [];
+            isCorrect = JSON.stringify(userAnswers) === JSON.stringify(correctAnswers_q);
+          }
+
+          if (!isCorrect) {
+            wrongQuestions.push({ index: i, question, userAnswer });
+          }
+        }
+
+        // Create QuestionProgress for each wrong answer
+        for (const wrong of wrongQuestions) {
+          const questionId = wrong.question._id?.toString() || `${slug}-q${wrong.index}`;
+
+          // Check if already exists
+          const existing = await QuestionProgress.findOne({
+            userId,
+            quizSlug: slug,
+            questionId
+          });
+
+          if (!existing) {
+            // Create new QuestionProgress - due immediately for review
+            await QuestionProgress.create({
+              userId,
+              quizSlug: slug,
+              questionId,
+              questionRef: {
+                text: wrong.question.question || wrong.question.text || '',
+                options: wrong.question.options || [],
+                correctIndexes: wrong.question.type === 'single'
+                  ? [wrong.question.correctIndex]
+                  : (wrong.question.correctIndexes || [])
+              },
+              srsLevel: 0,
+              interval: 0,
+              easeFactor: 2.5,
+              nextReviewDate: new Date(), // Due immediately
+              lastReviewDate: null,
+              correctStreak: 0,
+              totalReviews: 0,
+              totalCorrect: 0,
+              history: []
+            });
+          }
+        }
+
+        // 2. Update UserProgress
+        let uProgress = await UserProgress.findOne({ userId });
+
+        if (!uProgress) {
+          uProgress = new UserProgress({ userId });
+        }
+
+        // Award XP: 10 XP per correct answer
+        const xpGain = correctAnswers * 10;
+        uProgress.totalXp += xpGain;
+
+        // Increment totalQuizzesTaken
+        uProgress.totalQuizzesTaken += 1;
+
+        // Update streak logic
+        const now = new Date();
+        const lastActive = uProgress.lastActiveDate ? new Date(uProgress.lastActiveDate) : null;
+        const todayStr = now.toISOString().split('T')[0];
+        const lastActiveStr = lastActive ? lastActive.toISOString().split('T')[0] : null;
+
+        if (todayStr !== lastActiveStr) {
+          if (lastActiveStr) {
+            const yesterday = new Date(now);
+            yesterday.setDate(yesterday.getDate() - 1);
+            const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+            if (lastActiveStr === yesterdayStr) {
+              // Continue streak
+              uProgress.currentStreak += 1;
+            } else {
+              // Check for streak freeze
+              const twoDaysAgo = new Date(now);
+              twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+              const twoDaysAgoStr = twoDaysAgo.toISOString().split('T')[0];
+
+              if (lastActiveStr === twoDaysAgoStr && uProgress.streakFreezeCount > 0) {
+                uProgress.streakFreezeCount -= 1;
+                uProgress.currentStreak += 1;
+              } else {
+                // Reset streak
+                uProgress.currentStreak = 1;
+              }
+            }
+          } else {
+            // First activity ever
+            uProgress.currentStreak = 1;
+          }
+
+          uProgress.lastActiveDate = now;
+
+          if (uProgress.currentStreak > uProgress.longestStreak) {
+            uProgress.longestStreak = uProgress.currentStreak;
+          }
+        }
+
+        // Update weekly activity
+        if (!uProgress.weeklyActivity) {
+          uProgress.weeklyActivity = new Map();
+        }
+
+        const activityKey = todayStr;
+        const currentActivity = uProgress.weeklyActivity.get(activityKey) || {
+          questionsReviewed: 0,
+          xpEarned: 0,
+          correctCount: 0,
+          totalCount: 0
+        };
+
+        currentActivity.questionsReviewed += totalQuestions;
+        currentActivity.xpEarned += xpGain;
+        currentActivity.correctCount += correctAnswers;
+        currentActivity.totalCount += totalQuestions;
+
+        uProgress.weeklyActivity.set(activityKey, currentActivity);
+
+        // Update 7-day accuracy
+        const last7Days: string[] = [];
+        for (let i = 6; i >= 0; i--) {
+          const d = new Date(now);
+          d.setDate(d.getDate() - i);
+          last7Days.push(d.toISOString().split('T')[0]);
+        }
+
+        let totalCorrectWeek = 0;
+        let totalQuestionsWeek = 0;
+        for (const dayKey of last7Days) {
+          const dayActivity = uProgress.weeklyActivity.get(dayKey);
+          if (dayActivity) {
+            totalCorrectWeek += dayActivity.correctCount || 0;
+            totalQuestionsWeek += dayActivity.totalCount || 0;
+          }
+        }
+
+        uProgress.averageAccuracy = totalQuestionsWeek > 0
+          ? Math.round((totalCorrectWeek / totalQuestionsWeek) * 100)
+          : 0;
+
+        await uProgress.save();
+      }
+
+      // === END: Update gamification stats ===
 
       return {
         success: true,

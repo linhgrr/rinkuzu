@@ -1,6 +1,7 @@
 'use client';
 
 import { memo, useState, useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import { Card } from '@/components/ui/Card';
 import { HiOutlineChevronLeft, HiOutlineChevronRight } from '@/components/icons';
 
@@ -44,6 +45,8 @@ const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 export const WeeklyProgressHeatmap = memo(function WeeklyProgressHeatmap({
   weeklyActivity,
 }: WeeklyProgressHeatmapProps) {
+  const t = useTranslations('dashboard');
+  const tCommon = useTranslations('common');
   const [weekOffset, setWeekOffset] = useState(0);
 
   const { weekDates, weekLabel, isCurrentWeek } = useMemo(() => {
@@ -83,7 +86,7 @@ export const WeeklyProgressHeatmap = memo(function WeeklyProgressHeatmap({
   return (
     <Card className="p-6 rounded-2xl shadow-sm border-gray-100/50 bg-white">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="font-semibold text-[#1d1d1f]">Weekly Progress</h3>
+        <h3 className="font-semibold text-[#1d1d1f]">{t('weeklyProgress')}</h3>
         <div className="flex items-center gap-2">
           <button
             onClick={handlePrevWeek}
@@ -92,7 +95,7 @@ export const WeeklyProgressHeatmap = memo(function WeeklyProgressHeatmap({
             <HiOutlineChevronLeft className="w-5 h-5 text-gray-600" />
           </button>
           <span className="text-sm text-[#86868b] min-w-[100px] text-center">
-            {isCurrentWeek ? 'This week' : weekLabel}
+            {isCurrentWeek ? t('thisWeek') : weekLabel}
           </span>
           <button
             onClick={handleNextWeek}
@@ -127,7 +130,7 @@ export const WeeklyProgressHeatmap = memo(function WeeklyProgressHeatmap({
       </div>
 
       <div className="flex items-center justify-center gap-2 mt-4 text-xs text-[#86868b]">
-        <span>Less</span>
+        <span>{tCommon('less')}</span>
         <div className="flex gap-1">
           <div className="w-4 h-4 rounded bg-gray-100" />
           <div className="w-4 h-4 rounded bg-green-200" />
@@ -135,7 +138,7 @@ export const WeeklyProgressHeatmap = memo(function WeeklyProgressHeatmap({
           <div className="w-4 h-4 rounded bg-green-500" />
           <div className="w-4 h-4 rounded bg-green-600" />
         </div>
-        <span>More</span>
+        <span>{tCommon('more')}</span>
       </div>
     </Card>
   );

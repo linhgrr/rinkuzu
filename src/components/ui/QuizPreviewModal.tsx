@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Modal } from './Modal';
 import { Button } from './Button';
 import { Card, CardContent, CardHeader, CardTitle } from './Card';
@@ -16,6 +17,8 @@ interface QuizPreviewModalProps {
 
 export function QuizPreviewModal({ isOpen, onClose, title, questions }: QuizPreviewModalProps) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const t = useTranslations('quizPreview');
+  const tQuiz = useTranslations('quiz');
 
   if (!questions || questions.length === 0) {
     return null;
@@ -41,14 +44,14 @@ export function QuizPreviewModal({ isOpen, onClose, title, questions }: QuizPrev
     } else if (question.type === 'multiple' && question.correctIndexes) {
       return question.correctIndexes.map(idx => question.options[idx]).join(', ');
     }
-    return 'No correct answer defined';
+    return t('noCorrectAnswer');
   };
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="large">
       <div className="p-6">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-gray-900">Quiz Preview</h2>
+          <h2 className="text-2xl font-bold text-gray-900">{t('title')}</h2>
           <Button variant="ghost" onClick={onClose}>
             ✕
           </Button>
@@ -57,7 +60,7 @@ export function QuizPreviewModal({ isOpen, onClose, title, questions }: QuizPrev
         <div className="mb-4">
           <h3 className="text-lg font-semibold text-gray-800 mb-2">{title}</h3>
           <div className="text-sm text-gray-600">
-            Question {currentQuestionIndex + 1} of {questions.length}
+            {t('questionOf', { current: currentQuestionIndex + 1, total: questions.length })}
           </div>
         </div>
 
@@ -67,11 +70,11 @@ export function QuizPreviewModal({ isOpen, onClose, title, questions }: QuizPrev
               <span>{currentQuestion.question}</span>
               {currentQuestion.type === 'single' ? (
                 <span className="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
-                  📝 Single Choice
+                  📝 {t('singleChoice')}
                 </span>
               ) : (
                 <span className="inline-flex items-center px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-xs">
-                  ☑️ Multiple Choice
+                  ☑️ {t('multipleChoice')}
                 </span>
               )}
             </CardTitle>
@@ -139,7 +142,7 @@ export function QuizPreviewModal({ isOpen, onClose, title, questions }: QuizPrev
                       </div>
                       {isCorrect && (
                         <span className="ml-auto text-green-600 text-sm font-medium">
-                          ✓ Correct
+                          ✓ {t('correct')}
                         </span>
                       )}
                     </div>
@@ -149,7 +152,7 @@ export function QuizPreviewModal({ isOpen, onClose, title, questions }: QuizPrev
             </div>
 
             <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-              <div className="text-sm font-medium text-blue-900 mb-1">Correct Answer(s):</div>
+              <div className="text-sm font-medium text-blue-900 mb-1">{t('correctAnswers')}:</div>
               <div className="text-sm text-blue-800">{getCorrectAnswerText(currentQuestion)}</div>
             </div>
           </CardContent>
@@ -162,7 +165,7 @@ export function QuizPreviewModal({ isOpen, onClose, title, questions }: QuizPrev
             onClick={previousQuestion}
             disabled={currentQuestionIndex === 0}
           >
-            ← Previous
+            ← {tQuiz('previous')}
           </Button>
 
           <div className="text-sm text-gray-600">
@@ -174,13 +177,13 @@ export function QuizPreviewModal({ isOpen, onClose, title, questions }: QuizPrev
             onClick={nextQuestion}
             disabled={currentQuestionIndex === questions.length - 1}
           >
-            Next →
+            {tQuiz('next')} →
           </Button>
         </div>
 
         {/* Question Overview */}
         <div className="border-t pt-4">
-          <h4 className="text-sm font-medium text-gray-900 mb-3">Question Overview</h4>
+          <h4 className="text-sm font-medium text-gray-900 mb-3">{t('questionOverview')}</h4>
           <div className="grid grid-cols-10 gap-2">
             {questions.map((_, index) => (
               <button
@@ -200,7 +203,7 @@ export function QuizPreviewModal({ isOpen, onClose, title, questions }: QuizPrev
 
         <div className="flex justify-end mt-6">
           <Button onClick={onClose}>
-            Close Preview
+            {t('closePreview')}
           </Button>
         </div>
       </div>

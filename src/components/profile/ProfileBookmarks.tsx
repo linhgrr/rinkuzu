@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Modal } from '@/components/ui/Modal';
@@ -52,6 +53,8 @@ interface ChatHistoryState {
 
 export default function ProfileBookmarks() {
     const { data: session } = useSession();
+    const t = useTranslations('profile');
+    const tCommon = useTranslations('common');
     const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -326,7 +329,7 @@ export default function ProfileBookmarks() {
     if (loading && bookmarks.length === 0) {
         return (
             <div className="flex justify-center py-12">
-                <div className="text-gray-500">Loading bookmarks...</div>
+                <div className="text-gray-500">{tCommon('loadingBookmarks')}</div>
             </div>
         )
     }
@@ -334,8 +337,8 @@ export default function ProfileBookmarks() {
     return (
         <div className="space-y-6">
             <div>
-                <h2 className="text-2xl font-bold text-gray-900">Bookmarked Questions</h2>
-                <p className="mt-1 text-gray-600">Questions you've saved for later review</p>
+                <h2 className="text-2xl font-bold text-gray-900">{t('bookmarkedQuestions')}</h2>
+                <p className="mt-1 text-gray-600">{t('bookmarkedDescription')}</p>
             </div>
 
             {error && (
@@ -348,10 +351,10 @@ export default function ProfileBookmarks() {
                         <div className="flex justify-center mb-4">
                             <HiOutlineTag className="text-gray-400 w-12 h-12" />
                         </div>
-                        <h3 className="text-lg font-medium text-gray-900 mb-2">No bookmarks yet</h3>
-                        <p className="text-gray-600 mb-6">Start bookmarking questions during quizzes</p>
+                        <h3 className="text-lg font-medium text-gray-900 mb-2">{t('noBookmarks')}</h3>
+                        <p className="text-gray-600 mb-6">{t('exploreQuizzes')}</p>
                         <Link href="/">
-                            <Button>Browse Quizzes</Button>
+                            <Button>{tCommon('browseQuizzes')}</Button>
                         </Link>
                     </CardContent>
                 </Card>
@@ -371,17 +374,17 @@ export default function ProfileBookmarks() {
                                             </div>
                                             <span className={`px-2 py-0.5 rounded text-xs font-medium ${bookmark.question.type === 'single' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'
                                                 }`}>
-                                                {bookmark.question.type === 'single' ? 'Single Choice' : 'Multiple Choice'}
+                                                {bookmark.question.type === 'single' ? t('singleChoice') : t('multipleChoice')}
                                             </span>
                                             <span className="text-xs text-gray-500">{new Date(bookmark.createdAt).toLocaleDateString()}</span>
                                         </div>
                                     </div>
                                     <div className="flex gap-2 w-full sm:w-auto">
                                         <Button variant="outline" size="sm" onClick={() => openAIModal(bookmark)} className="flex items-center gap-1.5">
-                                            <HiOutlineChatAlt className="w-4 h-4" /> Ask AI {chatHistories[bookmark._id]?.length > 0 && `(${Math.floor(chatHistories[bookmark._id].length / 2)})`}
+                                            <HiOutlineChatAlt className="w-4 h-4" /> {t('askAI')} {chatHistories[bookmark._id]?.length > 0 && `(${Math.floor(chatHistories[bookmark._id].length / 2)})`}
                                         </Button>
                                         <Button variant="outline" size="sm" onClick={() => removeBookmark(bookmark._id)} className="text-red-600 border-red-200 hover:bg-red-50 flex items-center gap-1.5">
-                                            <HiOutlineTrash className="w-4 h-4" /> Remove
+                                            <HiOutlineTrash className="w-4 h-4" /> {tCommon('remove')}
                                         </Button>
                                     </div>
                                 </div>
@@ -394,7 +397,7 @@ export default function ProfileBookmarks() {
                             <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
                                 <div className="space-y-3">
                                     <div className="text-sm">
-                                        <span className="font-medium text-gray-700">Correct: </span>
+                                        <span className="font-medium text-gray-700">{t('correct')}: </span>
                                         <span className="text-green-600">{formatCorrectAnswer(bookmark.question)}</span>
                                     </div>
                                     <div className="mt-2 text-sm text-gray-600">
@@ -428,7 +431,7 @@ export default function ProfileBookmarks() {
                 <Modal
                     isOpen={showAIModal}
                     onClose={closeAIModal}
-                    title="Chat with Rin-chan"
+                    title={t('chatWithRinChan')}
                     size="wide"
                 >
                     {/* Simplified Modal Content for brevity in this rewrite, assuming logic carried over */}
@@ -446,19 +449,19 @@ export default function ProfileBookmarks() {
                         <div className="border rounded-lg p-4 bg-white h-[40vh] overflow-y-auto chat-history-container">
                             {chatHistories[currentBookmark._id]?.map((msg, idx) => (
                                 <div key={idx} className={`p-2 rounded mb-2 text-sm ${msg.role === 'user' ? 'bg-blue-50 ml-8' : 'bg-purple-50 mr-8'}`}>
-                                    <div className="font-bold text-xs mb-1">{msg.role === 'user' ? 'You' : 'Rin-chan'}</div>
+                                    <div className="font-bold text-xs mb-1">{msg.role === 'user' ? t('you') : t('rinChan')}</div>
                                     {msg.role === 'assistant' ? <MarkdownRenderer content={msg.content} /> : msg.content}
                                 </div>
                             ))}
                             {/* Show streaming content */}
                             {isStreaming && streamingContent && (
                                 <div className="p-2 rounded mb-2 text-sm bg-purple-50 mr-8">
-                                    <div className="font-bold text-xs mb-1">Rin-chan</div>
+                                    <div className="font-bold text-xs mb-1">{t('rinChan')}</div>
                                     <MarkdownRenderer content={streamingContent} />
                                     <span className="inline-block w-2 h-4 bg-purple-500 animate-pulse ml-1"></span>
                                 </div>
                             )}
-                            {loadingAI && !isStreaming && <div className="text-xs text-gray-500 animate-pulse">Thinking...</div>}
+                            {loadingAI && !isStreaming && <div className="text-xs text-gray-500 animate-pulse">{t('thinking')}</div>}
                         </div>
 
                         <div className="flex gap-2">
@@ -467,9 +470,9 @@ export default function ProfileBookmarks() {
                                 value={userQuestion}
                                 onChange={e => setUserQuestion(e.target.value)}
                                 onKeyDown={handleKeyPress}
-                                placeholder="Ask a question..."
+                                placeholder={t('askQuestion')}
                             />
-                            <Button onClick={askAI} disabled={loadingAI}>Send</Button>
+                            <Button onClick={askAI} disabled={loadingAI}>{tCommon('send')}</Button>
                         </div>
                     </div>
                 </Modal>

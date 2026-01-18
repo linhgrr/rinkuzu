@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 
@@ -11,6 +12,7 @@ interface StreakFreezeCardProps {
 }
 
 export function StreakFreezeCard({ count, xp, onBuy }: StreakFreezeCardProps) {
+    const t = useTranslations('dashboard');
     const MAX_FREEZES = 2;
     const COST = 500;
     const canBuy = count < MAX_FREEZES && xp >= COST;
@@ -31,11 +33,11 @@ export function StreakFreezeCard({ count, xp, onBuy }: StreakFreezeCardProps) {
                     ❄️
                 </div>
                 <div>
-                    <p className="font-semibold text-gray-900">Streak Freeze</p>
+                    <p className="font-semibold text-gray-900">{t('streakFreeze')}</p>
                     <p className="text-xs text-gray-600">
                         {count > 0
-                            ? `${count} equipped. Protects your streak.`
-                            : 'Not equipped. Miss a day, lose your streak!'}
+                            ? t('streakFreezeEquipped', { count })
+                            : t('streakFreezeNotEquipped')}
                     </p>
                 </div>
             </div>
@@ -47,11 +49,11 @@ export function StreakFreezeCard({ count, xp, onBuy }: StreakFreezeCardProps) {
                         disabled={!canBuy || buying}
                         className={canBuy ? 'bg-blue-600 hover:bg-blue-700' : 'opacity-50 cursor-not-allowed'}
                     >
-                        {buying ? '...' : `Buy (500 XP)`}
+                        {buying ? '...' : t('buyXP', { xp: COST })}
                     </Button>
                 ) : (
                     <span className="text-xs font-bold text-green-600 px-3 py-1 bg-green-100 rounded-full">
-                        Maxed Out
+                        {t('maxedOut')}
                     </span>
                 )}
             </div>

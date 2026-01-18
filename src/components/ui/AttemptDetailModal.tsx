@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import { Button } from './Button';
 import { Card, CardContent, CardHeader, CardTitle } from './Card';
 import { Modal } from './Modal';
@@ -37,12 +38,14 @@ interface AttemptDetailModalProps {
   quizTitle: string;
 }
 
-export default function AttemptDetailModal({ 
-  attemptId, 
-  isOpen, 
-  onClose, 
-  quizTitle 
+export default function AttemptDetailModal({
+  attemptId,
+  isOpen,
+  onClose,
+  quizTitle
 }: AttemptDetailModalProps) {
+  const t = useTranslations('attemptDetail');
+  const tCommon = useTranslations('common');
   const [attempt, setAttempt] = useState<AttemptDetail | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -87,12 +90,12 @@ export default function AttemptDetailModal({
       if (typeof answer === 'number' && answer >= 0) {
         return question.options[answer];
       }
-      return 'Không trả lời';
+      return t('notAnswered');
     } else {
       if (Array.isArray(answer) && answer.length > 0) {
         return answer.map(idx => question.options[idx]).join(', ');
       }
-      return 'Không trả lời';
+      return t('notAnswered');
     }
   };
 
@@ -115,7 +118,7 @@ export default function AttemptDetailModal({
           <div className="p-6 border-b border-gray-200">
             <div className="flex items-center justify-between">
               <h2 className="text-2xl font-bold text-gray-900">
-                Chi Tiết Kết Quả
+                {t('title')}
               </h2>
               <Button variant="ghost" onClick={onClose}>
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -123,13 +126,13 @@ export default function AttemptDetailModal({
                 </svg>
               </Button>
             </div>
-            
+
             {attempt && (
               <div className="mt-4">
                 <h3 className="text-lg font-semibold text-gray-800">{attempt.quiz.title}</h3>
                 <div className="flex items-center space-x-4 mt-2 text-sm text-gray-600">
-                  <span>📊 Điểm: {attempt.score}%</span>
-                  <span>📝 {attempt.quiz.questions.length} câu hỏi</span>
+                  <span>📊 {t('score')}: {attempt.score}%</span>
+                  <span>📝 {attempt.quiz.questions.length} {t('questions')}</span>
                   <span>🕒 {formatDate(attempt.takenAt)}</span>
                 </div>
               </div>
@@ -140,7 +143,7 @@ export default function AttemptDetailModal({
           <div className="overflow-y-auto max-h-[calc(90vh-140px)]">
             {loading ? (
               <div className="flex justify-center py-12">
-                <div className="text-gray-500">Đang tải...</div>
+                <div className="text-gray-500">{tCommon('loading')}</div>
               </div>
             ) : error ? (
               <div className="p-6">
@@ -157,7 +160,7 @@ export default function AttemptDetailModal({
                       <div className="text-xl font-bold text-green-600">
                         {attempt.quiz.questions.filter(q => q.isCorrect).length}
                       </div>
-                      <div className="text-sm text-gray-600">Câu đúng</div>
+                      <div className="text-sm text-gray-600">{t('correctAnswers')}</div>
                     </CardContent>
                   </Card>
                   <Card>
@@ -165,7 +168,7 @@ export default function AttemptDetailModal({
                       <div className="text-xl font-bold text-red-600">
                         {attempt.quiz.questions.filter(q => !q.isCorrect).length}
                       </div>
-                      <div className="text-sm text-gray-600">Câu sai</div>
+                      <div className="text-sm text-gray-600">{t('incorrectAnswers')}</div>
                     </CardContent>
                   </Card>
                   <Card>
@@ -173,7 +176,7 @@ export default function AttemptDetailModal({
                       <div className="text-xl font-bold text-blue-600">
                         {attempt.score}%
                       </div>
-                      <div className="text-sm text-gray-600">Tổng điểm</div>
+                      <div className="text-sm text-gray-600">{t('totalScore')}</div>
                     </CardContent>
                   </Card>
                 </div>
@@ -184,13 +187,13 @@ export default function AttemptDetailModal({
                     <Card key={index} className={`border-l-4 ${question.isCorrect ? 'border-green-500' : 'border-red-500'}`}>
                       <CardHeader>
                         <CardTitle className="flex items-center justify-between">
-                          <span className="text-lg">Câu {index + 1}</span>
+                          <span className="text-lg">{t('question')} {index + 1}</span>
                           <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                            question.isCorrect 
-                              ? 'bg-green-100 text-green-800' 
+                            question.isCorrect
+                              ? 'bg-green-100 text-green-800'
                               : 'bg-red-100 text-red-800'
                           }`}>
-                            {question.isCorrect ? '✓ Đúng' : '✗ Sai'}
+                            {question.isCorrect ? `✓ ${t('correct')}` : `✗ ${t('incorrect')}`}
                           </span>
                         </CardTitle>
                       </CardHeader>
@@ -207,7 +210,7 @@ export default function AttemptDetailModal({
 
                         {/* User Answer */}
                         <div>
-                          <h5 className="font-medium text-gray-900 mb-2">Câu trả lời của bạn:</h5>
+                          <h5 className="font-medium text-gray-900 mb-2">{t('yourAnswer')}:</h5>
                           <div className={`p-3 rounded-lg ${question.isCorrect ? 'bg-green-50' : 'bg-red-50'}`}>
                             <div className={question.isCorrect ? 'text-green-800' : 'text-red-800'}>
                               {getAnswerText(question, question.userAnswer)}
@@ -218,7 +221,7 @@ export default function AttemptDetailModal({
                         {/* Correct Answer (if wrong) */}
                         {!question.isCorrect && (
                           <div>
-                            <h5 className="font-medium text-gray-900 mb-2">Đáp án đúng:</h5>
+                            <h5 className="font-medium text-gray-900 mb-2">{t('correctAnswer')}:</h5>
                             <div className="p-3 rounded-lg bg-green-50">
                               <div className="text-green-800">
                                 {getCorrectAnswerText(question)}
@@ -229,7 +232,7 @@ export default function AttemptDetailModal({
 
                         {/* All Options */}
                         <div>
-                          <h5 className="font-medium text-gray-900 mb-2">Các lựa chọn:</h5>
+                          <h5 className="font-medium text-gray-900 mb-2">{t('allOptions')}:</h5>
                           <div className="space-y-2">
                             {question.options.map((option, optionIndex) => {
                               const isUserChoice = question.type === 'single' 
@@ -255,13 +258,13 @@ export default function AttemptDetailModal({
                                     <span>{String.fromCharCode(65 + optionIndex)}. {option}</span>
                                     <div className="flex space-x-1">
                                       {isCorrectChoice && (
-                                        <span className="text-green-600 text-sm">✓ Đúng</span>
+                                        <span className="text-green-600 text-sm">✓ {t('correct')}</span>
                                       )}
                                       {isUserChoice && !isCorrectChoice && (
-                                        <span className="text-red-600 text-sm">✗ Bạn chọn</span>
+                                        <span className="text-red-600 text-sm">✗ {t('youChose')}</span>
                                       )}
                                       {isUserChoice && isCorrectChoice && (
-                                        <span className="text-green-600 text-sm">✓ Bạn chọn đúng</span>
+                                        <span className="text-green-600 text-sm">✓ {t('youChoseCorrectly')}</span>
                                       )}
                                     </div>
                                   </div>

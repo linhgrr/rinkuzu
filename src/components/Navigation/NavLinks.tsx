@@ -1,17 +1,20 @@
+'use client';
+
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 
 interface NavLink {
   href: string;
-  label: string;
+  labelKey: string;
   isAdmin?: boolean;
 }
 
 const LINKS: NavLink[] = [
-  { href: '/', label: 'Home' },
-  { href: '/create', label: 'Create' },
-  { href: '/profile', label: 'Profile' },
-  { href: '/categories', label: 'Categories' },
-  { href: '/explore', label: 'Explore' },
+  { href: '/', labelKey: 'home' },
+  { href: '/create', labelKey: 'create' },
+  { href: '/profile', labelKey: 'profile' },
+  { href: '/categories', labelKey: 'categories' },
+  { href: '/explore', labelKey: 'explore' },
 ];
 
 interface NavLinksProps {
@@ -19,10 +22,12 @@ interface NavLinksProps {
 }
 
 /**
- * Static navigation links - can be used in Server Components
+ * Navigation links component with i18n support
  * Admin link is conditionally rendered based on isAdmin prop
  */
 export function NavLinks({ isAdmin = false }: NavLinksProps) {
+  const t = useTranslations('nav');
+
   return (
     <>
       {LINKS.map((link) => (
@@ -31,7 +36,7 @@ export function NavLinks({ isAdmin = false }: NavLinksProps) {
           href={link.href}
           className="px-4 py-2 text-sm font-medium text-[#1d1d1f] hover:text-[#0071e3] rounded-full transition-colors"
         >
-          {link.label}
+          {t(link.labelKey)}
         </Link>
       ))}
       {isAdmin && (
@@ -39,7 +44,7 @@ export function NavLinks({ isAdmin = false }: NavLinksProps) {
           href="/admin/queue"
           className="px-4 py-2 text-sm font-medium text-[#af52de] hover:text-[#8944ab] rounded-full transition-colors"
         >
-          Admin
+          {t('admin')}
         </Link>
       )}
     </>

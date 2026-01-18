@@ -3,6 +3,7 @@
 
 import { useState, useCallback } from 'react';
 import { motion, AnimatePresence, PanInfo } from 'framer-motion';
+import { useTranslations } from 'next-intl';
 import {
   HiOutlineChevronLeft,
   HiOutlineChevronRight,
@@ -28,6 +29,7 @@ export function MobileQuizPlayer({
   onComplete,
   onExit,
 }: MobileQuizPlayerProps) {
+  const t = useTranslations('quiz');
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number | number[]>>({});
   const [direction, setDirection] = useState(0);
@@ -128,7 +130,7 @@ export function MobileQuizPlayer({
 
           <div className="text-center">
             <span className="text-sm font-semibold text-gray-900">
-              Câu {currentIndex + 1} / {questions.length}
+              {t('question')} {currentIndex + 1} / {questions.length}
             </span>
             {/* Progress dots */}
             <div className="flex gap-1 justify-center mt-2 max-w-[200px] mx-auto flex-wrap">
@@ -191,7 +193,7 @@ export function MobileQuizPlayer({
               {/* Question Text */}
               <div className="mb-4 flex-shrink-0">
                 <span className="inline-block px-2.5 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-600 mb-2">
-                  {currentQuestion.type === 'single' ? 'Chọn một' : 'Chọn nhiều'}
+                  {currentQuestion.type === 'single' ? t('singleChoiceHelper') : t('multipleChoiceHelper')}
                 </span>
                 <p className="text-base font-medium text-gray-900 leading-relaxed">
                   {currentQuestion.question}
@@ -244,7 +246,7 @@ export function MobileQuizPlayer({
       <div className="flex-shrink-0 px-4 py-4 bg-white border-t border-gray-100 safe-area-bottom">
         {/* Swipe hint */}
         <p className="text-center text-xs text-gray-400 mb-3">
-          ← Vuốt để chuyển câu →
+          ← {t('previous')} / {t('next')} →
         </p>
 
         {/* Complete button */}
@@ -261,7 +263,7 @@ export function MobileQuizPlayer({
           `}
           whileTap={{ scale: 0.98 }}
         >
-          Hoàn thành ({answeredCount}/{questions.length} câu đã trả lời)
+          {t('complete')} ({answeredCount}/{questions.length} {t('answered')})
         </motion.button>
       </div>
     </div>

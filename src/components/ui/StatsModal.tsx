@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslations } from 'next-intl';
 import { Modal } from './Modal';
 import { Button } from './Button';
 import { Input } from './Input';
@@ -24,14 +25,16 @@ interface PaginationData {
   hasPrev: boolean;
 }
 
-export default function StatsModal({ 
-  isOpen, 
-  onClose, 
-  title, 
-  type, 
+export default function StatsModal({
+  isOpen,
+  onClose,
+  title,
+  type,
   apiEndpoint,
-  children 
+  children
 }: StatsModalProps) {
+  const t = useTranslations('statsModal');
+  const tCommon = useTranslations('common');
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -137,7 +140,7 @@ export default function StatsModal({
     <div key={category._id || index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
       <div className="flex items-center space-x-4">
         <span className="text-sm font-medium text-gray-500">#{index + 1 + (pagination.page - 1) * pagination.limit}</span>
-        <div 
+        <div
           className="w-4 h-4 rounded-full"
           style={{ backgroundColor: category.color }}
         />
@@ -149,13 +152,13 @@ export default function StatsModal({
       <div className="text-right">
         <div className="text-sm font-medium">{category.totalQuizzes || category.quizCount} quiz</div>
         <div className="text-xs text-gray-500">
-          {category.publishedQuizzes} đã xuất bản • {category.totalQuestions} câu hỏi
+          {category.publishedQuizzes} {t('published')} • {category.totalQuestions} {t('questionsCount')}
         </div>
         <div className="text-xs text-gray-400">
           {category.isActive ? (
-            <span className="text-green-600">Hoạt động</span>
+            <span className="text-green-600">{t('active')}</span>
           ) : (
-            <span className="text-red-600">Không hoạt động</span>
+            <span className="text-red-600">{t('inactive')}</span>
           )}
         </div>
       </div>
@@ -174,7 +177,7 @@ export default function StatsModal({
         <div>
           <h4 className="font-medium text-gray-900">{creator.email}</h4>
           <div className="flex items-center space-x-2 text-xs text-gray-500">
-            <span>Tham gia: {formatDate(creator.joinedAt)}</span>
+            <span>{t('joined')}: {formatDate(creator.joinedAt)}</span>
             {creator.role === 'admin' && (
               <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded">Admin</span>
             )}
@@ -184,11 +187,11 @@ export default function StatsModal({
       <div className="text-right">
         <div className="text-sm font-medium">{creator.quizCount} quiz</div>
         <div className="text-xs text-gray-500">
-          {creator.totalQuestions} câu hỏi • {Math.round(creator.successRate || 0)}% thành công
+          {creator.totalQuestions} {t('questionsCount')} • {Math.round(creator.successRate || 0)}% {t('successRate')}
         </div>
         <div className="text-xs text-gray-400">
-          <span className="text-green-600">{creator.publishedQuizzes} xuất bản</span> • 
-          <span className="text-yellow-600 ml-1">{creator.pendingQuizzes} chờ duyệt</span>
+          <span className="text-green-600">{creator.publishedQuizzes} {t('published')}</span> •
+          <span className="text-yellow-600 ml-1">{creator.pendingQuizzes} {t('pendingApproval')}</span>
         </div>
       </div>
     </div>
@@ -196,14 +199,13 @@ export default function StatsModal({
 
   const renderActivityItem = (activity: any, index: number) => {
     const { type: activityType, data: activityData, date } = activity;
-    
+
     return (
       <div key={index} className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-          activityType === 'user' ? 'bg-blue-100 text-blue-600' :
+        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${activityType === 'user' ? 'bg-blue-100 text-blue-600' :
           activityType === 'quiz' ? 'bg-green-100 text-green-600' :
-          'bg-purple-100 text-purple-600'
-        }`}>
+            'bg-purple-100 text-purple-600'
+          }`}>
           {activityType === 'user' && (
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -220,19 +222,19 @@ export default function StatsModal({
             </svg>
           )}
         </div>
-        
+
         <div className="flex-1">
           {activityType === 'user' && (
             <div>
-              <h4 className="font-medium text-gray-900">Người dùng mới: {activityData.email}</h4>
-              <p className="text-sm text-gray-600">Đã đăng ký tài khoản</p>
+              <h4 className="font-medium text-gray-900">{t('newUser')}: {activityData.email}</h4>
+              <p className="text-sm text-gray-600">{t('registered')}</p>
             </div>
           )}
           {activityType === 'quiz' && (
             <div>
               <h4 className="font-medium text-gray-900">{activityData.title}</h4>
               <p className="text-sm text-gray-600">
-                Bởi {activityData.author?.email} • {activityData.category?.name} • {activityData.questionCount} câu hỏi
+                {t('by')} {activityData.author?.email} • {activityData.category?.name} • {activityData.questionCount} {t('questionsCount')}
               </p>
             </div>
           )}
@@ -240,7 +242,7 @@ export default function StatsModal({
             <div>
               <h4 className="font-medium text-gray-900">{activityData.quiz?.title}</h4>
               <p className="text-sm text-gray-600">
-                {activityData.user?.email || 'Ẩn danh'} • Điểm: {activityData.score}% • {activityData.answeredQuestions} câu trả lời
+                {activityData.user?.email || t('anonymous')} • Score: {activityData.score}% • {activityData.answeredQuestions} {t('answeredQuestions')}
               </p>
             </div>
           )}
@@ -248,22 +250,20 @@ export default function StatsModal({
         </div>
 
         {activityType === 'quiz' && (
-          <span className={`px-2 py-1 rounded text-xs ${
-            activityData.status === 'published' ? 'bg-green-100 text-green-800' :
+          <span className={`px-2 py-1 rounded text-xs ${activityData.status === 'published' ? 'bg-green-100 text-green-800' :
             activityData.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-            'bg-red-100 text-red-800'
-          }`}>
+              'bg-red-100 text-red-800'
+            }`}>
             {activityData.status}
           </span>
         )}
-        
+
         {activityType === 'attempt' && (
           <div className="text-right">
-            <div className={`text-sm font-medium ${
-              activityData.score >= 80 ? 'text-green-600' :
+            <div className={`text-sm font-medium ${activityData.score >= 80 ? 'text-green-600' :
               activityData.score >= 60 ? 'text-yellow-600' :
-              'text-red-600'
-            }`}>
+                'text-red-600'
+              }`}>
               {activityData.score}%
             </div>
           </div>
@@ -285,12 +285,12 @@ export default function StatsModal({
       return (
         <div className="text-center py-8">
           <p className="text-red-600">{error}</p>
-          <Button 
-            onClick={() => fetchData(1, searchTerm)} 
+          <Button
+            onClick={() => fetchData(1, searchTerm)}
             className="mt-2"
             size="sm"
           >
-            Thử lại
+            {t('retry')}
           </Button>
         </div>
       );
@@ -299,7 +299,7 @@ export default function StatsModal({
     if (data.length === 0) {
       return (
         <div className="text-center py-8">
-          <p className="text-gray-500">Không có dữ liệu</p>
+          <p className="text-gray-500">{t('noData')}</p>
         </div>
       );
     }
@@ -322,15 +322,15 @@ export default function StatsModal({
     switch (type) {
       case 'categories':
         return [
-          { value: 'quizCount', label: 'Số quiz' },
-          { value: 'name', label: 'Tên' },
-          { value: 'createdAt', label: 'Ngày tạo' }
+          { value: 'quizCount', label: t('quizCount') },
+          { value: 'name', label: t('name') },
+          { value: 'createdAt', label: t('createdAt') }
         ];
       case 'creators':
         return [
-          { value: 'quizCount', label: 'Số quiz' },
-          { value: 'totalQuestions', label: 'Tổng câu hỏi' },
-          { value: 'joinedAt', label: 'Ngày tham gia' }
+          { value: 'quizCount', label: t('quizCount') },
+          { value: 'totalQuestions', label: t('totalQuestions') },
+          { value: 'joinedAt', label: t('joinedAt') }
         ];
       default:
         return [];
@@ -343,7 +343,7 @@ export default function StatsModal({
         <div className="mb-6">
           <h2 className="text-2xl font-bold text-gray-900 mb-2">{title}</h2>
           <p className="text-gray-600">
-            Hiển thị {data.length} trong tổng số {pagination.total} mục
+            {t('showing', { count: data.length, total: pagination.total })}
           </p>
         </div>
 
@@ -353,20 +353,20 @@ export default function StatsModal({
             <div className="flex-1">
               <Input
                 type="text"
-                placeholder="Tìm kiếm..."
+                placeholder={t('searchPlaceholder')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
             <Button type="submit" disabled={loading}>
-              Tìm kiếm
+              {t('search')}
             </Button>
           </form>
 
           {/* Sort Options */}
           {getSortOptions().length > 0 && (
             <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-600">Sắp xếp theo:</span>
+              <span className="text-sm text-gray-600">{t('sortBy')}</span>
               <div className="flex space-x-2">
                 {getSortOptions().map(option => (
                   <button
@@ -403,7 +403,7 @@ export default function StatsModal({
           <div className="text-center py-4">
             <div className="inline-flex items-center text-sm text-gray-600">
               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
-              Đang tải thêm...
+              {t('loadingMore')}
             </div>
           </div>
         )}
@@ -418,7 +418,7 @@ export default function StatsModal({
                 disabled={loading}
                 size="sm"
               >
-                Tải thêm
+                {t('loadMore')}
               </Button>
             )}
           </div>

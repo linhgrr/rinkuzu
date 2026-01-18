@@ -1,4 +1,7 @@
+'use client';
+
 import React from 'react'
+import { useTranslations } from 'next-intl'
 import { UploadProgress } from '@/services/largeFileUploadService'
 
 interface LargeFileUploadProgressProps {
@@ -7,6 +10,8 @@ interface LargeFileUploadProgressProps {
 }
 
 export function LargeFileUploadProgress({ progress, isVisible }: LargeFileUploadProgressProps) {
+  const t = useTranslations('upload');
+
   if (!isVisible) return null
 
   const getStatusColor = (status: UploadProgress['status']) => {
@@ -74,10 +79,10 @@ export function LargeFileUploadProgress({ progress, isVisible }: LargeFileUpload
           </div>
           <div className="flex-1">
             <h3 className="text-lg font-semibold text-gray-900">
-              Processing Large File
+              {t('processingLargeFile')}
             </h3>
             <p className="text-sm text-gray-600">
-              {progress.fileName && `File: ${progress.fileName}`}
+              {progress.fileName && `${t('file')}: ${progress.fileName}`}
             </p>
           </div>
         </div>
@@ -86,17 +91,17 @@ export function LargeFileUploadProgress({ progress, isVisible }: LargeFileUpload
         {progress.totalChunks > 0 && (
           <div className="mb-4">
             <div className="flex justify-between text-sm text-gray-600 mb-2">
-              <span>Progress</span>
-              <span>{progress.currentChunk}/{progress.totalChunks} chunks</span>
+              <span>{t('progress')}</span>
+              <span>{progress.currentChunk}/{progress.totalChunks} {t('chunks')}</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2">
-              <div 
+              <div
                 className="bg-gradient-to-r from-blue-500 to-purple-600 h-2 rounded-full transition-all duration-300"
                 style={{ width: `${calculateProgressPercentage()}%` }}
               ></div>
             </div>
             <div className="text-xs text-gray-500 mt-1">
-              {calculateProgressPercentage()}% complete
+              {calculateProgressPercentage()}% {t('complete')}
             </div>
           </div>
         )}
@@ -105,11 +110,11 @@ export function LargeFileUploadProgress({ progress, isVisible }: LargeFileUpload
         {progress.totalFiles > 1 && (
           <div className="mb-4 p-3 bg-gray-50 rounded-lg">
             <div className="flex justify-between text-sm text-gray-600 mb-1">
-              <span>File Progress</span>
+              <span>{t('fileProgress')}</span>
               <span>{progress.currentFile}/{progress.totalFiles}</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-1">
-              <div 
+              <div
                 className="bg-green-500 h-1 rounded-full transition-all duration-300"
                 style={{ width: `${Math.round((progress.currentFile / progress.totalFiles) * 100)}%` }}
               ></div>
@@ -128,7 +133,7 @@ export function LargeFileUploadProgress({ progress, isVisible }: LargeFileUpload
         <div className="mt-4 text-xs text-gray-500 space-y-1">
           {progress.fileName && (
             <div className="flex justify-between">
-              <span>Current File:</span>
+              <span>{t('currentFile')}:</span>
               <span className="truncate ml-2">{progress.fileName}</span>
             </div>
           )}
@@ -141,8 +146,8 @@ export function LargeFileUploadProgress({ progress, isVisible }: LargeFileUpload
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <div className="text-xs text-blue-800">
-              <p className="font-medium">Processing large files...</p>
-              <p>Please don't close this window. The process will continue automatically.</p>
+              <p className="font-medium">{t('processingTip')}</p>
+              <p>{t('dontCloseWindow')}</p>
             </div>
           </div>
         </div>

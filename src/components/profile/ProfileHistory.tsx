@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
 import { formatDate } from '@/lib/utils';
@@ -41,6 +42,8 @@ interface PaginationInfo {
 
 export default function ProfileHistory() {
     const { data: session } = useSession();
+    const t = useTranslations('profile');
+    const tCommon = useTranslations('common');
     const [attempts, setAttempts] = useState<AttemptHistory[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -85,11 +88,11 @@ export default function ProfileHistory() {
     };
 
     const getPerformanceBadge = (score: number) => {
-        if (score >= 90) return { text: 'Excellent', icon: <HiOutlineAcademicCap className="w-4 h-4" /> };
-        if (score >= 80) return { text: 'Great', icon: <HiOutlineStar className="w-4 h-4" /> };
-        if (score >= 70) return { text: 'Good', icon: <HiOutlineThumbUp className="w-4 h-4" /> };
-        if (score >= 60) return { text: 'Pass', icon: <HiOutlineEmojiHappy className="w-4 h-4" /> };
-        return { text: 'Needs Work', icon: <HiOutlineEmojiSad className="w-4 h-4" /> };
+        if (score >= 90) return { text: t('excellent'), icon: <HiOutlineAcademicCap className="w-4 h-4" /> };
+        if (score >= 80) return { text: t('great'), icon: <HiOutlineStar className="w-4 h-4" /> };
+        if (score >= 70) return { text: t('good'), icon: <HiOutlineThumbUp className="w-4 h-4" /> };
+        if (score >= 60) return { text: t('pass'), icon: <HiOutlineEmojiHappy className="w-4 h-4" /> };
+        return { text: t('needsWork'), icon: <HiOutlineEmojiSad className="w-4 h-4" /> };
     };
 
     const handlePageChange = (page: number) => {
@@ -100,7 +103,7 @@ export default function ProfileHistory() {
     if (loading && attempts.length === 0) {
         return (
             <div className="flex justify-center py-12">
-                <div className="text-gray-500">Loading history...</div>
+                <div className="text-gray-500">{tCommon('loadingHistory')}</div>
             </div>
         )
     }
@@ -108,9 +111,9 @@ export default function ProfileHistory() {
     return (
         <div className="space-y-6">
             <div>
-                <h2 className="text-2xl font-bold text-gray-900">Quiz History</h2>
+                <h2 className="text-2xl font-bold text-gray-900">{t('quizHistory')}</h2>
                 <p className="mt-1 text-gray-600">
-                    Your completed quiz attempts and scores
+                    {t('quizHistoryDescription')}
                 </p>
             </div>
 
@@ -127,13 +130,13 @@ export default function ProfileHistory() {
                             <HiOutlineDocumentText className="w-16 h-16 text-gray-300" />
                         </div>
                         <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                            No Quiz History Yet
+                            {t('noHistory')}
                         </h3>
                         <p className="text-gray-600 mb-6">
-                            You haven't taken any quizzes yet. Start your learning journey!
+                            {t('exploreQuizzes')}
                         </p>
                         <Link href="/">
-                            <Button>Browse Quizzes</Button>
+                            <Button>{tCommon('browseQuizzes')}</Button>
                         </Link>
                     </CardContent>
                 </Card>
@@ -146,7 +149,7 @@ export default function ProfileHistory() {
                                 <div className="text-xl font-bold text-blue-600">
                                     {pagination?.totalItems || attempts.length}
                                 </div>
-                                <div className="text-xs text-gray-600">Total Attempts</div>
+                                <div className="text-xs text-gray-600">{t('totalAttempts')}</div>
                             </CardContent>
                         </Card>
                         <Card>
@@ -154,7 +157,7 @@ export default function ProfileHistory() {
                                 <div className="text-xl font-bold text-green-600">
                                     {attempts.length > 0 ? Math.round(attempts.reduce((sum, a) => sum + a.score, 0) / attempts.length) : 0}%
                                 </div>
-                                <div className="text-xs text-gray-600">Avg Score</div>
+                                <div className="text-xs text-gray-600">{t('avgScore')}</div>
                             </CardContent>
                         </Card>
                         {/* Simplified stats for mobile */}
@@ -179,7 +182,7 @@ export default function ProfileHistory() {
                                                 </div>
 
                                                 <div className="flex items-center space-x-4 text-xs text-gray-500 mt-2">
-                                                    <span className="flex items-center gap-1"><HiOutlineDocumentText className="w-3 h-3" /> {attempt.quiz.totalQuestions} questions</span>
+                                                    <span className="flex items-center gap-1"><HiOutlineDocumentText className="w-3 h-3" /> {tCommon('questionsCount', { count: attempt.quiz.totalQuestions })}</span>
                                                     <span className="flex items-center gap-1"><HiOutlineClock className="w-3 h-3" /> {formatDate(new Date(attempt.takenAt))}</span>
                                                 </div>
                                             </div>
@@ -198,12 +201,12 @@ export default function ProfileHistory() {
                                                             size="sm"
                                                             className="bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-700"
                                                         >
-                                                            Details
+                                                            {t('details')}
                                                         </Button>
                                                     </Link>
                                                     <Link href={`/quiz/${attempt.quiz.slug}`}>
                                                         <Button variant="outline" size="sm">
-                                                            Redo
+                                                            {t('redo')}
                                                         </Button>
                                                     </Link>
                                                 </div>

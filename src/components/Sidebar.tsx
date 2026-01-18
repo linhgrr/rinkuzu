@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
+import { useTranslations } from 'next-intl';
 import { useState, useEffect } from 'react';
 import {
   HiOutlineDocumentText,
@@ -39,6 +40,7 @@ interface Category {
 
 export default function Sidebar({ isOpen, onToggle, currentPath }: SidebarProps) {
   const { data: session } = useSession();
+  const t = useTranslations('nav');
   const [adminMenuOpen, setAdminMenuOpen] = useState(true);
   const [categoryMenuOpen, setCategoryMenuOpen] = useState(true);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -71,12 +73,12 @@ export default function Sidebar({ isOpen, onToggle, currentPath }: SidebarProps)
   const menuItems = [
     {
       href: '/profile?tab=quizzes',
-      label: 'Profile',
+      labelKey: 'profile',
       icon: <HiOutlineUser className="w-full h-full" />
     },
     {
       href: '/explore',
-      label: 'Explore Quizzes',
+      labelKey: 'exploreQuizzes',
       icon: <HiOutlineSearch className="w-full h-full" />
     }
   ];
@@ -84,32 +86,32 @@ export default function Sidebar({ isOpen, onToggle, currentPath }: SidebarProps)
   const adminMenuItems = [
     {
       href: '/admin/queue',
-      label: 'Quiz Queue',
+      labelKey: 'quizQueue',
       icon: <HiOutlineCollection className="w-full h-full" />
     },
     {
       href: '/admin/users',
-      label: 'User Management',
+      labelKey: 'userManagement',
       icon: <HiOutlineUsers className="w-full h-full" />
     },
     {
       href: '/admin/categories',
-      label: 'Categories',
+      labelKey: 'categories',
       icon: <HiOutlineTag className="w-full h-full" />
     },
     {
       href: '/admin/subscriptions',
-      label: 'Subscriptions',
+      labelKey: 'subscriptions',
       icon: <HiOutlineCreditCard className="w-full h-full" />
     },
     {
       href: '/admin/plans',
-      label: 'Pricing Plans',
+      labelKey: 'pricingPlans',
       icon: <HiOutlineCurrencyDollar className="w-full h-full" />
     },
     {
       href: '/admin/stats',
-      label: 'Statistics',
+      labelKey: 'statistics',
       icon: <HiOutlineChartBar className="w-full h-full" />
     }
   ];
@@ -123,8 +125,8 @@ export default function Sidebar({ isOpen, onToggle, currentPath }: SidebarProps)
           <button
             onClick={onToggle}
             className="w-full flex items-center justify-center px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-            title={isOpen ? "Collapse sidebar" : "Expand sidebar"}
-            aria-label={isOpen ? "Collapse sidebar" : "Expand sidebar"}
+            title={isOpen ? t('collapseSidebar') : t('expandSidebar')}
+            aria-label={isOpen ? t('collapseSidebar') : t('expandSidebar')}
           >
             {isOpen ? (
               <HiChevronDoubleLeft className="w-5 h-5" />
@@ -142,23 +144,23 @@ export default function Sidebar({ isOpen, onToggle, currentPath }: SidebarProps)
               ? currentPath?.startsWith(item.href.split('?')[0])
               : currentPath === item.href;
 
-            const isActive = isExactActive || (item.label === 'Profile' && isPathActive);
+            const isActive = isExactActive || (item.labelKey === 'profile' && isPathActive);
 
             return (
               <Link
                 key={item.href}
-                href={item.label === 'Profile' && currentPath?.startsWith('/profile') ? currentPath : item.href}
+                href={item.labelKey === 'profile' && currentPath?.startsWith('/profile') ? currentPath : item.href}
                 className={`flex items-center px-3 py-2 text-sm rounded-lg transition-colors ${!isOpen ? 'justify-center' : ''
                   } ${isActive
                     ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700'
                     : 'text-gray-700 hover:bg-gray-100'
                   }`}
-                title={!isOpen ? item.label : ''}
+                title={!isOpen ? t(item.labelKey) : ''}
               >
                 <div className={`${isOpen ? 'w-5 h-5 mr-3' : 'w-6 h-6'}`}>
                   {item.icon}
                 </div>
-                {isOpen && <span>{item.label}</span>}
+                {isOpen && <span>{t(item.labelKey)}</span>}
               </Link>
             );
           })}
@@ -173,7 +175,7 @@ export default function Sidebar({ isOpen, onToggle, currentPath }: SidebarProps)
                     onClick={() => setAdminMenuOpen(!adminMenuOpen)}
                     className="flex items-center justify-between w-full px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
                   >
-                    <span>Admin Panel</span>
+                    <span>{t('adminPanel')}</span>
                     <HiChevronRight className={`w-4 h-4 transition-transform ${adminMenuOpen ? 'rotate-90' : ''}`} />
                   </button>
                 </div>
@@ -190,7 +192,7 @@ export default function Sidebar({ isOpen, onToggle, currentPath }: SidebarProps)
                 <div className={`space-y-1 ${isOpen ? 'ml-3' : ''}`}>
                   {[...adminMenuItems, {
                     href: '/admin/reports',
-                    label: 'Quiz Reports',
+                    labelKey: 'quizReports',
                     icon: <HiOutlineExclamationCircle className="w-full h-full" />
                   }].map((item) => {
                     const isActive = currentPath === item.href;
@@ -203,12 +205,12 @@ export default function Sidebar({ isOpen, onToggle, currentPath }: SidebarProps)
                             ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700'
                             : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                           }`}
-                        title={!isOpen ? item.label : ''}
+                        title={!isOpen ? t(item.labelKey) : ''}
                       >
                         <div className={`${isOpen ? 'w-4 h-4 mr-3' : 'w-5 h-5'}`}>
                           {item.icon}
                         </div>
-                        {isOpen && <span>{item.label}</span>}
+                        {isOpen && <span>{t(item.labelKey)}</span>}
                       </Link>
                     );
                   })}

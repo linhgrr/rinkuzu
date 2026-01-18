@@ -35,7 +35,13 @@
     "loadingHistory": "Đang tải lịch sử...",
     "loadingBookmarks": "Đang tải mục đã lưu...",
     "loadingDashboard": "Đang tải bảng điều khiển...",
-    "removeAll": "Xóa tất cả"
+    "removeAll": "Xóa tất cả",
+    "clear": "Xóa",
+    "accessDenied": "Truy cập bị từ chối. Cần quyền quản trị viên.",
+    "showingResults": "Hiển thị {from} đến {to} trong tổng số {total} kết quả",
+    "signIn": "Đăng nhập",
+    "getStarted": "Bắt đầu",
+    "logout": "Đăng xuất"
   },
   "nav": {
     "home": "Trang chủ",
@@ -57,7 +63,16 @@
     "users": "Người dùng",
     "categories": "Danh mục",
     "adminPanel": "Quản trị",
-    "admin": "Quản trị"
+    "admin": "Quản trị",
+    "collapseSidebar": "Thu gọn thanh bên",
+    "expandSidebar": "Mở rộng thanh bên",
+    "exploreQuizzes": "Khám phá Quiz",
+    "quizQueue": "Hàng đợi Quiz",
+    "userManagement": "Quản lý người dùng",
+    "subscriptions": "Gói đăng ký",
+    "pricingPlans": "Bảng giá",
+    "statistics": "Thống kê",
+    "quizReports": "Báo cáo Quiz"
   },
   "auth": {
     "signIn": "Đăng nhập",
@@ -112,7 +127,10 @@
     "agreeTerms": "Bằng việc đăng ký, bạn đồng ý với Điều khoản và Chính sách bảo mật của chúng tôi",
     "secureRegistration": "Đăng ký bảo mật",
     "noSpamPolicy": "Không spam",
-    "freePlan": "Miễn phí mãi mãi"
+    "freePlan": "Miễn phí mãi mãi",
+    "login": "Đăng nhập",
+    "loginToTrack": "để theo dõi tiến độ và lưu kết quả của bạn",
+    "weWillUseEmail": "Chúng tôi sẽ sử dụng email này để theo dõi tiến độ của bạn"
   },
   "dashboard": {
     "welcome": "Chào mừng trở lại, {name}! 👋",
@@ -207,7 +225,9 @@
     "you": "Bạn",
     "rinChan": "Rin-chan",
     "thinking": "Đang suy nghĩ...",
-    "askQuestion": "Đặt câu hỏi về vấn đề này..."
+    "askQuestion": "Đặt câu hỏi về vấn đề này...",
+    "noDescription": "Chưa có mô tả",
+    "noCategory": "Chưa có danh mục"
   },
   "quiz": {
     "title": "Quiz",
@@ -256,7 +276,9 @@
     "youScored": "Bạn đạt {score}%",
     "perfectScore": "Điểm tuyệt đối!",
     "goodJob": "Làm tốt lắm!",
-    "keepPracticing": "Hãy tiếp tục luyện tập!"
+    "keepPracticing": "Hãy tiếp tục luyện tập!",
+    "singleChoiceHelper": "Chọn một đáp án",
+    "multipleChoiceHelper": "Chọn nhiều đáp án"
   },
   "explore": {
     "title": "Khám phá Quiz",
@@ -332,7 +354,9 @@
     "allCaughtUp": "Đã hoàn thành!",
     "noReviewsDue": "Hiện tại không có bài ôn tập. Hãy quay lại sau!",
     "questionProgress": "{current} / {total}",
-    "xpEarned": "Đã kiếm {xp} XP"
+    "xpEarned": "Đã kiếm {xp} XP",
+    "question": "Câu hỏi",
+    "tapToSeeAnswer": "Chạm để xem đáp án"
   },
   "admin": {
     "title": "Quản trị",
@@ -574,5 +598,147 @@
     "pagesChunks": "{pages} trang, {chunks} phần",
     "failedToStartProcessing": "Không thể bắt đầu xử lý",
     "removeAll": "Xóa tất cả"
+  },
+  "premium": {
+    "required": "Yêu cầu Premium",
+    "subscriptionRequired": "Cần đăng ký Premium",
+    "privateQuizMessage": "Quiz này là riêng tư và yêu cầu đăng ký premium để truy cập.",
+    "benefits": "Lợi ích Premium:",
+    "benefitPrivateQuizzes": "Truy cập tất cả quiz riêng tư",
+    "benefitUnlimitedAttempts": "Không giới hạn lượt làm bài",
+    "benefitDetailedStats": "Thống kê chi tiết",
+    "benefitPrioritySupport": "Hỗ trợ ưu tiên",
+    "upgradeToPremium": "Nâng cấp lên Premium",
+    "goToHome": "Về trang chủ"
+  },
+  "discussion": {
+    "title": "Thảo luận",
+    "sharePlaceholder": "Chia sẻ suy nghĩ của bạn...",
+    "post": "Đăng",
+    "pleaseLoginToJoin": "Vui lòng đăng nhập để tham gia thảo luận",
+    "logIn": "Đăng nhập",
+    "noComments": "Chưa có bình luận",
+    "beFirstToDiscuss": "Hãy là người đầu tiên thảo luận!",
+    "failedToLoad": "Không thể tải bình luận",
+    "pleaseLoginToPost": "Vui lòng đăng nhập để đăng bình luận",
+    "pleaseEnterComment": "Vui lòng nhập bình luận",
+    "failedToPost": "Không thể đăng bình luận"
+  },
+  "report": {
+    "reportThisQuiz": "Báo cáo quiz này",
+    "reportQuiz": "Báo cáo Quiz",
+    "submitted": "Đã gửi báo cáo",
+    "thankYou": "Cảm ơn báo cáo của bạn. Đội ngũ của chúng tôi sẽ xem xét sớm.",
+    "quiz": "Quiz",
+    "describeIssue": "Vui lòng mô tả vấn đề với quiz này. Báo cáo của bạn sẽ giúp chúng tôi cải thiện chất lượng nội dung.",
+    "reportDetails": "Chi tiết báo cáo",
+    "placeholder": "Vui lòng cung cấp chi tiết về vấn đề (ví dụ: câu trả lời sai, nội dung không phù hợp, spam, v.v.)",
+    "describeClearly": "Mô tả vấn đề rõ ràng và cụ thể",
+    "submitting": "Đang gửi...",
+    "submitReport": "Gửi báo cáo",
+    "failedToSubmit": "Không thể gửi báo cáo"
+  },
+  "quizPreview": {
+    "title": "Xem trước Quiz",
+    "questionOf": "Câu hỏi {current} / {total}",
+    "singleChoice": "Chọn một",
+    "multipleChoice": "Chọn nhiều",
+    "correct": "Đúng",
+    "correctAnswers": "Đáp án đúng",
+    "noCorrectAnswer": "Chưa xác định đáp án đúng",
+    "questionOverview": "Tổng quan câu hỏi",
+    "closePreview": "Đóng xem trước"
+  },
+  "upload": {
+    "processingLargeFile": "Đang xử lý file lớn",
+    "file": "File",
+    "progress": "Tiến độ",
+    "chunks": "phần",
+    "complete": "hoàn thành",
+    "fileProgress": "Tiến độ file",
+    "currentFile": "File hiện tại",
+    "processingTip": "Đang xử lý file lớn...",
+    "dontCloseWindow": "Vui lòng không đóng cửa sổ này. Quá trình sẽ tự động tiếp tục.",
+    "uploadingImage": "Đang tải hình ảnh...",
+    "clickToUpload": "Nhấn để tải lên",
+    "orDragAndDrop": "hoặc kéo và thả",
+    "maxFileSize": "PNG, JPG, GIF tối đa 10MB",
+    "pleaseSelectImage": "Vui lòng chọn file hình ảnh",
+    "imageTooLarge": "Kích thước file hình ảnh phải nhỏ hơn 10MB",
+    "failedToUpload": "Không thể tải hình ảnh"
+  },
+  "pwa": {
+    "offline": "Bạn đang ngoại tuyến. Một số tính năng có thể bị hạn chế.",
+    "installApp": "Cài đặt ứng dụng",
+    "install": "Cài đặt",
+    "installRinKuzu": "Cài đặt RinKuzu",
+    "addToHomeScreen": "Thêm vào màn hình chính để truy cập nhanh và sử dụng ngoại tuyến"
+  },
+  "attemptDetail": {
+    "title": "Chi tiết kết quả",
+    "score": "Điểm",
+    "questions": "câu hỏi",
+    "correctAnswers": "Câu đúng",
+    "incorrectAnswers": "Câu sai",
+    "totalScore": "Tổng điểm",
+    "question": "Câu",
+    "correct": "Đúng",
+    "incorrect": "Sai",
+    "yourAnswer": "Câu trả lời của bạn",
+    "correctAnswer": "Đáp án đúng",
+    "allOptions": "Các lựa chọn",
+    "youChose": "Bạn chọn",
+    "youChoseCorrectly": "Bạn chọn đúng",
+    "notAnswered": "Không trả lời"
+  },
+  "statsModal": {
+    "retry": "Thử lại",
+    "noData": "Không có dữ liệu",
+    "showing": "Hiển thị {count} trong tổng số {total} mục",
+    "searchPlaceholder": "Tìm kiếm...",
+    "search": "Tìm kiếm",
+    "sortBy": "Sắp xếp theo:",
+    "loadingMore": "Đang tải thêm...",
+    "loadMore": "Tải thêm",
+    "quizCount": "Số quiz",
+    "name": "Tên",
+    "createdAt": "Ngày tạo",
+    "totalQuestions": "Tổng câu hỏi",
+    "joinedAt": "Ngày tham gia",
+    "published": "đã xuất bản",
+    "questionsCount": "câu hỏi",
+    "active": "Hoạt động",
+    "inactive": "Không hoạt động",
+    "joined": "Tham gia",
+    "successRate": "thành công",
+    "pendingApproval": "chờ duyệt",
+    "newUser": "Người dùng mới",
+    "registered": "Đã đăng ký tài khoản",
+    "by": "Bởi",
+    "anonymous": "Ẩn danh",
+    "answeredQuestions": "câu trả lời"
+  },
+  "draft": {
+    "processingPDF": "Đang xử lý PDF",
+    "cancelledProcessing": "Đã hủy xử lý \"{title}\"",
+    "processingFiles": "Đang xử lý {count} file",
+    "quizzesReady": "{count} quiz sẵn sàng",
+    "expired": "Hết hạn",
+    "days": "{count} ngày",
+    "hoursMinutes": "{hours}h {minutes}m",
+    "minutes": "{count} phút",
+    "chunksCompleted": "{completed}/{total} hoàn thành",
+    "errors": "{count} lỗi",
+    "questionsGenerated": "{count} câu hỏi",
+    "cancel": "Hủy",
+    "clickToEdit": "{count} câu hỏi – Bấm để chỉnh sửa",
+    "processingError": "Lỗi xử lý"
+  },
+  "flashcard": {
+    "correctAnswer": "Đáp án đúng",
+    "allAnswers": "Tất cả đáp án:",
+    "noCorrectAnswer": "Không có đáp án đúng",
+    "dontKnow": "Không biết",
+    "knowIt": "Biết rồi"
   }
 }

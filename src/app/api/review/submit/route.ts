@@ -141,26 +141,53 @@ export async function POST(req: Request) {
             uProgress.weeklyActivity = new Map();
         }
 
-        // We key by day of week index (0-6) or date string? 
-        // The UI expects M-T-W... so implies day index.
-        // BUT specific dates are better. Let's trust the dashboard to map dates to UI.
-        // Let's use YYYY-MM-DD keys.
         const activityKey = todayStr;
-        const currentActivity = uProgress.weeklyActivity.get(activityKey) || { questionsReviewed: 0, xpEarned: 0, accuracy: 0 };
+        const currentActivity = uProgress.weeklyActivity.get(activityKey) || {
+            questionsReviewed: 0,
+            xpEarned: 0,
+            correctCount: 0,
+            totalCount: 0
+        };
 
         currentActivity.questionsReviewed += 1;
         currentActivity.xpEarned += xpGain;
-        // Simple moving average for accuracy roughly, or just store total correct
-        // Let's simplified: accuracy = (accuracy * (N-1) + new) / N
-        const isCorrect = ['good', 'easy'].includes(rating);
-        const newCorrect = isCorrect ? 1 : 0;
-        // Recalculating based on N is hard without N. 
-        // Let's just store simple Accuracy as % (0-100) of last item? No that's erratic.
-        // Let's ignore accuracy field for now or make it dummy.
-        currentActivity.accuracy = 100; // Placeholder
+        currentActivity.totalCount += 1;
+        if (['good', 'easy'].includes(rating)) {
+            currentActivity.correctCount += 1;
+        }
 
-        // Map usage in Mongoose requires specific set
         uProgress.weeklyActivity.set(activityKey, currentActivity);
+
+        // Calculate 7-day moving average accuracy
+        const last7Days: string[] = [];
+        for (let i = 6; i >= 0; i--) {
+            const d = new Date(now);
+            d.setDate(d.getDate() - i);
+            last7Days.push(d.toISOString().split('T')[0]);
+        }
+
+        let totalCorrect = 0;
+        let totalReviews = 0;
+        for (const dayKey of last7Days) {
+            const dayActivity = uProgress.weeklyActivity.get(dayKey);
+            if (dayActivity) {
+                totalCorrect += dayActivity.correctCount || 0;
+                totalReviews += dayActivity.totalCount || 0;
+            }
+        }
+
+        uProgress.averageAccuracy = totalReviews > 0
+            ? Math.round((totalCorrect / totalReviews) * 100)
+            : 0;
+
+        // Increment review session count (once per day)
+        const lastSessionDate = uProgress.lastSessionDate
+            ? new Date(uProgress.lastSessionDate).toISOString().split('T')[0]
+            : null;
+        if (lastSessionDate !== todayStr) {
+            uProgress.totalReviewSessions += 1;
+            uProgress.lastSessionDate = now;
+        }
 
         // Stats
         uProgress.totalQuestionsLearned = await QuestionProgress.countDocuments({

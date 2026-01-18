@@ -4,6 +4,7 @@ import connectDB from '@/lib/mongoose';
 import UserProgress from '@/models/UserProgress';
 import QuestionProgress from '@/models/QuestionProgress';
 import { authOptions } from '@/lib/auth';
+import { calculateLevel, xpForNextLevel, levelProgress } from '@/lib/gamification';
 
 export async function GET() {
     try {
@@ -30,14 +31,24 @@ export async function GET() {
             nextReviewDate: { $lte: new Date() }
         });
 
+        // Calculate level dynamically from XP
+        const level = calculateLevel(uProgress.totalXp);
+        const xpToNextLevel = xpForNextLevel(uProgress.totalXp);
+        const currentLevelProgress = levelProgress(uProgress.totalXp);
+
         return NextResponse.json({
             streak: uProgress.currentStreak,
             longestStreak: uProgress.longestStreak,
             streakFreezeCount: uProgress.streakFreezeCount,
             xp: uProgress.totalXp,
-            level: uProgress.level,
+            level: level,
+            xpToNextLevel: xpToNextLevel,
+            levelProgress: currentLevelProgress,
             dueCount: dueCount,
-            weeklyActivity: uProgress.weeklyActivity
+            weeklyActivity: uProgress.weeklyActivity,
+            totalQuestionsLearned: uProgress.totalQuestionsLearned,
+            totalReviewSessions: uProgress.totalReviewSessions,
+            averageAccuracy: uProgress.averageAccuracy
         });
 
     } catch (error) {

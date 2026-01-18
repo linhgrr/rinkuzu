@@ -25,7 +25,7 @@ export function StreakFreezeCard({ count, xp, onBuy }: StreakFreezeCardProps) {
     };
 
     return (
-        <Card className="p-4 flex items-center justify-between border-blue-100 bg-blue-50/50">
+        <Card className="p-5 flex items-center justify-between border-blue-100/50 bg-blue-50/30 rounded-2xl shadow-sm">
             <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-xl">
                     ❄️

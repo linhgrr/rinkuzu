@@ -49,22 +49,25 @@ export const QuizCard = memo(function QuizCard({ quiz }: QuizCardProps) {
   return (
     <Card
       variant="interactive"
-      className="flex flex-col justify-between"
+      className="flex flex-col justify-between h-full rounded-2xl shadow-sm hover:shadow-md hover:border-blue-200 transition-all duration-300"
       onClick={handleClick}
     >
-      <CardHeader className="pb-2">
-        <Badge
-          variant={CategoryBadgeVariant(quiz.category?.color)}
-          className="w-fit mb-2"
-        >
-          {quiz.category?.name}
-        </Badge>
-        <CardTitle size="sm" className="line-clamp-2">
+      <CardHeader className="pb-3">
+        <div className="flex justify-between items-start mb-2">
+          <Badge
+            variant={CategoryBadgeVariant(quiz.category?.color)}
+            className="w-fit"
+          >
+            {quiz.category?.name}
+          </Badge>
+        </div>
+
+        <CardTitle size="sm" className="line-clamp-2 text-base font-bold text-gray-800 leading-snug group-hover:text-blue-600 transition-colors">
           {quiz.title}
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="flex items-center justify-between text-xs text-[#86868b] mt-2">
+        <div className="flex items-center justify-between text-xs font-medium text-gray-400 mt-2 pt-3 border-t border-gray-100">
           <span>{quiz.questions.length} questions</span>
           <span>{formatDisplayDate(quiz.createdAt)}</span>
         </div>

@@ -25,7 +25,10 @@ function getWeekStart(date: Date): Date {
 }
 
 function formatDateKey(date: Date): string {
-  return date.toISOString().split('T')[0];
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 function getIntensityClass(questions: number): string {
@@ -78,15 +81,13 @@ export const WeeklyProgressHeatmap = memo(function WeeklyProgressHeatmap({
   const todayKey = formatDateKey(new Date());
 
   return (
-    <Card className="p-6">
-      {/* Header with navigation */}
+    <Card className="p-6 rounded-2xl shadow-sm border-gray-100/50 bg-white">
       <div className="flex items-center justify-between mb-4">
         <h3 className="font-semibold text-[#1d1d1f]">Weekly Progress</h3>
         <div className="flex items-center gap-2">
           <button
             onClick={handlePrevWeek}
             className="p-1 rounded-full hover:bg-gray-100 transition-colors"
-            aria-label="Previous week"
           >
             <HiOutlineChevronLeft className="w-5 h-5 text-gray-600" />
           </button>
@@ -96,26 +97,20 @@ export const WeeklyProgressHeatmap = memo(function WeeklyProgressHeatmap({
           <button
             onClick={handleNextWeek}
             disabled={weekOffset >= 0}
-            className={`p-1 rounded-full transition-colors ${
-              weekOffset >= 0
-                ? 'opacity-30 cursor-not-allowed'
-                : 'hover:bg-gray-100'
-            }`}
-            aria-label="Next week"
+            className={`p-1 rounded-full transition-colors ${weekOffset >= 0 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-gray-100'
+              }`}
           >
             <HiOutlineChevronRight className="w-5 h-5 text-gray-600" />
           </button>
         </div>
       </div>
 
-      {/* Heat map grid */}
       <div className="grid grid-cols-7 gap-2">
         {weekDates.map((date, i) => {
           const dateKey = formatDateKey(date);
           const activity = weeklyActivity?.[dateKey];
           const questions = activity?.questionsReviewed || 0;
           const xp = activity?.xpEarned || 0;
-          const isToday = dateKey === todayKey;
 
           return (
             <div key={dateKey} className="flex flex-col items-center gap-2">
@@ -123,19 +118,14 @@ export const WeeklyProgressHeatmap = memo(function WeeklyProgressHeatmap({
                 {DAY_LABELS[i]}
               </span>
               <div
-                className={`w-10 h-10 rounded-lg flex items-center justify-center text-xs font-semibold transition-all ${getIntensityClass(questions)} ${
-                  isToday ? 'ring-2 ring-blue-500 ring-offset-1' : ''
-                } ${questions > 0 ? 'text-white' : 'text-gray-400'}`}
+                className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all ${getIntensityClass(questions)}`}
                 title={`${date.toLocaleDateString()}: ${questions} questions, ${xp} XP`}
-              >
-                {questions > 0 ? questions : ''}
-              </div>
+              />
             </div>
           );
         })}
       </div>
 
-      {/* Legend */}
       <div className="flex items-center justify-center gap-2 mt-4 text-xs text-[#86868b]">
         <span>Less</span>
         <div className="flex gap-1">

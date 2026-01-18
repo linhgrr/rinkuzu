@@ -36,6 +36,7 @@ import {
   HiOutlineLockClosed,
   HiOutlineExternalLink
 } from '@/components/icons';
+import { useTranslation } from '@/lib/i18n';
 
 // Enhanced PDF Viewer Component with merge capability
 function PDFViewerComponent({ files, onClose }: { files: File[]; onClose: () => void }) {
@@ -44,6 +45,7 @@ function PDFViewerComponent({ files, onClose }: { files: File[]; onClose: () => 
   const [error, setError] = useState('');
   const [totalPages, setTotalPages] = useState(0);
   const [fileInfo, setFileInfo] = useState<string>('');
+  const { text } = useTranslation();
 
   useEffect(() => {
     if (files.length === 0) {
@@ -65,7 +67,12 @@ function PDFViewerComponent({ files, onClose }: { files: File[]; onClose: () => 
         // Single file - create URL directly
         const url = URL.createObjectURL(files[0]);
         setPdfUrl(url);
-        setFileInfo(`1 file: ${files[0].name} (${(files[0].size / 1024 / 1024).toFixed(2)} MB)`);
+        setFileInfo(
+          text({
+            en: `1 file: ${files[0].name} (${(files[0].size / 1024 / 1024).toFixed(2)} MB)`,
+            vi: `1 tệp: ${files[0].name} (${(files[0].size / 1024 / 1024).toFixed(2)} MB)`,
+          })
+        );
 
         // Count pages for single file
         await countPDFPages(files[0]);
@@ -75,7 +82,7 @@ function PDFViewerComponent({ files, onClose }: { files: File[]; onClose: () => 
       }
     } catch (err) {
       console.error('Error loading PDFs:', err);
-      setError('Failed to load PDF files');
+      setError(text({ en: 'Failed to load PDF files', vi: 'Không thể tải tệp PDF' }));
     } finally {
       setLoading(false);
     }
@@ -131,7 +138,12 @@ function PDFViewerComponent({ files, onClose }: { files: File[]; onClose: () => 
       }
 
       if (totalPageCount === 0) {
-        throw new Error('No pages could be extracted from any PDF file');
+        throw new Error(
+          text({
+            en: 'No pages could be extracted from any PDF file',
+            vi: 'Không thể trích xuất trang nào từ các tệp PDF',
+          })
+        );
       }
 
       // Save merged PDF
@@ -142,13 +154,23 @@ function PDFViewerComponent({ files, onClose }: { files: File[]; onClose: () => 
 
       setPdfUrl(url);
       setTotalPages(totalPageCount);
-      setFileInfo(`${files.length} files merged: ${fileNames.join(', ')} (${(totalSize / 1024 / 1024).toFixed(2)} MB total)`);
+      setFileInfo(
+        text({
+          en: `${files.length} files merged: ${fileNames.join(', ')} (${(totalSize / 1024 / 1024).toFixed(2)} MB total)`,
+          vi: `${files.length} tệp đã gộp: ${fileNames.join(', ')} (tổng ${(totalSize / 1024 / 1024).toFixed(2)} MB)`,
+        })
+      );
 
       console.log(`✅ Successfully merged ${files.length} files into ${totalPageCount} pages`);
 
     } catch (err) {
       console.error('Error merging PDFs:', err);
-      setError(`Failed to merge PDF files: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      setError(
+        text({
+          en: `Failed to merge PDF files: ${err instanceof Error ? err.message : 'Unknown error'}`,
+          vi: `Không thể gộp tệp PDF: ${err instanceof Error ? err.message : 'Lỗi không xác định'}`,
+        })
+      );
     }
   };
 
@@ -167,9 +189,13 @@ function PDFViewerComponent({ files, onClose }: { files: File[]; onClose: () => 
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-violet-600 mx-auto mb-2"></div>
           <p className="text-sm text-gray-600">
-            {files.length > 1 ? `Merging ${files.length} PDF files...` : 'Loading PDF...'}
+            {files.length > 1
+              ? text({ en: `Merging ${files.length} PDF files...`, vi: `Đang gộp ${files.length} tệp PDF...` })
+              : text({ en: 'Loading PDF...', vi: 'Đang tải PDF...' })}
           </p>
-          <p className="text-xs text-gray-500 mt-1">This may take a moment</p>
+          <p className="text-xs text-gray-500 mt-1">
+            {text({ en: 'This may take a moment', vi: 'Quá trình có thể mất một chút thời gian' })}
+          </p>
         </div>
       </div>
     );
@@ -180,7 +206,9 @@ function PDFViewerComponent({ files, onClose }: { files: File[]; onClose: () => 
       <div className="w-full h-full flex items-center justify-center bg-gray-50">
         <div className="text-center text-red-600 max-w-sm">
           <HiOutlineExclamationCircle className="w-8 h-8 mx-auto mb-2" />
-          <p className="text-sm font-medium mb-1">PDF Loading Error</p>
+          <p className="text-sm font-medium mb-1">
+            {text({ en: 'PDF Loading Error', vi: 'Lỗi tải PDF' })}
+          </p>
           <p className="text-xs">{error}</p>
         </div>
       </div>
@@ -192,7 +220,7 @@ function PDFViewerComponent({ files, onClose }: { files: File[]; onClose: () => 
       <div className="w-full h-full flex items-center justify-center bg-gray-50">
         <div className="text-center text-gray-500">
           <HiOutlineDocumentText className="w-8 h-8 mx-auto mb-2" />
-          <p className="text-sm">No PDF loaded</p>
+          <p className="text-sm">{text({ en: 'No PDF loaded', vi: 'Chưa có PDF' })}</p>
         </div>
       </div>
     );
@@ -205,7 +233,9 @@ function PDFViewerComponent({ files, onClose }: { files: File[]; onClose: () => 
         <div className="flex items-center justify-between text-sm">
           <div className="flex items-center space-x-2">
             <HiOutlineDocumentText className="w-4 h-4 text-blue-600" />
-            <span className="text-gray-700 font-medium">{totalPages} pages</span>
+            <span className="text-gray-700 font-medium">
+              {text({ en: `${totalPages} pages`, vi: `${totalPages} trang` })}
+            </span>
           </div>
 
           <div className="flex items-center space-x-2">
@@ -216,16 +246,16 @@ function PDFViewerComponent({ files, onClose }: { files: File[]; onClose: () => 
                 }
               }}
               className="px-2 py-1 text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 rounded transition-colors"
-              title="Open in new tab"
+              title={text({ en: 'Open in new tab', vi: 'Mở trong tab mới' })}
             >
-              <HiOutlineExternalLink className="mr-1" /> Open in new tab
+              <HiOutlineExternalLink className="mr-1" /> {text({ en: 'Open in new tab', vi: 'Mở trong tab mới' })}
             </button>
             <button
               onClick={onClose}
               className="px-2 py-1 text-xs bg-red-100 hover:bg-red-200 text-red-700 rounded transition-colors"
-              title="Hide preview"
+              title={text({ en: 'Hide preview', vi: 'Ẩn xem trước' })}
             >
-              Close
+              {text({ en: 'Close', vi: 'Đóng' })}
             </button>
           </div>
         </div>
@@ -252,6 +282,7 @@ export default function CreateQuizPage() {
   const router = useRouter();
   const { addDraft } = useDraftStore();
   const { startProcessing } = usePdfProcessor();
+  const { text } = useTranslation();
 
   // Mobile redirect
   useEffect(() => {
@@ -320,17 +351,17 @@ export default function CreateQuizPage() {
     e.preventDefault();
 
     if (!title.trim()) {
-      setError('Title is required');
+      setError(text({ en: 'Title is required', vi: 'Cần có tiêu đề' }));
       return;
     }
 
     if (!selectedCategory) {
-      setError('Please select a category');
+      setError(text({ en: 'Please select a category', vi: 'Vui lòng chọn danh mục' }));
       return;
     }
 
     if (pdfFiles.length === 0) {
-      setError('Please upload at least one PDF file');
+      setError(text({ en: 'Please upload at least one PDF file', vi: 'Vui lòng tải lên ít nhất một tệp PDF' }));
       return;
     }
 
@@ -386,7 +417,7 @@ export default function CreateQuizPage() {
 
     } catch (err: any) {
       console.error('Error extracting questions:', err);
-      setError(err.message || 'Failed to extract questions from PDF');
+      setError(err.message || text({ en: 'Failed to extract questions from PDF', vi: 'Không thể trích xuất câu hỏi từ PDF' }));
       setShowLargeFileProgress(false);
     } finally {
       setExtracting(false);
@@ -396,12 +427,12 @@ export default function CreateQuizPage() {
   // Create quiz
   const handleCreateQuiz = async () => {
     if (!editableTitle.trim()) {
-      setError('Quiz title is required');
+      setError(text({ en: 'Quiz title is required', vi: 'Cần có tiêu đề quiz' }));
       return;
     }
 
     if (editableQuestions.length === 0) {
-      setError('At least one question is required');
+      setError(text({ en: 'At least one question is required', vi: 'Cần ít nhất một câu hỏi' }));
       return;
     }
 
@@ -417,7 +448,13 @@ export default function CreateQuizPage() {
         isPrivate
       });
 
-      setSuccess(result.message || 'Quiz created successfully and sent for approval! Admin will review and approve your quiz.');
+      setSuccess(
+        result.message ||
+          text({
+            en: 'Quiz created successfully and sent for approval! Admin will review and approve your quiz.',
+            vi: 'Tạo quiz thành công và đã gửi duyệt! Admin sẽ xem xét và phê duyệt quiz của bạn.',
+          })
+      );
 
       setTimeout(() => {
         router.push('/pending');
@@ -425,7 +462,7 @@ export default function CreateQuizPage() {
 
     } catch (err: any) {
       console.error('Error creating quiz:', err);
-      setError(err.message || 'Failed to create quiz');
+      setError(err.message || text({ en: 'Failed to create quiz', vi: 'Không thể tạo quiz' }));
     } finally {
       setCreating(false);
     }
@@ -536,12 +573,12 @@ export default function CreateQuizPage() {
     e.preventDefault();
 
     if (!title.trim()) {
-      setError('Title is required');
+      setError(text({ en: 'Title is required', vi: 'Cần có tiêu đề' }));
       return;
     }
 
     if (pdfFiles.length === 0) {
-      setError('Please upload at least one PDF file');
+      setError(text({ en: 'Please upload at least one PDF file', vi: 'Vui lòng tải lên ít nhất một tệp PDF' }));
       return;
     }
 
@@ -575,7 +612,10 @@ export default function CreateQuizPage() {
         const blob = new Blob([mergedPdfBytes], { type: 'application/pdf' });
         const mergedFile = new File([blob], 'merged.pdf', { type: 'application/pdf' });
         base64Data = await fileToBase64(mergedFile);
-        fileName = `${pdfFiles.length} merged files`;
+        fileName = text({
+          en: `${pdfFiles.length} merged files`,
+          vi: `${pdfFiles.length} tệp đã gộp`,
+        });
       }
 
       // Create draft via API
@@ -593,7 +633,7 @@ export default function CreateQuizPage() {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || 'Failed to create draft');
+        throw new Error(error.error || text({ en: 'Failed to create draft', vi: 'Không thể tạo bản nháp' }));
       }
 
       const { draftId, chunks, totalPages, expiresAt } = await response.json();
@@ -611,8 +651,11 @@ export default function CreateQuizPage() {
         expiresAt: expiresAt,
       });
 
-      toast.success('Processing started', {
-        description: `${totalPages} pages, ${chunks.total} chunks`,
+      toast.success(text({ en: 'Processing started', vi: 'Bắt đầu xử lý' }), {
+        description: text({
+          en: `${totalPages} pages, ${chunks.total} chunks`,
+          vi: `${totalPages} trang, ${chunks.total} phần`,
+        }),
       });
 
       // Navigate to home - DraftSyncProvider will resume processing
@@ -621,7 +664,7 @@ export default function CreateQuizPage() {
 
     } catch (err: any) {
       console.error('Error starting background processing:', err);
-      setError(err.message || 'Failed to start background processing');
+      setError(err.message || text({ en: 'Failed to start background processing', vi: 'Không thể bắt đầu xử lý nền' }));
     } finally {
       setExtracting(false);
     }
@@ -660,22 +703,27 @@ export default function CreateQuizPage() {
               /* Step 1: Upload Form */
               <Card variant="glass" className="max-w-2xl mx-auto backdrop-blur-xl border-white/30 shadow-xl animate-fadeInUp">
                 <CardHeader className="text-center">
-                  <CardTitle size="lg" className="text-gray-900">Upload PDF Document</CardTitle>
+                  <CardTitle size="lg" className="text-gray-900">
+                    {text({ en: 'Upload PDF Document', vi: 'Tải lên tài liệu PDF' })}
+                  </CardTitle>
                   <CardDescription className="text-base">
-                    Choose to process in the background (faster, navigate away) or preview questions first (wait for extraction)
+                    {text({
+                      en: 'Choose to process in the background (faster, navigate away) or preview questions first (wait for extraction)',
+                      vi: 'Chọn xử lý nền (nhanh hơn, có thể rời trang) hoặc xem trước câu hỏi (chờ trích xuất)',
+                    })}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="pt-0">
                   <form onSubmit={handleExtractQuestions} className="space-y-6">
                     <div className="space-y-5">
                       <Input
-                        label="Quiz Title"
+                        label={text({ en: 'Quiz Title', vi: 'Tiêu đề quiz' })}
                         id="title"
                         type="text"
                         required
                         value={title}
                         onChange={(e) => setTitle(e.target.value)}
-                        placeholder="Enter a descriptive title for your quiz"
+                        placeholder={text({ en: 'Enter a descriptive title for your quiz', vi: 'Nhập tiêu đề mô tả cho quiz' })}
                         maxLength={200}
                         variant="glass"
                         icon={
@@ -684,24 +732,24 @@ export default function CreateQuizPage() {
                       />
 
                       <Textarea
-                        label="Description (Optional)"
+                        label={text({ en: 'Description (Optional)', vi: 'Mô tả (không bắt buộc)' })}
                         id="description"
                         rows={3}
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
-                        placeholder="Provide additional context about the quiz"
+                        placeholder={text({ en: 'Provide additional context about the quiz', vi: 'Cung cấp thêm thông tin về quiz' })}
                         maxLength={1000}
                         variant="glass"
                       />
 
                       <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-3">
-                          Category *
+                          {text({ en: 'Category *', vi: 'Danh mục *' })}
                         </label>
                         <CategorySelector
                           value={selectedCategory}
                           onChange={setSelectedCategory}
-                          placeholder="Search and select a category..."
+                          placeholder={text({ en: 'Search and select a category...', vi: 'Tìm và chọn danh mục...' })}
                           required
                         />
                       </div>
@@ -721,10 +769,13 @@ export default function CreateQuizPage() {
                           <div className="flex-1">
                             <label htmlFor="isPrivateUpload" className="text-sm font-semibold text-gray-900 flex items-center">
                               <HiOutlineLockClosed className="w-4 h-4 mr-1 text-violet-600" />
-                              Private Quiz
+                              {text({ en: 'Private Quiz', vi: 'Quiz riêng tư' })}
                             </label>
                             <p className="text-xs text-gray-600 mt-1">
-                              Private quizzes are only visible to you and administrators. Perfect for personal study or internal team assessments.
+                              {text({
+                                en: 'Private quizzes are only visible to you and administrators. Perfect for personal study or internal team assessments.',
+                                vi: 'Quiz riêng tư chỉ hiển thị cho bạn và quản trị viên. Phù hợp cho học cá nhân hoặc đánh giá nội bộ.',
+                              })}
                             </p>
                           </div>
                         </div>
@@ -734,7 +785,7 @@ export default function CreateQuizPage() {
                     {/* PDF Upload Section */}
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-3">
-                        PDF Document *
+                        {text({ en: 'PDF Document *', vi: 'Tài liệu PDF *' })}
                       </label>
 
                       <div>
@@ -757,18 +808,27 @@ export default function CreateQuizPage() {
                               {isUploading ? (
                                 <div className="flex items-center justify-center space-x-2">
                                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-violet-600"></div>
-                                  <p className="text-sm font-semibold text-violet-700">Processing files...</p>
+                                  <p className="text-sm font-semibold text-violet-700">
+                                    {text({ en: 'Processing files...', vi: 'Đang xử lý tệp...' })}
+                                  </p>
                                 </div>
                               ) : isDragActive ? (
-                                <p className="text-lg font-semibold text-violet-700">Drop PDF files here!</p>
+                                <p className="text-lg font-semibold text-violet-700">
+                                  {text({ en: 'Drop PDF files here!', vi: 'Thả tệp PDF vào đây!' })}
+                                </p>
                               ) : (
                                 <div>
                                   <p className="text-lg font-semibold text-gray-700 mb-2">
-                                    <span className="text-violet-600 hover:text-violet-700 transition-colors">Click to upload</span> or drag and drop
+                                    <span className="text-violet-600 hover:text-violet-700 transition-colors">
+                                      {text({ en: 'Click to upload', vi: 'Bấm để tải lên' })}
+                                    </span>{' '}
+                                    {text({ en: 'or drag and drop', vi: 'hoặc kéo thả' })}
                                   </p>
-                                  <p className="text-sm text-gray-500">Multiple PDF files allowed, up to 50MB each</p>
+                                  <p className="text-sm text-gray-500">
+                                    {text({ en: 'Multiple PDF files allowed, up to 50MB each', vi: 'Cho phép nhiều tệp PDF, tối đa 50MB mỗi tệp' })}
+                                  </p>
                                   <p className="text-xs text-gray-400 mt-1">
-                                    Supported formats: .pdf files only
+                                    {text({ en: 'Supported formats: .pdf files only', vi: 'Định dạng hỗ trợ: chỉ .pdf' })}
                                   </p>
                                 </div>
                               )}
@@ -781,7 +841,7 @@ export default function CreateQuizPage() {
                           <div className="mt-4 space-y-2">
                             <div className="flex items-center justify-between mb-4">
                               <h4 className="text-sm font-semibold text-gray-700">
-                                Selected Files ({pdfFiles.length})
+                                {text({ en: `Selected Files (${pdfFiles.length})`, vi: `Tệp đã chọn (${pdfFiles.length})` })}
                               </h4>
                               <Button
                                 type="button"
@@ -791,7 +851,7 @@ export default function CreateQuizPage() {
                                 className="text-red-600 hover:text-red-700 hover:bg-red-50"
                               >
                                 <HiOutlineTrash className="w-4 h-4 mr-1" />
-                                Remove All
+                                {text({ en: 'Remove All', vi: 'Xóa tất cả' })}
                               </Button>
                             </div>
 
@@ -840,7 +900,9 @@ export default function CreateQuizPage() {
                             className="text-violet-600 border-violet-200 hover:bg-violet-50"
                           >
                             {showPDFViewer ? <HiOutlineEyeOff className="w-4 h-4 mr-2" /> : <HiOutlineEye className="w-4 h-4 mr-2" />}
-                            {showPDFViewer ? 'Hide' : 'Show'} PDF Preview
+                            {showPDFViewer
+                              ? text({ en: 'Hide PDF Preview', vi: 'Ẩn xem trước PDF' })
+                              : text({ en: 'Show PDF Preview', vi: 'Hiện xem trước PDF' })}
                           </Button>
                         </div>
                       )}
@@ -850,7 +912,7 @@ export default function CreateQuizPage() {
                         <Link href="/">
                           <Button type="button" variant="outline" className="w-full sm:w-auto">
                             <HiOutlineX className="w-4 h-4 mr-2" />
-                            Cancel
+                            {text({ en: 'Cancel', vi: 'Hủy' })}
                           </Button>
                         </Link>
                         <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
@@ -866,12 +928,12 @@ export default function CreateQuizPage() {
                             {extracting ? (
                               <>
                                 <HiOutlineRefresh className="w-4 h-4 mr-2 animate-spin" />
-                                Creating Draft...
+                                {text({ en: 'Creating Draft...', vi: 'Đang tạo bản nháp...' })}
                               </>
                             ) : (
                               <>
                                 <HiOutlineArrowRight className="w-4 h-4 mr-2" />
-                                Create Quiz (Background)
+                                {text({ en: 'Create Quiz (Background)', vi: 'Tạo quiz (nền)' })}
                               </>
                             )}
                           </Button>
@@ -886,12 +948,12 @@ export default function CreateQuizPage() {
                             {extracting ? (
                               <>
                                 <HiOutlineRefresh className="w-4 h-4 mr-2 animate-spin" />
-                                Extracting Questions...
+                                {text({ en: 'Extracting Questions...', vi: 'Đang trích xuất câu hỏi...' })}
                               </>
                             ) : (
                               <>
                                 <HiOutlineLightBulb className="w-4 h-4 mr-2" />
-                                Extract Questions (Preview)
+                                {text({ en: 'Extract Questions (Preview)', vi: 'Trích xuất câu hỏi (xem trước)' })}
                               </>
                             )}
                           </Button>
@@ -907,15 +969,15 @@ export default function CreateQuizPage() {
                 {/* Quiz Info */}
                 <Card>
                   <CardHeader>
-                    <CardTitle>Quiz Information</CardTitle>
+                    <CardTitle>{text({ en: 'Quiz Information', vi: 'Thông tin quiz' })}</CardTitle>
                     <CardDescription>
-                      Edit the title and description for your quiz
+                      {text({ en: 'Edit the title and description for your quiz', vi: 'Chỉnh sửa tiêu đề và mô tả cho quiz' })}
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div>
                       <label htmlFor="editTitle" className="block text-sm font-medium text-gray-700">
-                        Quiz Title *
+                        {text({ en: 'Quiz Title *', vi: 'Tiêu đề quiz *' })}
                       </label>
                       <div className="mt-1">
                         <Input
@@ -924,7 +986,7 @@ export default function CreateQuizPage() {
                           required
                           value={editableTitle}
                           onChange={(e) => setEditableTitle(e.target.value)}
-                          placeholder="Enter quiz title"
+                          placeholder={text({ en: 'Enter quiz title', vi: 'Nhập tiêu đề quiz' })}
                           maxLength={200}
                         />
                       </div>
@@ -932,7 +994,7 @@ export default function CreateQuizPage() {
 
                     <div>
                       <label htmlFor="editDescription" className="block text-sm font-medium text-gray-700">
-                        Description
+                        {text({ en: 'Description', vi: 'Mô tả' })}
                       </label>
                       <div className="mt-1">
                         <Textarea
@@ -940,7 +1002,7 @@ export default function CreateQuizPage() {
                           rows={3}
                           value={editableDescription}
                           onChange={(e) => setEditableDescription(e.target.value)}
-                          placeholder="Enter quiz description"
+                          placeholder={text({ en: 'Enter quiz description', vi: 'Nhập mô tả quiz' })}
                           maxLength={1000}
                           variant="glass"
                         />
@@ -956,13 +1018,15 @@ export default function CreateQuizPage() {
                   <CardHeader>
                     <div className="flex justify-between items-center">
                       <div>
-                        <CardTitle>Questions ({editableQuestions.length})</CardTitle>
+                        <CardTitle>
+                          {text({ en: `Questions (${editableQuestions.length})`, vi: `Câu hỏi (${editableQuestions.length})` })}
+                        </CardTitle>
                         <CardDescription>
-                          Review and edit the questions extracted from your PDF
+                          {text({ en: 'Review and edit the questions extracted from your PDF', vi: 'Xem lại và chỉnh sửa câu hỏi trích xuất từ PDF' })}
                         </CardDescription>
                       </div>
                       <Button onClick={addQuestion} size="sm">
-                        Add Question
+                        {text({ en: 'Add Question', vi: 'Thêm câu hỏi' })}
                       </Button>
                     </div>
                   </CardHeader>
@@ -970,33 +1034,37 @@ export default function CreateQuizPage() {
                     {editableQuestions.map((question, questionIndex) => (
                       <div key={questionIndex} className="border border-gray-200 rounded-lg p-4 space-y-4">
                         <div className="flex justify-between items-start">
-                          <h4 className="font-medium text-gray-900">Question {questionIndex + 1}</h4>
+                          <h4 className="font-medium text-gray-900">
+                            {text({ en: `Question ${questionIndex + 1}`, vi: `Câu ${questionIndex + 1}` })}
+                          </h4>
                           <Button
                             onClick={() => removeQuestionLocal(questionIndex)}
                             variant="ghost"
                             size="sm"
                             className="text-red-600 hover:text-red-700"
                           >
-                            Remove
+                            {text({ en: 'Remove', vi: 'Xóa' })}
                           </Button>
                         </div>
 
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Question Text *
+                            {text({ en: 'Question Text *', vi: 'Nội dung câu hỏi *' })}
                           </label>
                           <textarea
                             value={question.question}
                             onChange={(e) => updateQuestion(questionIndex, 'question', e.target.value)}
                             className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                             rows={2}
-                            placeholder="Enter the question"
+                            placeholder={text({ en: 'Enter the question', vi: 'Nhập câu hỏi' })}
                             required
                           />
 
                           {/* Question Image Upload */}
                           <div className="mt-3">
-                            <div className="text-sm font-medium text-gray-700 mb-2">Question Image (Optional):</div>
+                            <div className="text-sm font-medium text-gray-700 mb-2">
+                              {text({ en: 'Question Image (Optional):', vi: 'Hình ảnh câu hỏi (không bắt buộc):' })}
+                            </div>
                             <QuestionImageUpload
                               currentImage={question.questionImage}
                               onImageUploaded={(imageUrl) => updateQuestionImage(questionIndex, imageUrl)}
@@ -1008,7 +1076,7 @@ export default function CreateQuizPage() {
                         {/* Question Type Selector */}
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Question Type *
+                            {text({ en: 'Question Type *', vi: 'Loại câu hỏi *' })}
                           </label>
                           <div className="flex space-x-4">
                             <label className="flex items-center">
@@ -1020,7 +1088,7 @@ export default function CreateQuizPage() {
                                 className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
                               />
                               <span className="ml-2 text-sm text-gray-700">
-                                📝 Single Choice (one correct answer)
+                                {text({ en: '📝 Single Choice (one correct answer)', vi: '📝 Một lựa chọn (một đáp án đúng)' })}
                               </span>
                             </label>
                             <label className="flex items-center">
@@ -1032,7 +1100,7 @@ export default function CreateQuizPage() {
                                 className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
                               />
                               <span className="ml-2 text-sm text-gray-700">
-                                ☑️ Multiple Choice (multiple correct answers)
+                                {text({ en: '☑️ Multiple Choice (multiple correct answers)', vi: '☑️ Nhiều lựa chọn (nhiều đáp án đúng)' })}
                               </span>
                             </label>
                           </div>
@@ -1040,10 +1108,10 @@ export default function CreateQuizPage() {
 
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Answer Options *
+                            {text({ en: 'Answer Options *', vi: 'Các lựa chọn trả lời *' })}
                             {question.type === 'single'
-                              ? '(Click radio button to mark correct answer)'
-                              : '(Check boxes to mark correct answers)'
+                              ? text({ en: '(Click radio button to mark correct answer)', vi: '(Chọn radio để đánh dấu đáp án đúng)' })
+                              : text({ en: '(Check boxes to mark correct answers)', vi: '(Tích chọn để đánh dấu đáp án đúng)' })
                             }
                           </label>
                           <div className="space-y-2">
@@ -1068,7 +1136,10 @@ export default function CreateQuizPage() {
                                       checked={isSelected}
                                       onChange={() => updateSingleChoice(questionIndex, optionIndex)}
                                       className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                                      title={`Mark option ${optionIndex + 1} as correct answer`}
+                                      title={text({
+                                        en: `Mark option ${optionIndex + 1} as correct answer`,
+                                        vi: `Đánh dấu lựa chọn ${optionIndex + 1} là đáp án đúng`,
+                                      })}
                                     />
                                   ) : (
                                     <input
@@ -1076,14 +1147,17 @@ export default function CreateQuizPage() {
                                       checked={isSelected}
                                       onChange={(e) => updateMultipleChoice(questionIndex, optionIndex, e.target.checked)}
                                       className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                                      title={`Mark option ${optionIndex + 1} as correct answer`}
+                                      title={text({
+                                        en: `Mark option ${optionIndex + 1} as correct answer`,
+                                        vi: `Đánh dấu lựa chọn ${optionIndex + 1} là đáp án đúng`,
+                                      })}
                                     />
                                   )}
                                   <div className="flex-1">
                                     <Input
                                       value={option}
                                       onChange={(e) => updateOption(questionIndex, optionIndex, e.target.value)}
-                                      placeholder={`Option ${optionIndex + 1}`}
+                                      placeholder={text({ en: `Option ${optionIndex + 1}`, vi: `Lựa chọn ${optionIndex + 1}` })}
                                       required
                                       className={isSelected ? 'border-green-300' : ''}
                                     />
@@ -1101,7 +1175,7 @@ export default function CreateQuizPage() {
                                     </span>
                                     {isSelected && (
                                       <span className="text-xs font-medium text-green-600 bg-green-100 px-2 py-1 rounded">
-                                        ✓ Correct
+                                        {text({ en: '✓ Correct', vi: '✓ Đúng' })}
                                       </span>
                                     )}
                                   </div>
@@ -1115,7 +1189,10 @@ export default function CreateQuizPage() {
 
                     {editableQuestions.length === 0 && (
                       <div className="text-center py-8 text-gray-500">
-                        No questions found. Click "Add Question" to create one manually.
+                        {text({
+                          en: 'No questions found. Click "Add Question" to create one manually.',
+                          vi: 'Không tìm thấy câu hỏi. Bấm "Thêm câu hỏi" để tạo thủ công.',
+                        })}
                       </div>
                     )}
                   </CardContent>
@@ -1124,7 +1201,7 @@ export default function CreateQuizPage() {
                 {/* Actions */}
                 <div className="flex flex-col sm:flex-row justify-between gap-4">
                   <Button onClick={backToUpload} variant="outline" className="w-full sm:w-auto">
-                    Back to Upload
+                    {text({ en: 'Back to Upload', vi: 'Quay lại tải lên' })}
                   </Button>
                   <div className="flex flex-col sm:flex-row items-center gap-3">
                     {pdfFiles.length > 0 && (
@@ -1133,7 +1210,9 @@ export default function CreateQuizPage() {
                         variant="outline"
                         className="text-blue-600 border-blue-200 hover:bg-blue-50 w-full sm:w-auto"
                       >
-                        📄 {showPDFViewer ? 'Hide' : 'Show'} PDF Reference
+                        {showPDFViewer
+                          ? text({ en: '📄 Hide PDF Reference', vi: '📄 Ẩn tài liệu PDF' })
+                          : text({ en: '📄 Show PDF Reference', vi: '📄 Hiện tài liệu PDF' })}
                       </Button>
                     )}
                     <Button
@@ -1142,10 +1221,12 @@ export default function CreateQuizPage() {
                       disabled={editableQuestions.length === 0}
                       className="w-full sm:w-auto"
                     >
-                      Preview Quiz
+                      {text({ en: 'Preview Quiz', vi: 'Xem trước quiz' })}
                     </Button>
                     <Link href="/">
-                      <Button variant="outline" className="w-full sm:w-auto">Cancel</Button>
+                      <Button variant="outline" className="w-full sm:w-auto">
+                        {text({ en: 'Cancel', vi: 'Hủy' })}
+                      </Button>
                     </Link>
                     <Button
                       onClick={handleCreateQuiz}
@@ -1153,7 +1234,9 @@ export default function CreateQuizPage() {
                       disabled={!editableTitle.trim() || editableQuestions.length === 0}
                       className="w-full sm:w-auto"
                     >
-                      {creating ? 'Creating Quiz...' : 'Create Quiz'}
+                      {creating
+                        ? text({ en: 'Creating Quiz...', vi: 'Đang tạo quiz...' })
+                        : text({ en: 'Create Quiz', vi: 'Tạo quiz' })}
                     </Button>
                   </div>
                 </div>
@@ -1186,7 +1269,9 @@ export default function CreateQuizPage() {
                           <svg className="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                           </svg>
-                          <p className="text-sm">Upload PDF files to see preview here</p>
+                          <p className="text-sm">
+                            {text({ en: 'Upload PDF files to see preview here', vi: 'Tải lên tệp PDF để xem trước ở đây' })}
+                          </p>
                         </div>
                       </div>
                     ) : (

@@ -15,6 +15,7 @@ import {
   HiOutlineInbox,
   HiOutlineArrowRight
 } from '@/components/icons';
+import { useTranslation } from '@/lib/i18n';
 
 interface Category {
   _id: string;
@@ -33,6 +34,7 @@ export default function CategoriesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const { text } = useTranslation();
 
   const fetchCategories = async () => {
     try {
@@ -41,7 +43,7 @@ export default function CategoriesPage() {
       const data = await response.json();
 
       if (!data.success) {
-        setError(data.error || 'Failed to fetch categories');
+        setError(data.error || text({ en: 'Failed to fetch categories', vi: 'Không thể tải danh mục' }));
         return;
       }
 
@@ -50,7 +52,7 @@ export default function CategoriesPage() {
       setError('');
     } catch (error) {
       console.error('Error fetching categories:', error);
-      setError('An error occurred while fetching categories');
+      setError(text({ en: 'An error occurred while fetching categories', vi: 'Đã xảy ra lỗi khi tải danh mục' }));
     } finally {
       setLoading(false);
     }
@@ -135,14 +137,19 @@ export default function CategoriesPage() {
         <nav className="flex items-center space-x-2 text-sm text-gray-500 mb-4 md:mb-6">
           <Link href="/" className="hover:text-gray-700">Home</Link>
           <span>›</span>
-          <span className="text-gray-900 font-medium">All Categories</span>
+          <span className="text-gray-900 font-medium">{text({ en: 'All Categories', vi: 'Tất cả danh mục' })}</span>
         </nav>
 
         {/* Header */}
         <div className="mb-6 md:mb-8">
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2 md:mb-4">All Categories</h1>
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2 md:mb-4">
+            {text({ en: 'All Categories', vi: 'Tất cả danh mục' })}
+          </h1>
           <p className="text-sm md:text-base text-gray-600">
-            Explore quizzes by subject and find what interests you most
+            {text({
+              en: 'Explore quizzes by subject and find what interests you most',
+              vi: 'Khám phá quiz theo chủ đề và tìm nội dung bạn quan tâm',
+            })}
           </p>
         </div>
 
@@ -153,7 +160,7 @@ export default function CategoriesPage() {
               <div className="flex-1">
                 <Input
                   type="text"
-                  placeholder="Search categories..."
+                  placeholder={text({ en: 'Search categories...', vi: 'Tìm danh mục...' })}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   icon={
@@ -168,7 +175,7 @@ export default function CategoriesPage() {
                   onClick={() => setSearchTerm('')}
                   className="text-violet-600 hover:text-violet-700 w-full sm:w-auto"
                 >
-                  Clear
+                  {text({ en: 'Clear', vi: 'Xóa' })}
                 </Button>
               )}
             </div>
@@ -178,10 +185,13 @@ export default function CategoriesPage() {
         {/* Results Info */}
         <div className="flex items-center justify-between mb-6 md:mb-8">
           <p className="text-sm md:text-base text-gray-600">
-            Showing {filteredCategories.length} of {categories.length} categories
+            {text({
+              en: `Showing ${filteredCategories.length} of ${categories.length} categories`,
+              vi: `Hiển thị ${filteredCategories.length} / ${categories.length} danh mục`,
+            })}
             {searchTerm && (
               <span className="ml-2">
-                matching "<strong>{searchTerm}</strong>"
+                {text({ en: 'matching', vi: 'khớp' })} "<strong>{searchTerm}</strong>"
               </span>
             )}
           </p>
@@ -193,11 +203,16 @@ export default function CategoriesPage() {
             <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mx-auto mb-6">
               <HiOutlineInbox className="w-8 h-8 text-gray-400" />
             </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-3">No categories found</h3>
+            <h3 className="text-xl font-semibold text-gray-900 mb-3">
+              {text({ en: 'No categories found', vi: 'Không tìm thấy danh mục' })}
+            </h3>
             <p className="text-gray-600 mb-6">
               {searchTerm
-                ? "Try adjusting your search criteria or browse all categories."
-                : "No categories available yet."
+                ? text({
+                  en: 'Try adjusting your search criteria or browse all categories.',
+                  vi: 'Hãy thử điều chỉnh tiêu chí tìm kiếm hoặc xem tất cả danh mục.',
+                })
+                : text({ en: 'No categories available yet.', vi: 'Chưa có danh mục nào.' })
               }
             </p>
             {searchTerm && (
@@ -206,7 +221,7 @@ export default function CategoriesPage() {
                 onClick={() => setSearchTerm('')}
                 className="mx-auto"
               >
-                View All Categories
+                {text({ en: 'View All Categories', vi: 'Xem tất cả danh mục' })}
               </Button>
             )}
           </Card>
@@ -231,7 +246,10 @@ export default function CategoriesPage() {
                       {category.name}
                     </Badge>
                     <span className="text-xs text-gray-500">
-                      {category.quizCount} quiz{category.quizCount !== 1 ? 'es' : ''}
+                      {text({
+                        en: `${category.quizCount} quiz${category.quizCount !== 1 ? 'es' : ''}`,
+                        vi: `${category.quizCount} quiz`,
+                      })}
                     </span>
                   </div>
                   <CardTitle size="md" className="group-hover:text-violet-600 transition-colors">
@@ -251,7 +269,10 @@ export default function CategoriesPage() {
                         {category.name.charAt(0)}
                       </div>
                       <span className="text-sm text-gray-500">
-                        {category.quizCount} quiz{category.quizCount !== 1 ? 'es' : ''} available
+                        {text({
+                          en: `${category.quizCount} quiz${category.quizCount !== 1 ? 'es' : ''} available`,
+                          vi: `${category.quizCount} quiz khả dụng`,
+                        })}
                       </span>
                     </div>
 
@@ -264,7 +285,7 @@ export default function CategoriesPage() {
                       }}
                     >
                       <HiOutlineArrowRight className="w-4 h-4 mr-1" />
-                      Explore
+                      {text({ en: 'Explore', vi: 'Khám phá' })}
                     </Button>
                   </div>
                 </CardContent>
@@ -277,7 +298,7 @@ export default function CategoriesPage() {
         <div className="mt-12 text-center">
           <Link href="/">
             <Button variant="outline">
-              ← Back to Home
+              {text({ en: '← Back to Home', vi: '← Quay về trang chủ' })}
             </Button>
           </Link>
         </div>

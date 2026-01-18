@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from 'next';
-import { Inter } from 'next/font/google';
 import dynamic from 'next/dynamic';
 import './globals.css';
 import Providers from './providers';
@@ -18,12 +17,6 @@ const FloatingDraftProgress = dynamic(
   () => import('@/components/FloatingDraftProgress').then(mod => ({ default: mod.FloatingDraftProgress })),
   { ssr: false }
 );
-
-const inter = Inter({
-  subsets: ['latin'],
-  display: 'swap',
-  variable: '--font-inter',
-});
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -71,7 +64,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${inter.variable} scroll-smooth`}>
+    <html lang="en" className="scroll-smooth">
       <head>
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#ffffff" />
@@ -86,7 +79,7 @@ export default function RootLayout({
         <meta name="overscroll-behavior" content="none" />
         <meta name="format-detection" content="telephone=no" />
       </head>
-      <body className={`${inter.className} min-h-screen antialiased bg-[#f5f5f7]`}>
+      <body className="min-h-screen antialiased bg-[#f5f5f7] font-sans">
         <Providers>
           <main className="relative min-h-screen pb-16 md:pb-0">
             {children}

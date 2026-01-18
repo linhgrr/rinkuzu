@@ -175,7 +175,7 @@ export function DashboardClient({ userEmail }: { userEmail: string }) {
                 label="To Review"
                 value={stats?.dueCount || 0}
                 color="bg-blue-50 text-blue-600"
-                icon={<HiOutlineLightningBolt className="text-2xl opacity-50" />}
+                icon={<HiOutlineLightBulb className="text-2xl" />}
               />
             </div>
 

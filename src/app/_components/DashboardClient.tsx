@@ -20,6 +20,7 @@ import {
   HiOutlineArrowRight,
   HiOutlineShare,
   HiOutlineTrendingUp,
+  HiOutlineLightBulb,
 } from '@/components/icons';
 
 const ProTipCard = memo(function ProTipCard() {

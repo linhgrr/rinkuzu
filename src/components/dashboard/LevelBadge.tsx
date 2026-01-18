@@ -11,8 +11,8 @@ export const LevelBadge = memo(function LevelBadge({ level, className = "" }: Le
     return (
         <div className={`relative inline-block ${className}`}>
             <svg
-                width="100"
-                height="85"
+                width="120"
+                height="100"
                 viewBox="0 0 120 100"
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
@@ -32,6 +32,14 @@ export const LevelBadge = memo(function LevelBadge({ level, className = "" }: Le
                         <stop offset="0%" stopColor="#6B21A8" />
                         <stop offset="100%" stopColor="#4C1D95" />
                     </linearGradient>
+                    <filter id="innerShadow">
+                        <feOffset dx="0" dy="2" />
+                        <feGaussianBlur stdDeviation="2" result="offset-blur" />
+                        <feComposite operator="out" in="SourceGraphic" in2="offset-blur" result="inverse" />
+                        <feFlood floodColor="black" floodOpacity="0.3" result="color" />
+                        <feComposite operator="in" in="color" in2="inverse" result="shadow" />
+                        <feComposite operator="over" in="shadow" in2="SourceGraphic" />
+                    </filter>
                 </defs>
 
                 {/* Wings - Left */}
@@ -56,9 +64,11 @@ export const LevelBadge = memo(function LevelBadge({ level, className = "" }: Le
                     <circle cx="28" cy="18" r="4" fill="#FF7E5F" stroke="#B45309" strokeWidth="1" />
                 </g>
 
-                {/* Main Circle */}
+                {/* Main Circle - Outer Rim */}
                 <circle cx="60" cy="45" r="32" fill="#B45309" />
                 <circle cx="60" cy="45" r="30" fill="url(#goldGradient)" stroke="#FEF3C7" strokeWidth="2" />
+
+                {/* Main Circle - Inner Highlight */}
                 <circle cx="60" cy="42" r="24" fill="#FFEDD5" fillOpacity="0.4" />
 
                 {/* Level Text */}
@@ -81,6 +91,9 @@ export const LevelBadge = memo(function LevelBadge({ level, className = "" }: Le
                     stroke="#2E1065"
                     strokeWidth="1"
                 />
+                <path d="M20 85 L15 92 L25 92 L30 85 Z" fill="#4C1D95" />
+                <path d="M100 85 L105 92 L95 92 L90 85 Z" fill="#4C1D95" />
+
                 <text
                     x="60"
                     y="79"

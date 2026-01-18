@@ -2,6 +2,7 @@
 
 import { memo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import {
   Card,
   CardHeader,
@@ -41,6 +42,7 @@ const CategoryBadgeVariant = (color: string) => {
 
 export const QuizCard = memo(function QuizCard({ quiz }: QuizCardProps) {
   const router = useRouter();
+  const t = useTranslations('common');
 
   const handleClick = useCallback(() => {
     router.push(ROUTES.QUIZ.VIEW(quiz.slug));
@@ -68,7 +70,7 @@ export const QuizCard = memo(function QuizCard({ quiz }: QuizCardProps) {
       </CardHeader>
       <CardContent>
         <div className="flex items-center justify-between text-xs font-medium text-gray-400 mt-2 pt-3 border-t border-gray-100">
-          <span>{quiz.questions.length} questions</span>
+          <span>{t('questionsCount', { count: quiz.questions.length })}</span>
           <span>{formatDisplayDate(quiz.createdAt)}</span>
         </div>
       </CardContent>

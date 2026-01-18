@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 
 interface BeforeInstallPromptEvent extends Event {
   readonly platforms: string[];
@@ -12,6 +13,7 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 export default function PWAInstaller() {
+  const t = useTranslations('pwa');
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstallable, setIsInstallable] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
@@ -99,7 +101,7 @@ export default function PWAInstaller() {
       {isOffline && (
         <div className="fixed top-0 left-0 right-0 bg-red-500 text-white text-center py-2 z-50">
           <span className="text-sm">
-            📱 You're offline. Some features may be limited.
+            📱 {t('offline')}
           </span>
         </div>
       )}
@@ -109,9 +111,9 @@ export default function PWAInstaller() {
         <div className="fixed bottom-4 left-4 right-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg p-4 shadow-lg z-50 md:left-auto md:right-4 md:max-w-sm">
           <div className="flex items-center justify-between">
             <div className="flex-1">
-              <h3 className="font-semibold text-sm">Install RinKuzu</h3>
+              <h3 className="font-semibold text-sm">{t('installRinKuzu')}</h3>
               <p className="text-xs opacity-90 mt-1">
-                Add to home screen for quick access and offline use
+                {t('addToHomeScreen')}
               </p>
             </div>
             <div className="flex gap-2 ml-4">
@@ -119,7 +121,7 @@ export default function PWAInstaller() {
                 onClick={handleInstallClick}
                 className="bg-white text-blue-600 px-3 py-1 rounded text-sm font-medium hover:bg-gray-100 transition-colors"
               >
-                Install
+                {t('install')}
               </button>
               <button
                 onClick={dismissInstallBanner}
@@ -138,12 +140,12 @@ export default function PWAInstaller() {
         <button
           onClick={handleInstallClick}
           className="hidden md:inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
-          title="Install App"
+          title={t('installApp')}
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
           </svg>
-          Install App
+          {t('installApp')}
         </button>
       )}
     </>

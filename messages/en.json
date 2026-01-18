@@ -35,7 +35,13 @@
     "loadingHistory": "Loading history...",
     "loadingBookmarks": "Loading bookmarks...",
     "loadingDashboard": "Loading your dashboard...",
-    "removeAll": "Remove All"
+    "removeAll": "Remove All",
+    "clear": "Clear",
+    "accessDenied": "Access denied. Admin privileges required.",
+    "showingResults": "Showing {from} to {to} of {total} results",
+    "signIn": "Sign In",
+    "getStarted": "Get Started",
+    "logout": "Logout"
   },
   "nav": {
     "home": "Home",
@@ -57,7 +63,16 @@
     "users": "Users",
     "categories": "Categories",
     "adminPanel": "Admin Panel",
-    "admin": "Admin"
+    "admin": "Admin",
+    "collapseSidebar": "Collapse sidebar",
+    "expandSidebar": "Expand sidebar",
+    "exploreQuizzes": "Explore Quizzes",
+    "quizQueue": "Quiz Queue",
+    "userManagement": "User Management",
+    "subscriptions": "Subscriptions",
+    "pricingPlans": "Pricing Plans",
+    "statistics": "Statistics",
+    "quizReports": "Quiz Reports"
   },
   "auth": {
     "signIn": "Sign In",
@@ -112,7 +127,10 @@
     "agreeTerms": "By signing up, you agree to our Terms and Privacy Policy",
     "secureRegistration": "Secure Registration",
     "noSpamPolicy": "No Spam",
-    "freePlan": "Free Forever"
+    "freePlan": "Free Forever",
+    "login": "Login",
+    "loginToTrack": "to track your progress and save your results",
+    "weWillUseEmail": "We'll use this to track your progress"
   },
   "dashboard": {
     "welcome": "Welcome back, {name}! 👋",
@@ -207,7 +225,9 @@
     "you": "You",
     "rinChan": "Rin-chan",
     "thinking": "Thinking...",
-    "askQuestion": "Ask a question about this..."
+    "askQuestion": "Ask a question about this...",
+    "noDescription": "No description provided",
+    "noCategory": "No Category"
   },
   "quiz": {
     "title": "Quiz",
@@ -310,7 +330,9 @@
     "mastery": "Mastery",
     "unknownQuestions": "Unknown Questions",
     "practiceContinue": "Practice Continue",
-    "total": "Total"
+    "total": "Total",
+    "singleChoiceHelper": "Select one answer",
+    "multipleChoiceHelper": "Select multiple answers"
   },
   "explore": {
     "title": "Explore Quizzes",
@@ -386,7 +408,9 @@
     "allCaughtUp": "All Caught Up!",
     "noReviewsDue": "No reviews due at the moment. Come back later!",
     "questionProgress": "{current} of {total}",
-    "xpEarned": "{xp} XP earned"
+    "xpEarned": "{xp} XP earned",
+    "question": "Question",
+    "tapToSeeAnswer": "Tap to see answer"
   },
   "admin": {
     "title": "Admin",
@@ -628,5 +652,147 @@
     "pagesChunks": "{pages} pages, {chunks} chunks",
     "failedToStartProcessing": "Failed to start processing",
     "removeAll": "Remove All"
+  },
+  "premium": {
+    "required": "Premium Required",
+    "subscriptionRequired": "Premium Subscription Required",
+    "privateQuizMessage": "This quiz is private and requires a premium subscription to access.",
+    "benefits": "Premium Benefits:",
+    "benefitPrivateQuizzes": "Access to all private quizzes",
+    "benefitUnlimitedAttempts": "Unlimited quiz attempts",
+    "benefitDetailedStats": "Detailed statistics",
+    "benefitPrioritySupport": "Priority support",
+    "upgradeToPremium": "Upgrade to Premium",
+    "goToHome": "Go to Home"
+  },
+  "discussion": {
+    "title": "Discussion",
+    "sharePlaceholder": "Share your thoughts...",
+    "post": "Post",
+    "pleaseLoginToJoin": "Please log in to join the discussion",
+    "logIn": "Log In",
+    "noComments": "No comments yet",
+    "beFirstToDiscuss": "Be the first to discuss!",
+    "failedToLoad": "Failed to load comments",
+    "pleaseLoginToPost": "Please log in to post a comment",
+    "pleaseEnterComment": "Please enter a comment",
+    "failedToPost": "Failed to post comment"
+  },
+  "report": {
+    "reportThisQuiz": "Report this quiz",
+    "reportQuiz": "Report Quiz",
+    "submitted": "Report Submitted",
+    "thankYou": "Thank you for your report. Our team will review it soon.",
+    "quiz": "Quiz",
+    "describeIssue": "Please describe the issue with this quiz. Your report will help us improve the content quality.",
+    "reportDetails": "Report Details",
+    "placeholder": "Please provide details about the issue (e.g., incorrect answers, inappropriate content, spam, etc.)",
+    "describeClearly": "Describe the problem clearly and specifically",
+    "submitting": "Submitting...",
+    "submitReport": "Submit Report",
+    "failedToSubmit": "Failed to submit report"
+  },
+  "quizPreview": {
+    "title": "Quiz Preview",
+    "questionOf": "Question {current} of {total}",
+    "singleChoice": "Single Choice",
+    "multipleChoice": "Multiple Choice",
+    "correct": "Correct",
+    "correctAnswers": "Correct Answer(s)",
+    "noCorrectAnswer": "No correct answer defined",
+    "questionOverview": "Question Overview",
+    "closePreview": "Close Preview"
+  },
+  "upload": {
+    "processingLargeFile": "Processing Large File",
+    "file": "File",
+    "progress": "Progress",
+    "chunks": "chunks",
+    "complete": "complete",
+    "fileProgress": "File Progress",
+    "currentFile": "Current File",
+    "processingTip": "Processing large files...",
+    "dontCloseWindow": "Please don't close this window. The process will continue automatically.",
+    "uploadingImage": "Uploading image...",
+    "clickToUpload": "Click to upload",
+    "orDragAndDrop": "or drag and drop",
+    "maxFileSize": "PNG, JPG, GIF up to 10MB",
+    "pleaseSelectImage": "Please select an image file",
+    "imageTooLarge": "Image file size must be less than 10MB",
+    "failedToUpload": "Failed to upload image"
+  },
+  "pwa": {
+    "offline": "You're offline. Some features may be limited.",
+    "installApp": "Install App",
+    "install": "Install",
+    "installRinKuzu": "Install RinKuzu",
+    "addToHomeScreen": "Add to home screen for quick access and offline use"
+  },
+  "attemptDetail": {
+    "title": "Result Details",
+    "score": "Score",
+    "questions": "questions",
+    "correctAnswers": "Correct",
+    "incorrectAnswers": "Incorrect",
+    "totalScore": "Total Score",
+    "question": "Question",
+    "correct": "Correct",
+    "incorrect": "Incorrect",
+    "yourAnswer": "Your Answer",
+    "correctAnswer": "Correct Answer",
+    "allOptions": "All Options",
+    "youChose": "You chose",
+    "youChoseCorrectly": "You chose correctly",
+    "notAnswered": "Not answered"
+  },
+  "statsModal": {
+    "retry": "Retry",
+    "noData": "No data",
+    "showing": "Showing {count} of {total} items",
+    "searchPlaceholder": "Search...",
+    "search": "Search",
+    "sortBy": "Sort by:",
+    "loadingMore": "Loading more...",
+    "loadMore": "Load More",
+    "quizCount": "Quiz count",
+    "name": "Name",
+    "createdAt": "Created at",
+    "totalQuestions": "Total questions",
+    "joinedAt": "Joined at",
+    "published": "published",
+    "questionsCount": "questions",
+    "active": "Active",
+    "inactive": "Inactive",
+    "joined": "Joined",
+    "successRate": "success",
+    "pendingApproval": "pending",
+    "newUser": "New user",
+    "registered": "Registered account",
+    "by": "By",
+    "anonymous": "Anonymous",
+    "answeredQuestions": "answers"
+  },
+  "draft": {
+    "processingPDF": "Processing PDF",
+    "cancelledProcessing": "Cancelled processing \"{title}\"",
+    "processingFiles": "Processing {count} files",
+    "quizzesReady": "{count} quizzes ready",
+    "expired": "Expired",
+    "days": "{count} days",
+    "hoursMinutes": "{hours}h {minutes}m",
+    "minutes": "{count} minutes",
+    "chunksCompleted": "{completed}/{total} completed",
+    "errors": "{count} errors",
+    "questionsGenerated": "{count} questions",
+    "cancel": "Cancel",
+    "clickToEdit": "{count} questions – Click to edit",
+    "processingError": "Processing error"
+  },
+  "flashcard": {
+    "correctAnswer": "Correct Answer",
+    "allAnswers": "All answers:",
+    "noCorrectAnswer": "No correct answer",
+    "dontKnow": "Don't Know",
+    "knowIt": "Know It"
   }
 }

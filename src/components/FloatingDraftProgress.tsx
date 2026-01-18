@@ -7,6 +7,7 @@ import { usePdfProcessor } from '@/hooks/usePdfProcessor';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 import {
   HiOutlineDocumentText,
   HiOutlineCheckCircle,
@@ -19,6 +20,7 @@ import {
 export function FloatingDraftProgress() {
   const { getActiveDrafts, getProcessingCount, getCompletedCount, removeDraft, hasActiveDrafts } = useDraftStore();
   const { stopProcessing } = usePdfProcessor();
+  const t = useTranslations('draft');
   const [isExpanded, setIsExpanded] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -45,7 +47,7 @@ export function FloatingDraftProgress() {
     }
 
     removeDraft(id);
-    toast.success(`Đã hủy xử lý "${title}"`);
+    toast.success(t('cancelledProcessing', { title }));
   };
 
   return (
@@ -60,7 +62,7 @@ export function FloatingDraftProgress() {
                        shadow-xl border border-gray-200/60 overflow-hidden"
           >
             <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-              <h3 className="font-semibold text-sm text-gray-900">Đang xử lý PDF</h3>
+              <h3 className="font-semibold text-sm text-gray-900">{t('processingPDF')}</h3>
               <button
                 onClick={() => setIsExpanded(false)}
                 className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
@@ -76,6 +78,7 @@ export function FloatingDraftProgress() {
                   draft={draft}
                   onRemove={() => removeDraft(draft.id)}
                   onCancel={() => handleCancel(draft.id, draft.title)}
+                  t={t}
                 />
               ))}
             </div>
@@ -102,8 +105,8 @@ export function FloatingDraftProgress() {
 
         <span className="text-sm font-medium text-gray-700">
           {processingCount > 0
-            ? `Đang xử lý ${processingCount} file`
-            : `${completedCount} quiz sẵn sàng`}
+            ? t('processingFiles', { count: processingCount })
+            : t('quizzesReady', { count: completedCount })}
         </span>
 
         <HiOutlineChevronUp
@@ -115,36 +118,38 @@ export function FloatingDraftProgress() {
   );
 }
 
-function getTimeRemaining(expiresAt: string): string {
+function getTimeRemaining(expiresAt: string, t: (key: string, params?: Record<string, any>) => string): string {
   const now = new Date();
   const expiry = new Date(expiresAt);
   const diffMs = expiry.getTime() - now.getTime();
 
-  if (diffMs <= 0) return 'Hết hạn';
+  if (diffMs <= 0) return t('expired');
 
   const hours = Math.floor(diffMs / (1000 * 60 * 60));
   const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
 
   if (hours > 24) {
     const days = Math.floor(hours / 24);
-    return `${days} ngày`;
+    return t('days', { count: days });
   }
 
   if (hours > 0) {
-    return `${hours}h ${minutes}m`;
+    return t('hoursMinutes', { hours, minutes });
   }
 
-  return `${minutes} phút`;
+  return t('minutes', { count: minutes });
 }
 
 function DraftItem({
   draft,
   onRemove,
   onCancel,
+  t,
 }: {
   draft: DraftProgress;
   onRemove: () => void;
   onCancel: () => void;
+  t: (key: string, params?: Record<string, any>) => string;
 }) {
   const progress = draft.chunksTotal > 0
     ? (draft.chunksProcessed / draft.chunksTotal) * 100
@@ -164,7 +169,7 @@ function DraftItem({
             </p>
             {draft.expiresAt && (
               <span className="text-xs text-gray-400 flex-shrink-0">
-                ~ {getTimeRemaining(draft.expiresAt)}
+                ~ {getTimeRemaining(draft.expiresAt, t)}
               </span>
             )}
           </div>
@@ -189,17 +194,17 @@ function DraftItem({
               </div>
               <div className="mt-1.5 flex items-center justify-between">
                 <p className="text-xs text-gray-500">
-                  {draft.chunksProcessed}/{draft.chunksTotal} hoàn thành
+                  {t('chunksCompleted', { completed: draft.chunksProcessed, total: draft.chunksTotal })}
                   {(draft.chunksError || 0) > 0 && (
-                    <span className="text-red-500"> • {draft.chunksError} lỗi</span>
+                    <span className="text-red-500"> • {t('errors', { count: draft.chunksError })}</span>
                   )}
-                  {' • '}{draft.questionsCount} câu hỏi
+                  {' • '}{t('questionsGenerated', { count: draft.questionsCount })}
                 </p>
                 <button
                   onClick={onCancel}
                   className="text-xs text-red-600 hover:text-red-700 font-medium"
                 >
-                  Hủy
+                  {t('cancel')}
                 </button>
               </div>
             </>
@@ -210,13 +215,13 @@ function DraftItem({
                          text-blue-600 hover:text-blue-700 font-medium"
             >
               <HiOutlineCheckCircle className="w-3.5 h-3.5" />
-              {draft.questionsCount} câu hỏi – Bấm để chỉnh sửa
+              {t('clickToEdit', { count: draft.questionsCount })}
             </Link>
           ) : draft.status === 'error' ? (
             <div className="mt-1.5">
               <span className="text-xs text-red-500 flex items-center gap-1">
                 <HiOutlineExclamationCircle className="w-3.5 h-3.5" />
-                {draft.error || 'Lỗi xử lý'}
+                {draft.error || t('processingError')}
               </span>
             </div>
           ) : null}

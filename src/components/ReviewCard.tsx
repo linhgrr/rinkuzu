@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Button } from './ui/Button';
 import { Card } from './ui/Card';
 
@@ -17,6 +18,7 @@ import { HiCheck } from '@/components/icons';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 
 export default function ReviewCard({ question, onResult }: ReviewCardProps) {
+    const t = useTranslations('review');
     const [isFlipped, setIsFlipped] = useState(false);
 
     useKeyboardShortcuts({
@@ -46,13 +48,13 @@ export default function ReviewCard({ question, onResult }: ReviewCardProps) {
                     >
                         <div className="text-center">
                             <span className="inline-block px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold mb-4">
-                                Question
+                                {t('question')}
                             </span>
                             <h3 className="text-xl md:text-2xl font-medium text-[#1d1d1f] mb-8 leading-relaxed">
                                 {question.text}
                             </h3>
                             <p className="text-[#86868b] text-sm animate-pulse">
-                                Tap to see answer
+                                {t('tapToSeeAnswer')}
                             </p>
                         </div>
                     </Card>
@@ -101,7 +103,7 @@ export default function ReviewCard({ question, onResult }: ReviewCardProps) {
                                 <div className="w-10 h-10 md:w-11 md:h-11 rounded-full bg-red-100 text-red-600 flex items-center justify-center mb-1 md:mb-2 group-hover:scale-110 transition-transform">
                                     <span className="font-bold text-sm md:text-base">1</span>
                                 </div>
-                                <span className="text-[10px] md:text-xs font-medium text-red-600">Again</span>
+                                <span className="text-[10px] md:text-xs font-medium text-red-600">{t('again')}</span>
                             </button>
 
                             <button
@@ -111,7 +113,7 @@ export default function ReviewCard({ question, onResult }: ReviewCardProps) {
                                 <div className="w-10 h-10 md:w-11 md:h-11 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center mb-1 md:mb-2 group-hover:scale-110 transition-transform">
                                     <span className="font-bold text-sm md:text-base">2</span>
                                 </div>
-                                <span className="text-[10px] md:text-xs font-medium text-orange-600">Hard</span>
+                                <span className="text-[10px] md:text-xs font-medium text-orange-600">{t('hard')}</span>
                             </button>
 
                             <button
@@ -121,7 +123,7 @@ export default function ReviewCard({ question, onResult }: ReviewCardProps) {
                                 <div className="w-10 h-10 md:w-11 md:h-11 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mb-1 md:mb-2 group-hover:scale-110 transition-transform">
                                     <span className="font-bold text-sm md:text-base">3</span>
                                 </div>
-                                <span className="text-[10px] md:text-xs font-medium text-blue-600">Good</span>
+                                <span className="text-[10px] md:text-xs font-medium text-blue-600">{t('good')}</span>
                             </button>
 
                             <button
@@ -131,7 +133,7 @@ export default function ReviewCard({ question, onResult }: ReviewCardProps) {
                                 <div className="w-10 h-10 md:w-11 md:h-11 rounded-full bg-green-100 text-green-600 flex items-center justify-center mb-1 md:mb-2 group-hover:scale-110 transition-transform">
                                     <span className="font-bold text-sm md:text-base">4</span>
                                 </div>
-                                <span className="text-[10px] md:text-xs font-medium text-green-600">Easy</span>
+                                <span className="text-[10px] md:text-xs font-medium text-green-600">{t('easy')}</span>
                             </button>
                         </div>
                     </Card>

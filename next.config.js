@@ -105,6 +105,9 @@ const withPWA = require('next-pwa')({
   ],
 });
 
+const createNextIntlPlugin = require('next-intl/plugin');
+const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Server Actions are enabled by default in Next.js 14
@@ -155,4 +158,4 @@ const nextConfig = {
   },
 }
 
-module.exports = withPWA(nextConfig) 
+module.exports = withPWA(withNextIntl(nextConfig));

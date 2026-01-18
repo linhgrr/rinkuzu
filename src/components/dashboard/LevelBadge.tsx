@@ -1,6 +1,7 @@
 'use client';
 
 import { memo } from 'react';
+import { useTranslations } from 'next-intl';
 
 interface LevelBadgeProps {
     level: number;
@@ -8,6 +9,7 @@ interface LevelBadgeProps {
 }
 
 export const LevelBadge = memo(function LevelBadge({ level, className = "" }: LevelBadgeProps) {
+    const t = useTranslations('dashboard');
     return (
         <div className={`relative inline-block ${className}`}>
             <svg
@@ -103,7 +105,7 @@ export const LevelBadge = memo(function LevelBadge({ level, className = "" }: Le
                     fontWeight="bold"
                     letterSpacing="1"
                 >
-                    LEVEL
+                    {t('level').toUpperCase()}
                 </text>
             </svg>
         </div>

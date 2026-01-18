@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSession } from 'next-auth/react';
+import { useTranslations } from 'next-intl';
 import {
     HiOutlineHome,
     HiHome,
@@ -17,27 +18,28 @@ import {
 export default function BottomNav() {
     const pathname = usePathname();
     const { data: session } = useSession();
+    const t = useTranslations('nav');
 
     if (!session) return null;
 
     const navItems = [
         {
             href: '/',
-            label: 'Home',
+            labelKey: 'home',
             icon: (isActive: boolean) => (
                 isActive ? <HiHome className="w-6 h-6 text-blue-600" /> : <HiOutlineHome className="w-6 h-6 text-gray-500" />
             )
         },
         {
             href: '/review',
-            label: 'Review',
+            labelKey: 'history',
             icon: (isActive: boolean) => (
                 isActive ? <HiInbox className="w-6 h-6 text-blue-600" /> : <HiOutlineInbox className="w-6 h-6 text-gray-500" />
             )
         },
         {
             href: '/create',
-            label: 'Create',
+            labelKey: 'create',
             icon: (isActive: boolean) => (
                 <div className={`w-10 h-10 -mt-5 rounded-full flex items-center justify-center shadow-lg ${isActive ? 'bg-blue-700' : 'bg-blue-600'}`}>
                     {isActive ? <HiPlus className="w-6 h-6 text-white" /> : <HiOutlinePlus className="w-6 h-6 text-white" />}
@@ -46,14 +48,14 @@ export default function BottomNav() {
         },
         {
             href: '/explore',
-            label: 'Explore',
+            labelKey: 'explore',
             icon: (isActive: boolean) => (
                 isActive ? <HiSearch className="w-6 h-6 text-blue-600" /> : <HiOutlineSearch className="w-6 h-6 text-gray-500" />
             )
         },
         {
             href: '/profile',
-            label: 'Profile',
+            labelKey: 'profile',
             icon: (isActive: boolean) => (
                 <div className={`w-6 h-6 rounded-full flex items-center justify-center border-2 ${isActive ? 'border-blue-600' : 'border-gray-400'}`}>
                     <span className="text-xs font-bold text-gray-500">{session.user?.email?.[0].toUpperCase()}</span>
@@ -78,7 +80,7 @@ export default function BottomNav() {
                             {typeof item.icon === 'function' ? item.icon(isActive) : null}
                             {!isCreate && (
                                 <span className={`text-[10px] font-medium ${isActive ? 'text-blue-600' : 'text-gray-500'}`}>
-                                    {item.label}
+                                    {t(item.labelKey)}
                                 </span>
                             )}
                         </Link>

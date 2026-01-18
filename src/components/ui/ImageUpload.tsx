@@ -1,4 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { uploadImageToImgBB } from '@/services/imageUploadService';
 import { Button } from './Button';
@@ -17,11 +18,12 @@ export function ImageUpload({
   currentImage,
   onImageUploaded,
   onImageRemoved,
-  placeholder = "Click to upload, drag & drop, or paste image (Ctrl+V)",
+  placeholder,
   maxWidth = 400,
   maxHeight = 300,
   className = ""
 }: ImageUploadProps) {
+  const t = useTranslations('upload');
   const [isUploading, setIsUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
@@ -29,12 +31,12 @@ export function ImageUpload({
 
   const handleImageUpload = useCallback(async (file: File) => {
     if (!file.type.startsWith('image/')) {
-      toast.error('Please select an image file');
+      toast.error(t('pleaseSelectImage'));
       return;
     }
 
     if (file.size > 10 * 1024 * 1024) { // 10MB limit
-      toast.error('Image file size must be less than 10MB');
+      toast.error(t('imageTooLarge'));
       return;
     }
 
@@ -44,11 +46,11 @@ export function ImageUpload({
       onImageUploaded(result.displayUrl);
     } catch (error: any) {
       console.error('Failed to upload image:', error);
-      toast.error('Failed to upload image: ' + error.message);
+      toast.error(t('failedToUpload') + ': ' + error.message);
     } finally {
       setIsUploading(false);
     }
-  }, [onImageUploaded]);
+  }, [onImageUploaded, t]);
 
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -199,7 +201,7 @@ export function ImageUpload({
         {isUploading ? (
           <div className="flex flex-col items-center justify-center space-y-2">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            <span className="text-sm text-gray-600">Uploading image...</span>
+            <span className="text-sm text-gray-600">{t('uploadingImage')}</span>
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center space-y-2">
@@ -217,14 +219,14 @@ export function ImageUpload({
               />
             </svg>
             <div className="text-sm text-gray-600">
-              <span className="font-medium text-blue-600">Click to upload</span>
-              <span> or drag and drop</span>
+              <span className="font-medium text-blue-600">{t('clickToUpload')}</span>
+              <span> {t('orDragAndDrop')}</span>
             </div>
             <p className="text-xs text-gray-500">
-              {placeholder}
+              {placeholder || t('clickToUpload')}
             </p>
             <p className="text-xs text-gray-400">
-              PNG, JPG, GIF up to 10MB
+              {t('maxFileSize')}
             </p>
           </div>
         )}

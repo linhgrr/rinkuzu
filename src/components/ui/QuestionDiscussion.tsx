@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
+import { useTranslations } from 'next-intl';
 import { Button } from './Button';
 import { Card, CardContent, CardHeader, CardTitle } from './Card';
 import { Input } from './Input';
@@ -36,14 +37,16 @@ interface QuestionDiscussionProps {
   isMobile?: boolean;
 }
 
-export function QuestionDiscussion({ 
-  quizSlug, 
-  questionIndex, 
-  isCollapsed, 
+export function QuestionDiscussion({
+  quizSlug,
+  questionIndex,
+  isCollapsed,
   onToggleCollapse,
-  isMobile = false 
+  isMobile = false
 }: QuestionDiscussionProps) {
   const { data: session } = useSession();
+  const t = useTranslations('discussion');
+  const tCommon = useTranslations('common');
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
   const [loading, setLoading] = useState(true);
@@ -68,10 +71,10 @@ export function QuestionDiscussion({
         );
         setComments(questionDiscussion?.comments || []);
       } else {
-        setError(data.error || 'Failed to load comments');
+        setError(data.error || t('failedToLoad'));
       }
     } catch (error) {
-      setError('Failed to load comments');
+      setError(t('failedToLoad'));
     } finally {
       setLoading(false);
     }
@@ -79,14 +82,14 @@ export function QuestionDiscussion({
 
   const handleSubmitComment = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!session?.user?.email) {
-      setError('Please log in to post a comment');
+      setError(t('pleaseLoginToPost'));
       return;
     }
 
     if (!newComment.trim()) {
-      setError('Please enter a comment');
+      setError(t('pleaseEnterComment'));
       return;
     }
 
@@ -111,10 +114,10 @@ export function QuestionDiscussion({
         setComments(data.data.comments);
         setNewComment('');
       } else {
-        setError(data.error || 'Failed to post comment');
+        setError(data.error || t('failedToPost'));
       }
     } catch (error) {
-      setError('Failed to post comment');
+      setError(t('failedToPost'));
     } finally {
       setSubmitting(false);
     }
@@ -150,7 +153,7 @@ export function QuestionDiscussion({
             <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
             </svg>
-            <span className="text-sm font-medium text-gray-900">Discussion</span>
+            <span className="text-sm font-medium text-gray-900">{t('title')}</span>
             {commentCount > 0 && (
               <span className="bg-blue-100 text-blue-800 text-xs px-1.5 py-0.5 rounded-full">
                 {commentCount}
@@ -173,7 +176,7 @@ export function QuestionDiscussion({
             <textarea
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
-              placeholder="Share your thoughts..."
+              placeholder={t('sharePlaceholder')}
               className="w-full px-2 py-2 border border-gray-300 rounded-md text-xs resize-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
               rows={2}
               maxLength={2000}
@@ -192,17 +195,17 @@ export function QuestionDiscussion({
                 disabled={!newComment.trim()}
                 className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1"
               >
-                Post
+                {t('post')}
               </Button>
             </div>
           </form>
         ) : (
           <div className="text-center py-3">
             <p className="text-xs text-gray-500 mb-2">
-              Please log in to join the discussion
+              {t('pleaseLoginToJoin')}
             </p>
             <Button size="sm" variant="outline" className="text-xs px-3 py-1">
-              Log In
+              {t('logIn')}
             </Button>
           </div>
         )}
@@ -219,8 +222,8 @@ export function QuestionDiscussion({
                 <svg className="w-8 h-8 mx-auto mb-2 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                 </svg>
-                <p className="text-xs">No comments yet</p>
-                <p className="text-xs mt-1 text-gray-400">Be the first to discuss!</p>
+                <p className="text-xs">{t('noComments')}</p>
+                <p className="text-xs mt-1 text-gray-400">{t('beFirstToDiscuss')}</p>
               </div>
             ) : (
               comments.map((comment) => (

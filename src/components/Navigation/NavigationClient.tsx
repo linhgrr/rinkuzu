@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback, memo } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import {
   HiOutlineClock,
   HiOutlineBookmark,
@@ -17,6 +18,7 @@ import {
 import { NavLogo } from './NavLogo';
 import { NavLinks } from './NavLinks';
 import { GuestLinks } from './GuestLinks';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
 
 interface UserMenuProps {
   session: any;
@@ -27,6 +29,8 @@ interface UserMenuProps {
 }
 
 const UserMenu = memo(function UserMenu({ session, isOpen, onToggle, onClose, menuRef }: UserMenuProps) {
+  const t = useTranslations('nav');
+
   const handleSignOut = useCallback(() => {
     onClose();
     signOut();
@@ -73,7 +77,7 @@ const UserMenu = memo(function UserMenu({ session, isOpen, onToggle, onClose, me
                 onClick={onClose}
               >
                 <HiOutlineClock className="w-5 h-5 text-[#86868b]" />
-                History
+                {t('history')}
               </Link>
 
               <Link
@@ -82,7 +86,7 @@ const UserMenu = memo(function UserMenu({ session, isOpen, onToggle, onClose, me
                 onClick={onClose}
               >
                 <HiOutlineBookmark className="w-5 h-5 text-[#86868b]" />
-                Bookmarks
+                {t('bookmarks')}
               </Link>
 
               <Link
@@ -91,7 +95,7 @@ const UserMenu = memo(function UserMenu({ session, isOpen, onToggle, onClose, me
                 onClick={onClose}
               >
                 <HiOutlineSparkles className="w-5 h-5 text-[#86868b]" />
-                Premium
+                {t('premium')}
               </Link>
 
               {(session.user as any)?.role === 'admin' && (
@@ -103,7 +107,7 @@ const UserMenu = memo(function UserMenu({ session, isOpen, onToggle, onClose, me
                     onClick={onClose}
                   >
                     <HiOutlineDocumentText className="w-5 h-5" />
-                    Review Queue
+                    {t('reviewQueue')}
                   </Link>
                   <Link
                     href="/admin/users"
@@ -111,7 +115,7 @@ const UserMenu = memo(function UserMenu({ session, isOpen, onToggle, onClose, me
                     onClick={onClose}
                   >
                     <HiOutlineUsers className="w-5 h-5" />
-                    Users
+                    {t('users')}
                   </Link>
                   <Link
                     href="/admin/categories"
@@ -119,7 +123,7 @@ const UserMenu = memo(function UserMenu({ session, isOpen, onToggle, onClose, me
                     onClick={onClose}
                   >
                     <HiOutlineTag className="w-5 h-5" />
-                    Categories
+                    {t('categories')}
                   </Link>
                 </>
               )}
@@ -132,7 +136,7 @@ const UserMenu = memo(function UserMenu({ session, isOpen, onToggle, onClose, me
                 className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-[#ff3b30] hover:bg-red-50 rounded-xl transition-colors cursor-pointer"
               >
                 <HiOutlineLogout className="w-5 h-5" />
-                Sign Out
+                {t('signOut')}
               </button>
             </div>
           </div>
@@ -149,6 +153,9 @@ interface MobileMenuProps {
 }
 
 const MobileMenu = memo(function MobileMenu({ session, isOpen, onClose }: MobileMenuProps) {
+  const t = useTranslations('nav');
+  const tAuth = useTranslations('auth');
+
   const handleSignOut = useCallback(() => {
     onClose();
     signOut();
@@ -169,55 +176,65 @@ const MobileMenu = memo(function MobileMenu({ session, isOpen, onClose }: Mobile
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-[#1d1d1f] truncate">{session.user?.email}</p>
                 <p className="text-xs text-[#86868b]">
-                  {(session.user as any)?.role === 'admin' ? 'Administrator' : 'User'}
+                  {(session.user as any)?.role === 'admin' ? tAuth('administrator') : tAuth('user')}
                 </p>
               </div>
             </div>
 
             <Link href="/" className="block px-4 py-3 text-sm font-medium text-[#1d1d1f] hover:bg-gray-50 rounded-xl transition-colors" onClick={onClose}>
-              Home
+              {t('home')}
             </Link>
             <Link href="/create" className="block px-4 py-3 text-sm font-medium text-[#1d1d1f] hover:bg-gray-50 rounded-xl transition-colors" onClick={onClose}>
-              Create Quiz
+              {t('createQuiz')}
             </Link>
             <Link href="/explore" className="block px-4 py-3 text-sm font-medium text-[#1d1d1f] hover:bg-gray-50 rounded-xl transition-colors" onClick={onClose}>
-              Explore
+              {t('explore')}
             </Link>
             <Link href="/profile?tab=quizzes" className="block px-4 py-3 text-sm font-medium text-[#1d1d1f] hover:bg-gray-50 rounded-xl transition-colors" onClick={onClose}>
-              My Quizzes
+              {t('profile')}
             </Link>
             <Link href="/profile?tab=history" className="block px-4 py-3 text-sm font-medium text-[#1d1d1f] hover:bg-gray-50 rounded-xl transition-colors" onClick={onClose}>
-              History
+              {t('history')}
             </Link>
             <Link href="/profile?tab=bookmarks" className="block px-4 py-3 text-sm font-medium text-[#1d1d1f] hover:bg-gray-50 rounded-xl transition-colors" onClick={onClose}>
-              Bookmarks
+              {t('bookmarks')}
             </Link>
 
             {(session.user as any)?.role === 'admin' && (
               <>
                 <div className="h-px bg-gray-200 my-3" />
                 <Link href="/admin/queue" className="block px-4 py-3 text-sm font-medium text-[#af52de] hover:bg-purple-50 rounded-xl transition-colors" onClick={onClose}>
-                  Admin Panel
+                  {t('adminPanel')}
                 </Link>
               </>
             )}
 
             <div className="h-px bg-gray-200 my-3" />
+
+            {/* Language Switcher in Mobile */}
+            <div className="px-4 py-2">
+              <LanguageSwitcher />
+            </div>
+
             <button
               onClick={handleSignOut}
               className="w-full text-left px-4 py-3 text-sm font-medium text-[#ff3b30] hover:bg-red-50 rounded-xl transition-colors"
             >
-              Sign Out
+              {t('signOut')}
             </button>
           </>
         ) : (
           <>
             <Link href="/login" className="block px-4 py-3 text-sm font-medium text-[#1d1d1f] hover:bg-gray-50 rounded-xl transition-colors" onClick={onClose}>
-              Sign In
+              {t('signIn')}
             </Link>
             <Link href="/register" className="block px-4 py-3 text-sm font-medium text-[#0071e3] hover:bg-blue-50 rounded-xl transition-colors" onClick={onClose}>
-              Get Started
+              {t('getStarted')}
             </Link>
+            <div className="h-px bg-gray-200 my-3" />
+            <div className="px-4 py-2">
+              <LanguageSwitcher />
+            </div>
           </>
         )}
       </div>
@@ -285,6 +302,9 @@ export default function NavigationClient({ className = '' }: NavigationClientPro
                 {/* Static Links */}
                 <NavLinks isAdmin={isAdmin} />
 
+                {/* Language Switcher */}
+                <LanguageSwitcher />
+
                 {/* Interactive User Menu */}
                 <UserMenu
                   session={session}
@@ -295,8 +315,12 @@ export default function NavigationClient({ className = '' }: NavigationClientPro
                 />
               </>
             ) : (
-              /* Static Guest Links */
-              <GuestLinks />
+              <>
+                {/* Language Switcher for guests */}
+                <LanguageSwitcher />
+                {/* Static Guest Links */}
+                <GuestLinks />
+              </>
             )}
           </div>
 

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 
@@ -23,6 +24,7 @@ export function Flashcard({
   onSwipe,
   isLast
 }: FlashcardProps) {
+  const t = useTranslations('flashcard');
   const [isFlipped, setIsFlipped] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
@@ -194,9 +196,9 @@ export function Flashcard({
   const getCorrectAnswerText = () => {
     const correctAnswers = getCorrectAnswers();
     if (type === 'single') {
-      return correctAnswers[0] || 'No correct answer';
+      return correctAnswers[0] || t('noCorrectAnswer');
     } else {
-      return correctAnswers.length > 0 ? correctAnswers.join(', ') : 'No correct answers';
+      return correctAnswers.length > 0 ? correctAnswers.join(', ') : t('noCorrectAnswer');
     }
   };
   const getCorrectAnswerLetters = () => {
@@ -326,13 +328,13 @@ export function Flashcard({
 
               <CardContent className="flex flex-col h-full py-10 px-14 justify-between">
                 <div className="flex-1 flex flex-col justify-center">
-                  <h3 className="text-xl font-semibold text-green-700 mb-6 text-center">Đáp án đúng</h3>
+                  <h3 className="text-xl font-semibold text-green-700 mb-6 text-center">{t('correctAnswer')}</h3>
                   <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4 text-center">
                     <span className="text-green-600 font-bold text-lg mr-2">{getCorrectAnswerLetters()}</span>
                     <span className="text-green-800 font-semibold text-lg break-words">{getCorrectAnswerText()}</span>
                   </div>
                   <div className="space-y-2">
-                    <h4 className="font-medium text-gray-900">Tất cả đáp án:</h4>
+                    <h4 className="font-medium text-gray-900">{t('allAnswers')}</h4>
                     {options.map((option, index) => {
                       const isCorrect = type === 'single'
                         ? (typeof correctIndex === 'number' && index === correctIndex)
@@ -391,7 +393,7 @@ export function Flashcard({
               variant="outline"
               className="border-red-300 text-red-600 hover:bg-red-50 px-8 py-3 text-lg rounded-full"
             >
-              Don&apos;t Know
+              {t('dontKnow')}
             </Button>
             <Button
               onClick={() => {
@@ -412,7 +414,7 @@ export function Flashcard({
               }}
               className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 text-lg rounded-full"
             >
-              Know It
+              {t('knowIt')}
             </Button>
           </>
         )}

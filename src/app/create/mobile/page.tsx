@@ -15,12 +15,14 @@ import {
   HiOutlineX,
 } from '@/components/icons';
 import { toast } from 'sonner';
+import { useTranslation } from '@/lib/i18n';
 
 export default function MobileCreatePage() {
   const router = useRouter();
   const { data: session, status } = useSession();
   const { addDraft } = useDraftStore();
   const { startProcessing } = usePdfProcessor();
+  const { text } = useTranslation();
 
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState('');
@@ -82,8 +84,11 @@ export default function MobileCreatePage() {
         expiresAt: expiresAt,
       });
 
-      toast.success('Đang xử lý PDF', {
-        description: `${totalPages} trang, ${chunks.total} phần`,
+      toast.success(text({ en: 'Processing PDF', vi: 'Đang xử lý PDF' }), {
+        description: text({
+          en: `${totalPages} pages, ${chunks.total} chunks`,
+          vi: `${totalPages} trang, ${chunks.total} phần`,
+        }),
       });
 
       // Navigate away first, then DraftSyncProvider will resume processing
@@ -91,7 +96,7 @@ export default function MobileCreatePage() {
       router.push('/');
 
     } catch (error: any) {
-      toast.error('Lỗi', { description: error.message });
+      toast.error(text({ en: 'Error', vi: 'Lỗi' }), { description: error.message });
     } finally {
       setIsUploading(false);
     }
@@ -114,8 +119,12 @@ export default function MobileCreatePage() {
     <div className="min-h-screen bg-gray-50 px-4 py-6 pb-24">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Tạo Quiz mới</h1>
-        <p className="text-gray-500 mt-1">Upload PDF và để AI tạo câu hỏi</p>
+        <h1 className="text-2xl font-bold text-gray-900">
+          {text({ en: 'Create a new quiz', vi: 'Tạo Quiz mới' })}
+        </h1>
+        <p className="text-gray-500 mt-1">
+          {text({ en: 'Upload a PDF and let AI generate questions', vi: 'Upload PDF và để AI tạo câu hỏi' })}
+        </p>
       </div>
 
       {/* Upload Zone */}
@@ -155,7 +164,7 @@ export default function MobileCreatePage() {
                 className="mt-3 inline-flex items-center gap-1 text-sm text-red-500 hover:text-red-600"
               >
                 <HiOutlineX className="w-4 h-4" />
-                Chọn file khác
+                {text({ en: 'Choose another file', vi: 'Chọn file khác' })}
               </button>
             </motion.div>
           ) : (
@@ -168,9 +177,11 @@ export default function MobileCreatePage() {
             >
               <HiOutlineUpload className="w-14 h-14 text-gray-400 mx-auto" />
               <p className="mt-3 font-medium text-gray-700">
-                {isDragActive ? 'Thả file vào đây' : 'Chọn hoặc kéo thả PDF'}
+                {isDragActive
+                  ? text({ en: 'Drop the file here', vi: 'Thả file vào đây' })
+                  : text({ en: 'Select or drag & drop a PDF', vi: 'Chọn hoặc kéo thả PDF' })}
               </p>
-              <p className="text-sm text-gray-500">Tối đa 50MB</p>
+              <p className="text-sm text-gray-500">{text({ en: 'Up to 50MB', vi: 'Tối đa 50MB' })}</p>
             </motion.div>
           )}
         </AnimatePresence>
@@ -186,13 +197,13 @@ export default function MobileCreatePage() {
             className="mt-5"
           >
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Tên Quiz
+              {text({ en: 'Quiz title', vi: 'Tên Quiz' })}
             </label>
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Nhập tên quiz..."
+              placeholder={text({ en: 'Enter quiz title...', vi: 'Nhập tên quiz...' })}
               className="w-full px-4 py-3.5 rounded-xl border border-gray-200
                          bg-white text-gray-900 placeholder-gray-400
                          focus:ring-2 focus:ring-blue-500 focus:border-transparent
@@ -220,11 +231,11 @@ export default function MobileCreatePage() {
             {isUploading ? (
               <>
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                Đang tải lên...
+                {text({ en: 'Uploading...', vi: 'Đang tải lên...' })}
               </>
             ) : (
               <>
-                Tạo Quiz
+                {text({ en: 'Create Quiz', vi: 'Tạo Quiz' })}
                 <HiOutlineArrowRight className="w-5 h-5" />
               </>
             )}
@@ -236,9 +247,14 @@ export default function MobileCreatePage() {
       <div className="mt-8 p-4 rounded-xl bg-gray-100 flex items-start gap-3">
         <HiOutlineDesktopComputer className="w-6 h-6 text-gray-500 flex-shrink-0 mt-0.5" />
         <div>
-          <p className="text-sm font-medium text-gray-700">Cần chỉnh sửa chi tiết?</p>
+          <p className="text-sm font-medium text-gray-700">
+            {text({ en: 'Need detailed edits?', vi: 'Cần chỉnh sửa chi tiết?' })}
+          </p>
           <p className="text-sm text-gray-500 mt-0.5">
-            Mở trên máy tính để edit câu hỏi, thêm hình ảnh, và nhiều tùy chọn khác.
+            {text({
+              en: 'Open on desktop to edit questions, add images, and more options.',
+              vi: 'Mở trên máy tính để edit câu hỏi, thêm hình ảnh, và nhiều tùy chọn khác.',
+            })}
           </p>
         </div>
       </div>

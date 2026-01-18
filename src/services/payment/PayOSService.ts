@@ -6,6 +6,7 @@ export class PayOSService implements IPayOSService {
   private apiKey: string;
   private checksumKey: string;
   private baseUrl: string;
+  private static readonly BUILD_PHASE = 'phase-production-build';
 
   constructor() {
     this.clientId = process.env.PAYOS_CLIENT_ID || '';
@@ -20,6 +21,9 @@ export class PayOSService implements IPayOSService {
         apiKey: !!this.apiKey,
         checksumKey: !!this.checksumKey
       });
+      if (process.env.NEXT_PHASE === PayOSService.BUILD_PHASE) {
+        return;
+      }
       throw new Error('PayOS configuration is incomplete');
     }
   }

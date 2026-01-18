@@ -7,6 +7,7 @@ import { Card, Badge } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { ROUTES } from '@/shared/constants';
 import { HiOutlineArrowRight } from '@/components/icons';
+import { useTranslation } from '@/lib/i18n';
 
 interface Quiz {
   _id: string;
@@ -36,6 +37,7 @@ const CategoryBadgeVariant = (color: string) => {
 
 export function GuestLanding({ quizzes }: GuestLandingProps) {
   const router = useRouter();
+  const { t } = useTranslation();
 
   const handleGetStarted = useCallback(() => {
     router.push(ROUTES.REGISTER);
@@ -54,18 +56,17 @@ export function GuestLanding({ quizzes }: GuestLandingProps) {
       <Navigation />
       <div className="max-w-6xl mx-auto px-4 py-10 md:py-16 text-center">
         <h1 className="text-3xl sm:text-4xl md:text-5xl font-semibold mb-4 md:mb-6 tracking-tight">
-          Master any subject.
+          {t('common.masterAnySubject')}
         </h1>
         <p className="text-base sm:text-lg md:text-xl text-[#86868b] mb-8 md:mb-12 max-w-2xl mx-auto px-2">
-          Create AI-powered quizzes from your study materials. Track progress
-          with Spaced Repetition.
+          {t('common.createAiQuizzes')}
         </p>
         <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 mb-12 md:mb-20 px-4 sm:px-0">
           <Button size="lg" onClick={handleGetStarted} className="w-full sm:w-auto">
-            Get Started Free
+            {t('common.getStartedFree')}
           </Button>
           <Button size="lg" variant="outline" onClick={handleLogin} className="w-full sm:w-auto">
-            Log In
+            {t('common.logIn')}
           </Button>
         </div>
 
@@ -89,7 +90,7 @@ export function GuestLanding({ quizzes }: GuestLandingProps) {
 
         <div className="flex justify-center">
           <Button variant="ghost" onClick={handleExplore}>
-            Explore All Quizzes <HiOutlineArrowRight className="ml-1" />
+            {t('common.exploreAllQuizzes')} <HiOutlineArrowRight className="ml-1" />
           </Button>
         </div>
       </div>

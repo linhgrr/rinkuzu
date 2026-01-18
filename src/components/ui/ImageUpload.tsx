@@ -2,6 +2,7 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { toast } from 'sonner';
 import { uploadImageToImgBB } from '@/services/imageUploadService';
 import { Button } from './Button';
+import { useTranslation } from '@/lib/i18n';
 
 interface ImageUploadProps {
   currentImage?: string;
@@ -17,24 +18,29 @@ export function ImageUpload({
   currentImage,
   onImageUploaded,
   onImageRemoved,
-  placeholder = "Click to upload, drag & drop, or paste image (Ctrl+V)",
+  placeholder,
   maxWidth = 400,
   maxHeight = 300,
   className = ""
 }: ImageUploadProps) {
+  const { text } = useTranslation();
   const [isUploading, setIsUploading] = useState(false);
+  const defaultPlaceholder = text({
+    en: 'Click to upload, drag & drop, or paste image (Ctrl+V)',
+    vi: 'Bấm để tải lên, kéo thả hoặc dán ảnh (Ctrl+V)',
+  });
   const [dragActive, setDragActive] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleImageUpload = useCallback(async (file: File) => {
     if (!file.type.startsWith('image/')) {
-      toast.error('Please select an image file');
+      toast.error(text({ en: 'Please select an image file', vi: 'Vui lòng chọn tệp hình ảnh' }));
       return;
     }
 
     if (file.size > 10 * 1024 * 1024) { // 10MB limit
-      toast.error('Image file size must be less than 10MB');
+      toast.error(text({ en: 'Image file size must be less than 10MB', vi: 'Kích thước ảnh phải nhỏ hơn 10MB' }));
       return;
     }
 
@@ -44,7 +50,7 @@ export function ImageUpload({
       onImageUploaded(result.displayUrl);
     } catch (error: any) {
       console.error('Failed to upload image:', error);
-      toast.error('Failed to upload image: ' + error.message);
+      toast.error(`${text({ en: 'Failed to upload image', vi: 'Không thể tải ảnh lên' })}: ${error.message}`);
     } finally {
       setIsUploading(false);
     }
@@ -199,7 +205,9 @@ export function ImageUpload({
         {isUploading ? (
           <div className="flex flex-col items-center justify-center space-y-2">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            <span className="text-sm text-gray-600">Uploading image...</span>
+            <span className="text-sm text-gray-600">
+              {text({ en: 'Uploading image...', vi: 'Đang tải ảnh lên...' })}
+            </span>
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center space-y-2">
@@ -217,14 +225,14 @@ export function ImageUpload({
               />
             </svg>
             <div className="text-sm text-gray-600">
-              <span className="font-medium text-blue-600">Click to upload</span>
-              <span> or drag and drop</span>
+              <span className="font-medium text-blue-600">{text({ en: 'Click to upload', vi: 'Bấm để tải lên' })}</span>
+              <span> {text({ en: 'or drag and drop', vi: 'hoặc kéo thả' })}</span>
             </div>
             <p className="text-xs text-gray-500">
-              {placeholder}
+              {placeholder ?? defaultPlaceholder}
             </p>
             <p className="text-xs text-gray-400">
-              PNG, JPG, GIF up to 10MB
+              {text({ en: 'PNG, JPG, GIF up to 10MB', vi: 'PNG, JPG, GIF tối đa 10MB' })}
             </p>
           </div>
         )}
@@ -241,10 +249,11 @@ interface QuestionImageUploadProps {
 }
 
 export function QuestionImageUpload(props: QuestionImageUploadProps) {
+  const { text } = useTranslation();
   return (
     <ImageUpload
       {...props}
-      placeholder="Add image to question (optional)"
+      placeholder={text({ en: 'Add image to question (optional)', vi: 'Thêm ảnh cho câu hỏi (không bắt buộc)' })}
       maxWidth={600}
       maxHeight={400}
       className="w-full"
@@ -259,10 +268,11 @@ interface OptionImageUploadProps {
 }
 
 export function OptionImageUpload(props: OptionImageUploadProps) {
+  const { text } = useTranslation();
   return (
     <ImageUpload
       {...props}
-      placeholder="Add image to option (optional)"
+      placeholder={text({ en: 'Add image to option (optional)', vi: 'Thêm ảnh cho lựa chọn (không bắt buộc)' })}
       maxWidth={200}
       maxHeight={150}
       className="mt-2"

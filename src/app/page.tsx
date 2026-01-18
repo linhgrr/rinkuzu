@@ -4,10 +4,12 @@ import { useSession } from 'next-auth/react';
 import { GuestLanding, DashboardClient } from './_components';
 import { useQuizzes } from '@/hooks';
 import { NavLogo } from '@/components/Navigation';
+import { useTranslation } from '@/lib/i18n';
 
 export default function HomePage() {
   const { data: session, status } = useSession();
   const { quizzes, isLoading } = useQuizzes(6);
+  const { t } = useTranslation();
 
   // Loading state
   if (status === 'loading' || isLoading) {
@@ -17,7 +19,7 @@ export default function HomePage() {
           <div className="flex justify-center mb-4">
             <NavLogo />
           </div>
-          <p className="text-[#86868b]">Loading your dashboard...</p>
+          <p className="text-[#86868b]">{t('common.loadingDashboard')}</p>
         </div>
       </div>
     );

@@ -4,20 +4,26 @@ import useSWR from 'swr';
 import useSWRMutation from 'swr/mutation';
 import { fetcher } from '@/lib/fetcher';
 
-interface UserStats {
+interface DailyActivity {
+  questionsReviewed: number;
+  xpEarned: number;
+  correctCount: number;
+  totalCount: number;
+}
+
+export interface UserStats {
   streak: number;
+  longestStreak: number;
   xp: number;
   level: number;
+  xpToNextLevel: number;
+  levelProgress: number;
   dueCount: number;
   streakFreezeCount: number;
-  weeklyActivity: Record<
-    string,
-    {
-      questionsReviewed: number;
-      xpEarned: number;
-      accuracy: number;
-    }
-  >;
+  weeklyActivity: Record<string, DailyActivity>;
+  totalQuestionsLearned?: number;
+  totalReviewSessions?: number;
+  averageAccuracy?: number;
 }
 
 interface BuyFreezeResponse {
@@ -55,10 +61,10 @@ export function useStats() {
             (current) =>
               current
                 ? {
-                    ...current,
-                    xp: response.data!.xp,
-                    streakFreezeCount: response.data!.streakFreezeCount,
-                  }
+                  ...current,
+                  xp: response.data!.xp,
+                  streakFreezeCount: response.data!.streakFreezeCount,
+                }
                 : current,
             { revalidate: false }
           );

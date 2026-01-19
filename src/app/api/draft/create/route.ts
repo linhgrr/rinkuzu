@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { title, categoryId, pdfBase64, fileName } = body;
+    const { title, categoryId, pdfBase64, fileName, prompt } = body;
 
     if (!title?.trim() || !pdfBase64 || !fileName) {
       return NextResponse.json(
@@ -113,6 +113,7 @@ export async function POST(request: NextRequest) {
         userId,
         title: title.trim(),
         categoryId: categoryId || undefined,
+        prompt: prompt?.trim() ? prompt.trim() : undefined,
         pdfData: {
           fileName,
           fileSize: buffer.length,

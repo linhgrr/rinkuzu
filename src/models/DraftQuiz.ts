@@ -23,6 +23,7 @@ export interface IDraftQuestion {
 export interface IDraftQuiz extends Document {
   userId: Types.ObjectId;
   title: string;
+  prompt?: string;
   categoryId?: Types.ObjectId;
   pdfData: {
     fileName: string;
@@ -70,6 +71,7 @@ const DraftQuestionSchema = new Schema<IDraftQuestion>({
 const DraftQuizSchema = new Schema<IDraftQuiz>({
   userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   title: { type: String, required: true, trim: true, maxlength: 200 },
+  prompt: { type: String, trim: true, maxlength: 2000 },
   categoryId: { type: Schema.Types.ObjectId, ref: 'Category' },
   pdfData: {
     fileName: { type: String, required: true },

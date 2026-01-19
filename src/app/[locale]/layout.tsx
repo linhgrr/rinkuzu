@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from 'next';
-import { Inter } from 'next/font/google';
 import { notFound } from 'next/navigation';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
@@ -23,11 +22,6 @@ const FloatingDraftProgress = dynamic(
   { ssr: false }
 );
 
-const inter = Inter({
-  subsets: ['latin'],
-  display: 'swap',
-  variable: '--font-inter',
-});
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -91,7 +85,7 @@ export default async function LocaleLayout({
   const messages = await getMessages();
 
   return (
-    <html lang={locale} className={`${inter.variable} scroll-smooth`}>
+    <html lang={locale} className="scroll-smooth">
       <head>
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#ffffff" />
@@ -106,7 +100,7 @@ export default async function LocaleLayout({
         <meta name="overscroll-behavior" content="none" />
         <meta name="format-detection" content="telephone=no" />
       </head>
-      <body className={`${inter.className} min-h-screen antialiased bg-[#f5f5f7]`}>
+      <body className="min-h-screen antialiased bg-[#f5f5f7]">
         <NextIntlClientProvider messages={messages}>
           <Providers>
             <main className="relative min-h-screen pb-16 md:pb-0">

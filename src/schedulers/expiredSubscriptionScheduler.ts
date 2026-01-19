@@ -4,8 +4,10 @@ import { UserRepository } from '@/repositories/UserRepository'
 import { PayOSService } from '@/services/payment/PayOSService'
 import { SubscriptionService } from '@/services/subscription/SubscriptionService'
 
+const hasMongoUrl = Boolean(process.env.MONGO_URL)
+
 // Prevent multiple scheduler instances in dev (hot-reload) or across imports
-if (!(global as any)._expiredSubscriptionSchedulerInitialized) {
+if (hasMongoUrl && !(global as any)._expiredSubscriptionSchedulerInitialized) {
   (global as any)._expiredSubscriptionSchedulerInitialized = true
 
   const subscriptionRepository = new SubscriptionRepository()
@@ -34,4 +36,8 @@ if (!(global as any)._expiredSubscriptionSchedulerInitialized) {
   })
 
   console.log('[Scheduler] Expired subscription scheduler initialized (runs daily at 00:00)')
-} 
+}
+
+if (!hasMongoUrl) {
+  console.warn('[Scheduler] Skipping expired subscription scheduler: MONGO_URL is not set')
+}

@@ -55,17 +55,34 @@ export function formatQuizExplanation(data: QuizExplanation): string {
   return result;
 }
 
-if (!process.env.GEMINI_KEYS) {
-  throw new Error('Please add your GEMINI_KEYS to .env.local');
-}
-
-const keys = process.env.GEMINI_KEYS!.split(',').map(k => k.trim());
+let keysCache: string[] | null = null;
 let keyIndex = 0;
+
+function getKeys(): string[] {
+  if (!keysCache) {
+    const rawKeys = process.env.GEMINI_KEYS;
+    if (!rawKeys) {
+      throw new Error('Please add your GEMINI_KEYS to .env.local');
+    }
+
+    keysCache = rawKeys
+      .split(',')
+      .map(k => k.trim())
+      .filter(Boolean);
+
+    if (keysCache.length === 0) {
+      throw new Error('Please add your GEMINI_KEYS to .env.local');
+    }
+  }
+
+  return keysCache;
+}
 
 /**
  * Get the next API key in rotation
  */
 export function getNextKey(): string {
+  const keys = getKeys();
   const key = keys[keyIndex];
   keyIndex = (keyIndex + 1) % keys.length;
   return key;
@@ -93,7 +110,7 @@ export function createLangChainModel(options?: {
  * Get total number of available keys
  */
 export function getKeysCount(): number {
-  return keys.length;
+  return getKeys().length;
 }
 
 /**

@@ -68,7 +68,7 @@ export { HiOutlineX, HiX, HiOutlineXCircle } from 'react-icons/hi';
 // Arrow icons
 export {
   HiOutlineArrowRight, HiOutlineArrowLeft, HiOutlineArrowUp, HiOutlineArrowDown,
-  HiArrowRight, HiArrowLeft, HiOutlineArrowNarrowRight, HiOutlineArrowNarrowLeft
+  HiArrowRight, HiArrowLeft, HiArrowUp, HiOutlineArrowNarrowRight, HiOutlineArrowNarrowLeft
 } from 'react-icons/hi';
 
 // Fire/Energy icons
@@ -76,6 +76,9 @@ export { HiOutlineFire, HiFire, HiOutlineLightningBolt, HiLightningBolt } from '
 
 // Light/Idea icons
 export { HiOutlineLightBulb, HiLightBulb, HiOutlineSparkles, HiSparkles } from 'react-icons/hi';
+
+// Chip/Hardware icons
+export { HiOutlineChip, HiChip } from 'react-icons/hi';
 
 // Share icons
 export { HiOutlineShare, HiShare } from 'react-icons/hi';

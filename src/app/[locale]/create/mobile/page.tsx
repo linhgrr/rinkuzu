@@ -27,6 +27,7 @@ export default function MobileCreatePage() {
 
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState('');
+  const [aiPrompt, setAiPrompt] = useState('');
   const [isUploading, setIsUploading] = useState(false);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
@@ -62,6 +63,7 @@ export default function MobileCreatePage() {
           title: title.trim(),
           pdfBase64: base64,
           fileName: file.name,
+          prompt: aiPrompt.trim() || undefined,
         }),
       });
 
@@ -154,6 +156,7 @@ export default function MobileCreatePage() {
                   e.stopPropagation();
                   setFile(null);
                   setTitle('');
+                  setAiPrompt('');
                 }}
                 className="mt-3 inline-flex items-center gap-1 text-sm text-red-500 hover:text-red-600"
               >
@@ -202,6 +205,36 @@ export default function MobileCreatePage() {
                          transition-all duration-200"
               disabled={isUploading}
             />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* AI Prompt Input */}
+      <AnimatePresence>
+        {file && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="mt-5"
+          >
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {t('aiPromptLabel')}
+            </label>
+            <textarea
+              value={aiPrompt}
+              onChange={(e) => setAiPrompt(e.target.value)}
+              placeholder={t('aiPromptPlaceholder')}
+              rows={3}
+              className="w-full px-4 py-3.5 rounded-xl border border-gray-200
+                         bg-white text-gray-900 placeholder-gray-400
+                         focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                         transition-all duration-200"
+              disabled={isUploading}
+            />
+            <p className="text-xs text-gray-500 mt-2">
+              {t('aiPromptHelper')}
+            </p>
           </motion.div>
         )}
       </AnimatePresence>

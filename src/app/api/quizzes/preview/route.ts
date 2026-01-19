@@ -79,6 +79,8 @@ export async function POST(request: NextRequest) {
     const title = formData.get('title') as string;
     const description = formData.get('description') as string;
     const fileCount = parseInt(formData.get('fileCount') as string) || 0;
+    const prompt = (formData.get('prompt') as string | null)?.trim();
+    const userPrompt = prompt ? prompt : undefined;
 
     if (!title || fileCount === 0) {
       return NextResponse.json(
@@ -130,7 +132,7 @@ export async function POST(request: NextRequest) {
 
       try {
         // Use optimized processing for each file
-        const fileQuestions = await extractQuestionsFromPdfOptimized(buffer, false);
+        const fileQuestions = await extractQuestionsFromPdfOptimized(buffer, false, userPrompt);
 
         console.log(`✅ File ${file.name}: ${fileQuestions.length} questions extracted`);
 

@@ -167,7 +167,12 @@ export async function POST(
       }
 
       // Extract questions using AI
-      const extractedQuestions = await extractQuestionsFromPdf(chunkBuffer, 2, request.signal);
+      const extractedQuestions = await extractQuestionsFromPdf(
+        chunkBuffer,
+        2,
+        request.signal,
+        draft.prompt
+      );
 
       // Remove duplicates with existing questions
       const existingHashes = new Set(

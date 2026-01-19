@@ -269,6 +269,7 @@ export default function CreateQuizPage() {
   // Form state
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [aiPrompt, setAiPrompt] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<any>(null);
   const [isPrivate, setIsPrivate] = useState(false);
 
@@ -358,6 +359,9 @@ export default function CreateQuizPage() {
           description.trim(),
           (progress) => {
             setUploadProgress(progress);
+          },
+          {
+            prompt: aiPrompt.trim() || undefined
           }
         );
 
@@ -381,6 +385,9 @@ export default function CreateQuizPage() {
           formData.append(`pdfFile_${index}`, file);
         });
         formData.append('fileCount', pdfFiles.length.toString());
+        if (aiPrompt.trim()) {
+          formData.append('prompt', aiPrompt.trim());
+        }
 
         const data = await extractQuestionsFromPDF(formData);
 
@@ -594,6 +601,7 @@ export default function CreateQuizPage() {
           fileName: fileName,
           category: selectedCategory?._id,
           description: description.trim(),
+          prompt: aiPrompt.trim() || undefined,
         }),
       });
 
@@ -699,6 +707,22 @@ export default function CreateQuizPage() {
                         maxLength={1000}
                         variant="glass"
                       />
+
+                      <div>
+                        <Textarea
+                          label={t('aiPromptLabel')}
+                          id="aiPrompt"
+                          rows={3}
+                          value={aiPrompt}
+                          onChange={(e) => setAiPrompt(e.target.value)}
+                          placeholder={t('aiPromptPlaceholder')}
+                          maxLength={2000}
+                          variant="glass"
+                        />
+                        <p className="text-xs text-gray-500 mt-2">
+                          {t('aiPromptHelper')}
+                        </p>
+                      </div>
 
                       <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-3">

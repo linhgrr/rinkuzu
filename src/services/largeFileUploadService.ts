@@ -44,6 +44,7 @@ export interface ProcessingOptions {
   overlapPages?: number
   maxRetries?: number
   chunkDelay?: number
+  prompt?: string
 }
 
 /**
@@ -153,7 +154,8 @@ function createChunkFormData(
   fileName: string,
   title: string,
   description: string,
-  pageRange: { start: number, end: number }
+  pageRange: { start: number, end: number },
+  prompt?: string
 ): FormData {
   const formData = new FormData()
 
@@ -170,6 +172,9 @@ function createChunkFormData(
   formData.append('totalChunks', totalChunks.toString())
   formData.append('originalFileName', fileName)
   formData.append('pageRange', JSON.stringify(pageRange))
+  if (prompt) {
+    formData.append('prompt', prompt)
+  }
 
   return formData
 }
@@ -343,6 +348,7 @@ async function processChunksSequentially(
   fileName: string,
   title: string,
   description: string,
+  prompt?: string,
   onProgress?: (progress: UploadProgress) => void,
   maxRetries: number = MAX_RETRIES,
   chunkDelay: number = CHUNK_DELAY
@@ -374,7 +380,8 @@ async function processChunksSequentially(
       fileName,
       title,
       description,
-      pageRange
+      pageRange,
+      prompt
     )
 
     try {
@@ -447,7 +454,8 @@ export async function extractQuestionsFromLargePDF(
     chunkSize: options?.chunkSize ?? CHUNK_SIZE,
     overlapPages: options?.overlapPages ?? OVERLAP_PAGES,
     maxRetries: options?.maxRetries ?? MAX_RETRIES,
-    chunkDelay: options?.chunkDelay ?? CHUNK_DELAY
+    chunkDelay: options?.chunkDelay ?? CHUNK_DELAY,
+    prompt: options?.prompt?.trim() || undefined
   }
 
   console.log(`⚙️ Processing configuration (SEQUENTIAL):`, config)
@@ -478,6 +486,9 @@ export async function extractQuestionsFromLargePDF(
       formData.append('fileCount', '1')
       formData.append('title', title)
       formData.append('description', description)
+      if (config.prompt) {
+        formData.append('prompt', config.prompt)
+      }
 
       const result = await uploadChunkWithRetry(formData, onProgress, config.maxRetries)
 
@@ -519,6 +530,7 @@ export async function extractQuestionsFromLargePDF(
         fileName,
         title,
         description,
+        config.prompt,
         onProgress,
         config.maxRetries,
         config.chunkDelay

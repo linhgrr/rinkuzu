@@ -78,33 +78,104 @@ Answer Formatting Rules:
 **REMEMBER:** Generating questions is allowed **only if and only if** there are absolutely **no questions to extract** from the original text.
 `;
 
+const CUSTOM_EXTRACTION_PROMPT = `
+You are a quiz extraction and generation assistant for educators.
+
+You must follow the user's customization instructions below, while still obeying the extraction rules in this system prompt.
+
+User customization:
+<<<USER_PROMPT>>>
+
+**Non-negotiable extraction rules:**
+- Your FIRST and PRIMARY task is to **extract any and all questions** present in the content.
+- **ONLY IF AND ONLY IF** there are absolutely **no extractable questions** in the content, then and only then you may generate new questions.
+- Do NOT skip or filter out any extractable questions, even if the user's customization asks for fewer questions or a narrower scope.
+- Preserve the original wording when extracting, except for removing answer content and enumeration markers as required below.
+
+**If you extract a question that expects a free-text or input-based answer** (e.g., "Nhập kết quả", "Điền vào chỗ trống", "What is the result of...?", etc.), then you MUST:
+- Convert it into a **single-choice question** with exactly 4 plausible answer options.
+- Ensure 1 is the correct answer, and 3 are incorrect but plausible distractors.
+
+**If you generate questions (only when absolutely no extractable questions are present):**
+- Follow the user's customization for topic focus, difficulty, tone, and question count if specified.
+- If the user does not specify the question count, generate **exactly 10** questions.
+- The questions must be based strictly on the ideas, facts, or definitions in the content — no outside knowledge.
+- Use the same language as the content unless the user explicitly requests another language.
+
+Important Instructions:
+
+1. **DO NOT OMIT ANY TEXT.** Even if the text refers to or is adjacent to an image, you must extract the full surrounding question text exactly as it appears.
+2. **IGNORE IMAGES ENTIRELY.** Do not describe, summarize, or attempt to interpret any image content. Only process the visible text — even if it partially depends on an image.
+3. **PRESERVE ALL CONTEXTUAL TEXT.** If a question is written around or near an image, still extract the full question text as-is. Do not skip it.
+4. **NEVER DROP OR SKIP ANY QUESTION** just because it involves an image. Your job is to preserve every meaningful question or prompt in textual form.
+5. Do not fabricate or modify content. Extract exact original wording where possible.
+6. Reconstruct questions from visible text if they are implied or structured around diagrams or image references.
+7. **REMOVE ANSWER CONTENT FROM QUESTIONS.** Ensure the extracted question text does *not* include any part of the answer options or explanatory answer content.
+8. **STRIP ENUMERATION MARKERS.** When capturing options, delete any leading letters or numbers such as "a)", "A.", "1.", "(b)", "II.", etc., so each option contains only the core answer text.
+
+Return ONLY a JSON array in the following format:
+
+[
+    {
+        "question": "What is the capital of France?",
+        "type": "single",
+        "options": ["London", "Berlin", "Paris", "Madrid"],
+        "correctIndex": 2
+    },
+    {
+        "question": "Which of the following are programming languages?",
+        "type": "multiple",
+        "options": ["JavaScript", "HTML", "Python", "CSS"],
+        "correctIndexes": [0, 2]
+    }
+]
+
+Answer Formatting Rules:
+- Use "type": "single" for one correct answer, with "correctIndex"
+- Use "type": "multiple" for multiple correct answers, with "correctIndexes" (array of indexes)
+- Options must **not** contain any enumeration characters.
+- No explanation, no extra output, only the JSON array
+- Do NOT include any image fields (like questionImage or optionImages)
+
+**REMEMBER:** Generating questions is allowed **only if and only if** there are absolutely **no questions to extract** from the original text.
+`;
+
+function buildExtractionPrompt(userPrompt?: string) {
+  if (userPrompt?.trim()) {
+    return CUSTOM_EXTRACTION_PROMPT.replace('<<<USER_PROMPT>>>', userPrompt.trim());
+  }
+  return EXTRACTION_PROMPT;
+}
+
 /**
  * Extract questions from PDF using LangChain with retry logic
  */
 export async function extractQuestionsFromPdf(
   buffer: Buffer | string,
   maxRetries: number = 3,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  userPrompt?: string
 ): Promise<any[]> {
   const maxAttempts = Math.min(getKeysCount(), maxRetries);
 
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     try {
       const model = createLangChainModel({ maxRetries: 1 });
+      const extractionPrompt = buildExtractionPrompt(userPrompt);
 
       let messageContent: any[];
 
       if (typeof buffer === 'string') {
         // Handle URL/text case
         messageContent = [
-          { type: 'text', text: EXTRACTION_PROMPT },
+          { type: 'text', text: extractionPrompt },
           { type: 'text', text: `Content: ${buffer}` }
         ];
       } else {
         // Handle PDF buffer case
         const base64Data = buffer.toString('base64');
         messageContent = [
-          { type: 'text', text: EXTRACTION_PROMPT },
+          { type: 'text', text: extractionPrompt },
           {
             type: 'media',
             mimeType: 'application/pdf',
@@ -222,7 +293,10 @@ export async function generateQuizTitle(content: string): Promise<string> {
 /**
  * Process multiple PDF chunks SEQUENTIALLY (not parallel)
  */
-export async function extractQuestionsFromPdfChunks(chunks: PDFChunk[]): Promise<any[]> {
+export async function extractQuestionsFromPdfChunks(
+  chunks: PDFChunk[],
+  userPrompt?: string
+): Promise<any[]> {
   console.log(`🚀 Starting SEQUENTIAL processing of ${chunks.length} chunks`);
   const startTime = Date.now();
 
@@ -233,7 +307,7 @@ export async function extractQuestionsFromPdfChunks(chunks: PDFChunk[]): Promise
     console.log(`📋 Processing chunk ${chunk.chunkIndex} (pages ${chunk.startPage}-${chunk.endPage})...`);
 
     try {
-      const questions = await extractQuestionsFromPdf(chunk.buffer, 2);
+      const questions = await extractQuestionsFromPdf(chunk.buffer, 2, undefined, userPrompt);
 
       console.log(`✅ Chunk ${chunk.chunkIndex} completed: ${questions.length} questions extracted`);
 
@@ -274,7 +348,8 @@ export async function extractQuestionsFromPdfChunks(chunks: PDFChunk[]): Promise
  */
 export async function extractQuestionsFromPdfOptimized(
   buffer: Buffer,
-  forceChunking: boolean = false
+  forceChunking: boolean = false,
+  userPrompt?: string
 ): Promise<any[]> {
   const fileSize = buffer.length;
   const fileSizeMB = fileSize / (1024 * 1024);
@@ -286,7 +361,7 @@ export async function extractQuestionsFromPdfOptimized(
 
   if (!shouldUseChunking) {
     console.log('📝 Using standard processing for small PDF');
-    return extractQuestionsFromPdf(buffer);
+    return extractQuestionsFromPdf(buffer, 3, undefined, userPrompt);
   }
 
   // For larger files, use chunked sequential processing
@@ -307,15 +382,15 @@ export async function extractQuestionsFromPdfOptimized(
 
     if (chunks.length === 1) {
       console.log('📝 PDF too small to benefit from chunking, using standard processing');
-      return extractQuestionsFromPdf(buffer);
+      return extractQuestionsFromPdf(buffer, 3, undefined, userPrompt);
     }
 
     // Process chunks SEQUENTIALLY
-    return await extractQuestionsFromPdfChunks(chunks);
+    return await extractQuestionsFromPdfChunks(chunks, userPrompt);
 
   } catch (error) {
     console.error('❌ Chunked processing failed, falling back to standard processing:', error);
     // Fallback to standard processing
-    return extractQuestionsFromPdf(buffer);
+    return extractQuestionsFromPdf(buffer, 3, undefined, userPrompt);
   }
 }

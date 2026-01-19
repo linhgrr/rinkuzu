@@ -12,8 +12,9 @@ export class PayOSService implements IPayOSService {
     this.apiKey = process.env.PAYOS_API_KEY || '';
     this.checksumKey = process.env.PAYOS_CHECKSUM_KEY || '';
     this.baseUrl = 'https://api-merchant.payos.vn';
+  }
 
-    // Validate required environment variables
+  private ensureConfigured(): void {
     if (!this.clientId || !this.apiKey || !this.checksumKey) {
       console.error('Missing PayOS environment variables:', {
         clientId: !!this.clientId,
@@ -48,6 +49,7 @@ export class PayOSService implements IPayOSService {
     method: 'GET' | 'POST' = 'POST',
     body?: any
   ): Promise<T> {
+    this.ensureConfigured();
     const url = `${this.baseUrl}${endpoint}`;
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -113,6 +115,7 @@ export class PayOSService implements IPayOSService {
     buyerEmail?: string,
     buyerName?: string
   ): Promise<PayOSPaymentResponse> {
+    this.ensureConfigured();
     const paymentData = {
       orderCode,
       amount,
@@ -143,6 +146,7 @@ export class PayOSService implements IPayOSService {
   }
 
   async verifyPayment(orderCode: number): Promise<PayOSVerifyResponse> {
+    this.ensureConfigured();
     return this.makeRequest<PayOSVerifyResponse>(
       `/v2/payment-requests/${orderCode}`,
       'GET'
@@ -150,6 +154,7 @@ export class PayOSService implements IPayOSService {
   }
 
   async getPaymentInfo(orderCode: number): Promise<PayOSVerifyResponse> {
+    this.ensureConfigured();
     return this.makeRequest<PayOSVerifyResponse>(
       `/v2/payment-requests/${orderCode}`,
       'GET'
@@ -158,6 +163,7 @@ export class PayOSService implements IPayOSService {
 
   async testConnection(): Promise<boolean> {
     try {
+      this.ensureConfigured();
       console.log('Testing PayOS API connection...');
       console.log('Environment variables:', {
         clientId: this.clientId ? 'Set' : 'Missing',

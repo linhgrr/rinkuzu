@@ -45,6 +45,7 @@
   },
   "nav": {
     "home": "Home",
+    "adaptiveLearning": "Adaptive Learning",
     "explore": "Explore",
     "create": "Create Quiz",
     "createQuiz": "Create Quiz",
@@ -137,6 +138,7 @@
     "keepMomentum": "You're doing great! Keep up the momentum.",
     "dailyGoal": "Daily Goal",
     "questionsDue": "{count} questions due",
+    "adaptiveLearning": "Adaptive Learning",
     "startReview": "Start Review",
     "startReviewSession": "Start Review Session",
     "reviewingHelps": "Reviewing today helps you retain knowledge longer. Let's clear these cards!",

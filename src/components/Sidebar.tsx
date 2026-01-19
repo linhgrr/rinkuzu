@@ -20,7 +20,8 @@ import {
   HiChevronRight,
   HiChevronDoubleLeft,
   HiChevronDoubleRight,
-  HiOutlineCog
+  HiOutlineCog,
+  HiOutlineAcademicCap
 } from '@/components/icons';
 import CategorySearch from '@/components/ui/CategorySearch';
 
@@ -75,6 +76,11 @@ export default function Sidebar({ isOpen, onToggle, currentPath }: SidebarProps)
       href: '/profile?tab=quizzes',
       labelKey: 'profile',
       icon: <HiOutlineUser className="w-full h-full" />
+    },
+    {
+      href: '/adaptive-learning',
+      labelKey: 'adaptiveLearning',
+      icon: <HiOutlineAcademicCap className="w-full h-full" />
     },
     {
       href: '/explore',

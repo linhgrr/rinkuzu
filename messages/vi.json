@@ -45,6 +45,7 @@
   },
   "nav": {
     "home": "Trang chủ",
+    "adaptiveLearning": "Học tập thích ứng",
     "explore": "Khám phá",
     "create": "Tạo Quiz",
     "createQuiz": "Tạo Quiz",
@@ -137,6 +138,7 @@
     "keepMomentum": "Bạn đang làm rất tốt! Hãy tiếp tục nhé.",
     "dailyGoal": "Mục tiêu hàng ngày",
     "questionsDue": "{count} câu hỏi cần ôn tập",
+    "adaptiveLearning": "Học tập thích ứng",
     "startReview": "Bắt đầu ôn tập",
     "startReviewSession": "Bắt đầu phiên ôn tập",
     "reviewingHelps": "Ôn tập hàng ngày giúp bạn ghi nhớ kiến thức lâu hơn. Hãy hoàn thành các thẻ này!",

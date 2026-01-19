@@ -1,7 +1,7 @@
 'use client';
 
 import { useLocale } from 'next-intl';
-import { useRouter, usePathname } from 'next/navigation';
+import { usePathname, useRouter } from '@/i18n/routing';
 import { useState, useRef, useEffect, useCallback, memo } from 'react';
 import { locales, localeLabels, localeFlags, type Locale } from '@/i18n/config';
 
@@ -34,26 +34,7 @@ export const LanguageSwitcher = memo(function LanguageSwitcher({
   }, [isOpen]);
 
   const handleLocaleChange = useCallback((newLocale: Locale) => {
-    // Remove current locale prefix from pathname
-    const segments = pathname.split('/');
-    const currentLocaleIndex = locales.indexOf(segments[1] as Locale);
-
-    let newPath: string;
-    if (currentLocaleIndex !== -1) {
-      // Replace locale segment
-      segments[1] = newLocale;
-      newPath = segments.join('/');
-    } else {
-      // Add locale prefix
-      newPath = `/${newLocale}${pathname}`;
-    }
-
-    // For default locale (vi), we can optionally remove the prefix
-    if (newLocale === 'vi') {
-      newPath = newPath.replace('/vi', '') || '/';
-    }
-
-    router.push(newPath);
+    router.push(pathname, { locale: newLocale });
     setIsOpen(false);
   }, [pathname, router]);
 

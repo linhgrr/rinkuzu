@@ -127,31 +127,69 @@ export function DashboardClient({ userEmail }: { userEmail: string }) {
               </Button>
             </div>
 
-            {/* Hero Card: Daily Review */}
-            <div className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-[#0071e3] to-[#40a9ff] p-8 md:p-10 text-white shadow-xl hover:shadow-2xl transition-all duration-500 group">
-              <div className="relative z-10 max-w-xl">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md border border-white/20 text-sm font-medium mb-4">
-                  <HiOutlineFire className="w-4 h-4 text-orange-300" />
-                  <span>{t('dailyGoal')}</span>
+            {/* Hero Section: Modes */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Card 1: Daily Review (Existing) */}
+              <div className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-[#0071e3] to-[#40a9ff] p-8 text-white shadow-xl hover:shadow-2xl transition-all duration-500 group flex flex-col justify-between min-h-[300px]">
+                <div className="relative z-10">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md border border-white/20 text-sm font-medium mb-4">
+                    <HiOutlineFire className="w-4 h-4 text-orange-300" />
+                    <span>{t('dailyGoal')}</span>
+                  </div>
+                  <h2 className="text-3xl font-bold mb-2 tracking-tight">
+                    {t('questionsDue', { count: stats?.dueCount || 0 })}
+                  </h2>
+                  <p className="text-blue-50 text-sm mb-6 leading-relaxed opacity-90">
+                    {t('reviewingHelps')}
+                  </p>
                 </div>
-                <h2 className="text-4xl md:text-5xl font-bold mb-4 tracking-tight">
-                  {t('questionsDue', { count: stats?.dueCount || 0 })}
-                </h2>
-                <p className="text-blue-50 text-lg mb-8 max-w-md leading-relaxed">
-                  {t('reviewingHelps')}
-                </p>
-                <Button
-                  onClick={handleStartReview}
-                  size="lg"
-                  className="bg-white text-[#0071e3] hover:bg-blue-50 border-0 rounded-full px-8 py-6 text-lg font-semibold shadow-lg hover:translate-y-[-2px] transition-all"
-                >
-                  {t('startReviewSession')} <HiOutlineArrowRight className="ml-2 w-5 h-5" />
-                </Button>
+
+                <div className="relative z-10 mt-auto">
+                  <Button
+                    onClick={handleStartReview}
+                    size="lg"
+                    className="w-full bg-white text-[#0071e3] hover:bg-blue-50 border-0 rounded-xl py-6 text-base font-semibold shadow-lg hover:translate-y-[-2px] transition-all"
+                  >
+                    {t('startReviewSession')} <HiOutlineArrowRight className="ml-2 w-5 h-5" />
+                  </Button>
+                </div>
+
+                {/* Decorative Elements */}
+                <div className="absolute top-[-20%] right-[-10%] w-60 h-60 bg-white/10 rounded-full blur-3xl group-hover:bg-white/20 transition-all duration-700" />
+                <div className="absolute bottom-[-10%] right-[10%] w-32 h-32 bg-indigo-500/30 rounded-full blur-2xl" />
               </div>
 
-              {/* Decorative Elements */}
-              <div className="absolute top-[-20%] right-[-10%] w-80 h-80 bg-white/10 rounded-full blur-3xl group-hover:bg-white/20 transition-all duration-700" />
-              <div className="absolute bottom-[-10%] right-[10%] w-40 h-40 bg-indigo-500/30 rounded-full blur-2xl" />
+              {/* Card 2: Adaptive Learning (New) */}
+              <div className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-indigo-600 to-purple-600 p-8 text-white shadow-xl hover:shadow-2xl transition-all duration-500 group flex flex-col justify-between min-h-[300px]">
+                <div className="relative z-10">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md border border-white/20 text-sm font-medium mb-4">
+                    <svg className="w-4 h-4 text-purple-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                    <span>AI Powered</span>
+                  </div>
+                  <h2 className="text-3xl font-bold mb-2 tracking-tight">
+                    {t('adaptiveLearning') || "Adaptive Learning"}
+                  </h2>
+                  <p className="text-indigo-100 text-sm mb-6 leading-relaxed opacity-90">
+                    Upload your documents and let AI create a personalized learning path for you.
+                  </p>
+                </div>
+
+                <div className="relative z-10 mt-auto">
+                  <Button
+                    onClick={() => router.push('/adaptive-learning')}
+                    size="lg"
+                    className="w-full bg-white text-indigo-600 hover:bg-indigo-50 border-0 rounded-xl py-6 text-base font-semibold shadow-lg hover:translate-y-[-2px] transition-all"
+                  >
+                    Start Learning <HiOutlineArrowRight className="ml-2 w-5 h-5" />
+                  </Button>
+                </div>
+
+                {/* Decorative Elements */}
+                <div className="absolute top-[-20%] right-[-10%] w-60 h-60 bg-white/10 rounded-full blur-3xl group-hover:bg-white/20 transition-all duration-700" />
+                <div className="absolute bottom-[-10%] left-[-10%] w-32 h-32 bg-purple-500/30 rounded-full blur-2xl" />
+              </div>
             </div>
 
             {/* Quick Stats Grid */}

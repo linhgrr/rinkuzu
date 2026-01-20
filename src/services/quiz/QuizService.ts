@@ -38,11 +38,12 @@ export class QuizService implements IQuizService {
       totalPages: number
     }
   }> {
-    const { status, search, category, page = 1, limit = 10, userRole, userId, onlyMine } = options
+    const { status, search, category, page = 1, limit = 10, isPrivate, userRole, userId, onlyMine } = options
 
     let filter: any = {}
 
     if (status) filter.status = status
+    if (typeof isPrivate === 'boolean') filter.isPrivate = isPrivate
 
     // If caller wants only their own quizzes
     if (onlyMine && userId) {

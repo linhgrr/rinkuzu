@@ -240,7 +240,13 @@ export class QuizService implements IQuizService {
         };
       }
 
-      if (quiz.status !== 'published') {
+      const authorId = (quiz.author as any)?._id
+        ? (quiz.author as any)._id.toString()
+        : quiz.author?.toString();
+      const isAuthor = !!userId && authorId === userId;
+      const canAccessUnpublished = userRole === 'admin' || isAuthor;
+
+      if (quiz.status !== 'published' && !canAccessUnpublished) {
         return {
           success: false,
           error: 'Quiz is not available',

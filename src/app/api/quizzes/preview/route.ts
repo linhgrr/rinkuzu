@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { extractQuestionsFromPdf, extractQuestionsFromPdfOptimized } from '@/lib/gemini';
+import { buildChunkLevelPrompt, extractQuestionsFromPdfOptimized } from '@/lib/gemini';
 import { authOptions } from '@/lib/auth';
 import crypto from 'crypto';
 
@@ -80,7 +80,11 @@ export async function POST(request: NextRequest) {
     const description = formData.get('description') as string;
     const fileCount = parseInt(formData.get('fileCount') as string) || 0;
     const prompt = (formData.get('prompt') as string | null)?.trim();
+    const totalChunks = parseInt(formData.get('totalChunks') as string) || 0;
     const userPrompt = prompt ? prompt : undefined;
+    const chunkAdjustedPrompt = userPrompt && totalChunks > 1
+      ? await buildChunkLevelPrompt(userPrompt, totalChunks)
+      : userPrompt;
 
     if (!title || fileCount === 0) {
       return NextResponse.json(
@@ -132,7 +136,7 @@ export async function POST(request: NextRequest) {
 
       try {
         // Use optimized processing for each file
-        const fileQuestions = await extractQuestionsFromPdfOptimized(buffer, false, userPrompt);
+        const fileQuestions = await extractQuestionsFromPdfOptimized(buffer, false, chunkAdjustedPrompt);
 
         console.log(`✅ File ${file.name}: ${fileQuestions.length} questions extracted`);
 

@@ -9,15 +9,9 @@ const quizService = serviceFactory.getQuizService();
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
+    const isGuest = !session?.user;
     const url = new URL(request.url);
-    const status = url.searchParams.get('status') || undefined;
+    const status = isGuest ? 'published' : url.searchParams.get('status') || undefined;
     const search = url.searchParams.get('search') || undefined;
     const category = url.searchParams.get('category') || undefined;
     const page = parseInt(url.searchParams.get('page') || '1');
@@ -30,9 +24,10 @@ export async function GET(request: NextRequest) {
       category,
       page,
       limit,
-      userRole: (session.user as any).role,
-      userId: (session.user as any).id,
-      onlyMine: mine !== null && mine !== 'false'
+      isPrivate: isGuest ? false : undefined,
+      userRole: (session?.user as any)?.role,
+      userId: (session?.user as any)?.id,
+      onlyMine: !isGuest && mine !== null && mine !== 'false'
     });
 
     return NextResponse.json({

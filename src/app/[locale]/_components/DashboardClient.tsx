@@ -166,13 +166,13 @@ export function DashboardClient({ userEmail }: { userEmail: string }) {
                     <svg className="w-4 h-4 text-purple-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                     </svg>
-                    <span>AI Powered</span>
+                    <span>{t('aiPowered')}</span>
                   </div>
                   <h2 className="text-3xl font-bold mb-2 tracking-tight">
-                    {t('adaptiveLearning') || "Adaptive Learning"}
+                    {t('adaptiveLearning')}
                   </h2>
                   <p className="text-indigo-100 text-sm mb-6 leading-relaxed opacity-90">
-                    Upload your documents and let AI create a personalized learning path for you.
+                    {t('adaptiveLearningDescription')}
                   </p>
                 </div>
 
@@ -182,7 +182,7 @@ export function DashboardClient({ userEmail }: { userEmail: string }) {
                     size="lg"
                     className="w-full bg-white text-indigo-600 hover:bg-indigo-50 border-0 rounded-xl py-6 text-base font-semibold shadow-lg hover:translate-y-[-2px] transition-all"
                   >
-                    Start Learning <HiOutlineArrowRight className="ml-2 w-5 h-5" />
+                    {t('startLearning')} <HiOutlineArrowRight className="ml-2 w-5 h-5" />
                   </Button>
                 </div>
 

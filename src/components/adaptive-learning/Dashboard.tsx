@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -44,6 +45,8 @@ const StatCard = ({ title, value, subtitle, icon: Icon, gradient }: any) => (
 
 export default function AdaptiveLearningDashboard() {
     const router = useRouter();
+    const t = useTranslations('adaptiveLearning');
+    const tCommon = useTranslations('common');
 
     return (
         <div className="space-y-8">
@@ -52,10 +55,10 @@ export default function AdaptiveLearningDashboard() {
                 <div>
                     <h1 className="text-3xl font-bold text-gray-900 tracking-tight flex items-center gap-3">
                         <HiOutlineAcademicCap className="w-8 h-8 text-indigo-600" />
-                        Adaptive Learning Center
+                        {t('dashboardTitle')}
                     </h1>
                     <p className="text-gray-500 mt-2 text-lg max-w-2xl">
-                        Track your personalized learning path, upload new materials, and master concepts with AI-driven guidance.
+                        {t('dashboardDescription')}
                     </p>
                 </div>
                 <Button
@@ -64,29 +67,29 @@ export default function AdaptiveLearningDashboard() {
                     size="lg"
                 >
                     <HiOutlineCloudUpload className="w-5 h-5 mr-2" />
-                    Upload New Material
+                    {t('uploadNewMaterial')}
                 </Button>
             </div>
 
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <StatCard
-                    title="Exercises Completed"
+                    title={t('stats.exercisesCompleted')}
                     value={mockDailyStats.exercisesCompleted}
-                    subtitle="+4 today"
+                    subtitle={t('stats.exercisesCompletedSubtitle', { count: 4 })}
                     icon={HiOutlineChartBar}
                     gradient="bg-gradient-to-br from-blue-500 to-blue-600"
                 />
                 <StatCard
-                    title="Learning Time"
-                    value="45m"
-                    subtitle="Target: 60m"
+                    title={t('stats.learningTime')}
+                    value={t('stats.learningTimeValue', { minutes: mockDailyStats.timeSpentMinutes })}
+                    subtitle={t('stats.learningTimeTarget', { minutes: 60 })}
                     icon={HiOutlineClock}
                     gradient="bg-gradient-to-br from-indigo-500 to-purple-600"
                 />
                 <StatCard
-                    title="Current Streak"
-                    value={`${mockDailyStats.streakDays} Days`}
+                    title={t('stats.currentStreak')}
+                    value={t('stats.streakDays', { count: mockDailyStats.streakDays })}
                     icon={HiOutlineLightningBolt}
                     gradient="bg-gradient-to-br from-orange-400 to-pink-500"
                 />
@@ -95,7 +98,7 @@ export default function AdaptiveLearningDashboard() {
                         <span className="font-bold text-lg">A+</span>
                     </div>
                     <div>
-                        <div className="text-gray-900 font-bold">Accuracy Rate</div>
+                        <div className="text-gray-900 font-bold">{t('stats.accuracyRate')}</div>
                         <div className="text-green-600 font-semibold text-xl">{mockDailyStats.accuracy}%</div>
                     </div>
                 </div>
@@ -107,8 +110,8 @@ export default function AdaptiveLearningDashboard() {
                 {/* Left Column: Active Courses */}
                 <div className="lg:col-span-2 space-y-6">
                     <div className="flex items-center justify-between">
-                        <h2 className="text-xl font-bold text-gray-900">Active Learning Paths</h2>
-                        <Button variant="ghost" className="text-indigo-600 hover:bg-indigo-50">View All</Button>
+                        <h2 className="text-xl font-bold text-gray-900">{t('activeLearningPaths')}</h2>
+                        <Button variant="ghost" className="text-indigo-600 hover:bg-indigo-50">{tCommon('viewAll')}</Button>
                     </div>
 
                     <div className="space-y-4">
@@ -131,7 +134,9 @@ export default function AdaptiveLearningDashboard() {
                                                 {course.progress}%
                                             </Badge>
                                         </div>
-                                        <p className="text-sm text-gray-500 truncate">Current Topic: <span className="text-gray-700 font-medium">{course.currentTopic}</span></p>
+                                        <p className="text-sm text-gray-500 truncate">
+                                            {t('currentTopic')} <span className="text-gray-700 font-medium">{course.currentTopic}</span>
+                                        </p>
                                     </div>
 
                                     <div className="flex flex-col items-end gap-2 w-full sm:w-auto">
@@ -139,7 +144,7 @@ export default function AdaptiveLearningDashboard() {
                                             <div className="bg-indigo-500 h-full rounded-full" style={{ width: `${course.progress}%` }} />
                                         </div>
                                         <span className="text-xs text-indigo-600 font-medium group-hover:translate-x-1 transition-transform flex items-center">
-                                            Continue <HiArrowRight className="w-3 h-3 ml-1" />
+                                            {t('continue')} <HiArrowRight className="w-3 h-3 ml-1" />
                                         </span>
                                     </div>
                                 </div>
@@ -150,32 +155,32 @@ export default function AdaptiveLearningDashboard() {
 
                 {/* Right Column: Recommendations & Activity */}
                 <div className="space-y-6">
-                    <h2 className="text-xl font-bold text-gray-900">Recommended for You</h2>
+                    <h2 className="text-xl font-bold text-gray-900">{t('recommendedForYou')}</h2>
 
                     <Card className="bg-gradient-to-b from-gray-900 to-gray-800 text-white border-none shadow-xl">
                         <CardContent className="p-6 space-y-6">
                             <div>
-                                <div className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">Focus Area</div>
-                                <h3 className="text-lg font-bold text-white mb-2">Calculus: Derivatives</h3>
+                                <div className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">{t('focusArea')}</div>
+                                <h3 className="text-lg font-bold text-white mb-2">{t('recommendedTopicTitle')}</h3>
                                 <p className="text-gray-300 text-sm leading-relaxed">
-                                    You struggled with Chain Rule yesterday. Let's do a quick focused review session.
+                                    {t('recommendedTopicDescription')}
                                 </p>
                             </div>
                             <Button className="w-full bg-white text-gray-900 hover:bg-gray-100 font-semibold rounded-xl py-6">
-                                Start Focused Review
+                                {t('startFocusedReview')}
                             </Button>
                         </CardContent>
                     </Card>
 
                     <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
-                        <h3 className="font-bold text-gray-900 mb-4">Recent Activity</h3>
+                        <h3 className="font-bold text-gray-900 mb-4">{t('recentActivity')}</h3>
                         <div className="space-y-4">
                             {[1, 2, 3].map((_, i) => (
                                 <div key={i} className="flex items-center gap-3 pb-3 border-b border-gray-50 last:border-0 last:pb-0">
                                     <div className="w-2 h-2 rounded-full bg-blue-500" />
                                     <div>
-                                        <div className="text-sm font-medium text-gray-700">Completed "Linear Algebra 101"</div>
-                                        <div className="text-xs text-gray-400">2 hours ago</div>
+                                        <div className="text-sm font-medium text-gray-700">{t('recentActivityItem', { title: t('recentActivityCourseTitle') })}</div>
+                                        <div className="text-xs text-gray-400">{t('timeAgoHours', { count: 2 })}</div>
                                     </div>
                                 </div>
                             ))}

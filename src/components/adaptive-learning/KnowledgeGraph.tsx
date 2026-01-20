@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { motion } from 'framer-motion';
 
 interface Node {
@@ -17,16 +18,6 @@ interface Edge {
     to: string;
 }
 
-const mockNodes: Node[] = [
-    { id: '1', x: 100, y: 300, label: 'Basics', status: 'completed', radius: 40 },
-    { id: '2', x: 250, y: 150, label: 'Algebra', status: 'completed', radius: 45 },
-    { id: '3', x: 250, y: 450, label: 'Geometry', status: 'completed', radius: 45 },
-    { id: '4', x: 450, y: 300, label: 'Calculus', status: 'current', radius: 55 },
-    { id: '5', x: 650, y: 200, label: 'Limits', status: 'available', radius: 35 },
-    { id: '6', x: 650, y: 400, label: 'Integrals', status: 'locked', radius: 35 },
-    { id: '7', x: 800, y: 300, label: 'Advanced', status: 'locked', radius: 30 },
-];
-
 const mockEdges: Edge[] = [
     { from: '1', to: '2' },
     { from: '1', to: '3' },
@@ -40,6 +31,16 @@ const mockEdges: Edge[] = [
 
 export default function KnowledgeGraph() {
     const [hoveredNode, setHoveredNode] = useState<string | null>(null);
+    const t = useTranslations('adaptiveLearning');
+    const mockNodes: Node[] = [
+        { id: '1', x: 100, y: 300, label: t('knowledgeGraph.nodes.basics'), status: 'completed', radius: 40 },
+        { id: '2', x: 250, y: 150, label: t('knowledgeGraph.nodes.algebra'), status: 'completed', radius: 45 },
+        { id: '3', x: 250, y: 450, label: t('knowledgeGraph.nodes.geometry'), status: 'completed', radius: 45 },
+        { id: '4', x: 450, y: 300, label: t('knowledgeGraph.nodes.calculus'), status: 'current', radius: 55 },
+        { id: '5', x: 650, y: 200, label: t('knowledgeGraph.nodes.limits'), status: 'available', radius: 35 },
+        { id: '6', x: 650, y: 400, label: t('knowledgeGraph.nodes.integrals'), status: 'locked', radius: 35 },
+        { id: '7', x: 800, y: 300, label: t('knowledgeGraph.nodes.advanced'), status: 'locked', radius: 30 },
+    ];
 
     const getNodeColor = (status: Node['status']) => {
         switch (status) {
@@ -59,15 +60,15 @@ export default function KnowledgeGraph() {
     return (
         <div className="w-full h-[600px] bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden relative interactive-graph">
             <div className="absolute top-4 left-6 z-10">
-                <h3 className="text-lg font-bold text-gray-900">Knowledge Map</h3>
-                <p className="text-sm text-gray-500">Your learning journey visualization</p>
+                <h3 className="text-lg font-bold text-gray-900">{t('knowledgeGraph.title')}</h3>
+                <p className="text-sm text-gray-500">{t('knowledgeGraph.subtitle')}</p>
             </div>
 
             <div className="absolute bottom-4 right-6 z-10 flex gap-4 text-xs font-medium">
-                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-green-500" /> Completed</div>
-                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-indigo-500" /> Current</div>
-                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-amber-500" /> Available</div>
-                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-gray-300" /> Locked</div>
+                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-green-500" /> {t('knowledgeGraph.legend.completed')}</div>
+                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-indigo-500" /> {t('knowledgeGraph.legend.current')}</div>
+                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-amber-500" /> {t('knowledgeGraph.legend.available')}</div>
+                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-gray-300" /> {t('knowledgeGraph.legend.locked')}</div>
             </div>
 
             <svg width="100%" height="100%" viewBox="0 0 900 600" className="w-full h-full">

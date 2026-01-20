@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
 import { HiOutlineX, HiArrowUp } from '@/components/icons';
 import { HiOutlineSparkles } from '@/components/icons';
@@ -18,8 +19,9 @@ interface ChatbotProps {
 }
 
 export default function AdaptiveLearningChatbot({ context, isOpen, onClose }: ChatbotProps) {
+    const t = useTranslations('adaptiveLearning');
     const [messages, setMessages] = useState<Message[]>([
-        { id: '1', role: 'assistant', content: 'Hello! I noticed you might need help with this question. How can I assist you?' }
+        { id: '1', role: 'assistant', content: t('chatbot.initialGreeting') }
     ]);
     const [input, setInput] = useState('');
     const [isTyping, setIsTyping] = useState(false);
@@ -44,7 +46,7 @@ export default function AdaptiveLearningChatbot({ context, isOpen, onClose }: Ch
             const aiMsg: Message = {
                 id: (Date.now() + 1).toString(),
                 role: 'assistant',
-                content: "That's a great question. In this context, we apply the chain rule because the function is a composite of two other functions..."
+                content: t('chatbot.sampleResponse')
             };
             setMessages(prev => [...prev, aiMsg]);
             setIsTyping(false);
@@ -59,7 +61,7 @@ export default function AdaptiveLearningChatbot({ context, isOpen, onClose }: Ch
             <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-blue-50/50">
                 <div className="flex items-center gap-2 text-blue-700">
                     <HiOutlineSparkles className="w-5 h-5" />
-                    <span className="font-semibold">AI Tutor</span>
+                    <span className="font-semibold">{t('chatbot.title')}</span>
                 </div>
                 <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
                     <HiOutlineX className="w-6 h-6" />
@@ -70,7 +72,7 @@ export default function AdaptiveLearningChatbot({ context, isOpen, onClose }: Ch
             <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50" ref={scrollRef}>
                 {context && (
                     <div className="bg-white p-3 rounded-lg border border-gray-200 text-xs text-gray-500 mb-4">
-                        <strong>Context:</strong> {context}
+                        <strong>{t('chatbot.context')}:</strong> {context}
                     </div>
                 )}
                 {messages.map((msg) => (
@@ -104,7 +106,7 @@ export default function AdaptiveLearningChatbot({ context, isOpen, onClose }: Ch
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                        placeholder="Ask a question..."
+                        placeholder={t('chatbot.placeholder')}
                         className="w-full pl-4 pr-12 py-3 bg-gray-100 border-none rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all outline-none text-sm"
                     />
                     <button

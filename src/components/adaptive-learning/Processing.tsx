@@ -2,19 +2,20 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { Card, CardContent } from '@/components/ui/Card';
 import { HiCheck, HiOutlineSparkles, HiOutlineChip } from '@/components/icons';
 
-const STEPS = [
-    { id: 1, label: 'Reading PDF content' },
-    { id: 2, label: 'Extracting key concepts' },
-    { id: 3, label: 'Building Knowledge Graph' },
-    { id: 4, label: 'Generating learning path' },
-    { id: 5, label: 'Preparing first exercise' },
-];
-
 export default function AdaptiveLearningProcessing() {
     const router = useRouter();
+    const t = useTranslations('adaptiveLearning');
+    const steps = [
+        { id: 1, label: t('processing.steps.readingPdf') },
+        { id: 2, label: t('processing.steps.extractingConcepts') },
+        { id: 3, label: t('processing.steps.buildingGraph') },
+        { id: 4, label: t('processing.steps.generatingPath') },
+        { id: 5, label: t('processing.steps.preparingExercise') },
+    ];
     const [currentStep, setCurrentStep] = useState(1);
     const [progress, setProgress] = useState(0);
 
@@ -31,7 +32,7 @@ export default function AdaptiveLearningProcessing() {
             setProgress(currentProgress);
 
             // Map progress to steps (approximate)
-            const step = Math.min(Math.ceil((currentProgress / 100) * STEPS.length), STEPS.length);
+            const step = Math.min(Math.ceil((currentProgress / 100) * steps.length), steps.length);
             setCurrentStep(step);
 
             if (currentProgress >= 100) {
@@ -59,12 +60,12 @@ export default function AdaptiveLearningProcessing() {
                             <HiOutlineChip className="w-10 h-10 text-indigo-600" />
                         </div>
 
-                        <h2 className="text-2xl font-bold text-gray-900 mb-2">Analyzing Material</h2>
-                        <p className="text-gray-500 mb-8">Please wait while our AI builds your personalized curriculum.</p>
+                        <h2 className="text-2xl font-bold text-gray-900 mb-2">{t('processing.title')}</h2>
+                        <p className="text-gray-500 mb-8">{t('processing.description')}</p>
 
                         {/* Steps List */}
                         <div className="space-y-4 text-left max-w-sm mx-auto mb-8">
-                            {STEPS.map((step) => {
+                            {steps.map((step) => {
                                 const isCompleted = step.id < currentStep;
                                 const isActive = step.id === currentStep;
 
@@ -77,10 +78,10 @@ export default function AdaptiveLearningProcessing() {
                                             {isCompleted && <HiCheck className="w-3 h-3" />}
                                             {isActive && <div className="w-2 h-2 rounded-full bg-indigo-600 animate-pulse" />}
                                         </div>
-                                        <span className={`text-sm font-medium transition-colors ${isCompleted ? 'text-gray-900' :
-                                                isActive ? 'text-indigo-600' :
-                                                    'text-gray-400'
-                                            }`}>
+                                <span className={`text-sm font-medium transition-colors ${isCompleted ? 'text-gray-900' :
+                                        isActive ? 'text-indigo-600' :
+                                            'text-gray-400'
+                                    }`}>
                                             {step.label}
                                         </span>
                                     </div>
@@ -91,7 +92,7 @@ export default function AdaptiveLearningProcessing() {
                         {/* Progress Bar */}
                         <div className="relative pt-4">
                             <div className="flex justify-between text-xs font-semibold text-gray-400 mb-2">
-                                <span>PROGRESS</span>
+                                <span>{t('processing.progress')}</span>
                                 <span>{Math.round(progress)}%</span>
                             </div>
                             <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
@@ -108,7 +109,7 @@ export default function AdaptiveLearningProcessing() {
                 <div className="mt-8 flex items-start gap-3 p-4 bg-white rounded-2xl border border-gray-100 shadow-sm text-sm text-gray-600 max-w-md mx-auto">
                     <HiOutlineSparkles className="w-5 h-5 text-yellow-500 flex-shrink-0" />
                     <p>
-                        <strong>Did you know?</strong> Adaptive learning adjusts the difficulty of questions in real-time based on your performance.
+                        <strong>{t('processing.didYouKnow')}</strong> {t('processing.didYouKnowDescription')}
                     </p>
                 </div>
             </div>

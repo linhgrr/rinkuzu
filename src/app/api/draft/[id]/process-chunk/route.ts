@@ -5,7 +5,7 @@ import { authOptions } from '@/lib/auth';
 import connectDB from '@/lib/mongoose';
 import DraftQuiz from '@/models/DraftQuiz';
 import { PDFDocument } from 'pdf-lib';
-import { extractQuestionsFromPdf } from '@/lib/gemini';
+import { buildChunkLevelPrompt, extractQuestionsFromPdf } from '@/lib/gemini';
 import { getPDFBuffer } from '@/lib/s3';
 import { randomUUID } from 'crypto';
 
@@ -167,11 +167,17 @@ export async function POST(
       }
 
       // Extract questions using AI
+      let chunkPrompt = draft.chunkPrompt ?? draft.prompt;
+
+      if (!draft.chunkPrompt && draft.prompt && draft.chunks.total > 1) {
+        chunkPrompt = await buildChunkLevelPrompt(draft.prompt, draft.chunks.total);
+      }
+
       const extractedQuestions = await extractQuestionsFromPdf(
         chunkBuffer,
         2,
         request.signal,
-        draft.prompt
+        chunkPrompt
       );
 
       // Remove duplicates with existing questions

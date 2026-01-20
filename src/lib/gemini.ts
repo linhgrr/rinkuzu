@@ -140,11 +140,65 @@ Answer Formatting Rules:
 **REMEMBER:** Generating questions is allowed **only if and only if** there are absolutely **no questions to extract** from the original text.
 `;
 
+const CHUNK_PROMPT_ADJUSTMENT = `
+You rewrite a user's quiz customization so it can be applied to ONE chunk of a document.
+
+Inputs:
+- userPrompt: the user's original customization.
+- chunkCount: how many chunks the full document is split into.
+
+Rules:
+- If the userPrompt specifies a TOTAL number of questions for the whole document, rewrite it to a PER-CHUNK number.
+- Compute per-chunk count as: ceil(total / chunkCount).
+- Preserve the user's language, tone, and all other instructions.
+- If the userPrompt already references per-chunk/each part, keep it unchanged.
+- If the userPrompt does not specify a total count, return it unchanged.
+
+Return ONLY the rewritten prompt text, no extra formatting or explanation.
+`;
+
 function buildExtractionPrompt(userPrompt?: string) {
   if (userPrompt?.trim()) {
     return CUSTOM_EXTRACTION_PROMPT.replace('<<<USER_PROMPT>>>', userPrompt.trim());
   }
   return EXTRACTION_PROMPT;
+}
+
+export async function buildChunkLevelPrompt(
+  userPrompt: string,
+  chunkCount: number
+): Promise<string> {
+  const trimmedPrompt = userPrompt.trim();
+
+  if (!trimmedPrompt || chunkCount <= 1) {
+    return trimmedPrompt;
+  }
+
+  try {
+    const model = createLangChainModel({ temperature: 0 });
+    const prompt = `
+${CHUNK_PROMPT_ADJUSTMENT}
+
+userPrompt:
+"""
+${trimmedPrompt}
+"""
+
+chunkCount: ${chunkCount}
+`;
+
+    const message = new HumanMessage(prompt);
+    const result = await model.invoke([message]);
+
+    const text = typeof result.content === 'string'
+      ? result.content.trim()
+      : JSON.stringify(result.content).trim();
+
+    return text || trimmedPrompt;
+  } catch (error) {
+    console.warn('⚠️ Failed to adjust prompt for chunking, using original prompt.', error);
+    return trimmedPrompt;
+  }
 }
 
 /**
@@ -300,6 +354,10 @@ export async function extractQuestionsFromPdfChunks(
   console.log(`🚀 Starting SEQUENTIAL processing of ${chunks.length} chunks`);
   const startTime = Date.now();
 
+  const chunkPrompt = userPrompt
+    ? await buildChunkLevelPrompt(userPrompt, chunks.length)
+    : userPrompt;
+
   const results: ChunkResult[] = [];
 
   // Process chunks one by one (sequential)
@@ -307,7 +365,7 @@ export async function extractQuestionsFromPdfChunks(
     console.log(`📋 Processing chunk ${chunk.chunkIndex} (pages ${chunk.startPage}-${chunk.endPage})...`);
 
     try {
-      const questions = await extractQuestionsFromPdf(chunk.buffer, 2, undefined, userPrompt);
+      const questions = await extractQuestionsFromPdf(chunk.buffer, 2, undefined, chunkPrompt);
 
       console.log(`✅ Chunk ${chunk.chunkIndex} completed: ${questions.length} questions extracted`);
 

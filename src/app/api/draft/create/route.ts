@@ -6,6 +6,7 @@ import connectDB from '@/lib/mongoose';
 import DraftQuiz from '@/models/DraftQuiz';
 import { PDFDocument } from 'pdf-lib';
 import { uploadPDF, generatePDFKey, deletePDF } from '@/lib/s3';
+import { buildChunkLevelPrompt } from '@/lib/gemini';
 
 const CHUNK_SIZE = 5; // pages per chunk
 const OVERLAP_PAGES = 1;
@@ -108,12 +109,20 @@ export async function POST(request: NextRequest) {
     const expiresAt = new Date(Date.now() + EXPIRY_HOURS * 60 * 60 * 1000);
 
     let draft;
+    let chunkPrompt: string | undefined;
+    const trimmedPrompt = prompt?.trim();
+
+    if (trimmedPrompt && chunkDetails.length > 1) {
+      chunkPrompt = await buildChunkLevelPrompt(trimmedPrompt, chunkDetails.length);
+    }
+
     try {
       draft = await DraftQuiz.create({
         userId,
         title: title.trim(),
         categoryId: categoryId || undefined,
-        prompt: prompt?.trim() ? prompt.trim() : undefined,
+        prompt: trimmedPrompt || undefined,
+        chunkPrompt,
         pdfData: {
           fileName,
           fileSize: buffer.length,

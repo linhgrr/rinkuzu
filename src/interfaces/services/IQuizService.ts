@@ -15,6 +15,7 @@ export interface QuizListOptions {
   category?: string
   page?: number
   limit?: number
+  isPrivate?: boolean
   userRole?: string
   userId?: string
   onlyMine?: boolean

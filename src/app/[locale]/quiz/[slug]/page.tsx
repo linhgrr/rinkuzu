@@ -642,7 +642,7 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
                   <div className="text-center text-blue-700">
                     <HiOutlineLightBulb className="w-6 h-6 mx-auto mb-2 text-blue-600" />
                     <p className="text-sm font-medium">
-                      <Link href="/login" className="underline hover:text-blue-800">{t('login', { ns: 'auth' })}</Link> {t('loginToTrack', { ns: 'auth' })}
+                      <Link href="/login" className="underline hover:text-blue-800">{t('login')}</Link> {t('loginToTrack')}
                     </p>
                   </div>
                 </Card>
@@ -650,12 +650,12 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
                 {/* Email Input */}
                 <div>
                   <Input
-                    label="Your Email"
+                    label={t('yourEmail')}
                     id="email"
                     type="email"
                     value={userEmail}
                     onChange={(e) => setUserEmail(e.target.value)}
-                    placeholder="Enter your email address"
+                    placeholder={t('enterEmailAddress')}
                     required
                     variant="glass"
                     icon={
@@ -663,7 +663,7 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
                     }
                   />
                   <p className="mt-2 text-xs text-gray-500">
-                    {t('weWillUseEmail', { ns: 'auth' })}
+                    {t('weWillUseEmail')}
                   </p>
                 </div>
 

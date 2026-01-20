@@ -2,6 +2,7 @@
 
 import React, { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
+import { useTranslations } from 'next-intl';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import {
@@ -15,6 +16,8 @@ import { useRouter } from 'next/navigation';
 
 export default function AdaptiveLearningUpload() {
     const router = useRouter();
+    const t = useTranslations('adaptiveLearning');
+    const tCommon = useTranslations('common');
     const [isUploading, setIsUploading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
 
@@ -57,11 +60,11 @@ export default function AdaptiveLearningUpload() {
                     onClick={() => router.back()}
                     className="text-gray-500 hover:text-gray-900 -ml-4 mb-4"
                 >
-                    <HiOutlineArrowLeft className="w-5 h-5 mr-2" /> Back
+                    <HiOutlineArrowLeft className="w-5 h-5 mr-2" /> {tCommon('back')}
                 </Button>
-                <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Upload Learning Material</h1>
+                <h1 className="text-3xl font-bold text-gray-900 tracking-tight">{t('uploadTitle')}</h1>
                 <p className="text-gray-500 mt-2 text-lg">
-                    Upload your PDF textbooks or lecture notes. Our AI will analyze them to create a personalized learning path used just for you.
+                    {t('uploadDescription')}
                 </p>
             </div>
 
@@ -86,13 +89,13 @@ export default function AdaptiveLearningUpload() {
                                         <HiOutlineCloudUpload className="w-10 h-10" />
                                     </div>
                                     <h3 className="text-xl font-bold text-gray-900 mb-2">
-                                        {isDragActive ? 'Drop the PDF here' : 'Drag & Drop PDF'}
+                                        {isDragActive ? t('dropPdfHere') : t('dragDropPdf')}
                                     </h3>
                                     <p className="text-gray-500 mb-6 max-w-sm">
-                                        or click to browse from your computer. Supports PDF up to 50MB.
+                                        {t('uploadBrowseHint')}
                                     </p>
                                     <Button variant="outline" className="rounded-full px-8 border-gray-300 font-medium">
-                                        Browse Files
+                                        {t('browseFiles')}
                                     </Button>
                                 </>
                             ) : (
@@ -100,7 +103,7 @@ export default function AdaptiveLearningUpload() {
                                     <div className="w-20 h-20 mx-auto rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center mb-6 animate-pulse">
                                         <HiOutlineDocumentText className="w-10 h-10" />
                                     </div>
-                                    <h3 className="text-lg font-bold text-gray-900 mb-2">Uploading your file...</h3>
+                                    <h3 className="text-lg font-bold text-gray-900 mb-2">{t('uploadingFile')}</h3>
                                     <div className="flex items-center justify-between text-sm text-gray-500 mb-2">
                                         <span>{uploadProgress}%</span>
                                     </div>
@@ -116,33 +119,33 @@ export default function AdaptiveLearningUpload() {
                 {/* Sidebar Info */}
                 <div className="space-y-6">
                     <div className="bg-indigo-900 text-white rounded-2xl p-6 shadow-lg">
-                        <h3 className="font-bold text-lg mb-4">How it works</h3>
+                        <h3 className="font-bold text-lg mb-4">{t('howItWorksTitle')}</h3>
                         <ol className="space-y-4 text-sm text-indigo-100">
                             <li className="flex gap-3">
                                 <span className="flex-shrink-0 w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-xs font-bold">1</span>
-                                <span>Upload your course material (PDF)</span>
+                                <span>{t('howItWorksStep1')}</span>
                             </li>
                             <li className="flex gap-3">
                                 <span className="flex-shrink-0 w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-xs font-bold">2</span>
-                                <span>AI analyzes key concepts & difficulty</span>
+                                <span>{t('howItWorksStep2')}</span>
                             </li>
                             <li className="flex gap-3">
                                 <span className="flex-shrink-0 w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-xs font-bold">3</span>
-                                <span>Start personalized exercises immediately</span>
+                                <span>{t('howItWorksStep3')}</span>
                             </li>
                         </ol>
                     </div>
 
                     <div>
-                        <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4">Recent Uploads</h3>
+                        <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4">{t('recentUploads')}</h3>
                         <div className="space-y-3">
                             <div className="bg-white rounded-xl p-3 border border-gray-100 shadow-sm flex items-center gap-3">
                                 <div className="bg-red-50 text-red-500 p-2 rounded-lg">
                                     <HiOutlineDocumentText className="w-5 h-5" />
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                    <div className="font-medium text-gray-900 text-sm truncate">Toán Giải tích 12.pdf</div>
-                                    <div className="text-xs text-gray-500">2 days ago</div>
+                                    <div className="font-medium text-gray-900 text-sm truncate">{t('recentUploadFileName')}</div>
+                                    <div className="text-xs text-gray-500">{t('timeAgoDays', { count: 2 })}</div>
                                 </div>
                                 <HiCheckCircle className="w-5 h-5 text-green-500" />
                             </div>

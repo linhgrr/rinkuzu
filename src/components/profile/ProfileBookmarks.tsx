@@ -9,7 +9,10 @@ import { Modal } from '@/components/ui/Modal';
 import { DynamicMarkdownRenderer as MarkdownRenderer } from '@/components/ui/DynamicMarkdownRenderer';
 import Pagination from '@/components/ui/Pagination';
 import { useSession } from 'next-auth/react';
-import { HiOutlineTag, HiOutlineChatAlt, HiOutlineTrash, HiOutlineExternalLink } from '@/components/icons';
+import { HiOutlineTag, HiOutlineTrash, HiOutlineExternalLink } from '@/components/icons';
+import Image from 'next/image';
+
+const chatbotIcon = 'https://i.ibb.co/ZRYgc1tN/Gemini-Generated-Image-yjm06yyjm06yyjm0-removebg-preview.png';
 
 interface Bookmark {
     _id: string;
@@ -381,7 +384,7 @@ export default function ProfileBookmarks() {
                                     </div>
                                     <div className="flex gap-2 w-full sm:w-auto">
                                         <Button variant="outline" size="sm" onClick={() => openAIModal(bookmark)} className="flex items-center gap-1.5">
-                                            <HiOutlineChatAlt className="w-4 h-4" /> {t('askAI')} {chatHistories[bookmark._id]?.length > 0 && `(${Math.floor(chatHistories[bookmark._id].length / 2)})`}
+                                            <Image src={chatbotIcon} alt="AI chatbot" width={16} height={16} className="w-4 h-4" /> {t('askAI')} {chatHistories[bookmark._id]?.length > 0 && `(${Math.floor(chatHistories[bookmark._id].length / 2)})`}
                                         </Button>
                                         <Button variant="outline" size="sm" onClick={() => removeBookmark(bookmark._id)} className="text-red-600 border-red-200 hover:bg-red-50 flex items-center gap-1.5">
                                             <HiOutlineTrash className="w-4 h-4" /> {tCommon('remove')}

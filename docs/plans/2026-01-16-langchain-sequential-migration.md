@@ -1170,7 +1170,7 @@ async function summarizeChatHistory(chatHistory: ChatMessage[]): Promise<string>
       .join('\n\n');
 
     const summarizePrompt = `
-Please provide a concise summary of this educational conversation between a student and AI tutor Rin-chan about a quiz question.
+Please provide a concise summary of this educational conversation between a student and Rin-chan Rin-chan about a quiz question.
 
 CONVERSATION TO SUMMARIZE:
 ${chatText}

@@ -325,6 +325,19 @@
 }
 
 /* Animations */
+@keyframes scrollLeft {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-scroll-left {
+  animation: scrollLeft 30s linear infinite;
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;

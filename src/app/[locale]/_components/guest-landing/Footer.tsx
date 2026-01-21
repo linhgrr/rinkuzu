@@ -1,0 +1,87 @@
+'use client'
+
+import { useTranslations } from 'next-intl'
+import Link from 'next/link'
+import { HiOutlineMail, HiOutlinePhone, HiOutlineLocationMarker } from '@/components/icons'
+import { NavLogo } from '@/components/Navigation/NavLogo'
+
+export function Footer () {
+  const t = useTranslations('landing.footer')
+
+  return (
+    <footer className="bg-white pt-24 pb-12 border-t border-gray-100">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-20">
+          {/* Logo & Contact */}
+          <div className="space-y-6">
+            <NavLogo />
+            <div className="space-y-4 text-gray-500 text-sm">
+              <div className="flex items-start gap-3">
+                <HiOutlineLocationMarker className="w-5 h-5 text-blue-600 shrink-0" />
+                <p>{t('address')}</p>
+              </div>
+              <div className="flex items-center gap-3">
+                <HiOutlinePhone className="w-5 h-5 text-blue-600 shrink-0" />
+                <p>+1 (234) 567-890</p>
+              </div>
+              <div className="flex items-center gap-3">
+                <HiOutlineMail className="w-5 h-5 text-blue-600 shrink-0" />
+                <p>support@rinkuzu.com</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Links */}
+          <div>
+            <h4 className="font-bold text-[#1e242c] mb-6 uppercase tracking-wider text-sm">{t('links.title')}</h4>
+            <ul className="space-y-4">
+              <li><Link href="/" className="text-gray-500 hover:text-blue-600 transition-colors">{t('links.home')}</Link></li>
+              <li><Link href="#features" className="text-gray-500 hover:text-blue-600 transition-colors">{t('links.features')}</Link></li>
+              <li><Link href="/pricing" className="text-gray-500 hover:text-blue-600 transition-colors">{t('links.pricing')}</Link></li>
+              <li><Link href="/faq" className="text-gray-500 hover:text-blue-600 transition-colors">{t('links.faq')}</Link></li>
+            </ul>
+          </div>
+
+          {/* Legal */}
+          <div>
+            <h4 className="font-bold text-[#1e242c] mb-6 uppercase tracking-wider text-sm">{t('legal.title')}</h4>
+            <ul className="space-y-4">
+              <li><Link href="/privacy" className="text-gray-500 hover:text-blue-600 transition-colors">{t('legal.privacy')}</Link></li>
+              <li><Link href="/terms" className="text-gray-500 hover:text-blue-600 transition-colors">{t('legal.terms')}</Link></li>
+              <li><Link href="/cookies" className="text-gray-500 hover:text-blue-600 transition-colors">{t('legal.cookie')}</Link></li>
+            </ul>
+          </div>
+
+          {/* Newsletter */}
+          <div className="space-y-6">
+            <h4 className="font-bold text-[#1e242c] uppercase tracking-wider text-sm">{t('newsletter.title')}</h4>
+            <p className="text-gray-500 text-sm">{t('newsletter.description')}</p>
+            <div className="relative">
+              <input 
+                type="email" 
+                placeholder={t('newsletter.placeholder')}
+                className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-6 py-4 text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none"
+              />
+              <button className="absolute right-2 top-2 bottom-2 bg-blue-600 text-white px-4 rounded-xl text-xs font-bold hover:bg-blue-700 transition-colors">
+                {t('newsletter.button')}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="pt-12 border-t border-gray-100 flex flex-col md:flex-row items-center justify-between gap-6">
+          <p className="text-gray-400 text-sm">
+            {t('copyright')}
+          </p>
+          <div className="flex items-center gap-6">
+            {['Twitter', 'Facebook', 'LinkedIn', 'Instagram'].map((social) => (
+              <a key={social} href="#" className="text-gray-400 hover:text-[#1e242c] transition-colors text-sm">
+                {social}
+              </a>
+            ))}
+          </div>
+        </div>
+      </div>
+    </footer>
+  )
+}

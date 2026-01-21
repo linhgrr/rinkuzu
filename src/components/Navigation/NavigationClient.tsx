@@ -244,6 +244,7 @@ const MobileMenu = memo(function MobileMenu({ session, isOpen, onClose }: Mobile
 
 interface NavigationClientProps {
   className?: string;
+  transparent?: boolean;
 }
 
 /**
@@ -251,11 +252,24 @@ interface NavigationClientProps {
  * Composes static components (NavLogo, NavLinks, GuestLinks) with
  * interactive client components (UserMenu, MobileMenu)
  */
-export default function NavigationClient({ className = '' }: NavigationClientProps) {
+export default function NavigationClient({ className = '', transparent = false }: NavigationClientProps) {
   const { data: session } = useSession();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 20);
+    };
+
+    if (transparent) {
+      window.addEventListener('scroll', handleScroll);
+      handleScroll(); // Initial check
+      return () => window.removeEventListener('scroll', handleScroll);
+    }
+  }, [transparent]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -288,8 +302,16 @@ export default function NavigationClient({ className = '' }: NavigationClientPro
 
   const isAdmin = (session?.user as any)?.role === 'admin';
 
+  const navClasses = transparent
+    ? isScrolled
+      ? 'backdrop-blur-xl bg-white/80 border-b border-gray-200/50 shadow-sm'
+      : 'bg-transparent border-transparent'
+    : 'backdrop-blur-xl bg-white/80 border-b border-gray-200/50 shadow-sm';
+
+  const positionClass = transparent ? 'fixed' : 'sticky';
+
   return (
-    <nav className={`sticky top-0 z-50 backdrop-blur-xl bg-white/80 border-b border-gray-200/50 ${className}`}>
+    <nav className={`${positionClass} top-0 left-0 right-0 z-50 transition-all duration-300 ${navClasses} ${className}`}>
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-14">
           {/* Logo - Static Component */}

@@ -4,7 +4,9 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
 import { HiOutlineX, HiArrowUp } from '@/components/icons';
-import { HiOutlineSparkles } from '@/components/icons';
+import Image from 'next/image';
+
+const chatbotIcon = 'https://i.ibb.co/ZRYgc1tN/Gemini-Generated-Image-yjm06yyjm06yyjm0-removebg-preview.png';
 
 interface Message {
     id: string;
@@ -60,7 +62,7 @@ export default function AdaptiveLearningChatbot({ context, isOpen, onClose }: Ch
             {/* Header */}
             <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-blue-50/50">
                 <div className="flex items-center gap-2 text-blue-700">
-                    <HiOutlineSparkles className="w-5 h-5" />
+                    <Image src={chatbotIcon} alt="AI chatbot" width={20} height={20} className="w-5 h-5" />
                     <span className="font-semibold">{t('chatbot.title')}</span>
                 </div>
                 <button onClick={onClose} className="text-gray-400 hover:text-gray-600">

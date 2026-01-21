@@ -158,6 +158,27 @@ export { HiOutlineFilter, HiFilter, HiOutlineSortAscending, HiOutlineSortDescend
 // Globe/World icons
 export { HiOutlineGlobe, HiGlobe, HiOutlineGlobeAlt } from 'react-icons/hi';
 
+// Location icons
+export { HiOutlineLocationMarker, HiLocationMarker } from 'react-icons/hi';
+
+// Phone icons
+export { HiOutlinePhone, HiPhone } from 'react-icons/hi';
+
+// Code icons
+export { HiOutlineCode, HiCode } from 'react-icons/hi';
+
+// Translate icons
+export { HiOutlineTranslate, HiTranslate } from 'react-icons/hi';
+
+// Calculator icons
+export { HiOutlineCalculator, HiCalculator } from 'react-icons/hi';
+
+// Science/Beaker icons
+export { HiOutlineBeaker, HiBeaker } from 'react-icons/hi';
+
+// User Add icons
+export { HiOutlineUserAdd, HiUserAdd } from 'react-icons/hi';
+
 // Photograph/Image icons
 export { HiOutlinePhotograph, HiPhotograph } from 'react-icons/hi';
 

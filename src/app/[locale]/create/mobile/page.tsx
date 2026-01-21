@@ -14,8 +14,11 @@ import {
   HiOutlineArrowRight,
   HiOutlineDesktopComputer,
   HiOutlineX,
+  HiOutlineTag,
 } from '@/components/icons';
 import { toast } from 'sonner';
+import { CategorySelector } from '@/components/ui/CategorySelector';
+import { Textarea } from '@/components/ui/Input';
 
 export default function MobileCreatePage() {
   const t = useTranslations('create');
@@ -27,6 +30,8 @@ export default function MobileCreatePage() {
 
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<any>(null);
   const [aiPrompt, setAiPrompt] = useState('');
   const [isUploading, setIsUploading] = useState(false);
 
@@ -61,6 +66,8 @@ export default function MobileCreatePage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: title.trim(),
+          description: description.trim() || undefined,
+          category: selectedCategory?._id,
           pdfBase64: base64,
           fileName: file.name,
           prompt: aiPrompt.trim() || undefined,
@@ -161,7 +168,7 @@ export default function MobileCreatePage() {
                 className="mt-3 inline-flex items-center gap-1 text-sm text-red-500 hover:text-red-600"
               >
                 <HiOutlineX className="w-4 h-4" />
-                {t('selectCategory')}
+                {t('remove')}
               </button>
             </motion.div>
           ) : (
@@ -209,6 +216,56 @@ export default function MobileCreatePage() {
         )}
       </AnimatePresence>
 
+      {/* Description Input */}
+      <AnimatePresence>
+        {file && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="mt-5"
+          >
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {t('descriptionOptional')}
+            </label>
+            <Textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder={t('provideContext')}
+              rows={3}
+              className="w-full px-4 py-3.5 rounded-xl border border-gray-200
+                         bg-white text-gray-900 placeholder-gray-400
+                         focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                         transition-all duration-200"
+              disabled={isUploading}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Category Selector */}
+      <AnimatePresence>
+        {file && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="mt-5"
+          >
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {t('category')}
+            </label>
+            <CategorySelector
+              value={selectedCategory}
+              onChange={setSelectedCategory}
+              placeholder={t('searchSelectCategory')}
+              required
+              disabled={isUploading}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* AI Prompt Input */}
       <AnimatePresence>
         {file && (
@@ -241,7 +298,7 @@ export default function MobileCreatePage() {
 
       {/* Submit Button */}
       <AnimatePresence>
-        {file && title.trim() && (
+        {file && title.trim() && selectedCategory && (
           <motion.button
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}

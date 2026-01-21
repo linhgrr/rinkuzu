@@ -24,8 +24,8 @@
     "no": "Không",
     "or": "hoặc",
     "all": "Tất cả",
-    "more": "Xem thêm",
-    "less": "Thu gọn",
+    "more": "Nhiều hơn",
+    "less": "Ít hơn",
     "total": "Tổng",
     "remove": "Xóa",
     "send": "Gửi",
@@ -289,8 +289,8 @@
       "dashboard": "Bảng điều khiển",
       "continueJourney": "Tiếp tục hành trình",
       "stillConfused": "Vẫn còn bối rối?",
-      "aiTutorDescription": "Gia sư AI có thể giải thích đơn giản hơn hoặc đưa thêm ví dụ.",
-      "chatWithTutor": "Trò chuyện với gia sư AI",
+      "aiTutorDescription": "Rin-chan có thể giải thích đơn giản hơn hoặc đưa thêm ví dụ.",
+      "chatWithTutor": "Trò chuyện với Rin-chan",
       "sessionStats": "Thống kê phiên",
       "timeTaken": "Thời gian",
       "timeTakenValue": "{minutes}p {seconds}g",
@@ -302,7 +302,7 @@
     "chatbot": {
       "initialGreeting": "Xin chào! Mình thấy bạn có thể cần trợ giúp với câu hỏi này. Mình có thể hỗ trợ gì?",
       "sampleResponse": "Đây là một câu hỏi hay. Trong trường hợp này, chúng ta áp dụng quy tắc chuỗi vì hàm là hợp của hai hàm khác nhau...",
-      "title": "Gia sư AI",
+      "title": "Rin-chan",
       "context": "Ngữ cảnh",
       "placeholder": "Hỏi một câu..."
     }
@@ -936,5 +936,123 @@
     "noCorrectAnswer": "Không có đáp án đúng",
     "dontKnow": "Không biết",
     "knowIt": "Biết rồi"
+  },
+  "landing": {
+    "hero": {
+      "badge": "Nền tảng học tập AI #1 cho học sinh, sinh viên",
+      "titlePart1": "Làm chủ kiến thức.",
+      "titlePart2": "Vượt mọi kỳ thi.",
+      "description": "Tạo quiz từ PDF, ôn tập thông minh với Flashcards và Rin-chan cá nhân hóa hành trình học tập của bạn.",
+      "searchPlaceholder": "Tìm kiếm chủ đề: Giải tích, Tiếng Anh...",
+      "community": "Cộng đồng RinKuzu",
+      "searchButton": "Tìm kiếm ngay"
+    },
+    "categories": {
+      "title": "Khám phá kiến thức mới",
+      "subtitle": "Tìm kiếm những bộ quiz chất lượng nhất từ cộng đồng theo từng chủ đề yêu thích của bạn.",
+      "viewAll": "Xem tất cả",
+      "items": {
+        "dev": "Lập trình",
+        "lang": "Ngoại ngữ",
+        "math": "Toán học",
+        "science": "Khoa học",
+        "history": "Lịch sử",
+        "design": "Thiết kế"
+      }
+    },
+    "features": {
+      "title": "Tại sao chọn RinKuzu?",
+      "subtitle": "Mở khóa tiềm năng thực sự của bạn với các công cụ học tập thông minh được hỗ trợ bởi AI.",
+      "feature1": {
+        "title": "Tạo Quiz Tức Thì",
+        "description": "Chuyển đổi file PDF bài giảng thành bộ câu hỏi trắc nghiệm chỉ trong vài giây.",
+        "button": "Thử ngay"
+      },
+      "feature2": {
+        "title": "Rin-chan 24/7",
+        "description": "Rin-chan luôn sẵn sàng giải thích mọi thắc mắc và hướng dẫn bạn giải bài tập."
+      },
+      "feature3": {
+        "title": "Học Tập Thích Ứng",
+        "description": "Lộ trình học được cá nhân hóa dựa trên thế mạnh và điểm yếu của riêng bạn.",
+        "button": "Bắt đầu học"
+      },
+      "feature4": {
+        "title": "Phân Tích Tiến Độ",
+        "description": "Theo dõi sự tiến bộ của bạn qua các biểu đồ trực quan và báo cáo chi tiết."
+      },
+      "stats": {
+        "activeUsers": "Học viên đang ôn tập",
+        "worldwide": "Người dùng toàn cầu"
+      },
+      "aiTutor": "Rin-chan Rin-chan"
+    },
+    "howItWorks": {
+      "title": "Cách hoạt động",
+      "step1": {
+        "title": "Đăng ký tài khoản",
+        "description": "Tạo tài khoản nhanh chóng chỉ trong vài giây để bắt đầu hành trình."
+      },
+      "step2": {
+        "title": "Tải tài liệu lên",
+        "description": "Tải file PDF bài giảng hoặc ghi chú của bạn lên hệ thống."
+      },
+      "step3": {
+        "title": "Bắt đầu học tập",
+        "description": "Hệ thống sẽ tạo quiz, flashcards và lộ trình học dành riêng cho bạn."
+      }
+    },
+    "testimonials": {
+      "title": "Người dùng nói gì về chúng tôi",
+      "main": {
+        "name": "Nguyễn Văn A",
+        "role": "Sinh viên Đại học Bách Khoa",
+        "content": "RinKuzu đã thay đổi hoàn toàn cách mình ôn thi. Từ khi dùng tính năng tạo quiz từ PDF, mình tiết kiệm được rất nhiều thời gian soạn bài và tập trung hơn vào việc hiểu bản chất kiến thức."
+      }
+    },
+    "faq": {
+      "title": "Câu hỏi thường gặp",
+      "q1": "RinKuzu có miễn phí không?",
+      "a1": "RinKuzu cung cấp gói miễn phí với đầy đủ các tính năng cơ bản như tạo quiz, flashcards và ôn tập. Chúng tôi cũng có gói Premium cho người dùng muốn sử dụng không giới hạn và các tính năng AI nâng cao.",
+      "q2": "Làm thế nào để tạo quiz từ file PDF?",
+      "a2": "Bạn chỉ cần tải file PDF bài giảng lên, AI của chúng tôi sẽ tự động phân tích nội dung và đề xuất các câu hỏi trắc nghiệm, tự luận phù hợp.",
+      "q3": "Tôi có thể chia sẻ bộ quiz của mình không?",
+      "a3": "Tất nhiên! Bạn có thể đặt quiz ở chế độ công khai để chia sẻ với bạn bè hoặc cộng đồng người học trên RinKuzu.",
+      "q4": "Rin-chan Rin-chan hoạt động như thế nào?",
+      "a4": "Rin-chan sử dụng mô hình ngôn ngữ lớn để hiểu nội dung bài học của bạn và có thể giải thích các khái niệm khó, gợi ý cách giải bài tập một cách dễ hiểu nhất."
+    },
+    "cta": {
+      "title": "Sẵn sàng để nâng tầm tri thức?",
+      "subtitle": "Tham gia cùng hàng ngàn học sinh, sinh viên đang học tập hiệu quả hơn mỗi ngày với RinKuzu.",
+      "button": "Tham gia ngay hôm nay",
+      "placeholder": "Địa chỉ email của bạn",
+      "freeTrial": "Trải nghiệm miễn phí",
+      "noCreditCard": "Không cần thẻ tín dụng",
+      "aiSupport": "Hỗ trợ AI 24/7"
+    },
+    "footer": {
+      "contact": "Liên hệ",
+      "address": "3787 Jerry Dove Drive, Florence, South Carolina, 29501, United States.",
+      "links": {
+        "title": "Liên kết",
+        "home": "Trang chủ",
+        "features": "Tính năng",
+        "pricing": "Bảng giá",
+        "faq": "FAQ"
+      },
+      "legal": {
+        "title": "Pháp lý",
+        "privacy": "Chính sách bảo mật",
+        "terms": "Điều khoản sử dụng",
+        "cookie": "Chính sách Cookie"
+      },
+      "newsletter": {
+        "title": "Bản tin",
+        "description": "Đăng ký nhận tin tức và ưu đãi mới nhất từ RinKuzu.",
+        "placeholder": "Email của bạn",
+        "button": "Đăng ký"
+      },
+      "copyright": "© 2024 RinKuzu. Bảo lưu mọi quyền."
+    }
   }
 }

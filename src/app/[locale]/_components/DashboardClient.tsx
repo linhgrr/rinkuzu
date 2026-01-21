@@ -36,7 +36,7 @@ const ProTipCard = memo(function ProTipCard() {
         <Button
           size="sm"
           variant="outline"
-          className="w-full border-gray-700 text-white hover:bg-white hover:text-black transition-all rounded-full"
+          className="w-full border-gray-700 text-white hover:bg-white text-black transition-all rounded-full"
         >
           {t('readGuide')}
         </Button>

@@ -289,8 +289,8 @@
       "dashboard": "Dashboard",
       "continueJourney": "Continue Journey",
       "stillConfused": "Still confused?",
-      "aiTutorDescription": "Our AI tutor can explain this concept in simpler terms or provide more examples.",
-      "chatWithTutor": "Chat with AI Tutor",
+      "aiTutorDescription": "Our Rin-chan can explain this concept in simpler terms or provide more examples.",
+      "chatWithTutor": "Chat with Rin-chan",
       "sessionStats": "Session Stats",
       "timeTaken": "Time Taken",
       "timeTakenValue": "{minutes}m {seconds}s",
@@ -302,7 +302,7 @@
     "chatbot": {
       "initialGreeting": "Hello! I noticed you might need help with this question. How can I assist you?",
       "sampleResponse": "That's a great question. In this context, we apply the chain rule because the function is a composite of two other functions...",
-      "title": "AI Tutor",
+      "title": "Rin-chan",
       "context": "Context",
       "placeholder": "Ask a question..."
     }
@@ -936,5 +936,123 @@
     "noCorrectAnswer": "No correct answer",
     "dontKnow": "Don't Know",
     "knowIt": "Know It"
+  },
+  "landing": {
+    "hero": {
+      "badge": "#1 AI Learning Platform for Students",
+      "titlePart1": "Master Knowledge.",
+      "titlePart2": "Ace Every Exam.",
+      "description": "Create quizzes from PDF, study smart with Flashcards, and personalized Rin-chan for your learning journey.",
+      "searchPlaceholder": "Search topics: Calculus, English...",
+      "community": "RinKuzu Community",
+      "searchButton": "Search Now"
+    },
+    "categories": {
+      "title": "Explore New Knowledge",
+      "subtitle": "Search for high-quality quizzes from the community by your favorite topics.",
+      "viewAll": "View All",
+      "items": {
+        "dev": "Programming",
+        "lang": "Languages",
+        "math": "Mathematics",
+        "science": "Science",
+        "history": "History",
+        "design": "Design"
+      }
+    },
+    "features": {
+      "title": "Why Choose RinKuzu?",
+      "subtitle": "Unlock your true potential with AI-powered smart learning tools.",
+      "feature1": {
+        "title": "Instant Quiz Generation",
+        "description": "Convert lecture PDFs into multiple-choice question sets in seconds.",
+        "button": "Try Now"
+      },
+      "feature2": {
+        "title": "24/7 Rin-chan",
+        "description": "Rin-chan is always ready to explain any questions and guide you through exercises."
+      },
+      "feature3": {
+        "title": "Adaptive Learning",
+        "description": "Learning paths personalized based on your own strengths and weaknesses.",
+        "button": "Start Learning"
+      },
+      "feature4": {
+        "title": "Progress Analytics",
+        "description": "Track your progress through intuitive charts and detailed reports."
+      },
+      "stats": {
+        "activeUsers": "Students reviewing",
+        "worldwide": "Worldwide Active Users"
+      },
+      "aiTutor": "Rin-chan Rin-chan"
+    },
+    "howItWorks": {
+      "title": "How It Works",
+      "step1": {
+        "title": "Sign Up",
+        "description": "Create an account quickly in seconds to start your journey."
+      },
+      "step2": {
+        "title": "Upload Materials",
+        "description": "Upload your lecture PDFs or notes to the system."
+      },
+      "step3": {
+        "title": "Start Learning",
+        "description": "The system will create quizzes, flashcards, and a personalized learning path for you."
+      }
+    },
+    "testimonials": {
+      "title": "What Our Users Say",
+      "main": {
+        "name": "John Doe",
+        "role": "University Student",
+        "content": "RinKuzu has completely changed how I study for exams. Since using the PDF-to-quiz feature, I've saved so much time and can focus more on understanding the material."
+      }
+    },
+    "faq": {
+      "title": "Frequently Asked Questions",
+      "q1": "Is RinKuzu free?",
+      "a1": "RinKuzu offers a free plan with all basic features like quiz creation, flashcards, and review. We also have a Premium plan for users who want unlimited access and advanced AI features.",
+      "q2": "How to create a quiz from a PDF?",
+      "a2": "Simply upload your lecture PDF, and our AI will automatically analyze the content and suggest relevant multiple-choice or essay questions.",
+      "q3": "Can I share my quiz sets?",
+      "a3": "Of course! You can set your quizzes to public to share with friends or the learning community on RinKuzu.",
+      "q4": "How does Rin-chan Rin-chan work?",
+      "a4": "Rin-chan uses large language models to understand your lesson content and can explain difficult concepts, suggesting solutions in an easy-to-understand way."
+    },
+    "cta": {
+      "title": "Ready to Level Up Your Knowledge?",
+      "subtitle": "Join thousands of students who are learning more effectively every day with RinKuzu.",
+      "button": "Join Today",
+      "placeholder": "Your email address",
+      "freeTrial": "Free Trial Available",
+      "noCreditCard": "No Credit Card Required",
+      "aiSupport": "24/7 AI Support"
+    },
+    "footer": {
+      "contact": "Contact",
+      "address": "3787 Jerry Dove Drive, Florence, South Carolina, 29501, United States.",
+      "links": {
+        "title": "Links",
+        "home": "Home",
+        "features": "Features",
+        "pricing": "Pricing",
+        "faq": "FAQ"
+      },
+      "legal": {
+        "title": "Legal",
+        "privacy": "Privacy Policy",
+        "terms": "Terms of Service",
+        "cookie": "Cookie Policy"
+      },
+      "newsletter": {
+        "title": "Newsletter",
+        "description": "Subscribe to receive the latest news and offers from RinKuzu.",
+        "placeholder": "Your email",
+        "button": "Subscribe"
+      },
+      "copyright": "© 2024 RinKuzu. All rights reserved."
+    }
   }
 }

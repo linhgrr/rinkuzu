@@ -1,4 +1,5 @@
 export * from './Hero'
+export * from './IntroVideo'
 export * from './PopularCategories'
 export * from './Features'
 export * from './HowItWorks'

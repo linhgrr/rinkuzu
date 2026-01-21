@@ -7,8 +7,9 @@ import { Button } from '@/components/ui/Button'
 import { ROUTES } from '@/shared/constants'
 import { HiOutlineArrowRight, HiOutlineSearch, HiOutlineLocationMarker } from '@/components/icons'
 import Image from 'next/image'
+import { IntroVideo } from './IntroVideo'
 
-export function Hero () {
+export function Hero() {
   const t = useTranslations('landing.hero')
   const router = useRouter()
 
@@ -20,8 +21,8 @@ export function Hero () {
     <section className="relative w-full bg-white overflow-hidden pt-20 pb-20 md:pt-32 md:pb-32">
       {/* Background Gradient Image from Design */}
       <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden -z-0">
-        <Image 
-          src="https://i.ibb.co/ZpKFGPTj/Backgroudn-Gradient.png" 
+        <Image
+          src="https://i.ibb.co/ZpKFGPTj/Backgroudn-Gradient.png"
           alt="Background Gradient"
           fill
           priority
@@ -54,9 +55,9 @@ export function Hero () {
           <div className="flex flex-col sm:flex-row items-center bg-white p-2 rounded-[32px] sm:rounded-full shadow-apple-lg border border-gray-100 gap-2">
             <div className="flex-1 flex items-center gap-3 px-6 py-3 w-full border-b sm:border-b-0 sm:border-r border-gray-100">
               <HiOutlineSearch className="w-5 h-5 text-gray-400" />
-              <input 
-                type="text" 
-                placeholder={t('searchPlaceholder')} 
+              <input
+                type="text"
+                placeholder={t('searchPlaceholder')}
                 className="w-full bg-transparent border-none focus:ring-0 text-gray-700 placeholder:text-gray-400"
               />
             </div>
@@ -70,22 +71,8 @@ export function Hero () {
           </div>
         </div>
 
-        {/* Photo Grid Preview - Adapted from Figma */}
-        <div className="relative w-full overflow-hidden py-4">
-          <div className="flex gap-4 animate-scroll-left">
-             {[1, 2, 3, 4, 5, 6].map((i) => (
-               <div key={i} className="flex-none w-[280px] h-[350px] rounded-2xl bg-gray-100 overflow-hidden shadow-apple-md">
-                 <Image 
-                   src={`https://picsum.photos/seed/${i + 10}/280/350`} 
-                   alt={`Study ${i}`}
-                   width={280}
-                   height={350}
-                   className="object-cover w-full h-full hover:scale-105 transition-transform duration-500"
-                 />
-               </div>
-             ))}
-          </div>
-        </div>
+        {/* Intro Video Section */}
+        <IntroVideo />
       </div>
     </section>
   )

@@ -20,7 +20,7 @@ interface PopularCategoriesProps {
   quizzes: Quiz[];
 }
 
-export function PopularCategories ({ quizzes }: PopularCategoriesProps) {
+export function PopularCategories({ quizzes }: PopularCategoriesProps) {
   const t = useTranslations('landing.categories')
 
   const categories = [
@@ -33,13 +33,13 @@ export function PopularCategories ({ quizzes }: PopularCategoriesProps) {
   ]
 
   return (
-    <section className="py-20 bg-[#fafafa]">
+    <section className="py-16 md:py-20 bg-[#fafafa]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-bold text-[#1e242c] mb-4">
+        <div className="text-center mb-12 md:mb-16">
+          <h2 className="text-3xl md:text-5xl font-bold text-[#1e242c] mb-4">
             {t('title')}
           </h2>
-          <p className="text-gray-500 max-w-xl mx-auto">
+          <p className="text-gray-500 text-sm md:text-base max-w-xl mx-auto">
             {t('subtitle')}
           </p>
         </div>
@@ -49,11 +49,10 @@ export function PopularCategories ({ quizzes }: PopularCategoriesProps) {
           {categories.map((cat) => (
             <button
               key={cat.id}
-              className={`flex items-center gap-2 px-6 py-3 rounded-full whitespace-nowrap transition-all border ${
-                cat.active 
-                  ? 'bg-blue-50 border-blue-200 text-blue-600 shadow-sm' 
+              className={`flex items-center gap-2 px-6 py-3 rounded-full whitespace-nowrap transition-all border ${cat.active
+                  ? 'bg-blue-50 border-blue-200 text-blue-600 shadow-sm'
                   : 'bg-white border-gray-100 text-gray-500 hover:border-gray-200'
-              }`}
+                }`}
             >
               <cat.icon className="w-5 h-5" />
               <span className="font-medium">{cat.name}</span>
@@ -86,9 +85,9 @@ export function PopularCategories ({ quizzes }: PopularCategoriesProps) {
 
         {/* View All Button */}
         <div className="flex justify-center">
-          <Button 
-            variant="outline" 
-            size="lg" 
+          <Button
+            variant="outline"
+            size="lg"
             className="rounded-full px-8 py-6 h-auto text-base font-bold border-blue-200 text-blue-600 hover:bg-blue-50 transition-all group"
             onClick={() => window.location.href = '/explore'}
           >

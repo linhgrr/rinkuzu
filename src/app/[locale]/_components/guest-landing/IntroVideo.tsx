@@ -34,7 +34,7 @@ export function IntroVideo() {
     return (
         <div
             ref={containerRef}
-            className="relative w-full max-w-6xl mx-auto px-4 py-24 perspective-1000"
+            className="relative w-full max-w-6xl mx-auto px-4 py-8 md:py-24 perspective-1000"
         >
             <motion.div
                 style={{
@@ -42,7 +42,7 @@ export function IntroVideo() {
                     opacity,
                     rotateX,
                 }}
-                className="relative aspect-video rounded-3xl overflow-hidden shadow-2xl border border-white/20 bg-black/5 backdrop-blur-sm"
+                className="relative aspect-video rounded-2xl md:rounded-3xl overflow-hidden shadow-2xl border border-white/20 bg-black/5 backdrop-blur-sm"
             >
                 <iframe
                     className="w-full h-full object-cover"

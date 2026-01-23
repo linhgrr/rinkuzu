@@ -1,17 +1,12 @@
-'use client';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { GuestLanding, AuthenticatedHome } from './_components';
 
-import { useSession } from 'next-auth/react';
-import { useTranslations } from 'next-intl';
-import { GuestLanding, DashboardClient } from './_components';
-import { useQuizzes } from '@/hooks';
-import { NavLogo } from '@/components/Navigation';
+export default async function HomePage() {
+  const session = await getServerSession(authOptions);
 
-export default function HomePage() {
-  const { data: session, status } = useSession();
-  const t = useTranslations('common');
-
-  // Guest view - Render immediately without hooks that trigger API calls
-  if (status !== 'loading' && !session) {
+  // Guest view - Render immediately on server
+  if (!session) {
     const hustMockQuizzes = [
       {
         _id: 'mock-1',
@@ -59,26 +54,6 @@ export default function HomePage() {
     return <GuestLanding quizzes={hustMockQuizzes} />;
   }
 
-  // Use hooks only for authenticated users or while loading
-  return <AuthenticatedHomePage session={session} status={status} />;
-}
-
-function AuthenticatedHomePage({ session, status }: { session: any, status: string }) {
-  const { quizzes, isLoading: quizzesLoading } = useQuizzes(6);
-  const t = useTranslations('common');
-
-  if (status === 'loading' || quizzesLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#f5f5f7]">
-        <div className="text-center animate-pulse">
-          <div className="flex justify-center mb-4">
-            <NavLogo />
-          </div>
-          <p className="text-[#86868b]">{t('loadingDashboard')}</p>
-        </div>
-      </div>
-    );
-  }
-
-  return <DashboardClient userEmail={session?.user?.email || ''} />;
+  // Authenticated view - Pass session to client component for further data fetching
+  return <AuthenticatedHome session={session} initialStatus="authenticated" />;
 }

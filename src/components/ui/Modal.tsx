@@ -29,14 +29,18 @@ export function Modal({ isOpen, onClose, children, title, description, className
     <Portal>
       <div className="fixed inset-0 z-[9999] flex items-center justify-center">
         {/* Backdrop */}
-        <div 
-          className="absolute inset-0 bg-black/50" 
+        <div
+          className="absolute inset-0 bg-black/50"
           onClick={onClose}
+          onKeyDown={(e) => e.key === 'Escape' && onClose()}
+          role="button"
+          tabIndex={-1}
+          aria-label="Close modal"
         />
         
         {/* Modal */}
         <div className={cn(
-          'relative bg-white rounded-lg shadow-lg w-full mx-4 max-h-[90vh] overflow-y-auto',
+          'relative bg-white rounded-lg shadow-lg w-full mx-4 max-h-[90vh] overflow-y-auto overscroll-contain',
           sizeClasses[size],
           className
         )}>
@@ -68,8 +72,9 @@ export function Modal({ isOpen, onClose, children, title, description, className
           <button
             onClick={onClose}
             className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+            aria-label="Close modal"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>

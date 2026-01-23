@@ -122,9 +122,11 @@ export function MobileQuizPlayer({
             onClick={goPrev}
             disabled={isFirst}
             className="p-2 -ml-2 rounded-full active:bg-gray-100 transition-colors"
+            aria-label="Previous question"
           >
             <HiOutlineChevronLeft
               className={`w-6 h-6 ${isFirst ? 'text-gray-300' : 'text-gray-600'}`}
+              aria-hidden="true"
             />
           </button>
 
@@ -153,9 +155,11 @@ export function MobileQuizPlayer({
             onClick={goNext}
             disabled={isLast}
             className="p-2 -mr-2 rounded-full active:bg-gray-100 transition-colors"
+            aria-label="Next question"
           >
             <HiOutlineChevronRight
               className={`w-6 h-6 ${isLast ? 'text-gray-300' : 'text-gray-600'}`}
+              aria-hidden="true"
             />
           </button>
         </div>
@@ -184,7 +188,9 @@ export function MobileQuizPlayer({
                 <div className="mb-4 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0">
                   <img
                     src={currentQuestion.questionImage}
-                    alt="Question"
+                    alt={`Image for question ${currentIndex + 1}`}
+                    width={400}
+                    height={144}
                     className="w-full h-auto max-h-36 object-contain"
                   />
                 </div>

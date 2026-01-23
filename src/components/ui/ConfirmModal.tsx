@@ -38,7 +38,7 @@ export function ConfirmModal({
             {cancelText}
           </Button>
           <Button variant={confirmVariant} onClick={onConfirm} disabled={isLoading}>
-            {isLoading ? 'Processing...' : confirmText}
+            {isLoading ? 'Processing…' : confirmText}
           </Button>
         </div>
       </div>

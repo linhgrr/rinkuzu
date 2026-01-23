@@ -27,7 +27,7 @@ const Card = React.forwardRef<
     <div
       ref={ref}
       className={cn(
-        'rounded-2xl transition-all duration-300 ease-apple',
+        'rounded-2xl transition-[transform,box-shadow] duration-300 ease-apple',
         variants[variant],
         hoverEffects,
         className

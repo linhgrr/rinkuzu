@@ -48,11 +48,22 @@ export const QuizCard = memo(function QuizCard({ quiz }: QuizCardProps) {
     router.push(ROUTES.QUIZ.VIEW(quiz.slug));
   }, [router, quiz.slug]);
 
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      router.push(ROUTES.QUIZ.VIEW(quiz.slug));
+    }
+  }, [router, quiz.slug]);
+
   return (
     <Card
       variant="interactive"
       className="flex flex-col justify-between h-full rounded-2xl shadow-sm hover:shadow-md hover:border-blue-200 transition-all duration-300"
       onClick={handleClick}
+      onKeyDown={handleKeyDown}
+      tabIndex={0}
+      role="button"
+      aria-label={`Open quiz: ${quiz.title}`}
     >
       <CardHeader className="pb-3">
         <div className="flex justify-between items-start mb-2">

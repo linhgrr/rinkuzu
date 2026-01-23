@@ -356,7 +356,7 @@ export function Flashcard({
                             {option}
                           </span>
                           {isCorrect && (
-                            <span className="text-green-600">✓</span>
+                            <span className="text-green-600" aria-hidden="true">✓</span>
                           )}
                         </div>
                       );

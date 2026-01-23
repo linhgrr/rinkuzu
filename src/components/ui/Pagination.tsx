@@ -68,7 +68,7 @@ export function Pagination({
                 1
               </Button>
               {visiblePages[0] > 2 && (
-                <span className="px-2 text-gray-500">...</span>
+                <span className="px-2 text-gray-500">…</span>
               )}
             </>
           )}
@@ -90,7 +90,7 @@ export function Pagination({
           {visiblePages[visiblePages.length - 1] < totalPages && (
             <>
               {visiblePages[visiblePages.length - 1] < totalPages - 1 && (
-                <span className="px-2 text-gray-500">...</span>
+                <span className="px-2 text-gray-500">…</span>
               )}
               <Button
                 variant="outline"

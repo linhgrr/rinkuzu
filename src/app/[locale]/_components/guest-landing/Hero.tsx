@@ -6,7 +6,6 @@ import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/Button'
 import { ROUTES } from '@/shared/constants'
 import { HiOutlineArrowRight, HiOutlineSearch, HiOutlineLocationMarker } from '@/components/icons'
-import Image from 'next/image'
 import { IntroVideo } from './IntroVideo'
 
 export function Hero() {
@@ -19,15 +18,11 @@ export function Hero() {
 
   return (
     <section className="relative w-full bg-white overflow-hidden pt-12 pb-16 md:pt-32 md:pb-32">
-      {/* Background Gradient Image from Design */}
+      {/* Background Gradient - Optimized CSS Solution */}
       <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden -z-0">
-        <Image
-          src="https://i.ibb.co/ZpKFGPTj/Backgroudn-Gradient.png"
-          alt="Background Gradient"
-          fill
-          priority
-          className="object-cover object-top opacity-80"
-        />
+        <div className="absolute top-[-20%] left-1/2 -translate-x-1/2 w-[140%] h-[100%] bg-[radial-gradient(circle_at_top,_#e0e7ff_0%,_transparent_50%)] opacity-40" />
+        <div className="absolute top-[-10%] left-[10%] sm:left-[20%] w-[40%] sm:w-[30%] h-[40%] bg-[#818cf8] opacity-20 blur-[80px] sm:blur-[120px] rounded-full" />
+        <div className="absolute top-[-10%] right-[10%] sm:right-[20%] w-[40%] sm:w-[30%] h-[40%] bg-[#c084fc] opacity-20 blur-[80px] sm:blur-[120px] rounded-full" />
       </div>
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center z-10">
@@ -54,10 +49,12 @@ export function Hero() {
         <div className="max-w-3xl mx-auto mb-12 md:mb-16 animate-fadeInUp delay-200">
           <div className="flex flex-col sm:flex-row items-center bg-white p-1.5 sm:p-2 rounded-[28px] sm:rounded-full shadow-apple-lg border border-gray-100 gap-1 sm:gap-2">
             <div className="flex-1 flex items-center gap-3 px-5 py-3 w-full border-b sm:border-b-0 sm:border-r border-gray-100">
-              <HiOutlineSearch className="w-5 h-5 text-gray-400" />
+              <HiOutlineSearch className="w-5 h-5 text-gray-400" aria-hidden="true" />
               <input
                 type="text"
+                name="search"
                 placeholder={t('searchPlaceholder')}
+                aria-label={t('searchPlaceholder')}
                 className="w-full bg-transparent border-none focus:ring-0 text-gray-700 placeholder:text-gray-400 text-sm md:text-base"
               />
             </div>

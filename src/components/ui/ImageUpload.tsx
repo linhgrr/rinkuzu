@@ -145,6 +145,8 @@ export function ImageUpload({
         <img
           src={currentImage}
           alt="Uploaded image"
+          width={maxWidth}
+          height={maxHeight}
           className="rounded-lg border border-gray-200 shadow-sm"
           style={{
             maxWidth: maxWidth,
@@ -160,8 +162,9 @@ export function ImageUpload({
             variant="ghost"
             size="sm"
             className="bg-red-600 text-white hover:bg-red-700 rounded-full w-8 h-8 p-0"
+            aria-label="Remove image"
           >
-            ✕
+            <span aria-hidden="true">✕</span>
           </Button>
         </div>
       </div>
@@ -210,6 +213,7 @@ export function ImageUpload({
               fill="none"
               stroke="currentColor"
               viewBox="0 0 48 48"
+              aria-hidden="true"
             >
               <path
                 strokeLinecap="round"

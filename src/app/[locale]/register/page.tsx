@@ -81,9 +81,9 @@ export default function RegisterPage() {
       <div className="absolute inset-0 bg-gradient-to-br from-emerald-50 via-cyan-50 to-violet-50" />
 
       {/* Floating Elements */}
-      <div className="absolute top-20 right-20 w-28 h-28 bg-gradient-to-br from-emerald-400/20 to-teal-500/20 rounded-full blur-xl animate-pulse" />
-      <div className="absolute top-1/2 left-10 w-36 h-36 bg-gradient-to-br from-cyan-400/20 to-blue-500/20 rounded-full blur-xl animate-pulse delay-1000" />
-      <div className="absolute bottom-20 right-1/3 w-32 h-32 bg-gradient-to-br from-violet-400/20 to-purple-500/20 rounded-full blur-xl animate-pulse delay-2000" />
+      <div className="absolute top-20 right-20 w-28 h-28 bg-gradient-to-br from-emerald-400/20 to-teal-500/20 rounded-full blur-xl animate-pulse motion-reduce:animate-none" />
+      <div className="absolute top-1/2 left-10 w-36 h-36 bg-gradient-to-br from-cyan-400/20 to-blue-500/20 rounded-full blur-xl animate-pulse delay-1000 motion-reduce:animate-none" />
+      <div className="absolute bottom-20 right-1/3 w-32 h-32 bg-gradient-to-br from-violet-400/20 to-purple-500/20 rounded-full blur-xl animate-pulse delay-2000 motion-reduce:animate-none" />
 
       <div className="relative flex flex-col justify-center py-12 sm:px-6 lg:px-8 min-h-screen pt-20">
         {/* Header */}
@@ -91,7 +91,7 @@ export default function RegisterPage() {
           <div className="text-center">
             <Link href="/" className="inline-flex items-center group">
               <div className="h-16 sm:h-20 flex items-center justify-center transition-transform group-hover:scale-105">
-                <img src="https://i.ibb.co/WWGXBZXm/image-removebg-preview.png" alt="RinKuzu Logo" className="h-16 sm:h-20 w-auto object-contain" />
+                <img src="https://i.ibb.co/WWGXBZXm/image-removebg-preview.png" alt="RinKuzu Logo" width={80} height={80} className="h-16 sm:h-20 w-auto object-contain" />
               </div>
             </Link>
           </div>

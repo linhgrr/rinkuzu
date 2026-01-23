@@ -41,8 +41,8 @@ export default function BottomNav() {
             href: '/create',
             labelKey: 'create',
             icon: (isActive: boolean) => (
-                <div className={`w-10 h-10 -mt-5 rounded-full flex items-center justify-center shadow-lg ${isActive ? 'bg-blue-700' : 'bg-blue-600'}`}>
-                    {isActive ? <HiPlus className="w-6 h-6 text-white" /> : <HiOutlinePlus className="w-6 h-6 text-white" />}
+                <div className={`w-10 h-10 -mt-5 rounded-full flex items-center justify-center shadow-lg ${isActive ? 'bg-blue-700' : 'bg-blue-600'}`} aria-label="Create new quiz">
+                    {isActive ? <HiPlus className="w-6 h-6 text-white" aria-hidden="true" /> : <HiOutlinePlus className="w-6 h-6 text-white" aria-hidden="true" />}
                 </div>
             )
         },

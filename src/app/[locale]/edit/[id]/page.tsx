@@ -695,7 +695,7 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
                             disabled={!title.trim()}
                             className="flex items-center gap-2"
                           >
-                            {saving ? 'Saving...' : (
+                            {saving ? 'Saving…' : (
                               <>
                                 <HiOutlineSave className="w-4 h-4" />
                                 Save Changes
@@ -713,7 +713,7 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
                           loading={deleting}
                           className="flex items-center gap-2"
                         >
-                          {deleting ? 'Deleting...' : (
+                          {deleting ? 'Deleting…' : (
                             <>
                               <HiOutlineTrash className="w-4 h-4" />
                               Delete Quiz

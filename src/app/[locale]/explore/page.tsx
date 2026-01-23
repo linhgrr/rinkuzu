@@ -55,10 +55,21 @@ interface QuizCardProps {
 const QuizCard = memo(function QuizCard({ quiz, onClick }: QuizCardProps) {
     const tQuiz = useTranslations('quiz');
 
+    const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onClick();
+        }
+    }, [onClick]);
+
     return (
         <Card
             className="flex flex-col h-full hover:shadow-lg transition-shadow cursor-pointer group"
             onClick={onClick}
+            onKeyDown={handleKeyDown}
+            tabIndex={0}
+            role="button"
+            aria-label={`Open quiz: ${quiz.title}`}
         >
             <CardHeader className="pb-2">
                 <div className="flex justify-between items-start mb-2">
@@ -135,12 +146,26 @@ function ExploreContent() {
     const [quizzes, setQuizzes] = useState<Quiz[]>([]);
     const [loading, setLoading] = useState(true);
     const [pagination, setPagination] = useState<PaginationData>({
-        page: 1, limit: 12, total: 0, totalPages: 0
+        page: parseInt(searchParams.get('page') || '1', 10),
+        limit: 12,
+        total: 0,
+        totalPages: 0
     });
 
-    // Filters
-    const [search, setSearch] = useState('');
-    const [categoryId, setCategoryId] = useState<string | null>(null);
+    // Filters - initialize from URL
+    const [search, setSearch] = useState(searchParams.get('q') || '');
+    const [categoryId, setCategoryId] = useState<string | null>(searchParams.get('category') || null);
+
+    // Sync state to URL
+    const updateURL = useCallback((newSearch: string, newCategory: string | null, newPage: number) => {
+        const params = new URLSearchParams();
+        if (newSearch) params.set('q', newSearch);
+        if (newCategory) params.set('category', newCategory);
+        if (newPage > 1) params.set('page', newPage.toString());
+
+        const queryString = params.toString();
+        router.replace(queryString ? `?${queryString}` : '/explore', { scroll: false });
+    }, [router]);
 
     const fetchQuizzes = useCallback(async (page: number) => {
         setLoading(true);
@@ -183,7 +208,8 @@ function ExploreContent() {
     const handlePageChange = useCallback((newPage: number) => {
         setPagination(prev => ({ ...prev, page: newPage }));
         fetchQuizzes(newPage);
-    }, [fetchQuizzes]);
+        updateURL(search, categoryId, newPage);
+    }, [fetchQuizzes, search, categoryId, updateURL]);
 
     const handleQuizClick = useCallback((slug: string) => {
         router.push(`/quiz/${slug}`);
@@ -194,17 +220,26 @@ function ExploreContent() {
     }, []);
 
     const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-        setSearch(e.target.value);
-    }, []);
+        const newSearch = e.target.value;
+        setSearch(newSearch);
+        updateURL(newSearch, categoryId, 1);
+    }, [categoryId, updateURL]);
 
     const handleClearFilters = useCallback(() => {
         setSearch('');
         setCategoryId(null);
-    }, []);
+        updateURL('', null, 1);
+    }, [updateURL]);
 
     const handleClearCategory = useCallback(() => {
         setCategoryId(null);
-    }, []);
+        updateURL(search, null, pagination.page);
+    }, [search, pagination.page, updateURL]);
+
+    const handleCategoryChange = useCallback((newCategoryId: string | null) => {
+        setCategoryId(newCategoryId);
+        updateURL(search, newCategoryId, 1);
+    }, [search, updateURL]);
 
     return (
         <div className="min-h-screen bg-[#f5f5f7] pb-24 md:pb-8">
@@ -237,16 +272,19 @@ function ExploreContent() {
                                 <div className="w-full sm:w-64">
                                     <input
                                         type="text"
+                                        name="search"
+                                        autoComplete="off"
                                         placeholder={t('searchPlaceholder')}
                                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                                         value={search}
                                         onChange={handleSearchChange}
+                                        aria-label={t('searchPlaceholder')}
                                     />
                                 </div>
                                 <div className="w-full sm:w-64 relative z-20">
                                     <CategorySearch
                                         showInHomepage={true}
-                                        onCategorySelect={setCategoryId}
+                                        onCategorySelect={handleCategoryChange}
                                     />
                                 </div>
                             </div>
@@ -258,8 +296,17 @@ function ExploreContent() {
                                     variant="default"
                                     className="flex items-center gap-1 cursor-pointer hover:bg-gray-200"
                                     onClick={handleClearCategory}
+                                    onKeyDown={(e: React.KeyboardEvent) => {
+                                        if (e.key === 'Enter' || e.key === ' ') {
+                                            e.preventDefault();
+                                            handleClearCategory();
+                                        }
+                                    }}
+                                    tabIndex={0}
+                                    role="button"
+                                    aria-label={t('clearCategoryFilter')}
                                 >
-                                    {t('categoryFilterActive')} <HiOutlineX className="inline-block ml-1" />
+                                    {t('categoryFilterActive')} <HiOutlineX className="inline-block ml-1" aria-hidden="true" />
                                 </Badge>
                             </div>
                         )}

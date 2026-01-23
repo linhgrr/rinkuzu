@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Input, Textarea } from '@/components/ui/Input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { QuizPreviewModal } from '@/components/ui/QuizPreviewModal';
+import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { QuestionImageUpload, OptionImageUpload } from '@/components/ui/ImageUpload';
 import { CategorySelector } from '@/components/ui/CategorySelector';
 import { useState, useEffect } from 'react';
@@ -138,7 +139,7 @@ function PDFViewerComponent({ files, onClose }: { files: File[]; onClose: () => 
       }
 
       // Save merged PDF
-      console.log('💾 Saving merged PDF...');
+      console.log('💾 Saving merged PDF…');
       const mergedPdfBytes = await mergedPdf.save();
       const blob = new Blob([mergedPdfBytes], { type: 'application/pdf' });
       const url = URL.createObjectURL(blob);
@@ -315,6 +316,8 @@ export default function CreateQuizPage() {
 
   // UI state
   const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [showRemoveAllConfirm, setShowRemoveAllConfirm] = useState(false);
+  const [questionToRemove, setQuestionToRemove] = useState<number | null>(null);
 
   // Redirect if not authenticated
   if (!session) {
@@ -399,7 +402,8 @@ export default function CreateQuizPage() {
 
     } catch (err: any) {
       console.error('Error extracting questions:', err);
-      setError(err.message || t('failedToExtract'));
+      const errorMessage = err.message || t('failedToExtract');
+      setError(`${errorMessage}. ${t('tryAgainOrContact')}`);
       setShowLargeFileProgress(false);
     } finally {
       setExtracting(false);
@@ -438,7 +442,8 @@ export default function CreateQuizPage() {
 
     } catch (err: any) {
       console.error('Error creating quiz:', err);
-      setError(err.message || t('failedToCreate'));
+      const errorMessage = err.message || t('failedToCreate');
+      setError(`${errorMessage}. ${t('tryAgainOrContact')}`);
     } finally {
       setCreating(false);
     }
@@ -653,18 +658,18 @@ export default function CreateQuizPage() {
 
             {/* Error/Success Messages */}
             {error && (
-              <Card variant="bordered" className="border-red-200 bg-red-50 p-4 mb-6 max-w-2xl mx-auto animate-fadeInUp">
+              <Card variant="bordered" className="border-red-200 bg-red-50 p-4 mb-6 max-w-2xl mx-auto animate-fadeInUp" role="alert" aria-live="polite">
                 <div className="flex items-center text-red-700">
-                  <HiOutlineExclamationCircle className="w-5 h-5 mr-2 flex-shrink-0" />
+                  <HiOutlineExclamationCircle className="w-5 h-5 mr-2 flex-shrink-0" aria-hidden="true" />
                   <span className="text-sm font-medium">{error}</span>
                 </div>
               </Card>
             )}
 
             {success && (
-              <Card variant="bordered" className="border-emerald-200 bg-emerald-50 p-4 mb-6 max-w-2xl mx-auto animate-fadeInUp">
+              <Card variant="bordered" className="border-emerald-200 bg-emerald-50 p-4 mb-6 max-w-2xl mx-auto animate-fadeInUp" role="status" aria-live="polite">
                 <div className="flex items-center text-emerald-700">
-                  <HiOutlineCheckCircle className="w-5 h-5 mr-2 flex-shrink-0" />
+                  <HiOutlineCheckCircle className="w-5 h-5 mr-2 flex-shrink-0" aria-hidden="true" />
                   <span className="text-sm font-medium">{success}</span>
                 </div>
               </Card>
@@ -738,7 +743,7 @@ export default function CreateQuizPage() {
 
                       {/* Privacy Setting */}
                       <div className="bg-gradient-to-r from-violet-50 to-purple-50 p-4 rounded-xl border border-violet-200">
-                        <div className="flex items-start space-x-3">
+                        <label htmlFor="isPrivateUpload" className="flex items-start space-x-3 cursor-pointer">
                           <div className="flex items-center h-5">
                             <input
                               type="checkbox"
@@ -749,15 +754,15 @@ export default function CreateQuizPage() {
                             />
                           </div>
                           <div className="flex-1">
-                            <label htmlFor="isPrivateUpload" className="text-sm font-semibold text-gray-900 flex items-center">
-                              <HiOutlineLockClosed className="w-4 h-4 mr-1 text-violet-600" />
+                            <span className="text-sm font-semibold text-gray-900 flex items-center">
+                              <HiOutlineLockClosed className="w-4 h-4 mr-1 text-violet-600" aria-hidden="true" />
                               {t('privateQuiz')}
-                            </label>
+                            </span>
                             <p className="text-xs text-gray-600 mt-1">
                               {t('privateQuizDescription')}
                             </p>
                           </div>
-                        </div>
+                        </label>
                       </div>
                     </div>
 
@@ -817,10 +822,10 @@ export default function CreateQuizPage() {
                                 type="button"
                                 variant="ghost"
                                 size="sm"
-                                onClick={removeAllFiles}
+                                onClick={() => setShowRemoveAllConfirm(true)}
                                 className="text-red-600 hover:text-red-700 hover:bg-red-50"
                               >
-                                <HiOutlineTrash className="w-4 h-4 mr-1" />
+                                <HiOutlineTrash className="w-4 h-4 mr-1" aria-hidden="true" />
                                 {tCommon('removeAll')}
                               </Button>
                             </div>
@@ -829,12 +834,12 @@ export default function CreateQuizPage() {
                               {pdfFiles.map((file, index) => (
                                 <Card key={index} variant="bordered" className="p-4 hover:shadow-md transition-shadow">
                                   <div className="flex items-center justify-between">
-                                    <div className="flex items-center space-x-3">
-                                      <div className="p-2 bg-red-100 rounded-xl">
-                                        <HiOutlineDocumentText className="h-6 w-6 text-red-600" />
+                                    <div className="flex items-center space-x-3 min-w-0 flex-1">
+                                      <div className="p-2 bg-red-100 rounded-xl flex-shrink-0">
+                                        <HiOutlineDocumentText className="h-6 w-6 text-red-600" aria-hidden="true" />
                                       </div>
-                                      <div>
-                                        <p className="text-sm font-semibold text-gray-900">{file.name}</p>
+                                      <div className="min-w-0 flex-1">
+                                        <p className="text-sm font-semibold text-gray-900 truncate" title={file.name}>{file.name}</p>
                                         <p className="text-xs text-gray-500">
                                           {(file.size / 1024 / 1024).toFixed(2)} MB
                                         </p>
@@ -1002,7 +1007,7 @@ export default function CreateQuizPage() {
                         <div className="flex justify-between items-start">
                           <h4 className="font-medium text-gray-900">{t('questionNumber', { number: questionIndex + 1 })}</h4>
                           <Button
-                            onClick={() => removeQuestionLocal(questionIndex)}
+                            onClick={() => setQuestionToRemove(questionIndex)}
                             variant="ghost"
                             size="sm"
                             className="text-red-600 hover:text-red-700"
@@ -1036,12 +1041,12 @@ export default function CreateQuizPage() {
                         </div>
 
                         {/* Question Type Selector */}
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <fieldset>
+                          <legend className="block text-sm font-medium text-gray-700 mb-2">
                             {t('questionType')}
-                          </label>
+                          </legend>
                           <div className="flex space-x-4">
-                            <label className="flex items-center">
+                            <label className="flex items-center cursor-pointer">
                               <input
                                 type="radio"
                                 name={`type-${questionIndex}`}
@@ -1053,7 +1058,7 @@ export default function CreateQuizPage() {
                                 {t('singleChoice')}
                               </span>
                             </label>
-                            <label className="flex items-center">
+                            <label className="flex items-center cursor-pointer">
                               <input
                                 type="radio"
                                 name={`type-${questionIndex}`}
@@ -1066,7 +1071,7 @@ export default function CreateQuizPage() {
                               </span>
                             </label>
                           </div>
-                        </div>
+                        </fieldset>
 
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1097,7 +1102,7 @@ export default function CreateQuizPage() {
                                       checked={isSelected}
                                       onChange={() => updateSingleChoice(questionIndex, optionIndex)}
                                       className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                                      title={t('markCorrectAnswer', { number: optionIndex + 1 })}
+                                      aria-label={t('markCorrectAnswer', { number: optionIndex + 1 })}
                                     />
                                   ) : (
                                     <input
@@ -1105,7 +1110,7 @@ export default function CreateQuizPage() {
                                       checked={isSelected}
                                       onChange={(e) => updateMultipleChoice(questionIndex, optionIndex, e.target.checked)}
                                       className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                                      title={t('markCorrectAnswer', { number: optionIndex + 1 })}
+                                      aria-label={t('markCorrectAnswer', { number: optionIndex + 1 })}
                                     />
                                   )}
                                   <div className="flex-1">
@@ -1252,6 +1257,38 @@ export default function CreateQuizPage() {
         <LargeFileUploadProgress
           progress={uploadProgress}
           isVisible={showLargeFileProgress}
+        />
+
+        {/* Confirmation Modal for Remove All Files */}
+        <ConfirmModal
+          isOpen={showRemoveAllConfirm}
+          title={t('confirmRemoveAllTitle')}
+          message={t('confirmRemoveAllMessage', { count: pdfFiles.length })}
+          confirmText={tCommon('removeAll')}
+          cancelText={tCommon('cancel')}
+          confirmVariant="destructive"
+          onConfirm={() => {
+            removeAllFiles();
+            setShowRemoveAllConfirm(false);
+          }}
+          onCancel={() => setShowRemoveAllConfirm(false)}
+        />
+
+        {/* Confirmation Modal for Remove Question */}
+        <ConfirmModal
+          isOpen={questionToRemove !== null}
+          title={t('confirmRemoveQuestionTitle')}
+          message={t('confirmRemoveQuestionMessage', { number: (questionToRemove ?? 0) + 1 })}
+          confirmText={t('remove')}
+          cancelText={tCommon('cancel')}
+          confirmVariant="destructive"
+          onConfirm={() => {
+            if (questionToRemove !== null) {
+              removeQuestionLocal(questionToRemove);
+              setQuestionToRemove(null);
+            }
+          }}
+          onCancel={() => setQuestionToRemove(null)}
         />
       </main>
     </div>

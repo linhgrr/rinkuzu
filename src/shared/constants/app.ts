@@ -84,9 +84,9 @@ export const MESSAGES = {
     VALIDATION: 'Please check your input and try again.'
   },
   LOADING: {
-    QUIZ: 'Loading quiz...',
-    CATEGORIES: 'Loading categories...',
-    SAVING: 'Saving...',
-    DELETING: 'Deleting...'
+    QUIZ: 'Loading quiz…',
+    CATEGORIES: 'Loading categories…',
+    SAVING: 'Saving…',
+    DELETING: 'Deleting…'
   }
 } as const 

@@ -580,7 +580,7 @@ export default function AdminPlansPage() {
                         disabled={createLoading}
                         className="bg-blue-600 hover:bg-blue-700 text-white"
                       >
-                        {createLoading ? 'Creating...' : tCommon('create') + ' Plan'}
+                        {createLoading ? 'Creating…' : tCommon('create') + ' Plan'}
                       </Button>
                     </div>
                   </div>

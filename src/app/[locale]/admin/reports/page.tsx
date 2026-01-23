@@ -364,7 +364,7 @@ export default function AdminReportsPage() {
                 disabled={updating}
                 className="flex-1 bg-green-600 hover:bg-green-700"
               >
-                {updating ? 'Updating...' : <><HiOutlineCheck className="w-4 h-4 mr-1" /> Mark Resolved</>}
+                {updating ? 'Updating…' : <><HiOutlineCheck className="w-4 h-4 mr-1" /> Mark Resolved</>}
               </Button>
 
               <Button
@@ -373,7 +373,7 @@ export default function AdminReportsPage() {
                 disabled={updating}
                 className="flex-1"
               >
-                {updating ? 'Updating...' : <><HiOutlineX className="w-4 h-4 mr-1" /> Dismiss</>}
+                {updating ? 'Updating…' : <><HiOutlineX className="w-4 h-4 mr-1" /> Dismiss</>}
               </Button>
             </div>
           </div>

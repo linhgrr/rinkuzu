@@ -165,7 +165,7 @@ export default function SetupPage() {
                   loading={creating}
                   className="w-full"
                 >
-                  {creating ? 'Creating Admin Account...' : 'Create Admin Account'}
+                  {creating ? 'Creating Admin Account…' : 'Create Admin Account'}
                 </Button>
 
                 <div className="text-center">

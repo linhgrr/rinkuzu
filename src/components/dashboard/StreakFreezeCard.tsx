@@ -49,7 +49,7 @@ export function StreakFreezeCard({ count, xp, onBuy }: StreakFreezeCardProps) {
                         disabled={!canBuy || buying}
                         className={canBuy ? 'bg-blue-600 hover:bg-blue-700' : 'opacity-50 cursor-not-allowed'}
                     >
-                        {buying ? '...' : t('buyXP', { xp: COST })}
+                        {buying ? '…' : t('buyXP', { xp: COST })}
                     </Button>
                 ) : (
                     <span className="text-xs font-bold text-green-600 px-3 py-1 bg-green-100 rounded-full">

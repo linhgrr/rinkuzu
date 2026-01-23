@@ -69,7 +69,7 @@ export default function RegisterPage() {
         setError(data.error || t('registrationFailed'));
       }
     } catch (error) {
-      setError(t('registrationError'));
+      setError(`${t('registrationError')}. ${t('checkConnectionAndRetry')}`);
     } finally {
       setLoading(false);
     }
@@ -117,18 +117,18 @@ export default function RegisterPage() {
             <CardContent className="pt-0">
               <form className="space-y-6" onSubmit={handleSubmit}>
                 {error && (
-                  <Card variant="bordered" className="border-red-200 bg-red-50 p-4 animate-fadeInUp">
+                  <Card variant="bordered" className="border-red-200 bg-red-50 p-4 animate-fadeInUp" role="alert" aria-live="polite">
                     <div className="flex items-center text-red-700">
-                      <HiOutlineExclamationCircle className="w-5 h-5 mr-2 flex-shrink-0" />
+                      <HiOutlineExclamationCircle className="w-5 h-5 mr-2 flex-shrink-0" aria-hidden="true" />
                       <span className="text-sm font-medium">{error}</span>
                     </div>
                   </Card>
                 )}
 
                 {success && (
-                  <Card variant="bordered" className="border-emerald-200 bg-emerald-50 p-4 animate-fadeInUp">
+                  <Card variant="bordered" className="border-emerald-200 bg-emerald-50 p-4 animate-fadeInUp" role="status" aria-live="polite">
                     <div className="flex items-center text-emerald-700">
-                      <HiOutlineCheckCircle className="w-5 h-5 mr-2 flex-shrink-0" />
+                      <HiOutlineCheckCircle className="w-5 h-5 mr-2 flex-shrink-0" aria-hidden="true" />
                       <span className="text-sm font-medium">{success}</span>
                     </div>
                   </Card>

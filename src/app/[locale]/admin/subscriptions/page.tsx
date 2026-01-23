@@ -626,7 +626,7 @@ export default function AdminSubscriptionsPage() {
                         : ''
                       }`}
                   >
-                    {actionLoading === selectedSubscription._id ? 'Updating...' : `Mark as ${status}`}
+                    {actionLoading === selectedSubscription._id ? 'Updating…' : `Mark as ${status}`}
                   </Button>
                 ))}
               </div>

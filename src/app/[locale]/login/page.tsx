@@ -54,7 +54,7 @@ export default function LoginPage() {
       }
     } catch (error) {
       console.error('Login exception:', error);
-      setError(t('loginError'));
+      setError(`${t('loginError')}. ${t('checkConnectionAndRetry')}`);
     } finally {
       setLoading(false);
     }
@@ -102,9 +102,9 @@ export default function LoginPage() {
             <CardContent className="pt-0">
               <form className="space-y-6" onSubmit={handleSubmit}>
                 {error && (
-                  <Card variant="bordered" className="border-red-200 bg-red-50 p-4 animate-fadeInUp">
+                  <Card variant="bordered" className="border-red-200 bg-red-50 p-4 animate-fadeInUp" role="alert" aria-live="polite">
                     <div className="flex items-center text-red-700">
-                      <HiOutlineExclamationCircle className="w-5 h-5 mr-2 flex-shrink-0" />
+                      <HiOutlineExclamationCircle className="w-5 h-5 mr-2 flex-shrink-0" aria-hidden="true" />
                       <span className="text-sm font-medium">{error}</span>
                     </div>
                   </Card>

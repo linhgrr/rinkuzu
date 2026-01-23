@@ -376,7 +376,7 @@ export default function DraftEditPage() {
                   ) : (
                     <HiOutlineCloudUpload className="w-5 h-5" />
                   )}
-                  {isSubmitting ? 'Đang gửi...' : 'Gửi để duyệt'}
+                  {isSubmitting ? 'Đang gửi…' : 'Gửi để duyệt'}
                 </button>
               </div>
             </div>

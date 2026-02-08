@@ -59,10 +59,10 @@ export function Hero() {
               />
             </div>
             <div className="flex-1 hidden md:flex items-center gap-3 px-6 py-3 w-full">
-              <HiOutlineLocationMarker className="w-5 h-5 text-gray-400" />
+              <HiOutlineLocationMarker className="w-5 h-5 text-gray-400" aria-hidden="true" />
               <span className="text-gray-400 text-sm">{t('community')}</span>
             </div>
-            <Button size="lg" className="w-full sm:w-auto rounded-full px-8 py-4 md:py-6 h-auto text-base">
+            <Button size="lg" className="w-full sm:w-auto rounded-full px-8 py-4 md:py-6 h-auto text-base focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2">
               {t('searchButton')}
             </Button>
           </div>

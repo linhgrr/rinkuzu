@@ -1,10 +1,11 @@
 'use client';
 
-import { motion, useScroll, useTransform } from 'framer-motion';
+import { motion, useScroll, useTransform, useReducedMotion } from 'framer-motion';
 import { useRef } from 'react';
 
 export function IntroVideo() {
     const containerRef = useRef<HTMLDivElement>(null);
+    const prefersReducedMotion = useReducedMotion();
     const { scrollYProgress } = useScroll({
         target: containerRef,
         offset: ['start end', 'end start'],
@@ -14,21 +15,21 @@ export function IntroVideo() {
     const scale = useTransform(
         scrollYProgress,
         [0, 0.5, 1],
-        [0.8, 1.1, 0.8]
+        prefersReducedMotion ? [1, 1, 1] : [0.8, 1.1, 0.8]
     );
 
     // Opacity fade in/out
     const opacity = useTransform(
         scrollYProgress,
         [0, 0.2, 0.8, 1],
-        [0, 1, 1, 0]
+        prefersReducedMotion ? [1, 1, 1, 1] : [0, 1, 1, 0]
     );
 
     // Smooth rotation for a "dynamic" feel
     const rotateX = useTransform(
         scrollYProgress,
         [0, 0.5, 1],
-        [5, 0, -5]
+        prefersReducedMotion ? [0, 0, 0] : [5, 0, -5]
     );
 
     return (

@@ -29,11 +29,17 @@ export function Testimonials() {
               </p>
 
               <div className="flex items-center justify-center gap-4">
-                <button className="w-14 h-14 rounded-full border border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors">
-                  <HiOutlineChevronLeft className="w-6 h-6" />
+                <button
+                  className="w-14 h-14 rounded-full border border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors focus-visible:ring-2 focus-visible:ring-white"
+                  aria-label="Previous testimonial"
+                >
+                  <HiOutlineChevronLeft className="w-6 h-6" aria-hidden="true" />
                 </button>
-                <button className="w-14 h-14 rounded-full border border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors">
-                  <HiOutlineChevronRight className="w-6 h-6" />
+                <button
+                  className="w-14 h-14 rounded-full border border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors focus-visible:ring-2 focus-visible:ring-white"
+                  aria-label="Next testimonial"
+                >
+                  <HiOutlineChevronRight className="w-6 h-6" aria-hidden="true" />
                 </button>
               </div>
             </div>
@@ -49,7 +55,7 @@ export function Testimonials() {
               <div key={i} className="relative aspect-square rounded-3xl overflow-hidden group">
                 <Image
                   src={`https://i.pravatar.cc/300?u=user${i}`}
-                  alt="Reviewer"
+                  alt=""
                   fill
                   className="object-cover group-hover:scale-110 transition-transform duration-500"
                 />

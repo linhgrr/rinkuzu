@@ -45,15 +45,16 @@ export function FAQ () {
               className={`rounded-3xl border transition-all ${openId === faq.id ? 'border-blue-200 bg-blue-50/30' : 'border-gray-100 bg-white'}`}
             >
               <button
-                className="w-full px-8 py-6 flex items-center justify-between text-left"
+                className="w-full px-8 py-6 flex items-center justify-between text-left focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:rounded-3xl"
                 onClick={() => setOpenId(openId === faq.id ? null : faq.id)}
+                aria-expanded={openId === faq.id}
               >
                 <span className="text-lg font-bold text-[#1e242c]">{faq.question}</span>
                 <div className={`flex-none w-10 h-10 rounded-full flex items-center justify-center transition-colors ${openId === faq.id ? 'bg-blue-600 text-white' : 'bg-gray-50 text-gray-400'}`}>
                   {openId === faq.id ? (
-                    <HiOutlineMinus className="w-5 h-5" />
+                    <HiOutlineMinus className="w-5 h-5" aria-hidden="true" />
                   ) : (
-                    <HiOutlinePlus className="w-5 h-5" />
+                    <HiOutlinePlus className="w-5 h-5" aria-hidden="true" />
                   )}
                 </div>
               </button>

@@ -51,9 +51,9 @@ export function Features() {
               className="object-cover"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-blue-600/80 via-transparent to-transparent flex flex-col justify-end p-8 text-center">
-              <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center mx-auto mb-4 border border-white/30 group cursor-pointer hover:scale-110 transition-transform">
-                <HiOutlinePlay className="w-6 h-6 text-white fill-current" />
-              </div>
+              <button className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center mx-auto mb-4 border border-white/30 hover:scale-110 transition-transform focus-visible:ring-2 focus-visible:ring-white" aria-label="Play video">
+                <HiOutlinePlay className="w-6 h-6 text-white fill-current" aria-hidden="true" />
+              </button>
               <p className="text-white font-bold text-xl uppercase tracking-wider">{t('aiTutor')}</p>
             </div>
           </div>
@@ -62,7 +62,7 @@ export function Features() {
           <div className="absolute left-[-5%] top-[25%] z-30 w-[32%] animate-float-slow">
             <Card className="p-6 border border-[#edeef0] shadow-[10px_25px_100px_0px_rgba(0,43,107,0.15)] rounded-[24px] text-center bg-white/95 backdrop-blur-sm">
               <div className="w-12 h-12 rounded-2xl bg-blue-50 shadow-apple-sm flex items-center justify-center mx-auto mb-4 text-blue-600">
-                <HiOutlineDocumentText className="w-6 h-6" />
+                <HiOutlineDocumentText className="w-6 h-6" aria-hidden="true" />
               </div>
               <h4 className="font-bold text-[#1e242c] text-lg mb-2">{t('feature1.title')}</h4>
               <p className="text-[#414d60] text-xs mb-6 line-clamp-2">{t('feature1.description')}</p>
@@ -73,7 +73,7 @@ export function Features() {
           <div className="absolute left-[0%] bottom-[20%] z-30 w-[30%] animate-float-slow" style={{ animationDelay: '1s' }}>
             <Card className="p-5 border border-[#edeef0] shadow-[10px_25px_100px_0px_rgba(0,43,107,0.15)] rounded-[20px] bg-white/95 backdrop-blur-sm flex items-center gap-4">
               <div className="w-12 h-12 rounded-full bg-green-50 shadow-apple-sm flex items-center justify-center shrink-0 text-green-600">
-                <HiOutlineUsers className="w-6 h-6" />
+                <HiOutlineUsers className="w-6 h-6" aria-hidden="true" />
               </div>
               <div>
                 <p className="font-bold text-[#1e242c] text-lg">50K +</p>
@@ -86,7 +86,7 @@ export function Features() {
           <div className="absolute right-[0%] top-[15%] z-30 w-[28%] animate-bounce-slow">
             <Card className="p-4 border border-[#edeef0] shadow-[10px_25px_100px_0px_rgba(0,43,107,0.15)] rounded-[20px] flex items-center gap-4 bg-white/95 backdrop-blur-sm">
               <div className="w-12 h-12 rounded-full bg-purple-50 flex items-center justify-center shrink-0">
-                <Image src={chatbotIcon} alt="AI chatbot" width={24} height={24} className="w-6 h-6" />
+                <Image src={chatbotIcon} alt="" width={24} height={24} className="w-6 h-6" />
               </div>
               <p className="font-bold text-[#1e242c] text-base leading-tight">{t('feature2.title')}</p>
             </Card>
@@ -95,7 +95,7 @@ export function Features() {
           <div className="absolute right-[-5%] bottom-[30%] z-30 w-[32%] animate-bounce-slow" style={{ animationDelay: '1.5s' }}>
             <Card className="p-6 border border-[#edeef0] shadow-[10px_25px_100px_0px_rgba(0,43,107,0.15)] rounded-[24px] text-center bg-white/95 backdrop-blur-sm">
               <div className="w-12 h-12 rounded-2xl bg-orange-50 shadow-apple-sm flex items-center justify-center mx-auto mb-4 text-orange-600">
-                <HiOutlineLightningBolt className="w-6 h-6" />
+                <HiOutlineLightningBolt className="w-6 h-6" aria-hidden="true" />
               </div>
               <h4 className="font-bold text-[#1e242c] text-lg mb-2">{t('feature3.title')}</h4>
               <p className="text-[#414d60] text-xs mb-6 line-clamp-2">{t('feature3.description')}</p>
@@ -129,7 +129,7 @@ export function Features() {
           <div className="grid grid-cols-1 gap-4">
             <Card className="p-6 border border-gray-100 shadow-apple-sm flex items-center gap-4">
               <div className="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center shrink-0 text-blue-600">
-                <HiOutlineDocumentText className="w-6 h-6" />
+                <HiOutlineDocumentText className="w-6 h-6" aria-hidden="true" />
               </div>
               <div className="flex-1">
                 <h4 className="font-bold text-gray-900">{t('feature1.title')}</h4>
@@ -139,7 +139,7 @@ export function Features() {
 
             <Card className="p-6 border border-gray-100 shadow-apple-sm flex items-center gap-4">
               <div className="w-12 h-12 rounded-2xl bg-purple-50 flex items-center justify-center shrink-0">
-                <Image src={chatbotIcon} alt="AI chatbot" width={24} height={24} className="w-6 h-6" />
+                <Image src={chatbotIcon} alt="" width={24} height={24} className="w-6 h-6" />
               </div>
               <div className="flex-1">
                 <h4 className="font-bold text-gray-900">{t('feature2.title')}</h4>
@@ -149,7 +149,7 @@ export function Features() {
 
             <Card className="p-6 border border-gray-100 shadow-apple-sm flex items-center gap-4">
               <div className="w-12 h-12 rounded-2xl bg-orange-50 flex items-center justify-center shrink-0 text-orange-600">
-                <HiOutlineLightningBolt className="w-6 h-6" />
+                <HiOutlineLightningBolt className="w-6 h-6" aria-hidden="true" />
               </div>
               <div className="flex-1">
                 <h4 className="font-bold text-gray-900">{t('feature3.title')}</h4>

@@ -17,15 +17,15 @@ export function Footer () {
             <NavLogo />
             <div className="space-y-4 text-gray-500 text-sm">
               <div className="flex items-start gap-3">
-                <HiOutlineLocationMarker className="w-5 h-5 text-blue-600 shrink-0" />
+                <HiOutlineLocationMarker className="w-5 h-5 text-blue-600 shrink-0" aria-hidden="true" />
                 <p>{t('address')}</p>
               </div>
               <div className="flex items-center gap-3">
-                <HiOutlinePhone className="w-5 h-5 text-blue-600 shrink-0" />
+                <HiOutlinePhone className="w-5 h-5 text-blue-600 shrink-0" aria-hidden="true" />
                 <p>+1 (234) 567-890</p>
               </div>
               <div className="flex items-center gap-3">
-                <HiOutlineMail className="w-5 h-5 text-blue-600 shrink-0" />
+                <HiOutlineMail className="w-5 h-5 text-blue-600 shrink-0" aria-hidden="true" />
                 <p>support@rinkuzu.com</p>
               </div>
             </div>
@@ -57,12 +57,15 @@ export function Footer () {
             <h4 className="font-bold text-[#1e242c] uppercase tracking-wider text-sm">{t('newsletter.title')}</h4>
             <p className="text-gray-500 text-sm">{t('newsletter.description')}</p>
             <div className="relative">
-              <input 
-                type="email" 
-                placeholder={t('newsletter.placeholder')}
+              <input
+                type="email"
+                name="newsletter-email"
+                placeholder={`${t('newsletter.placeholder')}…`}
+                aria-label={t('newsletter.placeholder')}
+                autoComplete="email"
                 className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-6 py-4 text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none"
               />
-              <button className="absolute right-2 top-2 bottom-2 bg-blue-600 text-white px-4 rounded-xl text-xs font-bold hover:bg-blue-700 transition-colors">
+              <button className="absolute right-2 top-2 bottom-2 bg-blue-600 text-white px-4 rounded-xl text-xs font-bold hover:bg-blue-700 transition-colors focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2">
                 {t('newsletter.button')}
               </button>
             </div>
@@ -74,9 +77,20 @@ export function Footer () {
             {t('copyright')}
           </p>
           <div className="flex items-center gap-6">
-            {['Twitter', 'Facebook', 'LinkedIn', 'Instagram'].map((social) => (
-              <a key={social} href="#" className="text-gray-400 hover:text-[#1e242c] transition-colors text-sm">
-                {social}
+            {[
+              { name: 'Twitter', url: 'https://twitter.com' },
+              { name: 'Facebook', url: 'https://facebook.com' },
+              { name: 'LinkedIn', url: 'https://linkedin.com' },
+              { name: 'Instagram', url: 'https://instagram.com' }
+            ].map((social) => (
+              <a
+                key={social.name}
+                href={social.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-gray-400 hover:text-[#1e242c] transition-colors text-sm focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:rounded"
+              >
+                {social.name}
               </a>
             ))}
           </div>

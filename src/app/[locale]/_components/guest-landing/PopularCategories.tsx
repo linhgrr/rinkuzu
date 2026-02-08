@@ -3,6 +3,7 @@
 import { useTranslations } from 'next-intl'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
+import Link from 'next/link'
 import { HiOutlineCode, HiOutlineTranslate, HiOutlineCalculator, HiOutlineBeaker, HiOutlineAcademicCap, HiOutlineLightningBolt, HiOutlineArrowRight } from '@/components/icons'
 
 interface Quiz {
@@ -49,12 +50,12 @@ export function PopularCategories({ quizzes }: PopularCategoriesProps) {
           {categories.map((cat) => (
             <button
               key={cat.id}
-              className={`flex items-center gap-2 px-6 py-3 rounded-full whitespace-nowrap transition-all border ${cat.active
+              className={`flex items-center gap-2 px-6 py-3 rounded-full whitespace-nowrap transition-all border focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 ${cat.active
                   ? 'bg-blue-50 border-blue-200 text-blue-600 shadow-sm'
                   : 'bg-white border-gray-100 text-gray-500 hover:border-gray-200'
                 }`}
             >
-              <cat.icon className="w-5 h-5" />
+              <cat.icon className="w-5 h-5" aria-hidden="true" />
               <span className="font-medium">{cat.name}</span>
             </button>
           ))}
@@ -85,15 +86,13 @@ export function PopularCategories({ quizzes }: PopularCategoriesProps) {
 
         {/* View All Button */}
         <div className="flex justify-center">
-          <Button
-            variant="outline"
-            size="lg"
-            className="rounded-full px-8 py-6 h-auto text-base font-bold border-blue-200 text-blue-600 hover:bg-blue-50 transition-all group"
-            onClick={() => window.location.href = '/explore'}
+          <Link
+            href="/explore"
+            className="inline-flex items-center rounded-full px-8 py-6 text-base font-bold border-2 border-blue-200 text-blue-600 hover:bg-blue-50 transition-all group focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
           >
             {t('viewAll')}
-            <HiOutlineArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
-          </Button>
+            <HiOutlineArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" aria-hidden="true" />
+          </Link>
         </div>
       </div>
     </section>

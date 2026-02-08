@@ -38,13 +38,16 @@ export function CTA() {
           <div className="flex flex-col sm:flex-row items-center gap-4 justify-center max-w-xl mx-auto">
             <div className="relative flex-1 w-full group">
               <div className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-600 transition-colors">
-                <HiOutlineMail className="w-6 h-6" />
+                <HiOutlineMail className="w-6 h-6" aria-hidden="true" />
               </div>
               <input
                 type="email"
+                name="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder={t('placeholder')}
+                placeholder={`${t('placeholder')}…`}
+                aria-label={t('placeholder')}
+                autoComplete="email"
                 className="w-full bg-white border border-[#ededed] rounded-full pl-16 pr-6 py-5 text-gray-700 shadow-[8px_8px_56px_0px_rgba(0,0,0,0.05)] focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all outline-none"
               />
             </div>

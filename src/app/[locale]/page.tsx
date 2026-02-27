@@ -55,5 +55,5 @@ export default async function HomePage() {
   }
 
   // Authenticated view - Pass session to client component for further data fetching
-  return <AuthenticatedHome session={session} initialStatus="authenticated" />;
+  return <AuthenticatedHome session={session} />;
 }

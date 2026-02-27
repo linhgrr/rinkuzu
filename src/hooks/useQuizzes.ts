@@ -23,12 +23,33 @@ interface QuizzesResponse {
   success: boolean;
   data: {
     quizzes: Quiz[];
-    total: number;
+    pagination: {
+      total: number;
+    };
   };
 }
 
-export function useQuizzes(limit?: number) {
-  const url = limit ? `/api/quizzes?limit=${limit}` : '/api/quizzes';
+interface UseQuizzesOptions {
+  limit?: number;
+  status?: 'pending' | 'published' | 'rejected';
+  mine?: boolean;
+}
+
+export function useQuizzes(options: UseQuizzesOptions = {}) {
+  const params = new URLSearchParams();
+
+  if (typeof options.limit === 'number') {
+    params.set('limit', String(options.limit));
+  }
+  if (options.status) {
+    params.set('status', options.status);
+  }
+  if (options.mine) {
+    params.set('mine', 'true');
+  }
+
+  const query = params.toString();
+  const url = query ? `/api/quizzes?${query}` : '/api/quizzes';
 
   const { data, error, isLoading, mutate } = useSWR<QuizzesResponse>(
     url,
@@ -41,7 +62,7 @@ export function useQuizzes(limit?: number) {
 
   return {
     quizzes: data?.data?.quizzes ?? [],
-    total: data?.data?.total ?? 0,
+    total: data?.data?.pagination?.total ?? 0,
     isLoading,
     error,
     mutateQuizzes: mutate,

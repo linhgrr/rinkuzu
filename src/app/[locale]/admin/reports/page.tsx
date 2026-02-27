@@ -1,8 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import Link from 'next/link';
@@ -25,8 +24,7 @@ import { IReport } from '@/models/Report';
 export default function AdminReportsPage() {
   const t = useTranslations('admin');
   const tCommon = useTranslations('common');
-  const { data: session, status } = useSession();
-  const router = useRouter();
+  const { data: session } = useSession();
   const [reports, setReports] = useState<IReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -38,18 +36,7 @@ export default function AdminReportsPage() {
   const [reportToDelete, setReportToDelete] = useState<IReport | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  useEffect(() => {
-    if (status === 'loading') return;
-
-    if (!session?.user || (session.user as any)?.role !== 'admin') {
-      router.push('/');
-      return;
-    }
-
-    fetchReports();
-  }, [session, status, router, statusFilter]);
-
-  const fetchReports = async () => {
+  const fetchReports = useCallback(async () => {
     try {
       setLoading(true);
       const params = new URLSearchParams();
@@ -68,7 +55,11 @@ export default function AdminReportsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [statusFilter]);
+
+  useEffect(() => {
+    fetchReports();
+  }, [fetchReports]);
 
   const openReportModal = (report: IReport) => {
     setSelectedReport(report);
@@ -170,7 +161,7 @@ export default function AdminReportsPage() {
     }
   };
 
-  if (status === 'loading' || loading) {
+  if (loading) {
     return (
       <div className="min-h-screen">
         <Navigation />
@@ -196,8 +187,7 @@ export default function AdminReportsPage() {
       />
 
       {/* Main content */}
-      <div className={`transition-all duration-300 ${session && isSidebarOpen ? 'ml-64' : session ? 'ml-16' : ''
-        }`}>
+      <div className={`transition-all duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-16'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900">{t('quizReports')}</h1>

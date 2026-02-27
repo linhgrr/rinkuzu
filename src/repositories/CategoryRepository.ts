@@ -1,7 +1,13 @@
 import connectDB from '@/lib/mongoose'
 import Category from '@/models/Category'
-import Quiz from '@/models/Quiz'
 import { ICategory, ICategoryRepository } from '@/interfaces/repositories/ICategoryRepository'
+
+function normalizeSlug(value: string): string {
+  return decodeURIComponent(value)
+    .toLowerCase()
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9-]/g, '');
+}
 
 export class CategoryRepository implements ICategoryRepository {
   async findById(id: string): Promise<ICategory | null> {
@@ -11,26 +17,15 @@ export class CategoryRepository implements ICategoryRepository {
 
   async findBySlug(slug: string): Promise<ICategory | null> {
     await connectDB()
-    
-    console.log('CategoryRepository.findBySlug called with slug:', slug);
-    
-    // Decode the URL-encoded slug
-    const decodedSlug = decodeURIComponent(slug);
-    console.log('Decoded slug:', decodedSlug);
-    
-    // Find all active categories and match by slug
-    const allCategories = await Category.find({ isActive: true }).lean() as unknown as ICategory[];
-    console.log('All active categories:', allCategories.map(c => ({ name: c.name, _id: c._id })));
-    
-    const category = allCategories.find(cat => {
-      const categorySlug = cat.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-      const inputSlug = decodedSlug.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-      console.log(`Comparing: "${categorySlug}" with "${inputSlug}"`);
-      return categorySlug === inputSlug;
-    });
-    
-    console.log('Found category by slug matching:', category);
-    return category || null;
+
+    const inputSlug = normalizeSlug(slug);
+    const categories = await Category.find(
+      { isActive: true },
+      '_id name description color isActive createdBy createdAt updatedAt'
+    ).lean() as unknown as ICategory[];
+
+    const category = categories.find((cat) => normalizeSlug(cat.name) === inputSlug);
+    return category ?? null;
   }
 
   async findAll(options: {

@@ -1,6 +1,7 @@
 // Frontend Routes - Navigation paths
 export const ROUTES = {
   HOME: '/',
+  DASHBOARD: '/dashboard',
   LOGIN: '/login',
   REGISTER: '/register',
   CREATE_QUIZ: '/create',

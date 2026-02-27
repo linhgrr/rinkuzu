@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
@@ -11,7 +11,6 @@ import { QuizPreviewModal } from '@/components/ui/QuizPreviewModal';
 import Pagination from '@/components/ui/Pagination';
 import { formatDate } from '@/lib/utils';
 import { IQuiz } from '@/types';
-import { useSession } from 'next-auth/react';
 import {
     HiOutlineClock,
     HiOutlineCheckCircle,
@@ -31,7 +30,6 @@ interface PaginationData {
 }
 
 export default function ProfileQuizzes() {
-    const { data: session } = useSession();
     const t = useTranslations('profile');
     const tCommon = useTranslations('common');
     const [quizzes, setQuizzes] = useState<IQuiz[]>([]);
@@ -49,15 +47,7 @@ export default function ProfileQuizzes() {
         totalPages: 0
     });
 
-    useEffect(() => {
-        if (session) {
-            fetchMyQuizzes();
-        }
-    }, [session, filter]);
-
-    const fetchMyQuizzes = async (page: number = 1) => {
-        if (!session) return;
-
+    const fetchMyQuizzes = useCallback(async (page: number = 1) => {
         try {
             setLoading(true);
             const params = new URLSearchParams({
@@ -87,7 +77,11 @@ export default function ProfileQuizzes() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [filter, pagination.limit]);
+
+    useEffect(() => {
+        fetchMyQuizzes();
+    }, [fetchMyQuizzes]);
 
     const handlePageChange = (newPage: number) => {
         setPagination(prev => ({ ...prev, page: newPage }));

@@ -4,6 +4,8 @@ import { useCallback, memo } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
+import useSWR from 'swr';
+import useSWRMutation from 'swr/mutation';
 import Navigation from '@/components/Navigation';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -12,8 +14,10 @@ import { QuizCard } from '@/components/shared/QuizCard';
 import { StreakFreezeCard } from '@/components/dashboard/StreakFreezeCard';
 import { LevelBadge } from '@/components/dashboard/LevelBadge';
 import { WeeklyProgressHeatmap } from '@/components/dashboard/WeeklyProgressHeatmap';
-import { useStats, useQuizzes } from '@/hooks';
+import type { UserStats } from '@/hooks/useStats';
+import type { Quiz } from '@/hooks/useQuizzes';
 import { ROUTES } from '@/shared/constants';
+import { fetcher } from '@/lib/fetcher';
 import {
   HiOutlineFire,
   HiOutlineLightningBolt,
@@ -142,11 +146,99 @@ const ProTipCard = memo(function ProTipCard() {
   );
 });
 
-export function DashboardClient({ userEmail }: { userEmail: string }) {
+interface DashboardClientProps {
+  userEmail: string;
+  initialStats?: UserStats;
+  initialQuizzes?: Quiz[];
+  initialSession?: any;
+}
+
+interface DashboardBootstrapResponse {
+  success: boolean;
+  data: {
+    stats: UserStats;
+    quizzes: Quiz[];
+  };
+}
+
+interface BuyFreezeResponse {
+  success: boolean;
+  message?: string;
+  data?: {
+    xp: number;
+    streakFreezeCount: number;
+  };
+}
+
+async function buyFreezeFetcher(url: string) {
+  const response = await fetch(url, { method: 'POST' });
+  return response.json() as Promise<BuyFreezeResponse>;
+}
+
+export function DashboardClient({
+  userEmail,
+  initialStats,
+  initialQuizzes = [],
+  initialSession,
+}: DashboardClientProps) {
   const t = useTranslations('dashboard');
   const router = useRouter();
-  const { stats, isLoading: statsLoading, buyFreeze } = useStats();
-  const { quizzes, isLoading: quizzesLoading } = useQuizzes({ limit: 3, status: 'published' });
+
+  const bootstrapFallbackData =
+    initialStats
+      ? {
+        success: true,
+        data: {
+          stats: initialStats,
+          quizzes: initialQuizzes,
+        },
+      }
+      : undefined;
+
+  const {
+    data: bootstrapData,
+    isLoading: bootstrapLoading,
+    mutate: mutateBootstrapData,
+  } = useSWR<DashboardBootstrapResponse>(
+    '/api/dashboard/bootstrap',
+    fetcher,
+    {
+      revalidateOnFocus: false,
+      dedupingInterval: 30000,
+      fallbackData: bootstrapFallbackData,
+    }
+  );
+
+  const { trigger: buyFreeze } = useSWRMutation(
+    '/api/shop/buy-freeze',
+    buyFreezeFetcher,
+    {
+      onSuccess: (response) => {
+        if (response.success && response.data) {
+          mutateBootstrapData(
+            (currentData) =>
+              currentData
+                ? {
+                  ...currentData,
+                  data: {
+                    ...currentData.data,
+                    stats: {
+                      ...currentData.data.stats,
+                      xp: response.data!.xp,
+                      streakFreezeCount: response.data!.streakFreezeCount,
+                    },
+                  },
+                }
+                : currentData,
+            { revalidate: false }
+          );
+        }
+      },
+    }
+  );
+
+  const stats = bootstrapData?.data?.stats;
+  const quizzes = bootstrapData?.data?.quizzes ?? [];
 
   const handleStartReview = useCallback(() => {
     router.push('/review');
@@ -195,12 +287,12 @@ export function DashboardClient({ userEmail }: { userEmail: string }) {
   const weeklyActivityObj = stats?.weeklyActivity
     ? (typeof stats.weeklyActivity === 'object' ? stats.weeklyActivity : {})
     : {};
-  const isStatsInitialLoading = statsLoading && !stats;
-  const isQuizzesInitialLoading = quizzesLoading && quizzes.length === 0;
+  const isStatsInitialLoading = bootstrapLoading && !stats;
+  const isQuizzesInitialLoading = bootstrapLoading && quizzes.length === 0;
 
   return (
     <div className="min-h-screen bg-[#F5F5F7] pb-12">
-      <Navigation />
+      <Navigation initialSession={initialSession} />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">

@@ -35,18 +35,23 @@ interface BuyFreezeResponse {
   };
 }
 
+interface UseStatsOptions {
+  fallbackData?: UserStats;
+}
+
 async function buyFreezeFetcher(url: string) {
   const res = await fetch(url, { method: 'POST' });
   return res.json() as Promise<BuyFreezeResponse>;
 }
 
-export function useStats() {
+export function useStats(options: UseStatsOptions = {}) {
   const { data, error, isLoading, mutate } = useSWR<UserStats>(
     '/api/progress/stats',
     fetcher,
     {
       revalidateOnFocus: false,
       dedupingInterval: 30000, // 30 seconds
+      fallbackData: options.fallbackData,
     }
   );
 

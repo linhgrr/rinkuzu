@@ -29,14 +29,7 @@ export const authOptions: NextAuthOptions = {
             credentials.password,
             user.password
           );
-          
-          console.log('Auth debug:', {
-            email: credentials.email,
-            passwordLength: credentials.password.length,
-            hashedPasswordLength: user.password.length,
-            isValidPassword
-          });
-          
+
           if (!isValidPassword) {
             return null;
           }

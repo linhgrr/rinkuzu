@@ -23,6 +23,7 @@ interface Quiz {
   };
   createdAt: string;
   questions: Array<unknown>;
+  questionCount?: number;
 }
 
 interface QuizCardProps {
@@ -43,6 +44,7 @@ const CategoryBadgeVariant = (color: string) => {
 export const QuizCard = memo(function QuizCard({ quiz }: QuizCardProps) {
   const router = useRouter();
   const t = useTranslations('common');
+  const questionCount = quiz.questionCount ?? quiz.questions.length;
 
   const handleClick = useCallback(() => {
     router.push(ROUTES.QUIZ.VIEW(quiz.slug));
@@ -81,7 +83,7 @@ export const QuizCard = memo(function QuizCard({ quiz }: QuizCardProps) {
       </CardHeader>
       <CardContent>
         <div className="flex items-center justify-between text-xs font-medium text-gray-400 mt-2 pt-3 border-t border-gray-100">
-          <span>{t('questionsCount', { count: quiz.questions.length })}</span>
+          <span>{t('questionsCount', { count: questionCount })}</span>
           <span>{formatDisplayDate(quiz.createdAt)}</span>
         </div>
       </CardContent>

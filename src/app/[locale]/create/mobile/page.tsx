@@ -3,10 +3,8 @@
 import { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
 import { useDraftStore } from '@/store/useDraftStore';
-import { usePdfProcessor } from '@/hooks/usePdfProcessor';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   HiOutlineUpload,
@@ -24,9 +22,7 @@ export default function MobileCreatePage() {
   const t = useTranslations('create');
   const tCommon = useTranslations('common');
   const router = useRouter();
-  const { data: session, status } = useSession();
   const { addDraft } = useDraftStore();
-  const { startProcessing } = usePdfProcessor();
 
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState('');
@@ -52,7 +48,7 @@ export default function MobileCreatePage() {
   });
 
   const handleSubmit = async () => {
-    if (!file || !title.trim() || !session?.user) return;
+    if (!file || !title.trim()) return;
 
     setIsUploading(true);
 
@@ -100,7 +96,7 @@ export default function MobileCreatePage() {
 
       // Navigate away first, then DraftSyncProvider will resume processing
       // This prevents the abort that happens when this component unmounts
-      router.push('/');
+      router.push('/dashboard');
 
     } catch (error: any) {
       toast.error(tCommon('error'), { description: error.message });
@@ -108,19 +104,6 @@ export default function MobileCreatePage() {
       setIsUploading(false);
     }
   };
-
-  if (status === 'loading') {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-
-  if (!session) {
-    router.push('/login');
-    return null;
-  }
 
   return (
     <div className="min-h-screen bg-gray-50 px-4 py-6 pb-24">

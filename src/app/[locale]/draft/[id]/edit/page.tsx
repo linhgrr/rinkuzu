@@ -1,9 +1,8 @@
 // /src/app/draft/[id]/edit/page.tsx
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
 import { useDraftStore } from '@/store/useDraftStore';
 import { toast } from 'sonner';
@@ -64,7 +63,6 @@ export default function DraftEditPage() {
   const tCommon = useTranslations('common');
   const { id } = useParams();
   const router = useRouter();
-  const { data: session, status: authStatus } = useSession();
   const { removeDraft } = useDraftStore();
 
   const [draft, setDraft] = useState<Draft | null>(null);
@@ -115,17 +113,7 @@ export default function DraftEditPage() {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Fetch draft
-  useEffect(() => {
-    if (authStatus === 'loading') return;
-    if (!session) {
-      router.push('/login');
-      return;
-    }
-    fetchDraft();
-  }, [id, session, authStatus]);
-
-  const fetchDraft = async () => {
+  const fetchDraft = useCallback(async () => {
     try {
       const response = await fetch(`/api/draft/${id}`);
       if (!response.ok) throw new Error('Draft not found');
@@ -156,7 +144,12 @@ export default function DraftEditPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [id, router]);
+
+  // Fetch draft
+  useEffect(() => {
+    fetchDraft();
+  }, [fetchDraft]);
 
   const handleQuestionEdit = (index: number, updates: Partial<DraftQuestion>) => {
     setQuestions((prev) =>

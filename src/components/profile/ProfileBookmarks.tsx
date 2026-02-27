@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Modal } from '@/components/ui/Modal';
 import { DynamicMarkdownRenderer as MarkdownRenderer } from '@/components/ui/DynamicMarkdownRenderer';
 import Pagination from '@/components/ui/Pagination';
-import { useSession } from 'next-auth/react';
+import { ROUTES } from '@/shared/constants';
 import { HiOutlineTag, HiOutlineTrash, HiOutlineExternalLink } from '@/components/icons';
 import Image from 'next/image';
 
@@ -55,7 +55,6 @@ interface ChatHistoryState {
 }
 
 export default function ProfileBookmarks() {
-    const { data: session } = useSession();
     const t = useTranslations('profile');
     const tCommon = useTranslations('common');
     const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
@@ -92,13 +91,7 @@ export default function ProfileBookmarks() {
         }
     }, [chatHistories]);
 
-    useEffect(() => {
-        if (session) {
-            fetchBookmarks();
-        }
-    }, [session, currentPage]);
-
-    const fetchBookmarks = async () => {
+    const fetchBookmarks = useCallback(async () => {
         try {
             setLoading(true);
             const params = new URLSearchParams({
@@ -120,7 +113,11 @@ export default function ProfileBookmarks() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [currentPage]);
+
+    useEffect(() => {
+        fetchBookmarks();
+    }, [fetchBookmarks]);
 
     const removeBookmark = async (bookmarkId: string) => {
         try {
@@ -326,7 +323,15 @@ export default function ProfileBookmarks() {
     };
 
     const OptionImage = ({ src, alt }: { src: string; alt: string }) => (
-        <img src={src} alt={alt} className="max-w-full h-auto rounded border" style={{ maxHeight: '200px' }} />
+        <Image
+            src={src}
+            alt={alt}
+            width={480}
+            height={200}
+            unoptimized
+            className="max-w-full h-auto rounded border"
+            style={{ maxHeight: '200px' }}
+        />
     );
 
     if (loading && bookmarks.length === 0) {
@@ -356,7 +361,7 @@ export default function ProfileBookmarks() {
                         </div>
                         <h3 className="text-lg font-medium text-gray-900 mb-2">{t('noBookmarks')}</h3>
                         <p className="text-gray-600 mb-6">{t('exploreQuizzes')}</p>
-                        <Link href="/">
+                        <Link href={ROUTES.DASHBOARD}>
                             <Button>{tCommon('browseQuizzes')}</Button>
                         </Link>
                     </CardContent>

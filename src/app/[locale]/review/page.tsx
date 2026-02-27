@@ -1,8 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
 import Navigation from '@/components/Navigation';
 import { Button } from '@/components/ui/Button';
@@ -30,7 +29,6 @@ interface Question {
 
 export default function ReviewPage() {
     const t = useTranslations('review');
-    const { data: session, status } = useSession();
     const router = useRouter();
     const [questions, setQuestions] = useState<Question[]>([]);
     const [currentIndex, setCurrentIndex] = useState(0);
@@ -38,15 +36,7 @@ export default function ReviewPage() {
     const [completed, setCompleted] = useState(false);
     const [stats, setStats] = useState({ xpGained: 0, reviewedCount: 0 });
 
-    useEffect(() => {
-        if (status === 'authenticated') {
-            fetchDueReviews();
-        } else if (status === 'unauthenticated') {
-            router.push(ROUTES.LOGIN);
-        }
-    }, [status, router]);
-
-    const fetchDueReviews = async () => {
+    const fetchDueReviews = useCallback(async () => {
         try {
             setLoading(true);
             const res = await fetch('/api/review/due');
@@ -59,7 +49,11 @@ export default function ReviewPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
+
+    useEffect(() => {
+        fetchDueReviews();
+    }, [fetchDueReviews]);
 
     const handleReviewSubmit = async (rating: 'fail' | 'hard' | 'good' | 'easy') => {
         const currentQ = questions[currentIndex];
@@ -93,7 +87,7 @@ export default function ReviewPage() {
         }
     };
 
-    if (status === 'loading' || loading) {
+    if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-[#f5f5f7]">
                 <div className="animate-pulse flex flex-col items-center">
@@ -118,7 +112,7 @@ export default function ReviewPage() {
                             {t('reviewedQuestions', { count: stats.reviewedCount, xp: stats.xpGained })}
                         </p>
                         <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
-                            <Button onClick={() => router.push('/')} variant="default" size="lg" className="w-full sm:w-auto flex items-center justify-center gap-2">
+                            <Button onClick={() => router.push(ROUTES.DASHBOARD)} variant="default" size="lg" className="w-full sm:w-auto flex items-center justify-center gap-2">
                                 <HiOutlineHome className="w-5 h-5" /> {t('backToDashboard')}
                             </Button>
                             <Button onClick={() => window.location.reload()} variant="outline" size="lg" className="w-full sm:w-auto flex items-center justify-center gap-2">
@@ -142,7 +136,7 @@ export default function ReviewPage() {
                         </div>
                         <h2 className="text-2xl font-semibold mb-2">{t('noCards')}</h2>
                         <p className="text-[#86868b] mb-6">{t('comeBack')}</p>
-                        <Button onClick={() => router.push('/')}>{t('backToDashboard')}</Button>
+                        <Button onClick={() => router.push(ROUTES.DASHBOARD)}>{t('backToDashboard')}</Button>
                     </Card>
                 </div>
             </div>

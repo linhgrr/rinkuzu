@@ -1,14 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Badge } from '@/components/ui/Card';
 import Navigation from '@/components/Navigation';
+import { ROUTES } from '@/shared/constants';
 import {
   HiOutlineSearch,
   HiOutlineExclamationCircle,
@@ -29,7 +30,6 @@ interface Category {
 export default function CategoriesPage() {
   const t = useTranslations('categories');
   const tCommon = useTranslations('common');
-  const { data: session, status } = useSession();
   const router = useRouter();
   const [categories, setCategories] = useState<Category[]>([]);
   const [filteredCategories, setFilteredCategories] = useState<Category[]>([]);
@@ -37,7 +37,7 @@ export default function CategoriesPage() {
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
 
-  const fetchCategories = async () => {
+  const fetchCategories = useCallback(async () => {
     try {
       setLoading(true);
       const response = await fetch('/api/categories');
@@ -57,17 +57,11 @@ export default function CategoriesPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    if (status === 'loading') return;
-
-    if (session) {
-      fetchCategories();
-    } else {
-      router.push('/login');
-    }
-  }, [session, status, router]);
+    fetchCategories();
+  }, [fetchCategories]);
 
   useEffect(() => {
     if (searchTerm.trim()) {
@@ -98,14 +92,21 @@ export default function CategoriesPage() {
     return colorMap[color?.toLowerCase()] || colorMap['purple'];
   };
 
-  if (status === 'loading' || loading) {
+  if (loading) {
     return (
       <div className="min-h-screen">
         <Navigation />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-8">
           <div className="flex justify-center items-center h-64">
             <div className="h-16 flex items-center justify-center mx-auto mb-4 animate-pulse">
-              <img src="https://i.ibb.co/WWGXBZXm/image-removebg-preview.png" alt="RinKuzu Logo" className="h-16 w-auto object-contain" />
+              <Image
+                src="https://i.ibb.co/WWGXBZXm/image-removebg-preview.png"
+                alt="RinKuzu Logo"
+                width={64}
+                height={64}
+                className="h-16 w-auto object-contain"
+                unoptimized
+              />
             </div>
           </div>
         </div>
@@ -136,7 +137,7 @@ export default function CategoriesPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 md:pt-20 pb-8">
         {/* Breadcrumb */}
         <nav className="flex items-center space-x-2 text-sm text-gray-500 mb-4 md:mb-6">
-          <Link href="/" className="hover:text-gray-700">{tCommon('nav.home')}</Link>
+          <Link href={ROUTES.DASHBOARD} className="hover:text-gray-700">{tCommon('nav.home')}</Link>
           <span>›</span>
           <span className="text-gray-900 font-medium">{t('title')}</span>
         </nav>
@@ -184,7 +185,7 @@ export default function CategoriesPage() {
             Showing {filteredCategories.length} of {categories.length} categories
             {searchTerm && (
               <span className="ml-2">
-                matching "<strong>{searchTerm}</strong>"
+                matching &quot;<strong>{searchTerm}</strong>&quot;
               </span>
             )}
           </p>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -63,7 +63,7 @@ interface Category {
 export default function EditQuizPage({ params }: EditQuizPageProps) {
   const t = useTranslations('quiz');
   const tCommon = useTranslations('common');
-  const { data: session, status } = useSession();
+  const { data: session } = useSession();
   const router = useRouter();
   const pathname = usePathname();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -84,18 +84,7 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [showPDFViewer, setShowPDFViewer] = useState(false);
 
-  useEffect(() => {
-    if (status === 'loading') return;
-
-    if (!session) {
-      router.push('/login');
-      return;
-    }
-
-    fetchQuiz();
-  }, [session, status, router, params.id]);
-
-  const fetchQuiz = async () => {
+  const fetchQuiz = useCallback(async () => {
     try {
       const response = await fetch(`/api/quizzes/${params.id}`);
       const data = await response.json();
@@ -116,7 +105,11 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [params.id]);
+
+  useEffect(() => {
+    fetchQuiz();
+  }, [fetchQuiz]);
 
   const updateQuestionField = (index: number, field: keyof Question, value: any) => {
     const updated = [...editableQuestions];
@@ -306,7 +299,7 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
             <CardTitle className="text-center text-red-600">Access Denied</CardTitle>
           </CardHeader>
           <CardContent className="text-center">
-            <p className="text-gray-600 mb-4">You don't have permission to edit this quiz.</p>
+            <p className="text-gray-600 mb-4">You do not have permission to edit this quiz.</p>
             <Link href="/pending">
               <Button>Back to My Quizzes</Button>
             </Link>
@@ -435,8 +428,7 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
       />
 
       {/* Main Content - with flex layout for PDF viewer */}
-      <main className={`py-8 transition-all duration-300 ${session && isSidebarOpen ? 'ml-64' : session ? 'ml-16' : ''
-        } max-w-none px-4 sm:px-6 lg:px-8`}>
+      <main className={`py-8 transition-all duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-16'} max-w-none px-4 sm:px-6 lg:px-8`}>
         <div className="flex min-h-screen transition-all duration-300">
           {/* Left Side - Form Content (50% when PDF visible, full width when not) */}
           <div className={`transition-all duration-300 ${showPDFViewer && pdfUrl ? 'lg:w-1/2 lg:pr-4' : 'w-full'}`}>
@@ -496,7 +488,7 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
                       <div>
                         <h3 className="text-lg font-semibold text-gray-900">Read Only</h3>
                         <p className="text-sm text-gray-600">
-                          This quiz cannot be edited because it's already published. Only admins can edit published quizzes.
+                          This quiz cannot be edited because it is already published. Only admins can edit published quizzes.
                         </p>
                       </div>
                     </div>

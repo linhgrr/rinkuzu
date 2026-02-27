@@ -1,14 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { useLocale, useTranslations } from 'next-intl';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { HiOutlineMail, HiOutlineLockClosed, HiOutlineExclamationCircle, HiOutlineShieldCheck } from '@/components/icons';
-import { defaultLocale } from '@/i18n/config';
+import { defaultLocale, locales } from '@/i18n/config';
 
 export default function LoginPage() {
   const t = useTranslations('auth');
@@ -17,6 +19,40 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const locale = useLocale();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const callbackUrl = useMemo(() => {
+    const fallback = locale === defaultLocale ? '/dashboard' : `/${locale}/dashboard`;
+    const raw = searchParams.get('callbackUrl');
+
+    if (!raw || !raw.startsWith('/') || raw.startsWith('//')) {
+      return fallback;
+    }
+
+    const pathOnly = raw.split('?')[0];
+    const normalizedPath =
+      pathOnly.length > 1 && pathOnly.endsWith('/') ? pathOnly.slice(0, -1) : pathOnly;
+    const localeRoot = locale === defaultLocale ? '/' : `/${locale}`;
+    const localeLoginPath = locale === defaultLocale ? '/login' : `/${locale}/login`;
+    const localeRegisterPath = locale === defaultLocale ? '/register' : `/${locale}/register`;
+    const localeRoots = locales.map((supportedLocale) => `/${supportedLocale}`);
+    const blockedCallbacks = new Set([
+      '/',
+      '/login',
+      '/register',
+      ...localeRoots,
+      localeRoot,
+      localeLoginPath,
+      localeRegisterPath,
+    ]);
+
+    return blockedCallbacks.has(normalizedPath) ? fallback : raw;
+  }, [locale, searchParams]);
+
+  useEffect(() => {
+    router.prefetch(callbackUrl);
+  }, [callbackUrl, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,9 +65,9 @@ export default function LoginPage() {
       return;
     }
 
-    try {
-      const callbackUrl = locale === defaultLocale ? '/' : `/${locale}`;
+    let shouldResetLoading = true;
 
+    try {
       const result = await signIn('credentials', {
         email: email.trim(),
         password,
@@ -42,7 +78,10 @@ export default function LoginPage() {
       if (result?.error) {
         setError(t('invalidEmailPassword'));
       } else if (result?.ok) {
-        window.location.assign(result.url || callbackUrl);
+        shouldResetLoading = false;
+        router.replace(callbackUrl);
+        router.refresh();
+        return;
       } else {
         setError(t('loginFailed'));
       }
@@ -50,7 +89,9 @@ export default function LoginPage() {
       console.error('Login exception:', error);
       setError(`${t('loginError')}. ${t('checkConnectionAndRetry')}`);
     } finally {
-      setLoading(false);
+      if (shouldResetLoading) {
+        setLoading(false);
+      }
     }
   };
 
@@ -70,7 +111,14 @@ export default function LoginPage() {
           <div className="text-center">
             <Link href="/" prefetch={false} className="inline-flex items-center group">
               <div className="h-16 sm:h-20 flex items-center justify-center transition-transform group-hover:scale-105">
-                <img src="https://i.ibb.co/WWGXBZXm/image-removebg-preview.png" alt="RinKuzu Logo" width={80} height={80} className="h-16 sm:h-20 w-auto object-contain" />
+                <Image
+                  src="https://i.ibb.co/WWGXBZXm/image-removebg-preview.png"
+                  alt="RinKuzu Logo"
+                  width={80}
+                  height={80}
+                  className="h-16 sm:h-20 w-auto object-contain"
+                  unoptimized
+                />
               </div>
             </Link>
           </div>

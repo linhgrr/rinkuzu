@@ -13,7 +13,6 @@ import { QuestionImageUpload, OptionImageUpload } from '@/components/ui/ImageUpl
 import { CategorySelector } from '@/components/ui/CategorySelector';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
 import { extractQuestionsFromLargePDF, UploadProgress } from '@/services/largeFileUploadService';
 import { LargeFileUploadProgress } from '@/components/ui/LargeFileUploadProgress';
@@ -255,7 +254,6 @@ export default function CreateQuizPage() {
   const t = useTranslations('create');
   const tCommon = useTranslations('common');
   const tQuiz = useTranslations('quiz');
-  const { data: session } = useSession();
   const router = useRouter();
   const { addDraft } = useDraftStore();
   const { startProcessing } = usePdfProcessor();
@@ -318,12 +316,6 @@ export default function CreateQuizPage() {
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [showRemoveAllConfirm, setShowRemoveAllConfirm] = useState(false);
   const [questionToRemove, setQuestionToRemove] = useState<number | null>(null);
-
-  // Redirect if not authenticated
-  if (!session) {
-    router.push('/login');
-    return null;
-  }
 
   // Extract questions from PDF
   const handleExtractQuestions = async (e: React.FormEvent) => {

@@ -1,7 +1,6 @@
 'use client';
 
 import { Suspense, useState, useCallback, memo } from 'react';
-import { useSession } from 'next-auth/react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import Navigation from '@/components/Navigation';
@@ -44,12 +43,10 @@ const TabButton = memo(function TabButton({ id, label, icon, isActive, onClick }
 });
 
 function ProfileContent() {
-    const { data: session, status } = useSession();
     const router = useRouter();
     const pathname = usePathname();
     const searchParams = useSearchParams();
     const t = useTranslations('profile');
-    const tCommon = useTranslations('common');
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
     const TABS = [
@@ -73,19 +70,6 @@ function ProfileContent() {
     const handleSidebarToggle = useCallback(() => {
         setIsSidebarOpen(prev => !prev);
     }, []);
-
-    if (status === 'loading') {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            </div>
-        );
-    }
-
-    if (!session) {
-        if (typeof window !== 'undefined') router.push('/login');
-        return null;
-    }
 
     return (
         <div className="min-h-screen bg-[#f5f5f7] pb-24 md:pb-8">

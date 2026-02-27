@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSession, signOut } from 'next-auth/react';
-import { useRouter, usePathname } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
@@ -86,8 +86,7 @@ interface AdminStats {
 export default function AdminStatsPage() {
   const t = useTranslations('admin');
   const tCommon = useTranslations('common');
-  const { data: session, status } = useSession();
-  const router = useRouter();
+  const { data: session } = useSession();
   const pathname = usePathname();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -101,23 +100,7 @@ export default function AdminStatsPage() {
   const [showCreatorsModal, setShowCreatorsModal] = useState(false);
   const [showActivityModal, setShowActivityModal] = useState(false);
 
-  useEffect(() => {
-    if (status === 'loading') return;
-
-    if (!session) {
-      router.push('/login');
-      return;
-    }
-
-    if ((session.user as any)?.role !== 'admin') {
-      router.push('/');
-      return;
-    }
-
-    fetchStats();
-  }, [session, status, router]);
-
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
     try {
       setLoading(true);
       const response = await fetch('/api/admin/stats');
@@ -134,7 +117,11 @@ export default function AdminStatsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchStats();
+  }, [fetchStats]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('vi-VN', {

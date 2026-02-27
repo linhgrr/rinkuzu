@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -37,6 +37,13 @@ import { IQuiz } from '@/types';
 interface QuizPlayerPageProps {
   params: { slug: string };
 }
+
+const DEBUG_QUIZ_FLOW = process.env.NODE_ENV !== 'production' && false;
+const debugLog = (...args: unknown[]) => {
+  if (DEBUG_QUIZ_FLOW) {
+    console.log(...args);
+  }
+};
 
 export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
   const t = useTranslations('quiz');
@@ -91,11 +98,7 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
     }
   }, [session]);
 
-  useEffect(() => {
-    fetchQuiz();
-  }, [params.slug]);
-
-  const fetchQuiz = async () => {
+  const fetchQuiz = useCallback(async () => {
     try {
       const response = await fetch(`/api/quiz/${params.slug}/play`);
       const data = await response.json();
@@ -111,8 +114,8 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
           return shuffled;
         }
 
-        console.log('\n=== SHUFFLING QUIZ ===');
-        console.log('Original questions count:', data.data.questions.length);
+        debugLog('\n=== SHUFFLING QUIZ ===');
+        debugLog('Original questions count:', data.data.questions.length);
 
         // First, shuffle the order of questions
         const questionsWithIndex = data.data.questions.map((question: any, index: number) => ({
@@ -121,9 +124,9 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
         }));
 
         const shuffledQuestionsWithIndex = shuffleArray(questionsWithIndex);
-        console.log('Questions shuffled order:');
+        debugLog('Questions shuffled order:');
         shuffledQuestionsWithIndex.forEach((item: any, newIndex: number) => {
-          console.log(`Position ${newIndex + 1}: Question ${item.originalIndex + 1}`);
+          debugLog(`Position ${newIndex + 1}: Question ${item.originalIndex + 1}`);
         });
 
         // Create mapping for question order (new position -> original position)
@@ -134,8 +137,8 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
           const q = item.question;
           questionIndexMap[questionIndex] = item.originalIndex;
 
-          console.log(`\n=== Processing Question ${questionIndex + 1} (originally Q${item.originalIndex + 1}) ===`);
-          console.log('Original options:', q.options);
+          debugLog(`\n=== Processing Question ${questionIndex + 1} (originally Q${item.originalIndex + 1}) ===`);
+          debugLog('Original options:', q.options);
 
           // Create array of options with their original indices
           const optionsWithIndex = q.options.map((option: string, index: number) => ({
@@ -143,11 +146,11 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
             originalIndex: index
           }));
 
-          console.log('Options with original indices:', optionsWithIndex);
+          debugLog('Options with original indices:', optionsWithIndex);
 
           // Shuffle the array
           const shuffledOptionsWithIndex = shuffleArray(optionsWithIndex);
-          console.log('After shuffle:', shuffledOptionsWithIndex);
+          debugLog('After shuffle:', shuffledOptionsWithIndex);
 
           // Extract shuffled options and create mapping
           const shuffledOptions: string[] = [];
@@ -159,12 +162,12 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
             optionIndexMap[newIndex] = item.originalIndex;
           }
 
-          console.log('Final shuffled options:', shuffledOptions);
-          console.log('Option index map (new -> original):', optionIndexMap);
+          debugLog('Final shuffled options:', shuffledOptions);
+          debugLog('Option index map (new -> original):', optionIndexMap);
 
           // Check if shuffle actually happened
           const isShuffled = !q.options.every((option: string, index: number) => option === shuffledOptions[index]);
-          console.log('Was actually shuffled:', isShuffled);
+          debugLog('Was actually shuffled:', isShuffled);
 
           return {
             ...q,
@@ -202,12 +205,12 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
 
         // Initialize answers based on SHUFFLED question types (not original)
         const initialAnswers = shuffledQuestions.map((q: any, index: number) => {
-          console.log(`Shuffled Question ${index}:`, { type: q.type, question: q.question });
+          debugLog(`Shuffled Question ${index}:`, { type: q.type, question: q.question });
           return q.type === 'multiple' ? [] : -1;
         });
 
-        console.log('Initial answers (based on shuffled questions):', initialAnswers);
-        console.log('Initial answers with types:', initialAnswers.map((ans: any, idx: number) => ({
+        debugLog('Initial answers (based on shuffled questions):', initialAnswers);
+        debugLog('Initial answers with types:', initialAnswers.map((ans: any, idx: number) => ({
           index: idx,
           answer: ans,
           answerType: typeof ans,
@@ -215,11 +218,11 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
         })));
 
         setUserAnswers(initialAnswers);
-        console.log('\n=== QUIZ LOADED ===');
-        console.log('Total questions:', data.data.questions.length);
-        console.log('Questions shuffled:', shuffledQuestions.length);
-        console.log('Question order mapping:', questionIndexMap);
-        console.log('Quiz ready with both question and option shuffling!');
+        debugLog('\n=== QUIZ LOADED ===');
+        debugLog('Total questions:', data.data.questions.length);
+        debugLog('Questions shuffled:', shuffledQuestions.length);
+        debugLog('Question order mapping:', questionIndexMap);
+        debugLog('Quiz ready with both question and option shuffling!');
       } else {
         if (data.error === 'Premium subscription required to access private quizzes') {
           setShowPremiumModal(true);
@@ -232,7 +235,11 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [params.slug]);
+
+  useEffect(() => {
+    fetchQuiz();
+  }, [fetchQuiz]);
 
   const startQuiz = () => {
     if (!session?.user?.email && !userEmail.trim()) {
@@ -291,16 +298,16 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
 
     setSubmitting(true);
     try {
-      console.log('=== SUBMITTING QUIZ ===');
-      console.log('userAnswers:', userAnswers);
-      console.log('userAnswers with types:', userAnswers.map((ans: any, idx: number) => ({
+      debugLog('=== SUBMITTING QUIZ ===');
+      debugLog('userAnswers:', userAnswers);
+      debugLog('userAnswers with types:', userAnswers.map((ans: any, idx: number) => ({
         index: idx,
         answer: ans,
         answerType: typeof ans,
         isArray: Array.isArray(ans)
       })));
-      console.log('questionIndexMap:', (quiz as any).questionIndexMap);
-      console.log('quiz.questions:', quiz.questions.map((q, i) => ({
+      debugLog('questionIndexMap:', (quiz as any).questionIndexMap);
+      debugLog('quiz.questions:', quiz.questions.map((q, i) => ({
         currentIndex: i,
         originalQuestionIndex: (q as any).originalQuestionIndex,
         type: q.type,
@@ -322,7 +329,7 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
           throw new Error(`Option mapping is missing for question ${idx + 1}`);
         }
 
-        console.log(`Converting question ${idx} (originally Q${(question as any).originalQuestionIndex + 1}):`, {
+        debugLog(`Converting question ${idx} (originally Q${(question as any).originalQuestionIndex + 1}):`, {
           userAnswer: ans,
           optionIndexMap: mapArr,
           questionType: question.type
@@ -346,7 +353,7 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
             throw new Error(`Invalid answer for question ${idx + 1}`);
           }
           const converted = aNum === -1 ? -1 : mapArr[aNum];
-          console.log(`Single choice: ${aNum} -> ${converted}`);
+          debugLog(`Single choice: ${aNum} -> ${converted}`);
           return converted;
         } else {
           // Validate that answer is an array for multiple choice
@@ -367,7 +374,7 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
             }
           }
           const converted = arr.map(a => mapArr[a]);
-          console.log(`Multiple choice: [${arr}] -> [${converted}]`);
+          debugLog(`Multiple choice: [${arr}] -> [${converted}]`);
           return converted;
         }
       });
@@ -403,15 +410,15 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
         originalOrderAnswers[originalIndex] = answer;
       });
 
-      console.log('convertedAnswers (shuffled order):', convertedAnswers);
-      console.log('originalOrderAnswers (original question order):', originalOrderAnswers);
+      debugLog('convertedAnswers (shuffled order):', convertedAnswers);
+      debugLog('originalOrderAnswers (original question order):', originalOrderAnswers);
 
       const payload = {
         answers: originalOrderAnswers,
         userEmail: session?.user?.email || userEmail.trim(),
       };
 
-      console.log('payload:', payload);
+      debugLog('payload:', payload);
 
       const response = await fetch(`/api/quiz/${params.slug}/attempt`, {
         method: 'POST',
@@ -715,16 +722,16 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
   const handleQuizComplete = async (answers: (number | number[])[]) => {
     setSubmitting(true);
     try {
-      console.log('=== SUBMITTING QUIZ (Mobile) ===');
-      console.log('userAnswers:', answers);
-      console.log('userAnswers with types:', answers.map((ans: any, idx: number) => ({
+      debugLog('=== SUBMITTING QUIZ (Mobile) ===');
+      debugLog('userAnswers:', answers);
+      debugLog('userAnswers with types:', answers.map((ans: any, idx: number) => ({
         index: idx,
         answer: ans,
         answerType: typeof ans,
         isArray: Array.isArray(ans)
       })));
-      console.log('questionIndexMap:', (quiz as any).questionIndexMap);
-      console.log('quiz.questions:', quiz.questions.map((q, i) => ({
+      debugLog('questionIndexMap:', (quiz as any).questionIndexMap);
+      debugLog('quiz.questions:', quiz.questions.map((q, i) => ({
         currentIndex: i,
         originalQuestionIndex: (q as any).originalQuestionIndex,
         type: q.type,
@@ -746,7 +753,7 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
           throw new Error(`Option mapping is missing for question ${idx + 1}`);
         }
 
-        console.log(`Converting question ${idx} (originally Q${(question as any).originalQuestionIndex + 1}):`, {
+        debugLog(`Converting question ${idx} (originally Q${(question as any).originalQuestionIndex + 1}):`, {
           userAnswer: ans,
           optionIndexMap: mapArr,
           questionType: question.type
@@ -770,7 +777,7 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
             throw new Error(`Invalid answer for question ${idx + 1}`);
           }
           const converted = aNum === -1 ? -1 : mapArr[aNum];
-          console.log(`Single choice: ${aNum} -> ${converted}`);
+          debugLog(`Single choice: ${aNum} -> ${converted}`);
           return converted;
         } else {
           // Validate that answer is an array for multiple choice
@@ -791,7 +798,7 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
             }
           }
           const converted = arr.map(a => mapArr[a]);
-          console.log(`Multiple choice: [${arr}] -> [${converted}]`);
+          debugLog(`Multiple choice: [${arr}] -> [${converted}]`);
           return converted;
         }
       });
@@ -827,15 +834,15 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
         originalOrderAnswers[originalIndex] = answer;
       });
 
-      console.log('convertedAnswers (shuffled order):', convertedAnswers);
-      console.log('originalOrderAnswers (original question order):', originalOrderAnswers);
+      debugLog('convertedAnswers (shuffled order):', convertedAnswers);
+      debugLog('originalOrderAnswers (original question order):', originalOrderAnswers);
 
       const payload = {
         answers: originalOrderAnswers,
         userEmail: session?.user?.email || userEmail.trim(),
       };
 
-      console.log('payload:', payload);
+      debugLog('payload:', payload);
 
       const response = await fetch(`/api/quiz/${params.slug}/attempt`, {
         method: 'POST',

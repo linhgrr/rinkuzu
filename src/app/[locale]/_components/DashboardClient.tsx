@@ -26,17 +26,17 @@ import {
 
 const StatCardsSkeleton = memo(function StatCardsSkeleton() {
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 animate-pulse" aria-hidden="true">
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4" aria-hidden="true">
       {Array.from({ length: 4 }).map((_, index) => (
         <Card
           key={`stats-skeleton-${index}`}
           className="p-5 rounded-2xl shadow-sm border-gray-100/50"
         >
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-gray-200 shrink-0" />
+            <div className="w-12 h-12 rounded-2xl skeleton-shimmer shrink-0" />
             <div className="flex-1 min-w-0 space-y-2">
-              <div className="h-3 w-16 bg-gray-200 rounded" />
-              <div className="h-7 w-20 bg-gray-200 rounded" />
+              <div className="h-3 w-16 skeleton-shimmer" />
+              <div className="h-7 w-20 skeleton-shimmer" />
             </div>
           </div>
         </Card>
@@ -51,17 +51,17 @@ const QuizCardsSkeleton = memo(function QuizCardsSkeleton() {
       {Array.from({ length: 3 }).map((_, index) => (
         <Card
           key={`quiz-skeleton-${index}`}
-          className="rounded-2xl shadow-sm border-gray-100/50 p-5 animate-pulse min-h-[160px]"
+          className="rounded-2xl shadow-sm border-gray-100/50 p-5 min-h-[160px]"
           aria-hidden="true"
         >
           <div className="space-y-3">
-            <div className="h-5 w-24 bg-gray-200 rounded-full" />
-            <div className="h-5 w-4/5 bg-gray-200 rounded" />
-            <div className="h-5 w-2/3 bg-gray-200 rounded" />
+            <div className="h-5 w-24 skeleton-shimmer rounded-full" />
+            <div className="h-5 w-4/5 skeleton-shimmer" />
+            <div className="h-5 w-2/3 skeleton-shimmer" />
             <div className="h-px bg-gray-100 my-3" />
             <div className="flex justify-between">
-              <div className="h-4 w-16 bg-gray-200 rounded" />
-              <div className="h-4 w-14 bg-gray-200 rounded" />
+              <div className="h-4 w-16 skeleton-shimmer" />
+              <div className="h-4 w-14 skeleton-shimmer" />
             </div>
           </div>
         </Card>
@@ -73,47 +73,47 @@ const QuizCardsSkeleton = memo(function QuizCardsSkeleton() {
 const SidebarSkeleton = memo(function SidebarSkeleton() {
   return (
     <>
-      <Card className="p-6 border-0 shadow-lg shadow-gray-100/50 bg-white rounded-2xl animate-pulse" aria-hidden="true">
+      <Card className="p-6 border-0 shadow-lg shadow-gray-100/50 bg-white rounded-2xl" aria-hidden="true">
         <div className="flex items-center gap-4 mb-5">
-          <div className="w-[120px] h-[100px] bg-gray-200 rounded-2xl shrink-0" />
+          <div className="w-[120px] h-[100px] skeleton-shimmer rounded-2xl shrink-0" />
           <div className="flex-1 space-y-2">
-            <div className="h-5 w-24 bg-gray-200 rounded" />
-            <div className="h-4 w-28 bg-gray-200 rounded" />
+            <div className="h-5 w-24 skeleton-shimmer" />
+            <div className="h-4 w-28 skeleton-shimmer" />
           </div>
         </div>
         <div className="space-y-3">
           <div className="flex justify-between">
-            <div className="h-4 w-24 bg-gray-200 rounded" />
-            <div className="h-4 w-16 bg-gray-200 rounded" />
+            <div className="h-4 w-24 skeleton-shimmer" />
+            <div className="h-4 w-16 skeleton-shimmer" />
           </div>
-          <div className="h-3 w-full bg-gray-200 rounded-full" />
-          <div className="h-3 w-32 bg-gray-200 rounded mx-auto" />
+          <div className="h-3 w-full skeleton-shimmer rounded-full" />
+          <div className="h-3 w-32 skeleton-shimmer mx-auto" />
         </div>
       </Card>
 
-      <Card className="p-6 rounded-2xl shadow-sm border-gray-100/50 bg-white animate-pulse" aria-hidden="true">
-        <div className="h-5 w-32 bg-gray-200 rounded mb-5" />
+      <Card className="p-6 rounded-2xl shadow-sm border-gray-100/50 bg-white" aria-hidden="true">
+        <div className="h-5 w-32 skeleton-shimmer mb-5" />
         <div className="grid grid-cols-7 gap-2">
           {Array.from({ length: 7 }).map((_, index) => (
             <div key={`heatmap-skeleton-${index}`} className="flex flex-col items-center gap-2">
-              <div className="h-3 w-3 bg-gray-200 rounded" />
-              <div className="w-10 h-10 rounded-lg bg-gray-200" />
+              <div className="h-3 w-3 skeleton-shimmer" />
+              <div className="w-10 h-10 rounded-lg skeleton-shimmer" />
             </div>
           ))}
         </div>
-        <div className="h-3 w-40 bg-gray-200 rounded mt-5 mx-auto" />
+        <div className="h-3 w-40 skeleton-shimmer mt-5 mx-auto" />
       </Card>
 
-      <Card className="p-5 border-blue-100/50 bg-blue-50/30 rounded-2xl shadow-sm animate-pulse" aria-hidden="true">
+      <Card className="p-5 border-blue-100/50 bg-blue-50/30 rounded-2xl shadow-sm" aria-hidden="true">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-blue-100 rounded-full" />
+            <div className="w-10 h-10 rounded-full skeleton-shimmer-blue" />
             <div className="space-y-2">
-              <div className="h-4 w-24 bg-blue-100 rounded" />
-              <div className="h-3 w-28 bg-blue-100 rounded" />
+              <div className="h-4 w-24 skeleton-shimmer-blue" />
+              <div className="h-3 w-28 skeleton-shimmer-blue" />
             </div>
           </div>
-          <div className="h-8 w-20 bg-blue-100 rounded-full" />
+          <div className="h-8 w-20 rounded-full skeleton-shimmer-blue" />
         </div>
       </Card>
     </>
@@ -235,7 +235,7 @@ export function DashboardClient({ userEmail }: { userEmail: string }) {
                     <span>{t('dailyGoal')}</span>
                   </div>
                   {isStatsInitialLoading ? (
-                    <div className="h-10 w-52 bg-white/30 rounded-xl animate-pulse mb-2" />
+                    <div className="h-10 w-52 rounded-xl skeleton-shimmer-light mb-2" />
                   ) : (
                     <h2 className="text-3xl font-bold mb-2 tracking-tight">
                       {t('questionsDue', { count: stats?.dueCount || 0 })}

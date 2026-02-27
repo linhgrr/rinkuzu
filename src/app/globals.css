@@ -39,6 +39,15 @@
   -webkit-transform-style: preserve-3d;
 }
 
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+
 @layer base {
   :root {
     /* Apple-inspired color palette */
@@ -301,7 +310,45 @@
 
   /* Skeleton Loading */
   .skeleton {
-    @apply bg-gray-100 animate-pulse rounded-lg;
+    @apply bg-gray-100 rounded-lg;
+  }
+
+  .skeleton-shimmer {
+    @apply rounded-lg;
+    background: linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 37%, #e5e7eb 63%);
+    background-size: 300% 100%;
+    animation: skeleton-shimmer 1.4s ease-in-out infinite;
+  }
+
+  .skeleton-shimmer-blue {
+    @apply rounded-lg;
+    background: linear-gradient(90deg, #dbeafe 25%, #eff6ff 37%, #dbeafe 63%);
+    background-size: 300% 100%;
+    animation: skeleton-shimmer 1.4s ease-in-out infinite;
+  }
+
+  .skeleton-shimmer-light {
+    @apply rounded-lg;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.2) 25%, rgba(255, 255, 255, 0.45) 37%, rgba(255, 255, 255, 0.2) 63%);
+    background-size: 300% 100%;
+    animation: skeleton-shimmer 1.4s ease-in-out infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .skeleton-shimmer {
+      animation: none;
+      background: #e5e7eb;
+    }
+
+    .skeleton-shimmer-blue {
+      animation: none;
+      background: #dbeafe;
+    }
+
+    .skeleton-shimmer-light {
+      animation: none;
+      background: rgba(255, 255, 255, 0.3);
+    }
   }
 
   /* Divider */

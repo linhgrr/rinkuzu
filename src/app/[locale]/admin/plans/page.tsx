@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useSession, signOut } from 'next-auth/react'
-import { useRouter, usePathname } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { Button } from '@/components/ui/Button'
@@ -50,8 +50,7 @@ interface NewPlanForm {
 export default function AdminPlansPage() {
   const t = useTranslations('admin')
   const tCommon = useTranslations('common')
-  const { data: session, status } = useSession()
-  const router = useRouter()
+  const { data: session } = useSession()
   const pathname = usePathname()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
@@ -76,23 +75,7 @@ export default function AdminPlansPage() {
   })
   const [createLoading, setCreateLoading] = useState(false)
 
-  useEffect(() => {
-    if (status === 'loading') return
-
-    if (!session) {
-      router.push('/login')
-      return
-    }
-
-    if ((session.user as any)?.role !== 'admin') {
-      router.push('/')
-      return
-    }
-
-    fetchPlans()
-  }, [session, status, router])
-
-  const fetchPlans = async () => {
+  const fetchPlans = useCallback(async () => {
     try {
       setLoading(true)
       const response = await fetch('/api/admin/plans')
@@ -109,7 +92,11 @@ export default function AdminPlansPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    fetchPlans()
+  }, [fetchPlans])
 
   const handleEdit = (plan: Plan) => {
     setEditingPlan(plan._id)
@@ -421,23 +408,13 @@ export default function AdminPlansPage() {
       />
 
       {/* Main Content */}
-      <main className={`py-8 transition-all duration-300 ${session && isSidebarOpen ? 'ml-64' : session ? 'ml-16' : ''
-        } max-w-none px-4 sm:px-6 lg:px-8`}>
-        {status === 'loading' ? (
+      <main className={`py-8 transition-all duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-16'} max-w-none px-4 sm:px-6 lg:px-8`}>
+        {loading ? (
           <div className="flex justify-center py-12">
             <div className="text-gray-500">{tCommon('loading')}</div>
           </div>
-        ) : !session ? (
-          <div className="flex justify-center py-12">
-            <div className="text-gray-500">{t('loggingOut')}</div>
-          </div>
-        ) : (session.user as any)?.role !== 'admin' ? (
-          <div className="flex justify-center py-12">
-            <div className="text-gray-500">{tCommon('accessDenied')}</div>
-          </div>
         ) : (
-          <>
-            <div className="max-w-6xl mx-auto">
+          <div className="max-w-6xl mx-auto">
               <div className="flex justify-between items-center mb-8">
                 <div>
                   <h1 className="text-3xl font-bold text-gray-900">{t('plans')}</h1>
@@ -766,7 +743,6 @@ export default function AdminPlansPage() {
                 </div>
               )}
             </div>
-          </>
         )}
       </main>
 

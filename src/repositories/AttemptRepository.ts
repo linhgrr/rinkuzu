@@ -34,10 +34,7 @@ export class AttemptRepository implements IAttemptRepository {
     const limit = options?.limit || 10
     const skip = (page - 1) * limit
 
-    console.log('AttemptRepository.findByUser called with userId:', userId, 'page:', page, 'limit:', limit);
-
-    // Try to find attempts by user ID (could be ObjectId or email string)
-    let attempts = await Attempt.find({ user: userId })
+    const attempts = await Attempt.find({ user: userId })
       .populate({
         path: 'quiz',
         select: 'title slug description questions'
@@ -47,25 +44,7 @@ export class AttemptRepository implements IAttemptRepository {
       .limit(limit)
       .lean() as unknown as IAttempt[]
 
-    console.log('Found attempts with userId:', attempts.length);
-
-    // If no attempts found with userId, try to find by email if userId looks like an email
-    if (attempts.length === 0 && userId.includes('@')) {
-      console.log('No attempts found with userId, trying with email:', userId);
-      attempts = await Attempt.find({ user: userId })
-        .populate({
-          path: 'quiz',
-          select: 'title slug description questions'
-        })
-        .sort({ takenAt: -1 })
-        .skip(skip)
-        .limit(limit)
-        .lean() as unknown as IAttempt[]
-      console.log('Found attempts with email:', attempts.length);
-    }
-
     const totalItems = await Attempt.countDocuments({ user: userId })
-    console.log('Total items for user:', totalItems);
     
     const totalPages = Math.ceil(totalItems / limit)
 

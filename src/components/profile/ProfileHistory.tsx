@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
 import { formatDate } from '@/lib/utils';
 import Pagination from '@/components/ui/Pagination';
-import { useSession } from 'next-auth/react';
+import { ROUTES } from '@/shared/constants';
 import {
     HiOutlineDocumentText,
     HiOutlineClock,
@@ -41,7 +41,6 @@ interface PaginationInfo {
 }
 
 export default function ProfileHistory() {
-    const { data: session } = useSession();
     const t = useTranslations('profile');
     const tCommon = useTranslations('common');
     const [attempts, setAttempts] = useState<AttemptHistory[]>([]);
@@ -51,13 +50,7 @@ export default function ProfileHistory() {
     const [pagination, setPagination] = useState<PaginationInfo | null>(null);
     const itemsPerPage = 10;
 
-    useEffect(() => {
-        if (session) {
-            fetchAttempts();
-        }
-    }, [session, currentPage]);
-
-    const fetchAttempts = async () => {
+    const fetchAttempts = useCallback(async () => {
         try {
             setLoading(true);
             const params = new URLSearchParams({
@@ -79,7 +72,11 @@ export default function ProfileHistory() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [currentPage]);
+
+    useEffect(() => {
+        fetchAttempts();
+    }, [fetchAttempts]);
 
     const getScoreColor = (score: number) => {
         if (score >= 80) return 'text-green-600 bg-green-50';
@@ -135,7 +132,7 @@ export default function ProfileHistory() {
                         <p className="text-gray-600 mb-6">
                             {t('exploreQuizzes')}
                         </p>
-                        <Link href="/">
+                        <Link href={ROUTES.DASHBOARD}>
                             <Button>{tCommon('browseQuizzes')}</Button>
                         </Link>
                     </CardContent>

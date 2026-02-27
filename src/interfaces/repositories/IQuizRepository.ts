@@ -10,6 +10,7 @@ export interface IQuiz {
   isPrivate: boolean
   pdfUrl?: string
   tags?: string[]
+  questionCount?: number
   createdAt?: Date
   updatedAt?: Date
 }
@@ -32,6 +33,7 @@ export interface IQuizRepository {
     limit?: number
     sort?: any
     populate?: string[]
+    compact?: boolean
   }): Promise<{
     quizzes: IQuiz[]
     pagination: {

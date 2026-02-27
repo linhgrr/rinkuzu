@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSession, signOut } from 'next-auth/react';
-import { useRouter, usePathname } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
@@ -44,8 +44,7 @@ interface PaginationData {
 export default function AdminCategoriesPage() {
   const t = useTranslations('admin');
   const tCommon = useTranslations('common');
-  const { data: session, status } = useSession();
-  const router = useRouter();
+  const { data: session } = useSession();
   const pathname = usePathname();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -76,22 +75,7 @@ export default function AdminCategoriesPage() {
     isActive: true
   });
 
-  // Redirect if not admin
-  useEffect(() => {
-    if (status === 'loading') return;
-
-    if (!session) {
-      router.push('/login');
-      return;
-    }
-
-    if ((session.user as any)?.role !== 'admin') {
-      router.push('/');
-      return;
-    }
-  }, [session, status, router]);
-
-  const fetchCategories = async (page: number = 1, search: string = '') => {
+  const fetchCategories = useCallback(async (page: number = 1, search: string = '') => {
     try {
       setLoading(true);
       const params = new URLSearchParams({
@@ -118,13 +102,11 @@ export default function AdminCategoriesPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [pagination.limit]);
 
   useEffect(() => {
-    if (session) {
-      fetchCategories();
-    }
-  }, [session]);
+    fetchCategories();
+  }, [fetchCategories]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -245,22 +227,12 @@ export default function AdminCategoriesPage() {
     });
   };
 
-  if (status === 'loading') {
+  if (loading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">{tCommon('loading')}</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!session || (session.user as any)?.role !== 'admin') {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-gray-600">{tCommon('accessDenied')}</p>
         </div>
       </div>
     );

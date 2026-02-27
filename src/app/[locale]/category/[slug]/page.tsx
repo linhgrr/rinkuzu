@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Badge } from '@/components/ui/Card';
@@ -59,7 +59,6 @@ export default function CategoryPage({ params }: CategoryPageProps) {
   const t = useTranslations('categories');
   const tCommon = useTranslations('common');
   const tQuiz = useTranslations('quiz');
-  const { data: session, status } = useSession();
   const router = useRouter();
   const [category, setCategory] = useState<Category | null>(null);
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
@@ -73,7 +72,7 @@ export default function CategoryPage({ params }: CategoryPageProps) {
     totalPages: 0
   });
 
-  const fetchCategoryAndQuizzes = async (page: number = 1, search: string = '') => {
+  const fetchCategoryAndQuizzes = useCallback(async (page: number = 1, search: string = '') => {
     try {
       setLoading(true);
 
@@ -86,9 +85,6 @@ export default function CategoryPage({ params }: CategoryPageProps) {
       if (search.trim()) {
         queryParams.append('search', search.trim());
       }
-
-      console.log('🔍 Fetching category with params:', queryParams.toString());
-      console.log('📂 Slug:', params.slug);
 
       // Get category and quizzes in one API call
       const response = await fetch(`/api/categories/${params.slug}?${queryParams}`);
@@ -110,17 +106,11 @@ export default function CategoryPage({ params }: CategoryPageProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [params.slug, pagination.limit]);
 
   useEffect(() => {
-    if (status === 'loading') return;
-
-    if (session) {
-      fetchCategoryAndQuizzes();
-    } else {
-      router.push('/login');
-    }
-  }, [session, status, router, params.slug]);
+    fetchCategoryAndQuizzes();
+  }, [fetchCategoryAndQuizzes]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -158,14 +148,23 @@ export default function CategoryPage({ params }: CategoryPageProps) {
     return colorMap[color?.toLowerCase()] || colorMap['purple'];
   };
 
-  if (status === 'loading' || loading) {
+  const isInitialLoading = loading && !category && quizzes.length === 0;
+
+  if (isInitialLoading) {
     return (
       <div className="min-h-screen">
         <Navigation />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-8">
           <div className="flex justify-center items-center h-64">
             <div className="h-16 flex items-center justify-center mx-auto mb-4 animate-pulse">
-              <img src="https://i.ibb.co/WWGXBZXm/image-removebg-preview.png" alt="RinKuzu Logo" className="h-16 w-auto object-contain" />
+              <Image
+                src="https://i.ibb.co/WWGXBZXm/image-removebg-preview.png"
+                alt="RinKuzu Logo"
+                width={64}
+                height={64}
+                className="h-16 w-auto object-contain"
+                unoptimized
+              />
             </div>
           </div>
         </div>
@@ -265,7 +264,7 @@ export default function CategoryPage({ params }: CategoryPageProps) {
             Showing {quizzes.length} of {pagination.total} quizzes
             {searchTerm && (
               <span className="ml-2">
-                matching "<strong>{searchTerm}</strong>"
+                matching <strong>&quot;{searchTerm}&quot;</strong>
               </span>
             )}
             {category && (
@@ -274,6 +273,9 @@ export default function CategoryPage({ params }: CategoryPageProps) {
               </span>
             )}
           </p>
+          {loading && (
+            <span className="text-sm text-gray-500">{tCommon('loading')}...</span>
+          )}
 
           {(searchTerm) && (
             <Button
@@ -351,7 +353,7 @@ export default function CategoryPage({ params }: CategoryPageProps) {
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
-                    <span>By {quiz.author.email.split('@')[0]}</span>
+                    <span>By {(quiz.author?.email || 'unknown').split('@')[0]}</span>
                     <span>{formatDate(quiz.createdAt)}</span>
                   </div>
 

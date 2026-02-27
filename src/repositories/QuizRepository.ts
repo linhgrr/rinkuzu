@@ -1,6 +1,7 @@
 import connectDB from '@/lib/mongoose'
 import Quiz from '@/models/Quiz'
 import { IQuiz, IQuizRepository } from '@/interfaces/repositories/IQuizRepository'
+import { Types } from 'mongoose'
 
 export class QuizRepository implements IQuizRepository {
   async findById(id: string): Promise<IQuiz | null> {
@@ -51,6 +52,7 @@ export class QuizRepository implements IQuizRepository {
     limit?: number
     sort?: any
     populate?: string[]
+    compact?: boolean
   } = {}): Promise<{
     quizzes: IQuiz[]
     pagination: {
@@ -66,6 +68,88 @@ export class QuizRepository implements IQuizRepository {
     const limit = options.limit || 10
     const skip = (page - 1) * limit
     const sort = options.sort || { createdAt: -1 }
+
+    if (options.compact) {
+      const normalizedFilter = { ...filter }
+
+      if (typeof normalizedFilter.category === 'string' && Types.ObjectId.isValid(normalizedFilter.category)) {
+        normalizedFilter.category = new Types.ObjectId(normalizedFilter.category)
+      }
+      if (typeof normalizedFilter.author === 'string' && Types.ObjectId.isValid(normalizedFilter.author)) {
+        normalizedFilter.author = new Types.ObjectId(normalizedFilter.author)
+      }
+
+      const [quizzes, total] = await Promise.all([
+        Quiz.aggregate([
+          { $match: normalizedFilter },
+          { $sort: sort },
+          { $skip: skip },
+          { $limit: limit },
+          {
+            $lookup: {
+              from: 'categories',
+              localField: 'category',
+              foreignField: '_id',
+              as: 'categoryDoc'
+            }
+          },
+          {
+            $lookup: {
+              from: 'users',
+              localField: 'author',
+              foreignField: '_id',
+              as: 'authorDoc'
+            }
+          },
+          {
+            $unwind: {
+              path: '$categoryDoc',
+              preserveNullAndEmptyArrays: true
+            }
+          },
+          {
+            $unwind: {
+              path: '$authorDoc',
+              preserveNullAndEmptyArrays: true
+            }
+          },
+          {
+            $project: {
+              _id: 1,
+              title: 1,
+              description: 1,
+              slug: 1,
+              status: 1,
+              isPrivate: 1,
+              author: {
+                _id: { $ifNull: ['$authorDoc._id', '$author'] },
+                email: '$authorDoc.email'
+              },
+              createdAt: 1,
+              updatedAt: 1,
+              category: {
+                _id: { $ifNull: ['$categoryDoc._id', '$category'] },
+                name: '$categoryDoc.name',
+                color: '$categoryDoc.color'
+              },
+              questionCount: { $size: { $ifNull: ['$questions', []] } },
+              questions: { $literal: [] }
+            }
+          }
+        ]) as unknown as IQuiz[],
+        Quiz.countDocuments(normalizedFilter)
+      ])
+
+      return {
+        quizzes,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit)
+        }
+      }
+    }
 
     let query = Quiz.find(filter)
     

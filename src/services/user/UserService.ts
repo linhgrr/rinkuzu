@@ -28,11 +28,8 @@ export class UserService implements IUserService {
     }
   }> {
     try {
-      console.log('UserService.getUserAttempts called with:', userEmail, options);
-      
       // Find user first
       const user = await this.userRepository.findByEmail(userEmail)
-      console.log('Found user:', user?._id);
       
       if (!user) {
         throw new Error('User not found')
@@ -41,9 +38,7 @@ export class UserService implements IUserService {
       const page = options?.page || 1
       const limit = options?.limit || 10
       const result = await this.attemptRepository.findByUser(user._id.toString(), { page, limit })
-      
-      console.log('AttemptRepository result:', result);
-      
+
       // Format attempts
       const formattedAttempts = result.attempts.map(attempt => ({
         _id: attempt._id,
@@ -56,8 +51,6 @@ export class UserService implements IUserService {
           totalQuestions: attempt.quiz.questions.length,
         },
       }))
-
-      console.log('Formatted attempts:', formattedAttempts);
 
       return {
         attempts: formattedAttempts,

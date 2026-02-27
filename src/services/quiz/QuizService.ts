@@ -38,7 +38,7 @@ export class QuizService implements IQuizService {
       totalPages: number
     }
   }> {
-    const { status, search, category, page = 1, limit = 10, isPrivate, userRole, userId, onlyMine } = options
+    const { status, search, category, page = 1, limit = 10, isPrivate, userRole, userId, onlyMine, compact } = options
 
     let filter: any = {}
 
@@ -71,7 +71,8 @@ export class QuizService implements IQuizService {
       page,
       limit,
       sort: { createdAt: -1 },
-      populate: ['author', 'category']
+      populate: ['author', 'category'],
+      compact
     })
   }
 

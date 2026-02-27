@@ -1,7 +1,6 @@
 import { ICategoryService } from '@/interfaces/services/ICategoryService'
 import { ICategoryRepository } from '@/interfaces/repositories/ICategoryRepository'
 import { IQuizRepository } from '@/interfaces/repositories/IQuizRepository'
-import mongoose from 'mongoose'
 
 interface ServiceResult<T> {
   success: boolean;
@@ -49,15 +48,9 @@ export class CategoryService implements ICategoryService {
 
   async getCategoryBySlug(slug: string, page: number = 1, limit: number = 12, search?: string): Promise<ServiceResult<any>> {
     try {
-      console.log('CategoryService.getCategoryBySlug called with slug:', slug);
-      
       const category = await this.categoryRepository.findBySlug(slug);
-      
-      console.log('Category found:', category);
-      console.log('Category _id:', category?._id);
-      
+
       if (!category) {
-        console.log('Category not found for slug:', slug);
         return {
           success: false,
           error: 'Category not found',
@@ -66,7 +59,6 @@ export class CategoryService implements ICategoryService {
       }
 
       if (!category.isActive) {
-        console.log('Category is inactive:', category.name);
         return {
           success: false,
           error: 'Category is inactive',
@@ -75,22 +67,18 @@ export class CategoryService implements ICategoryService {
       }
 
       if (!category._id) {
-        console.error('Category found but has no _id:', category);
         return {
           success: false,
           error: 'Category data is invalid',
           statusCode: 500
         };
       }
-
-      // Convert category._id to ObjectId for the query
-      const categoryObjectId = new mongoose.Types.ObjectId(category._id);
-      console.log('Querying quizzes with category ObjectId:', categoryObjectId);
       
       // Build filter for quizzes
       const filter: any = {
-        category: categoryObjectId,
+        category: category._id,
         status: 'published',
+        isPrivate: false,
       };
 
       // Add search filter if provided
@@ -106,27 +94,15 @@ export class CategoryService implements ICategoryService {
         page,
         limit,
         sort: { createdAt: -1 },
-        populate: ['author', 'category']
+        populate: ['author', 'category'],
+        compact: true,
       });
-
-      // Transform quiz data to only include essential fields
-      const transformedQuizzes = quizzesResult.quizzes.map((quiz: any) => ({
-        _id: quiz._id,
-        title: quiz.title,
-        description: quiz.description,
-        slug: quiz.slug,
-        author: quiz.author,
-        category: quiz.category,
-        createdAt: quiz.createdAt,
-        status: quiz.status,
-        questionCount: quiz.questions?.length || 0
-      }));
 
       return {
         success: true,
         data: {
           category,
-          quizzes: transformedQuizzes,
+          quizzes: quizzesResult.quizzes,
           pagination: quizzesResult.pagination
         }
       };

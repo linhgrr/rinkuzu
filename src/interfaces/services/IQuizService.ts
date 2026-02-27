@@ -19,6 +19,7 @@ export interface QuizListOptions {
   userRole?: string
   userId?: string
   onlyMine?: boolean
+  compact?: boolean
 }
 
 interface ServiceResult<T> {

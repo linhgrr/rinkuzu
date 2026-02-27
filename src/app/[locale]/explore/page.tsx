@@ -30,6 +30,7 @@ interface Quiz {
     };
     createdAt: string;
     questions: unknown[];
+    questionCount?: number;
 }
 
 interface PaginationData {
@@ -54,6 +55,7 @@ interface QuizCardProps {
 
 const QuizCard = memo(function QuizCard({ quiz, onClick }: QuizCardProps) {
     const tQuiz = useTranslations('quiz');
+    const questionCount = quiz.questionCount ?? quiz.questions.length;
 
     const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
         if (e.key === 'Enter' || e.key === ' ') {
@@ -90,7 +92,7 @@ const QuizCard = memo(function QuizCard({ quiz, onClick }: QuizCardProps) {
             <CardContent className="mt-auto pt-0">
                 <div className="flex items-center justify-between text-sm text-gray-500 border-t pt-4 mt-2">
                     <span className="flex items-center gap-1">
-                        <HiOutlineQuestionMarkCircle className="w-4 h-4" /> {quiz.questions.length} {tQuiz('questions')}
+                        <HiOutlineQuestionMarkCircle className="w-4 h-4" /> {questionCount} {tQuiz('questions')}
                     </span>
                     <span className="text-blue-600 font-medium group-hover:underline flex items-center gap-1">
                         {tQuiz('takeQuiz')} <HiOutlineArrowRight className="w-4 h-4" />
@@ -173,7 +175,8 @@ function ExploreContent() {
             const params = new URLSearchParams({
                 page: page.toString(),
                 limit: pagination.limit.toString(),
-                status: 'published'
+                status: 'published',
+                compact: 'true'
             });
 
             if (search) params.append('search', search);

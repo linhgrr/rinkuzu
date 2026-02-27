@@ -156,6 +156,12 @@ const nextConfig = {
     // your project has ESLint errors.
     ignoreDuringBuilds: true,
   },
+  compiler: {
+    // Drop verbose logs from production bundles while keeping actionable errors/warnings.
+    removeConsole: process.env.NODE_ENV === 'production'
+      ? { exclude: ['error', 'warn'] }
+      : false,
+  },
 }
 
 module.exports = withPWA(withNextIntl(nextConfig));

@@ -1,8 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useSession } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect, useCallback } from 'react'
 import { toast } from 'sonner'
 import { useTranslations } from 'next-intl'
 import Navigation from '@/components/Navigation'
@@ -38,8 +36,6 @@ interface SubscriptionStatus {
 
 export default function SubscriptionPage() {
   const t = useTranslations('subscription')
-  const { data: session, status } = useSession()
-  const router = useRouter()
   const [plans, setPlans] = useState<SubscriptionPlan[]>([])
   const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatus | null>(null)
   const [loading, setLoading] = useState(true)
@@ -47,19 +43,7 @@ export default function SubscriptionPage() {
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [paymentLoading, setPaymentLoading] = useState(false)
 
-  useEffect(() => {
-    if (status === 'loading') return
-
-    if (status === 'unauthenticated') {
-      router.push('/login')
-      return
-    }
-
-    fetchPlans()
-    fetchSubscriptionStatus()
-  }, [status, session])
-
-  const fetchPlans = async () => {
+  const fetchPlans = useCallback(async () => {
     try {
       const response = await fetch('/api/subscription/plans')
       const data = await response.json()
@@ -69,9 +53,9 @@ export default function SubscriptionPage() {
     } catch (error) {
       console.error('Error fetching plans:', error)
     }
-  }
+  }, [])
 
-  const fetchSubscriptionStatus = async () => {
+  const fetchSubscriptionStatus = useCallback(async () => {
     try {
       const response = await fetch('/api/subscription/status')
       const data = await response.json()
@@ -80,10 +64,24 @@ export default function SubscriptionPage() {
       }
     } catch (error) {
       console.error('Error fetching subscription status:', error)
-    } finally {
-      setLoading(false)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    const loadInitialData = async () => {
+      setLoading(true)
+      try {
+        await Promise.all([
+          fetchPlans(),
+          fetchSubscriptionStatus()
+        ])
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadInitialData()
+  }, [fetchPlans, fetchSubscriptionStatus])
 
   const handlePurchase = async (plan: SubscriptionPlan) => {
     setSelectedPlan(plan)

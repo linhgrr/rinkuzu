@@ -10,7 +10,7 @@ interface NavLink {
 }
 
 const LINKS: NavLink[] = [
-  { href: '/', labelKey: 'home' },
+  { href: '/dashboard', labelKey: 'home' },
   { href: '/create', labelKey: 'create' },
   { href: '/profile', labelKey: 'profile' },
   { href: '/categories', labelKey: 'categories' },

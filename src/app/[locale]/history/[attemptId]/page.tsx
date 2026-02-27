@@ -1,9 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
-import { useRouter, useParams } from 'next/navigation';
-import { useTranslations } from 'next-intl';
+import { useState, useEffect, useCallback } from 'react';
+import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -35,10 +33,6 @@ interface AttemptDetail {
 }
 
 export default function AttemptDetailPage() {
-  const t = useTranslations('quiz');
-  const tCommon = useTranslations('common');
-  const { data: session, status } = useSession();
-  const router = useRouter();
   const params = useParams();
   const attemptId = params.attemptId as string;
   
@@ -46,19 +40,9 @@ export default function AttemptDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const historyLink = '/profile?tab=history';
 
-  useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/login');
-      return;
-    }
-    
-    if (session?.user && attemptId) {
-      fetchAttemptDetail();
-    }
-  }, [session, status, router, attemptId]);
-
-  const fetchAttemptDetail = async () => {
+  const fetchAttemptDetail = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
@@ -75,7 +59,13 @@ export default function AttemptDetailPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [attemptId]);
+
+  useEffect(() => {
+    if (attemptId) {
+      fetchAttemptDetail();
+    }
+  }, [attemptId, fetchAttemptDetail]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('vi-VN', {
@@ -110,22 +100,6 @@ export default function AttemptDetailPage() {
     return '';
   };
 
-  if (status === 'loading') {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-gray-500">Loading...</div>
-      </div>
-    );
-  }
-
-  if (!session) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-gray-500">Redirecting to login...</div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-white">
       {/* Sidebar */}
@@ -145,7 +119,7 @@ export default function AttemptDetailPage() {
             <div className="flex items-center justify-between">
               <div>
                 <nav className="flex items-center space-x-2 text-sm text-gray-500 mb-2">
-                  <Link href="/history" className="hover:text-gray-700">
+                  <Link href={historyLink} className="hover:text-gray-700">
                     Lịch sử Quiz
                   </Link>
                   <span>/</span>
@@ -167,7 +141,7 @@ export default function AttemptDetailPage() {
               </div>
               
               <div className="flex space-x-3">
-                <Link href="/history">
+                <Link href={historyLink}>
                   <Button variant="outline">
                     ← Quay lại
                   </Button>
@@ -197,7 +171,7 @@ export default function AttemptDetailPage() {
                     Có lỗi xảy ra
                   </h3>
                   <p className="text-gray-600 mb-4">{error}</p>
-                  <Link href="/history">
+                  <Link href={historyLink}>
                     <Button>Quay lại lịch sử</Button>
                   </Link>
                 </CardContent>

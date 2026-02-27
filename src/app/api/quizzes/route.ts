@@ -17,6 +17,7 @@ export async function GET(request: NextRequest) {
     const page = parseInt(url.searchParams.get('page') || '1');
     const limit = parseInt(url.searchParams.get('limit') || '10');
     const mine = url.searchParams.get('mine');
+    const compact = url.searchParams.get('compact') === 'true';
 
     const result = await quizService.getQuizzes({
       status,
@@ -27,7 +28,8 @@ export async function GET(request: NextRequest) {
       isPrivate: isGuest ? false : undefined,
       userRole: (session?.user as any)?.role,
       userId: (session?.user as any)?.id,
-      onlyMine: !isGuest && mine !== null && mine !== 'false'
+      onlyMine: !isGuest && mine !== null && mine !== 'false',
+      compact
     });
 
     return NextResponse.json({

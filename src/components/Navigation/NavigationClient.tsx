@@ -150,9 +150,10 @@ interface MobileMenuProps {
   session: any;
   isOpen: boolean;
   onClose: () => void;
+  isAuthLoading?: boolean;
 }
 
-const MobileMenu = memo(function MobileMenu({ session, isOpen, onClose }: MobileMenuProps) {
+const MobileMenu = memo(function MobileMenu({ session, isOpen, onClose, isAuthLoading = false }: MobileMenuProps) {
   const t = useTranslations('nav');
   const tAuth = useTranslations('auth');
 
@@ -162,6 +163,18 @@ const MobileMenu = memo(function MobileMenu({ session, isOpen, onClose }: Mobile
   }, [onClose]);
 
   if (!isOpen) return null;
+
+  if (isAuthLoading) {
+    return (
+      <div className="md:hidden border-t border-gray-100 py-4 animate-fadeIn">
+        <div className="px-4 py-2">
+          <div className="h-4 w-28 rounded skeleton-shimmer mb-3" />
+          <div className="h-4 w-20 rounded skeleton-shimmer mb-3" />
+          <div className="h-4 w-24 rounded skeleton-shimmer" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="md:hidden border-t border-gray-100 py-4 animate-fadeIn">
@@ -245,6 +258,7 @@ const MobileMenu = memo(function MobileMenu({ session, isOpen, onClose }: Mobile
 interface NavigationClientProps {
   className?: string;
   transparent?: boolean;
+  initialSession?: any;
 }
 
 /**
@@ -252,8 +266,14 @@ interface NavigationClientProps {
  * Composes static components (NavLogo, NavLinks, GuestLinks) with
  * interactive client components (UserMenu, MobileMenu)
  */
-export default function NavigationClient({ className = '', transparent = false }: NavigationClientProps) {
-  const { data: session } = useSession();
+export default function NavigationClient({
+  className = '',
+  transparent = false,
+  initialSession,
+}: NavigationClientProps) {
+  const { data: sessionFromHook, status } = useSession();
+  const isAuthLoading = !initialSession && status === 'loading';
+  const session = sessionFromHook ?? initialSession;
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
@@ -319,7 +339,13 @@ export default function NavigationClient({ className = '', transparent = false }
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-1">
-            {session ? (
+            {isAuthLoading ? (
+              <div className="flex items-center gap-2" aria-hidden="true">
+                <div className="h-8 w-24 rounded-full skeleton-shimmer" />
+                <div className="h-8 w-20 rounded-full skeleton-shimmer" />
+                <div className="h-8 w-8 rounded-full skeleton-shimmer" />
+              </div>
+            ) : session ? (
               <>
                 {/* Static Links */}
                 <NavLinks isAdmin={isAdmin} />
@@ -366,6 +392,7 @@ export default function NavigationClient({ className = '', transparent = false }
           session={session}
           isOpen={isMenuOpen}
           onClose={handleMobileMenuClose}
+          isAuthLoading={isAuthLoading}
         />
       </div>
     </nav>

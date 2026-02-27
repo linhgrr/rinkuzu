@@ -3,7 +3,7 @@
 import useSWR from 'swr';
 import { fetcher } from '@/lib/fetcher';
 
-interface Quiz {
+export interface Quiz {
   _id: string;
   title: string;
   description: string;
@@ -17,6 +17,7 @@ interface Quiz {
   };
   createdAt: string;
   questions: Array<unknown>;
+  questionCount?: number;
 }
 
 interface QuizzesResponse {
@@ -33,6 +34,9 @@ interface UseQuizzesOptions {
   limit?: number;
   status?: 'pending' | 'published' | 'rejected';
   mine?: boolean;
+  compact?: boolean;
+  fallbackQuizzes?: Quiz[];
+  fallbackTotal?: number;
 }
 
 export function useQuizzes(options: UseQuizzesOptions = {}) {
@@ -47,9 +51,25 @@ export function useQuizzes(options: UseQuizzesOptions = {}) {
   if (options.mine) {
     params.set('mine', 'true');
   }
+  if (options.compact) {
+    params.set('compact', 'true');
+  }
 
   const query = params.toString();
   const url = query ? `/api/quizzes?${query}` : '/api/quizzes';
+
+  const fallbackData =
+    options.fallbackQuizzes
+      ? {
+        success: true,
+        data: {
+          quizzes: options.fallbackQuizzes,
+          pagination: {
+            total: options.fallbackTotal ?? options.fallbackQuizzes.length,
+          },
+        },
+      }
+      : undefined;
 
   const { data, error, isLoading, mutate } = useSWR<QuizzesResponse>(
     url,
@@ -57,6 +77,7 @@ export function useQuizzes(options: UseQuizzesOptions = {}) {
     {
       revalidateOnFocus: false,
       dedupingInterval: 60000, // 1 minute
+      fallbackData,
     }
   );
 

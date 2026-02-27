@@ -24,6 +24,102 @@ import {
   HiOutlineLightBulb,
 } from '@/components/icons';
 
+const StatCardsSkeleton = memo(function StatCardsSkeleton() {
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 animate-pulse" aria-hidden="true">
+      {Array.from({ length: 4 }).map((_, index) => (
+        <Card
+          key={`stats-skeleton-${index}`}
+          className="p-5 rounded-2xl shadow-sm border-gray-100/50"
+        >
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-gray-200 shrink-0" />
+            <div className="flex-1 min-w-0 space-y-2">
+              <div className="h-3 w-16 bg-gray-200 rounded" />
+              <div className="h-7 w-20 bg-gray-200 rounded" />
+            </div>
+          </div>
+        </Card>
+      ))}
+    </div>
+  );
+});
+
+const QuizCardsSkeleton = memo(function QuizCardsSkeleton() {
+  return (
+    <>
+      {Array.from({ length: 3 }).map((_, index) => (
+        <Card
+          key={`quiz-skeleton-${index}`}
+          className="rounded-2xl shadow-sm border-gray-100/50 p-5 animate-pulse min-h-[160px]"
+          aria-hidden="true"
+        >
+          <div className="space-y-3">
+            <div className="h-5 w-24 bg-gray-200 rounded-full" />
+            <div className="h-5 w-4/5 bg-gray-200 rounded" />
+            <div className="h-5 w-2/3 bg-gray-200 rounded" />
+            <div className="h-px bg-gray-100 my-3" />
+            <div className="flex justify-between">
+              <div className="h-4 w-16 bg-gray-200 rounded" />
+              <div className="h-4 w-14 bg-gray-200 rounded" />
+            </div>
+          </div>
+        </Card>
+      ))}
+    </>
+  );
+});
+
+const SidebarSkeleton = memo(function SidebarSkeleton() {
+  return (
+    <>
+      <Card className="p-6 border-0 shadow-lg shadow-gray-100/50 bg-white rounded-2xl animate-pulse" aria-hidden="true">
+        <div className="flex items-center gap-4 mb-5">
+          <div className="w-[120px] h-[100px] bg-gray-200 rounded-2xl shrink-0" />
+          <div className="flex-1 space-y-2">
+            <div className="h-5 w-24 bg-gray-200 rounded" />
+            <div className="h-4 w-28 bg-gray-200 rounded" />
+          </div>
+        </div>
+        <div className="space-y-3">
+          <div className="flex justify-between">
+            <div className="h-4 w-24 bg-gray-200 rounded" />
+            <div className="h-4 w-16 bg-gray-200 rounded" />
+          </div>
+          <div className="h-3 w-full bg-gray-200 rounded-full" />
+          <div className="h-3 w-32 bg-gray-200 rounded mx-auto" />
+        </div>
+      </Card>
+
+      <Card className="p-6 rounded-2xl shadow-sm border-gray-100/50 bg-white animate-pulse" aria-hidden="true">
+        <div className="h-5 w-32 bg-gray-200 rounded mb-5" />
+        <div className="grid grid-cols-7 gap-2">
+          {Array.from({ length: 7 }).map((_, index) => (
+            <div key={`heatmap-skeleton-${index}`} className="flex flex-col items-center gap-2">
+              <div className="h-3 w-3 bg-gray-200 rounded" />
+              <div className="w-10 h-10 rounded-lg bg-gray-200" />
+            </div>
+          ))}
+        </div>
+        <div className="h-3 w-40 bg-gray-200 rounded mt-5 mx-auto" />
+      </Card>
+
+      <Card className="p-5 border-blue-100/50 bg-blue-50/30 rounded-2xl shadow-sm animate-pulse" aria-hidden="true">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-blue-100 rounded-full" />
+            <div className="space-y-2">
+              <div className="h-4 w-24 bg-blue-100 rounded" />
+              <div className="h-3 w-28 bg-blue-100 rounded" />
+            </div>
+          </div>
+          <div className="h-8 w-20 bg-blue-100 rounded-full" />
+        </div>
+      </Card>
+    </>
+  );
+});
+
 const ProTipCard = memo(function ProTipCard() {
   const t = useTranslations('dashboard');
   return (
@@ -49,8 +145,8 @@ const ProTipCard = memo(function ProTipCard() {
 export function DashboardClient({ userEmail }: { userEmail: string }) {
   const t = useTranslations('dashboard');
   const router = useRouter();
-  const { stats, buyFreeze } = useStats();
-  const { quizzes } = useQuizzes();
+  const { stats, isLoading: statsLoading, buyFreeze } = useStats();
+  const { quizzes, isLoading: quizzesLoading } = useQuizzes({ limit: 3, status: 'published' });
 
   const handleStartReview = useCallback(() => {
     router.push('/review');
@@ -99,6 +195,8 @@ export function DashboardClient({ userEmail }: { userEmail: string }) {
   const weeklyActivityObj = stats?.weeklyActivity
     ? (typeof stats.weeklyActivity === 'object' ? stats.weeklyActivity : {})
     : {};
+  const isStatsInitialLoading = statsLoading && !stats;
+  const isQuizzesInitialLoading = quizzesLoading && quizzes.length === 0;
 
   return (
     <div className="min-h-screen bg-[#F5F5F7] pb-12">
@@ -136,9 +234,13 @@ export function DashboardClient({ userEmail }: { userEmail: string }) {
                     <HiOutlineFire className="w-4 h-4 text-orange-300" />
                     <span>{t('dailyGoal')}</span>
                   </div>
-                  <h2 className="text-3xl font-bold mb-2 tracking-tight">
-                    {t('questionsDue', { count: stats?.dueCount || 0 })}
-                  </h2>
+                  {isStatsInitialLoading ? (
+                    <div className="h-10 w-52 bg-white/30 rounded-xl animate-pulse mb-2" />
+                  ) : (
+                    <h2 className="text-3xl font-bold mb-2 tracking-tight">
+                      {t('questionsDue', { count: stats?.dueCount || 0 })}
+                    </h2>
+                  )}
                   <p className="text-blue-50 text-sm mb-6 leading-relaxed opacity-90">
                     {t('reviewingHelps')}
                   </p>
@@ -193,32 +295,36 @@ export function DashboardClient({ userEmail }: { userEmail: string }) {
             </div>
 
             {/* Quick Stats Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <StatCard
-                label={t('dailyStreak')}
-                value={`${stats?.streak || 0} ${t('days')}`}
-                color="bg-orange-50 text-orange-600"
-                icon={<HiOutlineFire className="text-2xl" />}
-              />
-              <StatCard
-                label={t('totalXP')}
-                value={stats?.xp || 0}
-                color="bg-purple-50 text-purple-600"
-                icon={<HiOutlineLightningBolt className="text-2xl" />}
-              />
-              <StatCard
-                label={t('accuracy')}
-                value={`${stats?.averageAccuracy || 0}%`}
-                color="bg-green-50 text-green-600"
-                icon={<HiOutlineTrendingUp className="text-2xl" />}
-              />
-              <StatCard
-                label={t('toReview')}
-                value={stats?.dueCount || 0}
-                color="bg-blue-50 text-blue-600"
-                icon={<HiOutlineLightBulb className="text-2xl" />}
-              />
-            </div>
+            {isStatsInitialLoading ? (
+              <StatCardsSkeleton />
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <StatCard
+                  label={t('dailyStreak')}
+                  value={`${stats?.streak || 0} ${t('days')}`}
+                  color="bg-orange-50 text-orange-600"
+                  icon={<HiOutlineFire className="text-2xl" />}
+                />
+                <StatCard
+                  label={t('totalXP')}
+                  value={stats?.xp || 0}
+                  color="bg-purple-50 text-purple-600"
+                  icon={<HiOutlineLightningBolt className="text-2xl" />}
+                />
+                <StatCard
+                  label={t('accuracy')}
+                  value={`${stats?.averageAccuracy || 0}%`}
+                  color="bg-green-50 text-green-600"
+                  icon={<HiOutlineTrendingUp className="text-2xl" />}
+                />
+                <StatCard
+                  label={t('toReview')}
+                  value={stats?.dueCount || 0}
+                  color="bg-blue-50 text-blue-600"
+                  icon={<HiOutlineLightBulb className="text-2xl" />}
+                />
+              </div>
+            )}
 
             {/* Continue Learning Section */}
             <section>
@@ -245,9 +351,13 @@ export function DashboardClient({ userEmail }: { userEmail: string }) {
                   <p className="text-sm text-gray-500 mt-1">{t('addYourQuestions')}</p>
                 </div>
 
-                {quizzes.slice(0, 3).map((quiz) => (
-                  <QuizCard key={quiz._id} quiz={quiz} />
-                ))}
+                {isQuizzesInitialLoading ? (
+                  <QuizCardsSkeleton />
+                ) : (
+                  quizzes.slice(0, 3).map((quiz) => (
+                    <QuizCard key={quiz._id} quiz={quiz} />
+                  ))
+                )}
 
                 {/* Explore Banner as standard card size */}
                 <div
@@ -269,43 +379,49 @@ export function DashboardClient({ userEmail }: { userEmail: string }) {
 
           {/* Sidebar Column */}
           <div className="lg:col-span-4 space-y-6 sticky top-24 self-start h-fit">
-            {/* Profile Level Card */}
-            {stats && (
-              <Card className="p-6 border-0 shadow-lg shadow-gray-100/50 bg-white rounded-2xl">
-                <div className="flex items-center gap-4 mb-4">
-                  <LevelBadge level={stats.level} className="shrink-0" />
-                  <div>
-                    <h3 className="font-bold text-lg text-gray-900 leading-tight">{t('level')} {stats.level}</h3>
-                    <p className="text-sm text-gray-500">{t('keepLearning')}</p>
-                  </div>
-                </div>
+            {isStatsInitialLoading ? (
+              <SidebarSkeleton />
+            ) : (
+              <>
+                {/* Profile Level Card */}
+                {stats && (
+                  <Card className="p-6 border-0 shadow-lg shadow-gray-100/50 bg-white rounded-2xl">
+                    <div className="flex items-center gap-4 mb-4">
+                      <LevelBadge level={stats.level} className="shrink-0" />
+                      <div>
+                        <h3 className="font-bold text-lg text-gray-900 leading-tight">{t('level')} {stats.level}</h3>
+                        <p className="text-sm text-gray-500">{t('keepLearning')}</p>
+                      </div>
+                    </div>
 
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm font-medium">
-                    <span className="text-gray-600">{t('levelProgress')}</span>
-                    <span className="text-blue-600">{stats.levelProgress}/100 XP</span>
-                  </div>
-                  <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
-                    <div
-                      className="bg-gradient-to-r from-blue-500 to-purple-500 h-full rounded-full transition-all duration-500"
-                      style={{ width: `${stats.levelProgress}%` }}
-                    />
-                  </div>
-                  <p className="text-xs text-gray-400 text-center mt-2">
-                    {t('xpNeeded', { xp: 100 - stats.levelProgress, level: stats.level + 1 })}
-                  </p>
-                </div>
-              </Card>
-            )}
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm font-medium">
+                        <span className="text-gray-600">{t('levelProgress')}</span>
+                        <span className="text-blue-600">{stats.levelProgress}/100 XP</span>
+                      </div>
+                      <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
+                        <div
+                          className="bg-gradient-to-r from-blue-500 to-purple-500 h-full rounded-full transition-all duration-500"
+                          style={{ width: `${stats.levelProgress}%` }}
+                        />
+                      </div>
+                      <p className="text-xs text-gray-400 text-center mt-2">
+                        {t('xpNeeded', { xp: 100 - stats.levelProgress, level: stats.level + 1 })}
+                      </p>
+                    </div>
+                  </Card>
+                )}
 
-            <WeeklyProgressHeatmap weeklyActivity={weeklyActivityObj} />
+                <WeeklyProgressHeatmap weeklyActivity={weeklyActivityObj} />
 
-            {stats && (
-              <StreakFreezeCard
-                count={stats.streakFreezeCount || 0}
-                xp={stats.xp}
-                onBuy={handleBuyFreeze}
-              />
+                {stats && (
+                  <StreakFreezeCard
+                    count={stats.streakFreezeCount || 0}
+                    xp={stats.xp}
+                    onBuy={handleBuyFreeze}
+                  />
+                )}
+              </>
             )}
 
             <ProTipCard />

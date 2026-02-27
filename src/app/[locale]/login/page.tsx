@@ -2,13 +2,13 @@
 
 import { useState } from 'react';
 import { signIn } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { HiOutlineMail, HiOutlineLockClosed, HiOutlineExclamationCircle, HiOutlineShieldCheck } from '@/components/icons';
+import { defaultLocale } from '@/i18n/config';
 
 export default function LoginPage() {
   const t = useTranslations('auth');
@@ -16,7 +16,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const router = useRouter();
+  const locale = useLocale();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,25 +30,19 @@ export default function LoginPage() {
     }
 
     try {
-      console.log('Attempting login for:', email);
+      const callbackUrl = locale === defaultLocale ? '/' : `/${locale}`;
 
       const result = await signIn('credentials', {
         email: email.trim(),
         password,
         redirect: false,
+        callbackUrl,
       });
 
-      console.log('Login result:', result);
-
       if (result?.error) {
-        console.error('Login error:', result.error);
         setError(t('invalidEmailPassword'));
       } else if (result?.ok) {
-        console.log('Login successful, redirecting...');
-        router.replace('/');
-        setTimeout(() => {
-          window.location.reload();
-        }, 100);
+        window.location.assign(result.url || callbackUrl);
       } else {
         setError(t('loginFailed'));
       }
@@ -74,7 +68,7 @@ export default function LoginPage() {
         {/* Header */}
         <div className="sm:mx-auto sm:w-full sm:max-w-md mb-6 sm:mb-8">
           <div className="text-center">
-            <Link href="/" className="inline-flex items-center group">
+            <Link href="/" prefetch={false} className="inline-flex items-center group">
               <div className="h-16 sm:h-20 flex items-center justify-center transition-transform group-hover:scale-105">
                 <img src="https://i.ibb.co/WWGXBZXm/image-removebg-preview.png" alt="RinKuzu Logo" width={80} height={80} className="h-16 sm:h-20 w-auto object-contain" />
               </div>

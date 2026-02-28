@@ -8,6 +8,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { ImageDisplay } from '@/components/ui/ImageDisplay';
 import { DynamicMarkdownRenderer as MarkdownRenderer } from '@/components/ui/DynamicMarkdownRenderer';
 import Sidebar from '@/components/Sidebar';
+import {
+  HiOutlineArrowLeft,
+  HiOutlineChartBar,
+  HiOutlineCheck,
+  HiOutlineClock,
+  HiOutlineDocumentText,
+  HiOutlineRefresh,
+  HiOutlineX,
+  HiOutlineXCircle
+} from '@/components/icons';
 
 interface AttemptDetail {
   _id: string;
@@ -132,9 +142,18 @@ export default function AttemptDetailPage() {
                   <div className="mt-2">
                     <h2 className="text-xl font-semibold text-gray-800">{attempt.quiz.title}</h2>
                     <div className="flex items-center space-x-4 mt-2 text-sm text-gray-600">
-                      <span>📊 Điểm: {attempt.score}%</span>
-                      <span>📝 {attempt.quiz.questions.length} câu hỏi</span>
-                      <span>🕒 {formatDate(attempt.takenAt)}</span>
+                      <span className="inline-flex items-center gap-1.5">
+                        <HiOutlineChartBar className="w-4 h-4" />
+                        Điểm: {attempt.score}%
+                      </span>
+                      <span className="inline-flex items-center gap-1.5">
+                        <HiOutlineDocumentText className="w-4 h-4" />
+                        {attempt.quiz.questions.length} câu hỏi
+                      </span>
+                      <span className="inline-flex items-center gap-1.5">
+                        <HiOutlineClock className="w-4 h-4" />
+                        {formatDate(attempt.takenAt)}
+                      </span>
                     </div>
                   </div>
                 )}
@@ -143,13 +162,19 @@ export default function AttemptDetailPage() {
               <div className="flex space-x-3">
                 <Link href={historyLink}>
                   <Button variant="outline">
-                    ← Quay lại
+                    <span className="inline-flex items-center gap-2">
+                      <HiOutlineArrowLeft className="w-4 h-4" />
+                      Quay lại
+                    </span>
                   </Button>
                 </Link>
                 {attempt && (
                   <Link href={`/quiz/${attempt.quiz.slug}`}>
                     <Button>
-                      🔄 Làm lại Quiz
+                      <span className="inline-flex items-center gap-2">
+                        <HiOutlineRefresh className="w-4 h-4" />
+                        Làm lại Quiz
+                      </span>
                     </Button>
                   </Link>
                 )}
@@ -166,7 +191,9 @@ export default function AttemptDetailPage() {
             <div className="mb-6">
               <Card>
                 <CardContent className="text-center py-12">
-                  <div className="text-red-600 mb-4">❌</div>
+                  <div className="mb-4 flex justify-center text-red-600">
+                    <HiOutlineXCircle className="w-8 h-8" />
+                  </div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">
                     Có lỗi xảy ra
                   </h3>
@@ -219,7 +246,17 @@ export default function AttemptDetailPage() {
                             ? 'bg-green-100 text-green-800' 
                             : 'bg-red-100 text-red-800'
                         }`}>
-                          {question.isCorrect ? '✓ Đúng' : '✗ Sai'}
+                          {question.isCorrect ? (
+                            <span className="inline-flex items-center gap-1.5">
+                              <HiOutlineCheck className="w-4 h-4" />
+                              Đúng
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1.5">
+                              <HiOutlineX className="w-4 h-4" />
+                              Sai
+                            </span>
+                          )}
                         </span>
                       </CardTitle>
                     </CardHeader>
@@ -290,17 +327,26 @@ export default function AttemptDetailPage() {
                                   <div className="flex space-x-2 ml-4">
                                     {isCorrectChoice && (
                                       <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                        ✓ Đáp án đúng
+                                        <span className="inline-flex items-center gap-1">
+                                          <HiOutlineCheck className="w-3 h-3" />
+                                          Đáp án đúng
+                                        </span>
                                       </span>
                                     )}
                                     {isUserChoice && !isCorrectChoice && (
                                       <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                        ✗ Bạn đã chọn
+                                        <span className="inline-flex items-center gap-1">
+                                          <HiOutlineX className="w-3 h-3" />
+                                          Bạn đã chọn
+                                        </span>
                                       </span>
                                     )}
                                     {isUserChoice && isCorrectChoice && (
                                       <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                        ✓ Bạn chọn đúng
+                                        <span className="inline-flex items-center gap-1">
+                                          <HiOutlineCheck className="w-3 h-3" />
+                                          Bạn chọn đúng
+                                        </span>
                                       </span>
                                     )}
                                   </div>
@@ -325,14 +371,20 @@ export default function AttemptDetailPage() {
 
               {/* Footer Actions */}
               <div className="flex justify-center space-x-4 pt-8 border-t border-gray-200">
-                <Link href="/history">
+                <Link href={historyLink}>
                   <Button variant="outline" size="lg">
-                    ← Quay lại lịch sử
+                    <span className="inline-flex items-center gap-2">
+                      <HiOutlineArrowLeft className="w-4 h-4" />
+                      Quay lại lịch sử
+                    </span>
                   </Button>
                 </Link>
                 <Link href={`/quiz/${attempt.quiz.slug}`}>
                   <Button size="lg">
-                    🔄 Làm lại Quiz
+                    <span className="inline-flex items-center gap-2">
+                      <HiOutlineRefresh className="w-4 h-4" />
+                      Làm lại Quiz
+                    </span>
                   </Button>
                 </Link>
               </div>

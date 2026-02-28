@@ -30,6 +30,7 @@ interface Category {
 export default function CategoriesPage() {
   const t = useTranslations('categories');
   const tCommon = useTranslations('common');
+  const tNav = useTranslations('nav');
   const router = useRouter();
   const [categories, setCategories] = useState<Category[]>([]);
   const [filteredCategories, setFilteredCategories] = useState<Category[]>([]);
@@ -137,7 +138,7 @@ export default function CategoriesPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 md:pt-20 pb-8">
         {/* Breadcrumb */}
         <nav className="flex items-center space-x-2 text-sm text-gray-500 mb-4 md:mb-6">
-          <Link href={ROUTES.DASHBOARD} className="hover:text-gray-700">{tCommon('nav.home')}</Link>
+          <Link href={ROUTES.DASHBOARD} className="hover:text-gray-700">{tNav('home')}</Link>
           <span>›</span>
           <span className="text-gray-900 font-medium">{t('title')}</span>
         </nav>

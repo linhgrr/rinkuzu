@@ -793,6 +793,10 @@
     "processingStarted": "Bắt đầu xử lý",
     "pagesChunks": "{pages} trang, {chunks} phần",
     "failedToStartProcessing": "Không thể bắt đầu xử lý",
+    "confirmRemoveAllTitle": "Xóa tất cả tệp?",
+    "confirmRemoveAllMessage": "Bạn có chắc muốn xóa tất cả {count} tệp không? Hành động này không thể hoàn tác.",
+    "confirmRemoveQuestionTitle": "Xóa câu hỏi?",
+    "confirmRemoveQuestionMessage": "Bạn có chắc muốn xóa câu hỏi số {number} không?",
     "removeAll": "Xóa tất cả"
   },
   "premium": {

@@ -793,6 +793,10 @@
     "processingStarted": "Processing started",
     "pagesChunks": "{pages} pages, {chunks} chunks",
     "failedToStartProcessing": "Failed to start processing",
+    "confirmRemoveAllTitle": "Remove all files?",
+    "confirmRemoveAllMessage": "Are you sure you want to remove all {count} files? This action cannot be undone.",
+    "confirmRemoveQuestionTitle": "Remove question?",
+    "confirmRemoveQuestionMessage": "Are you sure you want to remove question {number}?",
     "removeAll": "Remove All"
   },
   "premium": {

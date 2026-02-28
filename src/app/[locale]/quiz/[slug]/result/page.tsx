@@ -158,7 +158,7 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
 
   const formatAnswer = (answer: number | number[], options: string[], type: 'single' | 'multiple', isAnswered: boolean = true) => {
     if (!isAnswered) {
-      return tProfile('notAnswered');
+      return t('notAnswered');
     }
 
     if (type === 'single') {
@@ -656,7 +656,7 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
                             ? `✓ ${tProfile('correct')}`
                             : isAnswered
                               ? '✗ Incorrect'
-                              : `— ${tProfile('notAnswered')}`
+                              : `— ${t('notAnswered')}`
                           }
                         </span>
                       </div>

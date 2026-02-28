@@ -58,6 +58,7 @@ interface CategoryPageProps {
 export default function CategoryPage({ params }: CategoryPageProps) {
   const t = useTranslations('categories');
   const tCommon = useTranslations('common');
+  const tNav = useTranslations('nav');
   const tQuiz = useTranslations('quiz');
   const router = useRouter();
   const [category, setCategory] = useState<Category | null>(null);
@@ -195,7 +196,7 @@ export default function CategoryPage({ params }: CategoryPageProps) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-8">
         {/* Breadcrumb */}
         <nav className="flex items-center space-x-2 text-sm text-gray-500 mb-6">
-          <Link href="/" className="hover:text-gray-700">{tCommon('nav.home')}</Link>
+          <Link href="/" className="hover:text-gray-700">{tNav('home')}</Link>
           <span>›</span>
           <Link href="/categories" className="hover:text-gray-700">{t('title')}</Link>
           <span>›</span>

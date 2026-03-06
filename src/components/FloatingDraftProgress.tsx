@@ -4,7 +4,6 @@
 import { useState, useEffect } from 'react';
 import { useDraftStore, DraftProgress } from '@/store/useDraftStore';
 import { usePdfProcessor } from '@/hooks/usePdfProcessor';
-import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
@@ -52,47 +51,41 @@ export function FloatingDraftProgress() {
 
   return (
     <div className="fixed bottom-20 right-4 z-50 md:bottom-6 md:right-6">
-      <AnimatePresence>
-        {isExpanded && (
-          <motion.div
-            initial={{ opacity: 0, y: 10, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 10, scale: 0.95 }}
-            className="mb-3 w-80 rounded-2xl bg-white/95 backdrop-blur-xl
+      {isExpanded && (
+        <div
+          className="mb-3 w-80 rounded-2xl bg-white/95 backdrop-blur-xl
                        shadow-xl border border-gray-200/60 overflow-hidden"
-          >
-            <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-              <h3 className="font-semibold text-sm text-gray-900">{t('processingPDF')}</h3>
-              <button
-                onClick={() => setIsExpanded(false)}
-                className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <HiOutlineX className="w-4 h-4" />
-              </button>
-            </div>
+        >
+          <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+            <h3 className="font-semibold text-sm text-gray-900">{t('processingPDF')}</h3>
+            <button
+              onClick={() => setIsExpanded(false)}
+              className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <HiOutlineX className="w-4 h-4" />
+            </button>
+          </div>
 
-            <div className="max-h-72 overflow-y-auto">
-              {drafts.map((draft) => (
-                <DraftItem
-                  key={draft.id}
-                  draft={draft}
-                  onRemove={() => removeDraft(draft.id)}
-                  onCancel={() => handleCancel(draft.id, draft.title)}
-                  t={t}
-                />
-              ))}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          <div className="max-h-72 overflow-y-auto">
+            {drafts.map((draft) => (
+              <DraftItem
+                key={draft.id}
+                draft={draft}
+                onRemove={() => removeDraft(draft.id)}
+                onCancel={() => handleCancel(draft.id, draft.title)}
+                t={t}
+              />
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Floating Button */}
-      <motion.button
+      <button
         onClick={() => setIsExpanded(!isExpanded)}
         className="flex items-center gap-2.5 px-4 py-2.5 rounded-full
                    bg-white/95 backdrop-blur-xl shadow-lg border border-gray-200/60
-                   hover:shadow-xl transition-all duration-200"
-        whileTap={{ scale: 0.97 }}
+                   hover:shadow-xl active:scale-[0.97] transition-all duration-200"
       >
         {processingCount > 0 ? (
           <div className="relative">
@@ -113,7 +106,7 @@ export function FloatingDraftProgress() {
           className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isExpanded ? '' : 'rotate-180'
             }`}
         />
-      </motion.button>
+      </button>
     </div>
   );
 }
@@ -177,18 +170,14 @@ function DraftItem({
           {draft.status === 'processing' || draft.status === 'uploading' ? (
             <>
               <div className="mt-2 h-1.5 bg-gray-100 rounded-full overflow-hidden flex">
-                <motion.div
-                  className="h-full bg-blue-500"
-                  initial={{ width: 0 }}
-                  animate={{ width: `${progress}%` }}
-                  transition={{ duration: 0.3 }}
+                <div
+                  className="h-full bg-blue-500 transition-[width] duration-300"
+                  style={{ width: `${progress}%` }}
                 />
                 {errorProgress > 0 && (
-                  <motion.div
-                    className="h-full bg-red-400"
-                    initial={{ width: 0 }}
-                    animate={{ width: `${errorProgress}%` }}
-                    transition={{ duration: 0.3 }}
+                  <div
+                    className="h-full bg-red-400 transition-[width] duration-300"
+                    style={{ width: `${errorProgress}%` }}
                   />
                 )}
               </div>

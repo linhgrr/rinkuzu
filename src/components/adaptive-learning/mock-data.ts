@@ -1,4 +1,4 @@
-import { Course, DailyStats, Exercise } from './types';
+import { Course, DailyStats } from './types';
 
 export const mockCourses: Course[] = [
     {
@@ -41,7 +41,7 @@ export const mockDailyStats: DailyStats = {
     streakDays: 12,
 };
 
-export const mockExercises: Exercise[] = [
+export const mockExercises = [
     {
         id: 'ex-01',
         courseId: 'math-12',
@@ -49,12 +49,12 @@ export const mockExercises: Exercise[] = [
         bloomLevel: 'Remember',
         question: "Đạo hàm của hàm số f(x) = x³ là:",
         type: 'MCQ',
-        options: [
-            'f\'(x) = 3x',
-            'f\'(x) = 3x²',
-            'f\'(x) = x²',
-            'f\'(x) = 2x³',
-        ],
+        options: {
+            A: 'f\'(x) = 3x',
+            B: 'f\'(x) = 3x²',
+            C: 'f\'(x) = x²',
+            D: 'f\'(x) = 2x³',
+        },
         correctAnswer: 'f\'(x) = 3x²',
         explanation: "Áp dụng công thức đạo hàm của hàm lũy thừa: (xⁿ)' = n·xⁿ⁻¹. Với n=3, ta có (x³)' = 3x².",
     },

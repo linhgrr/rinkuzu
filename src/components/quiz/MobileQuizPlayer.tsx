@@ -1,8 +1,7 @@
 // /src/components/quiz/MobileQuizPlayer.tsx
 'use client';
 
-import { useState, useCallback } from 'react';
-import { motion, AnimatePresence, PanInfo } from 'framer-motion';
+import { useState, useCallback, useRef, type TouchEvent } from 'react';
 import { useTranslations } from 'next-intl';
 import {
   HiOutlineChevronLeft,
@@ -32,7 +31,8 @@ export function MobileQuizPlayer({
   const t = useTranslations('quiz');
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number | number[]>>({});
-  const [direction, setDirection] = useState(0);
+  const touchStartXRef = useRef<number | null>(null);
+  const touchCurrentXRef = useRef<number | null>(null);
 
   const currentQuestion = questions[currentIndex];
   const isFirst = currentIndex === 0;
@@ -40,31 +40,43 @@ export function MobileQuizPlayer({
 
   const goNext = useCallback(() => {
     if (!isLast) {
-      setDirection(1);
       setCurrentIndex((prev) => prev + 1);
     }
   }, [isLast]);
 
   const goPrev = useCallback(() => {
     if (!isFirst) {
-      setDirection(-1);
       setCurrentIndex((prev) => prev - 1);
     }
   }, [isFirst]);
 
-  const handleDragEnd = useCallback(
-    (event: any, info: PanInfo) => {
-      const threshold = 50;
-      const velocity = 500;
+  const handleTouchStart = useCallback((event: TouchEvent<HTMLDivElement>) => {
+    const touchX = event.touches[0]?.clientX;
+    touchStartXRef.current = touchX ?? null;
+    touchCurrentXRef.current = touchX ?? null;
+  }, []);
 
-      if (info.offset.x > threshold || info.velocity.x > velocity) {
-        if (!isFirst) goPrev();
-      } else if (info.offset.x < -threshold || info.velocity.x < -velocity) {
-        if (!isLast) goNext();
-      }
-    },
-    [isFirst, isLast, goNext, goPrev]
-  );
+  const handleTouchMove = useCallback((event: TouchEvent<HTMLDivElement>) => {
+    touchCurrentXRef.current = event.touches[0]?.clientX ?? null;
+  }, []);
+
+  const handleTouchEnd = useCallback(() => {
+    if (touchStartXRef.current === null || touchCurrentXRef.current === null) {
+      return;
+    }
+
+    const deltaX = touchCurrentXRef.current - touchStartXRef.current;
+    const threshold = 50;
+
+    if (deltaX > threshold && !isFirst) {
+      goPrev();
+    } else if (deltaX < -threshold && !isLast) {
+      goNext();
+    }
+
+    touchStartXRef.current = null;
+    touchCurrentXRef.current = null;
+  }, [goNext, goPrev, isFirst, isLast]);
 
   const handleOptionSelect = useCallback(
     (optionIndex: number) => {
@@ -98,21 +110,6 @@ export function MobileQuizPlayer({
 
   const answeredCount = Object.keys(answers).length;
 
-  const variants = {
-    enter: (dir: number) => ({
-      x: dir > 0 ? 300 : -300,
-      opacity: 0,
-    }),
-    center: {
-      x: 0,
-      opacity: 1,
-    },
-    exit: (dir: number) => ({
-      x: dir < 0 ? 300 : -300,
-      opacity: 0,
-    }),
-  };
-
   return (
     <div className="fixed inset-0 bg-gray-50 flex flex-col z-50">
       {/* Header */}
@@ -139,13 +136,12 @@ export function MobileQuizPlayer({
               {questions.map((q, i) => (
                 <div
                   key={q._id}
-                  className={`w-2 h-2 rounded-full transition-colors ${
-                    i === currentIndex
+                  className={`w-2 h-2 rounded-full transition-colors ${i === currentIndex
                       ? 'bg-blue-500'
                       : answers[q._id] !== undefined
-                      ? 'bg-green-400'
-                      : 'bg-gray-200'
-                  }`}
+                        ? 'bg-green-400'
+                        : 'bg-gray-200'
+                    }`}
                 />
               ))}
             </div>
@@ -167,85 +163,75 @@ export function MobileQuizPlayer({
 
       {/* Question Card - Swipeable */}
       <div className="flex-1 overflow-hidden px-4 py-4">
-        <AnimatePresence mode="wait" custom={direction}>
-          <motion.div
-            key={currentIndex}
-            custom={direction}
-            variants={variants}
-            initial="enter"
-            animate="center"
-            exit="exit"
-            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-            drag="x"
-            dragConstraints={{ left: 0, right: 0 }}
-            dragElastic={0.15}
-            onDragEnd={handleDragEnd}
-            className="h-full touch-pan-y"
+        <div
+          className="h-full touch-pan-y"
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+        >
+          <div
+            key={currentQuestion._id}
+            className="h-full bg-white rounded-2xl shadow-sm border border-gray-100 p-5 flex flex-col overflow-hidden"
           >
-            <div className="h-full bg-white rounded-2xl shadow-sm border border-gray-100 p-5 flex flex-col overflow-hidden">
-              {/* Question Image */}
-              {currentQuestion.questionImage && (
-                <div className="mb-4 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0">
-                  <img
-                    src={currentQuestion.questionImage}
-                    alt={`Image for question ${currentIndex + 1}`}
-                    width={400}
-                    height={144}
-                    className="w-full h-auto max-h-36 object-contain"
-                  />
-                </div>
-              )}
-
-              {/* Question Text */}
-              <div className="mb-4 flex-shrink-0">
-                <span className="inline-block px-2.5 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-600 mb-2">
-                  {currentQuestion.type === 'single' ? t('singleChoiceHelper') : t('multipleChoiceHelper')}
-                </span>
-                <p className="text-base font-medium text-gray-900 leading-relaxed">
-                  {currentQuestion.question}
-                </p>
+            {/* Question Image */}
+            {currentQuestion.questionImage && (
+              <div className="mb-4 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0">
+                <img
+                  src={currentQuestion.questionImage}
+                  alt={`Image for question ${currentIndex + 1}`}
+                  width={400}
+                  height={144}
+                  className="w-full h-auto max-h-36 object-contain"
+                />
               </div>
+            )}
 
-              {/* Options */}
-              <div className="flex-1 space-y-2.5 overflow-y-auto pb-2">
-                {currentQuestion.options.map((option, optIdx) => (
-                  <motion.button
-                    key={optIdx}
-                    onClick={() => handleOptionSelect(optIdx)}
-                    className={`
+            {/* Question Text */}
+            <div className="mb-4 flex-shrink-0">
+              <span className="inline-block px-2.5 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-600 mb-2">
+                {currentQuestion.type === 'single' ? t('singleChoiceHelper') : t('multipleChoiceHelper')}
+              </span>
+              <p className="text-base font-medium text-gray-900 leading-relaxed">
+                {currentQuestion.question}
+              </p>
+            </div>
+
+            {/* Options */}
+            <div className="flex-1 space-y-2.5 overflow-y-auto pb-2">
+              {currentQuestion.options.map((option, optIdx) => (
+                <button
+                  key={optIdx}
+                  onClick={() => handleOptionSelect(optIdx)}
+                  className={`
                       w-full p-4 rounded-xl border-2 text-left transition-all duration-150
-                      ${
-                        isOptionSelected(optIdx)
-                          ? 'border-blue-500 bg-blue-50'
-                          : 'border-gray-100 bg-gray-50 active:border-gray-200 active:bg-gray-100'
-                      }
+                      ${isOptionSelected(optIdx)
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-gray-100 bg-gray-50 active:border-gray-200 active:bg-gray-100'
+                    }
                     `}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div
-                        className={`
+                >
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={`
                           w-6 h-6 rounded-full border-2 flex items-center justify-center
                           flex-shrink-0 transition-all duration-150
-                          ${
-                            isOptionSelected(optIdx)
-                              ? 'border-blue-500 bg-blue-500'
-                              : 'border-gray-300 bg-white'
-                          }
+                          ${isOptionSelected(optIdx)
+                          ? 'border-blue-500 bg-blue-500'
+                          : 'border-gray-300 bg-white'
+                        }
                         `}
-                      >
-                        {isOptionSelected(optIdx) && (
-                          <HiOutlineCheck className="w-4 h-4 text-white" />
-                        )}
-                      </div>
-                      <span className="flex-1 text-sm text-gray-800">{option}</span>
+                    >
+                      {isOptionSelected(optIdx) && (
+                        <HiOutlineCheck className="w-4 h-4 text-white" />
+                      )}
                     </div>
-                  </motion.button>
-                ))}
-              </div>
+                    <span className="flex-1 text-sm text-gray-800">{option}</span>
+                  </div>
+                </button>
+              ))}
             </div>
-          </motion.div>
-        </AnimatePresence>
+          </div>
+        </div>
       </div>
 
       {/* Footer */}
@@ -256,21 +242,19 @@ export function MobileQuizPlayer({
         </p>
 
         {/* Complete button */}
-        <motion.button
+        <button
           onClick={() => onComplete(answers)}
           className={`
             w-full py-4 rounded-full font-semibold flex items-center justify-center gap-2
-            transition-all duration-200
-            ${
-              answeredCount === questions.length
-                ? 'bg-green-500 text-white active:bg-green-600'
-                : 'bg-gray-100 text-gray-600 active:bg-gray-200'
+            transition-all duration-200 active:scale-[0.98]
+            ${answeredCount === questions.length
+              ? 'bg-green-500 text-white active:bg-green-600'
+              : 'bg-gray-100 text-gray-600 active:bg-gray-200'
             }
           `}
-          whileTap={{ scale: 0.98 }}
         >
           {t('complete')} ({answeredCount}/{questions.length} {t('answered')})
-        </motion.button>
+        </button>
       </div>
     </div>
   );

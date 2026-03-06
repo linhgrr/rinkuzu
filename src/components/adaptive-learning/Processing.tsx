@@ -1,118 +1,490 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { Card, CardContent } from '@/components/ui/Card';
-import { HiCheck, HiOutlineSparkles, HiOutlineChip } from '@/components/icons';
+import { Button } from '@/components/ui/Button';
+import {
+    HiCheck,
+    HiOutlineSparkles,
+    HiOutlineExclamationCircle,
+    HiOutlineArrowLeft
+} from '@/components/icons';
+import {
+    ReactFlow,
+    Background,
+    Controls,
+    Handle,
+    Position,
+    NodeProps,
+    Node,
+    Edge,
+    MarkerType,
+    useReactFlow,
+    ReactFlowProvider
+} from '@xyflow/react';
+import '@xyflow/react/dist/style.css';
+import dagre from 'dagre';
+import { createSessionFromPipeline, getPipelineJobStatus } from './api-client';
+import type { PipelineStatus, PipelineJobStatus } from './types';
+
+interface ConceptNodeData extends Record<string, unknown> {
+    label: string;
+}
+
+const ConceptNode = memo(function ConceptNode({ data }: NodeProps<Node<ConceptNodeData>>) {
+    return (
+        <div className="min-w-[120px] rounded-md border border-gray-300 bg-white px-3 py-2 transition-all duration-200">
+            <Handle type="target" position={Position.Top} className="!h-1 !w-1 !bg-gray-400" />
+            <div className="text-center text-[10px] font-mono tracking-wider text-gray-700">
+                {data.label.length > 25 ? `${data.label.substring(0, 23)}...` : data.label}
+            </div>
+            <div className="pointer-events-none absolute -inset-0.5 animate-pulse rounded-md border border-gray-400/30" />
+            <Handle type="source" position={Position.Bottom} className="!h-1 !w-1 !bg-gray-400" />
+        </div>
+    );
+});
+
+const nodeTypes = {
+    concept: ConceptNode,
+};
+
+const dagreGraph = new dagre.graphlib.Graph();
+dagreGraph.setDefaultEdgeLabel(() => ({}));
+
+const getLayoutedElements = (nodes: Node<ConceptNodeData>[], edges: Edge[], direction = 'TB') => {
+    dagreGraph.setGraph({ rankdir: direction, nodesep: 60, ranksep: 80 });
+
+    nodes.forEach((node) => {
+        dagreGraph.setNode(node.id, { width: 140, height: 60 });
+    });
+
+    edges.forEach((edge) => {
+        dagreGraph.setEdge(edge.source, edge.target);
+    });
+
+    dagre.layout(dagreGraph);
+
+    nodes.forEach((node) => {
+        const nodeWithPosition = dagreGraph.node(node.id);
+        node.targetPosition = direction === 'LR' ? Position.Left : Position.Top;
+        node.sourcePosition = direction === 'LR' ? Position.Right : Position.Bottom;
+
+        node.position = {
+            x: nodeWithPosition.x - 70,
+            y: nodeWithPosition.y - 30,
+        };
+
+        return node;
+    });
+
+    return { nodes, edges };
+};
+
+function PartialGraphFlow({ partialGraph }: { partialGraph?: PipelineJobStatus['partial_graph'] }) {
+    const { fitView } = useReactFlow();
+
+    const initialNodes: Node<ConceptNodeData>[] = useMemo(() => {
+        if (!partialGraph?.nodes) return [];
+        return partialGraph.nodes.map((n) => ({
+            id: n.id,
+            type: 'concept',
+            position: { x: 0, y: 0 },
+            data: { label: n.name },
+        }));
+    }, [partialGraph]);
+
+    const initialEdges: Edge[] = useMemo(() => {
+        if (!partialGraph?.edges) return [];
+        return partialGraph.edges.map((e, index) => ({
+            id: `${e.source}-${e.target}-${index}`,
+            source: e.source,
+            target: e.target,
+            type: 'default',
+            animated: true,
+            style: { stroke: '#94A3B8', strokeWidth: 2 },
+            markerEnd: { type: MarkerType.ArrowClosed, color: '#94A3B8' },
+        }));
+    }, [partialGraph]);
+
+    const { nodes, edges } = useMemo(() => {
+        if (initialNodes.length === 0) return { nodes: [], edges: [] };
+        return getLayoutedElements(initialNodes, initialEdges);
+    }, [initialNodes, initialEdges]);
+
+    useEffect(() => {
+        if (nodes.length > 0) {
+            window.setTimeout(() => fitView({ padding: 0.3, duration: 800 }), 50);
+        }
+    }, [nodes, fitView]);
+
+    if (!partialGraph || nodes.length === 0) {
+        return (
+            <div className="flex h-full w-full items-center justify-center text-sm text-gray-400">
+                <div className="flex flex-col items-center gap-3">
+                    <div className="h-6 w-6 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600" />
+                    Waiting for concepts...
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <ReactFlow
+            nodes={nodes}
+            edges={edges}
+            nodeTypes={nodeTypes}
+            fitView
+            fitViewOptions={{ padding: 0.3 }}
+            minZoom={0.2}
+            maxZoom={2}
+            proOptions={{ hideAttribution: true }}
+            className="bg-gray-50/30"
+            nodesDraggable={false}
+            nodesConnectable={false}
+            elementsSelectable={false}
+        >
+            <Background color="#E2E8F0" gap={16} size={1} />
+            <Controls showInteractive={false} className="border-gray-200 fill-gray-500" />
+        </ReactFlow>
+    );
+}
+
+const STATUS_TO_STEP: Record<PipelineStatus, number> = {
+    pending: 0,
+    loading: 1,
+    chunking: 1,
+    extracting: 2,
+    embedding: 3,
+    merging: 3,
+    ranking: 4,
+    verifying: 4,
+    building_graph: 5,
+    optimizing: 5,
+    completed: 6,
+    failed: -1,
+};
+
+const STATUS_LABEL_KEYS: Record<PipelineStatus, string> = {
+    pending: 'waitingToStart',
+    loading: 'readingDocument',
+    chunking: 'splittingChunks',
+    extracting: 'extractingConceptsWithAI',
+    embedding: 'computingEmbeddings',
+    merging: 'mergingDuplicateConcepts',
+    ranking: 'rankingPrerequisites',
+    verifying: 'verifyingRelationsWithAI',
+    building_graph: 'buildingKnowledgeGraph',
+    optimizing: 'optimizingDAG',
+    completed: 'completed',
+    failed: 'failed',
+};
+
+type ProcessingStats = {
+    concepts_extracted: number;
+    concepts_after_merge: number;
+    relations_verified: number;
+};
 
 export default function AdaptiveLearningProcessing() {
     const router = useRouter();
     const t = useTranslations('adaptiveLearning');
-    const steps = [
-        { id: 1, label: t('processing.steps.readingPdf') },
-        { id: 2, label: t('processing.steps.extractingConcepts') },
-        { id: 3, label: t('processing.steps.buildingGraph') },
-        { id: 4, label: t('processing.steps.generatingPath') },
-        { id: 5, label: t('processing.steps.preparingExercise') },
-    ];
-    const [currentStep, setCurrentStep] = useState(1);
+    const [currentStep, setCurrentStep] = useState(0);
     const [progress, setProgress] = useState(0);
+    const [statusLabel, setStatusLabel] = useState('');
+    const [error, setError] = useState<string | null>(null);
+    const [stats, setStats] = useState<ProcessingStats | null>(null);
+    const [partialGraph, setPartialGraph] = useState<PipelineJobStatus['partial_graph']>(null);
+    const [creatingSession, setCreatingSession] = useState(false);
+    const [filename, setFilename] = useState('');
+    const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const pollInFlightRef = useRef(false);
+    const creatingSessionRef = useRef(false);
 
-    useEffect(() => {
+    const steps = useMemo(
+        () => [
+            { id: 1, label: t('processing.steps.readingPdf') },
+            { id: 2, label: t('processing.steps.extractingConcepts') },
+            { id: 3, label: t('processing.steps.buildingGraph') },
+            { id: 4, label: t('processing.steps.generatingPath') },
+            { id: 5, label: t('processing.steps.preparingExercise') },
+        ],
+        [t]
+    );
+
+    const getStatusLabel = useCallback(
+        (status: PipelineStatus) => t(`processing.status.${STATUS_LABEL_KEYS[status]}`),
+        [t]
+    );
+
+    const clearPolling = useCallback(() => {
+        if (pollingRef.current) {
+            clearInterval(pollingRef.current);
+            pollingRef.current = null;
+        }
+        if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current);
+            timeoutRef.current = null;
+        }
+        pollInFlightRef.current = false;
+    }, []);
+
+    const runFallbackProgress = useCallback(() => {
         const totalDuration = 5000;
         const interval = 50;
-        const increment = (100 / (totalDuration / interval));
-
+        const increment = 100 / (totalDuration / interval);
         let currentProgress = 0;
-        const timer = setInterval(() => {
+
+        clearPolling();
+        setStatusLabel(t('processing.status.processing'));
+        pollingRef.current = setInterval(() => {
             currentProgress += increment;
-            if (currentProgress > 100) currentProgress = 100;
+            if (currentProgress > 100) {
+                currentProgress = 100;
+            }
 
             setProgress(currentProgress);
-
-            // Map progress to steps (approximate)
             const step = Math.min(Math.ceil((currentProgress / 100) * steps.length), steps.length);
             setCurrentStep(step);
 
             if (currentProgress >= 100) {
-                clearInterval(timer);
-                setTimeout(() => {
-                    router.push('/adaptive-learning/exercise/ex-01');
+                clearPolling();
+                const sessionId = localStorage.getItem('al_session_id');
+                timeoutRef.current = setTimeout(() => {
+                    router.push(`/adaptive-learning/subject/${sessionId || 'demo'}`);
                 }, 800);
             }
         }, interval);
+    }, [clearPolling, router, steps.length, t]);
 
-        return () => clearInterval(timer);
-    }, [router]);
+    useEffect(() => {
+        setStatusLabel(t('processing.status.starting'));
+        const storedFilename = localStorage.getItem('al_pipeline_filename');
+        setFilename(storedFilename || t('processing.defaultFilename'));
+    }, [t]);
+
+    useEffect(() => {
+        const jobId = localStorage.getItem('al_pipeline_job_id');
+        if (!jobId) {
+            runFallbackProgress();
+            return () => clearPolling();
+        }
+
+        const poll = async () => {
+            if (pollInFlightRef.current || creatingSessionRef.current) {
+                return;
+            }
+
+            pollInFlightRef.current = true;
+            try {
+                const job = await getPipelineJobStatus(jobId);
+                const step = STATUS_TO_STEP[job.status] ?? 0;
+                setCurrentStep(step);
+                setProgress(job.progress * 100);
+                setStatusLabel(getStatusLabel(job.status));
+                if (job.partial_graph) setPartialGraph(job.partial_graph);
+
+                if (job.concepts_extracted > 0) {
+                    setStats((prev) => {
+                        if (
+                            prev &&
+                            prev.concepts_extracted === job.concepts_extracted &&
+                            prev.concepts_after_merge === job.concepts_after_merge &&
+                            prev.relations_verified === job.relations_verified
+                        ) {
+                            return prev;
+                        }
+
+                        return {
+                            concepts_extracted: job.concepts_extracted,
+                            concepts_after_merge: job.concepts_after_merge,
+                            relations_verified: job.relations_verified,
+                        };
+                    });
+                }
+
+                if (job.status === 'completed' && !creatingSessionRef.current) {
+                    clearPolling();
+                    creatingSessionRef.current = true;
+                    setCreatingSession(true);
+                    try {
+                        const session = await createSessionFromPipeline(jobId, 50);
+                        localStorage.setItem('al_session_id', session.session_id);
+                        localStorage.removeItem('al_pipeline_job_id');
+                        timeoutRef.current = setTimeout(() => {
+                            router.push(`/adaptive-learning/subject/${session.session_id}`);
+                        }, 800);
+                    } catch (err) {
+                        const message = err instanceof Error ? err.message : t('createSessionFailed');
+                        setError(message);
+                        setCreatingSession(false);
+                        creatingSessionRef.current = false;
+                    }
+                } else if (job.status === 'failed') {
+                    clearPolling();
+                    setError(job.error_message || getStatusLabel('failed'));
+                }
+            } catch (err) {
+                clearPolling();
+                const message = err instanceof Error ? err.message : getStatusLabel('failed');
+                setError(message);
+            } finally {
+                pollInFlightRef.current = false;
+            }
+        };
+
+        creatingSessionRef.current = false;
+        void poll();
+        pollingRef.current = setInterval(() => {
+            void poll();
+        }, 2000);
+
+        return () => clearPolling();
+    }, [clearPolling, getStatusLabel, router, runFallbackProgress, t]);
+
+    const handleGoBack = useCallback(() => {
+        clearPolling();
+        creatingSessionRef.current = false;
+        localStorage.removeItem('al_pipeline_job_id');
+        localStorage.removeItem('al_pipeline_filename');
+        router.push('/adaptive-learning/upload');
+    }, [clearPolling, router]);
 
     return (
-        <div className="flex flex-col items-center justify-center min-h-[60vh]">
-            <div className="w-full max-w-lg">
-                {/* Main Card */}
-                <div className="bg-white rounded-3xl shadow-xl overflow-hidden relative border border-gray-100">
-                    {/* Top Gradient */}
-                    <div className="h-2 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500" />
+        <div className="mx-auto mt-8 flex w-full max-w-6xl flex-col lg:flex-row gap-8 items-stretch pt-4">
+            <div className="w-full lg:w-[45%] flex-shrink-0">
+                <div className="relative overflow-hidden rounded-lg border border-gray-200 bg-white p-8 md:p-10">
+                    <div className="text-center">
+                        {error && (
+                            <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-lg bg-red-50 text-red-500 border border-red-100">
+                                <HiOutlineExclamationCircle className="h-8 w-8" />
+                            </div>
+                        )}
 
-                    <div className="p-8 text-center">
-                        <div className="w-24 h-24 mx-auto bg-indigo-50 rounded-full flex items-center justify-center mb-6 relative">
-                            <div className="absolute inset-0 rounded-full border-4 border-indigo-100 border-t-indigo-600 animate-spin" />
-                            <HiOutlineChip className="w-10 h-10 text-indigo-600" />
-                        </div>
+                        <h2 className="mb-2 text-2xl font-medium tracking-tight text-gray-900">
+                            {error ? t('processing.failedTitle') : t('processing.title')}
+                        </h2>
+                        <p className="mb-6 text-sm text-gray-500">{filename}</p>
 
-                        <h2 className="text-2xl font-bold text-gray-900 mb-2">{t('processing.title')}</h2>
-                        <p className="text-gray-500 mb-8">{t('processing.description')}</p>
+                        {!error && (
+                            <div className="mb-8 inline-flex items-center rounded-md bg-gray-50 px-4 py-1.5 border border-gray-200">
+                                <p className="text-[10px] font-bold tracking-widest uppercase text-gray-900">{statusLabel}</p>
+                            </div>
+                        )}
 
-                        {/* Steps List */}
-                        <div className="space-y-4 text-left max-w-sm mx-auto mb-8">
-                            {steps.map((step) => {
-                                const isCompleted = step.id < currentStep;
-                                const isActive = step.id === currentStep;
+                        {error ? (
+                            <div className="mb-8 rounded-md border border-red-100 bg-red-50 p-4 text-left text-sm text-red-700">
+                                {error}
+                            </div>
+                        ) : null}
 
-                                return (
-                                    <div key={step.id} className="flex items-center gap-3">
-                                        <div className={`w-5 h-5 rounded-full flex items-center justify-center border transition-all duration-300 ${isCompleted ? 'bg-green-500 border-green-500 text-white' :
-                                                isActive ? 'border-indigo-600 bg-white' :
-                                                    'border-gray-200 bg-gray-50'
-                                            }`}>
-                                            {isCompleted && <HiCheck className="w-3 h-3" />}
-                                            {isActive && <div className="w-2 h-2 rounded-full bg-indigo-600 animate-pulse" />}
+                        {stats && !error ? (
+                            <div className="mb-8 grid grid-cols-3 gap-3">
+                                <div className="rounded-md bg-gray-50 border border-gray-100 p-3 text-center">
+                                    <div className="text-xl font-mono text-gray-900">{stats?.concepts_extracted}</div>
+                                    <div className="text-[10px] font-bold text-gray-500 mt-1 uppercase tracking-widest">{t('processing.stats.extracted')}</div>
+                                </div>
+                                <div className="rounded-md bg-gray-50 border border-gray-100 p-3 text-center">
+                                    <div className="text-xl font-mono text-gray-900">{stats?.concepts_after_merge}</div>
+                                    <div className="text-[10px] font-bold text-gray-500 mt-1 uppercase tracking-widest">{t('processing.stats.afterMerge')}</div>
+                                </div>
+                                <div className="rounded-md bg-gray-50 border border-gray-100 p-3 text-center">
+                                    <div className="text-xl font-mono text-gray-900">{stats?.relations_verified}</div>
+                                    <div className="text-[10px] font-bold text-gray-500 mt-1 uppercase tracking-widest">{t('processing.stats.relations')}</div>
+                                </div>
+                            </div>
+                        ) : null}
+
+                        {!error ? (
+                            <div className="mx-auto mb-8 max-w-sm space-y-4 text-left">
+                                {steps.map((step) => {
+                                    const isCompleted = step.id < currentStep;
+                                    const isActive = step.id === currentStep;
+
+                                    return (
+                                        <div key={step.id} className="flex items-center gap-3 group">
+                                            <div
+                                                className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full transition-colors duration-200 ${isCompleted
+                                                    ? 'bg-gray-900 text-white'
+                                                    : isActive
+                                                        ? 'border border-gray-900 bg-white'
+                                                        : 'border border-gray-200 bg-gray-50'
+                                                    }`}
+                                            >
+                                                {isCompleted ? <HiCheck className="h-3 w-3" /> : null}
+                                                {isActive ? <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-gray-900" /> : null}
+                                            </div>
+                                            <span
+                                                className={`text-sm transition-colors duration-200 ${isCompleted
+                                                    ? 'text-gray-900 font-medium'
+                                                    : isActive
+                                                        ? 'text-gray-900 font-semibold'
+                                                        : 'text-gray-400'
+                                                    }`}
+                                            >
+                                                {step.label}
+                                            </span>
                                         </div>
-                                <span className={`text-sm font-medium transition-colors ${isCompleted ? 'text-gray-900' :
-                                        isActive ? 'text-indigo-600' :
-                                            'text-gray-400'
-                                    }`}>
-                                            {step.label}
-                                        </span>
-                                    </div>
-                                );
-                            })}
-                        </div>
+                                    );
+                                })}
+                            </div>
+                        ) : null}
 
-                        {/* Progress Bar */}
-                        <div className="relative pt-4">
-                            <div className="flex justify-between text-xs font-semibold text-gray-400 mb-2">
-                                <span>{t('processing.progress')}</span>
-                                <span>{Math.round(progress)}%</span>
+                        {creatingSession ? (
+                            <div className="mb-6 flex flex-col items-center justify-center gap-2 font-medium text-gray-900 text-sm">
+                                <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-200 border-t-gray-900" />
+                                {t('processing.creatingSession')}
                             </div>
-                            <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
-                                <div
-                                    className="bg-gradient-to-r from-blue-500 to-purple-600 h-full rounded-full transition-all duration-100 ease-linear shadow-sm"
-                                    style={{ width: `${progress}%` }}
-                                />
+                        ) : null}
+
+                        {!error ? (
+                            <div className="relative pt-4">
+                                <div className="mb-2 flex justify-between text-[10px] font-bold uppercase tracking-widest text-gray-500">
+                                    <span>{t('processing.progress')}</span>
+                                    <span className="font-mono">{Math.round(progress)}%</span>
+                                </div>
+                                <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-100 border border-gray-200">
+                                    <div
+                                        className="h-full rounded-full bg-gray-900 transition-all duration-500 ease-out"
+                                        style={{ width: `${progress}%` }}
+                                    />
+                                </div>
                             </div>
-                        </div>
+                        ) : null}
+
+                        {error ? (
+                            <div className="mt-8 flex justify-center">
+                                <Button variant="outline" onClick={handleGoBack} className="rounded-md px-6 py-2.5 h-auto text-sm font-medium hover:bg-gray-50 border-gray-200 transition-colors">
+                                    <HiOutlineArrowLeft className="mr-2 h-4 w-4" />
+                                    {t('processing.tryAgain')}
+                                </Button>
+                            </div>
+                        ) : null}
                     </div>
                 </div>
 
-                {/* Tip */}
-                <div className="mt-8 flex items-start gap-3 p-4 bg-white rounded-2xl border border-gray-100 shadow-sm text-sm text-gray-600 max-w-md mx-auto">
-                    <HiOutlineSparkles className="w-5 h-5 text-yellow-500 flex-shrink-0" />
-                    <p>
-                        <strong>{t('processing.didYouKnow')}</strong> {t('processing.didYouKnowDescription')}
-                    </p>
-                </div>
+                {!error ? (
+                    <div className="mx-auto mt-6 flex w-full items-start gap-2 rounded-md border border-gray-200 bg-white p-4 text-xs text-gray-600">
+                        <HiOutlineSparkles className="h-4 w-4 flex-shrink-0 text-gray-400" />
+                        <p>
+                            <strong>{t('processing.didYouKnow')}</strong> {t('processing.didYouKnowDescription')}
+                        </p>
+                    </div>
+                ) : null}
             </div>
-        </div>
+
+            {!error ? (
+                <div className="relative hidden lg:flex w-full lg:w-[55%] h-[600px] overflow-hidden rounded-lg border border-gray-200 bg-white">
+                    <div className="pointer-events-none absolute left-6 top-6 z-10">
+                        <h3 className="text-sm font-medium tracking-wide text-gray-900">Knowledge Graph</h3>
+                        <p className="text-xs text-gray-500 mt-0.5">Visualizing structures in real-time...</p>
+                    </div>
+                    <ReactFlowProvider>
+                        <PartialGraphFlow partialGraph={partialGraph} />
+                    </ReactFlowProvider>
+                </div>
+            ) : null}
+        </div >
     );
 }

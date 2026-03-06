@@ -5,7 +5,6 @@ import { useDropzone } from 'react-dropzone';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useDraftStore } from '@/store/useDraftStore';
-import { motion, AnimatePresence } from 'framer-motion';
 import {
   HiOutlineUpload,
   HiOutlineDocumentText,
@@ -127,186 +126,139 @@ export default function MobileCreatePage() {
       >
         <input {...getInputProps()} />
 
-        <AnimatePresence mode="wait">
-          {file ? (
-            <motion.div
-              key="file"
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="text-center"
+        {file ? (
+          <div className="text-center">
+            <HiOutlineDocumentText className="w-14 h-14 text-green-500 mx-auto" />
+            <p className="mt-3 font-medium text-gray-900">{file.name}</p>
+            <p className="text-sm text-gray-500">
+              {(file.size / 1024 / 1024).toFixed(2)} MB
+            </p>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setFile(null);
+                setTitle('');
+                setAiPrompt('');
+              }}
+              className="mt-3 inline-flex items-center gap-1 text-sm text-red-500 hover:text-red-600"
             >
-              <HiOutlineDocumentText className="w-14 h-14 text-green-500 mx-auto" />
-              <p className="mt-3 font-medium text-gray-900">{file.name}</p>
-              <p className="text-sm text-gray-500">
-                {(file.size / 1024 / 1024).toFixed(2)} MB
-              </p>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setFile(null);
-                  setTitle('');
-                  setAiPrompt('');
-                }}
-                className="mt-3 inline-flex items-center gap-1 text-sm text-red-500 hover:text-red-600"
-              >
-                <HiOutlineX className="w-4 h-4" />
-                {t('remove')}
-              </button>
-            </motion.div>
-          ) : (
-            <motion.div
-              key="empty"
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="text-center"
-            >
-              <HiOutlineUpload className="w-14 h-14 text-gray-400 mx-auto" />
-              <p className="mt-3 font-medium text-gray-700">
-                {isDragActive ? t('dropPDFHere') : t('clickToUpload')}
-              </p>
-              <p className="text-sm text-gray-500">{t('supportedFormats')}</p>
-            </motion.div>
-          )}
-        </AnimatePresence>
+              <HiOutlineX className="w-4 h-4" />
+              {t('remove')}
+            </button>
+          </div>
+        ) : (
+          <div className="text-center">
+            <HiOutlineUpload className="w-14 h-14 text-gray-400 mx-auto" />
+            <p className="mt-3 font-medium text-gray-700">
+              {isDragActive ? t('dropPDFHere') : t('clickToUpload')}
+            </p>
+            <p className="text-sm text-gray-500">{t('supportedFormats')}</p>
+          </div>
+        )}
       </div>
 
       {/* Title Input */}
-      <AnimatePresence>
-        {file && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="mt-5"
-          >
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              {t('quizTitle')}
-            </label>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder={t('enterTitle')}
-              className="w-full px-4 py-3.5 rounded-xl border border-gray-200
+      {file && (
+        <div className="mt-5">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            {t('quizTitle')}
+          </label>
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder={t('enterTitle')}
+            className="w-full px-4 py-3.5 rounded-xl border border-gray-200
                          bg-white text-gray-900 placeholder-gray-400
                          focus:ring-2 focus:ring-blue-500 focus:border-transparent
                          transition-all duration-200"
-              disabled={isUploading}
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
+            disabled={isUploading}
+          />
+        </div>
+      )}
 
       {/* Description Input */}
-      <AnimatePresence>
-        {file && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="mt-5"
-          >
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              {t('descriptionOptional')}
-            </label>
-            <Textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder={t('provideContext')}
-              rows={3}
-              className="w-full px-4 py-3.5 rounded-xl border border-gray-200
+      {file && (
+        <div className="mt-5">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            {t('descriptionOptional')}
+          </label>
+          <Textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder={t('provideContext')}
+            rows={3}
+            className="w-full px-4 py-3.5 rounded-xl border border-gray-200
                          bg-white text-gray-900 placeholder-gray-400
                          focus:ring-2 focus:ring-blue-500 focus:border-transparent
                          transition-all duration-200"
-              disabled={isUploading}
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
+            disabled={isUploading}
+          />
+        </div>
+      )}
 
       {/* Category Selector */}
-      <AnimatePresence>
-        {file && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="mt-5"
-          >
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              {t('category')}
-            </label>
-            <CategorySelector
-              value={selectedCategory}
-              onChange={setSelectedCategory}
-              placeholder={t('searchSelectCategory')}
-              required
-              disabled={isUploading}
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {file && (
+        <div className="mt-5">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            {t('category')}
+          </label>
+          <CategorySelector
+            value={selectedCategory}
+            onChange={setSelectedCategory}
+            placeholder={t('searchSelectCategory')}
+            required
+            disabled={isUploading}
+          />
+        </div>
+      )}
 
       {/* AI Prompt Input */}
-      <AnimatePresence>
-        {file && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="mt-5"
-          >
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              {t('aiPromptLabel')}
-            </label>
-            <textarea
-              value={aiPrompt}
-              onChange={(e) => setAiPrompt(e.target.value)}
-              placeholder={t('aiPromptPlaceholder')}
-              rows={3}
-              className="w-full px-4 py-3.5 rounded-xl border border-gray-200
+      {file && (
+        <div className="mt-5">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            {t('aiPromptLabel')}
+          </label>
+          <textarea
+            value={aiPrompt}
+            onChange={(e) => setAiPrompt(e.target.value)}
+            placeholder={t('aiPromptPlaceholder')}
+            rows={3}
+            className="w-full px-4 py-3.5 rounded-xl border border-gray-200
                          bg-white text-gray-900 placeholder-gray-400
                          focus:ring-2 focus:ring-blue-500 focus:border-transparent
                          transition-all duration-200"
-              disabled={isUploading}
-            />
-            <p className="text-xs text-gray-500 mt-2">
-              {t('aiPromptHelper')}
-            </p>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            disabled={isUploading}
+          />
+          <p className="text-xs text-gray-500 mt-2">
+            {t('aiPromptHelper')}
+          </p>
+        </div>
+      )}
 
       {/* Submit Button */}
-      <AnimatePresence>
-        {file && title.trim() && selectedCategory && (
-          <motion.button
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            onClick={handleSubmit}
-            disabled={isUploading}
-            className="w-full mt-6 py-4 rounded-full bg-blue-500 text-white
+      {file && title.trim() && selectedCategory && (
+        <button
+          onClick={handleSubmit}
+          disabled={isUploading}
+          className="w-full mt-6 py-4 rounded-full bg-blue-500 text-white
                        font-semibold flex items-center justify-center gap-2
                        hover:bg-blue-600 active:scale-[0.98] disabled:opacity-50
                        transition-all duration-200"
-          >
-            {isUploading ? (
-              <>
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                {t('creatingDraft')}
-              </>
-            ) : (
-              <>
-                {t('createQuiz')}
-                <HiOutlineArrowRight className="w-5 h-5" />
-              </>
-            )}
-          </motion.button>
-        )}
-      </AnimatePresence>
+        >
+          {isUploading ? (
+            <>
+              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              {t('creatingDraft')}
+            </>
+          ) : (
+            <>
+              {t('createQuiz')}
+              <HiOutlineArrowRight className="w-5 h-5" />
+            </>
+          )}
+        </button>
+      )}
 
       {/* Desktop Hint */}
       <div className="mt-8 p-4 rounded-xl bg-gray-100 flex items-start gap-3">

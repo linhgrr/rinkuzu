@@ -1,210 +1,316 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { Badge } from '@/components/ui/Card';
-import {
-    HiOutlineLightBulb,
-    HiArrowRight,
-    HiOutlineX,
-    HiOutlineClock,
-    HiOutlineFlag,
-    HiCheck
-} from '@/components/icons';
-import { mockExercises } from './mock-data';
+import { HiArrowRight, HiOutlineX, HiCheck, HiBookOpen, HiLightBulb } from '@/components/icons';
+import { getNextExercise, submitAnswer } from './api-client';
+import { DynamicMarkdownRenderer } from '@/components/ui/DynamicMarkdownRenderer';
+import type { BloomLevel, Exercise } from './types';
 
 interface ExerciseProps {
-    exerciseId: string;
+    sessionId: string;
 }
 
-export default function AdaptiveLearningExercise({ exerciseId }: ExerciseProps) {
+const BLOOM_COLORS: Record<BloomLevel, string> = {
+    Remember: 'bg-blue-500',
+    Understand: 'bg-green-500',
+    Apply: 'bg-yellow-500',
+    Analyze: 'bg-purple-500',
+    Evaluate: 'bg-red-500',
+    Create: 'bg-indigo-500',
+};
+
+const BLOOM_TRANSLATION_KEYS: Record<BloomLevel, string> = {
+    Remember: 'remember',
+    Understand: 'understand',
+    Apply: 'apply',
+    Analyze: 'analyze',
+    Evaluate: 'evaluate',
+    Create: 'create',
+};
+
+export default function AdaptiveLearningExercise({ sessionId }: ExerciseProps) {
     const router = useRouter();
     const t = useTranslations('adaptiveLearning');
-    const exercise = mockExercises.find(e => e.id === exerciseId) || mockExercises[0];
+    const [exercise, setExercise] = useState<Exercise | null>(null);
     const [selectedOption, setSelectedOption] = useState<string | null>(null);
-    const [answerInput, setAnswerInput] = useState('');
-    const [showHint, setShowHint] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [submitting, setSubmitting] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [showTheory, setShowTheory] = useState(false);
 
-    // Mock progress
-    const currentQuestionIndex = mockExercises.findIndex(e => e.id === exercise.id);
-    const totalQuestions = mockExercises.length;
-    const progressPercent = ((currentQuestionIndex) / totalQuestions) * 100;
+    const loadingRef = useRef(false);
 
-    const handleSubmit = () => {
-        router.push(`/adaptive-learning/result/${exerciseId}`);
-    };
-
-    const bloomKey = exercise.bloomLevel.toLowerCase();
-    const bloomLabel = t(`bloom.${bloomKey}`);
-
-    const getBloomColor = (level: string) => {
-        switch (level) {
-            case 'Remember': return 'bg-blue-100 text-blue-700';
-            case 'Understand': return 'bg-green-100 text-green-700';
-            case 'Apply': return 'bg-yellow-100 text-yellow-700';
-            case 'Analyze': return 'bg-purple-100 text-purple-700';
-            case 'Evaluate': return 'bg-red-100 text-red-700';
-            case 'Create': return 'bg-indigo-100 text-indigo-700';
-            default: return 'bg-gray-100 text-gray-700';
+    const loadExercise = useCallback(async () => {
+        if (loadingRef.current) return;   // ← prevent duplicate concurrent calls
+        loadingRef.current = true;
+        setLoading(true);
+        setError(null);
+        setSelectedOption(null);
+        try {
+            const nextExercise = await getNextExercise(sessionId);
+            setExercise(nextExercise);
+            if (nextExercise.theory) {
+                setShowTheory(true);
+            } else {
+                setShowTheory(false);
+            }
+        } catch (err) {
+            const message = err instanceof Error ? err.message : t('exercise.failedToLoadExercise');
+            setError(message);
+        } finally {
+            setLoading(false);
+            loadingRef.current = false;
         }
-    };
+    }, [sessionId, t]);
+
+    useEffect(() => {
+        void loadExercise();
+    }, [loadExercise]);
+
+    const handleSubmit = useCallback(async () => {
+        if (!selectedOption || !exercise) {
+            return;
+        }
+        setSubmitting(true);
+        try {
+            const result = await submitAnswer(sessionId, selectedOption);
+            localStorage.setItem('al_last_result', JSON.stringify(result));
+            localStorage.setItem('al_last_exercise', JSON.stringify(exercise));
+            router.push(`/adaptive-learning/result/${sessionId}`);
+        } catch (err) {
+            const message = err instanceof Error ? err.message : t('exercise.failedToSubmitAnswer');
+            setError(message);
+        } finally {
+            setSubmitting(false);
+        }
+    }, [exercise, router, selectedOption, sessionId, t]);
+
+    const progressPercent = useMemo(() => {
+        if (!exercise || exercise.max_steps <= 0) {
+            return 0;
+        }
+        return (exercise.step / exercise.max_steps) * 100;
+    }, [exercise]);
+
+    const bloomColor = useMemo(() => {
+        if (!exercise) {
+            return 'bg-gray-400';
+        }
+        return BLOOM_COLORS[exercise.bloom_label] || 'bg-gray-400';
+    }, [exercise]);
+
+    const localizedBloomLabel = useMemo(() => {
+        if (!exercise) {
+            return '';
+        }
+        return t(`bloom.${BLOOM_TRANSLATION_KEYS[exercise.bloom_label]}`);
+    }, [exercise, t]);
+
+    const optionEntries = useMemo(() => {
+        if (!exercise) {
+            return [];
+        }
+        return Object.entries(exercise.options);
+    }, [exercise]);
+
+    if (loading) {
+        return (
+            <div className="mx-auto flex min-h-[80vh] max-w-5xl items-center justify-center">
+                <div className="text-center">
+                    <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-2 border-gray-200 border-t-gray-900" />
+                    <p className="text-base font-medium text-gray-900">{t('exercise.loadingTitle')}</p>
+                    <p className="mt-1 text-sm text-gray-500">{t('exercise.loadingSubtitle')}</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (error || !exercise) {
+        return (
+            <div className="mx-auto flex min-h-[80vh] max-w-5xl items-center justify-center">
+                <div className="space-y-4 text-center">
+                    <p className="text-lg text-red-500">{error || t('exercise.noExerciseAvailable')}</p>
+                    <div className="flex justify-center gap-3">
+                        <Button variant="outline" className="border-gray-200 hover:bg-gray-50 text-gray-700" onClick={() => router.push('/adaptive-learning')}>
+                            {t('exercise.backToDashboard')}
+                        </Button>
+                        <Button className="bg-black hover:bg-gray-800 shadow-none text-white transition-colors" onClick={() => void loadExercise()}>{t('exercise.tryAgain')}</Button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    if (showTheory && exercise?.theory) {
+        return (
+            <div className="mx-auto flex min-h-[80vh] max-w-4xl flex-col">
+                <div className="mb-10 text-center">
+                    <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-md bg-gray-100 border border-gray-200 text-gray-900">
+                        <HiBookOpen className="h-8 w-8" />
+                    </div>
+                    <h1 className="mb-2 text-2xl font-medium tracking-tight text-gray-900 md:text-3xl">{t('exercise.theory.reviewKnowledge')}</h1>
+                    <p className="text-base text-gray-500">
+                        {t.rich('exercise.theory.theoryReview', {
+                            concept: (chunks) => <span className="font-semibold text-gray-900">{exercise.concept_name}</span>
+                        })}
+                    </p>
+                </div>
+
+                <div className="grid gap-8 pb-12 md:grid-cols-1">
+                    <Card className="overflow-hidden rounded-lg border-gray-200 shadow-sm bg-white p-8 md:p-10">
+                        <div className="mb-8">
+                            <h3 className="mb-4 flex items-center gap-2 text-xl font-semibold text-gray-900 border-b border-gray-50 pb-4">
+                                <HiBookOpen className="h-5 w-5 text-blue-500" /> {t('exercise.theory.basicTheory')}
+                            </h3>
+                            <div className="text-lg leading-relaxed text-gray-700">
+                                <DynamicMarkdownRenderer content={exercise.theory.content} />
+                            </div>
+                        </div>
+
+                        {exercise.theory.examples && exercise.theory.examples.length > 0 && (
+                            <div>
+                                <h3 className="mb-6 flex items-center gap-2 text-lg font-medium text-gray-900">
+                                    <HiLightBulb className="h-5 w-5 text-gray-900" /> {t('exercise.theory.illustration')}
+                                </h3>
+                                <div className="grid gap-4 md:grid-cols-2">
+                                    {exercise.theory.examples.map((ex: string, idx: number) => (
+                                        <div key={idx} className="rounded-md bg-gray-50 border border-gray-100 p-6 transition-colors hover:border-gray-200">
+                                            <div className="mb-3 text-[10px] font-bold text-gray-500 uppercase tracking-widest">{t('exercise.theory.example', { index: idx + 1 })}</div>
+                                            <div className="text-gray-700 leading-relaxed">
+                                                <DynamicMarkdownRenderer content={ex} />
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </Card>
+
+                    <div className="flex justify-center pt-4">
+                        <Button
+                            onClick={() => setShowTheory(false)}
+                            className="h-10 min-w-[200px] rounded-md bg-black px-8 text-sm font-medium text-white transition-colors hover:bg-gray-800"
+                        >
+                            {t('exercise.theory.startExercise')}
+                            <HiArrowRight className="ml-2 h-4 w-4" />
+                        </Button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
-        <div className="max-w-5xl mx-auto min-h-[80vh] flex flex-col">
-            {/* Top Bar */}
-            <div className="flex items-center justify-between mb-8">
+        <div className="mx-auto flex min-h-[80vh] max-w-5xl flex-col">
+            <div className="mb-8 flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                    <Button variant="ghost" size="sm" onClick={() => router.push('/adaptive-learning')} className="text-gray-500 hover:text-gray-900 font-medium">
-                        <HiOutlineX className="w-5 h-5 mr-2" />
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => router.push('/adaptive-learning')}
+                        className="font-medium text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-md px-3 border border-transparent hover:border-gray-200"
+                    >
+                        <HiOutlineX className="mr-2 h-4 w-4" />
                         {t('quit')}
                     </Button>
                     <div className="h-6 w-px bg-gray-200" />
                     <div className="flex flex-col">
-                        <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{t('courseProgress')}</span>
-                        <div className="flex items-center gap-2">
-                            <div className="w-32 h-2 bg-gray-100 rounded-full overflow-hidden">
-                                <div className="h-full bg-green-500 rounded-full" style={{ width: `${progressPercent}%` }} />
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">{t('exercise.progress')}</span>
+                        <div className="flex items-center gap-3">
+                            <div className="h-1.5 w-32 overflow-hidden rounded-full bg-gray-100 border border-gray-200">
+                                <div className="h-full rounded-full bg-gray-900 transition-all duration-500 ease-out" style={{ width: `${progressPercent}%` }} />
                             </div>
+                            <span className="text-xs font-mono text-gray-600">{exercise.step}/{exercise.max_steps}</span>
                         </div>
                     </div>
                 </div>
 
-                <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-sm border border-gray-100 text-gray-600 font-medium text-sm">
-                    <HiOutlineClock className="w-4 h-4 text-indigo-500" />
-                    <span>{t('timerValue', { time: '05:00' })}</span>
+                <div className="flex items-center gap-3">
+                    <span className="text-xs font-medium text-gray-700 bg-gray-50 border border-gray-200 px-2.5 py-1 rounded-md">{exercise.concept_name}</span>
                 </div>
             </div>
 
-            <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-8">
-                {/* Question Area */}
-                <div className="lg:col-span-8 flex flex-col">
-                    <Card className="flex-1 border-gray-100 shadow-lg rounded-3xl overflow-hidden">
-                        <div className="bg-gray-50/50 px-8 py-4 border-b border-gray-100 flex justify-between items-center">
-                            <span className={`px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wider ${getBloomColor(exercise.bloomLevel)}`}>
-                                {bloomLabel}
+            <div className="grid flex-1 grid-cols-1 gap-6 lg:grid-cols-12">
+                <div className="flex flex-col lg:col-span-8">
+                    <Card className="flex-1 overflow-hidden rounded-lg border border-gray-200 bg-white">
+                        <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4 bg-gray-50">
+                            <div className="flex items-center gap-2 rounded-md bg-white border border-gray-200 px-2.5 py-1 box-border">
+                                <div className={`h-2 w-2 rounded-full ${bloomColor}`} />
+                                <span className={`text-[10px] font-bold uppercase tracking-widest text-gray-700`}>
+                                    {t('exercise.bloomBadge', { level: exercise.bloom_level, label: localizedBloomLabel })}
+                                </span>
+                            </div>
+                            <span className="text-xs font-mono text-gray-500">
+                                {t('exercise.stepCounter', { current: exercise.step + 1, total: exercise.max_steps })}
                             </span>
-                            <span className="text-sm font-medium text-gray-400">{t('questionCount', { current: currentQuestionIndex + 1, total: totalQuestions })}</span>
                         </div>
 
-                        <CardContent className="p-8 md:p-10">
-                            <h2 className="text-2xl md:text-3xl font-bold text-gray-900 leading-tight mb-8">
-                                {exercise.question}
+                        <CardContent className="p-6 md:p-10">
+                            <h2 className="mb-8 text-xl font-medium leading-relaxed text-gray-900 tracking-tight">
+                                <DynamicMarkdownRenderer content={exercise.question} />
                             </h2>
 
-                            {/* Hint Toggle */}
-                            {exercise.hint && !showHint && (
-                                <button
-                                    onClick={() => setShowHint(true)}
-                                    className="flex items-center gap-2 text-indigo-600 text-sm font-medium hover:underline mb-8"
-                                >
-                                    <HiOutlineLightBulb className="w-5 h-5" />
-                                    {t('needHint')}
-                                </button>
-                            )}
-
-                            {showHint && (
-                                <div className="bg-amber-50 border border-amber-100 rounded-xl p-4 mb-8 text-amber-900 text-sm animate-fadeIn">
-                                    <span className="font-bold block mb-1">💡 {t('hintLabel')}</span>
-                                    {exercise.hint}
-                                </div>
-                            )}
-
-                            <div className="space-y-4">
-                                {exercise.type === 'MCQ' && exercise.options && (
-                                    <div className="grid gap-3">
-                                        {exercise.options.map((option, idx) => (
-                                            <div
-                                                key={idx}
-                                                onClick={() => setSelectedOption(option)}
-                                                className={`group relative p-5 rounded-xl border-2 cursor-pointer transition-all duration-200 flex items-center gap-4 ${selectedOption === option
-                                                        ? 'border-indigo-600 bg-indigo-50/50 shadow-md'
-                                                        : 'border-gray-200 hover:border-indigo-300 hover:bg-gray-50'
-                                                    }`}
-                                            >
-                                                <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${selectedOption === option ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-gray-300 group-hover:border-indigo-400'
-                                                    }`}>
-                                                    {selectedOption === option ? <HiCheck className="w-5 h-5" /> : <span className="text-sm font-bold text-gray-400">{String.fromCharCode(65 + idx)}</span>}
-                                                </div>
-                                                <span className={`text-lg transition-colors ${selectedOption === option ? 'font-semibold text-indigo-900' : 'text-gray-700'}`}>
-                                                    {option}
-                                                </span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-
-                                {exercise.type === 'FillBlank' && (
-                                    <input
-                                        type="text"
-                                        value={answerInput}
-                                        onChange={(e) => setAnswerInput(e.target.value)}
-                                        placeholder={t('typeAnswerPlaceholder')}
-                                        className="w-full text-xl p-4 border-b-2 border-gray-300 focus:border-indigo-600 bg-transparent outline-none transition-colors placeholder:text-gray-300"
-                                        autoFocus
-                                    />
-                                )}
-
-                                {exercise.type === 'ProblemSolving' && (
-                                    <div className="space-y-4">
-                                        <textarea
-                                            value={answerInput}
-                                            onChange={(e) => setAnswerInput(e.target.value)}
-                                            placeholder={t('showWorkPlaceholder')}
-                                            rows={8}
-                                            className="w-full p-4 text-base border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-0 outline-none transition-all resize-none bg-gray-50 focus:bg-white"
-                                        />
-                                        <div className="flex items-center gap-3 bg-gray-50 p-4 rounded-xl border border-gray-200">
-                                            <span className="font-medium text-gray-700">{t('finalAnswerLabel')}</span>
-                                            <div className="flex-1 bg-white border border-gray-300 rounded-lg px-3 py-2 flex items-center">
-                                                <input type="text" className="flex-1 outline-none text-gray-900 font-mono" placeholder={t('finalAnswerPlaceholder')} />
-                                                <span className="text-gray-400 text-sm ml-2">{t('unitsLabel')}</span>
-                                            </div>
+                            <div className="grid gap-4">
+                                {optionEntries.map(([key, value]) => (
+                                    <div
+                                        key={key}
+                                        onClick={() => setSelectedOption(key)}
+                                        className={`group relative flex cursor-pointer items-center gap-4 rounded-md border p-4 transition-colors duration-200 ${selectedOption === key
+                                            ? 'border-gray-900 bg-gray-50'
+                                            : 'border-gray-200 bg-white hover:border-gray-400'
+                                            }`}
+                                    >
+                                        <div
+                                            className={`flex h-6 w-6 flex-shrink-0 items-center justify-center rounded border transition-colors duration-200 ${selectedOption === key
+                                                ? 'border-gray-900 bg-gray-900 text-white'
+                                                : 'border-gray-300 bg-gray-50 group-hover:border-gray-400'
+                                                }`}
+                                        >
+                                            {selectedOption === key ? (
+                                                <HiCheck className="h-4 w-4" />
+                                            ) : (
+                                                <span className="text-[10px] font-mono font-medium text-gray-500">{key}</span>
+                                            )}
                                         </div>
+                                        <span
+                                            className={`text-base transition-colors duration-200 ${selectedOption === key ? 'font-medium text-gray-900' : 'text-gray-700'
+                                                }`}
+                                        >
+                                            <DynamicMarkdownRenderer content={value} />
+                                        </span>
                                     </div>
-                                )}
-
-                                {exercise.type === 'Essay' && (
-                                    <textarea
-                                        value={answerInput}
-                                        onChange={(e) => setAnswerInput(e.target.value)}
-                                        placeholder={t('analysisPlaceholder')}
-                                        rows={12}
-                                        className="w-full p-6 text-lg leading-relaxed border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-0 outline-none transition-all resize-none bg-white shadow-inner"
-                                    />
-                                )}
+                                ))}
                             </div>
                         </CardContent>
                     </Card>
                 </div>
 
-                {/* Sidebar / Action Area */}
-                <div className="lg:col-span-4 flex flex-col gap-6">
-                    <div className="bg-indigo-900 text-white rounded-3xl p-6 shadow-xl relative overflow-hidden">
+                <div className="flex flex-col gap-6 lg:col-span-4">
+                    <div className="relative overflow-hidden rounded-lg bg-gray-50 border border-gray-200 p-6 text-gray-900">
                         <div className="relative z-10">
-                            <h3 className="font-bold text-lg mb-2">{t('focusModeTitle')}</h3>
-                            <p className="text-indigo-200 text-sm mb-6">
-                                {t('focusModeDescription', { level: bloomLabel.toLowerCase() })}
+                            <h3 className="mb-2 text-base font-medium tracking-tight flex items-center gap-2">
+                                <span className="h-2 w-2 rounded-full bg-gray-400 animate-pulse" />
+                                {t('focusModeTitle')}
+                            </h3>
+                            <p className="mb-6 text-sm text-gray-500 leading-relaxed">
+                                {t('exercise.focusModeContext', {
+                                    concept: exercise.concept_name,
+                                    level: localizedBloomLabel,
+                                })}
                             </p>
                             <Button
-                                className="w-full bg-white text-indigo-900 hover:bg-indigo-50 border-0 font-bold py-6 text-lg shadow-lg hover:shadow-xl transition-all"
-                                onClick={handleSubmit}
-                                disabled={!selectedOption && !answerInput && exercise.type !== 'Essay'}
+                                className="w-full h-10 rounded-md bg-black py-2 text-sm font-medium text-white transition-colors hover:bg-gray-800 justify-center"
+                                onClick={() => void handleSubmit()}
+                                disabled={!selectedOption || submitting}
                             >
-                                {t('checkAnswer')}
-                                <HiArrowRight className="w-5 h-5 ml-2" />
+                                {submitting ? t('exercise.checking') : t('checkAnswer')}
+                                {!submitting ? <HiArrowRight className="ml-2 h-4 w-4" /> : null}
                             </Button>
                         </div>
-                        <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-2xl" />
-                    </div>
-
-                    <div className="text-center">
-                        <button className="text-gray-400 text-sm hover:text-gray-600 flex items-center justify-center gap-2 mx-auto transition-colors">
-                            <HiOutlineFlag className="w-4 h-4" />
-                            {t('reportIssue')}
-                        </button>
                     </div>
                 </div>
             </div>

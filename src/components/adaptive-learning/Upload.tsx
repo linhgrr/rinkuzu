@@ -2,153 +2,167 @@
 
 import React, { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { useTranslations } from 'next-intl';
-import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import {
     HiOutlineCloudUpload,
     HiOutlineDocumentText,
-    HiOutlineX,
-    HiCheckCircle,
-    HiOutlineArrowLeft
+    HiOutlineArrowLeft,
 } from '@/components/icons';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
+import { checkApiHealth, uploadPdf } from './api-client';
 
 export default function AdaptiveLearningUpload() {
     const router = useRouter();
     const t = useTranslations('adaptiveLearning');
-    const tCommon = useTranslations('common');
     const [isUploading, setIsUploading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
+    const [error, setError] = useState<string | null>(null);
+    const [subjectName, setSubjectName] = useState('');
+
+    const handleUpload = useCallback(async (file: File) => {
+        if (!subjectName.trim()) {
+            setError(t('uploadPage.subjectRequiredBeforeUpload'));
+            return;
+        }
+
+        setIsUploading(true);
+        setError(null);
+        setUploadProgress(10);
+        try {
+            const online = await checkApiHealth();
+            if (!online) {
+                setError(t('uploadPage.backendOffline'));
+                setIsUploading(false);
+                return;
+            }
+            setUploadProgress(30);
+            const result = await uploadPdf(file, subjectName.trim());
+            setUploadProgress(100);
+            localStorage.setItem('al_pipeline_job_id', result.job_id);
+            localStorage.setItem('al_pipeline_filename', file.name);
+            localStorage.setItem('al_pipeline_subject_name', subjectName.trim());
+            setTimeout(() => {
+                router.push('/adaptive-learning/processing');
+            }, 500);
+        } catch (err) {
+            const message = err instanceof Error ? err.message : t('uploadPage.uploadFailed');
+            setError(message);
+            setIsUploading(false);
+            setUploadProgress(0);
+        }
+    }, [router, subjectName, t]);
 
     const onDrop = useCallback((acceptedFiles: File[]) => {
         if (acceptedFiles.length > 0) {
-            handleUpload(acceptedFiles[0]);
+            void handleUpload(acceptedFiles[0]);
         }
-    }, []);
+    }, [handleUpload]);
 
-    const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
         onDrop,
-        accept: {
-            'application/pdf': ['.pdf'],
-        },
+        accept: { 'application/pdf': ['.pdf'] },
         maxFiles: 1,
+        maxSize: 50 * 1024 * 1024,
+        noClick: true,
     });
 
-    const handleUpload = async (file: File) => {
-        setIsUploading(true);
-        // Simulate upload progress
-        let progress = 0;
-        const interval = setInterval(() => {
-            progress += 5;
-            setUploadProgress(progress);
-            if (progress >= 100) {
-                clearInterval(interval);
-                setTimeout(() => {
-                    router.push('/adaptive-learning/processing');
-                }, 800);
-            }
-        }, 50);
+    const handleOpenFileDialog = (event: React.MouseEvent<HTMLButtonElement>) => {
+        event.stopPropagation();
+        if (!subjectName.trim()) {
+            setError(t('uploadPage.subjectRequiredBeforeSelectFile'));
+            return;
+        }
+        open();
     };
 
     return (
         <div className="max-w-4xl mx-auto">
             {/* Header */}
-            <div className="mb-8">
+            <div className="mb-12 md:pl-4">
                 <Button
                     variant="ghost"
                     onClick={() => router.back()}
-                    className="text-gray-500 hover:text-gray-900 -ml-4 mb-4"
+                    className="text-gray-500 hover:text-gray-900 -ml-4 mb-6 font-medium bg-transparent"
                 >
-                    <HiOutlineArrowLeft className="w-5 h-5 mr-2" /> {tCommon('back')}
+                    <HiOutlineArrowLeft className="w-5 h-5 mr-2" /> {t('uploadPage.back')}
                 </Button>
-                <h1 className="text-3xl font-bold text-gray-900 tracking-tight">{t('uploadTitle')}</h1>
-                <p className="text-gray-500 mt-2 text-lg">
-                    {t('uploadDescription')}
+                <h1 className="text-3xl md:text-4xl font-medium tracking-tight text-gray-900 mb-3">{t('uploadPage.startLearning')}</h1>
+                <p className="text-gray-500 text-base md:text-lg leading-relaxed max-w-2xl">
+                    {t('uploadPage.description')}
                 </p>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Upload Area */}
-                <div className="lg:col-span-2">
+            {error && (
+                <div className="bg-red-50 border border-red-200 text-red-700 rounded-md p-4 mb-6 text-sm">
+                    {error}
+                </div>
+            )}
+
+            <div className="max-w-3xl mx-auto space-y-10">
+                <div className="space-y-5">
+                    <div className="flex flex-col space-y-3">
+                        <label htmlFor="subjectName" className="font-semibold text-gray-900 text-base">
+                            {t('uploadPage.subjectName')} <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                            id="subjectName"
+                            type="text"
+                            placeholder={t('uploadPage.subjectNamePlaceholder')}
+                            value={subjectName}
+                            onChange={(e) => setSubjectName(e.target.value)}
+                            className="px-4 py-3 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-900 focus:border-gray-900 outline-none w-full bg-gray-50 hover:bg-white transition-all font-medium"
+                            disabled={isUploading}
+                        />
+                        {error && !subjectName.trim() && (
+                            <p className="text-sm text-red-500 font-medium">{t('uploadPage.subjectRequired')}</p>
+                        )}
+                    </div>
+
                     <div
                         {...getRootProps()}
-                        className={`relative group bg-white rounded-3xl border-2 border-dashed transition-all duration-300 cursor-pointer overflow-hidden
-                ${isDragActive
-                                ? 'border-indigo-500 bg-indigo-50/30'
-                                : 'border-gray-200 hover:border-indigo-400 hover:bg-gray-50'
-                            } ${isUploading ? 'pointer-events-none' : ''}`}
+                        className={`relative group rounded-lg border border-dashed transition-all duration-200 overflow-hidden
+                            ${isDragActive ? 'border-gray-900 bg-gray-100 cursor-copy' : 'border-gray-300 bg-gray-50 hover:border-gray-500 cursor-pointer'}
+                            ${isUploading ? 'pointer-events-none' : ''}`}
                     >
                         <input {...getInputProps()} />
 
-                        <div className="p-12 flex flex-col items-center justify-center text-center">
+                        <div className="p-16 md:p-20 flex flex-col items-center justify-center text-center">
                             {!isUploading ? (
                                 <>
-                                    <div className={`w-20 h-20 rounded-full flex items-center justify-center mb-6 transition-transform duration-300 group-hover:scale-110 ${isDragActive ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-100 text-gray-400 group-hover:text-indigo-500 group-hover:bg-indigo-50'
+                                    <div className={`w-16 h-16 rounded-md flex items-center justify-center mb-6 transition-transform duration-200 group-hover:scale-105 border ${isDragActive ? 'bg-gray-200 text-gray-900 border-gray-300' : 'bg-white text-gray-500 border-gray-200 group-hover:text-gray-900'
                                         }`}>
-                                        <HiOutlineCloudUpload className="w-10 h-10" />
+                                        <HiOutlineCloudUpload className="h-8 w-8" />
                                     </div>
-                                    <h3 className="text-xl font-bold text-gray-900 mb-2">
+                                    <h3 className="text-xl font-medium tracking-tight text-gray-900 mb-2">
                                         {isDragActive ? t('dropPdfHere') : t('dragDropPdf')}
                                     </h3>
-                                    <p className="text-gray-500 mb-6 max-w-sm">
-                                        {t('uploadBrowseHint')}
+                                    <p className="text-gray-500 mb-6 text-sm">
+                                        {t('uploadPage.uploadMaterialDescription')}
                                     </p>
-                                    <Button variant="outline" className="rounded-full px-8 border-gray-300 font-medium">
+                                    <Button
+                                        variant="outline"
+                                        className="rounded-md px-6 py-4 border-gray-200 font-medium text-sm hover:bg-gray-100 hover:text-gray-900 transition-all"
+                                        onClick={handleOpenFileDialog}
+                                    >
                                         {t('browseFiles')}
                                     </Button>
                                 </>
                             ) : (
                                 <div className="w-full max-w-sm">
-                                    <div className="w-20 h-20 mx-auto rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center mb-6 animate-pulse">
-                                        <HiOutlineDocumentText className="w-10 h-10" />
+                                    <div className="w-16 h-16 mx-auto rounded-md bg-gray-100 border border-gray-200 text-gray-900 flex items-center justify-center mb-6 animate-pulse">
+                                        <HiOutlineDocumentText className="w-8 h-8" />
                                     </div>
-                                    <h3 className="text-lg font-bold text-gray-900 mb-2">{t('uploadingFile')}</h3>
-                                    <div className="flex items-center justify-between text-sm text-gray-500 mb-2">
-                                        <span>{uploadProgress}%</span>
+                                    <h3 className="text-lg font-medium tracking-tight text-gray-900 mb-3">{t('uploadPage.uploading')}</h3>
+                                    <div className="flex items-center justify-between text-xs font-medium text-gray-500 mb-2.5 px-1 tracking-widest uppercase">
+                                        <span>{t('uploadingFile')}</span>
+                                        <span className="tabular-nums font-bold text-gray-900">{uploadProgress}%</span>
                                     </div>
-                                    <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
-                                        <div className="bg-indigo-600 h-full rounded-full transition-all duration-300" style={{ width: `${uploadProgress}%` }} />
+                                    <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
+                                        <div className="bg-gray-900 h-full rounded-full transition-all duration-300 ease-out" style={{ width: `${uploadProgress}%` }} />
                                     </div>
                                 </div>
                             )}
-                        </div>
-                    </div>
-                </div>
-
-                {/* Sidebar Info */}
-                <div className="space-y-6">
-                    <div className="bg-indigo-900 text-white rounded-2xl p-6 shadow-lg">
-                        <h3 className="font-bold text-lg mb-4">{t('howItWorksTitle')}</h3>
-                        <ol className="space-y-4 text-sm text-indigo-100">
-                            <li className="flex gap-3">
-                                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-xs font-bold">1</span>
-                                <span>{t('howItWorksStep1')}</span>
-                            </li>
-                            <li className="flex gap-3">
-                                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-xs font-bold">2</span>
-                                <span>{t('howItWorksStep2')}</span>
-                            </li>
-                            <li className="flex gap-3">
-                                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-xs font-bold">3</span>
-                                <span>{t('howItWorksStep3')}</span>
-                            </li>
-                        </ol>
-                    </div>
-
-                    <div>
-                        <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4">{t('recentUploads')}</h3>
-                        <div className="space-y-3">
-                            <div className="bg-white rounded-xl p-3 border border-gray-100 shadow-sm flex items-center gap-3">
-                                <div className="bg-red-50 text-red-500 p-2 rounded-lg">
-                                    <HiOutlineDocumentText className="w-5 h-5" />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <div className="font-medium text-gray-900 text-sm truncate">{t('recentUploadFileName')}</div>
-                                    <div className="text-xs text-gray-500">{t('timeAgoDays', { count: 2 })}</div>
-                                </div>
-                                <HiCheckCircle className="w-5 h-5 text-green-500" />
-                            </div>
                         </div>
                     </div>
                 </div>

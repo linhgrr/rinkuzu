@@ -18,27 +18,27 @@ interface ConfirmModalProps {
 
 export function ConfirmModal({
   isOpen,
-  title = 'Confirm',
+  title = 'Xác nhận',
   message,
-  confirmText = 'Confirm',
-  cancelText = 'Cancel',
-  confirmVariant = 'primary',
+  confirmText = 'Xác nhận',
+  cancelText = 'Hủy',
+  confirmVariant = 'destructive',
   onConfirm,
   onCancel,
   isLoading = false
 }: ConfirmModalProps) {
   return (
-    <Modal isOpen={isOpen} onClose={onCancel} title={title}>
+    <Modal isOpen={isOpen} onClose={isLoading ? () => { } : onCancel} title={title}>
       <div className="space-y-6">
-        <div className="text-sm text-gray-600">
+        <div className="text-base text-gray-600 leading-relaxed">
           {message}
         </div>
-        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-          <Button variant="outline" onClick={onCancel} disabled={isLoading}>
+        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end mt-8 pt-5 border-t border-gray-100">
+          <Button variant="outline" onClick={onCancel} disabled={isLoading} className="sm:w-auto w-full font-medium">
             {cancelText}
           </Button>
-          <Button variant={confirmVariant} onClick={onConfirm} disabled={isLoading}>
-            {isLoading ? 'Processing…' : confirmText}
+          <Button variant={confirmVariant} onClick={onConfirm} disabled={isLoading} className="sm:w-auto w-full font-medium">
+            {confirmText}
           </Button>
         </div>
       </div>

@@ -3,10 +3,13 @@
 import { useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
+import dynamic from 'next/dynamic'
 import { Button } from '@/components/ui/Button'
 import { ROUTES } from '@/shared/constants'
 import { HiOutlineArrowRight, HiOutlineSearch, HiOutlineLocationMarker } from '@/components/icons'
 import { IntroVideo } from './IntroVideo'
+
+const Hero3DScene = dynamic(() => import('./Hero3DScene').then(mod => mod.Hero3DScene), { ssr: false })
 
 export function Hero() {
   const t = useTranslations('landing.hero')
@@ -18,11 +21,14 @@ export function Hero() {
 
   return (
     <section className="relative w-full bg-white overflow-hidden pt-12 pb-16 md:pt-32 md:pb-32">
-      {/* Background Gradient - Optimized CSS Solution */}
-      <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden -z-0">
-        <div className="absolute top-[-20%] left-1/2 -translate-x-1/2 w-[140%] h-[100%] bg-[radial-gradient(circle_at_top,_#e0e7ff_0%,_transparent_50%)] opacity-40" />
+      {/* Background Gradient & 3D Scene */}
+      <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden z-0">
+        <div className="absolute top-[-20%] left-1/2 -translate-x-1/2 w-[140%] h-[100%] bg-[radial-gradient(circle_at_top,_#e0e7ff_0%,_transparent_50%)] opacity-40 mix-blend-multiply" />
         <div className="absolute top-[-10%] left-[10%] sm:left-[20%] w-[40%] sm:w-[30%] h-[40%] bg-[#818cf8] opacity-20 blur-[80px] sm:blur-[120px] rounded-full" />
         <div className="absolute top-[-10%] right-[10%] sm:right-[20%] w-[40%] sm:w-[30%] h-[40%] bg-[#c084fc] opacity-20 blur-[80px] sm:blur-[120px] rounded-full" />
+
+        {/* Interactive 3D Background */}
+        <Hero3DScene />
       </div>
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center z-10">

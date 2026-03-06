@@ -183,9 +183,31 @@
     "myRinKuzuProgress": "My RinKuzu Progress"
   },
   "adaptiveLearning": {
+    "common": {
+      "locale_date": "en-US",
+      "cancel": "Cancel",
+      "confirm": "Confirm"
+    },
     "dashboardTitle": "Adaptive Learning Center",
     "dashboardDescription": "Track your personalized learning path, upload new materials, and master concepts with AI-driven guidance.",
+    "dashboardSubtitle": "AI-powered personalized learning",
+    "backendOffline": "Backend offline. Start: cd full-demo/api && uvicorn api.main:app --reload --port 8000",
     "uploadNewMaterial": "Upload New Material",
+    "uploadPdf": "Upload PDF",
+    "continueLearning": "Continue Learning",
+    "createSessionFailed": "Failed to create session",
+    "failedToLoadSessionStatus": "Failed to load session status",
+    "defaultLearningPath": "Learning Path",
+    "noLearningDataTitle": "No learning data yet",
+    "noLearningDataDescription": "Click {uploadPdf} above to upload your material and let AI build a personalized learning path for you.",
+    "uploadMaterial": "Upload Material",
+    "recentExercises": "Recent Exercises",
+    "currentLearningPath": "Current Learning Path",
+    "viewLearningPath": "View Learning Path",
+    "viewPath": "View Path",
+    "bloomLevel": "Bloom Level {level}",
+    "correct": "Correct",
+    "incorrect": "Incorrect",
     "stats": {
       "exercisesCompleted": "Exercises Completed",
       "exercisesCompletedSubtitle": "+{count} today",
@@ -194,7 +216,16 @@
       "learningTimeTarget": "Target: {minutes}m",
       "currentStreak": "Current Streak",
       "streakDays": "{count} Days",
-      "accuracyRate": "Accuracy Rate"
+      "accuracyRate": "Accuracy Rate",
+      "accuracySubtitle": "{accuracy}% accuracy",
+      "conceptsVisited": "Concepts Visited",
+      "ofConcepts": "of {count}",
+      "averageMastery": "Average Mastery",
+      "conceptsAccuracySummary": "{concepts} concepts • {accuracy}% overall accuracy",
+      "correct": "Correct",
+      "total": "Total",
+      "concepts": "Concepts",
+      "correctTotal": "Correct/Total"
     },
     "activeLearningPaths": "Active Learning Paths",
     "currentTopic": "Current Topic:",
@@ -215,6 +246,52 @@
     "uploadBrowseHint": "or click to browse from your computer. Supports PDF up to 50MB.",
     "browseFiles": "Browse Files",
     "uploadingFile": "Uploading your file...",
+    "uploadPage": {
+      "back": "Back",
+      "startLearning": "Start Learning",
+      "description": "Upload a PDF to begin your adaptive learning session.",
+      "subjectName": "Subject Name",
+      "subjectNamePlaceholder": "e.g. Machine Learning Basics, Data Structures",
+      "subjectRequired": "This field is required to start a personalized session.",
+      "subjectRequiredBeforeUpload": "Please enter a Subject Name before uploading.",
+      "subjectRequiredBeforeSelectFile": "Please enter a Subject Name before selecting a file.",
+      "uploadMaterialDescription": "Upload a textbook or study material to create a personalized learning path.",
+      "uploading": "Uploading...",
+      "backendOffline": "Backend is offline. Please start the API server first.",
+      "uploadFailed": "Failed to upload PDF"
+    },
+    "dashboard": {
+      "creatingSession": "Creating session...",
+      "startLearning": "Start Learning",
+      "noMaterials": "No materials yet",
+      "uploadPdfHint": "Upload PDF material...",
+      "uploadMaterial": "Upload Material",
+      "searchPlaceholder": "Search materials...",
+      "deleteMaterial": "Delete Material",
+      "deleteDocumentTitle": "Delete Material",
+      "deleteConfirmTitle": "Are you sure you want to delete this material?",
+      "deleteConfirmDescription": "This action will permanently remove the material and its associated data.",
+      "yourDocuments": "Your Documents",
+      "relations": "Relations"
+    },
+    "history": {
+      "title": "Exercise History",
+      "loadingFromMongoDB": "Loading from MongoDB...",
+      "noMongoDBData": "No data in MongoDB for this session yet.",
+      "completed": "Completed",
+      "step": "Step {step}/{total}",
+      "correct": "Correct",
+      "loading": "Loading history...",
+      "loadError": "Failed to load history from MongoDB: {error}",
+      "noSession": "No sessions found in MongoDB.",
+      "sessionSaveHint": "Sessions will be saved after you answer at least one exercise.",
+      "table": {
+        "question": "Question",
+        "result": "Result",
+        "time": "Time",
+        "noExercise": "No exercises yet."
+      }
+    },
     "howItWorksTitle": "How it works",
     "howItWorksStep1": "Upload your course material (PDF)",
     "howItWorksStep2": "AI analyzes key concepts & difficulty",
@@ -223,13 +300,18 @@
     "recentUploadFileName": "Calculus 12.pdf",
     "timeAgoDays": "{count} days ago",
     "knowledgeGraph": {
-      "title": "Knowledge Map",
+      "title": "Knowledge Graph",
       "subtitle": "Your learning journey visualization",
+      "clickNodeHint": "Click a node to see concept details",
+      "startSessionHint": "Start a session to see the knowledge graph",
+      "noData": "No graph data available",
       "legend": {
         "completed": "Completed",
         "current": "Current",
         "available": "Available",
-        "locked": "Locked"
+        "locked": "Locked",
+        "mastered": "Mastered",
+        "inProgress": "In Progress"
       },
       "nodes": {
         "basics": "Basics",
@@ -244,6 +326,10 @@
     "processing": {
       "title": "Analyzing Material",
       "description": "Please wait while our AI builds your personalized curriculum.",
+      "failedTitle": "Processing Failed",
+      "creatingSession": "Creating learning session...",
+      "tryAgain": "Try Again",
+      "defaultFilename": "document.pdf",
       "steps": {
         "readingPdf": "Reading PDF content",
         "extractingConcepts": "Extracting key concepts",
@@ -251,9 +337,52 @@
         "generatingPath": "Generating learning path",
         "preparingExercise": "Preparing first exercise"
       },
+      "status": {
+        "starting": "Starting...",
+        "waitingToStart": "Waiting to start...",
+        "readingDocument": "Reading PDF document...",
+        "splittingChunks": "Splitting into chunks...",
+        "extractingConceptsWithAI": "Extracting concepts with AI...",
+        "computingEmbeddings": "Computing embeddings...",
+        "mergingDuplicateConcepts": "Merging duplicate concepts...",
+        "rankingPrerequisites": "Ranking prerequisites...",
+        "verifyingRelationsWithAI": "Verifying relations with AI...",
+        "buildingKnowledgeGraph": "Building knowledge graph...",
+        "optimizingDAG": "Optimizing DAG structure...",
+        "completed": "Ready to learn!",
+        "failed": "Processing failed",
+        "processing": "Processing..."
+      },
+      "stats": {
+        "extracted": "Extracted",
+        "afterMerge": "After Merge",
+        "relations": "Relations"
+      },
       "progress": "PROGRESS",
       "didYouKnow": "Did you know?",
       "didYouKnowDescription": "Adaptive learning adjusts the difficulty of questions in real-time based on your performance."
+    },
+    "exercise": {
+      "loadingTitle": "AI is selecting the best exercise for you...",
+      "loadingSubtitle": "From Linhdz with iu iu",
+      "noExerciseAvailable": "No exercise available",
+      "theory": {
+        "reviewKnowledge": "Review Knowledge",
+        "theoryReview": "Let's review the theory about {concept} before starting the exercise.",
+        "basicTheory": "Basic Theory",
+        "illustration": "Illustration",
+        "example": "Example {index}",
+        "startExercise": "Start Exercise"
+      },
+      "backToDashboard": "Back to Dashboard",
+      "tryAgain": "Try Again",
+      "progress": "Progress",
+      "stepCounter": "Step {current} / {total}",
+      "bloomBadge": "Bloom {level}: {label}",
+      "focusModeContext": "Concept: {concept} at {level} level",
+      "checking": "Checking...",
+      "failedToLoadExercise": "Failed to load exercise",
+      "failedToSubmitAnswer": "Failed to submit answer"
     },
     "bloom": {
       "remember": "Remember",
@@ -297,14 +426,91 @@
       "xpEarned": "XP Earned",
       "xpEarnedValue": "+{xp} XP",
       "streak": "Streak",
-      "streakValue": "🔥 {count} Days"
+      "streakValue": "🔥 {count} Days",
+      "noResultDataFound": "No result data found",
+      "masteryUpdate": "Mastery Update",
+      "averageMastery": "Average Mastery: {value}%",
+      "stepLabel": "Step {step}",
+      "nextExercise": "Next Exercise",
+      "sessionCompleteCta": "Session Complete - View Results",
+      "statsCorrect": "Correct",
+      "statsTotal": "Total",
+      "statsAccuracy": "Accuracy",
+      "sessionCompleteTitle": "Session Complete!",
+      "sessionCompleteDescription": "You've completed all {count} exercises. Great work!"
+    },
+    "subjectDetails": {
+      "backToDashboard": "Back to Dashboard",
+      "summary": "{concepts} Concepts • {accuracy}% Accuracy",
+      "summaryFallback": "Knowledge Graph and Mastery Map",
+      "startLearning": "Start Learning"
+    },
+    "masteryMatrix": {
+      "loading": "Loading mastery matrix...",
+      "title": "Mastery Matrix",
+      "subtitle": "Concepts x Bloom Taxonomy Levels",
+      "sortByMastery": "Sort by Mastery",
+      "sortByName": "Sort by Name",
+      "concept": "Concept",
+      "avg": "Avg",
+      "showingTop": "Showing top 30 of {count} concepts",
+      "legend": "Legend:",
+      "rangeLt40": "<40%",
+      "range40To50": "40-50%",
+      "range50To60": "50-60%",
+      "range60To75": "60-75%",
+      "range75Plus": "75%+ (Mastered)"
+    },
+    "conceptDetail": {
+      "mastered": "Mastered",
+      "inProgress": "In Progress",
+      "notStarted": "Not Started",
+      "visits": "{count} visits",
+      "definition": "Definition",
+      "overallMastery": "Overall Mastery",
+      "bloomBreakdown": "Bloom Level Breakdown",
+      "prerequisites": "Prerequisites ({count})",
+      "unlocks": "Unlocks ({count})"
     },
     "chatbot": {
       "initialGreeting": "Hello! I noticed you might need help with this question. How can I assist you?",
       "sampleResponse": "That's a great question. In this context, we apply the chain rule because the function is a composite of two other functions...",
       "title": "Rin-chan",
       "context": "Context",
-      "placeholder": "Ask a question..."
+      "contextConcept": "Concept",
+      "contextQuestion": "Question",
+      "placeholder": "Ask a question...",
+      "iconAlt": "AI chatbot",
+      "errorInsufficientContext": "Insufficient context to ask AI.",
+      "errorAIFailure": "Failed to get response from AI.",
+      "fallbackNoResponse": "I don't have a suitable response at this moment.",
+      "errorConnection": "Error connecting to AI."
+    },
+    "meta": {
+      "dashboard": {
+        "title": "Adaptive Learning | Rinkuzu",
+        "description": "Personalized learning path based on your documents"
+      },
+      "upload": {
+        "title": "Upload Material | Adaptive Learning",
+        "description": "Upload PDFs to start your personalized learning journey"
+      },
+      "processing": {
+        "title": "Processing... | Adaptive Learning",
+        "description": "AI analysis in progress"
+      },
+      "subject": {
+        "title": "Subject Path | Adaptive Learning",
+        "description": "Knowledge Graph and Mastery Matrix for your subject"
+      },
+      "exercise": {
+        "title": "Exercise | Adaptive Learning",
+        "description": "Practice concepts tailored to your needs"
+      },
+      "result": {
+        "title": "Result | Adaptive Learning",
+        "description": "Exercise feedback"
+      }
     }
   },
   "profile": {
@@ -1056,7 +1262,7 @@
         "placeholder": "Your email",
         "button": "Subscribe"
       },
-      "copyright": "© 2024 RinKuzu. All rights reserved."
+      "copyright": "© 2026 RinKuzu. All rights reserved."
     }
   }
 }

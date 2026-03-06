@@ -1,0 +1,48 @@
+'use client';
+
+import useSWR from 'swr';
+import {
+    getSubjects,
+    getKnowledgeGraph,
+    getMasteryMatrix,
+    getConceptDetail,
+} from '@/components/adaptive-learning/api-client';
+
+export function useSubjects(options: { revalidateOnFocus?: boolean, dedupingInterval?: number } = {}) {
+    return useSWR('/api/history/subjects', getSubjects, {
+        revalidateOnFocus: options.revalidateOnFocus ?? false,
+        dedupingInterval: options.dedupingInterval ?? 60000, // 1 minute default
+    });
+}
+
+export function useKnowledgeGraph(sessionId: string | undefined) {
+    return useSWR(
+        sessionId ? `/api/session/${sessionId}/graph` : null,
+        () => getKnowledgeGraph(sessionId!),
+        {
+            revalidateOnFocus: false,
+            // SWR caches based on the key
+        }
+    );
+}
+
+export function useMasteryMatrix(sessionId: string | undefined) {
+    return useSWR(
+        sessionId ? `/api/session/${sessionId}/mastery-matrix` : null,
+        () => getMasteryMatrix(sessionId!),
+        {
+            revalidateOnFocus: false,
+        }
+    );
+}
+
+export function useConceptDetail(sessionId: string | undefined, conceptId: string | undefined) {
+    return useSWR(
+        sessionId && conceptId ? `/api/session/${sessionId}/concept/${conceptId}` : null,
+        () => getConceptDetail(sessionId!, conceptId!),
+        {
+            revalidateOnFocus: false,
+            dedupingInterval: 300000, // cache for 5 minutes
+        }
+    );
+}

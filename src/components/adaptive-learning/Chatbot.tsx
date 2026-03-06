@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
-import { Button } from '@/components/ui/Button';
 import { HiOutlineX, HiArrowUp } from '@/components/icons';
 import Image from 'next/image';
+import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer';
 
 const chatbotIcon = 'https://i.ibb.co/ZRYgc1tN/Gemini-Generated-Image-yjm06yyjm06yyjm0-removebg-preview.png';
 
@@ -16,18 +16,40 @@ interface Message {
 
 interface ChatbotProps {
     context?: string;
+    question?: string;
+    options?: string[];
+    questionImage?: string;
+    optionImages?: string[];
     isOpen: boolean;
     onClose: () => void;
 }
 
-export default function AdaptiveLearningChatbot({ context, isOpen, onClose }: ChatbotProps) {
+export default function AdaptiveLearningChatbot({
+    context,
+    question,
+    options,
+    questionImage,
+    optionImages,
+    isOpen,
+    onClose,
+}: ChatbotProps) {
     const t = useTranslations('adaptiveLearning');
-    const [messages, setMessages] = useState<Message[]>([
-        { id: '1', role: 'assistant', content: t('chatbot.initialGreeting') }
-    ]);
+    const initialMessage = useMemo<Message>(() => ({
+        id: '1',
+        role: 'assistant',
+        content: t('chatbot.initialGreeting')
+    }), [t]);
+    const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState('');
     const [isTyping, setIsTyping] = useState(false);
+    const [streamingContent, setStreamingContent] = useState('');
+    const [isStreaming, setIsStreaming] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
+    const assistantIdRef = useRef<string | null>(null);
+
+    useEffect(() => {
+        setMessages([initialMessage]);
+    }, [initialMessage]);
 
     useEffect(() => {
         if (scrollRef.current) {
@@ -35,34 +57,69 @@ export default function AdaptiveLearningChatbot({ context, isOpen, onClose }: Ch
         }
     }, [messages, isOpen]);
 
-    const handleSend = () => {
-        if (!input.trim()) return;
+    const handleSend = useCallback(async () => {
+        const trimmedQuestion = input.trim();
+        if (!trimmedQuestion || isTyping) return;
 
-        const userMsg: Message = { id: Date.now().toString(), role: 'user', content: input };
-        setMessages(prev => [...prev, userMsg]);
+        const userMsg: Message = { id: Date.now().toString(), role: 'user', content: trimmedQuestion };
+        const previousHistory = messages
+            .filter((msg) => msg.id !== initialMessage.id)
+            .map((msg) => ({ role: msg.role, content: msg.content }));
+
+        setMessages((prev) => [...prev, userMsg]);
         setInput('');
         setIsTyping(true);
 
-        // Simulate AI response
-        setTimeout(() => {
+        try {
+            if (!question || !Array.isArray(options) || options.length === 0) {
+                throw new Error(t('chatbot.errorInsufficientContext'));
+            }
+
+            const resp = await fetch('/api/quiz/ask-ai', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    question,
+                    options,
+                    questionImage,
+                    optionImages,
+                    userQuestion: trimmedQuestion,
+                    chatHistory: [...previousHistory, { role: 'user', content: trimmedQuestion }],
+                    stream: false,
+                }),
+            });
+
+            const data = await resp.json().catch(() => null);
+            if (!resp.ok || !data?.success) {
+                throw new Error(data?.error || t('chatbot.errorAIFailure'));
+            }
+
             const aiMsg: Message = {
                 id: (Date.now() + 1).toString(),
                 role: 'assistant',
-                content: t('chatbot.sampleResponse')
+                content: data?.data?.explanation || t('chatbot.fallbackNoResponse'),
             };
-            setMessages(prev => [...prev, aiMsg]);
+            setMessages((prev) => [...prev, aiMsg]);
+        } catch (error) {
+            const aiMsg: Message = {
+                id: (Date.now() + 1).toString(),
+                role: 'assistant',
+                content: error instanceof Error ? error.message : t('chatbot.errorConnection'),
+            };
+            setMessages((prev) => [...prev, aiMsg]);
+        } finally {
             setIsTyping(false);
-        }, 1500);
-    };
+        }
+    }, [initialMessage.id, input, isTyping, messages, optionImages, options, question, questionImage]);
 
     if (!isOpen) return null;
 
     return (
         <div className="fixed inset-y-0 right-0 w-full md:w-[400px] bg-white shadow-2xl z-50 flex flex-col border-l border-gray-200 animate-slideInRight">
             {/* Header */}
-            <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-blue-50/50">
-                <div className="flex items-center gap-2 text-blue-700">
-                    <Image src={chatbotIcon} alt="AI chatbot" width={20} height={20} className="w-5 h-5" />
+            <div className="p-4 border-b border-gray-200 flex items-center justify-between bg-white shadow-sm z-10">
+                <div className="flex items-center gap-2 text-slate-800">
+                    <Image src={chatbotIcon} alt={t('chatbot.iconAlt')} width={20} height={20} className="w-5 h-5" />
                     <span className="font-semibold">{t('chatbot.title')}</span>
                 </div>
                 <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
@@ -79,11 +136,15 @@ export default function AdaptiveLearningChatbot({ context, isOpen, onClose }: Ch
                 )}
                 {messages.map((msg) => (
                     <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                        <div className={`max-w-[85%] rounded-2xl p-3 text-sm ${msg.role === 'user'
-                                ? 'bg-blue-600 text-white rounded-br-none'
-                                : 'bg-white border border-gray-200 text-gray-800 rounded-bl-none shadow-sm'
+                        <div className={`max-w-[85%] rounded-md p-3 text-sm border ${msg.role === 'user'
+                            ? 'bg-gray-900 border-gray-900 text-white rounded-br-[2px]'
+                            : 'bg-white border-gray-200 text-gray-900 rounded-bl-[2px] shadow-sm'
                             }`}>
-                            {msg.content}
+                            {msg.role === 'assistant' ? (
+                                <MarkdownRenderer content={msg.content} className="whitespace-pre-wrap text-sm" />
+                            ) : (
+                                <div className="whitespace-pre-wrap">{msg.content}</div>
+                            )}
                         </div>
                     </div>
                 ))}
@@ -109,12 +170,12 @@ export default function AdaptiveLearningChatbot({ context, isOpen, onClose }: Ch
                         onChange={(e) => setInput(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && handleSend()}
                         placeholder={t('chatbot.placeholder')}
-                        className="w-full pl-4 pr-12 py-3 bg-gray-100 border-none rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all outline-none text-sm"
+                        className="w-full pl-4 pr-12 py-2.5 bg-white border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900 transition-colors text-sm"
                     />
                     <button
                         onClick={handleSend}
                         disabled={!input.trim() || isTyping}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-gray-900 text-white rounded hover:bg-black disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
                         <HiArrowUp className="w-4 h-4" />
                     </button>

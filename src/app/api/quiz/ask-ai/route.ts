@@ -212,8 +212,7 @@ export async function POST(request: NextRequest) {
       userQuestion,
       questionImage,
       optionImages,
-      chatHistory = [],
-      stream = true // Enable streaming by default
+      chatHistory = []
     } = await request.json();
 
     if (!question || !options || !Array.isArray(options)) {
@@ -239,8 +238,7 @@ export async function POST(request: NextRequest) {
       question: question.substring(0, 100) + '...',
       userQuestion: userQuestion || 'General explanation',
       optionsCount: options.length,
-      chatHistoryLength: chatHistory.length,
-      streaming: stream
+      chatHistoryLength: chatHistory.length
     });
 
     // Handle chat history summarization if needed
@@ -262,54 +260,6 @@ export async function POST(request: NextRequest) {
       optionImages,
       contextualInfo
     );
-
-    // Streaming response
-    if (stream) {
-      const encoder = new TextEncoder();
-
-      const readableStream = new ReadableStream({
-        async start(controller) {
-          try {
-            const model = createOpenAIModel({ temperature: 0.7 });
-
-            // Use LangChain's stream method
-            const streamResponse = await model.stream(messages);
-
-            for await (const chunk of streamResponse) {
-              const content = typeof chunk.content === 'string'
-                ? chunk.content
-                : JSON.stringify(chunk.content);
-
-              if (content) {
-                // Send as SSE format
-                const sseMessage = `data: ${JSON.stringify({ content })}\n\n`;
-                controller.enqueue(encoder.encode(sseMessage));
-              }
-            }
-
-            // Send done signal
-            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ done: true })}\n\n`));
-            controller.close();
-
-            console.log('✅ AI streaming completed successfully');
-
-          } catch (error: any) {
-            console.error('Streaming error:', error);
-            const errorMessage = `data: ${JSON.stringify({ error: error.message })}\n\n`;
-            controller.enqueue(encoder.encode(errorMessage));
-            controller.close();
-          }
-        }
-      });
-
-      return new Response(readableStream, {
-        headers: {
-          'Content-Type': 'text/event-stream',
-          'Cache-Control': 'no-cache',
-          'Connection': 'keep-alive',
-        },
-      });
-    }
 
     // Non-streaming response with STRUCTURED OUTPUT (Best Practice 2025)
     // Uses Zod schema for constrained, validated output

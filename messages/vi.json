@@ -183,9 +183,31 @@
     "myRinKuzuProgress": "Tiến độ RinKuzu của tôi"
   },
   "adaptiveLearning": {
+    "common": {
+      "locale_date": "vi-VN",
+      "cancel": "Hủy",
+      "confirm": "Xác nhận"
+    },
     "dashboardTitle": "Trung tâm học tập thích ứng",
     "dashboardDescription": "Theo dõi lộ trình học cá nhân hóa, tải thêm tài liệu và làm chủ kiến thức với hướng dẫn từ AI.",
+    "dashboardSubtitle": "Học tập cá nhân hóa với AI",
+    "backendOffline": "Backend đang offline. Chạy: cd full-demo/api && uvicorn api.main:app --reload --port 8000",
     "uploadNewMaterial": "Tải tài liệu mới",
+    "uploadPdf": "Tải lên PDF",
+    "continueLearning": "Tiếp tục học",
+    "createSessionFailed": "Tạo phiên học thất bại",
+    "failedToLoadSessionStatus": "Không tải được trạng thái phiên học",
+    "defaultLearningPath": "Lộ trình học",
+    "noLearningDataTitle": "Chưa có dữ liệu học tập",
+    "noLearningDataDescription": "Hãy nhấn {uploadPdf} phía trên để tải tài liệu và để AI tạo lộ trình học cá nhân hóa cho bạn.",
+    "uploadMaterial": "Tải tài liệu",
+    "recentExercises": "Bài tập gần đây",
+    "currentLearningPath": "Lộ trình học hiện tại",
+    "viewLearningPath": "Xem lộ trình học",
+    "viewPath": "Xem lộ trình",
+    "bloomLevel": "Mức Bloom {level}",
+    "correct": "Đúng",
+    "incorrect": "Sai",
     "stats": {
       "exercisesCompleted": "Bài tập đã hoàn thành",
       "exercisesCompletedSubtitle": "+{count} hôm nay",
@@ -194,7 +216,16 @@
       "learningTimeTarget": "Mục tiêu: {minutes} phút",
       "currentStreak": "Chuỗi hiện tại",
       "streakDays": "{count} ngày",
-      "accuracyRate": "Tỷ lệ chính xác"
+      "accuracyRate": "Tỷ lệ chính xác",
+      "accuracySubtitle": "{accuracy}% chính xác",
+      "conceptsVisited": "Khái niệm đã học",
+      "ofConcepts": "trên {count}",
+      "averageMastery": "Độ thành thạo trung bình",
+      "conceptsAccuracySummary": "{concepts} khái niệm • {accuracy}% chính xác tổng thể",
+      "correct": "Đúng",
+      "total": "Tổng",
+      "concepts": "Khái niệm",
+      "correctTotal": "Đúng/Tổng"
     },
     "activeLearningPaths": "Lộ trình học đang hoạt động",
     "currentTopic": "Chủ đề hiện tại:",
@@ -215,6 +246,52 @@
     "uploadBrowseHint": "hoặc bấm để duyệt tệp từ máy tính. Hỗ trợ PDF tối đa 50MB.",
     "browseFiles": "Chọn tệp",
     "uploadingFile": "Đang tải tệp...",
+    "uploadPage": {
+      "back": "Quay lại",
+      "startLearning": "Bắt đầu học",
+      "description": "Tải lên PDF để bắt đầu phiên học thích ứng.",
+      "subjectName": "Tên môn học",
+      "subjectNamePlaceholder": "Ví dụ: Nhập môn Machine Learning, Cấu trúc dữ liệu",
+      "subjectRequired": "Trường này bắt buộc để tạo phiên học cá nhân hóa.",
+      "subjectRequiredBeforeUpload": "Vui lòng nhập tên môn học trước khi tải lên.",
+      "subjectRequiredBeforeSelectFile": "Vui lòng nhập tên môn học trước khi chọn tệp.",
+      "uploadMaterialDescription": "Tải lên giáo trình hoặc tài liệu học để tạo lộ trình học cá nhân hóa.",
+      "uploading": "Đang tải lên...",
+      "backendOffline": "Backend đang offline. Vui lòng khởi động API server trước.",
+      "uploadFailed": "Tải lên PDF thất bại"
+    },
+    "dashboard": {
+      "creatingSession": "Đang tạo phiên học...",
+      "startLearning": "Bắt đầu học",
+      "noMaterials": "Chưa có tài liệu nào",
+      "uploadPdfHint": "Upload tài liệu PDF...",
+      "uploadMaterial": "Upload tài liệu",
+      "searchPlaceholder": "Tìm tài liệu...",
+      "deleteMaterial": "Xóa tài liệu",
+      "deleteDocumentTitle": "Xóa tài liệu",
+      "deleteConfirmTitle": "Bạn có chắc chắn muốn xóa tài liệu này?",
+      "deleteConfirmDescription": "Hành động này sẽ xóa vĩnh viễn tài liệu và dữ liệu liên quan.",
+      "yourDocuments": "Tài liệu của bạn",
+      "relations": "Quan hệ"
+    },
+    "history": {
+      "title": "Lịch sử bài tập",
+      "loadingFromMongoDB": "Đang tải từ MongoDB...",
+      "noMongoDBData": "Chưa có dữ liệu trong MongoDB cho phiên này.",
+      "completed": "Hoàn thành",
+      "step": "Bước {step}/{total}",
+      "correct": "Đúng",
+      "loading": "Đang tải lịch sử...",
+      "loadError": "Không thể tải lịch sử từ MongoDB: {error}",
+      "noSession": "Chưa có session nào được lưu trong MongoDB.",
+      "sessionSaveHint": "Phiên học sẽ được lưu sau khi bạn trả lời ít nhất 1 bài tập.",
+      "table": {
+        "question": "Câu hỏi",
+        "result": "Kết quả",
+        "time": "Thời gian",
+        "noExercise": "Chưa có bài tập nào."
+      }
+    },
     "howItWorksTitle": "Cách hoạt động",
     "howItWorksStep1": "Tải lên tài liệu học (PDF)",
     "howItWorksStep2": "AI phân tích khái niệm chính & độ khó",
@@ -223,13 +300,18 @@
     "recentUploadFileName": "Toán Giải tích 12.pdf",
     "timeAgoDays": "{count} ngày trước",
     "knowledgeGraph": {
-      "title": "Bản đồ kiến thức",
+      "title": "Sơ đồ kiến thức",
       "subtitle": "Hình dung hành trình học tập của bạn",
+      "clickNodeHint": "Nhấn vào nút để xem chi tiết khái niệm",
+      "startSessionHint": "Hãy bắt đầu phiên học để xem sơ đồ kiến thức",
+      "noData": "Chưa có dữ liệu sơ đồ",
       "legend": {
         "completed": "Đã hoàn thành",
         "current": "Hiện tại",
         "available": "Có sẵn",
-        "locked": "Đã khóa"
+        "locked": "Đã khóa",
+        "mastered": "Đã thành thạo",
+        "inProgress": "Đang học"
       },
       "nodes": {
         "basics": "Cơ bản",
@@ -244,6 +326,10 @@
     "processing": {
       "title": "Đang phân tích tài liệu",
       "description": "Vui lòng đợi khi AI xây dựng lộ trình học cá nhân hóa cho bạn.",
+      "failedTitle": "Xử lý thất bại",
+      "creatingSession": "Đang tạo phiên học...",
+      "tryAgain": "Thử lại",
+      "defaultFilename": "tai-lieu.pdf",
       "steps": {
         "readingPdf": "Đọc nội dung PDF",
         "extractingConcepts": "Trích xuất khái niệm chính",
@@ -251,9 +337,58 @@
         "generatingPath": "Tạo lộ trình học",
         "preparingExercise": "Chuẩn bị bài tập đầu tiên"
       },
+      "status": {
+        "starting": "Đang bắt đầu...",
+        "waitingToStart": "Đang chờ bắt đầu...",
+        "readingDocument": "Đang đọc tài liệu PDF...",
+        "splittingChunks": "Đang chia thành các đoạn...",
+        "extractingConceptsWithAI": "Đang trích xuất khái niệm bằng AI...",
+        "computingEmbeddings": "Đang tính embedding...",
+        "mergingDuplicateConcepts": "Đang gộp khái niệm trùng lặp...",
+        "rankingPrerequisites": "Đang xếp hạng quan hệ tiên quyết...",
+        "verifyingRelationsWithAI": "Đang xác minh quan hệ bằng AI...",
+        "buildingKnowledgeGraph": "Đang xây dựng sơ đồ kiến thức...",
+        "optimizingDAG": "Đang tối ưu cấu trúc DAG...",
+        "completed": "Học thui bạn iu!",
+        "failed": "Xử lý thất bại",
+        "processing": "Đang xử lý..."
+      },
+      "stats": {
+        "extracted": "Đã trích xuất",
+        "afterMerge": "Sau khi gộp",
+        "relations": "Quan hệ",
+        "accuracyRate": "Độ chính xác",
+        "averageMastery": "Mastery trung bình",
+        "correct": "Đúng",
+        "total": "Tổng",
+        "concepts": "Khái niệm",
+        "correctTotal": "Đúng/Tổng"
+      },
       "progress": "TIẾN ĐỘ",
       "didYouKnow": "Bạn có biết?",
       "didYouKnowDescription": "Học tập thích ứng điều chỉnh độ khó câu hỏi theo thời gian thực dựa trên hiệu suất của bạn."
+    },
+    "exercise": {
+      "loadingTitle": "AI đang chọn bài tập phù hợp nhất cho bạn...",
+      "loadingSubtitle": "From Linhdz with iu iu",
+      "noExerciseAvailable": "Hiện chưa có bài tập",
+      "theory": {
+        "reviewKnowledge": "Ôn tập kiến thức",
+        "theoryReview": "Hãy cùng xem lại lý thuyết về {concept} trước khi làm bài tập.",
+        "basicTheory": "Lý thuyết cơ bản",
+        "illustration": "Ví dụ minh họa",
+        "example": "Ví dụ {index}",
+        "startExercise": "Bắt đầu làm bài tập"
+      },
+      "backToDashboard": "Quay về bảng điều khiển",
+      "tryAgain": "Thử lại",
+      "progress": "Tiến độ",
+      "stepCounter": "Bước {current} / {total}",
+      "bloomBadge": "Bloom {level}: {label}",
+      "focusModeContext": "Khái niệm: {concept} ở mức {level}",
+      "checking": "Đang kiểm tra...",
+      "failedToLoadExercise": "Tải bài tập thất bại",
+      "failedToSubmitAnswer": "Nộp đáp án thất bại"
     },
     "bloom": {
       "remember": "Ghi nhớ",
@@ -297,14 +432,91 @@
       "xpEarned": "XP nhận được",
       "xpEarnedValue": "+{xp} XP",
       "streak": "Chuỗi",
-      "streakValue": "🔥 {count} ngày"
+      "streakValue": "🔥 {count} ngày",
+      "noResultDataFound": "Không tìm thấy dữ liệu kết quả",
+      "masteryUpdate": "Cập nhật độ thành thạo",
+      "averageMastery": "Độ thành thạo trung bình: {value}%",
+      "stepLabel": "Bước {step}",
+      "nextExercise": "Bài tập tiếp theo",
+      "sessionCompleteCta": "Hoàn tất phiên - Xem kết quả",
+      "statsCorrect": "Đúng",
+      "statsTotal": "Tổng",
+      "statsAccuracy": "Độ chính xác",
+      "sessionCompleteTitle": "Hoàn tất phiên học!",
+      "sessionCompleteDescription": "Bạn đã hoàn thành {count} bài tập. Rất tốt!"
+    },
+    "subjectDetails": {
+      "backToDashboard": "Quay về bảng điều khiển",
+      "summary": "{concepts} khái niệm • {accuracy}% chính xác",
+      "summaryFallback": "Sơ đồ kiến thức và bản đồ độ thành thạo",
+      "startLearning": "Bắt đầu học"
+    },
+    "masteryMatrix": {
+      "loading": "Đang tải ma trận độ thành thạo...",
+      "title": "Ma trận độ thành thạo",
+      "subtitle": "Khái niệm x các mức Bloom",
+      "sortByMastery": "Sắp xếp theo độ thành thạo",
+      "sortByName": "Sắp xếp theo tên",
+      "concept": "Khái niệm",
+      "avg": "TB",
+      "showingTop": "Hiển thị 30 trên tổng {count} khái niệm",
+      "legend": "Chú giải:",
+      "rangeLt40": "<40%",
+      "range40To50": "40-50%",
+      "range50To60": "50-60%",
+      "range60To75": "60-75%",
+      "range75Plus": "75%+ (Đã thành thạo)"
+    },
+    "conceptDetail": {
+      "mastered": "Đã thành thạo",
+      "inProgress": "Đang học",
+      "notStarted": "Chưa bắt đầu",
+      "visits": "{count} lượt truy cập",
+      "definition": "Định nghĩa",
+      "overallMastery": "Độ thành thạo tổng thể",
+      "bloomBreakdown": "Chi tiết theo mức Bloom",
+      "prerequisites": "Tiên quyết ({count})",
+      "unlocks": "Mở khóa ({count})"
     },
     "chatbot": {
       "initialGreeting": "Xin chào! Mình thấy bạn có thể cần trợ giúp với câu hỏi này. Mình có thể hỗ trợ gì?",
       "sampleResponse": "Đây là một câu hỏi hay. Trong trường hợp này, chúng ta áp dụng quy tắc chuỗi vì hàm là hợp của hai hàm khác nhau...",
       "title": "Rin-chan",
       "context": "Ngữ cảnh",
-      "placeholder": "Hỏi một câu..."
+      "contextConcept": "Khái niệm",
+      "contextQuestion": "Câu hỏi",
+      "placeholder": "Hỏi một câu...",
+      "iconAlt": "Trợ lý AI",
+      "errorInsufficientContext": "Không có đủ ngữ cảnh câu hỏi để hỏi AI.",
+      "errorAIFailure": "Không thể lấy phản hồi từ AI.",
+      "fallbackNoResponse": "Mình chưa có phản hồi phù hợp lúc này.",
+      "errorConnection": "Có lỗi khi kết nối AI."
+    },
+    "meta": {
+      "dashboard": {
+        "title": "Học tập thích ứng | Rinkuzu",
+        "description": "Lộ trình học cá nhân hóa dựa trên tài liệu của bạn"
+      },
+      "upload": {
+        "title": "Tải tài liệu | Học tập thích ứng",
+        "description": "Tải PDF để bắt đầu hành trình học cá nhân hóa"
+      },
+      "processing": {
+        "title": "Đang xử lý... | Học tập thích ứng",
+        "description": "AI đang phân tích tài liệu"
+      },
+      "subject": {
+        "title": "Lộ trình môn học | Học tập thích ứng",
+        "description": "Sơ đồ kiến thức và ma trận độ thành thạo của môn học"
+      },
+      "exercise": {
+        "title": "Bài tập | Học tập thích ứng",
+        "description": "Luyện tập theo khái niệm phù hợp với bạn"
+      },
+      "result": {
+        "title": "Kết quả | Học tập thích ứng",
+        "description": "Phản hồi bài tập"
+      }
     }
   },
   "profile": {
@@ -1056,7 +1268,7 @@
         "placeholder": "Email của bạn",
         "button": "Đăng ký"
       },
-      "copyright": "© 2024 RinKuzu. Bảo lưu mọi quyền."
+      "copyright": "© 2026 RinKuzu. Bảo lưu mọi quyền."
     }
   }
 }

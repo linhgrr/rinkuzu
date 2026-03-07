@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback, memo } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import {
   HiOutlineClock,
@@ -278,6 +279,10 @@ export default function NavigationClient({
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const pathname = usePathname();
+
+  // Hide Top Navigation in exercise mode (including theory screens) to maximize screen space on mobile
+  const isExerciseMode = pathname?.includes('/adaptive-learning/exercise') || pathname?.includes('/adaptive-learning/result') || false;
 
   useEffect(() => {
     const handleScroll = () => {
@@ -329,6 +334,10 @@ export default function NavigationClient({
     : 'backdrop-blur-xl bg-white/80 border-b border-gray-200/50 shadow-sm';
 
   const positionClass = transparent ? 'fixed' : 'sticky';
+
+  if (isExerciseMode) {
+    return null;
+  }
 
   return (
     <nav className={`${positionClass} top-0 left-0 right-0 z-50 transition-all duration-300 ${navClasses} ${className}`}>

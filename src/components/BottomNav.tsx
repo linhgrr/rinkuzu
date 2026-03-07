@@ -62,6 +62,11 @@ export default function BottomNav() {
         matchesPrefix(pathWithoutLocale, prefix)
     );
 
+    // Hide bottom navigation in exercise mode to prevent distractions
+    if (pathWithoutLocale.startsWith('/adaptive-learning/exercise')) {
+        return null;
+    }
+
     if (!session) {
         if (status === 'loading' && isProtectedRoute) {
             return (

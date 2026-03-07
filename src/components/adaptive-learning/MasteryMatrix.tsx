@@ -151,29 +151,30 @@ export default function MasteryMatrix({ sessionId, filterActiveOnly = false }: M
             <div className="overflow-x-auto">
                 <table className="w-full">
                     <thead>
-                        <tr className="bg-gray-50 border-b border-gray-200">
-                            <th className="sticky left-0 z-10 w-48 bg-gray-50 px-4 py-3 text-left text-[10px] font-bold uppercase tracking-widest text-gray-500">
+                        <tr className="bg-[#f5f5f7] border-b border-gray-200">
+                            <th className="sticky left-0 z-10 w-48 bg-[#f5f5f7] px-4 py-3 text-left text-[11px] font-bold uppercase tracking-widest text-[#86868b] shadow-[1px_0_0_0_#f3f4f6]">
                                 {t('masteryMatrix.concept')}
                             </th>
                             {data.bloom_labels.map((label, index) => {
                                 const localizedLabel = localizedBloomLabels[index] || label;
                                 return (
-                                    <th key={`${label}-${index}`} className="w-20 px-2 py-3 text-center text-[10px] font-bold uppercase tracking-widest text-gray-500">
-                                        <div className={`mx-auto mb-1 h-2 w-2 rounded-full ${BLOOM_COLORS[index] || 'bg-gray-400'}`} />
+                                    <th key={`${label}-${index}`} className="w-20 px-2 py-3 text-center text-[11px] font-bold uppercase tracking-widest text-[#86868b]">
+                                        <div className={`mx-auto mb-1.5 h-2 w-2 rounded-full ${BLOOM_COLORS[index] || 'bg-gray-400'}`} />
                                         {localizedLabel.substring(0, 3)}
                                     </th>
                                 );
                             })}
-                            <th className="w-20 px-3 py-3 text-center text-[10px] font-bold uppercase tracking-widest text-gray-500">
+                            <th className="w-20 px-3 py-3 text-center text-[11px] font-bold uppercase tracking-widest text-[#86868b]">
                                 {t('masteryMatrix.avg')}
                             </th>
                         </tr>
                     </thead>
                     <tbody>
                         {displayMatrix.map((row, rowIndex) => {
+                            const isEven = rowIndex % 2 === 0;
                             return (
-                                <tr key={row.concept_id} className={`border-b border-gray-100 last:border-0 ${rowIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'}`}>
-                                    <td className="sticky left-0 z-10 max-w-[200px] truncate bg-inherit px-4 py-3 text-sm text-gray-900">
+                                <tr key={row.concept_id} className={`border-b border-gray-100 last:border-0 ${isEven ? 'bg-white' : 'bg-gray-50/50'}`}>
+                                    <td className={`sticky left-0 z-10 max-w-[200px] sm:max-w-[300px] truncate px-4 py-3.5 text-sm font-medium text-[#1d1d1f] shadow-[1px_0_0_0_#f3f4f6] ${isEven ? 'bg-white' : 'bg-gray-50'}`}>
                                         {row.concept_name}
                                     </td>
                                     {row.bloom_levels.map((value, colIndex) => {
@@ -182,7 +183,7 @@ export default function MasteryMatrix({ sessionId, filterActiveOnly = false }: M
                                         return (
                                             <td key={`${row.concept_id}-${colIndex}`} className="px-1 py-1 text-center">
                                                 <div
-                                                    className={`mx-auto flex h-7 w-12 items-center justify-center rounded text-xs font-mono transition-colors ${getMasteryColor(value)} ${getMasteryTextColor(value)}`}
+                                                    className={`mx-auto flex h-8 w-14 items-center justify-center rounded-md text-xs font-mono font-medium transition-colors ${getMasteryColor(value)} ${getMasteryTextColor(value)}`}
                                                     title={`${row.concept_name} - ${localizedLabel}: ${Math.round(value * 100)}%`}
                                                 >
                                                     {Math.round(value * 100)}
@@ -191,7 +192,7 @@ export default function MasteryMatrix({ sessionId, filterActiveOnly = false }: M
                                         );
                                     })}
                                     <td className="px-2 py-1 text-center">
-                                        <span className={`text-xs font-mono font-medium ${row.avgMastery >= 0.75 ? 'text-gray-900' : 'text-gray-500'}`}>
+                                        <span className={`text-sm font-mono font-semibold ${row.avgMastery >= 0.75 ? 'text-green-600' : 'text-gray-500'}`}>
                                             {Math.round(row.avgMastery * 100)}%
                                         </span>
                                     </td>

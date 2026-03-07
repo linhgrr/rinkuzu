@@ -11,5 +11,18 @@ export async function generateMetadata({ params }: { params: { locale: string; i
 }
 
 export default function AdaptiveLearningExercisePage({ params }: { params: { id: string } }) {
-    return <AdaptiveLearningExercise sessionId={params.id} />;
+    return (
+        <>
+            <style dangerouslySetInnerHTML={{
+                __html: `
+                nav, .fixed.bottom-0.left-0.right-0.z-50 {
+                    display: none !important;
+                }
+                main.pb-16 {
+                    padding-bottom: 0 !important;
+                }
+            `}} />
+            <AdaptiveLearningExercise sessionId={params.id} />
+        </>
+    );
 }

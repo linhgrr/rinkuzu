@@ -194,7 +194,7 @@ export default function SubjectDetails({ sessionId }: { sessionId: string }) {
             </div>
 
             {/* ── Tab Switcher ── */}
-            <div className="flex gap-1 bg-gray-50/80 p-1 rounded-md w-fit border border-gray-200 overflow-x-auto">
+            <div className="flex gap-1 bg-gray-50/80 p-1 rounded-md max-w-full sm:w-fit border border-gray-200 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                 {TAB_CONFIG.map(({ key, icon: Icon, labelKey }) => (
                     <button
                         key={key}

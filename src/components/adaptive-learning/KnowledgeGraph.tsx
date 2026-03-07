@@ -175,6 +175,8 @@ function GraphFlow({ graphData, onNodeClick }: { graphData: KnowledgeGraphData |
             fitViewOptions={{ padding: 0.2 }}
             minZoom={0.2}
             maxZoom={2}
+            panOnScroll={false}
+            preventScrolling={false}
             proOptions={{ hideAttribution: true }}
             className="bg-gray-50/50"
         >

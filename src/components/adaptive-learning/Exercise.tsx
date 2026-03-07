@@ -148,39 +148,39 @@ export default function AdaptiveLearningExercise({ sessionId }: ExerciseProps) {
     if (showTheory && exercise?.theory) {
         return (
             <div className="mx-auto flex min-h-[80vh] max-w-4xl flex-col">
-                <div className="mb-10 text-center">
-                    <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-md bg-gray-100 border border-gray-200 text-gray-900">
-                        <HiBookOpen className="h-8 w-8" />
+                <div className="mb-8 md:mb-10 text-center px-4">
+                    <div className="mx-auto mb-5 md:mb-6 flex h-14 w-14 md:h-16 md:w-16 items-center justify-center rounded-[18px] bg-gray-50/50 border border-gray-100 text-gray-900 shadow-sm">
+                        <HiBookOpen className="h-6 w-6 md:h-8 md:w-8" />
                     </div>
-                    <h1 className="mb-2 text-2xl font-medium tracking-tight text-gray-900 md:text-3xl">{t('exercise.theory.reviewKnowledge')}</h1>
-                    <p className="text-base text-gray-500">
+                    <h1 className="mb-2 text-xl font-semibold tracking-tight text-gray-900 md:text-3xl">{t('exercise.theory.reviewKnowledge')}</h1>
+                    <p className="text-sm md:text-base text-gray-500">
                         {t.rich('exercise.theory.theoryReview', {
-                            concept: (chunks) => <span className="font-semibold text-gray-900">{exercise.concept_name}</span>
+                            concept: (chunks) => <span className="font-medium text-gray-900">{exercise.concept_name}</span>
                         })}
                     </p>
                 </div>
 
-                <div className="grid gap-8 pb-12 md:grid-cols-1">
-                    <Card className="overflow-hidden rounded-lg border-gray-200 shadow-sm bg-white p-8 md:p-10">
+                <div className="grid gap-6 md:gap-8 pb-12 md:grid-cols-1">
+                    <Card className="overflow-hidden rounded-xl border-gray-200 shadow-sm bg-white p-5 sm:p-8 md:p-10">
                         <div className="mb-8">
-                            <h3 className="mb-4 flex items-center gap-2 text-xl font-semibold text-gray-900 border-b border-gray-50 pb-4">
+                            <h3 className="mb-4 flex items-center gap-2 text-lg md:text-xl font-medium text-gray-900 border-b border-gray-50 pb-4">
                                 <HiBookOpen className="h-5 w-5 text-blue-500" /> {t('exercise.theory.basicTheory')}
                             </h3>
-                            <div className="text-lg leading-relaxed text-gray-700">
+                            <div className="text-base md:text-lg leading-relaxed text-gray-700">
                                 <DynamicMarkdownRenderer content={exercise.theory.content} />
                             </div>
                         </div>
 
                         {exercise.theory.examples && exercise.theory.examples.length > 0 && (
                             <div>
-                                <h3 className="mb-6 flex items-center gap-2 text-lg font-medium text-gray-900">
-                                    <HiLightBulb className="h-5 w-5 text-gray-900" /> {t('exercise.theory.illustration')}
+                                <h3 className="mb-5 md:mb-6 flex items-center gap-2 text-base md:text-lg font-medium text-gray-900">
+                                    <HiLightBulb className="h-5 w-5 text-yellow-500" /> {t('exercise.theory.illustration')}
                                 </h3>
                                 <div className="grid gap-4 md:grid-cols-2">
                                     {exercise.theory.examples.map((ex: string, idx: number) => (
-                                        <div key={idx} className="rounded-md bg-gray-50 border border-gray-100 p-6 transition-colors hover:border-gray-200">
-                                            <div className="mb-3 text-[10px] font-bold text-gray-500 uppercase tracking-widest">{t('exercise.theory.example', { index: idx + 1 })}</div>
-                                            <div className="text-gray-700 leading-relaxed">
+                                        <div key={idx} className="rounded-xl bg-gray-50/80 border border-gray-100 p-5 md:p-6 transition-colors hover:border-gray-200">
+                                            <div className="mb-2.5 text-[11px] font-bold text-gray-500 uppercase tracking-widest flex items-center gap-1.5 before:content-[''] before:w-1.5 before:h-1.5 before:rounded-full before:bg-yellow-400">{t('exercise.theory.example', { index: idx + 1 })}</div>
+                                            <div className="text-sm md:text-base text-gray-700 leading-relaxed">
                                                 <DynamicMarkdownRenderer content={ex} />
                                             </div>
                                         </div>
@@ -190,10 +190,10 @@ export default function AdaptiveLearningExercise({ sessionId }: ExerciseProps) {
                         )}
                     </Card>
 
-                    <div className="flex justify-center pt-4">
+                    <div className="flex justify-center pt-2 md:pt-4 px-4">
                         <Button
                             onClick={() => setShowTheory(false)}
-                            className="h-10 min-w-[200px] rounded-md bg-black px-8 text-sm font-medium text-white transition-colors hover:bg-gray-800"
+                            className="w-full md:w-auto h-12 md:h-11 min-h-[48px] md:min-w-[200px] rounded-full bg-black px-8 text-sm md:text-base font-medium text-white transition-all active:scale-[0.98] hover:bg-gray-800 shadow-md"
                         >
                             {t('exercise.theory.startExercise')}
                             <HiArrowRight className="ml-2 h-4 w-4" />
@@ -236,8 +236,8 @@ export default function AdaptiveLearningExercise({ sessionId }: ExerciseProps) {
 
             <div className="grid flex-1 grid-cols-1 gap-6 lg:grid-cols-12">
                 <div className="flex flex-col lg:col-span-8">
-                    <Card className="flex-1 overflow-hidden rounded-lg border border-gray-200 bg-white">
-                        <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4 bg-gray-50">
+                    <Card className="flex-1 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+                        <div className="flex items-center justify-between border-b border-gray-100 px-5 sm:px-6 py-4 bg-gray-50/50">
                             <div className="flex items-center gap-2 rounded-md bg-white border border-gray-200 px-2.5 py-1 box-border">
                                 <div className={`h-2 w-2 rounded-full ${bloomColor}`} />
                                 <span className={`text-[10px] font-bold uppercase tracking-widest text-gray-700`}>
@@ -249,24 +249,24 @@ export default function AdaptiveLearningExercise({ sessionId }: ExerciseProps) {
                             </span>
                         </div>
 
-                        <CardContent className="p-6 md:p-10">
+                        <CardContent className="p-5 sm:p-6 md:p-10">
                             <h2 className="mb-8 text-xl font-medium leading-relaxed text-gray-900 tracking-tight">
                                 <DynamicMarkdownRenderer content={exercise.question} />
                             </h2>
 
-                            <div className="grid gap-4">
+                            <div className="grid gap-3 sm:gap-4">
                                 {optionEntries.map(([key, value]) => (
                                     <div
                                         key={key}
                                         onClick={() => setSelectedOption(key)}
-                                        className={`group relative flex cursor-pointer items-center gap-4 rounded-md border p-4 transition-colors duration-200 ${selectedOption === key
-                                            ? 'border-gray-900 bg-gray-50'
-                                            : 'border-gray-200 bg-white hover:border-gray-400'
+                                        className={`group relative flex cursor-pointer items-start gap-4 rounded-[12px] border p-4 sm:p-5 transition-all duration-200 ${selectedOption === key
+                                            ? 'border-[#0071e3] bg-[#0071e3]/5 shadow-sm'
+                                            : 'border-gray-200 bg-white hover:border-[#c7c7c7] active:scale-[0.99]'
                                             }`}
                                     >
                                         <div
-                                            className={`flex h-6 w-6 flex-shrink-0 items-center justify-center rounded border transition-colors duration-200 ${selectedOption === key
-                                                ? 'border-gray-900 bg-gray-900 text-white'
+                                            className={`flex h-6 w-6 mt-0.5 flex-shrink-0 items-center justify-center rounded-md border transition-colors duration-200 ${selectedOption === key
+                                                ? 'border-[#0071e3] bg-[#0071e3] text-white'
                                                 : 'border-gray-300 bg-gray-50 group-hover:border-gray-400'
                                                 }`}
                                         >
@@ -277,7 +277,7 @@ export default function AdaptiveLearningExercise({ sessionId }: ExerciseProps) {
                                             )}
                                         </div>
                                         <span
-                                            className={`text-base transition-colors duration-200 ${selectedOption === key ? 'font-medium text-gray-900' : 'text-gray-700'
+                                            className={`text-base leading-relaxed transition-colors duration-200 ${selectedOption === key ? 'font-medium text-gray-900' : 'text-[#1d1d1f]'
                                                 }`}
                                         >
                                             <DynamicMarkdownRenderer content={value} />
@@ -290,20 +290,20 @@ export default function AdaptiveLearningExercise({ sessionId }: ExerciseProps) {
                 </div>
 
                 <div className="flex flex-col gap-6 lg:col-span-4">
-                    <div className="relative overflow-hidden rounded-lg bg-gray-50 border border-gray-200 p-6 text-gray-900">
+                    <div className="relative overflow-hidden rounded-xl bg-[#f5f5f7] border border-gray-200/50 p-5 sm:p-6 text-[#1d1d1f]">
                         <div className="relative z-10">
-                            <h3 className="mb-2 text-base font-medium tracking-tight flex items-center gap-2">
-                                <span className="h-2 w-2 rounded-full bg-gray-400 animate-pulse" />
+                            <h3 className="mb-3 text-base font-semibold tracking-tight flex items-center gap-2">
+                                <span className="h-2 w-2 rounded-full bg-[#0071e3] animate-pulse" />
                                 {t('focusModeTitle')}
                             </h3>
-                            <p className="mb-6 text-sm text-gray-500 leading-relaxed">
+                            <p className="mb-6 text-sm text-[#86868b] leading-relaxed">
                                 {t('exercise.focusModeContext', {
                                     concept: exercise.concept_name,
                                     level: localizedBloomLabel,
                                 })}
                             </p>
                             <Button
-                                className="w-full h-10 rounded-md bg-black py-2 text-sm font-medium text-white transition-colors hover:bg-gray-800 justify-center"
+                                className="w-full min-h-[48px] h-12 sm:h-11 sm:min-h-[44px] rounded-full bg-[#0071e3] py-2 text-sm md:text-base font-medium text-white transition-all active:scale-[0.98] sm:hover:scale-[1.02] hover:bg-[#0077ED] justify-center shadow-sm"
                                 onClick={() => void handleSubmit()}
                                 disabled={!selectedOption || submitting}
                             >

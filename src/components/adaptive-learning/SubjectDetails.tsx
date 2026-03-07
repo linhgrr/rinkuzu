@@ -133,23 +133,23 @@ export default function SubjectDetails({ sessionId }: { sessionId: string }) {
             </div>
 
             {/* ── Hero Header Card ── */}
-            <div className="relative overflow-hidden rounded-lg bg-white border border-gray-200 p-8 md:p-10">
-                <div className="relative flex flex-col md:flex-row justify-between gap-8 md:items-center">
+            <div className="relative overflow-hidden rounded-xl bg-white border border-gray-200 p-5 sm:p-8 md:p-10 shadow-sm">
+                <div className="relative flex flex-col md:flex-row justify-between gap-6 md:items-center">
                     <div className="flex items-start gap-4">
-                        <div className="rounded-md bg-gray-100 p-3 shrink-0">
-                            <HiOutlineBookOpen className="h-6 w-6 text-gray-900" />
+                        <div className="rounded-[14px] bg-gray-50/50 border border-gray-100 p-3 sm:p-3.5 shrink-0 shadow-xs">
+                            <HiOutlineBookOpen className="h-6 w-6 sm:w-7 sm:h-7 text-[#0071e3]" />
                         </div>
                         <div>
-                            <h1 className="text-2xl md:text-3xl font-medium tracking-tight text-gray-900 mb-2">
+                            <h1 className="text-xl sm:text-2xl md:text-3xl font-semibold tracking-tight text-[#1d1d1f] mb-1.5">
                                 {filename}
                             </h1>
-                            <p className="text-gray-500 text-sm leading-relaxed max-w-2xl">{summary}</p>
+                            <p className="text-[#86868b] text-sm sm:text-base leading-relaxed max-w-2xl">{summary}</p>
                         </div>
                     </div>
                     <div className="shrink-0">
                         <Button
                             onClick={handleStartLearning}
-                            className="h-10 w-full rounded-md bg-black text-white px-6 font-medium transition-colors hover:bg-gray-800 md:w-auto gap-2"
+                            className="w-full sm:w-auto rounded-full bg-[#0071e3] text-white hover:bg-[#0077ED] px-6 min-h-[44px] h-11 font-medium text-sm transition-all sm:hover:scale-105 active:scale-95 shadow-sm hover:shadow-md md:w-auto gap-2"
                         >
                             <HiOutlineLightningBolt className="h-4 w-4" />
                             {t('subjectDetails.startLearning')}

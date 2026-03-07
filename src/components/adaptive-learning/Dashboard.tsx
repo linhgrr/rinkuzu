@@ -103,11 +103,11 @@ const SubjectCard = memo(function SubjectCard({ job, onOpen, onDelete, loading, 
                 <Button
                     onClick={() => onOpen(job.job_id)}
                     disabled={loading || deleting}
-                    className="flex-1 rounded-md bg-black hover:bg-gray-800 text-white font-medium h-9 text-sm gap-2 disabled:opacity-50 transition-colors"
+                    className="flex-1 rounded-md bg-black hover:bg-gray-800 text-white font-medium min-h-[44px] h-11 text-sm gap-2 disabled:opacity-50 transition-colors"
                 >
                     {loading ? (
                         <>
-                            <svg className="animate-spin h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                             </svg>
@@ -116,7 +116,7 @@ const SubjectCard = memo(function SubjectCard({ job, onOpen, onDelete, loading, 
                     ) : (
                         <>
                             {t('dashboard.startLearning')}
-                            <HiArrowRight className="h-3.5 w-3.5" />
+                            <HiArrowRight className="h-4 w-4" />
                         </>
                     )}
                 </Button>
@@ -124,17 +124,17 @@ const SubjectCard = memo(function SubjectCard({ job, onOpen, onDelete, loading, 
                     variant="ghost"
                     onClick={(e) => { e.stopPropagation(); onDelete(job); }}
                     disabled={loading || deleting}
-                    className="h-9 w-9 p-0 rounded-md border border-gray-200 text-gray-500 hover:text-red-600 hover:bg-red-50 hover:border-red-200 transition-colors"
+                    className="min-h-[44px] h-11 w-11 p-0 rounded-md border border-gray-200 text-gray-500 hover:text-red-600 hover:bg-red-50 hover:border-red-200 transition-colors"
                     title="Xóa tài liệu"
                     aria-label={`Xóa tài liệu ${displayName}`}
                 >
                     {deleting ? (
-                        <svg className="animate-spin h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                         </svg>
                     ) : (
-                        <HiOutlineTrash className="h-4 w-4" />
+                        <HiOutlineTrash className="h-5 w-5" />
                     )}
                 </Button>
             </div>
@@ -248,17 +248,17 @@ export default function AdaptiveLearningDashboard() {
     return (
         <div className="space-y-8">
             {/* ── Hero Header ── */}
-            <div className="relative overflow-hidden rounded-lg bg-white border border-gray-200 p-8 md:p-10 mb-10">
-                <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-8">
+            <div className="relative overflow-hidden rounded-xl bg-white border border-gray-200 p-5 sm:p-8 md:p-10 mb-8 sm:mb-10 shadow-sm">
+                <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-6 md:gap-8">
                     <div className="flex items-start gap-4">
-                        <div className="rounded-md bg-gray-100 p-3 shrink-0">
-                            <HiOutlineAcademicCap className="w-6 h-6 text-gray-900" />
+                        <div className="rounded-[14px] bg-gray-50/50 border border-gray-100 p-3 sm:p-3.5 shrink-0 shadow-xs">
+                            <HiOutlineAcademicCap className="w-6 h-6 sm:w-7 sm:h-7 text-[#0071e3]" />
                         </div>
                         <div>
-                            <h1 className="text-2xl md:text-3xl font-medium tracking-tight text-gray-900 mb-2">
+                            <h1 className="text-xl sm:text-2xl md:text-3xl font-semibold tracking-tight text-[#1d1d1f] mb-1.5">
                                 {t('dashboardTitle')}
                             </h1>
-                            <p className="text-gray-500 text-base leading-relaxed max-w-2xl">
+                            <p className="text-[#86868b] text-sm sm:text-base leading-relaxed max-w-2xl">
                                 {t('dashboardSubtitle')}
                             </p>
                             {apiOnline === false && (
@@ -271,7 +271,7 @@ export default function AdaptiveLearningDashboard() {
                     </div>
                     <Button
                         onClick={handleGoUpload}
-                        className="rounded-md bg-black text-white hover:bg-gray-800 px-6 h-10 font-medium text-sm transition-colors shrink-0"
+                        className="rounded-full bg-[#0071e3] text-white hover:bg-[#0077ED] px-6 min-h-[44px] h-11 font-medium text-sm transition-all sm:hover:scale-105 active:scale-95 shadow-sm hover:shadow-md shrink-0 w-full md:w-auto"
                     >
                         {t('dashboard.uploadMaterial')}
                     </Button>
@@ -279,8 +279,8 @@ export default function AdaptiveLearningDashboard() {
 
                 {/* Quick stats */}
                 {!loading && subjects.length > 0 && (
-                    <div className="relative mt-8 grid grid-cols-2 md:grid-cols-3 gap-4">
-                        <div className="rounded-md bg-gray-50 px-5 py-4 border border-gray-100">
+                    <div className="relative mt-8 sm:mt-10 grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
+                        <div className="rounded-xl bg-[#f5f5f7] px-4 sm:px-5 py-3.5 sm:py-4">
                             <div className="text-[10px] font-bold tracking-widest uppercase text-gray-500 mb-1 flex items-center gap-1.5">
                                 <HiOutlineBookOpen className="w-3.5 h-3.5" />
                                 {t('uploadMaterial')}

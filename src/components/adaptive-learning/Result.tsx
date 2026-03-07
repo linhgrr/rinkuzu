@@ -76,19 +76,32 @@ export default function AdaptiveLearningResult({ sessionId }: ResultProps) {
 
     return (
         <div className="mx-auto flex min-h-[80vh] max-w-4xl flex-col items-center justify-center py-8">
-            <div className="mb-6 w-full text-center">
+            {/* Force hide Top Navigation and Bottom Navigation when Result is mounted */}
+            <style dangerouslySetInnerHTML={{
+                __html: `
+                nav, .md\\:hidden.fixed.bottom-0.left-0.right-0.z-50, .fixed.bottom-0.left-0.right-0.z-50 {
+                    display: none !important;
+                }
+                main.pb-16 {
+                    padding-bottom: 0 !important;
+                }
+            `}} />
+
+            <div className="mb-6 flex w-full flex-col sm:flex-row items-center justify-center gap-4 text-center sm:text-left">
                 <div
-                    className={`inline-flex h-16 w-16 items-center justify-center rounded-full ring-4 ring-white ${isCorrect ? 'bg-green-500' : 'bg-red-500'
+                    className={`inline-flex h-12 w-12 items-center justify-center rounded-full shrink-0 ${isCorrect ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'
                         }`}
                 >
-                    {isCorrect ? <HiCheck className="h-8 w-8 text-white" /> : <HiOutlineX className="h-8 w-8 text-white" />}
+                    {isCorrect ? <HiCheck className="h-6 w-6" /> : <HiOutlineX className="h-6 w-6" />}
                 </div>
-                <h1 className="mb-1 mt-4 text-2xl font-bold text-gray-900">
-                    {isCorrect ? t('result.correctTitle') : t('result.incorrectTitle')}
-                </h1>
-                <p className="text-base text-gray-500">
-                    {isCorrect ? t('result.correctDescription') : t('result.incorrectDescription')}
-                </p>
+                <div>
+                    <h1 className="text-xl font-bold text-gray-900">
+                        {isCorrect ? t('result.correctTitle') : t('result.incorrectTitle')}
+                    </h1>
+                    <p className="text-sm text-gray-500">
+                        {isCorrect ? t('result.correctDescription') : t('result.incorrectDescription')}
+                    </p>
+                </div>
             </div>
 
             <div className="grid w-full grid-cols-1 gap-6 lg:grid-cols-3">
@@ -112,6 +125,24 @@ export default function AdaptiveLearningResult({ sessionId }: ResultProps) {
                                         <DynamicMarkdownRenderer content={result.correct_option} />
                                     </span>
                                 </div>
+                            </div>
+
+                            <div className="mt-6 pt-6 border-t border-gray-100">
+                                <Button
+                                    className="flex items-center justify-center w-full h-11 gap-2 rounded-lg border border-gray-200 bg-white text-sm font-medium text-gray-900 transition-colors hover:bg-gray-50 hover:shadow-sm"
+                                    onClick={() => setIsChatOpen(true)}
+                                >
+                                    <span className="relative flex h-7 w-7 items-center justify-center rounded-full bg-gray-100 border border-gray-200">
+                                        <Image
+                                            src="https://i.ibb.co/ZRYgc1tN/Gemini-Generated-Image-yjm06yyjm06yyjm0-removebg-preview.png"
+                                            alt="Rin-chan avatar"
+                                            width={28}
+                                            height={28}
+                                            className="rounded-full object-cover"
+                                        />
+                                    </span>
+                                    <span>{t('result.chatWithTutor')}</span>
+                                </Button>
                             </div>
                         </CardContent>
                     </Card>
@@ -137,48 +168,26 @@ export default function AdaptiveLearningResult({ sessionId }: ResultProps) {
                         </CardContent>
                     </Card>
 
-                    <div className="flex gap-4">
+                    <div className="flex gap-4 pb-6">
                         <Button
                             variant="ghost"
-                            className="h-10 flex-1 rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors"
+                            className="h-12 flex-1 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors font-semibold"
                             onClick={() => router.push('/adaptive-learning')}
                         >
-                            <HiOutlineHome className="mr-2 h-4 w-4" />
+                            <HiOutlineHome className="mr-2 h-5 w-5" />
                             {t('result.dashboard')}
                         </Button>
                         <Button
-                            className="h-10 flex-[2] rounded-md bg-black text-sm font-medium text-white transition-colors hover:bg-gray-800"
+                            className="h-12 flex-[2] rounded-xl bg-[#0071e3] transition-all hover:bg-[#0077ED] text-white shadow-md hover:shadow-lg active:scale-[0.98] font-semibold"
                             onClick={handleNext}
                         >
                             {result.session_completed ? t('result.sessionCompleteCta') : t('result.nextExercise')}
-                            <HiArrowRight className="ml-2 h-4 w-4" />
+                            <HiArrowRight className="ml-2 h-5 w-5" />
                         </Button>
                     </div>
                 </div>
 
                 <div className="space-y-6">
-                    <Card className="overflow-hidden border border-gray-200 rounded-lg bg-white">
-                        <CardContent className="p-6">
-                            <h3 className="mb-2 font-medium tracking-tight text-gray-900">{t('result.stillConfused')}</h3>
-                            <p className="mb-6 text-xs text-gray-500">{t('result.aiTutorDescription')}</p>
-                            <Button
-                                className="flex items-center justify-center w-full h-10 gap-2 rounded-md border border-gray-200 bg-white text-xs font-medium text-gray-900 transition-colors hover:bg-gray-50"
-                                onClick={() => setIsChatOpen(true)}
-                            >
-                                <span className="relative flex h-6 w-6 items-center justify-center rounded-full bg-gray-100 border border-gray-200">
-                                    <Image
-                                        src="https://i.ibb.co/ZRYgc1tN/Gemini-Generated-Image-yjm06yyjm06yyjm0-removebg-preview.png"
-                                        alt="Rin-chan avatar"
-                                        width={24}
-                                        height={24}
-                                        className="rounded-full object-cover"
-                                    />
-                                </span>
-                                <span>{t('result.chatWithTutor')}</span>
-                            </Button>
-                        </CardContent>
-                    </Card>
-
                     <div className="rounded-lg border border-gray-200 bg-white p-6">
                         <h4 className="mb-4 text-[10px] font-bold uppercase tracking-widest text-gray-500">{t('result.sessionStats')}</h4>
                         <div className="space-y-4">

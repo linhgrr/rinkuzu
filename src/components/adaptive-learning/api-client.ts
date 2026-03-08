@@ -3,6 +3,7 @@ import {
     KnowledgeGraphData, MasteryMatrixData, ConceptDetail,
     PipelineUploadResponse, PipelineJobStatus, PipelineSessionResponse,
     SessionHistoryItem, SessionHistoryDetail, PipelineJobHistoryItem, DeleteSubjectResponse,
+    NextConcept, TheoryData,
 } from './types';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
@@ -27,8 +28,20 @@ export async function createSession(maxSteps: number = 50): Promise<Session> {
     });
 }
 
-export async function getNextExercise(sessionId: string): Promise<Exercise> {
-    return apiFetch<Exercise>(`/api/session/${sessionId}/next`, {
+export async function getNextConcept(sessionId: string): Promise<NextConcept> {
+    return apiFetch<NextConcept>(`/api/session/${sessionId}/next-concept`, {
+        method: 'POST',
+    });
+}
+
+export async function getTheory(sessionId: string): Promise<TheoryData> {
+    return apiFetch<TheoryData>(`/api/session/${sessionId}/theory`, {
+        method: 'GET',
+    });
+}
+
+export async function getExercise(sessionId: string): Promise<Exercise> {
+    return apiFetch<Exercise>(`/api/session/${sessionId}/exercise`, {
         method: 'POST',
     });
 }

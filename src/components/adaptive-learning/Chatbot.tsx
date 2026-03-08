@@ -122,7 +122,7 @@ export default function AdaptiveLearningChatbot({
                     <Image src={chatbotIcon} alt={t('chatbot.iconAlt')} width={20} height={20} className="w-5 h-5" />
                     <span className="font-semibold">{t('chatbot.title')}</span>
                 </div>
-                <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+                <button aria-label={t('common.close') || "Close chat"} onClick={onClose} className="flex min-h-[44px] min-w-[44px] items-center justify-center text-gray-400 hover:text-gray-600 rounded-lg transition-colors hover:bg-gray-100">
                     <HiOutlineX className="w-6 h-6" />
                 </button>
             </div>
@@ -170,12 +170,13 @@ export default function AdaptiveLearningChatbot({
                         onChange={(e) => setInput(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && handleSend()}
                         placeholder={t('chatbot.placeholder')}
-                        className="w-full pl-4 pr-12 py-2.5 bg-white border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900 transition-colors text-sm"
+                        className="w-full pl-4 pr-14 py-3 min-h-[44px] bg-white border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900 transition-colors text-sm"
                     />
                     <button
                         onClick={handleSend}
                         disabled={!input.trim() || isTyping}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-gray-900 text-white rounded hover:bg-black disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        aria-label={t('chatbot.send') || "Send message"}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 flex min-h-[40px] min-w-[40px] items-center justify-center bg-gray-900 text-white rounded hover:bg-black disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
                         <HiArrowUp className="w-4 h-4" />
                     </button>

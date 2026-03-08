@@ -369,6 +369,7 @@
       "theory": {
         "reviewKnowledge": "Review Knowledge",
         "theoryReview": "Let's review the theory about {concept} before starting the exercise.",
+        "generatingExplanationFor": "Generating explanation for {concept}...",
         "basicTheory": "Basic Theory",
         "illustration": "Illustration",
         "example": "Example {index}",

@@ -27,6 +27,8 @@ import {
   HiOutlineTrendingUp,
   HiOutlineLightBulb,
 } from '@/components/icons';
+import { TextShimmer } from '@/components/ui/text-shimmer';
+import { FiBookOpen, FiTarget, FiZap, FiAward } from 'react-icons/fi';
 
 const StatCardsSkeleton = memo(function StatCardsSkeleton() {
   return (
@@ -108,16 +110,16 @@ const SidebarSkeleton = memo(function SidebarSkeleton() {
         <div className="h-3 w-40 skeleton-shimmer mt-5 mx-auto" />
       </Card>
 
-      <Card className="p-5 border-blue-100/50 bg-blue-50/30 rounded-2xl shadow-sm" aria-hidden="true">
+      <Card className="p-5 border-slate-100 bg-slate-50/30 rounded-2xl shadow-sm" aria-hidden="true">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full skeleton-shimmer-blue" />
+            <div className="w-10 h-10 rounded-full skeleton-shimmer" />
             <div className="space-y-2">
-              <div className="h-4 w-24 skeleton-shimmer-blue" />
-              <div className="h-3 w-28 skeleton-shimmer-blue" />
+              <div className="h-4 w-24 skeleton-shimmer" />
+              <div className="h-3 w-28 skeleton-shimmer" />
             </div>
           </div>
-          <div className="h-8 w-20 rounded-full skeleton-shimmer-blue" />
+          <div className="h-8 w-20 rounded-full skeleton-shimmer" />
         </div>
       </Card>
     </>
@@ -127,21 +129,24 @@ const SidebarSkeleton = memo(function SidebarSkeleton() {
 const ProTipCard = memo(function ProTipCard() {
   const t = useTranslations('dashboard');
   return (
-    <Card className="p-6 bg-gray-900 text-white border-0 shadow-xl overflow-hidden relative">
+    <Card className="p-6 bg-slate-900 text-white border-0 shadow-xl overflow-hidden relative group">
       <div className="relative z-10">
+        <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center mb-4 border border-white/10 group-hover:bg-white/20 transition-all">
+          <HiOutlineLightBulb className="w-6 h-6 text-slate-100" />
+        </div>
         <h3 className="font-bold text-lg mb-2">{t('proTip')}</h3>
-        <p className="text-sm text-gray-300 mb-4 leading-relaxed">
+        <p className="text-sm text-slate-400 mb-4 leading-relaxed font-medium">
           {t('proTipContent')}
         </p>
         <Button
           size="sm"
           variant="outline"
-          className="w-full border-gray-700 text-white hover:bg-white text-black transition-all rounded-full"
+          className="w-full border-white/20 text-white hover:bg-white hover:text-black transition-all rounded-xl py-5"
         >
           {t('readGuide')}
         </Button>
       </div>
-      <div className="absolute top-[-20%] right-[-10%] w-40 h-40 bg-white/5 rounded-full blur-2xl" />
+      <div className="absolute top-[-20%] right-[-10%] w-40 h-40 bg-white/5 rounded-full blur-2xl group-hover:bg-white/10 transition-all duration-700" />
     </Card>
   );
 });
@@ -291,7 +296,7 @@ export function DashboardClient({
   const isQuizzesInitialLoading = bootstrapLoading && quizzes.length === 0;
 
   return (
-    <div className="min-h-screen bg-[#F5F5F7] pb-12">
+    <div className="min-h-screen bg-slate-50 pb-12 font-sans selection:bg-slate-900 selection:text-white">
       <Navigation initialSession={initialSession} />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -317,72 +322,64 @@ export function DashboardClient({
               </Button>
             </div>
 
-            {/* Hero Section: Modes */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Card 1: Daily Review (Existing) */}
-              <div className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-[#0071e3] to-[#40a9ff] p-8 text-white shadow-xl hover:shadow-2xl transition-all duration-500 group flex flex-col justify-between min-h-[300px]">
-                <div className="relative z-10">
-                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md border border-white/20 text-sm font-medium mb-4">
-                    <HiOutlineFire className="w-4 h-4 text-orange-300" />
-                    <span>{t('dailyGoal')}</span>
-                  </div>
-                  {isStatsInitialLoading ? (
-                    <div className="h-10 w-52 rounded-xl skeleton-shimmer-light mb-2" />
-                  ) : (
-                    <h2 className="text-3xl font-bold mb-2 tracking-tight">
-                      {t('questionsDue', { count: stats?.dueCount || 0 })}
-                    </h2>
-                  )}
-                  <p className="text-blue-50 text-sm mb-6 leading-relaxed opacity-90">
-                    {t('reviewingHelps')}
-                  </p>
+            {/* Hero Section: Adaptive Learning Feature Introduction */}
+            <div className="relative overflow-hidden rounded-[2rem] bg-white border border-slate-200 shadow-sm p-8 md:p-12 flex flex-col md:flex-row items-center justify-between gap-8 md:gap-12 group transition-all duration-500 hover:shadow-md">
+              {/* Subtle background decoration */}
+              <div className="pointer-events-none absolute top-0 right-0 w-[40rem] h-[40rem] -mr-40 -mt-40 bg-slate-100/50 rounded-full blur-3xl transition-all duration-700 group-hover:bg-slate-200/50" />
+
+              <div className="relative z-10 flex-1 max-w-2xl">
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 mb-6 uppercase tracking-wider">
+                  <FiZap className="w-3.5 h-3.5 text-slate-500" />
+                  <span>{t('aiPowered', { fallback: 'AI-Powered Engine' })}</span>
                 </div>
 
-                <div className="relative z-10 mt-auto">
-                  <Button
-                    onClick={handleStartReview}
-                    size="lg"
-                    className="w-full bg-white text-[#0071e3] hover:bg-blue-50 border-0 rounded-xl py-6 text-base font-semibold shadow-lg hover:translate-y-[-2px] transition-all"
-                  >
-                    {t('startReviewSession')} <HiOutlineArrowRight className="ml-2 w-5 h-5" />
-                  </Button>
-                </div>
+                <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-slate-900 tracking-tight leading-tight mb-4">
+                  Master any subject with <br />
+                  <TextShimmer className="font-extrabold" duration={3}>
+                    Adaptive Learning
+                  </TextShimmer>
+                </h2>
 
-                {/* Decorative Elements */}
-                <div className="absolute top-[-20%] right-[-10%] w-60 h-60 bg-white/10 rounded-full blur-3xl group-hover:bg-white/20 transition-all duration-700" />
-                <div className="absolute bottom-[-10%] right-[10%] w-32 h-32 bg-indigo-500/30 rounded-full blur-2xl" />
-              </div>
+                <p className="text-slate-500 text-base md:text-lg mb-8 leading-relaxed max-w-xl">
+                  {t('adaptiveLearningDescription', { fallback: "Upload your documents, and our AI will extract key concepts and relationships, generating a personalized learning path tailored just for you." })}
+                </p>
 
-              {/* Card 2: Adaptive Learning (New) */}
-              <div className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-indigo-600 to-purple-600 p-8 text-white shadow-xl hover:shadow-2xl transition-all duration-500 group flex flex-col justify-between min-h-[300px]">
-                <div className="relative z-10">
-                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md border border-white/20 text-sm font-medium mb-4">
-                    <svg className="w-4 h-4 text-purple-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                    </svg>
-                    <span>{t('aiPowered')}</span>
-                  </div>
-                  <h2 className="text-3xl font-bold mb-2 tracking-tight">
-                    {t('adaptiveLearning')}
-                  </h2>
-                  <p className="text-indigo-100 text-sm mb-6 leading-relaxed opacity-90">
-                    {t('adaptiveLearningDescription')}
-                  </p>
-                </div>
-
-                <div className="relative z-10 mt-auto">
+                <div className="flex flex-col sm:flex-row items-center gap-4">
                   <Button
                     onClick={() => router.push('/adaptive-learning')}
-                    size="lg"
-                    className="w-full bg-white text-indigo-600 hover:bg-indigo-50 border-0 rounded-xl py-6 text-base font-semibold shadow-lg hover:translate-y-[-2px] transition-all"
+                    className="w-full sm:w-auto bg-slate-900 text-white hover:bg-slate-800 rounded-2xl px-8 py-6 font-medium shadow-none transition-all flex items-center justify-center gap-2 text-base"
                   >
-                    {t('startLearning')} <HiOutlineArrowRight className="ml-2 w-5 h-5" />
+                    {t('startLearning', { fallback: "Try Adaptive Learning" })} <HiOutlineArrowRight className="w-5 h-5 ml-1" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={handleStartReview}
+                    className="w-full sm:w-auto border-slate-200 text-slate-600 hover:bg-slate-50 rounded-2xl px-8 py-6 font-medium transition-all text-base bg-white"
+                  >
+                    {t('startReviewSession', { fallback: "Classic Review" })}
                   </Button>
                 </div>
+              </div>
 
-                {/* Decorative Elements */}
-                <div className="absolute top-[-20%] right-[-10%] w-60 h-60 bg-white/10 rounded-full blur-3xl group-hover:bg-white/20 transition-all duration-700" />
-                <div className="absolute bottom-[-10%] left-[-10%] w-32 h-32 bg-purple-500/30 rounded-full blur-2xl" />
+              {/* Minimalist Graphic replacing the colored blobs */}
+              <div className="relative z-10 hidden lg:flex items-center justify-center w-72 h-72 shrink-0">
+                {/* Central node */}
+                <div className="w-20 h-20 rounded-3xl bg-white border-2 border-slate-900 shadow-[0_8px_30px_rgb(0,0,0,0.12)] flex items-center justify-center z-20">
+                  <FiBookOpen className="w-8 h-8 text-slate-900" />
+                </div>
+
+                {/* Orbiting structure */}
+                <div className="absolute inset-4 rounded-full border-[1.5px] border-dashed border-slate-200 animate-[spin_20s_linear_infinite]">
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 rounded-2xl bg-white border border-slate-200 shadow-sm flex items-center justify-center -rotate-90">
+                    <FiTarget className="w-5 h-5 text-slate-500" />
+                  </div>
+                </div>
+                <div className="absolute inset-16 rounded-full border border-slate-200 animate-[spin_15s_linear_infinite_reverse]">
+                  <div className="absolute bottom-0 right-1/4 w-10 h-10 rounded-2xl bg-white border border-slate-200 shadow-sm flex items-center justify-center">
+                    <FiAward className="w-4 h-4 text-slate-500" />
+                  </div>
+                </div>
+                <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent opacity-80 z-10 bottom-0 top-1/2" />
               </div>
             </div>
 
@@ -394,25 +391,25 @@ export function DashboardClient({
                 <StatCard
                   label={t('dailyStreak')}
                   value={`${stats?.streak || 0} ${t('days')}`}
-                  color="bg-orange-50 text-orange-600"
+                  color="bg-slate-50 text-slate-600"
                   icon={<HiOutlineFire className="text-2xl" />}
                 />
                 <StatCard
                   label={t('totalXP')}
                   value={stats?.xp || 0}
-                  color="bg-purple-50 text-purple-600"
+                  color="bg-slate-900 text-white"
                   icon={<HiOutlineLightningBolt className="text-2xl" />}
                 />
                 <StatCard
                   label={t('accuracy')}
                   value={`${stats?.averageAccuracy || 0}%`}
-                  color="bg-green-50 text-green-600"
+                  color="bg-slate-50 text-slate-900 font-bold"
                   icon={<HiOutlineTrendingUp className="text-2xl" />}
                 />
                 <StatCard
                   label={t('toReview')}
                   value={stats?.dueCount || 0}
-                  color="bg-blue-50 text-blue-600"
+                  color="bg-slate-100 text-slate-500"
                   icon={<HiOutlineLightBulb className="text-2xl" />}
                 />
               </div>
@@ -434,13 +431,13 @@ export function DashboardClient({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div
                   onClick={handleCreateQuiz}
-                  className="group cursor-pointer rounded-2xl border-2 border-dashed border-gray-200 p-6 flex flex-col items-center justify-center text-center hover:border-blue-500 hover:bg-blue-50/50 transition-all duration-300 min-h-[160px]"
+                  className="group cursor-pointer rounded-2xl border-2 border-dashed border-slate-200 p-6 flex flex-col items-center justify-center text-center hover:border-slate-900 hover:bg-white transition-all duration-300 min-h-[160px] bg-slate-50/50"
                 >
-                  <div className="w-14 h-14 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                  <div className="w-14 h-14 bg-white border border-slate-200 text-slate-900 rounded-2xl flex items-center justify-center mb-4 shadow-sm group-hover:scale-105 transition-transform">
                     <HiOutlinePlus className="w-7 h-7" />
                   </div>
-                  <h3 className="font-semibold text-gray-900 group-hover:text-blue-700">{t('createNewQuiz')}</h3>
-                  <p className="text-sm text-gray-500 mt-1">{t('addYourQuestions')}</p>
+                  <h3 className="font-bold text-slate-900 group-hover:text-black">{t('createNewQuiz')}</h3>
+                  <p className="text-xs font-medium text-slate-400 mt-1 uppercase tracking-tight">{t('addYourQuestions')}</p>
                 </div>
 
                 {isQuizzesInitialLoading ? (
@@ -454,16 +451,17 @@ export function DashboardClient({
                 {/* Explore Banner as standard card size */}
                 <div
                   onClick={handleExplore}
-                  className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 p-6 text-white cursor-pointer hover:shadow-lg transition-all group min-h-[160px] flex flex-col justify-center"
+                  className="relative overflow-hidden rounded-2xl bg-white border border-slate-200 p-6 text-slate-900 cursor-pointer hover:shadow-md transition-all group min-h-[160px] flex flex-col justify-center"
                 >
                   <div className="relative z-10">
-                    <h3 className="text-lg font-bold mb-1">{t('exploreCommunity')}</h3>
-                    <p className="text-indigo-100 text-sm mb-4">{t('discoverQuizzes')}</p>
-                    <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center group-hover:translate-x-1 transition-transform">
-                      <HiOutlineArrowRight className="w-5 h-5" />
+                    <div className="inline-flex px-2 py-0.5 rounded bg-slate-900 text-white text-[10px] font-bold uppercase tracking-widest mb-2">Explore</div>
+                    <h3 className="text-lg font-bold mb-1 tracking-tight">{t('exploreCommunity')}</h3>
+                    <p className="text-slate-400 text-xs font-medium mb-4">{t('discoverQuizzes')}</p>
+                    <div className="w-10 h-10 bg-slate-50 border border-slate-100 rounded-full flex items-center justify-center group-hover:translate-x-1 transition-transform shadow-sm">
+                      <HiOutlineArrowRight className="w-5 h-5 text-slate-900" />
                     </div>
                   </div>
-                  <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-white/10 rounded-full blur-2xl group-hover:bg-white/20 transition-all" />
+                  <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-slate-50 rounded-full blur-2xl group-hover:bg-slate-100 transition-all" />
                 </div>
               </div>
             </section>
@@ -491,9 +489,9 @@ export function DashboardClient({
                         <span className="text-gray-600">{t('levelProgress')}</span>
                         <span className="text-blue-600">{stats.levelProgress}/100 XP</span>
                       </div>
-                      <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
+                      <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
                         <div
-                          className="bg-gradient-to-r from-blue-500 to-purple-500 h-full rounded-full transition-all duration-500"
+                          className="bg-slate-900 h-full rounded-full transition-all duration-700 ease-out"
                           style={{ width: `${stats.levelProgress}%` }}
                         />
                       </div>

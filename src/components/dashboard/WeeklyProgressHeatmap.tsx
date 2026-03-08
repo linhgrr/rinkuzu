@@ -33,11 +33,11 @@ function formatDateKey(date: Date): string {
 }
 
 function getIntensityClass(questions: number): string {
-  if (questions === 0) return 'bg-gray-100';
-  if (questions <= 5) return 'bg-green-200';
-  if (questions <= 10) return 'bg-green-400';
-  if (questions <= 20) return 'bg-green-500';
-  return 'bg-green-600';
+  if (questions === 0) return 'bg-slate-50';
+  if (questions <= 5) return 'bg-slate-200';
+  if (questions <= 10) return 'bg-slate-400';
+  if (questions <= 20) return 'bg-slate-600';
+  return 'bg-slate-900';
 }
 
 const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
@@ -129,14 +129,14 @@ export const WeeklyProgressHeatmap = memo(function WeeklyProgressHeatmap({
         })}
       </div>
 
-      <div className="flex items-center justify-center gap-2 mt-4 text-xs text-[#86868b]">
+      <div className="flex items-center justify-center gap-2 mt-4 text-[10px] text-slate-400 font-bold uppercase tracking-widest">
         <span>{tCommon('less')}</span>
-        <div className="flex gap-1">
-          <div className="w-4 h-4 rounded bg-gray-100" />
-          <div className="w-4 h-4 rounded bg-green-200" />
-          <div className="w-4 h-4 rounded bg-green-400" />
-          <div className="w-4 h-4 rounded bg-green-500" />
-          <div className="w-4 h-4 rounded bg-green-600" />
+        <div className="flex gap-1.5">
+          <div className="w-3 h-3 rounded-sm bg-slate-50 border border-slate-100" />
+          <div className="w-3 h-3 rounded-sm bg-slate-200" />
+          <div className="w-3 h-3 rounded-sm bg-slate-400" />
+          <div className="w-3 h-3 rounded-sm bg-slate-600" />
+          <div className="w-3 h-3 rounded-sm bg-slate-900" />
         </div>
         <span>{tCommon('more')}</span>
       </div>

@@ -27,9 +27,9 @@ export function StreakFreezeCard({ count, xp, onBuy }: StreakFreezeCardProps) {
     };
 
     return (
-        <Card className="p-5 flex items-center justify-between border-blue-100/50 bg-blue-50/30 rounded-2xl shadow-sm">
+        <Card className="p-5 flex items-center justify-between border-slate-200 bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-xl">
+                <div className="w-10 h-10 bg-slate-50 border border-slate-100 rounded-xl flex items-center justify-center text-xl">
                     ❄️
                 </div>
                 <div>
@@ -47,12 +47,12 @@ export function StreakFreezeCard({ count, xp, onBuy }: StreakFreezeCardProps) {
                         size="sm"
                         onClick={handleBuy}
                         disabled={!canBuy || buying}
-                        className={canBuy ? 'bg-blue-600 hover:bg-blue-700' : 'opacity-50 cursor-not-allowed'}
+                        className={canBuy ? 'bg-slate-900 hover:bg-black text-white' : 'bg-slate-100 text-slate-400 cursor-not-allowed'}
                     >
                         {buying ? '…' : t('buyXP', { xp: COST })}
                     </Button>
                 ) : (
-                    <span className="text-xs font-bold text-green-600 px-3 py-1 bg-green-100 rounded-full">
+                    <span className="text-[10px] font-bold text-slate-400 px-3 py-1 bg-slate-50 border border-slate-100 rounded-full uppercase tracking-wider">
                         {t('maxedOut')}
                     </span>
                 )}

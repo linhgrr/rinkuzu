@@ -17,15 +17,15 @@ export const StatCard = memo(function StatCard({
   color,
 }: StatCardProps) {
   return (
-    <Card className="p-5 flex items-center gap-4 rounded-2xl shadow-sm hover:shadow-md transition-shadow border-gray-100/50">
+    <Card className="p-5 flex items-center gap-4 rounded-2xl shadow-sm hover:shadow-md hover:border-slate-300 transition-all border-slate-200 bg-white">
       <div
-        className={`w-12 h-12 rounded-2xl flex items-center justify-center ${color} shrink-0`}
+        className={`w-12 h-12 rounded-xl flex items-center justify-center ${color} shrink-0`}
       >
         {icon}
       </div>
       <div className="min-w-0">
-        <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-0.5">{label}</p>
-        <p className="text-xl sm:text-2xl font-bold text-[#1d1d1f] truncate">{value}</p>
+        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">{label}</p>
+        <p className="text-xl sm:text-2xl font-bold text-slate-900 truncate tracking-tight">{value}</p>
       </div>
     </Card>
   );

@@ -60,7 +60,7 @@ export const QuizCard = memo(function QuizCard({ quiz }: QuizCardProps) {
   return (
     <Card
       variant="interactive"
-      className="flex flex-col justify-between h-full rounded-2xl shadow-sm hover:shadow-md hover:border-blue-200 transition-all duration-300"
+      className="flex flex-col justify-between h-full rounded-2xl shadow-sm hover:shadow-md hover:border-slate-300 transition-all duration-300 border-slate-200"
       onClick={handleClick}
       onKeyDown={handleKeyDown}
       tabIndex={0}
@@ -77,7 +77,7 @@ export const QuizCard = memo(function QuizCard({ quiz }: QuizCardProps) {
           </Badge>
         </div>
 
-        <CardTitle size="sm" className="line-clamp-2 text-base font-bold text-gray-800 leading-snug group-hover:text-blue-600 transition-colors">
+        <CardTitle size="sm" className="line-clamp-2 text-base font-bold text-slate-800 leading-snug group-hover:text-black transition-colors">
           {quiz.title}
         </CardTitle>
       </CardHeader>

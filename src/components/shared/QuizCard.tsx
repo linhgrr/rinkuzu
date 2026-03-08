@@ -60,7 +60,7 @@ export const QuizCard = memo(function QuizCard({ quiz }: QuizCardProps) {
   return (
     <Card
       variant="interactive"
-      className="flex flex-col justify-between h-full rounded-2xl shadow-sm hover:shadow-md hover:border-slate-300 transition-all duration-300 border-slate-200"
+      className="flex flex-col justify-between h-full rounded-2xl shadow-sm border border-slate-200 hover:border-teal-400 hover:shadow-[0_0_15px_rgba(45,212,191,0.2)] transition-all duration-300"
       onClick={handleClick}
       onKeyDown={handleKeyDown}
       tabIndex={0}

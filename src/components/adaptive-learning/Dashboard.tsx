@@ -16,7 +16,8 @@ import {
     FiSearch,
     FiBook,
     FiChevronRight,
-    FiAward
+    FiAward,
+    FiActivity
 } from 'react-icons/fi';
 import { checkApiHealth, createSessionFromPipeline, deleteSubject, getSessionHistory } from './api-client';
 import type { PipelineJobHistoryItem, SessionHistoryItem } from './types';
@@ -63,7 +64,7 @@ const SubjectCard = memo(function SubjectCard({ job, onOpen, onDelete, loading, 
 
     return (
         <div
-            className="group w-full overflow-hidden rounded-2xl bg-white border border-slate-200/80 shadow-sm hover:shadow-md transition-all duration-300 flex flex-row items-center cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-slate-900 hover:-translate-y-1 bg-gradient-to-r from-white to-slate-50/30 mb-3"
+            className="group w-full overflow-hidden rounded-2xl bg-white border border-slate-200/80 shadow-sm hover:border-teal-400 hover:shadow-[0_0_15px_rgba(20,184,166,0.2)] transition-all duration-300 flex flex-row items-center cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-teal-500 bg-gradient-to-r from-white to-slate-50/30 mb-3"
             onClick={() => onOpen(job.job_id)}
             role="button"
             tabIndex={0}
@@ -252,9 +253,9 @@ export default function AdaptiveLearningDashboard() {
                         <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-slate-900">Welcome back.</h1>
                         <p className="text-slate-600 mt-2 text-base max-w-xl">Pick up right where you left off and keep your learning streak alive.</p>
                         {apiOnline === false && (
-                            <div className="mt-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-red-50 border border-red-100 text-red-600 text-xs font-medium">
-                                <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span>
-                                API Offline
+                            <div className="mt-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-orange-50 border border-orange-100 text-orange-600 text-xs font-medium">
+                                <span className="w-1.5 h-1.5 rounded-full bg-orange-500"></span>
+                                Connection limited. Some features may be unavailable.
                             </div>
                         )}
                         {error && (
@@ -291,11 +292,12 @@ export default function AdaptiveLearningDashboard() {
                                 <div className="h-12 bg-slate-100 rounded-xl w-40"></div>
                             </section>
                         ) : upNextSubject ? (
-                            <section className="bg-white rounded-3xl p-8 md:p-10 border border-slate-200 shadow-sm relative overflow-hidden">
+                            <section className="bg-white rounded-3xl p-8 md:p-10 border border-slate-200 shadow-sm hover:border-teal-400 hover:shadow-[0_0_20px_rgba(20,184,166,0.15)] transition-all duration-500 relative overflow-hidden">
+                                <div className="absolute top-0 right-0 w-64 h-64 bg-teal-50 rounded-full blur-3xl opacity-60 translate-x-1/3 -translate-y-1/4 pointer-events-none"></div>
                                 <div className="relative z-10 flex flex-col items-start gap-6">
                                     <div className="flex items-center gap-3 mb-2">
-                                        <span className="bg-slate-900 text-white text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded">UP NEXT</span>
-                                        <span className="text-slate-600 text-sm font-medium">Continue Learning</span>
+                                        <span className="bg-teal-100 text-teal-700 text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded">UP NEXT</span>
+                                        <span className="text-teal-600 text-sm font-medium">Continue Learning</span>
                                     </div>
                                     <h2 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight leading-snug">
                                         {upNextSubject.subject_id || upNextSubject.filename.replace(/\.[^.]+$/, '')}
@@ -306,7 +308,7 @@ export default function AdaptiveLearningDashboard() {
                                     <button
                                         onClick={() => handleOpenSubject(upNextSubject.job_id)}
                                         disabled={loadingJobId === upNextSubject.job_id}
-                                        className="bg-slate-900 hover:bg-black text-white font-medium py-3.5 px-8 rounded-xl flex items-center justify-center gap-2.5 transition-all duration-300 w-full sm:w-auto disabled:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-slate-900 min-h-[56px]"
+                                        className="bg-teal-600 hover:bg-teal-700 text-white font-medium py-3.5 px-8 rounded-xl flex items-center justify-center gap-2.5 shadow-lg hover:shadow-teal-500/25 border border-teal-500 transition-all duration-300 w-full sm:w-auto disabled:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-teal-600 min-h-[56px]"
                                     >
                                         {loadingJobId === upNextSubject.job_id ? (
                                             <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
@@ -328,7 +330,7 @@ export default function AdaptiveLearningDashboard() {
                                 <p className="text-slate-600 mb-8 max-w-sm mx-auto">Get started by uploading a PDF document to generate an adaptive learning experience.</p>
                                 <button
                                     onClick={handleGoUpload}
-                                    className="bg-slate-900 hover:bg-black text-white font-medium py-3.5 px-8 rounded-xl inline-flex items-center justify-center gap-2.5 transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-slate-900 shadow-sm min-h-[56px]"
+                                    className="bg-teal-600 hover:bg-teal-700 text-white font-medium py-3.5 px-8 rounded-xl inline-flex items-center justify-center gap-2.5 shadow-lg hover:shadow-teal-500/25 border border-teal-500 transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-teal-600 min-h-[56px]"
                                 >
                                     <FiUploadCloud className="w-5 h-5 opacity-80" aria-hidden="true" />
                                     Upload Document
@@ -377,7 +379,7 @@ export default function AdaptiveLearningDashboard() {
                                 </div>
                             ) : filteredSubjects.length === 0 ? (
                                 <div className="text-center py-12 bg-slate-50 rounded-2xl border border-slate-200 border-dashed mb-4">
-                                    <div className="bg-white w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-4 border border-slate-100 shadow-sm">
+                                    <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center mx-auto mb-4 shadow-sm border border-slate-200">
                                         <FiBookOpen className="w-5 h-5 text-slate-400" aria-hidden="true" />
                                     </div>
                                     <h3 className="text-sm font-semibold text-slate-900 tracking-tight">No documents yet</h3>

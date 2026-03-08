@@ -18,10 +18,10 @@ const Card = React.forwardRef<
   };
 
   const hoverEffects = hover
-    ? 'hover:shadow-apple-lg hover:-translate-y-0.5 active:scale-[0.99]'
+    ? 'active:scale-[0.99]'
     : variant === 'interactive'
-    ? 'hover:shadow-apple-lg hover:-translate-y-0.5 active:scale-[0.99]'
-    : '';
+      ? 'active:scale-[0.99]'
+      : '';
 
   return (
     <div

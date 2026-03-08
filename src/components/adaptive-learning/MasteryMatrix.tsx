@@ -10,7 +10,7 @@ interface MasteryMatrixProps {
     filterActiveOnly?: boolean;
 }
 
-const BLOOM_COLORS = ['bg-blue-500', 'bg-green-500', 'bg-yellow-500', 'bg-purple-500', 'bg-red-500', 'bg-blue-500'];
+const BLOOM_COLORS = ['bg-slate-500', 'bg-teal-500', 'bg-emerald-500', 'bg-amber-500', 'bg-orange-500', 'bg-rose-500'];
 const BLOOM_TRANSLATION_BY_LABEL: Record<string, string> = {
     Remember: 'remember',
     Understand: 'understand',

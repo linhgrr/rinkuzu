@@ -80,7 +80,7 @@ export default function AdaptiveLearningResult({ sessionId }: ResultProps) {
 
             <div className="mb-6 flex w-full flex-col sm:flex-row items-center justify-center gap-4 text-center sm:text-left">
                 <div
-                    className={`inline-flex h-12 w-12 items-center justify-center rounded-full shrink-0 ${isCorrect ? 'bg-slate-900 text-white shadow-md' : 'bg-slate-100 text-slate-600 border border-slate-200'
+                    className={`inline-flex h-12 w-12 items-center justify-center rounded-full shrink-0 ${isCorrect ? 'bg-emerald-500 text-white shadow-md' : 'bg-slate-100 text-slate-600 border border-slate-200'
                         }`}
                 >
                     {isCorrect ? <HiCheck className="h-6 w-6" /> : <HiOutlineX className="h-6 w-6" />}
@@ -169,7 +169,7 @@ export default function AdaptiveLearningResult({ sessionId }: ResultProps) {
                             {t('result.dashboard')}
                         </Button>
                         <Button
-                            className="h-12 flex-[2] rounded-xl bg-slate-900 hover:bg-slate-800 text-white shadow-md active:scale-[0.98] font-semibold transition-all"
+                            className="h-12 flex-[2] rounded-xl bg-teal-600 hover:bg-teal-700 focus:ring-teal-500 text-white shadow-md active:scale-[0.98] font-semibold transition-all"
                             onClick={handleNext}
                         >
                             {result.session_completed ? t('result.sessionCompleteCta') : t('result.nextExercise')}

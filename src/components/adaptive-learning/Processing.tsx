@@ -406,7 +406,7 @@ export default function AdaptiveLearningProcessing() {
                                         <div key={step.id} className="flex items-center gap-3 group">
                                             <div
                                                 className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full transition-colors duration-200 ${isCompleted
-                                                    ? 'bg-slate-900 text-white'
+                                                    ? 'bg-teal-600 text-white'
                                                     : isActive
                                                         ? 'border border-slate-900 bg-white'
                                                         : 'border border-slate-200 bg-slate-50'

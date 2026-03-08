@@ -149,7 +149,7 @@ export default function SubjectDetails({ sessionId }: { sessionId: string }) {
                     <div className="shrink-0">
                         <Button
                             onClick={handleStartLearning}
-                            className="w-full sm:w-auto rounded-full bg-slate-900 text-white hover:bg-slate-800 px-6 min-h-[44px] h-11 font-medium text-sm transition-all sm:hover:scale-105 active:scale-95 shadow-sm hover:shadow-md md:w-auto gap-2"
+                            className="w-full sm:w-auto rounded-full bg-teal-600 text-white hover:bg-teal-700 focus:ring-teal-500 px-6 min-h-[44px] h-11 font-medium text-sm transition-all sm:hover:scale-105 active:scale-95 shadow-sm md:w-auto gap-2"
                         >
                             <HiOutlineLightningBolt className="h-4 w-4" />
                             {t('subjectDetails.startLearning')}

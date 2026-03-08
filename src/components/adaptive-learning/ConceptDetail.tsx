@@ -11,7 +11,7 @@ interface ConceptDetailPanelProps {
 }
 
 const BLOOM_KEYS = ['remember', 'understand', 'apply', 'analyze', 'evaluate', 'create'] as const;
-const BLOOM_COLORS = ['bg-blue-500', 'bg-green-500', 'bg-yellow-500', 'bg-purple-500', 'bg-red-500', 'bg-blue-500'];
+const BLOOM_COLORS = ['bg-slate-500', 'bg-teal-500', 'bg-emerald-500', 'bg-amber-500', 'bg-orange-500', 'bg-rose-500'];
 
 export default function ConceptDetailPanel({ concept, onClose }: ConceptDetailPanelProps) {
     const t = useTranslations('adaptiveLearning');
@@ -24,7 +24,7 @@ export default function ConceptDetailPanel({ concept, onClose }: ConceptDetailPa
             return { label: t('conceptDetail.mastered'), className: 'bg-green-100 text-green-700' };
         }
         if (concept.status === 'in_progress') {
-            return { label: t('conceptDetail.inProgress'), className: 'bg-blue-100 text-blue-700' };
+            return { label: t('conceptDetail.inProgress'), className: 'bg-teal-100 text-teal-700' };
         }
         return { label: t('conceptDetail.notStarted'), className: 'bg-gray-100 text-gray-600' };
     }, [concept.status, t]);
@@ -33,7 +33,7 @@ export default function ConceptDetailPanel({ concept, onClose }: ConceptDetailPa
         ? 'bg-gray-400'
         : concept.mastery >= 0.75
             ? 'bg-green-500'
-            : 'bg-blue-500';
+            : 'bg-teal-500';
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm" onClick={onClose}>
@@ -129,7 +129,7 @@ export default function ConceptDetailPanel({ concept, onClose }: ConceptDetailPa
                             </h3>
                             <div className="flex flex-wrap gap-2">
                                 {concept.dependents.map((dependent) => (
-                                    <span key={dependent.id} className="rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700">
+                                    <span key={dependent.id} className="rounded-full bg-teal-50 px-3 py-1 text-xs font-medium text-teal-700">
                                         {dependent.name}
                                     </span>
                                 ))}

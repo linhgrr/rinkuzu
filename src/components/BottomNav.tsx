@@ -95,21 +95,21 @@ export default function BottomNav() {
             href: '/dashboard',
             labelKey: 'home',
             icon: (isActive: boolean) => (
-                isActive ? <HiHome className="w-6 h-6 text-blue-600" /> : <HiOutlineHome className="w-6 h-6 text-gray-500" />
+                isActive ? <HiHome className="w-6 h-6 text-slate-900" /> : <HiOutlineHome className="w-6 h-6 text-slate-500" />
             )
         },
         {
             href: '/review',
             labelKey: 'history',
             icon: (isActive: boolean) => (
-                isActive ? <HiInbox className="w-6 h-6 text-blue-600" /> : <HiOutlineInbox className="w-6 h-6 text-gray-500" />
+                isActive ? <HiInbox className="w-6 h-6 text-slate-900" /> : <HiOutlineInbox className="w-6 h-6 text-slate-500" />
             )
         },
         {
             href: '/create',
             labelKey: 'create',
             icon: (isActive: boolean) => (
-                <div className={`w-10 h-10 -mt-5 rounded-full flex items-center justify-center shadow-lg ${isActive ? 'bg-blue-700' : 'bg-blue-600'}`} aria-label="Create new quiz">
+                <div className={`w-12 h-12 -mt-6 rounded-full flex items-center justify-center shadow-[0_8px_16px_rgb(0,0,0,0.12)] border-[3px] border-white transition-transform duration-300 ${isActive ? 'bg-slate-800 scale-105' : 'bg-slate-900 hover:scale-105'}`} aria-label="Create new quiz">
                     {isActive ? <HiPlus className="w-6 h-6 text-white" aria-hidden="true" /> : <HiOutlinePlus className="w-6 h-6 text-white" aria-hidden="true" />}
                 </div>
             )
@@ -118,22 +118,22 @@ export default function BottomNav() {
             href: '/explore',
             labelKey: 'explore',
             icon: (isActive: boolean) => (
-                isActive ? <HiSearch className="w-6 h-6 text-blue-600" /> : <HiOutlineSearch className="w-6 h-6 text-gray-500" />
+                isActive ? <HiSearch className="w-6 h-6 text-slate-900" /> : <HiOutlineSearch className="w-6 h-6 text-slate-500" />
             )
         },
         {
             href: '/profile',
             labelKey: 'profile',
             icon: (isActive: boolean) => (
-                <div className={`w-6 h-6 rounded-full flex items-center justify-center border-2 ${isActive ? 'border-blue-600' : 'border-gray-400'}`}>
-                    <span className="text-xs font-bold text-gray-500">{session.user?.email?.[0].toUpperCase()}</span>
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center border-2 ${isActive ? 'border-slate-900' : 'border-slate-400'}`}>
+                    <span className={`text-xs font-bold ${isActive ? 'text-slate-900' : 'text-slate-500'}`}>{session.user?.email?.[0].toUpperCase()}</span>
                 </div>
             )
         }
     ];
 
     return (
-        <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-lg border-t border-gray-200/50 px-2 pt-2 z-50 safe-area-bottom">
+        <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-t border-slate-200/60 shadow-[0_-4px_20px_rgb(0,0,0,0.04)] px-2 pt-2 z-50 safe-area-bottom">
             <div className="flex justify-around items-end">
                 {navItems.map((item) => {
                     const isActive = pathWithoutLocale === item.href;
@@ -143,11 +143,11 @@ export default function BottomNav() {
                         <Link
                             key={item.href}
                             href={item.href}
-                            className={`flex flex-col items-center justify-center min-w-[56px] min-h-[48px] px-3 py-1 rounded-xl transition-colors active:bg-gray-100 ${isCreate ? '' : 'gap-0.5'}`}
+                            className={`flex flex-col items-center justify-center min-w-[56px] min-h-[48px] px-3 py-1 rounded-xl transition-colors active:bg-slate-100 ${isCreate ? '' : 'gap-0.5'}`}
                         >
                             {typeof item.icon === 'function' ? item.icon(isActive) : null}
                             {!isCreate && (
-                                <span className={`text-[10px] font-medium ${isActive ? 'text-blue-600' : 'text-gray-500'}`}>
+                                <span className={`text-[10px] font-medium ${isActive ? 'text-slate-900' : 'text-slate-500'}`}>
                                     {t(item.labelKey)}
                                 </span>
                             )}

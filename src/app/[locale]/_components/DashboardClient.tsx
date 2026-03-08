@@ -131,7 +131,7 @@ const ProTipCard = memo(function ProTipCard() {
   return (
     <Card className="p-6 bg-slate-900 text-white border-0 shadow-xl overflow-hidden relative group">
       <div className="relative z-10">
-        <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center mb-4 border border-white/10 group-hover:bg-white/20 transition-all">
+        <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center mb-4 border border-white/10 group-hover:bg-white/20 transition-all duration-300">
           <HiOutlineLightBulb className="w-6 h-6 text-slate-100" />
         </div>
         <h3 className="font-bold text-lg mb-2">{t('proTip')}</h3>
@@ -146,7 +146,7 @@ const ProTipCard = memo(function ProTipCard() {
           {t('readGuide')}
         </Button>
       </div>
-      <div className="absolute top-[-20%] right-[-10%] w-40 h-40 bg-white/5 rounded-full blur-2xl group-hover:bg-white/10 transition-all duration-700" />
+      <div className="absolute top-[-20%] right-[-10%] w-40 h-40 bg-white/5 rounded-full blur-2xl group-hover:bg-white/10 transition-all duration-300" />
     </Card>
   );
 });
@@ -316,7 +316,7 @@ export function DashboardClient({
               <Button
                 variant="outline"
                 onClick={handleShare}
-                className="hidden sm:flex items-center gap-2 rounded-full border-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all font-medium"
+                className="hidden sm:flex items-center gap-2 rounded-full border-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-300 font-medium min-h-[44px]"
               >
                 {t('shareProgress')} <HiOutlineShare className="w-4 h-4" />
               </Button>
@@ -325,7 +325,7 @@ export function DashboardClient({
             {/* Hero Section: Adaptive Learning Feature Introduction */}
             <div className="relative overflow-hidden rounded-[2rem] bg-white border border-slate-200 shadow-sm p-8 md:p-12 flex flex-col md:flex-row items-center justify-between gap-8 md:gap-12 group transition-all duration-500 hover:shadow-md">
               {/* Subtle background decoration */}
-              <div className="pointer-events-none absolute top-0 right-0 w-[40rem] h-[40rem] -mr-40 -mt-40 bg-slate-100/50 rounded-full blur-3xl transition-all duration-700 group-hover:bg-slate-200/50" />
+              <div className="pointer-events-none absolute top-0 right-0 w-[40rem] h-[40rem] -mr-40 -mt-40 bg-slate-100/50 rounded-full blur-3xl transition-all duration-500 group-hover:bg-slate-200/50" />
 
               <div className="relative z-10 flex-1 max-w-2xl">
                 <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 mb-6 uppercase tracking-wider">
@@ -340,21 +340,21 @@ export function DashboardClient({
                   </TextShimmer>
                 </h2>
 
-                <p className="text-slate-500 text-base md:text-lg mb-8 leading-relaxed max-w-xl">
+                <p className="text-slate-600 text-base md:text-lg mb-8 leading-relaxed max-w-xl">
                   {t('adaptiveLearningDescription', { fallback: "Upload your documents, and our AI will extract key concepts and relationships, generating a personalized learning path tailored just for you." })}
                 </p>
 
                 <div className="flex flex-col sm:flex-row items-center gap-4">
                   <Button
                     onClick={() => router.push('/adaptive-learning')}
-                    className="w-full sm:w-auto bg-slate-900 text-white hover:bg-slate-800 rounded-2xl px-8 py-6 font-medium shadow-none transition-all flex items-center justify-center gap-2 text-base"
+                    className="w-full sm:w-auto bg-slate-900 text-white hover:bg-slate-800 rounded-2xl px-8 py-6 font-medium shadow-none transition-all duration-300 flex items-center justify-center gap-2 text-base min-h-[56px]"
                   >
                     {t('startLearning', { fallback: "Try Adaptive Learning" })} <HiOutlineArrowRight className="w-5 h-5 ml-1" />
                   </Button>
                   <Button
                     variant="outline"
                     onClick={handleStartReview}
-                    className="w-full sm:w-auto border-slate-200 text-slate-600 hover:bg-slate-50 rounded-2xl px-8 py-6 font-medium transition-all text-base bg-white"
+                    className="w-full sm:w-auto border-slate-200 text-slate-700 hover:bg-slate-50 rounded-2xl px-8 py-6 font-medium transition-all duration-300 text-base bg-white/80 backdrop-blur-md min-h-[56px]"
                   >
                     {t('startReviewSession', { fallback: "Classic Review" })}
                   </Button>
@@ -409,7 +409,7 @@ export function DashboardClient({
                 <StatCard
                   label={t('toReview')}
                   value={stats?.dueCount || 0}
-                  color="bg-slate-100 text-slate-500"
+                  color="bg-slate-100 text-slate-600"
                   icon={<HiOutlineLightBulb className="text-2xl" />}
                 />
               </div>
@@ -437,7 +437,7 @@ export function DashboardClient({
                     <HiOutlinePlus className="w-7 h-7" />
                   </div>
                   <h3 className="font-bold text-slate-900 group-hover:text-black">{t('createNewQuiz')}</h3>
-                  <p className="text-xs font-medium text-slate-400 mt-1 uppercase tracking-tight">{t('addYourQuestions')}</p>
+                  <p className="text-xs font-medium text-slate-500 mt-1 uppercase tracking-tight">{t('addYourQuestions')}</p>
                 </div>
 
                 {isQuizzesInitialLoading ? (
@@ -451,17 +451,17 @@ export function DashboardClient({
                 {/* Explore Banner as standard card size */}
                 <div
                   onClick={handleExplore}
-                  className="relative overflow-hidden rounded-2xl bg-white border border-slate-200 p-6 text-slate-900 cursor-pointer hover:shadow-md transition-all group min-h-[160px] flex flex-col justify-center"
+                  className="relative overflow-hidden rounded-2xl bg-white/80 backdrop-blur-sm border border-slate-200 p-6 text-slate-900 cursor-pointer hover:shadow-md transition-all duration-300 group min-h-[160px] flex flex-col justify-center"
                 >
                   <div className="relative z-10">
                     <div className="inline-flex px-2 py-0.5 rounded bg-slate-900 text-white text-[10px] font-bold uppercase tracking-widest mb-2">Explore</div>
                     <h3 className="text-lg font-bold mb-1 tracking-tight">{t('exploreCommunity')}</h3>
-                    <p className="text-slate-400 text-xs font-medium mb-4">{t('discoverQuizzes')}</p>
-                    <div className="w-10 h-10 bg-slate-50 border border-slate-100 rounded-full flex items-center justify-center group-hover:translate-x-1 transition-transform shadow-sm">
+                    <p className="text-slate-500 text-xs font-medium mb-4">{t('discoverQuizzes')}</p>
+                    <div className="w-10 h-10 bg-slate-50 border border-slate-100 rounded-full flex items-center justify-center group-hover:translate-x-1 transition-transform duration-300 shadow-sm">
                       <HiOutlineArrowRight className="w-5 h-5 text-slate-900" />
                     </div>
                   </div>
-                  <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-slate-50 rounded-full blur-2xl group-hover:bg-slate-100 transition-all" />
+                  <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-slate-50 rounded-full blur-2xl group-hover:bg-slate-100 transition-all duration-300" />
                 </div>
               </div>
             </section>
@@ -491,11 +491,11 @@ export function DashboardClient({
                       </div>
                       <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
                         <div
-                          className="bg-slate-900 h-full rounded-full transition-all duration-700 ease-out"
+                          className="bg-slate-900 h-full rounded-full transition-all duration-500 ease-out"
                           style={{ width: `${stats.levelProgress}%` }}
                         />
                       </div>
-                      <p className="text-xs text-gray-400 text-center mt-2">
+                      <p className="text-xs text-slate-500 text-center mt-2">
                         {t('xpNeeded', { xp: 100 - stats.levelProgress, level: stats.level + 1 })}
                       </p>
                     </div>

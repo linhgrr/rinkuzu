@@ -84,11 +84,11 @@ const SubjectCard = memo(function SubjectCard({ job, onOpen, onDelete, loading, 
                     </h3>
                     <div className="flex items-center gap-3 mt-1 w-full opacity-70 min-w-0">
                         {job.subject_id && job.filename && (
-                            <p className="text-[11px] font-medium text-slate-500 truncate" title={job.filename}>
+                            <p className="text-[11px] font-medium text-slate-600 truncate" title={job.filename}>
                                 {job.filename}
                             </p>
                         )}
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5 whitespace-nowrap shrink-0">
+                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-1.5 whitespace-nowrap shrink-0">
                             <FiClock className="w-3 h-3" aria-hidden="true" />
                             {completedAt}
                         </span>
@@ -100,7 +100,7 @@ const SubjectCard = memo(function SubjectCard({ job, onOpen, onDelete, loading, 
                     <button
                         onClick={(e) => { e.stopPropagation(); onDelete(job); }}
                         disabled={loading || deleting}
-                        className="p-2 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                        className="p-3 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 min-w-[44px] min-h-[44px] flex items-center justify-center"
                         title={t('dashboard.deleteMaterial')}
                         aria-label={t('dashboard.deleteMaterial')}
                     >
@@ -250,7 +250,7 @@ export default function AdaptiveLearningDashboard() {
                 <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-slate-200">
                     <div>
                         <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-slate-900">Welcome back.</h1>
-                        <p className="text-slate-500 mt-2 text-base max-w-xl">Pick up right where you left off and keep your learning streak alive.</p>
+                        <p className="text-slate-600 mt-2 text-base max-w-xl">Pick up right where you left off and keep your learning streak alive.</p>
                         {apiOnline === false && (
                             <div className="mt-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-red-50 border border-red-100 text-red-600 text-xs font-medium">
                                 <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span>
@@ -295,18 +295,18 @@ export default function AdaptiveLearningDashboard() {
                                 <div className="relative z-10 flex flex-col items-start gap-6">
                                     <div className="flex items-center gap-3 mb-2">
                                         <span className="bg-slate-900 text-white text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded">UP NEXT</span>
-                                        <span className="text-slate-500 text-sm font-medium">Continue Learning</span>
+                                        <span className="text-slate-600 text-sm font-medium">Continue Learning</span>
                                     </div>
                                     <h2 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight leading-snug">
                                         {upNextSubject.subject_id || upNextSubject.filename.replace(/\.[^.]+$/, '')}
                                     </h2>
-                                    <p className="text-slate-500 mb-6 max-w-[420px] leading-relaxed text-base">
+                                    <p className="text-slate-600 mb-6 max-w-[420px] leading-relaxed text-base">
                                         Dive back into this document to improve your mastery. Based on your previous runs, you are ready for the next level.
                                     </p>
                                     <button
                                         onClick={() => handleOpenSubject(upNextSubject.job_id)}
                                         disabled={loadingJobId === upNextSubject.job_id}
-                                        className="bg-slate-900 hover:bg-black text-white font-medium py-3.5 px-8 rounded-xl flex items-center justify-center gap-2.5 transition-all w-full sm:w-auto disabled:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-slate-900"
+                                        className="bg-slate-900 hover:bg-black text-white font-medium py-3.5 px-8 rounded-xl flex items-center justify-center gap-2.5 transition-all duration-300 w-full sm:w-auto disabled:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-slate-900 min-h-[56px]"
                                     >
                                         {loadingJobId === upNextSubject.job_id ? (
                                             <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
@@ -325,10 +325,10 @@ export default function AdaptiveLearningDashboard() {
                                     <FiUploadCloud className="text-slate-400 w-8 h-8" aria-hidden="true" />
                                 </div>
                                 <h2 className="text-2xl font-bold mb-3 text-slate-900 tracking-tight">Upload Material</h2>
-                                <p className="text-slate-500 mb-8 max-w-sm mx-auto">Get started by uploading a PDF document to generate an adaptive learning experience.</p>
+                                <p className="text-slate-600 mb-8 max-w-sm mx-auto">Get started by uploading a PDF document to generate an adaptive learning experience.</p>
                                 <button
                                     onClick={handleGoUpload}
-                                    className="bg-slate-900 hover:bg-black text-white font-medium py-3.5 px-8 rounded-xl inline-flex items-center justify-center gap-2.5 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-slate-900 shadow-sm"
+                                    className="bg-slate-900 hover:bg-black text-white font-medium py-3.5 px-8 rounded-xl inline-flex items-center justify-center gap-2.5 transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-slate-900 shadow-sm min-h-[56px]"
                                 >
                                     <FiUploadCloud className="w-5 h-5 opacity-80" aria-hidden="true" />
                                     Upload Document
@@ -344,7 +344,7 @@ export default function AdaptiveLearningDashboard() {
                                         <FiBookOpen className="text-slate-400 w-5 h-5" aria-hidden="true" />
                                         Your Library
                                     </h3>
-                                    <p className="text-xs text-slate-500 mt-2">All uploaded and processed study materials.</p>
+                                    <p className="text-xs text-slate-600 mt-2">All uploaded and processed study materials.</p>
                                 </div>
                                 <div className="flex flex-row gap-3 items-center w-full sm:w-auto">
                                     <div className="relative w-full sm:w-48">
@@ -362,7 +362,7 @@ export default function AdaptiveLearningDashboard() {
                                     </div>
                                     <button
                                         onClick={handleGoUpload}
-                                        className="bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-800 font-medium py-2 px-3 rounded-xl flex items-center justify-center gap-2 transition-all shadow-sm whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900"
+                                        className="bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-800 font-medium py-2 px-3 rounded-xl flex items-center justify-center gap-2 transition-all duration-300 shadow-sm whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 min-h-[44px] min-w-[44px]"
                                         title="Upload new document"
                                     >
                                         <FiUploadCloud className="w-4 h-4 opacity-70" aria-hidden="true" />
@@ -381,7 +381,7 @@ export default function AdaptiveLearningDashboard() {
                                         <FiBookOpen className="w-5 h-5 text-slate-400" aria-hidden="true" />
                                     </div>
                                     <h3 className="text-sm font-semibold text-slate-900 tracking-tight">No documents yet</h3>
-                                    <p className="text-xs text-slate-500 mt-1 max-w-[200px] mx-auto">Upload a new PDF to populate your library.</p>
+                                    <p className="text-xs text-slate-600 mt-1 max-w-[200px] mx-auto">Upload a new PDF to populate your library.</p>
                                 </div>
                             ) : (
                                 <div className="flex flex-col pb-4 mt-2">
@@ -425,7 +425,7 @@ export default function AdaptiveLearningDashboard() {
                                         <div className="w-5 h-5 rounded-full border-2 border-slate-300 shrink-0 group-hover:border-slate-500 transition-colors relative z-10 bg-white" role="checkbox" aria-checked="false" aria-label="Not completed" tabIndex={0}></div>
                                     </div>
                                     <div>
-                                        <p className="text-sm font-semibold text-slate-900 group-hover:text-black transition-colors">Achieve 80% accuracy</p>
+                                        <p className="text-sm font-semibold text-slate-900 group-hover:text-black transition-colors duration-300">Achieve 80% accuracy</p>
                                         <p className="text-xs text-slate-500 mt-1 font-mono">20 XP</p>
                                     </div>
                                 </li>

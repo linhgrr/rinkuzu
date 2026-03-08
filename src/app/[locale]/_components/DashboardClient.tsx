@@ -131,18 +131,14 @@ const ProTipCard = memo(function ProTipCard() {
   return (
     <Card className="p-6 bg-slate-900 text-white border-0 shadow-xl overflow-hidden relative group">
       <div className="relative z-10">
-        <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center mb-4 border border-white/10 group-hover:bg-white/20 transition-all duration-300">
-          <HiOutlineLightBulb className="w-6 h-6 text-slate-100" />
+        <div className="w-14 h-14 bg-teal-100 rounded-full flex items-center justify-center text-teal-600 mb-4 group-hover:scale-110 transition-transform">
+          <HiOutlineLightBulb className="w-6 h-6 text-teal-600" />
         </div>
         <h3 className="font-bold text-lg mb-2">{t('proTip')}</h3>
         <p className="text-sm text-slate-400 mb-4 leading-relaxed font-medium">
           {t('proTipContent')}
         </p>
-        <Button
-          size="sm"
-          variant="outline"
-          className="w-full border-white/20 text-white hover:bg-white hover:text-black transition-all rounded-xl py-5"
-        >
+        <Button variant="outline" className="w-full mt-4 bg-white/10 border-white/20 text-white hover:bg-orange-500 hover:text-white hover:border-orange-500 transition-colors">
           {t('readGuide')}
         </Button>
       </div>
@@ -325,7 +321,7 @@ export function DashboardClient({
             {/* Hero Section: Adaptive Learning Feature Introduction */}
             <div className="relative overflow-hidden rounded-[2rem] bg-white border border-slate-200 shadow-sm p-8 md:p-12 flex flex-col md:flex-row items-center justify-between gap-8 md:gap-12 group transition-all duration-500 hover:shadow-md">
               {/* Subtle background decoration */}
-              <div className="pointer-events-none absolute top-0 right-0 w-[40rem] h-[40rem] -mr-40 -mt-40 bg-slate-100/50 rounded-full blur-3xl transition-all duration-500 group-hover:bg-slate-200/50" />
+              <div className="pointer-events-none absolute top-0 right-0 w-[40rem] h-[40rem] -mr-40 -mt-40 bg-teal-50/50 rounded-full blur-3xl transition-all duration-500 group-hover:bg-teal-100/50" />
 
               <div className="relative z-10 flex-1 max-w-2xl">
                 <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 mb-6 uppercase tracking-wider">
@@ -335,8 +331,8 @@ export function DashboardClient({
 
                 <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-slate-900 tracking-tight leading-tight mb-4">
                   Master any subject with <br />
-                  <TextShimmer className="font-extrabold" duration={3}>
-                    Adaptive Learning
+                  <TextShimmer className="font-semibold" duration={2}>
+                    ✨ AI Powered
                   </TextShimmer>
                 </h2>
 
@@ -347,7 +343,7 @@ export function DashboardClient({
                 <div className="flex flex-col sm:flex-row items-center gap-4">
                   <Button
                     onClick={() => router.push('/adaptive-learning')}
-                    className="w-full sm:w-auto bg-slate-900 text-white hover:bg-slate-800 rounded-2xl px-8 py-6 font-medium shadow-none transition-all duration-300 flex items-center justify-center gap-2 text-base min-h-[56px]"
+                    className="w-full sm:w-auto bg-teal-600 text-white hover:bg-teal-700 rounded-2xl px-8 py-6 font-medium shadow-lg hover:shadow-teal-500/25 border border-teal-500 transition-all duration-300 flex items-center justify-center gap-2 text-base min-h-[56px]"
                   >
                     {t('startLearning', { fallback: "Try Adaptive Learning" })} <HiOutlineArrowRight className="w-5 h-5 ml-1" />
                   </Button>
@@ -391,14 +387,14 @@ export function DashboardClient({
                 <StatCard
                   label={t('dailyStreak')}
                   value={`${stats?.streak || 0} ${t('days')}`}
-                  color="bg-slate-50 text-slate-600"
-                  icon={<HiOutlineFire className="text-2xl" />}
+                  color="bg-orange-50 text-orange-600 border border-orange-100"
+                  icon={<HiOutlineFire className="text-2xl text-orange-500" />}
                 />
                 <StatCard
                   label={t('totalXP')}
                   value={stats?.xp || 0}
-                  color="bg-slate-900 text-white"
-                  icon={<HiOutlineLightningBolt className="text-2xl" />}
+                  color="bg-amber-50 text-amber-600 border border-amber-100"
+                  icon={<HiOutlineLightningBolt className="text-2xl text-amber-500" />}
                 />
                 <StatCard
                   label={t('accuracy')}
@@ -431,7 +427,7 @@ export function DashboardClient({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div
                   onClick={handleCreateQuiz}
-                  className="group cursor-pointer rounded-2xl border-2 border-dashed border-slate-200 p-6 flex flex-col items-center justify-center text-center hover:border-slate-900 hover:bg-white transition-all duration-300 min-h-[160px] bg-slate-50/50"
+                  className="group cursor-pointer rounded-2xl border-2 border-dashed border-teal-200 p-6 flex flex-col items-center justify-center text-center hover:border-teal-500 hover:bg-teal-50/50 transition-all duration-300 min-h-[160px] bg-slate-50/50"
                 >
                   <div className="w-14 h-14 bg-white border border-slate-200 text-slate-900 rounded-2xl flex items-center justify-center mb-4 shadow-sm group-hover:scale-105 transition-transform">
                     <HiOutlinePlus className="w-7 h-7" />
@@ -451,17 +447,17 @@ export function DashboardClient({
                 {/* Explore Banner as standard card size */}
                 <div
                   onClick={handleExplore}
-                  className="relative overflow-hidden rounded-2xl bg-white/80 backdrop-blur-sm border border-slate-200 p-6 text-slate-900 cursor-pointer hover:shadow-md transition-all duration-300 group min-h-[160px] flex flex-col justify-center"
+                  className="relative overflow-hidden rounded-2xl bg-white/80 backdrop-blur-sm border border-slate-200 p-6 text-slate-900 cursor-pointer hover:border-teal-500 hover:shadow-lg hover:shadow-teal-100 transition-all duration-300 group min-h-[160px] flex flex-col justify-center"
                 >
                   <div className="relative z-10">
-                    <div className="inline-flex px-2 py-0.5 rounded bg-slate-900 text-white text-[10px] font-bold uppercase tracking-widest mb-2">Explore</div>
+                    <div className="inline-flex px-2 py-0.5 rounded bg-teal-100 text-teal-700 text-[10px] font-bold uppercase tracking-widest mb-2">Explore</div>
                     <h3 className="text-lg font-bold mb-1 tracking-tight">{t('exploreCommunity')}</h3>
                     <p className="text-slate-500 text-xs font-medium mb-4">{t('discoverQuizzes')}</p>
-                    <div className="w-10 h-10 bg-slate-50 border border-slate-100 rounded-full flex items-center justify-center group-hover:translate-x-1 transition-transform duration-300 shadow-sm">
-                      <HiOutlineArrowRight className="w-5 h-5 text-slate-900" />
+                    <div className="w-10 h-10 bg-teal-50 border border-teal-100 rounded-full flex items-center justify-center group-hover:translate-x-1 group-hover:bg-teal-500 group-hover:text-white transition-all duration-300 shadow-sm">
+                      <HiOutlineArrowRight className="w-5 h-5 text-teal-600 group-hover:text-white transition-colors" />
                     </div>
                   </div>
-                  <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-slate-50 rounded-full blur-2xl group-hover:bg-slate-100 transition-all duration-300" />
+                  <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-teal-50/50 rounded-full blur-2xl group-hover:bg-teal-100/50 transition-all duration-300" />
                 </div>
               </div>
             </section>
@@ -491,7 +487,7 @@ export function DashboardClient({
                       </div>
                       <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
                         <div
-                          className="bg-slate-900 h-full rounded-full transition-all duration-500 ease-out"
+                          className="bg-emerald-500 h-full rounded-full transition-all duration-500 ease-out"
                           style={{ width: `${stats.levelProgress}%` }}
                         />
                       </div>

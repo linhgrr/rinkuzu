@@ -17,7 +17,7 @@ export const StatCard = memo(function StatCard({
   color,
 }: StatCardProps) {
   return (
-    <Card className="p-5 flex items-center gap-4 rounded-2xl shadow-sm hover:shadow-md hover:border-slate-300 transition-all border-slate-200 bg-white">
+    <Card className="p-5 flex items-center gap-4 rounded-2xl shadow-sm border-slate-200 bg-white hover:border-teal-400 hover:shadow-[0_0_15px_rgba(45,212,191,0.2)] transition-all duration-300">
       <div
         className={`w-12 h-12 rounded-xl flex items-center justify-center ${color} shrink-0`}
       >

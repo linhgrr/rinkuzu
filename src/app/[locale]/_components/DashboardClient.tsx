@@ -9,8 +9,8 @@ import useSWRMutation from 'swr/mutation';
 import Navigation from '@/components/Navigation';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { StatCard } from '@/components/shared/StatCard';
 import { QuizCard } from '@/components/shared/QuizCard';
+import { StatOverview } from '@/components/dashboard/StatOverview';
 import { StreakFreezeCard } from '@/components/dashboard/StreakFreezeCard';
 import { LevelBadge } from '@/components/dashboard/LevelBadge';
 import { WeeklyProgressHeatmap } from '@/components/dashboard/WeeklyProgressHeatmap';
@@ -19,12 +19,9 @@ import type { Quiz } from '@/hooks/useQuizzes';
 import { ROUTES } from '@/shared/constants';
 import { fetcher } from '@/lib/fetcher';
 import {
-  HiOutlineFire,
-  HiOutlineLightningBolt,
   HiOutlinePlus,
   HiOutlineArrowRight,
   HiOutlineShare,
-  HiOutlineTrendingUp,
   HiOutlineLightBulb,
 } from '@/components/icons';
 import { TextShimmer } from '@/components/ui/text-shimmer';
@@ -32,22 +29,19 @@ import { FiBookOpen, FiTarget, FiZap, FiAward } from 'react-icons/fi';
 
 const StatCardsSkeleton = memo(function StatCardsSkeleton() {
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4" aria-hidden="true">
-      {Array.from({ length: 4 }).map((_, index) => (
-        <Card
-          key={`stats-skeleton-${index}`}
-          className="p-5 rounded-2xl shadow-sm border-gray-100/50"
-        >
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl skeleton-shimmer shrink-0" />
+    <Card className="rounded-2xl shadow-sm border-gray-100/50 p-0 overflow-hidden" aria-hidden="true">
+      <div className="grid grid-cols-2 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-gray-100/50">
+        {Array.from({ length: 4 }).map((_, index) => (
+          <div key={`stats-skeleton-${index}`} className="p-5 flex items-center gap-4 bg-white">
+            <div className="w-12 h-12 rounded-xl skeleton-shimmer shrink-0" />
             <div className="flex-1 min-w-0 space-y-2">
               <div className="h-3 w-16 skeleton-shimmer" />
               <div className="h-7 w-20 skeleton-shimmer" />
             </div>
           </div>
-        </Card>
-      ))}
-    </div>
+        ))}
+      </div>
+    </Card>
   );
 });
 
@@ -383,32 +377,7 @@ export function DashboardClient({
             {isStatsInitialLoading ? (
               <StatCardsSkeleton />
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                <StatCard
-                  label={t('dailyStreak')}
-                  value={`${stats?.streak || 0} ${t('days')}`}
-                  color="bg-orange-50 text-orange-600 border border-orange-100"
-                  icon={<HiOutlineFire className="text-2xl text-orange-500" />}
-                />
-                <StatCard
-                  label={t('totalXP')}
-                  value={stats?.xp || 0}
-                  color="bg-amber-50 text-amber-600 border border-amber-100"
-                  icon={<HiOutlineLightningBolt className="text-2xl text-amber-500" />}
-                />
-                <StatCard
-                  label={t('accuracy')}
-                  value={`${stats?.averageAccuracy || 0}%`}
-                  color="bg-slate-50 text-slate-900 font-bold"
-                  icon={<HiOutlineTrendingUp className="text-2xl" />}
-                />
-                <StatCard
-                  label={t('toReview')}
-                  value={stats?.dueCount || 0}
-                  color="bg-slate-100 text-slate-600"
-                  icon={<HiOutlineLightBulb className="text-2xl" />}
-                />
-              </div>
+              <StatOverview stats={stats} />
             )}
 
             {/* Continue Learning Section */}

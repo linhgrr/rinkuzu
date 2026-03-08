@@ -15,13 +15,13 @@ interface ExerciseProps {
     sessionId: string;
 }
 
-const BLOOM_COLORS: Record<BloomLevel, string> = {
-    Remember: 'bg-slate-900 text-white',
-    Understand: 'bg-slate-900 text-white',
-    Apply: 'bg-slate-900 text-white',
-    Analyze: 'bg-slate-900 text-white',
-    Evaluate: 'bg-slate-900 text-white',
-    Create: 'bg-slate-900 text-white',
+const BLOOM_LEVEL_COLORS: Record<string, string> = {
+    Remember: 'bg-slate-100 text-slate-700',
+    Understand: 'bg-teal-100 text-teal-700',
+    Apply: 'bg-emerald-100 text-emerald-700',
+    Analyze: 'bg-amber-100 text-amber-700',
+    Evaluate: 'bg-orange-100 text-orange-700',
+    Create: 'bg-rose-100 text-rose-700',
 };
 
 const BLOOM_TRANSLATION_KEYS: Record<BloomLevel, string> = {
@@ -147,7 +147,7 @@ export default function AdaptiveLearningExercise({ sessionId }: ExerciseProps) {
         if (!itemInfo) {
             return 'bg-slate-400 text-white';
         }
-        return BLOOM_COLORS[itemInfo.bloom_label] || 'bg-slate-400 text-white';
+        return BLOOM_LEVEL_COLORS[itemInfo.bloom_label] || 'bg-slate-400 text-white';
     }, [exercise, concept]);
 
     const localizedBloomLabel = useMemo(() => {
@@ -186,7 +186,7 @@ export default function AdaptiveLearningExercise({ sessionId }: ExerciseProps) {
                         <Button variant="outline" className="border-slate-200 hover:bg-slate-50 text-slate-700" onClick={() => router.push('/adaptive-learning')}>
                             {t('exercise.backToDashboard')}
                         </Button>
-                        <Button className="bg-slate-900 hover:bg-slate-800 shadow-none text-white transition-colors" onClick={() => void loadData()}>{t('exercise.tryAgain')}</Button>
+                        <Button className="bg-teal-600 hover:bg-teal-700 shadow-none text-white transition-colors" onClick={() => void loadData()}>{t('exercise.tryAgain')}</Button>
                     </div>
                 </div>
             </div>
@@ -260,7 +260,7 @@ export default function AdaptiveLearningExercise({ sessionId }: ExerciseProps) {
                         <Button
                             onClick={() => setShowTheory(false)}
                             disabled={loadingExercise}
-                            className="w-full md:w-auto h-12 md:h-11 min-h-[48px] md:min-w-[200px] rounded-full bg-slate-900 px-8 text-sm md:text-base font-medium text-white transition-all active:scale-[0.98] hover:bg-slate-800 shadow-md disabled:bg-slate-200 disabled:text-slate-400"
+                            className="w-full md:w-auto h-12 md:h-11 min-h-[48px] md:min-w-[200px] rounded-full bg-teal-600 px-8 text-sm md:text-base font-medium text-white transition-all active:scale-[0.98] hover:bg-teal-700 shadow-md disabled:bg-slate-200 disabled:text-slate-400"
                         >
                             {loadingExercise ? t('exercise.loadingTitle') : t('exercise.theory.startExercise')}
                             {!loadingExercise && <HiArrowRight className="ml-2 h-4 w-4" />}
@@ -333,27 +333,24 @@ export default function AdaptiveLearningExercise({ sessionId }: ExerciseProps) {
                                 </h2>
 
                                 <div className="grid gap-3 sm:gap-4">
-                                    {optionEntries.map(([key, value]) => (
+                                    {optionEntries.map(([key, value], idx) => (
                                         <button
                                             type="button"
                                             key={key}
                                             onClick={() => setSelectedOption(key)}
                                             className={`group relative flex w-full text-left cursor-pointer items-start gap-4 rounded-[12px] border p-4 sm:p-5 transition-all duration-200 ${selectedOption === key
-                                                ? 'border-slate-900 bg-slate-50 shadow-sm'
+                                                ? 'border-teal-600 bg-teal-50 shadow-sm'
                                                 : 'border-slate-200 bg-white hover:border-slate-400 active:scale-[0.99]'
                                                 }`}
                                         >
-                                            <div
-                                                className={`flex h-6 w-6 mt-0.5 flex-shrink-0 items-center justify-center rounded-md border transition-colors duration-200 ${selectedOption === key
-                                                    ? 'border-slate-900 bg-slate-900 text-white'
-                                                    : 'border-slate-300 bg-slate-50 group-hover:border-slate-400'
-                                                    }`}
-                                            >
-                                                {selectedOption === key ? (
-                                                    <HiCheck className="h-4 w-4" />
-                                                ) : (
-                                                    <span className="text-[10px] font-mono font-medium text-slate-500">{key}</span>
-                                                )}
+                                            {selectedOption === key && <div className="absolute inset-0 bg-teal-500/10 rounded-xl" />}
+                                            <div className={`
+                                                w-6 h-6 sm:w-8 sm:h-8 rounded-full border-2 flex items-center justify-center text-xs sm:text-sm font-semibold shrink-0 transition-colors
+                                                ${selectedOption === key
+                                                    ? 'border-teal-600 bg-teal-600 text-white'
+                                                    : 'border-slate-300 text-slate-500 group-hover:border-slate-400'}
+                                            `}>
+                                                {String.fromCharCode(65 + idx)}
                                             </div>
                                             <span
                                                 className={`text-base leading-relaxed transition-colors duration-200 ${selectedOption === key ? 'font-medium text-slate-900' : 'text-slate-700'
@@ -385,7 +382,7 @@ export default function AdaptiveLearningExercise({ sessionId }: ExerciseProps) {
                                 })}
                             </p>
                             <Button
-                                className="w-full min-h-[48px] h-12 sm:h-11 sm:min-h-[44px] rounded-full bg-slate-900 py-2 text-sm md:text-base font-medium text-white transition-all active:scale-[0.98] sm:hover:scale-[1.02] hover:bg-slate-800 justify-center shadow-sm"
+                                className="w-full min-h-[48px] h-12 sm:h-11 sm:min-h-[44px] rounded-full bg-teal-600 py-2 text-sm md:text-base font-medium text-white transition-all active:scale-[0.98] sm:hover:scale-[1.02] hover:bg-teal-700 justify-center shadow-sm"
                                 onClick={() => void handleSubmit()}
                                 disabled={!selectedOption || submitting}
                             >

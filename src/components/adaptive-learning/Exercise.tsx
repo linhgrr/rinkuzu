@@ -214,7 +214,7 @@ export default function AdaptiveLearningExercise({ sessionId }: ExerciseProps) {
                             <div className="flex flex-col items-center justify-center py-12 px-4 text-center min-h-[300px]">
                                 <HiLightBulb className="h-8 w-8 text-slate-400 mb-4 animate-pulse" />
                                 <TextShimmer className="text-lg font-medium text-slate-400" duration={1.5}>
-                                    Generating explanation...
+                                    {t('exercise.theory.generatingExplanationFor', { concept: concept.concept_name })}
                                 </TextShimmer>
                             </div>
                         ) : theory ? (

@@ -27,22 +27,13 @@ import { useSubjects } from '@/hooks/useAdaptiveLearning';
 
 const SkeletonCard = memo(function SkeletonCard() {
     return (
-        <div className="overflow-hidden rounded-2xl bg-white border border-slate-200 shadow-sm flex flex-col pt-6 px-6 pb-4 gap-5 animate-pulse h-64">
-            <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-xl bg-slate-100 shrink-0"></div>
-                <div className="flex-1 space-y-2 mt-1">
-                    <div className="h-5 bg-slate-100 rounded-md w-3/4"></div>
-                    <div className="h-3 bg-slate-50 rounded-md w-1/2"></div>
-                </div>
+        <div className="w-full h-24 overflow-hidden rounded-2xl bg-white border border-slate-200 shadow-sm flex items-center p-4 gap-4 animate-pulse mb-3">
+            <div className="w-12 h-12 bg-slate-100 rounded-xl shrink-0"></div>
+            <div className="flex-1 space-y-2">
+                <div className="h-5 bg-slate-100 rounded-md w-1/3"></div>
+                <div className="h-3 bg-slate-50 rounded-md w-1/4"></div>
             </div>
-            <div className="grid grid-cols-2 gap-3 mt-2">
-                <div className="rounded-xl bg-slate-50 px-4 py-3 border border-slate-100 h-16"></div>
-                <div className="rounded-xl bg-slate-50 px-4 py-3 border border-slate-100 h-16"></div>
-            </div>
-            <div className="flex items-center justify-between mt-auto pt-4 border-t border-slate-100">
-                <div className="h-3 bg-slate-100 rounded-md w-1/4"></div>
-                <div className="h-8 w-8 bg-slate-100 rounded-lg"></div>
-            </div>
+            <div className="h-8 w-8 bg-slate-100 rounded-lg shrink-0"></div>
         </div>
     );
 });
@@ -55,9 +46,10 @@ interface SubjectCardProps {
     onDelete: (job: PipelineJobHistoryItem) => void;
     loading?: boolean;
     deleting?: boolean;
+    index?: number;
 }
 
-const SubjectCard = memo(function SubjectCard({ job, onOpen, onDelete, loading, deleting }: SubjectCardProps) {
+const SubjectCard = memo(function SubjectCard({ job, onOpen, onDelete, loading, deleting, index = 0 }: SubjectCardProps) {
     const displayName = job.filename
         ? job.filename.replace(/\.[^.]+$/, '')
         : job.subject_id || job.job_id;
@@ -71,54 +63,44 @@ const SubjectCard = memo(function SubjectCard({ job, onOpen, onDelete, loading, 
 
     return (
         <div
-            className="group relative overflow-hidden rounded-2xl bg-white border border-slate-200 shadow-sm hover:shadow-md hover:border-slate-300 transition-all duration-300 flex flex-col cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
+            className="group w-full overflow-hidden rounded-2xl bg-white border border-slate-200/80 shadow-sm hover:shadow-md transition-all duration-300 flex flex-row items-center cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-slate-900 hover:-translate-y-1 bg-gradient-to-r from-white to-slate-50/30 mb-3"
             onClick={() => onOpen(job.job_id)}
             role="button"
             tabIndex={0}
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onOpen(job.job_id); }}
         >
-            <div className="flex flex-col flex-1 p-6 gap-5">
-                {/* Icon + title */}
-                <div className="flex items-start gap-4">
-                    <div className="rounded-xl bg-slate-50 p-3 text-slate-700 shrink-0 group-hover:bg-slate-100 transition-colors duration-200 border border-slate-100">
-                        <FiBook className="h-6 w-6" aria-hidden="true" />
+            <div className="flex flex-row items-center flex-1 p-4 gap-4 relative z-10 w-full min-w-0">
+                {/* Icon */}
+                <div className="shrink-0">
+                    <div className="inline-flex rounded-xl bg-white p-3 text-slate-600 group-hover:bg-slate-900 group-hover:text-white transition-all duration-300 border border-slate-200/50 shadow-sm">
+                        <FiBookOpen className="h-5 w-5" aria-hidden="true" />
                     </div>
-                    <div className="min-w-0 flex-1">
-                        {job.subject_id && (
-                            <h3 className="font-semibold text-slate-900 text-lg tracking-tight leading-tight line-clamp-2" title={job.subject_id}>
-                                {job.subject_id}
-                            </h3>
+                </div>
+
+                {/* Titles */}
+                <div className="min-w-0 flex-1 flex flex-col justify-center">
+                    <h3 className="font-bold text-slate-900 text-base md:text-lg tracking-tight leading-tight truncate group-hover:text-black transition-colors" title={job.subject_id || displayName}>
+                        {job.subject_id || displayName}
+                    </h3>
+                    <div className="flex items-center gap-3 mt-1 w-full opacity-70 min-w-0">
+                        {job.subject_id && job.filename && (
+                            <p className="text-[11px] font-medium text-slate-500 truncate" title={job.filename}>
+                                {job.filename}
+                            </p>
                         )}
-                        <p className="text-sm text-slate-500 mt-1 truncate">{displayName}</p>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5 whitespace-nowrap shrink-0">
+                            <FiClock className="w-3 h-3" aria-hidden="true" />
+                            {completedAt}
+                        </span>
                     </div>
                 </div>
 
-                {/* Stats */}
-                <div className="grid grid-cols-2 gap-3">
-                    <div className="rounded-xl bg-slate-50 px-4 py-3 border border-slate-100/50">
-                        <div className="text-xl font-bold text-slate-900">{job.concepts_after_merge ?? '—'}</div>
-                        <div className="text-[11px] font-medium tracking-wide text-slate-500 mt-1">
-                            Concepts
-                        </div>
-                    </div>
-                    <div className="rounded-xl bg-slate-50 px-4 py-3 border border-slate-100/50">
-                        <div className="text-xl font-bold text-slate-900">{job.relations_verified ?? '—'}</div>
-                        <div className="text-[11px] font-medium tracking-wide text-slate-500 mt-1">
-                            Relations
-                        </div>
-                    </div>
-                </div>
-
-                {/* Footer */}
-                <div className="flex items-center justify-between mt-auto pt-4 border-t border-slate-100">
-                    <span className="text-xs font-medium text-slate-500 flex items-center gap-1.5">
-                        <FiClock className="w-3.5 h-3.5" aria-hidden="true" />
-                        {completedAt}
-                    </span>
+                {/* Actions */}
+                <div className="shrink-0 flex items-center gap-2 pl-4 border-l border-slate-100 h-full">
                     <button
                         onClick={(e) => { e.stopPropagation(); onDelete(job); }}
                         disabled={loading || deleting}
-                        className="p-3 -mr-3 -my-3 rounded-lg text-slate-400 hover:text-slate-900 hover:bg-slate-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900"
+                        className="p-2 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
                         title={t('dashboard.deleteMaterial')}
                         aria-label={t('dashboard.deleteMaterial')}
                     >
@@ -128,11 +110,14 @@ const SubjectCard = memo(function SubjectCard({ job, onOpen, onDelete, loading, 
                             <FiTrash2 className="h-4 w-4" aria-hidden="true" />
                         )}
                     </button>
+                    <div className="hidden sm:flex text-slate-300 group-hover:text-slate-900 group-hover:translate-x-1 transition-all duration-300 mr-2">
+                        <FiChevronRight className="w-5 h-5" />
+                    </div>
                 </div>
             </div>
 
             {loading && (
-                <div className="absolute inset-0 bg-white/70 backdrop-blur-sm flex items-center justify-center z-10">
+                <div className="absolute inset-0 bg-white/70 backdrop-blur-sm flex items-center justify-center z-20">
                     <div className="flex flex-col items-center gap-3">
                         <svg className="animate-spin h-6 w-6 text-slate-900" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                     </div>
@@ -351,33 +336,68 @@ export default function AdaptiveLearningDashboard() {
                             </section>
                         )}
 
-                        {/* Skill Mastery Overview */}
-                        <section className="bg-white rounded-3xl p-8 md:p-10 border border-slate-200 shadow-sm">
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-10">
-                                <h3 className="text-xl font-bold flex items-center gap-2.5 text-slate-900 tracking-tight">
-                                    <FiBarChart2 className="text-slate-400 w-5 h-5" aria-hidden="true" />
-                                    Skill Mastery Focus
-                                </h3>
-                                <button className="text-sm text-slate-500 font-medium hover:text-slate-900 transition-colors focus-visible:outline-none focus-visible:underline">View Details</button>
+                        {/* Library Stack Overview */}
+                        <section className="bg-white rounded-3xl p-8 md:p-10 border border-slate-200 shadow-sm overflow-hidden flex flex-col items-stretch">
+                            <div className="flex flex-col sm:flex-row sm:items-start lg:items-center justify-between gap-4 mb-8">
+                                <div>
+                                    <h3 className="text-xl font-bold flex items-center gap-2.5 text-slate-900 tracking-tight">
+                                        <FiBookOpen className="text-slate-400 w-5 h-5" aria-hidden="true" />
+                                        Your Library
+                                    </h3>
+                                    <p className="text-xs text-slate-500 mt-2">All uploaded and processed study materials.</p>
+                                </div>
+                                <div className="flex flex-row gap-3 items-center w-full sm:w-auto">
+                                    <div className="relative w-full sm:w-48">
+                                        <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" aria-hidden="true" />
+                                        <input
+                                            type="text"
+                                            placeholder="Search..."
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                            spellCheck={false}
+                                            autoComplete="off"
+                                            className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:bg-white transition-all"
+                                            aria-label="Search documents"
+                                        />
+                                    </div>
+                                    <button
+                                        onClick={handleGoUpload}
+                                        className="bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-800 font-medium py-2 px-3 rounded-xl flex items-center justify-center gap-2 transition-all shadow-sm whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900"
+                                        title="Upload new document"
+                                    >
+                                        <FiUploadCloud className="w-4 h-4 opacity-70" aria-hidden="true" />
+                                        <span className="hidden md:inline text-sm">Upload</span>
+                                    </button>
+                                </div>
                             </div>
 
-                            <div className="space-y-8">
-                                {[
-                                    { skill: 'Remember & Understand', level: 85 },
-                                    { skill: 'Apply', level: 60 },
-                                    { skill: 'Analyze & Evaluate', level: 35 },
-                                ].map((item) => (
-                                    <div key={item.skill}>
-                                        <div className="flex justify-between items-end mb-3">
-                                            <span className="text-sm font-semibold text-slate-800">{item.skill}</span>
-                                            <span className="font-mono text-slate-400 font-medium text-sm">{item.level}%</span>
-                                        </div>
-                                        <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
-                                            <div className="bg-slate-900 h-full rounded-full transition-all duration-1000 ease-out" style={{ width: `${item.level}%` }}></div>
-                                        </div>
+                            {loading ? (
+                                <div className="flex flex-col pb-4 mt-2">
+                                    {[1, 2, 3].map((i) => <SkeletonCard key={`skel-${i}`} />)}
+                                </div>
+                            ) : filteredSubjects.length === 0 ? (
+                                <div className="text-center py-12 bg-slate-50 rounded-2xl border border-slate-200 border-dashed mb-4">
+                                    <div className="bg-white w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-4 border border-slate-100 shadow-sm">
+                                        <FiBookOpen className="w-5 h-5 text-slate-400" aria-hidden="true" />
                                     </div>
-                                ))}
-                            </div>
+                                    <h3 className="text-sm font-semibold text-slate-900 tracking-tight">No documents yet</h3>
+                                    <p className="text-xs text-slate-500 mt-1 max-w-[200px] mx-auto">Upload a new PDF to populate your library.</p>
+                                </div>
+                            ) : (
+                                <div className="flex flex-col pb-4 mt-2">
+                                    {filteredSubjects.map((job, idx) => (
+                                        <SubjectCard
+                                            key={job.job_id}
+                                            job={job}
+                                            index={idx}
+                                            onOpen={handleOpenSubject}
+                                            onDelete={handleDeleteClick}
+                                            loading={loadingJobId === job.job_id}
+                                            deleting={deletingJobId === job.job_id}
+                                        />
+                                    ))}
+                                </div>
+                            )}
                         </section>
                     </div>
 
@@ -467,64 +487,8 @@ export default function AdaptiveLearningDashboard() {
                     </div>
                 </div>
 
-                {/* Library Documents section */}
-                <section className="pt-12 md:pt-20 pb-20">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 mb-10">
-                        <div>
-                            <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Your Library</h2>
-                            <p className="text-slate-500 mt-1.5 text-sm">All uploaded and processed study materials.</p>
-                        </div>
-                        <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
-                            <div className="relative w-full sm:w-64">
-                                <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" aria-hidden="true" />
-                                <input
-                                    type="text"
-                                    placeholder="Search documents..."
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                    spellCheck={false}
-                                    autoComplete="off"
-                                    className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 bg-white text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-shadow shadow-sm"
-                                    aria-label="Search documents"
-                                />
-                            </div>
-                            <button
-                                onClick={handleGoUpload}
-                                className="bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-800 font-medium py-3 px-5 rounded-xl flex items-center justify-center gap-2 transition-all shadow-sm whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
-                            >
-                                <FiUploadCloud className="w-4 h-4 opacity-70" aria-hidden="true" />
-                                <span className="hidden sm:inline">Upload</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    {loading ? (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {[1, 2, 3].map(i => <SkeletonCard key={`skel-${i}`} />)}
-                        </div>
-                    ) : filteredSubjects.length === 0 ? (
-                        <div className="text-center py-24 bg-white rounded-3xl border border-slate-200 shadow-sm border-dashed">
-                            <div className="bg-slate-50 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-5 border border-slate-100">
-                                <FiBookOpen className="w-7 h-7 text-slate-400" aria-hidden="true" />
-                            </div>
-                            <h3 className="text-lg font-semibold text-slate-900 tracking-tight">No documents found</h3>
-                            <p className="text-slate-500 mt-2 text-sm max-w-sm mx-auto">Upload a new PDF to populate your library and generate personalized exercises.</p>
-                        </div>
-                    ) : (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {filteredSubjects.map((job) => (
-                                <SubjectCard
-                                    key={job.job_id}
-                                    job={job}
-                                    onOpen={handleOpenSubject}
-                                    onDelete={handleDeleteClick}
-                                    loading={loadingJobId === job.job_id}
-                                    deleting={deletingJobId === job.job_id}
-                                />
-                            ))}
-                        </div>
-                    )}
-                </section>
+                {/* Bottom Spacer */}
+                <div className="pb-12 md:pb-20"></div>
             </div>
 
             {/* Confirm Delete Modal */}

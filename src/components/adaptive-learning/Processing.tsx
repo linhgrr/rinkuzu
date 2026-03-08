@@ -34,13 +34,13 @@ interface ConceptNodeData extends Record<string, unknown> {
 
 const ConceptNode = memo(function ConceptNode({ data }: NodeProps<Node<ConceptNodeData>>) {
     return (
-        <div className="min-w-[120px] rounded-md border border-gray-300 bg-white px-3 py-2 transition-all duration-200">
-            <Handle type="target" position={Position.Top} className="!h-1 !w-1 !bg-gray-400" />
-            <div className="text-center text-[10px] font-mono tracking-wider text-gray-700">
+        <div className="min-w-[120px] rounded-md border border-slate-300 bg-white px-3 py-2 transition-all duration-200">
+            <Handle type="target" position={Position.Top} className="!h-1 !w-1 !bg-slate-400" />
+            <div className="text-center text-[10px] font-mono tracking-wider text-slate-700">
                 {data.label.length > 25 ? `${data.label.substring(0, 23)}...` : data.label}
             </div>
-            <div className="pointer-events-none absolute -inset-0.5 animate-pulse rounded-md border border-gray-400/30" />
-            <Handle type="source" position={Position.Bottom} className="!h-1 !w-1 !bg-gray-400" />
+            <div className="pointer-events-none absolute -inset-0.5 animate-pulse rounded-md border border-slate-400/30" />
+            <Handle type="source" position={Position.Bottom} className="!h-1 !w-1 !bg-slate-400" />
         </div>
     );
 });
@@ -120,9 +120,9 @@ function PartialGraphFlow({ partialGraph }: { partialGraph?: PipelineJobStatus['
 
     if (!partialGraph || nodes.length === 0) {
         return (
-            <div className="flex h-full w-full items-center justify-center text-sm text-gray-400">
+            <div className="flex h-full w-full items-center justify-center text-sm text-slate-400">
                 <div className="flex flex-col items-center gap-3">
-                    <div className="h-6 w-6 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600" />
+                    <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-300 border-t-slate-600" />
                     Waiting for concepts...
                 </div>
             </div>
@@ -139,13 +139,13 @@ function PartialGraphFlow({ partialGraph }: { partialGraph?: PipelineJobStatus['
             minZoom={0.2}
             maxZoom={2}
             proOptions={{ hideAttribution: true }}
-            className="bg-gray-50/30"
+            className="bg-slate-50/30"
             nodesDraggable={false}
             nodesConnectable={false}
             elementsSelectable={false}
         >
             <Background color="#E2E8F0" gap={16} size={1} />
-            <Controls showInteractive={false} className="border-gray-200 fill-gray-500" />
+            <Controls showInteractive={false} className="border-slate-200 fill-slate-500" />
         </ReactFlow>
     );
 }
@@ -354,7 +354,7 @@ export default function AdaptiveLearningProcessing() {
     return (
         <div className="mx-auto mt-8 flex w-full max-w-6xl flex-col lg:flex-row gap-8 items-stretch pt-4">
             <div className="w-full lg:w-[45%] flex-shrink-0">
-                <div className="relative overflow-hidden rounded-lg border border-gray-200 bg-white p-8 md:p-10">
+                <div className="relative overflow-hidden rounded-[20px] border border-slate-200 bg-white p-8 md:p-10 shadow-sm">
                     <div className="text-center">
                         {error && (
                             <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-lg bg-red-50 text-red-500 border border-red-100">
@@ -362,14 +362,14 @@ export default function AdaptiveLearningProcessing() {
                             </div>
                         )}
 
-                        <h2 className="mb-2 text-2xl font-medium tracking-tight text-gray-900">
+                        <h2 className="mb-2 text-2xl font-medium tracking-tight text-slate-900">
                             {error ? t('processing.failedTitle') : t('processing.title')}
                         </h2>
-                        <p className="mb-6 text-sm text-gray-500">{filename}</p>
+                        <p className="mb-6 text-sm text-slate-500">{filename}</p>
 
                         {!error && (
-                            <div className="mb-8 inline-flex items-center rounded-md bg-gray-50 px-4 py-1.5 border border-gray-200">
-                                <p className="text-[10px] font-bold tracking-widest uppercase text-gray-900">{statusLabel}</p>
+                            <div className="mb-8 inline-flex items-center rounded-md bg-slate-50 px-4 py-1.5 border border-slate-200">
+                                <p className="text-[10px] font-bold tracking-widest uppercase text-slate-900">{statusLabel}</p>
                             </div>
                         )}
 
@@ -381,17 +381,17 @@ export default function AdaptiveLearningProcessing() {
 
                         {stats && !error ? (
                             <div className="mb-8 grid grid-cols-3 gap-3">
-                                <div className="rounded-md bg-gray-50 border border-gray-100 p-3 text-center">
-                                    <div className="text-xl font-mono text-gray-900">{stats?.concepts_extracted}</div>
-                                    <div className="text-[10px] font-bold text-gray-500 mt-1 uppercase tracking-widest">{t('processing.stats.extracted')}</div>
+                                <div className="rounded-md bg-slate-50 border border-slate-100 p-3 text-center">
+                                    <div className="text-xl font-mono text-slate-900">{stats?.concepts_extracted}</div>
+                                    <div className="text-[10px] font-bold text-slate-500 mt-1 uppercase tracking-widest">{t('processing.stats.extracted')}</div>
                                 </div>
-                                <div className="rounded-md bg-gray-50 border border-gray-100 p-3 text-center">
-                                    <div className="text-xl font-mono text-gray-900">{stats?.concepts_after_merge}</div>
-                                    <div className="text-[10px] font-bold text-gray-500 mt-1 uppercase tracking-widest">{t('processing.stats.afterMerge')}</div>
+                                <div className="rounded-md bg-slate-50 border border-slate-100 p-3 text-center">
+                                    <div className="text-xl font-mono text-slate-900">{stats?.concepts_after_merge}</div>
+                                    <div className="text-[10px] font-bold text-slate-500 mt-1 uppercase tracking-widest">{t('processing.stats.afterMerge')}</div>
                                 </div>
-                                <div className="rounded-md bg-gray-50 border border-gray-100 p-3 text-center">
-                                    <div className="text-xl font-mono text-gray-900">{stats?.relations_verified}</div>
-                                    <div className="text-[10px] font-bold text-gray-500 mt-1 uppercase tracking-widest">{t('processing.stats.relations')}</div>
+                                <div className="rounded-md bg-slate-50 border border-slate-100 p-3 text-center">
+                                    <div className="text-xl font-mono text-slate-900">{stats?.relations_verified}</div>
+                                    <div className="text-[10px] font-bold text-slate-500 mt-1 uppercase tracking-widest">{t('processing.stats.relations')}</div>
                                 </div>
                             </div>
                         ) : null}
@@ -406,21 +406,21 @@ export default function AdaptiveLearningProcessing() {
                                         <div key={step.id} className="flex items-center gap-3 group">
                                             <div
                                                 className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full transition-colors duration-200 ${isCompleted
-                                                    ? 'bg-gray-900 text-white'
+                                                    ? 'bg-slate-900 text-white'
                                                     : isActive
-                                                        ? 'border border-gray-900 bg-white'
-                                                        : 'border border-gray-200 bg-gray-50'
+                                                        ? 'border border-slate-900 bg-white'
+                                                        : 'border border-slate-200 bg-slate-50'
                                                     }`}
                                             >
                                                 {isCompleted ? <HiCheck className="h-3 w-3" /> : null}
-                                                {isActive ? <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-gray-900" /> : null}
+                                                {isActive ? <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-slate-900" /> : null}
                                             </div>
                                             <span
                                                 className={`text-sm transition-colors duration-200 ${isCompleted
-                                                    ? 'text-gray-900 font-medium'
+                                                    ? 'text-slate-900 font-medium'
                                                     : isActive
-                                                        ? 'text-gray-900 font-semibold'
-                                                        : 'text-gray-400'
+                                                        ? 'text-slate-900 font-semibold'
+                                                        : 'text-slate-400'
                                                     }`}
                                             >
                                                 {step.label}
@@ -432,21 +432,21 @@ export default function AdaptiveLearningProcessing() {
                         ) : null}
 
                         {creatingSession ? (
-                            <div className="mb-6 flex flex-col items-center justify-center gap-2 font-medium text-gray-900 text-sm">
-                                <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-200 border-t-gray-900" />
+                            <div className="mb-6 flex flex-col items-center justify-center gap-2 font-medium text-slate-900 text-sm">
+                                <div className="h-4 w-4 animate-spin rounded-full border-2 border-slate-200 border-t-slate-900" />
                                 {t('processing.creatingSession')}
                             </div>
                         ) : null}
 
                         {!error ? (
                             <div className="relative pt-4">
-                                <div className="mb-2 flex justify-between text-[10px] font-bold uppercase tracking-widest text-gray-500">
+                                <div className="mb-2 flex justify-between text-[10px] font-bold uppercase tracking-widest text-slate-500">
                                     <span>{t('processing.progress')}</span>
                                     <span className="font-mono">{Math.round(progress)}%</span>
                                 </div>
-                                <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-100 border border-gray-200">
+                                <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100 border border-slate-200">
                                     <div
-                                        className="h-full rounded-full bg-gray-900 transition-all duration-500 ease-out"
+                                        className="h-full rounded-full bg-slate-900 transition-all duration-500 ease-out"
                                         style={{ width: `${progress}%` }}
                                     />
                                 </div>
@@ -455,7 +455,7 @@ export default function AdaptiveLearningProcessing() {
 
                         {error ? (
                             <div className="mt-8 flex justify-center">
-                                <Button variant="outline" onClick={handleGoBack} className="rounded-md px-6 py-2.5 h-auto text-sm font-medium hover:bg-gray-50 border-gray-200 transition-colors">
+                                <Button variant="outline" onClick={handleGoBack} className="rounded-md px-6 py-2.5 h-auto text-sm font-medium hover:bg-slate-50 border-slate-200 transition-colors">
                                     <HiOutlineArrowLeft className="mr-2 h-4 w-4" />
                                     {t('processing.tryAgain')}
                                 </Button>
@@ -465,20 +465,20 @@ export default function AdaptiveLearningProcessing() {
                 </div>
 
                 {!error ? (
-                    <div className="mx-auto mt-6 flex w-full items-start gap-2 rounded-md border border-gray-200 bg-white p-4 text-xs text-gray-600">
-                        <HiOutlineSparkles className="h-4 w-4 flex-shrink-0 text-gray-400" />
+                    <div className="mx-auto mt-6 flex w-full items-start gap-2 rounded-[16px] border border-slate-200 bg-white p-4 shadow-sm text-xs text-slate-600">
+                        <HiOutlineSparkles className="h-4 w-4 flex-shrink-0 text-slate-400" />
                         <p>
-                            <strong>{t('processing.didYouKnow')}</strong> {t('processing.didYouKnowDescription')}
+                            <strong className="text-slate-900">{t('processing.didYouKnow')}</strong> {t('processing.didYouKnowDescription')}
                         </p>
                     </div>
                 ) : null}
             </div>
 
             {!error ? (
-                <div className="relative hidden lg:flex w-full lg:w-[55%] h-[600px] overflow-hidden rounded-lg border border-gray-200 bg-white">
+                <div className="relative hidden shadow-sm lg:flex w-full lg:w-[55%] h-[600px] overflow-hidden rounded-[20px] border border-slate-200 bg-white">
                     <div className="pointer-events-none absolute left-6 top-6 z-10">
-                        <h3 className="text-sm font-medium tracking-wide text-gray-900">Knowledge Graph</h3>
-                        <p className="text-xs text-gray-500 mt-0.5">Visualizing structures in real-time...</p>
+                        <h3 className="text-sm font-medium tracking-wide text-slate-900">Knowledge Graph</h3>
+                        <p className="text-xs text-slate-500 mt-0.5">Visualizing structures in real-time...</p>
                     </div>
                     <ReactFlowProvider>
                         <PartialGraphFlow partialGraph={partialGraph} />

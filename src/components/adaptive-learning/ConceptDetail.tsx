@@ -53,7 +53,7 @@ export default function ConceptDetailPanel({ concept, onClose }: ConceptDetailPa
                             ) : null}
                         </div>
                     </div>
-                    <button onClick={onClose} className="rounded-lg p-1 transition-colors hover:bg-gray-100">
+                    <button aria-label={t('common.close') || "Close"} onClick={onClose} className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg p-1 transition-colors hover:bg-gray-100">
                         <HiOutlineX className="h-5 w-5 text-gray-400" />
                     </button>
                 </div>

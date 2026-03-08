@@ -63,7 +63,7 @@ export default function BottomNav() {
     );
 
     // Hide bottom navigation in exercise mode to prevent distractions
-    if (pathWithoutLocale.startsWith('/adaptive-learning/exercise')) {
+    if (pathWithoutLocale.startsWith('/adaptive-learning/exercise') || pathWithoutLocale.startsWith('/adaptive-learning/result')) {
         return null;
     }
 

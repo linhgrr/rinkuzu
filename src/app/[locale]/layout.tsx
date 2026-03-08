@@ -7,6 +7,7 @@ import '../globals.css';
 import Providers from '../providers';
 import BottomNav from '@/components/BottomNav';
 import { routing } from '@/i18n/routing';
+import { MainLayoutWrapper } from '@/components/MainLayoutWrapper';
 
 /**
  * Rule: bundle-defer-third-party
@@ -101,9 +102,9 @@ export default async function LocaleLayout({
       <body className="min-h-screen antialiased bg-[#f5f5f7]">
         <NextIntlClientProvider messages={messages}>
           <Providers>
-            <main className="relative min-h-screen pb-16 md:pb-0">
+            <MainLayoutWrapper>
               {children}
-            </main>
+            </MainLayoutWrapper>
             <BottomNav />
             <FloatingDraftProgress />
             <PWAInstaller />

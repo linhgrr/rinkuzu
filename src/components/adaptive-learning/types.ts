@@ -13,6 +13,20 @@ export interface Course {
     currentTopic: string;
 }
 
+export interface NextConcept {
+    concept_name: string;
+    concept_idx: number;
+    bloom_level: number;
+    bloom_label: BloomLevel;
+    step: number;
+    max_steps: number;
+}
+
+export interface TheoryData {
+    content: string;
+    examples: string[];
+}
+
 export interface Exercise {
     id: string;
     exercise_id: string;

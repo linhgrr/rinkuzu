@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, memo } from 'react';
+import { useCallback, memo, Suspense, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
@@ -26,6 +26,48 @@ import {
 } from '@/components/icons';
 import { TextShimmer } from '@/components/ui/text-shimmer';
 import { FiBookOpen, FiTarget, FiZap, FiAward } from 'react-icons/fi';
+import { Canvas, useFrame } from '@react-three/fiber';
+import { useGLTF, Float, OrbitControls, Environment } from '@react-three/drei';
+import * as THREE from 'three';
+
+function MascotModel() {
+  const { scene } = useGLTF('/models/base_basic_pbr.glb');
+  const groupRef = useRef<THREE.Group>(null);
+
+  // Track mouse globally across the whole screen
+  const target = useRef({ x: 0, y: 0 });
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      // Normalize to -1 to 1 based on window width/height
+      target.current.x = (e.clientX / window.innerWidth) * 2 - 1;
+      target.current.y = -(e.clientY / window.innerHeight) * 2 + 1;
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, []);
+
+  useFrame(() => {
+    if (groupRef.current) {
+      // Add slight offset for natural look (-0.1y)
+      const targetRotationY = target.current.x * 0.8 - 0.1;
+      const targetRotationX = target.current.y * -0.5;
+
+      groupRef.current.rotation.y = THREE.MathUtils.lerp(groupRef.current.rotation.y, targetRotationY, 0.1);
+      groupRef.current.rotation.x = THREE.MathUtils.lerp(groupRef.current.rotation.x, targetRotationX, 0.1);
+    }
+  });
+
+  return (
+    <Float speed={2} rotationIntensity={0.5} floatIntensity={1}>
+      <group ref={groupRef}>
+        <primitive object={scene} scale={1.5} position={[0, -1.2, 0]} />
+      </group>
+    </Float>
+  );
+}
+useGLTF.preload('/models/base_basic_pbr.glb');
 
 const StatCardsSkeleton = memo(function StatCardsSkeleton() {
   return (
@@ -318,10 +360,10 @@ export function DashboardClient({
               <div className="pointer-events-none absolute top-0 right-0 w-[40rem] h-[40rem] -mr-40 -mt-40 bg-teal-50/50 rounded-full blur-3xl transition-all duration-500 group-hover:bg-teal-100/50" />
 
               <div className="relative z-10 flex-1 max-w-2xl">
-            
+
                 <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-slate-900 tracking-tight leading-tight mb-4">
                   Master any subject with <br />
-                  <TextShimmer className="font-semibold" duration={2}>
+                  <TextShimmer className="font-semibold" duration={8}>
                     ✨ AI Powered
                   </TextShimmer>
                 </h2>
@@ -347,25 +389,25 @@ export function DashboardClient({
                 </div>
               </div>
 
-              {/* Minimalist Graphic replacing the colored blobs */}
+              {/* Interactive 3D Mascot replacing the static graphic */}
               <div className="relative z-10 hidden lg:flex items-center justify-center w-72 h-72 shrink-0">
-                {/* Central node */}
-                <div className="w-20 h-20 rounded-3xl bg-white border-2 border-slate-900 shadow-[0_8px_30px_rgb(0,0,0,0.12)] flex items-center justify-center z-20">
-                  <FiBookOpen className="w-8 h-8 text-slate-900" />
+                <div className="absolute inset-0 bg-teal-50/50 rounded-full blur-3xl" />
+                <div className="w-full h-full relative z-20 cursor-grab active:cursor-grabbing">
+                  <Canvas camera={{ position: [0, 0, 5], fov: 45 }} className="w-full h-full" dpr={[1, 2]}>
+                    <ambientLight intensity={0.8} />
+                    <directionalLight position={[10, 10, 5]} intensity={1} />
+                    <directionalLight position={[-10, 10, -5]} intensity={0.5} />
+                    <Environment preset="city" />
+                    <Suspense fallback={null}>
+                      <MascotModel />
+                    </Suspense>
+                    <OrbitControls
+                      enableZoom={false}
+                      enablePan={false}
+                      enableRotate={false}
+                    />
+                  </Canvas>
                 </div>
-
-                {/* Orbiting structure */}
-                <div className="absolute inset-4 rounded-full border-[1.5px] border-dashed border-slate-200 animate-[spin_20s_linear_infinite]">
-                  <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 rounded-2xl bg-white border border-slate-200 shadow-sm flex items-center justify-center -rotate-90">
-                    <FiTarget className="w-5 h-5 text-slate-500" />
-                  </div>
-                </div>
-                <div className="absolute inset-16 rounded-full border border-slate-200 animate-[spin_15s_linear_infinite_reverse]">
-                  <div className="absolute bottom-0 right-1/4 w-10 h-10 rounded-2xl bg-white border border-slate-200 shadow-sm flex items-center justify-center">
-                    <FiAward className="w-4 h-4 text-slate-500" />
-                  </div>
-                </div>
-                <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent opacity-80 z-10 bottom-0 top-1/2" />
               </div>
             </div>
 

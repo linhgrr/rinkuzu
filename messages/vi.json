@@ -374,7 +374,7 @@
       "noExerciseAvailable": "Hiện chưa có bài tập",
       "theory": {
         "reviewKnowledge": "Ôn tập kiến thức",
-        "theoryReview": "Hãy cùng xem lại lý thuyết về {concept} trước khi làm bài tập.",
+        "theoryReview": "Hãy cùng xem lại lý thuyết về <highlight>{concept}</highlight> trước khi làm bài tập.",
         "generatingExplanationFor": "Đang tạo giải thích cho {concept}...",
         "basicTheory": "Lý thuyết cơ bản",
         "illustration": "Ví dụ minh họa",

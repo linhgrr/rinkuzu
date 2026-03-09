@@ -368,7 +368,7 @@
       "noExerciseAvailable": "No exercise available",
       "theory": {
         "reviewKnowledge": "Review Knowledge",
-        "theoryReview": "Let's review the theory about {concept} before starting the exercise.",
+        "theoryReview": "Let's review the theory about <highlight>{concept}</highlight> before starting the exercise.",
         "generatingExplanationFor": "Generating explanation for {concept}...",
         "basicTheory": "Basic Theory",
         "illustration": "Illustration",

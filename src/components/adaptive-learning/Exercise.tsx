@@ -203,7 +203,8 @@ export default function AdaptiveLearningExercise({ sessionId }: ExerciseProps) {
                     <h1 className="mb-2 text-xl font-semibold tracking-tight text-slate-900 md:text-3xl">{t('exercise.theory.reviewKnowledge')}</h1>
                     <p className="text-sm md:text-base text-slate-500">
                         {t.rich('exercise.theory.theoryReview', {
-                            concept: () => <span className="font-medium text-slate-900">{concept.concept_name}</span>
+                            concept: concept.concept_name,
+                            highlight: (chunks) => <span className="font-medium text-slate-900">{chunks}</span>
                         })}
                     </p>
                 </div>

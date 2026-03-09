@@ -318,11 +318,7 @@ export function DashboardClient({
               <div className="pointer-events-none absolute top-0 right-0 w-[40rem] h-[40rem] -mr-40 -mt-40 bg-teal-50/50 rounded-full blur-3xl transition-all duration-500 group-hover:bg-teal-100/50" />
 
               <div className="relative z-10 flex-1 max-w-2xl">
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 mb-6 uppercase tracking-wider">
-                  <FiZap className="w-3.5 h-3.5 text-slate-500" />
-                  <span>{t('aiPowered', { fallback: 'AI-Powered Engine' })}</span>
-                </div>
-
+            
                 <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-slate-900 tracking-tight leading-tight mb-4">
                   Master any subject with <br />
                   <TextShimmer className="font-semibold" duration={2}>

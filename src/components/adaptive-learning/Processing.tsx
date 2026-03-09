@@ -83,6 +83,7 @@ const getLayoutedElements = (nodes: Node<ConceptNodeData>[], edges: Edge[], dire
 
 function PartialGraphFlow({ partialGraph }: { partialGraph?: PipelineJobStatus['partial_graph'] }) {
     const { fitView } = useReactFlow();
+    const t = useTranslations('adaptiveLearning');
 
     const initialNodes: Node<ConceptNodeData>[] = useMemo(() => {
         if (!partialGraph?.nodes) return [];
@@ -123,7 +124,7 @@ function PartialGraphFlow({ partialGraph }: { partialGraph?: PipelineJobStatus['
             <div className="flex h-full w-full items-center justify-center text-sm text-slate-400">
                 <div className="flex flex-col items-center gap-3">
                     <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-300 border-t-slate-600" />
-                    Waiting for concepts...
+                    {t('processing.waitingForConcepts')}
                 </div>
             </div>
         );
@@ -477,8 +478,8 @@ export default function AdaptiveLearningProcessing() {
             {!error ? (
                 <div className="relative hidden shadow-sm lg:flex w-full lg:w-[55%] h-[600px] overflow-hidden rounded-[20px] border border-slate-200 bg-white">
                     <div className="pointer-events-none absolute left-6 top-6 z-10">
-                        <h3 className="text-sm font-medium tracking-wide text-slate-900">Knowledge Graph</h3>
-                        <p className="text-xs text-slate-500 mt-0.5">Visualizing structures in real-time...</p>
+                        <h3 className="text-sm font-medium tracking-wide text-slate-900">{t('processing.knowledgeGraph')}</h3>
+                        <p className="text-xs text-slate-500 mt-0.5">{t('processing.visualizingStructures')}</p>
                     </div>
                     <ReactFlowProvider>
                         <PartialGraphFlow partialGraph={partialGraph} />

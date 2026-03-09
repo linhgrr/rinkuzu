@@ -232,7 +232,7 @@ export default function AdaptiveLearningDashboard() {
     const upNextSubject = subjects.length > 0 ? subjects[0] : null;
 
     return (
-        <div className="min-h-screen bg-slate-50 p-4 md:p-8 xl:p-12 font-sans text-slate-900 selection:bg-slate-200">
+        <div className="font-sans text-slate-900 selection:bg-slate-200">
             {/* Custom Toast Container for Errors */}
             {toastMsg && (
                 <div className={`fixed bottom-6 right-6 z-50 px-6 py-4 rounded-xl border shadow-lg flex items-center gap-3 transition-all animate-in fade-in slide-in-from-bottom-5 ${toastMsg.type === 'error' ? 'bg-white border-red-200 text-slate-900' : 'bg-slate-900 text-white border-transparent'}`}>
@@ -250,12 +250,12 @@ export default function AdaptiveLearningDashboard() {
                 {/* Header Section */}
                 <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-slate-200">
                     <div>
-                        <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-slate-900">Welcome back.</h1>
-                        <p className="text-slate-600 mt-2 text-base max-w-xl">Pick up right where you left off and keep your learning streak alive.</p>
+                        <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-slate-900">{t('dashboard.welcomeBack')}</h1>
+                        <p className="text-slate-600 mt-2 text-base max-w-xl">{t('dashboard.pickUpDescription')}</p>
                         {apiOnline === false && (
                             <div className="mt-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-orange-50 border border-orange-100 text-orange-600 text-xs font-medium">
                                 <span className="w-1.5 h-1.5 rounded-full bg-orange-500"></span>
-                                Connection limited. Some features may be unavailable.
+                                {t('dashboard.connectionLimited')}
                             </div>
                         )}
                         {error && (
@@ -268,11 +268,11 @@ export default function AdaptiveLearningDashboard() {
                     <div className="flex items-center gap-3">
                         <div className="flex items-center gap-2 bg-white px-4 py-2.5 rounded-full border border-slate-200 shadow-sm">
                             <FiZap className="text-slate-800 fill-slate-800 w-4 h-4" aria-label="Streak" />
-                            <span className="font-semibold text-sm text-slate-800 tracking-tight">12 Day Streak</span>
+                            <span className="font-semibold text-sm text-slate-800 tracking-tight">{t('dashboard.dayStreak', { count: 12 })}</span>
                         </div>
                         <div className="flex items-center gap-2 bg-white px-4 py-2.5 rounded-full border border-slate-200 shadow-sm">
                             <FiTarget className="text-slate-500 w-4 h-4" aria-label="Goal" />
-                            <span className="font-medium text-sm text-slate-700 tracking-tight">Daily Goal: 2/3</span>
+                            <span className="font-medium text-sm text-slate-700 tracking-tight">{t('dashboard.dailyGoalProgress', { current: 2, total: 3 })}</span>
                         </div>
                     </div>
                 </header>
@@ -296,14 +296,14 @@ export default function AdaptiveLearningDashboard() {
                                 <div className="absolute top-0 right-0 w-64 h-64 bg-teal-50 rounded-full blur-3xl opacity-60 translate-x-1/3 -translate-y-1/4 pointer-events-none"></div>
                                 <div className="relative z-10 flex flex-col items-start gap-6">
                                     <div className="flex items-center gap-3 mb-2">
-                                        <span className="bg-teal-100 text-teal-700 text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded">UP NEXT</span>
-                                        <span className="text-teal-600 text-sm font-medium">Continue Learning</span>
+                                        <span className="bg-teal-100 text-teal-700 text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded">{t('dashboard.upNext')}</span>
+                                        <span className="text-teal-600 text-sm font-medium">{t('dashboard.continueLearning')}</span>
                                     </div>
                                     <h2 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight leading-snug">
                                         {upNextSubject.subject_id || upNextSubject.filename.replace(/\.[^.]+$/, '')}
                                     </h2>
                                     <p className="text-slate-600 mb-6 max-w-[420px] leading-relaxed text-base">
-                                        Dive back into this document to improve your mastery. Based on your previous runs, you are ready for the next level.
+                                        {t('dashboard.nextLevelDescription')}
                                     </p>
                                     <button
                                         onClick={() => handleOpenSubject(upNextSubject.job_id)}
@@ -315,7 +315,7 @@ export default function AdaptiveLearningDashboard() {
                                         ) : (
                                             <>
                                                 <FiBookOpen className="w-5 h-5 opacity-80" aria-hidden="true" />
-                                                Continue Session
+                                                {t('dashboard.continueSession')}
                                             </>
                                         )}
                                     </button>
@@ -326,14 +326,14 @@ export default function AdaptiveLearningDashboard() {
                                 <div className="bg-slate-50 p-5 border border-slate-100 rounded-2xl mb-6">
                                     <FiUploadCloud className="text-slate-400 w-8 h-8" aria-hidden="true" />
                                 </div>
-                                <h2 className="text-2xl font-bold mb-3 text-slate-900 tracking-tight">Upload Material</h2>
-                                <p className="text-slate-600 mb-8 max-w-sm mx-auto">Get started by uploading a PDF document to generate an adaptive learning experience.</p>
+                                <h2 className="text-2xl font-bold mb-3 text-slate-900 tracking-tight">{t('dashboard.uploadMaterialTitle')}</h2>
+                                <p className="text-slate-600 mb-8 max-w-sm mx-auto">{t('dashboard.uploadMaterialHint')}</p>
                                 <button
                                     onClick={handleGoUpload}
                                     className="bg-teal-600 hover:bg-teal-700 text-white font-medium py-3.5 px-8 rounded-xl inline-flex items-center justify-center gap-2.5 shadow-lg hover:shadow-teal-500/25 border border-teal-500 transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-teal-600 min-h-[56px]"
                                 >
                                     <FiUploadCloud className="w-5 h-5 opacity-80" aria-hidden="true" />
-                                    Upload Document
+                                    {t('dashboard.uploadDocument')}
                                 </button>
                             </section>
                         )}
@@ -344,16 +344,16 @@ export default function AdaptiveLearningDashboard() {
                                 <div>
                                     <h3 className="text-xl font-bold flex items-center gap-2.5 text-slate-900 tracking-tight">
                                         <FiBookOpen className="text-slate-400 w-5 h-5" aria-hidden="true" />
-                                        Your Library
+                                        {t('dashboard.yourLibrary')}
                                     </h3>
-                                    <p className="text-xs text-slate-600 mt-2">All uploaded and processed study materials.</p>
+                                    <p className="text-xs text-slate-600 mt-2">{t('dashboard.libraryDescription')}</p>
                                 </div>
                                 <div className="flex flex-row gap-3 items-center w-full sm:w-auto">
                                     <div className="relative w-full sm:w-48">
                                         <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" aria-hidden="true" />
                                         <input
                                             type="text"
-                                            placeholder="Search..."
+                                            placeholder={t('dashboard.searchPlaceholder')}
                                             value={searchQuery}
                                             onChange={(e) => setSearchQuery(e.target.value)}
                                             spellCheck={false}
@@ -368,7 +368,7 @@ export default function AdaptiveLearningDashboard() {
                                         title="Upload new document"
                                     >
                                         <FiUploadCloud className="w-4 h-4 opacity-70" aria-hidden="true" />
-                                        <span className="hidden md:inline text-sm">Upload</span>
+                                        <span className="hidden md:inline text-sm">{t('uploadPage.upload')}</span>
                                     </button>
                                 </div>
                             </div>
@@ -382,8 +382,8 @@ export default function AdaptiveLearningDashboard() {
                                     <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center mx-auto mb-4 shadow-sm border border-slate-200">
                                         <FiBookOpen className="w-5 h-5 text-slate-400" aria-hidden="true" />
                                     </div>
-                                    <h3 className="text-sm font-semibold text-slate-900 tracking-tight">No documents yet</h3>
-                                    <p className="text-xs text-slate-600 mt-1 max-w-[200px] mx-auto">Upload a new PDF to populate your library.</p>
+                                    <h3 className="text-sm font-semibold text-slate-900 tracking-tight">{t('dashboard.noDocumentsTitle')}</h3>
+                                    <p className="text-xs text-slate-600 mt-1 max-w-[200px] mx-auto">{t('dashboard.noDocumentsDescription')}</p>
                                 </div>
                             ) : (
                                 <div className="flex flex-col pb-4 mt-2">
@@ -410,7 +410,7 @@ export default function AdaptiveLearningDashboard() {
                         <section className="bg-white rounded-3xl p-6 md:p-8 border border-slate-200 shadow-sm">
                             <h3 className="text-lg font-bold mb-6 flex items-center gap-2.5 text-slate-900 tracking-tight">
                                 <FiTarget className="text-slate-400 w-5 h-5" aria-hidden="true" />
-                                Daily Quests
+                                {t('dashboard.dailyQuests')}
                             </h3>
                             <ul className="space-y-5">
                                 <li className="flex items-start gap-4">
@@ -418,7 +418,7 @@ export default function AdaptiveLearningDashboard() {
                                         <FiCheckCircle className="text-slate-300 w-5 h-5 shrink-0 relative z-10 bg-white" aria-label="Completed" />
                                     </div>
                                     <div>
-                                        <p className="text-sm font-semibold text-slate-400 line-through">Complete 1 lesson</p>
+                                        <p className="text-sm font-semibold text-slate-400 line-through">{t('dashboard.completeOneLesson')}</p>
                                         <p className="text-xs text-slate-400 mt-1 font-mono">10 / 10 XP</p>
                                     </div>
                                 </li>
@@ -427,7 +427,7 @@ export default function AdaptiveLearningDashboard() {
                                         <div className="w-5 h-5 rounded-full border-2 border-slate-300 shrink-0 group-hover:border-slate-500 transition-colors relative z-10 bg-white" role="checkbox" aria-checked="false" aria-label="Not completed" tabIndex={0}></div>
                                     </div>
                                     <div>
-                                        <p className="text-sm font-semibold text-slate-900 group-hover:text-black transition-colors duration-300">Achieve 80% accuracy</p>
+                                        <p className="text-sm font-semibold text-slate-900 group-hover:text-black transition-colors duration-300">{t('dashboard.achieveAccuracy')}</p>
                                         <p className="text-xs text-slate-500 mt-1 font-mono">20 XP</p>
                                     </div>
                                 </li>
@@ -438,49 +438,49 @@ export default function AdaptiveLearningDashboard() {
                         <section className="bg-white rounded-3xl p-6 md:p-8 border border-slate-200 shadow-sm">
                             <h3 className="text-lg font-bold mb-6 flex items-center gap-2.5 text-slate-900 tracking-tight">
                                 <FiAward className="text-slate-400 w-5 h-5" aria-hidden="true" />
-                                Recent Badges
+                                {t('dashboard.recentBadges')}
                             </h3>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100 flex flex-col items-center text-center transition-colors hover:bg-slate-100">
                                     <div className="w-10 h-10 bg-white border border-slate-200 rounded-xl flex items-center justify-center shadow-sm mb-3">
                                         <FiZap className="text-slate-800 text-lg" aria-hidden="true" />
                                     </div>
-                                    <p className="text-[13px] font-bold text-slate-900 tracking-tight">Fast Learner</p>
-                                    <p className="text-[11px] text-slate-500 mt-1 font-medium">3 lessons today</p>
+                                    <p className="text-[13px] font-bold text-slate-900 tracking-tight">{t('dashboard.fastLearner')}</p>
+                                    <p className="text-[11px] text-slate-500 mt-1 font-medium">{t('dashboard.lessonsToday', { count: 3 })}</p>
                                 </div>
                                 <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100 flex flex-col items-center text-center transition-colors hover:bg-slate-100">
                                     <div className="w-10 h-10 bg-white border border-slate-200 rounded-xl flex items-center justify-center shadow-sm mb-3">
                                         <FiStar className="text-slate-800 text-lg" aria-hidden="true" />
                                     </div>
-                                    <p className="text-[13px] font-bold text-slate-900 tracking-tight">Perfect Score</p>
-                                    <p className="text-[11px] text-slate-500 mt-1 font-medium">100% accuracy</p>
+                                    <p className="text-[13px] font-bold text-slate-900 tracking-tight">{t('dashboard.perfectScore')}</p>
+                                    <p className="text-[11px] text-slate-500 mt-1 font-medium">{t('dashboard.accuracyBadge')}</p>
                                 </div>
                             </div>
                         </section>
 
                         {/* Activity Feed */}
                         <section className="px-2">
-                            <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-6">History</h3>
+                            <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-6">{t('dashboard.activityHistory')}</h3>
                             <div className="relative border-l border-slate-200 ml-2.5 space-y-8">
                                 {sessionHistory.length > 0 ? sessionHistory.map((h, i) => (
                                     <div key={h.session_id} className="relative pl-6">
                                         <div className={`absolute w-2 h-2 bg-white border-2 ${i === 0 ? 'border-slate-900 shadow-[0_0_0_2px_rgba(15,23,42,0.1)]' : 'border-slate-300'} rounded-full -left-[4.5px] top-1.5`}></div>
-                                        <p className="text-sm font-semibold text-slate-900">Learning Session</p>
+                                        <p className="text-sm font-semibold text-slate-900">{t('dashboard.learningSession')}</p>
                                         <p className="text-xs text-slate-500 font-medium flex items-center gap-1.5 mt-1">
-                                            {Math.round(h.accuracy * 100)}% acc, {h.total_answered} qs
+                                            {t('dashboard.accQs', { acc: Math.round(h.accuracy * 100), count: h.total_answered })}
                                         </p>
                                     </div>
                                 )) : (
                                     <>
                                         <div className="relative pl-6">
                                             <div className="absolute w-2 h-2 bg-white border-2 border-slate-900 shadow-[0_0_0_2px_rgba(15,23,42,0.1)] rounded-full -left-[4.5px] top-1.5"></div>
-                                            <p className="text-sm font-semibold text-slate-900">Mastered &quot;React State&quot;</p>
-                                            <p className="text-xs text-slate-500 mt-1.5 font-medium">2 hours ago</p>
+                                            <p className="text-sm font-semibold text-slate-900">{t('dashboard.masteredReactState')}</p>
+                                            <p className="text-xs text-slate-500 mt-1.5 font-medium">{t('dashboard.hoursAgo', { count: 2 })}</p>
                                         </div>
                                         <div className="relative pl-6">
                                             <div className="absolute w-2 h-2 bg-white border-2 border-slate-300 rounded-full -left-[4.5px] top-1.5"></div>
-                                            <p className="text-sm font-medium text-slate-500">Completed daily goal</p>
-                                            <p className="text-xs text-slate-400 mt-1.5 font-medium">Yesterday</p>
+                                            <p className="text-sm font-medium text-slate-500">{t('dashboard.completedDailyGoal')}</p>
+                                            <p className="text-xs text-slate-400 mt-1.5 font-medium">{t('dashboard.yesterday')}</p>
                                         </div>
                                     </>
                                 )}

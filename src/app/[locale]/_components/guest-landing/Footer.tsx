@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { HiOutlineMail, HiOutlinePhone, HiOutlineLocationMarker } from '@/components/icons'
 import { NavLogo } from '@/components/Navigation/NavLogo'
 
-export function Footer () {
+export function Footer() {
   const t = useTranslations('landing.footer')
 
   return (
@@ -17,15 +17,15 @@ export function Footer () {
             <NavLogo />
             <div className="space-y-4 text-gray-500 text-sm">
               <div className="flex items-start gap-3">
-                <HiOutlineLocationMarker className="w-5 h-5 text-blue-600 shrink-0" aria-hidden="true" />
+                <HiOutlineLocationMarker className="w-5 h-5 text-teal-600 shrink-0" aria-hidden="true" />
                 <p>{t('address')}</p>
               </div>
               <div className="flex items-center gap-3">
-                <HiOutlinePhone className="w-5 h-5 text-blue-600 shrink-0" aria-hidden="true" />
+                <HiOutlinePhone className="w-5 h-5 text-teal-600 shrink-0" aria-hidden="true" />
                 <p>+1 (234) 567-890</p>
               </div>
               <div className="flex items-center gap-3">
-                <HiOutlineMail className="w-5 h-5 text-blue-600 shrink-0" aria-hidden="true" />
+                <HiOutlineMail className="w-5 h-5 text-teal-600 shrink-0" aria-hidden="true" />
                 <p>support@rinkuzu.com</p>
               </div>
             </div>
@@ -35,10 +35,10 @@ export function Footer () {
           <div>
             <h4 className="font-bold text-[#1e242c] mb-6 uppercase tracking-wider text-sm">{t('links.title')}</h4>
             <ul className="space-y-4">
-              <li><Link href="/" className="text-gray-500 hover:text-blue-600 transition-colors">{t('links.home')}</Link></li>
-              <li><Link href="#features" className="text-gray-500 hover:text-blue-600 transition-colors">{t('links.features')}</Link></li>
-              <li><Link href="/pricing" className="text-gray-500 hover:text-blue-600 transition-colors">{t('links.pricing')}</Link></li>
-              <li><Link href="/faq" className="text-gray-500 hover:text-blue-600 transition-colors">{t('links.faq')}</Link></li>
+              <li><Link href="/" className="text-gray-500 hover:text-teal-600 transition-colors">{t('links.home')}</Link></li>
+              <li><Link href="#features" className="text-gray-500 hover:text-teal-600 transition-colors">{t('links.features')}</Link></li>
+              <li><Link href="/pricing" className="text-gray-500 hover:text-teal-600 transition-colors">{t('links.pricing')}</Link></li>
+              <li><Link href="/faq" className="text-gray-500 hover:text-teal-600 transition-colors">{t('links.faq')}</Link></li>
             </ul>
           </div>
 
@@ -46,9 +46,9 @@ export function Footer () {
           <div>
             <h4 className="font-bold text-[#1e242c] mb-6 uppercase tracking-wider text-sm">{t('legal.title')}</h4>
             <ul className="space-y-4">
-              <li><Link href="/privacy" className="text-gray-500 hover:text-blue-600 transition-colors">{t('legal.privacy')}</Link></li>
-              <li><Link href="/terms" className="text-gray-500 hover:text-blue-600 transition-colors">{t('legal.terms')}</Link></li>
-              <li><Link href="/cookies" className="text-gray-500 hover:text-blue-600 transition-colors">{t('legal.cookie')}</Link></li>
+              <li><Link href="/privacy" className="text-gray-500 hover:text-teal-600 transition-colors">{t('legal.privacy')}</Link></li>
+              <li><Link href="/terms" className="text-gray-500 hover:text-teal-600 transition-colors">{t('legal.terms')}</Link></li>
+              <li><Link href="/cookies" className="text-gray-500 hover:text-teal-600 transition-colors">{t('legal.cookie')}</Link></li>
             </ul>
           </div>
 
@@ -63,9 +63,9 @@ export function Footer () {
                 placeholder={`${t('newsletter.placeholder')}…`}
                 aria-label={t('newsletter.placeholder')}
                 autoComplete="email"
-                className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-6 py-4 text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none"
+                className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-6 py-4 text-sm focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all outline-none"
               />
-              <button className="absolute right-2 top-2 bottom-2 bg-blue-600 text-white px-4 rounded-xl text-xs font-bold hover:bg-blue-700 transition-colors focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2">
+              <button className="absolute right-2 top-2 bottom-2 bg-teal-600 text-white px-4 rounded-xl text-xs font-bold hover:bg-teal-700 transition-colors focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2">
                 {t('newsletter.button')}
               </button>
             </div>
@@ -88,7 +88,7 @@ export function Footer () {
                 href={social.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-gray-400 hover:text-[#1e242c] transition-colors text-sm focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:rounded"
+                className="text-gray-400 hover:text-[#1e242c] transition-colors text-sm focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:rounded"
               >
                 {social.name}
               </a>

@@ -8,6 +8,7 @@ import Providers from '../providers';
 import BottomNav from '@/components/BottomNav';
 import { routing } from '@/i18n/routing';
 import { MainLayoutWrapper } from '@/components/MainLayoutWrapper';
+import { GlobalFooter } from '@/components/GlobalFooter';
 
 /**
  * Rule: bundle-defer-third-party
@@ -105,6 +106,7 @@ export default async function LocaleLayout({
             <MainLayoutWrapper>
               {children}
             </MainLayoutWrapper>
+            <GlobalFooter />
             <BottomNav />
             <FloatingDraftProgress />
             <PWAInstaller />

@@ -1,0 +1,90 @@
+'use client';
+
+import { ChevronDown } from "lucide-react";
+import Link from "next/link";
+import { useSession } from "next-auth/react";
+
+const navLinks = [
+  { label: "Dashboard", href: "/dashboard" },
+  { label: "Knowledge Graph", href: "/adaptive-learning" },
+  { label: "History", href: "/profile?tab=history" },
+  { label: "Achievements", href: "/profile?tab=achievements" }
+];
+
+const Navbar = () => {
+  const { data: session } = useSession();
+
+  return (
+    <nav className="relative z-10 flex items-center justify-between px-6 md:px-[120px] py-[20px] font-sans">
+      {/* Left side */}
+      <div className="flex items-center gap-[30px]">
+        <img
+          src="https://i.ibb.co/Lz1LzttJ/unnamed-2-removebg-preview.png"
+          alt="RinKuzu Logo"
+          className="h-[32px] w-auto object-contain"
+        />
+        <div className="hidden md:flex items-center gap-[30px]">
+          {navLinks.map((link) => (
+            <Link
+              key={link.label}
+              href={link.href}
+              className="flex items-center gap-[14px] text-[14px] font-medium text-white hover:opacity-80 transition-opacity"
+            >
+              {link.label}
+              <ChevronDown size={14} className="text-white" />
+            </Link>
+          ))}
+        </div>
+      </div>
+
+      {/* Right side - Upload PDF button */}
+      <div className="flex items-center gap-4">
+        {!session ? (
+          <Link href="/login" className="text-white text-[14px] font-medium hover:underline">Login</Link>
+        ) : null}
+        <GlowPillButton 
+          label={session ? "Upload PDF" : "Get Started"} 
+          variant="dark" 
+          href={session ? "/adaptive-learning/upload" : "/register"} 
+        />
+      </div>
+    </nav>
+  );
+};
+
+export const GlowPillButton = ({
+  label,
+  variant = "dark",
+  href = "#"
+}: {
+  label: string;
+  variant?: "dark" | "light";
+  href?: string;
+}) => {
+  const isDark = variant === "dark";
+  return (
+    <Link 
+      href={href}
+      className="relative rounded-full inline-block cursor-pointer transition-opacity hover:opacity-90" 
+      style={{ border: "0.6px solid rgba(255,255,255,0.8)" }}
+    >
+      {/* Top glow streak */}
+      <div
+        className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-[1px] rounded-full"
+        style={{
+          background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent)",
+          filter: "blur(1px)",
+        }}
+      />
+      <div
+        className={`rounded-full px-[29px] py-[11px] text-[14px] font-medium ${
+          isDark ? "bg-black text-white" : "bg-white text-black"
+        }`}
+      >
+        {label}
+      </div>
+    </Link>
+  );
+};
+
+export default Navbar;

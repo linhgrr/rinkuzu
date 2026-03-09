@@ -98,12 +98,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen relative overflow-hidden">
       {/* Background Elements */}
-      <div className="absolute inset-0 bg-gradient-to-br from-violet-50 via-cyan-50 to-blue-50" />
-
-      {/* Floating Elements */}
-      <div className="absolute top-10 left-10 w-32 h-32 bg-gradient-to-br from-violet-400/20 to-purple-500/20 rounded-full blur-xl animate-pulse motion-reduce:animate-none" />
-      <div className="absolute top-1/3 right-10 w-24 h-24 bg-gradient-to-br from-cyan-400/20 to-blue-500/20 rounded-full blur-xl animate-pulse delay-1000 motion-reduce:animate-none" />
-      <div className="absolute bottom-10 left-1/3 w-40 h-40 bg-gradient-to-br from-emerald-400/20 to-teal-500/20 rounded-full blur-xl animate-pulse delay-2000 motion-reduce:animate-none" />
+      <div className="absolute inset-0 bg-slate-50" />
 
       <div className="relative flex flex-col justify-center py-8 sm:py-12 px-4 sm:px-6 lg:px-8 min-h-screen pt-16 sm:pt-20">
         {/* Header */}
@@ -133,7 +128,7 @@ export default function LoginPage() {
 
         {/* Login Form */}
         <div className="sm:mx-auto sm:w-full sm:max-w-md">
-          <Card variant="glass" className="backdrop-blur-xl border-white/30 shadow-xl animate-fadeInUp" style={{ animationDelay: '200ms' }}>
+          <Card className="border-0 shadow-lg shadow-gray-100/50 bg-white animate-fadeInUp" style={{ animationDelay: '200ms' }}>
             <CardHeader className="text-center pb-4">
               <CardTitle size="lg" className="text-gray-900">{t('signIn')}</CardTitle>
               <CardDescription className="text-base">
@@ -163,7 +158,7 @@ export default function LoginPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder={t('enterEmail')}
-                    variant="glass"
+                    variant="default"
                     icon={
                       <HiOutlineMail className="w-5 h-5" />
                     }
@@ -182,7 +177,7 @@ export default function LoginPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder={t('enterPassword')}
-                    variant="glass"
+                    variant="default"
                     icon={
                       <HiOutlineLockClosed className="w-5 h-5" />
                     }
@@ -193,9 +188,8 @@ export default function LoginPage() {
                   <Button
                     type="submit"
                     loading={loading}
-                    variant="gradient"
                     size="lg"
-                    className="w-full"
+                    className="w-full bg-teal-600 text-white hover:bg-teal-700 shadow-sm border-0"
                   >
                     {loading ? t('signingIn') : t('signInButton')}
                   </Button>
@@ -203,13 +197,13 @@ export default function LoginPage() {
               </form>
 
               {/* Sign Up Link */}
-              <div className="mt-8 pt-6 border-t border-white/20">
+              <div className="mt-8 pt-6 border-t border-gray-100">
                 <div className="text-center">
                   <p className="text-sm text-gray-600">
                     {t('dontHaveAccount')}{' '}
                     <Link
                       href="/register"
-                      className="font-semibold text-violet-600 hover:text-violet-700 transition-colors"
+                      className="font-semibold text-teal-600 hover:text-teal-700 transition-colors"
                     >
                       {t('createAccount')}
                     </Link>

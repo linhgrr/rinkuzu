@@ -2,15 +2,21 @@ import AdaptiveLearningExercise from '@/components/adaptive-learning/Exercise';
 import { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 
-export async function generateMetadata({ params }: { params: { locale: string; id: string } }): Promise<Metadata> {
-    const t = await getTranslations({ locale: params.locale, namespace: 'adaptiveLearning.meta.exercise' });
+type Props = {
+    params: Promise<{ locale: string; id: string }>;
+};
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+    const { locale } = await params;
+    const t = await getTranslations({ locale, namespace: 'adaptiveLearning.meta.exercise' });
     return {
         title: t('title'),
         description: t('description'),
     };
 }
 
-export default function AdaptiveLearningExercisePage({ params }: { params: { id: string } }) {
+export default async function AdaptiveLearningExercisePage({ params }: Props) {
+    const { id } = await params;
     return (
         <>
             <style dangerouslySetInnerHTML={{
@@ -22,7 +28,7 @@ export default function AdaptiveLearningExercisePage({ params }: { params: { id:
                     padding-bottom: 0 !important;
                 }
             `}} />
-            <AdaptiveLearningExercise sessionId={params.id} />
+            <AdaptiveLearningExercise sessionId={id} />
         </>
     );
 }

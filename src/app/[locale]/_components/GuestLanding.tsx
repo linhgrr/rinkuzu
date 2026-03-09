@@ -1,15 +1,6 @@
 'use client';
 
-import Navigation from '@/components/Navigation';
-import {
-  Hero,
-  PopularCategories,
-  Features,
-  HowItWorks,
-  Testimonials,
-  FAQ,
-  CTA
-} from './guest-landing';
+import { HeroSection } from './new-landing';
 
 interface Quiz {
   _id: string;
@@ -28,16 +19,9 @@ interface GuestLandingProps {
 
 export function GuestLanding({ quizzes }: GuestLandingProps) {
   return (
-    <div className="min-h-screen bg-white">
-      <Navigation transparent />
+    <div className="min-h-screen bg-black">
       <main>
-        <Hero />
-        <PopularCategories quizzes={quizzes} />
-        <Features />
-        <HowItWorks />
-        <Testimonials />
-        <FAQ />
-        <CTA />
+        <HeroSection />
       </main>
     </div>
   );

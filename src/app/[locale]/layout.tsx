@@ -4,6 +4,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
 import dynamic from 'next/dynamic';
 import '../globals.css';
+import './_components/new-landing/style.css';
 import Providers from '../providers';
 import BottomNav from '@/components/BottomNav';
 import { routing } from '@/i18n/routing';

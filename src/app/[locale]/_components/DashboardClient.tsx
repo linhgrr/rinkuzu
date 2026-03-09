@@ -362,9 +362,9 @@ export function DashboardClient({
               <div className="relative z-10 flex-1 max-w-2xl">
 
                 <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-slate-900 tracking-tight leading-tight mb-4">
-                  Master any subject with <br />
+                  {t('masterAnySubject')} <br />
                   <TextShimmer className="font-semibold" duration={8}>
-                    ✨ AI Powered
+                    ✨ {t('aiPowered')}
                   </TextShimmer>
                 </h2>
 
@@ -457,7 +457,7 @@ export function DashboardClient({
                   className="relative overflow-hidden rounded-2xl bg-white/80 backdrop-blur-sm border border-slate-200 p-6 text-slate-900 cursor-pointer hover:border-teal-500 hover:shadow-lg hover:shadow-teal-100 transition-all duration-300 group min-h-[160px] flex flex-col justify-center"
                 >
                   <div className="relative z-10">
-                    <div className="inline-flex px-2 py-0.5 rounded bg-teal-100 text-teal-700 text-[10px] font-bold uppercase tracking-widest mb-2">Explore</div>
+                    <div className="inline-flex px-2 py-0.5 rounded bg-teal-100 text-teal-700 text-[10px] font-bold uppercase tracking-widest mb-2">{t('explore')}</div>
                     <h3 className="text-lg font-bold mb-1 tracking-tight">{t('exploreCommunity')}</h3>
                     <p className="text-slate-500 text-xs font-medium mb-4">{t('discoverQuizzes')}</p>
                     <div className="w-10 h-10 bg-teal-50 border border-teal-100 rounded-full flex items-center justify-center group-hover:translate-x-1 group-hover:bg-teal-500 group-hover:text-white transition-all duration-300 shadow-sm">

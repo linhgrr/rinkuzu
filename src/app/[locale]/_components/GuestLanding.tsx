@@ -8,8 +8,7 @@ import {
   HowItWorks,
   Testimonials,
   FAQ,
-  CTA,
-  Footer
+  CTA
 } from './guest-landing';
 
 interface Quiz {
@@ -40,7 +39,6 @@ export function GuestLanding({ quizzes }: GuestLandingProps) {
         <FAQ />
         <CTA />
       </main>
-      <Footer />
     </div>
   );
 }

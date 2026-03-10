@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
 import dynamic from 'next/dynamic';
+import { Inter } from 'next/font/google';
 import '../globals.css';
 import './_components/new-landing/style.css';
 import Providers from '../providers';
@@ -10,6 +11,12 @@ import BottomNav from '@/components/BottomNav';
 import { routing } from '@/i18n/routing';
 import { MainLayoutWrapper } from '@/components/MainLayoutWrapper';
 import { GlobalFooter } from '@/components/GlobalFooter';
+
+const inter = Inter({
+  subsets: ['latin', 'vietnamese'],
+  display: 'swap',
+  variable: '--font-inter',
+});
 
 /**
  * Rule: bundle-defer-third-party
@@ -101,7 +108,7 @@ export default async function LocaleLayout({
         <meta name="overscroll-behavior" content="none" />
         <meta name="format-detection" content="telephone=no" />
       </head>
-      <body className="min-h-screen antialiased bg-[#f5f5f7]">
+      <body className={`${inter.className} min-h-screen antialiased bg-[#f5f5f7]`}>
         <NextIntlClientProvider messages={messages}>
           <Providers>
             <MainLayoutWrapper>

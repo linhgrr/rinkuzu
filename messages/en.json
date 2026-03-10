@@ -280,6 +280,7 @@
       "relations": "Relations",
       "welcomeBack": "Welcome back.",
       "pickUpDescription": "Pick up right where you left off and keep your learning streak alive.",
+      "continueLearning": "Continue Learning",
       "connectionLimited": "Connection limited. Some features may be unavailable.",
       "dayStreak": "{count} Day Streak",
       "dailyGoalProgress": "Daily Goal: {current}/{total}",

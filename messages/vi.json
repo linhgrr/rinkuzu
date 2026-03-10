@@ -280,6 +280,7 @@
       "relations": "Quan hệ",
       "welcomeBack": "Chào mừng trở lại.",
       "pickUpDescription": "Tiếp tục từ nơi bạn đã dừng lại và giữ chuỗi học tập của mình.",
+      "continueLearning": "Tiếp tục học",
       "connectionLimited": "Kết nối hạn chế. Một số tính năng có thể không khả dụng.",
       "dayStreak": "Chuỗi {count} ngày",
       "dailyGoalProgress": "Mục tiêu ngày: {current}/{total}",

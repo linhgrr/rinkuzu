@@ -50,7 +50,7 @@ const FC_ICONS = [
 import { checkApiHealth, createSessionFromPipeline, deleteSubject, getSessionHistory } from './api-client';
 import type { PipelineJobHistoryItem, SessionHistoryItem } from './types';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
-import { useSubjects } from '@/hooks/useAdaptiveLearning';
+
 
 // ─── Skeletons ───────────────────────────────────────────────────────────────
 
@@ -92,7 +92,7 @@ const SubjectCard = memo(function SubjectCard({ job, onOpen, onDelete, loading, 
 
     // Determine icon based on file type or use a random one from FC_ICONS
     let IconComponent = FC_ICONS[index % FC_ICONS.length];
-    
+
     if (job.filename) {
         const lowerName = job.filename.toLowerCase();
         if (lowerName.endsWith('.pdf')) {
@@ -172,20 +172,28 @@ const SubjectCard = memo(function SubjectCard({ job, onOpen, onDelete, loading, 
 
 // ─── Dashboard ────────────────────────────────────────────────────────────────
 
-export default function AdaptiveLearningDashboard() {
+interface DashboardProps {
+    initialSubjects: PipelineJobHistoryItem[];
+    initialSessionHistory: SessionHistoryItem[];
+}
+
+export default function AdaptiveLearningDashboard({
+    initialSubjects,
+    initialSessionHistory
+}: DashboardProps) {
     const router = useRouter();
     const t = useTranslations('adaptiveLearning');
 
-    const { data: subjectsData, isLoading: loading, error: subjectsError, mutate: mutateSubjects } = useSubjects();
-    const subjects = subjectsData || [];
-    const error = subjectsError ? String(subjectsError) : null;
+    const [subjects, setSubjects] = useState<PipelineJobHistoryItem[]>(initialSubjects);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
-    const [apiOnline, setApiOnline] = useState<boolean | null>(null);
+    const [apiOnline, setApiOnline] = useState<boolean | null>(true);
     const [loadingJobId, setLoadingJobId] = useState<string | null>(null);
     const [deletingJobId, setDeletingJobId] = useState<string | null>(null);
     const [itemToDelete, setItemToDelete] = useState<PipelineJobHistoryItem | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
-    const [sessionHistory, setSessionHistory] = useState<SessionHistoryItem[]>([]);
+    const [sessionHistory, setSessionHistory] = useState<SessionHistoryItem[]>(initialSessionHistory);
 
     // Simple state for toast notifications
     const [toastMsg, setToastMsg] = useState<{ title: string, type: 'error' | 'success' } | null>(null);
@@ -195,23 +203,17 @@ export default function AdaptiveLearningDashboard() {
         setTimeout(() => setToastMsg(null), 5000);
     }, []);
 
-    useEffect(() => {
-        let mounted = true;
-        const bootstrap = async () => {
-            const online = await checkApiHealth();
-            if (mounted) setApiOnline(online);
-            if (online) {
-                try {
-                    const h = await getSessionHistory(5);
-                    if (mounted) setSessionHistory(h);
-                } catch (e) {
-                    if (mounted) showToast('Failed to load activity history', 'error');
-                }
+    const refreshSubjects = useCallback(async () => {
+        try {
+            const res = await fetch('/api/adaptive-learning/subjects');
+            if (res.ok) {
+                const data = await res.json();
+                setSubjects(data);
             }
-        };
-        void bootstrap();
-        return () => { mounted = false; };
-    }, [showToast]);
+        } catch (e) {
+            console.error('Failed to refresh subjects', e);
+        }
+    }, []);
 
     const handleGoUpload = useCallback(() => {
         router.push('/adaptive-learning/upload');
@@ -242,7 +244,7 @@ export default function AdaptiveLearningDashboard() {
         setDeletingJobId(itemToDelete.job_id);
         try {
             await deleteSubject(itemToDelete.job_id, true);
-            void mutateSubjects();
+            await refreshSubjects();
 
             if (localStorage.getItem('al_pipeline_job_id') === itemToDelete.job_id) {
                 localStorage.removeItem('al_pipeline_job_id');
@@ -257,7 +259,7 @@ export default function AdaptiveLearningDashboard() {
             setDeletingJobId(null);
             setItemToDelete(null);
         }
-    }, [itemToDelete, loadingJobId, deletingJobId, mutateSubjects, showToast]);
+    }, [itemToDelete, loadingJobId, deletingJobId, refreshSubjects, showToast]);
 
     const handleCancelDelete = useCallback(() => {
         if (!deletingJobId) {
@@ -349,7 +351,7 @@ export default function AdaptiveLearningDashboard() {
                         ) : upNextSubject ? (
                             <section className="bg-white rounded-3xl p-8 md:p-10 border border-slate-200 shadow-sm hover:border-teal-400 hover:shadow-[0_0_20px_rgba(20,184,166,0.15)] transition-all duration-500 relative overflow-hidden group">
                                 <div className="absolute top-0 right-0 w-64 h-64 bg-teal-50 rounded-full blur-3xl opacity-60 translate-x-1/3 -translate-y-1/4 pointer-events-none"></div>
-                                
+
                                 {/* Mascot Image */}
                                 <div className="absolute right-0 bottom-0 pointer-events-none hidden sm:block opacity-90 transition-transform duration-500 group-hover:scale-105 group-hover:-translate-y-2 z-0">
                                     <img src="https://i.ibb.co/xKj9w8hs/image-removebg-preview-1.png" alt="Mascot" className="w-64 h-64 md:w-72 md:h-72 object-contain" />

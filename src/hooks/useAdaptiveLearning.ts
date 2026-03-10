@@ -2,18 +2,10 @@
 
 import useSWR from 'swr';
 import {
-    getSubjects,
     getKnowledgeGraph,
     getMasteryMatrix,
     getConceptDetail,
 } from '@/components/adaptive-learning/api-client';
-
-export function useSubjects(options: { revalidateOnFocus?: boolean, dedupingInterval?: number } = {}) {
-    return useSWR('/api/history/subjects', getSubjects, {
-        revalidateOnFocus: options.revalidateOnFocus ?? false,
-        dedupingInterval: options.dedupingInterval ?? 60000, // 1 minute default
-    });
-}
 
 export function useKnowledgeGraph(sessionId: string | undefined) {
     return useSWR(

@@ -19,6 +19,34 @@ import {
     FiAward,
     FiActivity
 } from 'react-icons/fi';
+import {
+    FcDocument,
+    FcFile,
+    FcFolder,
+    FcIdea,
+    FcLibrary,
+    FcMindMap,
+    FcNews,
+    FcOpenedFolder,
+    FcReading,
+    FcReadingEbook,
+    FcFlashOn,
+    FcSportsMode,
+    FcPuzzle
+} from 'react-icons/fc';
+
+const FC_ICONS = [
+    FcReadingEbook,
+    FcDocument,
+    FcIdea,
+    FcMindMap,
+    FcNews,
+    FcLibrary,
+    FcReading,
+    FcOpenedFolder,
+    FcPuzzle,
+    FcFolder
+];
 import { checkApiHealth, createSessionFromPipeline, deleteSubject, getSessionHistory } from './api-client';
 import type { PipelineJobHistoryItem, SessionHistoryItem } from './types';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
@@ -62,6 +90,20 @@ const SubjectCard = memo(function SubjectCard({ job, onOpen, onDelete, loading, 
         ? new Date(job.completed_at * 1000).toLocaleDateString(locale)
         : '—';
 
+    // Determine icon based on file type or use a random one from FC_ICONS
+    let IconComponent = FC_ICONS[index % FC_ICONS.length];
+    
+    if (job.filename) {
+        const lowerName = job.filename.toLowerCase();
+        if (lowerName.endsWith('.pdf')) {
+            IconComponent = FcDocument;
+        } else if (lowerName.match(/\.(doc|docx)$/)) {
+            IconComponent = FcFile;
+        } else if (lowerName.match(/\.(ppt|pptx)$/)) {
+            IconComponent = FcMindMap;
+        }
+    }
+
     return (
         <div
             className="group w-full overflow-hidden rounded-2xl bg-white border border-slate-200/80 shadow-sm hover:border-teal-400 hover:shadow-[0_0_15px_rgba(20,184,166,0.2)] transition-all duration-300 flex flex-row items-center cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-teal-500 bg-gradient-to-r from-white to-slate-50/30 mb-3"
@@ -73,8 +115,8 @@ const SubjectCard = memo(function SubjectCard({ job, onOpen, onDelete, loading, 
             <div className="flex flex-row items-center flex-1 p-4 gap-4 relative z-10 w-full min-w-0">
                 {/* Icon */}
                 <div className="shrink-0">
-                    <div className="inline-flex rounded-xl bg-white p-3 text-slate-600 group-hover:bg-slate-900 group-hover:text-white transition-all duration-300 border border-slate-200/50 shadow-sm">
-                        <FiBookOpen className="h-5 w-5" aria-hidden="true" />
+                    <div className="inline-flex rounded-xl p-3 bg-white/50 group-hover:bg-white transition-all duration-300 border border-slate-200/60 shadow-sm group-hover:shadow-md group-hover:scale-105">
+                        <IconComponent className="h-6 w-6" aria-hidden="true" />
                     </div>
                 </div>
 
@@ -239,7 +281,9 @@ export default function AdaptiveLearningDashboard() {
                     {toastMsg.type === 'error' ? (
                         <FiZap className="text-red-500 w-5 h-5 shrink-0" aria-hidden="true" />
                     ) : (
-                        <FiCheckCircle className="text-emerald-400 w-5 h-5 shrink-0" aria-hidden="true" />
+                        <div className="w-10 h-10 shrink-0 bg-white/10 rounded-full flex items-center justify-center p-1">
+                            <img src="https://i.ibb.co/xKj9w8hs/image-removebg-preview-1.png" alt="Mascot" className="w-full h-full object-contain" />
+                        </div>
                     )}
                     <span className="text-sm font-medium">{toastMsg.title}</span>
                 </div>
@@ -266,13 +310,24 @@ export default function AdaptiveLearningDashboard() {
                         )}
                     </div>
                     <div className="flex items-center gap-3">
+                        {/* Streak */}
                         <div className="flex items-center gap-2 bg-white px-4 py-2.5 rounded-full border border-slate-200 shadow-sm">
-                            <FiZap className="text-slate-800 fill-slate-800 w-4 h-4" aria-label="Streak" />
-                            <span className="font-semibold text-sm text-slate-800 tracking-tight">{t('dashboard.dayStreak', { count: 12 })}</span>
+                            <span className="text-lg leading-none select-none" aria-label="Streak">🔥</span>
+                            <span className="font-bold text-sm text-orange-600 tracking-tight">{t('dashboard.dayStreak', { count: 12 })}</span>
                         </div>
-                        <div className="flex items-center gap-2 bg-white px-4 py-2.5 rounded-full border border-slate-200 shadow-sm">
-                            <FiTarget className="text-slate-500 w-4 h-4" aria-label="Goal" />
-                            <span className="font-medium text-sm text-slate-700 tracking-tight">{t('dashboard.dailyGoalProgress', { current: 2, total: 3 })}</span>
+                        {/* Daily Goal Progress Bar */}
+                        <div className="flex items-center gap-3 bg-white px-4 py-2.5 rounded-full border border-slate-200 shadow-sm min-w-[140px] md:min-w-[160px]">
+                            <FiTarget className="text-slate-500 w-4 h-4 shrink-0" aria-label="Goal" />
+                            <div className="flex-1">
+                                <div className="flex justify-between items-center mb-1">
+                                    <span className="text-[10px] font-bold text-slate-700 tracking-wider">
+                                        {t('dashboard.dailyGoalProgress', { current: 2, total: 3 })}
+                                    </span>
+                                </div>
+                                <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                                    <div className="h-full bg-teal-500 rounded-full transition-all duration-500" style={{ width: '66%' }}></div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </header>
@@ -292,8 +347,14 @@ export default function AdaptiveLearningDashboard() {
                                 <div className="h-12 bg-slate-100 rounded-xl w-40"></div>
                             </section>
                         ) : upNextSubject ? (
-                            <section className="bg-white rounded-3xl p-8 md:p-10 border border-slate-200 shadow-sm hover:border-teal-400 hover:shadow-[0_0_20px_rgba(20,184,166,0.15)] transition-all duration-500 relative overflow-hidden">
+                            <section className="bg-white rounded-3xl p-8 md:p-10 border border-slate-200 shadow-sm hover:border-teal-400 hover:shadow-[0_0_20px_rgba(20,184,166,0.15)] transition-all duration-500 relative overflow-hidden group">
                                 <div className="absolute top-0 right-0 w-64 h-64 bg-teal-50 rounded-full blur-3xl opacity-60 translate-x-1/3 -translate-y-1/4 pointer-events-none"></div>
+                                
+                                {/* Mascot Image */}
+                                <div className="absolute right-0 bottom-0 pointer-events-none hidden sm:block opacity-90 transition-transform duration-500 group-hover:scale-105 group-hover:-translate-y-2 z-0">
+                                    <img src="https://i.ibb.co/xKj9w8hs/image-removebg-preview-1.png" alt="Mascot" className="w-64 h-64 md:w-72 md:h-72 object-contain" />
+                                </div>
+
                                 <div className="relative z-10 flex flex-col items-start gap-6">
                                     <div className="flex items-center gap-3 mb-2">
                                         <span className="bg-teal-100 text-teal-700 text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded">{t('dashboard.upNext')}</span>
@@ -413,20 +474,24 @@ export default function AdaptiveLearningDashboard() {
                                 {t('dashboard.dailyQuests')}
                             </h3>
                             <ul className="space-y-5">
-                                <li className="flex items-start gap-4">
+                                <li className="flex items-start gap-4 group cursor-pointer">
                                     <div className="mt-0.5 relative">
-                                        <FiCheckCircle className="text-slate-300 w-5 h-5 shrink-0 relative z-10 bg-white" aria-label="Completed" />
+                                        <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center shrink-0 group-hover:bg-amber-200 transition-colors">
+                                            <FiZap className="text-amber-500 w-4 h-4" aria-label="Speed" />
+                                        </div>
                                     </div>
-                                    <div>
-                                        <p className="text-sm font-semibold text-slate-400 line-through">{t('dashboard.completeOneLesson')}</p>
-                                        <p className="text-xs text-slate-400 mt-1 font-mono">10 / 10 XP</p>
+                                    <div className="flex-1 mt-1.5">
+                                        <p className="text-sm font-semibold text-slate-900 group-hover:text-black transition-colors duration-300">{t('dashboard.completeOneLesson')}</p>
+                                        <p className="text-xs text-slate-500 mt-1 font-mono">10 XP</p>
                                     </div>
                                 </li>
                                 <li className="flex items-start gap-4 group cursor-pointer">
                                     <div className="mt-0.5 relative">
-                                        <div className="w-5 h-5 rounded-full border-2 border-slate-300 shrink-0 group-hover:border-slate-500 transition-colors relative z-10 bg-white" role="checkbox" aria-checked="false" aria-label="Not completed" tabIndex={0}></div>
+                                        <div className="w-8 h-8 rounded-full bg-rose-100 flex items-center justify-center shrink-0 group-hover:bg-rose-200 transition-colors">
+                                            <FiTarget className="text-rose-500 w-4 h-4" aria-label="Accuracy" />
+                                        </div>
                                     </div>
-                                    <div>
+                                    <div className="flex-1 mt-1.5">
                                         <p className="text-sm font-semibold text-slate-900 group-hover:text-black transition-colors duration-300">{t('dashboard.achieveAccuracy')}</p>
                                         <p className="text-xs text-slate-500 mt-1 font-mono">20 XP</p>
                                     </div>
@@ -441,19 +506,21 @@ export default function AdaptiveLearningDashboard() {
                                 {t('dashboard.recentBadges')}
                             </h3>
                             <div className="grid grid-cols-2 gap-4">
-                                <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100 flex flex-col items-center text-center transition-colors hover:bg-slate-100">
-                                    <div className="w-10 h-10 bg-white border border-slate-200 rounded-xl flex items-center justify-center shadow-sm mb-3">
-                                        <FiZap className="text-slate-800 text-lg" aria-hidden="true" />
+                                <div className="bg-gradient-to-b from-amber-50 to-orange-50 p-5 rounded-2xl border border-orange-100 flex flex-col items-center text-center transition-all hover:scale-[1.02] hover:shadow-md cursor-default relative overflow-hidden group">
+                                    <div className="absolute top-0 right-0 w-16 h-16 bg-white/40 rounded-full blur-xl group-hover:bg-white/60 transition-colors"></div>
+                                    <div className="text-4xl drop-shadow-md mb-3 transform group-hover:scale-110 transition-transform flex items-center justify-center">
+                                        <FcFlashOn className="w-12 h-12" />
                                     </div>
                                     <p className="text-[13px] font-bold text-slate-900 tracking-tight">{t('dashboard.fastLearner')}</p>
-                                    <p className="text-[11px] text-slate-500 mt-1 font-medium">{t('dashboard.lessonsToday', { count: 3 })}</p>
+                                    <p className="text-[11px] text-slate-600 mt-1 font-medium">{t('dashboard.lessonsToday', { count: 3 })}</p>
                                 </div>
-                                <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100 flex flex-col items-center text-center transition-colors hover:bg-slate-100">
-                                    <div className="w-10 h-10 bg-white border border-slate-200 rounded-xl flex items-center justify-center shadow-sm mb-3">
-                                        <FiStar className="text-slate-800 text-lg" aria-hidden="true" />
+                                <div className="bg-gradient-to-b from-blue-50 to-indigo-50 p-5 rounded-2xl border border-blue-100 flex flex-col items-center text-center transition-all hover:scale-[1.02] hover:shadow-md cursor-default relative overflow-hidden group">
+                                    <div className="absolute top-0 right-0 w-16 h-16 bg-white/40 rounded-full blur-xl group-hover:bg-white/60 transition-colors"></div>
+                                    <div className="text-4xl drop-shadow-md mb-3 transform group-hover:scale-110 transition-transform flex items-center justify-center">
+                                        <FcSportsMode className="w-12 h-12" />
                                     </div>
                                     <p className="text-[13px] font-bold text-slate-900 tracking-tight">{t('dashboard.perfectScore')}</p>
-                                    <p className="text-[11px] text-slate-500 mt-1 font-medium">{t('dashboard.accuracyBadge')}</p>
+                                    <p className="text-[11px] text-slate-600 mt-1 font-medium">{t('dashboard.accuracyBadge')}</p>
                                 </div>
                             </div>
                         </section>

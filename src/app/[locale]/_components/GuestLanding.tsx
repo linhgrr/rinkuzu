@@ -1,5 +1,3 @@
-'use client';
-
 import { HeroSection } from './new-landing';
 
 interface Quiz {

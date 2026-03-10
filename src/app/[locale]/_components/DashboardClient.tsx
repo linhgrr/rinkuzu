@@ -30,43 +30,14 @@ import { Canvas, useFrame } from '@react-three/fiber';
 import { useGLTF, Float, OrbitControls, Environment } from '@react-three/drei';
 import * as THREE from 'three';
 
-function MascotModel() {
-  const { scene } = useGLTF('/models/base_basic_pbr.glb');
-  const groupRef = useRef<THREE.Group>(null);
+import dynamic from 'next/dynamic';
 
-  // Track mouse globally across the whole screen
-  const target = useRef({ x: 0, y: 0 });
-
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      // Normalize to -1 to 1 based on window width/height
-      target.current.x = (e.clientX / window.innerWidth) * 2 - 1;
-      target.current.y = -(e.clientY / window.innerHeight) * 2 + 1;
-    };
-
-    window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, []);
-
-  useFrame(() => {
-    if (groupRef.current) {
-      // Add slight offset for natural look (-0.1y)
-      const targetRotationY = target.current.x * 0.8 - 0.1;
-      const targetRotationX = target.current.y * -0.5;
-
-      groupRef.current.rotation.y = THREE.MathUtils.lerp(groupRef.current.rotation.y, targetRotationY, 0.1);
-      groupRef.current.rotation.x = THREE.MathUtils.lerp(groupRef.current.rotation.x, targetRotationX, 0.1);
-    }
-  });
-
-  return (
-    <Float speed={2} rotationIntensity={0.5} floatIntensity={1}>
-      <group ref={groupRef}>
-        <primitive object={scene} scale={1.5} position={[0, -1.2, 0]} />
-      </group>
-    </Float>
-  );
-}
+const MascotModel = dynamic(
+  () => import('./MascotModel'),
+  {
+    ssr: false,
+  }
+);
 useGLTF.preload('/models/base_basic_pbr.glb');
 
 const StatCardsSkeleton = memo(function StatCardsSkeleton() {
@@ -240,9 +211,9 @@ export function DashboardClient({
     '/api/dashboard/bootstrap',
     fetcher,
     {
+      fallbackData: bootstrapFallbackData,
       revalidateOnFocus: false,
       dedupingInterval: 30000,
-      fallbackData: bootstrapFallbackData,
     }
   );
 
@@ -324,8 +295,8 @@ export function DashboardClient({
   const weeklyActivityObj = stats?.weeklyActivity
     ? (typeof stats.weeklyActivity === 'object' ? stats.weeklyActivity : {})
     : {};
-  const isStatsInitialLoading = bootstrapLoading && !stats;
-  const isQuizzesInitialLoading = bootstrapLoading && quizzes.length === 0;
+  const isStatsInitialLoading = !stats && bootstrapLoading;
+  const isQuizzesInitialLoading = quizzes.length === 0 && bootstrapLoading;
 
   return (
     <div className="min-h-screen bg-slate-50 pb-12 font-sans selection:bg-slate-900 selection:text-white">

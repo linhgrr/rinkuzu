@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
 import { defaultLocale } from '@/i18n/config';
 import { DashboardClient } from '../_components/DashboardClient';
+import { getDashboardBootstrapData } from '@/lib/dashboard';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,12 +21,18 @@ export default async function DashboardPage({
     redirect(`${loginPath}?callbackUrl=${encodeURIComponent(callbackPath)}`);
   }
 
+  const userId = (session.user as any).id;
+  const userRole = (session.user as any).role;
+  const bootstrapData = await getDashboardBootstrapData(userId, userRole);
+
   const userEmail = session.user.email || '';
 
   return (
     <DashboardClient
       userEmail={userEmail}
       initialSession={session}
+      initialStats={bootstrapData.stats}
+      initialQuizzes={bootstrapData.quizzes}
     />
   );
 }

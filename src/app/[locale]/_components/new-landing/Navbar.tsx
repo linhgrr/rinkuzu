@@ -6,10 +6,10 @@ import Image from "next/image";
 import { useSession } from "next-auth/react";
 
 const navLinks = [
-  { label: "Dashboard", href: "/dashboard" },
-  { label: "Knowledge Graph", href: "/adaptive-learning" },
-  { label: "History", href: "/profile?tab=history" },
-  { label: "Achievements", href: "/profile?tab=achievements" }
+  { label: "AI Quiz Generator", href: "/adaptive-learning" },
+  { label: "Knowledge Graph Learning", href: "/adaptive-learning" },
+  { label: "Pricing", href: "/pricing" },
+  { label: "FAQ", href: "/faq" }
 ];
 
 const Navbar = () => {

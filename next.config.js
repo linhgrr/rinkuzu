@@ -110,6 +110,7 @@ const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  poweredByHeader: false,
   // Server Actions are enabled by default in Next.js 14
   experimental: {
     serverComponentsExternalPackages: ['pdf-lib'],

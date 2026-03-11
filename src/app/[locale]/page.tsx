@@ -16,9 +16,9 @@ export async function generateMetadata({
   return buildLocalizedMetadata({
     locale,
     path: '/',
-    title: 'RinKuzu: AI Quiz Maker & Personalized Learning Paths',
+    title: 'AI Quiz Generator from PDFs - Knowledge Graph Learning | RinKuzu',
     description:
-      'Turn PDFs into AI-powered quizzes, adaptive practice, and personalized learning paths with Bloom-level progression for students and teachers.',
+      'Generate quizzes from PDFs with AI, build knowledge graph learning paths, and run adaptive practice sessions for students and teachers.',
   });
 }
 

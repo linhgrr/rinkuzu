@@ -6,7 +6,7 @@ import {
     NextConcept, TheoryData,
 } from './types';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_BASE = '';
 
 async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
     const res = await fetch(`${API_BASE}${path}`, {
@@ -22,56 +22,56 @@ async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
 }
 
 export async function createSession(maxSteps: number = 50): Promise<Session> {
-    return apiFetch<Session>('/api/session/start', {
+    return apiFetch<Session>('/api/adaptive-learning/session/start', {
         method: 'POST',
         body: JSON.stringify({ max_steps: maxSteps, use_default_data: true }),
     });
 }
 
 export async function getNextConcept(sessionId: string): Promise<NextConcept> {
-    return apiFetch<NextConcept>(`/api/session/${sessionId}/next-concept`, {
+    return apiFetch<NextConcept>(`/api/adaptive-learning/session/${sessionId}/next-concept`, {
         method: 'POST',
     });
 }
 
 export async function getTheory(sessionId: string): Promise<TheoryData> {
-    return apiFetch<TheoryData>(`/api/session/${sessionId}/theory`, {
+    return apiFetch<TheoryData>(`/api/adaptive-learning/session/${sessionId}/theory`, {
         method: 'GET',
     });
 }
 
 export async function getExercise(sessionId: string): Promise<Exercise> {
-    return apiFetch<Exercise>(`/api/session/${sessionId}/exercise`, {
+    return apiFetch<Exercise>(`/api/adaptive-learning/session/${sessionId}/exercise`, {
         method: 'POST',
     });
 }
 
 export async function submitAnswer(sessionId: string, answer: string): Promise<SubmitResult> {
-    return apiFetch<SubmitResult>(`/api/session/${sessionId}/submit`, {
+    return apiFetch<SubmitResult>(`/api/adaptive-learning/session/${sessionId}/submit`, {
         method: 'POST',
         body: JSON.stringify({ answer }),
     });
 }
 
 export async function getSessionStatus(sessionId: string): Promise<SessionStatus> {
-    return apiFetch<SessionStatus>(`/api/session/${sessionId}/status`);
+    return apiFetch<SessionStatus>(`/api/adaptive-learning/session/${sessionId}/status`);
 }
 
 export async function getKnowledgeGraph(sessionId: string): Promise<KnowledgeGraphData> {
-    return apiFetch<KnowledgeGraphData>(`/api/session/${sessionId}/graph`);
+    return apiFetch<KnowledgeGraphData>(`/api/adaptive-learning/session/${sessionId}/graph`);
 }
 
 export async function getMasteryMatrix(sessionId: string): Promise<MasteryMatrixData> {
-    return apiFetch<MasteryMatrixData>(`/api/session/${sessionId}/mastery-matrix`);
+    return apiFetch<MasteryMatrixData>(`/api/adaptive-learning/session/${sessionId}/mastery-matrix`);
 }
 
 export async function getConceptDetail(sessionId: string, conceptId: string): Promise<ConceptDetail> {
-    return apiFetch<ConceptDetail>(`/api/session/${sessionId}/concept/${conceptId}`);
+    return apiFetch<ConceptDetail>(`/api/adaptive-learning/session/${sessionId}/concept/${conceptId}`);
 }
 
 export async function checkApiHealth(): Promise<boolean> {
     try {
-        const res = await fetch(`${API_BASE}/api/health`);
+        const res = await fetch('/api/adaptive-learning/health');
         return res.ok;
     } catch {
         return false;
@@ -88,7 +88,7 @@ export async function uploadPdf(
     formData.append('file', file);
     if (subjectId) formData.append('subject_id', subjectId);
 
-    const res = await fetch(`${API_BASE}/api/pipeline/process`, {
+    const res = await fetch('/api/adaptive-learning/pipeline/process', {
         method: 'POST',
         body: formData,
     });
@@ -100,7 +100,7 @@ export async function uploadPdf(
 }
 
 export async function getPipelineJobStatus(jobId: string): Promise<PipelineJobStatus> {
-    return apiFetch<PipelineJobStatus>(`/api/pipeline/jobs/${jobId}`);
+    return apiFetch<PipelineJobStatus>(`/api/adaptive-learning/pipeline/jobs/${jobId}`);
 }
 
 export async function createSessionFromPipeline(
@@ -108,14 +108,14 @@ export async function createSessionFromPipeline(
     maxSteps: number = 50,
 ): Promise<PipelineSessionResponse> {
     return apiFetch<PipelineSessionResponse>(
-        `/api/pipeline/jobs/${jobId}/create-session?max_steps=${maxSteps}`,
+        `/api/adaptive-learning/pipeline/jobs/${jobId}/create-session?max_steps=${maxSteps}`,
         { method: 'POST' },
     );
 }
 
 export async function checkPipelineAvailable(): Promise<boolean> {
     try {
-        const res = await apiFetch<{ available: boolean }>('/api/pipeline/status');
+        const res = await apiFetch<{ available: boolean }>('/api/adaptive-learning/pipeline/status');
         return res.available;
     } catch {
         return false;
@@ -126,18 +126,18 @@ export async function checkPipelineAvailable(): Promise<boolean> {
 
 export async function getSessionHistory(limit = 50): Promise<SessionHistoryItem[]> {
     const res = await apiFetch<{ sessions: SessionHistoryItem[]; count: number }>(
-        `/api/history/sessions?limit=${limit}`
+        `/api/adaptive-learning/history/sessions?limit=${limit}`
     );
     return res.sessions;
 }
 
 export async function getSessionHistoryDetail(sessionId: string): Promise<SessionHistoryDetail> {
-    return apiFetch<SessionHistoryDetail>(`/api/history/sessions/${sessionId}`);
+    return apiFetch<SessionHistoryDetail>(`/api/adaptive-learning/history/sessions/${sessionId}`);
 }
 
 export async function getPipelineJobHistory(limit = 20): Promise<PipelineJobHistoryItem[]> {
     const res = await apiFetch<{ jobs: PipelineJobHistoryItem[]; count: number }>(
-        `/api/history/pipeline-jobs?limit=${limit}`
+        `/api/adaptive-learning/history/pipeline-jobs?limit=${limit}`
     );
     return res.jobs;
 }
@@ -148,7 +148,7 @@ export async function getPipelineJobHistory(limit = 20): Promise<PipelineJobHist
  */
 export async function getSubjects(): Promise<PipelineJobHistoryItem[]> {
     const res = await apiFetch<{ subjects: PipelineJobHistoryItem[]; count: number }>(
-        '/api/history/subjects'
+        '/api/adaptive-learning/subjects'
     );
     return res.subjects;
 }
@@ -158,7 +158,7 @@ export async function deleteSubject(
     deleteSessions: boolean = true,
 ): Promise<DeleteSubjectResponse> {
     return apiFetch<DeleteSubjectResponse>(
-        `/api/history/subjects/${jobId}?delete_sessions=${deleteSessions ? 'true' : 'false'}`,
+        `/api/adaptive-learning/history/subjects/${jobId}?delete_sessions=${deleteSessions ? 'true' : 'false'}`,
         { method: 'DELETE' },
     );
 }

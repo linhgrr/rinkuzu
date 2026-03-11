@@ -17,7 +17,7 @@ interface GuestLandingProps {
 
 export function GuestLanding({ quizzes }: GuestLandingProps) {
   return (
-    <div className="min-h-screen bg-black">
+    <div className="new-landing min-h-screen bg-black">
       <main>
         <HeroSection />
       </main>

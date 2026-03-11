@@ -9,7 +9,7 @@ import {
 
 export function useKnowledgeGraph(sessionId: string | undefined) {
     return useSWR(
-        sessionId ? `/api/session/${sessionId}/graph` : null,
+        sessionId ? `/api/adaptive-learning/session/${sessionId}/graph` : null,
         () => getKnowledgeGraph(sessionId!),
         {
             revalidateOnFocus: false,
@@ -20,7 +20,7 @@ export function useKnowledgeGraph(sessionId: string | undefined) {
 
 export function useMasteryMatrix(sessionId: string | undefined) {
     return useSWR(
-        sessionId ? `/api/session/${sessionId}/mastery-matrix` : null,
+        sessionId ? `/api/adaptive-learning/session/${sessionId}/mastery-matrix` : null,
         () => getMasteryMatrix(sessionId!),
         {
             revalidateOnFocus: false,
@@ -30,7 +30,7 @@ export function useMasteryMatrix(sessionId: string | undefined) {
 
 export function useConceptDetail(sessionId: string | undefined, conceptId: string | undefined) {
     return useSWR(
-        sessionId && conceptId ? `/api/session/${sessionId}/concept/${conceptId}` : null,
+        sessionId && conceptId ? `/api/adaptive-learning/session/${sessionId}/concept/${conceptId}` : null,
         () => getConceptDetail(sessionId!, conceptId!),
         {
             revalidateOnFocus: false,

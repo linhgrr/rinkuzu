@@ -34,6 +34,8 @@ const HeroSection = () => {
           muted
           playsInline
           preload="none"
+          aria-hidden="true"
+          tabIndex={-1}
           className="absolute inset-0 w-full h-full object-cover"
         >
           <source src={VIDEO_URL} type="video/mp4" />

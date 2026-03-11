@@ -16,9 +16,9 @@ export async function generateMetadata({
   return buildLocalizedMetadata({
     locale,
     path: '/',
-    title: 'RinKuzu - Tao quiz tu PDF bang AI',
+    title: 'RinKuzu: AI Quiz Maker & Personalized Learning Paths',
     description:
-      'Nen tang tao va luyen tap quiz thong minh tu PDF voi AI, ho tro giao vien va sinh vien hoc tap hieu qua.',
+      'Turn PDFs into AI-powered quizzes, adaptive practice, and personalized learning paths with Bloom-level progression for students and teachers.',
   });
 }
 
@@ -39,45 +39,45 @@ export default async function HomePage({
   const hustMockQuizzes = [
     {
       _id: 'mock-1',
-      title: 'Giải tích 1 (MI1111)',
-      description: 'Tổng hợp các dạng bài tập đạo hàm, nguyên hàm và ứng dụng cho sinh viên Bách Khoa.',
+      title: 'Calculus 1 (MI1111)',
+      description: 'A comprehensive set of derivative, integral, and application problems for university students.',
       slug: 'giai-tich-1-hust',
-      category: { name: 'Toán học', color: 'blue' }
+      category: { name: 'Mathematics', color: 'blue' }
     },
     {
       _id: 'mock-2',
-      title: 'Vật lý đại cương 1 (PH1110)',
-      description: 'Câu hỏi trắc nghiệm chương Cơ - Nhiệt, bám sát nội dung đề thi giữa kỳ và cuối kỳ HUST.',
+      title: 'General Physics 1 (PH1110)',
+      description: 'Multiple-choice questions on Mechanics and Thermodynamics aligned with midterm and final exam formats.',
       slug: 'vat-ly-1-hust',
-      category: { name: 'Khoa học', color: 'purple' }
+      category: { name: 'Science', color: 'purple' }
     },
     {
       _id: 'mock-3',
-      title: 'Lập trình C cơ bản (IT1110)',
-      description: 'Hệ thống câu hỏi về kiểu dữ liệu, vòng lặp, mảng và con trỏ trong ngôn ngữ C.',
+      title: 'Introduction to C Programming (IT1110)',
+      description: 'Practice questions on data types, loops, arrays, and pointers in the C language.',
       slug: 'lap-trinh-c-hust',
-      category: { name: 'CNTT', color: 'green' }
+      category: { name: 'Computer Science', color: 'green' }
     },
     {
       _id: 'mock-4',
-      title: 'Triết học Mác - Lênin (SSH1110)',
-      description: 'Bộ đề ôn tập trắc nghiệm lý luận chính trị dành cho sinh viên năm nhất.',
+      title: 'Marxism-Leninism Philosophy (SSH1110)',
+      description: 'Political theory review quizzes designed for first-year university students.',
       slug: 'triet-hoc-hust',
-      category: { name: 'Chính trị', color: 'red' }
+      category: { name: 'Politics', color: 'red' }
     },
     {
       _id: 'mock-5',
-      title: 'Tiếng Anh cơ bản (FL1100)',
-      description: 'Luyện tập các kỹ năng Listening và Reading theo định dạng bài thi của HUST.',
+      title: 'Basic English (FL1100)',
+      description: 'Listening and Reading practice following common university exam formats.',
       slug: 'tieng-anh-hust',
-      category: { name: 'Ngoại ngữ', color: 'orange' }
+      category: { name: 'Languages', color: 'orange' }
     },
     {
       _id: 'mock-6',
-      title: 'Cấu trúc dữ liệu & Giải thuật (IT3011)',
-      description: 'Nâng cao tư duy lập trình với các thuật toán sắp xếp, tìm kiếm và cấu trúc cây phức tạp.',
+      title: 'Data Structures & Algorithms (IT3011)',
+      description: 'Strengthen problem-solving with sorting, searching, and advanced tree-based structures.',
       slug: 'ctdl-gt-hust',
-      category: { name: 'CNTT', color: 'indigo' }
+      category: { name: 'Computer Science', color: 'indigo' }
     }
   ];
 

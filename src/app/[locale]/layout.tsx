@@ -42,8 +42,8 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   metadataBase: siteUrl,
-  title: 'RinKuzu - Create Interactive Quizzes from PDFs',
-  description: 'A modern platform for teachers to create interactive quizzes from PDF files with AI-powered question extraction and admin approval workflow.',
+  title: 'RinKuzu: AI Quiz Maker & Personalized Learning Paths',
+  description: 'Turn PDFs into AI-powered quizzes, adaptive learning sessions, and measurable progress dashboards for students, teachers, and training teams.',
   keywords: 'quiz, education, PDF, AI, teachers, students, assessment, interactive learning',
   authors: [{ name: 'RinKuzu Team' }],
   alternates: {
@@ -53,8 +53,8 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     siteName: 'RinKuzu',
-    title: 'RinKuzu - Create Interactive Quizzes from PDFs',
-    description: 'A modern platform for teachers to create interactive quizzes from PDF files with AI-powered question extraction and admin approval workflow.',
+    title: 'RinKuzu: AI Quiz Maker & Personalized Learning Paths',
+    description: 'Turn PDFs into AI-powered quizzes, adaptive learning sessions, and measurable progress dashboards for students, teachers, and training teams.',
     url: '/',
     images: [
       {
@@ -67,8 +67,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'RinKuzu - Create Interactive Quizzes from PDFs',
-    description: 'A modern platform for teachers to create interactive quizzes from PDF files with AI-powered question extraction and admin approval workflow.',
+    title: 'RinKuzu: AI Quiz Maker & Personalized Learning Paths',
+    description: 'Turn PDFs into AI-powered quizzes, adaptive learning sessions, and measurable progress dashboards for students, teachers, and training teams.',
     images: ['/icons/icon-512x512.png'],
   },
   robots: {

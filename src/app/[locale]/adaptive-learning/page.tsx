@@ -13,12 +13,8 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
     return buildLocalizedMetadata({
         locale,
         path: '/adaptive-learning',
-        title: locale === 'vi'
-            ? 'Hoc tap thich ung bang AI | RinKuzu'
-            : 'AI Adaptive Learning Platform | RinKuzu',
-        description: locale === 'vi'
-            ? 'Tai tai lieu PDF, de AI trich xuat khai niem va tao lo trinh hoc tap ca nhan hoa theo Bloom.'
-            : 'Upload your PDF, let AI extract concepts, and learn with a personalized Bloom-based curriculum.',
+        title: 'AI Adaptive Learning Platform | RinKuzu',
+        description: 'Upload your PDF, let AI extract concepts, and learn with a personalized Bloom-based curriculum.',
     });
 }
 
@@ -77,28 +73,16 @@ export default async function AdaptiveLearningPage({ params }: { params: Promise
 
         const faqItems = [
             {
-                question: locale === 'vi'
-                    ? 'Hoc tap thich ung hoat dong nhu the nao?'
-                    : 'How does adaptive learning work?',
-                answer: locale === 'vi'
-                    ? 'Ban tai PDF, AI se trich xuat khai niem, tao do thi tien quyet va de xuat bai tap theo muc Bloom phu hop.'
-                    : 'You upload a PDF, AI extracts concepts, builds prerequisite knowledge graph, then recommends Bloom-level exercises.',
+                question: 'How does adaptive learning work?',
+                answer: 'You upload a PDF, AI extracts concepts, builds prerequisite knowledge graph, then recommends Bloom-level exercises.',
             },
             {
-                question: locale === 'vi'
-                    ? 'Nen tang co phu hop cho nguoi moi bat dau khong?'
-                    : 'Is it suitable for beginners?',
-                answer: locale === 'vi'
-                    ? 'Co. He thong danh gia muc do va mo khoa bai hoc theo tien do, giup nguoi hoc di tu co ban den nang cao.'
-                    : 'Yes. The system adapts difficulty and unlocks lessons progressively from fundamentals to advanced topics.',
+                question: 'Is it suitable for beginners?',
+                answer: 'Yes. The system adapts difficulty and unlocks lessons progressively from fundamentals to advanced topics.',
             },
             {
-                question: locale === 'vi'
-                    ? 'Toi co the hoc nhieu mon cung luc khong?'
-                    : 'Can I learn multiple subjects?',
-                answer: locale === 'vi'
-                    ? 'Co. Ban co the tao nhieu phien hoc tu cac tai lieu khac nhau va theo doi tien do rieng tung mon.'
-                    : 'Yes. You can create multiple sessions from different documents and track progress per subject.',
+                question: 'Can I learn multiple subjects?',
+                answer: 'Yes. You can create multiple sessions from different documents and track progress per subject.',
             },
         ];
 
@@ -127,9 +111,7 @@ export default async function AdaptiveLearningPage({ params }: { params: Promise
                 price: '0',
                 priceCurrency: 'USD',
             },
-            description: locale === 'vi'
-                ? 'Nen tang hoc tap thich ung su dung AI de tao lo trinh hoc ca nhan hoa tu tai lieu PDF.'
-                : 'Adaptive learning platform using AI to build personalized learning paths from PDF materials.',
+            description: 'Adaptive learning platform using AI to build personalized learning paths from PDF materials.',
         };
 
         return (
@@ -145,9 +127,7 @@ export default async function AdaptiveLearningPage({ params }: { params: Promise
 
                 <header className="space-y-4">
                     <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-slate-900">
-                        {locale === 'vi'
-                            ? 'Hoc tap thich ung bang AI cho mon STEM'
-                            : 'AI Adaptive Learning for STEM subjects'}
+                        AI Adaptive Learning for STEM subjects
                     </h1>
                     <p className="text-slate-600 text-lg">
                         {t('dashboardDescription')}
@@ -157,13 +137,13 @@ export default async function AdaptiveLearningPage({ params }: { params: Promise
                             href={`${loginPath}?callbackUrl=${encodeURIComponent(callbackPath)}`}
                             className="inline-flex items-center rounded-lg bg-violet-600 px-5 py-2.5 font-medium text-white hover:bg-violet-700"
                         >
-                            {locale === 'vi' ? 'Dang nhap de bat dau' : 'Login to start learning'}
+                            Login to start learning
                         </Link>
                         <Link
                             href={registerPath}
                             className="inline-flex items-center rounded-lg border border-slate-300 px-5 py-2.5 font-medium text-slate-700 hover:bg-slate-50"
                         >
-                            {locale === 'vi' ? 'Tao tai khoan' : 'Create account'}
+                            Create account
                         </Link>
                     </div>
                 </header>
@@ -185,7 +165,7 @@ export default async function AdaptiveLearningPage({ params }: { params: Promise
 
                 <section className="space-y-3">
                     <h2 className="text-2xl font-semibold text-slate-900">
-                        {locale === 'vi' ? 'Cau hoi thuong gap' : 'Frequently asked questions'}
+                        Frequently asked questions
                     </h2>
                     <div className="space-y-3">
                         {faqItems.map((item) => (
@@ -200,19 +180,17 @@ export default async function AdaptiveLearningPage({ params }: { params: Promise
                 <div className="rounded-xl bg-slate-900 text-white p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                     <div>
                         <h2 className="text-xl font-semibold">
-                            {locale === 'vi' ? 'San sang bat dau lo trinh hoc?' : 'Ready to start your learning path?'}
+                            Ready to start your learning path?
                         </h2>
                         <p className="text-slate-300 mt-1">
-                            {locale === 'vi'
-                                ? 'Tai tai lieu dau tien va de AI tao curriculum ca nhan hoa cho ban.'
-                                : 'Upload your first document and let AI build your personalized curriculum.'}
+                            Upload your first document and let AI build your personalized curriculum.
                         </p>
                     </div>
                     <Link
                         href={`${loginPath}?callbackUrl=${encodeURIComponent(uploadPath)}`}
                         className="inline-flex items-center justify-center rounded-lg bg-white px-5 py-2.5 font-medium text-slate-900 hover:bg-slate-100"
                     >
-                        {locale === 'vi' ? 'Bat dau ngay' : 'Start now'}
+                        Start now
                     </Link>
                 </div>
             </section>

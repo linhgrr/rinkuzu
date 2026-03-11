@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Navbar from "./Navbar";
 import { GlowPillButton } from "./Navbar";
 
@@ -7,18 +8,39 @@ const VIDEO_URL =
   "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260217_030345_246c0224-10a4-422c-b324-070b7c0eceda.mp4";
 
 const HeroSection = () => {
+  const [shouldLoadVideo, setShouldLoadVideo] = useState(false);
+
+  useEffect(() => {
+    const prefersReducedMotion =
+      typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    if (prefersReducedMotion) return;
+
+    const timer = window.setTimeout(() => {
+      setShouldLoadVideo(true);
+    }, 1200);
+
+    return () => window.clearTimeout(timer);
+  }, []);
+
   return (
     <section className="relative min-h-screen w-full overflow-hidden bg-black font-sans">
       {/* Background video */}
-      <video
-        autoPlay
-        loop
-        muted
-        playsInline
-        className="absolute inset-0 w-full h-full object-cover"
-      >
-        <source src={VIDEO_URL} type="video/mp4" />
-      </video>
+      {shouldLoadVideo ? (
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          preload="none"
+          className="absolute inset-0 w-full h-full object-cover"
+        >
+          <source src={VIDEO_URL} type="video/mp4" />
+        </video>
+      ) : (
+        <div className="absolute inset-0 bg-gradient-to-br from-[#0d1117] via-[#111827] to-black" />
+      )}
 
       {/* Dark overlay */}
       <div className="absolute inset-0 bg-black/50" />

@@ -55,7 +55,7 @@ export function Footer() {
           {/* Newsletter */}
           <div className="space-y-6">
             <h4 className="font-bold text-[#1e242c] uppercase tracking-wider text-sm">{t('newsletter.title')}</h4>
-            <p className="text-gray-500 text-sm">{t('newsletter.description')}</p>
+            <p className="text-gray-600 text-sm">{t('newsletter.description')}</p>
             <div className="relative">
               <input
                 type="email"
@@ -63,7 +63,7 @@ export function Footer() {
                 placeholder={`${t('newsletter.placeholder')}…`}
                 aria-label={t('newsletter.placeholder')}
                 autoComplete="email"
-                className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-6 py-4 text-sm focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all outline-none"
+                className="w-full bg-gray-50 border border-gray-200 rounded-2xl px-6 py-4 text-sm text-gray-800 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all outline-none"
               />
               <button className="absolute right-2 top-2 bottom-2 bg-teal-600 text-white px-4 rounded-xl text-xs font-bold hover:bg-teal-700 transition-colors focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2">
                 {t('newsletter.button')}
@@ -73,7 +73,7 @@ export function Footer() {
         </div>
 
         <div className="pt-12 border-t border-gray-100 flex flex-col md:flex-row items-center justify-between gap-6">
-          <p className="text-gray-400 text-sm">
+          <p className="text-gray-600 text-sm">
             {t('copyright')}
           </p>
           <div className="flex items-center gap-6">
@@ -88,7 +88,7 @@ export function Footer() {
                 href={social.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-gray-400 hover:text-[#1e242c] transition-colors text-sm focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:rounded"
+                className="text-gray-600 hover:text-[#1e242c] transition-colors text-sm focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:rounded"
               >
                 {social.name}
               </a>

@@ -10,10 +10,11 @@ export function NavLogo() {
     <Link href="/" className="flex items-center group">
       <div className="h-10 flex items-center justify-center transition-transform group-hover:scale-105">
         <Image
-          src="/images/auth_logo.png"
+          src="/images/auth_logo.webp"
           alt="RinKuzu Logo"
           width={150}
           height={40}
+          sizes="150px"
           className="h-10 w-auto object-contain"
         />
       </div>

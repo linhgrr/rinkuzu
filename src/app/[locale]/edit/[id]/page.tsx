@@ -322,7 +322,7 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
             <div className="flex items-center">
               <Link href="/" className="flex items-center group">
                 <div className="h-10 flex items-center justify-center transition-transform group-hover:scale-105">
-                  <img src="https://i.ibb.co/WWGXBZXm/image-removebg-preview.png" alt="RinKuzu Logo" className="h-10 w-auto object-contain" />
+                  <img src="/images/auth_logo.png" alt="RinKuzu Logo" className="h-10 w-auto object-contain" />
                 </div>
               </Link>
             </div>

@@ -6,7 +6,7 @@ import { HiOutlineX, HiArrowUp } from '@/components/icons';
 import Image from 'next/image';
 import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer';
 
-const chatbotIcon = 'https://i.ibb.co/ZRYgc1tN/Gemini-Generated-Image-yjm06yyjm06yyjm0-removebg-preview.png';
+const chatbotIcon = '/images/chatbot_icon.png';
 
 interface Message {
     id: string;

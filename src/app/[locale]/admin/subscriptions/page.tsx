@@ -218,7 +218,7 @@ export default function AdminSubscriptionsPage() {
             <div className="flex items-center">
               <Link href="/" className="flex items-center">
                 <div className="h-10 flex items-center justify-center">
-                  <img src="https://i.ibb.co/WWGXBZXm/image-removebg-preview.png" alt="RinKuzu Logo" className="h-10 w-auto object-contain" />
+                  <img src="/images/auth_logo.png" alt="RinKuzu Logo" className="h-10 w-auto object-contain" />
                 </div>
               </Link>
               <span className="ml-3 px-2 py-1 bg-red-100 text-red-800 text-xs font-medium rounded">

@@ -125,7 +125,7 @@ export default function AdaptiveLearningResult({ sessionId }: ResultProps) {
                                 >
                                     <span className="relative flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 border border-slate-200">
                                         <Image
-                                            src="https://i.ibb.co/ZRYgc1tN/Gemini-Generated-Image-yjm06yyjm06yyjm0-removebg-preview.png"
+                                            src="/images/chatbot_icon.png"
                                             alt="Rin-chan avatar"
                                             width={28}
                                             height={28}

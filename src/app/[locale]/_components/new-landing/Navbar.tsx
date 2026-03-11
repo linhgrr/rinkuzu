@@ -2,6 +2,7 @@
 
 import { ChevronDown } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { useSession } from "next-auth/react";
 
 const navLinks = [
@@ -18,9 +19,11 @@ const Navbar = () => {
     <nav className="relative z-10 flex items-center justify-between px-6 md:px-[120px] py-[20px] font-sans">
       {/* Left side */}
       <div className="flex items-center gap-[30px]">
-        <img
-          src="https://i.ibb.co/Lz1LzttJ/unnamed-2-removebg-preview.png"
+        <Image
+          src="/images/navbar_logo.png"
           alt="RinKuzu Logo"
+          width={120}
+          height={32}
           className="h-[32px] w-auto object-contain"
         />
         <div className="hidden md:flex items-center gap-[30px]">

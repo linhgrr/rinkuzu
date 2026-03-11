@@ -1,17 +1,26 @@
 import { NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
     try {
+        const session = await getServerSession(authOptions);
+        if (!session || !session.user) {
+            return NextResponse.json({ detail: 'Unauthorized' }, { status: 401 });
+        }
+
+        const userId = session.user.id;
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
         const response = await fetch(`${apiUrl}/api/history/subjects`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
+                'x-user-id': userId
             },
-            next: { revalidate: 60, tags: ['adaptive-learning-subjects'] } // Short cache
+            cache: 'no-store'
         });
 
         if (!response.ok) {

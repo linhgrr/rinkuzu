@@ -21,8 +21,8 @@ export default async function DashboardPage({
     redirect(`${loginPath}?callbackUrl=${encodeURIComponent(callbackPath)}`);
   }
 
-  const userId = (session.user as any).id;
-  const userRole = (session.user as any).role;
+  const userId = session.user.id;
+  const userRole = session.user.role;
   const bootstrapData = await getDashboardBootstrapData(userId, userRole);
 
   const userEmail = session.user.email || '';

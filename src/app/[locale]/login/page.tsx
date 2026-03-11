@@ -21,7 +21,7 @@ export default async function LoginPage({ params }: { params: Promise<{ locale: 
             <Link href="/" prefetch={false} className="inline-flex items-center group">
               <div className="h-16 sm:h-20 flex items-center justify-center transition-transform group-hover:scale-105">
                 <Image
-                  src="https://i.ibb.co/WWGXBZXm/image-removebg-preview.png"
+                  src="/images/auth_logo.png"
                   alt="RinKuzu Logo"
                   width={80}
                   height={80}

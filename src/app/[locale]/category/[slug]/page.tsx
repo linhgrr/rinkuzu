@@ -159,7 +159,7 @@ export default function CategoryPage({ params }: CategoryPageProps) {
           <div className="flex justify-center items-center h-64">
             <div className="h-16 flex items-center justify-center mx-auto mb-4 animate-pulse">
               <Image
-                src="https://i.ibb.co/WWGXBZXm/image-removebg-preview.png"
+                src="/images/auth_logo.png"
                 alt="RinKuzu Logo"
                 width={64}
                 height={64}

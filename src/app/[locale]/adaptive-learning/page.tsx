@@ -15,19 +15,25 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
     };
 }
 
-async function fetchInitialData() {
+async function fetchInitialData(userId: string) {
     try {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
         // Parallel fetching
         const [subjectsRes, histRes] = await Promise.all([
             fetch(`${apiUrl}/api/history/subjects`, {
-                headers: { 'Content-Type': 'application/json' },
-                next: { revalidate: 60 }
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'x-user-id': userId
+                },
+                cache: 'no-store'
             }),
-            fetch(`${apiUrl}/api/history/sessions?limit=5`, { // Fixed the URL to history/sessions
-                headers: { 'Content-Type': 'application/json' },
-                next: { revalidate: 60 }
+            fetch(`${apiUrl}/api/history/sessions?limit=5`, { 
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'x-user-id': userId
+                },
+                cache: 'no-store'
             })
         ]);
 
@@ -54,7 +60,8 @@ export default async function AdaptiveLearningPage({ params }: { params: Promise
         redirect(`${loginPath}?callbackUrl=${encodeURIComponent(callbackPath)}`);
     }
 
-    const { subjects, sessionHistory } = await fetchInitialData();
+    const userId = session.user.id;
+    const { subjects, sessionHistory } = await fetchInitialData(userId);
 
     return <AdaptiveLearningDashboard initialSubjects={subjects} initialSessionHistory={sessionHistory} />;
 }

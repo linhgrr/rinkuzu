@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -86,7 +87,7 @@ export default function RegisterPage() {
           <div className="text-center">
             <Link href="/" className="inline-flex items-center group">
               <div className="h-16 sm:h-20 flex items-center justify-center transition-transform group-hover:scale-105">
-                <img src="https://i.ibb.co/WWGXBZXm/image-removebg-preview.png" alt="RinKuzu Logo" width={80} height={80} className="h-16 sm:h-20 w-auto object-contain" />
+                <Image src="/images/auth_logo.png" alt="RinKuzu Logo" width={80} height={80} className="h-16 sm:h-20 w-auto object-contain" />
               </div>
             </Link>
           </div>

@@ -10,7 +10,7 @@ export function NavLogo() {
     <Link href="/" className="flex items-center group">
       <div className="h-10 flex items-center justify-center transition-transform group-hover:scale-105">
         <Image
-          src="https://i.ibb.co/WWGXBZXm/image-removebg-preview.png"
+          src="/images/auth_logo.png"
           alt="RinKuzu Logo"
           width={150}
           height={40}

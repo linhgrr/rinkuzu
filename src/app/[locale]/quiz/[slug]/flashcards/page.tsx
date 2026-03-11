@@ -226,7 +226,7 @@ export default function FlashcardPage() {
               <div className="flex items-center">
                 <Link href="/quizzes" className="flex items-center">
                   <div className="h-10 flex items-center justify-center">
-                    <img src="https://i.ibb.co/WWGXBZXm/image-removebg-preview.png" alt="RinKuzu Logo" className="h-10 w-auto object-contain" />
+                    <img src="/images/auth_logo.png" alt="RinKuzu Logo" className="h-10 w-auto object-contain" />
                   </div>
                 </Link>
               </div>
@@ -360,7 +360,7 @@ export default function FlashcardPage() {
             <div className="flex items-center">
               <Link href="/quizzes" className="flex items-center">
                 <div className="h-10 flex items-center justify-center">
-                  <img src="https://i.ibb.co/WWGXBZXm/image-removebg-preview.png" alt="RinKuzu Logo" className="h-10 w-auto object-contain" />
+                  <img src="/images/auth_logo.png" alt="RinKuzu Logo" className="h-10 w-auto object-contain" />
                 </div>
               </Link>
             </div>

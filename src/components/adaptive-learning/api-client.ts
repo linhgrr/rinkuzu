@@ -7,18 +7,72 @@ import {
 } from './types';
 
 const API_BASE = '';
+const DEFAULT_TIMEOUT_MS = 15_000;
+const inFlightGetRequests = new Map<string, Promise<unknown>>();
 
-async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
+type ApiFetchOptions = RequestInit & {
+    timeoutMs?: number;
+    dedupeKey?: string;
+};
+
+async function executeRequest<T>(
+    path: string,
+    method: string,
+    options?: ApiFetchOptions,
+): Promise<T> {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), options?.timeoutMs ?? DEFAULT_TIMEOUT_MS);
+    const headers = new Headers(options?.headers);
+    const body = options?.body;
+    const shouldAttachJsonContentType =
+        body !== undefined
+        && body !== null
+        && !(body instanceof FormData)
+        && !headers.has('Content-Type');
+
+    if (shouldAttachJsonContentType) {
+        headers.set('Content-Type', 'application/json');
+    }
+
     const res = await fetch(`${API_BASE}${path}`, {
-        cache: 'no-store',
-        headers: { 'Content-Type': 'application/json', ...options?.headers },
         ...options,
-    });
+        method,
+        cache: options?.cache ?? 'no-store',
+        headers,
+        signal: controller.signal,
+    }).finally(() => clearTimeout(timeout));
+
     if (!res.ok) {
         const error = await res.text().catch(() => res.statusText);
         throw new Error(`API Error ${res.status}: ${error}`);
     }
+
+    if (res.status === 204) {
+        return undefined as T;
+    }
+
     return res.json();
+}
+
+async function apiFetch<T>(path: string, options?: ApiFetchOptions): Promise<T> {
+    const method = (options?.method || 'GET').toUpperCase();
+    const isGet = method === 'GET';
+    const dedupeKey = options?.dedupeKey || path;
+
+    if (!isGet) {
+        return executeRequest<T>(path, method, options);
+    }
+
+    const inFlight = inFlightGetRequests.get(dedupeKey);
+    if (inFlight) {
+        return inFlight as Promise<T>;
+    }
+
+    const requestPromise = executeRequest<T>(path, method, options)
+        .finally(() => inFlightGetRequests.delete(dedupeKey));
+
+    inFlightGetRequests.set(dedupeKey, requestPromise as Promise<unknown>);
+    return requestPromise;
 }
 
 export async function createSession(maxSteps: number = 50): Promise<Session> {
@@ -147,10 +201,10 @@ export async function getPipelineJobHistory(limit = 20): Promise<PipelineJobHist
  * Used by the Dashboard to show the "My Subjects" grid.
  */
 export async function getSubjects(): Promise<PipelineJobHistoryItem[]> {
-    const res = await apiFetch<{ subjects: PipelineJobHistoryItem[]; count: number }>(
+    const res = await apiFetch<{ subjects: PipelineJobHistoryItem[]; count: number } | PipelineJobHistoryItem[]>(
         '/api/adaptive-learning/subjects'
     );
-    return res.subjects;
+    return Array.isArray(res) ? res : res.subjects;
 }
 
 export async function deleteSubject(

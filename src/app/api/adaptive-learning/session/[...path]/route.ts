@@ -13,9 +13,7 @@ export async function POST(
     req: Request,
     { params }: { params: { path: string[] } },
 ) {
-    const rawBody = await req.text();
     return proxyAdaptiveRequest(req, `/api/session/${params.path.join('/')}`, {
-        body: rawBody,
-        contentType: req.headers.get('content-type') || 'application/json',
+        method: 'POST',
     });
 }

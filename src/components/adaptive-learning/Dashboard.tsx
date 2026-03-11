@@ -48,7 +48,7 @@ const FC_ICONS = [
     FcPuzzle,
     FcFolder
 ];
-import { checkApiHealth, createSessionFromPipeline, deleteSubject, getSessionHistory } from './api-client';
+import { checkApiHealth, createSessionFromPipeline, deleteSubject, getSessionHistory, getSubjects } from './api-client';
 import type { PipelineJobHistoryItem, SessionHistoryItem } from './types';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { SkeletonCard } from './Skeletons';
@@ -89,11 +89,8 @@ export default function AdaptiveLearningDashboard({
 
     const refreshSubjects = useCallback(async () => {
         try {
-            const res = await fetch('/api/adaptive-learning/subjects');
-            if (res.ok) {
-                const data = await res.json();
-                setSubjects(data);
-            }
+            const data = await getSubjects();
+            setSubjects(data);
         } catch (e) {
             console.error('Failed to refresh subjects', e);
         }

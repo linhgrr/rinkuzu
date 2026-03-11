@@ -1,6 +1,13 @@
-'use client';
-
+import type { Metadata } from 'next';
 import Navigation from '@/components/Navigation';
+
+export const metadata: Metadata = {
+    robots: {
+        index: false,
+        follow: false,
+        nocache: true,
+    },
+};
 
 export default function AdaptiveLearningLayout({ children }: { children: React.ReactNode }) {
     return (

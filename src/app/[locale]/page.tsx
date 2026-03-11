@@ -3,6 +3,24 @@ import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
 import { defaultLocale } from '@/i18n/config';
 import { GuestLanding } from './_components';
+import type { Metadata } from 'next';
+import { buildLocalizedMetadata } from '@/lib/seo';
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+
+  return buildLocalizedMetadata({
+    locale,
+    path: '/',
+    title: 'RinKuzu - Tao quiz tu PDF bang AI',
+    description:
+      'Nen tang tao va luyen tap quiz thong minh tu PDF voi AI, ho tro giao vien va sinh vien hoc tap hieu qua.',
+  });
+}
 
 export default async function HomePage({
   params,

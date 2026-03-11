@@ -1,32 +1,12 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { proxyAdaptiveRequest } from '@/lib/adaptive-learning/proxy';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(req: Request) {
     try {
-        const session = await getServerSession(authOptions);
-        if (!session || !session.user) {
-            return NextResponse.json({ detail: 'Unauthorized' }, { status: 401 });
-        }
-
-        const userId = session.user.id;
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-
-        const response = await fetch(`${apiUrl}/api/history/subjects`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-user-id': userId
-            },
-            cache: 'no-store'
-        });
-
-        if (!response.ok) {
-            throw new Error(`Failed to fetch subjects: ${response.statusText}`);
-        }
-
+        const response = await proxyAdaptiveRequest(req, '/api/history/subjects');
+        if (!response.ok) return response;
         const data = await response.json();
         return NextResponse.json(data.subjects || []);
     } catch (error) {

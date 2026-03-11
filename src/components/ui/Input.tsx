@@ -67,7 +67,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           <input
             id={inputId}
             className={cn(
-              'w-full rounded-xl font-medium transition-all duration-300 focus:outline-none focus:ring-2 disabled:cursor-not-allowed disabled:opacity-50 placeholder:text-gray-400',
+              'w-full rounded-xl font-medium text-gray-900 transition-all duration-300 focus:outline-none focus:ring-2 disabled:cursor-not-allowed disabled:opacity-50 placeholder:text-gray-400',
               variants[variant],
               sizes[inputSize],
               icon && iconPosition === 'left' && 'pl-10',
@@ -133,7 +133,7 @@ const Textarea = React.forwardRef<
       <textarea
         id={textareaId}
         className={cn(
-          'w-full rounded-xl px-4 py-3 font-medium transition-all duration-300 focus:outline-none focus:ring-2 disabled:cursor-not-allowed disabled:opacity-50 placeholder:text-gray-400 resize-none',
+          'w-full rounded-xl px-4 py-3 font-medium text-gray-900 transition-all duration-300 focus:outline-none focus:ring-2 disabled:cursor-not-allowed disabled:opacity-50 placeholder:text-gray-400 resize-none',
           variants[variant],
           error && 'border-red-300 focus:border-red-500 focus:ring-red-200',
           className

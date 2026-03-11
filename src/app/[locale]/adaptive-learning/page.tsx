@@ -18,20 +18,23 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
 async function fetchInitialData(userId: string) {
     try {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+        const serviceToken = process.env.INTERNAL_SERVICE_TOKEN;
 
         // Parallel fetching
         const [subjectsRes, histRes] = await Promise.all([
             fetch(`${apiUrl}/api/history/subjects`, {
                 headers: { 
                     'Content-Type': 'application/json',
-                    'x-user-id': userId
+                    'x-user-id': userId,
+                    ...(serviceToken ? { 'x-service-token': serviceToken } : {}),
                 },
                 cache: 'no-store'
             }),
             fetch(`${apiUrl}/api/history/sessions?limit=5`, { 
                 headers: { 
                     'Content-Type': 'application/json',
-                    'x-user-id': userId
+                    'x-user-id': userId,
+                    ...(serviceToken ? { 'x-service-token': serviceToken } : {}),
                 },
                 cache: 'no-store'
             })

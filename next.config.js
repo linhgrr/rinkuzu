@@ -143,7 +143,9 @@ const nextConfig = {
         pathname: '/**',
       }
     ],
-    unoptimized: true // Allow external image URLs
+    // Keep optimization enabled by default for better LCP/SEO.
+    // Set NEXT_IMAGE_UNOPTIMIZED=true only when debugging image delivery issues.
+    unoptimized: process.env.NEXT_IMAGE_UNOPTIMIZED === 'true'
   },
   env: {
     MONGO_URL: process.env.MONGO_URL,

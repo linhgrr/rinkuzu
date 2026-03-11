@@ -9,8 +9,10 @@ import './_components/new-landing/style.css';
 import Providers from '../providers';
 import BottomNav from '@/components/BottomNav';
 import { routing } from '@/i18n/routing';
+import { defaultLocale } from '@/i18n/config';
 import { MainLayoutWrapper } from '@/components/MainLayoutWrapper';
 import { GlobalFooter } from '@/components/GlobalFooter';
+import { languageAlternates, siteUrl } from '@/lib/seo';
 
 const inter = Inter({
   subsets: ['latin', 'vietnamese'],
@@ -41,10 +43,47 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
+  metadataBase: siteUrl,
   title: 'RinKuzu - Create Interactive Quizzes from PDFs',
   description: 'A modern platform for teachers to create interactive quizzes from PDF files with AI-powered question extraction and admin approval workflow.',
   keywords: 'quiz, education, PDF, AI, teachers, students, assessment, interactive learning',
   authors: [{ name: 'RinKuzu Team' }],
+  alternates: {
+    canonical: '/',
+    languages: languageAlternates('/'),
+  },
+  openGraph: {
+    type: 'website',
+    siteName: 'RinKuzu',
+    title: 'RinKuzu - Create Interactive Quizzes from PDFs',
+    description: 'A modern platform for teachers to create interactive quizzes from PDF files with AI-powered question extraction and admin approval workflow.',
+    url: '/',
+    images: [
+      {
+        url: '/icons/icon-512x512.png',
+        width: 512,
+        height: 512,
+        alt: 'RinKuzu',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'RinKuzu - Create Interactive Quizzes from PDFs',
+    description: 'A modern platform for teachers to create interactive quizzes from PDF files with AI-powered question extraction and admin approval workflow.',
+    images: ['/icons/icon-512x512.png'],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      maxSnippet: -1,
+      maxImagePreview: 'large',
+      maxVideoPreview: -1,
+    },
+  },
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
@@ -92,9 +131,12 @@ export default async function LocaleLayout({
   // Providing all messages to the client
   const messages = await getMessages();
 
+  const currentLocalePath = locale === defaultLocale ? '/' : `/${locale}`;
+
   return (
     <html lang={locale} className="scroll-smooth">
       <head>
+        <link rel="canonical" href={currentLocalePath} />
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#ffffff" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />

@@ -33,6 +33,7 @@ const Navbar = () => {
             <Link
               key={link.label}
               href={link.href}
+              prefetch={false}
               className="flex items-center gap-[14px] text-[14px] font-medium text-white hover:opacity-80 transition-opacity"
             >
               {link.label}

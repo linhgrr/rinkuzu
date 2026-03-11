@@ -5,11 +5,9 @@ import { getMessages } from 'next-intl/server';
 import dynamic from 'next/dynamic';
 import { Inter } from 'next/font/google';
 import '../globals.css';
-import './_components/new-landing/style.css';
 import Providers from '../providers';
 import BottomNav from '@/components/BottomNav';
 import { routing } from '@/i18n/routing';
-import { defaultLocale } from '@/i18n/config';
 import { MainLayoutWrapper } from '@/components/MainLayoutWrapper';
 import { GlobalFooter } from '@/components/GlobalFooter';
 import { languageAlternates, siteUrl } from '@/lib/seo';
@@ -131,12 +129,9 @@ export default async function LocaleLayout({
   // Providing all messages to the client
   const messages = await getMessages();
 
-  const currentLocalePath = locale === defaultLocale ? '/' : `/${locale}`;
-
   return (
     <html lang={locale} className="scroll-smooth">
       <head>
-        <link rel="canonical" href={currentLocalePath} />
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#ffffff" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />

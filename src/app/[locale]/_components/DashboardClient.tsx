@@ -27,7 +27,7 @@ import {
 import { TextShimmer } from '@/components/ui/text-shimmer';
 import { FiBookOpen, FiTarget, FiZap, FiAward } from 'react-icons/fi';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { useGLTF, Float, OrbitControls, Environment } from '@react-three/drei';
+import { Float, OrbitControls, Environment } from '@react-three/drei';
 import * as THREE from 'three';
 
 import dynamic from 'next/dynamic';
@@ -40,7 +40,6 @@ const MascotModel = dynamic(
     ssr: false,
   }
 );
-useGLTF.preload('/models/base_basic_pbr.glb');
 
 interface DashboardClientProps {
   userEmail: string;

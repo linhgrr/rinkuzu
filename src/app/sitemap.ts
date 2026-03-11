@@ -3,7 +3,7 @@ import { serviceFactory } from '@/lib/serviceFactory';
 import { defaultLocale, locales } from '@/i18n/config';
 import { canonicalFor } from '@/lib/seo';
 
-const STATIC_PUBLIC_ROUTES = ['/', '/explore', '/categories'] as const;
+const STATIC_PUBLIC_ROUTES = ['/', '/explore', '/categories', '/adaptive-learning'] as const;
 
 function localeVariants(path: string): { locale: string; path: string }[] {
   return locales.map((locale) => ({ locale, path }));

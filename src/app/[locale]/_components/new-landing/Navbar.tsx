@@ -20,10 +20,12 @@ const Navbar = () => {
       {/* Left side */}
       <div className="flex items-center gap-[30px]">
         <Image
-          src="/images/navbar_logo.png"
+          src="/images/navbar_logo.webp"
           alt="RinKuzu Logo"
           width={120}
           height={32}
+          priority
+          sizes="120px"
           className="h-[32px] w-auto object-contain"
         />
         <div className="hidden md:flex items-center gap-[30px]">

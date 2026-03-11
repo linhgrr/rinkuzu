@@ -13,8 +13,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const fallback = buildLocalizedMetadata({
     locale,
     path: `/quiz/${slug}`,
-    title: 'Quiz hoc tap | RinKuzu',
-    description: 'Luyen tap quiz duoc tao tu tai lieu va danh gia ket qua ngay lap tuc.',
+    title: 'Practice Quiz | RinKuzu',
+    description: 'Take interactive quizzes generated from learning materials and get instant feedback.',
   });
 
   try {
@@ -37,7 +37,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title: `${quiz.title} | RinKuzu`,
       description:
         quiz.description ||
-        'Luyen tap quiz da kiem duyet tren RinKuzu voi giao dien than thien va ket qua chi tiet.',
+        'Practice reviewed quizzes on RinKuzu with clear explanations and detailed results.',
       robots: {
         index: isIndexable,
         follow: isIndexable,

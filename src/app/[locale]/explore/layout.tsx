@@ -11,8 +11,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return buildLocalizedMetadata({
     locale,
     path: '/explore',
-    title: 'Kham pha quiz | RinKuzu',
-    description: 'Kham pha kho quiz da duoc kiem duyet theo chu de va bat dau luyen tap ngay.',
+    title: 'Explore Quizzes | RinKuzu',
+    description: 'Browse curated quizzes by topic and start practicing right away.',
   });
 }
 

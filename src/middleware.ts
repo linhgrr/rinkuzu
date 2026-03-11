@@ -8,7 +8,11 @@ const intlMiddleware = createMiddleware(routing);
 
 const AUTH_REQUIRED_PREFIXES = [
   '/dashboard',
-  '/adaptive-learning',
+  '/adaptive-learning/upload',
+  '/adaptive-learning/processing',
+  '/adaptive-learning/exercise',
+  '/adaptive-learning/subject',
+  '/adaptive-learning/result',
   '/create',
   '/profile',
   '/review',

@@ -19,33 +19,37 @@ async function fetchInitialData(userId: string) {
     try {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
         const serviceToken = process.env.INTERNAL_SERVICE_TOKEN;
+        const headers = {
+            'x-user-id': userId,
+            ...(serviceToken ? { 'x-service-token': serviceToken } : {}),
+        };
+        const timeoutMs = Number(process.env.ADAPTIVE_PROXY_TIMEOUT_MS || 20_000);
+
+        const fetchAdaptiveJson = async (path: string) => {
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), timeoutMs);
+            try {
+                const response = await fetch(`${apiUrl}${path}`, {
+                    headers,
+                    cache: 'no-store',
+                    signal: controller.signal,
+                });
+                if (!response.ok) return null;
+                return response.json();
+            } finally {
+                clearTimeout(timeout);
+            }
+        };
 
         // Parallel fetching
-        const [subjectsRes, histRes] = await Promise.all([
-            fetch(`${apiUrl}/api/history/subjects`, {
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'x-user-id': userId,
-                    ...(serviceToken ? { 'x-service-token': serviceToken } : {}),
-                },
-                cache: 'no-store'
-            }),
-            fetch(`${apiUrl}/api/history/sessions?limit=5`, { 
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'x-user-id': userId,
-                    ...(serviceToken ? { 'x-service-token': serviceToken } : {}),
-                },
-                cache: 'no-store'
-            })
+        const [subjectsData, historyData] = await Promise.all([
+            fetchAdaptiveJson('/api/history/subjects'),
+            fetchAdaptiveJson('/api/history/sessions?limit=5'),
         ]);
 
-        const subjectsData = subjectsRes.ok ? await subjectsRes.json() : { subjects: [] };
-        const historyData = histRes.ok ? await histRes.json() : { sessions: [] };
-
         return {
-            subjects: subjectsData.subjects || [],
-            sessionHistory: historyData.sessions || []
+            subjects: subjectsData?.subjects || [],
+            sessionHistory: historyData?.sessions || [],
         };
     } catch (err) {
         console.error('Failed fetching adaptive learning data server-side:', err);

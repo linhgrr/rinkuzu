@@ -4,6 +4,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
 import dynamic from 'next/dynamic';
 import { Inter } from 'next/font/google';
+import Script from 'next/script';
 import '../globals.css';
 import Providers from '../providers';
 import BottomNav from '@/components/BottomNav';
@@ -42,8 +43,8 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   metadataBase: siteUrl,
-  title: 'RinKuzu: AI Quiz Maker & Personalized Learning Paths',
-  description: 'Turn PDFs into AI-powered quizzes, adaptive learning sessions, and measurable progress dashboards for students, teachers, and training teams.',
+  title: 'AI Quiz Generator from PDFs - Knowledge Graph Learning | RinKuzu',
+  description: 'Generate quizzes from PDFs with AI, build knowledge graph learning paths, and run adaptive practice sessions for students, teachers, and teams.',
   keywords: 'quiz, education, PDF, AI, teachers, students, assessment, interactive learning',
   authors: [{ name: 'RinKuzu Team' }],
   alternates: {
@@ -53,8 +54,8 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     siteName: 'RinKuzu',
-    title: 'RinKuzu: AI Quiz Maker & Personalized Learning Paths',
-    description: 'Turn PDFs into AI-powered quizzes, adaptive learning sessions, and measurable progress dashboards for students, teachers, and training teams.',
+    title: 'AI Quiz Generator from PDFs - Knowledge Graph Learning | RinKuzu',
+    description: 'Generate quizzes from PDFs with AI, build knowledge graph learning paths, and run adaptive practice sessions for students, teachers, and teams.',
     url: '/',
     images: [
       {
@@ -67,8 +68,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'RinKuzu: AI Quiz Maker & Personalized Learning Paths',
-    description: 'Turn PDFs into AI-powered quizzes, adaptive learning sessions, and measurable progress dashboards for students, teachers, and training teams.',
+    title: 'AI Quiz Generator from PDFs - Knowledge Graph Learning | RinKuzu',
+    description: 'Generate quizzes from PDFs with AI, build knowledge graph learning paths, and run adaptive practice sessions for students, teachers, and teams.',
     images: ['/icons/icon-512x512.png'],
   },
   robots: {
@@ -155,6 +156,22 @@ export default async function LocaleLayout({
             <BottomNav />
             <FloatingDraftProgress />
             <PWAInstaller />
+            {process.env.NEXT_PUBLIC_GA_ID ? (
+              <>
+                <Script
+                  src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_ID}`}
+                  strategy="afterInteractive"
+                />
+                <Script id="ga-init" strategy="afterInteractive">
+                  {`
+                    window.dataLayer = window.dataLayer || [];
+                    function gtag(){dataLayer.push(arguments);}
+                    gtag('js', new Date());
+                    gtag('config', '${process.env.NEXT_PUBLIC_GA_ID}');
+                  `}
+                </Script>
+              </>
+            ) : null}
           </Providers>
         </NextIntlClientProvider>
       </body>

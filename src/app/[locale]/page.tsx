@@ -16,7 +16,7 @@ export async function generateMetadata({
   return buildLocalizedMetadata({
     locale,
     path: '/',
-    title: 'AI Quiz Generator from PDFs - Knowledge Graph Learning | RinKuzu',
+    title: 'AI Quiz Generator from PDF - Knowledge Graph | RinKuzu',
     description:
       'Generate quizzes from PDFs with AI, build knowledge graph learning paths, and run adaptive practice sessions for students and teachers.',
   });

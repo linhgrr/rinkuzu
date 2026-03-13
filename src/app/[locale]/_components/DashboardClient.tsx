@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, memo, Suspense, useRef, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
@@ -22,22 +22,19 @@ import {
   HiOutlinePlus,
   HiOutlineArrowRight,
   HiOutlineShare,
-  HiOutlineLightBulb,
 } from '@/components/icons';
 import { TextShimmer } from '@/components/ui/text-shimmer';
-import { FiBookOpen, FiTarget, FiZap, FiAward } from 'react-icons/fi';
-import { Canvas, useFrame } from '@react-three/fiber';
-import { Float, OrbitControls, Environment } from '@react-three/drei';
-import * as THREE from 'three';
-
 import dynamic from 'next/dynamic';
 import { StatCardsSkeleton, QuizCardsSkeleton, SidebarSkeleton } from './DashboardSkeletons';
 import { ProTipCard } from './DashboardProTip';
 
-const MascotModel = dynamic(
-  () => import('./MascotModel'),
+const DashboardMascot3D = dynamic(
+  () => import('./DashboardMascot3D'),
   {
     ssr: false,
+    loading: () => (
+      <div className="w-full h-full rounded-full bg-slate-100 animate-pulse" aria-hidden="true" />
+    ),
   }
 );
 
@@ -100,6 +97,7 @@ export function DashboardClient({
     {
       fallbackData: bootstrapFallbackData,
       revalidateOnFocus: false,
+      revalidateOnMount: false,
       dedupingInterval: 30000,
     }
   );
@@ -184,6 +182,38 @@ export function DashboardClient({
     : {};
   const isStatsInitialLoading = !stats && bootstrapLoading;
   const isQuizzesInitialLoading = quizzes.length === 0 && bootstrapLoading;
+  const [shouldLoadMascot, setShouldLoadMascot] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (!window.matchMedia('(min-width: 1024px)').matches) return;
+
+    let timeoutId: number | null = null;
+    let idleId: number | null = null;
+    const idleApi = window as Window & {
+      requestIdleCallback?: (cb: () => void) => number;
+      cancelIdleCallback?: (id: number) => void;
+    };
+
+    const schedule = () => {
+      if (idleApi.requestIdleCallback) {
+        idleId = idleApi.requestIdleCallback(() => setShouldLoadMascot(true));
+      } else {
+        timeoutId = window.setTimeout(() => setShouldLoadMascot(true), 200);
+      }
+    };
+
+    schedule();
+
+    return () => {
+      if (idleId !== null && idleApi.cancelIdleCallback) {
+        idleApi.cancelIdleCallback(idleId);
+      }
+      if (timeoutId !== null) {
+        window.clearTimeout(timeoutId);
+      }
+    };
+  }, []);
 
   return (
     <div className="min-h-screen bg-slate-50 pb-12 font-sans selection:bg-slate-900 selection:text-white">
@@ -251,20 +281,11 @@ export function DashboardClient({
               <div className="relative z-10 hidden lg:flex items-center justify-center w-72 h-72 shrink-0">
                 <div className="absolute inset-0 bg-teal-50/50 rounded-full blur-3xl" />
                 <div className="w-full h-full relative z-20 cursor-grab active:cursor-grabbing">
-                  <Canvas camera={{ position: [0, 0, 5], fov: 45 }} className="w-full h-full" dpr={[1, 2]}>
-                    <ambientLight intensity={0.8} />
-                    <directionalLight position={[10, 10, 5]} intensity={1} />
-                    <directionalLight position={[-10, 10, -5]} intensity={0.5} />
-                    <Environment preset="city" />
-                    <Suspense fallback={null}>
-                      <MascotModel />
-                    </Suspense>
-                    <OrbitControls
-                      enableZoom={false}
-                      enablePan={false}
-                      enableRotate={false}
-                    />
-                  </Canvas>
+                  {shouldLoadMascot ? (
+                    <DashboardMascot3D />
+                  ) : (
+                    <div className="w-full h-full rounded-full bg-slate-100" aria-hidden="true" />
+                  )}
                 </div>
               </div>
             </div>

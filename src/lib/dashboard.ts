@@ -16,15 +16,15 @@ type DashboardQuiz = {
   updatedAt?: string;
   questionCount?: number;
   questions: unknown[];
-  category: {
+  category?: {
     _id?: string;
     name: string;
     color: string;
-  };
-  author: {
+  } | null;
+  author?: {
     _id?: string;
     email: string;
-  };
+  } | null;
 };
 
 export interface DashboardStatsData {
@@ -155,7 +155,7 @@ function serializeQuizForClient(rawQuiz: any): DashboardQuiz {
     author: author
       ? {
         _id: author?._id ? normalizeId(author._id) : undefined,
-        email: author?.email ? String(author.email) : undefined,
+        email: author?.email ? String(author.email) : '',
       }
       : null,
   };

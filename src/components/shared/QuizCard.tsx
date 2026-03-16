@@ -17,10 +17,10 @@ interface Quiz {
   _id: string;
   title: string;
   slug: string;
-  category: {
+  category?: {
     name: string;
     color: string;
-  };
+  } | null;
   createdAt: string;
   questions: Array<unknown>;
   questionCount?: number;
@@ -70,10 +70,10 @@ export const QuizCard = memo(function QuizCard({ quiz }: QuizCardProps) {
       <CardHeader className="pb-3">
         <div className="flex justify-between items-start mb-2">
           <Badge
-            variant={CategoryBadgeVariant(quiz.category?.color)}
+            variant={CategoryBadgeVariant(quiz.category?.color || '')}
             className="w-fit"
           >
-            {quiz.category?.name}
+            {quiz.category?.name || 'Uncategorized'}
           </Badge>
         </div>
 

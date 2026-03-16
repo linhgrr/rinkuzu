@@ -8,13 +8,15 @@ export interface Quiz {
   title: string;
   description: string;
   slug: string;
-  category: {
+  category?: {
+    _id?: string;
     name: string;
     color: string;
-  };
-  author: {
+  } | null;
+  author?: {
+    _id?: string;
     email: string;
-  };
+  } | null;
   createdAt: string;
   questions: Array<unknown>;
   questionCount?: number;

@@ -1,6 +1,6 @@
 // /src/app/[locale]/draft/[id]/edit/page.tsx
 import { notFound, redirect } from 'next/navigation';
-import { getServerSession } from 'next-auth/getServerSession';
+import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import connectDB from '@/lib/mongoose';
 import DraftQuiz from '@/models/DraftQuiz';
@@ -16,12 +16,11 @@ interface Props {
 }
 
 export default async function DraftEditPage({ params }: Props) {
+  const { id, locale } = params;
   const session = await getServerSession(authOptions);
   if (!(session?.user as any)?.id) {
-    redirect('/login');
+    redirect(`/${locale}/login`);
   }
-
-  const { id, locale } = params;
 
   await connectDB();
 

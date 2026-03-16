@@ -519,8 +519,25 @@ export class QuizService implements IQuizService {
     userEmail?: string
   ): Promise<ServiceResult<any>> {
     try {
-      const quiz = await this.quizRepository.findBySlugAndStatus(slug, 'published')
+      const quiz = await this.quizRepository.findBySlug(slug);
+      
       if (!quiz || !quiz._id) {
+        return {
+          success: false,
+          error: 'Quiz not found',
+          statusCode: 404
+        }
+      }
+
+      // Check access permission for unpublished quiz
+      const authorId = (quiz.author as any)?._id 
+        ? (quiz.author as any)._id.toString() 
+        : quiz.author?.toString();
+      const userIdFromSession = session?.user?.id;
+      const userRole = session?.user?.role;
+      const canAccessUnpublished = userRole === 'admin' || (!!userIdFromSession && authorId === userIdFromSession);
+      
+      if (quiz.status !== 'published' && !canAccessUnpublished) {
         return {
           success: false,
           error: 'Quiz not found or not published',
@@ -937,18 +954,23 @@ export class QuizService implements IQuizService {
   }
 
   async getQuizFlashcards(slug: string, session?: any): Promise<any> {
-    const quiz = await this.quizRepository.findBySlugAndStatus(slug, 'published')
+    const quiz = await this.quizRepository.findBySlug(slug);
+    
     if (!quiz) {
+      throw new Error('Quiz not found')
+    }
+
+    const isAdmin = session?.user?.role === 'admin';
+    const isAuthor = !!session?.user?.id && ((quiz.author as any)?._id
+      ? (quiz.author as any)._id.toString() === session.user.id
+      : quiz.author === session.user.id);
+
+    if (quiz.status !== 'published' && !isAdmin && !isAuthor) {
       throw new Error('Quiz not found or not published')
     }
 
     // Check if quiz is private and user has access
     if (quiz.isPrivate && session?.user) {
-      const isAdmin = (session.user as any).role === 'admin';
-      const isAuthor = (quiz.author as any)?._id
-        ? (quiz.author as any)._id.toString() === (session.user as any).id
-        : quiz.author === (session.user as any).id;
-
       if (!isAdmin && !isAuthor) {
         // Check if user has premium subscription
         const subscriptionService = ServiceFactory.createSubscriptionService();
@@ -984,7 +1006,20 @@ export class QuizService implements IQuizService {
     try {
       const quiz = await this.quizRepository.findBySlug(slug);
 
-      if (!quiz || quiz.status !== 'published') {
+      if (!quiz) {
+        return {
+          success: false,
+          error: 'Quiz not found',
+          statusCode: 404
+        };
+      }
+
+      const isAdmin = session?.user?.role === 'admin';
+      const isAuthor = !!session?.user?.id && ((quiz.author as any)?._id
+        ? (quiz.author as any)._id.toString() === session.user.id
+        : quiz.author === session.user.id);
+
+      if (quiz.status !== 'published' && !isAdmin && !isAuthor) {
         return {
           success: false,
           error: 'Quiz not found or not published',
@@ -1001,11 +1036,6 @@ export class QuizService implements IQuizService {
             statusCode: 403
           };
         }
-
-        const isAdmin = (session.user as any).role === 'admin';
-        const isAuthor = (quiz.author as any)?._id
-          ? (quiz.author as any)._id.toString() === (session.user as any).id
-          : quiz.author === (session.user as any).id;
 
         if (!isAdmin && !isAuthor) {
           // Check if user has premium subscription

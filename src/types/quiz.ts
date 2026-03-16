@@ -18,16 +18,6 @@ export interface Category {
   color: string;
 }
 
-export interface PreviewData {
-  title: string;
-  description: string;
-  questions: Question[];
-  originalFileName: string;
-  fileSize: number;
-  fileCount?: number;
-  fileNames?: string[];
-}
-
 export interface QuizFormData {
   title: string;
   description: string;

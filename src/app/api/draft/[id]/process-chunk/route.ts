@@ -4,9 +4,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import connectDB from '@/lib/mongoose';
 import DraftQuiz from '@/models/DraftQuiz';
-import { PDFDocument } from 'pdf-lib';
-import { buildChunkLevelPrompt, extractQuestionsFromPdf } from '@/lib/gemini';
-import { getPDFBuffer } from '@/lib/s3';
+import { extractQuizFromS3Key } from '@/lib/quiz/extractApi';
 import { randomUUID } from 'crypto';
 
 export async function POST(
@@ -37,7 +35,7 @@ export async function POST(
       );
     }
 
-    const LOCK_TIMEOUT_MS = 60000; // 60 seconds - if locked longer, consider stale
+    const LOCK_TIMEOUT_MS = 600000; // 10 minutes - extraction may take multiple minutes
 
     // Generate unique request ID
     const requestId = randomUUID();
@@ -135,50 +133,23 @@ export async function POST(
     }
 
     try {
-      // Extract pages for this chunk
-      let fullPdfBuffer: Buffer;
-      try {
-        fullPdfBuffer = await getPDFBuffer(draft.pdfData.pdfKey);
-      } catch (s3Error) {
-        console.error('Failed to fetch PDF from S3:', s3Error);
-        return NextResponse.json({ error: 'Failed to fetch PDF' }, { status: 500 });
-      }
-      const fullPdfDoc = await PDFDocument.load(fullPdfBuffer);
-
-      const chunkPdfDoc = await PDFDocument.create();
-      for (let i = chunkDetail.startPage - 1; i < chunkDetail.endPage; i++) {
-        if (i < fullPdfDoc.getPageCount()) {
-          const [copiedPage] = await chunkPdfDoc.copyPages(fullPdfDoc, [i]);
-          chunkPdfDoc.addPage(copiedPage);
-        }
-      }
-
-      const chunkBuffer = Buffer.from(await chunkPdfDoc.save());
-
-      // 3. Pre-AI check - is the client still there?
+      // Pre-AI check - is the client still there?
       if (request.signal.aborted) {
         throw new Error('AbortError: Request was cancelled by user');
       }
 
-      // 4. Pre-AI check - double check if draft was deleted while we were loading PDF
+      // Pre-AI check - double check if draft was deleted while waiting for lock.
       const stillExists = await DraftQuiz.exists({ _id: params.id });
       if (!stillExists) {
         throw new Error('Draft was deleted or cancelled');
       }
 
-      // Extract questions using AI
-      let chunkPrompt = draft.chunkPrompt ?? draft.prompt;
-
-      if (!draft.chunkPrompt && draft.prompt && draft.chunks.total > 1) {
-        chunkPrompt = await buildChunkLevelPrompt(draft.prompt, draft.chunks.total);
-      }
-
-      const extractedQuestions = await extractQuestionsFromPdf(
-        chunkBuffer,
-        2,
-        request.signal,
-        chunkPrompt
-      );
+      const { questions: extractedQuestions } = await extractQuizFromS3Key({
+        s3Key: draft.pdfData.pdfKey,
+        userId: session!.user?.id || 'unknown',
+        userPrompt: draft.prompt,
+        timeoutMs: 280000,
+      });
 
       // Remove duplicates with existing questions
       const existingHashes = new Set(
@@ -210,7 +181,12 @@ export async function POST(
         { _id: params.id, 'chunks.chunkDetails.index': chunkIndex },
         {
           $push: { questions: { $each: newQuestions } },
-          $set: { 'chunks.chunkDetails.$.status': 'done' },
+          $set: {
+            'chunks.chunkDetails.$.status': 'done',
+            'chunks.chunkDetails.$.lockedAt': null,
+            'chunks.chunkDetails.$.lockedBy': null,
+            'chunks.chunkDetails.$.error': null,
+          },
           $inc: { 'chunks.processed': 1 },
         },
         { new: true }
@@ -228,15 +204,16 @@ export async function POST(
       const allAttempted = (doneCount + errorCount) >= updateResult!.chunks.total;
       const hasQuestions = updateResult!.questions.length > 0;
 
-      // Complete if all chunks attempted AND we have at least some questions
-      const isComplete = allAttempted && hasQuestions;
+      // Consider processing cycle complete once all chunk attempts finish.
+      const isComplete = allAttempted;
 
-      if (isComplete) {
+      if (allAttempted) {
+        const finalStatus = hasQuestions ? 'completed' : 'error';
         await DraftQuiz.updateOne(
           { _id: params.id },
           {
             $set: {
-              status: 'completed',
+              status: finalStatus,
               'chunks.processed': doneCount,
             }
           }
@@ -263,6 +240,8 @@ export async function POST(
           $set: {
             'chunks.chunkDetails.$.status': 'error',
             'chunks.chunkDetails.$.error': extractError.message,
+            'chunks.chunkDetails.$.lockedAt': null,
+            'chunks.chunkDetails.$.lockedBy': null,
           },
         }
       );

@@ -5,6 +5,28 @@ import QuestionProgress from '@/models/QuestionProgress';
 import { calculateLevel, xpForNextLevel, levelProgress } from '@/lib/gamification';
 import { serviceFactory } from '@/lib/serviceFactory';
 
+type DashboardQuiz = {
+  _id: string;
+  title: string;
+  description: string;
+  slug: string;
+  status?: string;
+  isPrivate?: boolean;
+  createdAt: string;
+  updatedAt?: string;
+  questionCount?: number;
+  questions: unknown[];
+  category: {
+    _id?: string;
+    name: string;
+    color: string;
+  };
+  author: {
+    _id?: string;
+    email: string;
+  };
+};
+
 export interface DashboardStatsData {
   streak: number;
   longestStreak: number;
@@ -52,6 +74,91 @@ function toWeeklyActivityObject(
   }
 
   return {};
+}
+
+function normalizeId(value: unknown): string {
+  if (!value) return '';
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number' || typeof value === 'bigint' || typeof value === 'boolean') {
+    return String(value);
+  }
+
+  if (typeof value === 'object') {
+    const candidate = value as {
+      toHexString?: () => string;
+      toString?: () => string;
+      $oid?: unknown;
+      id?: unknown;
+    };
+
+    if (typeof candidate.toHexString === 'function') {
+      return candidate.toHexString();
+    }
+
+    if (typeof candidate.$oid === 'string' && candidate.$oid) {
+      return candidate.$oid;
+    }
+
+    if (
+      typeof candidate.id === 'string'
+      || typeof candidate.id === 'number'
+      || typeof candidate.id === 'bigint'
+    ) {
+      return String(candidate.id);
+    }
+
+    if (typeof candidate.toString === 'function') {
+      const text = candidate.toString();
+      if (text && text !== '[object Object]') {
+        return text;
+      }
+    }
+  }
+
+  return '';
+}
+
+function normalizeIsoDate(value: unknown): string {
+  if (!value) return '';
+  if (value instanceof Date) return value.toISOString();
+  if (typeof value === 'string') return value;
+  const parsed = new Date(value as any);
+  return Number.isNaN(parsed.getTime()) ? '' : parsed.toISOString();
+}
+
+function serializeQuizForClient(rawQuiz: any): DashboardQuiz {
+  const category = rawQuiz?.category;
+  const author = rawQuiz?.author;
+
+  return {
+    _id: normalizeId(rawQuiz?._id),
+    title: String(rawQuiz?.title || ''),
+    description: String(rawQuiz?.description || ''),
+    slug: String(rawQuiz?.slug || ''),
+    status: rawQuiz?.status,
+    isPrivate: rawQuiz?.isPrivate,
+    createdAt: normalizeIsoDate(rawQuiz?.createdAt),
+    updatedAt: rawQuiz?.updatedAt ? normalizeIsoDate(rawQuiz.updatedAt) : undefined,
+    questionCount: typeof rawQuiz?.questionCount === 'number'
+      ? rawQuiz.questionCount
+      : Array.isArray(rawQuiz?.questions)
+        ? rawQuiz.questions.length
+        : 0,
+    questions: Array.isArray(rawQuiz?.questions) ? rawQuiz.questions : [],
+    category: category
+      ? {
+        _id: normalizeId(category?._id),
+        name: String(category?.name || ''),
+        color: String(category?.color || ''),
+      }
+      : null,
+    author: author
+      ? {
+        _id: author?._id ? normalizeId(author._id) : undefined,
+        email: author?.email ? String(author.email) : undefined,
+      }
+      : null,
+  };
 }
 
 export async function getUserProgressStats(userId: string): Promise<DashboardStatsData> {
@@ -110,11 +217,12 @@ export async function getUserProgressStats(userId: string): Promise<DashboardSta
 
 export async function getDashboardBootstrapData(userId: string, userRole?: string): Promise<{
   stats: DashboardStatsData;
-  quizzes: any[];
+  quizzes: DashboardQuiz[];
+  yourQuizzes: DashboardQuiz[];
 }> {
   const quizService = serviceFactory.getQuizService();
 
-  const [stats, quizzesResult] = await Promise.all([
+  const [stats, quizzesResult, yourQuizzesResult] = await Promise.all([
     getUserProgressStats(userId),
     quizService.getQuizzes({
       status: 'published',
@@ -125,10 +233,19 @@ export async function getDashboardBootstrapData(userId: string, userRole?: strin
       userId,
       compact: true
     }),
+    quizService.getQuizzes({
+      page: 1,
+      limit: 3,
+      userId,
+      userRole,
+      onlyMine: true,
+      compact: true
+    }),
   ]);
 
   return {
     stats,
-    quizzes: quizzesResult.quizzes,
+    quizzes: quizzesResult.quizzes.map(serializeQuizForClient),
+    yourQuizzes: yourQuizzesResult.quizzes.map(serializeQuizForClient),
   };
 }

@@ -33,6 +33,7 @@ export default async function DashboardPage({
       initialSession={session}
       initialStats={bootstrapData.stats}
       initialQuizzes={bootstrapData.quizzes}
+      initialYourQuizzes={bootstrapData.yourQuizzes}
     />
   );
 }

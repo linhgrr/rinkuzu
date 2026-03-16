@@ -8,7 +8,6 @@ export const API_ENDPOINTS = {
     FLASHCARDS: (slug: string) => `/api/quiz/${slug}/flashcards`,
     DISCUSSIONS: (slug: string) => `/api/quiz/${slug}/discussions`,
     REPORT: (slug: string) => `/api/quiz/${slug}/report`,
-    PREVIEW: '/api/quizzes/preview'
   },
   CATEGORY: {
     BASE: '/api/categories',

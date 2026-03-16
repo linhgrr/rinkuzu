@@ -1,43 +1,55 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 
 interface PDFViewerProps {
-  pdfDataUrl: string | null; // Base64 data URL for inline display
+  pdfDataUrl: string | null; // Data/object URL for inline display
   onClose: () => void;
   pdfUrl?: string | null; // Original URL for "open in new tab"
+  showHeader?: boolean;
 }
 
-export default function PDFViewer({ pdfDataUrl, onClose, pdfUrl }: PDFViewerProps) {
+export default function PDFViewer({ pdfDataUrl, onClose, pdfUrl, showHeader = true }: PDFViewerProps) {
   const [isLoading, setIsLoading] = useState(true);
 
-  // Use pdfDataUrl for inline display (avoids download headers from S3/cloud)
-  // pdfUrl is only for "open in new tab" button
-  const displayUrl = pdfDataUrl;
+  // Prefer inline source if provided, otherwise fallback to original URL.
+  const displayUrl = useMemo(() => {
+    const source = pdfDataUrl || pdfUrl || null;
+    if (!source) return null;
+    return source.includes('#')
+      ? source
+      : `${source}#toolbar=1&navpanes=1&scrollbar=1&view=FitH&zoom=page-width`;
+  }, [pdfDataUrl, pdfUrl]);
+
+  useEffect(() => {
+    setIsLoading(true);
+  }, [displayUrl]);
 
   return (
     <div className="h-full flex flex-col">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="font-semibold text-gray-900">PDF Reference</h3>
-        <div className="flex gap-2">
-          <Button
-            onClick={() => pdfUrl && window.open(pdfUrl, '_blank')}
-            size="sm"
-            variant="outline"
-            disabled={!pdfUrl}
-          >
-            Mở tab mới
-          </Button>
-          <Button
-            onClick={onClose}
-            size="sm"
-            variant="ghost"
-          >
-            ✕
-          </Button>
+      {showHeader && (
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="font-semibold text-gray-900">PDF Reference</h3>
+          <div className="flex gap-2">
+            <Button
+              onClick={() => pdfUrl && window.open(pdfUrl, '_blank')}
+              size="sm"
+              variant="outline"
+              disabled={!pdfUrl}
+            >
+              Mở tab mới
+            </Button>
+            <Button
+              onClick={onClose}
+              size="sm"
+              variant="ghost"
+            >
+              ✕
+            </Button>
+          </div>
         </div>
-      </div>
+      )}
       <div className="flex-1 border border-gray-200 rounded overflow-hidden bg-gray-100 flex items-center justify-center relative min-h-[400px]">
         {displayUrl ? (
           <>

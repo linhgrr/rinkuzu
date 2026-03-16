@@ -72,6 +72,7 @@ const SubscriptionSchema = new Schema<ISubscription>({
 // Indexes for better performance
 SubscriptionSchema.index({ user: 1, createdAt: -1 });
 SubscriptionSchema.index({ status: 1, createdAt: -1 });
+SubscriptionSchema.index({ status: 1, isActive: 1, endDate: 1 });
 SubscriptionSchema.index({ payosOrderId: 1 }, { unique: true });
 
 // Prevent re-compilation in development

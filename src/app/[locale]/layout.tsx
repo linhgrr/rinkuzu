@@ -11,7 +11,10 @@ import BottomNav from '@/components/BottomNav';
 import { routing } from '@/i18n/routing';
 import { MainLayoutWrapper } from '@/components/MainLayoutWrapper';
 import { GlobalFooter } from '@/components/GlobalFooter';
-import { languageAlternates, siteUrl } from '@/lib/seo';
+import { canonicalFor, languageAlternates, siteUrl } from '@/lib/seo';
+import { defaultLocale } from '@/i18n/config';
+import { JsonLd } from '@/components/seo/JsonLd';
+import { buildOrganizationSchema, buildWebsiteSchema } from '@/lib/structured-data';
 
 const inter = Inter({
   subsets: ['latin', 'vietnamese'],
@@ -48,7 +51,7 @@ export const metadata: Metadata = {
   keywords: 'quiz, education, PDF, AI, teachers, students, assessment, interactive learning',
   authors: [{ name: 'RinKuzu Team' }],
   alternates: {
-    canonical: '/',
+    canonical: canonicalFor(defaultLocale, '/'),
     languages: languageAlternates('/'),
   },
   openGraph: {
@@ -130,6 +133,9 @@ export default async function LocaleLayout({
   // Providing all messages to the client
   const messages = await getMessages();
 
+  const organizationSchema = buildOrganizationSchema();
+  const websiteSchema = buildWebsiteSchema(locale);
+
   return (
     <html lang={locale} className="scroll-smooth">
       <head>
@@ -150,6 +156,8 @@ export default async function LocaleLayout({
         <NextIntlClientProvider messages={messages}>
           <Providers>
             <MainLayoutWrapper>
+              <JsonLd id="org-schema" data={organizationSchema} />
+              <JsonLd id="website-schema" data={websiteSchema} />
               {children}
             </MainLayoutWrapper>
             <GlobalFooter />

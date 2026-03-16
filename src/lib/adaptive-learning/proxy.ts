@@ -1,19 +1,24 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { isCacheSafeAdaptivePath } from './cache-policy';
 
 type ProxyOptions = {
     method?: string;
     body?: BodyInit | null;
     contentType?: string | null;
     timeoutMs?: number;
+    cache?: {
+        revalidateSeconds: number;
+        tags: string[];
+    };
 };
 
 const DEFAULT_API_URL = 'http://localhost:8000';
 const DEFAULT_TIMEOUT_MS = 60_000;
 
 function resolveApiUrl(): string {
-    return process.env.NEXT_PUBLIC_API_URL || DEFAULT_API_URL;
+    return process.env.ADAPTIVE_API_URL || process.env.NEXT_PUBLIC_API_URL || DEFAULT_API_URL;
 }
 
 function resolveTimeoutMs(): number {
@@ -77,11 +82,25 @@ export async function proxyAdaptiveRequest(
 
         const response = await (async () => {
             try {
+                const cacheOptions = options?.cache;
+                const allowCache =
+                    !!cacheOptions
+                    && isCacheSafeAdaptivePath(targetPath)
+                    && !shouldAttachBody(method)
+                    && cacheOptions.revalidateSeconds > 0
+                    && cacheOptions.tags.length > 0;
+
                 return await fetch(targetUrl.toString(), {
                     method,
                     headers,
                     body,
-                    cache: 'no-store',
+                    cache: allowCache ? 'force-cache' : 'no-store',
+                    next: allowCache
+                        ? {
+                            revalidate: cacheOptions.revalidateSeconds,
+                            tags: cacheOptions.tags,
+                        }
+                        : undefined,
                     signal: controller.signal,
                 });
             } finally {

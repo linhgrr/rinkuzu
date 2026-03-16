@@ -11,12 +11,17 @@ export const siteUrl = new URL(
   trimTrailingSlash(process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXTAUTH_URL || FALLBACK_SITE_URL)
 );
 
+export function normalizeSeoPath(path: string): string {
+  if (!path || path.trim() === '') return '/';
+  return path.startsWith('/') ? path : `/${path}`;
+}
+
 export function localePrefix(locale: string): string {
   return locale === defaultLocale ? '' : `/${locale}`;
 }
 
 export function localizedPath(locale: string, path: string): string {
-  const safePath = path.startsWith('/') ? path : `/${path}`;
+  const safePath = normalizeSeoPath(path);
   return `${localePrefix(locale)}${safePath === '/' ? '' : safePath}` || '/';
 }
 

@@ -83,6 +83,8 @@ const UserSchema = new Schema<IUser>({
   },
 });
 
+UserSchema.index({ role: 1, createdAt: -1 });
+
 // Prevent re-compilation in development
 const User = mongoose.models.User || mongoose.model<IUser>('User', UserSchema);
 

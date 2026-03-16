@@ -128,12 +128,17 @@ export const getFeaturedQuizzes = cache(async (limit: number = 6): Promise<Cache
         from: 'attempts',
         localField: '_id',
         foreignField: 'quiz',
-        as: 'attempts'
+        as: 'attemptStats',
+        pipeline: [
+          { $count: 'count' }
+        ]
       }
     },
     {
       $addFields: {
-        attemptCount: { $size: '$attempts' }
+        attemptCount: {
+          $ifNull: [{ $arrayElemAt: ['$attemptStats.count', 0] }, 0]
+        }
       }
     },
     { $sort: { attemptCount: -1, createdAt: -1 } },

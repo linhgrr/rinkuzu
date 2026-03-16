@@ -3,6 +3,7 @@ import createMiddleware from 'next-intl/middleware';
 import { getToken } from 'next-auth/jwt';
 import { routing } from './i18n/routing';
 import { defaultLocale } from './i18n/config';
+import { getLocaleFromPath, matchesPrefix } from './lib/routing/pathname';
 
 const intlMiddleware = createMiddleware(routing);
 
@@ -27,36 +28,6 @@ const AUTH_REQUIRED_PREFIXES = [
 const ADMIN_PREFIX = '/admin';
 const GUEST_ONLY_PREFIXES = ['/login', '/register'];
 
-function normalizePath(pathname: string): string {
-  if (pathname.length > 1 && pathname.endsWith('/')) {
-    return pathname.slice(0, -1);
-  }
-  return pathname;
-}
-
-function getLocaleAndPath(pathname: string) {
-  const normalized = normalizePath(pathname);
-  const segments = normalized.split('/');
-  const firstSegment = segments[1];
-
-  if (routing.locales.includes(firstSegment as any)) {
-    const restPath = `/${segments.slice(2).join('/')}`;
-    return {
-      locale: firstSegment,
-      pathWithoutLocale: normalizePath(restPath === '/' ? '/' : restPath),
-    };
-  }
-
-  return {
-    locale: defaultLocale,
-    pathWithoutLocale: normalized,
-  };
-}
-
-function matchesPrefix(pathname: string, prefix: string): boolean {
-  return pathname === prefix || pathname.startsWith(`${prefix}/`);
-}
-
 function localizePath(pathname: string, locale: string): string {
   if (locale === defaultLocale) {
     return pathname;
@@ -65,7 +36,7 @@ function localizePath(pathname: string, locale: string): string {
 }
 
 export default async function middleware(request: NextRequest) {
-  const { locale, pathWithoutLocale } = getLocaleAndPath(request.nextUrl.pathname);
+  const { locale, pathWithoutLocale } = getLocaleFromPath(request.nextUrl.pathname);
   const isAdminRoute = matchesPrefix(pathWithoutLocale, ADMIN_PREFIX);
   const isAuthRequiredRoute = AUTH_REQUIRED_PREFIXES.some((prefix) =>
     matchesPrefix(pathWithoutLocale, prefix)

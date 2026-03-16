@@ -173,6 +173,7 @@ RinKuzu is a Next.js 14 app (App Router) with MongoDB, NextAuth, and an API-prox
 - Adaptive API: `/home/linh/Downloads/datn_1/new/data/rinkuzu-ai-api`
 - Subscription subsystem notes: `docs/SUBSCRIPTION_README.md`
 - Duration migration notes: `docs/DURATION_MIGRATION_GUIDE.md`
+- SEO runbook: `docs/SEO_TECHNICAL_RUNBOOK.md`
 
 ---
 

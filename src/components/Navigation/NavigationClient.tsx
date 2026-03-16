@@ -5,6 +5,7 @@ import { useSession, signOut } from 'next-auth/react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
+import { isAdaptiveExerciseModePath } from '@/lib/routing/pathname';
 import {
   HiOutlineClock,
   HiOutlineBookmark,
@@ -282,7 +283,7 @@ export default function NavigationClient({
   const pathname = usePathname();
 
   // Hide Top Navigation in exercise mode (including theory screens) to maximize screen space on mobile
-  const isExerciseMode = pathname?.includes('/adaptive-learning/exercise') || pathname?.includes('/adaptive-learning/result') || false;
+  const isExerciseMode = isAdaptiveExerciseModePath(pathname || '/');
 
   useEffect(() => {
     const handleScroll = () => {

@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import { buildLocalizedMetadata } from '@/lib/seo';
+import { JsonLd } from '@/components/seo/JsonLd';
+import { buildFaqSchema } from '@/lib/structured-data';
 
 type Props = {
   params: Promise<{ locale: string }>;
@@ -33,25 +35,11 @@ export default async function FAQPage({ params }: Props) {
     },
   ];
 
-  const faqSchema = {
-    '@context': 'https://schema.org',
-    '@type': 'FAQPage',
-    mainEntity: faqs.map((item) => ({
-      '@type': 'Question',
-      name: item.q,
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: item.a,
-      },
-    })),
-  };
+  const faqSchema = buildFaqSchema(faqs);
 
   return (
     <section className="max-w-4xl mx-auto space-y-6">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
-      />
+      <JsonLd id="faq-schema" data={faqSchema} />
       <h1 className="text-3xl font-bold text-slate-900">Frequently asked questions</h1>
       <div className="space-y-4">
         {faqs.map((item) => (

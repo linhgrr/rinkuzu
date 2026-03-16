@@ -19,13 +19,29 @@ export class CategoryRepository implements ICategoryRepository {
     await connectDB()
 
     const inputSlug = normalizeSlug(slug);
-    const categories = await Category.find(
+    const bySlug = await Category.findOne(
+      { slug: inputSlug, isActive: true },
+      '_id name slug description color isActive createdBy createdAt updatedAt'
+    ).lean() as unknown as ICategory | null;
+
+    if (bySlug) {
+      return bySlug;
+    }
+
+    // Legacy fallback for records created before slug field existed.
+    const legacyCategories = await Category.find(
       { isActive: true },
-      '_id name description color isActive createdBy createdAt updatedAt'
+      '_id name slug description color isActive createdBy createdAt updatedAt'
     ).lean() as unknown as ICategory[];
 
-    const category = categories.find((cat) => normalizeSlug(cat.name) === inputSlug);
-    return category ?? null;
+    const legacyCategory = legacyCategories.find((cat) => normalizeSlug(cat.name) === inputSlug) ?? null;
+
+    if (legacyCategory?._id && !legacyCategory.slug) {
+      // Opportunistic backfill so subsequent reads hit indexed slug query.
+      void Category.updateOne({ _id: legacyCategory._id }, { $set: { slug: inputSlug } }).exec();
+    }
+
+    return legacyCategory;
   }
 
   async findAll(options: {
@@ -182,6 +198,9 @@ export class CategoryRepository implements ICategoryRepository {
                 status: 'published',
                 isPrivate: { $ne: true }
               }
+            },
+            {
+              $count: 'count'
             }
           ],
           as: 'quizzes'
@@ -202,7 +221,9 @@ export class CategoryRepository implements ICategoryRepository {
               }
             }
           },
-          quizCount: { $size: '$quizzes' },
+          quizCount: {
+            $ifNull: [{ $arrayElemAt: ['$quizzes.count', 0] }, 0]
+          },
           isActive: 1,
           createdBy: 1,
           createdAt: 1,

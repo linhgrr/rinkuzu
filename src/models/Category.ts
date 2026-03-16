@@ -1,5 +1,14 @@
 import mongoose from 'mongoose';
 
+function toSlug(value: string): string {
+  return value
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9-]/g, '')
+    .replace(/-+/g, '-');
+}
+
 const CategorySchema = new mongoose.Schema({
   name: {
     type: String,
@@ -7,6 +16,14 @@ const CategorySchema = new mongoose.Schema({
     unique: true,
     trim: true,
     maxlength: 50
+  },
+  slug: {
+    type: String,
+    required: true,
+    unique: true,
+    lowercase: true,
+    trim: true,
+    maxlength: 80
   },
   description: {
     type: String,
@@ -39,6 +56,14 @@ const CategorySchema = new mongoose.Schema({
 
 // Update updatedAt on save
 CategorySchema.pre('save', function(next) {
+  if (this.isModified('name')) {
+    this.slug = toSlug(this.name);
+  }
+
+  if (!this.slug && this.name) {
+    this.slug = toSlug(this.name);
+  }
+
   this.updatedAt = new Date();
   next();
 });
@@ -46,5 +71,6 @@ CategorySchema.pre('save', function(next) {
 // Index for efficient searching
 CategorySchema.index({ name: 'text', description: 'text' });
 CategorySchema.index({ isActive: 1, name: 1 });
+CategorySchema.index({ slug: 1, isActive: 1 });
 
-export default mongoose.models.Category || mongoose.model('Category', CategorySchema); 
+export default mongoose.models.Category || mongoose.model('Category', CategorySchema);

@@ -2,18 +2,7 @@ import type { MetadataRoute } from 'next';
 import { serviceFactory } from '@/lib/serviceFactory';
 import { defaultLocale, locales } from '@/i18n/config';
 import { canonicalFor } from '@/lib/seo';
-
-const STATIC_PUBLIC_ROUTES = [
-  '/',
-  '/explore',
-  '/categories',
-  '/adaptive-learning',
-  '/faq',
-  '/pricing',
-  '/privacy',
-  '/terms',
-  '/cookies',
-] as const;
+import { INDEXABLE_STATIC_PUBLIC_ROUTES } from '@/lib/seo.routes';
 
 function localeVariants(path: string): { locale: string; path: string }[] {
   return locales.map((locale) => ({ locale, path }));
@@ -36,12 +25,19 @@ function toEntry(
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const entries: MetadataRoute.Sitemap = [];
+  const seenUrls = new Set<string>();
 
-  for (const route of STATIC_PUBLIC_ROUTES) {
+  const pushEntry = (entry: MetadataRoute.Sitemap[number]) => {
+    if (seenUrls.has(entry.url)) return;
+    seenUrls.add(entry.url);
+    entries.push(entry);
+  };
+
+  for (const route of INDEXABLE_STATIC_PUBLIC_ROUTES) {
     const priority = route === '/' ? 1 : 0.8;
     const changeFrequency = route === '/' ? 'daily' : 'weekly';
     for (const { locale } of localeVariants(route)) {
-      entries.push(toEntry(locale, route, changeFrequency, priority));
+      pushEntry(toEntry(locale, route, changeFrequency, priority));
     }
   }
 
@@ -55,7 +51,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         if (!category?.slug || category.isActive === false) continue;
         const path = `/category/${category.slug}`;
         for (const { locale } of localeVariants(path)) {
-          entries.push(toEntry(locale, path, 'weekly', 0.7, new Date(category.updatedAt || category.createdAt || Date.now())));
+          pushEntry(toEntry(locale, path, 'weekly', 0.7, new Date(category.updatedAt || category.createdAt || Date.now())));
         }
       }
     }
@@ -78,7 +74,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       const quizUpdatedAt = (quiz as any).updatedAt || (quiz as any).createdAt;
 
       for (const { locale } of localeVariants(path)) {
-        entries.push(toEntry(locale, path, 'weekly', 0.7, new Date(quizUpdatedAt || Date.now())));
+        pushEntry(toEntry(locale, path, 'weekly', 0.7, new Date(quizUpdatedAt || Date.now())));
       }
     }
   } catch (error) {

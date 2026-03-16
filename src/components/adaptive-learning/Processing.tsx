@@ -27,6 +27,7 @@ import '@xyflow/react/dist/style.css';
 import dagre from 'dagre';
 import { createSessionFromPipeline, getPipelineJobStatus } from './api-client';
 import type { PipelineStatus, PipelineJobStatus } from './types';
+import { ADAPTIVE_ROUTES } from './routes';
 
 interface ConceptNodeData extends Record<string, unknown> {
     label: string;
@@ -253,7 +254,12 @@ export default function AdaptiveLearningProcessing() {
                 clearPolling();
                 const sessionId = localStorage.getItem('al_session_id');
                 timeoutRef.current = setTimeout(() => {
-                    router.push(`/adaptive-learning/subject/${sessionId || 'demo'}`);
+                    if (sessionId) {
+                        router.push(ADAPTIVE_ROUTES.subject(sessionId));
+                        return;
+                    }
+
+                    router.push(ADAPTIVE_ROUTES.upload);
                 }, 800);
             }
         }, interval);
@@ -314,7 +320,7 @@ export default function AdaptiveLearningProcessing() {
                         localStorage.setItem('al_session_id', session.session_id);
                         localStorage.removeItem('al_pipeline_job_id');
                         timeoutRef.current = setTimeout(() => {
-                            router.push(`/adaptive-learning/subject/${session.session_id}`);
+                            router.push(ADAPTIVE_ROUTES.subject(session.session_id));
                         }, 800);
                     } catch (err) {
                         const message = err instanceof Error ? err.message : t('createSessionFailed');
@@ -349,7 +355,7 @@ export default function AdaptiveLearningProcessing() {
         creatingSessionRef.current = false;
         localStorage.removeItem('al_pipeline_job_id');
         localStorage.removeItem('al_pipeline_filename');
-        router.push('/adaptive-learning/upload');
+        router.push(ADAPTIVE_ROUTES.upload);
     }, [clearPolling, router]);
 
     return (

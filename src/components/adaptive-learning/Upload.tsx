@@ -11,6 +11,7 @@ import {
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { checkApiHealth, uploadPdf } from './api-client';
+import { ADAPTIVE_ROUTES } from './routes';
 
 export default function AdaptiveLearningUpload() {
     const router = useRouter();
@@ -43,7 +44,7 @@ export default function AdaptiveLearningUpload() {
             localStorage.setItem('al_pipeline_filename', file.name);
             localStorage.setItem('al_pipeline_subject_name', subjectName.trim());
             setTimeout(() => {
-                router.push('/adaptive-learning/processing');
+                router.push(ADAPTIVE_ROUTES.processing);
             }, 500);
         } catch (err) {
             const message = err instanceof Error ? err.message : t('uploadPage.uploadFailed');

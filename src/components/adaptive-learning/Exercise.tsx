@@ -10,6 +10,8 @@ import { getNextConcept, getTheory, getExercise, submitAnswer } from './api-clie
 import { DynamicMarkdownRenderer } from '@/components/ui/DynamicMarkdownRenderer';
 import { TextShimmer } from '@/components/ui/text-shimmer';
 import type { BloomLevel, Exercise, NextConcept, TheoryData } from './types';
+import { saveSessionExerciseOutcome } from './session-storage';
+import { ADAPTIVE_ROUTES } from './routes';
 
 interface ExerciseProps {
     sessionId: string;
@@ -49,10 +51,21 @@ export default function AdaptiveLearningExercise({ sessionId }: ExerciseProps) {
     const [showTheory, setShowTheory] = useState(false);
 
     const loadingRef = useRef(false);
+    const isMountedRef = useRef(true);
+    const activeRequestIdRef = useRef(0);
+
+    useEffect(() => {
+        isMountedRef.current = true;
+        return () => {
+            isMountedRef.current = false;
+        };
+    }, []);
 
     const loadData = useCallback(async () => {
-        if (loadingRef.current) return;
+        if (!isMountedRef.current || loadingRef.current) return;
         loadingRef.current = true;
+        const requestId = activeRequestIdRef.current + 1;
+        activeRequestIdRef.current = requestId;
         setLoadingConcept(true);
         setError(null);
         setSelectedOption(null);
@@ -62,9 +75,15 @@ export default function AdaptiveLearningExercise({ sessionId }: ExerciseProps) {
         setExercise(null);
         setShowTheory(false);
 
+        const isLatestActiveRequest = () =>
+            isMountedRef.current && activeRequestIdRef.current === requestId;
+
         try {
             // 1. Get concept first
             const nextConcept = await getNextConcept(sessionId);
+            if (!isLatestActiveRequest()) {
+                return;
+            }
             setConcept(nextConcept);
             setLoadingConcept(false);
 
@@ -74,34 +93,50 @@ export default function AdaptiveLearningExercise({ sessionId }: ExerciseProps) {
                 setLoadingTheory(true);
                 setLoadingExercise(true);
 
-                // Fetch theory and show immediately when ready
-                getTheory(sessionId).then(data => {
-                    setTheory(data);
-                }).catch(err => {
-                    console.error("Failed to load theory:", err);
-                }).finally(() => {
-                    setLoadingTheory(false);
-                });
+                const [theoryResult, exerciseResult] = await Promise.allSettled([
+                    getTheory(sessionId),
+                    getExercise(sessionId),
+                ]);
 
-                // Fetch exercise in background
-                getExercise(sessionId).then(data => {
-                    setExercise(data);
-                }).catch(err => {
-                    console.error("Failed to load exercise:", err);
-                    setError(err instanceof Error ? err.message : t('exercise.failedToLoadExercise'));
-                }).finally(() => {
-                    setLoadingExercise(false);
-                });
+                if (!isLatestActiveRequest()) {
+                    return;
+                }
+
+                if (theoryResult.status === 'fulfilled') {
+                    setTheory(theoryResult.value);
+                } else {
+                    console.error('Failed to load theory:', theoryResult.reason);
+                }
+
+                if (exerciseResult.status === 'fulfilled') {
+                    setExercise(exerciseResult.value);
+                } else {
+                    console.error('Failed to load exercise:', exerciseResult.reason);
+                    setError(
+                        exerciseResult.reason instanceof Error
+                            ? exerciseResult.reason.message
+                            : t('exercise.failedToLoadExercise')
+                    );
+                }
+
+                setLoadingTheory(false);
+                setLoadingExercise(false);
 
             } else {
                 // Bloom > 2: skip theory, load exercise directly
                 setLoadingExercise(true);
                 const ex = await getExercise(sessionId);
+                if (!isLatestActiveRequest()) {
+                    return;
+                }
                 setExercise(ex);
                 setLoadingExercise(false);
             }
 
         } catch (err) {
+            if (!isLatestActiveRequest()) {
+                return;
+            }
             const message = err instanceof Error ? err.message : t('exercise.failedToLoadExercise');
             setError(message);
             setLoadingConcept(false);
@@ -123,13 +158,21 @@ export default function AdaptiveLearningExercise({ sessionId }: ExerciseProps) {
         setSubmitting(true);
         try {
             const result = await submitAnswer(sessionId, selectedOption);
-            localStorage.setItem('al_last_result', JSON.stringify(result));
-            localStorage.setItem('al_last_exercise', JSON.stringify(exercise));
-            router.push(`/adaptive-learning/result/${sessionId}`);
+            if (!isMountedRef.current) {
+                return;
+            }
+            saveSessionExerciseOutcome(sessionId, { result, exercise });
+            router.push(ADAPTIVE_ROUTES.result(sessionId));
         } catch (err) {
+            if (!isMountedRef.current) {
+                return;
+            }
             const message = err instanceof Error ? err.message : t('exercise.failedToSubmitAnswer');
             setError(message);
         } finally {
+            if (!isMountedRef.current) {
+                return;
+            }
             setSubmitting(false);
         }
     }, [exercise, router, selectedOption, sessionId, t]);
@@ -183,7 +226,7 @@ export default function AdaptiveLearningExercise({ sessionId }: ExerciseProps) {
                 <div className="space-y-4 text-center">
                     <p className="text-lg text-red-500">{error || t('exercise.noExerciseAvailable')}</p>
                     <div className="flex justify-center gap-3">
-                        <Button variant="outline" className="border-slate-200 hover:bg-slate-50 text-slate-700" onClick={() => router.push('/adaptive-learning')}>
+                        <Button variant="outline" className="border-slate-200 hover:bg-slate-50 text-slate-700" onClick={() => router.push(ADAPTIVE_ROUTES.dashboard)}>
                             {t('exercise.backToDashboard')}
                         </Button>
                         <Button className="bg-teal-600 hover:bg-teal-700 shadow-none text-white transition-colors" onClick={() => void loadData()}>{t('exercise.tryAgain')}</Button>
@@ -278,7 +321,7 @@ export default function AdaptiveLearningExercise({ sessionId }: ExerciseProps) {
                 <div className="flex items-center gap-4">
                     <Button
                         variant="ghost"
-                        onClick={() => router.push('/adaptive-learning')}
+                        onClick={() => router.push(ADAPTIVE_ROUTES.dashboard)}
                         className="font-medium text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-md px-4 min-h-[44px] border border-transparent hover:border-slate-200"
                     >
                         <HiOutlineX className="mr-2 h-4 w-4" />

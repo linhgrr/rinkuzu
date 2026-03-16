@@ -1,12 +1,4 @@
-import type { Metadata } from 'next';
 import Navigation from '@/components/Navigation';
-
-export const metadata: Metadata = {
-    robots: {
-        index: true,
-        follow: true,
-    },
-};
 
 export default function AdaptiveLearningLayout({ children }: { children: React.ReactNode }) {
     return (

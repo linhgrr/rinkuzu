@@ -1,6 +1,8 @@
 import type { CSSProperties } from 'react';
 import Link from 'next/link';
 import { HeroSection } from './new-landing';
+import { JsonLd } from '@/components/seo/JsonLd';
+import { siteUrl } from '@/lib/seo';
 
 interface Quiz {
   _id: string;
@@ -25,26 +27,12 @@ export function GuestLanding({ quizzes }: GuestLandingProps) {
     applicationCategory: 'EducationalApplication',
     operatingSystem: 'Web',
     description: 'AI quiz generator from PDFs with knowledge graph learning and adaptive practice.',
-    url: 'https://quizz-ck.vercel.app',
+    url: siteUrl.origin,
     offers: {
       '@type': 'Offer',
       price: '0',
       priceCurrency: 'USD',
     },
-  };
-
-  const organizationSchema = {
-    '@context': 'https://schema.org',
-    '@type': 'Organization',
-    name: 'RinKuzu',
-    url: 'https://quizz-ck.vercel.app',
-    logo: 'https://quizz-ck.vercel.app/icons/icon-512x512.png',
-    sameAs: [
-      'https://twitter.com',
-      'https://facebook.com',
-      'https://linkedin.com',
-      'https://instagram.com',
-    ],
   };
 
   return (
@@ -56,14 +44,7 @@ export function GuestLanding({ quizzes }: GuestLandingProps) {
         } as CSSProperties
       }
     >
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareSchema) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
-      />
+      <JsonLd id="home-software-schema" data={softwareSchema} />
       <main>
         <HeroSection />
         <section className="bg-[#fbfbfd] text-[#1d1d1f]">

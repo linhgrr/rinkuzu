@@ -26,7 +26,7 @@ async function fetchInitialData(userId: string) {
             'x-user-id': userId,
             ...(serviceToken ? { 'x-service-token': serviceToken } : {}),
         };
-        const timeoutMs = Number(process.env.ADAPTIVE_PROXY_TIMEOUT_MS || 20_000);
+        const timeoutMs = Number(process.env.ADAPTIVE_PROXY_TIMEOUT_MS || 60_000);
 
         const fetchAdaptiveJson = async (path: string) => {
             const controller = new AbortController();

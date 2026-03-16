@@ -7,7 +7,7 @@ import {
 } from './types';
 
 const API_BASE = '';
-const DEFAULT_TIMEOUT_MS = 15_000;
+const DEFAULT_TIMEOUT_MS = 60_000;
 const inFlightGetRequests = new Map<string, Promise<unknown>>();
 
 type ApiFetchOptions = RequestInit & {

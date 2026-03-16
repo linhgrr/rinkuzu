@@ -10,7 +10,7 @@ type ProxyOptions = {
 };
 
 const DEFAULT_API_URL = 'http://localhost:8000';
-const DEFAULT_TIMEOUT_MS = 20_000;
+const DEFAULT_TIMEOUT_MS = 60_000;
 
 function resolveApiUrl(): string {
     return process.env.NEXT_PUBLIC_API_URL || DEFAULT_API_URL;

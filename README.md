@@ -13,34 +13,6 @@
 
 </div>
 
----
-
-> [!IMPORTANT]
-> Trust and safety before install.
->
-> - What it touches:
->   - Your local project dependencies (`node_modules`) and local env files (`.env.local`) when you set up.
->   - Your app database in MongoDB and object storage (S3-compatible) when running features.
->   - Companion Python API (`/home/linh/Downloads/datn_1/new/data/rinkuzu-ai-api`) if you enable adaptive mode or PDF extraction pipeline.
-> - Network/exfiltration surface:
->   - Calls external services you configure (MongoDB Atlas, S3-compatible storage, LLM/OpenAI-compatible endpoint).
-> - Permission surface:
->   - Normal web app/API runtime. No automatic git hook registration by default.
->   - Optional maintenance scripts exist in `src/scripts/*`, but only run when you invoke them manually.
-> - Reversibility:
->   - Stop immediately: `Ctrl+C` in the running terminal.
->   - Disable adaptive/PDF external calls: unset `NEXT_PUBLIC_API_URL` and `ADAPTIVE_API_URL`.
->   - Uninstall dependencies: remove `node_modules` and lockfile reinstall state.
->
-> Quick uninstall:
-> - `rm -rf node_modules .next`
-> - remove `.env.local`
-
-```bash
-npm install && npm run dev
-```
-
----
 
 ## The Problem
 

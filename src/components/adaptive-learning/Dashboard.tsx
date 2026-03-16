@@ -1,60 +1,83 @@
 'use client';
 
-import React, { memo, useCallback, useEffect, useState, useMemo } from 'react';
+import React, { useCallback, useEffect, useState, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { useTranslations, useLocale } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import {
     FiTarget,
     FiZap,
     FiBookOpen,
-    FiCheckCircle,
-    FiClock,
-    FiBarChart2,
-    FiStar,
     FiUploadCloud,
-    FiTrash2,
     FiSearch,
-    FiBook,
-    FiChevronRight,
     FiAward,
-    FiActivity
 } from 'react-icons/fi';
 import {
-    FcDocument,
-    FcFile,
-    FcFolder,
-    FcIdea,
-    FcLibrary,
-    FcMindMap,
-    FcNews,
-    FcOpenedFolder,
-    FcReading,
-    FcReadingEbook,
     FcFlashOn,
     FcSportsMode,
-    FcPuzzle
 } from 'react-icons/fc';
-
-const FC_ICONS = [
-    FcReadingEbook,
-    FcDocument,
-    FcIdea,
-    FcMindMap,
-    FcNews,
-    FcLibrary,
-    FcReading,
-    FcOpenedFolder,
-    FcPuzzle,
-    FcFolder
-];
 import { checkApiHealth, createSessionFromPipeline, deleteSubject, getSessionHistory, getSubjects } from './api-client';
 import type { PipelineJobHistoryItem, SessionHistoryItem } from './types';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { SkeletonCard } from './Skeletons';
 import { SubjectCard } from './SubjectCard';
+import { ADAPTIVE_ROUTES } from './routes';
 
 // ─── Dashboard ────────────────────────────────────────────────────────────────
+
+const DAILY_GOAL_TARGET = 3;
+const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+
+function toTimestampMs(value: number): number {
+    // Support both seconds and milliseconds from backend.
+    return value < 1_000_000_000_000 ? value * 1000 : value;
+}
+
+function getDayStart(value: number): number {
+    const date = new Date(value);
+    date.setHours(0, 0, 0, 0);
+    return date.getTime();
+}
+
+function calculateLearningStreak(sessions: SessionHistoryItem[]): number {
+    if (sessions.length === 0) {
+        return 0;
+    }
+
+    const dayStarts = Array.from(
+        new Set(
+            sessions
+                .filter((session) => session.total_answered > 0)
+                .map((session) => getDayStart(toTimestampMs(session.updated_at || session.created_at)))
+        )
+    ).sort((a, b) => b - a);
+
+    if (dayStarts.length === 0) {
+        return 0;
+    }
+
+    let streak = 0;
+    let expectedDay = getDayStart(Date.now());
+
+    for (const day of dayStarts) {
+        if (day === expectedDay) {
+            streak += 1;
+            expectedDay -= ONE_DAY_MS;
+            continue;
+        }
+
+        if (streak === 0 && day === expectedDay - ONE_DAY_MS) {
+            // Allow streak to continue from yesterday when there is no session today yet.
+            streak += 1;
+            expectedDay = day - ONE_DAY_MS;
+            continue;
+        }
+
+        break;
+    }
+
+    return streak;
+}
 
 interface DashboardProps {
     initialSubjects: PipelineJobHistoryItem[];
@@ -78,13 +101,28 @@ export default function AdaptiveLearningDashboard({
     const [itemToDelete, setItemToDelete] = useState<PipelineJobHistoryItem | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [sessionHistory, setSessionHistory] = useState<SessionHistoryItem[]>(initialSessionHistory);
+    const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     // Simple state for toast notifications
     const [toastMsg, setToastMsg] = useState<{ title: string, type: 'error' | 'success' } | null>(null);
 
     const showToast = useCallback((title: string, type: 'error' | 'success' = 'error') => {
+        if (toastTimerRef.current) {
+            clearTimeout(toastTimerRef.current);
+        }
         setToastMsg({ title, type });
-        setTimeout(() => setToastMsg(null), 5000);
+        toastTimerRef.current = setTimeout(() => {
+            setToastMsg(null);
+            toastTimerRef.current = null;
+        }, 5000);
+    }, []);
+
+    useEffect(() => {
+        return () => {
+            if (toastTimerRef.current) {
+                clearTimeout(toastTimerRef.current);
+            }
+        };
     }, []);
 
     const refreshSubjects = useCallback(async () => {
@@ -97,7 +135,7 @@ export default function AdaptiveLearningDashboard({
     }, []);
 
     const handleGoUpload = useCallback(() => {
-        router.push('/adaptive-learning/upload');
+        router.push(ADAPTIVE_ROUTES.upload);
     }, [router]);
 
     const handleOpenSubject = useCallback(async (jobId: string) => {
@@ -107,7 +145,7 @@ export default function AdaptiveLearningDashboard({
         try {
             const session = await createSessionFromPipeline(jobId, 50);
             localStorage.setItem('al_session_id', session.session_id);
-            router.push(`/adaptive-learning/subject/${session.session_id}`);
+            router.push(ADAPTIVE_ROUTES.subject(session.session_id));
         } catch (err) {
             console.error(`Error creating session: ${(err as Error).message}`);
             showToast(`Could not start session: ${(err as Error).message}`, 'error');
@@ -154,6 +192,86 @@ export default function AdaptiveLearningDashboard({
         return displayName.toLowerCase().includes(searchQuery.toLowerCase());
     });
 
+    const streakDays = useMemo(() => calculateLearningStreak(sessionHistory), [sessionHistory]);
+
+    const dailyGoalProgress = useMemo(() => {
+        const todayStart = getDayStart(Date.now());
+        const current = sessionHistory.filter((session) => {
+            if (session.total_answered <= 0) return false;
+            const dayStart = getDayStart(toTimestampMs(session.updated_at || session.created_at));
+            return dayStart === todayStart;
+        }).length;
+
+        return {
+            current,
+            total: DAILY_GOAL_TARGET,
+            percent: Math.min(100, Math.round((current / DAILY_GOAL_TARGET) * 100)),
+        };
+    }, [sessionHistory]);
+
+    const hasServerHydratedData = initialSubjects.length > 0 || initialSessionHistory.length > 0;
+
+    useEffect(() => {
+        let isActive = true;
+
+        const applyHealthResult = (healthResult: PromiseSettledResult<boolean>) => {
+            if (healthResult.status === 'fulfilled') {
+                setApiOnline(healthResult.value);
+            } else {
+                setApiOnline(false);
+            }
+        };
+
+        const hydrateDashboard = async () => {
+            setError(null);
+
+            if (hasServerHydratedData) {
+                const [healthResult] = await Promise.allSettled([checkApiHealth()]);
+                if (!isActive) {
+                    return;
+                }
+
+                applyHealthResult(healthResult);
+                return;
+            }
+
+            setLoading(true);
+
+            const [healthResult, subjectsResult, historyResult] = await Promise.allSettled([
+                checkApiHealth(),
+                getSubjects(),
+                getSessionHistory(5),
+            ]);
+
+            if (!isActive) {
+                return;
+            }
+
+            applyHealthResult(healthResult);
+
+            if (subjectsResult.status === 'fulfilled') {
+                setSubjects(subjectsResult.value);
+            } else {
+                console.error('Failed to hydrate subjects', subjectsResult.reason);
+                setError(t('dashboard.connectionLimited'));
+            }
+
+            if (historyResult.status === 'fulfilled') {
+                setSessionHistory(historyResult.value);
+            } else {
+                console.error('Failed to hydrate session history', historyResult.reason);
+            }
+
+            setLoading(false);
+        };
+
+        void hydrateDashboard();
+
+        return () => {
+            isActive = false;
+        };
+    }, [hasServerHydratedData, t]);
+
     const upNextSubject = subjects.length > 0 ? subjects[0] : null;
 
     return (
@@ -196,7 +314,7 @@ export default function AdaptiveLearningDashboard({
                         {/* Streak */}
                         <div className="flex items-center gap-2 bg-white px-4 py-2.5 rounded-full border border-slate-200 shadow-sm">
                             <span className="text-lg leading-none select-none" aria-label="Streak">🔥</span>
-                            <span className="font-bold text-sm text-orange-600 tracking-tight">{t('dashboard.dayStreak', { count: 12 })}</span>
+                            <span className="font-bold text-sm text-orange-600 tracking-tight">{t('dashboard.dayStreak', { count: streakDays })}</span>
                         </div>
                         {/* Daily Goal Progress Bar */}
                         <div className="flex items-center gap-3 bg-white px-4 py-2.5 rounded-full border border-slate-200 shadow-sm min-w-[140px] md:min-w-[160px]">
@@ -204,11 +322,11 @@ export default function AdaptiveLearningDashboard({
                             <div className="flex-1">
                                 <div className="flex justify-between items-center mb-1">
                                     <span className="text-[10px] font-bold text-slate-700 tracking-wider">
-                                        {t('dashboard.dailyGoalProgress', { current: 2, total: 3 })}
+                                        {t('dashboard.dailyGoalProgress', { current: dailyGoalProgress.current, total: dailyGoalProgress.total })}
                                     </span>
                                 </div>
                                 <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
-                                    <div className="h-full bg-teal-500 rounded-full transition-all duration-500" style={{ width: '66%' }}></div>
+                                    <div className="h-full bg-teal-500 rounded-full transition-all duration-500" style={{ width: `${dailyGoalProgress.percent}%` }}></div>
                                 </div>
                             </div>
                         </div>

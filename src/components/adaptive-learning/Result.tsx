@@ -10,6 +10,8 @@ import Image from 'next/image';
 import type { Exercise, SubmitResult } from './types';
 import { DynamicMarkdownRenderer } from '@/components/ui/DynamicMarkdownRenderer';
 import AdaptiveLearningChatbot from './Chatbot';
+import { getSessionExerciseOutcome } from './session-storage';
+import { ADAPTIVE_ROUTES } from './routes';
 
 interface ResultProps {
     sessionId: string;
@@ -24,19 +26,20 @@ export default function AdaptiveLearningResult({ sessionId }: ResultProps) {
 
     useEffect(() => {
         try {
-            const savedResult = localStorage.getItem('al_last_result');
-            const savedExercise = localStorage.getItem('al_last_exercise');
-            if (savedResult) {
-                setResult(JSON.parse(savedResult));
+            const payload = getSessionExerciseOutcome(sessionId);
+            if (payload) {
+                setResult(payload.result);
+                setExercise(payload.exercise);
+                return;
             }
-            if (savedExercise) {
-                setExercise(JSON.parse(savedExercise));
-            }
+
+            setResult(null);
+            setExercise(null);
         } catch {
             setResult(null);
             setExercise(null);
         }
-    }, []);
+    }, [sessionId]);
 
     const isCorrect = result?.is_correct ?? false;
     const masteryPercent = useMemo(() => Math.round((result?.mastery_after ?? 0) * 100), [result]);
@@ -57,10 +60,10 @@ export default function AdaptiveLearningResult({ sessionId }: ResultProps) {
             return;
         }
         if (result.session_completed) {
-            router.push('/adaptive-learning');
+            router.push(ADAPTIVE_ROUTES.dashboard);
             return;
         }
-        router.push(`/adaptive-learning/exercise/${sessionId}`);
+        router.push(ADAPTIVE_ROUTES.exercise(sessionId));
     };
 
     if (!result || !exercise) {
@@ -68,7 +71,7 @@ export default function AdaptiveLearningResult({ sessionId }: ResultProps) {
             <div className="mx-auto flex min-h-[80vh] max-w-4xl items-center justify-center">
                 <div className="space-y-4 text-center">
                     <p className="text-sm font-medium text-slate-500">{t('result.noResultDataFound')}</p>
-                    <Button variant="outline" className="border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors" onClick={() => router.push('/adaptive-learning')}>{t('exercise.backToDashboard')}</Button>
+                    <Button variant="outline" className="border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors" onClick={() => router.push(ADAPTIVE_ROUTES.dashboard)}>{t('exercise.backToDashboard')}</Button>
                 </div>
             </div>
         );
@@ -163,7 +166,7 @@ export default function AdaptiveLearningResult({ sessionId }: ResultProps) {
                         <Button
                             variant="ghost"
                             className="h-12 flex-1 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors font-semibold"
-                            onClick={() => router.push('/adaptive-learning')}
+                            onClick={() => router.push(ADAPTIVE_ROUTES.dashboard)}
                         >
                             <HiOutlineHome className="mr-2 h-5 w-5" />
                             {t('result.dashboard')}

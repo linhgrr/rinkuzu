@@ -20,6 +20,7 @@ import {
 import { getSessionStatus, getSessionHistoryDetail } from './api-client';
 import type { SessionStatus, SessionHistoryDetail } from './types';
 import { ExerciseHistoryTable } from './SessionHistory';
+import { ADAPTIVE_ROUTES } from './routes';
 
 function SectionSkeleton() {
     return (
@@ -41,7 +42,7 @@ const TAB_CONFIG = [
     { key: 'graph' as const, icon: HiOutlineCollection, labelKey: 'knowledgeGraph.title' },
     { key: 'mastery' as const, icon: HiOutlineChartBar, labelKey: 'masteryMatrix.title' },
     { key: 'history' as const, icon: HiOutlineClipboardList, labelKey: 'history.title' },
-];
+] as const;
 
 export default function SubjectDetails({ sessionId }: { sessionId: string }) {
     const router = useRouter();
@@ -103,11 +104,11 @@ export default function SubjectDetails({ sessionId }: { sessionId: string }) {
     }, [status, t]);
 
     const handleBackToDashboard = useCallback(() => {
-        router.push('/adaptive-learning');
+        router.push(ADAPTIVE_ROUTES.dashboard);
     }, [router]);
 
     const handleStartLearning = useCallback(() => {
-        router.push(`/adaptive-learning/exercise/${sessionId}`);
+        router.push(ADAPTIVE_ROUTES.exercise(sessionId));
     }, [router, sessionId]);
 
     if (loading) {
@@ -205,7 +206,7 @@ export default function SubjectDetails({ sessionId }: { sessionId: string }) {
                             }`}
                     >
                         <Icon className="w-4 h-4" aria-hidden="true" />
-                        {t(labelKey as any)}
+                        {t(labelKey)}
                     </button>
                 ))}
             </div>

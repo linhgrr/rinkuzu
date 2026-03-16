@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { proxyAdaptiveRequest } from '@/lib/adaptive-learning/proxy';
+import { invalidateAdaptiveServiceCache } from '@/lib/adaptive-learning/cache-policy';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,12 +20,15 @@ export async function POST(req: Request) {
             proxiedForm.append('subject_id', subjectId);
         }
 
-        return proxyAdaptiveRequest(req, '/api/pipeline/process', {
+        const response = await proxyAdaptiveRequest(req, '/api/pipeline/process', {
             method: 'POST',
             body: proxiedForm,
             // Let fetch set multipart boundary automatically.
             contentType: null,
         });
+
+        invalidateAdaptiveServiceCache();
+        return response;
     } catch (error) {
         console.error('Error proxying pipeline process request:', error);
         return NextResponse.json(

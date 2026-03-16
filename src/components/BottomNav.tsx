@@ -14,6 +14,7 @@ import {
     HiOutlineSearch,
     HiSearch
 } from '@/components/icons';
+import { isAdaptiveExerciseModePath, matchesPrefix, stripLocaleFromPath } from '@/lib/routing/pathname';
 
 const AUTH_REQUIRED_PREFIXES = [
     '/dashboard',
@@ -29,41 +30,17 @@ const AUTH_REQUIRED_PREFIXES = [
     '/admin',
 ];
 
-function normalizePath(pathname: string): string {
-    if (pathname.length > 1 && pathname.endsWith('/')) {
-        return pathname.slice(0, -1);
-    }
-    return pathname;
-}
-
-function stripLocale(pathname: string): string {
-    const normalized = normalizePath(pathname);
-    const segments = normalized.split('/');
-    const firstSegment = segments[1];
-
-    if (firstSegment === 'vi' || firstSegment === 'en') {
-        const restPath = `/${segments.slice(2).join('/')}`;
-        return normalizePath(restPath === '/' ? '/' : restPath);
-    }
-
-    return normalized;
-}
-
-function matchesPrefix(pathname: string, prefix: string): boolean {
-    return pathname === prefix || pathname.startsWith(`${prefix}/`);
-}
-
 export default function BottomNav() {
     const pathname = usePathname();
     const { data: session, status } = useSession();
     const t = useTranslations('nav');
-    const pathWithoutLocale = stripLocale(pathname || '/');
+    const pathWithoutLocale = stripLocaleFromPath(pathname || '/');
     const isProtectedRoute = AUTH_REQUIRED_PREFIXES.some((prefix) =>
         matchesPrefix(pathWithoutLocale, prefix)
     );
 
     // Hide bottom navigation in exercise mode to prevent distractions
-    if (pathWithoutLocale.startsWith('/adaptive-learning/exercise') || pathWithoutLocale.startsWith('/adaptive-learning/result')) {
+    if (isAdaptiveExerciseModePath(pathname || '/')) {
         return null;
     }
 

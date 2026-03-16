@@ -2,8 +2,9 @@ import 'server-only';
 import connectDB from '@/lib/mongoose';
 import UserProgress from '@/models/UserProgress';
 import QuestionProgress from '@/models/QuestionProgress';
+import Quiz from '@/models/Quiz';
 import { calculateLevel, xpForNextLevel, levelProgress } from '@/lib/gamification';
-import { serviceFactory } from '@/lib/serviceFactory';
+import { Types } from 'mongoose';
 
 type DashboardQuiz = {
   _id: string;
@@ -58,6 +59,23 @@ interface UserProgressStatsDoc {
   averageAccuracy?: number;
 }
 
+type DashboardQuizAggregationResult = {
+  _id: unknown;
+  title?: unknown;
+  description?: unknown;
+  slug?: unknown;
+  status?: unknown;
+  isPrivate?: unknown;
+  createdAt?: unknown;
+  updatedAt?: unknown;
+  questionCount?: unknown;
+  category?: {
+    _id?: unknown;
+    name?: unknown;
+    color?: unknown;
+  } | null;
+};
+
 function toWeeklyActivityObject(
   activity: unknown
 ): DashboardStatsData['weeklyActivity'] {
@@ -74,6 +92,23 @@ function toWeeklyActivityObject(
   }
 
   return {};
+}
+
+function trimWeeklyActivity(
+  activity: DashboardStatsData['weeklyActivity'],
+  days: number = 14
+): DashboardStatsData['weeklyActivity'] {
+  const entries = Object.entries(activity);
+  if (entries.length <= days) {
+    return activity;
+  }
+
+  // Keys are expected to be ISO-like day strings; lexical sorting is stable for this format.
+  const latestEntries = entries
+    .sort(([dayA], [dayB]) => dayB.localeCompare(dayA))
+    .slice(0, days);
+
+  return Object.fromEntries(latestEntries);
 }
 
 function normalizeId(value: unknown): string {
@@ -168,8 +203,16 @@ export async function getUserProgressStats(userId: string): Promise<DashboardSta
   const projection =
     'currentStreak longestStreak streakFreezeCount totalXp weeklyActivity totalQuestionsLearned totalReviewSessions averageAccuracy';
 
-  const [existingProgress, dueCount] = await Promise.all([
-    UserProgress.findOne({ userId })
+  const [uProgress, dueCount] = await Promise.all([
+    UserProgress.findOneAndUpdate(
+      { userId },
+      { $setOnInsert: { userId } },
+      {
+        upsert: true,
+        new: true,
+        setDefaultsOnInsert: true,
+      }
+    )
       .select(projection)
       .lean<UserProgressStatsDoc>()
       .exec(),
@@ -178,17 +221,6 @@ export async function getUserProgressStats(userId: string): Promise<DashboardSta
       nextReviewDate: { $lte: now }
     })
   ]);
-
-  let uProgress = existingProgress;
-
-  // Create a progress document only once per user instead of issuing upsert writes on every stats read.
-  if (!uProgress) {
-    await UserProgress.create({ userId });
-    uProgress = await UserProgress.findOne({ userId })
-      .select(projection)
-      .lean<UserProgressStatsDoc>()
-      .exec();
-  }
 
   if (!uProgress) {
     throw new Error('Failed to load user progress');
@@ -208,44 +240,82 @@ export async function getUserProgressStats(userId: string): Promise<DashboardSta
     xpToNextLevel,
     levelProgress: currentLevelProgress,
     dueCount,
-    weeklyActivity: toWeeklyActivityObject(uProgress.weeklyActivity),
+    weeklyActivity: trimWeeklyActivity(toWeeklyActivityObject(uProgress.weeklyActivity)),
     totalQuestionsLearned: uProgress.totalQuestionsLearned,
     totalReviewSessions: uProgress.totalReviewSessions,
     averageAccuracy: uProgress.averageAccuracy
   };
 }
 
-export async function getDashboardBootstrapData(userId: string, userRole?: string): Promise<{
+async function getDashboardQuizList(filter: Record<string, unknown>, limit: number): Promise<DashboardQuiz[]> {
+  const quizzes = await Quiz.aggregate<DashboardQuizAggregationResult>([
+    { $match: filter },
+    { $sort: { createdAt: -1 } },
+    { $limit: limit },
+    {
+      $lookup: {
+        from: 'categories',
+        localField: 'category',
+        foreignField: '_id',
+        as: 'categoryDoc'
+      }
+    },
+    {
+      $unwind: {
+        path: '$categoryDoc',
+        preserveNullAndEmptyArrays: true
+      }
+    },
+    {
+      $project: {
+        _id: 1,
+        title: 1,
+        description: 1,
+        slug: 1,
+        status: 1,
+        isPrivate: 1,
+        createdAt: 1,
+        updatedAt: 1,
+        questionCount: { $size: { $ifNull: ['$questions', []] } },
+        // Keep payload small for dashboard cards.
+        questions: { $literal: [] },
+        category: {
+          _id: '$categoryDoc._id',
+          name: '$categoryDoc.name',
+          color: '$categoryDoc.color'
+        }
+      }
+    }
+  ]).exec();
+
+  return quizzes.map(serializeQuizForClient);
+}
+
+export async function getDashboardBootstrapData(userId: string, _userRole?: string): Promise<{
   stats: DashboardStatsData;
   quizzes: DashboardQuiz[];
   yourQuizzes: DashboardQuiz[];
 }> {
-  const quizService = serviceFactory.getQuizService();
+  await connectDB();
 
-  const [stats, quizzesResult, yourQuizzesResult] = await Promise.all([
+  const authorFilter: string | Types.ObjectId = Types.ObjectId.isValid(userId)
+    ? new Types.ObjectId(userId)
+    : userId;
+
+  const publishedFilter: Record<string, unknown> = {
+    status: 'published',
+    isPrivate: false,
+  };
+
+  const [stats, quizzes, yourQuizzes] = await Promise.all([
     getUserProgressStats(userId),
-    quizService.getQuizzes({
-      status: 'published',
-      page: 1,
-      limit: 3,
-      isPrivate: false,
-      userRole,
-      userId,
-      compact: true
-    }),
-    quizService.getQuizzes({
-      page: 1,
-      limit: 3,
-      userId,
-      userRole,
-      onlyMine: true,
-      compact: true
-    }),
+    getDashboardQuizList(publishedFilter, 3),
+    getDashboardQuizList({ author: authorFilter }, 3),
   ]);
 
   return {
     stats,
-    quizzes: quizzesResult.quizzes.map(serializeQuizForClient),
-    yourQuizzes: yourQuizzesResult.quizzes.map(serializeQuizForClient),
+    quizzes,
+    yourQuizzes,
   };
 }

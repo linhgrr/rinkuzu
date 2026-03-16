@@ -5,7 +5,9 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import Link from 'next/link';
 import { defaultLocale } from '@/i18n/config';
-import { buildLocalizedMetadata, canonicalFor } from '@/lib/seo';
+import { buildLocalizedMetadata } from '@/lib/seo';
+import { JsonLd } from '@/components/seo/JsonLd';
+import { buildFaqSchema, buildSoftwareApplicationSchema } from '@/lib/structured-data';
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
     const { locale } = await params;
@@ -20,7 +22,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
 
 async function fetchInitialData(userId: string) {
     try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+        const apiUrl = process.env.ADAPTIVE_API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
         const serviceToken = process.env.INTERNAL_SERVICE_TOKEN;
         const headers = {
             'x-user-id': userId,
@@ -44,11 +46,14 @@ async function fetchInitialData(userId: string) {
             }
         };
 
-        // Parallel fetching
-        const [subjectsData, historyData] = await Promise.all([
+        // Keep independent requests resilient so one failure does not blank all dashboard data.
+        const [subjectsDataResult, historyDataResult] = await Promise.allSettled([
             fetchAdaptiveJson('/api/history/subjects'),
             fetchAdaptiveJson('/api/history/sessions?limit=5'),
         ]);
+
+        const subjectsData = subjectsDataResult.status === 'fulfilled' ? subjectsDataResult.value : null;
+        const historyData = historyDataResult.status === 'fulfilled' ? historyDataResult.value : null;
 
         return {
             subjects: subjectsData?.subjects || [],
@@ -62,8 +67,10 @@ async function fetchInitialData(userId: string) {
 
 export default async function AdaptiveLearningPage({ params }: { params: Promise<{ locale: string }> }) {
     const { locale } = await params;
-    const session = await getServerSession(authOptions);
-    const t = await getTranslations({ locale, namespace: 'adaptiveLearning' });
+    const [session, t] = await Promise.all([
+        getServerSession(authOptions),
+        getTranslations({ locale, namespace: 'adaptiveLearning' }),
+    ]);
 
     if (!session?.user) {
         const loginPath = locale === defaultLocale ? '/login' : `/${locale}/login`;
@@ -86,44 +93,16 @@ export default async function AdaptiveLearningPage({ params }: { params: Promise
             },
         ];
 
-        const faqSchema = {
-            '@context': 'https://schema.org',
-            '@type': 'FAQPage',
-            mainEntity: faqItems.map((item) => ({
-                '@type': 'Question',
-                name: item.question,
-                acceptedAnswer: {
-                    '@type': 'Answer',
-                    text: item.answer,
-                },
-            })),
-        };
+        const faqSchema = buildFaqSchema(
+            faqItems.map((item) => ({ q: item.question, a: item.answer }))
+        );
 
-        const softwareSchema = {
-            '@context': 'https://schema.org',
-            '@type': 'SoftwareApplication',
-            name: 'RinKuzu Adaptive Learning',
-            applicationCategory: 'EducationalApplication',
-            operatingSystem: 'Web',
-            url: canonicalFor(locale, '/adaptive-learning'),
-            offers: {
-                '@type': 'Offer',
-                price: '0',
-                priceCurrency: 'USD',
-            },
-            description: 'Adaptive learning platform using AI to build personalized learning paths from PDF materials.',
-        };
+        const softwareSchema = buildSoftwareApplicationSchema(locale);
 
         return (
             <section className="max-w-4xl mx-auto space-y-8">
-                <script
-                    type="application/ld+json"
-                    dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
-                />
-                <script
-                    type="application/ld+json"
-                    dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareSchema) }}
-                />
+                <JsonLd id="adaptive-faq-schema" data={faqSchema} />
+                <JsonLd id="adaptive-software-schema" data={softwareSchema} />
 
                 <header className="space-y-4">
                     <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-slate-900">

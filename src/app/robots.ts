@@ -1,6 +1,7 @@
 import type { MetadataRoute } from 'next';
 import { defaultLocale, locales } from '@/i18n/config';
 import { siteUrl } from '@/lib/seo';
+import { PRIVATE_ROUTE_PREFIXES } from '@/lib/seo.routes';
 
 function localizedDisallow(path: string): string[] {
   const normalized = path.startsWith('/') ? path : `/${path}`;
@@ -9,26 +10,7 @@ function localizedDisallow(path: string): string[] {
 
 export default function robots(): MetadataRoute.Robots {
   const disallow = [
-    ...localizedDisallow('/admin'),
-    ...localizedDisallow('/dashboard'),
-    ...localizedDisallow('/profile'),
-    ...localizedDisallow('/history'),
-    ...localizedDisallow('/review'),
-    ...localizedDisallow('/setup'),
-    ...localizedDisallow('/subscription'),
-    ...localizedDisallow('/create'),
-    ...localizedDisallow('/adaptive-learning/upload'),
-    ...localizedDisallow('/adaptive-learning/processing'),
-    ...localizedDisallow('/adaptive-learning/exercise'),
-    ...localizedDisallow('/adaptive-learning/subject'),
-    ...localizedDisallow('/adaptive-learning/result'),
-    ...localizedDisallow('/draft'),
-    ...localizedDisallow('/edit'),
-    ...localizedDisallow('/login'),
-    ...localizedDisallow('/register'),
-    ...localizedDisallow('/payment'),
-    ...localizedDisallow('/quiz/*/result'),
-    ...localizedDisallow('/test-image-upload'),
+    ...PRIVATE_ROUTE_PREFIXES.flatMap((path) => localizedDisallow(path)),
     '/api/',
   ];
 

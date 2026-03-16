@@ -70,7 +70,7 @@ export const getCategoriesWithStats = cache(async (): Promise<CachedCategory[]> 
         as: 'quizzes',
         pipeline: [
           { $match: { status: 'published' } },
-          { $project: { _id: 1 } }
+          { $count: 'count' }
         ]
       }
     },
@@ -80,7 +80,7 @@ export const getCategoriesWithStats = cache(async (): Promise<CachedCategory[]> 
         slug: 1,
         description: 1,
         color: 1,
-        quizCount: { $size: '$quizzes' }
+        quizCount: { $ifNull: [{ $arrayElemAt: ['$quizzes.count', 0] }, 0] }
       }
     },
     { $sort: { quizCount: -1 } }

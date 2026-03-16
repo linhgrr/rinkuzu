@@ -16,12 +16,12 @@
 
 ## The Problem
 
-Người học thường có tài liệu PDF nhưng thiếu lộ trình luyện tập cá nhân hoa theo mức độ nắm vững. Nếu bạn từng dùng các quiz builder truyền thống, bạn đã quen phần "tạo câu hỏi"; điểm mới ở RinKuzu là kết hợp thêm mode adaptive learning để đi theo learning path động thay vì chỉ làm một quiz tĩnh.
+Learners often have PDF materials but lack a personalized practice path based on their mastery level. If you have used traditional quiz builders before, you are familiar with the “question creation” part; the new aspect of RinKuzu is the addition of an adaptive learning mode that follows a dynamic learning path instead of just doing a static quiz.
 
-RinKuzu giải quyết bằng 2 mode rõ ràng:
+RinKuzu addresses this with two clear modes:
 
-1. `PDF -> Quiz`: upload PDF, trich/xay quiz de publish va lam ngay.
-2. `PDF -> Adaptive Learning Path`: upload PDF, trich concept + knowledge graph, sau do tao chuoi bai tap de master all concepts.
+1. `PDF -> Quiz`: upload a PDF, extract/build quizzes to publish and practice immediately.
+2. `PDF -> Adaptive Learning Path`: upload a PDF, extract concepts + build a knowledge graph, then create a sequence of exercises to master all concepts.
 
 ---
 

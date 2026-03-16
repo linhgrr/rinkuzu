@@ -1,145 +1,229 @@
-# RinKuzu App
+<div align="center">
 
-A modern web application built with Next.js 14 that allows teachers to create interactive quizzes from PDF files with an admin approval workflow.
+# RinKuzu
 
-## 🚀 Features
+### Personalized quiz practice from your own PDFs in two modes: instant quiz generation and adaptive learning path.
 
-- **PDF to Quiz Conversion**: Upload PDF files and let AI extract multiple-choice questions automatically
-- **Admin Approval System**: All quizzes go through an admin review process before publication
-- **User Authentication**: Secure login/registration with role-based access control
-- **Quiz Management**: Users can track their quiz submissions and manage published quizzes
-- **Interactive Quiz Player**: Clean, user-friendly interface for taking quizzes
-- **Score Tracking**: Automatic scoring and result display
-- **Real-time Status Updates**: Track quiz approval status in real-time
-- **Responsive Design**: Works seamlessly on desktop, tablet, and mobile devices
+![Next.js](https://img.shields.io/badge/Next.js-14-black)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)
+![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-green)
+![License](https://img.shields.io/badge/License-Private-lightgrey)
 
-## 🛠 Tech Stack
+[Problem](#the-problem) • [Install](#install) • [See It Work](#see-it-work) • [Getting Started](#getting-started) • [How It Works](#how-it-works)
 
-- **Framework**: Next.js 14 (App Router, Server Actions)
-- **Language**: TypeScript (ES2022)
-- **Database**: MongoDB Atlas via Mongoose
-- **Authentication**: NextAuth.js with JWT
-- **State Management**: Zustand
-- **Styling**: TailwindCSS
-- **AI Integration**: Google Gemini 2.0 Flash
-- **PDF Processing**: Base64 encoding (≤20MB) with react-dropzone
-- **Deployment**: Vercel optimized
+</div>
 
-## Features
+---
 
-- 📄 PDF upload and automatic quiz generation using Gemini AI
-- 👥 User authentication with role-based access (admin/user)
-- ✅ Admin approval workflow for quizzes
-- 🎯 Interactive quiz taking experience
-- 📊 Score tracking and attempt history
-- 🔄 Key rotation for Gemini API with automatic retry
-- 📱 Responsive design
+> [!IMPORTANT]
+> Trust and safety before install.
+>
+> - What it touches:
+>   - Your local project dependencies (`node_modules`) and local env files (`.env.local`) when you set up.
+>   - Your app database in MongoDB and object storage (S3-compatible) when running features.
+>   - Companion Python API (`/home/linh/Downloads/datn_1/new/data/rinkuzu-ai-api`) if you enable adaptive mode or PDF extraction pipeline.
+> - Network/exfiltration surface:
+>   - Calls external services you configure (MongoDB Atlas, S3-compatible storage, LLM/OpenAI-compatible endpoint).
+> - Permission surface:
+>   - Normal web app/API runtime. No automatic git hook registration by default.
+>   - Optional maintenance scripts exist in `src/scripts/*`, but only run when you invoke them manually.
+> - Reversibility:
+>   - Stop immediately: `Ctrl+C` in the running terminal.
+>   - Disable adaptive/PDF external calls: unset `NEXT_PUBLIC_API_URL` and `ADAPTIVE_API_URL`.
+>   - Uninstall dependencies: remove `node_modules` and lockfile reinstall state.
+>
+> Quick uninstall:
+> - `rm -rf node_modules .next`
+> - remove `.env.local`
 
-## Getting Started
+```bash
+npm install && npm run dev
+```
+
+---
+
+## The Problem
+
+Người học thường có tài liệu PDF nhưng thiếu lộ trình luyện tập cá nhân hoa theo mức độ nắm vững. Nếu bạn từng dùng các quiz builder truyền thống, bạn đã quen phần "tạo câu hỏi"; điểm mới ở RinKuzu là kết hợp thêm mode adaptive learning để đi theo learning path động thay vì chỉ làm một quiz tĩnh.
+
+RinKuzu giải quyết bằng 2 mode rõ ràng:
+
+1. `PDF -> Quiz`: upload PDF, trich/xay quiz de publish va lam ngay.
+2. `PDF -> Adaptive Learning Path`: upload PDF, trich concept + knowledge graph, sau do tao chuoi bai tap de master all concepts.
+
+---
+
+## See It Work
+
+```bash
+# 1) Frontend
+cd /home/linh/Downloads/datn_1/new/data/rinkuzu
+npm install
+npm run dev
+
+# 2) Open app
+# http://localhost:3000
+
+# 3) Mode A: Generate Quiz from PDF
+# Login -> Create/Upload -> upload PDF -> app calls /api/quiz/upload-url,
+# then extraction endpoint -> review/edit draft -> publish -> play quiz.
+
+# 4) Mode B: Adaptive Learning
+# Go to /adaptive-learning/upload -> upload PDF -> processing job starts
+# -> open subject/session -> do exercises -> see result page.
+```
+
+---
+
+## Install
 
 ### Prerequisites
 
-- Node.js 18+ 
-- pnpm (recommended) or npm
-- MongoDB Atlas account
-- Google Gemini API keys
+- Node.js 18+ (recommended 20+)
+- npm
+- MongoDB connection string
+- S3-compatible bucket (for PDF storage)
+- Optional companion API for adaptive mode and robust quiz extraction:
+  - `/home/linh/Downloads/datn_1/new/data/rinkuzu-ai-api`
 
-### Installation
+### 1) Configure environment
 
-1. Clone the repository:
-```bash
-git clone <repository-url>
-cd quiz-app
-```
+Create `.env.local` based on `.env.example` (`/home/linh/Downloads/datn_1/new/data/rinkuzu/.env.example`) and add at least:
 
-2. Install dependencies:
-```bash
-pnpm install
-```
-
-3. Set up environment variables:
-```bash
-cp .env.example .env.local
-```
-
-Fill in your environment variables:
 ```env
-MONGO_URL=mongodb+srv://username:password@cluster.mongodb.net/dbname
-NEXTAUTH_SECRET=your-secret-key
+MONGO_URL=...
+NEXTAUTH_SECRET=...
 GEMINI_KEYS=key1,key2,key3
 JWT_EXPIRES_IN=30m
+
+OPENAI_API_BASE_URL=...
+OPENAI_API_KEY=...
+OPENAI_MODEL=gpt-4o
+
+S3_ENDPOINT=...
+S3_ACCESS_KEY=...
+S3_SECRET_KEY=...
+S3_BUCKET_NAME=...
+
+# Companion adaptive API URL (frontend proxy target)
+NEXT_PUBLIC_API_URL=http://127.0.0.1:8000
+ADAPTIVE_API_URL=http://127.0.0.1:8000
+
+# Shared internal header token between frontend and adaptive API
+INTERNAL_SERVICE_TOKEN=...
 ```
 
-4. Run the development server:
+### 2) Run frontend
+
 ```bash
-pnpm dev
+cd /home/linh/Downloads/datn_1/new/data/rinkuzu
+npm install
+npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) to view the app.
+### 3) (Optional but recommended) Run companion adaptive API
 
-## Deployment on Vercel
-
-1. Push your code to GitHub
-2. Connect your repository to Vercel
-3. Set environment variables in Vercel dashboard:
-   - `MONGO_URL`
-   - `NEXTAUTH_SECRET` 
-   - `GEMINI_KEYS`
-   - `JWT_EXPIRES_IN`
-4. Deploy!
-
-## Project Structure
-
-```
-src/
-├── app/                 # Next.js 14 App Router
-│   ├── api/            # API routes
-│   └── (pages)/        # Page components
-├── components/         # Reusable components
-├── lib/               # Utility libraries
-├── models/            # MongoDB models
-├── store/             # Zustand store
-└── types/             # TypeScript types
+```bash
+cd /home/linh/Downloads/datn_1/new/data/rinkuzu-ai-api
+pip install -r requirements.txt
+uvicorn api.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-## Usage
+<details>
+<summary><b>What gets called in each mode</b></summary>
 
-### For Teachers:
-1. Register/Login to the platform
-2. Upload PDF files containing quiz content
-3. Wait for admin approval
-4. Share quiz links with students
+- Quiz mode:
+  - Frontend requests presigned upload URL: `/api/quiz/upload-url`
+  - Frontend sends PDF extraction request via `extractQuizFromS3Key` -> `${ADAPTIVE_API_URL}/api/quiz/extract`
+- Adaptive mode:
+  - Frontend routes under `/api/adaptive-learning/*` proxy to Python API via `src/lib/adaptive-learning/proxy.ts`
+  - Python API handles pipeline/session/history endpoints and model-backed recommendation flow
 
-### For Admins:
-1. Review submitted quizzes in admin queue
-2. Approve or reject quiz submissions
-3. Monitor user activity and quiz attempts
+</details>
 
-### For Students:
-1. Access quiz via shared link
-2. Complete quiz and submit answers
-3. View results and attempt history
+---
 
-## API Endpoints
+## Getting Started
 
-- `POST /api/auth/register` - User registration
-- `POST /api/auth/login` - User login
-- `GET /api/quizzes` - List quizzes (filtered by status)
-- `POST /api/quizzes` - Create quiz from PDF
-- `PUT /api/quizzes/[id]` - Edit quiz
-- `POST /api/quizzes/[id]/approve` - Admin approve quiz
-- `POST /api/quizzes/[id]/reject` - Admin reject quiz
-- `GET /api/quiz/[slug]/play` - Get quiz for playing
-- `POST /api/quiz/[slug]/attempt` - Submit quiz attempt
+1. Run both services (`rinkuzu` and `rinkuzu-ai-api`) for full feature parity.
+2. Register/login and upload one PDF in quiz mode.
+3. Edit/publish draft and complete one quiz attempt.
+4. Open adaptive learning dashboard and upload the same (or another) PDF.
+5. Finish one adaptive exercise set and check result page.
+6. Verify data persistence in MongoDB (quiz attempts + adaptive sessions).
+
+---
+
+## How It Works
+
+RinKuzu is a Next.js 14 app (App Router) with MongoDB, NextAuth, and an API-proxy integration to a FastAPI adaptive engine. The frontend owns user flow, auth, and quiz UX; the Python service owns heavy content pipeline and SAINT+DQN adaptive decisioning.
+
+<details>
+<summary><b>Details</b> - architecture, flow, and key modules</summary>
+
+### Main app (`rinkuzu`)
+
+- Framework/runtime: Next.js 14 + TypeScript
+- Auth: NextAuth
+- Storage: MongoDB + S3-compatible object storage
+- Key integration points:
+  - `src/lib/quiz/extractApi.ts`: server-side call to quiz extraction endpoint using `x-user-id` + optional `x-service-token`
+  - `src/lib/adaptive-learning/proxy.ts`: authenticated proxy to adaptive backend (`/api/adaptive-learning/*`)
+  - `src/app/api/quiz/upload-url/route.ts`: presigned upload URL for PDF (50MB max)
+
+### Companion API (`rinkuzu-ai-api`)
+
+- Framework/runtime: FastAPI
+- Entry point: `api/main.py`
+- Key routes:
+  - `/api/quiz/extract`: extract/generate quiz questions from uploaded PDF
+  - `/api/pipeline/process`: process PDF for adaptive pipeline
+  - `/api/session/*`, `/api/history/*`, `/api/knowledge/*`
+- Adaptive models:
+  - SAINT knowledge tracing + Dueling DQN policy (loaded on startup when enabled)
+
+### End-to-end flow (adaptive mode)
+
+1. User uploads PDF from frontend.
+2. Frontend proxy forwards upload to Python pipeline.
+3. Pipeline extracts concepts and builds knowledge representation.
+4. Session manager initializes adaptive environment.
+5. Exercise engine serves next questions based on mastery state.
+6. Results and history are persisted and shown in dashboard.
+
+</details>
+
+---
+
+## Reference
+
+- Frontend app: `/home/linh/Downloads/datn_1/new/data/rinkuzu`
+- Adaptive API: `/home/linh/Downloads/datn_1/new/data/rinkuzu-ai-api`
+- Subscription subsystem notes: `docs/SUBSCRIPTION_README.md`
+- Duration migration notes: `docs/DURATION_MIGRATION_GUIDE.md`
+
+---
+
+## FAQ
+
+### Do I need the Python API to run RinKuzu?
+
+Core UI can run without it, but PDF extraction/adaptive learning features depend on the companion API.
+
+### Which mode should I start with?
+
+Start with quiz mode for fast validation, then enable adaptive mode when you want personalized progression.
+
+### Is there a 50MB PDF limit?
+
+Yes. The upload/extraction flow enforces a 50MB ceiling for PDF inputs.
+
+---
 
 ## Contributing
 
-1. Fork the repository
-2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Open a Pull Request
+Internal project. Open an issue/plan in `docs/plans/` before major feature refactors.
 
 ## License
 
-This project is licensed under the MIT License. 
+Private repository. No public redistribution without permission.

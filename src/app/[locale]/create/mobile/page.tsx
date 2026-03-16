@@ -52,8 +52,8 @@ export default function MobileCreatePage() {
     setIsUploading(true);
 
     try {
-      // Convert to base64
-      const base64 = await fileToBase64(file);
+      const { s3Key } = await uploadPdfViaPresignedUrl(file);
+      const detectedTotalPages = await getPdfPageCount(file);
 
       // Create draft via API
       const response = await fetch('/api/draft/create', {
@@ -63,8 +63,10 @@ export default function MobileCreatePage() {
           title: title.trim(),
           description: description.trim() || undefined,
           category: selectedCategory?._id,
-          pdfBase64: base64,
+          s3Key,
           fileName: file.name,
+          fileSize: file.size,
+          totalPages: detectedTotalPages,
           prompt: aiPrompt.trim() || undefined,
         }),
       });
@@ -274,11 +276,44 @@ export default function MobileCreatePage() {
   );
 }
 
-function fileToBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
+async function uploadPdfViaPresignedUrl(file: File): Promise<{ s3Key: string }> {
+  const response = await fetch('/api/quiz/upload-url', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      fileName: file.name,
+      contentType: file.type || 'application/pdf',
+      fileSize: file.size,
+    }),
   });
+
+  const payload = await response.json();
+  if (!response.ok || !payload?.success || !payload?.data?.uploadUrl || !payload?.data?.s3Key) {
+    throw new Error(payload?.error || 'Failed to create upload URL');
+  }
+
+  const putResponse = await fetch(payload.data.uploadUrl, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/pdf',
+    },
+    body: file,
+  });
+
+  if (!putResponse.ok) {
+    throw new Error(`Storage upload failed with status ${putResponse.status}`);
+  }
+
+  return { s3Key: payload.data.s3Key as string };
+}
+
+async function getPdfPageCount(file: File): Promise<number> {
+  try {
+    const { PDFDocument } = await import('pdf-lib');
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await PDFDocument.load(arrayBuffer);
+    return pdf.getPageCount();
+  } catch {
+    return 1;
+  }
 }

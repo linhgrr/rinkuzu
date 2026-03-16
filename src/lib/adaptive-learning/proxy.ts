@@ -6,6 +6,7 @@ type ProxyOptions = {
     method?: string;
     body?: BodyInit | null;
     contentType?: string | null;
+    timeoutMs?: number;
 };
 
 const DEFAULT_API_URL = 'http://localhost:8000';
@@ -67,7 +68,10 @@ export async function proxyAdaptiveRequest(
         }
 
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), resolveTimeoutMs());
+        const timeoutMs = options?.timeoutMs && options.timeoutMs > 0
+            ? options.timeoutMs
+            : resolveTimeoutMs();
+        const timeout = setTimeout(() => controller.abort(), timeoutMs);
         const body = options?.body
             ?? (shouldAttachBody(method) ? await req.text() : undefined);
 

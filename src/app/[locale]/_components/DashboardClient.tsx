@@ -42,6 +42,7 @@ interface DashboardClientProps {
   userEmail: string;
   initialStats?: UserStats;
   initialQuizzes?: Quiz[];
+  initialYourQuizzes?: Quiz[];
   initialSession?: any;
 }
 
@@ -50,6 +51,7 @@ interface DashboardBootstrapResponse {
   data: {
     stats: UserStats;
     quizzes: Quiz[];
+    yourQuizzes: Quiz[];
   };
 }
 
@@ -71,6 +73,7 @@ export function DashboardClient({
   userEmail,
   initialStats,
   initialQuizzes = [],
+  initialYourQuizzes = [],
   initialSession,
 }: DashboardClientProps) {
   const t = useTranslations('dashboard');
@@ -83,6 +86,7 @@ export function DashboardClient({
         data: {
           stats: initialStats,
           quizzes: initialQuizzes,
+          yourQuizzes: initialYourQuizzes,
         },
       }
       : undefined;
@@ -132,6 +136,7 @@ export function DashboardClient({
 
   const stats = bootstrapData?.data?.stats;
   const quizzes = bootstrapData?.data?.quizzes ?? [];
+  const yourQuizzes = bootstrapData?.data?.yourQuizzes ?? [];
 
   const handleStartReview = useCallback(() => {
     router.push('/review');
@@ -143,6 +148,10 @@ export function DashboardClient({
 
   const handleViewAll = useCallback(() => {
     router.push(ROUTES.PENDING_QUIZZES);
+  }, [router]);
+
+  const handleViewYourQuizzes = useCallback(() => {
+    router.push('/profile');
   }, [router]);
 
   const handleExplore = useCallback(() => {
@@ -182,6 +191,7 @@ export function DashboardClient({
     : {};
   const isStatsInitialLoading = !stats && bootstrapLoading;
   const isQuizzesInitialLoading = quizzes.length === 0 && bootstrapLoading;
+  const isYourQuizzesInitialLoading = yourQuizzes.length === 0 && bootstrapLoading;
   const [shouldLoadMascot, setShouldLoadMascot] = useState(false);
 
   useEffect(() => {
@@ -345,6 +355,41 @@ export function DashboardClient({
                   </div>
                   <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-teal-50/50 rounded-full blur-2xl group-hover:bg-teal-100/50 transition-all duration-300" />
                 </div>
+              </div>
+            </section>
+
+            {/* Your Quizzes Section */}
+            <section className="mt-8">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold text-[#1d1d1f]">{t('yourQuizzes')}</h2>
+                <Button
+                  variant="ghost"
+                  onClick={handleViewYourQuizzes}
+                  className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 font-medium"
+                >
+                  {t('viewAllQuizzes')}
+                </Button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div
+                  onClick={handleCreateQuiz}
+                  className="group cursor-pointer rounded-2xl border-2 border-dashed border-purple-200 p-6 flex flex-col items-center justify-center text-center hover:border-purple-500 hover:bg-purple-50/50 transition-all duration-300 min-h-[160px] bg-slate-50/50"
+                >
+                  <div className="w-14 h-14 bg-white border border-slate-200 text-slate-900 rounded-2xl flex items-center justify-center mb-4 shadow-sm group-hover:scale-105 transition-transform">
+                    <HiOutlinePlus className="w-7 h-7" />
+                  </div>
+                  <h3 className="font-bold text-slate-900 group-hover:text-black">{t('createNewQuiz')}</h3>
+                  <p className="text-xs font-medium text-slate-500 mt-1 uppercase tracking-tight">{t('addYourQuestions')}</p>
+                </div>
+
+                {isYourQuizzesInitialLoading ? (
+                  <QuizCardsSkeleton />
+                ) : (
+                  yourQuizzes.slice(0, 3).map((quiz) => (
+                    <QuizCard key={quiz._id} quiz={quiz} />
+                  ))
+                )}
               </div>
             </section>
           </div>

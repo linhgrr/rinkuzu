@@ -19,7 +19,8 @@ import {
     HiOutlineEye,
     HiOutlinePencil,
     HiOutlineTrash,
-    HiOutlineLockClosed
+    HiOutlineLockClosed,
+    HiOutlinePlay
 } from '@/components/icons';
 
 interface PaginationData {
@@ -279,6 +280,12 @@ export default function ProfileQuizzes() {
                                     </div>
 
                                     <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                                        <Link href={`/quiz/${quiz.slug}`}>
+                                            <Button size="sm" variant="outline" className="text-blue-600 hover:text-blue-700 border-blue-200 hover:border-blue-300">
+                                                <HiOutlinePlay className="w-4 h-4" />
+                                            </Button>
+                                        </Link>
+
                                         <Button
                                             size="sm"
                                             variant="ghost"

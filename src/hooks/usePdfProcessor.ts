@@ -2,6 +2,7 @@
 import { useCallback, useRef, useEffect } from 'react';
 import { useDraftStore } from '@/store/useDraftStore';
 import { toast } from 'sonner';
+import { mapWithConcurrency } from '@/lib/asyncPool';
 
 interface ChunkInfo {
   index: number;
@@ -12,6 +13,8 @@ interface ChunkInfo {
 
 const MAX_RETRIES = 3;
 const INITIAL_RETRY_DELAY = 1000;
+const MAX_CONCURRENT_CHUNKS = 3;
+const MAX_ERRORS_BEFORE_ABORT = 3;
 
 async function fetchWithRetry(
   url: string,
@@ -117,13 +120,14 @@ export function usePdfProcessor() {
 
     let processedCount = chunks.filter(c => c.status === 'done').length;
     let totalQuestions = 0;
-    let consecutiveErrors = 0;
-    const MAX_CONSECUTIVE_ERRORS = 3;
+    let totalErrors = 0;
+    let hasCompleted = false;
+    let hasAbortedForErrors = false;
 
     try {
-      for (const chunk of pendingChunks) {
-        if (abortController.signal.aborted) {
-          break;
+      await mapWithConcurrency(pendingChunks, MAX_CONCURRENT_CHUNKS, async (chunk) => {
+        if (abortController.signal.aborted || hasCompleted || hasAbortedForErrors) {
+          return;
         }
 
         try {
@@ -134,7 +138,6 @@ export function usePdfProcessor() {
           );
 
           if (result.success) {
-            consecutiveErrors = 0; // Reset on success
             processedCount++;
             totalQuestions = result.totalQuestions;
 
@@ -145,6 +148,7 @@ export function usePdfProcessor() {
             });
 
             if (result.isComplete) {
+              hasCompleted = true;
               completeDraft(draftId, totalQuestions);
               toast.success(`"${title}" đã sẵn sàng!`, {
                 description: `${totalQuestions} câu hỏi được trích xuất`,
@@ -153,31 +157,29 @@ export function usePdfProcessor() {
                   onClick: () => window.location.href = `/draft/${draftId}/edit`,
                 },
               });
-              break;
+              abortController.abort();
+              return;
             }
           }
-
-          // Small delay between chunks
-          await new Promise(r => setTimeout(r, 300));
-
         } catch (chunkError: any) {
           if (chunkError.name === 'AbortError') {
-            break;
+            return;
           }
 
-          consecutiveErrors++;
+          totalErrors++;
           console.error(`Chunk ${chunk.index} failed:`, chunkError);
 
-          // Stop if too many consecutive errors
-          if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
-            setDraftError(draftId, `Quá nhiều lỗi liên tiếp: ${chunkError.message}`);
+          // Stop if too many failures overall
+          if (totalErrors >= MAX_ERRORS_BEFORE_ABORT) {
+            hasAbortedForErrors = true;
+            setDraftError(draftId, `Quá nhiều lỗi khi xử lý chunk: ${chunkError.message}`);
             toast.error(`Lỗi xử lý "${title}"`, {
               description: 'Vui lòng thử lại sau',
             });
-            break;
+            abortController.abort();
           }
         }
-      }
+      });
     } catch (error: any) {
       if (error.name !== 'AbortError') {
         setDraftError(draftId, error.message);

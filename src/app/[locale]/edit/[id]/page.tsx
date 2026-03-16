@@ -10,10 +10,11 @@ import { Button } from '@/components/ui/Button';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { Input } from '@/components/ui/Input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
+import QuizMetaForm from '@/components/quiz/QuizMetaForm';
+import PDFViewer from '@/components/ui/PDFViewer';
 import { IQuiz, ICategory } from '@/types';
 import { QuestionImageUpload, OptionImageUpload } from '@/components/ui/ImageUpload';
 import { QuestionImage, OptionImage } from '@/components/ui/ImageDisplay';
-import { CategorySelector } from '@/components/ui/CategorySelector';
 import Sidebar from '@/components/Sidebar';
 import {
   HiChevronDown,
@@ -82,7 +83,7 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
   const [isPrivate, setIsPrivate] = useState(false);
   // PDF viewer state
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
-  const [showPDFViewer, setShowPDFViewer] = useState(false);
+  const [showPDFViewer, setShowPDFViewer] = useState(true);
 
   const fetchQuiz = useCallback(async () => {
     try {
@@ -520,71 +521,29 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
                       </div>
                     )}
 
-                    <div>
-                      <label htmlFor="title" className="block text-sm font-medium text-gray-700">
-                        Quiz Title *
-                      </label>
-                      <div className="mt-1">
-                        <Input
-                          id="title"
-                          type="text"
-                          required
-                          value={title}
-                          onChange={(e) => setTitle(e.target.value)}
-                          placeholder="Enter a descriptive title for your quiz"
-                          maxLength={200}
-                          disabled={!canEdit}
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label htmlFor="description" className="block text-sm font-medium text-gray-700">
-                        Description (Optional)
-                      </label>
-                      <div className="mt-1">
-                        <textarea
-                          id="description"
-                          rows={3}
-                          value={description}
-                          onChange={(e) => setDescription(e.target.value)}
-                          placeholder="Provide additional context about the quiz"
-                          maxLength={1000}
-                          disabled={!canEdit}
-                          className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Category *
-                      </label>
-                      <CategorySelector
-                        value={selectedCategory}
-                        onChange={setSelectedCategory}
-                        placeholder="Search and select a category..."
-                        required
-                        disabled={!canEdit}
-                      />
-                    </div>
-
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        id="isPrivate"
-                        checked={isPrivate}
-                        onChange={(e) => setIsPrivate(e.target.checked)}
-                        disabled={!canEdit}
-                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded disabled:bg-gray-50"
-                      />
-                      <label htmlFor="isPrivate" className="text-sm font-medium text-gray-700">
-                        <HiOutlineLockClosed className="inline-block mr-1" /> Private Quiz
-                      </label>
-                      <div className="text-xs text-gray-500">
-                        (Only visible to you and admins)
-                      </div>
-                    </div>
+                    <QuizMetaForm
+                      title={title}
+                      onTitleChange={setTitle}
+                      description={description}
+                      onDescriptionChange={setDescription}
+                      selectedCategory={selectedCategory}
+                      onCategoryChange={(category) => setSelectedCategory(category as Category | null)}
+                      labels={{
+                        title: 'Quiz Title',
+                        titlePlaceholder: 'Enter a descriptive title for your quiz',
+                        description: 'Description (Optional)',
+                        descriptionPlaceholder: 'Provide additional context about the quiz',
+                        category: 'Category *',
+                        categoryPlaceholder: 'Search and select a category...',
+                        privateLabel: 'Private Quiz',
+                        privateDescription: '(Only visible to you and admins)',
+                      }}
+                      isPrivate={isPrivate}
+                      onPrivateChange={setIsPrivate}
+                      privateCheckboxId="isPrivate"
+                      disabled={!canEdit}
+                      categoryDisabled={!canEdit}
+                    />
 
                     {/* Quiz Questions Info */}
                     <div className="border-t pt-6">
@@ -770,26 +729,11 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
                     </div>
                   </CardHeader>
                   <CardContent className="flex-1 flex flex-col p-4 min-h-0">
-                    <div className="flex-shrink-0 mb-3">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-gray-600">Source PDF</span>
-                        <Button
-                          onClick={() => window.open(pdfUrl, '_blank')}
-                          size="sm"
-                          variant="outline"
-                          className="text-xs"
-                        >
-                          🔗 Open in New Tab
-                        </Button>
-                      </div>
-                    </div>
-                    <div className="flex-1 border border-gray-200 rounded overflow-hidden">
-                      <iframe
-                        src={`${pdfUrl}#toolbar=1&navpanes=1&scrollbar=1`}
-                        className="w-full h-full"
-                        title="PDF Viewer"
-                      />
-                    </div>
+                    <PDFViewer
+                      pdfDataUrl={null}
+                      pdfUrl={pdfUrl}
+                      onClose={() => setShowPDFViewer(false)}
+                    />
                   </CardContent>
                 </Card>
               </div>

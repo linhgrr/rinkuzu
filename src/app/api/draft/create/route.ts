@@ -4,12 +4,8 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import connectDB from '@/lib/mongoose';
 import DraftQuiz from '@/models/DraftQuiz';
-import { PDFDocument } from 'pdf-lib';
-import { uploadPDF, generatePDFKey, deletePDF } from '@/lib/s3';
-import { buildChunkLevelPrompt } from '@/lib/gemini';
+import { deletePDF } from '@/lib/s3';
 
-const CHUNK_SIZE = 5; // pages per chunk
-const OVERLAP_PAGES = 1;
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 const EXPIRY_HOURS = 48;
 
@@ -21,111 +17,86 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { title, categoryId, pdfBase64, fileName, prompt } = body;
+    const {
+      title,
+      categoryId,
+      category,
+      s3Key,
+      fileName,
+      fileSize: rawFileSize,
+      totalPages: rawTotalPages,
+      prompt,
+    } = body;
 
-    if (!title?.trim() || !pdfBase64 || !fileName) {
+    if (!title?.trim() || !fileName || !s3Key) {
       return NextResponse.json(
-        { error: 'Title, PDF data, and filename are required' },
+        { error: 'Title, filename, and s3Key are required' },
         { status: 400 }
       );
     }
 
-    // Extract base64 data (remove data URL prefix if present)
-    const base64Data = pdfBase64.includes(',')
-      ? pdfBase64.split(',')[1]
-      : pdfBase64;
-
-    // Validate file size
-    const buffer = Buffer.from(base64Data, 'base64');
-    if (buffer.length > MAX_FILE_SIZE) {
-      return NextResponse.json(
-        { error: 'File size exceeds 50MB limit' },
-        { status: 400 }
-      );
-    }
-
-    // Parse PDF to get page count
+    const userId = (session!.user as any).id;
+    let pdfKey = '';
+    let pdfUrl = '';
+    let fileSize = 0;
     let totalPages: number;
-    try {
-      const pdfDoc = await PDFDocument.load(buffer);
-      totalPages = pdfDoc.getPageCount();
-    } catch {
+
+    if (typeof s3Key === 'string' && s3Key.trim()) {
+      pdfKey = s3Key.trim().replace(/^\/+/, '');
+      const expectedPrefix = `uploads/quiz_extract/${userId}/`;
+      if (!pdfKey.startsWith(expectedPrefix)) {
+        return NextResponse.json(
+          { error: 'Invalid s3Key for current user' },
+          { status: 403 }
+        );
+      }
+
+      const endpoint = process.env.S3_ENDPOINT || 'https://objectstorageapi.ap-southeast-1.clawcloudrun.com';
+      const bucket = process.env.S3_BUCKET_NAME || 'rinkuzu-pdfs';
+      pdfUrl = `${endpoint}/${bucket}/${pdfKey}`;
+
+      const parsedFileSize = Number(rawFileSize);
+      fileSize = Number.isFinite(parsedFileSize) && parsedFileSize > 0 ? parsedFileSize : 0;
+      if (fileSize <= 0 || fileSize > MAX_FILE_SIZE) {
+        return NextResponse.json(
+          { error: 'Invalid file size (max 50MB)' },
+          { status: 400 }
+        );
+      }
+
+      const parsedTotalPages = Number(rawTotalPages);
+      totalPages = Number.isFinite(parsedTotalPages) && parsedTotalPages > 0 ? Math.floor(parsedTotalPages) : 1;
+    } else {
       return NextResponse.json(
-        { error: 'Invalid PDF file' },
+        { error: 'Invalid s3Key' },
         { status: 400 }
       );
     }
 
-    // Calculate chunks
-    const chunkDetails: Array<{
-      index: number;
-      startPage: number;
-      endPage: number;
-      status: 'pending';
-    }> = [];
-
-    if (totalPages <= CHUNK_SIZE) {
-      // Small PDF - single chunk
-      chunkDetails.push({
-        index: 0,
-        startPage: 1,
-        endPage: totalPages,
-        status: 'pending',
-      });
-    } else {
-      // Large PDF - multiple chunks with overlap
-      let chunkIndex = 0;
-      for (let start = 1; start <= totalPages; start += CHUNK_SIZE - OVERLAP_PAGES) {
-        const end = Math.min(start + CHUNK_SIZE - 1, totalPages);
-        chunkDetails.push({
-          index: chunkIndex++,
-          startPage: start,
-          endPage: end,
-          status: 'pending',
-        });
-        if (end >= totalPages) break;
-      }
-    }
+    const chunkDetails = [{
+      index: 0,
+      startPage: 1,
+      endPage: totalPages,
+      status: 'pending' as const,
+    }];
 
     await connectDB();
-
-    // Upload PDF to S3 (REQUIRED)
-    const userId = (session!.user as any).id;
-    const pdfKey = generatePDFKey(userId, fileName);
-    let pdfUrl: string;
-
-    try {
-      pdfUrl = await uploadPDF(buffer, pdfKey);
-      console.log('PDF uploaded to S3:', pdfUrl);
-    } catch (s3Error) {
-      console.error('S3 upload error:', s3Error);
-      return NextResponse.json(
-        { error: 'Failed to upload PDF to S3' },
-        { status: 500 }
-      );
-    }
 
     // Create draft
     const expiresAt = new Date(Date.now() + EXPIRY_HOURS * 60 * 60 * 1000);
 
     let draft;
-    let chunkPrompt: string | undefined;
     const trimmedPrompt = prompt?.trim();
-
-    if (trimmedPrompt && chunkDetails.length > 1) {
-      chunkPrompt = await buildChunkLevelPrompt(trimmedPrompt, chunkDetails.length);
-    }
 
     try {
       draft = await DraftQuiz.create({
         userId,
         title: title.trim(),
-        categoryId: categoryId || undefined,
+        categoryId: categoryId || category || undefined,
         prompt: trimmedPrompt || undefined,
-        chunkPrompt,
         pdfData: {
           fileName,
-          fileSize: buffer.length,
+          fileSize,
           totalPages,
           pdfKey, // S3 key for fetching PDF
           pdfUrl, // Signed URL for PDF viewing

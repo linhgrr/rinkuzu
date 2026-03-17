@@ -94,34 +94,52 @@ export default function AdaptiveLearningExercise({ sessionId }: ExerciseProps) {
                 setLoadingTheory(true);
                 setLoadingExercise(true);
 
-                const [theoryResult, exerciseResult] = await Promise.allSettled([
-                    getTheory(sessionId),
-                    getExercise(sessionId),
-                ]);
+                const theoryPromise = getTheory(sessionId)
+                    .then((theoryData) => {
+                        if (!isLatestActiveRequest()) {
+                            return;
+                        }
+                        setTheory(theoryData);
+                    })
+                    .catch((reason) => {
+                        if (!isLatestActiveRequest()) {
+                            return;
+                        }
+                        console.error('Failed to load theory:', reason);
+                    })
+                    .finally(() => {
+                        if (!isLatestActiveRequest()) {
+                            return;
+                        }
+                        setLoadingTheory(false);
+                    });
 
-                if (!isLatestActiveRequest()) {
-                    return;
-                }
+                const exercisePromise = getExercise(sessionId)
+                    .then((exerciseData) => {
+                        if (!isLatestActiveRequest()) {
+                            return;
+                        }
+                        setExercise(exerciseData);
+                    })
+                    .catch((reason) => {
+                        if (!isLatestActiveRequest()) {
+                            return;
+                        }
+                        console.error('Failed to load exercise:', reason);
+                        setError(
+                            reason instanceof Error
+                                ? reason.message
+                                : t('exercise.failedToLoadExercise')
+                        );
+                    })
+                    .finally(() => {
+                        if (!isLatestActiveRequest()) {
+                            return;
+                        }
+                        setLoadingExercise(false);
+                    });
 
-                if (theoryResult.status === 'fulfilled') {
-                    setTheory(theoryResult.value);
-                } else {
-                    console.error('Failed to load theory:', theoryResult.reason);
-                }
-
-                if (exerciseResult.status === 'fulfilled') {
-                    setExercise(exerciseResult.value);
-                } else {
-                    console.error('Failed to load exercise:', exerciseResult.reason);
-                    setError(
-                        exerciseResult.reason instanceof Error
-                            ? exerciseResult.reason.message
-                            : t('exercise.failedToLoadExercise')
-                    );
-                }
-
-                setLoadingTheory(false);
-                setLoadingExercise(false);
+                await Promise.allSettled([theoryPromise, exercisePromise]);
 
             } else {
                 // Bloom > 2: skip theory, load exercise directly
@@ -187,6 +205,7 @@ export default function AdaptiveLearningExercise({ sessionId }: ExerciseProps) {
         }
         setSubmitting(true);
         try {
+            router.prefetch(ADAPTIVE_ROUTES.result(sessionId));
             const result = await submitAnswer(sessionId, selectedOption);
             if (!isMountedRef.current) {
                 return;

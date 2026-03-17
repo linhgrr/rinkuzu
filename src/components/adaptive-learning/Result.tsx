@@ -7,14 +7,62 @@ import { Card, CardContent, CardHeader } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { HiCheck, HiOutlineX, HiArrowRight, HiOutlineHome, HiOutlineChatAlt2 } from '@/components/icons';
 import Image from 'next/image';
-import type { Exercise, SubmitResult } from './types';
+import type { Exercise, SessionHistoryDetail, SubmitResult } from './types';
 import { DynamicMarkdownRenderer } from '@/components/ui/DynamicMarkdownRenderer';
 import AdaptiveLearningChatbot from './Chatbot';
 import { getSessionExerciseOutcome } from './session-storage';
 import { ADAPTIVE_ROUTES } from './routes';
+import { BLOOM_LABELS } from './types';
+import { getSessionHistoryDetailFresh } from './api-client';
 
 interface ResultProps {
     sessionId: string;
+}
+
+function deriveOutcomeFromHistory(
+    detail: SessionHistoryDetail,
+): { result: SubmitResult; exercise: Exercise } | null {
+    const answered = detail.exercise_history.filter((item) => item.user_answer !== null);
+    if (answered.length === 0) {
+        return null;
+    }
+
+    const latest = answered.reduce((acc, item) => (item.timestamp > acc.timestamp ? item : acc));
+    const bloomLabel = BLOOM_LABELS[Math.max(0, Math.min(BLOOM_LABELS.length - 1, latest.bloom_level - 1))] || 'Remember';
+    const conceptMastery = detail.concept_mastery[latest.concept_idx];
+    const masteryAfter = typeof conceptMastery === 'number' ? conceptMastery : detail.avg_mastery;
+
+    const exercise: Exercise = {
+        id: latest.exercise_id,
+        exercise_id: latest.exercise_id,
+        concept_name: latest.concept_name,
+        concept_idx: latest.concept_idx,
+        bloom_level: latest.bloom_level,
+        bloom_label: bloomLabel,
+        question: latest.question,
+        options: latest.options,
+        step: answered.length,
+        max_steps: detail.max_steps,
+    };
+
+    const result: SubmitResult = {
+        is_correct: Boolean(latest.is_correct),
+        correct_option: latest.correct_option,
+        explanation: latest.explanation,
+        concept_name: latest.concept_name,
+        bloom_level: latest.bloom_level,
+        mastery_after: masteryAfter,
+        avg_mastery: detail.avg_mastery,
+        step: answered.length,
+        session_completed: detail.status === 'completed' || answered.length >= detail.max_steps,
+        stats: {
+            total_correct: detail.total_correct,
+            total_answered: detail.total_answered,
+            accuracy: detail.accuracy,
+        },
+    };
+
+    return { result, exercise };
 }
 
 export default function AdaptiveLearningResult({ sessionId }: ResultProps) {
@@ -23,22 +71,59 @@ export default function AdaptiveLearningResult({ sessionId }: ResultProps) {
     const [result, setResult] = useState<SubmitResult | null>(null);
     const [exercise, setExercise] = useState<Exercise | null>(null);
     const [isChatOpen, setIsChatOpen] = useState(false);
+    const [hydrating, setHydrating] = useState(true);
 
     useEffect(() => {
-        try {
-            const payload = getSessionExerciseOutcome(sessionId);
-            if (payload) {
-                setResult(payload.result);
-                setExercise(payload.exercise);
-                return;
-            }
+        router.prefetch(ADAPTIVE_ROUTES.dashboard);
+        router.prefetch(ADAPTIVE_ROUTES.exercise(sessionId));
+    }, [router, sessionId]);
 
-            setResult(null);
-            setExercise(null);
-        } catch {
-            setResult(null);
-            setExercise(null);
-        }
+    useEffect(() => {
+        let cancelled = false;
+
+        const hydrate = async () => {
+            setHydrating(true);
+            try {
+                const payload = getSessionExerciseOutcome(sessionId);
+                if (payload) {
+                    if (!cancelled) {
+                        setResult(payload.result);
+                        setExercise(payload.exercise);
+                    }
+                    return;
+                }
+
+                const detail = await getSessionHistoryDetailFresh(sessionId);
+                if (cancelled) {
+                    return;
+                }
+
+                const derived = deriveOutcomeFromHistory(detail);
+                if (derived) {
+                    setResult(derived.result);
+                    setExercise(derived.exercise);
+                    return;
+                }
+
+                setResult(null);
+                setExercise(null);
+            } catch {
+                if (!cancelled) {
+                    setResult(null);
+                    setExercise(null);
+                }
+            } finally {
+                if (!cancelled) {
+                    setHydrating(false);
+                }
+            }
+        };
+
+        void hydrate();
+
+        return () => {
+            cancelled = true;
+        };
     }, [sessionId]);
 
     const isCorrect = result?.is_correct ?? false;
@@ -65,6 +150,17 @@ export default function AdaptiveLearningResult({ sessionId }: ResultProps) {
         }
         router.push(ADAPTIVE_ROUTES.exercise(sessionId));
     };
+
+    if (hydrating) {
+        return (
+            <div className="mx-auto flex min-h-[80vh] max-w-4xl items-center justify-center">
+                <div className="space-y-3 text-center">
+                    <div className="mx-auto h-7 w-7 animate-spin rounded-full border-2 border-slate-200 border-t-slate-900" />
+                    <p className="text-sm font-medium text-slate-500">{t('exercise.loadingTitle')}</p>
+                </div>
+            </div>
+        );
+    }
 
     if (!result || !exercise) {
         return (

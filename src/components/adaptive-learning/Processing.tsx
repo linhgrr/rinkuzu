@@ -1,6 +1,7 @@
 'use client';
 
-import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
@@ -10,148 +11,21 @@ import {
     HiOutlineExclamationCircle,
     HiOutlineArrowLeft
 } from '@/components/icons';
-import {
-    ReactFlow,
-    Background,
-    Controls,
-    Handle,
-    Position,
-    NodeProps,
-    Node,
-    Edge,
-    MarkerType,
-    useReactFlow,
-    ReactFlowProvider
-} from '@xyflow/react';
-import '@xyflow/react/dist/style.css';
-import dagre from 'dagre';
 import { createSessionFromPipeline, getPipelineJobStatus } from './api-client';
 import type { PipelineStatus, PipelineJobStatus } from './types';
 import { ADAPTIVE_ROUTES } from './routes';
 import { saveSessionJobMapping } from './session-storage';
 
-interface ConceptNodeData extends Record<string, unknown> {
-    label: string;
-}
-
-const ConceptNode = memo(function ConceptNode({ data }: NodeProps<Node<ConceptNodeData>>) {
-    return (
-        <div className="min-w-[120px] rounded-md border border-slate-300 bg-white px-3 py-2 transition-all duration-200">
-            <Handle type="target" position={Position.Top} className="!h-1 !w-1 !bg-slate-400" />
-            <div className="text-center text-[10px] font-mono tracking-wider text-slate-700">
-                {data.label.length > 25 ? `${data.label.substring(0, 23)}...` : data.label}
+const ProcessingGraphPanel = dynamic(() => import('./ProcessingGraphPanel'), {
+    loading: () => (
+        <div className="flex h-full w-full items-center justify-center text-sm text-slate-400">
+            <div className="flex flex-col items-center gap-3">
+                <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-300 border-t-slate-600" />
             </div>
-            <div className="pointer-events-none absolute -inset-0.5 animate-pulse rounded-md border border-slate-400/30" />
-            <Handle type="source" position={Position.Bottom} className="!h-1 !w-1 !bg-slate-400" />
         </div>
-    );
+    ),
+    ssr: false,
 });
-
-const nodeTypes = {
-    concept: ConceptNode,
-};
-
-const dagreGraph = new dagre.graphlib.Graph();
-dagreGraph.setDefaultEdgeLabel(() => ({}));
-
-const getLayoutedElements = (nodes: Node<ConceptNodeData>[], edges: Edge[], direction = 'TB') => {
-    dagreGraph.setGraph({ rankdir: direction, nodesep: 60, ranksep: 80 });
-
-    nodes.forEach((node) => {
-        dagreGraph.setNode(node.id, { width: 140, height: 60 });
-    });
-
-    edges.forEach((edge) => {
-        dagreGraph.setEdge(edge.source, edge.target);
-    });
-
-    dagre.layout(dagreGraph);
-
-    nodes.forEach((node) => {
-        const nodeWithPosition = dagreGraph.node(node.id);
-        node.targetPosition = direction === 'LR' ? Position.Left : Position.Top;
-        node.sourcePosition = direction === 'LR' ? Position.Right : Position.Bottom;
-
-        node.position = {
-            x: nodeWithPosition.x - 70,
-            y: nodeWithPosition.y - 30,
-        };
-
-        return node;
-    });
-
-    return { nodes, edges };
-};
-
-function PartialGraphFlow({ partialGraph }: { partialGraph?: PipelineJobStatus['partial_graph'] }) {
-    const { fitView } = useReactFlow();
-    const t = useTranslations('adaptiveLearning');
-
-    const initialNodes: Node<ConceptNodeData>[] = useMemo(() => {
-        if (!partialGraph?.nodes) return [];
-        return partialGraph.nodes.map((n) => ({
-            id: n.id,
-            type: 'concept',
-            position: { x: 0, y: 0 },
-            data: { label: n.name },
-        }));
-    }, [partialGraph]);
-
-    const initialEdges: Edge[] = useMemo(() => {
-        if (!partialGraph?.edges) return [];
-        return partialGraph.edges.map((e, index) => ({
-            id: `${e.source}-${e.target}-${index}`,
-            source: e.source,
-            target: e.target,
-            type: 'default',
-            animated: true,
-            style: { stroke: '#94A3B8', strokeWidth: 2 },
-            markerEnd: { type: MarkerType.ArrowClosed, color: '#94A3B8' },
-        }));
-    }, [partialGraph]);
-
-    const { nodes, edges } = useMemo(() => {
-        if (initialNodes.length === 0) return { nodes: [], edges: [] };
-        return getLayoutedElements(initialNodes, initialEdges);
-    }, [initialNodes, initialEdges]);
-
-    useEffect(() => {
-        if (nodes.length > 0) {
-            window.setTimeout(() => fitView({ padding: 0.3, duration: 800 }), 50);
-        }
-    }, [nodes, fitView]);
-
-    if (!partialGraph || nodes.length === 0) {
-        return (
-            <div className="flex h-full w-full items-center justify-center text-sm text-slate-400">
-                <div className="flex flex-col items-center gap-3">
-                    <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-300 border-t-slate-600" />
-                    {t('processing.waitingForConcepts')}
-                </div>
-            </div>
-        );
-    }
-
-    return (
-        <ReactFlow
-            nodes={nodes}
-            edges={edges}
-            nodeTypes={nodeTypes}
-            fitView
-            fitViewOptions={{ padding: 0.3 }}
-            minZoom={0.2}
-            maxZoom={2}
-            proOptions={{ hideAttribution: true }}
-            className="bg-slate-50/30"
-            nodesDraggable={false}
-            nodesConnectable={false}
-            elementsSelectable={false}
-        >
-            <Background color="#E2E8F0" gap={16} size={1} />
-            <Controls showInteractive={false} className="border-slate-200 fill-slate-500" />
-        </ReactFlow>
-    );
-}
 
 const STATUS_TO_STEP: Record<PipelineStatus, number> = {
     pending: 0,
@@ -200,6 +74,7 @@ export default function AdaptiveLearningProcessing() {
     const [partialGraph, setPartialGraph] = useState<PipelineJobStatus['partial_graph']>(null);
     const [creatingSession, setCreatingSession] = useState(false);
     const [filename, setFilename] = useState('');
+    const [showGraphPanel, setShowGraphPanel] = useState(false);
     const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const pollInFlightRef = useRef(false);
@@ -271,6 +146,18 @@ export default function AdaptiveLearningProcessing() {
         const storedFilename = localStorage.getItem('al_pipeline_filename');
         setFilename(storedFilename || t('processing.defaultFilename'));
     }, [t]);
+
+    useEffect(() => {
+        const mediaQuery = window.matchMedia('(min-width: 1024px)');
+        const applyMatch = () => setShowGraphPanel(mediaQuery.matches);
+
+        applyMatch();
+        mediaQuery.addEventListener('change', applyMatch);
+
+        return () => {
+            mediaQuery.removeEventListener('change', applyMatch);
+        };
+    }, []);
 
     useEffect(() => {
         const jobId = localStorage.getItem('al_pipeline_job_id');
@@ -483,15 +370,13 @@ export default function AdaptiveLearningProcessing() {
                 ) : null}
             </div>
 
-            {!error ? (
+            {!error && showGraphPanel ? (
                 <div className="relative hidden shadow-sm lg:flex w-full lg:w-[55%] h-[600px] overflow-hidden rounded-[20px] border border-slate-200 bg-white">
                     <div className="pointer-events-none absolute left-6 top-6 z-10">
                         <h3 className="text-sm font-medium tracking-wide text-slate-900">{t('processing.knowledgeGraph')}</h3>
                         <p className="text-xs text-slate-500 mt-0.5">{t('processing.visualizingStructures')}</p>
                     </div>
-                    <ReactFlowProvider>
-                        <PartialGraphFlow partialGraph={partialGraph} />
-                    </ReactFlowProvider>
+                    <ProcessingGraphPanel partialGraph={partialGraph} />
                 </div>
             ) : null}
         </div >

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardHeader } from '@/components/ui/Card';
@@ -9,11 +10,14 @@ import { HiCheck, HiOutlineX, HiArrowRight, HiOutlineHome, HiOutlineChatAlt2 } f
 import Image from 'next/image';
 import type { Exercise, SessionHistoryDetail, SubmitResult } from './types';
 import { DynamicMarkdownRenderer } from '@/components/ui/DynamicMarkdownRenderer';
-import AdaptiveLearningChatbot from './Chatbot';
 import { getSessionExerciseOutcome } from './session-storage';
 import { ADAPTIVE_ROUTES } from './routes';
 import { BLOOM_LABELS } from './types';
 import { getSessionHistoryDetailFresh } from './api-client';
+
+const AdaptiveLearningChatbot = dynamic(() => import('./Chatbot'), {
+    ssr: false,
+});
 
 interface ResultProps {
     sessionId: string;

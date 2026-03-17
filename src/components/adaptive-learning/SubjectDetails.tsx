@@ -19,7 +19,6 @@ import {
 } from '@/components/icons';
 import { createSessionFromPipeline, getSessionStatus, getSessionHistoryDetail, isSessionNotFoundError, prefetchStartLearningData } from './api-client';
 import type { SessionStatus, SessionHistoryDetail } from './types';
-import { ExerciseHistoryTable } from './SessionHistory';
 import { ADAPTIVE_ROUTES } from './routes';
 import { getJobIdForSession, saveSessionJobMapping } from './session-storage';
 
@@ -38,6 +37,18 @@ const KnowledgeGraph = dynamic(() => import('./KnowledgeGraph'), {
 const MasteryMatrix = dynamic(() => import('./MasteryMatrix'), {
     loading: SectionSkeleton,
 });
+
+const ExerciseHistoryTable = dynamic(
+    () => import('./SessionHistory').then(module => ({ default: module.ExerciseHistoryTable })),
+    {
+        loading: () => (
+            <div className="flex items-center gap-2 py-10 justify-center text-slate-500">
+                <div className="h-5 w-5 animate-spin rounded-full border-2 border-slate-300 border-t-slate-900" />
+            </div>
+        ),
+        ssr: false,
+    }
+);
 
 const TAB_CONFIG = [
     { key: 'graph' as const, icon: HiOutlineCollection, labelKey: 'knowledgeGraph.title' },

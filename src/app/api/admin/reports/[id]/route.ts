@@ -2,11 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
+import { AsyncRouteParams } from '@/types/next-route';
 
 export const dynamic = 'force-dynamic';
 
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, { params }: AsyncRouteParams<{ id: string }>) {
   try {
+    const { id } = await params;
     const session = await getServerSession(authOptions);
     
     if (!session?.user || (session.user as any)?.role !== 'admin') {
@@ -20,7 +22,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     }
 
     const adminService = serviceFactory.getAdminService();
-    const result = await adminService.updateReportStatus(params.id, status);
+    const result = await adminService.updateReportStatus(id, status);
 
     if (!result.success) {
       return NextResponse.json(
@@ -42,9 +44,10 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: AsyncRouteParams<{ id: string }>
 ) {
   try {
+    const { id } = await params;
     const session = await getServerSession(authOptions);
     
     if (!session?.user || (session.user as any)?.role !== 'admin') {
@@ -52,7 +55,7 @@ export async function DELETE(
     }
 
     const adminService = serviceFactory.getAdminService();
-    const result = await adminService.deleteReport(params.id);
+    const result = await adminService.deleteReport(id);
 
     if (!result.success) {
       return NextResponse.json(

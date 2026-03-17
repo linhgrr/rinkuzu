@@ -225,6 +225,15 @@ export function DashboardClient({
     };
   }, []);
 
+  useEffect(() => {
+    router.prefetch('/adaptive-learning');
+    router.prefetch('/review');
+    router.prefetch(ROUTES.CREATE_QUIZ);
+    router.prefetch(ROUTES.EXPLORE);
+    router.prefetch(ROUTES.PENDING_QUIZZES);
+    router.prefetch('/profile');
+  }, [router]);
+
   return (
     <div className="min-h-screen bg-slate-50 pb-12 font-sans selection:bg-slate-900 selection:text-white">
       <Navigation initialSession={initialSession} />

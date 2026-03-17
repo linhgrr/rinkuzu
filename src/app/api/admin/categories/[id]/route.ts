@@ -4,13 +4,15 @@ import connectDB from '@/lib/mongoose';
 import Category from '@/models/Category';
 import Quiz from '@/models/Quiz';
 import { authOptions } from '@/lib/auth';
+import { AsyncRouteParams } from '@/types/next-route';
 
 // GET /api/admin/categories/[id] - Get single category
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: AsyncRouteParams<{ id: string }>
 ) {
   try {
+    const { id } = await params;
     const session = await getServerSession(authOptions);
     if (!session?.user || (session.user as any).role !== 'admin') {
       return NextResponse.json(
@@ -21,7 +23,7 @@ export async function GET(
 
     await connectDB();
 
-    const category = await Category.findById(params.id).populate('createdBy', 'email');
+    const category = await Category.findById(id).populate('createdBy', 'email');
 
     if (!category) {
       return NextResponse.json(
@@ -47,9 +49,10 @@ export async function GET(
 // PUT /api/admin/categories/[id] - Update category
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: AsyncRouteParams<{ id: string }>
 ) {
   try {
+    const { id } = await params;
     const session = await getServerSession(authOptions);
     if (!session?.user || (session.user as any).role !== 'admin') {
       return NextResponse.json(
@@ -70,7 +73,7 @@ export async function PUT(
 
     await connectDB();
 
-    const category = await Category.findById(params.id);
+    const category = await Category.findById(id);
 
     if (!category) {
       return NextResponse.json(
@@ -81,7 +84,7 @@ export async function PUT(
 
     // Check if name already exists (excluding current category)
     const existingCategory = await Category.findOne({ 
-      _id: { $ne: params.id },
+      _id: { $ne: id },
       name: { $regex: `^${name.trim()}$`, $options: 'i' } 
     });
 
@@ -117,9 +120,10 @@ export async function PUT(
 // DELETE /api/admin/categories/[id] - Delete category
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: AsyncRouteParams<{ id: string }>
 ) {
   try {
+    const { id } = await params;
     const session = await getServerSession(authOptions);
     if (!session?.user || (session.user as any).role !== 'admin') {
       return NextResponse.json(
@@ -130,7 +134,7 @@ export async function DELETE(
 
     await connectDB();
 
-    const category = await Category.findById(params.id);
+    const category = await Category.findById(id);
 
     if (!category) {
       return NextResponse.json(
@@ -140,7 +144,7 @@ export async function DELETE(
     }
 
     // Check if category is being used by any quizzes
-    const quizCount = await Quiz.countDocuments({ category: params.id });
+    const quizCount = await Quiz.countDocuments({ category: id });
 
     if (quizCount > 0) {
       return NextResponse.json(
@@ -149,7 +153,7 @@ export async function DELETE(
       );
     }
 
-    await Category.findByIdAndDelete(params.id);
+    await Category.findByIdAndDelete(id);
 
     return NextResponse.json({
       success: true,

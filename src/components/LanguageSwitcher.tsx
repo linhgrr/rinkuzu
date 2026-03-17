@@ -1,6 +1,6 @@
 'use client';
 
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { usePathname, useRouter } from '@/i18n/routing';
 import { useState, useRef, useEffect, useCallback, memo } from 'react';
 import { locales, localeLabels, localeFlags, type Locale } from '@/i18n/config';
@@ -15,6 +15,7 @@ export const LanguageSwitcher = memo(function LanguageSwitcher({
   variant = 'dropdown'
 }: LanguageSwitcherProps) {
   const locale = useLocale() as Locale;
+  const tCommon = useTranslations('common');
   const router = useRouter();
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
@@ -67,7 +68,7 @@ export const LanguageSwitcher = memo(function LanguageSwitcher({
       <button
         onClick={toggleDropdown}
         className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors"
-        aria-label="Change language"
+        aria-label={tCommon('changeLanguage')}
       >
         <span className="text-base">{localeFlags[locale]}</span>
         <span className="hidden sm:inline">{localeLabels[locale]}</span>

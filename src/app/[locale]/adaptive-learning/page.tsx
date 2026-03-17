@@ -178,5 +178,11 @@ export default async function AdaptiveLearningPage({ params }: { params: Promise
 
     const userId = session.user.id;
     const { subjects, sessionHistory } = await fetchInitialData(userId);
-    return <AdaptiveLearningDashboard initialSubjects={subjects} initialSessionHistory={sessionHistory} />;
+    return (
+        <AdaptiveLearningDashboard
+            initialSubjects={subjects}
+            initialSessionHistory={sessionHistory}
+            didHydrateFromServer
+        />
+    );
 }

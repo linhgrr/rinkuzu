@@ -6,12 +6,14 @@ import connectDB from '@/lib/mongoose';
 import DraftQuiz from '@/models/DraftQuiz';
 import { extractQuizFromS3Key } from '@/lib/quiz/extractApi';
 import { randomUUID } from 'crypto';
+import { AsyncRouteParams } from '@/types/next-route';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: AsyncRouteParams<{ id: string }>
 ) {
   try {
+    const { id } = await params;
     const session = await getServerSession(authOptions);
     if (!(session?.user as any)?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -49,7 +51,7 @@ export async function POST(
     // 2. status is 'processing' but lock is stale (older than LOCK_TIMEOUT_MS)
     const lockResult = await DraftQuiz.findOneAndUpdate(
       {
-        _id: params.id,
+        _id: id,
         userId: (session!.user as any).id,
         'chunks.chunkDetails': {
           $elemMatch: {
@@ -75,7 +77,7 @@ export async function POST(
     if (!lockResult) {
       // Could not acquire lock - check why
       const draft = await DraftQuiz.findOne({
-        _id: params.id,
+        _id: id,
         userId: (session!.user as any).id,
       });
 
@@ -139,7 +141,7 @@ export async function POST(
       }
 
       // Pre-AI check - double check if draft was deleted while waiting for lock.
-      const stillExists = await DraftQuiz.exists({ _id: params.id });
+      const stillExists = await DraftQuiz.exists({ _id: id });
       if (!stillExists) {
         throw new Error('Draft was deleted or cancelled');
       }
@@ -178,7 +180,7 @@ export async function POST(
 
       // Update draft with new questions
       const updateResult = await DraftQuiz.findOneAndUpdate(
-        { _id: params.id, 'chunks.chunkDetails.index': chunkIndex },
+        { _id: id, 'chunks.chunkDetails.index': chunkIndex },
         {
           $push: { questions: { $each: newQuestions } },
           $set: {
@@ -210,7 +212,7 @@ export async function POST(
       if (allAttempted) {
         const finalStatus = hasQuestions ? 'completed' : 'error';
         await DraftQuiz.updateOne(
-          { _id: params.id },
+          { _id: id },
           {
             $set: {
               status: finalStatus,
@@ -235,7 +237,7 @@ export async function POST(
     } catch (extractError: any) {
       // Mark chunk as error
       await DraftQuiz.updateOne(
-        { _id: params.id, 'chunks.chunkDetails.index': chunkIndex },
+        { _id: id, 'chunks.chunkDetails.index': chunkIndex },
         {
           $set: {
             'chunks.chunkDetails.$.status': 'error',

@@ -17,10 +17,11 @@ import {
     HiOutlineAcademicCap,
     HiOutlineTrendingUp,
 } from '@/components/icons';
-import { getSessionStatus, getSessionHistoryDetail } from './api-client';
+import { createSessionFromPipeline, getSessionStatus, getSessionHistoryDetail, isSessionNotFoundError, prefetchStartLearningData } from './api-client';
 import type { SessionStatus, SessionHistoryDetail } from './types';
 import { ExerciseHistoryTable } from './SessionHistory';
 import { ADAPTIVE_ROUTES } from './routes';
+import { getJobIdForSession, saveSessionJobMapping } from './session-storage';
 
 function SectionSkeleton() {
     return (
@@ -53,6 +54,8 @@ export default function SubjectDetails({ sessionId }: { sessionId: string }) {
     const [activeTab, setActiveTab] = useState<'graph' | 'mastery' | 'history'>('graph');
     const [historyDetail, setHistoryDetail] = useState<SessionHistoryDetail | null>(null);
     const [historyLoading, setHistoryLoading] = useState(false);
+    const [recoveringSession, setRecoveringSession] = useState(false);
+    const [didPrefetchStartLearning, setDidPrefetchStartLearning] = useState(false);
 
     useEffect(() => {
         let mounted = true;
@@ -68,6 +71,33 @@ export default function SubjectDetails({ sessionId }: { sessionId: string }) {
                 if (mounted) {
                     setStatus(sessionStatus);
                 }
+            } catch (error) {
+                if (!mounted || !isSessionNotFoundError(error)) {
+                    return;
+                }
+
+                const jobId = getJobIdForSession(sessionId);
+                if (!jobId) {
+                    return;
+                }
+
+                setRecoveringSession(true);
+                try {
+                    const newSession = await createSessionFromPipeline(jobId, 50);
+                    if (!mounted) {
+                        return;
+                    }
+
+                    localStorage.setItem('al_session_id', newSession.session_id);
+                    saveSessionJobMapping(newSession.session_id, jobId);
+                    router.replace(ADAPTIVE_ROUTES.subject(newSession.session_id));
+                    return;
+                } catch {
+                    if (!mounted) {
+                        return;
+                    }
+                    setRecoveringSession(false);
+                }
             } finally {
                 if (mounted) {
                     setLoading(false);
@@ -79,7 +109,51 @@ export default function SubjectDetails({ sessionId }: { sessionId: string }) {
         return () => {
             mounted = false;
         };
-    }, [sessionId, t]);
+    }, [router, sessionId, t]);
+
+    useEffect(() => {
+        router.prefetch(ADAPTIVE_ROUTES.dashboard);
+        router.prefetch(ADAPTIVE_ROUTES.exercise(sessionId));
+    }, [router, sessionId]);
+
+    useEffect(() => {
+        if (historyDetail) return;
+
+        let mounted = true;
+        const windowWithIdle = window as Window & {
+            requestIdleCallback?: (cb: () => void, opts?: { timeout?: number }) => number;
+            cancelIdleCallback?: (id: number) => void;
+        };
+
+        const hydrateHistory = () => {
+            getSessionHistoryDetail(sessionId)
+                .then((d) => {
+                    if (mounted) setHistoryDetail(d);
+                })
+                .catch(() => {
+                    // Intentionally ignore; tab-specific loader still handles retries visually.
+                });
+        };
+
+        let idleId: number | undefined;
+        let timeoutId: number | undefined;
+
+        if (windowWithIdle.requestIdleCallback) {
+            idleId = windowWithIdle.requestIdleCallback(hydrateHistory, { timeout: 1200 });
+        } else {
+            timeoutId = window.setTimeout(hydrateHistory, 300);
+        }
+
+        return () => {
+            mounted = false;
+            if (idleId !== undefined && windowWithIdle.cancelIdleCallback) {
+                windowWithIdle.cancelIdleCallback(idleId);
+            }
+            if (timeoutId !== undefined) {
+                window.clearTimeout(timeoutId);
+            }
+        };
+    }, [historyDetail, sessionId]);
 
     // Load MongoDB exercise history when tab selected
     useEffect(() => {
@@ -111,7 +185,16 @@ export default function SubjectDetails({ sessionId }: { sessionId: string }) {
         router.push(ADAPTIVE_ROUTES.exercise(sessionId));
     }, [router, sessionId]);
 
-    if (loading) {
+    const handlePrefetchStartLearning = useCallback(() => {
+        if (didPrefetchStartLearning) {
+            return;
+        }
+
+        setDidPrefetchStartLearning(true);
+        void prefetchStartLearningData(sessionId);
+    }, [didPrefetchStartLearning, sessionId]);
+
+    if (recoveringSession) {
         return (
             <div className="flex min-h-[50vh] items-center justify-center">
                 <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-200 border-t-slate-900" />
@@ -150,6 +233,8 @@ export default function SubjectDetails({ sessionId }: { sessionId: string }) {
                     <div className="shrink-0">
                         <Button
                             onClick={handleStartLearning}
+                            onMouseEnter={handlePrefetchStartLearning}
+                            onFocus={handlePrefetchStartLearning}
                             className="w-full sm:w-auto rounded-full bg-teal-600 text-white hover:bg-teal-700 focus:ring-teal-500 px-6 min-h-[44px] h-11 font-medium text-sm transition-all sm:hover:scale-105 active:scale-95 shadow-sm md:w-auto gap-2"
                         >
                             <HiOutlineLightningBolt className="h-4 w-4" />
@@ -160,7 +245,7 @@ export default function SubjectDetails({ sessionId }: { sessionId: string }) {
                 </div>
 
                 {/* Quick stats row */}
-                {status && (
+                {status ? (
                     <div className="relative mt-8 grid grid-cols-2 lg:grid-cols-4 gap-4">
                         <div className="rounded-xl bg-slate-50 border border-slate-100 px-5 py-4">
                             <div className="text-[10px] font-bold tracking-widest uppercase text-slate-500 mb-1 flex items-center gap-1.5">
@@ -191,7 +276,16 @@ export default function SubjectDetails({ sessionId }: { sessionId: string }) {
                             <div className="text-2xl font-mono text-slate-900">{status.total_correct}/{status.total_answered}</div>
                         </div>
                     </div>
-                )}
+                ) : loading ? (
+                    <div className="relative mt-8 grid grid-cols-2 lg:grid-cols-4 gap-4">
+                        {Array.from({ length: 4 }).map((_, idx) => (
+                            <div key={idx} className="rounded-xl bg-slate-50 border border-slate-100 px-5 py-4 animate-pulse">
+                                <div className="h-3 w-24 bg-slate-200 rounded mb-3" />
+                                <div className="h-8 w-16 bg-slate-200 rounded" />
+                            </div>
+                        ))}
+                    </div>
+                ) : null}
             </div>
 
             {/* ── Tab Switcher ── */}

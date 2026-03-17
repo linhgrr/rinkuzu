@@ -6,11 +6,11 @@ import { useTranslations } from 'next-intl';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { HiArrowRight, HiOutlineX, HiCheck, HiBookOpen, HiLightBulb } from '@/components/icons';
-import { getNextConcept, getTheory, getExercise, submitAnswer } from './api-client';
+import { createSessionFromPipeline, getNextConcept, getTheory, getExercise, submitAnswer, isSessionNotFoundError } from './api-client';
 import { DynamicMarkdownRenderer } from '@/components/ui/DynamicMarkdownRenderer';
 import { TextShimmer } from '@/components/ui/text-shimmer';
 import type { BloomLevel, Exercise, NextConcept, TheoryData } from './types';
-import { saveSessionExerciseOutcome } from './session-storage';
+import { getJobIdForSession, saveSessionExerciseOutcome, saveSessionJobMapping } from './session-storage';
 import { ADAPTIVE_ROUTES } from './routes';
 
 interface ExerciseProps {
@@ -49,6 +49,7 @@ export default function AdaptiveLearningExercise({ sessionId }: ExerciseProps) {
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [showTheory, setShowTheory] = useState(false);
+    const [recoveringSession, setRecoveringSession] = useState(false);
 
     const loadingRef = useRef(false);
     const isMountedRef = useRef(true);
@@ -137,6 +138,30 @@ export default function AdaptiveLearningExercise({ sessionId }: ExerciseProps) {
             if (!isLatestActiveRequest()) {
                 return;
             }
+
+            if (isSessionNotFoundError(err)) {
+                const mappedJobId = getJobIdForSession(sessionId);
+                if (mappedJobId) {
+                    setRecoveringSession(true);
+                    try {
+                        const freshSession = await createSessionFromPipeline(mappedJobId, 50);
+                        if (!isLatestActiveRequest()) {
+                            return;
+                        }
+
+                        localStorage.setItem('al_session_id', freshSession.session_id);
+                        saveSessionJobMapping(freshSession.session_id, mappedJobId);
+                        router.replace(ADAPTIVE_ROUTES.exercise(freshSession.session_id));
+                        return;
+                    } catch {
+                        if (!isLatestActiveRequest()) {
+                            return;
+                        }
+                        setRecoveringSession(false);
+                    }
+                }
+            }
+
             const message = err instanceof Error ? err.message : t('exercise.failedToLoadExercise');
             setError(message);
             setLoadingConcept(false);
@@ -150,6 +175,11 @@ export default function AdaptiveLearningExercise({ sessionId }: ExerciseProps) {
     useEffect(() => {
         void loadData();
     }, [loadData]);
+
+    useEffect(() => {
+        router.prefetch(ADAPTIVE_ROUTES.dashboard);
+        router.prefetch(ADAPTIVE_ROUTES.result(sessionId));
+    }, [router, sessionId]);
 
     const handleSubmit = useCallback(async () => {
         if (!selectedOption || !exercise) {
@@ -167,6 +197,30 @@ export default function AdaptiveLearningExercise({ sessionId }: ExerciseProps) {
             if (!isMountedRef.current) {
                 return;
             }
+
+            if (isSessionNotFoundError(err)) {
+                const mappedJobId = getJobIdForSession(sessionId);
+                if (mappedJobId) {
+                    setRecoveringSession(true);
+                    try {
+                        const freshSession = await createSessionFromPipeline(mappedJobId, 50);
+                        if (!isMountedRef.current) {
+                            return;
+                        }
+
+                        localStorage.setItem('al_session_id', freshSession.session_id);
+                        saveSessionJobMapping(freshSession.session_id, mappedJobId);
+                        router.replace(ADAPTIVE_ROUTES.exercise(freshSession.session_id));
+                        return;
+                    } catch {
+                        if (!isMountedRef.current) {
+                            return;
+                        }
+                        setRecoveringSession(false);
+                    }
+                }
+            }
+
             const message = err instanceof Error ? err.message : t('exercise.failedToSubmitAnswer');
             setError(message);
         } finally {
@@ -208,7 +262,7 @@ export default function AdaptiveLearningExercise({ sessionId }: ExerciseProps) {
         return Object.entries(exercise.options);
     }, [exercise]);
 
-    if (loadingConcept) {
+    if (loadingConcept || recoveringSession) {
         return (
             <div className="mx-auto flex min-h-[80vh] max-w-5xl items-center justify-center">
                 <div className="text-center">

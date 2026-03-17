@@ -22,6 +22,7 @@ import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { SkeletonCard } from './Skeletons';
 import { SubjectCard } from './SubjectCard';
 import { ADAPTIVE_ROUTES } from './routes';
+import { saveSessionJobMapping } from './session-storage';
 
 // ─── Dashboard ────────────────────────────────────────────────────────────────
 
@@ -82,11 +83,13 @@ function calculateLearningStreak(sessions: SessionHistoryItem[]): number {
 interface DashboardProps {
     initialSubjects: PipelineJobHistoryItem[];
     initialSessionHistory: SessionHistoryItem[];
+    didHydrateFromServer?: boolean;
 }
 
 export default function AdaptiveLearningDashboard({
     initialSubjects,
-    initialSessionHistory
+    initialSessionHistory,
+    didHydrateFromServer = false,
 }: DashboardProps) {
     const router = useRouter();
     const t = useTranslations('adaptiveLearning');
@@ -145,6 +148,7 @@ export default function AdaptiveLearningDashboard({
         try {
             const session = await createSessionFromPipeline(jobId, 50);
             localStorage.setItem('al_session_id', session.session_id);
+            saveSessionJobMapping(session.session_id, jobId);
             router.push(ADAPTIVE_ROUTES.subject(session.session_id));
         } catch (err) {
             console.error(`Error creating session: ${(err as Error).message}`);
@@ -209,7 +213,11 @@ export default function AdaptiveLearningDashboard({
         };
     }, [sessionHistory]);
 
-    const hasServerHydratedData = initialSubjects.length > 0 || initialSessionHistory.length > 0;
+    const hasServerHydratedData = didHydrateFromServer;
+
+    useEffect(() => {
+        router.prefetch(ADAPTIVE_ROUTES.upload);
+    }, [router]);
 
     useEffect(() => {
         let isActive = true;
@@ -226,12 +234,25 @@ export default function AdaptiveLearningDashboard({
             setError(null);
 
             if (hasServerHydratedData) {
-                const [healthResult] = await Promise.allSettled([checkApiHealth()]);
+                const [healthResult, subjectsResult, historyResult] = await Promise.allSettled([
+                    checkApiHealth(),
+                    getSubjects(),
+                    getSessionHistory(5),
+                ]);
                 if (!isActive) {
                     return;
                 }
 
                 applyHealthResult(healthResult);
+
+                // Keep UI responsive by refreshing hydrated data in background.
+                if (subjectsResult.status === 'fulfilled') {
+                    setSubjects(subjectsResult.value);
+                }
+
+                if (historyResult.status === 'fulfilled') {
+                    setSessionHistory(historyResult.value);
+                }
                 return;
             }
 

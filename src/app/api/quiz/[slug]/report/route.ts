@@ -2,12 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
+import { AsyncRouteParams } from '@/types/next-route';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { slug: string } }
+  { params }: AsyncRouteParams<{ slug: string }>
 ) {
   try {
+    const { slug } = await params;
     const session = await getServerSession(authOptions);
     
     if (!session?.user) {
@@ -27,7 +29,7 @@ export async function POST(
     const quizService = serviceFactory.getQuizService();
     
     const result = await quizService.reportQuiz(
-      params.slug,
+      slug,
       content.trim(),
       session.user.email!,
       session.user.name || session.user.email || 'Anonymous'

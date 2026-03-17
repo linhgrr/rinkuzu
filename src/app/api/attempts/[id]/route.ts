@@ -2,12 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
+import { AsyncRouteParams } from '@/types/next-route';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: AsyncRouteParams<{ id: string }>
 ) {
   try {
+    const { id } = await params;
     const session = await getServerSession(authOptions);
     const { searchParams } = new URL(request.url);
     const userEmail = searchParams.get('userEmail');
@@ -24,7 +26,7 @@ export async function GET(
     
     // Use session email if available, otherwise use userEmail from params
     const email = session?.user?.email || userEmail!;
-    const result = await userService.getAttemptDetails(params.id, email);
+    const result = await userService.getAttemptDetails(id, email);
 
     if (!result.success) {
       return NextResponse.json(
@@ -45,4 +47,4 @@ export async function GET(
       { status: 500 }
     );
   }
-} 
+}

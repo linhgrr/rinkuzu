@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { serviceFactory } from '@/lib/serviceFactory';
+import { AsyncRouteParams } from '@/types/next-route';
 
 // GET /api/categories/[slug] - Get category by slug with quizzes
 export async function GET(
   request: NextRequest,
-  { params }: { params: { slug: string } }
+  { params }: AsyncRouteParams<{ slug: string }>
 ) {
   try {
-    const slug = params.slug;
+    const { slug } = await params;
     if (!slug) {
       return NextResponse.json(
         { success: false, error: 'Slug is required' },
@@ -44,4 +45,4 @@ export async function GET(
       { status: 500 }
     );
   }
-} 
+}

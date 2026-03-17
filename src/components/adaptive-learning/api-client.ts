@@ -9,11 +9,46 @@ import {
 const API_BASE = '';
 const DEFAULT_TIMEOUT_MS = 60_000;
 const inFlightGetRequests = new Map<string, Promise<unknown>>();
+const responseCache = new Map<string, { expiresAt: number; data: unknown }>();
 
 type ApiFetchOptions = RequestInit & {
     timeoutMs?: number;
     dedupeKey?: string;
+    cacheTtlMs?: number;
 };
+
+function readCachedResponse<T>(key: string): T | null {
+    const hit = responseCache.get(key);
+    if (!hit) {
+        return null;
+    }
+
+    if (Date.now() >= hit.expiresAt) {
+        responseCache.delete(key);
+        return null;
+    }
+
+    return hit.data as T;
+}
+
+function writeCachedResponse<T>(key: string, data: T, ttlMs?: number): void {
+    if (!ttlMs || ttlMs <= 0) {
+        return;
+    }
+
+    responseCache.set(key, {
+        data,
+        expiresAt: Date.now() + ttlMs,
+    });
+}
+
+function invalidateCacheByPrefixes(prefixes: string[]): void {
+    for (const key of responseCache.keys()) {
+        if (prefixes.some((prefix) => key.startsWith(prefix))) {
+            responseCache.delete(key);
+        }
+    }
+}
 
 async function executeRequest<T>(
     path: string,
@@ -60,7 +95,20 @@ async function apiFetch<T>(path: string, options?: ApiFetchOptions): Promise<T> 
     const dedupeKey = options?.dedupeKey || path;
 
     if (!isGet) {
+        // Writes can affect several derived reads in adaptive dashboards.
+        if (method === 'POST' || method === 'PATCH' || method === 'PUT' || method === 'DELETE') {
+            invalidateCacheByPrefixes([
+                '/api/adaptive-learning/session/',
+                '/api/adaptive-learning/history/',
+                '/api/adaptive-learning/subjects',
+            ]);
+        }
         return executeRequest<T>(path, method, options);
+    }
+
+    const cached = readCachedResponse<T>(dedupeKey);
+    if (cached !== null) {
+        return cached;
     }
 
     const inFlight = inFlightGetRequests.get(dedupeKey);
@@ -69,6 +117,10 @@ async function apiFetch<T>(path: string, options?: ApiFetchOptions): Promise<T> 
     }
 
     const requestPromise = executeRequest<T>(path, method, options)
+        .then((data) => {
+            writeCachedResponse(dedupeKey, data, options?.cacheTtlMs);
+            return data;
+        })
         .finally(() => inFlightGetRequests.delete(dedupeKey));
 
     inFlightGetRequests.set(dedupeKey, requestPromise as Promise<unknown>);
@@ -108,24 +160,32 @@ export async function submitAnswer(sessionId: string, answer: string): Promise<S
 }
 
 export async function getSessionStatus(sessionId: string): Promise<SessionStatus> {
-    return apiFetch<SessionStatus>(`/api/adaptive-learning/session/${sessionId}/status`);
+    return apiFetch<SessionStatus>(`/api/adaptive-learning/session/${sessionId}/status`, {
+        cacheTtlMs: 10_000,
+    });
 }
 
 export async function getKnowledgeGraph(sessionId: string): Promise<KnowledgeGraphData> {
-    return apiFetch<KnowledgeGraphData>(`/api/adaptive-learning/session/${sessionId}/graph`);
+    return apiFetch<KnowledgeGraphData>(`/api/adaptive-learning/session/${sessionId}/graph`, {
+        cacheTtlMs: 10_000,
+    });
 }
 
 export async function getMasteryMatrix(sessionId: string): Promise<MasteryMatrixData> {
-    return apiFetch<MasteryMatrixData>(`/api/adaptive-learning/session/${sessionId}/mastery-matrix`);
+    return apiFetch<MasteryMatrixData>(`/api/adaptive-learning/session/${sessionId}/mastery-matrix`, {
+        cacheTtlMs: 10_000,
+    });
 }
 
 export async function getConceptDetail(sessionId: string, conceptId: string): Promise<ConceptDetail> {
-    return apiFetch<ConceptDetail>(`/api/adaptive-learning/session/${sessionId}/concept/${conceptId}`);
+    return apiFetch<ConceptDetail>(`/api/adaptive-learning/session/${sessionId}/concept/${conceptId}`, {
+        cacheTtlMs: 10_000,
+    });
 }
 
 export async function checkApiHealth(): Promise<boolean> {
     try {
-        const res = await fetch('/api/adaptive-learning/health');
+        const res = await fetch('/api/adaptive-learning/health', { cache: 'no-store' });
         return res.ok;
     } catch {
         return false;
@@ -180,18 +240,28 @@ export async function checkPipelineAvailable(): Promise<boolean> {
 
 export async function getSessionHistory(limit = 50): Promise<SessionHistoryItem[]> {
     const res = await apiFetch<{ sessions: SessionHistoryItem[]; count: number }>(
-        `/api/adaptive-learning/history/sessions?limit=${limit}`
+        `/api/adaptive-learning/history/sessions?limit=${limit}`,
+        { cacheTtlMs: 15_000 }
     );
     return res.sessions;
 }
 
 export async function getSessionHistoryDetail(sessionId: string): Promise<SessionHistoryDetail> {
-    return apiFetch<SessionHistoryDetail>(`/api/adaptive-learning/history/sessions/${sessionId}`);
+    return apiFetch<SessionHistoryDetail>(`/api/adaptive-learning/history/sessions/${sessionId}`, {
+        cacheTtlMs: 30_000,
+    });
+}
+
+export async function prefetchStartLearningData(sessionId: string): Promise<void> {
+    await Promise.allSettled([
+        getSessionStatus(sessionId),
+    ]);
 }
 
 export async function getPipelineJobHistory(limit = 20): Promise<PipelineJobHistoryItem[]> {
     const res = await apiFetch<{ jobs: PipelineJobHistoryItem[]; count: number }>(
-        `/api/adaptive-learning/history/pipeline-jobs?limit=${limit}`
+        `/api/adaptive-learning/history/pipeline-jobs?limit=${limit}`,
+        { cacheTtlMs: 10_000 }
     );
     return res.jobs;
 }
@@ -202,7 +272,8 @@ export async function getPipelineJobHistory(limit = 20): Promise<PipelineJobHist
  */
 export async function getSubjects(): Promise<PipelineJobHistoryItem[]> {
     const res = await apiFetch<{ subjects: PipelineJobHistoryItem[]; count: number } | PipelineJobHistoryItem[]>(
-        '/api/adaptive-learning/subjects'
+        '/api/adaptive-learning/subjects',
+        { cacheTtlMs: 10_000 }
     );
     return Array.isArray(res) ? res : res.subjects;
 }
@@ -215,4 +286,13 @@ export async function deleteSubject(
         `/api/adaptive-learning/history/subjects/${jobId}?delete_sessions=${deleteSessions ? 'true' : 'false'}`,
         { method: 'DELETE' },
     );
+}
+
+export function isSessionNotFoundError(error: unknown): boolean {
+    if (!(error instanceof Error)) {
+        return false;
+    }
+
+    const message = error.message.toLowerCase();
+    return message.includes('session not found') || message.includes('session_not_found');
 }

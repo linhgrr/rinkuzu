@@ -252,6 +252,14 @@ export async function getSessionHistoryDetail(sessionId: string): Promise<Sessio
     });
 }
 
+export async function getSessionHistoryDetailFresh(sessionId: string): Promise<SessionHistoryDetail> {
+    return executeRequest<SessionHistoryDetail>(
+        `/api/adaptive-learning/history/sessions/${sessionId}`,
+        'GET',
+        { cache: 'no-store' },
+    );
+}
+
 export async function prefetchStartLearningData(sessionId: string): Promise<void> {
     await Promise.allSettled([
         getSessionStatus(sessionId),

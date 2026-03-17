@@ -1,4 +1,5 @@
 import 'server-only';
+import { unstable_cache } from 'next/cache';
 import connectDB from '@/lib/mongoose';
 import UserProgress from '@/models/UserProgress';
 import QuestionProgress from '@/models/QuestionProgress';
@@ -209,15 +210,7 @@ export async function getUserProgressStats(
     'currentStreak longestStreak streakFreezeCount totalXp weeklyActivity totalQuestionsLearned totalReviewSessions averageAccuracy';
 
   const [uProgress, dueCount] = await Promise.all([
-    UserProgress.findOneAndUpdate(
-      { userId },
-      { $setOnInsert: { userId } },
-      {
-        upsert: true,
-        new: true,
-        setDefaultsOnInsert: true,
-      }
-    )
+    UserProgress.findOne({ userId })
       .select(projection)
       .lean<UserProgressStatsDoc>()
       .exec(),
@@ -228,7 +221,20 @@ export async function getUserProgressStats(
   ]);
 
   if (!uProgress) {
-    throw new Error('Failed to load user progress');
+    return {
+      streak: 0,
+      longestStreak: 0,
+      streakFreezeCount: 0,
+      xp: 0,
+      level: calculateLevel(0),
+      xpToNextLevel: xpForNextLevel(0),
+      levelProgress: levelProgress(0),
+      dueCount,
+      weeklyActivity: {},
+      totalQuestionsLearned: 0,
+      totalReviewSessions: 0,
+      averageAccuracy: 0,
+    };
   }
 
   const totalXp = uProgress.totalXp ?? 0;
@@ -296,6 +302,14 @@ async function getDashboardQuizList(filter: Record<string, unknown>, limit: numb
   return quizzes.map(serializeQuizForClient);
 }
 
+const getCachedPublishedDashboardQuizzes = unstable_cache(
+  async () => getDashboardQuizList({ status: 'published', isPrivate: false }, 3),
+  ['dashboard-published-quizzes-v1'],
+  {
+    revalidate: 60,
+  }
+);
+
 export async function getDashboardBootstrapData(userId: string, _userRole?: string): Promise<{
   stats: DashboardStatsData;
   quizzes: DashboardQuiz[];
@@ -307,14 +321,9 @@ export async function getDashboardBootstrapData(userId: string, _userRole?: stri
     ? new Types.ObjectId(userId)
     : userId;
 
-  const publishedFilter: Record<string, unknown> = {
-    status: 'published',
-    isPrivate: false,
-  };
-
   const [stats, quizzes, yourQuizzes] = await Promise.all([
     getUserProgressStats(userId, { skipConnect: true }),
-    getDashboardQuizList(publishedFilter, 3),
+    getCachedPublishedDashboardQuizzes(),
     getDashboardQuizList({ author: authorFilter }, 3),
   ]);
 

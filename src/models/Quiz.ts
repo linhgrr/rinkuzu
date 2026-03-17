@@ -143,6 +143,7 @@ const QuizSchema = new Schema<IQuiz>({
 
 // Indexes for better performance
 QuizSchema.index({ status: 1, createdAt: -1 });
+QuizSchema.index({ status: 1, isPrivate: 1, createdAt: -1 });
 QuizSchema.index({ author: 1, createdAt: -1 });
 QuizSchema.index({ category: 1, status: 1, isPrivate: 1, createdAt: -1 });
 QuizSchema.index({ category: 1, status: 1, createdAt: -1 });

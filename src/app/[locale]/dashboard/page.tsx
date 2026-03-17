@@ -12,8 +12,10 @@ export default async function DashboardPage({
 }: {
   params: Promise<{ locale: string }>;
 }) {
-  const { locale } = await params;
-  const session = await getServerSession(authOptions);
+  const [{ locale }, session] = await Promise.all([
+    params,
+    getServerSession(authOptions),
+  ]);
 
   if (!session?.user) {
     const loginPath = locale === defaultLocale ? '/login' : `/${locale}/login`;

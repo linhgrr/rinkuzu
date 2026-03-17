@@ -28,6 +28,7 @@ import dagre from 'dagre';
 import { createSessionFromPipeline, getPipelineJobStatus } from './api-client';
 import type { PipelineStatus, PipelineJobStatus } from './types';
 import { ADAPTIVE_ROUTES } from './routes';
+import { saveSessionJobMapping } from './session-storage';
 
 interface ConceptNodeData extends Record<string, unknown> {
     label: string;
@@ -318,6 +319,7 @@ export default function AdaptiveLearningProcessing() {
                     try {
                         const session = await createSessionFromPipeline(jobId, 50);
                         localStorage.setItem('al_session_id', session.session_id);
+                        saveSessionJobMapping(session.session_id, jobId);
                         localStorage.removeItem('al_pipeline_job_id');
                         timeoutRef.current = setTimeout(() => {
                             router.push(ADAPTIVE_ROUTES.subject(session.session_id));

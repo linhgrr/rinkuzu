@@ -15,8 +15,8 @@ export function generateSlug(title: string): string {
     + '-' + Date.now().toString().slice(-6);
 }
 
-export function formatDate(date: Date): string {
-  return new Intl.DateTimeFormat('en-US', {
+export function formatDate(date: Date, locale?: string): string {
+  return new Intl.DateTimeFormat(locale, {
     year: 'numeric',
     month: 'short',
     day: 'numeric',

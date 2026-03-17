@@ -196,8 +196,13 @@ function serializeQuizForClient(rawQuiz: any): DashboardQuiz {
   };
 }
 
-export async function getUserProgressStats(userId: string): Promise<DashboardStatsData> {
-  await connectDB();
+export async function getUserProgressStats(
+  userId: string,
+  options?: { skipConnect?: boolean }
+): Promise<DashboardStatsData> {
+  if (!options?.skipConnect) {
+    await connectDB();
+  }
 
   const now = new Date();
   const projection =
@@ -308,7 +313,7 @@ export async function getDashboardBootstrapData(userId: string, _userRole?: stri
   };
 
   const [stats, quizzes, yourQuizzes] = await Promise.all([
-    getUserProgressStats(userId),
+    getUserProgressStats(userId, { skipConnect: true }),
     getDashboardQuizList(publishedFilter, 3),
     getDashboardQuizList({ author: authorFilter }, 3),
   ]);

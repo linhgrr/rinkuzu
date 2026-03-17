@@ -2,21 +2,23 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
+import { AsyncRouteParams } from '@/types/next-route';
 
 const bookmarkService = serviceFactory.getBookmarkService();
 
 // DELETE - Remove bookmark
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: AsyncRouteParams<{ id: string }>
 ) {
   try {
+    const { id } = await params;
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
-    await bookmarkService.deleteBookmarkByUser(params.id, session.user.email);
+    await bookmarkService.deleteBookmarkByUser(id, session.user.email);
 
     return NextResponse.json({
       success: true,
@@ -37,4 +39,4 @@ export async function DELETE(
       { status: 500 }
     );
   }
-} 
+}

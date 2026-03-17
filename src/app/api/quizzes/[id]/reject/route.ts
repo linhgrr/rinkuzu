@@ -2,12 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
+import { AsyncRouteParams } from '@/types/next-route';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: AsyncRouteParams<{ id: string }>
 ) {
   try {
+    const { id } = await params;
     const session = await getServerSession(authOptions);
     if (!session?.user || (session.user as any).role !== 'admin') {
       return NextResponse.json(
@@ -19,7 +21,7 @@ export async function POST(
     const { reason } = await request.json();
     const quizService = serviceFactory.getQuizService();
     
-    const result = await quizService.rejectQuiz(params.id, reason);
+    const result = await quizService.rejectQuiz(id, reason);
 
     if (!result.success) {
       return NextResponse.json(
@@ -41,4 +43,4 @@ export async function POST(
       { status: 500 }
     );
   }
-} 
+}

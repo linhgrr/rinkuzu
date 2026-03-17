@@ -2,6 +2,7 @@ import type { Exercise, SubmitResult } from './types';
 
 const RESULT_KEY_PREFIX = 'al_session_result';
 const EXERCISE_KEY_PREFIX = 'al_session_exercise';
+const SESSION_JOB_MAP_KEY = 'al_session_job_map';
 
 function getResultKey(sessionId: string): string {
     return `${RESULT_KEY_PREFIX}:${sessionId}`;
@@ -21,6 +22,51 @@ function parseJson<T>(value: string | null): T | null {
     } catch {
         return null;
     }
+}
+
+type SessionJobMap = Record<string, { jobId: string; updatedAt: number }>;
+
+function readSessionJobMap(): SessionJobMap {
+    return parseJson<SessionJobMap>(localStorage.getItem(SESSION_JOB_MAP_KEY)) || {};
+}
+
+function writeSessionJobMap(map: SessionJobMap): void {
+    localStorage.setItem(SESSION_JOB_MAP_KEY, JSON.stringify(map));
+}
+
+export function saveSessionJobMapping(sessionId: string, jobId: string): void {
+    const map = readSessionJobMap();
+    map[sessionId] = {
+        jobId,
+        updatedAt: Date.now(),
+    };
+
+    // Keep storage bounded to most recent 30 sessions.
+    const entries = Object.entries(map)
+        .sort(([, a], [, b]) => b.updatedAt - a.updatedAt)
+        .slice(0, 30);
+
+    writeSessionJobMap(Object.fromEntries(entries));
+}
+
+export function getJobIdForSession(sessionId: string): string | null {
+    const map = readSessionJobMap();
+    return map[sessionId]?.jobId || null;
+}
+
+export function replaceSessionJobMapping(oldSessionId: string, newSessionId: string): void {
+    const map = readSessionJobMap();
+    const source = map[oldSessionId];
+    if (!source) {
+        return;
+    }
+
+    map[newSessionId] = {
+        ...source,
+        updatedAt: Date.now(),
+    };
+    delete map[oldSessionId];
+    writeSessionJobMap(map);
 }
 
 export function saveSessionExerciseOutcome(

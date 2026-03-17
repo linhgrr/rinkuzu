@@ -41,7 +41,8 @@
     "showingResults": "Showing {from} to {to} of {total} results",
     "signIn": "Sign In",
     "getStarted": "Get Started",
-    "logout": "Logout"
+    "logout": "Logout",
+    "changeLanguage": "Change language"
   },
   "nav": {
     "home": "Home",
@@ -880,6 +881,7 @@
     "role": "Role",
     "subscription": "Subscription",
     "created": "Created",
+    "updated": "Updated",
     "actions": "Actions",
     "you": "(you)",
     "administrator": "Administrator",

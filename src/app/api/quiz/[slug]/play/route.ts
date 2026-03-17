@@ -2,20 +2,22 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
+import { AsyncRouteParams } from '@/types/next-route';
 
 const quizService = serviceFactory.getQuizService();
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { slug: string } }
+  { params }: AsyncRouteParams<{ slug: string }>
 ) {
   try {
+    const { slug } = await params;
     const session = await getServerSession(authOptions);
     
     const userRole = (session?.user as any)?.role;
     const userId = (session?.user as any)?.id;
 
-    const result = await quizService.getQuizForPlay(params.slug, userRole, userId);
+    const result = await quizService.getQuizForPlay(slug, userRole, userId);
 
     if (!result.success) {
       return NextResponse.json(
@@ -36,4 +38,4 @@ export async function GET(
       { status: 500 }
     );
   }
-} 
+}

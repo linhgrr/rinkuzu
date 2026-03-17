@@ -5,12 +5,14 @@ import { authOptions } from '@/lib/auth';
 import connectDB from '@/lib/mongoose';
 import DraftQuiz from '@/models/DraftQuiz';
 import { deletePDF } from '@/lib/s3';
+import { AsyncRouteParams } from '@/types/next-route';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: AsyncRouteParams<{ id: string }>
 ) {
   try {
+    const { id } = await params;
     const session = await getServerSession(authOptions);
     if (!(session?.user as any)?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -19,7 +21,7 @@ export async function GET(
     await connectDB();
 
     const draft = await DraftQuiz.findOne({
-      _id: params.id,
+      _id: id,
       userId: ((session!.user as any) as any).id,
     }).lean() as any;
 
@@ -50,9 +52,10 @@ export async function GET(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: AsyncRouteParams<{ id: string }>
 ) {
   try {
+    const { id } = await params;
     const session = await getServerSession(authOptions);
     if (!(session?.user as any)?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -62,7 +65,7 @@ export async function DELETE(
 
     // Find draft first to get pdfKey
     const draft = await DraftQuiz.findOne({
-      _id: params.id,
+      _id: id,
       userId: (session!.user as any).id,
     });
 
@@ -71,7 +74,7 @@ export async function DELETE(
     }
 
     // Delete from MongoDB
-    await DraftQuiz.deleteOne({ _id: params.id });
+    await DraftQuiz.deleteOne({ _id: id });
 
     // Cleanup S3 (best effort, don't fail if this fails)
     if (draft.pdfData?.pdfKey) {

@@ -7,16 +7,12 @@ import DraftQuiz from '@/models/DraftQuiz';
 import Category from '@/models/Category';
 import DraftEditClient from './DraftEditClient';
 import { getSignedPDFUrl } from '@/lib/s3';
+import { AsyncRouteParams } from '@/types/next-route';
 
-interface Props {
-  params: {
-    id: string;
-    locale: string;
-  };
-}
+type Props = AsyncRouteParams<{ id: string; locale: string }>;
 
 export default async function DraftEditPage({ params }: Props) {
-  const { id, locale } = params;
+  const { id, locale } = await params;
   const session = await getServerSession(authOptions);
   if (!(session?.user as any)?.id) {
     redirect(`/${locale}/login`);
@@ -55,8 +51,8 @@ export default async function DraftEditPage({ params }: Props) {
   }
 
   return (
-    <DraftEditClient 
-      initialDraft={sanitizedDraft} 
+    <DraftEditClient
+      initialDraft={sanitizedDraft}
       initialCategory={initialCategory}
       locale={locale}
     />

@@ -733,8 +733,8 @@ export default function AdminPlansPage() {
                         {/* Plan Info */}
                         <div className="mt-4 pt-4 border-t border-gray-100">
                           <div className="text-xs text-gray-500 space-y-1">
-                            <div>Created: {new Date(plan.createdAt).toLocaleDateString()}</div>
-                            <div>Updated: {new Date(plan.updatedAt).toLocaleDateString()}</div>
+                            <div>{t('created')}: {new Date(plan.createdAt).toLocaleDateString()}</div>
+                            <div>{t('updated')}: {new Date(plan.updatedAt).toLocaleDateString()}</div>
                           </div>
                         </div>
                       </CardContent>

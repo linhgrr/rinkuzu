@@ -2,16 +2,18 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
+import { AsyncRouteParams } from '@/types/next-route';
 
 // GET /api/quiz/[slug]/discussions - Get all discussions for a quiz
 export async function GET(
   request: NextRequest,
-  { params }: { params: { slug: string } }
+  { params }: AsyncRouteParams<{ slug: string }>
 ) {
   try {
+    const { slug } = await params;
     const quizService = serviceFactory.getQuizService();
     
-    const result = await quizService.getQuizDiscussions(params.slug);
+    const result = await quizService.getQuizDiscussions(slug);
 
     if (!result.success) {
       return NextResponse.json(
@@ -36,9 +38,10 @@ export async function GET(
 // POST /api/quiz/[slug]/discussions - Add a new comment to a question
 export async function POST(
   request: NextRequest,
-  { params }: { params: { slug: string } }
+  { params }: AsyncRouteParams<{ slug: string }>
 ) {
   try {
+    const { slug } = await params;
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
       return NextResponse.json(
@@ -59,7 +62,7 @@ export async function POST(
     const quizService = serviceFactory.getQuizService();
     
     const result = await quizService.addDiscussionComment(
-      params.slug,
+      slug,
       questionIndex,
       content.trim(),
       session.user.email

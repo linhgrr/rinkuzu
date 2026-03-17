@@ -41,7 +41,8 @@
     "showingResults": "Hiển thị {from} đến {to} trong tổng số {total} kết quả",
     "signIn": "Đăng nhập",
     "getStarted": "Bắt đầu",
-    "logout": "Đăng xuất"
+    "logout": "Đăng xuất",
+    "changeLanguage": "Đổi ngôn ngữ"
   },
   "nav": {
     "home": "Trang chủ",
@@ -401,6 +402,7 @@
         "afterMerge": "Sau khi hợp nhất",
         "relations": "Quan hệ"
       },
+      "progress": "Tiến độ",
       "didYouKnow": "Bạn có biết?",
       "didYouKnowDescription": "AI của chúng tôi sử dụng mô hình ngôn ngữ tiên tiến để hiểu nội dung và tạo ra lộ trình học tập hiệu quả nhất cho bạn."
     },
@@ -879,6 +881,7 @@
     "role": "Vai trò",
     "subscription": "Gói đăng ký",
     "created": "Ngày tạo",
+    "updated": "Cập nhật",
     "actions": "Thao tác",
     "you": "(bạn)",
     "administrator": "Quản trị viên",

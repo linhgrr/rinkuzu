@@ -2,11 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { ServiceFactory } from '@/lib/serviceFactory'
+import { AsyncRouteParams } from '@/types/next-route'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: AsyncRouteParams<{ id: string }>) {
   try {
+    const { id } = await params
     const session = await getServerSession(authOptions)
     if (!session?.user || (session.user as any).role !== 'admin') {
       return NextResponse.json({ success: false, error: 'Admin access required' }, { status: 403 })
@@ -16,7 +18,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     
     // Get all subscription history and find the specific one
     const allSubscriptions = await subscriptionService.getSubscriptionHistory('')
-    const subscription = allSubscriptions.find((sub: any) => sub._id.toString() === params.id)
+    const subscription = allSubscriptions.find((sub: any) => sub._id.toString() === id)
 
     if (!subscription) {
       return NextResponse.json({ success: false, error: 'Subscription not found' }, { status: 404 })
@@ -29,8 +31,9 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, { params }: AsyncRouteParams<{ id: string }>) {
   try {
+    const { id } = await params
     const session = await getServerSession(authOptions)
     if (!session?.user || (session.user as any).role !== 'admin') {
       return NextResponse.json({ success: false, error: 'Admin access required' }, { status: 403 })
@@ -38,7 +41,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
 
     const body = await request.json()
     const subscriptionService = ServiceFactory.createSubscriptionService()
-    const result = await subscriptionService.updateSubscriptionById(params.id, body)
+    const result = await subscriptionService.updateSubscriptionById(id, body)
     if (!result.success) {
       return NextResponse.json({ success: false, error: result.error }, { status: 400 })
     }

@@ -2,13 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
+import { AsyncRouteParams } from '@/types/next-route';
 
 // GET /api/quizzes/[id] - Get specific quiz
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: AsyncRouteParams<{ id: string }>
 ) {
   try {
+    const { id } = await params;
     const session = await getServerSession(authOptions);
     if (!session?.user) {
       return NextResponse.json(
@@ -20,7 +22,7 @@ export async function GET(
     const quizService = serviceFactory.getQuizService();
 
     const result = await quizService.getQuizById(
-      params.id,
+      id,
       session.user.email!,
       (session.user as any).role
     );
@@ -71,9 +73,10 @@ export async function GET(
 // PUT /api/quizzes/[id] - Update quiz (only author or admin)
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: AsyncRouteParams<{ id: string }>
 ) {
   try {
+    const { id } = await params;
     const session = await getServerSession(authOptions);
     if (!session?.user) {
       return NextResponse.json(
@@ -86,7 +89,7 @@ export async function PUT(
     const quizService = serviceFactory.getQuizService();
 
     const result = await quizService.updateQuiz(
-      params.id,
+      id,
       quizData,
       session.user.email!,
       (session.user as any).role
@@ -116,9 +119,10 @@ export async function PUT(
 // DELETE /api/quizzes/[id] - Delete quiz (only author or admin)
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: AsyncRouteParams<{ id: string }>
 ) {
   try {
+    const { id } = await params;
     const session = await getServerSession(authOptions);
     if (!session?.user) {
       return NextResponse.json(
@@ -130,7 +134,7 @@ export async function DELETE(
     const quizService = serviceFactory.getQuizService();
 
     const result = await quizService.deleteQuiz(
-      params.id,
+      id,
       session.user.email!,
       (session.user as any).role
     );
@@ -154,4 +158,4 @@ export async function DELETE(
       { status: 500 }
     );
   }
-} 
+}

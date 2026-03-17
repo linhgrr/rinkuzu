@@ -2,11 +2,13 @@ import AdaptiveLearningUpload from '@/components/adaptive-learning/Upload';
 import { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import { buildLocalizedMetadata } from '@/lib/seo';
+import { AsyncRouteParams } from '@/types/next-route';
 
-export async function generateMetadata({ params }: { params: { locale: string } }): Promise<Metadata> {
-    const t = await getTranslations({ locale: params.locale, namespace: 'adaptiveLearning.meta.upload' });
+export async function generateMetadata({ params }: AsyncRouteParams<{ locale: string }>): Promise<Metadata> {
+    const { locale } = await params;
+    const t = await getTranslations({ locale, namespace: 'adaptiveLearning.meta.upload' });
     return buildLocalizedMetadata({
-        locale: params.locale,
+        locale,
         path: '/adaptive-learning/upload',
         title: t('title'),
         description: t('description'),

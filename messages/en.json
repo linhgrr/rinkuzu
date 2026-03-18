@@ -330,7 +330,8 @@
         "question": "Question",
         "result": "Result",
         "time": "Time",
-        "noExercise": "No exercises yet."
+        "noExercise": "No exercises yet.",
+        "exerciseDetails": "Exercise Details"
       }
     },
     "howItWorksTitle": "How it works",

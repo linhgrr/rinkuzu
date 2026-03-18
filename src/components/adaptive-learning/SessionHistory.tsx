@@ -1,10 +1,13 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations, useLocale } from 'next-intl';
 import { Badge } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { Modal } from '@/components/ui/Modal';
+import { Pagination } from '@/components/ui/Pagination';
+import { DynamicMarkdownRenderer } from '@/components/ui/DynamicMarkdownRenderer';
 import {
     HiOutlineAcademicCap,
     HiOutlineChartBar,
@@ -12,9 +15,11 @@ import {
     HiOutlineBookOpen,
     HiCheck,
     HiOutlineX,
+    HiOutlineEye,
 } from '@/components/icons';
 import { getSessionHistory } from './api-client';
-import type { SessionHistoryItem } from './types';
+import { BLOOM_LABELS } from './types';
+import type { SessionHistoryItem, ExerciseHistoryFull } from './types';
 
 function formatDate(ts: number, locale: string = 'vi-VN') {
     if (!ts) return '—';
@@ -161,67 +166,183 @@ export default function SessionHistory() {
 // ---- Inline Exercise History Detail (shown inside SubjectDetails via tab) ----
 
 interface ExerciseHistoryTableProps {
-    exercises: {
-        exercise_id: string;
-        concept_name: string;
-        bloom_level: number;
-        question: string;
-        user_answer: string | null;
-        correct_option: string;
-        is_correct: boolean | null;
-        timestamp: number;
-    }[];
+    exercises: ExerciseHistoryFull[];
 }
 
 export function ExerciseHistoryTable({ exercises }: ExerciseHistoryTableProps) {
     const t = useTranslations('adaptiveLearning');
     const locale = useLocale();
+
+    const getBloomLabel = useCallback((level: number) => {
+        const enLabel = BLOOM_LABELS[Math.max(0, Math.min(BLOOM_LABELS.length - 1, level - 1))] || 'Remember';
+        return t(`bloom.${enLabel.toLowerCase()}` as any);
+    }, [t]);
+    
+    const [currentPage, setCurrentPage] = useState(1);
+    const [selectedExercise, setSelectedExercise] = useState<ExerciseHistoryFull | null>(null);
+    const pageSize = 10;
+    
+    const totalPages = Math.ceil((exercises?.length || 0) / pageSize);
+    const paginatedExercises = useMemo(() => {
+        if (!exercises) return [];
+        const start = (currentPage - 1) * pageSize;
+        return exercises.slice(start, start + pageSize);
+    }, [exercises, currentPage, pageSize]);
+
     if (!exercises?.length) {
         return <p className="text-sm text-gray-400 py-4 text-center">{t('history.table.noExercise')}</p>;
     }
 
     return (
-        <div className="overflow-x-auto rounded-md border border-gray-200 bg-white">
-            <table className="w-full text-sm">
-                <thead>
-                    <tr className="bg-gray-50 border-b border-gray-200 text-gray-500 text-[10px] font-bold uppercase tracking-widest">
-                        <th className="px-5 py-3 text-left">#</th>
-                        <th className="px-5 py-3 text-left">{t('masteryMatrix.concept')}</th>
-                        <th className="px-5 py-3 text-left">Bloom</th>
-                        <th className="px-5 py-3 text-left w-1/3">{t('history.table.question')}</th>
-                        <th className="px-5 py-3 text-center">{t('history.table.result')}</th>
-                        <th className="px-5 py-3 text-left">{t('history.table.time')}</th>
-                    </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                    {exercises.map((ex, i) => (
-                        <tr key={ex.exercise_id} className="hover:bg-gray-50 transition-colors">
-                            <td className="px-5 py-3 text-gray-500 font-mono text-xs">{i + 1}</td>
-                            <td className="px-5 py-3 font-medium text-gray-900">{ex.concept_name}</td>
-                            <td className="px-5 py-3 text-gray-500 font-mono text-xs">Lv{ex.bloom_level}</td>
-                            <td className="px-5 py-3 text-gray-600 truncate max-w-[280px]" title={ex.question}>
-                                {ex.question}
-                            </td>
-                            <td className="px-5 py-3 flex justify-center">
-                                {ex.is_correct == null ? (
-                                    <span className="text-gray-300 font-medium">—</span>
-                                ) : ex.is_correct ? (
-                                    <span className="inline-flex items-center justify-center w-6 h-6 rounded border border-gray-200 bg-white text-gray-900">
-                                        <HiCheck className="w-4 h-4" />
-                                    </span>
-                                ) : (
-                                    <span className="inline-flex items-center justify-center w-6 h-6 rounded border border-gray-200 bg-gray-50 text-gray-400">
-                                        <HiOutlineX className="w-4 h-4" />
-                                    </span>
-                                )}
-                            </td>
-                            <td className="px-5 py-3 text-gray-500 whitespace-nowrap text-xs font-mono">
-                                {formatDate(ex.timestamp, locale)}
-                            </td>
+        <div className="space-y-4">
+            <div className="overflow-x-auto rounded-md border border-gray-200 bg-white">
+                <table className="w-full text-sm">
+                    <thead>
+                        <tr className="bg-gray-50 border-b border-gray-200 text-gray-500 text-[10px] font-bold uppercase tracking-widest">
+                            <th className="px-5 py-3 text-left">#</th>
+                            <th className="px-5 py-3 text-left">{t('masteryMatrix.concept')}</th>
+                            <th className="px-5 py-3 text-left">Bloom</th>
+                            <th className="px-5 py-3 text-left w-1/3">{t('history.table.question')}</th>
+                            <th className="px-5 py-3 text-center">{t('history.table.result')}</th>
+                            <th className="px-5 py-3 text-left">{t('history.table.time')}</th>
+                            <th className="px-5 py-3 text-center"></th>
                         </tr>
-                    ))}
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                        {paginatedExercises.map((ex, i) => (
+                            <tr key={ex.exercise_id || i} className="hover:bg-gray-50 transition-colors">
+                                <td className="px-5 py-3 text-gray-500 font-mono text-xs">{(currentPage - 1) * pageSize + i + 1}</td>
+                                <td className="px-5 py-3 font-medium text-gray-900">{ex.concept_name}</td>
+                                <td className="px-5 py-3 text-gray-500 text-xs">
+                                    <span className="inline-flex items-center rounded-md bg-slate-100 px-2 py-1 text-[11px] font-medium text-slate-700">
+                                        {getBloomLabel(ex.bloom_level)}
+                                    </span>
+                                </td>
+                                <td className="px-5 py-3 text-gray-600 truncate max-w-[280px]" title={ex.question}>
+                                    {ex.question}
+                                </td>
+                                <td className="px-5 py-3 flex justify-center">
+                                    {ex.is_correct == null ? (
+                                        <span className="text-gray-300 font-medium">—</span>
+                                    ) : ex.is_correct ? (
+                                        <span className="inline-flex items-center justify-center w-6 h-6 rounded border border-gray-200 bg-white text-gray-900">
+                                            <HiCheck className="w-4 h-4" />
+                                        </span>
+                                    ) : (
+                                        <span className="inline-flex items-center justify-center w-6 h-6 rounded border border-gray-200 bg-gray-50 text-gray-400">
+                                            <HiOutlineX className="w-4 h-4" />
+                                        </span>
+                                    )}
+                                </td>
+                                <td className="px-5 py-3 text-gray-500 whitespace-nowrap text-xs font-mono">
+                                    {formatDate(ex.timestamp, locale)}
+                                </td>
+                                <td className="px-5 py-3 text-center">
+                                    <button 
+                                        onClick={() => setSelectedExercise(ex)}
+                                        className="text-gray-400 hover:text-gray-900 transition-colors p-1 rounded-md hover:bg-gray-100"
+                                        title="View Details"
+                                    >
+                                        <HiOutlineEye className="w-5 h-5" />
+                                    </button>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+
+            {totalPages > 1 && (
+                <div className="py-2">
+                    <Pagination 
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        onPageChange={setCurrentPage}
+                    />
+                </div>
+            )}
+
+            <Modal
+                isOpen={!!selectedExercise}
+                onClose={() => setSelectedExercise(null)}
+                title={t('history.table.exerciseDetails')}
+                size="large"
+            >
+                {selectedExercise && (
+                    <div className="space-y-6">
+                        <div className="grid grid-cols-2 gap-4 text-sm bg-gray-50 p-4 rounded-lg border border-gray-100">
+                            <div>
+                                <span className="text-gray-500 font-medium">{t('masteryMatrix.concept')}:</span>
+                                <span className="ml-2 font-semibold text-gray-900">{selectedExercise.concept_name}</span>
+                            </div>
+                            <div>
+                                <span className="text-gray-500 font-medium">Bloom Level:</span>
+                                <span className="ml-2 font-semibold text-gray-900">{getBloomLabel(selectedExercise.bloom_level)}</span>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h4 className="text-sm font-semibold text-gray-900 mb-3">{t('history.table.question')}</h4>
+                            <div className="bg-white p-4 rounded-lg border border-gray-200 text-sm text-gray-800 shadow-sm">
+                                <DynamicMarkdownRenderer content={selectedExercise.question} />
+                            </div>
+                        </div>
+
+                        <div>
+                            <h4 className="text-sm font-semibold text-gray-900 mb-3">Options</h4>
+                            <div className="space-y-2.5">
+                                {Object.entries(selectedExercise.options || {}).map(([key, value]) => {
+                                    const isUserAnswer = key === selectedExercise.user_answer;
+                                    const isCorrect = key === selectedExercise.correct_option;
+                                    
+                                    let optionClass = "p-3.5 border rounded-lg text-sm flex gap-3 items-start transition-colors";
+                                    if (isCorrect) {
+                                        optionClass += " border-green-200 bg-green-50/50 text-green-900";
+                                    } else if (isUserAnswer && !isCorrect) {
+                                        optionClass += " border-red-200 bg-red-50/50 text-red-900";
+                                    } else {
+                                        optionClass += " border-gray-200 bg-white text-gray-700";
+                                    }
+
+                                    return (
+                                        <div key={key} className={optionClass}>
+                                            <span className={"font-bold w-6 shrink-0 mt-0.5 " + (isCorrect ? "text-green-700" : isUserAnswer ? "text-red-700" : "text-gray-500")}>{key}.</span>
+                                            <span className="flex-1 leading-relaxed"><DynamicMarkdownRenderer content={value} /></span>
+                                            {isCorrect && (
+                                                <div className="shrink-0 flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-bold bg-green-100 text-green-700 mt-0.5">
+                                                    <HiCheck className="w-3.5 h-3.5" />
+                                                    Correct
+                                                </div>
+                                            )}
+                                            {isUserAnswer && !isCorrect && (
+                                                <div className="shrink-0 flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-bold bg-red-100 text-red-700 mt-0.5">
+                                                    <HiOutlineX className="w-3.5 h-3.5" />
+                                                    Your Answer
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        {selectedExercise.explanation && (
+                            <div>
+                                <h4 className="text-sm font-semibold text-gray-900 mb-3">Explanation</h4>
+                                <div className="bg-blue-50 border border-blue-100 p-5 sm:p-6 rounded-lg text-sm text-blue-900 leading-relaxed shadow-sm">
+                                    <DynamicMarkdownRenderer content={selectedExercise.explanation} />
+                                </div>
+                            </div>
+                        )}
+                        
+                        <div className="flex justify-end pt-5 border-t border-gray-100">
+                            <Button onClick={() => setSelectedExercise(null)} variant="outline" className="px-6">
+                                Close
+                            </Button>
+                        </div>
+                    </div>
+                )}
+            </Modal>
         </div>
     );
 }

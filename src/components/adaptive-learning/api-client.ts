@@ -127,7 +127,7 @@ async function apiFetch<T>(path: string, options?: ApiFetchOptions): Promise<T> 
     return requestPromise;
 }
 
-export async function createSession(maxSteps: number = 50): Promise<Session> {
+export async function createSession(maxSteps: number = 9999): Promise<Session> {
     return apiFetch<Session>('/api/adaptive-learning/session/start', {
         method: 'POST',
         body: JSON.stringify({ max_steps: maxSteps, use_default_data: true }),
@@ -219,7 +219,7 @@ export async function getPipelineJobStatus(jobId: string): Promise<PipelineJobSt
 
 export async function createSessionFromPipeline(
     jobId: string,
-    maxSteps: number = 50,
+    maxSteps: number = 9999,
 ): Promise<PipelineSessionResponse> {
     return apiFetch<PipelineSessionResponse>(
         `/api/adaptive-learning/pipeline/jobs/${jobId}/create-session?max_steps=${maxSteps}`,

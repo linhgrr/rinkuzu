@@ -94,7 +94,7 @@ export default function SubjectDetails({ sessionId }: { sessionId: string }) {
 
                 setRecoveringSession(true);
                 try {
-                    const newSession = await createSessionFromPipeline(jobId, 50);
+                    const newSession = await createSessionFromPipeline(jobId, 9999);
                     if (!mounted) {
                         return;
                     }

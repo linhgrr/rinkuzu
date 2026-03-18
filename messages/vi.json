@@ -423,7 +423,7 @@
       "backToDashboard": "Quay về bảng điều khiển",
       "tryAgain": "Thử lại",
       "progress": "Tiến độ",
-      "stepCounter": "Bước {current} / {total}",
+      "stepCounter": "Bài tập {current}",
       "bloomBadge": "Bloom {level}: {label}",
       "focusModeContext": "Khái niệm: {concept} ở mức {level}",
       "checking": "Đang kiểm tra...",

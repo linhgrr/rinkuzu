@@ -330,7 +330,8 @@
         "question": "Câu hỏi",
         "result": "Kết quả",
         "time": "Thời gian",
-        "noExercise": "Chưa có bài tập nào."
+        "noExercise": "Chưa có bài tập nào.",
+        "exerciseDetails": "Chi tiết câu hỏi"
       }
     },
     "howItWorksTitle": "Cách thức hoạt động",

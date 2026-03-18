@@ -45,30 +45,28 @@ export function Pagination({
       {/* Previous Button */}
       <Button
         variant="outline"
-        size="sm"
         disabled={currentPage === 1}
         onClick={() => onPageChange(currentPage - 1)}
-        className="px-3 py-2"
+        className="h-10 min-h-[40px] px-4 py-2 rounded-full text-sm font-medium"
       >
-        <HiChevronLeft className="w-4 h-4 mr-1" />
+        <HiChevronLeft className="w-4 h-4 mr-1 text-gray-500" />
         Previous
       </Button>
 
       {showPageNumbers && (
-        <>
+        <div className="flex items-center space-x-1.5 mx-2">
           {/* First page if not visible */}
           {visiblePages[0] > 1 && (
             <>
               <Button
                 variant="outline"
-                size="sm"
                 onClick={() => onPageChange(1)}
-                className="min-w-[40px] px-3 py-2"
+                className="h-10 w-10 min-w-[40px] min-h-[40px] p-0 rounded-full text-sm font-medium flex items-center justify-center transition-colors"
               >
                 1
               </Button>
               {visiblePages[0] > 2 && (
-                <span className="px-2 text-gray-500">…</span>
+                <span className="px-1 text-gray-500">…</span>
               )}
             </>
           )}
@@ -77,10 +75,13 @@ export function Pagination({
           {visiblePages.map(page => (
             <Button
               key={page}
-              variant={currentPage === page ? "gradient" : "outline"}
-              size="sm"
+              variant="outline"
               onClick={() => onPageChange(page)}
-              className="min-w-[40px] px-3 py-2"
+              className={`h-10 w-10 min-w-[40px] min-h-[40px] p-0 rounded-full text-sm font-medium flex items-center justify-center transition-colors ${
+                currentPage === page 
+                  ? '!bg-teal-600 !text-white !border-teal-600 hover:!bg-teal-700 shadow-sm' 
+                  : 'text-gray-600 hover:bg-gray-50'
+              }`}
             >
               {page}
             </Button>
@@ -90,31 +91,29 @@ export function Pagination({
           {visiblePages[visiblePages.length - 1] < totalPages && (
             <>
               {visiblePages[visiblePages.length - 1] < totalPages - 1 && (
-                <span className="px-2 text-gray-500">…</span>
+                <span className="px-1 text-gray-500">…</span>
               )}
               <Button
                 variant="outline"
-                size="sm"
                 onClick={() => onPageChange(totalPages)}
-                className="min-w-[40px] px-3 py-2"
+                className="h-10 w-10 min-w-[40px] min-h-[40px] p-0 rounded-full text-sm font-medium flex items-center justify-center transition-colors"
               >
                 {totalPages}
               </Button>
             </>
           )}
-        </>
+        </div>
       )}
 
       {/* Next Button */}
       <Button
         variant="outline"
-        size="sm"
         disabled={currentPage === totalPages}
         onClick={() => onPageChange(currentPage + 1)}
-        className="px-3 py-2"
+        className="h-10 min-h-[40px] px-4 py-2 rounded-full text-sm font-medium"
       >
         Next
-        <HiChevronRight className="w-4 h-4 ml-1" />
+        <HiChevronRight className="w-4 h-4 ml-1 text-gray-500" />
       </Button>
     </div>
   );

@@ -75,7 +75,7 @@ function SessionRow({ item, onOpen }: SessionRowProps) {
                             </span>
                         ) : (
                             <span className="inline-flex items-center rounded-md bg-gray-50 border border-gray-200 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-gray-600">
-                                {t('history.step', { step: item.step, total: item.max_steps })}
+                                {t('history.step', { step: item.step })}
                             </span>
                         )}
                     </div>

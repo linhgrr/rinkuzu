@@ -194,7 +194,7 @@ export const ExerciseQuestionView = ({
             <div className="h-1.5 w-32 overflow-hidden rounded-full bg-slate-100 border border-slate-200">
               <div className="h-full rounded-full bg-slate-900 transition-all duration-500 ease-out" style={{ width: `${progressPercent}%` }} />
             </div>
-            <span className="text-xs font-mono text-slate-600">{concept.step}/{concept.max_steps}</span>
+            <span className="text-xs font-mono text-slate-600">{concept.step}</span>
           </div>
         </div>
       </div>
@@ -215,7 +215,7 @@ export const ExerciseQuestionView = ({
               </span>
             </div>
             <span className="text-xs font-mono text-slate-500">
-              {t('exercise.stepCounter', { current: concept.step + 1, total: concept.max_steps })}
+              {t('exercise.stepCounter', { current: concept.step + 1 })}
             </span>
           </div>
 

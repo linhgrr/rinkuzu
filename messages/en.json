@@ -423,7 +423,7 @@
       "backToDashboard": "Back to Dashboard",
       "tryAgain": "Try Again",
       "progress": "Progress",
-      "stepCounter": "Step {current} / {total}",
+      "stepCounter": "Exercise {current}",
       "bloomBadge": "Bloom {level}: {label}",
       "focusModeContext": "Concept: {concept} at {level} level",
       "checking": "Checking...",

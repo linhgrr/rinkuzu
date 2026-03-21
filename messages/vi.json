@@ -189,6 +189,7 @@
     "common": {
       "locale_date": "vi-VN",
       "cancel": "Hủy",
+      "close": "Đóng",
       "confirm": "Xác nhận"
     },
     "dashboardTitle": "Trung tâm học tập thích ứng",

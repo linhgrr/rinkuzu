@@ -189,6 +189,7 @@
     "common": {
       "locale_date": "en-US",
       "cancel": "Cancel",
+      "close": "Close",
       "confirm": "Confirm"
     },
     "dashboardTitle": "Adaptive Learning Center",

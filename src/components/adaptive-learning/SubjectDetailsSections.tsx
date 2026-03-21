@@ -77,6 +77,8 @@ export const SubjectDetailsHero = ({
   loading,
   onPrefetchStartLearning,
   onStartLearning,
+  sessionNotice,
+  startingSession,
   status,
   summary,
   t,
@@ -85,6 +87,8 @@ export const SubjectDetailsHero = ({
   loading: boolean
   onPrefetchStartLearning: () => void
   onStartLearning: () => void
+  sessionNotice: string | null
+  startingSession: boolean
   status: SessionStatus | null
   summary: string
   t: TranslateFn
@@ -107,14 +111,32 @@ export const SubjectDetailsHero = ({
           onClick={onStartLearning}
           onMouseEnter={onPrefetchStartLearning}
           onFocus={onPrefetchStartLearning}
+          disabled={startingSession}
           className="h-11 min-h-[44px] w-full gap-2 rounded-full bg-teal-600 px-6 text-sm font-medium text-white shadow-sm transition-all hover:bg-teal-700 focus:ring-teal-500 active:scale-95 sm:w-auto sm:hover:scale-105 md:w-auto"
         >
-          <HiOutlineLightningBolt className="h-4 w-4" />
-          {t('subjectDetails.startLearning')}
-          <HiArrowRight className="h-4 w-4" />
+          {startingSession
+            ? (
+                <>
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                  {t('dashboard.creatingSession')}
+                </>
+              )
+            : (
+                <>
+                  <HiOutlineLightningBolt className="h-4 w-4" />
+                  {t('subjectDetails.startLearning')}
+                  <HiArrowRight className="h-4 w-4" />
+                </>
+              )}
         </Button>
       </div>
     </div>
+
+    {sessionNotice && (
+      <div className="relative mt-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+        {sessionNotice}
+      </div>
+    )}
 
     {status ? (
       <div className="relative mt-8 grid grid-cols-2 gap-4 lg:grid-cols-4">

@@ -11,6 +11,7 @@ import {
 } from '../api-client'
 import { ADAPTIVE_ROUTES } from '../routes'
 import { getJobIdForSession, saveSessionJobMapping } from '../session-storage'
+import { getSessionStartFeedback } from '../session-start-feedback'
 import type { SessionStatus, SubjectHistoryDetail } from '../types'
 
 type TranslateFn = (key: string, values?: Record<string, any>) => string
@@ -27,6 +28,8 @@ export const useSubjectDetailsState = (sessionId: string, t: TranslateFn) => {
   const [historyDetail, setHistoryDetail] = useState<SubjectHistoryDetail | null>(null)
   const [historyLoading, setHistoryLoading] = useState(false)
   const [didPrefetchStartLearning, setDidPrefetchStartLearning] = useState(false)
+  const [startingSession, setStartingSession] = useState(false)
+  const [sessionNotice, setSessionNotice] = useState<string | null>(null)
 
   useEffect(() => {
     let mounted = true
@@ -144,21 +147,29 @@ export const useSubjectDetailsState = (sessionId: string, t: TranslateFn) => {
   }, [router])
 
   const handleStartLearning = useCallback(() => {
+    setSessionNotice(null)
+
     if (status || !jobId) {
       router.push(ADAPTIVE_ROUTES.exercise(sessionId))
       return
     }
 
+    setStartingSession(true)
     void createSessionFromPipeline(jobId, 50)
       .then((session) => {
         localStorage.setItem('al_session_id', session.session_id)
         saveSessionJobMapping(session.session_id, jobId)
         router.push(ADAPTIVE_ROUTES.exercise(session.session_id))
       })
-      .catch(() => {
-        router.push(ADAPTIVE_ROUTES.dashboard)
+      .catch((error) => {
+        console.error(`Error creating session from subject details: ${(error as Error).message}`)
+        const feedback = getSessionStartFeedback(t, 'subjectDetails', error)
+        setSessionNotice(feedback.message)
       })
-  }, [jobId, router, sessionId, status])
+      .finally(() => {
+        setStartingSession(false)
+      })
+  }, [jobId, router, sessionId, status, t])
 
   const handlePrefetchStartLearning = useCallback(() => {
     if (didPrefetchStartLearning)
@@ -177,7 +188,9 @@ export const useSubjectDetailsState = (sessionId: string, t: TranslateFn) => {
     historyDetail,
     historyLoading,
     loading,
+    sessionNotice,
     setActiveTab,
+    startingSession,
     status,
     summary,
   }

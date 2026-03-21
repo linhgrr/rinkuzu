@@ -33,10 +33,15 @@ type ProcessingStats = {
 type ProcessingStatusCardProps = {
   creatingSession: boolean
   currentStep: number
-  error: string | null
+  error: {
+    message: string
+    retryable: boolean
+    code: string | null
+    action: 'upload' | 'dashboard'
+  } | null
   filename: string
+  handleErrorAction: () => void
   notice: string | null
-  onGoBack: () => void
   progress: number
   stats: ProcessingStats | null
   statusLabel: string
@@ -49,8 +54,8 @@ export const ProcessingStatusCard = ({
   currentStep,
   error,
   filename,
+  handleErrorAction,
   notice,
-  onGoBack,
   progress,
   stats,
   statusLabel,
@@ -84,7 +89,13 @@ export const ProcessingStatusCard = ({
 
       {error && (
         <div className="mb-8 rounded-md border border-red-100 bg-red-50 p-4 text-left text-sm text-red-700">
-          {error}
+          {error.message}
+        </div>
+      )}
+
+      {error && notice && (
+        <div className="mb-8 rounded-md border border-amber-200 bg-amber-50 p-4 text-left text-sm text-amber-800">
+          {notice}
         </div>
       )}
 
@@ -166,9 +177,9 @@ export const ProcessingStatusCard = ({
 
       {error && (
         <div className="mt-8 flex justify-center">
-          <Button variant="outline" onClick={onGoBack} className="h-auto rounded-md border-slate-200 px-6 py-2.5 text-sm font-medium transition-colors hover:bg-slate-50">
+          <Button variant="outline" onClick={handleErrorAction} className="h-auto rounded-md border-slate-200 px-6 py-2.5 text-sm font-medium transition-colors hover:bg-slate-50">
             <HiOutlineArrowLeft className="mr-2 h-4 w-4" />
-            {t('processing.tryAgain')}
+            {error.action === 'dashboard' ? t('processing.goToDashboard') : t('processing.tryAgain')}
           </Button>
         </div>
       )}

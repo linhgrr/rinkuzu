@@ -30,6 +30,7 @@ export interface PipelineJobStatus {
   filename: string
   subject_id: string
   status: PipelineStatus
+  is_terminal?: boolean
   current_step: string
   progress: number
   total_chunks: number
@@ -38,6 +39,9 @@ export interface PipelineJobStatus {
   relations_verified: number
   graph_stats: Record<string, any>
   error_message: string | null
+  error_code?: string | null
+  user_message?: string | null
+  retryable?: boolean
   partial_graph?: {
     nodes: { id: string; name: string }[]
     edges: { source: string; target: string }[]

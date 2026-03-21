@@ -20,7 +20,9 @@ export default function SubjectDetails({ sessionId }: { sessionId: string }) {
     historyDetail,
     historyLoading,
     loading,
+    sessionNotice,
     setActiveTab,
+    startingSession,
     status,
     summary,
   } = useSubjectDetailsState(sessionId, t)
@@ -34,6 +36,8 @@ export default function SubjectDetails({ sessionId }: { sessionId: string }) {
         loading={loading}
         onPrefetchStartLearning={handlePrefetchStartLearning}
         onStartLearning={handleStartLearning}
+        sessionNotice={sessionNotice}
+        startingSession={startingSession}
         status={status}
         summary={summary}
         t={t}

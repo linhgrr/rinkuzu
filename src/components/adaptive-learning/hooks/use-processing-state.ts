@@ -6,6 +6,7 @@ import {
   AdaptiveApiError,
   createSessionFromPipeline,
   getPipelineJobStatus,
+  isAdaptiveApiError,
   isRetryableAdaptiveError,
 } from '../api-client'
 import { ADAPTIVE_ROUTES } from '../routes'
@@ -54,6 +55,9 @@ type ProcessingStats = {
   relations_verified: number
 }
 
+const BASE_POLL_DELAY_MS = 2_000
+const MAX_POLL_DELAY_MS = 10_000
+
 export type ProcessingStep = {
   id: number
   label: string
@@ -75,10 +79,12 @@ export const useProcessingState = (t: TranslateFn) => {
   const [filename, setFilename] = useState('')
   const [showGraphPanel, setShowGraphPanel] = useState(false)
 
-  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const pollingRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const pollInFlightRef = useRef(false)
   const creatingSessionRef = useRef(false)
+  const retryDelayRef = useRef(BASE_POLL_DELAY_MS)
+  const pollJobRef = useRef<(jobId: string) => void>(() => {})
 
   const steps = useMemo<ProcessingStep[]>(
     () => [
@@ -106,6 +112,8 @@ export const useProcessingState = (t: TranslateFn) => {
         return t('processing.errors.conflict')
       if (err.code === 'temporary_unavailable')
         return t('processing.errors.serviceUnavailable')
+      if (err.code === 'request_aborted' || err.code === 'network_error')
+        return t('processing.errors.connectionInterrupted')
     }
 
     return err instanceof Error ? err.message : t('processing.errors.generic')
@@ -115,10 +123,10 @@ export const useProcessingState = (t: TranslateFn) => {
     if (phase === 'createSession')
       return t('processing.notices.retryingCreateSession')
 
-    if (err instanceof AdaptiveApiError) {
+    if (isAdaptiveApiError(err)) {
       if (err.code === 'request_aborted')
         return t('processing.notices.connectionInterrupted')
-      if (err.code === 'temporary_unavailable')
+      if (err.code === 'temporary_unavailable' || err.code === 'network_error')
         return t('processing.notices.backendSlowRetrying')
     }
 
@@ -127,7 +135,7 @@ export const useProcessingState = (t: TranslateFn) => {
 
   const clearPolling = useCallback(() => {
     if (pollingRef.current) {
-      clearInterval(pollingRef.current)
+      clearTimeout(pollingRef.current)
       pollingRef.current = null
     }
 
@@ -137,6 +145,17 @@ export const useProcessingState = (t: TranslateFn) => {
     }
 
     pollInFlightRef.current = false
+    retryDelayRef.current = BASE_POLL_DELAY_MS
+  }, [])
+
+  const scheduleNextPoll = useCallback((jobId: string, delayMs = BASE_POLL_DELAY_MS) => {
+    if (pollingRef.current) {
+      clearTimeout(pollingRef.current)
+    }
+
+    pollingRef.current = setTimeout(() => {
+      pollJobRef.current(jobId)
+    }, delayMs)
   }, [])
 
   const runFallbackProgress = useCallback(() => {
@@ -212,11 +231,12 @@ export const useProcessingState = (t: TranslateFn) => {
 
       if (isRetryableAdaptiveError(err)) {
         setNotice(getRetryNotice(err, 'createSession'))
-        return
+        return 'retry'
       }
 
       setError(getFriendlyProcessingError(err) || t('createSessionFailed'))
       clearPolling()
+      return 'failed'
     }
   }, [clearPolling, getFriendlyProcessingError, getRetryNotice, router, t])
 
@@ -228,6 +248,7 @@ export const useProcessingState = (t: TranslateFn) => {
 
     try {
       const job = await getPipelineJobStatus(jobId)
+      retryDelayRef.current = BASE_POLL_DELAY_MS
       setNotice(null)
       setCurrentStep(STATUS_TO_STEP[job.status] ?? 0)
       setProgress(job.progress * 100)
@@ -239,16 +260,25 @@ export const useProcessingState = (t: TranslateFn) => {
       updateStats(job)
 
       if (job.status === 'completed' && !creatingSessionRef.current) {
-        await handleCompletedJob(jobId)
+        const outcome = await handleCompletedJob(jobId)
+        if (outcome === 'retry') {
+          retryDelayRef.current = Math.min(retryDelayRef.current * 2, MAX_POLL_DELAY_MS)
+          scheduleNextPoll(jobId, retryDelayRef.current)
+        }
       }
       else if (job.status === 'failed' || job.status === 'cancelled') {
         clearPolling()
         setError(job.error_message || t('processing.errors.pipelineFailed'))
       }
+      else {
+        scheduleNextPoll(jobId, BASE_POLL_DELAY_MS)
+      }
     }
     catch (err) {
       if (isRetryableAdaptiveError(err)) {
         setNotice(getRetryNotice(err, 'polling'))
+        retryDelayRef.current = Math.min(retryDelayRef.current * 2, MAX_POLL_DELAY_MS)
+        scheduleNextPoll(jobId, retryDelayRef.current)
         return
       }
 
@@ -258,7 +288,13 @@ export const useProcessingState = (t: TranslateFn) => {
     finally {
       pollInFlightRef.current = false
     }
-  }, [clearPolling, getFriendlyProcessingError, getRetryNotice, getStatusLabel, handleCompletedJob, t, updateStats])
+  }, [clearPolling, getFriendlyProcessingError, getRetryNotice, getStatusLabel, handleCompletedJob, scheduleNextPoll, t, updateStats])
+
+  useEffect(() => {
+    pollJobRef.current = (jobId: string) => {
+      void pollJob(jobId)
+    }
+  }, [pollJob])
 
   useEffect(() => {
     setStatusLabel(t('processing.status.starting'))
@@ -286,9 +322,6 @@ export const useProcessingState = (t: TranslateFn) => {
 
     creatingSessionRef.current = false
     void pollJob(jobId)
-    pollingRef.current = setInterval(() => {
-      void pollJob(jobId)
-    }, 2000)
 
     return () => clearPolling()
   }, [clearPolling, pollJob, runFallbackProgress])

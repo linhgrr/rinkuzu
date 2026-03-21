@@ -25,6 +25,7 @@ export async function POST(req: Request) {
             body: proxiedForm,
             // Let fetch set multipart boundary automatically.
             contentType: null,
+            timeoutMs: 120_000,
         });
 
         invalidateAdaptiveServiceCache();

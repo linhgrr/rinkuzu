@@ -117,6 +117,10 @@ export function isRetryableAdaptiveError(error: unknown): error is AdaptiveApiEr
     return error instanceof AdaptiveApiError && error.retryable;
 }
 
+export function isAdaptiveApiError(error: unknown): error is AdaptiveApiError {
+    return error instanceof AdaptiveApiError;
+}
+
 function readCachedResponse<T>(key: string): T | null {
     const hit = responseCache.get(key);
     if (!hit) {
@@ -187,7 +191,20 @@ async function executeRequest<T>(
             });
         }
 
-        throw error;
+        if (error instanceof Error) {
+            throw new AdaptiveApiError({
+                message: error.message || 'Network request failed',
+                code: 'network_error',
+                detail: error.message,
+                retryable: true,
+            });
+        }
+
+        throw new AdaptiveApiError({
+            message: 'Network request failed',
+            code: 'network_error',
+            retryable: true,
+        });
     } finally {
         clearTimeout(timeout);
     }
@@ -317,15 +334,14 @@ export async function uploadPdf(
     formData.append('file', file);
     if (subjectId) formData.append('subject_id', subjectId);
 
-    const res = await fetch('/api/adaptive-learning/pipeline/process', {
-        method: 'POST',
-        body: formData,
-    });
-    if (!res.ok) {
-        const error = await res.text().catch(() => res.statusText);
-        throw new Error(`Upload failed: ${error}`);
-    }
-    return res.json();
+    return executeRequest<PipelineUploadResponse>(
+        '/api/adaptive-learning/pipeline/process',
+        'POST',
+        {
+            body: formData,
+            timeoutMs: 120_000,
+        },
+    );
 }
 
 export async function getPipelineJobStatus(jobId: string): Promise<PipelineJobStatus> {

@@ -263,6 +263,12 @@
       "uploading": "Đang tải lên...",
       "backendOffline": "Backend đang offline. Vui lòng khởi động API server trước.",
       "uploadFailed": "Tải lên PDF thất bại",
+      "errors": {
+        "unauthorized": "Phiên đăng nhập của bạn đã hết hạn. Vui lòng đăng nhập lại rồi tải PDF lên lần nữa.",
+        "connectionInterrupted": "Kết nối tải lên đã bị gián đoạn. Vui lòng thử tải lại PDF.",
+        "serviceUnavailable": "Dịch vụ học tập đang bận tạm thời. Vui lòng đợi một chút rồi thử lại.",
+        "conflict": "Tài liệu này hiện chưa thể được đưa vào hàng chờ xử lý. Vui lòng thử lại."
+      },
       "subject": "Môn học",
       "upload": "Tải lên",
       "deleteDocumentSuccess": "Xóa tài liệu thành công",
@@ -456,6 +462,7 @@
       },
       "errors": {
         "generic": "Đã xảy ra lỗi khi kiểm tra tiến trình xử lý. Vui lòng thử lại.",
+        "connectionInterrupted": "Kết nối bị gián đoạn trong lúc kiểm tra tiến trình. Hệ thống sẽ tiếp tục tự thử lại.",
         "serviceUnavailable": "Dịch vụ học tập hiện tạm thời không khả dụng. Vui lòng đợi một chút rồi thử lại.",
         "jobNotFound": "Không còn tìm thấy tiến trình xử lý này. Vui lòng tải lại tài liệu.",
         "unauthorized": "Phiên đăng nhập của bạn đã hết hạn. Vui lòng đăng nhập lại rồi thử lại.",

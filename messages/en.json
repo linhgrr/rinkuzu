@@ -263,6 +263,12 @@
       "uploading": "Uploading...",
       "backendOffline": "Backend is offline. Please start the API server first.",
       "uploadFailed": "Failed to upload PDF",
+      "errors": {
+        "unauthorized": "Your session has expired. Please sign in again and upload the PDF once more.",
+        "connectionInterrupted": "The upload connection was interrupted. Please try uploading the PDF again.",
+        "serviceUnavailable": "The learning service is temporarily busy. Please wait a moment and try again.",
+        "conflict": "This material could not be queued right now. Please try again."
+      },
       "subject": "Subject",
       "upload": "Upload",
       "deleteDocumentSuccess": "Document deleted successfully",
@@ -456,6 +462,7 @@
       },
       "errors": {
         "generic": "Something went wrong while checking processing status. Please try again.",
+        "connectionInterrupted": "The connection was interrupted while checking progress. We’ll keep trying automatically.",
         "serviceUnavailable": "The learning service is temporarily unavailable. Please wait a moment and try again.",
         "jobNotFound": "We couldn’t find this processing job anymore. Please upload the document again.",
         "unauthorized": "Your session has expired. Please sign in again and retry.",

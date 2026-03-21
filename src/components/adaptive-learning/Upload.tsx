@@ -10,7 +10,7 @@ import {
 } from '@/components/icons';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { checkApiHealth, uploadPdf } from './api-client';
+import { AdaptiveApiError, checkApiHealth, uploadPdf } from './api-client';
 import { ADAPTIVE_ROUTES } from './routes';
 
 export default function AdaptiveLearningUpload() {
@@ -20,6 +20,21 @@ export default function AdaptiveLearningUpload() {
     const [uploadProgress, setUploadProgress] = useState(0);
     const [error, setError] = useState<string | null>(null);
     const [subjectName, setSubjectName] = useState('');
+
+    const getFriendlyUploadError = useCallback((err: unknown) => {
+        if (err instanceof AdaptiveApiError) {
+            if (err.code === 'unauthorized')
+                return t('uploadPage.errors.unauthorized');
+            if (err.code === 'request_aborted' || err.code === 'network_error')
+                return t('uploadPage.errors.connectionInterrupted');
+            if (err.code === 'temporary_unavailable')
+                return t('uploadPage.errors.serviceUnavailable');
+            if (err.code === 'conflict')
+                return t('uploadPage.errors.conflict');
+        }
+
+        return t('uploadPage.uploadFailed');
+    }, [t]);
 
     const handleUpload = useCallback(async (file: File) => {
         if (!subjectName.trim()) {
@@ -47,12 +62,11 @@ export default function AdaptiveLearningUpload() {
                 router.push(ADAPTIVE_ROUTES.processing);
             }, 500);
         } catch (err) {
-            const message = err instanceof Error ? err.message : t('uploadPage.uploadFailed');
-            setError(message);
+            setError(getFriendlyUploadError(err));
             setIsUploading(false);
             setUploadProgress(0);
         }
-    }, [router, subjectName, t]);
+    }, [getFriendlyUploadError, router, subjectName, t]);
 
     const onDrop = useCallback((acceptedFiles: File[]) => {
         if (acceptedFiles.length > 0) {

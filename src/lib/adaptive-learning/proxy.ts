@@ -44,6 +44,10 @@ function shouldAttachBody(method: string): boolean {
     return !['GET', 'HEAD'].includes(method.toUpperCase());
 }
 
+function isHtmlResponse(contentType: string | null): boolean {
+    return (contentType || '').toLowerCase().includes('text/html');
+}
+
 export async function proxyAdaptiveRequest(
     req: Request,
     targetPath: string,
@@ -108,8 +112,18 @@ export async function proxyAdaptiveRequest(
             }
         })();
 
-        const responseHeaders = new Headers();
         const contentTypeHeader = response.headers.get('content-type');
+        if (isHtmlResponse(contentTypeHeader)) {
+            return NextResponse.json(
+                {
+                    detail: 'Adaptive service temporarily unavailable',
+                    code: 'upstream_html_error',
+                },
+                { status: response.ok ? 502 : response.status },
+            );
+        }
+
+        const responseHeaders = new Headers();
         if (contentTypeHeader) {
             responseHeaders.set('content-type', contentTypeHeader);
         }

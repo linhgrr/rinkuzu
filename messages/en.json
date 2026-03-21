@@ -516,7 +516,9 @@
       "focusModeContext": "Concept: {concept} at {level} level",
       "checking": "Checking...",
       "failedToLoadExercise": "Failed to load exercise",
-      "failedToSubmitAnswer": "Failed to submit answer"
+      "failedToSubmitAnswer": "Failed to submit answer",
+      "serviceUnavailable": "Exercise service is temporarily unavailable. Please try again in a moment.",
+      "submitUnavailable": "We could not submit your answer right now. Please try again."
     },
     "bloom": {
       "remember": "Remember",

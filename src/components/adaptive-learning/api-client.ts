@@ -49,8 +49,26 @@ function isAbortLikeError(error: unknown): boolean {
     return error instanceof Error && error.name === 'AbortError';
 }
 
+function looksLikeHtmlPayload(value: string): boolean {
+    const normalized = value.trim().toLowerCase();
+    return normalized.startsWith('<!doctype html')
+        || normalized.startsWith('<html')
+        || normalized.includes('<head>')
+        || normalized.includes('<body>');
+}
+
 function normalizeAdaptiveError(status: number, detail: string): AdaptiveApiError {
     const trimmedDetail = detail.trim();
+
+    if (looksLikeHtmlPayload(trimmedDetail)) {
+        return new AdaptiveApiError({
+            message: 'Adaptive service temporarily unavailable',
+            code: 'upstream_html_error',
+            status,
+            detail: 'upstream_html_error',
+            retryable: true,
+        });
+    }
 
     if (status === 400 && /not completed/i.test(trimmedDetail)) {
         return new AdaptiveApiError({
@@ -228,7 +246,16 @@ async function executeRequest<T>(
         return undefined as T;
     }
 
-    return res.json();
+    try {
+        return await res.json();
+    } catch {
+        throw new AdaptiveApiError({
+            message: 'Adaptive service returned an unexpected response',
+            code: 'invalid_response',
+            status: res.status,
+            retryable: true,
+        });
+    }
 }
 
 async function apiFetch<T>(path: string, options?: ApiFetchOptions): Promise<T> {

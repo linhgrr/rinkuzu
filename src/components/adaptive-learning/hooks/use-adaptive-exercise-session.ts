@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { getExercise, getNextConcept, getTheory, isSessionNotFoundError, submitAnswer } from '../api-client'
+import { AdaptiveApiError, getExercise, getNextConcept, getTheory, isSessionNotFoundError, submitAnswer } from '../api-client'
 import { ADAPTIVE_ROUTES } from '../routes'
 import { saveSessionExerciseOutcome } from '../session-storage'
 import type { Exercise, NextConcept, TheoryData } from '../types'
@@ -16,6 +16,32 @@ type UseAdaptiveExerciseSessionParams = {
   sessionId: string
   router: RouterLike
   t: TranslateFn
+}
+
+function resolveExerciseFeedback(
+  error: unknown,
+  t: TranslateFn,
+  intent: 'load' | 'submit',
+): string {
+  const fallback = intent === 'load'
+    ? t('exercise.failedToLoadExercise')
+    : t('exercise.failedToSubmitAnswer')
+
+  if (error instanceof AdaptiveApiError) {
+    if (
+      error.code === 'temporary_unavailable'
+      || error.code === 'request_aborted'
+      || error.code === 'network_error'
+      || error.code === 'upstream_html_error'
+      || error.code === 'invalid_response'
+    ) {
+      return intent === 'load'
+        ? t('exercise.serviceUnavailable')
+        : t('exercise.submitUnavailable')
+    }
+  }
+
+  return fallback
 }
 
 export const useAdaptiveExerciseSession = ({ sessionId, router, t }: UseAdaptiveExerciseSessionParams) => {
@@ -100,11 +126,7 @@ export const useAdaptiveExerciseSession = ({ sessionId, router, t }: UseAdaptive
             if (!isLatestActiveRequest())
               return
             console.error('Failed to load exercise:', reason)
-            setError(
-              reason instanceof Error
-                ? reason.message
-                : t('exercise.failedToLoadExercise'),
-            )
+            setError(resolveExerciseFeedback(reason, t, 'load'))
           })
           .finally(() => {
             if (!isLatestActiveRequest())
@@ -135,8 +157,7 @@ export const useAdaptiveExerciseSession = ({ sessionId, router, t }: UseAdaptive
         return
       }
 
-      const message = err instanceof Error ? err.message : t('exercise.failedToLoadExercise')
-      setError(message)
+      setError(resolveExerciseFeedback(err, t, 'load'))
       setLoadingConcept(false)
       setLoadingTheory(false)
       setLoadingExercise(false)
@@ -144,7 +165,7 @@ export const useAdaptiveExerciseSession = ({ sessionId, router, t }: UseAdaptive
     finally {
       loadingRef.current = false
     }
-  }, [router, sessionId, t])
+  }, [sessionId, t])
 
   useEffect(() => {
     void loadData()
@@ -178,8 +199,7 @@ export const useAdaptiveExerciseSession = ({ sessionId, router, t }: UseAdaptive
         return
       }
 
-      const message = err instanceof Error ? err.message : t('exercise.failedToSubmitAnswer')
-      setError(message)
+      setError(resolveExerciseFeedback(err, t, 'submit'))
     }
     finally {
       if (!isMountedRef.current)

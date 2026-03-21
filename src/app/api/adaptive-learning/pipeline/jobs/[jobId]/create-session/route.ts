@@ -12,7 +12,7 @@ export async function POST(
     const { jobId } = await params;
     const response = await proxyAdaptiveRequest(req, `/api/pipeline/jobs/${jobId}/create-session`, {
         method: 'POST',
-        timeoutMs: 20_000,
+        timeoutMs: 30_000,
     });
 
     invalidateAdaptiveServiceCache();

@@ -267,7 +267,9 @@
         "unauthorized": "Phiên đăng nhập của bạn đã hết hạn. Vui lòng đăng nhập lại rồi tải PDF lên lần nữa.",
         "connectionInterrupted": "Kết nối tải lên đã bị gián đoạn. Vui lòng thử tải lại PDF.",
         "serviceUnavailable": "Dịch vụ học tập đang bận tạm thời. Vui lòng đợi một chút rồi thử lại.",
-        "conflict": "Tài liệu này hiện chưa thể được đưa vào hàng chờ xử lý. Vui lòng thử lại."
+        "conflict": "Tài liệu này hiện chưa thể được đưa vào hàng chờ xử lý. Vui lòng thử lại.",
+        "onlyPdf": "Hệ thống chỉ hỗ trợ tệp PDF cho luồng học thích ứng.",
+        "fileTooLarge": "Tệp PDF này quá lớn. Vui lòng tải lên tệp nhỏ hơn {maxSizeMb} MB."
       },
       "subject": "Môn học",
       "upload": "Tải lên",
@@ -347,6 +349,12 @@
       "openedYesterday": "Mở hôm qua",
       "openedDaysAgo": "Mở {count} ngày trước",
       "lastOpenedUnknown": "Mới thêm gần đây",
+      "deleteSuccess": "Đã xóa tài liệu thành công.",
+      "deleteFailed": "Hiện chưa thể xóa tài liệu này.",
+      "sessionNotReady": "Tài liệu này vẫn đang hoàn tất thiết lập. Vui lòng thử mở lại sau ít phút.",
+      "sessionUnavailable": "Hiện chưa thể bắt đầu phiên học này. Vui lòng thử lại sau ít phút.",
+      "sessionMissing": "Không còn tìm thấy tài liệu này. Vui lòng làm mới bảng điều khiển.",
+      "sessionOpenFailed": "Hiện chưa thể mở tài liệu này.",
       "aiPowered": "AI hỗ trợ",
       "viewDetails": "Xem chi tiết",
       "newLesson": "Bài học mới",
@@ -430,6 +438,7 @@
       "knowledgeGraph": "Sơ đồ kiến thức",
       "visualizingStructures": "Đang trực quan hóa cấu trúc thực tế...",
       "tryAgain": "Thử lại",
+      "goToDashboard": "Về bảng điều khiển",
       "defaultFilename": "tai-lieu.pdf",
       "steps": {
         "readingPdf": "Đang đọc PDF",
@@ -458,7 +467,9 @@
       "notices": {
         "connectionInterrupted": "Kết nối tạm thời bị gián đoạn nhưng tài liệu của bạn có thể vẫn đang được xử lý. Hệ thống đang tự thử lại...",
         "backendSlowRetrying": "Dịch vụ học tập đang phản hồi chậm hơn bình thường. Hệ thống sẽ tự kiểm tra lại...",
-        "retryingCreateSession": "Lộ trình học đã sẵn sàng. Hệ thống đang kết nối lại để hoàn tất việc tạo phiên học..."
+        "retryingCreateSession": "Lộ trình học đã sẵn sàng. Hệ thống đang kết nối lại để hoàn tất việc tạo phiên học...",
+        "sessionSetupUnconfirmed": "Tài liệu đã xử lý xong nhưng chưa xác nhận được việc tạo phiên học. Vui lòng mở lại môn học từ bảng điều khiển.",
+        "retryAfterFailure": "Bạn có thể quay lại và thử tải lại tài liệu này một cách an toàn."
       },
       "errors": {
         "generic": "Đã xảy ra lỗi khi kiểm tra tiến trình xử lý. Vui lòng thử lại.",
@@ -467,7 +478,12 @@
         "jobNotFound": "Không còn tìm thấy tiến trình xử lý này. Vui lòng tải lại tài liệu.",
         "unauthorized": "Phiên đăng nhập của bạn đã hết hạn. Vui lòng đăng nhập lại rồi thử lại.",
         "conflict": "Tài liệu này chưa sẵn sàng để tạo phiên học.",
-        "pipelineFailed": "Không thể hoàn tất việc xử lý tài liệu này. Vui lòng thử lại hoặc tải lên một PDF khác."
+        "pipelineFailed": "Không thể hoàn tất việc xử lý tài liệu này. Vui lòng thử lại hoặc tải lên một PDF khác.",
+        "pipelineTimeout": "Quá trình xử lý mất quá nhiều thời gian và đã bị dừng. Vui lòng tải lại tài liệu và thử lại.",
+        "pipelineCancelled": "Quá trình xử lý đã bị gián đoạn trước khi hoàn tất. Vui lòng tải lại tài liệu.",
+        "pipelineUnavailable": "Dịch vụ xử lý hiện tạm thời không khả dụng. Vui lòng thử lại sau ít phút.",
+        "sessionNotReady": "Lộ trình học gần như đã sẵn sàng nhưng phiên học chưa thể mở ngay lúc này.",
+        "sessionSetupUnconfirmed": "Tài liệu đã xử lý xong nhưng chưa xác nhận được phiên học. Vui lòng mở lại từ bảng điều khiển."
       },
       "stats": {
         "extracted": "Đã trích xuất",
@@ -560,7 +576,11 @@
       "backToDashboard": "Quay về bảng điều khiển",
       "summary": "{concepts} khái niệm • {accuracy}% chính xác",
       "summaryFallback": "Sơ đồ kiến thức và bản đồ độ thành thạo",
-      "startLearning": "Bắt đầu học"
+      "startLearning": "Bắt đầu học",
+      "sessionNotReady": "Lộ trình học này vẫn đang hoàn tất thiết lập. Vui lòng thử bắt đầu lại sau ít phút.",
+      "sessionUnavailable": "Hiện chưa thể bắt đầu phiên học. Vui lòng đợi thêm một chút rồi thử lại.",
+      "sessionMissing": "Không còn tìm thấy tài liệu này. Vui lòng quay lại bảng điều khiển và mở lại.",
+      "sessionOpenFailed": "Hiện chưa thể mở phiên học này."
     },
     "masteryMatrix": {
       "loading": "Đang tải ma trận độ thành thạo...",

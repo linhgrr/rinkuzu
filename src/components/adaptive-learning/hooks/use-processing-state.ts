@@ -63,6 +63,13 @@ export type ProcessingStep = {
   label: string
 }
 
+type ProcessingErrorState = {
+  message: string
+  retryable: boolean
+  code: string | null
+  action: 'upload' | 'dashboard'
+}
+
 const getStoredFilename = (fallback: string) =>
   localStorage.getItem('al_pipeline_filename') || fallback
 
@@ -71,7 +78,7 @@ export const useProcessingState = (t: TranslateFn) => {
   const [currentStep, setCurrentStep] = useState(0)
   const [progress, setProgress] = useState(0)
   const [statusLabel, setStatusLabel] = useState('')
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<ProcessingErrorState | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [stats, setStats] = useState<ProcessingStats | null>(null)
   const [partialGraph, setPartialGraph] = useState<PipelineJobStatus['partial_graph']>(null)
@@ -105,23 +112,109 @@ export const useProcessingState = (t: TranslateFn) => {
   const getFriendlyProcessingError = useCallback((err: unknown) => {
     if (err instanceof AdaptiveApiError) {
       if (err.code === 'unauthorized')
-        return t('processing.errors.unauthorized')
+        return {
+          message: t('processing.errors.unauthorized'),
+          retryable: false,
+          code: err.code,
+          action: 'upload' as const,
+        }
       if (err.code === 'not_found')
-        return t('processing.errors.jobNotFound')
+        return {
+          message: t('processing.errors.jobNotFound'),
+          retryable: false,
+          code: err.code,
+          action: 'upload' as const,
+        }
       if (err.code === 'conflict')
-        return t('processing.errors.conflict')
+        return {
+          message: t('processing.errors.conflict'),
+          retryable: false,
+          code: err.code,
+          action: 'upload' as const,
+        }
       if (err.code === 'temporary_unavailable')
-        return t('processing.errors.serviceUnavailable')
+        return {
+          message: t('processing.errors.serviceUnavailable'),
+          retryable: true,
+          code: err.code,
+          action: 'upload' as const,
+        }
       if (err.code === 'request_aborted' || err.code === 'network_error')
-        return t('processing.errors.connectionInterrupted')
+        return {
+          message: t('processing.errors.connectionInterrupted'),
+          retryable: true,
+          code: err.code,
+          action: 'upload' as const,
+        }
+      if (err.code === 'pipeline_not_ready')
+        return {
+          message: t('processing.errors.sessionNotReady'),
+          retryable: true,
+          code: err.code,
+          action: 'dashboard' as const,
+        }
     }
 
-    return err instanceof Error ? err.message : t('processing.errors.generic')
+    return {
+      message: err instanceof Error ? err.message : t('processing.errors.generic'),
+      retryable: false,
+      code: null,
+      action: 'upload' as const,
+    }
+  }, [t])
+
+  const getTerminalProcessingError = useCallback((job: PipelineJobStatus): ProcessingErrorState => {
+    const code = job.error_code ?? null
+
+    if (code === 'pipeline_timeout') {
+      return {
+        message: t('processing.errors.pipelineTimeout'),
+        retryable: Boolean(job.retryable),
+        code,
+        action: 'upload',
+      }
+    }
+
+    if (code === 'pipeline_cancelled' || job.status === 'cancelled') {
+      return {
+        message: t('processing.errors.pipelineCancelled'),
+        retryable: true,
+        code: code ?? 'pipeline_cancelled',
+        action: 'upload',
+      }
+    }
+
+    if (code === 'pipeline_unavailable') {
+      return {
+        message: t('processing.errors.pipelineUnavailable'),
+        retryable: true,
+        code,
+        action: 'upload',
+      }
+    }
+
+    if (job.user_message?.trim()) {
+      return {
+        message: job.user_message,
+        retryable: Boolean(job.retryable),
+        code,
+        action: 'upload',
+      }
+    }
+
+    return {
+      message: t('processing.errors.pipelineFailed'),
+      retryable: Boolean(job.retryable),
+      code,
+      action: 'upload',
+    }
   }, [t])
 
   const getRetryNotice = useCallback((err: unknown, phase: 'polling' | 'createSession') => {
     if (phase === 'createSession')
-      return t('processing.notices.retryingCreateSession')
+      return isAdaptiveApiError(err) && err.code === 'pipeline_not_ready'
+        ? t('processing.notices.retryingCreateSession')
+        : t('processing.notices.sessionSetupUnconfirmed')
 
     if (isAdaptiveApiError(err)) {
       if (err.code === 'request_aborted')
@@ -230,11 +323,21 @@ export const useProcessingState = (t: TranslateFn) => {
       creatingSessionRef.current = false
 
       if (isRetryableAdaptiveError(err)) {
+        clearPolling()
         setNotice(getRetryNotice(err, 'createSession'))
-        return 'retry'
+        setError({
+          message: t('processing.errors.sessionSetupUnconfirmed'),
+          retryable: true,
+          code: isAdaptiveApiError(err) ? err.code : 'session_setup_unconfirmed',
+          action: 'dashboard',
+        })
+        return 'deferred'
       }
 
-      setError(getFriendlyProcessingError(err) || t('createSessionFailed'))
+      setError({
+        ...getFriendlyProcessingError(err),
+        action: 'dashboard',
+      })
       clearPolling()
       return 'failed'
     }
@@ -261,14 +364,13 @@ export const useProcessingState = (t: TranslateFn) => {
 
       if (job.status === 'completed' && !creatingSessionRef.current) {
         const outcome = await handleCompletedJob(jobId)
-        if (outcome === 'retry') {
-          retryDelayRef.current = Math.min(retryDelayRef.current * 2, MAX_POLL_DELAY_MS)
-          scheduleNextPoll(jobId, retryDelayRef.current)
-        }
+        if (outcome === 'deferred')
+          return
       }
       else if (job.status === 'failed' || job.status === 'cancelled') {
         clearPolling()
-        setError(job.error_message || t('processing.errors.pipelineFailed'))
+        setNotice(job.retryable ? t('processing.notices.retryAfterFailure') : null)
+        setError(getTerminalProcessingError(job))
       }
       else {
         scheduleNextPoll(jobId, BASE_POLL_DELAY_MS)
@@ -288,7 +390,7 @@ export const useProcessingState = (t: TranslateFn) => {
     finally {
       pollInFlightRef.current = false
     }
-  }, [clearPolling, getFriendlyProcessingError, getRetryNotice, getStatusLabel, handleCompletedJob, scheduleNextPoll, t, updateStats])
+  }, [clearPolling, getFriendlyProcessingError, getRetryNotice, getStatusLabel, getTerminalProcessingError, handleCompletedJob, scheduleNextPoll, t, updateStats])
 
   useEffect(() => {
     pollJobRef.current = (jobId: string) => {
@@ -335,10 +437,21 @@ export const useProcessingState = (t: TranslateFn) => {
     router.push(ADAPTIVE_ROUTES.upload)
   }, [clearPolling, router])
 
+  const handleErrorAction = useCallback(() => {
+    if (error?.action === 'dashboard') {
+      clearPolling()
+      router.push(ADAPTIVE_ROUTES.dashboard)
+      return
+    }
+
+    handleGoBack()
+  }, [clearPolling, error?.action, handleGoBack, router])
+
   return {
     creatingSession,
     currentStep,
     error,
+    handleErrorAction,
     filename,
     handleGoBack,
     notice,

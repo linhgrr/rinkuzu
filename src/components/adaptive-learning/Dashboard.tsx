@@ -58,6 +58,7 @@ export default function AdaptiveLearningDashboard({
     initialSessionHistory,
     didHydrateFromServer,
     t: tDashboard,
+    tAdaptive,
   })
 
   const dashboardSubjects = useMemo(

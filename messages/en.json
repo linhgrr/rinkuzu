@@ -267,7 +267,9 @@
         "unauthorized": "Your session has expired. Please sign in again and upload the PDF once more.",
         "connectionInterrupted": "The upload connection was interrupted. Please try uploading the PDF again.",
         "serviceUnavailable": "The learning service is temporarily busy. Please wait a moment and try again.",
-        "conflict": "This material could not be queued right now. Please try again."
+        "conflict": "This material could not be queued right now. Please try again.",
+        "onlyPdf": "Only PDF files are supported for adaptive learning.",
+        "fileTooLarge": "This PDF is too large. Please upload a file smaller than {maxSizeMb} MB."
       },
       "subject": "Subject",
       "upload": "Upload",
@@ -347,6 +349,12 @@
       "openedYesterday": "Opened yesterday",
       "openedDaysAgo": "Opened {count} days ago",
       "lastOpenedUnknown": "Recently added",
+      "deleteSuccess": "Material deleted successfully.",
+      "deleteFailed": "We couldn't delete this material right now.",
+      "sessionNotReady": "This material is still finishing setup. Please try opening it again in a moment.",
+      "sessionUnavailable": "We couldn't start this learning session right now. Please try again shortly.",
+      "sessionMissing": "We couldn't find this material anymore. Please refresh the dashboard.",
+      "sessionOpenFailed": "We couldn't open this material right now.",
       "aiPowered": "AI Powered",
       "viewDetails": "View Details",
       "newLesson": "New Lesson",
@@ -430,6 +438,7 @@
       "knowledgeGraph": "Knowledge Graph",
       "visualizingStructures": "Visualizing structures in real-time...",
       "tryAgain": "Try Again",
+      "goToDashboard": "Go To Dashboard",
       "defaultFilename": "document.pdf",
       "steps": {
         "readingPdf": "Reading PDF content",
@@ -458,7 +467,9 @@
       "notices": {
         "connectionInterrupted": "The connection was interrupted, but your material may still be processing. We’re retrying automatically...",
         "backendSlowRetrying": "The learning service is taking longer than expected. We’re checking again automatically...",
-        "retryingCreateSession": "Your learning path is ready. We’re reconnecting to finish creating your session..."
+        "retryingCreateSession": "Your learning path is ready. We’re reconnecting to finish creating your session...",
+        "sessionSetupUnconfirmed": "Your material finished processing, but we could not confirm session setup. Please open the subject again from the dashboard.",
+        "retryAfterFailure": "You can safely return and try this upload again."
       },
       "errors": {
         "generic": "Something went wrong while checking processing status. Please try again.",
@@ -467,7 +478,12 @@
         "jobNotFound": "We couldn’t find this processing job anymore. Please upload the document again.",
         "unauthorized": "Your session has expired. Please sign in again and retry.",
         "conflict": "This material is not ready to start a learning session yet.",
-        "pipelineFailed": "We couldn't finish processing this material. Please try again or upload a different PDF."
+        "pipelineFailed": "We couldn't finish processing this material. Please try again or upload a different PDF.",
+        "pipelineTimeout": "Processing took too long and was stopped. Please try uploading the document again.",
+        "pipelineCancelled": "Processing was interrupted before completion. Please upload the document again.",
+        "pipelineUnavailable": "The processing service is temporarily unavailable. Please try again in a moment.",
+        "sessionNotReady": "Your learning path is almost ready, but the session is not available yet.",
+        "sessionSetupUnconfirmed": "Your material finished processing, but we could not confirm the learning session. Please open it again from the dashboard."
       },
       "stats": {
         "extracted": "Extracted",
@@ -560,7 +576,11 @@
       "backToDashboard": "Back to Dashboard",
       "summary": "{concepts} Concepts • {accuracy}% Accuracy",
       "summaryFallback": "Knowledge Graph and Mastery Map",
-      "startLearning": "Start Learning"
+      "startLearning": "Start Learning",
+      "sessionNotReady": "This learning path is still finishing setup. Please try starting again in a moment.",
+      "sessionUnavailable": "We couldn't start the learning session right now. Please wait a bit and try again.",
+      "sessionMissing": "We couldn't find this material anymore. Please return to the dashboard and open it again.",
+      "sessionOpenFailed": "We couldn't open this learning session right now."
     },
     "masteryMatrix": {
       "loading": "Loading mastery matrix...",

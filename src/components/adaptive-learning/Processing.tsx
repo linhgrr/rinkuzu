@@ -15,7 +15,7 @@ export default function AdaptiveLearningProcessing() {
     currentStep,
     error,
     filename,
-    handleGoBack,
+    handleErrorAction,
     notice,
     partialGraph,
     progress,
@@ -33,8 +33,8 @@ export default function AdaptiveLearningProcessing() {
           currentStep={currentStep}
           error={error}
           filename={filename}
+          handleErrorAction={handleErrorAction}
           notice={notice}
-          onGoBack={handleGoBack}
           progress={progress}
           stats={stats}
           statusLabel={statusLabel}

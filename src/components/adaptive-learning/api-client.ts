@@ -52,6 +52,16 @@ function isAbortLikeError(error: unknown): boolean {
 function normalizeAdaptiveError(status: number, detail: string): AdaptiveApiError {
     const trimmedDetail = detail.trim();
 
+    if (status === 400 && /not completed/i.test(trimmedDetail)) {
+        return new AdaptiveApiError({
+            message: trimmedDetail || 'Processing is not ready yet',
+            code: 'pipeline_not_ready',
+            status,
+            detail: trimmedDetail,
+            retryable: true,
+        });
+    }
+
     if (status === 401) {
         return new AdaptiveApiError({
             message: 'Unauthorized',
@@ -346,7 +356,7 @@ export async function uploadPdf(
 
 export async function getPipelineJobStatus(jobId: string): Promise<PipelineJobStatus> {
     return apiFetch<PipelineJobStatus>(`/api/adaptive-learning/pipeline/jobs/${jobId}`, {
-        timeoutMs: 15_000,
+        timeoutMs: 25_000,
     });
 }
 
@@ -356,7 +366,7 @@ export async function createSessionFromPipeline(
 ): Promise<PipelineSessionResponse> {
     return apiFetch<PipelineSessionResponse>(
         `/api/adaptive-learning/pipeline/jobs/${jobId}/create-session?max_steps=${maxSteps}`,
-        { method: 'POST', timeoutMs: 20_000 },
+        { method: 'POST', timeoutMs: 30_000 },
     );
 }
 

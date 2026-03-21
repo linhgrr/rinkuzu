@@ -9,6 +9,7 @@ import {
 } from '../api-client'
 import { ADAPTIVE_ROUTES } from '../routes'
 import { saveSessionJobMapping } from '../session-storage'
+import { getSessionStartFeedback } from '../session-start-feedback'
 import type { PipelineJobHistoryItem, SessionHistoryItem } from '../types'
 
 const DAILY_GOAL_TARGET = 3
@@ -78,6 +79,7 @@ type UseAdaptiveDashboardParams = {
   initialSessionHistory: SessionHistoryItem[]
   didHydrateFromServer: boolean
   t: TranslateFn
+  tAdaptive: TranslateFn
 }
 
 export const useAdaptiveDashboard = ({
@@ -85,6 +87,7 @@ export const useAdaptiveDashboard = ({
   initialSessionHistory,
   didHydrateFromServer,
   t,
+  tAdaptive,
 }: UseAdaptiveDashboardParams) => {
   const router = useRouter()
 
@@ -147,10 +150,11 @@ export const useAdaptiveDashboard = ({
     }
     catch (err) {
       console.error(`Error creating session: ${(err as Error).message}`)
-      showToast(`Could not start session: ${(err as Error).message}`, 'error')
+      const feedback = getSessionStartFeedback(tAdaptive, 'dashboard', err)
+      showToast(feedback.message, 'error')
       setLoadingJobId(null)
     }
-  }, [deletingJobId, loadingJobId, router, showToast])
+  }, [deletingJobId, loadingJobId, router, showToast, tAdaptive])
 
   const handleDeleteClick = useCallback((job: PipelineJobHistoryItem) => {
     setItemToDelete(job)
@@ -165,17 +169,17 @@ export const useAdaptiveDashboard = ({
       await deleteSubject(itemToDelete.job_id, true)
       await refreshSubjects()
       clearSelectedPipelineJob(itemToDelete.job_id)
-      showToast('Document deleted successfully', 'success')
+      showToast(t('deleteSuccess'), 'success')
     }
     catch (err) {
       console.error(`Error deleting subject: ${(err as Error).message}`)
-      showToast('Failed to delete document.', 'error')
+      showToast(t('deleteFailed'), 'error')
     }
     finally {
       setDeletingJobId(null)
       setItemToDelete(null)
     }
-  }, [deletingJobId, itemToDelete, loadingJobId, refreshSubjects, showToast])
+  }, [deletingJobId, itemToDelete, loadingJobId, refreshSubjects, showToast, t])
 
   const handleCancelDelete = useCallback(() => {
     if (!deletingJobId)

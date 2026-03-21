@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useState } from 'react';
-import { useDropzone } from 'react-dropzone';
+import { useDropzone, type FileRejection } from 'react-dropzone';
 import { Button } from '@/components/ui/Button';
 import {
     HiOutlineCloudUpload,
@@ -31,9 +31,31 @@ export default function AdaptiveLearningUpload() {
                 return t('uploadPage.errors.serviceUnavailable');
             if (err.code === 'conflict')
                 return t('uploadPage.errors.conflict');
+            if (err.detail?.trim())
+                return err.detail;
         }
 
         return t('uploadPage.uploadFailed');
+    }, [t]);
+
+    const onDropRejected = useCallback((rejections: FileRejection[]) => {
+        const firstError = rejections[0]?.errors[0];
+        if (!firstError) {
+            setError(t('uploadPage.uploadFailed'));
+            return;
+        }
+
+        if (firstError.code === 'file-too-large') {
+            setError(t('uploadPage.errors.fileTooLarge', { maxSizeMb: 50 }));
+            return;
+        }
+
+        if (firstError.code === 'file-invalid-type') {
+            setError(t('uploadPage.errors.onlyPdf'));
+            return;
+        }
+
+        setError(firstError.message || t('uploadPage.uploadFailed'));
     }, [t]);
 
     const handleUpload = useCallback(async (file: File) => {
@@ -76,6 +98,7 @@ export default function AdaptiveLearningUpload() {
 
     const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
         onDrop,
+        onDropRejected,
         accept: { 'application/pdf': ['.pdf'] },
         maxFiles: 1,
         maxSize: 50 * 1024 * 1024,

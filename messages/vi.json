@@ -516,7 +516,9 @@
       "focusModeContext": "Khái niệm: {concept} ở mức {level}",
       "checking": "Đang kiểm tra...",
       "failedToLoadExercise": "Tải bài tập thất bại",
-      "failedToSubmitAnswer": "Nộp đáp án thất bại"
+      "failedToSubmitAnswer": "Nộp đáp án thất bại",
+      "serviceUnavailable": "Dịch vụ bài tập đang tạm thời không khả dụng. Vui lòng thử lại sau ít phút.",
+      "submitUnavailable": "Hiện chưa thể nộp đáp án. Vui lòng thử lại."
     },
     "bloom": {
       "remember": "Ghi nhớ",

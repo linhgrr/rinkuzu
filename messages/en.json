@@ -271,6 +271,7 @@
     "dashboard": {
       "creatingSession": "Creating session...",
       "startLearning": "Start Learning",
+      "recommendedForYou": "Recommended for You",
       "noMaterials": "No materials yet",
       "uploadPdfHint": "Upload PDF material...",
       "uploadMaterial": "Upload Material",
@@ -284,7 +285,7 @@
       "welcomeBack": "Welcome back.",
       "pickUpDescription": "Pick up right where you left off and keep your learning streak alive.",
       "continueLearning": "Continue Learning",
-    "yourQuizzes": "Your Quizzes",
+      "yourQuizzes": "Your Quizzes",
       "connectionLimited": "Connection limited. Some features may be unavailable.",
       "dayStreak": "{count} Day Streak",
       "dailyGoalProgress": "Daily Goal: {current}/{total}",
@@ -313,7 +314,56 @@
       "hoursAgo": "{count} hours ago",
       "completedDailyGoal": "Completed daily goal",
       "yesterday": "Yesterday",
-      "upNext": "UP NEXT"
+      "upNext": "UP NEXT",
+      "brandSubtitle": "Empowering your learning journey with AI.",
+      "avatarAlt": "User avatar",
+      "activeJourney": "Active Journey",
+      "completePercent": "{percent}% Complete",
+      "conceptsToGo": "{count} concepts to go",
+      "progressPending": "Progress pending",
+      "progressLabel": "Progress",
+      "viewSyllabus": "View Syllabus",
+      "dailyProgressTitle": "Daily Progress",
+      "earnedToday": "Earned Today",
+      "achievements": "Achievements",
+      "unlocked": "Unlocked",
+      "levelArchitect": "Level 12 Architect",
+      "levelProgressHint": "850 XP to Level 13",
+      "knowledgeLibrary": "Knowledge Library",
+      "knowledgeLibrarySubtitle": "Access all your uploaded PDF materials",
+      "gridView": "Grid view",
+      "listView": "List view",
+      "uploadNewPdf": "Upload New PDF",
+      "uploadDragDropHint": "Drag and drop or click to browse",
+      "chooseFile": "Choose File",
+      "openedJustNow": "Opened just now",
+      "openedHoursAgo": "Opened {count}h ago",
+      "openedYesterday": "Opened yesterday",
+      "openedDaysAgo": "Opened {count} days ago",
+      "lastOpenedUnknown": "Recently added",
+      "aiPowered": "AI Powered",
+      "viewDetails": "View Details",
+      "newLesson": "New Lesson",
+      "recommendations": {
+        "basedOnActivity": {
+          "badge": "Based on Activity",
+          "title": "Mastering Typography",
+          "description": "You frequently study Design. This 12-page guide will complement your current path with practical exercises.",
+          "duration": "15 min read"
+        },
+        "highImpact": {
+          "badge": "High Impact",
+          "title": "Intro to Figma API",
+          "description": "Bridge the gap between design and development with this automated summary of technical documentation.",
+          "duration": "22 min read"
+        },
+        "communityTop": {
+          "badge": "Community Top",
+          "title": "Sustainable Living",
+          "description": "Most scholars in your level are exploring environmental sciences this week. Join the discussion.",
+          "duration": "8 min read"
+        }
+      }
     },
     "history": {
       "title": "Exercise History",
@@ -384,6 +434,7 @@
       },
       "status": {
         "starting": "Starting...",
+        "queuedForProcessing": "Queued for processing...",
         "waitingToStart": "Waiting to start...",
         "readingDocument": "Reading PDF document...",
         "splittingChunks": "Splitting into chunks...",
@@ -397,6 +448,19 @@
         "completed": "Ready to learn!",
         "failed": "Processing failed",
         "processing": "Processing..."
+      },
+      "notices": {
+        "connectionInterrupted": "The connection was interrupted, but your material may still be processing. We’re retrying automatically...",
+        "backendSlowRetrying": "The learning service is taking longer than expected. We’re checking again automatically...",
+        "retryingCreateSession": "Your learning path is ready. We’re reconnecting to finish creating your session..."
+      },
+      "errors": {
+        "generic": "Something went wrong while checking processing status. Please try again.",
+        "serviceUnavailable": "The learning service is temporarily unavailable. Please wait a moment and try again.",
+        "jobNotFound": "We couldn’t find this processing job anymore. Please upload the document again.",
+        "unauthorized": "Your session has expired. Please sign in again and retry.",
+        "conflict": "This material is not ready to start a learning session yet.",
+        "pipelineFailed": "We couldn't finish processing this material. Please try again or upload a different PDF."
       },
       "stats": {
         "extracted": "Extracted",

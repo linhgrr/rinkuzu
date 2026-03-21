@@ -1,16 +1,23 @@
 'use client'
 
+import { useMemo } from 'react'
+import { Inter } from 'next/font/google'
 import { useTranslations } from 'next-intl'
 import {
   DashboardDeleteModal,
   DashboardHeader,
   DashboardToast,
+  DailyProgressCard,
+  FloatingUploadAction,
+  HeroSection,
   LibrarySection,
-  RightSidebar,
-  UpNextSection,
-} from './dashboard-sections'
+  RecommendationsSection,
+} from './DashboardSections'
 import { useAdaptiveDashboard } from './hooks/use-adaptive-dashboard'
+import { toDashboardSubject } from './dashboard-view-model'
 import type { PipelineJobHistoryItem, SessionHistoryItem } from './types'
+
+const inter = Inter({ subsets: ['latin'] })
 
 interface DashboardProps {
   initialSubjects: PipelineJobHistoryItem[]
@@ -23,7 +30,9 @@ export default function AdaptiveLearningDashboard({
   initialSessionHistory,
   didHydrateFromServer = false,
 }: DashboardProps) {
-  const t = useTranslations('adaptiveLearning')
+  const tAdaptive = useTranslations('adaptiveLearning')
+  const tDashboard = useTranslations('adaptiveLearning.dashboard')
+  const locale = tAdaptive('common.locale_date')
 
   const {
     apiOnline,
@@ -40,7 +49,6 @@ export default function AdaptiveLearningDashboard({
     loading,
     loadingJobId,
     searchQuery,
-    sessionHistory,
     setSearchQuery,
     streakDays,
     toastMsg,
@@ -49,59 +57,69 @@ export default function AdaptiveLearningDashboard({
     initialSubjects,
     initialSessionHistory,
     didHydrateFromServer,
-    t,
+    t: tDashboard,
   })
 
+  const dashboardSubjects = useMemo(
+    () => filteredSubjects.map(subject => toDashboardSubject(subject, locale, tDashboard)),
+    [filteredSubjects, locale, tDashboard],
+  )
+
+  const upNextDashboardSubject = useMemo(
+    () => (upNextSubject ? toDashboardSubject(upNextSubject, locale, tDashboard) : null),
+    [locale, tDashboard, upNextSubject],
+  )
+
   return (
-    <div className="font-sans text-slate-900 selection:bg-slate-200">
+    <div className={`${inter.className} min-h-screen bg-[#faf8ff] text-[#131b2e]`}>
       <DashboardToast toastMsg={toastMsg} />
 
-      <div className="mx-auto max-w-6xl space-y-10">
+      <main className="mx-auto w-full max-w-7xl p-8 md:p-12">
         <DashboardHeader
           apiOnline={apiOnline}
           dailyGoalProgress={dailyGoalProgress}
           error={error}
           streakDays={streakDays}
-          t={t}
+          t={tDashboard}
         />
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 md:gap-10">
-          <div className="lg:col-span-2 space-y-8 md:space-y-10">
-            <UpNextSection
-              loading={loading}
-              upNextSubject={upNextSubject}
-              loadingJobId={loadingJobId}
-              onGoUpload={handleGoUpload}
-              onOpenSubject={handleOpenSubject}
-              t={t}
-            />
+        <section className="mb-16 grid grid-cols-1 gap-8 lg:grid-cols-12">
+          <HeroSection
+            subject={upNextDashboardSubject}
+            loading={loading}
+            loadingJobId={loadingJobId}
+            onGoUpload={handleGoUpload}
+            onOpenSubject={handleOpenSubject}
+            t={tDashboard}
+          />
+          <DailyProgressCard dailyGoalProgress={dailyGoalProgress} t={tDashboard} />
+        </section>
 
-            <LibrarySection
-              loading={loading}
-              filteredSubjects={filteredSubjects}
-              loadingJobId={loadingJobId}
-              deletingJobId={deletingJobId}
-              searchQuery={searchQuery}
-              setSearchQuery={setSearchQuery}
-              onGoUpload={handleGoUpload}
-              onOpenSubject={handleOpenSubject}
-              onDelete={handleDeleteClick}
-              t={t}
-            />
-          </div>
+        <LibrarySection
+          subjects={dashboardSubjects}
+          loading={loading}
+          loadingJobId={loadingJobId}
+          deletingJobId={deletingJobId}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          onGoUpload={handleGoUpload}
+          onOpenSubject={handleOpenSubject}
+          onDelete={handleDeleteClick}
+          t={tDashboard}
+        />
 
-          <RightSidebar sessionHistory={sessionHistory} t={t} />
-        </div>
+        <RecommendationsSection t={tDashboard} />
+      </main>
 
-        <div className="pb-12 md:pb-20"></div>
-      </div>
+      <FloatingUploadAction onClick={handleGoUpload} t={tDashboard} />
 
       <DashboardDeleteModal
+        cancelText={tAdaptive('common.cancel')}
         isOpen={!!itemToDelete}
         isLoading={!!deletingJobId}
         onConfirm={handleConfirmDelete}
         onCancel={handleCancelDelete}
-        t={t}
+        t={tDashboard}
       />
     </div>
   )

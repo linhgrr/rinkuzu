@@ -4,7 +4,7 @@ import {
   checkApiHealth,
   createSessionFromPipeline,
   deleteSubject,
-  getSessionHistory,
+  getSubjectProgressHistory,
   getSubjects,
 } from '../api-client'
 import { ADAPTIVE_ROUTES } from '../routes'
@@ -62,6 +62,15 @@ const calculateLearningStreak = (sessions: SessionHistoryItem[]): number => {
   }
 
   return streak
+}
+
+const clearSelectedPipelineJob = (jobId: string) => {
+  if (localStorage.getItem('al_pipeline_job_id') !== jobId)
+    return
+
+  localStorage.removeItem('al_pipeline_job_id')
+  localStorage.removeItem('al_pipeline_filename')
+  localStorage.removeItem('al_pipeline_subject_name')
 }
 
 type UseAdaptiveDashboardParams = {
@@ -155,12 +164,7 @@ export const useAdaptiveDashboard = ({
     try {
       await deleteSubject(itemToDelete.job_id, true)
       await refreshSubjects()
-
-      if (localStorage.getItem('al_pipeline_job_id') === itemToDelete.job_id) {
-        localStorage.removeItem('al_pipeline_job_id')
-        localStorage.removeItem('al_pipeline_filename')
-        localStorage.removeItem('al_pipeline_subject_name')
-      }
+      clearSelectedPipelineJob(itemToDelete.job_id)
       showToast('Document deleted successfully', 'success')
     }
     catch (err) {
@@ -234,11 +238,13 @@ export const useAdaptiveDashboard = ({
 
     const hydrateDashboard = async () => {
       setError(null)
+      if (!didHydrateFromServer)
+        setLoading(true)
 
       const [healthResult, subjectsResult, historyResult] = await Promise.allSettled([
         checkApiHealth(),
         getSubjects(),
-        getSessionHistory(5),
+        getSubjectProgressHistory(5),
       ])
 
       if (!isActive)
@@ -256,14 +262,12 @@ export const useAdaptiveDashboard = ({
         return
       }
 
-      setLoading(true)
-
       if (subjectsResult.status === 'fulfilled') {
         setSubjects(subjectsResult.value)
       }
       else {
         console.error('Failed to hydrate subjects', subjectsResult.reason)
-        setError(t('dashboard.connectionLimited'))
+        setError(t('connectionLimited'))
       }
 
       if (historyResult.status === 'fulfilled') {

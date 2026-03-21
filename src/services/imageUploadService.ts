@@ -1,7 +1,7 @@
-import axios from "axios";
+import axios from 'axios'
 
-const API_URL = "https://api.imgbb.com/1/upload";
-const API_KEY = "***REMOVED***";
+const API_URL = 'https://api.imgbb.com/1/upload'
+const API_KEY = '***REMOVED***'
 
 interface ImgBBResponse {
   data: {
@@ -55,41 +55,43 @@ interface UploadResult {
 }
 
 export const uploadImageToImgBB = async (
-  imageFile: File | Buffer | Blob, 
-  imageName: string = ""
+  imageFile: File | Buffer | Blob,
+  imageName: string = '',
 ): Promise<UploadResult> => {
   try {
-    console.log(`📤 Uploading image "${imageName}" to ImgBB...`);
-    
-    const formData = new FormData();
-    formData.append("key", API_KEY);
-    
+    console.log(`Uploading image "${imageName}" to ImgBB...`)
+
+    const formData = new FormData()
+    formData.append('key', API_KEY)
+
     // Handle different input types
     if (imageFile instanceof Buffer) {
-      // Convert Buffer to Blob for FormData
-      const blob = new Blob([imageFile], { type: 'image/jpeg' });
-      formData.append("image", blob, imageName || 'quiz-image.jpg');
-    } else {
-      formData.append("image", imageFile as File | Blob);
+      const bytes = Uint8Array.from(imageFile)
+      const blob = new Blob([bytes.buffer], { type: 'image/jpeg' })
+      formData.append('image', blob, imageName || 'quiz-image.jpg')
     }
-    
+    else {
+      const browserFile = imageFile as Blob
+      formData.append('image', browserFile, imageName || 'quiz-image.jpg')
+    }
+
     if (imageName) {
-      formData.append("name", imageName);
+      formData.append('name', imageName)
     }
 
     // Send POST request
     const response = await axios.post<ImgBBResponse>(API_URL, formData, {
       headers: {
-        "Content-Type": "multipart/form-data",
+        'Content-Type': 'multipart/form-data',
       },
       timeout: 30000, // 30 second timeout
-    });
+    })
 
     if (!response.data.success) {
-      throw new Error('ImgBB upload failed: ' + JSON.stringify(response.data));
+      throw new Error(`ImgBB upload failed: ${JSON.stringify(response.data)}`)
     }
 
-    const d = response.data.data as any;
+    const d = response.data.data as ImgBBResponse['data']
     const result: UploadResult = {
       url: d.url ?? d.display_url,
       displayUrl: d.display_url ?? d.url,
@@ -99,22 +101,25 @@ export const uploadImageToImgBB = async (
       width: d.width,
       height: d.height,
       size: d.size,
-      id: d.id
-    };
+      id: d.id,
+    }
 
-    console.log(`✅ Image uploaded successfully: ${result.displayUrl}`);
-    return result;
-    
-  } catch (error: any) {
-    console.error("ImgBB upload failed:", error.response?.data || error.message);
-    throw new Error(`Failed to upload image to ImgBB: ${error.message}`);
+    console.log(`Image uploaded successfully: ${result.displayUrl}`)
+    return result
   }
-};
+  catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown upload error'
+    const responseData = axios.isAxiosError(error) ? error.response?.data : undefined
+
+    console.error('ImgBB upload failed:', responseData || message)
+    throw new Error(`Failed to upload image to ImgBB: ${message}`)
+  }
+}
 
 // For backward compatibility
 const imageUploadService = {
   uploadImage: uploadImageToImgBB,
-  uploadImageToImgBB
-};
+  uploadImageToImgBB,
+}
 
-export default imageUploadService; 
+export default imageUploadService

@@ -2,7 +2,7 @@ import {
     Session, Exercise, SubmitResult, SessionStatus,
     KnowledgeGraphData, MasteryMatrixData, ConceptDetail,
     PipelineUploadResponse, PipelineJobStatus, PipelineSessionResponse,
-    SessionHistoryItem, SessionHistoryDetail, PipelineJobHistoryItem, DeleteSubjectResponse,
+    SubjectProgressItem, SubjectHistoryDetail, PipelineJobHistoryItem, DeleteSubjectResponse,
     NextConcept, TheoryData,
 } from './types';
 
@@ -11,11 +11,111 @@ const DEFAULT_TIMEOUT_MS = 60_000;
 const inFlightGetRequests = new Map<string, Promise<unknown>>();
 const responseCache = new Map<string, { expiresAt: number; data: unknown }>();
 
+export class AdaptiveApiError extends Error {
+    status?: number;
+    detail?: string;
+    code: string;
+    retryable: boolean;
+
+    constructor({
+        message,
+        code,
+        status,
+        detail,
+        retryable = false,
+    }: {
+        message: string;
+        code: string;
+        status?: number;
+        detail?: string;
+        retryable?: boolean;
+    }) {
+        super(message);
+        this.name = 'AdaptiveApiError';
+        this.status = status;
+        this.detail = detail;
+        this.code = code;
+        this.retryable = retryable;
+    }
+}
+
 type ApiFetchOptions = RequestInit & {
     timeoutMs?: number;
     dedupeKey?: string;
     cacheTtlMs?: number;
 };
+
+function isAbortLikeError(error: unknown): boolean {
+    return error instanceof Error && error.name === 'AbortError';
+}
+
+function normalizeAdaptiveError(status: number, detail: string): AdaptiveApiError {
+    const trimmedDetail = detail.trim();
+
+    if (status === 401) {
+        return new AdaptiveApiError({
+            message: 'Unauthorized',
+            code: 'unauthorized',
+            status,
+            detail: trimmedDetail,
+        });
+    }
+
+    if (status === 404) {
+        return new AdaptiveApiError({
+            message: 'Requested resource was not found',
+            code: 'not_found',
+            status,
+            detail: trimmedDetail,
+        });
+    }
+
+    if (status === 409) {
+        return new AdaptiveApiError({
+            message: trimmedDetail || 'Resource state conflict',
+            code: 'conflict',
+            status,
+            detail: trimmedDetail,
+        });
+    }
+
+    if (status === 429 || status === 502 || status === 503 || status === 504) {
+        return new AdaptiveApiError({
+            message: trimmedDetail || 'Adaptive service temporarily unavailable',
+            code: 'temporary_unavailable',
+            status,
+            detail: trimmedDetail,
+            retryable: true,
+        });
+    }
+
+    return new AdaptiveApiError({
+        message: trimmedDetail || `API Error ${status}`,
+        code: 'request_failed',
+        status,
+        detail: trimmedDetail,
+    });
+}
+
+async function readErrorDetail(res: Response): Promise<string> {
+    const contentType = res.headers.get('content-type') || '';
+
+    if (contentType.includes('application/json')) {
+        const payload = await res.json().catch(() => null);
+        if (payload && typeof payload === 'object') {
+            const detail = 'detail' in payload ? payload.detail : undefined;
+            if (typeof detail === 'string' && detail.trim()) {
+                return detail;
+            }
+        }
+    }
+
+    return res.text().catch(() => res.statusText);
+}
+
+export function isRetryableAdaptiveError(error: unknown): error is AdaptiveApiError {
+    return error instanceof AdaptiveApiError && error.retryable;
+}
 
 function readCachedResponse<T>(key: string): T | null {
     const hit = responseCache.get(key);
@@ -69,17 +169,32 @@ async function executeRequest<T>(
         headers.set('Content-Type', 'application/json');
     }
 
-    const res = await fetch(`${API_BASE}${path}`, {
-        ...options,
-        method,
-        cache: options?.cache ?? 'no-store',
-        headers,
-        signal: controller.signal,
-    }).finally(() => clearTimeout(timeout));
+    let res: Response;
+    try {
+        res = await fetch(`${API_BASE}${path}`, {
+            ...options,
+            method,
+            cache: options?.cache ?? 'no-store',
+            headers,
+            signal: controller.signal,
+        });
+    } catch (error) {
+        if (isAbortLikeError(error)) {
+            throw new AdaptiveApiError({
+                message: 'Request timed out or was interrupted',
+                code: 'request_aborted',
+                retryable: true,
+            });
+        }
+
+        throw error;
+    } finally {
+        clearTimeout(timeout);
+    }
 
     if (!res.ok) {
-        const error = await res.text().catch(() => res.statusText);
-        throw new Error(`API Error ${res.status}: ${error}`);
+        const detail = await readErrorDetail(res);
+        throw normalizeAdaptiveError(res.status, detail);
     }
 
     if (res.status === 204) {
@@ -214,7 +329,9 @@ export async function uploadPdf(
 }
 
 export async function getPipelineJobStatus(jobId: string): Promise<PipelineJobStatus> {
-    return apiFetch<PipelineJobStatus>(`/api/adaptive-learning/pipeline/jobs/${jobId}`);
+    return apiFetch<PipelineJobStatus>(`/api/adaptive-learning/pipeline/jobs/${jobId}`, {
+        timeoutMs: 15_000,
+    });
 }
 
 export async function createSessionFromPipeline(
@@ -223,7 +340,7 @@ export async function createSessionFromPipeline(
 ): Promise<PipelineSessionResponse> {
     return apiFetch<PipelineSessionResponse>(
         `/api/adaptive-learning/pipeline/jobs/${jobId}/create-session?max_steps=${maxSteps}`,
-        { method: 'POST' },
+        { method: 'POST', timeoutMs: 20_000 },
     );
 }
 
@@ -238,23 +355,23 @@ export async function checkPipelineAvailable(): Promise<boolean> {
 
 // --- MongoDB History API ---
 
-export async function getSessionHistory(limit = 50): Promise<SessionHistoryItem[]> {
-    const res = await apiFetch<{ sessions: SessionHistoryItem[]; count: number }>(
-        `/api/adaptive-learning/history/sessions?limit=${limit}`,
+export async function getSubjectProgressHistory(limit = 50): Promise<SubjectProgressItem[]> {
+    const res = await apiFetch<{ subjects: SubjectProgressItem[]; count: number }>(
+        `/api/adaptive-learning/history/subjects/progress?limit=${limit}`,
         { cacheTtlMs: 15_000 }
     );
-    return res.sessions;
+    return res.subjects;
 }
 
-export async function getSessionHistoryDetail(sessionId: string): Promise<SessionHistoryDetail> {
-    return apiFetch<SessionHistoryDetail>(`/api/adaptive-learning/history/sessions/${sessionId}`, {
+export async function getSubjectHistoryDetail(jobId: string): Promise<SubjectHistoryDetail> {
+    return apiFetch<SubjectHistoryDetail>(`/api/adaptive-learning/history/subjects/${jobId}`, {
         cacheTtlMs: 30_000,
     });
 }
 
-export async function getSessionHistoryDetailFresh(sessionId: string): Promise<SessionHistoryDetail> {
-    return executeRequest<SessionHistoryDetail>(
-        `/api/adaptive-learning/history/sessions/${sessionId}`,
+export async function getSubjectHistoryDetailFresh(jobId: string): Promise<SubjectHistoryDetail> {
+    return executeRequest<SubjectHistoryDetail>(
+        `/api/adaptive-learning/history/subjects/${jobId}`,
         'GET',
         { cache: 'no-store' },
     );

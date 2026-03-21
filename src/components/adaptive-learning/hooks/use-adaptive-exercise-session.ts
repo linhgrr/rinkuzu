@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { createSessionFromPipeline, getExercise, getNextConcept, getTheory, isSessionNotFoundError, submitAnswer } from '../api-client'
+import { getExercise, getNextConcept, getTheory, isSessionNotFoundError, submitAnswer } from '../api-client'
 import { ADAPTIVE_ROUTES } from '../routes'
-import { getJobIdForSession, saveSessionExerciseOutcome, saveSessionJobMapping } from '../session-storage'
+import { saveSessionExerciseOutcome } from '../session-storage'
 import type { Exercise, NextConcept, TheoryData } from '../types'
 
 type RouterLike = {
@@ -29,7 +29,6 @@ export const useAdaptiveExerciseSession = ({ sessionId, router, t }: UseAdaptive
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showTheory, setShowTheory] = useState(false)
-  const [recoveringSession, setRecoveringSession] = useState(false)
 
   const loadingRef = useRef(false)
   const isMountedRef = useRef(true)
@@ -129,25 +128,11 @@ export const useAdaptiveExerciseSession = ({ sessionId, router, t }: UseAdaptive
         return
 
       if (isSessionNotFoundError(err)) {
-        const mappedJobId = getJobIdForSession(sessionId)
-        if (mappedJobId) {
-          setRecoveringSession(true)
-          try {
-            const freshSession = await createSessionFromPipeline(mappedJobId, 50)
-            if (!isLatestActiveRequest())
-              return
-
-            localStorage.setItem('al_session_id', freshSession.session_id)
-            saveSessionJobMapping(freshSession.session_id, mappedJobId)
-            router.replace(ADAPTIVE_ROUTES.exercise(freshSession.session_id))
-            return
-          }
-          catch {
-            if (!isLatestActiveRequest())
-              return
-            setRecoveringSession(false)
-          }
-        }
+        setError(t('exercise.failedToLoadExercise'))
+        setLoadingConcept(false)
+        setLoadingTheory(false)
+        setLoadingExercise(false)
+        return
       }
 
       const message = err instanceof Error ? err.message : t('exercise.failedToLoadExercise')
@@ -189,25 +174,8 @@ export const useAdaptiveExerciseSession = ({ sessionId, router, t }: UseAdaptive
         return
 
       if (isSessionNotFoundError(err)) {
-        const mappedJobId = getJobIdForSession(sessionId)
-        if (mappedJobId) {
-          setRecoveringSession(true)
-          try {
-            const freshSession = await createSessionFromPipeline(mappedJobId, 50)
-            if (!isMountedRef.current)
-              return
-
-            localStorage.setItem('al_session_id', freshSession.session_id)
-            saveSessionJobMapping(freshSession.session_id, mappedJobId)
-            router.replace(ADAPTIVE_ROUTES.exercise(freshSession.session_id))
-            return
-          }
-          catch {
-            if (!isMountedRef.current)
-              return
-            setRecoveringSession(false)
-          }
-        }
+        setError(t('exercise.failedToSubmitAnswer'))
+        return
       }
 
       const message = err instanceof Error ? err.message : t('exercise.failedToSubmitAnswer')
@@ -231,7 +199,6 @@ export const useAdaptiveExerciseSession = ({ sessionId, router, t }: UseAdaptive
     submitting,
     error,
     showTheory,
-    recoveringSession,
     setShowTheory,
     setSelectedOption,
     loadData,

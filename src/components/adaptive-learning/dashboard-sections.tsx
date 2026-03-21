@@ -62,7 +62,7 @@ export const DashboardHeader = ({ apiOnline, dailyGoalProgress, error, streakDay
 
     <div className="flex items-center gap-3">
       <div className="flex items-center gap-2 bg-white px-4 py-2.5 rounded-full border border-slate-200 shadow-sm">
-        <span className="text-lg leading-none select-none" aria-label="Streak">🔥</span>
+        <FiZap className="w-4 h-4 text-orange-500 shrink-0" aria-hidden="true" />
         <span className="font-bold text-sm text-orange-600 tracking-tight">{t('dashboard.dayStreak', { count: streakDays })}</span>
       </div>
 
@@ -292,9 +292,9 @@ export const RightSidebar = ({ sessionHistory, t }: RightSidebarProps) => (
       <div className="relative border-l border-slate-200 ml-2.5 space-y-8">
         {sessionHistory.length > 0
           ? sessionHistory.map((h, i) => (
-              <div key={h.session_id} className="relative pl-6">
+              <div key={h.job_id} className="relative pl-6">
                 <div className={`absolute w-2 h-2 bg-white border-2 ${i === 0 ? 'border-slate-900 shadow-[0_0_0_2px_rgba(15,23,42,0.1)]' : 'border-slate-300'} rounded-full -left-[4.5px] top-1.5`}></div>
-                <p className="text-sm font-semibold text-slate-900">{t('dashboard.learningSession')}</p>
+                <p className="text-sm font-semibold text-slate-900">{h.subject_id || h.filename || t('dashboard.learningSession')}</p>
                 <p className="text-xs text-slate-500 font-medium flex items-center gap-1.5 mt-1">{t('dashboard.accQs', { acc: Math.round(h.accuracy * 100), count: h.total_answered })}</p>
               </div>
             ))

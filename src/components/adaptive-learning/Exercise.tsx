@@ -50,7 +50,6 @@ export default function AdaptiveLearningExercise({ sessionId }: ExerciseProps) {
     submitting,
     error,
     showTheory,
-    recoveringSession,
     setShowTheory,
     setSelectedOption,
     loadData,
@@ -88,7 +87,7 @@ export default function AdaptiveLearningExercise({ sessionId }: ExerciseProps) {
     return Object.entries(exercise.options) as [string, string][]
   }, [exercise])
 
-  if (loadingConcept || recoveringSession)
+  if (loadingConcept)
     return <ExerciseLoadingState t={t as any} />
 
   if (error || !concept) {

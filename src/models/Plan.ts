@@ -1,7 +1,7 @@
-import mongoose, { Schema, Document } from 'mongoose'
-import { SubscriptionDurationType, DurationUtils } from '@/types/subscription'
+import mongoose, { type HydratedDocument, type Model, Schema } from 'mongoose'
+import { DurationUtils } from '@/types/subscription'
 
-export interface IPlan extends Document {
+export interface IPlan {
   _id: string
   name: string
   price: number
@@ -19,6 +19,8 @@ export interface IPlan extends Document {
   }
   readonly isLifetime: boolean
 }
+
+type PlanDocument = HydratedDocument<IPlan>
 
 const PlanSchema = new Schema<IPlan>({
   _id: {
@@ -66,7 +68,7 @@ const PlanSchema = new Schema<IPlan>({
 })
 
 // Virtual for duration info
-PlanSchema.virtual('durationInfo').get(function (this: IPlan) {
+PlanSchema.virtual('durationInfo').get(function (this: PlanDocument) {
   try {
     // If already ISO 8601, use directly
     if (DurationUtils.isValidISO8601Duration(this.duration)) {
@@ -86,13 +88,13 @@ PlanSchema.virtual('durationInfo').get(function (this: IPlan) {
 })
 
 // Virtual for checking if lifetime
-PlanSchema.virtual('isLifetime').get(function (this: IPlan) {
+PlanSchema.virtual('isLifetime').get(function (this: PlanDocument) {
   const info = this.durationInfo
   return info.months === undefined
 })
 
 // Pre-save middleware to migrate legacy durations
-PlanSchema.pre('save', function(this: IPlan) {
+PlanSchema.pre('save', function(this: PlanDocument) {
   if (!DurationUtils.isValidISO8601Duration(this.duration)) {
     try {
       this.duration = DurationUtils.fromLegacyDuration(this.duration)
@@ -102,7 +104,7 @@ PlanSchema.pre('save', function(this: IPlan) {
   }
 })
 
-PlanSchema.virtual('id').get(function (this: any) {
+PlanSchema.virtual('id').get(function (this: PlanDocument) {
   return this._id
 })
 
@@ -110,6 +112,6 @@ PlanSchema.virtual('id').get(function (this: any) {
 PlanSchema.set('toJSON', { virtuals: true })
 PlanSchema.set('toObject', { virtuals: true })
 
-const Plan = mongoose.models.Plan || mongoose.model<IPlan>('Plan', PlanSchema)
+const Plan = (mongoose.models.Plan as Model<IPlan> | undefined) || mongoose.model<IPlan>('Plan', PlanSchema)
 
-export default Plan 
+export default Plan

@@ -9,5 +9,7 @@ export async function GET(
     { params }: AsyncRouteParams<{ jobId: string }>,
 ) {
     const { jobId } = await params;
-    return proxyAdaptiveRequest(req, `/api/pipeline/jobs/${jobId}`);
+    return proxyAdaptiveRequest(req, `/api/pipeline/jobs/${jobId}`, {
+        timeoutMs: 20_000,
+    });
 }

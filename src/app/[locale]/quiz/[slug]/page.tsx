@@ -34,10 +34,21 @@ import { MobileQuizPlayer } from '@/components/quiz/MobileQuizPlayer';
 import { useQuizStore } from '@/store/useQuizStore';
 import { IQuiz } from '@/types';
 import { askQuizAI } from '@/lib/quiz/ask-ai';
+import { fetchApiSuccess } from '@/lib/api/client';
 
 interface QuizPlayerPageProps {
   params: { slug: string };
 }
+
+type ShuffledQuizQuestion = IQuiz['questions'][number] & {
+  optionIndexMap: number[];
+  originalQuestionIndex: number;
+};
+
+type QuizPlayerQuiz = Omit<IQuiz, 'questions'> & {
+  questions: ShuffledQuizQuestion[];
+  questionIndexMap: number[];
+};
 
 const DEBUG_QUIZ_FLOW = process.env.NODE_ENV !== 'production' && false;
 const debugLog = (...args: unknown[]) => {
@@ -50,7 +61,7 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
   const t = useTranslations('quiz');
   const { data: session } = useSession();
   const router = useRouter();
-  const [quiz, setQuiz] = useState<IQuiz | null>(null);
+  const [quiz, setQuiz] = useState<QuizPlayerQuiz | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [userEmail, setUserEmail] = useState('');
@@ -101,42 +112,39 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
 
   const fetchQuiz = useCallback(async () => {
     try {
-      const response = await fetch(`/api/quiz/${params.slug}/play`);
-      const data = await response.json();
-
-      if (data.success) {
-        // Fisher-Yates shuffle function
-        function shuffleArray<T>(array: T[]): T[] {
-          const shuffled = [...array];
-          for (let i = shuffled.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-          }
-          return shuffled;
+      const data = await fetchApiSuccess<IQuiz>(`/api/quiz/${params.slug}/play`);
+      // Fisher-Yates shuffle function
+      function shuffleArray<T>(array: T[]): T[] {
+        const shuffled = [...array];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
         }
+        return shuffled;
+      }
 
-        debugLog('\n=== SHUFFLING QUIZ ===');
-        debugLog('Original questions count:', data.data.questions.length);
+      debugLog('\n=== SHUFFLING QUIZ ===');
+      debugLog('Original questions count:', data.data.questions.length);
 
-        // First, shuffle the order of questions
-        const questionsWithIndex = data.data.questions.map((question: any, index: number) => ({
-          question,
-          originalIndex: index
-        }));
+      // First, shuffle the order of questions
+      const questionsWithIndex = data.data.questions.map((question: any, index: number) => ({
+        question,
+        originalIndex: index
+      }));
 
-        const shuffledQuestionsWithIndex = shuffleArray(questionsWithIndex);
-        debugLog('Questions shuffled order:');
-        shuffledQuestionsWithIndex.forEach((item: any, newIndex: number) => {
-          debugLog(`Position ${newIndex + 1}: Question ${item.originalIndex + 1}`);
-        });
+      const shuffledQuestionsWithIndex = shuffleArray(questionsWithIndex);
+      debugLog('Questions shuffled order:');
+      shuffledQuestionsWithIndex.forEach((item: any, newIndex: number) => {
+        debugLog(`Position ${newIndex + 1}: Question ${item.originalIndex + 1}`);
+      });
 
-        // Create mapping for question order (new position -> original position)
-        const questionIndexMap: number[] = [];
+      // Create mapping for question order (new position -> original position)
+      const questionIndexMap: number[] = [];
 
-        // Then shuffle options within each question
-        const shuffledQuestions = shuffledQuestionsWithIndex.map((item: any, questionIndex: number) => {
-          const q = item.question;
-          questionIndexMap[questionIndex] = item.originalIndex;
+      // Then shuffle options within each question
+      const shuffledQuestions = shuffledQuestionsWithIndex.map((item: any, questionIndex: number) => {
+        const q = item.question;
+        questionIndexMap[questionIndex] = item.originalIndex;
 
           debugLog(`\n=== Processing Question ${questionIndex + 1} (originally Q${item.originalIndex + 1}) ===`);
           debugLog('Original options:', q.options);
@@ -224,15 +232,12 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
         debugLog('Questions shuffled:', shuffledQuestions.length);
         debugLog('Question order mapping:', questionIndexMap);
         debugLog('Quiz ready with both question and option shuffling!');
+    } catch (error: any) {
+      if (error.message === 'Premium subscription required to access private quizzes') {
+        setShowPremiumModal(true);
       } else {
-        if (data.error === 'Premium subscription required to access private quizzes') {
-          setShowPremiumModal(true);
-        } else {
-          setError(data.error || 'Quiz not found');
-        }
+        setError(error.message || 'Quiz not found');
       }
-    } catch (error) {
-      setError('Failed to load quiz');
     } finally {
       setLoading(false);
     }
@@ -421,7 +426,7 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
 
       debugLog('payload:', payload);
 
-      const response = await fetch(`/api/quiz/${params.slug}/attempt`, {
+      const data = await fetchApiSuccess<{ attemptId: string; score: number }>(`/api/quiz/${params.slug}/attempt`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -429,13 +434,7 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
         body: JSON.stringify(payload),
       });
 
-      const data = await response.json();
-
-      if (data.success) {
-        router.push(`/quiz/${params.slug}/result?attemptId=${data.data.attemptId}&score=${data.data.score}`);
-      } else {
-        setError(data.error || 'Failed to submit quiz');
-      }
+      router.push(`/quiz/${params.slug}/result?attemptId=${data.data.attemptId}&score=${data.data.score}`);
     } catch (error) {
       console.error('Quiz submission error:', error);
 
@@ -833,7 +832,7 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
 
       debugLog('payload:', payload);
 
-      const response = await fetch(`/api/quiz/${params.slug}/attempt`, {
+      const data = await fetchApiSuccess<{ attemptId: string; score: number }>(`/api/quiz/${params.slug}/attempt`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -841,13 +840,7 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
         body: JSON.stringify(payload),
       });
 
-      const data = await response.json();
-
-      if (data.success) {
-        router.push(`/quiz/${params.slug}/result?attemptId=${data.data.attemptId}&score=${data.data.score}`);
-      } else {
-        setError(data.error || 'Failed to submit quiz');
-      }
+      router.push(`/quiz/${params.slug}/result?attemptId=${data.data.attemptId}&score=${data.data.score}`);
     } catch (error) {
       console.error('Quiz submission error:', error);
 

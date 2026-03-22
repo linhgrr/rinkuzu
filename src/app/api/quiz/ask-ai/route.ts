@@ -1,204 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import {
-  createOpenAIModel,
-  createStructuredOpenAIModel,
-  HumanMessage,
-  SystemMessage,
-  QuizExplanationSchema,
-  formatQuizExplanation,
-  type QuizExplanation
-} from '@/lib/langchain-openai';
 import { authOptions } from '@/lib/auth';
+import type { QuizAskAiRequest } from '@/lib/quiz/ask-ai';
+import {
+  generateQuizAskAiResponse,
+  streamQuizAskAiResponse,
+  validateQuizAskAiInput,
+} from '@/lib/quiz/ask-ai-service';
 
-// Chat history interface
-interface ChatMessage {
-  role: 'user' | 'assistant';
-  content: string;
-}
-
-// Input validation and sanitization
-function sanitizeInput(input: string): string {
-  return input
-    .replace(/[<>]/g, '') // Remove HTML tags
-    .replace(/javascript:|data:|vbscript:/gi, '') // Remove dangerous protocols
-    .trim()
-    .substring(0, 1000); // Limit length
-}
-
-function validateChatInput(userQuestion: string): { isValid: boolean; error?: string } {
-  const sanitized = sanitizeInput(userQuestion);
-
-  // Check for prompt injection patterns
-  const suspiciousPatterns = [
-    /ignore\s+(previous|above|all)\s+(instructions?|prompts?)/i,
-    /you\s+are\s+now\s+/i,
-    /forget\s+(everything|all|previous)/i,
-    /act\s+as\s+(?!.*tutor)/i, // Allow "act as tutor" but not other roles
-    /roleplay|role\s*play/i,
-    /pretend\s+to\s+be/i,
-    /system\s*:|admin\s*:|root\s*:/i,
-    /<script|javascript|eval\(/i
-  ];
-
-  for (const pattern of suspiciousPatterns) {
-    if (pattern.test(sanitized)) {
-      return {
-        isValid: false,
-        error: 'Rin-chan only helps with quiz questions. Please ask about the specific quiz topic!'
-      };
-    }
-  }
-
-  // Check if question is related to learning/quiz
-  const offTopicPatterns = [
-    /(hack|crack|break)\s+into/i,
-    /personal\s+information/i,
-    /phone\s+number|address|email/i
-  ];
-
-  for (const pattern of offTopicPatterns) {
-    if (pattern.test(sanitized)) {
-      return {
-        isValid: false,
-        error: 'Rin-chan is here to help you understand quiz concepts. Please ask questions related to the quiz topic!'
-      };
-    }
-  }
-
-  return { isValid: true };
-}
-
-// Summarize chat history when it gets too long
-async function summarizeChatHistory(chatHistory: ChatMessage[]): Promise<string> {
-  try {
-    const model = createOpenAIModel({ temperature: 0.3 });
-
-    const chatText = chatHistory
-      .slice(-6) // Last 3 turns (6 messages)
-      .map(msg => `${msg.role}: ${msg.content}`)
-      .join('\n\n');
-
-    const summarizePrompt = `
-Please provide a concise summary of this educational conversation between a student and Rin-chan Rin-chan about a quiz question.
-
-CONVERSATION TO SUMMARIZE:
-${chatText}
-
-Please create a brief summary (2-3 sentences) that captures:
-1. The main concepts discussed
-2. Key points of confusion or clarification needed
-3. The current direction of the conversation
-
-Focus only on educational content relevant to understanding the quiz question.
-Keep it concise and educational.
-`;
-
-    const message = new HumanMessage(summarizePrompt);
-    const result = await model.invoke([message]);
-
-    return typeof result.content === 'string'
-      ? result.content.trim()
-      : 'Previous discussion about quiz concepts and explanations.';
-  } catch (error) {
-    console.error('Failed to summarize chat history:', error);
-    return 'Previous discussion about quiz concepts and explanations.';
-  }
-}
-
-// Helper to fetch image as base64
-async function fetchImageBase64(url: string): Promise<string | null> {
-  try {
-    const res = await fetch(url);
-    const buf = Buffer.from(await res.arrayBuffer());
-    return buf.toString('base64');
-  } catch {
-    return null;
-  }
-}
-
-// Build messages for LangChain
-async function buildMessages(
-  question: string,
-  options: string[],
-  userQuestion: string | undefined,
-  questionImage: string | undefined,
-  optionImages: string[] | undefined,
-  contextualInfo: string
-) {
-  const systemPrompt = `
-Bạn là Rin-chan, một gia sư dễ thương chuyên giúp học sinh hiểu bài tập trắc nghiệm.
-Ngôn ngữ mặc định: tiếng Việt (trả lời bằng ngôn ngữ của câu hỏi nếu khác).
-
-Quy tắc:
-- Chỉ thảo luận về câu hỏi quiz được cung cấp.
-- Nếu hỏi lạc đề, nhẹ nhàng chuyển hướng về bài quiz.
-- Giải thích dễ hiểu, khuyến khích học sinh tư duy.
-- Luôn giữ vai trò gia sư giáo dục.
-- Mọi biểu thức toán PHẢI dùng LaTeX: inline $...$ hoặc display $$...$$. KHÔNG viết công thức dạng text thuần.`;
-
-  const userPrompt = `
-QUIZ QUESTION:
-"${question}"
-
-OPTIONS:
-${options.map((option: string, index: number) => `${String.fromCharCode(65 + index)}. ${option}`).join('\n')}
-
-${contextualInfo}
-
-${userQuestion ? `STUDENT'S NEW QUESTION: "${sanitizeInput(userQuestion)}"` : 'Please provide a general explanation of this question.'}
-
-INSTRUCTIONS:
-1. Stay in character as Rin-chan - be cute but educational
-2. ONLY discuss this specific quiz question and related educational concepts
-3. If the conversation has history, build upon previous explanations naturally
-4. Provide clear, helpful explanations that promote understanding
-5. Nếu hỏi lạc đề: nhẹ nhàng chuyển về câu hỏi quiz hiện tại.
-6. Answer in the same language as the question
-7. Be encouraging and supportive of learning
-8. Mọi công thức toán phải viết bằng LaTeX ($...$ inline hoặc $$...$$ block). Ví dụ: $x^2 + 1 = 0$, $$\Delta = b^2 - 4ac$$
-
-Focus on educational value and conceptual understanding!
-`;
-
-  // Build message content
-  const messageContent: any[] = [{ type: 'text', text: userPrompt }];
-
-  // Add question image if available
-  if (questionImage) {
-    const b64 = await fetchImageBase64(questionImage);
-    if (b64) {
-      messageContent.push({
-        type: 'image_url',
-        image_url: { url: `data:image/jpeg;base64,${b64}` }
-      });
-    }
-  }
-
-  // Add option images if available
-  if (Array.isArray(optionImages)) {
-    for (const img of optionImages) {
-      if (!img) continue;
-      const b64 = await fetchImageBase64(img);
-      if (b64) {
-        messageContent.push({
-          type: 'image_url',
-          image_url: { url: `data:image/jpeg;base64,${b64}` }
-        });
-      }
-    }
-  }
-
-  return [
-    new SystemMessage(systemPrompt),
-    new HumanMessage({ content: messageContent })
-  ];
-}
-
-// POST /api/quiz/ask-ai - Get AI explanation with SSE streaming
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
+
     if (!session?.user) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized' },
@@ -206,25 +19,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const {
-      question,
-      options,
-      userQuestion,
-      questionImage,
-      optionImages,
-      chatHistory = []
-    } = await request.json();
+    const payload = await request.json() as QuizAskAiRequest;
 
-    if (!question || !options || !Array.isArray(options)) {
+    if (!payload.question || !Array.isArray(payload.options)) {
       return NextResponse.json(
         { success: false, error: 'Question and options are required' },
         { status: 400 }
       );
     }
 
-    // Validate user input if provided
-    if (userQuestion) {
-      const validation = validateChatInput(userQuestion);
+    if (payload.userQuestion) {
+      const validation = validateQuizAskAiInput(payload.userQuestion);
+
       if (!validation.isValid) {
         return NextResponse.json(
           { success: false, error: validation.error },
@@ -234,109 +40,37 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('🤖 Ask AI request:', {
-      user: session.user?.email,
-      question: question.substring(0, 100) + '...',
-      userQuestion: userQuestion || 'General explanation',
-      optionsCount: options.length,
-      chatHistoryLength: chatHistory.length
+      user: session.user.email,
+      question: `${payload.question.substring(0, 100)}...`,
+      userQuestion: payload.userQuestion || 'General explanation',
+      optionsCount: payload.options.length,
+      chatHistoryLength: payload.chatHistory?.length || 0,
+      stream: payload.stream === true,
     });
 
-    // Handle chat history summarization if needed
-    let contextualInfo = '';
-    if (chatHistory.length > 6) {
-      const summary = await summarizeChatHistory(chatHistory);
-      contextualInfo = `\n\nPREVIOUS CONVERSATION SUMMARY:\n${summary}\n`;
-    } else if (chatHistory.length > 0) {
-      contextualInfo = `\n\nPREVIOUS CONVERSATION:\n${chatHistory
-        .map((msg: ChatMessage) => `${msg.role}: ${msg.content}`)
-        .join('\n\n')}\n`;
+    if (payload.stream) {
+      const upstream = await streamQuizAskAiResponse(payload);
+
+      return new NextResponse(upstream.body, {
+        status: upstream.status,
+        headers: {
+          'Content-Type': upstream.headers.get('Content-Type') || 'text/event-stream; charset=utf-8',
+          'Cache-Control': 'no-cache, no-transform',
+          Connection: 'keep-alive',
+          'X-Accel-Buffering': 'no',
+        },
+      });
     }
 
-    const messages = await buildMessages(
-      question,
-      options,
-      userQuestion,
-      questionImage,
-      optionImages,
-      contextualInfo
-    );
+    const data = await generateQuizAskAiResponse(payload);
 
-    // Non-streaming response with STRUCTURED OUTPUT (Best Practice 2025)
-    // Uses Zod schema for constrained, validated output
-    const maxRetries = 2; // Bounded repair loop
-
-    for (let attempt = 0; attempt < maxRetries; attempt++) {
-      try {
-        // Use structured model with schema constraint
-        const structuredModel = createStructuredOpenAIModel(QuizExplanationSchema, {
-          temperature: 0.7
-        });
-
-        const result = await structuredModel.invoke(messages) as QuizExplanation;
-
-        // Validate output (semantic validation in app code)
-        if (!result.explanation || result.explanation.length < 20) {
-          throw new Error('Invalid explanation: too short');
-        }
-
-        if (!result.keyPoints || result.keyPoints.length < 1) {
-          throw new Error('Invalid keyPoints: missing');
-        }
-
-        // Format structured output to readable text
-        const formattedExplanation = formatQuizExplanation(result);
-
-        console.log('✅ AI structured explanation generated successfully', {
-          keyPointsCount: result.keyPoints.length,
-          hasHint: !!result.hint,
-          hasEncouragement: !!result.encouragement
-        });
-
-        return NextResponse.json({
-          success: true,
-          data: {
-            explanation: formattedExplanation,
-            structured: result, // Also return raw structured data
-            timestamp: new Date().toISOString(),
-            turnCount: Math.floor(chatHistory.length / 2) + 1
-          }
-        });
-
-      } catch (error: any) {
-        console.error(`Ask AI structured attempt ${attempt + 1} failed:`, error.message);
-
-        // On last retry, fall back to unstructured output
-        if (attempt === maxRetries - 1) {
-          console.log('⚠️ Falling back to unstructured output...');
-          try {
-            const model = createOpenAIModel({ temperature: 0.7 });
-            const result = await model.invoke(messages);
-            const explanation = typeof result.content === 'string'
-              ? result.content.trim()
-              : JSON.stringify(result.content);
-
-            return NextResponse.json({
-              success: true,
-              data: {
-                explanation,
-                structured: null, // Indicate fallback was used
-                timestamp: new Date().toISOString(),
-                turnCount: Math.floor(chatHistory.length / 2) + 1
-              }
-            });
-          } catch (fallbackError: any) {
-            throw new Error(`All attempts failed: ${fallbackError.message}`);
-          }
-        }
-
-        await new Promise(resolve => setTimeout(resolve, 1000));
-      }
-    }
-
-    throw new Error('All retry attempts failed');
-
+    return NextResponse.json({
+      success: true,
+      data,
+    });
   } catch (error: any) {
     console.error('Ask AI error:', error);
+
     return NextResponse.json(
       { success: false, error: error.message || 'Failed to get AI explanation' },
       { status: 500 }

@@ -11,6 +11,7 @@ import Pagination from '@/components/ui/Pagination';
 import { ROUTES } from '@/shared/constants';
 import { HiOutlineTag, HiOutlineTrash, HiOutlineExternalLink } from '@/components/icons';
 import Image from 'next/image';
+import { askQuizAI } from '@/lib/quiz/ask-ai';
 
 const chatbotIcon = 'https://i.ibb.co/ZRYgc1tN/Gemini-Generated-Image-yjm06yyjm06yyjm0-removebg-preview.png';
 
@@ -201,29 +202,22 @@ export default function ProfileBookmarks() {
 
             const currentHistory = chatHistories[currentBookmark._id] || [];
 
-            const resp = await fetch('/api/quiz/ask-ai', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    question: currentBookmark.question.text,
-                    options: currentBookmark.question.options,
-                    userQuestion: trimmedQuestion,
-                    questionImage: currentBookmark.question.questionImage,
-                    optionImages: currentBookmark.question.optionImages,
-                    chatHistory: [...currentHistory, userMessage]
-                })
+            const data = await askQuizAI({
+                question: currentBookmark.question.text,
+                options: currentBookmark.question.options,
+                userQuestion: trimmedQuestion,
+                questionImage: currentBookmark.question.questionImage,
+                optionImages: currentBookmark.question.optionImages,
+                chatHistory: [...currentHistory, userMessage]
             });
-            const data = await resp.json();
 
-            if (data.success) {
+            if (data.explanation) {
                 const assistantMessage: ChatMessage = {
                     role: 'assistant',
-                    content: data.data.explanation,
-                    timestamp: data.data.timestamp
+                    content: data.explanation,
+                    timestamp: data.timestamp
                 };
                 addMessageToHistory(currentBookmark._id, assistantMessage);
-            } else {
-                setAIError(data.error || 'Failed to get AI explanation');
             }
         } catch (err: any) {
             setAIError(err.message || 'Failed to connect to AI service.');

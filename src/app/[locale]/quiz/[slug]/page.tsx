@@ -33,6 +33,7 @@ import { PremiumRequiredModal } from '@/components/ui/PremiumRequiredModal';
 import { MobileQuizPlayer } from '@/components/quiz/MobileQuizPlayer';
 import { useQuizStore } from '@/store/useQuizStore';
 import { IQuiz } from '@/types';
+import { askQuizAI } from '@/lib/quiz/ask-ai';
 
 interface QuizPlayerPageProps {
   params: { slug: string };
@@ -479,29 +480,17 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
 
     try {
       const currentQuestion = quiz.questions[currentQuestionIndex];
-      const response = await fetch('/api/quiz/ask-ai', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          question: currentQuestion.question,
-          options: currentQuestion.options,
-          userQuestion: userQuestion.trim() || undefined,
-          questionImage: currentQuestion.questionImage,
-          optionImages: currentQuestion.optionImages,
-        }),
+      const data = await askQuizAI({
+        question: currentQuestion.question,
+        options: currentQuestion.options,
+        userQuestion: userQuestion.trim() || undefined,
+        questionImage: currentQuestion.questionImage,
+        optionImages: currentQuestion.optionImages,
       });
 
-      const data = await response.json();
-
-      if (data.success) {
-        setAIExplanation(data.data.explanation);
-      } else {
-        setAIError(data.error || 'Failed to get AI explanation');
-      }
-    } catch (error) {
-      setAIError('Failed to connect to AI service');
+      setAIExplanation(data.explanation);
+    } catch (error: any) {
+      setAIError(error.message || 'Failed to connect to AI service');
     } finally {
       setLoadingAI(false);
     }

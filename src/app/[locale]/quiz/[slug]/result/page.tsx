@@ -8,6 +8,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { DynamicMarkdownRenderer as MarkdownRenderer } from '@/components/ui/DynamicMarkdownRenderer';
+import { askQuizAI } from '@/lib/quiz/ask-ai';
 
 interface QuizResultPageProps {
   params: { slug: string };
@@ -237,37 +238,29 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
       // Get current chat history for this question
       const currentHistory = chatHistories[currentQuestionIndex] || [];
       
-      const resp = await fetch('/api/quiz/ask-ai', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          question: aiQuestionData.question,
-          options: aiQuestionData.options,
-          userQuestion: trimmedQuestion,
-          questionImage: aiQuestionData.questionImage,
-          optionImages: aiQuestionData.optionImages,
-          chatHistory: [...currentHistory, userMessage] // Include the new user message
-        })
+      const data = await askQuizAI({
+        question: aiQuestionData.question,
+        options: aiQuestionData.options,
+        userQuestion: trimmedQuestion,
+        questionImage: aiQuestionData.questionImage,
+        optionImages: aiQuestionData.optionImages,
+        chatHistory: [...currentHistory, userMessage]
       });
-      
-      const data = await resp.json();
-      
-      if (data.success) {
+
+      if (data.explanation) {
         // Add assistant response to chat history
         const assistantMessage: ChatMessage = {
           role: 'assistant',
-          content: data.data.explanation,
-          timestamp: data.data.timestamp
+          content: data.explanation,
+          timestamp: data.timestamp
         };
         addMessageToHistory(currentQuestionIndex, assistantMessage);
         
         // Clear input
         setUserQuestion('');
-      } else {
-        setAIError(data.error || 'Failed to get AI explanation');
       }
-    } catch (err) {
-      setAIError('Failed to connect to AI service. Please try again.');
+    } catch (err: any) {
+      setAIError(err.message || 'Failed to connect to AI service. Please try again.');
     } finally {
       setLoadingAI(false);
     }

@@ -32,7 +32,7 @@ import ReportQuiz from '@/components/ui/ReportQuiz';
 import { PremiumRequiredModal } from '@/components/ui/PremiumRequiredModal';
 import { MobileQuizPlayer } from '@/components/quiz/MobileQuizPlayer';
 import { IQuiz } from '@/types';
-import { askQuizAI } from '@/lib/quiz/ask-ai';
+import { streamQuizAI } from '@/lib/quiz/ask-ai';
 import { fetchApiSuccess } from '@/lib/api/client';
 
 interface QuizPlayerPageProps {
@@ -409,15 +409,19 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
 
     try {
       const currentQuestion = quiz.questions[currentQuestionIndex];
-      const data = await askQuizAI({
+      const explanation = await streamQuizAI({
         question: currentQuestion.question,
         options: currentQuestion.options,
         userQuestion: userQuestion.trim() || undefined,
         questionImage: currentQuestion.questionImage,
         optionImages: currentQuestion.optionImages,
+      }, {
+        onContent: (_, fullContent) => {
+          setAIExplanation(fullContent);
+        },
       });
 
-      setAIExplanation(data.explanation);
+      setAIExplanation(explanation);
     } catch (error: any) {
       setAIError(error.message || 'Failed to connect to AI service');
     } finally {

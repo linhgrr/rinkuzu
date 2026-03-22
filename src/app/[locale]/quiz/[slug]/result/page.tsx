@@ -8,7 +8,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { DynamicMarkdownRenderer as MarkdownRenderer } from '@/components/ui/DynamicMarkdownRenderer';
-import { askQuizAI } from '@/lib/quiz/ask-ai';
+import { streamQuizAI } from '@/lib/quiz/ask-ai';
 import { fetchApiSuccess } from '@/lib/api/client';
 
 interface QuizResultPageProps {
@@ -211,6 +211,41 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
     scrollToBottom();
   };
 
+  const updateLastAssistantMessage = (questionIndex: number, content: string) => {
+    setChatHistories(prev => {
+      const history = [...(prev[questionIndex] || [])];
+
+      for (let i = history.length - 1; i >= 0; i -= 1) {
+        if (history[i]?.role === 'assistant') {
+          history[i] = { ...history[i], content };
+          break;
+        }
+      }
+
+      return {
+        ...prev,
+        [questionIndex]: history,
+      };
+    });
+    scrollToBottom(0);
+  };
+
+  const removeEmptyLastAssistantMessage = (questionIndex: number) => {
+    setChatHistories(prev => {
+      const history = [...(prev[questionIndex] || [])];
+      const lastMessage = history[history.length - 1];
+
+      if (lastMessage?.role === 'assistant' && !lastMessage.content.trim()) {
+        history.pop();
+      }
+
+      return {
+        ...prev,
+        [questionIndex]: history,
+      };
+    });
+  };
+
   const askAI = async () => {
     if (!aiQuestionData || currentQuestionIndex === -1) return;
     
@@ -234,29 +269,31 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
 
       // Get current chat history for this question
       const currentHistory = chatHistories[currentQuestionIndex] || [];
-      
-      const data = await askQuizAI({
+      const nextHistory = [...currentHistory, userMessage];
+      const assistantTimestamp = new Date().toISOString();
+      addMessageToHistory(currentQuestionIndex, {
+        role: 'assistant',
+        content: '',
+        timestamp: assistantTimestamp,
+      });
+
+      const explanation = await streamQuizAI({
         question: aiQuestionData.question,
         options: aiQuestionData.options,
         userQuestion: trimmedQuestion,
         questionImage: aiQuestionData.questionImage,
         optionImages: aiQuestionData.optionImages,
-        chatHistory: [...currentHistory, userMessage]
+        chatHistory: nextHistory
+      }, {
+        onContent: (_, fullContent) => {
+          updateLastAssistantMessage(currentQuestionIndex, fullContent);
+        },
       });
 
-      if (data.explanation) {
-        // Add assistant response to chat history
-        const assistantMessage: ChatMessage = {
-          role: 'assistant',
-          content: data.explanation,
-          timestamp: data.timestamp
-        };
-        addMessageToHistory(currentQuestionIndex, assistantMessage);
-        
-        // Clear input
-        setUserQuestion('');
-      }
+      updateLastAssistantMessage(currentQuestionIndex, explanation);
+      setUserQuestion('');
     } catch (err: any) {
+      removeEmptyLastAssistantMessage(currentQuestionIndex);
       setAIError(err.message || 'Failed to connect to AI service. Please try again.');
     } finally {
       setLoadingAI(false);

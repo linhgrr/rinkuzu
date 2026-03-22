@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { HiOutlineX, HiArrowUp } from '@/components/icons';
 import Image from 'next/image';
 import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer';
+import { streamAdaptiveTutorChat } from '@/lib/adaptive-learning/chat';
 
 const chatbotIcon = '/images/chatbot_icon.png';
 
@@ -37,6 +38,7 @@ export default function AdaptiveLearningChatbot({
     const [input, setInput] = useState('');
     const [isTyping, setIsTyping] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
+    const abortControllerRef = useRef<AbortController | null>(null);
 
     useEffect(() => {
         setMessages([initialMessage]);
@@ -48,16 +50,31 @@ export default function AdaptiveLearningChatbot({
         }
     }, [messages, isOpen]);
 
+    useEffect(() => () => {
+        abortControllerRef.current?.abort();
+    }, []);
+
+    useEffect(() => {
+        if (!isOpen) {
+            abortControllerRef.current?.abort();
+        }
+    }, [isOpen]);
+
     const handleSend = useCallback(async () => {
         const trimmedQuestion = input.trim();
         if (!trimmedQuestion || isTyping) return;
 
         const userMsg: Message = { id: Date.now().toString(), role: 'user', content: trimmedQuestion };
+        const assistantId = (Date.now() + 1).toString();
         const previousHistory = messages
             .filter((msg) => msg.id !== initialMessage.id)
             .map((msg) => ({ role: msg.role, content: msg.content }));
 
-        setMessages((prev) => [...prev, userMsg]);
+        setMessages((prev) => [
+            ...prev,
+            userMsg,
+            { id: assistantId, role: 'assistant', content: '' },
+        ]);
         setInput('');
         setIsTyping(true);
 
@@ -66,34 +83,41 @@ export default function AdaptiveLearningChatbot({
                 throw new Error(t('chatbot.errorInsufficientContext'));
             }
 
-            const resp = await fetch(`/api/adaptive-learning/session/${sessionId}/chat`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
+            const abortController = new AbortController();
+            abortControllerRef.current = abortController;
+
+            const explanation = await streamAdaptiveTutorChat(
+                sessionId,
+                {
                     userQuestion: trimmedQuestion,
                     chatHistory: [...previousHistory, { role: 'user', content: trimmedQuestion }],
-                }),
-            });
+                },
+                {
+                    signal: abortController.signal,
+                    onContent: (_, fullContent) => {
+                        setMessages((prev) => prev.map((msg) => (
+                            msg.id === assistantId
+                                ? { ...msg, content: fullContent }
+                                : msg
+                        )));
+                    },
+                }
+            );
 
-            const data = await resp.json().catch(() => null);
-            if (!resp.ok) {
-                throw new Error(data?.detail || data?.error || t('chatbot.errorAIFailure'));
-            }
-
-            const aiMsg: Message = {
-                id: (Date.now() + 1).toString(),
-                role: 'assistant',
-                content: data?.explanation || t('chatbot.fallbackNoResponse'),
-            };
-            setMessages((prev) => [...prev, aiMsg]);
+            setMessages((prev) => prev.map((msg) => (
+                msg.id === assistantId
+                    ? { ...msg, content: explanation || t('chatbot.fallbackNoResponse') }
+                    : msg
+            )));
         } catch (error) {
-            const aiMsg: Message = {
-                id: (Date.now() + 1).toString(),
-                role: 'assistant',
-                content: error instanceof Error ? error.message : t('chatbot.errorConnection'),
-            };
-            setMessages((prev) => [...prev, aiMsg]);
+            const errorMessage = error instanceof Error ? error.message : t('chatbot.errorConnection');
+            setMessages((prev) => prev.map((msg) => (
+                msg.id === assistantId
+                    ? { ...msg, content: errorMessage }
+                    : msg
+            )));
         } finally {
+            abortControllerRef.current = null;
             setIsTyping(false);
         }
     }, [initialMessage.id, input, isTyping, messages, sessionId, t]);
@@ -134,7 +158,7 @@ export default function AdaptiveLearningChatbot({
                         </div>
                     </div>
                 ))}
-                {isTyping && (
+                {isTyping && messages[messages.length - 1]?.role !== 'assistant' && (
                     <div className="flex justify-start">
                         <div className="bg-white border border-gray-200 rounded-2xl rounded-bl-none p-3 shadow-sm">
                             <div className="flex gap-1">

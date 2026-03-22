@@ -31,7 +31,6 @@ import { QuestionDiscussion } from '@/components/ui/QuestionDiscussion';
 import ReportQuiz from '@/components/ui/ReportQuiz';
 import { PremiumRequiredModal } from '@/components/ui/PremiumRequiredModal';
 import { MobileQuizPlayer } from '@/components/quiz/MobileQuizPlayer';
-import { useQuizStore } from '@/store/useQuizStore';
 import { IQuiz } from '@/types';
 import { askQuizAI } from '@/lib/quiz/ask-ai';
 import { fetchApiSuccess } from '@/lib/api/client';
@@ -50,6 +49,172 @@ type QuizPlayerQuiz = Omit<IQuiz, 'questions'> & {
   questionIndexMap: number[];
 };
 
+type QuizAnswer = number | number[];
+
+function shuffleArray<T>(array: T[]): T[] {
+  const shuffled = [...array];
+
+  for (let index = shuffled.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1));
+    [shuffled[index], shuffled[swapIndex]] = [shuffled[swapIndex], shuffled[index]];
+  }
+
+  return shuffled;
+}
+
+function createQuizPlayerData(rawQuiz: IQuiz, log: (...args: unknown[]) => void) {
+  log('\n=== SHUFFLING QUIZ ===');
+  log('Original questions count:', rawQuiz.questions.length);
+
+  const questionsWithIndex = rawQuiz.questions.map((question, originalIndex) => ({
+    question,
+    originalIndex,
+  }));
+  const shuffledQuestionsWithIndex = shuffleArray(questionsWithIndex);
+  const questionIndexMap: number[] = [];
+
+  log('Questions shuffled order:');
+  shuffledQuestionsWithIndex.forEach((item, newIndex) => {
+    log(`Position ${newIndex + 1}: Question ${item.originalIndex + 1}`);
+  });
+
+  const questions = shuffledQuestionsWithIndex.map((item, questionIndex) => {
+    const question = item.question;
+    const optionsWithIndex = shuffleArray(
+      question.options.map((option, originalIndex) => ({
+        option,
+        originalIndex,
+      }))
+    );
+
+    questionIndexMap[questionIndex] = item.originalIndex;
+
+    const shuffledOptions = optionsWithIndex.map(optionItem => optionItem.option);
+    const optionIndexMap = optionsWithIndex.map(optionItem => optionItem.originalIndex);
+    const optionImages = question.optionImages
+      ? optionsWithIndex.map(optionItem => question.optionImages?.[optionItem.originalIndex])
+      : undefined;
+
+    log(`\n=== Processing Question ${questionIndex + 1} (originally Q${item.originalIndex + 1}) ===`);
+    log('Original options:', question.options);
+    log('Final shuffled options:', shuffledOptions);
+    log('Option index map (new -> original):', optionIndexMap);
+    log(
+      'Was actually shuffled:',
+      !question.options.every((option, index) => option === shuffledOptions[index])
+    );
+
+    return {
+      ...question,
+      options: shuffledOptions,
+      optionImages,
+      optionIndexMap,
+      originalQuestionIndex: item.originalIndex,
+    };
+  });
+
+  const validationErrors: string[] = [];
+  questions.forEach((question, index) => {
+    if (!Array.isArray(question.optionIndexMap)) {
+      validationErrors.push(`Question ${index + 1}: missing optionIndexMap`);
+    }
+    if (typeof question.originalQuestionIndex !== 'number') {
+      validationErrors.push(`Question ${index + 1}: missing originalQuestionIndex`);
+    }
+  });
+
+  if (questionIndexMap.length !== questions.length) {
+    validationErrors.push('Invalid questionIndexMap');
+  }
+
+  if (validationErrors.length > 0) {
+    throw new Error(`Quiz data validation failed: ${validationErrors.join(', ')}`);
+  }
+
+  const initialAnswers: QuizAnswer[] = questions.map(question => (
+    question.type === 'multiple' ? [] : -1
+  ));
+
+  log('Initial answers (based on shuffled questions):', initialAnswers);
+  log('\n=== QUIZ LOADED ===');
+  log('Total questions:', rawQuiz.questions.length);
+  log('Questions shuffled:', questions.length);
+  log('Question order mapping:', questionIndexMap);
+  log('Quiz ready with both question and option shuffling!');
+
+  return {
+    quiz: {
+      ...rawQuiz,
+      questions,
+      questionIndexMap,
+    } satisfies QuizPlayerQuiz,
+    initialAnswers,
+  };
+}
+
+function isQuestionAnswered(question: ShuffledQuizQuestion, answer: QuizAnswer): boolean {
+  if (question.type === 'single') {
+    return answer !== -1;
+  }
+
+  return Array.isArray(answer) && answer.length > 0;
+}
+
+function mapAnswersToOriginalOrder(quiz: QuizPlayerQuiz, answers: QuizAnswer[], log: (...args: unknown[]) => void) {
+  log('=== SUBMITTING QUIZ ===');
+  log('userAnswers:', answers);
+  log('questionIndexMap:', quiz.questionIndexMap);
+
+  const convertedAnswers = answers.map((answer, index) => {
+    const question = quiz.questions[index];
+    const optionIndexMap = question.optionIndexMap;
+
+    if (!Array.isArray(optionIndexMap) || optionIndexMap.length !== question.options.length) {
+      throw new Error(`Option mapping is missing for question ${index + 1}`);
+    }
+
+    if (question.type === 'single') {
+      if (typeof answer !== 'number') {
+        throw new Error(`Invalid answer type for single choice question ${index + 1}`);
+      }
+      if (answer !== -1 && (answer < 0 || answer >= optionIndexMap.length)) {
+        throw new Error(`Invalid answer for question ${index + 1}`);
+      }
+      return answer === -1 ? -1 : optionIndexMap[answer];
+    }
+
+    if (!Array.isArray(answer)) {
+      throw new Error(`Invalid answer type for multiple choice question ${index + 1}`);
+    }
+
+    answer.forEach(answerIndex => {
+      if (typeof answerIndex !== 'number' || answerIndex < 0 || answerIndex >= optionIndexMap.length) {
+        throw new Error(`Invalid answer for question ${index + 1}`);
+      }
+    });
+
+    return answer.map(answerIndex => optionIndexMap[answerIndex]);
+  });
+
+  if (quiz.questionIndexMap.length !== convertedAnswers.length) {
+    throw new Error('Question mapping length mismatch');
+  }
+
+  const originalOrderAnswers: QuizAnswer[] = new Array(convertedAnswers.length);
+  convertedAnswers.forEach((answer, shuffledIndex) => {
+    const originalIndex = quiz.questionIndexMap[shuffledIndex];
+    if (originalIndex < 0 || originalIndex >= convertedAnswers.length) {
+      throw new Error(`Invalid question mapping for question ${shuffledIndex + 1}`);
+    }
+    originalOrderAnswers[originalIndex] = answer;
+  });
+
+  log('convertedAnswers (shuffled order):', convertedAnswers);
+  log('originalOrderAnswers (original question order):', originalOrderAnswers);
+
+  return originalOrderAnswers;
+}
+
 const DEBUG_QUIZ_FLOW = process.env.NODE_ENV !== 'production' && false;
 const debugLog = (...args: unknown[]) => {
   if (DEBUG_QUIZ_FLOW) {
@@ -67,7 +232,7 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
   const [userEmail, setUserEmail] = useState('');
   const [showEmailInput, setShowEmailInput] = useState(true);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [userAnswers, setUserAnswers] = useState<(number | number[])[]>([]);
+  const [userAnswers, setUserAnswers] = useState<QuizAnswer[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
   const [unansweredCount, setUnansweredCount] = useState(0);
@@ -113,125 +278,9 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
   const fetchQuiz = useCallback(async () => {
     try {
       const data = await fetchApiSuccess<IQuiz>(`/api/quiz/${params.slug}/play`);
-      // Fisher-Yates shuffle function
-      function shuffleArray<T>(array: T[]): T[] {
-        const shuffled = [...array];
-        for (let i = shuffled.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-        }
-        return shuffled;
-      }
-
-      debugLog('\n=== SHUFFLING QUIZ ===');
-      debugLog('Original questions count:', data.data.questions.length);
-
-      // First, shuffle the order of questions
-      const questionsWithIndex = data.data.questions.map((question: any, index: number) => ({
-        question,
-        originalIndex: index
-      }));
-
-      const shuffledQuestionsWithIndex = shuffleArray(questionsWithIndex);
-      debugLog('Questions shuffled order:');
-      shuffledQuestionsWithIndex.forEach((item: any, newIndex: number) => {
-        debugLog(`Position ${newIndex + 1}: Question ${item.originalIndex + 1}`);
-      });
-
-      // Create mapping for question order (new position -> original position)
-      const questionIndexMap: number[] = [];
-
-      // Then shuffle options within each question
-      const shuffledQuestions = shuffledQuestionsWithIndex.map((item: any, questionIndex: number) => {
-        const q = item.question;
-        questionIndexMap[questionIndex] = item.originalIndex;
-
-          debugLog(`\n=== Processing Question ${questionIndex + 1} (originally Q${item.originalIndex + 1}) ===`);
-          debugLog('Original options:', q.options);
-
-          // Create array of options with their original indices
-          const optionsWithIndex = q.options.map((option: string, index: number) => ({
-            option,
-            originalIndex: index
-          }));
-
-          debugLog('Options with original indices:', optionsWithIndex);
-
-          // Shuffle the array
-          const shuffledOptionsWithIndex = shuffleArray(optionsWithIndex);
-          debugLog('After shuffle:', shuffledOptionsWithIndex);
-
-          // Extract shuffled options and create mapping
-          const shuffledOptions: string[] = [];
-          const optionIndexMap: number[] = [];
-
-          for (let newIndex = 0; newIndex < shuffledOptionsWithIndex.length; newIndex++) {
-            const item = shuffledOptionsWithIndex[newIndex] as { option: string; originalIndex: number };
-            shuffledOptions[newIndex] = item.option;
-            optionIndexMap[newIndex] = item.originalIndex;
-          }
-
-          debugLog('Final shuffled options:', shuffledOptions);
-          debugLog('Option index map (new -> original):', optionIndexMap);
-
-          // Check if shuffle actually happened
-          const isShuffled = !q.options.every((option: string, index: number) => option === shuffledOptions[index]);
-          debugLog('Was actually shuffled:', isShuffled);
-
-          return {
-            ...q,
-            options: shuffledOptions,
-            optionIndexMap, // Map from new option index to original option index
-            originalQuestionIndex: item.originalIndex // Store original question index
-          };
-        });
-
-        // Validate that all questions have the required mapping data
-        const validationErrors = [];
-        shuffledQuestions.forEach((q, index) => {
-          if (!Array.isArray((q as any).optionIndexMap)) {
-            validationErrors.push(`Question ${index + 1}: missing optionIndexMap`);
-          }
-          if (typeof (q as any).originalQuestionIndex !== 'number') {
-            validationErrors.push(`Question ${index + 1}: missing originalQuestionIndex`);
-          }
-        });
-
-        if (!Array.isArray(questionIndexMap) || questionIndexMap.length !== shuffledQuestions.length) {
-          validationErrors.push('Invalid questionIndexMap');
-        }
-
-        if (validationErrors.length > 0) {
-          console.error('Quiz validation errors:', validationErrors);
-          throw new Error('Quiz data validation failed: ' + validationErrors.join(', '));
-        }
-
-        setQuiz({
-          ...data.data,
-          questions: shuffledQuestions,
-          questionIndexMap // Map from new question position to original question position
-        });
-
-        // Initialize answers based on SHUFFLED question types (not original)
-        const initialAnswers = shuffledQuestions.map((q: any, index: number) => {
-          debugLog(`Shuffled Question ${index}:`, { type: q.type, question: q.question });
-          return q.type === 'multiple' ? [] : -1;
-        });
-
-        debugLog('Initial answers (based on shuffled questions):', initialAnswers);
-        debugLog('Initial answers with types:', initialAnswers.map((ans: any, idx: number) => ({
-          index: idx,
-          answer: ans,
-          answerType: typeof ans,
-          isArray: Array.isArray(ans)
-        })));
-
-        setUserAnswers(initialAnswers);
-        debugLog('\n=== QUIZ LOADED ===');
-        debugLog('Total questions:', data.data.questions.length);
-        debugLog('Questions shuffled:', shuffledQuestions.length);
-        debugLog('Question order mapping:', questionIndexMap);
-        debugLog('Quiz ready with both question and option shuffling!');
+      const { quiz: nextQuiz, initialAnswers } = createQuizPlayerData(data.data, debugLog);
+      setQuiz(nextQuiz);
+      setUserAnswers(initialAnswers);
     } catch (error: any) {
       if (error.message === 'Premium subscription required to access private quizzes') {
         setShowPremiumModal(true);
@@ -299,151 +348,36 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
     }
   };
 
+  const submitQuizAnswers = useCallback(async (answersToSubmit: QuizAnswer[]) => {
+    if (!quiz) return;
+
+    const payload = {
+      answers: mapAnswersToOriginalOrder(quiz, answersToSubmit, debugLog),
+      userEmail: session?.user?.email || userEmail.trim(),
+    };
+
+    debugLog('payload:', payload);
+
+    const data = await fetchApiSuccess<{ attemptId: string; score: number }>(`/api/quiz/${params.slug}/attempt`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    router.push(`/quiz/${params.slug}/result?attemptId=${data.data.attemptId}&score=${data.data.score}`);
+  }, [params.slug, quiz, router, session?.user?.email, userEmail]);
+
   const completeSubmit = async () => {
     if (!quiz) return;
 
     setSubmitting(true);
     try {
-      debugLog('=== SUBMITTING QUIZ ===');
-      debugLog('userAnswers:', userAnswers);
-      debugLog('userAnswers with types:', userAnswers.map((ans: any, idx: number) => ({
-        index: idx,
-        answer: ans,
-        answerType: typeof ans,
-        isArray: Array.isArray(ans)
-      })));
-      debugLog('questionIndexMap:', (quiz as any).questionIndexMap);
-      debugLog('quiz.questions:', quiz.questions.map((q, i) => ({
-        currentIndex: i,
-        originalQuestionIndex: (q as any).originalQuestionIndex,
-        type: q.type,
-        optionsCount: q.options.length,
-        optionIndexMap: (q as any).optionIndexMap
-      })));
-
-      // First convert option indices, then reorder to match original question order
-      const convertedAnswers = userAnswers.map((ans, idx) => {
-        const question = quiz.questions[idx];
-        const mapArr: number[] = (question as any).optionIndexMap;
-
-        // Add validation for optionIndexMap
-        if (!mapArr || !Array.isArray(mapArr)) {
-          console.error(`Question ${idx}: optionIndexMap is missing or invalid`, {
-            optionIndexMap: mapArr,
-            question: question
-          });
-          throw new Error(`Option mapping is missing for question ${idx + 1}`);
-        }
-
-        debugLog(`Converting question ${idx} (originally Q${(question as any).originalQuestionIndex + 1}):`, {
-          userAnswer: ans,
-          optionIndexMap: mapArr,
-          questionType: question.type
-        });
-
-        if (question.type === 'single') {
-          const aNum = ans as number;
-
-          // Validate that answer is a number for single choice
-          if (typeof aNum !== 'number') {
-            console.error(`Single choice question ${idx} has non-number answer:`, {
-              answer: ans,
-              answerType: typeof ans,
-              questionType: question.type
-            });
-            throw new Error(`Invalid answer type for single choice question ${idx + 1}`);
-          }
-
-          if (aNum !== -1 && (aNum < 0 || aNum >= mapArr.length)) {
-            console.error(`Invalid answer index ${aNum} for question ${idx}, mapArr length: ${mapArr.length}`);
-            throw new Error(`Invalid answer for question ${idx + 1}`);
-          }
-          const converted = aNum === -1 ? -1 : mapArr[aNum];
-          debugLog(`Single choice: ${aNum} -> ${converted}`);
-          return converted;
-        } else {
-          // Validate that answer is an array for multiple choice
-          if (!Array.isArray(ans)) {
-            console.error(`Multiple choice question ${idx} has non-array answer:`, {
-              answer: ans,
-              answerType: typeof ans,
-              questionType: question.type
-            });
-            throw new Error(`Invalid answer type for multiple choice question ${idx + 1}`);
-          }
-
-          const arr = ans as number[];
-          for (const a of arr) {
-            if (typeof a !== 'number' || a < 0 || a >= mapArr.length) {
-              console.error(`Invalid answer index ${a} for question ${idx}, mapArr length: ${mapArr.length}`);
-              throw new Error(`Invalid answer for question ${idx + 1}`);
-            }
-          }
-          const converted = arr.map(a => mapArr[a]);
-          debugLog(`Multiple choice: [${arr}] -> [${converted}]`);
-          return converted;
-        }
-      });
-
-      // Reorder answers to match original question order
-      const questionIndexMap: number[] = (quiz as any).questionIndexMap;
-
-      // Add validation for questionIndexMap
-      if (!questionIndexMap || !Array.isArray(questionIndexMap)) {
-        console.error('questionIndexMap is missing or invalid', {
-          questionIndexMap: questionIndexMap,
-          quiz: quiz
-        });
-        throw new Error('Question ordering mapping is missing');
-      }
-
-      if (questionIndexMap.length !== convertedAnswers.length) {
-        console.error('questionIndexMap length mismatch', {
-          questionIndexMapLength: questionIndexMap.length,
-          convertedAnswersLength: convertedAnswers.length
-        });
-        throw new Error('Question mapping length mismatch');
-      }
-
-      const originalOrderAnswers: (number | number[])[] = new Array(convertedAnswers.length);
-
-      convertedAnswers.forEach((answer, shuffledIndex) => {
-        const originalIndex = questionIndexMap[shuffledIndex];
-        if (originalIndex < 0 || originalIndex >= convertedAnswers.length) {
-          console.error(`Invalid original index ${originalIndex} for shuffled index ${shuffledIndex}`);
-          throw new Error(`Invalid question mapping for question ${shuffledIndex + 1}`);
-        }
-        originalOrderAnswers[originalIndex] = answer;
-      });
-
-      debugLog('convertedAnswers (shuffled order):', convertedAnswers);
-      debugLog('originalOrderAnswers (original question order):', originalOrderAnswers);
-
-      const payload = {
-        answers: originalOrderAnswers,
-        userEmail: session?.user?.email || userEmail.trim(),
-      };
-
-      debugLog('payload:', payload);
-
-      const data = await fetchApiSuccess<{ attemptId: string; score: number }>(`/api/quiz/${params.slug}/attempt`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      });
-
-      router.push(`/quiz/${params.slug}/result?attemptId=${data.data.attemptId}&score=${data.data.score}`);
+      await submitQuizAnswers(userAnswers);
     } catch (error) {
       console.error('Quiz submission error:', error);
-
-      // Show more specific error message if available
-      if (error instanceof Error) {
-        setError(error.message);
-      } else {
-        setError('Failed to submit quiz');
-      }
+      setError(error instanceof Error ? error.message : 'Failed to submit quiz');
     } finally {
       setSubmitting(false);
     }
@@ -454,11 +388,7 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
 
     const unanswered = userAnswers.filter((answer, index) => {
       const question = quiz.questions[index];
-      if (question.type === 'single') {
-        return answer === -1;
-      } else {
-        return !Array.isArray(answer) || answer.length === 0;
-      }
+      return !isQuestionAnswered(question, answer);
     }).length;
 
     if (unanswered > 0) {
@@ -699,161 +629,21 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
   const progress = Math.round(((currentQuestionIndex + 1) / quiz.questions.length) * 100);
   const answeredQuestions = userAnswers.filter((answer, index) => {
     const question = quiz.questions[index];
-    if (question.type === 'single') {
-      return answer !== -1;
-    } else {
-      return Array.isArray(answer) && answer.length > 0;
-    }
+    return isQuestionAnswered(question, answer);
   }).length;
 
   // Handle quiz completion for mobile
-  const handleQuizComplete = async (answers: (number | number[])[]) => {
+  const handleQuizComplete = useCallback(async (answers: QuizAnswer[]) => {
     setSubmitting(true);
     try {
-      debugLog('=== SUBMITTING QUIZ (Mobile) ===');
-      debugLog('userAnswers:', answers);
-      debugLog('userAnswers with types:', answers.map((ans: any, idx: number) => ({
-        index: idx,
-        answer: ans,
-        answerType: typeof ans,
-        isArray: Array.isArray(ans)
-      })));
-      debugLog('questionIndexMap:', (quiz as any).questionIndexMap);
-      debugLog('quiz.questions:', quiz.questions.map((q, i) => ({
-        currentIndex: i,
-        originalQuestionIndex: (q as any).originalQuestionIndex,
-        type: q.type,
-        optionsCount: q.options.length,
-        optionIndexMap: (q as any).optionIndexMap
-      })));
-
-      // First convert option indices, then reorder to match original question order
-      const convertedAnswers = answers.map((ans, idx) => {
-        const question = quiz.questions[idx];
-        const mapArr: number[] = (question as any).optionIndexMap;
-
-        // Add validation for optionIndexMap
-        if (!mapArr || !Array.isArray(mapArr)) {
-          console.error(`Question ${idx}: optionIndexMap is missing or invalid`, {
-            optionIndexMap: mapArr,
-            question: question
-          });
-          throw new Error(`Option mapping is missing for question ${idx + 1}`);
-        }
-
-        debugLog(`Converting question ${idx} (originally Q${(question as any).originalQuestionIndex + 1}):`, {
-          userAnswer: ans,
-          optionIndexMap: mapArr,
-          questionType: question.type
-        });
-
-        if (question.type === 'single') {
-          const aNum = ans as number;
-
-          // Validate that answer is a number for single choice
-          if (typeof aNum !== 'number') {
-            console.error(`Single choice question ${idx} has non-number answer:`, {
-              answer: ans,
-              answerType: typeof ans,
-              questionType: question.type
-            });
-            throw new Error(`Invalid answer type for single choice question ${idx + 1}`);
-          }
-
-          if (aNum !== -1 && (aNum < 0 || aNum >= mapArr.length)) {
-            console.error(`Invalid answer index ${aNum} for question ${idx}, mapArr length: ${mapArr.length}`);
-            throw new Error(`Invalid answer for question ${idx + 1}`);
-          }
-          const converted = aNum === -1 ? -1 : mapArr[aNum];
-          debugLog(`Single choice: ${aNum} -> ${converted}`);
-          return converted;
-        } else {
-          // Validate that answer is an array for multiple choice
-          if (!Array.isArray(ans)) {
-            console.error(`Multiple choice question ${idx} has non-array answer:`, {
-              answer: ans,
-              answerType: typeof ans,
-              questionType: question.type
-            });
-            throw new Error(`Invalid answer type for multiple choice question ${idx + 1}`);
-          }
-
-          const arr = ans as number[];
-          for (const a of arr) {
-            if (typeof a !== 'number' || a < 0 || a >= mapArr.length) {
-              console.error(`Invalid answer index ${a} for question ${idx}, mapArr length: ${mapArr.length}`);
-              throw new Error(`Invalid answer for question ${idx + 1}`);
-            }
-          }
-          const converted = arr.map(a => mapArr[a]);
-          debugLog(`Multiple choice: [${arr}] -> [${converted}]`);
-          return converted;
-        }
-      });
-
-      // Reorder answers to match original question order
-      const questionIndexMap: number[] = (quiz as any).questionIndexMap;
-
-      // Add validation for questionIndexMap
-      if (!questionIndexMap || !Array.isArray(questionIndexMap)) {
-        console.error('questionIndexMap is missing or invalid', {
-          questionIndexMap: questionIndexMap,
-          quiz: quiz
-        });
-        throw new Error('Question ordering mapping is missing');
-      }
-
-      if (questionIndexMap.length !== convertedAnswers.length) {
-        console.error('questionIndexMap length mismatch', {
-          questionIndexMapLength: questionIndexMap.length,
-          convertedAnswersLength: convertedAnswers.length
-        });
-        throw new Error('Question mapping length mismatch');
-      }
-
-      const originalOrderAnswers: (number | number[])[] = new Array(convertedAnswers.length);
-
-      convertedAnswers.forEach((answer, shuffledIndex) => {
-        const originalIndex = questionIndexMap[shuffledIndex];
-        if (originalIndex < 0 || originalIndex >= convertedAnswers.length) {
-          console.error(`Invalid original index ${originalIndex} for shuffled index ${shuffledIndex}`);
-          throw new Error(`Invalid question mapping for question ${shuffledIndex + 1}`);
-        }
-        originalOrderAnswers[originalIndex] = answer;
-      });
-
-      debugLog('convertedAnswers (shuffled order):', convertedAnswers);
-      debugLog('originalOrderAnswers (original question order):', originalOrderAnswers);
-
-      const payload = {
-        answers: originalOrderAnswers,
-        userEmail: session?.user?.email || userEmail.trim(),
-      };
-
-      debugLog('payload:', payload);
-
-      const data = await fetchApiSuccess<{ attemptId: string; score: number }>(`/api/quiz/${params.slug}/attempt`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      });
-
-      router.push(`/quiz/${params.slug}/result?attemptId=${data.data.attemptId}&score=${data.data.score}`);
+      await submitQuizAnswers(answers);
     } catch (error) {
       console.error('Quiz submission error:', error);
-
-      // Show more specific error message if available
-      if (error instanceof Error) {
-        setError(error.message);
-      } else {
-        setError('Failed to submit quiz');
-      }
+      setError(error instanceof Error ? error.message : 'Failed to submit quiz');
     } finally {
       setSubmitting(false);
     }
-  };
+  }, [submitQuizAnswers]);
 
   // Show MobileQuizPlayer on mobile devices
   if (isMobile && !showEmailInput) {

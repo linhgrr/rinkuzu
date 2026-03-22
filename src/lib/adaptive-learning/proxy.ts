@@ -19,6 +19,16 @@ type ProxyOptions = {
     };
 };
 
+const UPSTREAM_RESPONSE_HEADERS = [
+    'content-type',
+    'cache-control',
+    'etag',
+    'last-modified',
+    'vary',
+    'connection',
+    'x-accel-buffering',
+] as const;
+
 function buildTargetUrl(req: Request, targetPath: string): URL {
     const targetUrl = new URL(targetPath, resolveAdaptiveApiUrl());
     const incomingUrl = new URL(req.url);
@@ -36,6 +46,19 @@ function shouldAttachBody(method: string): boolean {
 
 function isHtmlResponse(contentType: string | null): boolean {
     return (contentType || '').toLowerCase().includes('text/html');
+}
+
+function copyUpstreamResponseHeaders(response: Response): Headers {
+    const responseHeaders = new Headers();
+
+    for (const headerName of UPSTREAM_RESPONSE_HEADERS) {
+        const headerValue = response.headers.get(headerName);
+        if (headerValue) {
+            responseHeaders.set(headerName, headerValue);
+        }
+    }
+
+    return responseHeaders;
 }
 
 export async function proxyAdaptiveRequest(
@@ -109,14 +132,9 @@ export async function proxyAdaptiveRequest(
             );
         }
 
-        const responseHeaders = new Headers();
-        if (contentTypeHeader) {
-            responseHeaders.set('content-type', contentTypeHeader);
-        }
-
         return new NextResponse(response.body, {
             status: response.status,
-            headers: responseHeaders,
+            headers: copyUpstreamResponseHeaders(response),
         });
     } catch (error) {
         if (error instanceof Error && error.name === 'AbortError') {

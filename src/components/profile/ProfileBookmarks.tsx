@@ -11,7 +11,7 @@ import Pagination from '@/components/ui/Pagination';
 import { ROUTES } from '@/shared/constants';
 import { HiOutlineTag, HiOutlineTrash, HiOutlineExternalLink } from '@/components/icons';
 import Image from 'next/image';
-import { askQuizAI } from '@/lib/quiz/ask-ai';
+import { streamQuizAI } from '@/lib/quiz/ask-ai';
 import { fetchApiSuccess } from '@/lib/api/client';
 
 const chatbotIcon = 'https://i.ibb.co/ZRYgc1tN/Gemini-Generated-Image-yjm06yyjm06yyjm0-removebg-preview.png';
@@ -169,6 +169,41 @@ export default function ProfileBookmarks() {
         scrollToBottom();
     };
 
+    const updateLastAssistantMessage = (bookmarkId: string, content: string) => {
+        setChatHistories(prev => {
+            const history = [...(prev[bookmarkId] || [])];
+
+            for (let i = history.length - 1; i >= 0; i -= 1) {
+                if (history[i]?.role === 'assistant') {
+                    history[i] = { ...history[i], content };
+                    break;
+                }
+            }
+
+            return {
+                ...prev,
+                [bookmarkId]: history,
+            };
+        });
+        scrollToBottom(0);
+    };
+
+    const removeEmptyLastAssistantMessage = (bookmarkId: string) => {
+        setChatHistories(prev => {
+            const history = [...(prev[bookmarkId] || [])];
+            const lastMessage = history[history.length - 1];
+
+            if (lastMessage?.role === 'assistant' && !lastMessage.content.trim()) {
+                history.pop();
+            }
+
+            return {
+                ...prev,
+                [bookmarkId]: history,
+            };
+        });
+    };
+
     const askAI = async () => {
         if (!currentBookmark) return;
         const trimmedQuestion = userQuestion.trim();
@@ -190,25 +225,32 @@ export default function ProfileBookmarks() {
             setUserQuestion('');
 
             const currentHistory = chatHistories[currentBookmark._id] || [];
+            const nextHistory = [...currentHistory, userMessage];
+            const assistantTimestamp = new Date().toISOString();
+            addMessageToHistory(currentBookmark._id, {
+                role: 'assistant',
+                content: '',
+                timestamp: assistantTimestamp
+            });
 
-            const data = await askQuizAI({
+            const explanation = await streamQuizAI({
                 question: currentBookmark.question.text,
                 options: currentBookmark.question.options,
                 userQuestion: trimmedQuestion,
                 questionImage: currentBookmark.question.questionImage,
                 optionImages: currentBookmark.question.optionImages,
-                chatHistory: [...currentHistory, userMessage]
+                chatHistory: nextHistory
+            }, {
+                onContent: (_, fullContent) => {
+                    updateLastAssistantMessage(currentBookmark._id, fullContent);
+                }
             });
 
-            if (data.explanation) {
-                const assistantMessage: ChatMessage = {
-                    role: 'assistant',
-                    content: data.explanation,
-                    timestamp: data.timestamp
-                };
-                addMessageToHistory(currentBookmark._id, assistantMessage);
-            }
+            updateLastAssistantMessage(currentBookmark._id, explanation);
         } catch (err: any) {
+            if (currentBookmark) {
+                removeEmptyLastAssistantMessage(currentBookmark._id);
+            }
             setAIError(err.message || 'Failed to connect to AI service.');
         } finally {
             setLoadingAI(false);

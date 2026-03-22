@@ -748,10 +748,9 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
               <CardHeader>
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
-                    <CardTitle className="text-xl">
-                      {currentQuestion.question}
-                    </CardTitle>
-
+                    <div className="text-xl font-semibold [&_p]:text-xl [&_p]:text-gray-900 [&_p]:m-0">
+                      <MarkdownRenderer content={currentQuestion.question} />
+                    </div>
                   </div>
                   <div className="flex items-center space-x-2 ml-4">
                     <Button
@@ -835,8 +834,9 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
                           )}
                         </div>
                         <div className="flex-1">
-                          <span className="text-gray-900">{option}</span>
-
+                          <div className="text-gray-900 [&_p]:m-0 [&_p]:text-base [&_p]:text-gray-900">
+                            <MarkdownRenderer content={option} />
+                          </div>
                           {/* Display option image if exists */}
                           {currentQuestion.optionImages?.[index] && (
                             <div className="mt-2">
@@ -1026,11 +1026,16 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
             {/* Current Question Display */}
             <div className="bg-gray-50 p-4 rounded-lg">
               <h4 className="font-medium text-gray-900 mb-2">{t('currentQuestion')}</h4>
-              <p className="text-sm text-gray-700">{quiz && currentQuestion.question}</p>
+              <div className="text-sm text-gray-700 [&_p]:mb-0 [&_p]:text-sm [&_p]:text-gray-700">
+                {quiz && <MarkdownRenderer content={currentQuestion.question} />}
+              </div>
               <div className="mt-2 space-y-1">
                 {quiz && currentQuestion.options.map((option, index) => (
                   <div key={index} className="text-xs text-gray-600 flex items-start space-x-2">
-                    <span>{String.fromCharCode(65 + index)}. {option}</span>
+                    <span className="mt-0.5">{String.fromCharCode(65 + index)}.</span>
+                    <div className="flex-1 [&_p]:m-0 [&_p]:text-xs [&_p]:text-gray-600">
+                      <MarkdownRenderer content={option} />
+                    </div>
                     {currentQuestion.optionImages?.[index] && (
                       <OptionImage src={currentQuestion.optionImages[index]!} alt={`Option ${index} image`} className="ml-1" />
                     )}

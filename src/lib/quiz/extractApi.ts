@@ -1,3 +1,8 @@
+import {
+  buildAdaptiveServiceHeaders,
+  resolveAdaptiveApiUrl,
+} from '@/lib/adaptive-learning/config';
+
 type ExtractQuizResult = {
   questions: any[];
 };
@@ -17,12 +22,6 @@ type ExtractApiResponse = {
   };
   error?: string;
 };
-
-function resolveAdaptiveApiUrl(): string {
-  return process.env.ADAPTIVE_API_URL
-    || process.env.NEXT_PUBLIC_API_URL
-    || 'http://127.0.0.1:8000';
-}
 
 /**
  * Calls the Python quiz extraction endpoint for a PDF already stored on S3.
@@ -45,15 +44,11 @@ export async function extractQuizFromS3Key(
   }
 
   const apiUrl = resolveAdaptiveApiUrl();
-  const serviceToken = process.env.INTERNAL_SERVICE_TOKEN;
 
   const response = await fetch(`${apiUrl}/api/quiz/extract`, {
     method: 'POST',
     body: formDataPayload,
-    headers: {
-      'x-user-id': userId,
-      ...(serviceToken ? { 'x-service-token': serviceToken } : {}),
-    },
+    headers: buildAdaptiveServiceHeaders(userId),
     signal: AbortSignal.timeout(timeoutMs),
   });
 

@@ -22,6 +22,23 @@ interface ChatbotProps {
     onClose: () => void;
 }
 
+function isAbortLikeError(error: unknown): boolean {
+    return error instanceof Error && error.name === 'AbortError';
+}
+
+function ThinkingPlaceholder({ label }: { label: string }) {
+    return (
+        <div className="flex items-center gap-2 text-sm text-gray-500">
+            <span className="animate-pulse font-medium">{label}</span>
+            <div className="flex gap-1">
+                <span className="h-1.5 w-1.5 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '0ms' }} />
+                <span className="h-1.5 w-1.5 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '150ms' }} />
+                <span className="h-1.5 w-1.5 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '300ms' }} />
+            </div>
+        </div>
+    );
+}
+
 export default function AdaptiveLearningChatbot({
     sessionId,
     context,
@@ -66,9 +83,6 @@ export default function AdaptiveLearningChatbot({
 
         const userMsg: Message = { id: Date.now().toString(), role: 'user', content: trimmedQuestion };
         const assistantId = (Date.now() + 1).toString();
-        const previousHistory = messages
-            .filter((msg) => msg.id !== initialMessage.id)
-            .map((msg) => ({ role: msg.role, content: msg.content }));
 
         setMessages((prev) => [
             ...prev,
@@ -90,7 +104,6 @@ export default function AdaptiveLearningChatbot({
                 sessionId,
                 {
                     userQuestion: trimmedQuestion,
-                    chatHistory: [...previousHistory, { role: 'user', content: trimmedQuestion }],
                 },
                 {
                     signal: abortController.signal,
@@ -110,17 +123,29 @@ export default function AdaptiveLearningChatbot({
                     : msg
             )));
         } catch (error) {
+            if (isAbortLikeError(error)) {
+                setMessages((prev) => prev.filter((msg) => (
+                    msg.id !== assistantId || msg.content.trim().length > 0
+                )));
+                return;
+            }
+
             const errorMessage = error instanceof Error ? error.message : t('chatbot.errorConnection');
             setMessages((prev) => prev.map((msg) => (
                 msg.id === assistantId
-                    ? { ...msg, content: errorMessage }
+                    ? {
+                        ...msg,
+                        content: msg.content.trim()
+                            ? `${msg.content}\n\n${t('chatbot.errorInterrupted')}`
+                            : errorMessage,
+                    }
                     : msg
             )));
         } finally {
             abortControllerRef.current = null;
             setIsTyping(false);
         }
-    }, [initialMessage.id, input, isTyping, messages, sessionId, t]);
+    }, [input, isTyping, sessionId, t]);
 
     if (!isOpen) return null;
 
@@ -150,7 +175,9 @@ export default function AdaptiveLearningChatbot({
                             ? 'bg-gray-900 border-gray-900 text-white rounded-br-[2px]'
                             : 'bg-white border-gray-200 text-gray-900 rounded-bl-[2px] shadow-sm'
                             }`}>
-                            {msg.role === 'assistant' ? (
+                            {msg.role === 'assistant' && isTyping && !msg.content.trim() ? (
+                                <ThinkingPlaceholder label={t('chatbot.thinking')} />
+                            ) : msg.role === 'assistant' ? (
                                 <MarkdownRenderer content={msg.content} className="whitespace-pre-wrap text-sm" />
                             ) : (
                                 <div className="whitespace-pre-wrap">{msg.content}</div>
@@ -158,17 +185,6 @@ export default function AdaptiveLearningChatbot({
                         </div>
                     </div>
                 ))}
-                {isTyping && messages[messages.length - 1]?.role !== 'assistant' && (
-                    <div className="flex justify-start">
-                        <div className="bg-white border border-gray-200 rounded-2xl rounded-bl-none p-3 shadow-sm">
-                            <div className="flex gap-1">
-                                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                            </div>
-                        </div>
-                    </div>
-                )}
             </div>
 
             {/* Input */}

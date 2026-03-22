@@ -1,13 +1,7 @@
 import { consumeOpenAISseResponse } from '@/lib/ai/stream';
 
-export interface AdaptiveTutorChatMessage {
-  role: 'user' | 'assistant';
-  content: string;
-}
-
 export interface AdaptiveTutorChatRequest {
   userQuestion: string;
-  chatHistory?: AdaptiveTutorChatMessage[];
 }
 
 interface AdaptiveTutorChatResponse {

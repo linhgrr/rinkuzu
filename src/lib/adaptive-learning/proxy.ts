@@ -2,6 +2,11 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { isCacheSafeAdaptivePath } from './cache-policy';
+import {
+    buildAdaptiveServiceHeaders,
+    resolveAdaptiveApiUrl,
+    resolveAdaptiveProxyTimeoutMs,
+} from './config';
 
 type ProxyOptions = {
     method?: string;
@@ -14,23 +19,8 @@ type ProxyOptions = {
     };
 };
 
-const DEFAULT_API_URL = 'http://localhost:8000';
-const DEFAULT_TIMEOUT_MS = 60_000;
-
-function resolveApiUrl(): string {
-    return process.env.ADAPTIVE_API_URL || process.env.NEXT_PUBLIC_API_URL || DEFAULT_API_URL;
-}
-
-function resolveTimeoutMs(): number {
-    const raw = Number(process.env.ADAPTIVE_PROXY_TIMEOUT_MS);
-    if (!Number.isFinite(raw) || raw <= 0) {
-        return DEFAULT_TIMEOUT_MS;
-    }
-    return raw;
-}
-
 function buildTargetUrl(req: Request, targetPath: string): URL {
-    const targetUrl = new URL(targetPath, resolveApiUrl());
+    const targetUrl = new URL(targetPath, resolveAdaptiveApiUrl());
     const incomingUrl = new URL(req.url);
 
     incomingUrl.searchParams.forEach((value, key) => {
@@ -60,13 +50,9 @@ export async function proxyAdaptiveRequest(
             return NextResponse.json({ detail: 'Unauthorized' }, { status: 401 });
         }
 
-        const serviceToken = process.env.INTERNAL_SERVICE_TOKEN;
         const targetUrl = buildTargetUrl(req, targetPath);
 
-        const headers: Record<string, string> = {
-            'x-user-id': userId,
-            ...(serviceToken ? { 'x-service-token': serviceToken } : {}),
-        };
+        const headers: Record<string, string> = buildAdaptiveServiceHeaders(userId);
 
         const method = options?.method || req.method;
         const contentType = options?.contentType === undefined
@@ -79,7 +65,7 @@ export async function proxyAdaptiveRequest(
         const controller = new AbortController();
         const timeoutMs = options?.timeoutMs && options.timeoutMs > 0
             ? options.timeoutMs
-            : resolveTimeoutMs();
+            : resolveAdaptiveProxyTimeoutMs();
         const timeout = setTimeout(() => controller.abort(), timeoutMs);
         const body = options?.body
             ?? (shouldAttachBody(method) ? await req.text() : undefined);

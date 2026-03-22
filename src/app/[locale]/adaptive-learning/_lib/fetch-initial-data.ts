@@ -1,19 +1,13 @@
 import type { PipelineJobHistoryItem, SessionHistoryItem } from '@/components/adaptive-learning/types'
+import {
+  buildAdaptiveServiceHeaders,
+  resolveAdaptiveApiUrl,
+  resolveAdaptiveProxyTimeoutMs,
+} from '@/lib/adaptive-learning/config'
 
 type AdaptiveDashboardPayload = {
   subjects: PipelineJobHistoryItem[]
   sessionHistory: SessionHistoryItem[]
-}
-
-const DEFAULT_ADAPTIVE_API_URL = 'http://localhost:8000'
-const DEFAULT_TIMEOUT_MS = 60_000
-
-const getAdaptiveApiHeaders = (userId: string) => {
-  const serviceToken = process.env.INTERNAL_SERVICE_TOKEN
-  return {
-    'x-user-id': userId,
-    ...(serviceToken ? { 'x-service-token': serviceToken } : {}),
-  }
 }
 
 const fetchAdaptiveJson = async <T>(baseUrl: string, path: string, headers: Record<string, string>, timeoutMs: number) => {
@@ -39,9 +33,9 @@ const fetchAdaptiveJson = async <T>(baseUrl: string, path: string, headers: Reco
 
 export async function fetchAdaptiveDashboardData(userId: string): Promise<AdaptiveDashboardPayload> {
   try {
-    const baseUrl = process.env.ADAPTIVE_API_URL || process.env.NEXT_PUBLIC_API_URL || DEFAULT_ADAPTIVE_API_URL
-    const timeoutMs = Number(process.env.ADAPTIVE_PROXY_TIMEOUT_MS || DEFAULT_TIMEOUT_MS)
-    const headers = getAdaptiveApiHeaders(userId)
+    const baseUrl = resolveAdaptiveApiUrl()
+    const timeoutMs = resolveAdaptiveProxyTimeoutMs()
+    const headers = buildAdaptiveServiceHeaders(userId)
 
     const [subjectsResult, historyResult] = await Promise.allSettled([
       fetchAdaptiveJson<{ subjects?: PipelineJobHistoryItem[] }>(baseUrl, '/api/history/subjects', headers, timeoutMs),

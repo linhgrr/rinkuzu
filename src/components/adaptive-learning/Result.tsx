@@ -27,7 +27,6 @@ export default function AdaptiveLearningResult({ sessionId }: ResultProps) {
     isCorrect,
     masteryPercent,
     openChat,
-    questionOptions,
     result,
   } = useResultState(sessionId, t)
 
@@ -50,11 +49,10 @@ export default function AdaptiveLearningResult({ sessionId }: ResultProps) {
         t={t}
       />
       <AdaptiveLearningChatbot
+        sessionId={sessionId}
         isOpen={isChatOpen}
         onClose={closeChat}
         context={chatContext}
-        question={exercise.question}
-        options={questionOptions}
       />
     </>
   )

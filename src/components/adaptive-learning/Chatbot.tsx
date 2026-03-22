@@ -15,21 +15,15 @@ interface Message {
 }
 
 interface ChatbotProps {
+    sessionId: string;
     context?: string;
-    question?: string;
-    options?: string[];
-    questionImage?: string;
-    optionImages?: string[];
     isOpen: boolean;
     onClose: () => void;
 }
 
 export default function AdaptiveLearningChatbot({
+    sessionId,
     context,
-    question,
-    options,
-    questionImage,
-    optionImages,
     isOpen,
     onClose,
 }: ChatbotProps) {
@@ -42,10 +36,7 @@ export default function AdaptiveLearningChatbot({
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState('');
     const [isTyping, setIsTyping] = useState(false);
-    const [streamingContent, setStreamingContent] = useState('');
-    const [isStreaming, setIsStreaming] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
-    const assistantIdRef = useRef<string | null>(null);
 
     useEffect(() => {
         setMessages([initialMessage]);
@@ -71,33 +62,28 @@ export default function AdaptiveLearningChatbot({
         setIsTyping(true);
 
         try {
-            if (!question || !Array.isArray(options) || options.length === 0) {
+            if (!sessionId) {
                 throw new Error(t('chatbot.errorInsufficientContext'));
             }
 
-            const resp = await fetch('/api/quiz/ask-ai', {
+            const resp = await fetch(`/api/adaptive-learning/session/${sessionId}/chat`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    question,
-                    options,
-                    questionImage,
-                    optionImages,
                     userQuestion: trimmedQuestion,
                     chatHistory: [...previousHistory, { role: 'user', content: trimmedQuestion }],
-                    stream: false,
                 }),
             });
 
             const data = await resp.json().catch(() => null);
-            if (!resp.ok || !data?.success) {
-                throw new Error(data?.error || t('chatbot.errorAIFailure'));
+            if (!resp.ok) {
+                throw new Error(data?.detail || data?.error || t('chatbot.errorAIFailure'));
             }
 
             const aiMsg: Message = {
                 id: (Date.now() + 1).toString(),
                 role: 'assistant',
-                content: data?.data?.explanation || t('chatbot.fallbackNoResponse'),
+                content: data?.explanation || t('chatbot.fallbackNoResponse'),
             };
             setMessages((prev) => [...prev, aiMsg]);
         } catch (error) {
@@ -110,7 +96,7 @@ export default function AdaptiveLearningChatbot({
         } finally {
             setIsTyping(false);
         }
-    }, [initialMessage.id, input, isTyping, messages, optionImages, options, question, questionImage]);
+    }, [initialMessage.id, input, isTyping, messages, sessionId, t]);
 
     if (!isOpen) return null;
 

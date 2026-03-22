@@ -369,6 +369,19 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
     router.push(`/quiz/${params.slug}/result?attemptId=${data.data.attemptId}&score=${data.data.score}`);
   }, [params.slug, quiz, router, session?.user?.email, userEmail]);
 
+  // Handle quiz completion for mobile
+  const handleQuizComplete = useCallback(async (answers: QuizAnswer[]) => {
+    setSubmitting(true);
+    try {
+      await submitQuizAnswers(answers);
+    } catch (error) {
+      console.error('Quiz submission error:', error);
+      setError(error instanceof Error ? error.message : 'Failed to submit quiz');
+    } finally {
+      setSubmitting(false);
+    }
+  }, [submitQuizAnswers]);
+
   const completeSubmit = async () => {
     if (!quiz) return;
 
@@ -635,19 +648,6 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
     const question = quiz.questions[index];
     return isQuestionAnswered(question, answer);
   }).length;
-
-  // Handle quiz completion for mobile
-  const handleQuizComplete = useCallback(async (answers: QuizAnswer[]) => {
-    setSubmitting(true);
-    try {
-      await submitQuizAnswers(answers);
-    } catch (error) {
-      console.error('Quiz submission error:', error);
-      setError(error instanceof Error ? error.message : 'Failed to submit quiz');
-    } finally {
-      setSubmitting(false);
-    }
-  }, [submitQuizAnswers]);
 
   // Show MobileQuizPlayer on mobile devices
   if (isMobile && !showEmailInput) {

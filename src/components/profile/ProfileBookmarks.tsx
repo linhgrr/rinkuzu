@@ -12,6 +12,7 @@ import { ROUTES } from '@/shared/constants';
 import { HiOutlineTag, HiOutlineTrash, HiOutlineExternalLink } from '@/components/icons';
 import Image from 'next/image';
 import { askQuizAI } from '@/lib/quiz/ask-ai';
+import { fetchApiSuccess } from '@/lib/api/client';
 
 const chatbotIcon = 'https://i.ibb.co/ZRYgc1tN/Gemini-Generated-Image-yjm06yyjm06yyjm0-removebg-preview.png';
 
@@ -100,17 +101,12 @@ export default function ProfileBookmarks() {
                 limit: itemsPerPage.toString(),
             });
 
-            const response = await fetch(`/api/bookmarks?${params}`);
-            const data = await response.json();
-
-            if (data.success) {
-                setBookmarks(data.data);
-                setPagination(data.pagination);
-            } else {
-                setError(data.error || 'Failed to fetch bookmarks');
-            }
-        } catch (error) {
-            setError('Failed to load bookmarks');
+            const data = await fetchApiSuccess<Bookmark[], { pagination: PaginationInfo }>(`/api/bookmarks?${params}`);
+            setBookmarks(data.data);
+            setPagination(data.pagination);
+            setError('');
+        } catch (error: any) {
+            setError(error.message || 'Failed to load bookmarks');
         } finally {
             setLoading(false);
         }
@@ -122,24 +118,17 @@ export default function ProfileBookmarks() {
 
     const removeBookmark = async (bookmarkId: string) => {
         try {
-            const response = await fetch(`/api/bookmarks/${bookmarkId}`, {
+            await fetchApiSuccess<null>(`/api/bookmarks/${bookmarkId}`, {
                 method: 'DELETE'
             });
-
-            const data = await response.json();
-
-            if (data.success) {
-                setBookmarks(prev => prev.filter(b => b._id !== bookmarkId));
-                setChatHistories(prev => {
-                    const newHistories = { ...prev };
-                    delete newHistories[bookmarkId];
-                    return newHistories;
-                });
-            } else {
-                setError(data.error || 'Failed to remove bookmark');
-            }
-        } catch (error) {
-            setError('Failed to remove bookmark');
+            setBookmarks(prev => prev.filter(b => b._id !== bookmarkId));
+            setChatHistories(prev => {
+                const newHistories = { ...prev };
+                delete newHistories[bookmarkId];
+                return newHistories;
+            });
+        } catch (error: any) {
+            setError(error.message || 'Failed to remove bookmark');
         }
     };
 

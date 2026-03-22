@@ -11,6 +11,7 @@ import { QuizPreviewModal } from '@/components/ui/QuizPreviewModal';
 import Pagination from '@/components/ui/Pagination';
 import { formatDate } from '@/lib/utils';
 import { IQuiz } from '@/types';
+import { fetchApiSuccess } from '@/lib/api/client';
 import {
     HiOutlineClock,
     HiOutlineCheckCircle,
@@ -61,20 +62,12 @@ export default function ProfileQuizzes() {
                 params.append('status', filter);
             }
 
-            const response = await fetch(`/api/quizzes?${params}`);
-            const data = await response.json();
-
-            if (data.success) {
-                // The API might return all quizzes, we filter just in case or trust API 'mine=true'
-                const userQuizzes = data.data.quizzes; // Assuming API handles 'mine' correctly
-                setQuizzes(userQuizzes);
-                setPagination(data.data.pagination);
-                setError('');
-            } else {
-                setError(data.error || 'Failed to fetch quizzes');
-            }
-        } catch (error) {
-            setError('Failed to fetch quizzes');
+            const data = await fetchApiSuccess<{ quizzes: IQuiz[]; pagination: PaginationData }>(`/api/quizzes?${params}`);
+            setQuizzes(data.data.quizzes);
+            setPagination(data.data.pagination);
+            setError('');
+        } catch (error: any) {
+            setError(error.message || 'Failed to fetch quizzes');
         } finally {
             setLoading(false);
         }
@@ -129,21 +122,14 @@ export default function ProfileQuizzes() {
         try {
             setDeletingQuizId(quizId);
 
-            const response = await fetch(`/api/quizzes/${quizId}`, {
+            const data = await fetchApiSuccess<null, { message?: string }>(`/api/quizzes/${quizId}`, {
                 method: 'DELETE',
             });
-
-            const data = await response.json();
-
-            if (data.success) {
-                setQuizzes(prev => prev.filter(q => q._id !== quizId));
-                setError('');
-                toast.success(data.message || 'Quiz deleted successfully');
-            } else {
-                setError(data.error || 'Failed to delete quiz');
-            }
-        } catch (error) {
-            setError('An error occurred while deleting the quiz');
+            setQuizzes(prev => prev.filter(q => q._id !== quizId));
+            setError('');
+            toast.success(data.message || 'Quiz deleted successfully');
+        } catch (error: any) {
+            setError(error.message || 'An error occurred while deleting the quiz');
         } finally {
             setDeletingQuizId(null);
             setQuizToDelete(null);

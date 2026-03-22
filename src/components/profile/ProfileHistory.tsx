@@ -8,6 +8,7 @@ import { Card, CardContent } from '@/components/ui/Card';
 import { formatDate } from '@/lib/utils';
 import Pagination from '@/components/ui/Pagination';
 import { ROUTES } from '@/shared/constants';
+import { fetchApiSuccess } from '@/lib/api/client';
 import {
     HiOutlineDocumentText,
     HiOutlineClock,
@@ -58,17 +59,12 @@ export default function ProfileHistory() {
                 limit: itemsPerPage.toString(),
             });
 
-            const response = await fetch(`/api/user/attempts?${params}`);
-            const data = await response.json();
-
-            if (data.success) {
-                setAttempts(data.data);
-                setPagination(data.pagination);
-            } else {
-                setError(data.error || 'Failed to fetch quiz history');
-            }
-        } catch (error) {
-            setError('Failed to load quiz history');
+            const data = await fetchApiSuccess<AttemptHistory[], { pagination: PaginationInfo }>(`/api/user/attempts?${params}`);
+            setAttempts(data.data);
+            setPagination(data.pagination);
+            setError('');
+        } catch (error: any) {
+            setError(error.message || 'Failed to load quiz history');
         } finally {
             setLoading(false);
         }

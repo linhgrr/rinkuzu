@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { DynamicMarkdownRenderer as MarkdownRenderer } from '@/components/ui/DynamicMarkdownRenderer';
 import { askQuizAI } from '@/lib/quiz/ask-ai';
+import { fetchApiSuccess } from '@/lib/api/client';
 
 interface QuizResultPageProps {
   params: { slug: string };
@@ -47,6 +48,13 @@ interface ChatMessage {
 // Chat history state for each question
 interface ChatHistoryState {
   [questionIndex: number]: ChatMessage[];
+}
+
+interface BookmarkSummary {
+  quiz: {
+    slug: string;
+  };
+  questionIndex: number;
 }
 
 export default function QuizResultPage({ params }: QuizResultPageProps) {
@@ -97,18 +105,14 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
   // Check which questions are already bookmarked
   const checkBookmarkedQuestions = async (resultData: QuizResult) => {
     try {
-      const response = await fetch('/api/bookmarks');
-      const data = await response.json();
-      
-      if (data.success) {
-        const bookmarkedSet = new Set<number>();
-        data.data.forEach((bookmark: any) => {
-          if (bookmark.quiz.slug === resultData.quiz.slug) {
-            bookmarkedSet.add(bookmark.questionIndex);
-          }
-        });
-        setBookmarkedQuestions(bookmarkedSet);
-      }
+      const data = await fetchApiSuccess<BookmarkSummary[]>('/api/bookmarks');
+      const bookmarkedSet = new Set<number>();
+      data.data.forEach(bookmark => {
+        if (bookmark.quiz.slug === resultData.quiz.slug) {
+          bookmarkedSet.add(bookmark.questionIndex);
+        }
+      });
+      setBookmarkedQuestions(bookmarkedSet);
     } catch (error) {
       console.error('Failed to check bookmarked questions:', error);
     }
@@ -123,18 +127,11 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
       }
 
       try {
-        const response = await fetch(`/api/attempts/${attemptId}`);
-        const data = await response.json();
-
-        if (data.success) {
-          setResult(data.data);
-          // Check which questions are already bookmarked
-          await checkBookmarkedQuestions(data.data);
-        } else {
-          setError(data.error || 'Failed to load results');
-        }
-      } catch (err) {
-        setError('Failed to load results');
+        const data = await fetchApiSuccess<QuizResult>(`/api/attempts/${attemptId}`);
+        setResult(data.data);
+        await checkBookmarkedQuestions(data.data);
+      } catch (err: any) {
+        setError(err.message || 'Failed to load results');
       } finally {
         setLoading(false);
       }
@@ -325,33 +322,28 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
           questionIndex: questionIndex
         };
 
-        const response = await fetch('/api/bookmarks', {
+        await fetchApiSuccess<null>('/api/bookmarks', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
           },
           body: JSON.stringify(bookmarkData)
         });
-
-        const data = await response.json();
-
-        if (data.success) {
-          setBookmarkedQuestions(prev => new Set(prev).add(questionIndex));
-          setBookmarkMessage('✅ Question bookmarked successfully!');
-        } else {
-          if (data.error === 'Question already bookmarked') {
-            setBookmarkMessage('⚠️ This question is already bookmarked');
-          } else {
-            setBookmarkMessage('❌ Failed to bookmark question');
-          }
-        }
+        setBookmarkedQuestions(prev => new Set(prev).add(questionIndex));
+        setBookmarkMessage('✅ Question bookmarked successfully!');
         
         // Auto-hide message after 3 seconds
         setTimeout(() => setBookmarkMessage(''), 3000);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error toggling bookmark:', error);
-      setBookmarkMessage('❌ Network error, please try again');
+
+      if (error.message === 'Question already bookmarked') {
+        setBookmarkMessage('⚠️ This question is already bookmarked');
+      } else {
+        setBookmarkMessage('❌ Network error, please try again');
+      }
+
       setTimeout(() => setBookmarkMessage(''), 3000);
     } finally {
       setBookmarkLoading(prev => {

@@ -134,10 +134,11 @@ export function ExerciseHistoryTable({ exercises }: ExerciseHistoryTableProps) {
               </div>
             </div>
 
-            <div>
-              <h4 className="mb-3 text-sm font-semibold text-gray-900">Options</h4>
-              <div className="space-y-2.5">
-                {Object.entries(selectedExercise.options || {}).map(([key, value]) => {
+            {Object.keys(selectedExercise.options || {}).length > 0 ? (
+              <div>
+                <h4 className="mb-3 text-sm font-semibold text-gray-900">Options</h4>
+                <div className="space-y-2.5">
+                  {Object.entries(selectedExercise.options || {}).map(([key, value]) => {
                   const isUserAnswer = key === selectedExercise.user_answer
                   const isCorrect = key === selectedExercise.correct_option
 
@@ -171,9 +172,21 @@ export function ExerciseHistoryTable({ exercises }: ExerciseHistoryTableProps) {
                       ) : null}
                     </div>
                   )
-                })}
+                  })}
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="rounded-lg border border-gray-200 bg-white p-4 text-sm text-gray-800 shadow-sm">
+                  <div className="mb-1 text-xs font-bold uppercase tracking-wide text-gray-500">Your Answer</div>
+                  <div>{selectedExercise.user_answer || 'No answer'}</div>
+                </div>
+                <div className="rounded-lg border border-green-200 bg-green-50/50 p-4 text-sm text-green-900 shadow-sm">
+                  <div className="mb-1 text-xs font-bold uppercase tracking-wide text-green-700">Correct Answer</div>
+                  <DynamicMarkdownRenderer content={selectedExercise.correct_option} />
+                </div>
+              </div>
+            )}
 
             {selectedExercise.explanation ? (
               <div>

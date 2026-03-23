@@ -6,7 +6,7 @@ import { Card, CardContent } from '@/components/ui/Card'
 import { HiArrowRight, HiBookOpen, HiLightBulb, HiOutlineX } from '@/components/icons'
 import { DynamicMarkdownRenderer } from '@/components/ui/DynamicMarkdownRenderer'
 import { TextShimmer } from '@/components/ui/text-shimmer'
-import { ADAPTIVE_ROUTES } from './routes'
+import { ExerciseInteraction } from './exercise-question-interaction'
 import type { Exercise, NextConcept, SubmitAnswerPayload, TheoryData } from './types'
 
 type TranslateFn = ((key: string, values?: Record<string, any>) => string) & {
@@ -122,14 +122,14 @@ export const ExerciseTheoryView = ({
             )}
           </>
         ) : (
-          <div className="py-12 text-center text-slate-500">Failed to load theory</div>
+          <div className="py-12 text-center text-slate-500">{t('exercise.theory.failedToLoad')}</div>
         )}
       </Card>
 
       <div className="flex justify-center pt-2 md:pt-4 px-4 flex-col items-center gap-3">
         {loadingExercise && !loadingTheory && (
           <TextShimmer className="text-sm font-medium text-slate-400" duration={1.2}>
-            Preparing your exercise...
+            {t('exercise.preparingExercise')}
           </TextShimmer>
         )}
         <Button
@@ -145,7 +145,7 @@ export const ExerciseTheoryView = ({
   </div>
 )
 
-type QuestionViewProps = {
+export type ExerciseQuestionViewProps = {
   concept: NextConcept
   exercise: Exercise | null
   loadingExercise: boolean
@@ -167,247 +167,6 @@ type QuestionViewProps = {
   submitting: boolean
   t: TranslateFn
 }
-
-function OptionCard({
-  active,
-  badge,
-  onClick,
-  value,
-}: {
-  active: boolean
-  badge: string
-  onClick: () => void
-  value: string
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`group relative flex w-full cursor-pointer items-start gap-4 rounded-[12px] border p-4 text-left transition-all duration-200 sm:p-5 ${active
-        ? 'border-teal-600 bg-teal-50 shadow-sm'
-        : 'border-slate-200 bg-white hover:border-slate-400 active:scale-[0.99]'
-      }`}
-    >
-      {active && <div className="absolute inset-0 rounded-xl bg-teal-500/10" />}
-      <div
-        className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 text-xs font-semibold transition-colors sm:h-8 sm:w-8 sm:text-sm ${active
-          ? 'border-teal-600 bg-teal-600 text-white'
-          : 'border-slate-300 text-slate-500 group-hover:border-slate-400'
-        }`}
-      >
-        {badge}
-      </div>
-      <span className={`text-base leading-relaxed transition-colors duration-200 ${active ? 'font-medium text-slate-900' : 'text-slate-700'}`}>
-        <DynamicMarkdownRenderer content={value} />
-      </span>
-    </button>
-  )
-}
-
-function ExerciseInteraction({
-  answerDraft,
-  exercise,
-  onMoveOrderingItem,
-  onSelectChoice,
-  onSetBlankAnswer,
-  onSetBooleanAnswer,
-  onSetTextAnswer,
-  onSetMatchingAnswer,
-  onToggleChoice,
-  optionEntries,
-}: {
-  answerDraft: SubmitAnswerPayload
-  exercise: Exercise
-  onMoveOrderingItem: (fromIndex: number, toIndex: number) => void
-  onSelectChoice: (value: string) => void
-  onSetBlankAnswer: (value: string) => void
-  onSetBooleanAnswer: (value: boolean) => void
-  onSetTextAnswer: (value: string) => void
-  onSetMatchingAnswer: (left: string, right: string) => void
-  onToggleChoice: (value: string) => void
-  optionEntries: [string, string][]
-}) {
-  if (exercise.exercise_type === 'true_false') {
-    return (
-      <div className="grid gap-3 sm:gap-4">
-        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 text-base leading-relaxed text-slate-800">
-          <DynamicMarkdownRenderer content={exercise.statement || exercise.question} />
-        </div>
-        {[
-          { label: 'T', value: 'True', bool: true },
-          { label: 'F', value: 'False', bool: false },
-        ].map(item => (
-          <OptionCard
-            key={item.value}
-            active={answerDraft.boolean === item.bool}
-            badge={item.label}
-            onClick={() => onSetBooleanAnswer(item.bool)}
-            value={item.value}
-          />
-        ))}
-      </div>
-    )
-  }
-
-  if (exercise.exercise_type === 'fill_blank') {
-    return (
-      <div className="space-y-4">
-        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 text-base leading-relaxed text-slate-800">
-          <DynamicMarkdownRenderer content={exercise.question} />
-        </div>
-        <textarea
-          value={answerDraft.blanks?.[0] || ''}
-          onChange={event => onSetBlankAnswer(event.target.value)}
-          rows={3}
-          placeholder="Nhập đáp án vào chỗ trống"
-          className="min-h-[120px] w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none transition-colors focus:border-teal-600"
-        />
-        {exercise.hint ? (
-          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-            Gợi ý: {exercise.hint}
-          </div>
-        ) : null}
-      </div>
-    )
-  }
-
-  if (exercise.exercise_type === 'multi_correct') {
-    const selectedChoices = new Set(answerDraft.choices || [])
-    return (
-      <div className="space-y-3 sm:space-y-4">
-        <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-          Chọn tất cả đáp án đúng.
-        </div>
-        <div className="grid gap-3 sm:gap-4">
-          {optionEntries.map(([key, value]) => (
-            <OptionCard
-              key={key}
-              active={selectedChoices.has(key)}
-              badge={key}
-              onClick={() => onToggleChoice(key)}
-              value={value}
-            />
-          ))}
-        </div>
-      </div>
-    )
-  }
-
-  if (exercise.exercise_type === 'ordering') {
-    const ordering = answerDraft.ordering || exercise.items
-    return (
-      <div className="space-y-4">
-        <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-          Sắp xếp các mục theo thứ tự đúng.
-        </div>
-        <div className="space-y-3">
-          {ordering.map((item, index) => (
-            <div key={`${item}-${index}`} className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-900 text-sm font-semibold text-white">
-                {index + 1}
-              </div>
-              <div className="flex-1 text-sm leading-relaxed text-slate-800">
-                <DynamicMarkdownRenderer content={item} />
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  className="border-slate-200 text-slate-700"
-                  onClick={() => onMoveOrderingItem(index, index - 1)}
-                  disabled={index === 0}
-                >
-                  Up
-                </Button>
-                <Button
-                  variant="outline"
-                  className="border-slate-200 text-slate-700"
-                  onClick={() => onMoveOrderingItem(index, index + 1)}
-                  disabled={index === ordering.length - 1}
-                >
-                  Down
-                </Button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    )
-  }
-
-  if (exercise.exercise_type === 'short_answer') {
-    return (
-      <div className="space-y-4">
-        {exercise.rubric.length > 0 ? (
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-            <div className="mb-3 text-sm font-semibold text-slate-900">Tiêu chí chấm</div>
-            <ul className="space-y-2 text-sm text-slate-700">
-              {exercise.rubric.map(item => (
-                <li key={item} className="flex gap-2">
-                  <span className="mt-1 h-1.5 w-1.5 rounded-full bg-slate-900" />
-                  <span>{item}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        ) : null}
-        <textarea
-          value={answerDraft.text || ''}
-          onChange={event => onSetTextAnswer(event.target.value)}
-          rows={8}
-          placeholder="Viết câu trả lời ngắn của bạn"
-          className="min-h-[220px] w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none transition-colors focus:border-teal-600"
-        />
-      </div>
-    )
-  }
-
-  if (exercise.exercise_type === 'matching') {
-    const matching = answerDraft.matching || {}
-    return (
-      <div className="space-y-4">
-        <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-          Ghép mỗi mục ở cột trái với đáp án phù hợp ở cột phải.
-        </div>
-        <div className="space-y-3">
-          {exercise.pairs.map((pair) => (
-            <div key={pair.left} className="grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 md:grid-cols-[minmax(0,1fr)_220px] md:items-center">
-              <div className="text-sm leading-relaxed text-slate-800">
-                <DynamicMarkdownRenderer content={pair.left} />
-              </div>
-              <select
-                value={matching[pair.left] || ''}
-                onChange={(event) => onSetMatchingAnswer(pair.left, event.target.value)}
-                className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition-colors focus:border-teal-600"
-              >
-                <option value="">Chọn đáp án</option>
-                {exercise.right_items.map((item) => (
-                  <option key={`${pair.left}-${item}`} value={item}>
-                    {item}
-                  </option>
-                ))}
-              </select>
-            </div>
-          ))}
-        </div>
-      </div>
-    )
-  }
-
-  return (
-    <div className="grid gap-3 sm:gap-4">
-      {optionEntries.map(([key, value], idx) => (
-        <OptionCard
-          key={key}
-          active={answerDraft.choice === key}
-          badge={String.fromCharCode(65 + idx)}
-          onClick={() => onSelectChoice(key)}
-          value={value}
-        />
-      ))}
-    </div>
-  )
-}
-
 export const ExerciseQuestionView = ({
   concept,
   exercise,
@@ -429,7 +188,7 @@ export const ExerciseQuestionView = ({
   canSubmit,
   submitting,
   t,
-}: QuestionViewProps) => (
+}: ExerciseQuestionViewProps) => (
   <div className="mx-auto flex min-h-[80vh] max-w-5xl flex-col">
     <div className="mb-8 flex items-center justify-between">
       <div className="flex items-center gap-4">
@@ -476,7 +235,7 @@ export const ExerciseQuestionView = ({
           {loadingExercise ? (
             <div className="flex flex-col items-center justify-center p-12 min-h-[300px] text-center">
               <TextShimmer className="text-lg font-medium text-slate-500 mb-6" duration={1.2}>
-                Constructing your challenge...
+                {t('exercise.constructingChallenge')}
               </TextShimmer>
               <div className="grid gap-4 w-full max-w-[400px]">
                 <div className="h-14 w-full bg-slate-100 animate-pulse rounded-xl" />
@@ -503,7 +262,7 @@ export const ExerciseQuestionView = ({
               />
             </CardContent>
           ) : (
-            <div className="py-12 text-center text-slate-500">Exercise failed to load</div>
+            <div className="py-12 text-center text-slate-500">{t('exercise.failedToLoadContent')}</div>
           )}
         </Card>
       </div>

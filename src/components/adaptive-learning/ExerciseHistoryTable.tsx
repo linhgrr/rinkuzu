@@ -51,7 +51,7 @@ export function ExerciseHistoryTable({ exercises }: ExerciseHistoryTableProps) {
             <tr className="border-b border-gray-200 bg-gray-50 text-[10px] font-bold uppercase tracking-widest text-gray-500">
               <th className="px-5 py-3 text-left">#</th>
               <th className="px-5 py-3 text-left">{t('masteryMatrix.concept')}</th>
-              <th className="px-5 py-3 text-left">Bloom</th>
+              <th className="px-5 py-3 text-left">{t('history.table.bloom')}</th>
               <th className="w-1/3 px-5 py-3 text-left">{t('history.table.question')}</th>
               <th className="px-5 py-3 text-center">{t('history.table.result')}</th>
               <th className="px-5 py-3 text-left">{t('history.table.time')}</th>
@@ -91,7 +91,7 @@ export function ExerciseHistoryTable({ exercises }: ExerciseHistoryTableProps) {
                   <button
                     onClick={() => setSelectedExercise(exercise)}
                     className="rounded-md p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-900"
-                    title="View Details"
+                    title={t('history.table.viewDetails')}
                   >
                     <HiOutlineEye className="h-5 w-5" />
                   </button>
@@ -122,7 +122,7 @@ export function ExerciseHistoryTable({ exercises }: ExerciseHistoryTableProps) {
                 <span className="ml-2 font-semibold text-gray-900">{selectedExercise.concept_name}</span>
               </div>
               <div>
-                <span className="font-medium text-gray-500">Bloom Level:</span>
+                <span className="font-medium text-gray-500">{t('history.table.bloomLevel')}:</span>
                 <span className="ml-2 font-semibold text-gray-900">{getBloomLabel(selectedExercise.bloom_level)}</span>
               </div>
             </div>
@@ -136,53 +136,53 @@ export function ExerciseHistoryTable({ exercises }: ExerciseHistoryTableProps) {
 
             {Object.keys(selectedExercise.options || {}).length > 0 ? (
               <div>
-                <h4 className="mb-3 text-sm font-semibold text-gray-900">Options</h4>
+                <h4 className="mb-3 text-sm font-semibold text-gray-900">{t('history.table.options')}</h4>
                 <div className="space-y-2.5">
                   {Object.entries(selectedExercise.options || {}).map(([key, value]) => {
-                  const isUserAnswer = key === selectedExercise.user_answer
-                  const isCorrect = key === selectedExercise.correct_option
+                    const isUserAnswer = key === selectedExercise.user_answer
+                    const isCorrect = key === selectedExercise.correct_option
 
-                  const optionClass = isCorrect
-                    ? 'border-green-200 bg-green-50/50 text-green-900'
-                    : isUserAnswer
-                      ? 'border-red-200 bg-red-50/50 text-red-900'
-                      : 'border-gray-200 bg-white text-gray-700'
+                    const optionClass = isCorrect
+                      ? 'border-green-200 bg-green-50/50 text-green-900'
+                      : isUserAnswer
+                        ? 'border-red-200 bg-red-50/50 text-red-900'
+                        : 'border-gray-200 bg-white text-gray-700'
 
-                  const badgeTone = isCorrect
-                    ? 'bg-green-100 text-green-700'
-                    : 'bg-red-100 text-red-700'
+                    const badgeTone = isCorrect
+                      ? 'bg-green-100 text-green-700'
+                      : 'bg-red-100 text-red-700'
 
-                  return (
-                    <div key={key} className={`flex items-start gap-3 rounded-lg border p-3.5 text-sm transition-colors ${optionClass}`}>
-                      <span className={`mt-0.5 w-6 shrink-0 font-bold ${isCorrect ? 'text-green-700' : isUserAnswer ? 'text-red-700' : 'text-gray-500'}`}>{key}.</span>
-                      <span className="flex-1 leading-relaxed">
-                        <DynamicMarkdownRenderer content={value} />
-                      </span>
-                      {isCorrect ? (
-                        <div className={`mt-0.5 flex shrink-0 items-center gap-1.5 rounded px-2 py-0.5 text-xs font-bold ${badgeTone}`}>
-                          <HiCheck className="h-3.5 w-3.5" />
-                          Correct
-                        </div>
-                      ) : null}
-                      {isUserAnswer && !isCorrect ? (
-                        <div className={`mt-0.5 flex shrink-0 items-center gap-1.5 rounded px-2 py-0.5 text-xs font-bold ${badgeTone}`}>
-                          <HiOutlineX className="h-3.5 w-3.5" />
-                          Your Answer
-                        </div>
-                      ) : null}
-                    </div>
-                  )
+                    return (
+                      <div key={key} className={`flex items-start gap-3 rounded-lg border p-3.5 text-sm transition-colors ${optionClass}`}>
+                        <span className={`mt-0.5 w-6 shrink-0 font-bold ${isCorrect ? 'text-green-700' : isUserAnswer ? 'text-red-700' : 'text-gray-500'}`}>{key}.</span>
+                        <span className="flex-1 leading-relaxed">
+                          <DynamicMarkdownRenderer content={value} />
+                        </span>
+                        {isCorrect ? (
+                          <div className={`mt-0.5 flex shrink-0 items-center gap-1.5 rounded px-2 py-0.5 text-xs font-bold ${badgeTone}`}>
+                            <HiCheck className="h-3.5 w-3.5" />
+                            {t('history.table.correctBadge')}
+                          </div>
+                        ) : null}
+                        {isUserAnswer && !isCorrect ? (
+                          <div className={`mt-0.5 flex shrink-0 items-center gap-1.5 rounded px-2 py-0.5 text-xs font-bold ${badgeTone}`}>
+                            <HiOutlineX className="h-3.5 w-3.5" />
+                            {t('history.table.yourAnswerBadge')}
+                          </div>
+                        ) : null}
+                      </div>
+                    )
                   })}
                 </div>
               </div>
             ) : (
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="rounded-lg border border-gray-200 bg-white p-4 text-sm text-gray-800 shadow-sm">
-                  <div className="mb-1 text-xs font-bold uppercase tracking-wide text-gray-500">Your Answer</div>
-                  <div>{selectedExercise.user_answer || 'No answer'}</div>
+                  <div className="mb-1 text-xs font-bold uppercase tracking-wide text-gray-500">{t('history.table.yourAnswerCard')}</div>
+                  <div>{selectedExercise.user_answer || t('history.table.noAnswer')}</div>
                 </div>
                 <div className="rounded-lg border border-green-200 bg-green-50/50 p-4 text-sm text-green-900 shadow-sm">
-                  <div className="mb-1 text-xs font-bold uppercase tracking-wide text-green-700">Correct Answer</div>
+                  <div className="mb-1 text-xs font-bold uppercase tracking-wide text-green-700">{t('history.table.correctAnswerCard')}</div>
                   <DynamicMarkdownRenderer content={selectedExercise.correct_option} />
                 </div>
               </div>
@@ -190,7 +190,7 @@ export function ExerciseHistoryTable({ exercises }: ExerciseHistoryTableProps) {
 
             {selectedExercise.explanation ? (
               <div>
-                <h4 className="mb-3 text-sm font-semibold text-gray-900">Explanation</h4>
+                <h4 className="mb-3 text-sm font-semibold text-gray-900">{t('history.table.explanation')}</h4>
                 <div className="rounded-lg border border-blue-100 bg-blue-50 p-5 text-sm leading-relaxed text-blue-900 shadow-sm sm:p-6">
                   <DynamicMarkdownRenderer content={selectedExercise.explanation} />
                 </div>
@@ -199,7 +199,7 @@ export function ExerciseHistoryTable({ exercises }: ExerciseHistoryTableProps) {
 
             <div className="flex justify-end border-t border-gray-100 pt-5">
               <Button onClick={() => setSelectedExercise(null)} variant="outline" className="px-6">
-                Close
+                {t('common.close')}
               </Button>
             </div>
           </div>

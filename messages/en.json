@@ -393,10 +393,20 @@
       "sessionSaveHint": "Sessions will be saved after you answer at least one exercise.",
       "table": {
         "question": "Question",
+        "bloom": "Bloom",
+        "bloomLevel": "Bloom Level",
         "result": "Result",
         "time": "Time",
         "noExercise": "No exercises yet.",
-        "exerciseDetails": "Exercise Details"
+        "exerciseDetails": "Exercise Details",
+        "viewDetails": "View Details",
+        "options": "Options",
+        "correctBadge": "Correct",
+        "yourAnswerBadge": "Your Answer",
+        "yourAnswerCard": "Your Answer",
+        "correctAnswerCard": "Correct Answer",
+        "noAnswer": "No answer",
+        "explanation": "Explanation"
       }
     },
     "howItWorksTitle": "How it works",
@@ -506,7 +516,8 @@
         "basicTheory": "Basic Theory",
         "illustration": "Illustration",
         "example": "Example {index}",
-        "startExercise": "Start Exercise"
+        "startExercise": "Start Exercise",
+        "failedToLoad": "Failed to load theory"
       },
       "backToDashboard": "Back to Dashboard",
       "tryAgain": "Try Again",
@@ -515,10 +526,27 @@
       "bloomBadge": "Bloom {level}: {label}",
       "focusModeContext": "Concept: {concept} at {level} level",
       "checking": "Checking...",
+      "preparingExercise": "Preparing your exercise...",
+      "constructingChallenge": "Constructing your challenge...",
       "failedToLoadExercise": "Failed to load exercise",
+      "failedToLoadContent": "Exercise failed to load",
       "failedToSubmitAnswer": "Failed to submit answer",
       "serviceUnavailable": "Exercise service is temporarily unavailable. Please try again in a moment.",
-      "submitUnavailable": "We could not submit your answer right now. Please try again."
+      "submitUnavailable": "We could not submit your answer right now. Please try again.",
+      "interactions": {
+        "trueLabel": "True",
+        "falseLabel": "False",
+        "fillBlankPlaceholder": "Type your answer for the blank",
+        "hintPrefix": "Hint",
+        "multiCorrectInstruction": "Select all correct answers.",
+        "orderingInstruction": "Arrange the items in the correct order.",
+        "moveUp": "Up",
+        "moveDown": "Down",
+        "matchingInstruction": "Match each item in the left column with the correct choice on the right.",
+        "matchingPlaceholder": "Select an answer",
+        "shortAnswerRubricTitle": "Grading Rubric",
+        "shortAnswerPlaceholder": "Write your short answer"
+      }
     },
     "bloom": {
       "remember": "Remember",

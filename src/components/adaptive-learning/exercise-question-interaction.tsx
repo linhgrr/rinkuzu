@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useRef, useEffect } from 'react'
 import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/Button'
 import { DynamicMarkdownRenderer } from '@/components/ui/DynamicMarkdownRenderer'
@@ -38,6 +39,79 @@ function OptionCard({
         <DynamicMarkdownRenderer content={value} />
       </span>
     </button>
+  )
+}
+
+function CustomDropdown({
+  value,
+  onChange,
+  options,
+  placeholder
+}: {
+  value: string
+  onChange: (value: string) => void
+  options: string[]
+  placeholder: string
+}) {
+  const [isOpen, setIsOpen] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  return (
+    <div className="relative w-full" ref={containerRef}>
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={() => setIsOpen(!isOpen)}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setIsOpen(!isOpen) } }}
+        className={`flex min-h-[44px] w-full items-center justify-between rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition-colors hover:border-slate-300 focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20 ${isOpen ? 'border-teal-600 ring-2 ring-teal-600/20' : ''}`}
+      >
+        <div className="flex-1 text-left overflow-hidden prose-sm prose-slate max-w-none prose-p:my-0 prose-p:leading-normal">
+          {value ? <DynamicMarkdownRenderer content={value} /> : <span className="text-slate-500">{placeholder}</span>}
+        </div>
+        <svg className={`ml-2 h-4 w-4 shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m6 9 6 6 6-6"/></svg>
+      </div>
+
+      {isOpen && (
+        <div className="absolute left-0 z-50 mt-1 max-h-60 min-w-[100%] max-w-[150%] overflow-auto rounded-xl border border-slate-200 bg-white shadow-lg p-1">
+          {options.map((option, idx) => {
+            const isSelected = value === option;
+            return (
+              <div
+                key={idx}
+                role="button"
+                tabIndex={0}
+                onClick={() => {
+                  onChange(option)
+                  setIsOpen(false)
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    onChange(option)
+                    setIsOpen(false)
+                  }
+                }}
+                className={`flex w-full cursor-pointer items-center rounded-lg px-3 py-2 text-left text-sm transition-colors mb-1 last:mb-0 hover:bg-slate-100 ${isSelected ? 'bg-teal-50 text-teal-900' : 'text-slate-700'}`}
+              >
+                <div className="flex-1 text-left prose-sm prose-slate max-w-none prose-p:my-0 prose-p:leading-normal">
+                  <DynamicMarkdownRenderer content={option} />
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -188,18 +262,12 @@ export function ExerciseInteraction({
               <div className="text-sm leading-relaxed text-slate-800">
                 <DynamicMarkdownRenderer content={pair.left} />
               </div>
-              <select
+              <CustomDropdown
                 value={matching[pair.left] || ''}
-                onChange={(event) => onSetMatchingAnswer(pair.left, event.target.value)}
-                className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition-colors focus:border-teal-600"
-              >
-                <option value="">{t('exercise.interactions.matchingPlaceholder')}</option>
-                {exercise.right_items.map((item) => (
-                  <option key={`${pair.left}-${item}`} value={item}>
-                    {item}
-                  </option>
-                ))}
-              </select>
+                onChange={(value) => onSetMatchingAnswer(pair.left, value)}
+                options={exercise.right_items}
+                placeholder={t('exercise.interactions.matchingPlaceholder')}
+              />
             </div>
           ))}
         </div>

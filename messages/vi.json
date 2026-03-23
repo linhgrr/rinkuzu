@@ -393,10 +393,20 @@
       "sessionSaveHint": "Phiên học sẽ được lưu sau khi bạn trả lời ít nhất 1 bài tập.",
       "table": {
         "question": "Câu hỏi",
+        "bloom": "Bloom",
+        "bloomLevel": "Mức Bloom",
         "result": "Kết quả",
         "time": "Thời gian",
         "noExercise": "Chưa có bài tập nào.",
-        "exerciseDetails": "Chi tiết câu hỏi"
+        "exerciseDetails": "Chi tiết câu hỏi",
+        "viewDetails": "Xem chi tiết",
+        "options": "Đáp án",
+        "correctBadge": "Đúng",
+        "yourAnswerBadge": "Câu trả lời của bạn",
+        "yourAnswerCard": "Câu trả lời của bạn",
+        "correctAnswerCard": "Đáp án đúng",
+        "noAnswer": "Chưa có câu trả lời",
+        "explanation": "Giải thích"
       }
     },
     "howItWorksTitle": "Cách thức hoạt động",
@@ -506,7 +516,8 @@
         "basicTheory": "Lý thuyết cơ bản",
         "illustration": "Ví dụ minh họa",
         "example": "Ví dụ {index}",
-        "startExercise": "Bắt đầu làm bài tập"
+        "startExercise": "Bắt đầu làm bài tập",
+        "failedToLoad": "Không tải được phần lý thuyết"
       },
       "backToDashboard": "Quay về bảng điều khiển",
       "tryAgain": "Thử lại",
@@ -515,10 +526,27 @@
       "bloomBadge": "Bloom {level}: {label}",
       "focusModeContext": "Khái niệm: {concept} ở mức {level}",
       "checking": "Đang kiểm tra...",
+      "preparingExercise": "Đang chuẩn bị bài tập cho bạn...",
+      "constructingChallenge": "Đang dựng thử thách tiếp theo...",
       "failedToLoadExercise": "Tải bài tập thất bại",
+      "failedToLoadContent": "Không tải được bài tập",
       "failedToSubmitAnswer": "Nộp đáp án thất bại",
       "serviceUnavailable": "Dịch vụ bài tập đang tạm thời không khả dụng. Vui lòng thử lại sau ít phút.",
-      "submitUnavailable": "Hiện chưa thể nộp đáp án. Vui lòng thử lại."
+      "submitUnavailable": "Hiện chưa thể nộp đáp án. Vui lòng thử lại.",
+      "interactions": {
+        "trueLabel": "Đúng",
+        "falseLabel": "Sai",
+        "fillBlankPlaceholder": "Nhập đáp án cho chỗ trống",
+        "hintPrefix": "Gợi ý",
+        "multiCorrectInstruction": "Chọn tất cả đáp án đúng.",
+        "orderingInstruction": "Sắp xếp các mục theo thứ tự chính xác.",
+        "moveUp": "Lên",
+        "moveDown": "Xuống",
+        "matchingInstruction": "Ghép mỗi mục ở cột trái với đáp án phù hợp ở cột phải.",
+        "matchingPlaceholder": "Chọn đáp án",
+        "shortAnswerRubricTitle": "Tiêu chí chấm",
+        "shortAnswerPlaceholder": "Viết câu trả lời ngắn của bạn"
+      }
     },
     "bloom": {
       "remember": "Ghi nhớ",

@@ -56,8 +56,9 @@ export default function AdaptiveLearningExercise({ sessionId }: ExerciseProps) {
     setBooleanAnswer,
     setBlankAnswer,
     moveOrderingItem,
+    setOrderingAnswer,
     setTextAnswer,
-    setMatchingAnswer,
+    setMatchingOrder,
     loadData,
     handleSubmit,
   } = useAdaptiveExerciseSession({
@@ -161,7 +162,8 @@ export default function AdaptiveLearningExercise({ sessionId }: ExerciseProps) {
       onSetBlankAnswer={setBlankAnswer}
       onMoveOrderingItem={moveOrderingItem}
       onSetTextAnswer={setTextAnswer}
-      onSetMatchingAnswer={setMatchingAnswer}
+      onSetMatchingOrder={setMatchingOrder}
+      onSetOrderingAnswer={setOrderingAnswer}
       onSubmit={() => void handleSubmit()}
       canSubmit={canSubmit}
       submitting={submitting}

@@ -1,7 +1,9 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
+import { Reorder } from 'framer-motion'
+import { ChevronDown, ChevronUp, GripVertical } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { DynamicMarkdownRenderer } from '@/components/ui/DynamicMarkdownRenderer'
 import type { Exercise, SubmitAnswerPayload } from './types'
@@ -42,75 +44,134 @@ function OptionCard({
   )
 }
 
-function CustomDropdown({
-  value,
-  onChange,
-  options,
-  placeholder
-}: {
+type MatchingInteractionProps = {
+  leftItems: string[]
+  rightItems: string[]
+  onSetMatchingOrder: (leftItems: string[], rightItems: string[]) => void
+  t: (key: string) => string
+}
+
+type MatchingRightEntry = {
+  id: string
   value: string
-  onChange: (value: string) => void
-  options: string[]
-  placeholder: string
-}) {
-  const [isOpen, setIsOpen] = useState(false)
+}
+
+function MatchingInteraction({
+  leftItems,
+  rightItems,
+  onSetMatchingOrder,
+  t,
+}: MatchingInteractionProps) {
   const containerRef = useRef<HTMLDivElement>(null)
+  const lastSyncedOrderRef = useRef<string>('')
+  const [cardMinHeight, setCardMinHeight] = useState<number | null>(null)
+  const normalizedRightItems = leftItems.map((_, index) => rightItems[index] ?? '')
+  const [rightEntries, setRightEntries] = useState<MatchingRightEntry[]>(() =>
+    normalizedRightItems.map((item, index) => ({ id: `right-${index}`, value: item })),
+  )
+  const normalizedOrderKey = normalizedRightItems.join('\u0001')
 
   useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        setIsOpen(false)
-      }
+    if (lastSyncedOrderRef.current === normalizedOrderKey)
+      return
+
+    setRightEntries(normalizedRightItems.map((item, index) => ({ id: `right-${index}`, value: item })))
+    lastSyncedOrderRef.current = normalizedOrderKey
+  }, [normalizedOrderKey, normalizedRightItems])
+
+  useEffect(() => {
+    const nextRightItems = rightEntries.map(entry => entry.value)
+    const nextOrderKey = nextRightItems.join('\u0001')
+    lastSyncedOrderRef.current = nextOrderKey
+    onSetMatchingOrder(leftItems, nextRightItems)
+  }, [leftItems, onSetMatchingOrder, rightEntries])
+
+  useEffect(() => {
+    const measureCards = () => {
+      const cards = containerRef.current?.querySelectorAll<HTMLElement>('[data-matching-card="true"]') ?? []
+      let nextHeight = 0
+
+      cards.forEach((card) => {
+        nextHeight = Math.max(nextHeight, card.offsetHeight)
+      })
+
+      setCardMinHeight(nextHeight > 0 ? nextHeight : null)
     }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
+
+    const frameId = window.requestAnimationFrame(measureCards)
+    const observer = typeof ResizeObserver !== 'undefined' && containerRef.current
+      ? new ResizeObserver(() => measureCards())
+      : null
+
+    if (observer && containerRef.current) {
+      observer.observe(containerRef.current)
+      containerRef.current.querySelectorAll<HTMLElement>('[data-matching-card="true"]').forEach(card => observer.observe(card))
+    }
+
+    window.addEventListener('resize', measureCards)
+
+    return () => {
+      window.cancelAnimationFrame(frameId)
+      observer?.disconnect()
+      window.removeEventListener('resize', measureCards)
+    }
+  }, [leftItems, rightEntries])
+
+  const sharedCardStyle = cardMinHeight ? { minHeight: `${cardMinHeight}px` } : undefined
 
   return (
-    <div className="relative w-full" ref={containerRef}>
-      <div
-        role="button"
-        tabIndex={0}
-        onClick={() => setIsOpen(!isOpen)}
-        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setIsOpen(!isOpen) } }}
-        className={`flex min-h-[44px] w-full items-center justify-between rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition-colors hover:border-slate-300 focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20 ${isOpen ? 'border-teal-600 ring-2 ring-teal-600/20' : ''}`}
-      >
-        <div className="flex-1 text-left overflow-hidden prose-sm prose-slate max-w-none prose-p:my-0 prose-p:leading-normal">
-          {value ? <DynamicMarkdownRenderer content={value} /> : <span className="text-slate-500">{placeholder}</span>}
-        </div>
-        <svg className={`ml-2 h-4 w-4 shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m6 9 6 6 6-6"/></svg>
+    <div ref={containerRef} className="space-y-4">
+      <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+        {t('exercise.interactions.matchingInstruction')}
       </div>
-
-      {isOpen && (
-        <div className="absolute left-0 z-50 mt-1 max-h-60 min-w-[100%] max-w-[150%] overflow-auto rounded-xl border border-slate-200 bg-white shadow-lg p-1">
-          {options.map((option, idx) => {
-            const isSelected = value === option;
-            return (
-              <div
-                key={idx}
-                role="button"
-                tabIndex={0}
-                onClick={() => {
-                  onChange(option)
-                  setIsOpen(false)
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault()
-                    onChange(option)
-                    setIsOpen(false)
-                  }
-                }}
-                className={`flex w-full cursor-pointer items-center rounded-lg px-3 py-2 text-left text-sm transition-colors mb-1 last:mb-0 hover:bg-slate-100 ${isSelected ? 'bg-teal-50 text-teal-900' : 'text-slate-700'}`}
-              >
-                <div className="flex-1 text-left prose-sm prose-slate max-w-none prose-p:my-0 prose-p:leading-normal">
-                  <DynamicMarkdownRenderer content={option} />
-                </div>
+      <div className="grid grid-cols-2 gap-4 sm:gap-6">
+        <div className="space-y-3">
+          
+          {leftItems.map((item, index) => (
+            <div
+              key={`left-${index}-${item}`}
+              data-matching-card="true"
+              style={sharedCardStyle}
+              className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 shadow-sm"
+            >
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-50 text-xs font-bold text-slate-500">
+                {index + 1}
               </div>
-            )
-          })}
+              <div className="flex-1 text-sm text-slate-700">
+                <DynamicMarkdownRenderer content={item} />
+              </div>
+            </div>
+          ))}
         </div>
-      )}
+
+        <div className="space-y-3">
+          
+          <Reorder.Group
+            axis="y"
+            values={rightEntries}
+            onReorder={setRightEntries}
+            className="space-y-3"
+          >
+            {rightEntries.map((entry, index) => (
+              <Reorder.Item
+                key={entry.id}
+                value={entry}
+                data-matching-card="true"
+                style={sharedCardStyle}
+                className="group flex cursor-grab items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 shadow-sm transition-colors hover:border-teal-500/50 active:cursor-grabbing"
+              >
+                <GripVertical className="h-4 w-4 shrink-0 text-slate-300" />
+                <div className="flex-1 text-right text-sm text-slate-700">
+                  <DynamicMarkdownRenderer content={entry.value} />
+                </div>
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-50 text-xs font-bold text-slate-500">
+                  {String.fromCharCode(65 + index)}
+                </div>
+              </Reorder.Item>
+            ))}
+          </Reorder.Group>
+        </div>
+      </div>
     </div>
   )
 }
@@ -119,11 +180,12 @@ type ExerciseInteractionProps = {
   answerDraft: SubmitAnswerPayload
   exercise: Exercise
   onMoveOrderingItem: (fromIndex: number, toIndex: number) => void
+  onSetOrderingAnswer: (ordering: string[]) => void
   onSelectChoice: (value: string) => void
   onSetBlankAnswer: (value: string) => void
   onSetBooleanAnswer: (value: boolean) => void
   onSetTextAnswer: (value: string) => void
-  onSetMatchingAnswer: (left: string, right: string) => void
+  onSetMatchingOrder: (leftItems: string[], rightItems: string[]) => void
   onToggleChoice: (value: string) => void
   optionEntries: [string, string][]
 }
@@ -132,11 +194,12 @@ export function ExerciseInteraction({
   answerDraft,
   exercise,
   onMoveOrderingItem,
+  onSetOrderingAnswer,
   onSelectChoice,
   onSetBlankAnswer,
   onSetBooleanAnswer,
   onSetTextAnswer,
-  onSetMatchingAnswer,
+  onSetMatchingOrder,
   onToggleChoice,
   optionEntries,
 }: ExerciseInteractionProps) {
@@ -215,64 +278,87 @@ export function ExerciseInteraction({
         <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
           {t('exercise.interactions.orderingInstruction')}
         </div>
-        <div className="space-y-3">
+        <Reorder.Group
+          axis="y"
+          values={ordering}
+          onReorder={onSetOrderingAnswer}
+          className="space-y-3"
+        >
           {ordering.map((item, index) => (
-            <div key={`${item}-${index}`} className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-900 text-sm font-semibold text-white">
+            <Reorder.Item
+              key={item}
+              value={item}
+              layout
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              whileDrag={{ 
+                scale: 1.02, 
+                boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+                zIndex: 50 
+              }}
+              transition={{
+                type: 'spring',
+                stiffness: 500,
+                damping: 30,
+                mass: 1
+              }}
+              className="group relative flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md cursor-grab active:cursor-grabbing"
+            >
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-50 font-medium text-slate-500 group-hover:bg-indigo-50 group-hover:text-indigo-600">
                 {index + 1}
               </div>
-              <div className="flex-1 text-sm leading-relaxed text-slate-800">
+              <div className="flex-1 text-slate-700">
                 <DynamicMarkdownRenderer content={item} />
               </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  className="border-slate-200 text-slate-700"
-                  onClick={() => onMoveOrderingItem(index, index - 1)}
-                  disabled={index === 0}
-                >
-                  {t('exercise.interactions.moveUp')}
-                </Button>
-                <Button
-                  variant="outline"
-                  className="border-slate-200 text-slate-700"
-                  onClick={() => onMoveOrderingItem(index, index + 1)}
-                  disabled={index === ordering.length - 1}
-                >
-                  {t('exercise.interactions.moveDown')}
-                </Button>
+              <div className="flex items-center gap-2">
+                <div className="flex flex-col gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-slate-400 hover:text-indigo-600"
+                    disabled={index === 0}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onMoveOrderingItem(index, index - 1)
+                    }}
+                  >
+                    <ChevronUp className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-slate-400 hover:text-indigo-600"
+                    disabled={index === ordering.length - 1}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onMoveOrderingItem(index, index + 1)
+                    }}
+                  >
+                    <ChevronDown className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="cursor-grab p-1 text-slate-300 group-hover:text-slate-400">
+                  <GripVertical className="h-5 w-5" />
+                </div>
               </div>
-            </div>
+            </Reorder.Item>
           ))}
-        </div>
+        </Reorder.Group>
       </div>
     )
   }
 
   if (exercise.exercise_type === 'matching') {
     const matching = answerDraft.matching || {}
-    return (
-      <div className="space-y-4">
-        <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-          {t('exercise.interactions.matchingInstruction')}
-        </div>
-        <div className="space-y-3">
-          {exercise.pairs.map((pair) => (
-            <div key={pair.left} className="grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 md:grid-cols-[minmax(0,1fr)_220px] md:items-center">
-              <div className="text-sm leading-relaxed text-slate-800">
-                <DynamicMarkdownRenderer content={pair.left} />
-              </div>
-              <CustomDropdown
-                value={matching[pair.left] || ''}
-                onChange={(value) => onSetMatchingAnswer(pair.left, value)}
-                options={exercise.right_items}
-                placeholder={t('exercise.interactions.matchingPlaceholder')}
-              />
-            </div>
-          ))}
-        </div>
-      </div>
-    )
+    const fallbackLeftItems = exercise.pairs.map(pair => pair.left)
+    const leftItems = Object.keys(matching).length > 0 ? Object.keys(matching) : fallbackLeftItems
+    const fallbackRightItems = exercise.right_items.length > 0
+      ? exercise.right_items
+      : exercise.pairs.map(pair => pair.right)
+    const rightItems = leftItems.map((left, index) => matching[left] ?? fallbackRightItems[index] ?? '')
+
+    return <MatchingInteraction leftItems={leftItems} rightItems={rightItems} onSetMatchingOrder={onSetMatchingOrder} t={t} />
   }
 
   if (exercise.exercise_type === 'short_answer') {

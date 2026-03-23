@@ -161,7 +161,8 @@ export type ExerciseQuestionViewProps = {
   onSetBlankAnswer: (value: string) => void
   onMoveOrderingItem: (fromIndex: number, toIndex: number) => void
   onSetTextAnswer: (value: string) => void
-  onSetMatchingAnswer: (left: string, right: string) => void
+  onSetMatchingOrder: (leftItems: string[], rightItems: string[]) => void
+  onSetOrderingAnswer: (value: string[]) => void
   onSubmit: () => void
   canSubmit: boolean
   submitting: boolean
@@ -183,7 +184,8 @@ export const ExerciseQuestionView = ({
   onSetBlankAnswer,
   onMoveOrderingItem,
   onSetTextAnswer,
-  onSetMatchingAnswer,
+  onSetMatchingOrder,
+  onSetOrderingAnswer,
   onSubmit,
   canSubmit,
   submitting,
@@ -219,8 +221,8 @@ export const ExerciseQuestionView = ({
 
     <div className="grid flex-1 grid-cols-1 gap-6 lg:grid-cols-12">
       <div className="flex flex-col lg:col-span-8">
-        <Card className="flex-1 overflow-hidden rounded-[20px] border border-slate-200 bg-white shadow-sm">
-          <div className="flex items-center justify-between border-b border-slate-100 px-5 sm:px-6 py-4 bg-slate-50/50">
+        <Card className="flex-1 rounded-[20px] border border-slate-200 bg-white shadow-sm">
+          <div className="flex items-center justify-between border-b border-slate-100 px-5 sm:px-6 py-4 bg-slate-50/50 rounded-t-[20px]">
             <div className={`flex items-center gap-2 rounded-md ${bloomColor} px-2.5 py-1 box-border`}>
               <div className="h-2 w-2 rounded-full bg-white opacity-80" />
               <span className="text-[10px] font-bold uppercase tracking-widest text-white">
@@ -256,7 +258,8 @@ export const ExerciseQuestionView = ({
                 onSetBlankAnswer={onSetBlankAnswer}
                 onSetBooleanAnswer={onSetBooleanAnswer}
                 onSetTextAnswer={onSetTextAnswer}
-                onSetMatchingAnswer={onSetMatchingAnswer}
+                onSetMatchingOrder={onSetMatchingOrder}
+                onSetOrderingAnswer={onSetOrderingAnswer}
                 onToggleChoice={onToggleChoice}
                 optionEntries={optionEntries}
               />

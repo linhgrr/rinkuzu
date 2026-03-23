@@ -10,9 +10,17 @@ import {
   HiOutlineHome,
   HiOutlineX,
 } from '@/components/icons'
-import type { SubmitResult } from './types'
+import type { SubmitResult, Exercise } from './types'
 
 type TranslateFn = (key: string, values?: Record<string, any>) => string
+
+function normalizeMathContent(content: string): string {
+  if (!content)
+    return content
+
+  return content
+    .replace(/\t(?=(imes|ext|frac|sqrt|cdot|vec|left|right|mathrm|mathbf|mathit|alpha|beta|gamma|delta|theta|lambda|mu|pi|rho|sigma|phi|omega|Delta))/g, '\\t')
+}
 
 type ResultEmptyStateProps = {
   onGoDashboard: () => void
@@ -45,6 +53,7 @@ export const ResultEmptyState = ({ onGoDashboard, t }: ResultEmptyStateProps) =>
 
 type ResultContentProps = {
   averageMasteryPercent: number
+  exercise: Exercise
   isCorrect: boolean
   masteryPercent: number
   onGoDashboard: () => void
@@ -56,6 +65,7 @@ type ResultContentProps = {
 
 export const ResultContent = ({
   averageMasteryPercent,
+  exercise,
   isCorrect,
   masteryPercent,
   onGoDashboard,
@@ -97,15 +107,48 @@ export const ResultContent = ({
               <DynamicMarkdownRenderer content={result.explanation} />
             </div>
 
-            <div className="flex items-start gap-4 rounded-xl border border-slate-200 bg-slate-50 p-5 shadow-sm">
-              <HiCheck className="mt-0.5 h-5 w-5 flex-shrink-0 text-slate-900" />
-              <div>
-                <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-slate-500">
-                  {t('result.correctAnswerLabel')}
-                </span>
-                <span className="text-sm font-medium text-slate-900">
-                  <DynamicMarkdownRenderer content={result.correct_option} />
-                </span>
+            <div className="space-y-4">
+              <div className="flex items-start gap-4 rounded-xl border border-emerald-100 bg-emerald-50/50 p-5 shadow-sm">
+                <div className="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white">
+                  <HiCheck className="h-4 w-4" />
+                </div>
+                <div className="flex-1">
+                  <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-emerald-600">
+                    {t('result.correctAnswerLabel')}
+                  </span>
+                  <div className="text-sm font-medium text-slate-900">
+                    {exercise.exercise_type === 'matching' ? (
+                      <div className="grid grid-cols-1 gap-2">
+                        {exercise.pairs.map((pair, idx) => (
+                          <div key={idx} className="flex items-center justify-between rounded-lg border border-emerald-100 bg-white p-2">
+                            <div className="min-w-0 flex-1 text-xs text-slate-600">
+                              <DynamicMarkdownRenderer content={normalizeMathContent(pair.left)} />
+                            </div>
+                            <HiArrowRight className="h-3 w-3 text-emerald-400" />
+                            <div className="min-w-0 flex-1 text-right text-xs font-semibold text-emerald-700">
+                              <DynamicMarkdownRenderer content={normalizeMathContent(pair.right)} />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : exercise.exercise_type === 'ordering' ? (
+                      <div className="flex flex-wrap gap-2">
+                        {exercise.items.map((item, idx) => (
+                          <div key={idx} className="flex items-center gap-2 rounded-lg border border-emerald-100 bg-white p-2 text-xs">
+                            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100 font-mono text-[10px] font-bold text-emerald-700">
+                              {idx + 1}
+                            </span>
+                            <div className="min-w-0 font-medium text-slate-700">
+                              <DynamicMarkdownRenderer content={normalizeMathContent(item)} />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <DynamicMarkdownRenderer content={normalizeMathContent(result.correct_option)} />
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
 

@@ -124,6 +124,15 @@ export const useAdaptiveExerciseSession = ({ sessionId, router, t }: UseAdaptive
             if (exerciseData.exercise_type === 'ordering') {
               setAnswerDraft({ ordering: exerciseData.items })
             }
+            if (exerciseData.exercise_type === 'matching') {
+              const leftItems = exerciseData.pairs.map(p => p.left)
+              const rightItems = exerciseData.right_items
+              const matching: Record<string, string> = {}
+              leftItems.forEach((left, i) => {
+                matching[left] = rightItems[i]
+              })
+              setAnswerDraft({ matching })
+            }
           })
           .catch((reason) => {
             if (!isLatestActiveRequest())
@@ -147,6 +156,15 @@ export const useAdaptiveExerciseSession = ({ sessionId, router, t }: UseAdaptive
         setExercise(ex)
         if (ex.exercise_type === 'ordering') {
           setAnswerDraft({ ordering: ex.items })
+        }
+        if (ex.exercise_type === 'matching') {
+          const leftItems = ex.pairs.map(p => p.left)
+          const rightItems = ex.right_items
+          const matching: Record<string, string> = {}
+          leftItems.forEach((left, i) => {
+            matching[left] = rightItems[i]
+          })
+          setAnswerDraft({ matching })
         }
         setLoadingExercise(false)
       }
@@ -287,6 +305,20 @@ export const useAdaptiveExerciseSession = ({ sessionId, router, t }: UseAdaptive
     }))
   }, [])
 
+  const setMatchingOrder = useCallback((leftItems: string[], rightItems: string[]) => {
+    setAnswerDraft((current) => {
+      const matching: Record<string, string> = {}
+      leftItems.forEach((left, index) => {
+        matching[left] = rightItems[index]
+      })
+      return { matching }
+    })
+  }, [])
+
+  const setOrderingAnswer = useCallback((ordering: string[]) => {
+    setAnswerDraft({ ordering })
+  }, [])
+
   return {
     concept,
     theory,
@@ -306,6 +338,8 @@ export const useAdaptiveExerciseSession = ({ sessionId, router, t }: UseAdaptive
     moveOrderingItem,
     setTextAnswer,
     setMatchingAnswer,
+    setMatchingOrder,
+    setOrderingAnswer,
     loadData,
     handleSubmit,
   }

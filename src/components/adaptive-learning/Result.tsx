@@ -40,6 +40,7 @@ export default function AdaptiveLearningResult({ sessionId }: ResultProps) {
     <>
       <ResultContent
         averageMasteryPercent={averageMasteryPercent}
+        exercise={exercise}
         isCorrect={isCorrect}
         masteryPercent={masteryPercent}
         onGoDashboard={handleGoDashboard}

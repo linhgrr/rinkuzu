@@ -2,7 +2,7 @@ const DEFAULT_ADAPTIVE_API_URL = 'http://localhost:8000'
 const DEFAULT_ADAPTIVE_PROXY_TIMEOUT_MS = 60_000
 
 export function resolveAdaptiveApiUrl(): string {
-  return process.env.ADAPTIVE_API_URL || process.env.NEXT_PUBLIC_API_URL || DEFAULT_ADAPTIVE_API_URL
+  return process.env.NEXT_PUBLIC_API_URL || DEFAULT_ADAPTIVE_API_URL
 }
 
 export function resolveAdaptiveProxyTimeoutMs(

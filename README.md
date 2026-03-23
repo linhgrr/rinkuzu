@@ -65,12 +65,12 @@ Create `.env.local` based on `.env.example` (`/home/linh/Downloads/datn_1/new/da
 ```env
 MONGO_URL=...
 NEXTAUTH_SECRET=...
-GEMINI_KEYS=key1,key2,key3
-JWT_EXPIRES_IN=30m
+NEXTAUTH_URL=http://localhost:3000
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
 
-OPENAI_API_BASE_URL=...
-OPENAI_API_KEY=...
-OPENAI_MODEL=gpt-4o
+JWT_SECRET=...
+JWT_EXPIRES_IN=30m
+SESSION_MAX_AGE=180000
 
 S3_ENDPOINT=...
 S3_ACCESS_KEY=...
@@ -79,12 +79,18 @@ S3_BUCKET_NAME=...
 
 # Companion adaptive API URL (frontend proxy target)
 NEXT_PUBLIC_API_URL=http://127.0.0.1:8000
-ADAPTIVE_API_URL=http://127.0.0.1:8000
+ADAPTIVE_PROXY_TIMEOUT_MS=60000
 
 # Shared internal header token between frontend and adaptive API
 INTERNAL_SERVICE_TOKEN=...
-```
 
+# Optional integrations
+PAYOS_CLIENT_ID=...
+PAYOS_API_KEY=...
+PAYOS_CHECKSUM_KEY=...
+NEXT_PUBLIC_GA_ID=
+NEXT_IMAGE_UNOPTIMIZED=false
+```
 ### 2) Run frontend
 
 ```bash
@@ -106,7 +112,7 @@ uvicorn api.main:app --reload --host 0.0.0.0 --port 8000
 
 - Quiz mode:
   - Frontend requests presigned upload URL: `/api/quiz/upload-url`
-  - Frontend sends PDF extraction request via `extractQuizFromS3Key` -> `${ADAPTIVE_API_URL}/api/quiz/extract`
+  - Frontend sends PDF extraction request via `extractQuizFromS3Key` -> `${NEXT_PUBLIC_API_URL}/api/quiz/extract`
 - Adaptive mode:
   - Frontend routes under `/api/adaptive-learning/*` proxy to Python API via `src/lib/adaptive-learning/proxy.ts`
   - Python API handles pipeline/session/history endpoints and model-backed recommendation flow

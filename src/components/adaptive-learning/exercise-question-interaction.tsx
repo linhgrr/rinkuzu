@@ -63,28 +63,20 @@ function MatchingInteraction({
   t,
 }: MatchingInteractionProps) {
   const containerRef = useRef<HTMLDivElement>(null)
-  const lastSyncedOrderRef = useRef<string>('')
   const [cardMinHeight, setCardMinHeight] = useState<number | null>(null)
   const normalizedRightItems = leftItems.map((_, index) => rightItems[index] ?? '')
   const [rightEntries, setRightEntries] = useState<MatchingRightEntry[]>(() =>
     normalizedRightItems.map((item, index) => ({ id: `right-${index}`, value: item })),
   )
   const normalizedOrderKey = normalizedRightItems.join('\u0001')
+  const renderedOrderKey = rightEntries.map(entry => entry.value).join('\u0001')
 
   useEffect(() => {
-    if (lastSyncedOrderRef.current === normalizedOrderKey)
+    if (renderedOrderKey === normalizedOrderKey)
       return
 
     setRightEntries(normalizedRightItems.map((item, index) => ({ id: `right-${index}`, value: item })))
-    lastSyncedOrderRef.current = normalizedOrderKey
-  }, [normalizedOrderKey, normalizedRightItems])
-
-  useEffect(() => {
-    const nextRightItems = rightEntries.map(entry => entry.value)
-    const nextOrderKey = nextRightItems.join('\u0001')
-    lastSyncedOrderRef.current = nextOrderKey
-    onSetMatchingOrder(leftItems, nextRightItems)
-  }, [leftItems, onSetMatchingOrder, rightEntries])
+  }, [normalizedOrderKey, normalizedRightItems, renderedOrderKey])
 
   useEffect(() => {
     const measureCards = () => {
@@ -149,7 +141,10 @@ function MatchingInteraction({
           <Reorder.Group
             axis="y"
             values={rightEntries}
-            onReorder={setRightEntries}
+            onReorder={(nextEntries) => {
+              setRightEntries(nextEntries)
+              onSetMatchingOrder(leftItems, nextEntries.map(entry => entry.value))
+            }}
             className="space-y-3"
           >
             {rightEntries.map((entry, index) => (

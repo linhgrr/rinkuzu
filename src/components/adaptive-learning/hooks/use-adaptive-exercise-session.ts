@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { AdaptiveApiError, getExercise, getNextConcept, getTheory, isSessionNotFoundError, submitAnswer } from '../api-client'
 import { ADAPTIVE_ROUTES } from '../routes'
 import { saveSessionExerciseOutcome } from '../session-storage'
-import type { Exercise, NextConcept, TheoryData } from '../types'
+import type { Exercise, NextConcept, SubmitAnswerPayload, TheoryData } from '../types'
 
 type RouterLike = {
   push: (href: string) => void
@@ -48,7 +48,7 @@ export const useAdaptiveExerciseSession = ({ sessionId, router, t }: UseAdaptive
   const [concept, setConcept] = useState<NextConcept | null>(null)
   const [theory, setTheory] = useState<TheoryData | null>(null)
   const [exercise, setExercise] = useState<Exercise | null>(null)
-  const [selectedOption, setSelectedOption] = useState<string | null>(null)
+  const [answerDraft, setAnswerDraft] = useState<SubmitAnswerPayload>({})
   const [loadingConcept, setLoadingConcept] = useState(true)
   const [loadingTheory, setLoadingTheory] = useState(false)
   const [loadingExercise, setLoadingExercise] = useState(false)
@@ -77,7 +77,7 @@ export const useAdaptiveExerciseSession = ({ sessionId, router, t }: UseAdaptive
 
     setLoadingConcept(true)
     setError(null)
-    setSelectedOption(null)
+    setAnswerDraft({})
     setConcept(null)
     setTheory(null)
     setExercise(null)
@@ -121,6 +121,9 @@ export const useAdaptiveExerciseSession = ({ sessionId, router, t }: UseAdaptive
             if (!isLatestActiveRequest())
               return
             setExercise(exerciseData)
+            if (exerciseData.exercise_type === 'ordering') {
+              setAnswerDraft({ ordering: exerciseData.items })
+            }
           })
           .catch((reason) => {
             if (!isLatestActiveRequest())
@@ -142,6 +145,9 @@ export const useAdaptiveExerciseSession = ({ sessionId, router, t }: UseAdaptive
         if (!isLatestActiveRequest())
           return
         setExercise(ex)
+        if (ex.exercise_type === 'ordering') {
+          setAnswerDraft({ ordering: ex.items })
+        }
         setLoadingExercise(false)
       }
     }
@@ -177,13 +183,37 @@ export const useAdaptiveExerciseSession = ({ sessionId, router, t }: UseAdaptive
   }, [router, sessionId])
 
   const handleSubmit = useCallback(async () => {
-    if (!selectedOption || !exercise)
+    if (!exercise)
+      return
+
+    const hasAnswer = (() => {
+      switch (exercise.exercise_type) {
+        case 'mcq':
+          return Boolean(answerDraft.choice)
+        case 'true_false':
+          return typeof answerDraft.boolean === 'boolean'
+        case 'fill_blank':
+          return Boolean(answerDraft.blanks?.some(value => value.trim().length > 0))
+        case 'multi_correct':
+          return Boolean(answerDraft.choices && answerDraft.choices.length > 0)
+        case 'ordering':
+          return Boolean(answerDraft.ordering && answerDraft.ordering.length === exercise.items.length)
+        case 'matching':
+          return Object.keys(answerDraft.matching || {}).length === exercise.pairs.length
+        case 'short_answer':
+          return Boolean(answerDraft.text?.trim())
+        default:
+          return false
+      }
+    })()
+
+    if (!hasAnswer)
       return
 
     setSubmitting(true)
     try {
       router.prefetch(ADAPTIVE_ROUTES.result(sessionId))
-      const result = await submitAnswer(sessionId, selectedOption)
+      const result = await submitAnswer(sessionId, answerDraft)
       if (!isMountedRef.current)
         return
 
@@ -206,13 +236,62 @@ export const useAdaptiveExerciseSession = ({ sessionId, router, t }: UseAdaptive
         return
       setSubmitting(false)
     }
-  }, [exercise, router, selectedOption, sessionId, t])
+  }, [answerDraft, exercise, router, sessionId, t])
+
+  const selectChoice = useCallback((choice: string) => {
+    setAnswerDraft({ choice })
+  }, [])
+
+  const toggleChoice = useCallback((choice: string) => {
+    setAnswerDraft((current) => {
+      const existing = new Set(current.choices || [])
+      if (existing.has(choice))
+        existing.delete(choice)
+      else
+        existing.add(choice)
+
+      return { choices: Array.from(existing).sort() }
+    })
+  }, [])
+
+  const setBooleanAnswer = useCallback((value: boolean) => {
+    setAnswerDraft({ boolean: value })
+  }, [])
+
+  const setBlankAnswer = useCallback((value: string) => {
+    setAnswerDraft({ blanks: [value] })
+  }, [])
+
+  const moveOrderingItem = useCallback((fromIndex: number, toIndex: number) => {
+    setAnswerDraft((current) => {
+      const ordering = [...(current.ordering || [])]
+      if (fromIndex < 0 || toIndex < 0 || fromIndex >= ordering.length || toIndex >= ordering.length)
+        return current
+
+      const [moved] = ordering.splice(fromIndex, 1)
+      ordering.splice(toIndex, 0, moved)
+      return { ordering }
+    })
+  }, [])
+
+  const setTextAnswer = useCallback((value: string) => {
+    setAnswerDraft({ text: value })
+  }, [])
+
+  const setMatchingAnswer = useCallback((left: string, right: string) => {
+    setAnswerDraft((current) => ({
+      matching: {
+        ...(current.matching || {}),
+        [left]: right,
+      },
+    }))
+  }, [])
 
   return {
     concept,
     theory,
     exercise,
-    selectedOption,
+    answerDraft,
     loadingConcept,
     loadingTheory,
     loadingExercise,
@@ -220,7 +299,13 @@ export const useAdaptiveExerciseSession = ({ sessionId, router, t }: UseAdaptive
     error,
     showTheory,
     setShowTheory,
-    setSelectedOption,
+    selectChoice,
+    toggleChoice,
+    setBooleanAnswer,
+    setBlankAnswer,
+    moveOrderingItem,
+    setTextAnswer,
+    setMatchingAnswer,
     loadData,
     handleSubmit,
   }

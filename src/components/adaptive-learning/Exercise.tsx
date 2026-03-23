@@ -43,7 +43,7 @@ export default function AdaptiveLearningExercise({ sessionId }: ExerciseProps) {
     concept,
     theory,
     exercise,
-    selectedOption,
+    answerDraft,
     loadingConcept,
     loadingTheory,
     loadingExercise,
@@ -51,7 +51,13 @@ export default function AdaptiveLearningExercise({ sessionId }: ExerciseProps) {
     error,
     showTheory,
     setShowTheory,
-    setSelectedOption,
+    selectChoice,
+    toggleChoice,
+    setBooleanAnswer,
+    setBlankAnswer,
+    moveOrderingItem,
+    setTextAnswer,
+    setMatchingAnswer,
     loadData,
     handleSubmit,
   } = useAdaptiveExerciseSession({
@@ -87,6 +93,30 @@ export default function AdaptiveLearningExercise({ sessionId }: ExerciseProps) {
     return Object.entries(exercise.options) as [string, string][]
   }, [exercise])
 
+  const canSubmit = useMemo(() => {
+    if (!exercise)
+      return false
+
+    switch (exercise.exercise_type) {
+      case 'mcq':
+        return Boolean(answerDraft.choice)
+      case 'true_false':
+        return typeof answerDraft.boolean === 'boolean'
+      case 'fill_blank':
+        return Boolean(answerDraft.blanks?.some(value => value.trim().length > 0))
+      case 'multi_correct':
+        return Boolean(answerDraft.choices?.length)
+      case 'ordering':
+        return Boolean(answerDraft.ordering && answerDraft.ordering.length === exercise.items.length)
+      case 'matching':
+        return Object.keys(answerDraft.matching || {}).length === exercise.pairs.length
+      case 'short_answer':
+        return Boolean(answerDraft.text?.trim())
+      default:
+        return false
+    }
+  }, [answerDraft, exercise])
+
   if (loadingConcept)
     return <ExerciseLoadingState t={t as any} />
 
@@ -119,14 +149,21 @@ export default function AdaptiveLearningExercise({ sessionId }: ExerciseProps) {
       concept={concept}
       exercise={exercise}
       loadingExercise={loadingExercise}
-      selectedOption={selectedOption}
+      answerDraft={answerDraft}
       optionEntries={optionEntries}
       progressPercent={progressPercent}
       bloomColor={bloomColor}
       localizedBloomLabel={localizedBloomLabel}
       onQuit={() => router.push(ADAPTIVE_ROUTES.dashboard)}
-      onSelectOption={setSelectedOption}
+      onSelectChoice={selectChoice}
+      onToggleChoice={toggleChoice}
+      onSetBooleanAnswer={setBooleanAnswer}
+      onSetBlankAnswer={setBlankAnswer}
+      onMoveOrderingItem={moveOrderingItem}
+      onSetTextAnswer={setTextAnswer}
+      onSetMatchingAnswer={setMatchingAnswer}
       onSubmit={() => void handleSubmit()}
+      canSubmit={canSubmit}
       submitting={submitting}
       t={t as any}
     />

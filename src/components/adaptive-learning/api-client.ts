@@ -1,5 +1,5 @@
 import {
-    Session, Exercise, SubmitResult, SessionStatus,
+    Session, Exercise, SubmitAnswerPayload, SubmitResult, SessionStatus,
     KnowledgeGraphData, MasteryMatrixData, ConceptDetail,
     PipelineUploadResponse, PipelineJobStatus, PipelineSessionResponse,
     SubjectProgressItem, SubjectHistoryDetail, PipelineJobHistoryItem, DeleteSubjectResponse,
@@ -321,7 +321,7 @@ export async function getExercise(sessionId: string): Promise<Exercise> {
     });
 }
 
-export async function submitAnswer(sessionId: string, answer: string): Promise<SubmitResult> {
+export async function submitAnswer(sessionId: string, answer: SubmitAnswerPayload): Promise<SubmitResult> {
     return apiFetch<SubmitResult>(`/api/adaptive-learning/session/${sessionId}/submit`, {
         method: 'POST',
         body: JSON.stringify({ answer }),

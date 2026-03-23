@@ -27,6 +27,23 @@ export interface TheoryData {
   examples: string[]
 }
 
+export type ExerciseType = 'mcq' | 'true_false' | 'fill_blank' | 'multi_correct' | 'ordering' | 'matching' | 'short_answer'
+
+export interface MatchingPair {
+  left: string
+  right: string
+}
+
+export interface SubmitAnswerPayload {
+  choice?: string
+  choices?: string[]
+  boolean?: boolean
+  blanks?: string[]
+  ordering?: string[]
+  matching?: Record<string, string>
+  text?: string
+}
+
 export interface Exercise {
   id: string
   exercise_id: string
@@ -34,8 +51,15 @@ export interface Exercise {
   concept_idx: number
   bloom_level: number
   bloom_label: BloomLevel
+  exercise_type: ExerciseType
   question: string
   options: Record<string, string>
+  statement?: string | null
+  hint?: string | null
+  items: string[]
+  pairs: MatchingPair[]
+  right_items: string[]
+  rubric: string[]
   step: number
   max_steps: number
   theory?: {

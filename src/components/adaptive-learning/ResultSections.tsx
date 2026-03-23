@@ -117,7 +117,7 @@ export const ResultContent = ({
                 <span className="relative flex h-7 w-7 items-center justify-center rounded-full border border-slate-200 bg-slate-100">
                   <Image
                     src="/images/chatbot_icon.png"
-                    alt="Rin-chan avatar"
+                    alt={t('chatbot.iconAlt')}
                     width={28}
                     height={28}
                     className="rounded-full object-cover"

@@ -1,6 +1,7 @@
 'use client'
 
 import Image from 'next/image'
+import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/Button'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { FiAward, FiBookOpen, FiSearch, FiTarget, FiUploadCloud, FiZap } from 'react-icons/fi'
@@ -16,6 +17,8 @@ type ToastProps = {
 }
 
 export const DashboardToast = ({ toastMsg }: ToastProps) => {
+  const t = useTranslations('adaptiveLearning')
+
   if (!toastMsg)
     return null
 
@@ -25,7 +28,7 @@ export const DashboardToast = ({ toastMsg }: ToastProps) => {
         ? <FiZap className="text-red-500 w-5 h-5 shrink-0" aria-hidden="true" />
         : (
             <div className="w-10 h-10 shrink-0 bg-white/10 rounded-full flex items-center justify-center p-1">
-              <Image src="/images/mascot_image.png" alt="Mascot" width={40} height={40} className="w-full h-full object-contain" />
+              <Image src="/images/mascot_image.png" alt={t('dashboard.mascotAlt')} width={40} height={40} className="w-full h-full object-contain" />
             </div>
           )}
       <span className="text-sm font-medium">{toastMsg.title}</span>
@@ -67,7 +70,7 @@ export const DashboardHeader = ({ apiOnline, dailyGoalProgress, error, streakDay
       </div>
 
       <div className="flex items-center gap-3 bg-white px-4 py-2.5 rounded-full border border-slate-200 shadow-sm min-w-[140px] md:min-w-[160px]">
-        <FiTarget className="text-slate-500 w-4 h-4 shrink-0" aria-label="Goal" />
+        <FiTarget className="text-slate-500 w-4 h-4 shrink-0" aria-label={t('dashboard.goalAriaLabel')} />
         <div className="flex-1">
           <div className="flex justify-between items-center mb-1">
             <span className="text-[10px] font-bold text-slate-700 tracking-wider">
@@ -110,7 +113,7 @@ export const UpNextSection = ({ loading, upNextSubject, loadingJobId, onGoUpload
         <div className="absolute top-0 right-0 w-64 h-64 bg-teal-50 rounded-full blur-3xl opacity-60 translate-x-1/3 -translate-y-1/4 pointer-events-none"></div>
 
         <div className="absolute right-0 bottom-0 pointer-events-none hidden sm:block opacity-90 transition-transform duration-500 group-hover:scale-105 group-hover:-translate-y-2 z-0">
-          <Image src="/images/mascot_image.png" alt="Mascot" width={288} height={288} className="w-64 h-64 md:w-72 md:h-72 object-contain" />
+          <Image src="/images/mascot_image.png" alt={t('dashboard.mascotAlt')} width={288} height={288} className="w-64 h-64 md:w-72 md:h-72 object-contain" />
         </div>
 
         <div className="relative z-10 flex flex-col items-start gap-6">
@@ -196,13 +199,13 @@ export const LibrarySection = ({
             spellCheck={false}
             autoComplete="off"
             className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:bg-white transition-all"
-            aria-label="Search documents"
+            aria-label={t('dashboard.searchAriaLabel')}
           />
         </div>
         <Button
           onClick={onGoUpload}
           className="bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-800 font-medium py-2 px-3 rounded-xl flex items-center justify-center gap-2 transition-all duration-300 shadow-sm whitespace-nowrap"
-          title="Upload new document"
+          title={t('dashboard.uploadNewDocumentTitle')}
         >
           <FiUploadCloud className="w-4 h-4 opacity-70" aria-hidden="true" />
           <span className="hidden md:inline text-sm">{t('uploadPage.upload')}</span>

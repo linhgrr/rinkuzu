@@ -53,6 +53,7 @@ export interface Exercise {
   bloom_label: BloomLevel
   exercise_type: ExerciseType
   question: string
+  sentence?: string | null
   options: Record<string, string>
   statement?: string | null
   hint?: string | null
@@ -60,6 +61,7 @@ export interface Exercise {
   pairs: MatchingPair[]
   right_items: string[]
   rubric: string[]
+  correct_answer?: string | string[] | boolean | Record<string, string> | null
   step: number
   max_steps: number
   theory?: {

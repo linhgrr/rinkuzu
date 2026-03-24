@@ -20,6 +20,7 @@ export interface ExerciseHistoryFull {
   concept_name: string
   bloom_level: number
   question: string
+  sentence?: string | null
   exercise_type?: string
   options: Record<string, string>
   statement?: string | null
@@ -28,6 +29,7 @@ export interface ExerciseHistoryFull {
   pairs?: { left: string, right: string }[]
   right_items?: string[]
   rubric?: string[]
+  correct_answer?: string | string[] | boolean | Record<string, string> | null
   correct_option: string
   explanation: string
   user_answer: string | null

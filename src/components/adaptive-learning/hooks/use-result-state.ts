@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { getSubjectHistoryDetailFresh } from '../api-client'
 import { ADAPTIVE_ROUTES } from '../routes'
 import { getJobIdForSession, getSessionExerciseOutcome } from '../session-storage'
+import { buildExercisePromptText } from '../exercise-prompt'
 import { BLOOM_LABELS } from '../types'
 import type { Exercise, SessionHistoryDetail, SubmitResult } from '../types'
 
@@ -61,18 +62,6 @@ function deriveOutcomeFromHistory(
       },
     },
   }
-}
-
-function buildExercisePrompt(exercise: Exercise): string {
-  if (exercise.exercise_type === 'true_false' && exercise.statement) {
-    return `${exercise.question}\n${exercise.statement}`
-  }
-
-  if (exercise.exercise_type === 'fill_blank' && exercise.sentence) {
-    return `${exercise.question}\n${exercise.sentence}`
-  }
-
-  return exercise.question
 }
 
 export const useResultState = (sessionId: string, t: TranslateFn) => {
@@ -159,7 +148,7 @@ export const useResultState = (sessionId: string, t: TranslateFn) => {
     if (!exercise || !result)
       return ''
 
-    return `${t('chatbot.contextConcept')}: ${result.concept_name}\n${t('chatbot.contextQuestion')}: ${buildExercisePrompt(exercise)}`
+    return `${t('chatbot.contextConcept')}: ${result.concept_name}\n${t('chatbot.contextQuestion')}: ${buildExercisePromptText(exercise)}`
   }, [exercise, result, t])
 
   const handleGoDashboard = useCallback(() => {

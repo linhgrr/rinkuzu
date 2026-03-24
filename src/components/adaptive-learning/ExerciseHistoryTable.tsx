@@ -11,6 +11,7 @@ import {
   HiOutlineEye,
   HiOutlineX,
 } from '@/components/icons'
+import { getExercisePromptSections } from './exercise-prompt'
 import { BLOOM_LABELS } from './types'
 import type { ExerciseHistoryFull } from './types'
 import { formatSessionHistoryDate } from './session-history-utils'
@@ -22,33 +23,15 @@ interface ExerciseHistoryTableProps {
 }
 
 function renderExercisePrompt(exercise: ExerciseHistoryFull) {
-  if (exercise.exercise_type === 'true_false') {
-    return (
-      <div className="space-y-3">
-        <DynamicMarkdownRenderer content={exercise.question} />
-        {exercise.statement ? (
-          <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-            <DynamicMarkdownRenderer content={exercise.statement} />
-          </div>
-        ) : null}
+  const promptSections = getExercisePromptSections(exercise)
+  return (
+    <div className="space-y-3">
+      {promptSections.lead ? <DynamicMarkdownRenderer content={promptSections.lead} /> : null}
+      <div className={promptSections.lead ? 'rounded-lg border border-slate-200 bg-slate-50 p-3' : ''}>
+        <DynamicMarkdownRenderer content={promptSections.primary} />
       </div>
-    )
-  }
-
-  if (exercise.exercise_type === 'fill_blank') {
-    return (
-      <div className="space-y-3">
-        <DynamicMarkdownRenderer content={exercise.question} />
-        {exercise.sentence ? (
-          <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-            <DynamicMarkdownRenderer content={exercise.sentence} />
-          </div>
-        ) : null}
-      </div>
-    )
-  }
-
-  return <DynamicMarkdownRenderer content={exercise.question} />
+    </div>
+  )
 }
 
 function renderCorrectAnswer(exercise: ExerciseHistoryFull, t: ReturnType<typeof useTranslations<'adaptiveLearning'>>) {

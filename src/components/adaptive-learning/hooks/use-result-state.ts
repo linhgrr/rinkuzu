@@ -32,6 +32,7 @@ function deriveOutcomeFromHistory(
       bloom_label: bloomLabel,
       exercise_type: (latest.exercise_type as Exercise['exercise_type']) || 'mcq',
       question: latest.question,
+      sentence: latest.sentence,
       options: latest.options,
       statement: latest.statement,
       hint: latest.hint,
@@ -39,6 +40,7 @@ function deriveOutcomeFromHistory(
       pairs: latest.pairs || [],
       right_items: latest.right_items || [],
       rubric: latest.rubric || [],
+      correct_answer: latest.correct_answer,
       step: answered.length,
       max_steps: detail.max_steps,
     },
@@ -59,6 +61,18 @@ function deriveOutcomeFromHistory(
       },
     },
   }
+}
+
+function buildExercisePrompt(exercise: Exercise): string {
+  if (exercise.exercise_type === 'true_false' && exercise.statement) {
+    return `${exercise.question}\n${exercise.statement}`
+  }
+
+  if (exercise.exercise_type === 'fill_blank' && exercise.sentence) {
+    return `${exercise.question}\n${exercise.sentence}`
+  }
+
+  return exercise.question
 }
 
 export const useResultState = (sessionId: string, t: TranslateFn) => {
@@ -145,7 +159,7 @@ export const useResultState = (sessionId: string, t: TranslateFn) => {
     if (!exercise || !result)
       return ''
 
-    return `${t('chatbot.contextConcept')}: ${result.concept_name}\n${t('chatbot.contextQuestion')}: ${exercise.question}`
+    return `${t('chatbot.contextConcept')}: ${result.concept_name}\n${t('chatbot.contextQuestion')}: ${buildExercisePrompt(exercise)}`
   }, [exercise, result, t])
 
   const handleGoDashboard = useCallback(() => {

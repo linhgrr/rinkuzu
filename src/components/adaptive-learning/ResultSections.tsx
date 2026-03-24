@@ -27,6 +27,57 @@ type ResultEmptyStateProps = {
   t: TranslateFn
 }
 
+function renderResultCorrectAnswer(exercise: Exercise, result: SubmitResult, t: TranslateFn) {
+  if (exercise.exercise_type === 'matching') {
+    return (
+      <div className="grid grid-cols-1 gap-2">
+        {exercise.pairs.map((pair, idx) => (
+          <div key={idx} className="flex items-center justify-between rounded-lg border border-emerald-100 bg-white p-2">
+            <div className="min-w-0 flex-1 text-xs text-slate-600">
+              <DynamicMarkdownRenderer content={normalizeMathContent(pair.left)} />
+            </div>
+            <HiArrowRight className="h-3 w-3 text-emerald-400" />
+            <div className="min-w-0 flex-1 text-right text-xs font-semibold text-emerald-700">
+              <DynamicMarkdownRenderer content={normalizeMathContent(pair.right)} />
+            </div>
+          </div>
+        ))}
+      </div>
+    )
+  }
+
+  if (exercise.exercise_type === 'ordering' && Array.isArray(exercise.correct_answer)) {
+    return (
+      <div className="flex flex-wrap gap-2">
+        {exercise.correct_answer.map((item, idx) => (
+          <div key={idx} className="flex items-center gap-2 rounded-lg border border-emerald-100 bg-white p-2 text-xs">
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100 font-mono text-[10px] font-bold text-emerald-700">
+              {idx + 1}
+            </span>
+            <div className="min-w-0 font-medium text-slate-700">
+              <DynamicMarkdownRenderer content={normalizeMathContent(item)} />
+            </div>
+          </div>
+        ))}
+      </div>
+    )
+  }
+
+  if (exercise.exercise_type === 'fill_blank' && Array.isArray(exercise.correct_answer)) {
+    return <DynamicMarkdownRenderer content={normalizeMathContent(exercise.correct_answer.join(', '))} />
+  }
+
+  if (exercise.exercise_type === 'multi_correct' && Array.isArray(exercise.correct_answer)) {
+    return <DynamicMarkdownRenderer content={normalizeMathContent(exercise.correct_answer.join(', '))} />
+  }
+
+  if (exercise.exercise_type === 'true_false' && typeof exercise.correct_answer === 'boolean') {
+    return <span>{exercise.correct_answer ? t('exercise.interactions.trueLabel') : t('exercise.interactions.falseLabel')}</span>
+  }
+
+  return <DynamicMarkdownRenderer content={normalizeMathContent(result.correct_option)} />
+}
+
 export const ResultLoadingState = ({ t }: { t: TranslateFn }) => (
   <div className="mx-auto flex min-h-[80vh] max-w-4xl items-center justify-center">
     <div className="space-y-3 text-center">
@@ -117,36 +168,7 @@ export const ResultContent = ({
                     {t('result.correctAnswerLabel')}
                   </span>
                   <div className="text-sm font-medium text-slate-900">
-                    {exercise.exercise_type === 'matching' ? (
-                      <div className="grid grid-cols-1 gap-2">
-                        {exercise.pairs.map((pair, idx) => (
-                          <div key={idx} className="flex items-center justify-between rounded-lg border border-emerald-100 bg-white p-2">
-                            <div className="min-w-0 flex-1 text-xs text-slate-600">
-                              <DynamicMarkdownRenderer content={normalizeMathContent(pair.left)} />
-                            </div>
-                            <HiArrowRight className="h-3 w-3 text-emerald-400" />
-                            <div className="min-w-0 flex-1 text-right text-xs font-semibold text-emerald-700">
-                              <DynamicMarkdownRenderer content={normalizeMathContent(pair.right)} />
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : exercise.exercise_type === 'ordering' ? (
-                      <div className="flex flex-wrap gap-2">
-                        {exercise.items.map((item, idx) => (
-                          <div key={idx} className="flex items-center gap-2 rounded-lg border border-emerald-100 bg-white p-2 text-xs">
-                            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100 font-mono text-[10px] font-bold text-emerald-700">
-                              {idx + 1}
-                            </span>
-                            <div className="min-w-0 font-medium text-slate-700">
-                              <DynamicMarkdownRenderer content={normalizeMathContent(item)} />
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <DynamicMarkdownRenderer content={normalizeMathContent(result.correct_option)} />
-                    )}
+                    {renderResultCorrectAnswer(exercise, result, t)}
                   </div>
                 </div>
               </div>

@@ -21,6 +21,87 @@ interface ExerciseHistoryTableProps {
   exercises: ExerciseHistoryFull[]
 }
 
+function renderExercisePrompt(exercise: ExerciseHistoryFull) {
+  if (exercise.exercise_type === 'true_false') {
+    return (
+      <div className="space-y-3">
+        <DynamicMarkdownRenderer content={exercise.question} />
+        {exercise.statement ? (
+          <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <DynamicMarkdownRenderer content={exercise.statement} />
+          </div>
+        ) : null}
+      </div>
+    )
+  }
+
+  if (exercise.exercise_type === 'fill_blank') {
+    return (
+      <div className="space-y-3">
+        <DynamicMarkdownRenderer content={exercise.question} />
+        {exercise.sentence ? (
+          <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <DynamicMarkdownRenderer content={exercise.sentence} />
+          </div>
+        ) : null}
+      </div>
+    )
+  }
+
+  return <DynamicMarkdownRenderer content={exercise.question} />
+}
+
+function renderCorrectAnswer(exercise: ExerciseHistoryFull, t: ReturnType<typeof useTranslations<'adaptiveLearning'>>) {
+  if (exercise.exercise_type === 'matching' && exercise.pairs?.length) {
+    return (
+      <div className="space-y-2">
+        {exercise.pairs.map((pair, idx) => (
+          <div key={`${pair.left}-${idx}`} className="flex items-center justify-between rounded-lg border border-green-100 bg-white p-2">
+            <div className="min-w-0 flex-1 text-xs text-slate-600">
+              <DynamicMarkdownRenderer content={pair.left} />
+            </div>
+            <div className="mx-2 text-green-500">→</div>
+            <div className="min-w-0 flex-1 text-right text-xs font-semibold text-green-700">
+              <DynamicMarkdownRenderer content={pair.right} />
+            </div>
+          </div>
+        ))}
+      </div>
+    )
+  }
+
+  if (exercise.exercise_type === 'ordering' && Array.isArray(exercise.correct_answer)) {
+    return (
+      <div className="flex flex-wrap gap-2">
+        {exercise.correct_answer.map((item, idx) => (
+          <div key={`${item}-${idx}`} className="flex items-center gap-2 rounded-lg border border-green-100 bg-white p-2 text-xs">
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-green-100 font-mono text-[10px] font-bold text-green-700">
+              {idx + 1}
+            </span>
+            <div className="min-w-0 text-slate-700">
+              <DynamicMarkdownRenderer content={item} />
+            </div>
+          </div>
+        ))}
+      </div>
+    )
+  }
+
+  if (exercise.exercise_type === 'fill_blank' && Array.isArray(exercise.correct_answer)) {
+    return <DynamicMarkdownRenderer content={exercise.correct_answer.join(', ')} />
+  }
+
+  if (exercise.exercise_type === 'multi_correct' && Array.isArray(exercise.correct_answer)) {
+    return <DynamicMarkdownRenderer content={exercise.correct_answer.join(', ')} />
+  }
+
+  if (exercise.exercise_type === 'true_false' && typeof exercise.correct_answer === 'boolean') {
+    return <span>{exercise.correct_answer ? t('exercise.interactions.trueLabel') : t('exercise.interactions.falseLabel')}</span>
+  }
+
+  return <DynamicMarkdownRenderer content={exercise.correct_option} />
+}
+
 export function ExerciseHistoryTable({ exercises }: ExerciseHistoryTableProps) {
   const t = useTranslations('adaptiveLearning')
   const locale = useLocale()
@@ -130,7 +211,7 @@ export function ExerciseHistoryTable({ exercises }: ExerciseHistoryTableProps) {
             <div>
               <h4 className="mb-3 text-sm font-semibold text-gray-900">{t('history.table.question')}</h4>
               <div className="rounded-lg border border-gray-200 bg-white p-4 text-sm text-gray-800 shadow-sm">
-                <DynamicMarkdownRenderer content={selectedExercise.question} />
+                {renderExercisePrompt(selectedExercise)}
               </div>
             </div>
 
@@ -183,7 +264,7 @@ export function ExerciseHistoryTable({ exercises }: ExerciseHistoryTableProps) {
                 </div>
                 <div className="rounded-lg border border-green-200 bg-green-50/50 p-4 text-sm text-green-900 shadow-sm">
                   <div className="mb-1 text-xs font-bold uppercase tracking-wide text-green-700">{t('history.table.correctAnswerCard')}</div>
-                  <DynamicMarkdownRenderer content={selectedExercise.correct_option} />
+                  {renderCorrectAnswer(selectedExercise, t)}
                 </div>
               </div>
             )}

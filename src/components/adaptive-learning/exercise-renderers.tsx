@@ -247,9 +247,11 @@ export const ExerciseQuestionView = ({
             </div>
           ) : exercise ? (
             <CardContent className="p-5 sm:p-6 md:p-10">
-              <h2 className="mb-8 text-xl font-medium leading-relaxed text-slate-900 tracking-tight">
-                <DynamicMarkdownRenderer content={exercise.question} />
-              </h2>
+              {!(exercise.exercise_type === 'fill_blank' && exercise.sentence) ? (
+                <h2 className="mb-8 text-xl font-medium leading-relaxed text-slate-900 tracking-tight">
+                  <DynamicMarkdownRenderer content={exercise.question} />
+                </h2>
+              ) : null}
               <ExerciseInteraction
                 answerDraft={answerDraft}
                 exercise={exercise}

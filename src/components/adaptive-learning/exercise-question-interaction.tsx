@@ -230,8 +230,10 @@ export function ExerciseInteraction({
   if (exercise.exercise_type === 'fill_blank') {
     return (
       <div className="space-y-4">
-        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 text-base leading-relaxed text-slate-800">
-          <DynamicMarkdownRenderer content={exercise.question} />
+        <div className="space-y-4">
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 text-base leading-relaxed text-slate-800">
+            <DynamicMarkdownRenderer content={exercise.sentence || exercise.question} />
+          </div>
         </div>
         <textarea
           value={answerDraft.blanks?.[0] || ''}

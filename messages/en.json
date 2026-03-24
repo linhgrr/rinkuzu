@@ -542,6 +542,8 @@
         "falseLabel": "False",
         "fillBlankPlaceholder": "Type your answer for the blank",
         "hintPrefix": "Hint",
+        "showHint": "Show hint",
+        "hideHint": "Hide hint",
         "multiCorrectInstruction": "Select all correct answers.",
         "orderingInstruction": "Arrange the items in the correct order.",
         "moveUp": "Up",

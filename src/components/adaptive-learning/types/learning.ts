@@ -60,7 +60,7 @@ export interface Exercise {
   items: string[]
   pairs: MatchingPair[]
   right_items: string[]
-  rubric: string[]
+  rubric?: string[]
   correct_answer?: string | string[] | boolean | Record<string, string> | null
   step: number
   max_steps: number

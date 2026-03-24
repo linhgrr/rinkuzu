@@ -387,19 +387,6 @@ export function ExerciseInteraction({
   if (exercise.exercise_type === 'short_answer') {
     return (
       <div className="space-y-4">
-        {exercise.rubric.length > 0 ? (
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-            <div className="mb-3 text-sm font-semibold text-slate-900">{t('exercise.interactions.shortAnswerRubricTitle')}</div>
-            <ul className="space-y-2 text-sm text-slate-700">
-              {exercise.rubric.map(item => (
-                <li key={item} className="flex gap-2">
-                  <span className="mt-1 h-1.5 w-1.5 rounded-full bg-slate-900" />
-                  <span>{item}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        ) : null}
         <textarea
           value={answerDraft.text || ''}
           onChange={event => onSetTextAnswer(event.target.value)}

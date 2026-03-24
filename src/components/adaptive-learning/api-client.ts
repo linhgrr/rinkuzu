@@ -367,15 +367,64 @@ export async function uploadPdf(
     file: File,
     subjectId?: string,
 ): Promise<PipelineUploadResponse> {
-    const formData = new FormData();
-    formData.append('file', file);
-    if (subjectId) formData.append('subject_id', subjectId);
+    // 1. Get presigned URL
+    const presignedRes = await fetch('/api/storage/presigned-url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            fileName: file.name,
+            contentType: file.type || 'application/pdf',
+            fileSize: file.size,
+            purpose: 'quiz',
+        }),
+    });
 
+    if (!presignedRes.ok) {
+        throw new AdaptiveApiError({
+            message: 'Failed to get upload URL',
+            code: 'presigned_url_failed',
+            status: presignedRes.status,
+        });
+    }
+
+    const data = await presignedRes.json();
+    const { uploadUrl, s3Key } = data.data || {};
+
+    if (!uploadUrl || !s3Key) {
+        throw new AdaptiveApiError({
+            message: 'Invalid presigned url response',
+            code: 'presigned_url_invalid',
+            status: presignedRes.status,
+        });
+    }
+
+    // 2. Upload to S3
+    const uploadRes = await fetch(uploadUrl, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': file.type || 'application/pdf',
+        },
+        body: file,
+    });
+
+    if (!uploadRes.ok) {
+        throw new AdaptiveApiError({
+            message: 'Failed to upload file to S3',
+            code: 's3_upload_failed',
+            status: uploadRes.status,
+        });
+    }
+
+    // 3. Process the file
     return executeRequest<PipelineUploadResponse>(
         '/api/adaptive-learning/pipeline/process',
         'POST',
         {
-            body: formData,
+            body: JSON.stringify({
+                s3Key,
+                filename: file.name,
+                subject_id: subjectId,
+            }),
             timeoutMs: 120_000,
         },
     );

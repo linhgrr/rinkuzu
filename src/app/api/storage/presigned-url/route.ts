@@ -7,8 +7,10 @@ import { s3Client, BUCKET_NAME } from '@/lib/s3';
 
 export const dynamic = 'force-dynamic';
 
-const MAX_FILE_SIZE = 50 * 1024 * 1024;
-const URL_EXPIRES_IN_SECONDS = 300;
+const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+const URL_EXPIRES_IN_SECONDS = 300; // 5 minutes
+
+type UploadPurpose = 'quiz' | 'adaptive';
 
 function sanitizeFileName(name: string): string {
   return name.replace(/[^a-zA-Z0-9._-]/g, '_');
@@ -27,6 +29,7 @@ export async function POST(request: NextRequest) {
     const fileName = String(body?.fileName || '').trim();
     const contentType = String(body?.contentType || 'application/pdf').trim();
     const fileSize = Number(body?.fileSize || 0);
+    const purpose = String(body?.purpose || '').trim() as UploadPurpose;
 
     if (!fileName) {
       return NextResponse.json({ success: false, error: 'fileName is required' }, { status: 400 });
@@ -40,13 +43,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Invalid file size (max 50MB)' }, { status: 400 });
     }
 
+    let prefix = '';
+    if (purpose === 'quiz') {
+      prefix = 'uploads/quiz_extract';
+    } else if (purpose === 'adaptive') {
+      prefix = 'uploads/adaptive_pipeline';
+    } else {
+      return NextResponse.json({ success: false, error: 'Invalid purpose specified' }, { status: 400 });
+    }
+
     const safeName = sanitizeFileName(fileName);
-    const key = `uploads/quiz_extract/${userId}/${Date.now()}-${safeName}`;
+    const key = `${prefix}/${userId}/${Date.now()}-${safeName}`;
 
     const command = new PutObjectCommand({
       Bucket: BUCKET_NAME,
       Key: key,
-      ContentType: 'application/pdf',
+      ContentType: contentType, // using contentType from request, mostly 'application/pdf'
     });
 
     const uploadUrl = await getSignedUrl(s3Client, command, { expiresIn: URL_EXPIRES_IN_SECONDS });

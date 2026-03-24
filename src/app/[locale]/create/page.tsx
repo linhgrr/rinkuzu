@@ -209,13 +209,14 @@ export default function CreateQuizPage() {
   };
 
   const uploadPdfViaPresignedUrl = async (file: File): Promise<{ s3Key: string }> => {
-    const response = await fetch('/api/quiz/upload-url', {
+    const response = await fetch('/api/storage/presigned-url', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         fileName: file.name,
         contentType: file.type || 'application/pdf',
         fileSize: file.size,
+        purpose: 'quiz',
       }),
     });
 

@@ -6,6 +6,7 @@ import { Reorder } from 'framer-motion'
 import { ChevronDown, ChevronUp, GripVertical, Lightbulb } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { DynamicMarkdownRenderer } from '@/components/ui/DynamicMarkdownRenderer'
+import { getExercisePromptSections } from './exercise-prompt'
 import type { Exercise, SubmitAnswerPayload } from './types'
 
 function OptionCard({
@@ -200,6 +201,7 @@ export function ExerciseInteraction({
 }: ExerciseInteractionProps) {
   const t = useTranslations('adaptiveLearning')
   const [isHintOpen, setIsHintOpen] = useState(false)
+  const promptSections = getExercisePromptSections(exercise)
 
   useEffect(() => {
     setIsHintOpen(false)
@@ -209,7 +211,7 @@ export function ExerciseInteraction({
     return (
       <div className="grid gap-3 sm:gap-4">
         <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 text-base leading-relaxed text-slate-800">
-          <DynamicMarkdownRenderer content={exercise.statement || exercise.question} />
+          <DynamicMarkdownRenderer content={promptSections.primary} />
         </div>
         {[
           { label: 'T', value: t('exercise.interactions.trueLabel'), bool: true },
@@ -230,10 +232,8 @@ export function ExerciseInteraction({
   if (exercise.exercise_type === 'fill_blank') {
     return (
       <div className="space-y-4">
-        <div className="space-y-4">
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 text-base leading-relaxed text-slate-800">
-            <DynamicMarkdownRenderer content={exercise.sentence || exercise.question} />
-          </div>
+        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 text-base leading-relaxed text-slate-800">
+          <DynamicMarkdownRenderer content={promptSections.primary} />
         </div>
         <textarea
           value={answerDraft.blanks?.[0] || ''}

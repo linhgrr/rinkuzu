@@ -7,6 +7,7 @@ import { HiArrowRight, HiBookOpen, HiLightBulb, HiOutlineX } from '@/components/
 import { DynamicMarkdownRenderer } from '@/components/ui/DynamicMarkdownRenderer'
 import { TextShimmer } from '@/components/ui/text-shimmer'
 import { ExerciseInteraction } from './exercise-question-interaction'
+import { getExercisePromptSections } from './exercise-prompt'
 import type { Exercise, NextConcept, SubmitAnswerPayload, TheoryData } from './types'
 
 type TranslateFn = ((key: string, values?: Record<string, any>) => string) & {
@@ -57,6 +58,15 @@ type TheoryViewProps = {
   loadingExercise: boolean
   onStartExercise: () => void
   t: TranslateFn
+}
+
+function getExerciseHeaderContent(exercise: Exercise): string | null {
+  const promptSections = getExercisePromptSections(exercise)
+  if (exercise.exercise_type === 'true_false' || exercise.exercise_type === 'fill_blank') {
+    return promptSections.lead
+  }
+
+  return promptSections.primary
 }
 
 export const ExerciseTheoryView = ({
@@ -247,9 +257,9 @@ export const ExerciseQuestionView = ({
             </div>
           ) : exercise ? (
             <CardContent className="p-5 sm:p-6 md:p-10">
-              {!(exercise.exercise_type === 'fill_blank' && exercise.sentence) ? (
+              {getExerciseHeaderContent(exercise) ? (
                 <h2 className="mb-8 text-xl font-medium leading-relaxed text-slate-900 tracking-tight">
-                  <DynamicMarkdownRenderer content={exercise.question} />
+                  <DynamicMarkdownRenderer content={getExerciseHeaderContent(exercise) || ''} />
                 </h2>
               ) : null}
               <ExerciseInteraction

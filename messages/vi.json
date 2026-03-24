@@ -542,6 +542,8 @@
         "falseLabel": "Sai",
         "fillBlankPlaceholder": "Nhập đáp án cho chỗ trống",
         "hintPrefix": "Gợi ý",
+        "showHint": "Hiện gợi ý",
+        "hideHint": "Ẩn gợi ý",
         "multiCorrectInstruction": "Chọn tất cả đáp án đúng.",
         "orderingInstruction": "Sắp xếp các mục theo thứ tự chính xác.",
         "moveUp": "Lên",

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { Reorder } from 'framer-motion'
-import { ChevronDown, ChevronUp, GripVertical } from 'lucide-react'
+import { ChevronDown, ChevronUp, GripVertical, Lightbulb } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { DynamicMarkdownRenderer } from '@/components/ui/DynamicMarkdownRenderer'
 import type { Exercise, SubmitAnswerPayload } from './types'
@@ -199,6 +199,11 @@ export function ExerciseInteraction({
   optionEntries,
 }: ExerciseInteractionProps) {
   const t = useTranslations('adaptiveLearning')
+  const [isHintOpen, setIsHintOpen] = useState(false)
+
+  useEffect(() => {
+    setIsHintOpen(false)
+  }, [exercise.exercise_id, exercise.hint])
 
   if (exercise.exercise_type === 'true_false') {
     return (
@@ -236,8 +241,29 @@ export function ExerciseInteraction({
           className="min-h-[120px] w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none transition-colors focus:border-teal-600"
         />
         {exercise.hint ? (
-          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-            {t('exercise.interactions.hintPrefix')}: {exercise.hint}
+          <div className="overflow-hidden rounded-xl border border-amber-200 bg-amber-50">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setIsHintOpen(open => !open)}
+              aria-expanded={isHintOpen}
+              className="flex w-full items-center justify-between rounded-none px-4 py-3 text-left text-sm font-medium text-amber-900 hover:bg-amber-100/80"
+            >
+              <span className="flex items-center gap-2">
+                <Lightbulb className="h-4 w-4 shrink-0" />
+                <span>{isHintOpen ? t('exercise.interactions.hideHint') : t('exercise.interactions.showHint')}</span>
+              </span>
+              {isHintOpen ? <ChevronUp className="h-4 w-4 shrink-0" /> : <ChevronDown className="h-4 w-4 shrink-0" />}
+            </Button>
+            <div
+              className={`grid transition-[grid-template-rows] duration-200 ease-out ${isHintOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}
+            >
+              <div className="overflow-hidden">
+                <div className="border-t border-amber-200 px-4 py-3 text-sm text-amber-900">
+                  <DynamicMarkdownRenderer content={exercise.hint} />
+                </div>
+              </div>
+            </div>
           </div>
         ) : null}
       </div>

@@ -51,11 +51,16 @@ export function Testimonials() {
 
           {/* User Photos Grid */}
           <div className="flex-1 grid grid-cols-2 gap-4">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="relative aspect-square rounded-3xl overflow-hidden group">
+            {[
+              { name: 'Student from Hanoi University', seed: 'user1' },
+              { name: 'Teacher using RinKuzu', seed: 'user2' },
+              { name: 'Self-learner using RinKuzu', seed: 'user3' },
+              { name: 'Course creator on RinKuzu', seed: 'user4' },
+            ].map((user) => (
+              <div key={user.seed} className="relative aspect-square rounded-3xl overflow-hidden group">
                 <Image
-                  src={`https://i.pravatar.cc/300?u=user${i}`}
-                  alt=""
+                  src={`https://i.pravatar.cc/300?u=${user.seed}`}
+                  alt={user.name}
                   fill
                   className="object-cover group-hover:scale-110 transition-transform duration-500"
                 />

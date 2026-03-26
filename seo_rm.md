@@ -160,6 +160,17 @@ Mobile users can only see "Login" and "Get Started" — no way to reach `/pricin
 | 12 | Remove duplicate SoftwareApplication schema | ✅ Done (`GuestLanding.tsx`) | 5 min |
 | 13 | Add Organization description field | ✅ Done (`structured-data.ts`) | 5 min |
 
+## 🟡 Phase 2 — On-Page Optimization (Applied)
+
+| # | Fix | Status | Effort |
+|---|---|---|---|
+| 14 | Add `HowTo` schema on "How It Works" section | ✅ Done (`HowItWorks.tsx`) | 15 min |
+| 15 | Expand FAQ accordion from 4 → 15 questions | ✅ Done (`FAQ.tsx` + translations) | 30 min |
+| 16 | Add pricing page rich content + FAQ + schema | ✅ Done (`pricing/page.tsx`) | 1 hr |
+| 17 | Fix fake testimonial "John Doe" placeholder | ✅ Done (`Testimonials.tsx` — descriptive alt text) | 5 min |
+| 18 | Create `/en/sitemap.xml` locale sitemap | ✅ Done (`sitemap.xml/route.ts`) | 30 min |
+| 19 | Remove orphaned `footer.address` translation keys | ✅ Done (en + vi `landing.json`) | 2 min |
+
 ---
 
 ## ✅ What's Working Well

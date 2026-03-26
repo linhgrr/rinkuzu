@@ -118,9 +118,11 @@
     "links": {
       "title": "Liên kết",
       "home": "Trang chủ",
+      "about": "Giới thiệu",
       "features": "Tính năng",
       "pricing": "Bảng giá",
-      "faq": "FAQ"
+      "faq": "FAQ",
+      "blog": "Blog"
     },
     "legal": {
       "title": "Pháp lý",

@@ -28,9 +28,10 @@ export function Footer() {
             <h4 className="font-bold text-[#1e242c] mb-6 uppercase tracking-wider text-sm">{t('links.title')}</h4>
             <ul className="space-y-4">
               <li><Link href="/" className="text-gray-500 hover:text-teal-600 transition-colors">{t('links.home')}</Link></li>
-              <li><Link href="#features" className="text-gray-500 hover:text-teal-600 transition-colors">{t('links.features')}</Link></li>
+              <li><Link href="/about" className="text-gray-500 hover:text-teal-600 transition-colors">{t('links.about')}</Link></li>
               <li><Link href="/pricing" className="text-gray-500 hover:text-teal-600 transition-colors">{t('links.pricing')}</Link></li>
               <li><Link href="/faq" className="text-gray-500 hover:text-teal-600 transition-colors">{t('links.faq')}</Link></li>
+              <li><Link href="/blog" className="text-gray-500 hover:text-teal-600 transition-colors">{t('links.blog')}</Link></li>
             </ul>
           </div>
 

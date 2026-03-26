@@ -118,9 +118,11 @@
     "links": {
       "title": "Links",
       "home": "Home",
+      "about": "About",
       "features": "Features",
       "pricing": "Pricing",
-      "faq": "FAQ"
+      "faq": "FAQ",
+      "blog": "Blog"
     },
     "legal": {
       "title": "Legal",

@@ -194,7 +194,7 @@ Mobile users can only see "Login" and "Get Started" — no way to reach `/pricin
 
 ### Phase 1: Foundation Fix (Week 1) — Fix Critical Misconfigurations
 
-- [ ] **Set `NEXT_PUBLIC_SITE_URL=https://www.rinkuzu.app`** in Vercel env vars → redeploy
+- [x] **Set `NEXT_PUBLIC_SITE_URL=https://www.rinkuzu.app`** in Vercel env vars → redeploy ✅ (confirmed live: robots.txt Host + Sitemap now correct, sitemap 0 old-domain URLs)
 - [ ] Remove or replace fake address + phone in footer (Footer.tsx)
 - [ ] Fix `$NaN` pricing display — validate billing API response
 - [ ] Remove dead social link icons from footer

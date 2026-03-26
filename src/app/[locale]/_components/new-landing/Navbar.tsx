@@ -1,13 +1,15 @@
 'use client';
 
 import { useState } from 'react';
-import { ChevronDown, Menu, X } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 
 const navLinks = [
   { label: 'AI Quiz Generator', href: '/adaptive-learning' },
   { label: 'Knowledge Graph Learning', href: '/adaptive-learning' },
+  { label: 'About', href: '/about' },
+  { label: 'Blog', href: '/blog' },
   { label: 'Pricing', href: '/pricing' },
   { label: 'FAQ', href: '/faq' },
 ];
@@ -15,6 +17,8 @@ const navLinks = [
 const mobileNavLinks = [
   { label: 'AI Quiz Generator', href: '/adaptive-learning' },
   { label: 'Knowledge Graph Learning', href: '/adaptive-learning' },
+  { label: 'About', href: '/about' },
+  { label: 'Blog', href: '/blog' },
   { label: 'Pricing', href: '/pricing' },
   { label: 'FAQ', href: '/faq' },
   { label: 'Login', href: '/login' },
@@ -44,10 +48,9 @@ const Navbar = ({ isAuthenticated = false }: { isAuthenticated?: boolean }) => {
                 key={link.label}
                 href={link.href}
                 prefetch={false}
-                className="flex items-center gap-[14px] text-[14px] font-medium text-white hover:opacity-80 transition-opacity"
+                className="text-[14px] font-medium text-white hover:opacity-80 transition-opacity"
               >
                 {link.label}
-                <ChevronDown size={14} className="text-white" />
               </Link>
             ))}
           </div>

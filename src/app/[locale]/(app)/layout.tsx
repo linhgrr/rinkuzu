@@ -5,6 +5,7 @@ import Providers from '@/app/providers';
 import { getScopedMessages } from '@/i18n/messages';
 import { APP_MESSAGE_NAMESPACES } from '@/i18n/namespaces';
 import BottomNav from '@/components/BottomNav';
+import { GlobalFooter } from '@/components/GlobalFooter';
 import { MainLayoutWrapper } from '@/components/MainLayoutWrapper';
 import { authOptions } from '@/lib/auth';
 
@@ -34,6 +35,7 @@ export default async function AppLayout({
     <NextIntlClientProvider messages={messages}>
       <Providers session={session}>
         <MainLayoutWrapper>{children}</MainLayoutWrapper>
+        <GlobalFooter />
         <BottomNav />
         <FloatingDraftProgress />
         <PWAInstaller />

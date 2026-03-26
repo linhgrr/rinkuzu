@@ -20,6 +20,7 @@ export const APP_MESSAGE_NAMESPACES = [
   'errors',
   'explore',
   'flashcard',
+  'landing',
   'nav',
   'premium',
   'profile',

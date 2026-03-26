@@ -3,6 +3,7 @@ import Navigation from '@/components/Navigation';
 import { Link } from '@/i18n/routing';
 import { ROUTES } from '@/shared/constants';
 import { Card } from '@/components/ui/Card';
+import { getScopedMessages } from '@/i18n/messages';
 import { StatOverview } from '@/components/dashboard/StatOverview';
 import { StreakFreezeCard } from '@/components/dashboard/StreakFreezeCard';
 import { LevelBadge } from '@/components/dashboard/LevelBadge';
@@ -60,13 +61,6 @@ interface DashboardPageShellProps {
   yourQuizzes: DashboardQuiz[];
 }
 
-function formatMessage(template: string, params: Record<string, string | number>) {
-  return Object.entries(params).reduce(
-    (result, [key, value]) => result.replace(`{${key}}`, String(value)),
-    template
-  );
-}
-
 export async function DashboardPageShell({
   locale,
   userEmail,
@@ -75,10 +69,12 @@ export async function DashboardPageShell({
   quizzes,
   yourQuizzes,
 }: DashboardPageShellProps) {
-  const [tDashboard, tCommon] = await Promise.all([
+  const [tDashboard, tCommon, dashboardMessages] = await Promise.all([
     getTranslations({ locale, namespace: 'dashboard' }),
     getTranslations({ locale, namespace: 'common' }),
+    getScopedMessages(locale, ['dashboard']),
   ]);
+  const dashboardTemplates = dashboardMessages.dashboard as Record<string, string>;
 
   const userName = userEmail?.split('@')[0] || 'User';
   const weeklyActivity = stats?.weeklyActivity ?? {};
@@ -269,7 +265,7 @@ export async function DashboardPageShell({
                   />
                 </div>
                 <p className="mt-2 text-center text-xs text-slate-500">
-                  {formatMessage(tDashboard('xpNeeded'), {
+                  {tDashboard('xpNeeded', {
                     xp: 100 - stats.levelProgress,
                     level: stats.level + 1,
                   })}
@@ -292,9 +288,9 @@ export async function DashboardPageShell({
               xp={stats.xp}
               labels={{
                 streakFreeze: tDashboard('streakFreeze'),
-                streakFreezeEquipped: tDashboard('streakFreezeEquipped'),
+                streakFreezeEquipped: dashboardTemplates.streakFreezeEquipped,
                 streakFreezeNotEquipped: tDashboard('streakFreezeNotEquipped'),
-                buyXP: tDashboard('buyXP'),
+                buyXP: dashboardTemplates.buyXP,
                 maxedOut: tDashboard('maxedOut'),
                 failedToBuyFreeze: tDashboard('failedToBuyFreeze'),
                 failedToConnectServer: tDashboard('failedToConnectServer'),

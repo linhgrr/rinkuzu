@@ -18,11 +18,20 @@ export function buildOrganizationSchema() {
     name: 'RinKuzu',
     url: siteUrl.origin,
     logo: `${siteUrl.origin}/icons/icon-512x512.png`,
+    description:
+      'RinKuzu is an AI-powered adaptive learning platform that transforms PDF documents into personalized quiz-based learning journeys using knowledge graphs and Bloom\'s Taxonomy.',
     contactPoint: {
       '@type': 'ContactPoint',
       email: 'support@rinkuzu.com',
       contactType: 'customer support',
     },
+    // sameAs: uncomment when real social accounts are created
+    // 'sameAs': [
+    //   'https://twitter.com/rinkuzu',
+    //   'https://facebook.com/rinkuzu',
+    //   'https://linkedin.com/company/rinkuzu',
+    //   'https://instagram.com/rinkuzu',
+    // ],
   };
 }
 
@@ -81,6 +90,8 @@ export function buildSoftwareApplicationSchema(locale: Locale | string) {
       '@type': 'Offer',
       price: '0',
       priceCurrency: 'USD',
+      availability: 'https://schema.org/IsAccessibleForFree',
+      url: canonicalFor(locale, '/pricing'),
     },
     description:
       'Adaptive learning platform using AI to build personalized learning paths from PDF materials.',

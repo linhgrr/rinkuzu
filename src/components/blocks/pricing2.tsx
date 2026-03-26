@@ -113,13 +113,17 @@ const Pricing2 = ({
                                     <span className="text-4xl font-bold">
                                         {isYearly ? plan.yearlyPrice : plan.monthlyPrice}
                                     </span>
-                                    <p className="text-muted-foreground">
-                                        Billed{" "}
-                                        {isYearly
-                                            ? `$${Number(plan.yearlyPrice.slice(1)) * 12}`
-                                            : `$${Number(plan.monthlyPrice.slice(1)) * 12}`}{" "}
-                                        annually
-                                    </p>
+                                    {(() => {
+                                        const priceStr = isYearly ? plan.yearlyPrice : plan.monthlyPrice;
+                                        const numericMatch = priceStr.match(/^\$(\d+(\.\d{2})?)$/);
+                                        if (!numericMatch) return null;
+                                        const annualAmount = (parseFloat(numericMatch[1]) * 12).toFixed(2);
+                                        return (
+                                            <p className="text-muted-foreground">
+                                                Billed ${annualAmount} annually
+                                            </p>
+                                        );
+                                    })()}
                                 </CardHeader>
                                 <CardContent>
                                     <Separator className="mb-6" />

@@ -16,6 +16,16 @@ export default function robots(): MetadataRoute.Robots {
 
   return {
     rules: [
+      // AI / LLM crawlers — explicit welcome
+      { userAgent: 'GPTBot', allow: '/', disallow: [] },
+      { userAgent: 'ChatGPT-User', allow: '/', disallow: [] },
+      { userAgent: 'Claude-WebBot', allow: '/', disallow: [] },
+      { userAgent: 'Google-Extended', allow: '/', disallow: [] },
+      { userAgent: 'OAI-SearchBot', allow: '/', disallow: [] },
+      { userAgent: 'Diffbot', allow: '/', disallow: [] },
+      { userAgent: 'Bytespider', allow: '/', disallow: [] },
+      { userAgent: 'Applebot-Extended', allow: '/', disallow: [] },
+      // Default — allow public, block private
       {
         userAgent: '*',
         allow: '/',

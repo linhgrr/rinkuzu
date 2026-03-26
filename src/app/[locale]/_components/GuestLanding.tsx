@@ -1,8 +1,6 @@
 import type { CSSProperties } from 'react';
 import Link from 'next/link';
 import { HeroSection } from './new-landing';
-import { JsonLd } from '@/components/seo/JsonLd';
-import { siteUrl } from '@/lib/seo';
 
 interface Quiz {
   _id: string;
@@ -21,21 +19,6 @@ interface GuestLandingProps {
 }
 
 export function GuestLanding({ quizzes, isAuthenticated = false }: GuestLandingProps) {
-  const softwareSchema = {
-    '@context': 'https://schema.org',
-    '@type': 'SoftwareApplication',
-    name: 'RinKuzu',
-    applicationCategory: 'EducationalApplication',
-    operatingSystem: 'Web',
-    description: 'AI quiz generator from PDFs with knowledge graph learning and adaptive practice.',
-    url: siteUrl.origin,
-    offers: {
-      '@type': 'Offer',
-      price: '0',
-      priceCurrency: 'USD',
-    },
-  };
-
   return (
     <div
       className="min-h-screen bg-black"
@@ -45,7 +28,6 @@ export function GuestLanding({ quizzes, isAuthenticated = false }: GuestLandingP
         } as CSSProperties
       }
     >
-      <JsonLd id="home-software-schema" data={softwareSchema} />
       <main>
         <HeroSection isAuthenticated={isAuthenticated} />
         <section className="bg-[#fbfbfd] text-[#1d1d1f]">

@@ -1,6 +1,9 @@
 import type { Metadata } from 'next';
 import { defaultLocale, locales, type Locale } from '@/i18n/config';
 
+// ⚠️  IMPORTANT: Set NEXT_PUBLIC_SITE_URL=https://www.rinkuzu.app in Vercel environment variables.
+// This value is used for all canonical URLs, Open Graph tags, hreflangs, sitemaps, and JSON-LD schemas.
+// If unset, this fallback is used (Vercel preview domain — WRONG for production).
 const FALLBACK_SITE_URL = 'https://quizz-ck.vercel.app';
 
 function trimTrailingSlash(url: string): string {

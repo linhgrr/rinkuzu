@@ -52,7 +52,7 @@ const HeroSection = ({ isAuthenticated = false }: { isAuthenticated?: boolean })
         <Navbar isAuthenticated={isAuthenticated} />
 
         {/* Hero content */}
-        <div className="flex-1 flex flex-col items-center justify-start pt-[200px] md:pt-[280px] pb-[102px] px-6">
+        <div className="flex-1 flex flex-col items-center justify-start pt-[120px] md:pt-[280px] pb-[102px] px-6">
           <div className="flex flex-col items-center gap-[40px]">
             {/* Badge */}
             <div

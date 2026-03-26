@@ -410,7 +410,8 @@
         "yourAnswerCard": "Câu trả lời của bạn",
         "correctAnswerCard": "Đáp án đúng",
         "noAnswer": "Chưa có câu trả lời",
-        "explanation": "Giải thích"
+        "explanation": "Giải thích",
+        "rubric": "Tiêu chí chấm"
       }
     },
     "howItWorksTitle": "Cách thức hoạt động",

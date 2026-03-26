@@ -11,7 +11,7 @@ import {
   HiOutlineEye,
   HiOutlineX,
 } from '@/components/icons'
-import { getExercisePromptSections } from './exercise-prompt'
+import { buildExercisePromptText, getExercisePromptSections } from './exercise-prompt'
 import { BLOOM_LABELS } from './types'
 import type { ExerciseHistoryFull } from './types'
 import { formatSessionHistoryDate } from './session-history-utils'
@@ -31,6 +31,32 @@ function renderExercisePrompt(exercise: ExerciseHistoryFull) {
         <DynamicMarkdownRenderer content={promptSections.primary} />
       </div>
     </div>
+  )
+}
+
+function renderAnswerText(value: string | null | undefined, t: ReturnType<typeof useTranslations<'adaptiveLearning'>>) {
+  const normalizedValue = value?.trim()
+  if (!normalizedValue) {
+    return <span>{t('history.table.noAnswer')}</span>
+  }
+
+  if (normalizedValue === 'True') {
+    return <span>{t('exercise.interactions.trueLabel')}</span>
+  }
+
+  if (normalizedValue === 'False') {
+    return <span>{t('exercise.interactions.falseLabel')}</span>
+  }
+
+  return <DynamicMarkdownRenderer content={normalizedValue} />
+}
+
+function getSelectedChoiceKeys(userAnswer: string | null | undefined) {
+  return new Set(
+    (userAnswer || '')
+      .split(',')
+      .map(choice => choice.trim().toUpperCase())
+      .filter(Boolean),
   )
 }
 
@@ -85,6 +111,77 @@ function renderCorrectAnswer(exercise: ExerciseHistoryFull, t: ReturnType<typeof
   return <DynamicMarkdownRenderer content={exercise.correct_option} />
 }
 
+function renderSelectedChoicesSummary(exercise: ExerciseHistoryFull, t: ReturnType<typeof useTranslations<'adaptiveLearning'>>) {
+  const selectedChoices = Array.from(getSelectedChoiceKeys(exercise.user_answer))
+
+  if (!selectedChoices.length) {
+    return <span>{t('history.table.noAnswer')}</span>
+  }
+
+  return (
+    <div className="flex flex-wrap gap-2">
+      {selectedChoices.map(choice => {
+        const optionValue = exercise.options?.[choice]
+        return (
+          <div key={choice} className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs text-slate-700">
+            <span className="font-mono font-semibold text-slate-500">{choice}</span>
+            {optionValue ? <DynamicMarkdownRenderer content={optionValue} /> : null}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+function renderSelectedOptions(
+  exercise: ExerciseHistoryFull,
+  t: ReturnType<typeof useTranslations<'adaptiveLearning'>>,
+) {
+  const selectedChoices = getSelectedChoiceKeys(exercise.user_answer)
+
+  return (
+    <div className="space-y-2.5">
+      {Object.entries(exercise.options || {}).map(([key, value]) => {
+        const isUserAnswer = selectedChoices.has(key)
+        const isCorrect = exercise.exercise_type === 'multi_correct'
+          ? Array.isArray(exercise.correct_answer) && exercise.correct_answer.includes(key)
+          : key === exercise.correct_option
+
+        const optionClass = isCorrect
+          ? 'border-green-200 bg-green-50/50 text-green-900'
+          : isUserAnswer
+            ? 'border-red-200 bg-red-50/50 text-red-900'
+            : 'border-gray-200 bg-white text-gray-700'
+
+        const badgeTone = isCorrect
+          ? 'bg-green-100 text-green-700'
+          : 'bg-red-100 text-red-700'
+
+        return (
+          <div key={key} className={`flex items-start gap-3 rounded-lg border p-3.5 text-sm transition-colors ${optionClass}`}>
+            <span className={`mt-0.5 w-6 shrink-0 font-bold ${isCorrect ? 'text-green-700' : isUserAnswer ? 'text-red-700' : 'text-gray-500'}`}>{key}.</span>
+            <span className="flex-1 leading-relaxed">
+              <DynamicMarkdownRenderer content={value} />
+            </span>
+            {isCorrect ? (
+              <div className={`mt-0.5 flex shrink-0 items-center gap-1.5 rounded px-2 py-0.5 text-xs font-bold ${badgeTone}`}>
+                <HiCheck className="h-3.5 w-3.5" />
+                {t('history.table.correctBadge')}
+              </div>
+            ) : null}
+            {isUserAnswer && !isCorrect ? (
+              <div className={`mt-0.5 flex shrink-0 items-center gap-1.5 rounded px-2 py-0.5 text-xs font-bold ${badgeTone}`}>
+                <HiOutlineX className="h-3.5 w-3.5" />
+                {t('history.table.yourAnswerBadge')}
+              </div>
+            ) : null}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 export function ExerciseHistoryTable({ exercises }: ExerciseHistoryTableProps) {
   const t = useTranslations('adaptiveLearning')
   const locale = useLocale()
@@ -132,8 +229,10 @@ export function ExerciseHistoryTable({ exercises }: ExerciseHistoryTableProps) {
                     {getBloomLabel(exercise.bloom_level)}
                   </span>
                 </td>
-                <td className="max-w-[280px] truncate px-5 py-3 text-gray-600" title={exercise.question}>
-                  {exercise.question}
+                <td className="max-w-[280px] px-5 py-3 text-gray-600" title={buildExercisePromptText(exercise)}>
+                  <div className="line-clamp-2 text-sm [&_p]:m-0 [&_p]:inline">
+                    <DynamicMarkdownRenderer content={buildExercisePromptText(exercise)} />
+                  </div>
                 </td>
                 <td className="flex justify-center px-5 py-3">
                   {exercise.is_correct == null ? (
@@ -199,51 +298,25 @@ export function ExerciseHistoryTable({ exercises }: ExerciseHistoryTableProps) {
             </div>
 
             {Object.keys(selectedExercise.options || {}).length > 0 ? (
-              <div>
+              <div className="space-y-3">
                 <h4 className="mb-3 text-sm font-semibold text-gray-900">{t('history.table.options')}</h4>
-                <div className="space-y-2.5">
-                  {Object.entries(selectedExercise.options || {}).map(([key, value]) => {
-                    const isUserAnswer = key === selectedExercise.user_answer
-                    const isCorrect = key === selectedExercise.correct_option
-
-                    const optionClass = isCorrect
-                      ? 'border-green-200 bg-green-50/50 text-green-900'
-                      : isUserAnswer
-                        ? 'border-red-200 bg-red-50/50 text-red-900'
-                        : 'border-gray-200 bg-white text-gray-700'
-
-                    const badgeTone = isCorrect
-                      ? 'bg-green-100 text-green-700'
-                      : 'bg-red-100 text-red-700'
-
-                    return (
-                      <div key={key} className={`flex items-start gap-3 rounded-lg border p-3.5 text-sm transition-colors ${optionClass}`}>
-                        <span className={`mt-0.5 w-6 shrink-0 font-bold ${isCorrect ? 'text-green-700' : isUserAnswer ? 'text-red-700' : 'text-gray-500'}`}>{key}.</span>
-                        <span className="flex-1 leading-relaxed">
-                          <DynamicMarkdownRenderer content={value} />
-                        </span>
-                        {isCorrect ? (
-                          <div className={`mt-0.5 flex shrink-0 items-center gap-1.5 rounded px-2 py-0.5 text-xs font-bold ${badgeTone}`}>
-                            <HiCheck className="h-3.5 w-3.5" />
-                            {t('history.table.correctBadge')}
-                          </div>
-                        ) : null}
-                        {isUserAnswer && !isCorrect ? (
-                          <div className={`mt-0.5 flex shrink-0 items-center gap-1.5 rounded px-2 py-0.5 text-xs font-bold ${badgeTone}`}>
-                            <HiOutlineX className="h-3.5 w-3.5" />
-                            {t('history.table.yourAnswerBadge')}
-                          </div>
-                        ) : null}
-                      </div>
-                    )
-                  })}
+                {renderSelectedOptions(selectedExercise, t)}
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-lg border border-gray-200 bg-white p-4 text-sm text-gray-800 shadow-sm">
+                    <div className="mb-1 text-xs font-bold uppercase tracking-wide text-gray-500">{t('history.table.yourAnswerCard')}</div>
+                    {renderSelectedChoicesSummary(selectedExercise, t)}
+                  </div>
+                  <div className="rounded-lg border border-green-200 bg-green-50/50 p-4 text-sm text-green-900 shadow-sm">
+                    <div className="mb-1 text-xs font-bold uppercase tracking-wide text-green-700">{t('history.table.correctAnswerCard')}</div>
+                    {renderCorrectAnswer(selectedExercise, t)}
+                  </div>
                 </div>
               </div>
             ) : (
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="rounded-lg border border-gray-200 bg-white p-4 text-sm text-gray-800 shadow-sm">
                   <div className="mb-1 text-xs font-bold uppercase tracking-wide text-gray-500">{t('history.table.yourAnswerCard')}</div>
-                  <div>{selectedExercise.user_answer || t('history.table.noAnswer')}</div>
+                  <div>{renderAnswerText(selectedExercise.user_answer, t)}</div>
                 </div>
                 <div className="rounded-lg border border-green-200 bg-green-50/50 p-4 text-sm text-green-900 shadow-sm">
                   <div className="mb-1 text-xs font-bold uppercase tracking-wide text-green-700">{t('history.table.correctAnswerCard')}</div>
@@ -251,6 +324,24 @@ export function ExerciseHistoryTable({ exercises }: ExerciseHistoryTableProps) {
                 </div>
               </div>
             )}
+
+            {selectedExercise.exercise_type === 'short_answer' && selectedExercise.rubric?.length ? (
+              <div>
+                <h4 className="mb-3 text-sm font-semibold text-gray-900">{t('history.table.rubric')}</h4>
+                <div className="rounded-lg border border-amber-200 bg-amber-50/70 p-4 text-sm text-amber-950 shadow-sm">
+                  <ul className="space-y-2">
+                    {selectedExercise.rubric.map((criterion, index) => (
+                      <li key={`${criterion}-${index}`} className="flex gap-2">
+                        <span className="font-mono text-xs text-amber-700">{index + 1}.</span>
+                        <span className="flex-1">
+                          <DynamicMarkdownRenderer content={criterion} />
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            ) : null}
 
             {selectedExercise.explanation ? (
               <div>

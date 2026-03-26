@@ -132,6 +132,28 @@ const nextConfig = {
             key: 'Referrer-Policy',
             value: 'strict-origin-when-cross-origin',
           },
+          {
+            key: 'Permissions-Policy',
+            // Control sensitive browser features: disable camera/mic/location/geolocation/payment
+            value: 'camera=(), microphone=(), geolocation=(), payment=()',
+          },
+          {
+            key: 'Content-Security-Policy',
+            // Note: 'unsafe-inline' and 'unsafe-eval' are required for Next.js / PWA service workers.
+            // Review and tighten this policy before launch. Use report-uri or report-to for violations.
+            value: [
+              "default-src 'self'",
+              "script-src 'self' 'unsafe-eval' 'unsafe-inline' 'strict-dynamic' https://www.googletagmanager.com https://www.google-analytics.com",
+              "style-src 'self' 'unsafe-inline'",
+              "img-src 'self' data: https: blob:",
+              "font-src 'self' data:",
+              "connect-src 'self' https://www.googletagmanager.com https://www.google-analytics.com",
+              "frame-src 'none'",
+              "object-src 'none'",
+              "base-uri 'self'",
+              "form-action 'self'",
+            ].join('; '),
+          },
         ],
       },
       {

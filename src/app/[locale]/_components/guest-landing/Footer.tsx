@@ -2,7 +2,7 @@
 
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
-import { HiOutlineMail, HiOutlinePhone, HiOutlineLocationMarker } from '@/components/icons'
+import { HiOutlineMail } from '@/components/icons'
 import { NavLogo } from '@/components/Navigation/NavLogo'
 
 export function Footer() {
@@ -16,17 +16,9 @@ export function Footer() {
           <div className="space-y-6">
             <NavLogo />
             <div className="space-y-4 text-gray-500 text-sm">
-              <div className="flex items-start gap-3">
-                <HiOutlineLocationMarker className="w-5 h-5 text-teal-600 shrink-0" aria-hidden="true" />
-                <p>{t('address')}</p>
-              </div>
-              <div className="flex items-center gap-3">
-                <HiOutlinePhone className="w-5 h-5 text-teal-600 shrink-0" aria-hidden="true" />
-                <p>+1 (234) 567-890</p>
-              </div>
               <div className="flex items-center gap-3">
                 <HiOutlineMail className="w-5 h-5 text-teal-600 shrink-0" aria-hidden="true" />
-                <p>support@rinkuzu.com</p>
+                <a href="mailto:support@rinkuzu.com" className="hover:text-teal-600 transition-colors">support@rinkuzu.com</a>
               </div>
             </div>
           </div>
@@ -76,24 +68,25 @@ export function Footer() {
           <p className="text-gray-600 text-sm">
             {t('copyright')}
           </p>
-          <div className="flex items-center gap-6">
-            {[
-              { name: 'Twitter', url: 'https://twitter.com' },
-              { name: 'Facebook', url: 'https://facebook.com' },
-              { name: 'LinkedIn', url: 'https://linkedin.com' },
-              { name: 'Instagram', url: 'https://instagram.com' }
-            ].map((social) => (
-              <a
-                key={social.name}
-                href={social.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-gray-600 hover:text-[#1e242c] transition-colors text-sm focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:rounded"
-              >
-                {social.name}
-              </a>
-            ))}
-          </div>
+          {/*
+          Social links placeholder — add real brand accounts when available:
+          {[
+            { name: 'Twitter', url: 'https://twitter.com/rinkuzu' },
+            { name: 'Facebook', url: 'https://facebook.com/rinkuzu' },
+            { name: 'LinkedIn', url: 'https://linkedin.com/company/rinkuzu' },
+            { name: 'Instagram', url: 'https://instagram.com/rinkuzu' }
+          ].map((social) => (
+            <a
+              key={social.name}
+              href={social.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-gray-600 hover:text-[#1e242c] transition-colors text-sm focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:rounded"
+            >
+              {social.name}
+            </a>
+          ))}
+          */}
         </div>
       </div>
     </footer>

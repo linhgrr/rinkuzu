@@ -2,12 +2,43 @@
 
 import { useTranslations } from 'next-intl'
 import { HiOutlineUserAdd, HiOutlineCloudUpload, HiOutlineAcademicCap, HiOutlineLogin } from '@/components/icons'
+import { JsonLd } from '@/components/seo/JsonLd'
 import Image from 'next/image'
+
+const howToSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'HowTo',
+  name: 'How to Use RinKuzu — AI-Powered Adaptive Learning',
+  description:
+    'Learn how to transform any PDF into a personalized adaptive learning journey using RinKuzu\'s AI quiz generator, knowledge graphs, and Bloom\'s Taxonomy mastery tracking.',
+  step: [
+    {
+      '@type': 'HowToStep',
+      name: 'Sign Up for Free',
+      text: 'Create a free RinKuzu account in seconds. No credit card required.',
+      url: '/register',
+    },
+    {
+      '@type': 'HowToStep',
+      name: 'Upload Your PDF Materials',
+      text: 'Upload lecture notes, textbooks, or any PDF document. RinKuzu\'s AI analyzes the content and extracts key concepts automatically.',
+      url: '/adaptive-learning/upload',
+    },
+    {
+      '@type': 'HowToStep',
+      name: 'Start Your Adaptive Learning Journey',
+      text: 'RinKuzu builds a knowledge graph, identifies prerequisite relationships, and creates personalized quiz sessions matching your current level. Track your mastery across Bloom\'s cognitive taxonomy levels.',
+      url: '/adaptive-learning',
+    },
+  ],
+}
 
 export function HowItWorks() {
   const t = useTranslations('landing.howItWorks')
 
   return (
+    <>
+      <JsonLd id="howto-schema" data={howToSchema} />
     <section className="py-16 md:py-24 bg-white overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col lg:flex-row items-center justify-between gap-12 lg:gap-20">
@@ -87,7 +118,7 @@ export function HowItWorks() {
               <div className="flex -space-x-3 items-center pr-2">
                 {[1, 2, 3].map((i) => (
                   <div key={i} className="w-12 h-12 rounded-full border-2 border-white overflow-hidden bg-gray-100">
-                    <Image src={`https://i.pravatar.cc/100?u=how${i}`} alt="" width={48} height={48} />
+                    <Image src={`https://i.pravatar.cc/100?u=how${i}`} alt="Student using RinKuzu" width={48} height={48} />
                   </div>
                 ))}
               </div>
@@ -102,5 +133,6 @@ export function HowItWorks() {
         </div>
       </div>
     </section>
+    </>
   )
 }

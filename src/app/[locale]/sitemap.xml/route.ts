@@ -1,0 +1,115 @@
+/**
+ * Locale-specific XML sitemap for /en/sitemap.xml, /vi/sitemap.xml
+ *
+ * Next.js automatically generates a sitemap from src/app/sitemap.ts at the root.
+ * This locale-scoped sitemap serves the same URLs but prefixed with the locale path
+ * (e.g., /en/, /en/pricing, /en/faq) to support crawlers that look for
+ * locale-specific sitemaps.
+ */
+
+import type { MetadataRoute } from 'next';
+import { serviceFactory } from '@/lib/serviceFactory';
+import { locales, type Locale } from '@/i18n/config';
+import { canonicalFor } from '@/lib/seo';
+import { INDEXABLE_STATIC_PUBLIC_ROUTES } from '@/lib/seo/routes';
+
+function toEntry(
+  locale: Locale | string,
+  path: string,
+  changeFrequency: MetadataRoute.Sitemap[number]['changeFrequency'],
+  priority: number,
+  lastModified = new Date()
+): MetadataRoute.Sitemap[number] {
+  return {
+    url: canonicalFor(locale, path),
+    lastModified,
+    changeFrequency,
+    priority,
+  };
+}
+
+export async function GET(): Promise<Response> {
+  const entries: MetadataRoute.Sitemap = [];
+  const seenUrls = new Set<string>();
+
+  const pushEntry = (entry: MetadataRoute.Sitemap[number]) => {
+    if (seenUrls.has(entry.url)) return;
+    seenUrls.add(entry.url);
+    entries.push(entry);
+  };
+
+  // Static public routes for each locale
+  for (const locale of locales as Locale[]) {
+    for (const route of INDEXABLE_STATIC_PUBLIC_ROUTES) {
+      const priority = route === '/' ? 1 : 0.8;
+      const changeFrequency = route === '/' ? 'daily' : 'weekly';
+      pushEntry(toEntry(locale, route, changeFrequency, priority));
+    }
+  }
+
+  // Category pages
+  const categoryService = serviceFactory.getCategoryService();
+  try {
+    const categoryResult = await categoryService.getCategories();
+    if (categoryResult.success && Array.isArray(categoryResult.data)) {
+      for (const category of categoryResult.data) {
+        if (!category?.slug || category.isActive === false) continue;
+        const path = `/category/${category.slug}`;
+        const updatedAt = new Date(category.updatedAt || category.createdAt || Date.now());
+        for (const locale of locales as Locale[]) {
+          pushEntry(toEntry(locale, path, 'weekly', 0.7, updatedAt));
+        }
+      }
+    }
+  } catch (error) {
+    console.error('locale sitemap: category generation failed', error);
+  }
+
+  // Published public quizzes
+  const quizService = serviceFactory.getQuizService();
+  try {
+    const quizResult = await quizService.getQuizzes({
+      status: 'published',
+      isPrivate: false,
+      page: 1,
+      limit: 5000,
+      compact: true,
+    });
+    for (const quiz of quizResult.quizzes || []) {
+      if (!quiz?.slug) continue;
+      const path = `/quiz/${quiz.slug}`;
+      const quizDate = new Date((quiz as any).updatedAt || (quiz as any).createdAt || Date.now());
+      for (const locale of locales as Locale[]) {
+        pushEntry(toEntry(locale, path, 'weekly', 0.7, quizDate));
+      }
+    }
+  } catch (error) {
+    console.error('locale sitemap: quiz generation failed', error);
+  }
+
+  // Sort
+  entries.sort((a, b) => a.url.localeCompare(b.url));
+
+  const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+${entries
+  .map(
+    (e) => `  <url>
+    <loc>${e.url}</loc>
+    <lastmod>${e.lastModified?.toISOString().split('T')[0]}</lastmod>
+    <changefreq>${e.changeFrequency}</changefreq>
+    <priority>${e.priority}</priority>
+  </url>`
+  )
+  .join('\n')}
+</urlset>`;
+
+  return new Response(sitemap, {
+    status: 200,
+    headers: {
+      'Content-Type': 'application/xml; charset=utf-8',
+      'Cache-Control': 'public, max-age=3600, stale-while-revalidate=86400',
+    },
+  });
+}

@@ -11,7 +11,7 @@ import type { MetadataRoute } from 'next';
 import { serviceFactory } from '@/lib/serviceFactory';
 import { locales, type Locale } from '@/i18n/config';
 import { canonicalFor } from '@/lib/seo';
-import { INDEXABLE_STATIC_PUBLIC_ROUTES } from '@/lib/seo/routes';
+import { INDEXABLE_STATIC_PUBLIC_ROUTES } from '@/lib/seo.routes';
 
 function toEntry(
   locale: Locale | string,
@@ -39,7 +39,7 @@ export async function GET(): Promise<Response> {
   };
 
   // Static public routes for each locale
-  for (const locale of locales as Locale[]) {
+  for (const locale of [...locales]) {
     for (const route of INDEXABLE_STATIC_PUBLIC_ROUTES) {
       const priority = route === '/' ? 1 : 0.8;
       const changeFrequency = route === '/' ? 'daily' : 'weekly';
@@ -56,7 +56,7 @@ export async function GET(): Promise<Response> {
         if (!category?.slug || category.isActive === false) continue;
         const path = `/category/${category.slug}`;
         const updatedAt = new Date(category.updatedAt || category.createdAt || Date.now());
-        for (const locale of locales as Locale[]) {
+        for (const locale of [...locales]) {
           pushEntry(toEntry(locale, path, 'weekly', 0.7, updatedAt));
         }
       }
@@ -79,7 +79,7 @@ export async function GET(): Promise<Response> {
       if (!quiz?.slug) continue;
       const path = `/quiz/${quiz.slug}`;
       const quizDate = new Date((quiz as any).updatedAt || (quiz as any).createdAt || Date.now());
-      for (const locale of locales as Locale[]) {
+      for (const locale of [...locales]) {
         pushEntry(toEntry(locale, path, 'weekly', 0.7, quizDate));
       }
     }
@@ -97,7 +97,7 @@ ${entries
   .map(
     (e) => `  <url>
     <loc>${e.url}</loc>
-    <lastmod>${e.lastModified?.toISOString().split('T')[0]}</lastmod>
+    <lastmod>${new Date(e.lastModified || Date.now()).toISOString().split('T')[0]}</lastmod>
     <changefreq>${e.changeFrequency}</changefreq>
     <priority>${e.priority}</priority>
   </url>`

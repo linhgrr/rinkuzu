@@ -8,6 +8,10 @@ export const INDEXABLE_STATIC_PUBLIC_ROUTES = [
   '/privacy',
   '/terms',
   '/cookies',
+  '/about',
+  '/blog',
+  '/blog/ai-powered-quiz-generation-guide',
+  '/blog/knowledge-graphs-adaptive-learning-pdfs',
 ] as const;
 
 export const PRIVATE_ROUTE_PREFIXES = [

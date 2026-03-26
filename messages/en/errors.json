@@ -1,0 +1,9 @@
+{
+  "general": "An error occurred",
+  "notFound": "Not found",
+  "unauthorized": "Unauthorized",
+  "serverError": "Server error",
+  "tryAgain": "Please try again",
+  "pageNotFound": "Page not found",
+  "goHome": "Go Home"
+}

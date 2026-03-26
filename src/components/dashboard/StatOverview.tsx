@@ -1,9 +1,5 @@
-'use client';
-
-import { memo } from 'react';
-import { useTranslations } from 'next-intl';
+import type { ReactNode } from 'react';
 import { Card } from '@/components/ui/Card';
-import type { UserStats } from '@/hooks/useStats';
 import {
     HiOutlineFire,
     HiOutlineLightningBolt,
@@ -12,67 +8,76 @@ import {
 } from '@/components/icons';
 
 interface StatOverviewProps {
-    stats?: UserStats;
+    stats?: {
+        streak?: number;
+        xp?: number;
+        averageAccuracy?: number;
+        dueCount?: number;
+    };
+    labels: {
+        dailyStreak: string;
+        days: string;
+        totalXP: string;
+        accuracy: string;
+        toReview: string;
+    };
 }
 
-export const StatOverview = memo(function StatOverview({ stats }: StatOverviewProps) {
-    const t = useTranslations('dashboard');
+function StatCard({
+    icon,
+    eyebrow,
+    value,
+    tone,
+}: {
+    icon: ReactNode;
+    eyebrow: string;
+    value: string;
+    tone: string;
+}) {
+    return (
+        <div className="flex items-center gap-4 bg-white p-5 transition-colors duration-300 hover:bg-slate-50/80">
+            <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${tone}`}>
+                {icon}
+            </div>
+            <div className="min-w-0">
+                <p className="mb-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">{eyebrow}</p>
+                <p className="truncate text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">
+                    {value}
+                </p>
+            </div>
+        </div>
+    );
+}
 
+export function StatOverview({ stats, labels }: StatOverviewProps) {
     return (
         <Card className="overflow-hidden rounded-2xl shadow-sm border-slate-200 p-0 bg-slate-100">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-[1px]">
-                {/* Daily Streak */}
-                <div className="bg-white p-5 flex items-center gap-4 hover:bg-slate-50/80 transition-colors duration-300">
-                    <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-orange-50 text-orange-600 border border-orange-100 shrink-0">
-                        <HiOutlineFire className="text-2xl text-orange-500" />
-                    </div>
-                    <div className="min-w-0">
-                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">{t('dailyStreak')}</p>
-                        <p className="text-xl sm:text-2xl font-bold text-slate-900 truncate tracking-tight">
-                            {stats?.streak || 0} {t('days')}
-                        </p>
-                    </div>
-                </div>
-
-                {/* Total XP */}
-                <div className="bg-white p-5 flex items-center gap-4 hover:bg-slate-50/80 transition-colors duration-300">
-                    <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-amber-50 text-amber-600 border border-amber-100 shrink-0">
-                        <HiOutlineLightningBolt className="text-2xl text-amber-500" />
-                    </div>
-                    <div className="min-w-0">
-                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">{t('totalXP')}</p>
-                        <p className="text-xl sm:text-2xl font-bold text-slate-900 truncate tracking-tight">
-                            {stats?.xp || 0}
-                        </p>
-                    </div>
-                </div>
-
-                {/* Accuracy */}
-                <div className="bg-white p-5 flex items-center gap-4 hover:bg-slate-50/80 transition-colors duration-300">
-                    <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-slate-50 text-slate-900 shrink-0">
-                        <HiOutlineTrendingUp className="text-2xl" />
-                    </div>
-                    <div className="min-w-0">
-                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">{t('accuracy')}</p>
-                        <p className="text-xl sm:text-2xl font-bold text-slate-900 truncate tracking-tight">
-                            {stats?.averageAccuracy || 0}%
-                        </p>
-                    </div>
-                </div>
-
-                {/* To Review */}
-                <div className="bg-white p-5 flex items-center gap-4 hover:bg-slate-50/80 transition-colors duration-300">
-                    <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-slate-100 text-slate-600 shrink-0">
-                        <HiOutlineLightBulb className="text-2xl" />
-                    </div>
-                    <div className="min-w-0">
-                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">{t('toReview')}</p>
-                        <p className="text-xl sm:text-2xl font-bold text-slate-900 truncate tracking-tight">
-                            {stats?.dueCount || 0}
-                        </p>
-                    </div>
-                </div>
+                <StatCard
+                    icon={<HiOutlineFire className="text-2xl text-orange-500" />}
+                    eyebrow={labels.dailyStreak}
+                    value={`${stats?.streak || 0} ${labels.days}`}
+                    tone="border border-orange-100 bg-orange-50 text-orange-600"
+                />
+                <StatCard
+                    icon={<HiOutlineLightningBolt className="text-2xl text-amber-500" />}
+                    eyebrow={labels.totalXP}
+                    value={String(stats?.xp || 0)}
+                    tone="border border-amber-100 bg-amber-50 text-amber-600"
+                />
+                <StatCard
+                    icon={<HiOutlineTrendingUp className="text-2xl" />}
+                    eyebrow={labels.accuracy}
+                    value={`${stats?.averageAccuracy || 0}%`}
+                    tone="bg-slate-50 text-slate-900"
+                />
+                <StatCard
+                    icon={<HiOutlineLightBulb className="text-2xl" />}
+                    eyebrow={labels.toReview}
+                    value={String(stats?.dueCount || 0)}
+                    tone="bg-slate-100 text-slate-600"
+                />
             </div>
         </Card>
     );
-});
+}

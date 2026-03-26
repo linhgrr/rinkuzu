@@ -1,0 +1,22 @@
+{
+  "title": "Ôn tập",
+  "dueCards": "Thẻ cần ôn tập",
+  "noCards": "Không có thẻ nào cần ôn tập!",
+  "allDone": "Bạn đã hoàn thành tất cả!",
+  "comeBack": "Hãy quay lại sau",
+  "showAnswer": "Hiện đáp án",
+  "again": "Làm lại",
+  "hard": "Khó",
+  "good": "Tốt",
+  "easy": "Dễ",
+  "sessionComplete": "Hoàn thành phiên ôn tập!",
+  "reviewedQuestions": "Bạn đã ôn tập {count} câu hỏi và kiếm được {xp} XP",
+  "backToDashboard": "Về trang chủ",
+  "reviewMore": "Ôn tập thêm",
+  "allCaughtUp": "Đã hoàn thành!",
+  "noReviewsDue": "Hiện tại không có bài ôn tập. Hãy quay lại sau!",
+  "questionProgress": "{current} / {total}",
+  "xpEarned": "Đã kiếm {xp} XP",
+  "question": "Câu hỏi",
+  "tapToSeeAnswer": "Chạm để xem đáp án"
+}

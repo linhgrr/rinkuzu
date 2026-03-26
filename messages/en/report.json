@@ -1,0 +1,14 @@
+{
+  "reportThisQuiz": "Report this quiz",
+  "reportQuiz": "Report Quiz",
+  "submitted": "Report Submitted",
+  "thankYou": "Thank you for your report. Our team will review it soon.",
+  "quiz": "Quiz",
+  "describeIssue": "Please describe the issue with this quiz. Your report will help us improve the content quality.",
+  "reportDetails": "Report Details",
+  "placeholder": "Please provide details about the issue (e.g., incorrect answers, inappropriate content, spam, etc.)",
+  "describeClearly": "Describe the problem clearly and specifically",
+  "submitting": "Submitting...",
+  "submitReport": "Submit Report",
+  "failedToSubmit": "Failed to submit report"
+}

@@ -1,0 +1,11 @@
+{
+  "title": "Quiz Preview",
+  "questionOf": "Question {current} of {total}",
+  "singleChoice": "Single Choice",
+  "multipleChoice": "Multiple Choice",
+  "correct": "Correct",
+  "correctAnswers": "Correct Answer(s)",
+  "noCorrectAnswer": "No correct answer defined",
+  "questionOverview": "Question Overview",
+  "closePreview": "Close Preview"
+}

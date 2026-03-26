@@ -1,7 +1,3 @@
-'use client';
-
-import { memo } from 'react';
-
 interface LevelBadgeProps {
     level?: number;
     className?: string;
@@ -9,7 +5,7 @@ interface LevelBadgeProps {
     height?: number | string;
 }
 
-export const LevelBadge = memo(function LevelBadge({
+export function LevelBadge({
     level,
     className = "",
     width = 120,
@@ -184,4 +180,4 @@ export const LevelBadge = memo(function LevelBadge({
             )}
         </div>
     );
-});
+}

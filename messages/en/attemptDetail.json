@@ -1,0 +1,17 @@
+{
+  "title": "Result Details",
+  "score": "Score",
+  "questions": "questions",
+  "correctAnswers": "Correct",
+  "incorrectAnswers": "Incorrect",
+  "totalScore": "Total Score",
+  "question": "Question",
+  "correct": "Correct",
+  "incorrect": "Incorrect",
+  "yourAnswer": "Your Answer",
+  "correctAnswer": "Correct Answer",
+  "allOptions": "All Options",
+  "youChose": "You chose",
+  "youChoseCorrectly": "You chose correctly",
+  "notAnswered": "Not answered"
+}

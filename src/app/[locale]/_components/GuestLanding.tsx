@@ -17,9 +17,10 @@ interface Quiz {
 
 interface GuestLandingProps {
   quizzes: Quiz[];
+  isAuthenticated?: boolean;
 }
 
-export function GuestLanding({ quizzes }: GuestLandingProps) {
+export function GuestLanding({ quizzes, isAuthenticated = false }: GuestLandingProps) {
   const softwareSchema = {
     '@context': 'https://schema.org',
     '@type': 'SoftwareApplication',
@@ -46,7 +47,7 @@ export function GuestLanding({ quizzes }: GuestLandingProps) {
     >
       <JsonLd id="home-software-schema" data={softwareSchema} />
       <main>
-        <HeroSection />
+        <HeroSection isAuthenticated={isAuthenticated} />
         <section className="bg-[#fbfbfd] text-[#1d1d1f]">
           <div className="max-w-6xl mx-auto px-6 py-24 md:py-32 space-y-24">
             <div className="max-w-3xl mx-auto text-center space-y-6">

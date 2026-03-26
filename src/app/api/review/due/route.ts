@@ -4,6 +4,8 @@ import connectDB from '@/lib/mongoose';
 import QuestionProgress from '@/models/QuestionProgress';
 import { authOptions } from '@/lib/auth';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
     try {
         const session = await getServerSession(authOptions);

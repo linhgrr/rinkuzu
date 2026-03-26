@@ -149,6 +149,9 @@ const nextConfig = {
   experimental: {
     serverComponentsExternalPackages: ['pdf-lib'],
     optimizePackageImports: ['react-icons', 'react-markdown', 'lucide-react'],
+    outputFileTracingIncludes: {
+      '/*': ['./messages/**/*'],
+    },
   },
   images: {
     domains: ['localhost'],

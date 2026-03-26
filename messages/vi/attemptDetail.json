@@ -1,0 +1,17 @@
+{
+  "title": "Chi tiết kết quả",
+  "score": "Điểm",
+  "questions": "câu hỏi",
+  "correctAnswers": "Câu đúng",
+  "incorrectAnswers": "Câu sai",
+  "totalScore": "Tổng điểm",
+  "question": "Câu",
+  "correct": "Đúng",
+  "incorrect": "Sai",
+  "yourAnswer": "Câu trả lời của bạn",
+  "correctAnswer": "Đáp án đúng",
+  "allOptions": "Các lựa chọn",
+  "youChose": "Bạn chọn",
+  "youChoseCorrectly": "Bạn chọn đúng",
+  "notAnswered": "Không trả lời"
+}

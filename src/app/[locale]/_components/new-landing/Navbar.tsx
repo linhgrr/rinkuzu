@@ -3,7 +3,6 @@
 import { ChevronDown } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
-import { useSession } from "next-auth/react";
 
 const navLinks = [
   { label: "AI Quiz Generator", href: "/adaptive-learning" },
@@ -12,9 +11,7 @@ const navLinks = [
   { label: "FAQ", href: "/faq" }
 ];
 
-const Navbar = () => {
-  const { data: session } = useSession();
-
+const Navbar = ({ isAuthenticated = false }: { isAuthenticated?: boolean }) => {
   return (
     <nav className="relative z-10 flex items-center justify-between px-6 md:px-[120px] py-[20px] font-sans">
       {/* Left side */}
@@ -45,13 +42,13 @@ const Navbar = () => {
 
       {/* Right side - Upload PDF button */}
       <div className="flex items-center gap-4">
-        {!session ? (
+        {!isAuthenticated ? (
           <Link href="/login" className="text-white text-[14px] font-medium hover:underline">Login</Link>
         ) : null}
         <GlowPillButton 
-          label={session ? "Upload PDF" : "Get Started"} 
+          label={isAuthenticated ? "Upload PDF" : "Get Started"} 
           variant="dark" 
-          href={session ? "/adaptive-learning/upload" : "/register"} 
+          href={isAuthenticated ? "/adaptive-learning/upload" : "/register"} 
         />
       </div>
     </nav>

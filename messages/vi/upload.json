@@ -1,0 +1,18 @@
+{
+  "processingLargeFile": "Đang xử lý file lớn",
+  "file": "File",
+  "progress": "Tiến độ",
+  "chunks": "phần",
+  "complete": "hoàn thành",
+  "fileProgress": "Tiến độ file",
+  "currentFile": "File hiện tại",
+  "processingTip": "Đang xử lý file lớn...",
+  "dontCloseWindow": "Vui lòng không đóng cửa sổ này. Quá trình sẽ tự động tiếp tục.",
+  "uploadingImage": "Đang tải hình ảnh...",
+  "clickToUpload": "Nhấn để tải lên",
+  "orDragAndDrop": "hoặc kéo và thả",
+  "maxFileSize": "PNG, JPG, GIF tối đa 10MB",
+  "pleaseSelectImage": "Vui lòng chọn file hình ảnh",
+  "imageTooLarge": "Kích thước file hình ảnh phải nhỏ hơn 10MB",
+  "failedToUpload": "Không thể tải hình ảnh"
+}

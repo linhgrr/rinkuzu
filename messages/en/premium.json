@@ -1,0 +1,12 @@
+{
+  "required": "Premium Required",
+  "subscriptionRequired": "Premium Subscription Required",
+  "privateQuizMessage": "This quiz is private and requires a premium subscription to access.",
+  "benefits": "Premium Benefits:",
+  "benefitPrivateQuizzes": "Access to all private quizzes",
+  "benefitUnlimitedAttempts": "Unlimited quiz attempts",
+  "benefitDetailedStats": "Detailed statistics",
+  "benefitPrioritySupport": "Priority support",
+  "upgradeToPremium": "Upgrade to Premium",
+  "goToHome": "Go to Home"
+}

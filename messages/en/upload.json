@@ -1,0 +1,18 @@
+{
+  "processingLargeFile": "Processing Large File",
+  "file": "File",
+  "progress": "Progress",
+  "chunks": "chunks",
+  "complete": "complete",
+  "fileProgress": "File Progress",
+  "currentFile": "Current File",
+  "processingTip": "Processing large files...",
+  "dontCloseWindow": "Please don't close this window. The process will continue automatically.",
+  "uploadingImage": "Uploading image...",
+  "clickToUpload": "Click to upload",
+  "orDragAndDrop": "or drag and drop",
+  "maxFileSize": "PNG, JPG, GIF up to 10MB",
+  "pleaseSelectImage": "Please select an image file",
+  "imageTooLarge": "Image file size must be less than 10MB",
+  "failedToUpload": "Failed to upload image"
+}

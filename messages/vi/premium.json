@@ -1,0 +1,12 @@
+{
+  "required": "Yêu cầu Premium",
+  "subscriptionRequired": "Cần đăng ký Premium",
+  "privateQuizMessage": "Quiz này là riêng tư và yêu cầu đăng ký premium để truy cập.",
+  "benefits": "Lợi ích Premium:",
+  "benefitPrivateQuizzes": "Truy cập tất cả quiz riêng tư",
+  "benefitUnlimitedAttempts": "Không giới hạn lượt làm bài",
+  "benefitDetailedStats": "Thống kê chi tiết",
+  "benefitPrioritySupport": "Hỗ trợ ưu tiên",
+  "upgradeToPremium": "Nâng cấp lên Premium",
+  "goToHome": "Về trang chủ"
+}

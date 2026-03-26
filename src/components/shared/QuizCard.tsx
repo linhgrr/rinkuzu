@@ -1,8 +1,4 @@
-'use client';
-
-import { memo, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
-import { useTranslations } from 'next-intl';
+import { Link } from '@/i18n/routing';
 import {
   Card,
   CardHeader,
@@ -28,9 +24,13 @@ interface Quiz {
 
 interface QuizCardProps {
   quiz: Quiz;
+  locale?: string;
+  questionCountLabel: string;
+  uncategorizedLabel: string;
+  openLabel: string;
 }
 
-const CategoryBadgeVariant = (color: string) => {
+function categoryBadgeVariant(color: string) {
   const map: Record<string, 'info' | 'success' | 'warning' | 'danger' | 'purple' | 'default'> = {
     'bg-blue-100': 'info',
     'bg-green-100': 'success',
@@ -38,55 +38,52 @@ const CategoryBadgeVariant = (color: string) => {
     'bg-red-100': 'danger',
     'bg-purple-100': 'purple',
   };
+
   return map[color] || 'default';
-};
+}
 
-export const QuizCard = memo(function QuizCard({ quiz }: QuizCardProps) {
-  const router = useRouter();
-  const t = useTranslations('common');
-  const questionCount = quiz.questionCount ?? quiz.questions.length;
-
-  const handleClick = useCallback(() => {
-    router.push(ROUTES.QUIZ.VIEW(quiz.slug));
-  }, [router, quiz.slug]);
-
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      router.push(ROUTES.QUIZ.VIEW(quiz.slug));
-    }
-  }, [router, quiz.slug]);
-
+export function QuizCard({
+  quiz,
+  locale,
+  questionCountLabel,
+  uncategorizedLabel,
+  openLabel,
+}: QuizCardProps) {
   return (
-    <Card
-      variant="interactive"
-      className="flex flex-col justify-between h-full rounded-2xl shadow-sm border border-slate-200 hover:border-teal-400 hover:shadow-[0_0_15px_rgba(45,212,191,0.2)] transition-all duration-300"
-      onClick={handleClick}
-      onKeyDown={handleKeyDown}
-      tabIndex={0}
-      role="button"
-      aria-label={`Open quiz: ${quiz.title}`}
+    <Link
+      href={ROUTES.QUIZ.VIEW(quiz.slug)}
+      className="block h-full"
+      aria-label={`${openLabel}: ${quiz.title}`}
     >
-      <CardHeader className="pb-3">
-        <div className="flex justify-between items-start mb-2">
-          <Badge
-            variant={CategoryBadgeVariant(quiz.category?.color || '')}
-            className="w-fit"
-          >
-            {quiz.category?.name || 'Uncategorized'}
-          </Badge>
-        </div>
+      <Card
+        variant="interactive"
+        className="group flex h-full flex-col justify-between rounded-2xl border border-slate-200 shadow-sm transition-all duration-300 hover:border-teal-400 hover:shadow-[0_0_15px_rgba(45,212,191,0.2)]"
+      >
+        <CardHeader className="pb-3">
+          <div className="mb-2 flex items-start justify-between">
+            <Badge
+              variant={categoryBadgeVariant(quiz.category?.color || '')}
+              className="w-fit"
+            >
+              {quiz.category?.name || uncategorizedLabel}
+            </Badge>
+          </div>
 
-        <CardTitle size="sm" className="line-clamp-2 text-base font-bold text-slate-800 leading-snug group-hover:text-black transition-colors">
-          {quiz.title}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="flex items-center justify-between text-xs font-medium text-gray-400 mt-2 pt-3 border-t border-gray-100">
-          <span>{t('questionsCount', { count: questionCount })}</span>
-          <span>{formatDisplayDate(quiz.createdAt)}</span>
-        </div>
-      </CardContent>
-    </Card>
+          <CardTitle
+            size="sm"
+            className="line-clamp-2 text-base font-bold leading-snug text-slate-800 transition-colors group-hover:text-black"
+          >
+            {quiz.title}
+          </CardTitle>
+        </CardHeader>
+
+        <CardContent>
+          <div className="mt-2 flex items-center justify-between border-t border-gray-100 pt-3 text-xs font-medium text-gray-400">
+            <span>{questionCountLabel}</span>
+            <span>{formatDisplayDate(quiz.createdAt, locale)}</span>
+          </div>
+        </CardContent>
+      </Card>
+    </Link>
   );
-});
+}

@@ -1,0 +1,16 @@
+{
+  "processingPDF": "Processing PDF",
+  "cancelledProcessing": "Cancelled processing \"{title}\"",
+  "processingFiles": "Processing {count} files",
+  "quizzesReady": "{count} quizzes ready",
+  "expired": "Expired",
+  "days": "{count} days",
+  "hoursMinutes": "{hours}h {minutes}m",
+  "minutes": "{count} minutes",
+  "chunksCompleted": "{completed}/{total} completed",
+  "errors": "{count} errors",
+  "questionsGenerated": "{count} questions",
+  "cancel": "Cancel",
+  "clickToEdit": "{count} questions – Click to edit",
+  "processingError": "Processing error"
+}

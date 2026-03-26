@@ -1,0 +1,11 @@
+{
+  "title": "Xem trước Quiz",
+  "questionOf": "Câu hỏi {current} / {total}",
+  "singleChoice": "Chọn một",
+  "multipleChoice": "Chọn nhiều",
+  "correct": "Đúng",
+  "correctAnswers": "Đáp án đúng",
+  "noCorrectAnswer": "Chưa xác định đáp án đúng",
+  "questionOverview": "Tổng quan câu hỏi",
+  "closePreview": "Đóng xem trước"
+}

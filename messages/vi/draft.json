@@ -1,0 +1,16 @@
+{
+  "processingPDF": "Đang xử lý PDF",
+  "cancelledProcessing": "Đã hủy xử lý \"{title}\"",
+  "processingFiles": "Đang xử lý {count} file",
+  "quizzesReady": "{count} quiz sẵn sàng",
+  "expired": "Hết hạn",
+  "days": "{count} ngày",
+  "hoursMinutes": "{hours}h {minutes}m",
+  "minutes": "{count} phút",
+  "chunksCompleted": "{completed}/{total} hoàn thành",
+  "errors": "{count} lỗi",
+  "questionsGenerated": "{count} câu hỏi",
+  "cancel": "Hủy",
+  "clickToEdit": "{count} câu hỏi – Bấm để chỉnh sửa",
+  "processingError": "Lỗi xử lý"
+}

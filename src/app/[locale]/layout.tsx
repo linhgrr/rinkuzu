@@ -1,16 +1,9 @@
 import type { Metadata, Viewport } from 'next';
 import { notFound } from 'next/navigation';
-import { NextIntlClientProvider } from 'next-intl';
-import { getMessages } from 'next-intl/server';
-import dynamic from 'next/dynamic';
 import { Inter } from 'next/font/google';
 import Script from 'next/script';
 import '../globals.css';
-import Providers from '../providers';
-import BottomNav from '@/components/BottomNav';
 import { routing } from '@/i18n/routing';
-import { MainLayoutWrapper } from '@/components/MainLayoutWrapper';
-import { GlobalFooter } from '@/components/GlobalFooter';
 import { canonicalFor, languageAlternates, siteUrl } from '@/lib/seo';
 import { defaultLocale } from '@/i18n/config';
 import { JsonLd } from '@/components/seo/JsonLd';
@@ -21,21 +14,6 @@ const inter = Inter({
   display: 'swap',
   variable: '--font-inter',
 });
-
-/**
- * Rule: bundle-defer-third-party
- * Defer loading of non-critical components after hydration
- * PWAInstaller and FloatingDraftProgress are not needed for initial render
- */
-const PWAInstaller = dynamic(() => import('@/components/PWAInstaller'), {
-  ssr: false,
-});
-
-const FloatingDraftProgress = dynamic(
-  () => import('@/components/FloatingDraftProgress').then(mod => ({ default: mod.FloatingDraftProgress })),
-  { ssr: false }
-);
-
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -130,9 +108,6 @@ export default async function LocaleLayout({
     notFound();
   }
 
-  // Providing all messages to the client
-  const messages = await getMessages();
-
   const organizationSchema = buildOrganizationSchema();
   const websiteSchema = buildWebsiteSchema(locale);
 
@@ -153,35 +128,25 @@ export default async function LocaleLayout({
         <meta name="format-detection" content="telephone=no" />
       </head>
       <body className={`${inter.className} min-h-screen antialiased bg-[#f5f5f7]`}>
-        <NextIntlClientProvider messages={messages}>
-          <Providers>
-            <MainLayoutWrapper>
-              <JsonLd id="org-schema" data={organizationSchema} />
-              <JsonLd id="website-schema" data={websiteSchema} />
-              {children}
-            </MainLayoutWrapper>
-            <GlobalFooter />
-            <BottomNav />
-            <FloatingDraftProgress />
-            <PWAInstaller />
-            {process.env.NEXT_PUBLIC_GA_ID ? (
-              <>
-                <Script
-                  src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_ID}`}
-                  strategy="afterInteractive"
-                />
-                <Script id="ga-init" strategy="afterInteractive">
-                  {`
-                    window.dataLayer = window.dataLayer || [];
-                    function gtag(){dataLayer.push(arguments);}
-                    gtag('js', new Date());
-                    gtag('config', '${process.env.NEXT_PUBLIC_GA_ID}');
-                  `}
-                </Script>
-              </>
-            ) : null}
-          </Providers>
-        </NextIntlClientProvider>
+        <JsonLd id="org-schema" data={organizationSchema} />
+        <JsonLd id="website-schema" data={websiteSchema} />
+        {children}
+        {process.env.NEXT_PUBLIC_GA_ID ? (
+          <>
+            <Script
+              src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_ID}`}
+              strategy="afterInteractive"
+            />
+            <Script id="ga-init" strategy="afterInteractive">
+              {`
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                gtag('js', new Date());
+                gtag('config', '${process.env.NEXT_PUBLIC_GA_ID}');
+              `}
+            </Script>
+          </>
+        ) : null}
       </body>
     </html>
   );

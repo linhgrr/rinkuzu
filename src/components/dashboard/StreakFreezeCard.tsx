@@ -1,29 +1,71 @@
 'use client';
 
 import { useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 
 interface StreakFreezeCardProps {
     count: number;
     xp: number;
-    onBuy: () => void;
+    labels: {
+        streakFreeze: string;
+        streakFreezeEquipped: string;
+        streakFreezeNotEquipped: string;
+        buyXP: string;
+        maxedOut: string;
+        failedToBuyFreeze: string;
+        failedToConnectServer: string;
+    };
 }
 
-export function StreakFreezeCard({ count, xp, onBuy }: StreakFreezeCardProps) {
-    const t = useTranslations('dashboard');
-    const MAX_FREEZES = 2;
-    const COST = 500;
-    const canBuy = count < MAX_FREEZES && xp >= COST;
+interface BuyFreezeResponse {
+    success: boolean;
+    message?: string;
+    data?: {
+        xp: number;
+        streakFreezeCount: number;
+    };
+}
 
+const MAX_FREEZES = 2;
+const COST = 500;
+
+function formatMessage(template: string, params: Record<string, string | number>) {
+    return Object.entries(params).reduce(
+        (result, [key, value]) => result.replace(`{${key}}`, String(value)),
+        template
+    );
+}
+
+export function StreakFreezeCard({ count, xp, labels }: StreakFreezeCardProps) {
     const [buying, setBuying] = useState(false);
+    const [currentCount, setCurrentCount] = useState(count);
+    const [currentXp, setCurrentXp] = useState(xp);
+    const canBuy = currentCount < MAX_FREEZES && currentXp >= COST;
 
     const handleBuy = async () => {
         if (!canBuy) return;
+
         setBuying(true);
-        await onBuy();
-        setBuying(false);
+
+        try {
+            const response = await fetch('/api/shop/buy-freeze', { method: 'POST' });
+            const result = await response.json() as BuyFreezeResponse;
+
+            if (!response.ok || !result.success || !result.data) {
+                toast.error(result.message || labels.failedToBuyFreeze);
+                return;
+            }
+
+            setCurrentXp(result.data.xp);
+            setCurrentCount(result.data.streakFreezeCount);
+        } catch (error) {
+            console.error(error);
+            toast.error(labels.failedToConnectServer);
+        } finally {
+            setBuying(false);
+        }
     };
 
     return (
@@ -33,27 +75,27 @@ export function StreakFreezeCard({ count, xp, onBuy }: StreakFreezeCardProps) {
                     ❄️
                 </div>
                 <div>
-                    <p className="font-semibold text-gray-900">{t('streakFreeze')}</p>
+                    <p className="font-semibold text-gray-900">{labels.streakFreeze}</p>
                     <p className="text-xs text-gray-600">
-                        {count > 0
-                            ? t('streakFreezeEquipped', { count })
-                            : t('streakFreezeNotEquipped')}
+                        {currentCount > 0
+                            ? formatMessage(labels.streakFreezeEquipped, { count: currentCount })
+                            : labels.streakFreezeNotEquipped}
                     </p>
                 </div>
             </div>
             <div>
-                {count < MAX_FREEZES ? (
+                {currentCount < MAX_FREEZES ? (
                     <Button
                         size="sm"
                         onClick={handleBuy}
                         disabled={!canBuy || buying}
                         className={canBuy ? 'bg-slate-900 hover:bg-black text-white' : 'bg-slate-100 text-slate-400 cursor-not-allowed'}
                     >
-                        {buying ? '…' : t('buyXP', { xp: COST })}
+                        {buying ? '…' : formatMessage(labels.buyXP, { xp: COST })}
                     </Button>
                 ) : (
                     <span className="text-[10px] font-bold text-slate-400 px-3 py-1 bg-slate-50 border border-slate-100 rounded-full uppercase tracking-wider">
-                        {t('maxedOut')}
+                        {labels.maxedOut}
                     </span>
                 )}
             </div>

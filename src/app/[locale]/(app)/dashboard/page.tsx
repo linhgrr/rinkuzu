@@ -2,8 +2,8 @@ import { getServerSession } from 'next-auth';
 import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
 import { defaultLocale } from '@/i18n/config';
-import { DashboardClient } from '../_components/DashboardClient';
 import { getDashboardBootstrapData } from '@/lib/dashboard';
+import { DashboardPageShell } from '@/app/[locale]/_components/DashboardPageShell';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,12 +30,13 @@ export default async function DashboardPage({
   const userEmail = session.user.email || '';
 
   return (
-    <DashboardClient
+    <DashboardPageShell
+      locale={locale}
       userEmail={userEmail}
-      initialSession={session}
-      initialStats={bootstrapData.stats}
-      initialQuizzes={bootstrapData.quizzes}
-      initialYourQuizzes={bootstrapData.yourQuizzes}
+      session={session}
+      stats={bootstrapData.stats}
+      quizzes={bootstrapData.quizzes}
+      yourQuizzes={bootstrapData.yourQuizzes}
     />
   );
 }

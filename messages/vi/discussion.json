@@ -1,0 +1,13 @@
+{
+  "title": "Thảo luận",
+  "sharePlaceholder": "Chia sẻ suy nghĩ của bạn...",
+  "post": "Đăng",
+  "pleaseLoginToJoin": "Vui lòng đăng nhập để tham gia thảo luận",
+  "logIn": "Đăng nhập",
+  "noComments": "Chưa có bình luận",
+  "beFirstToDiscuss": "Hãy là người đầu tiên thảo luận!",
+  "failedToLoad": "Không thể tải bình luận",
+  "pleaseLoginToPost": "Vui lòng đăng nhập để đăng bình luận",
+  "pleaseEnterComment": "Vui lòng nhập bình luận",
+  "failedToPost": "Không thể đăng bình luận"
+}

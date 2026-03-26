@@ -1,7 +1,6 @@
 'use client';
 
-import { memo, useState, useMemo } from 'react';
-import { useTranslations } from 'next-intl';
+import { useMemo, useState } from 'react';
 import { Card } from '@/components/ui/Card';
 import { HiOutlineChevronLeft, HiOutlineChevronRight } from '@/components/icons';
 
@@ -14,6 +13,12 @@ interface DailyActivity {
 
 interface WeeklyProgressHeatmapProps {
   weeklyActivity: Record<string, DailyActivity>;
+  labels: {
+    weeklyProgress: string;
+    thisWeek: string;
+    less: string;
+    more: string;
+  };
 }
 
 function getWeekStart(date: Date): Date {
@@ -42,11 +47,10 @@ function getIntensityClass(questions: number): string {
 
 const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
-export const WeeklyProgressHeatmap = memo(function WeeklyProgressHeatmap({
+export function WeeklyProgressHeatmap({
   weeklyActivity,
+  labels,
 }: WeeklyProgressHeatmapProps) {
-  const t = useTranslations('dashboard');
-  const tCommon = useTranslations('common');
   const [weekOffset, setWeekOffset] = useState(0);
 
   const { weekDates, weekLabel, isCurrentWeek } = useMemo(() => {
@@ -81,12 +85,10 @@ export const WeeklyProgressHeatmap = memo(function WeeklyProgressHeatmap({
     if (weekOffset < 0) setWeekOffset((prev) => prev + 1);
   };
 
-  const todayKey = formatDateKey(new Date());
-
   return (
     <Card className="p-6 rounded-2xl shadow-sm border-gray-100/50 bg-white">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="font-semibold text-[#1d1d1f]">{t('weeklyProgress')}</h3>
+        <h3 className="font-semibold text-[#1d1d1f]">{labels.weeklyProgress}</h3>
         <div className="flex items-center gap-2">
           <button
             onClick={handlePrevWeek}
@@ -95,7 +97,7 @@ export const WeeklyProgressHeatmap = memo(function WeeklyProgressHeatmap({
             <HiOutlineChevronLeft className="w-5 h-5 text-gray-600" />
           </button>
           <span className="text-sm text-[#86868b] min-w-[100px] text-center">
-            {isCurrentWeek ? t('thisWeek') : weekLabel}
+            {isCurrentWeek ? labels.thisWeek : weekLabel}
           </span>
           <button
             onClick={handleNextWeek}
@@ -130,7 +132,7 @@ export const WeeklyProgressHeatmap = memo(function WeeklyProgressHeatmap({
       </div>
 
       <div className="flex items-center justify-center gap-2 mt-4 text-[10px] text-slate-400 font-bold uppercase tracking-widest">
-        <span>{tCommon('less')}</span>
+        <span>{labels.less}</span>
         <div className="flex gap-1.5">
           <div className="w-3 h-3 rounded-sm bg-slate-50 border border-slate-100" />
           <div className="w-3 h-3 rounded-sm bg-slate-200" />
@@ -138,8 +140,8 @@ export const WeeklyProgressHeatmap = memo(function WeeklyProgressHeatmap({
           <div className="w-3 h-3 rounded-sm bg-slate-600" />
           <div className="w-3 h-3 rounded-sm bg-slate-900" />
         </div>
-        <span>{tCommon('more')}</span>
+        <span>{labels.more}</span>
       </div>
     </Card>
   );
-});
+}

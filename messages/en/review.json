@@ -1,0 +1,22 @@
+{
+  "title": "Review",
+  "dueCards": "Cards due for review",
+  "noCards": "No cards to review!",
+  "allDone": "You've completed everything!",
+  "comeBack": "Come back later",
+  "showAnswer": "Show Answer",
+  "again": "Again",
+  "hard": "Hard",
+  "good": "Good",
+  "easy": "Easy",
+  "sessionComplete": "Session Complete!",
+  "reviewedQuestions": "You reviewed {count} questions and earned {xp} XP",
+  "backToDashboard": "Back to Dashboard",
+  "reviewMore": "Review More",
+  "allCaughtUp": "All Caught Up!",
+  "noReviewsDue": "No reviews due at the moment. Come back later!",
+  "questionProgress": "{current} of {total}",
+  "xpEarned": "{xp} XP earned",
+  "question": "Question",
+  "tapToSeeAnswer": "Tap to see answer"
+}

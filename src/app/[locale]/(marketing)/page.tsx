@@ -2,7 +2,7 @@ import { getServerSession } from 'next-auth';
 import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
 import { defaultLocale } from '@/i18n/config';
-import { GuestLanding } from './_components';
+import { GuestLanding } from '@/app/[locale]/_components';
 import type { Metadata } from 'next';
 import { buildLocalizedMetadata } from '@/lib/seo';
 
@@ -81,5 +81,5 @@ export default async function HomePage({
     }
   ];
 
-  return <GuestLanding quizzes={hustMockQuizzes} />;
+  return <GuestLanding quizzes={hustMockQuizzes} isAuthenticated={Boolean(session?.user)} />;
 }

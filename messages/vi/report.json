@@ -1,0 +1,14 @@
+{
+  "reportThisQuiz": "Báo cáo quiz này",
+  "reportQuiz": "Báo cáo Quiz",
+  "submitted": "Đã gửi báo cáo",
+  "thankYou": "Cảm ơn báo cáo của bạn. Đội ngũ của chúng tôi sẽ xem xét sớm.",
+  "quiz": "Quiz",
+  "describeIssue": "Vui lòng mô tả vấn đề với quiz này. Báo cáo của bạn sẽ giúp chúng tôi cải thiện chất lượng nội dung.",
+  "reportDetails": "Chi tiết báo cáo",
+  "placeholder": "Vui lòng cung cấp chi tiết về vấn đề (ví dụ: câu trả lời sai, nội dung không phù hợp, spam, v.v.)",
+  "describeClearly": "Mô tả vấn đề rõ ràng và cụ thể",
+  "submitting": "Đang gửi...",
+  "submitReport": "Gửi báo cáo",
+  "failedToSubmit": "Không thể gửi báo cáo"
+}

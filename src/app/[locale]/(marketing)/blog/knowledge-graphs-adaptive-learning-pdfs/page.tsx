@@ -14,7 +14,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     path: '/blog/knowledge-graphs-adaptive-learning-pdfs',
     title: "Knowledge Graphs and Bloom's Taxonomy: A Complete Guide | RinKuzu",
     description:
-      "Learn how prerequisite knowledge graphs combined with Bloom's six cognitive levels create a scientifically-grounded adaptive learning path for any PDF document.",
+      "Learn how prerequisite knowledge graphs — built with PRS scoring and transitive reduction — combined with Bloom's six cognitive levels create a scientifically-grounded adaptive learning path for any PDF document.",
   });
 }
 
@@ -48,7 +48,7 @@ const articleSchema = {
 const sections = [
   {
     id: 'why-structure-matters',
-    heading: "Why Learning Structure Matters",
+    heading: 'Why Learning Structure Matters',
     body: `Every subject has an inherent structure — a web of concepts that build on each other. Calculus requires understanding functions before derivatives, derivatives before integrals, integrals before differential equations. Biology requires knowing cell structure before understanding organ systems. Learning these subjects effectively means respecting this structure.
 
 Traditional study tools ignore this. A deck of flashcards or a static quiz bank treats every concept as equally related, equally important, and equally prerequisite-free. This creates a fundamental mismatch: learners who skip prerequisites struggle not because they're incapable, but because they're being asked to build on sand.
@@ -66,7 +66,14 @@ RinKuzu's approach is different. By modeling the knowledge structure of any docu
 
 This graph is a directed acyclic graph (DAG) — a structure with no cycles, where learning always flows in one direction. You can't have an edge from "Derivatives" back to "Limits" in the prerequisite direction; they're separate paths.
 
-In RinKuzu, this graph is generated automatically from your PDF. The AI analyzes chapter ordering, section structure, cross-references between topics, and the semantic content of explanatory paragraphs to infer which concepts support which others.
+In RinKuzu, this graph is generated automatically from your PDF using a seven-step Content Processor pipeline:
+1. PDF text extraction (PyPDF2)
+2. Sliding-window chunking (4,000 char / 400 char overlap)
+3. LLM concept extraction (Gemini 2.0 Flash) — captures definitions, formulas, examples, and raw relations
+4. Concept embedding (SentenceTransformer, 384-dim) for semantic similarity
+5. Two-round merging: name-based + embedding-based (threshold 0.85), reducing duplicates by ~27%
+6. Prerequisite Ranking Score (PRS) verification: only pairs with PRS > 0.65 advance to LLM validation
+7. DAG construction with transitive reduction — removes redundant edges
 
 The result is a visual map of your course that reveals exactly what you need to know before you can understand anything else.`,
   },
@@ -81,6 +88,8 @@ More importantly, knowledge graphs reveal the *path* through a subject. If a lea
 - The technique itself (understanding the formula)
 - A prerequisite (weakness in basic derivatives or algebra)
 - A deeper gap (unresolved concepts in earlier chapters)
+
+In RinKuzu's Dueling DQN curriculum agent, prerequisite relationships are enforced by a hard prerequisite filter in the four-layer action masking system. A concept is entirely blocked from selection if any prerequisite concept has max Bloom mastery below 0.75. This is not a soft suggestion — it's a hard constraint. No practice question on Integration by Parts will appear until Derivatives and basic algebra are sufficiently mastered.
 
 This diagnostic power is impossible with a flat list of practice questions. The graph makes the structure of misunderstanding visible, enabling targeted remediation.`,
   },
@@ -128,6 +137,8 @@ Bloom's higher levels — Apply, Analyze, Evaluate, Create — reveal whether un
 - Evaluating which approach is best in a given context
 - Creating *new* outputs using the concept
 
+In RinKuzu, each concept is tracked with a separate mastery probability per Bloom level (the Bloom Mastery Matrix). The SAINT-Bloom knowledge tracing model maintains P(correct | concept, Bloom_level) — so the system knows whether your mastery at Apply is genuine or whether it's riding on strong Remember performance.
+
 Each level builds the neural pathways that transfer learning to novel problems. RinKuzu's adaptive system ensures learners practice across all six levels, preventing the illusion of mastery that comes from Remember-only review.`,
   },
   {
@@ -145,14 +156,16 @@ This creates a two-dimensional learning map:
 
 (Earlier concepts in the prerequisite chain are typically limited to lower Bloom levels; later concepts — which require synthesis of earlier knowledge — can reach Analyze, Evaluate, and Create.)
 
-RinKuzu's adaptive engine selects questions based on both dimensions simultaneously: the concept with the lowest mastery probability AND the Bloom level most likely to advance understanding. This produces a practice session that is simultaneously efficient (targeting weak spots) and rigorous (pushing toward higher-order thinking).`,
+RinKuzu's Dueling DQN agent selects questions based on both dimensions simultaneously: the concept with the lowest mastery probability AND the Bloom level most likely to advance understanding — but only if all prerequisites are satisfied (prerequisite filter ≥ 0.75) and no higher Bloom levels have been skipped (sequential Bloom unlock).
+
+This produces a practice session that is simultaneously efficient (targeting weak spots) and rigorous (pushing toward higher-order thinking). The SAINT-Bloom knowledge tracer then updates each (concept, Bloom) pair separately after every response, creating a fine-grained mastery profile that drives the next recommendation.`,
   },
   {
     id: 'getting-started',
     heading: 'Experience It Yourself',
     body: `The best way to understand this framework is to experience it. Upload any PDF lecture — on calculus, biology, economics, or history — and watch RinKuzu build the knowledge graph and generate adaptive practice questions across all six Bloom levels.
 
-Your practice sessions will be shaped by your own knowledge graph, your own mastery state, and your own pace. No two learners take the same path through the same material.
+Your practice sessions will be shaped by your own knowledge graph, your own SAINT-Bloom mastery state, and your own pace. No two learners take the same path through the same material.
 
 Start with the free plan — no credit card required. Your first personalized quiz is ready in under a minute.`,
   },
@@ -171,7 +184,7 @@ export default async function BlogPost({ params }: Props) {
           <nav className="flex items-center gap-2 text-sm text-[#414d60] mb-8">
             <Link href="/" className="hover:text-[#1e242c] transition-colors">Home</Link>
             <span>/</span>
-            <Link href="/blog/ai-powered-quiz-generation-guide" className="hover:text-[#1e242c] transition-colors">Blog</Link>
+            <Link href="/blog" className="hover:text-[#1e242c] transition-colors">Blog</Link>
             <span>/</span>
             <span className="text-[#1e242c]">Knowledge Graphs</span>
           </nav>
@@ -216,34 +229,9 @@ export default async function BlogPost({ params }: Props) {
         {sections.map((s) => (
           <section key={s.id} id={s.id} className="mb-12">
             <h2 className="text-2xl font-bold text-[#1e242c] mb-4">{s.heading}</h2>
-            {s.body.split('\n\n').map((para, i) => {
-              const boldParts = para.split('**');
-              if (boldParts.length > 1) {
-                return (
-                  <p key={i} className="text-[#414d60] leading-relaxed mb-3">
-                    {boldParts.map((part, j) =>
-                      j % 2 === 1 ? <strong key={j} className="text-[#1e242c]">{part}</strong> : part
-                    )}
-                  </p>
-                );
-              }
-              if (para.match(/^\d+\./)) {
-                return (
-                  <p key={i} className="text-[#414d60] leading-relaxed mb-3 pl-4 border-l-2 border-gray-200">
-                    {para.replace(/^\d+\.\s*(.+?)(?:\n|$)/, (_, content) => content)}
-                  </p>
-                );
-              }
-              if (para.startsWith('| ')) {
-                // Table — render as preformatted block for now
-                return (
-                  <pre key={i} className="bg-gray-50 border border-gray-200 rounded-xl p-4 text-xs text-[#414d60] overflow-x-auto mb-3">
-                    {para.split('\n').filter(Boolean).join('\n')}
-                  </pre>
-                );
-              }
-              return <p key={i} className="text-[#414d60] leading-relaxed mb-3">{para}</p>;
-            })}
+            <div className="text-[#414d60] leading-relaxed whitespace-pre-line">
+              {s.body}
+            </div>
           </section>
         ))}
 

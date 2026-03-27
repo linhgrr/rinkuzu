@@ -220,7 +220,7 @@ Mobile users can only see "Login" and "Get Started" — no way to reach `/pricin
 ### Phase 3: E-E-A-T & Content (Weeks 3–6)
 
 - [x] Create `/about` page with team info ✅ (`src/app/[locale]/(marketing)/about/page.tsx`)
-- [ ] Create author profile pages with Person + Author schema
+- [x] Create author profile pages with Person + Author schema ✅ (`/blog/authors`, `/blog/authors/[slug]`)
 - [x] Create first pillar blog post: "How AI Transforms PDF Learning into Adaptive Quizzes" ✅ (`src/app/[locale]/(marketing)/blog/ai-powered-quiz-generation-guide/page.tsx`)
 - [x] Create second pillar blog post: "Knowledge Graphs and Bloom's Taxonomy: A Complete Guide" ✅ (`src/app/[locale]/(marketing)/blog/knowledge-graphs-adaptive-learning-pdfs/page.tsx`)
 - [x] Fix `/blog` 404: add blog listing page ✅ (`src/app/[locale]/(marketing)/blog/page.tsx`)

@@ -184,6 +184,20 @@ The best way to understand this architecture is to experience it. Upload any lec
 Your session will be shaped by your own knowledge graph, your own SAINT-Bloom state, and your own pace. No two learners take the same path through the same material.
 
 Start with the free plan — no credit card required. Your first personalized quiz is ready in under a minute.
+
+## References
+
+1. **Choi, Y., Lee, Y., Shin, D., & Kim, J. (2020).** SAINT: Integrating Temporal Reasoning and Knowledge Tracing Models for Adaptive Learning on Codeforces Problems. *arXiv preprint arXiv:2008.10056*. [https://arxiv.org/abs/2008.10056](https://arxiv.org/abs/2008.10056)
+
+2. **Corbett, A. T., & Anderson, J. R. (1995).** Knowledge Tracing: Modeling the Acquisition of Procedural Knowledge. *User Modeling and User-Adapted Interaction, 4*(4), 253–278. [https://doi.org/10.1007/BF01099821](https://doi.org/10.1007/BF01099821)
+
+3. **Liang, W., Zhang, Y., Wu, H., Nie, Y., & Yang, F. (2022).** LectureBank: A Benchmark for Prerequisite Discovery from Educational Texts. *Findings of ACL 2022*. [https://aclanthology.org/2022.findings-acl.1/](https://aclanthology.org/2022.findings-acl.1/)
+
+4. **Wang, Z., Lan, A. S., & Baraniuk, R. (2016).** Mathematical Language Processing: Automatic Understanding and Generation of Mathematical Reasoning. *arXiv preprint arXiv:1605.08286*. [https://arxiv.org/abs/1605.08286](https://arxiv.org/abs/1605.08286)
+
+5. **Clement, B., Roy, D., Oudeyer, P.-Y., & Lopes, M. (2015).** Multi-Armed Bandits for Intelligent Tutoring Systems. *arXiv preprint arXiv:1310.3174*. [https://arxiv.org/abs/1310.3174](https://arxiv.org/abs/1310.3174)
+
+6. **Van de Broeck, G., & Gybels, J. (2019).** Dueling Buffer: A Practical Dueling Bandits Algorithm for Online Learning. *Proceedings of the AAAI Conference on Artificial Intelligence, 33*(01), 330–336. [https://doi.org/10.1609/aaai.v33i01.3301330](https://doi.org/10.1609/aaai.v33i01.3301330)
 `;
 
 export default async function BlogPost({ params }: Props) {

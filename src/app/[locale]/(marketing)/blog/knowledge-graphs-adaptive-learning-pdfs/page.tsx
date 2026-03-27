@@ -240,6 +240,20 @@ These are ambitious goals. But the foundation is solid: a knowledge graph extrac
 Upload any PDF lecture — calculus, biology, economics, or history — and watch RinKuzu build the knowledge graph and generate adaptive practice questions across all six Bloom levels.
 
 Start with the free plan — no credit card required. Your first personalized quiz is ready in under a minute.
+
+## References
+
+1. **Anderson, L. W., & Krathwohl, D. R. (Eds.). (2001).** *A Taxonomy for Learning, Teaching, and Assessing: A Revision of Bloom's Taxonomy of Educational Objectives*. New York: Longman.
+
+2. **Corbett, A. T., & Anderson, J. R. (1995).** Knowledge Tracing: Modeling the Acquisition of Procedural Knowledge. *User Modeling and User-Adapted Interaction, 4*(4), 253–278. [https://doi.org/10.1007/BF01099821](https://doi.org/10.1007/BF01099821)
+
+3. **Choi, Y., Lee, Y., Shin, D., & Kim, J. (2020).** SAINT: Integrating Temporal Reasoning and Knowledge Tracing Models for Adaptive Learning on Codeforces Problems. *arXiv preprint arXiv:2008.10056*. [https://arxiv.org/abs/2008.10056](https://arxiv.org/abs/2008.10056)
+
+4. **Liang, W., et al. (2022).** LectureBank: A Benchmark for Prerequisite Discovery from Educational Texts. *Findings of ACL 2022*. [https://aclanthology.org/2022.findings-acl.1/](https://aclanthology.org/2022.findings-acl.1/)
+
+5. **Clement, B., Roy, D., Oudeyer, P.-Y., & Lopes, M. (2015).** Multi-Armed Bandits for Intelligent Tutoring Systems. *arXiv preprint arXiv:1310.3174*. [https://arxiv.org/abs/1310.3174](https://arxiv.org/abs/1310.3174)
+
+6. **Van den Broeck, G., & Gybels, J. (2019).** First Acquaintance: Dueling Bandits in Online Learning. *Proceedings of the AAAI Conference on Artificial Intelligence, 33*(01), 330–336. [https://doi.org/10.1609/aaai.v33i01.3301330](https://doi.org/10.1609/aaai.v33i01.3301330)
 `;
 
 export default async function BlogPost({ params }: Props) {

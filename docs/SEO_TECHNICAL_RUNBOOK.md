@@ -77,8 +77,8 @@ Expected:
 1. Check crawl endpoints:
 
 ```bash
-curl -I https://quizz-ck.vercel.app/robots.txt
-curl -I https://quizz-ck.vercel.app/sitemap.xml
+curl -I https://www.rinkuzu.app/robots.txt
+curl -I https://www.rinkuzu.app/sitemap.xml
 ```
 
 Expected: HTTP 200 for both.
@@ -88,7 +88,7 @@ Expected: HTTP 200 for both.
 - Schema Validator: https://validator.schema.org/
 
 3. Search Console operations:
-- Submit sitemap: `https://quizz-ck.vercel.app/sitemap.xml`
+- Submit sitemap: `https://www.rinkuzu.app/sitemap.xml`
 - Review Coverage weekly
 - Review Enhancements for rich results
 - Track top queries and CTR for homepage, pricing, adaptive-learning pages

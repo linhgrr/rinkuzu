@@ -54,31 +54,31 @@ export function QuestionDiscussion({
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (!isCollapsed) {
-      fetchComments();
-    }
-  }, [quizSlug, questionIndex, isCollapsed]);
+    if (isCollapsed) return;
 
-  const fetchComments = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch(`/api/quiz/${quizSlug}/discussions`);
-      const data = await response.json();
+    const fetchComments = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(`/api/quiz/${quizSlug}/discussions`);
+        const data = await response.json();
 
-      if (data.success) {
-        const questionDiscussion = data.data.find(
-          (d: Discussion) => d.questionIndex === questionIndex
-        );
-        setComments(questionDiscussion?.comments || []);
-      } else {
-        setError(data.error || t('failedToLoad'));
+        if (data.success) {
+          const questionDiscussion = data.data.find(
+            (d: Discussion) => d.questionIndex === questionIndex
+          );
+          setComments(questionDiscussion?.comments || []);
+        } else {
+          setError(data.error || t('failedToLoad'));
+        }
+      } catch (error) {
+        setError(t('failedToLoad'));
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      setError(t('failedToLoad'));
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
+
+    void fetchComments();
+  }, [quizSlug, questionIndex, isCollapsed, t]);
 
   const handleSubmitComment = async (e: React.FormEvent) => {
     e.preventDefault();

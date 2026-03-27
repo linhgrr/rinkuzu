@@ -84,7 +84,7 @@ const HeroSection = ({ isAuthenticated = false }: { isAuthenticated?: boolean })
             <p className="max-w-[680px] text-center text-[15px] font-normal text-white/70 -mt-[16px]">
               Transform any PDF document into an interactive learning journey. Our adaptive AI
               extracts concepts, builds your knowledge graph, and tailors exercises across all
-              Bloom's cognitive levels to ensure deep mastery.
+              Bloom&apos;s cognitive levels to ensure deep mastery.
             </p>
 
             {/* CTA */}

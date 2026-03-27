@@ -26,8 +26,7 @@
 
 ### 1. All SEO Assets Point to Wrong Domain (CRITICAL — 1 fix resolves 8 issues)
 
-> **Status:** Code updated with warning comment. **Manual action required in Vercel dashboard.**
-> **Root cause:** `NEXT_PUBLIC_SITE_URL` env var is unset in Vercel. Code falls back to `FALLBACK_SITE_URL = 'https://quizz-ck.vercel.app'` in `src/lib/seo.ts`.
+> **Status:** ✅ Fixed — `FALLBACK_SITE_URL` updated to `https://www.rinkuzu.app` in `src/lib/seo.ts`. Also set `NEXT_PUBLIC_SITE_URL=https://www.rinkuzu.app` in Vercel environment variables for production.
 
 Every canonical, Open Graph, hreflang, sitemap URL, robots.txt directive, and JSON-LD schema points to `quizz-ck.vercel.app` instead of `www.rinkuzu.app`.
 
@@ -42,7 +41,7 @@ Every canonical, Open Graph, hreflang, sitemap URL, robots.txt directive, and JS
 | Sitemap `<loc>` | 86 URLs on `quizz-ck.vercel.app` | All on `www.rinkuzu.app` |
 | All JSON-LD schemas | `quizz-ck.vercel.app` | `www.rinkuzu.app` |
 
-**Fix:** Set `NEXT_PUBLIC_SITE_URL=https://www.rinkuzu.app` in **Vercel → Project → Environment Variables → Production**, then trigger a redeploy. No code changes needed.
+**Fix:** ✅ Done. Set `NEXT_PUBLIC_SITE_URL=https://www.rinkuzu.app` in **Vercel → Project → Environment Variables → Production**, then redeploy.
 
 ---
 

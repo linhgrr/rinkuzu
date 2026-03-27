@@ -52,30 +52,30 @@ export default function FlashcardPage() {
   const [showPremiumModal, setShowPremiumModal] = useState(false);
 
   useEffect(() => {
-    fetchQuiz();
-  }, [params.slug]);
+    const fetchQuiz = async () => {
+      try {
+        const response = await fetch(`/api/quiz/${params.slug}/flashcards`);
+        const data = await response.json();
 
-  const fetchQuiz = async () => {
-    try {
-      const response = await fetch(`/api/quiz/${params.slug}/flashcards`);
-      const data = await response.json();
-
-      if (data.success) {
-        setQuiz(data.data);
-        setCurrentQuestions(data.data.questions);
-      } else {
-        if (data.error === 'Premium subscription required to access private quizzes') {
-          setShowPremiumModal(true);
+        if (data.success) {
+          setQuiz(data.data);
+          setCurrentQuestions(data.data.questions);
         } else {
-          setError(data.error || 'Failed to load quiz');
+          if (data.error === 'Premium subscription required to access private quizzes') {
+            setShowPremiumModal(true);
+          } else {
+            setError(data.error || 'Failed to load quiz');
+          }
         }
+      } catch (error) {
+        setError('Failed to load quiz');
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      setError('Failed to load quiz');
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
+
+    void fetchQuiz();
+  }, [params.slug]);
 
   const handleSwipe = async (direction: 'left' | 'right') => {
     if (!quiz) return;

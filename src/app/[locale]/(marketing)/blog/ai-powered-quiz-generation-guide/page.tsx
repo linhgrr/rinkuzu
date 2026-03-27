@@ -14,7 +14,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     path: '/blog/ai-powered-quiz-generation-guide',
     title: 'How AI Transforms PDF Learning into Adaptive Quizzes | RinKuzu',
     description:
-      'Discover how large language models extract concepts from lecture PDFs and generate personalized quiz questions that adapt to each learner\'s mastery level using knowledge graphs and Bloom\'s Taxonomy.',
+      'Discover how RinKuzu\'s ALSS system — using SAINT-Bloom knowledge tracing, Dueling DQN curriculum planning, and Gemini-powered exercise generation — transforms any PDF lecture into a personalized adaptive quiz journey.',
   });
 }
 
@@ -24,7 +24,7 @@ const articleSchema = {
   name: 'How AI Transforms PDF Learning into Adaptive Quizzes',
   headline: 'How AI Transforms PDF Learning into Adaptive Quizzes',
   description:
-    'Discover how large language models extract concepts from lecture PDFs and generate personalized quiz questions that adapt to each learner\'s mastery level.',
+    'Discover how RinKuzu\'s ALSS system — SAINT-Bloom, Dueling DQN, and Gemini — transforms any PDF lecture into a personalized adaptive quiz journey.',
   url: `${siteUrl.origin}/blog/ai-powered-quiz-generation-guide`,
   datePublished: '2026-03-27',
   dateModified: '2026-03-27',
@@ -47,95 +47,112 @@ const articleSchema = {
 
 const sections = [
   {
-    id: 'the-problem',
-    heading: 'The Problem with Traditional Study Materials',
-    body: `Every student has a folder of lecture notes, course textbooks, and reference materials — rich content that contains the knowledge they need to master a subject. Yet most of that material sits passive, read once and forgotten. The challenge isn't access to information; it's that static documents can't adapt to the reader. A 300-page textbook treats every student the same way, whether they're seeing the material for the first time or reviewing for an exam.
+    id: 'the-static-learning-problem',
+    heading: 'The Static Learning Problem',
+    body: `Every student has a folder of lecture notes, textbooks, and handouts — rich content that contains the knowledge they need to master a subject. Yet most of that material sits passive, read once and forgotten. The challenge isn't access to information; it's that static documents can't adapt to the reader. A 300-page textbook treats every student the same way, whether they're seeing the material for the first time or reviewing for an exam.
 
-Research in cognitive science consistently shows that spaced repetition, active recall, and adaptive difficulty are among the most effective learning strategies. But applying these strategies manually requires significant expertise and time — time most students and teachers simply don't have.`,
+Research in cognitive science consistently shows that spaced repetition, active recall, and adaptive difficulty are among the most effective learning strategies. But applying these strategies manually requires significant expertise and time — time most students and teachers simply don't have. RinKuzu automates this entire pipeline: from any PDF document to a personalized, continuously adapting practice session.`,
   },
   {
-    id: 'how-ai-extracts',
-    heading: 'How AI Extracts Concepts from PDFs',
-    body: `Large language models (LLMs) have transformed how we can process written material. When RinKuzu analyzes a PDF, the AI doesn't just read the text — it identifies the conceptual structure underneath. It recognizes definitions, theorems, examples, cause-and-effect relationships, comparisons, and procedures.
+    id: 'content-processor-pipeline',
+    heading: 'From PDF to Knowledge Graph: The Content Processor Pipeline',
+    body: `Before a single practice question is generated, RinKuzu's Content Processor transforms the raw PDF into a structured, machine-readable knowledge representation. This pipeline runs once per document and consists of seven steps:
 
-This process involves several steps:
+**Step 1: PDF Loading.** Text is extracted from the document using PyPDF2 with caching to avoid reprocessing previously seen files.
 
-**Concept Identification.** The AI scans for key terms, definitions, and topic headers to build a list of discrete concepts present in the document.
+**Step 2: Chunking.** The text is split into overlapping chunks (default: 4,000 characters, 400-character overlap) using a sliding window approach, ensuring context isn't lost at boundaries.
 
-**Relationship Mapping.** Using the document's structure — chapter ordering, section hierarchies, cross-references — the AI infers which concepts are likely prerequisites for others. A chapter on "Derivatives" in a calculus textbook is almost certainly a prerequisite for a chapter on "Integration."
+**Step 3: LLM Concept Extraction.** Each chunk is processed by Google Gemini (gemini-2.0-flash) to extract discrete knowledge concepts. For each concept, the LLM identifies: a unique concept_id, a name, a detailed definition, related LaTeX formulas, examples, and prerequisite relationships with other concepts. Only newly introduced or defined concepts are extracted — not ones merely listed in headers or table of contents.
 
-**Difficulty Estimation.** The AI assesses concept complexity based on factors like: abstractness of definitions, density of prerequisites, use of technical notation, and length of explanatory sections.
+**Step 4: Embedding Generation.** Each extracted concept is encoded using SentenceTransformer (all-MiniLM-L6-v2), producing a 384-dimensional embedding vector for semantic similarity comparison.
 
-The output is a structured concept map that captures not just what topics exist in the document, but how they relate to each other.`,
+**Step 5: Concept Merging.** Two rounds of deduplication run: (1) name-based merge groups concepts with identical or near-identical names; (2) embedding-based merge uses cosine similarity (threshold: 0.85) to detect semantic duplicates. In practice, this reduces raw concept counts by ~27%.
+
+**Step 6: Prerequisite Relation Verification (PRS).** Raw prerequisite relations from step 3 are verified using the Prerequisite Ranking Score (PRS) algorithm — based on the Reference Distance hypothesis: if a concept's definition has high semantic similarity to another concept's name, a prerequisite relationship is likely. PRS > τ (default τ=0.65) passes a pair to LLM for final validation. Pairs below threshold are rejected. This two-stage approach achieves a 50% acceptance rate on LectureBank benchmark while maintaining reasonable precision.
+
+**Step 7: Knowledge Graph Construction.** Verified prerequisite pairs form directed edges in a DAG. Transitive reduction removes redundant edges, ensuring the graph has minimal edges while preserving all prerequisite relationships. The result: a directed, acyclic prerequisite graph ready for adaptive curriculum planning.`,
   },
   {
-    id: 'adaptive-questions',
-    heading: 'From Concepts to Adaptive Questions',
-    body: `Having extracted a concept map, the next challenge is generating questions that genuinely test understanding — not just recognition memory. This is where Bloom's Taxonomy becomes critical.
+    id: 'saint-bloom-knowledge-tracing',
+    heading: 'SAINT-Bloom: Multi-Level Knowledge Tracing',
+    body: `Once the knowledge graph is built, RinKuzu needs to track each learner's mastery state across all concepts and cognitive levels. This is handled by **SAINT-Bloom** — a variant of the Separated Self-Attentional Neural Knowledge Tracing model (Choi et al., 2020) extended to model mastery at each Bloom's Taxonomy level independently.
 
-**Bloom's Taxonomy** (Benjamin Bloom, 1956; Anderson & Krathwohl, 2001) classifies cognitive processes across six levels:
+Unlike standard knowledge tracing models that produce a single mastery probability per concept, SAINT-Bloom outputs: **P(correct | concept, Bloom_level)** — a separate probability for each of the six cognitive levels: Remember, Understand, Apply, Analyze, Evaluate, and Create.
 
-1. **Remember** — Recall definitions, facts, formulas
-2. **Understand** — Explain concepts in your own words
-3. **Apply** — Use knowledge in new situations
-4. **Analyze** — Break down relationships and structures
-5. **Evaluate** — Judge quality using criteria
-6. **Create** — Combine elements into new patterns
+This is critical because "knowing" a concept at the Remember level (memorizing a formula) is fundamentally different from "knowing" it at the Create level (designing a novel problem that uses it). Standard models collapse this distinction, leading to the illusion of mastery — students who score well on recall questions fail at application because the model never distinguished between the two levels.
 
-RinKuzu generates questions across all six levels. A Remember-level question might ask: "What is the derivative of x²?" An Apply-level question might present a novel physics scenario requiring the student to derive the correct formula. A Create-level prompt might ask the student to design an experiment that tests the concept.
-
-This matters because students who only practice Remember-level questions develop the illusion of mastery. True understanding only emerges when you can apply, analyze, and synthesize.`,
+SAINT-Bloom achieves AUC 0.8010 on the Junyi Academy benchmark. Its 128-dimensional hidden state captures the learner's full interaction history and serves as the primary input to the curriculum planning agent.`,
   },
   {
-    id: 'bayesian-mastery',
-    heading: 'Tracking Mastery with Bayesian Knowledge Tracing',
-    body: `How does RinKuzu know what to ask next? The answer lies in **Bayesian Knowledge Tracing (BKT)**, a probabilistic model originally developed for intelligent tutoring systems.
+    id: 'd3qn-curriculum-planning',
+    heading: 'Dueling DQN: Curriculum Sequencing with Hard Action Masking',
+    body: `With a knowledge graph and a learner's current mastery state, the next challenge is: what should the learner practice *next*? This is the curriculum sequencing problem — and RinKuzu solves it with a **Dueling Double Deep Q-Network (D3QN)** agent trained using Gymnasium.
 
-BKT maintains a probability estimate for each learner's mastery of every concept. Each time you answer a question, BKT updates this probability:
+**Action Space:** Each action represents a (concept, Bloom_level) pair. With N concepts and 6 Bloom levels, the action space has N×6 dimensions. RinKuzu uses a concept-agnostic architecture: every concept is processed by the same shared backbone network, enabling the agent to generalize to any number of concepts without retraining.
 
-**If you answer correctly:** Mastery probability increases, with the size of the increase depending on the question's difficulty and the prior probability. Correct answers on harder questions produce larger jumps.
+**State Representation:** The 2,082-dimensional state vector encodes:
+- Global features (130-dim): SAINT-Bloom hidden state + session progress scalars
+- Per-concept features (N×8): bloom mastery per level, visited flag, prerequisite satisfaction flag
 
-**If you answer incorrectly:** Mastery probability decreases, again scaled by difficulty.
+**Four-Layer Action Masking:** Before action selection, four filters block invalid actions:
+1. **Prerequisite filter:** Concept is blocked if any prerequisite has max Bloom mastery < 0.75
+2. **Bloom validity filter:** Actions not present in the dataset for that concept are blocked
+3. **Sequential Bloom unlock:** Bloom level b+1 cannot be selected unless Bloom b has been attempted
+4. **Mastery filter:** Actions where P(correct) ≥ 0.75 are blocked (already mastered)
 
-Over time, BKT builds a precise picture of each learner's knowledge state. RinKuzu's recommendation engine then uses this model to select the next concept to practice — prioritizing those where:
+**Dueling Architecture:** The Q-network separates the Value stream V(s) from the Advantage stream A(s,a), computing Q(s,a) = V(s) + A(s,a) − mean(A). This allows the agent to learn which states are valuable in general vs. which specific actions matter.
 
-- Mastery is low
-- The concept has no unresolved prerequisites
-- The learner hasn't practiced recently (spaced repetition)
-
-This produces a learning path that is genuinely personalized: different for every student, adapting in real time.`,
+The agent was trained over 500,000 timesteps on a SAINT-based student simulator, achieving Reward 58.45 and Normalized Learning Gain 0.774 — outperforming Random, Sequential, Greedy, and Q-matrix baselines.`,
   },
   {
-    id: 'knowledge-graphs',
-    heading: 'Knowledge Graphs: The Structural Foundation',
-    body: `A knowledge graph represents concepts as nodes and prerequisite relationships as directed edges. In a calculus knowledge graph, "Limits" → "Derivatives" → "Integrals" → "Differential Equations" would form a chain where mastering later concepts requires mastery of earlier ones.
+    id: 'gemini-exercise-generation',
+    heading: 'Gemini 2.0 Flash: Adaptive Exercise Generation & Evaluation',
+    body: `When D3QN selects action a* = (concept, Bloom_level), RinKuzu retrieves the concept's metadata (name, definition, formulas, examples) from the Concept Registry and calls **Gemini 2.0 Flash** to generate a tailored practice question.
 
-This structure enables two critical capabilities:
+The generation prompt is Bloom-specific:
 
-**Prerequisite-Aware Recommendations.** RinKuzu will never recommend practicing "Integration" before a learner's "Derivatives" mastery is sufficient. This prevents the frustration of being asked questions you can't answer because you're missing foundational knowledge.
+| Level | Focus |
+|---|---|
+| 1. Remember | Recall definitions, formulas, facts |
+| 2. Understand | Explain in own words, summarize, distinguish |
+| 3. Apply | Use formulas in new situations, calculate |
+| 4. Analyze | Compare methods, find patterns, decompose structure |
+| 5. Evaluate | Judge correctness, prove/disprove, justify choices |
+| 6. Create | Design new problems, compose multi-step solutions |
 
-**Gap Analysis.** The knowledge graph makes it easy to identify where a learner's understanding breaks down. If someone consistently fails questions about "Integration by Parts," the graph reveals whether the problem is the integration technique itself or a gap in the prerequisite chain (perhaps "Derivatives of Trigonometric Functions" wasn't fully mastered).
+Gemini outputs structured exercises with five fields: QUESTION, TYPE (multiple_choice or free_form), OPTIONS (A/B/C/D), ANSWER, and EXPLANATION. Temperature is set to 0.7 — diverse enough to prevent question repetition, controlled enough to avoid factual errors.
 
-When you upload a PDF, RinKuzu builds this graph automatically from the document's structure and content — no manual curriculum design required.`,
+**Mastery-adjusted difficulty:** Gemini also receives the learner's current P(correct) for this (concept, Bloom) pair. Low mastery (<50%) prompts the model to generate easier variants; high mastery (>70%) pushes toward harder applications.
+
+**Answer evaluation:** After the learner submits a response, a separate Gemini call evaluates correctness and provides targeted Vietnamese-language feedback. If Gemini is unavailable, a deterministic string-match fallback ensures the session never stalls.
+
+**Topic-Coherent Selection:** To prevent the D3QN agent from "jumping" between unrelated topics (which maximizes coverage metrics but frustrates learners), RinKuzu adds a light heuristic bias: +2.0 to Q-values for actions in the current topic for up to 3 consecutive steps. The agent still makes the final decision, but topic transitions are smoother.`,
   },
   {
-    id: 'real-results',
-    heading: 'What This Means in Practice',
-    body: `Traditional flashcard systems and quiz banks treat every concept equally and at fixed intervals. RinKuzu's approach produces measurably different outcomes:
+    id: 'the-adaptive-loop',
+    heading: 'The Complete Adaptive Loop: How It All Connects',
+    body: `The seven-step adaptive loop runs continuously throughout each practice session:
 
-- **Faster mastery**: By prioritizing weak concepts, study time is concentrated where it has the greatest impact. Students practicing with adaptive recommendation systems typically show 20–30% faster skill acquisition compared to fixed-schedule review.
-- **Better retention**: Spaced repetition built into BKT ensures concepts are revisited at optimal intervals — just before they're likely to be forgotten, not after.
-- **Deeper understanding**: Practice spanning all six Bloom's levels develops conceptual understanding, not just recall. Students can transfer knowledge to new problems, not just recognize answers they\'ve seen before.
-- **Personalized pacing**: Every learner moves at their own optimal speed. Strong prerequisites let a fast learner skip ahead; persistent gaps slow the pace and add practice.
+1. **State Representation:** Current learner's SAINT-Bloom hidden state + mastery vector + progress scalars
+2. **D3QN Decision:** ε-greedy action selection with four-layer masking → outputs (concept_id, Bloom_level)
+3. **Metadata Retrieval:** Concept definition, formulas, examples fetched from Concept Registry
+4. **Exercise Generation:** Gemini 2.0 Flash generates a Bloom-specific question tailored to current mastery
+5. **Learner Response:** Student submits an answer
+6. **Evaluation:** Gemini judges correctness and delivers feedback in Vietnamese
+7. **State Update:** env.step() triggers SAINT forward pass → new hidden state, updated mastery matrix → loop returns to step 1
 
-The AI doesn't replace the teacher — it handles the repetitive work of question generation, scheduling, and progress tracking, freeing educators to focus on insight, motivation, and the human elements of learning.`,
+This closed loop means the system gets smarter with every interaction. Correct answers increase P(correct) for that (concept, Bloom) pair; incorrect answers decrease it. D3QN observes the updated mastery and dynamically rebalances — either staying to deepen understanding or moving to address weaker areas.
+
+The entire pipeline — from uploading a calculus PDF to running your first adaptive session — completes in under 60 seconds. The knowledge graph, SAINT-Bloom state initialization, and D3QN recommendation engine all run server-side, invisible to the learner.`,
   },
   {
-    id: 'get-started',
-    heading: 'Get Started with AI-Powered Learning',
-    body: `RinKuzu puts all of this into practice in a single workflow: upload a PDF, get an adaptive quiz session. No curriculum design, no question banking, no scheduling — just your materials and an AI that understands how you learn.
+    id: 'getting-started',
+    heading: 'Experience the Adaptive Loop Yourself',
+    body: `The best way to understand this architecture is to experience it. Upload any lecture PDF — calculus, biology, economics, or physics — and watch RinKuzu build the knowledge graph, initialize your mastery state, and generate the first personalized practice question.
 
-The free plan includes full PDF-to-quiz generation, knowledge graph visualization, adaptive practice across all Bloom's levels, and mastery tracking. Start with your next lecture PDF and see what a truly adaptive learning session feels like.`,
+Your session will be shaped by your own knowledge graph, your own SAINT-Bloom state, and your own pace. No two learners take the same path through the same material.
+
+Start with the free plan — no credit card required. Your first personalized quiz is ready in under a minute.`,
   },
 ];
 
@@ -152,7 +169,7 @@ export default async function BlogPost({ params }: Props) {
           <nav className="flex items-center gap-2 text-sm text-[#414d60] mb-8">
             <Link href="/" className="hover:text-[#1e242c] transition-colors">Home</Link>
             <span>/</span>
-            <Link href="/blog/ai-powered-quiz-generation-guide" className="hover:text-[#1e242c] transition-colors">Blog</Link>
+            <Link href="/blog" className="hover:text-[#1e242c] transition-colors">Blog</Link>
             <span>/</span>
             <span className="text-[#1e242c]">AI & PDFs</span>
           </nav>
@@ -160,13 +177,13 @@ export default async function BlogPost({ params }: Props) {
             <span className="text-xs font-semibold uppercase tracking-wider text-teal-600 bg-teal-50 px-3 py-1 rounded-full">
               AI in Education
             </span>
-            <span className="text-xs text-[#414d60]">March 27, 2026 · 8 min read</span>
+            <span className="text-xs text-[#414d60]">March 27, 2026 · 9 min read</span>
           </div>
           <h1 className="text-3xl md:text-5xl font-bold text-[#1e242c] leading-tight mb-6">
             How AI Transforms PDF Learning into Adaptive Quizzes
           </h1>
           <p className="text-lg text-[#414d60] leading-relaxed">
-            Discover how large language models extract concepts from lecture PDFs and generate personalized quiz questions that adapt to each learner's mastery level.
+            Discover how RinKuzu's ALSS system — SAINT-Bloom, Dueling DQN, and Gemini — transforms any PDF lecture into a personalized adaptive quiz journey.
           </p>
           <div className="flex items-center gap-3 mt-6 pt-6 border-t border-gray-200">
             <div className="w-10 h-10 rounded-full bg-[#1d1d1f] flex items-center justify-center text-white font-bold text-sm">RK</div>
@@ -194,40 +211,14 @@ export default async function BlogPost({ params }: Props) {
 
       {/* Body */}
       <div className="max-w-3xl mx-auto px-6 pb-20">
-        <div className="prose prose-slate max-w-none">
-          {sections.map((s) => (
-            <section key={s.id} id={s.id} className="mb-12">
-              <h2 className="text-2xl font-bold text-[#1e242c] mb-4">{s.heading}</h2>
-              {s.body.split('\n\n').map((para, i) => {
-                if (para.startsWith('**') && para.endsWith('**')) {
-                  return (
-                    <p key={i} className="text-[#414d60] leading-relaxed mb-3">
-                      <strong className="text-[#1e242c]">{para.replace(/\*\*/g, '')}</strong>
-                    </p>
-                  );
-                }
-                if (para.startsWith('**')) {
-                  return (
-                    <p key={i} className="text-[#414d60] leading-relaxed mb-3">
-                      {para.split('**').map((part, j) =>
-                        j % 2 === 1 ? <strong key={j} className="text-[#1e242c]">{part}</strong> : part
-                      )}
-                    </p>
-                  );
-                }
-                if (para.match(/^\d+\./)) {
-                  // numbered list
-                  return (
-                    <p key={i} className="text-[#414d60] leading-relaxed mb-3 pl-4 border-l-2 border-gray-100">
-                      {para.replace(/^\d+\.\s*/, '')}
-                    </p>
-                  );
-                }
-                return <p key={i} className="text-[#414d60] leading-relaxed mb-3">{para}</p>;
-              })}
-            </section>
-          ))}
-        </div>
+        {sections.map((s) => (
+          <section key={s.id} id={s.id} className="mb-12">
+            <h2 className="text-2xl font-bold text-[#1e242c] mb-4">{s.heading}</h2>
+            <div className="prose prose-slate max-w-none text-[#414d60] leading-relaxed whitespace-pre-line">
+              {s.body}
+            </div>
+          </section>
+        ))}
 
         {/* CTA */}
         <div className="mt-16 bg-[#fbfbfd] rounded-3xl p-8 border border-gray-100 text-center">

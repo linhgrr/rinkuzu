@@ -148,7 +148,7 @@ const nextConfig = {
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: https: blob:",
               "font-src 'self' data:",
-              "connect-src 'self' https://www.googletagmanager.com https://www.google-analytics.com https://raw.githack.com https://raw.githubusercontent.com",
+              "connect-src 'self' https://www.googletagmanager.com https://www.google-analytics.com https://raw.githack.com https://raw.githubusercontent.com https://objectstorageapi.ap-southeast-1.clawcloudrun.com",
               "frame-src 'none'",
               "object-src 'none'",
               "base-uri 'self'",

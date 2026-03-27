@@ -25,7 +25,7 @@ interface GuestLandingProps {
 }
 
 export function GuestLanding({ quizzes, isAuthenticated = false }: GuestLandingProps) {
-  const t = useTranslations('Landing');
+  const t = useTranslations('landing');
 
   return (
     <div

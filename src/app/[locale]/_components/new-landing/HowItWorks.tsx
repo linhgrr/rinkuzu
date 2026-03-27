@@ -1,14 +1,15 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
+import { UserPlus, Upload, Target } from 'lucide-react';
 
 export function HowItWorks() {
   const t = useTranslations('landing.howItWorks');
 
   const steps = [
-    { key: 'step1', icon: '📝' },
-    { key: 'step2', icon: '📄' },
-    { key: 'step3', icon: '🎯' },
+    { key: 'step1', Icon: UserPlus },
+    { key: 'step2', Icon: Upload },
+    { key: 'step3', Icon: Target },
   ];
 
   return (
@@ -19,18 +20,18 @@ export function HowItWorks() {
         </div>
 
         <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-          {steps.map((step, i) => (
-            <div key={step.key} className="text-center">
-              <div className="w-16 h-16 rounded-full bg-teal-500/10 border border-teal-500/20 flex items-center justify-center mx-auto mb-6">
-                <span className="text-2xl">{step.icon}</span>
+          {steps.map((step) => {
+            const Icon = step.Icon;
+            return (
+              <div key={step.key} className="text-center rounded-2xl border border-white/10 bg-white/5 p-8">
+                <div className="w-16 h-16 rounded-full bg-teal-500/10 border border-teal-500/20 flex items-center justify-center mx-auto mb-6">
+                  <Icon className="w-7 h-7 text-teal-400" aria-hidden="true" />
+                </div>
+                <h3 className="text-white font-semibold text-xl mb-3">{t(`${step.key}.title`)}</h3>
+                <p className="text-white/60 text-sm leading-relaxed">{t(`${step.key}.description`)}</p>
               </div>
-              <h3 className="text-white font-semibold text-xl mb-3">{t(`${step.key}.title`)}</h3>
-              <p className="text-white/60 text-sm">{t(`${step.key}.description`)}</p>
-              {i < steps.length - 1 && (
-                <div className="hidden md:block absolute right-0 top-1/2 -translate-y-1/2 text-white/20 text-2xl">→</div>
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </section>

@@ -10,6 +10,8 @@ export const INDEXABLE_STATIC_PUBLIC_ROUTES = [
   '/cookies',
   '/about',
   '/blog',
+  '/blog/authors',
+  '/blog/authors/rinkuzu-team',
   '/blog/ai-powered-quiz-generation-guide',
   '/blog/knowledge-graphs-adaptive-learning-pdfs',
 ] as const;

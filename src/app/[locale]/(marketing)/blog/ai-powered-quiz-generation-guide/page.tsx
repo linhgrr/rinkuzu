@@ -29,9 +29,9 @@ const articleSchema = {
   datePublished: '2026-03-27',
   dateModified: '2026-03-27',
   author: {
-    '@type': 'Organization',
+    '@type': 'Person',
     name: 'RinKuzu Team',
-    url: `${siteUrl.origin}/about`,
+    url: `${siteUrl.origin}/blog/authors/rinkuzu-team`,
   },
   publisher: {
     '@type': 'Organization',

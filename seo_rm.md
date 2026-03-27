@@ -146,7 +146,7 @@ Mobile users can only see "Login" and "Get Started" — no way to reach `/pricin
 
 | # | Fix | Status | Effort |
 |---|---|---|---|
-| 1 | Set `NEXT_PUBLIC_SITE_URL` in Vercel → redeploy | ⏳ Pending (manual — set in Vercel dashboard) | 5 min |
+| 1 | Set `NEXT_PUBLIC_SITE_URL` in Vercel → redeploy | ✅ Done (user confirmed) | 5 min |
 | 2 | Remove or replace fake address + phone in footer | ✅ Done (`Footer.tsx`) | 10 min |
 | 3 | Fix `$NaN` pricing display | ✅ Done (`pricing2.tsx`) | 15 min |
 | 4 | Create `src/app/llms.txt/route.ts` | ✅ Done | 1 hr |
@@ -219,10 +219,11 @@ Mobile users can only see "Login" and "Get Started" — no way to reach `/pricin
 
 ### Phase 3: E-E-A-T & Content (Weeks 3–6)
 
-- [ ] Create `/about` page with team info
+- [x] Create `/about` page with team info ✅ (`src/app/[locale]/(marketing)/about/page.tsx`)
 - [ ] Create author profile pages with Person + Author schema
-- [ ] Create first pillar blog post: "How AI Transforms PDF Learning into Adaptive Quizzes"
-- [ ] Create second pillar blog post: "Knowledge Graphs and Bloom's Taxonomy: A Complete Guide"
+- [x] Create first pillar blog post: "How AI Transforms PDF Learning into Adaptive Quizzes" ✅ (`src/app/[locale]/(marketing)/blog/ai-powered-quiz-generation-guide/page.tsx`)
+- [x] Create second pillar blog post: "Knowledge Graphs and Bloom's Taxonomy: A Complete Guide" ✅ (`src/app/[locale]/(marketing)/blog/knowledge-graphs-adaptive-learning-pdfs/page.tsx`)
+- [x] Fix `/blog` 404: add blog listing page ✅ (`src/app/[locale]/(marketing)/blog/page.tsx`)
 - [ ] Add real testimonials with photos and institutional affiliations
 - [ ] Create Product Hunt launch page
 - [ ] Set up LinkedIn company page and founder profile

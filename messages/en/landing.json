@@ -6,7 +6,21 @@
     "description": "Create quizzes from PDF, study smart with Flashcards, and personalized Rin-chan for your learning journey.",
     "searchPlaceholder": "Search topics: Calculus, English...",
     "community": "RinKuzu Community",
-    "searchButton": "Search Now"
+    "searchButton": "Search Now",
+    "poweredBy": "Powered by",
+    "geminiAi": "Gemini AI",
+    "headline": "Master Any Subject at Your Own Pace",
+    "subtitle": "Transform any PDF document into an interactive learning journey. Our adaptive AI extracts concepts, builds your knowledge graph, and tailors exercises across all Bloom's cognitive levels to ensure deep mastery.",
+    "ctaStartLearning": "Start Learning Now",
+    "login": "Login",
+    "getStarted": "Get Started",
+    "navAiQuiz": "AI Quiz Generator",
+    "navKnowledgeGraph": "Knowledge Graph Learning",
+    "navAbout": "About",
+    "navBlog": "Blog",
+    "navPricing": "Pricing",
+    "navFaq": "FAQ",
+    "navUploadPdf": "Upload PDF"
   },
   "categories": {
     "title": "Explore New Knowledge",

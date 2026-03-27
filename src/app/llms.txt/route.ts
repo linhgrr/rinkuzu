@@ -62,9 +62,57 @@ ${SITE_NAME} is an AI-powered adaptive learning platform. ${DESCRIPTION}
 - /explore — Browse community quizzes
 
 ## Technology
-- Powered by Gemini AI
+- Powered by Google Gemini AI (quiz generation and answer evaluation)
+- Built by Hanoi University of Science and Technology (HUST)
 - Web application (no installation required)
 - PWA-ready (installable on mobile/desktop)
+- Languages: Vietnamese and English (full bilingual interface)
+
+## Contact Information
+- Email: support@rinkuzu.com
+- Data Protection Officer: dpo@rinkuzu.com
+- Address: Room 302, Building A1, Hanoi University of Science and Technology, 17 Dai Co Viet Street, Hai Ba Trung District, Hanoi, Vietnam
+- Website: ${SITE_URL}
+- Privacy Policy: ${SITE_URL}/privacy
+- Terms of Service: ${SITE_URL}/terms
+
+## Frequently Asked Questions
+
+Q: What is RinKuzu?
+A: RinKuzu is an AI-powered adaptive learning platform that transforms PDF documents into personalized quiz-based learning journeys. Using knowledge graphs and Bloom's Taxonomy, it helps students, teachers, and training teams master any subject at their own pace. The system uses SAINT-Bloom knowledge tracing and Dueling DQN reinforcement learning to continuously adapt to each learner's progress.
+
+Q: How do I generate a quiz from a PDF?
+A: Simply upload any PDF document — lecture notes, textbooks, or internal docs — and RinKuzu's AI will automatically extract key concepts, identify prerequisite relationships, and generate high-quality quizzes with explanations. No manual question writing required. The process takes under a minute for most documents.
+
+Q: Is RinKuzu free to use?
+A: Yes. RinKuzu's free plan includes unlimited PDF-to-quiz generation, adaptive practice, mastery tracking, and community quiz browsing. A Premium plan offers advanced features and priority support. See /pricing for details.
+
+Q: Which languages does RinKuzu support?
+A: RinKuzu supports Vietnamese and English with a full bilingual interface. AI-generated content adapts to the language of your uploaded PDF.
+
+Q: What is a knowledge graph in learning?
+A: A knowledge graph maps the relationships between concepts in your material. RinKuzu builds a visual graph showing prerequisite chains so you can see the learning path from fundamentals to advanced topics — ensuring you never practice a concept before mastering its prerequisites.
+
+Q: What is Bloom's Taxonomy?
+A: Bloom's Taxonomy classifies cognitive levels from Remember to Create. RinKuzu generates questions at each level — from basic recall to higher-order reasoning — ensuring deep mastery. The six levels are: Remember, Understand, Apply, Analyze, Evaluate, and Create.
+
+Q: How does adaptive learning work on RinKuzu?
+A: RinKuzu tracks your performance using Bayesian Knowledge Tracing (BKT), prioritizing questions on your weakest concepts. A Dueling DQN reinforcement learning agent selects the next best (concept, difficulty) pair. The AI adjusts difficulty dynamically for maximum learning efficiency.
+
+Q: What is the AI tutor Rin-chan?
+A: Rin-chan is RinKuzu's built-in AI tutor. It explains any concept from your PDF in plain language, answers follow-up questions, and guides you through difficult topics — available 24/7 within the app.
+
+Q: Can teachers use RinKuzu for classroom assessment?
+A: Absolutely. Teachers can upload lecture PDFs to generate student quizzes, track class-wide performance, and identify concepts that need re-teaching. Contact support@rinkuzu.com for educator pricing and bulk access.
+
+Q: How is my data and privacy protected?
+A: Uploaded PDFs are processed securely and kept private by default. We never use your content to train AI models. RinKuzu is GDPR and Vietnamese PDPA compliant. See /privacy for full details.
+
+Q: What file formats are supported?
+A: Currently PDF documents are supported. We recommend using text-based PDFs (not scanned images) for the best quiz generation quality. Word, PowerPoint, and plain text support is on the roadmap.
+
+Q: Does RinKuzu work on mobile?
+A: Yes. RinKuzu is a Progressive Web App (PWA) that works on desktop, tablet, and mobile browsers. Install it for an app-like experience with offline access to your progress.
 `;
 
 /**

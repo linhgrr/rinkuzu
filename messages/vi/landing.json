@@ -104,6 +104,12 @@
     "q15": "Giáo viên có thể dùng RinKuzu để đánh giá trên lớp không?",
     "a15": "Hoàn toàn có thể. Giáo viên tải bài giảng PDF lên để tạo quiz cho học sinh, theo dõi hiệu suất cả lớp, và xác định khái niệm cần giảng lại — lý tưởng cho đánh giá hình thành."
   },
+  "featured_quizzes": "Quiz Nổi Bật",
+  "featured_quizzes_description": "Khám phá các bộ quiz chất lượng từ cộng đồng RinKuzu.",
+  "start_quiz": "Bắt đầu Quiz",
+  "get_started_free": "Bắt đầu miễn phí",
+  "view_pricing": "Xem bảng giá",
+  "ready_to_start": "Sẵn sàng bắt đầu hành trình học tập?",
   "cta": {
     "title": "Sẵn sàng để nâng tầm tri thức?",
     "subtitle": "Tham gia cùng hàng ngàn học sinh, sinh viên đang học tập hiệu quả hơn mỗi ngày với RinKuzu.",

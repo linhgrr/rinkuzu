@@ -77,6 +77,12 @@ const articleSchema = {
     '@type': 'WebPage',
     url: `${siteUrl.origin}/blog/ai-powered-quiz-generation-guide`,
   },
+  image: {
+    '@type': 'ImageObject',
+    url: 'https://images.unsplash.com/photo-1589998059171-988d887df646?w=1200&q=80',
+    width: 1200,
+    height: 630,
+  },
   wordCount: 1350,
   timeRequired: 'PT9M',
 };

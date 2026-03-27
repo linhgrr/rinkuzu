@@ -61,20 +61,12 @@ function buildPersonSchema(author: (typeof AUTHORS)[string]) {
       name: 'RinKuzu / Hanoi University of Science and Technology',
       url: siteUrl.origin,
     },
-    sameAs: [],
   };
 }
 
-function buildAuthorSchema(author: (typeof AUTHORS)[string]) {
-  return {
-    '@context': 'https://schema.org',
-    '@type': 'Author',
-    name: author.name,
-    url: `${siteUrl.origin}/blog/authors/${author.slug}`,
-    description: author.shortBio,
-    image: author.imageUrl,
-  };
-}
+// NOTE: buildAuthorSchema removed — "@type: Author" is NOT a valid schema.org type.
+// Only Person schema is used (valid per schema.org specification).
+// See: https://schema.org/Person — use @type: Person for author identification.
 
 export default async function AuthorPage({ params }: Props) {
   const { locale, slug } = await params;
@@ -82,12 +74,10 @@ export default async function AuthorPage({ params }: Props) {
   if (!author) return null;
 
   const personSchema = buildPersonSchema(author);
-  const authorSchema = buildAuthorSchema(author);
 
   return (
     <>
       <JsonLd id="person-schema" data={personSchema} />
-      <JsonLd id="author-schema" data={authorSchema} />
 
       <main className="min-h-screen bg-white">
         {/* Hero */}

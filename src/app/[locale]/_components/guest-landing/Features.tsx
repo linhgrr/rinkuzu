@@ -11,6 +11,11 @@ import { ROUTES } from '@/shared/constants'
 
 const chatbotIcon = 'https://i.ibb.co/ZRYgc1tN/Gemini-Generated-Image-yjm06yyjm06yyjm0-removebg-preview.png'
 
+// External i.ibb.co images — must be unoptimized since Next.js image optimizer
+// cannot proxy external hosts not in next.config.js allowedDomains.
+// Hero image is the true LCP element: add priority + preconnect.
+const HERO_IMAGE_URL = 'https://i.ibb.co/chDwCJ84/image.png'
+
 export function Features() {
   const t = useTranslations('landing.features')
   const router = useRouter()
@@ -45,10 +50,11 @@ export function Features() {
           {/* Center Content: Rin-chan / Learning Experience */}
           <div className="relative w-[40%] h-[85%] z-20 rounded-[32px] overflow-hidden shadow-apple-2xl border-4 border-white">
             <Image
-              src="https://i.ibb.co/chDwCJ84/image.png"
-              alt="Rin-chan Rin-chan"
+              src={HERO_IMAGE_URL}
+              alt="Rin-chan — RinKuzu AI learning mascot with study interface"
               fill
               className="object-cover"
+              priority
             />
             <div className="absolute inset-0 bg-gradient-to-t from-blue-600/80 via-transparent to-transparent flex flex-col justify-end p-8 text-center">
               <button className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center mx-auto mb-4 border border-white/30 hover:scale-110 transition-transform focus-visible:ring-2 focus-visible:ring-white" aria-label="Play video">
@@ -86,7 +92,7 @@ export function Features() {
           <div className="absolute right-[0%] top-[15%] z-30 w-[28%] animate-bounce-slow">
             <Card className="p-4 border border-[#edeef0] shadow-[10px_25px_100px_0px_rgba(0,43,107,0.15)] rounded-[20px] flex items-center gap-4 bg-white/95 backdrop-blur-sm">
               <div className="w-12 h-12 rounded-full bg-purple-50 flex items-center justify-center shrink-0">
-                <Image src={chatbotIcon} alt="" width={24} height={24} className="w-6 h-6" />
+                <Image src={chatbotIcon} alt="Rin-chan AI tutor icon" width={24} height={24} className="w-6 h-6" />
               </div>
               <p className="font-bold text-[#1e242c] text-base leading-tight">{t('feature2.title')}</p>
             </Card>
@@ -116,8 +122,8 @@ export function Features() {
         <div className="md:hidden space-y-6">
           <div className="relative w-full aspect-[4/5] rounded-[32px] overflow-hidden shadow-apple-xl border-2 border-white mb-10">
             <Image
-              src="https://i.ibb.co/chDwCJ84/image.png"
-              alt="Rin-chan"
+              src={HERO_IMAGE_URL}
+              alt="Rin-chan — RinKuzu AI learning mascot"
               fill
               className="object-cover"
             />
@@ -139,7 +145,7 @@ export function Features() {
 
             <Card className="p-6 border border-gray-100 shadow-apple-sm flex items-center gap-4">
               <div className="w-12 h-12 rounded-2xl bg-purple-50 flex items-center justify-center shrink-0">
-                <Image src={chatbotIcon} alt="" width={24} height={24} className="w-6 h-6" />
+                <Image src={chatbotIcon} alt="Rin-chan AI tutor icon" width={24} height={24} className="w-6 h-6" />
               </div>
               <div className="flex-1">
                 <h4 className="font-bold text-gray-900">{t('feature2.title')}</h4>

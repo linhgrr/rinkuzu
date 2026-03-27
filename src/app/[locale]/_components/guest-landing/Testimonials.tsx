@@ -49,20 +49,21 @@ export function Testimonials() {
             <div className="absolute bottom-0 left-0 w-64 h-64 bg-purple-600/20 rounded-full blur-[100px]" />
           </div>
 
-          {/* User Photos Grid */}
+          {/* User Photos Grid — using Unsplash (already whitelisted in next.config.js) */}
           <div className="flex-1 grid grid-cols-2 gap-4">
             {[
-              { name: 'Student from Hanoi University', seed: 'user1' },
-              { name: 'Teacher using RinKuzu', seed: 'user2' },
-              { name: 'Self-learner using RinKuzu', seed: 'user3' },
-              { name: 'Course creator on RinKuzu', seed: 'user4' },
+              { name: 'Student from Hanoi University', url: 'https://images.unsplash.com/photo-1531482615713-2afd69097998?w=400&q=80' },
+              { name: 'Teacher using RinKuzu', url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80' },
+              { name: 'Self-learner using RinKuzu', url: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&q=80' },
+              { name: 'Course creator on RinKuzu', url: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&q=80' },
             ].map((user) => (
-              <div key={user.seed} className="relative aspect-square rounded-3xl overflow-hidden group">
+              <div key={user.name} className="relative aspect-square rounded-3xl overflow-hidden group">
                 <Image
-                  src={`https://i.pravatar.cc/300?u=${user.seed}`}
+                  src={user.url}
                   alt={user.name}
                   fill
                   className="object-cover group-hover:scale-110 transition-transform duration-500"
+                  sizes="(max-width: 1024px) 50vw, 200px"
                 />
                 <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors" />
               </div>

@@ -4,11 +4,20 @@ import { defaultLocale, locales } from '@/i18n/config';
 import { canonicalFor } from '@/lib/seo';
 import { INDEXABLE_STATIC_PUBLIC_ROUTES } from '@/lib/seo.routes';
 
+// Extended sitemap entry type that includes hreflang alternates.
+// Next.js MetadataRoute.Sitemap doesn't expose the 'links' field directly,
+// but the sitemap XML renderer supports it. We cast to extend the type.
+type HreflangLink = { language: string; url: string };
+
+type SitemapEntry = MetadataRoute.Sitemap[number] & {
+  links?: HreflangLink[];
+};
+
 function localeVariants(path: string): { locale: string; path: string }[] {
   return locales.map((locale) => ({ locale, path }));
 }
 
-function buildHreflangLinks(path: string) {
+function buildHreflangLinks(path: string): HreflangLink[] {
   return locales.map((locale) => ({
     language: locale,
     url: canonicalFor(locale, path),
@@ -21,7 +30,7 @@ function toEntry(
   changeFrequency: MetadataRoute.Sitemap[number]['changeFrequency'],
   priority: number,
   lastModified = new Date()
-): MetadataRoute.Sitemap[number] {
+): SitemapEntry {
   return {
     url: canonicalFor(locale, path),
     lastModified,
@@ -31,11 +40,11 @@ function toEntry(
   };
 }
 
-export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const entries: MetadataRoute.Sitemap = [];
+export default async function sitemap(): Promise<SitemapEntry[]> {
+  const entries: SitemapEntry[] = [];
   const seenUrls = new Set<string>();
 
-  const pushEntry = (entry: MetadataRoute.Sitemap[number]) => {
+  const pushEntry = (entry: SitemapEntry) => {
     if (seenUrls.has(entry.url)) return;
     seenUrls.add(entry.url);
     entries.push(entry);

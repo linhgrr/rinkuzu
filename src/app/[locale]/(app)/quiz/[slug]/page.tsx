@@ -34,6 +34,7 @@ import { MobileQuizPlayer } from '@/components/quiz/MobileQuizPlayer';
 import { IQuiz } from '@/types';
 import { streamQuizAI } from '@/lib/quiz/ask-ai';
 import { fetchApiSuccess } from '@/lib/api/client';
+import { QuizPageSchema } from '@/components/seo/QuizPageSchema';
 
 interface QuizPlayerPageProps {
   params: { slug: string };
@@ -642,6 +643,14 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
   // Quiz interface
   if (!quiz) return null;
 
+  // Extract author name safely (can be string or IUser object)
+  const authorName = typeof quiz.author === 'string'
+    ? quiz.author
+    : (quiz.author as any)?.name || 'RinKuzu Community';
+  const categoryName = typeof quiz.category === 'string'
+    ? quiz.category
+    : (quiz.category as any)?.name || undefined;
+
   const currentQuestion = quiz.questions[currentQuestionIndex];
   const progress = Math.round(((currentQuestionIndex + 1) / quiz.questions.length) * 100);
   const answeredQuestions = userAnswers.filter((answer, index) => {
@@ -649,37 +658,48 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
     return isQuestionAnswered(question, answer);
   }).length;
 
-  // Show MobileQuizPlayer on mobile devices
-  if (isMobile && !showEmailInput) {
-    // Convert Record<string, number | number[]> to (number | number[])[] for handleQuizComplete
-    const handleMobileComplete = (answers: Record<string, number | number[]>) => {
-      const orderedAnswers: (number | number[])[] = quiz.questions.map((q: any) => {
-        const answer = answers[q._id];
-        return answer !== undefined ? answer : -1;
-      });
-      handleQuizComplete(orderedAnswers);
-    };
-
-    // Map questions to include _id for MobileQuizPlayer
-    const questionsWithId = quiz.questions.map((q: any, idx: number) => ({
-      _id: q._id || `q-${idx}`,
-      question: q.question,
-      options: q.options,
-      type: q.type,
-      questionImage: q.questionImage,
-    }));
-
-    return (
-      <MobileQuizPlayer
-        questions={questionsWithId}
-        onComplete={handleMobileComplete}
-        onExit={() => router.push('/')}
-      />
-    );
-  }
-
   return (
-    <div className="min-h-screen">
+    <>
+      {/* Quiz schema for SEO — SoftwareApplication + Course */}
+      <QuizPageSchema
+        quizSlug={params.slug}
+        quizTitle={quiz.title}
+        quizDescription={quiz.description}
+        authorName={authorName}
+        categoryName={categoryName}
+        questionCount={quiz.questions.length}
+      />
+
+      {/* Mobile Quiz Player */}
+      {isMobile && !showEmailInput && (
+        (() => {
+          const handleMobileComplete = (answers: Record<string, number | number[]>) => {
+            const orderedAnswers: (number | number[])[] = quiz.questions.map((q: any) => {
+              const answer = answers[q._id];
+              return answer !== undefined ? answer : -1;
+            });
+            handleQuizComplete(orderedAnswers);
+          };
+          const questionsWithId = quiz.questions.map((q: any, idx: number) => ({
+            _id: q._id || `q-${idx}`,
+            question: q.question,
+            options: q.options,
+            type: q.type,
+            questionImage: q.questionImage,
+          }));
+          return (
+            <MobileQuizPlayer
+              questions={questionsWithId}
+              onComplete={handleMobileComplete}
+              onExit={() => router.push('/')}
+            />
+          );
+        })()
+      )}
+
+      {/* Desktop Quiz Interface */}
+      {!isMobile && (
+      <div className="min-h-screen">
       {/* Quiz Header - Full screen experience without navigation */}
       <div className="border-b border-gray-200/50 bg-white/80 backdrop-blur-sm sticky top-0 z-40">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -1112,5 +1132,7 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
         />
       </main>
     </div>
+      )}
+    </>
   );
 } 

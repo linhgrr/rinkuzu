@@ -1,0 +1,34 @@
+export interface TocItem {
+  id: string;
+  text: string;
+}
+
+const slugify = (text: string): string => {
+  return text
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, '')
+    .replace(/[\s_-]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+};
+
+/**
+ * Extract h2/h3 headings from markdown content as TocItem[].
+ * Runs on the server — safe to use in generateMetadata and page components.
+ */
+export const extractHeadingsFromMarkdown = (content: string): TocItem[] => {
+  const lines = content.split('\n');
+  const headings: TocItem[] = [];
+
+  for (const line of lines) {
+    const h2Match = line.match(/^## (.+)$/);
+    const h3Match = line.match(/^### (.+)$/);
+
+    if (h2Match) {
+      headings.push({ id: slugify(h2Match[1]), text: h2Match[1] });
+    } else if (h3Match) {
+      headings.push({ id: slugify(h3Match[1]), text: h3Match[1] });
+    }
+  }
+
+  return headings;
+};

@@ -7,19 +7,49 @@ import { siteUrl } from '@/lib/seo';
 import { ReadingProgressBar } from '@/components/blog/ReadingProgressBar';
 import { ShareButtons } from '@/components/blog/ShareButtons';
 import { TableOfContents } from '@/components/blog/TableOfContents';
+import { extractHeadingsFromMarkdown } from '@/lib/blog-utils';
 import { MarkdownRenderer } from '@/components/blog/MarkdownRenderer';
 
 type Props = { params: Promise<{ locale: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params;
-  return buildLocalizedMetadata({
+  const canonicalUrl = `${siteUrl.origin}/blog/ai-powered-quiz-generation-guide`;
+  const base = buildLocalizedMetadata({
     locale,
     path: '/blog/ai-powered-quiz-generation-guide',
     title: 'How AI Transforms PDF Learning into Adaptive Quizzes | RinKuzu',
     description:
       "Discover how RinKuzu's ALSS system — using SAINT-Bloom knowledge tracing, Dueling DQN curriculum planning, and Gemini-powered exercise generation — transforms any PDF lecture into a personalized adaptive quiz journey.",
+    imagePath: 'https://images.unsplash.com/photo-1589998059171-988d887df646?w=1200&q=80',
   });
+  return {
+    ...base,
+    openGraph: {
+      ...base.openGraph,
+      title: 'How AI Transforms PDF Learning into Adaptive Quizzes | RinKuzu',
+      description: "Discover how RinKuzu's ALSS system transforms any PDF lecture into a personalized adaptive quiz journey.",
+      url: canonicalUrl,
+      type: 'article',
+      publishedTime: '2026-03-27T00:00:00.000Z',
+      modifiedTime: '2026-03-27T00:00:00.000Z',
+      authors: [`${siteUrl.origin}/blog/authors/rinkuzu-team`],
+      images: [
+        {
+          url: 'https://images.unsplash.com/photo-1589998059171-988d887df646?w=1200&q=80',
+          width: 1200,
+          height: 630,
+          alt: 'Open textbook with highlighted notes beside a laptop showing an AI learning interface',
+        },
+      ],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: 'How AI Transforms PDF Learning into Adaptive Quizzes | RinKuzu',
+      description: "Discover how RinKuzu's ALSS system transforms any PDF lecture into a personalized adaptive quiz journey.",
+      images: ['https://images.unsplash.com/photo-1589998059171-988d887df646?w=1200&q=80'],
+    },
+  };
 }
 
 const articleSchema = {
@@ -47,6 +77,23 @@ const articleSchema = {
     '@type': 'WebPage',
     url: `${siteUrl.origin}/blog/ai-powered-quiz-generation-guide`,
   },
+  wordCount: 1350,
+  timeRequired: 'PT9M',
+};
+
+const breadcrumbSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Home', item: siteUrl.origin },
+    { '@type': 'ListItem', position: 2, name: 'Blog', item: `${siteUrl.origin}/blog` },
+    {
+      '@type': 'ListItem',
+      position: 3,
+      name: 'How AI Transforms PDF Learning into Adaptive Quizzes',
+      item: `${siteUrl.origin}/blog/ai-powered-quiz-generation-guide`,
+    },
+  ],
 };
 
 const postContent = `
@@ -137,11 +184,13 @@ export default async function BlogPost({ params }: Props) {
   const { locale } = await params;
   const postUrl = `${siteUrl.origin}/blog/ai-powered-quiz-generation-guide`;
   const postTitle = 'How AI Transforms PDF Learning into Adaptive Quizzes';
+  const headings = extractHeadingsFromMarkdown(postContent);
 
   return (
     <article className="min-h-screen bg-white">
       <ReadingProgressBar />
       <JsonLd id="article-schema" data={articleSchema} />
+      <JsonLd id="breadcrumb-schema" data={breadcrumbSchema} />
 
       {/* Hero */}
       <header className="bg-[#fbfbfd] border-b border-gray-100">
@@ -175,10 +224,10 @@ export default async function BlogPost({ params }: Props) {
         </div>
       </header>
 
-      {/* Article body: content left-aligned, ToC sidebar right */}
-      <div className="max-w-[1200px] mx-auto px-6 py-12">
+      {/* Article body: centered content, ToC fixed to the right */}
+      <div className="max-w-7xl mx-auto px-6 py-12 relative">
         {/* Hero image */}
-        <div className="mb-12 max-w-3xl">
+        <div className="mb-12 max-w-3xl mx-auto">
           <div className="rounded-3xl overflow-hidden shadow-[10px_25px_100px_0px_rgba(0,43,107,0.15)] ring-1 ring-black/5">
             <Image
               src="https://images.unsplash.com/photo-1589998059171-988d887df646?w=1200&q=80"
@@ -191,58 +240,55 @@ export default async function BlogPost({ params }: Props) {
           </div>
         </div>
 
-        {/* Two-column: article + sidebar */}
-        <div className="flex gap-16 items-start">
-          {/* Article content — left, max-w-3xl */}
-          <div className="flex-1 min-w-0 max-w-3xl">
-            <MarkdownRenderer content={postContent} />
+        {/* Article content — centered */}
+        <div className="max-w-3xl mx-auto">
+          <MarkdownRenderer content={postContent} />
 
-            <ShareButtons url={postUrl} title={postTitle} />
+          <ShareButtons url={postUrl} title={postTitle} />
 
-            {/* CTA */}
-            <div className="mt-16 bg-gradient-to-br from-[#1d1d1f] to-[#2d2d2f] rounded-[2rem] p-10 text-white relative overflow-hidden shadow-xl">
-              <div className="absolute top-0 right-0 w-64 h-64 bg-teal-500/10 rounded-full blur-3xl -mr-32 -mt-32"></div>
-              <div className="absolute bottom-0 left-0 w-64 h-64 bg-teal-500/10 rounded-full blur-3xl -ml-32 -mb-32"></div>
-              <div className="relative z-10 text-center max-w-xl mx-auto">
-                <h3 className="text-2xl md:text-3xl font-bold mb-4">Start your adaptive journey today</h3>
-                <p className="text-gray-300 text-lg mb-8">
-                  Upload your first PDF and see the ALSS pipeline in action. Join students mastering complex topics with RinKuzu.
-                </p>
-                <Link
-                  href="/register"
-                  className="inline-flex items-center justify-center rounded-full bg-teal-500 text-[#1d1d1f] font-bold px-10 py-4 hover:bg-teal-400 transition-all hover:scale-105 shadow-lg shadow-teal-500/20 active:scale-95"
-                >
-                  Get Started Free
-                </Link>
-                <p className="mt-4 text-xs text-gray-400">No credit card required · Free plan available</p>
-              </div>
-            </div>
-
-            {/* Post navigation */}
-            <div className="mt-16 pt-10 border-t border-gray-100 flex flex-col sm:flex-row justify-between items-center gap-6">
-              <div className="flex flex-col gap-1 w-full sm:w-auto">
-                <span className="text-xs uppercase tracking-widest text-gray-400 font-bold">Previous</span>
-                <span className="text-gray-300">No previous post</span>
-              </div>
+          {/* CTA */}
+          <div className="mt-16 bg-gradient-to-br from-[#1d1d1f] to-[#2d2d2f] rounded-[2rem] p-10 text-white relative overflow-hidden shadow-xl">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-teal-500/10 rounded-full blur-3xl -mr-32 -mt-32"></div>
+            <div className="absolute bottom-0 left-0 w-64 h-64 bg-teal-500/10 rounded-full blur-3xl -ml-32 -mb-32"></div>
+            <div className="relative z-10 text-center max-w-xl mx-auto">
+              <h3 className="text-2xl md:text-3xl font-bold mb-4">Start your adaptive journey today</h3>
+              <p className="text-gray-300 text-lg mb-8">
+                Upload your first PDF and see the ALSS pipeline in action. Join students mastering complex topics with RinKuzu.
+              </p>
               <Link
-                href="/blog/knowledge-graphs-adaptive-learning-pdfs"
-                className="flex flex-col gap-1 text-right group w-full sm:w-auto"
+                href="/register"
+                className="inline-flex items-center justify-center rounded-full bg-teal-500 text-[#1d1d1f] font-bold px-10 py-4 hover:bg-teal-400 transition-all hover:scale-105 shadow-lg shadow-teal-500/20 active:scale-95"
               >
-                <span className="text-xs uppercase tracking-widest text-gray-400 font-bold">Next Article</span>
-                <span className="text-[#1d1d1f] font-bold group-hover:text-teal-600 transition-colors">
-                  Knowledge Graphs & Bloom&apos;s Taxonomy →
-                </span>
+                Get Started Free
               </Link>
+              <p className="mt-4 text-xs text-gray-400">No credit card required · Free plan available</p>
             </div>
           </div>
 
-          {/* Table of Contents — right sidebar, sticky */}
-          <aside className="hidden xl:block w-56 flex-shrink-0">
-            <div className="sticky top-24">
-              <TableOfContents />
+          {/* Post navigation */}
+          <div className="mt-16 pt-10 border-t border-gray-100 flex flex-col sm:flex-row justify-between items-center gap-6">
+            <div className="flex flex-col gap-1 w-full sm:w-auto">
+              <span className="text-xs uppercase tracking-widest text-gray-400 font-bold">Previous</span>
+              <span className="text-gray-300">No previous post</span>
             </div>
-          </aside>
+            <Link
+              href="/blog/knowledge-graphs-adaptive-learning-pdfs"
+              className="flex flex-col gap-1 text-right group w-full sm:w-auto"
+            >
+              <span className="text-xs uppercase tracking-widest text-gray-400 font-bold">Next Article</span>
+              <span className="text-[#1d1d1f] font-bold group-hover:text-teal-600 transition-colors">
+                Knowledge Graphs & Bloom&apos;s Taxonomy →
+              </span>
+            </Link>
+          </div>
         </div>
+
+        {/* Table of Contents — right, fixed to container edge */}
+        <aside className="hidden xl:block absolute right-6 top-12 w-56 flex-shrink-0">
+          <div className="sticky top-24">
+            <TableOfContents headings={headings} />
+          </div>
+        </aside>
       </div>
     </article>
   );

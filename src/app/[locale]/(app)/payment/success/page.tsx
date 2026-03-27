@@ -21,10 +21,7 @@ function PaymentSuccessContent() {
       return
     }
 
-    verifyPayment(orderCode)
-  }, [searchParams, t])
-
-  const verifyPayment = async (orderCode: string) => {
+    const verifyPayment = async (orderCode: string) => {
     try {
       const response = await fetch('/api/subscription/verify', {
         method: 'POST',
@@ -48,7 +45,10 @@ function PaymentSuccessContent() {
       setStatus('error')
       setMessage(t('errorTitle'))
     }
-  }
+  };
+
+    verifyPayment(orderCode)
+  }, [searchParams, t])
 
   const handleGoHome = () => {
     router.push('/')

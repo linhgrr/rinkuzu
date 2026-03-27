@@ -51,29 +51,29 @@ export default function AttemptDetailModal({
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (isOpen && attemptId) {
-      fetchAttemptDetail();
-    }
-  }, [isOpen, attemptId]);
+    if (!isOpen || !attemptId) return;
 
-  const fetchAttemptDetail = async () => {
-    setLoading(true);
-    setError('');
-    try {
-      const response = await fetch(`/api/attempts/${attemptId}`);
-      const data = await response.json();
+    const fetchAttemptDetail = async () => {
+      setLoading(true);
+      setError('');
+      try {
+        const response = await fetch(`/api/attempts/${attemptId}`);
+        const data = await response.json();
 
-      if (data.success) {
-        setAttempt(data.data);
-      } else {
-        setError(data.error || 'Failed to fetch attempt details');
+        if (data.success) {
+          setAttempt(data.data);
+        } else {
+          setError(data.error || 'Failed to fetch attempt details');
+        }
+      } catch (error) {
+        setError('Failed to load attempt details');
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      setError('Failed to load attempt details');
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
+
+    void fetchAttemptDetail();
+  }, [isOpen, attemptId]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('vi-VN', {

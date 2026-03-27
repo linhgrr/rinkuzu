@@ -166,7 +166,7 @@ export default async function AuthorPage({ params }: Props) {
                     How AI Transforms PDF Learning into Adaptive Quizzes
                   </h3>
                   <p className="text-sm text-[#414d60] leading-relaxed line-clamp-2">
-                    Discover how RinKuzu's ALSS system — SAINT-Bloom, Dueling DQN, and Gemini — transforms any PDF lecture into a personalized adaptive quiz journey.
+                    Discover how RinKuzu&apos;s ALSS system — SAINT-Bloom, Dueling DQN, and Gemini — transforms any PDF lecture into a personalized adaptive quiz journey.
                   </p>
                 </div>
               </Link>

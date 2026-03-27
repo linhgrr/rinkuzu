@@ -25,7 +25,7 @@ export function Testimonials() {
               </div>
 
               <p className="text-2xl md:text-3xl font-medium leading-relaxed mb-12 italic">
-                "{t('main.content')}"
+                {t('main.content')}
               </p>
 
               <div className="flex items-center justify-center gap-4">

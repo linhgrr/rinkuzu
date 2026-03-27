@@ -44,11 +44,8 @@ function PDFViewerComponent({ files, onClose }: { files: File[]; onClose: () => 
       return;
     }
 
-    void loadPDFs();
-  }, [files]);
-
-  const loadPDFs = async () => {
-    setLoading(true);
+    const loadPDFs = async () => {
+      setLoading(true);
     setError('');
 
     try {
@@ -74,6 +71,9 @@ function PDFViewerComponent({ files, onClose }: { files: File[]; onClose: () => 
       setLoading(false);
     }
   };
+
+    void loadPDFs();
+  }, [files]);
 
   useEffect(() => {
     return () => {

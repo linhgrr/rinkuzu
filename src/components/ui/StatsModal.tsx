@@ -67,7 +67,8 @@ export default function StatsModal({
       const result = await response.json();
 
       if (result.success) {
-        const newData = result.data[getDataKey()] || result.data.activities || [];
+        const dataKey = type === 'categories' ? 'categories' : type === 'creators' ? 'creators' : type === 'activity' ? 'activities' : 'data';
+        const newData = result.data[dataKey] || result.data.activities || [];
         
         if (resetData || page === 1) {
           setData(newData);
@@ -85,21 +86,13 @@ export default function StatsModal({
     } finally {
       setLoading(false);
     }
-  }, [apiEndpoint, pagination.limit, sortBy, sortOrder]);
-
-  const getDataKey = () => {
-    switch (type) {
-      case 'categories': return 'categories';
-      case 'creators': return 'creators';
-      case 'activity': return 'activities';
-      default: return 'data';
-    }
-  };
+  }, [apiEndpoint, pagination.limit, sortBy, sortOrder, type]);
 
   useEffect(() => {
     if (isOpen) {
-      fetchData(1, searchTerm);
+      void fetchData(1, searchTerm);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, sortBy, sortOrder]);
 
   const handleSearch = (e: React.FormEvent) => {

@@ -73,7 +73,7 @@ export function QuestionImage({ src, alt, className = '' }: QuestionImageProps) 
       maxHeight={400}
       fallback={
         <div className="text-sm text-gray-500 italic mb-4">
-          📷 Question contains an image that couldn't be loaded
+          📷 Question contains an image that couldn&apos;t be loaded
         </div>
       }
     />

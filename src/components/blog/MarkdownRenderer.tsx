@@ -63,7 +63,7 @@ const components: Components = {
   ),
   thead: ({ children }) => <thead className="bg-gray-50">{children}</thead>,
   th: ({ children }) => (
-    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+    <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
       {children}
     </th>
   ),

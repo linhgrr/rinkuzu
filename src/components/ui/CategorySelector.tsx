@@ -209,7 +209,7 @@ export function CategorySelector({
 
           {!loading && categories.length === 0 && searchTerm && (
             <div className="px-4 py-3 text-sm text-gray-500 text-center">
-              No categories found for "{searchTerm}"
+              No categories found for &quot;{searchTerm}&quot;
             </div>
           )}
 

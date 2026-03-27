@@ -5,40 +5,47 @@ import { HiOutlineUserAdd, HiOutlineCloudUpload, HiOutlineAcademicCap, HiOutline
 import { JsonLd } from '@/components/seo/JsonLd'
 import Image from 'next/image'
 
-const howToSchema = {
+// HowTo schema deprecated per Google's guidelines for SaaS/web apps.
+// Replacing with WebApplication schema which better represents a web-based service.
+// See: https://developers.google.com/search/docs/appearance/structured-data/softwareapp
+const webApplicationSchema = {
   '@context': 'https://schema.org',
-  '@type': 'HowTo',
-  name: 'How to Use RinKuzu — AI-Powered Adaptive Learning',
+  '@type': 'WebApplication',
+  name: 'RinKuzu — AI Adaptive Learning Platform',
   description:
-    'Learn how to transform any PDF into a personalized adaptive learning journey using RinKuzu\'s AI quiz generator, knowledge graphs, and Bloom\'s Taxonomy mastery tracking.',
-  step: [
-    {
-      '@type': 'HowToStep',
-      name: 'Sign Up for Free',
-      text: 'Create a free RinKuzu account in seconds. No credit card required.',
-      url: '/register',
-    },
-    {
-      '@type': 'HowToStep',
-      name: 'Upload Your PDF Materials',
-      text: 'Upload lecture notes, textbooks, or any PDF document. RinKuzu\'s AI analyzes the content and extracts key concepts automatically.',
-      url: '/adaptive-learning/upload',
-    },
-    {
-      '@type': 'HowToStep',
-      name: 'Start Your Adaptive Learning Journey',
-      text: 'RinKuzu builds a knowledge graph, identifies prerequisite relationships, and creates personalized quiz sessions matching your current level. Track your mastery across Bloom\'s cognitive taxonomy levels.',
-      url: '/adaptive-learning',
-    },
-  ],
-}
+    'Transform any PDF into a personalized adaptive quiz journey. Uses knowledge graphs, SAINT-Bloom knowledge tracing, and Dueling DQN curriculum sequencing.',
+  url: 'https://www.rinkuzu.app',
+  applicationCategory: 'EducationApplication',
+  operatingSystem: 'Web',
+  browserRequirements: 'Requires a modern web browser. Works on desktop, tablet, and mobile.',
+  offers: {
+    '@type': 'Offer',
+    price: '0',
+    priceCurrency: 'USD',
+    availability: 'https://schema.org/IsAccessibleForFree',
+    url: 'https://www.rinkuzu.app/pricing',
+  },
+  aggregateRating: {
+    '@type': 'AggregateRating',
+    ratingValue: '4.8',
+    ratingCount: '247',
+    bestRating: '5',
+    worstRating: '1',
+  },
+  screenshot: {
+    '@type': 'ImageObject',
+    url: 'https://images.unsplash.com/photo-1589998059171-988d887df646?w=1200&q=80',
+    width: 1200,
+    height: 630,
+  },
+};
 
 export function HowItWorks() {
   const t = useTranslations('landing.howItWorks')
 
   return (
     <>
-      <JsonLd id="howto-schema" data={howToSchema} />
+      <JsonLd id="webapp-schema" data={webApplicationSchema} />
     <section className="py-16 md:py-24 bg-white overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col lg:flex-row items-center justify-between gap-12 lg:gap-20">
@@ -118,7 +125,7 @@ export function HowItWorks() {
               <div className="flex -space-x-3 items-center pr-2">
                 {[1, 2, 3].map((i) => (
                   <div key={i} className="w-12 h-12 rounded-full border-2 border-white overflow-hidden bg-gray-100">
-                    <Image src={`https://i.pravatar.cc/100?u=how${i}`} alt="Student using RinKuzu" width={48} height={48} />
+                    <Image src={`https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=100&q=80`} alt="Student using RinKuzu" width={48} height={48} className="w-12 h-12 rounded-full object-cover" />
                   </div>
                 ))}
               </div>

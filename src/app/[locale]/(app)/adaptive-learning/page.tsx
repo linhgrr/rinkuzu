@@ -6,6 +6,8 @@ import { fetchAdaptiveDashboardData } from './_lib/fetch-initial-data'
 import AdaptiveLearningDashboard from '@/components/adaptive-learning/Dashboard'
 import { authOptions } from '@/lib/auth'
 import { buildLocalizedMetadata } from '@/lib/seo'
+import { JsonLd } from '@/components/seo/JsonLd'
+import { buildSoftwareApplicationSchema } from '@/lib/structured-data'
 
 type PageParams = { locale: string }
 type PageProps = { params: Promise<PageParams> }
@@ -25,6 +27,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   })
 }
 
+const softwareSchema = buildSoftwareApplicationSchema('vi')
+
 export default async function AdaptiveLearningPage({ params }: PageProps) {
   const { locale } = await params
   const [session, t] = await Promise.all([
@@ -32,11 +36,21 @@ export default async function AdaptiveLearningPage({ params }: PageProps) {
     getTranslations({ locale, namespace: 'adaptiveLearning' }),
   ])
 
-  if (!session?.user)
-    return <AdaptiveLearningGuest locale={locale} t={t} />
+  return (
+    <>
+      <JsonLd id="adaptive-software-schema" data={softwareSchema} />
+      {session?.user ? (
+        <AdaptiveDashboardLoader userId={session.user.id} />
+      ) : (
+        <AdaptiveLearningGuest locale={locale} t={t} />
+      )}
+    </>
+  )
+}
 
-  const { subjects, sessionHistory } = await fetchAdaptiveDashboardData(session.user.id)
-
+// Separate async server component for authenticated dashboard data
+async function AdaptiveDashboardLoader({ userId }: { userId: string }) {
+  const { subjects, sessionHistory } = await fetchAdaptiveDashboardData(userId)
   return (
     <AdaptiveLearningDashboard
       initialSubjects={subjects}

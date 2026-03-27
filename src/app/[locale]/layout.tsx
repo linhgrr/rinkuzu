@@ -8,6 +8,8 @@ import { canonicalFor, languageAlternates, siteUrl } from '@/lib/seo';
 import { defaultLocale } from '@/i18n/config';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { buildOrganizationSchema, buildWebsiteSchema } from '@/lib/structured-data';
+import { NextIntlClientProvider } from 'next-intl';
+import { getMessages } from 'next-intl/server';
 
 const inter = Inter({
   subsets: ['latin', 'vietnamese'],
@@ -110,6 +112,7 @@ export default async function LocaleLayout({
 
   const organizationSchema = buildOrganizationSchema();
   const websiteSchema = buildWebsiteSchema(locale);
+  const messages = await getMessages();
 
   return (
     <html lang={locale} className="scroll-smooth">
@@ -128,9 +131,11 @@ export default async function LocaleLayout({
         <meta name="format-detection" content="telephone=no" />
       </head>
       <body className={`${inter.className} min-h-screen antialiased bg-[#f5f5f7]`}>
-        <JsonLd id="org-schema" data={organizationSchema} />
-        <JsonLd id="website-schema" data={websiteSchema} />
-        {children}
+        <NextIntlClientProvider messages={messages}>
+          <JsonLd id="org-schema" data={organizationSchema} />
+          <JsonLd id="website-schema" data={websiteSchema} />
+          {children}
+        </NextIntlClientProvider>
         {process.env.NEXT_PUBLIC_GA_ID ? (
           <>
             <Script

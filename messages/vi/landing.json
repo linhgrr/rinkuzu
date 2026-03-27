@@ -6,7 +6,21 @@
     "description": "Tạo quiz từ PDF, ôn tập thông minh với Flashcards và Rin-chan cá nhân hóa hành trình học tập của bạn.",
     "searchPlaceholder": "Tìm kiếm chủ đề: Giải tích, Tiếng Anh...",
     "community": "Cộng đồng RinKuzu",
-    "searchButton": "Tìm kiếm ngay"
+    "searchButton": "Tìm kiếm ngay",
+    "poweredBy": "Được hỗ trợ bởi",
+    "geminiAi": "Gemini AI",
+    "headline": "Làm chủ kiến thức theo tốc độ của bạn",
+    "subtitle": "Biến mọi tài liệu PDF thành hành trình học tập tương tác. AI thích ứng của chúng tôi trích xuất các khái niệm, xây dựng đồ thị kiến thức của bạn, và điều chỉnh bài tập theo tất cả các cấp độ nhận thức Bloom để đảm bảo thành thạo sâu.",
+    "ctaStartLearning": "Bắt đầu học ngay",
+    "login": "Đăng nhập",
+    "getStarted": "Bắt đầu ngay",
+    "navAiQuiz": "Tạo Quiz bằng AI",
+    "navKnowledgeGraph": "Học theo Đồ thị Kiến thức",
+    "navAbout": "Giới thiệu",
+    "navBlog": "Blog",
+    "navPricing": "Bảng giá",
+    "navFaq": "FAQ",
+    "navUploadPdf": "Tải PDF lên"
   },
   "categories": {
     "title": "Khám phá kiến thức mới",

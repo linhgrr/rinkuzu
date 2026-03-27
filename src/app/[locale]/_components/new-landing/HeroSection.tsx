@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import Navbar from "./Navbar";
 import { GlowPillButton } from "./Navbar";
 
@@ -8,6 +9,7 @@ const VIDEO_URL =
   "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260217_030345_246c0224-10a4-422c-b324-070b7c0eceda.mp4";
 
 const HeroSection = ({ isAuthenticated = false }: { isAuthenticated?: boolean }) => {
+  const t = useTranslations('landing.hero');
   const [shouldLoadVideo, setShouldLoadVideo] = useState(false);
 
   useEffect(() => {
@@ -63,8 +65,8 @@ const HeroSection = ({ isAuthenticated = false }: { isAuthenticated?: boolean })
               }}
             >
               <span className="w-[4px] h-[4px] rounded-full bg-white" />
-              <span className="text-white/60">Powered by</span>
-              <span className="text-white">Gemini AI</span>
+              <span className="text-white/60">{t('poweredBy')}</span>
+              <span className="text-white">{t('geminiAi')}</span>
             </div>
 
             {/* Heading */}
@@ -77,18 +79,16 @@ const HeroSection = ({ isAuthenticated = false }: { isAuthenticated?: boolean })
                 backgroundClip: "text",
               }}
             >
-              Master Any Subject at Your Own Pace
+              {t('headline')}
             </h1>
 
             {/* Subtitle */}
             <p className="max-w-[680px] text-center text-[15px] font-normal text-white/70 -mt-[16px]">
-              Transform any PDF document into an interactive learning journey. Our adaptive AI
-              extracts concepts, builds your knowledge graph, and tailors exercises across all
-              Bloom&apos;s cognitive levels to ensure deep mastery.
+              {t('subtitle')}
             </p>
 
             {/* CTA */}
-            <GlowPillButton label="Start Learning Now" variant="light" href="/register" />
+            <GlowPillButton label={t('ctaStartLearning')} variant="light" href="/register" />
           </div>
         </div>
       </div>

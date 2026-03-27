@@ -139,15 +139,16 @@ const nextConfig = {
           },
           {
             key: 'Content-Security-Policy',
-            // Note: 'unsafe-inline' and 'unsafe-eval' are required for Next.js / PWA service workers.
-            // Review and tighten this policy before launch. Use report-uri or report-to for violations.
+            // NOTE: Next.js injects inline hydration/runtime scripts.
+            // Keep 'unsafe-inline' unless migrating to nonce/hash-based CSP.
+            // Do NOT use 'strict-dynamic' without nonce/hash, or inline scripts can be blocked.
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-eval' 'unsafe-inline' 'strict-dynamic' https://www.googletagmanager.com https://www.google-analytics.com",
+              "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com",
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: https: blob:",
               "font-src 'self' data:",
-              "connect-src 'self' https://www.googletagmanager.com https://www.google-analytics.com",
+              "connect-src 'self' https://www.googletagmanager.com https://www.google-analytics.com https://raw.githack.com",
               "frame-src 'none'",
               "object-src 'none'",
               "base-uri 'self'",
@@ -199,6 +200,12 @@ const nextConfig = {
       {
         protocol: 'https',
         hostname: '*.blob.core.windows.net',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
         port: '',
         pathname: '/**',
       }

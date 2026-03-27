@@ -25,7 +25,15 @@ export function buildOrganizationSchema() {
       email: 'support@rinkuzu.com',
       contactType: 'customer support',
     },
-    // sameAs: uncomment when real social accounts are created
+    address: {
+      '@type': 'PostalAddress',
+      streetAddress: 'Room 302, Building A1, 17 Dai Co Viet Street',
+      addressLocality: 'Hai Ba Trung District',
+      addressRegion: 'Hanoi',
+      postalCode: '100000',
+      addressCountry: 'VN',
+    },
+    // sameAs: populated once social accounts are created — placeholder only
     // 'sameAs': [
     //   'https://twitter.com/rinkuzu',
     //   'https://facebook.com/rinkuzu',
@@ -41,7 +49,7 @@ export function buildWebsiteSchema(locale: Locale | string) {
     '@type': 'WebSite',
     name: 'RinKuzu',
     url: canonicalFor(locale, '/'),
-    inLanguage: locale,
+    // Use locale-specific URL for the canonical WebSite entry
     potentialAction: {
       '@type': 'SearchAction',
       target: `${siteUrl.origin}/explore?q={search_term_string}`,

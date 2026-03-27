@@ -75,7 +75,7 @@ export default async function PricingPage({ params }: Props) {
             '@type': 'Offer',
             price: '0',
             priceCurrency: 'USD',
-            availability: 'https://schema.org/https://schema.org/ContactForPricing',
+            availability: 'https://schema.org/ContactForPricing',
             description: 'Contact us for custom pricing',
           },
         },

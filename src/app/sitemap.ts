@@ -8,6 +8,13 @@ function localeVariants(path: string): { locale: string; path: string }[] {
   return locales.map((locale) => ({ locale, path }));
 }
 
+function buildHreflangLinks(path: string) {
+  return locales.map((locale) => ({
+    language: locale,
+    url: canonicalFor(locale, path),
+  }));
+}
+
 function toEntry(
   locale: string,
   path: string,
@@ -20,6 +27,7 @@ function toEntry(
     lastModified,
     changeFrequency,
     priority,
+    links: buildHreflangLinks(path),
   };
 }
 

@@ -79,8 +79,14 @@ const articleSchema = {
     '@type': 'WebPage',
     url: `${siteUrl.origin}/blog/knowledge-graphs-adaptive-learning-pdfs`,
   },
-  wordCount: 1400,
-  timeRequired: 'PT10M',
+  image: {
+    '@type': 'ImageObject',
+    url: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1200&q=80',
+    width: 1200,
+    height: 630,
+  },
+  wordCount: 1900,
+  timeRequired: 'PT14M',
 };
 
 const breadcrumbSchema = {
@@ -191,6 +197,43 @@ This creates a two-dimensional learning map:
 (Earlier concepts are limited to lower Bloom levels; later concepts can reach Analyze, Evaluate, and Create.)
 
 RinKuzu's Dueling DQN agent selects questions based on both dimensions simultaneously: the weakest (concept, Bloom) pair where all prerequisites are satisfied. The SAINT-Bloom tracer updates each pair separately after every response.
+
+## The Research Behind RinKuzu's Approach
+
+RinKuzu's adaptive learning architecture draws on a body of educational research spanning cognitive science, machine learning, and learning analytics.
+
+**Knowledge graphs in education** have roots in the field of Intelligent Tutoring Systems (ITS), dating back to ITS tutors like ANDES (for physics) and Cognitive Tutors (based on ACT-R theory). What makes RinKuzu different is scale: while traditional ITS systems required domain experts to hand-code the knowledge structure, RinKuzu's Content Processor extracts that structure automatically from any PDF using large language models. This bridges decades of ITS research with modern AI capabilities.
+
+**Bayesian Knowledge Tracing (BKT)** — the foundational model behind RinKuzu's mastery tracking — was introduced by Corbett and Anderson in 1995. BKT models each skill as a binary latent variable (learned vs. not learned), updating the learned probability based on observed performance. SAINT-Bloom extends this by decomposing mastery into six levels, recognizing that "learning" a concept is not binary — a student can remember a formula without being able to apply it.
+
+**Reinforcement Learning for curriculum sequencing** was first applied to educational games by the 2010s, with early work by Clement et al. (2015) demonstrating that RL agents could outperform fixed sequencing strategies. The Dueling DQN architecture used in RinKuzu — which separates value estimation from advantage estimation — is particularly well-suited to education because it handles the large, sparse action space of (concept, Bloom) pairs more stably than vanilla DQN.
+
+**SAINT**, introduced by Choi et al. (2020), uses a transformer encoder-decoder architecture that processes the full sequence of learner interactions (exercise_id, correctness, timestamp) rather than modeling each skill independently. RinKuzu extends SAINT by adding Bloom's Taxonomy level as an explicit input dimension, enabling the multi-level mastery tracking that drives the curriculum agent.
+
+## Limitations and Honest Tradeoffs
+
+No system is without tradeoffs, and being transparent about them builds trust.
+
+**Concept extraction quality depends on PDF quality.** Text-based PDFs with clear structure produce the best knowledge graphs. Scanned image PDFs (common in older textbooks) require OCR preprocessing and may produce lower-quality concept extractions. We recommend using the most recent, digitally-born version of a document for the best results.
+
+**Prerequisite relationships are probabilistic.** The PRS verification step uses a 0.65 threshold — meaning roughly 50% of LLM-proposed relations are rejected. This is a conservative tradeoff favoring precision over recall. For highly specialized domains (e.g., advanced mathematics), you may want to manually verify and correct the knowledge graph after generation.
+
+**The illusion of mastery persists at higher levels.** Even with Bloom-level tracking, a system can only measure what it tests. If a student becomes skilled at recognizing the *pattern* of Analyze-level questions — without genuinely deepening conceptual understanding — the system may overestimate mastery. This is a known limitation of any assessment-based knowledge tracer. The Evaluate and Create levels, which require genuine synthesis and original thought, are particularly hard to assess reliably through multiple-choice format.
+
+**Cold-start for new documents.** The first time you upload a PDF, RinKuzu must process it from scratch — a process that takes 30–120 seconds depending on document length. Cached concepts from previously processed documents reduce this significantly on subsequent uploads.
+
+Despite these limitations, the combination of knowledge graphs + Bloom's Taxonomy + RL curriculum sequencing represents a significant step forward from static flashcard decks. The key is using these tools as supplements to — not replacements for — deep engagement with your source material.
+
+## The Future: Towards Truly Intelligent Tutoring
+
+RinKuzu's architecture points toward several exciting directions:
+
+- **Concept chaining**: linking related concepts across different documents, so studying a calculus PDF automatically surfaces relevant physics prerequisites
+- **Learner modeling diversity**: moving beyond single-learner models to group-level adaptive sequencing for classroom use
+- **Open知识图谱**: communities building shared knowledge graphs for canonical subjects — imagine a shared prerequisite graph for "University Calculus" that every RinKuzu user contributes to and benefits from
+- **Multimodal inputs**: extending beyond PDFs to lecture videos, slide decks, and hand-written notes
+
+These are ambitious goals. But the foundation is solid: a knowledge graph extracted from your material, a model of where you are in that graph, and an AI that knows what question to ask you next.
 
 ## Experience It Yourself
 

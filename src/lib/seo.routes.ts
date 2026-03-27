@@ -9,6 +9,7 @@ export const INDEXABLE_STATIC_PUBLIC_ROUTES = [
   '/terms',
   '/cookies',
   '/about',
+  '/contact',
   '/blog',
   '/blog/authors',
   '/blog/authors/rinkuzu-team',

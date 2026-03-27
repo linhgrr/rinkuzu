@@ -129,6 +129,9 @@ export default async function LocaleLayout({
         <meta name="msapplication-tap-highlight" content="no" />
         <meta name="overscroll-behavior" content="none" />
         <meta name="format-detection" content="telephone=no" />
+        {/* Preconnect for third-party origins used by GTM and analytics */}
+        <link rel="preconnect" href="https://www.googletagmanager.com" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://www.google-analytics.com" crossOrigin="anonymous" />
       </head>
       <body className={`${inter.className} min-h-screen antialiased bg-[#f5f5f7]`}>
         <NextIntlClientProvider messages={messages}>

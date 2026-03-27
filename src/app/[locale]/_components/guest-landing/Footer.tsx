@@ -31,6 +31,7 @@ export function Footer() {
               <li><Link href="/about" className="text-gray-500 hover:text-teal-600 transition-colors">{t('links.about')}</Link></li>
               <li><Link href="/pricing" className="text-gray-500 hover:text-teal-600 transition-colors">{t('links.pricing')}</Link></li>
               <li><Link href="/faq" className="text-gray-500 hover:text-teal-600 transition-colors">{t('links.faq')}</Link></li>
+              <li><Link href="/contact" className="text-gray-500 hover:text-teal-600 transition-colors">Contact</Link></li>
               <li><Link href="/blog" className="text-gray-500 hover:text-teal-600 transition-colors">{t('links.blog')}</Link></li>
             </ul>
           </div>

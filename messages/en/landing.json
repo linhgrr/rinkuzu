@@ -104,6 +104,9 @@
     "q15": "Can teachers use RinKuzu for classroom assessment?",
     "a15": "Absolutely. Teachers can upload lecture PDFs to generate student quizzes, track class-wide performance, and identify concepts that need re-teaching — ideal for formative assessment."
   },
+  "featured_quizzes": "Featured Quizzes",
+  "featured_quizzes_description": "Browse quizzes created by the RinKuzu community on a wide range of subjects.",
+  "start_quiz": "Start Quiz",
   "cta": {
     "title": "Ready to Level Up Your Knowledge?",
     "subtitle": "Join thousands of students who are learning more effectively every day with RinKuzu.",
@@ -113,6 +116,9 @@
     "noCreditCard": "No Credit Card Required",
     "aiSupport": "24/7 AI Support"
   },
+  "get_started_free": "Get Started Free",
+  "view_pricing": "View Pricing",
+  "ready_to_start": "Ready to start your learning journey?",
   "footer": {
     "contact": "Contact",
     "links": {

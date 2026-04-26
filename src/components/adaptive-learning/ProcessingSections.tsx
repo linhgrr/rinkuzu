@@ -62,7 +62,7 @@ export const ProcessingStatusCard = ({
   steps,
   t,
 }: ProcessingStatusCardProps) => (
-  <div className="relative overflow-hidden rounded-[20px] border border-neutral-200 bg-white p-8 shadow-sm md:p-10">
+  <div className="relative overflow-hidden rounded-xl border border-neutral-200 bg-white p-8 shadow-sm md:p-10">
     <div className="text-center">
       {error && (
         <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-lg border border-red-100 bg-red-50 text-red-500">
@@ -188,7 +188,7 @@ export const ProcessingStatusCard = ({
 )
 
 export const ProcessingTipCard = ({ t }: { t: TranslateFn }) => (
-  <div className="mx-auto mt-6 flex w-full items-start gap-2 rounded-[16px] border border-neutral-200 bg-white p-4 text-xs text-neutral-600 shadow-sm">
+  <div className="mx-auto mt-6 flex w-full items-start gap-2 rounded-xl border border-neutral-200 bg-white p-4 text-xs text-neutral-600 shadow-sm">
     <HiOutlineSparkles className="h-4 w-4 flex-shrink-0 text-neutral-400" />
     <p>
       <strong className="text-neutral-900">{t('processing.didYouKnow')}</strong> {t('processing.didYouKnowDescription')}
@@ -203,7 +203,7 @@ export const ProcessingGraphCard = ({
   partialGraph: PipelineJobStatus['partial_graph']
   t: TranslateFn
 }) => (
-  <div className="relative hidden h-[600px] w-full overflow-hidden rounded-[20px] border border-neutral-200 bg-white shadow-sm lg:flex lg:w-[55%]">
+  <div className="relative hidden h-[600px] w-full overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-sm lg:flex lg:w-[55%]">
     <div className="pointer-events-none absolute left-6 top-6 z-10">
       <h3 className="text-sm font-medium tracking-wide text-neutral-900">{t('processing.knowledgeGraph')}</h3>
       <p className="mt-0.5 text-xs text-neutral-500">{t('processing.visualizingStructures')}</p>

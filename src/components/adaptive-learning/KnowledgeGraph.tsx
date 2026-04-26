@@ -27,10 +27,10 @@ interface KnowledgeGraphProps {
 }
 
 function getNodeColor(status: KnowledgeNode['status']) {
-    if (status === 'mastered') return '#009d8c';
-    if (status === 'in_progress') return '#ff7a1a';
-    if (status === 'available') return '#ffffff';
-    return '#ececea';
+    if (status === 'mastered') return 'var(--brand-trust)';
+    if (status === 'in_progress') return 'var(--brand-action)';
+    if (status === 'available') return 'var(--bg-surface)';
+    return 'var(--border-default)';
 }
 
 function getMasteryOpacity(mastery: number) {

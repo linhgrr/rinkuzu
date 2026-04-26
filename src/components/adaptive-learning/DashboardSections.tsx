@@ -1,5 +1,6 @@
 'use client'
 
+import { memo } from 'react'
 import Image from 'next/image'
 import {
   HiArrowRight,
@@ -112,7 +113,7 @@ export const DashboardToast = ({ toastMsg }: ToastProps) => {
     return null
 
   return (
-    <div className={`fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-xl border px-5 py-4 shadow-lg backdrop-blur ${toastMsg.type === 'error' ? 'border-red-200 bg-white/95 text-neutral-900' : 'border-transparent bg-brand-trust/95 text-white'}`}>
+    <div role="alert" className={`fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-xl border px-5 py-4 shadow-lg backdrop-blur animate-in fade-in slide-in-from-bottom-5 ${toastMsg.type === 'error' ? 'border-red-200 bg-white/95 text-neutral-900' : 'border-transparent bg-brand-trust/95 text-white'}`}>
       {toastMsg.type === 'error'
         ? <HiOutlineLightningBolt className="h-5 w-5 shrink-0 text-red-500" aria-hidden="true" />
         : <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/15"><HiOutlineBookOpen className="h-5 w-5" aria-hidden="true" /></div>}
@@ -226,14 +227,6 @@ export const HeroSection = ({ subject, loading, loadingJobId, onGoUpload, onOpen
               <HiOutlinePlay className="h-5 w-5" />
               {isOpening ? t('creatingSession') : t('continueLearning')}
             </Button>
-            <Button
-              onClick={() => onOpenSubject(subject.job_id)}
-              disabled={isOpening}
-              variant="secondary"
-              className="rounded-full border border-neutral-300/70 bg-white/60 px-8 py-4 font-bold text-neutral-900 backdrop-blur hover:bg-white"
-            >
-              {t('viewSyllabus')}
-            </Button>
           </div>
         </div>
       </div>
@@ -299,7 +292,7 @@ const UploadCard = ({ onGoUpload, t }: { onGoUpload: () => void, t: TranslateFn 
   </div>
 )
 
-const SubjectLibraryCard = ({
+const SubjectLibraryCard = memo(function SubjectLibraryCard({
   subject,
   index,
   loading,
@@ -308,8 +301,8 @@ const SubjectLibraryCard = ({
   onDelete,
   imageUrl,
   t,
-}: SubjectLibraryCardProps) => {
-  const progressBarClass = index % 3 === 1 ? 'bg-brand-trust' : 'bg-brand-trust'
+}: SubjectLibraryCardProps) {
+  const progressBarClass = 'bg-brand-trust'
 
   return (
     <div className="flex h-full flex-col justify-between rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:shadow-xl">
@@ -358,7 +351,7 @@ const SubjectLibraryCard = ({
       </div>
     </div>
   )
-}
+})
 
 export const LibrarySection = ({
   subjects,
@@ -430,7 +423,7 @@ export const FloatingUploadAction = ({ onClick, t }: FloatingUploadActionProps) 
   <button
     type="button"
     onClick={onClick}
-    className="group fixed bottom-10 right-10 z-50 flex h-20 w-20 items-center justify-center rounded-full bg-brand-action text-white shadow-2xl transition-all active:scale-90 hover:w-48 hover:rounded-[2rem]"
+    className="group fixed bottom-24 right-10 z-40 flex h-20 w-20 items-center justify-center rounded-full bg-brand-action text-white shadow-2xl transition-all active:scale-90 hover:w-48 hover:rounded-[2rem]"
     aria-label={t('newLesson')}
     title={t('newLesson')}
   >

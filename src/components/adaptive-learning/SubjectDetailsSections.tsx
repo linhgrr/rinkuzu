@@ -184,26 +184,45 @@ export const SubjectDetailsTabs = ({
   activeTab: SubjectTab
   onChange: (tab: SubjectTab) => void
   t: TranslateFn
-}) => (
-  <div className="max-w-full overflow-x-auto rounded-lg border border-neutral-200 bg-neutral-50 p-1 sm:w-fit [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-    <div className="flex gap-1">
-      {TAB_CONFIG.map(({ key, icon: Icon, labelKey }) => (
-        <button
-          key={key}
-          onClick={() => onChange(key)}
-          className={`flex min-h-[44px] cursor-pointer items-center gap-2 whitespace-nowrap rounded-sm px-4 py-2 text-sm font-medium transition-all duration-200 ${
-            activeTab === key
-              ? 'border border-neutral-200/50 bg-white text-neutral-900 shadow-sm'
-              : 'text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900'
-          }`}
-        >
-          <Icon className="h-4 w-4" aria-hidden="true" />
-          {t(labelKey)}
-        </button>
-      ))}
+}) => {
+  const handleKeyDown = (e: React.KeyboardEvent, currentIndex: number) => {
+    const tabs = TAB_CONFIG
+    let nextIndex = currentIndex
+    if (e.key === 'ArrowRight') nextIndex = (currentIndex + 1) % tabs.length
+    else if (e.key === 'ArrowLeft') nextIndex = (currentIndex - 1 + tabs.length) % tabs.length
+    else return
+    e.preventDefault()
+    onChange(tabs[nextIndex].key)
+    const nextButton = (e.currentTarget.parentElement?.children[nextIndex] as HTMLElement)
+    nextButton?.focus()
+  }
+
+  return (
+    <div className="max-w-full overflow-x-auto rounded-lg border border-neutral-200 bg-neutral-50 p-1 sm:w-fit [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+      <div className="flex gap-1" role="tablist">
+        {TAB_CONFIG.map(({ key, icon: Icon, labelKey }, index) => (
+          <button
+            key={key}
+            role="tab"
+            aria-selected={activeTab === key}
+            aria-controls={`tabpanel-${key}`}
+            tabIndex={activeTab === key ? 0 : -1}
+            onClick={() => onChange(key)}
+            onKeyDown={(e) => handleKeyDown(e, index)}
+            className={`flex min-h-[44px] cursor-pointer items-center gap-2 whitespace-nowrap rounded-sm px-4 py-2 text-sm font-medium transition-all duration-200 ${
+              activeTab === key
+                ? 'border border-neutral-200/50 bg-white text-neutral-900 shadow-sm'
+                : 'text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900'
+            }`}
+          >
+            <Icon className="h-4 w-4" aria-hidden="true" />
+            {t(labelKey)}
+          </button>
+        ))}
+      </div>
     </div>
-  </div>
-)
+  )
+}
 
 export const SubjectDetailsTabContent = ({
   activeTab,
@@ -218,7 +237,7 @@ export const SubjectDetailsTabContent = ({
   sessionId: string
   t: TranslateFn
 }) => (
-  <div className="space-y-8">
+  <div className="space-y-8" role="tabpanel" id={`tabpanel-${activeTab}`} aria-labelledby={`tab-${activeTab}`}>
     {activeTab === 'graph' && <KnowledgeGraph sessionId={sessionId} />}
     {activeTab === 'mastery' && <MasteryMatrix sessionId={sessionId} filterActiveOnly />}
     {activeTab === 'history' && (

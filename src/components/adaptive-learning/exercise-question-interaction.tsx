@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { memo, useEffect, useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { Reorder } from 'framer-motion'
 import { HiChevronDown, HiChevronUp, HiOutlineDotsVertical, HiOutlineLightBulb } from '@/components/icons'
@@ -9,7 +9,7 @@ import { DynamicMarkdownRenderer } from '@/components/ui/DynamicMarkdownRenderer
 import { getExercisePromptSections } from './exercise-prompt'
 import type { Exercise, SubmitAnswerPayload } from './types'
 
-function OptionCard({
+const OptionCard = memo(function OptionCard({
   active,
   badge,
   onClick,
@@ -43,7 +43,7 @@ function OptionCard({
       </span>
     </button>
   )
-}
+})
 
 type MatchingInteractionProps = {
   leftItems: string[]
@@ -240,6 +240,7 @@ export function ExerciseInteraction({
           onChange={event => onSetBlankAnswer(event.target.value)}
           rows={3}
           placeholder={t('exercise.interactions.fillBlankPlaceholder')}
+          aria-label={t('exercise.interactions.fillBlankPlaceholder')}
           className="min-h-[120px] w-full rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-base text-neutral-900 outline-none transition-colors focus:border-brand-trust focus:ring-2 focus:ring-[var(--focus-ring-soft)]"
         />
         {exercise.hint ? (
@@ -392,6 +393,7 @@ export function ExerciseInteraction({
           onChange={event => onSetTextAnswer(event.target.value)}
           rows={8}
           placeholder={t('exercise.interactions.shortAnswerPlaceholder')}
+          aria-label={t('exercise.interactions.shortAnswerPlaceholder')}
           className="min-h-[220px] w-full rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-base text-neutral-900 outline-none transition-colors focus:border-brand-trust focus:ring-2 focus:ring-[var(--focus-ring-soft)]"
         />
       </div>

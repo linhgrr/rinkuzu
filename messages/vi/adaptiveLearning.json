@@ -447,7 +447,9 @@
     "range40To50": "40-50%",
     "range50To60": "50-60%",
     "range60To75": "60-75%",
-    "range75Plus": "75%+ (Đã thành thạo)"
+    "range75Plus": "75%+ (Đã thành thạo)",
+    "noData": "Chưa có dữ liệu thành thạo",
+    "noDataHint": "Hoàn thành một vài bài tập để xem phân tích mức thành thạo"
   },
   "conceptDetail": {
     "mastered": "Đã thành thạo",

@@ -22,26 +22,7 @@ import type { PipelineJobHistoryItem } from './types'
 
 const plusJakartaSans = Plus_Jakarta_Sans({ subsets: ['latin'] })
 
-const DASHBOARD_RECOMMENDATIONS = [
-  {
-    badgeKey: 'recommendations.basedOnActivity.badge',
-    titleKey: 'recommendations.basedOnActivity.title',
-    descriptionKey: 'recommendations.basedOnActivity.description',
-    durationKey: 'recommendations.basedOnActivity.duration',
-  },
-  {
-    badgeKey: 'recommendations.highImpact.badge',
-    titleKey: 'recommendations.highImpact.title',
-    descriptionKey: 'recommendations.highImpact.description',
-    durationKey: 'recommendations.highImpact.duration',
-  },
-  {
-    badgeKey: 'recommendations.communityTop.badge',
-    titleKey: 'recommendations.communityTop.title',
-    descriptionKey: 'recommendations.communityTop.description',
-    durationKey: 'recommendations.communityTop.duration',
-  },
-] as const
+
 
 type TranslateFn = (key: string, values?: Record<string, any>) => string
 
@@ -445,40 +426,6 @@ export const LibrarySection = ({
     </section>
   )
 }
-
-export const RecommendationsSection = ({ t }: { t: TranslateFn }) => (
-  <section className="mb-12">
-    <div className="mb-8 flex items-center gap-4">
-      <h2 className={`${plusJakartaSans.className} text-3xl font-black text-neutral-900`}>{t('recommendedForYou')}</h2>
-      <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-trust/10 px-4 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-brand-trust">
-        <FiZap className="h-4 w-4" />
-        {t('aiPowered')}
-      </span>
-    </div>
-    <div className="-mx-4 flex gap-8 overflow-x-auto px-4 pb-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-      {DASHBOARD_RECOMMENDATIONS.map(item => (
-        <article key={item.titleKey} className="flex w-96 flex-none flex-col rounded-[1.75rem] border border-white/60 bg-neutral-100 p-8 shadow-sm transition-shadow hover:shadow-md">
-          <div className="mb-6 flex items-start justify-between gap-4">
-            <span className="rounded bg-white px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-neutral-600">{t(item.badgeKey)}</span>
-            <FiZap className="h-5 w-5 text-brand-trust" />
-          </div>
-          <h4 className="mb-3 text-xl font-bold text-neutral-900">{t(item.titleKey)}</h4>
-          <p className="mb-6 leading-relaxed text-neutral-600">{t(item.descriptionKey)}</p>
-          <div className="mt-auto flex items-center justify-between gap-4">
-            <span className="inline-flex items-center gap-1 text-xs font-bold text-neutral-600">
-              <FiClock className="h-3.5 w-3.5" />
-              {t(item.durationKey)}
-            </span>
-            <button type="button" className="inline-flex items-center gap-1 text-sm font-bold text-brand-trust transition-all hover:gap-2">
-              {t('viewDetails')}
-              <FiArrowRight className="h-4 w-4" />
-            </button>
-          </div>
-        </article>
-      ))}
-    </div>
-  </section>
-)
 
 export const FloatingUploadAction = ({ onClick, t }: FloatingUploadActionProps) => (
   <button

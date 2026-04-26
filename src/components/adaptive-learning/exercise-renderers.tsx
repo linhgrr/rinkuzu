@@ -79,7 +79,7 @@ export const ExerciseTheoryView = ({
 }: TheoryViewProps) => (
   <div className="mx-auto flex min-h-[80vh] max-w-4xl flex-col">
     <div className="mb-8 md:mb-10 text-center px-4">
-      <div className="mx-auto mb-5 md:mb-6 flex h-14 w-14 md:h-16 md:w-16 items-center justify-center rounded-[18px] bg-neutral-50 border border-neutral-200 text-neutral-900 shadow-sm">
+      <div className="mx-auto mb-5 md:mb-6 flex h-14 w-14 md:h-16 md:w-16 items-center justify-center rounded-xl bg-neutral-50 border border-neutral-200 text-neutral-900 shadow-sm">
         <HiBookOpen className="h-6 w-6 md:h-8 md:w-8" />
       </div>
       <h1 className="mb-2 text-xl font-semibold tracking-tight text-neutral-900 md:text-3xl">{t('exercise.theory.reviewKnowledge')}</h1>
@@ -92,7 +92,7 @@ export const ExerciseTheoryView = ({
     </div>
 
     <div className="grid gap-6 md:gap-8 pb-12 md:grid-cols-1">
-      <Card className="overflow-hidden rounded-[20px] border-neutral-200 shadow-sm bg-white p-5 sm:p-8 md:p-10 relative">
+      <Card className="overflow-hidden rounded-xl border-neutral-200 shadow-sm bg-white p-5 sm:p-8 md:p-10 relative">
         {loadingTheory ? (
           <div className="flex flex-col items-center justify-center py-12 px-4 text-center min-h-[300px]">
             <HiLightBulb className="h-8 w-8 text-neutral-400 mb-4 animate-pulse" />
@@ -145,7 +145,7 @@ export const ExerciseTheoryView = ({
         <Button
           onClick={onStartExercise}
           disabled={loadingExercise}
-          className="w-full md:w-auto h-12 md:h-11 min-h-[48px] md:min-w-[200px] rounded-full bg-brand-trust px-8 text-sm md:text-base font-medium text-white transition-all active:scale-[0.98] hover:bg-brand-trust-hover shadow-md disabled:bg-neutral-200 disabled:text-neutral-400"
+          className="w-full md:w-auto h-12 md:h-11 min-h-[48px] md:min-w-[200px] rounded-full bg-brand-action px-8 text-sm md:text-base font-medium text-white transition-all active:scale-[0.98] hover:bg-brand-action-hover shadow-md disabled:bg-neutral-200 disabled:text-neutral-400"
         >
           {loadingExercise ? t('exercise.loadingTitle') : t('exercise.theory.startExercise')}
           {!loadingExercise && <HiArrowRight className="ml-2 h-4 w-4" />}
@@ -231,7 +231,7 @@ export const ExerciseQuestionView = ({
 
     <div className="grid flex-1 grid-cols-1 gap-6 lg:grid-cols-12">
       <div className="flex flex-col lg:col-span-8">
-        <Card className="flex-1 rounded-[20px] border border-neutral-200 bg-white shadow-sm">
+        <Card className="flex-1 rounded-xl border border-neutral-200 bg-white shadow-sm">
           <div className="flex items-center justify-between border-b border-neutral-100 px-5 sm:px-6 py-4 bg-neutral-50/50 rounded-t-[20px]">
             <div className={`flex items-center gap-2 rounded-md ${bloomColor} px-2.5 py-1 box-border`}>
               <div className="h-2 w-2 rounded-full bg-white opacity-80" />
@@ -283,7 +283,7 @@ export const ExerciseQuestionView = ({
       </div>
 
       <div className="flex flex-col gap-6 lg:col-span-4">
-        <div className="relative overflow-hidden rounded-[20px] bg-neutral-50 border border-neutral-200 p-5 sm:p-6 text-neutral-900 shadow-sm">
+        <div className="relative overflow-hidden rounded-xl bg-neutral-50 border border-neutral-200 p-5 sm:p-6 text-neutral-900 shadow-sm">
           <div className="relative z-10">
             <h3 className="mb-3 text-base font-semibold tracking-tight flex items-center gap-2">
               <span className="h-2 w-2 rounded-full bg-brand-trust animate-pulse" />
@@ -296,7 +296,7 @@ export const ExerciseQuestionView = ({
               })}
             </p>
             <Button
-              className="w-full min-h-[48px] h-12 sm:h-11 sm:min-h-[44px] rounded-full bg-brand-trust py-2 text-sm md:text-base font-medium text-white transition-all active:scale-[0.98] sm:hover:scale-[1.02] hover:bg-brand-trust-hover justify-center shadow-sm"
+              className="w-full min-h-[48px] h-12 sm:h-11 sm:min-h-[44px] rounded-full bg-brand-action py-2 text-sm md:text-base font-medium text-white transition-all active:scale-[0.98] sm:hover:scale-[1.02] hover:bg-brand-action-hover justify-center shadow-sm"
               onClick={onSubmit}
               disabled={!canSubmit || submitting}
             >

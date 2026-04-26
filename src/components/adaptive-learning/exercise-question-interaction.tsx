@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { Reorder } from 'framer-motion'
-import { ChevronDown, ChevronUp, GripVertical, Lightbulb } from 'lucide-react'
+import { HiChevronDown, HiChevronUp, HiOutlineDotsVertical, HiOutlineLightBulb } from '@/components/icons'
 import { Button } from '@/components/ui/Button'
 import { DynamicMarkdownRenderer } from '@/components/ui/DynamicMarkdownRenderer'
 import { getExercisePromptSections } from './exercise-prompt'
@@ -24,7 +24,7 @@ function OptionCard({
     <button
       type="button"
       onClick={onClick}
-      className={`group relative flex w-full cursor-pointer items-start gap-4 rounded-[12px] border p-4 text-left transition-all duration-200 sm:p-5 ${active
+      className={`group relative flex w-full cursor-pointer items-start gap-4 rounded-lg border p-4 text-left transition-all duration-200 sm:p-5 ${active
         ? 'border-brand-action bg-orange-50 shadow-sm'
         : 'border-neutral-200 bg-white hover:border-neutral-400 active:scale-[0.99]'
       }`}
@@ -156,7 +156,7 @@ function MatchingInteraction({
                 style={sharedCardStyle}
                 className="group flex cursor-grab items-center gap-3 rounded-xl border border-neutral-200 bg-white p-3 shadow-sm transition-colors hover:border-brand-trust/50 active:cursor-grabbing"
               >
-                <GripVertical className="h-4 w-4 shrink-0 text-neutral-300" />
+                <HiOutlineDotsVertical className="h-4 w-4 shrink-0 text-neutral-300" />
                 <div className="flex-1 text-right text-sm text-neutral-700">
                   <DynamicMarkdownRenderer content={entry.value} />
                 </div>
@@ -252,10 +252,10 @@ export function ExerciseInteraction({
               className="flex w-full items-center justify-between rounded-none px-4 py-3 text-left text-sm font-medium text-amber-900 hover:bg-amber-100/80"
             >
               <span className="flex items-center gap-2">
-                <Lightbulb className="h-4 w-4 shrink-0" />
+                <HiOutlineLightBulb className="h-4 w-4 shrink-0" />
                 <span>{isHintOpen ? t('exercise.interactions.hideHint') : t('exercise.interactions.showHint')}</span>
               </span>
-              {isHintOpen ? <ChevronUp className="h-4 w-4 shrink-0" /> : <ChevronDown className="h-4 w-4 shrink-0" />}
+              {isHintOpen ? <HiChevronUp className="h-4 w-4 shrink-0" /> : <HiChevronDown className="h-4 w-4 shrink-0" />}
             </Button>
             <div
               className={`grid transition-[grid-template-rows] duration-200 ease-out ${isHintOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}
@@ -346,7 +346,7 @@ export function ExerciseInteraction({
                       onMoveOrderingItem(index, index - 1)
                     }}
                   >
-                    <ChevronUp className="h-4 w-4" />
+                    <HiChevronUp className="h-4 w-4" />
                   </Button>
                   <Button
                     variant="ghost"
@@ -358,11 +358,11 @@ export function ExerciseInteraction({
                       onMoveOrderingItem(index, index + 1)
                     }}
                   >
-                    <ChevronDown className="h-4 w-4" />
+                    <HiChevronDown className="h-4 w-4" />
                   </Button>
                 </div>
                 <div className="cursor-grab p-1 text-neutral-300 group-hover:text-neutral-400">
-                  <GripVertical className="h-5 w-5" />
+                  <HiOutlineDotsVertical className="h-5 w-5" />
                 </div>
               </div>
             </Reorder.Item>

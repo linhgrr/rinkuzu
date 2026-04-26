@@ -26,8 +26,11 @@ function SessionRow({ item, onOpen }: SessionRowProps) {
 
   return (
     <div
-      className="group flex cursor-pointer flex-col gap-4 rounded-lg border border-neutral-200 bg-white p-5 transition-colors duration-200 hover:border-neutral-800 sm:flex-row sm:items-center sm:justify-between"
+      className="group flex cursor-pointer flex-col gap-4 rounded-lg border border-neutral-200 bg-white p-5 transition-colors duration-200 hover:border-neutral-800 sm:flex-row sm:items-center sm:justify-between focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-trust"
+      role="button"
+      tabIndex={0}
       onClick={() => onOpen(item.job_id)}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(item.job_id) } }}
     >
       <div className="flex items-center gap-4">
         <div className={`flex h-12 w-12 items-center justify-center rounded-md border font-mono text-lg font-medium ${gradeColor}`}>

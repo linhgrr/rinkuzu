@@ -2,6 +2,7 @@
 
 import dynamic from 'next/dynamic'
 import { Button } from '@/components/ui/Button'
+import { Spinner } from '@/components/ui/Spinner'
 import {
   HiArrowRight,
   HiOutlineAcademicCap,
@@ -19,7 +20,7 @@ import type { SessionHistoryDetail, SessionStatus } from './types'
 function SectionSkeleton() {
   return (
     <div className="flex h-[400px] w-full items-center justify-center rounded-xl border border-neutral-200 bg-white shadow-sm">
-      <div className="h-6 w-6 animate-spin rounded-full border-2 border-neutral-200 border-t-brand-trust" />
+      <Spinner size="lg" />
     </div>
   )
 }
@@ -37,7 +38,7 @@ const ExerciseHistoryTable = dynamic(
   {
     loading: () => (
       <div className="flex items-center justify-center gap-2 py-10 text-neutral-500">
-        <div className="h-5 w-5 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
+        <Spinner />
       </div>
     ),
     ssr: false,
@@ -244,7 +245,7 @@ export const SubjectDetailsTabContent = ({
       historyLoading
         ? (
             <div className="flex items-center justify-center gap-2 py-10 text-neutral-500">
-              <div className="h-5 w-5 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
+              <Spinner />
               <span className="text-sm">{t('history.loadingFromMongoDB')}</span>
             </div>
           )

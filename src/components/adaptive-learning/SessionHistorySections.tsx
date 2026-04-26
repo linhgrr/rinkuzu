@@ -2,6 +2,7 @@
 
 import { memo } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
+import { Spinner } from '@/components/ui/Spinner'
 import {
   HiArrowRight,
   HiOutlineAcademicCap,
@@ -85,7 +86,7 @@ const SessionRow = memo(function SessionRow({ item, onOpen }: SessionRowProps) {
 
 export const SessionHistoryLoadingState = ({ message }: { message: string }) => (
   <div className="flex items-center justify-center gap-3 py-12 text-neutral-500">
-    <div className="h-5 w-5 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
+    <Spinner />
     <span className="text-sm">{message}</span>
   </div>
 )

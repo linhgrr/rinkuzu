@@ -504,5 +504,28 @@
       "title": "Kết quả | Học tập thích ứng",
       "description": "Phản hồi bài tập"
     }
+  },
+  "guest": {
+    "heroTitle": "Học tập thích ứng AI cho các môn STEM",
+    "loginCta": "Đăng nhập để bắt đầu học",
+    "registerCta": "Tạo tài khoản",
+    "faqTitle": "Câu hỏi thường gặp",
+    "ctaTitle": "Sẵn sàng bắt đầu hành trình học tập?",
+    "ctaDescription": "Tải lên tài liệu đầu tiên và để AI xây dựng chương trình học cá nhân hóa cho bạn.",
+    "startNow": "Bắt đầu ngay",
+    "faq": {
+      "howItWorks": {
+        "question": "Học tập thích ứng hoạt động như thế nào?",
+        "answer": "Bạn tải lên PDF, AI trích xuất khái niệm, xây dựng đồ thị kiến thức tiên quyết, sau đó đề xuất bài tập theo cấp độ Bloom."
+      },
+      "forBeginners": {
+        "question": "Có phù hợp cho người mới bắt đầu không?",
+        "answer": "Có. Hệ thống điều chỉnh độ khó và mở khóa bài học từ cơ bản đến nâng cao."
+      },
+      "multipleSubjects": {
+        "question": "Có thể học nhiều môn cùng lúc không?",
+        "answer": "Có. Bạn có thể tạo nhiều phiên học từ các tài liệu khác nhau và theo dõi tiến độ theo từng môn."
+      }
+    }
   }
 }

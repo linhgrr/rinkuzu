@@ -40,10 +40,9 @@ const nodeTypes = {
   concept: ConceptNode,
 }
 
-const dagreGraph = new dagre.graphlib.Graph()
-dagreGraph.setDefaultEdgeLabel(() => ({}))
-
 const getLayoutedElements = (nodes: Node<ConceptNodeData>[], edges: Edge[], direction = 'TB') => {
+  const dagreGraph = new dagre.graphlib.Graph()
+  dagreGraph.setDefaultEdgeLabel(() => ({}))
   dagreGraph.setGraph({ rankdir: direction, nodesep: 60, ranksep: 80 })
 
   nodes.forEach((node) => {

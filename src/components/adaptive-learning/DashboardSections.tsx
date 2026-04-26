@@ -167,7 +167,7 @@ export const HeroSection = ({ subject, loading, loadingJobId, onGoUpload, onOpen
 
   if (!subject) {
     return (
-      <section className="relative overflow-hidden rounded-2xl border border-neutral-200 bg-gradient-to-br from-green-50 to-green-50 p-8 shadow-sm md:p-10 lg:col-span-8">
+      <section className="relative overflow-hidden rounded-2xl border border-neutral-200 bg-green-50 p-8 shadow-sm md:p-10 lg:col-span-8">
         <div className="relative z-10 flex h-full flex-col justify-between gap-10">
           <div>
             <span className="mb-4 inline-block rounded-full bg-brand-trust/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.2em] text-brand-trust">
@@ -191,7 +191,7 @@ export const HeroSection = ({ subject, loading, loadingJobId, onGoUpload, onOpen
   const isOpening = loadingJobId === subject.job_id
 
   return (
-    <section className="relative overflow-hidden rounded-2xl border border-neutral-200 bg-gradient-to-br from-green-50 to-green-50 p-8 shadow-sm md:p-10 lg:col-span-8">
+    <section className="relative overflow-hidden rounded-2xl border border-neutral-200 bg-green-50 p-8 shadow-sm md:p-10 lg:col-span-8">
       <div className="relative z-10 flex h-full flex-col justify-between gap-10">
         <div>
           <span className="mb-4 inline-block rounded-full bg-brand-trust/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.2em] text-brand-trust">

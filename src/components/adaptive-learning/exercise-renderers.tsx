@@ -257,11 +257,14 @@ export const ExerciseQuestionView = ({
             </div>
           ) : exercise ? (
             <CardContent className="p-5 sm:p-6 md:p-10">
-              {getExerciseHeaderContent(exercise) ? (
-                <h2 className="mb-8 text-xl font-medium leading-relaxed text-neutral-900 tracking-tight">
-                  <DynamicMarkdownRenderer content={getExerciseHeaderContent(exercise) || ''} />
-                </h2>
-              ) : null}
+              {(() => {
+                const headerContent = getExerciseHeaderContent(exercise)
+                return headerContent ? (
+                  <h2 className="mb-8 text-xl font-medium leading-relaxed text-neutral-900 tracking-tight">
+                    <DynamicMarkdownRenderer content={headerContent} />
+                  </h2>
+                ) : null
+              })()}
               <ExerciseInteraction
                 answerDraft={answerDraft}
                 exercise={exercise}

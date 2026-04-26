@@ -60,17 +60,17 @@ function PaymentSuccessContent() {
 
   if (status === 'loading') {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">{t('verifyingPayment')}</p>
+          <div className="h-12 w-12 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust mx-auto" />
+          <p className="mt-4 text-neutral-600">{t('verifyingPayment')}</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center py-8">
+    <div className="min-h-screen bg-neutral-50 flex items-center justify-center py-8">
       <div className="max-w-md mx-auto px-4">
         <Card className="p-8 text-center">
           {status === 'success' ? (
@@ -90,10 +90,10 @@ function PaymentSuccessContent() {
                   />
                 </svg>
               </div>
-              <h1 className="text-2xl font-bold text-gray-900 mb-4">
+              <h1 className="text-2xl font-bold text-neutral-900 mb-4">
                 {t('paymentSuccessTitle')}
               </h1>
-              <p className="text-gray-600 mb-6">
+              <p className="text-neutral-600 mb-6">
                 {message}
               </p>
               <div className="space-y-3">
@@ -122,10 +122,10 @@ function PaymentSuccessContent() {
                   />
                 </svg>
               </div>
-              <h1 className="text-2xl font-bold text-gray-900 mb-4">
+              <h1 className="text-2xl font-bold text-neutral-900 mb-4">
                 {t('errorTitle')}
               </h1>
-              <p className="text-gray-600 mb-6">
+              <p className="text-neutral-600 mb-6">
                 {message}
               </p>
               <div className="space-y-3">
@@ -147,10 +147,10 @@ function PaymentSuccessContent() {
 function PaymentSuccessLoading() {
   const t = useTranslations('common')
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+    <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
       <div className="text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-        <p className="mt-4 text-gray-600">{t('loading')}</p>
+        <div className="h-12 w-12 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust mx-auto" />
+        <p className="mt-4 text-neutral-600">{t('loading')}</p>
       </div>
     </div>
   )

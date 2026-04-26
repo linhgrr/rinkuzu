@@ -62,7 +62,7 @@ export function ImageUpload({
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setDragActive(false);
-    
+
     const file = e.dataTransfer.files?.[0];
     if (file) {
       handleImageUpload(file);
@@ -99,10 +99,10 @@ export function ImageUpload({
   useEffect(() => {
     const onWindowPaste = (e: ClipboardEvent) => {
       if (!isHovered) return;
-      
+
       const items = e.clipboardData?.items;
       if (!items) return;
-      
+
       for (let i = 0; i < items.length; i++) {
         const item = items[i];
         if (item.type.startsWith('image/')) {
@@ -117,7 +117,7 @@ export function ImageUpload({
     };
 
     window.addEventListener('paste', onWindowPaste);
-    
+
     return () => {
       window.removeEventListener('paste', onWindowPaste);
     };
@@ -137,7 +137,7 @@ export function ImageUpload({
 
   if (currentImage) {
     return (
-      <div 
+      <div
         className={`relative group ${className}`}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
@@ -147,7 +147,7 @@ export function ImageUpload({
           alt="Uploaded image"
           width={maxWidth}
           height={maxHeight}
-          className="rounded-lg border border-gray-200 shadow-sm"
+          className="rounded-lg border border-neutral-200 shadow-sm"
           style={{
             maxWidth: maxWidth,
             maxHeight: maxHeight,
@@ -180,7 +180,7 @@ export function ImageUpload({
         onChange={handleFileSelect}
         className="hidden"
       />
-      
+
       <div
         onClick={handleClick}
         onDrop={handleDrop}
@@ -192,10 +192,10 @@ export function ImageUpload({
         tabIndex={0}
         className={`
           relative border-2 border-dashed rounded-lg p-6 text-center cursor-pointer
-          transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500
-          ${dragActive 
-            ? 'border-blue-500 bg-blue-50' 
-            : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
+          transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-brand-trust
+          ${dragActive
+            ? 'border-brand-action bg-orange-50'
+            : 'border-neutral-300 hover:border-neutral-400 hover:bg-neutral-50'
           }
           ${isUploading ? 'pointer-events-none opacity-75' : ''}
         `}
@@ -203,13 +203,13 @@ export function ImageUpload({
       >
         {isUploading ? (
           <div className="flex flex-col items-center justify-center space-y-2">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            <span className="text-sm text-gray-600">{t('uploadingImage')}</span>
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
+            <span className="text-sm text-neutral-600">{t('uploadingImage')}</span>
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center space-y-2">
             <svg
-              className="w-12 h-12 text-gray-400"
+              className="w-12 h-12 text-neutral-400"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 48 48"
@@ -222,14 +222,14 @@ export function ImageUpload({
                 d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
               />
             </svg>
-            <div className="text-sm text-gray-600">
-              <span className="font-medium text-blue-600">{t('clickToUpload')}</span>
+            <div className="text-sm text-neutral-600">
+              <span className="font-medium text-brand-action">{t('clickToUpload')}</span>
               <span> {t('orDragAndDrop')}</span>
             </div>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-neutral-500">
               {placeholder || t('clickToUpload')}
             </p>
-            <p className="text-xs text-gray-400">
+            <p className="text-xs text-neutral-400">
               {t('maxFileSize')}
             </p>
           </div>
@@ -274,4 +274,4 @@ export function OptionImageUpload(props: OptionImageUploadProps) {
       className="mt-2"
     />
   );
-} 
+}

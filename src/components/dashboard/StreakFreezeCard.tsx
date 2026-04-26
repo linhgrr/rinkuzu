@@ -69,14 +69,14 @@ export function StreakFreezeCard({ count, xp, labels }: StreakFreezeCardProps) {
     };
 
     return (
-        <Card className="p-5 flex items-center justify-between border-slate-200 bg-white rounded-2xl shadow-sm hover:border-orange-400 hover:shadow-[0_0_15px_rgba(251,146,60,0.2)] transition-all duration-300">
+        <Card className="p-5 flex items-center justify-between border-neutral-200 bg-white rounded-2xl shadow-sm hover:border-orange-400 hover:shadow-[0_0_15px_rgba(251,146,60,0.2)] transition-all duration-300">
             <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-slate-50 border border-slate-100 rounded-xl flex items-center justify-center text-xl">
+                <div className="w-10 h-10 bg-neutral-50 border border-neutral-100 rounded-xl flex items-center justify-center text-xl">
                     ❄️
                 </div>
                 <div>
-                    <p className="font-semibold text-gray-900">{labels.streakFreeze}</p>
-                    <p className="text-xs text-gray-600">
+                    <p className="font-semibold text-neutral-900">{labels.streakFreeze}</p>
+                    <p className="text-xs text-neutral-600">
                         {currentCount > 0
                             ? formatMessage(labels.streakFreezeEquipped, { count: currentCount })
                             : labels.streakFreezeNotEquipped}
@@ -89,12 +89,12 @@ export function StreakFreezeCard({ count, xp, labels }: StreakFreezeCardProps) {
                         size="sm"
                         onClick={handleBuy}
                         disabled={!canBuy || buying}
-                        className={canBuy ? 'bg-slate-900 hover:bg-black text-white' : 'bg-slate-100 text-slate-400 cursor-not-allowed'}
+                        className={canBuy ? 'bg-neutral-900 hover:bg-black text-white' : 'bg-neutral-100 text-neutral-400 cursor-not-allowed'}
                     >
                         {buying ? '…' : formatMessage(labels.buyXP, { xp: COST })}
                     </Button>
                 ) : (
-                    <span className="text-[10px] font-bold text-slate-400 px-3 py-1 bg-slate-50 border border-slate-100 rounded-full uppercase tracking-wider">
+                    <span className="text-[10px] font-bold text-neutral-400 px-3 py-1 bg-neutral-50 border border-neutral-100 rounded-full uppercase tracking-wider">
                         {labels.maxedOut}
                     </span>
                 )}

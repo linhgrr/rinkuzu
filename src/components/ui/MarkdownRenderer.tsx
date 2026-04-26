@@ -39,22 +39,22 @@ export function MarkdownRenderer({ content, className }: MarkdownRendererProps) 
         rehypePlugins={[rehypeKatex]}
         components={{
           h1: ({ children }) => (
-            <h1 className="text-lg font-bold text-gray-900 mb-3 mt-4 first:mt-0">
+            <h1 className="text-lg font-bold text-neutral-900 mb-3 mt-4 first:mt-0">
               {children}
             </h1>
           ),
           h2: ({ children }) => (
-            <h2 className="text-base font-semibold text-gray-900 mb-2 mt-3 first:mt-0">
+            <h2 className="text-base font-semibold text-neutral-900 mb-2 mt-3 first:mt-0">
               {children}
             </h2>
           ),
           h3: ({ children }) => (
-            <h3 className="text-sm font-medium text-gray-900 mb-2 mt-3 first:mt-0">
+            <h3 className="text-sm font-medium text-neutral-900 mb-2 mt-3 first:mt-0">
               {children}
             </h3>
           ),
           p: ({ children }) => (
-            <p className="text-sm text-gray-700 mb-2 leading-relaxed">
+            <p className="text-sm text-neutral-700 mb-2 leading-relaxed">
               {children}
             </p>
           ),
@@ -69,47 +69,47 @@ export function MarkdownRenderer({ content, className }: MarkdownRendererProps) 
             </ol>
           ),
           li: ({ children }) => (
-            <li className="text-sm text-gray-700">
+            <li className="text-sm text-neutral-700">
               {children}
             </li>
           ),
           strong: ({ children }) => (
-            <strong className="font-semibold text-gray-900">
+            <strong className="font-semibold text-neutral-900">
               {children}
             </strong>
           ),
           em: ({ children }) => (
-            <em className="italic text-gray-800">
+            <em className="italic text-neutral-800">
               {children}
             </em>
           ),
           code: ({ children }) => (
-            <code className="bg-gray-100 text-gray-900 px-1 py-0.5 rounded text-xs font-mono">
+            <code className="bg-neutral-100 text-neutral-900 px-1 py-0.5 rounded text-xs font-mono">
               {children}
             </code>
           ),
           pre: ({ children }) => (
-            <pre className="bg-gray-50 border border-gray-200 rounded-md p-3 overflow-x-auto mb-3">
+            <pre className="bg-neutral-50 border border-neutral-200 rounded-md p-3 overflow-x-auto mb-3">
               {children}
             </pre>
           ),
           blockquote: ({ children }) => (
-            <blockquote className="border-l-4 border-blue-200 pl-4 py-2 bg-blue-50 mb-3 rounded-r">
+            <blockquote className="border-l-4 border-green-200 pl-4 py-2 bg-green-50 mb-3 rounded-r">
               {children}
             </blockquote>
           ),
           hr: () => (
-            <hr className="border-gray-300 my-4" />
+            <hr className="border-neutral-300 my-4" />
           ),
           table: ({ children }) => (
             <div className="overflow-x-auto mb-3">
-              <table className="min-w-full border border-gray-200 rounded-md">
+              <table className="min-w-full border border-neutral-200 rounded-md">
                 {children}
               </table>
             </div>
           ),
           thead: ({ children }) => (
-            <thead className="bg-gray-50">
+            <thead className="bg-neutral-50">
               {children}
             </thead>
           ),
@@ -119,17 +119,17 @@ export function MarkdownRenderer({ content, className }: MarkdownRendererProps) 
             </tbody>
           ),
           tr: ({ children }) => (
-            <tr className="border-b border-gray-200">
+            <tr className="border-b border-neutral-200">
               {children}
             </tr>
           ),
           th: ({ children }) => (
-            <th className="px-3 py-2 text-left text-xs font-medium text-gray-900 border-r border-gray-200 last:border-r-0">
+            <th className="px-3 py-2 text-left text-xs font-medium text-neutral-900 border-r border-neutral-200 last:border-r-0">
               {children}
             </th>
           ),
           td: ({ children }) => (
-            <td className="px-3 py-2 text-sm text-gray-700 border-r border-gray-200 last:border-r-0">
+            <td className="px-3 py-2 text-sm text-neutral-700 border-r border-neutral-200 last:border-r-0">
               {children}
             </td>
           ),
@@ -138,7 +138,7 @@ export function MarkdownRenderer({ content, className }: MarkdownRendererProps) 
               href={href}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-blue-600 hover:text-blue-800 underline"
+              className="text-brand-trust hover:text-green-700 underline"
             >
               {children}
             </a>

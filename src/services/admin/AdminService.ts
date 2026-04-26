@@ -93,7 +93,7 @@ export class AdminService implements IAdminService {
       const category = await this.categoryRepository.create({
         name: name.trim(),
         description: description?.trim(),
-        color: color || '#3B82F6',
+        color: color || '#009d8c',
         createdBy: adminId
       });
 

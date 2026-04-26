@@ -10,7 +10,7 @@ interface MasteryMatrixProps {
     filterActiveOnly?: boolean;
 }
 
-const BLOOM_COLORS = ['bg-slate-500', 'bg-teal-500', 'bg-emerald-500', 'bg-amber-500', 'bg-orange-500', 'bg-rose-500'];
+const BLOOM_COLORS = ['bg-neutral-500', 'bg-green-500', 'bg-teal-500', 'bg-amber-500', 'bg-orange-500', 'bg-rose-500'];
 const BLOOM_TRANSLATION_BY_LABEL: Record<string, string> = {
     Remember: 'remember',
     Understand: 'understand',
@@ -22,7 +22,7 @@ const BLOOM_TRANSLATION_BY_LABEL: Record<string, string> = {
 
 function getMasteryColor(value: number): string {
     if (value >= 0.75) {
-        return 'bg-green-500';
+        return 'bg-brand-trust';
     }
     if (value >= 0.6) {
         return 'bg-green-300';
@@ -33,14 +33,14 @@ function getMasteryColor(value: number): string {
     if (value >= 0.4) {
         return 'bg-orange-200';
     }
-    return 'bg-gray-200';
+    return 'bg-neutral-200';
 }
 
 function getMasteryTextColor(value: number): string {
     if (value >= 0.6) {
         return 'text-white';
     }
-    return 'text-gray-700';
+    return 'text-neutral-700';
 }
 
 function getAverage(values: number[]) {
@@ -110,10 +110,10 @@ export default function MasteryMatrix({ sessionId, filterActiveOnly = false }: M
 
     if (loading) {
         return (
-            <div className="rounded-md border border-gray-200 bg-white p-8">
+            <div className="rounded-md border border-neutral-200 bg-white p-8">
                 <div className="mb-4 flex items-center gap-3">
-                    <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-300 border-t-gray-900" />
-                    <span className="text-gray-500 font-medium">{t('masteryMatrix.loading')}</span>
+                    <div className="h-5 w-5 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
+                    <span className="text-neutral-500 font-medium">{t('masteryMatrix.loading')}</span>
                 </div>
             </div>
         );
@@ -124,23 +124,23 @@ export default function MasteryMatrix({ sessionId, filterActiveOnly = false }: M
     }
 
     return (
-        <div className="overflow-hidden rounded-md border border-gray-200 bg-white">
-            <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4 bg-gray-50/50">
+        <div className="overflow-hidden rounded-md border border-neutral-200 bg-white">
+            <div className="flex items-center justify-between border-b border-neutral-100 px-5 py-4 bg-neutral-50/50">
                 <div>
-                    <h3 className="text-base font-medium tracking-tight text-gray-900">{t('masteryMatrix.title')}</h3>
-                    <p className="text-sm text-gray-500">{t('masteryMatrix.subtitle')}</p>
+                    <h3 className="text-base font-medium tracking-tight text-neutral-900">{t('masteryMatrix.title')}</h3>
+                    <p className="text-sm text-neutral-500">{t('masteryMatrix.subtitle')}</p>
                 </div>
                 <div className="flex gap-2">
                     <button
                         onClick={handleSortByMastery}
-                        className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${sortBy === 'mastery' ? 'bg-gray-100 text-gray-900' : 'text-gray-500 hover:bg-gray-50'
+                        className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${sortBy === 'mastery' ? 'bg-neutral-100 text-neutral-900' : 'text-neutral-500 hover:bg-neutral-50'
                             }`}
                     >
                         {t('masteryMatrix.sortByMastery')}
                     </button>
                     <button
                         onClick={handleSortByName}
-                        className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${sortBy === 'name' ? 'bg-gray-100 text-gray-900' : 'text-gray-500 hover:bg-gray-50'
+                        className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${sortBy === 'name' ? 'bg-neutral-100 text-neutral-900' : 'text-neutral-500 hover:bg-neutral-50'
                             }`}
                     >
                         {t('masteryMatrix.sortByName')}
@@ -151,20 +151,20 @@ export default function MasteryMatrix({ sessionId, filterActiveOnly = false }: M
             <div className="overflow-x-auto">
                 <table className="w-full">
                     <thead>
-                        <tr className="bg-[#f5f5f7] border-b border-gray-200">
-                            <th className="sticky left-0 z-10 w-48 bg-[#f5f5f7] px-4 py-3 text-left text-[11px] font-bold uppercase tracking-widest text-[#86868b] shadow-[1px_0_0_0_#f3f4f6]">
+                        <tr className="bg-neutral-50 border-b border-neutral-200">
+                            <th className="sticky left-0 z-10 w-48 bg-neutral-50 px-4 py-3 text-left text-[11px] font-bold uppercase tracking-widest text-[var(--text-muted)] shadow-[1px_0_0_0_var(--neutral-100)]">
                                 {t('masteryMatrix.concept')}
                             </th>
                             {data.bloom_labels.map((label, index) => {
                                 const localizedLabel = localizedBloomLabels[index] || label;
                                 return (
-                                    <th key={`${label}-${index}`} className="w-20 px-2 py-3 text-center text-[11px] font-bold uppercase tracking-widest text-[#86868b]">
-                                        <div className={`mx-auto mb-1.5 h-2 w-2 rounded-full ${BLOOM_COLORS[index] || 'bg-gray-400'}`} />
+                                    <th key={`${label}-${index}`} className="w-20 px-2 py-3 text-center text-[11px] font-bold uppercase tracking-widest text-[var(--text-muted)]">
+                                        <div className={`mx-auto mb-1.5 h-2 w-2 rounded-full ${BLOOM_COLORS[index] || 'bg-neutral-400'}`} />
                                         {localizedLabel.substring(0, 3)}
                                     </th>
                                 );
                             })}
-                            <th className="w-20 px-3 py-3 text-center text-[11px] font-bold uppercase tracking-widest text-[#86868b]">
+                            <th className="w-20 px-3 py-3 text-center text-[11px] font-bold uppercase tracking-widest text-[var(--text-muted)]">
                                 {t('masteryMatrix.avg')}
                             </th>
                         </tr>
@@ -173,8 +173,8 @@ export default function MasteryMatrix({ sessionId, filterActiveOnly = false }: M
                         {displayMatrix.map((row, rowIndex) => {
                             const isEven = rowIndex % 2 === 0;
                             return (
-                                <tr key={row.concept_id} className={`border-b border-gray-100 last:border-0 ${isEven ? 'bg-white' : 'bg-gray-50/50'}`}>
-                                    <td className={`sticky left-0 z-10 max-w-[200px] sm:max-w-[300px] truncate px-4 py-3.5 text-sm font-medium text-[#1d1d1f] shadow-[1px_0_0_0_#f3f4f6] ${isEven ? 'bg-white' : 'bg-gray-50'}`}>
+                                <tr key={row.concept_id} className={`border-b border-neutral-100 last:border-0 ${isEven ? 'bg-white' : 'bg-neutral-50/50'}`}>
+                                    <td className={`sticky left-0 z-10 max-w-[200px] sm:max-w-[300px] truncate px-4 py-3.5 text-sm font-medium text-[var(--text-primary)] shadow-[1px_0_0_0_var(--neutral-100)] ${isEven ? 'bg-white' : 'bg-neutral-50'}`}>
                                         {row.concept_name}
                                     </td>
                                     {row.bloom_levels.map((value, colIndex) => {
@@ -192,7 +192,7 @@ export default function MasteryMatrix({ sessionId, filterActiveOnly = false }: M
                                         );
                                     })}
                                     <td className="px-2 py-1 text-center">
-                                        <span className={`text-sm font-mono font-semibold ${row.avgMastery >= 0.75 ? 'text-green-600' : 'text-gray-500'}`}>
+                                        <span className={`text-sm font-mono font-semibold ${row.avgMastery >= 0.75 ? 'text-green-600' : 'text-neutral-500'}`}>
                                             {Math.round(row.avgMastery * 100)}%
                                         </span>
                                     </td>
@@ -204,18 +204,18 @@ export default function MasteryMatrix({ sessionId, filterActiveOnly = false }: M
             </div>
 
             {sortedMatrix.length > 30 ? (
-                <div className="border-t border-gray-100 px-6 py-3 text-center text-sm text-gray-500">
+                <div className="border-t border-neutral-100 px-6 py-3 text-center text-sm text-neutral-500">
                     {t('masteryMatrix.showingTop', { count: sortedMatrix.length })}
                 </div>
             ) : null}
 
-            <div className="flex items-center gap-4 border-t border-gray-100 px-6 py-3 text-xs text-gray-500">
+            <div className="flex items-center gap-4 border-t border-neutral-100 px-6 py-3 text-xs text-neutral-500">
                 <span className="font-medium">{t('masteryMatrix.legend')}</span>
-                <div className="flex items-center gap-1"><div className="h-3 w-4 rounded bg-gray-200" /> {t('masteryMatrix.rangeLt40')}</div>
+                <div className="flex items-center gap-1"><div className="h-3 w-4 rounded bg-neutral-200" /> {t('masteryMatrix.rangeLt40')}</div>
                 <div className="flex items-center gap-1"><div className="h-3 w-4 rounded bg-orange-200" /> {t('masteryMatrix.range40To50')}</div>
                 <div className="flex items-center gap-1"><div className="h-3 w-4 rounded bg-yellow-300" /> {t('masteryMatrix.range50To60')}</div>
                 <div className="flex items-center gap-1"><div className="h-3 w-4 rounded bg-green-300" /> {t('masteryMatrix.range60To75')}</div>
-                <div className="flex items-center gap-1"><div className="h-3 w-4 rounded bg-green-500" /> {t('masteryMatrix.range75Plus')}</div>
+                <div className="flex items-center gap-1"><div className="h-3 w-4 rounded bg-brand-trust" /> {t('masteryMatrix.range75Plus')}</div>
             </div>
         </div>
     );

@@ -110,12 +110,12 @@ export default function QuizMetaForm({
             variant="glass"
             disabled={disabled}
           />
-          {labels.promptHelper && <p className="text-xs text-gray-500 mt-2">{labels.promptHelper}</p>}
+          {labels.promptHelper && <p className="text-xs text-neutral-500 mt-2">{labels.promptHelper}</p>}
         </div>
       )}
 
       <div>
-        <label className="block text-sm font-semibold text-gray-700 mb-3">{labels.category}</label>
+        <label className="block text-sm font-semibold text-neutral-700 mb-3">{labels.category}</label>
         <CategorySelector
           value={selectedCategory}
           onChange={onCategoryChange}
@@ -126,7 +126,7 @@ export default function QuizMetaForm({
       </div>
 
       {showPrivate && (
-        <div className="bg-gradient-to-r from-violet-50 to-purple-50 p-4 rounded-xl border border-violet-200">
+        <div className="bg-gradient-to-r from-green-50 to-green-50/50 p-4 rounded-xl border border-green-100">
           <label htmlFor={privateCheckboxId} className="flex items-start space-x-3 cursor-pointer">
             <div className="flex items-center h-5">
               <input
@@ -135,15 +135,15 @@ export default function QuizMetaForm({
                 checked={isPrivate}
                 onChange={(e) => onPrivateChange(e.target.checked)}
                 disabled={disabled}
-                className="w-4 h-4 text-violet-600 bg-white border-gray-300 rounded focus:ring-violet-500 focus:ring-2"
+                className="w-4 h-4 text-brand-trust bg-white border-neutral-300 rounded focus:ring-brand-trust focus:ring-2"
               />
             </div>
             <div className="flex-1">
-              <span className="text-sm font-semibold text-gray-900 flex items-center">
-                <HiOutlineLockClosed className="w-4 h-4 mr-1 text-violet-600" />
+              <span className="text-sm font-semibold text-neutral-900 flex items-center">
+                <HiOutlineLockClosed className="w-4 h-4 mr-1 text-brand-trust" />
                 {labels.privateLabel}
               </span>
-              {labels.privateDescription && <p className="text-xs text-gray-600 mt-1">{labels.privateDescription}</p>}
+              {labels.privateDescription && <p className="text-xs text-neutral-600 mt-1">{labels.privateDescription}</p>}
             </div>
           </label>
         </div>

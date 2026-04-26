@@ -1,35 +1,31 @@
-import React, { useMemo } from 'react';
-import { motion, HTMLMotionProps } from 'framer-motion';
+import React from 'react';
 import { cn } from '@/lib/utils';
 
-// Extend HTMLMotionProps instead of standard HTMLAttributes to prevent conflicts
-// specifically with properties like 'onDrag'.
-interface TextShimmerProps extends HTMLMotionProps<"div"> {
+interface TextShimmerProps extends React.HTMLAttributes<HTMLSpanElement> {
   children: React.ReactNode;
   duration?: number;
 }
 
-export function TextShimmer({ children, duration = 1.0, className, ...props }: TextShimmerProps) {
+export function TextShimmer({
+  children,
+  duration = 8,
+  className,
+  style,
+  ...props
+}: TextShimmerProps) {
   return (
-    <motion.div
+    <span
       className={cn(
         'relative inline-block overflow-hidden',
-        'text-transparent bg-clip-text',
-        'bg-gradient-to-r from-gray-500 via-white to-gray-500 bg-[length:200%_auto]',
+        'bg-clip-text text-transparent',
+        'bg-gradient-to-r from-neutral-500 via-white to-neutral-500 bg-[length:200%_auto]',
+        'animate-text-shimmer',
         className
       )}
-      animate={{
-        backgroundPosition: ['200% center', '-200% center'],
-      }}
-      transition={{
-        repeat: Infinity,
-        duration: duration,
-        ease: 'linear',
-      }}
+      style={{ animationDuration: `${duration}s`, ...style }}
       {...props}
     >
       {children}
-    </motion.div>
+    </span>
   );
 }
-

@@ -49,7 +49,7 @@ export function Pagination({
         onClick={() => onPageChange(currentPage - 1)}
         className="h-10 min-h-[40px] px-4 py-2 rounded-full text-sm font-medium"
       >
-        <HiChevronLeft className="w-4 h-4 mr-1 text-gray-500" />
+        <HiChevronLeft className="w-4 h-4 mr-1 text-neutral-500" />
         Previous
       </Button>
 
@@ -66,7 +66,7 @@ export function Pagination({
                 1
               </Button>
               {visiblePages[0] > 2 && (
-                <span className="px-1 text-gray-500">…</span>
+                <span className="px-1 text-neutral-500">…</span>
               )}
             </>
           )}
@@ -78,9 +78,9 @@ export function Pagination({
               variant="outline"
               onClick={() => onPageChange(page)}
               className={`h-10 w-10 min-w-[40px] min-h-[40px] p-0 rounded-full text-sm font-medium flex items-center justify-center transition-colors ${
-                currentPage === page 
-                  ? '!bg-teal-600 !text-white !border-teal-600 hover:!bg-teal-700 shadow-sm' 
-                  : 'text-gray-600 hover:bg-gray-50'
+                currentPage === page
+                  ? '!bg-brand-trust !text-white !border-brand-trust hover:!bg-brand-trust-hover shadow-sm'
+                  : 'text-neutral-600 hover:bg-neutral-50'
               }`}
             >
               {page}
@@ -91,7 +91,7 @@ export function Pagination({
           {visiblePages[visiblePages.length - 1] < totalPages && (
             <>
               {visiblePages[visiblePages.length - 1] < totalPages - 1 && (
-                <span className="px-1 text-gray-500">…</span>
+                <span className="px-1 text-neutral-500">…</span>
               )}
               <Button
                 variant="outline"
@@ -113,10 +113,10 @@ export function Pagination({
         className="h-10 min-h-[40px] px-4 py-2 rounded-full text-sm font-medium"
       >
         Next
-        <HiChevronRight className="w-4 h-4 ml-1 text-gray-500" />
+        <HiChevronRight className="w-4 h-4 ml-1 text-neutral-500" />
       </Button>
     </div>
   );
 }
 
-export default Pagination; 
+export default Pagination;

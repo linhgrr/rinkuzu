@@ -49,7 +49,7 @@ export default async function HomePage({
       title: 'General Physics 1 (PH1110)',
       description: 'Multiple-choice questions on Mechanics and Thermodynamics aligned with midterm and final exam formats.',
       slug: 'vat-ly-1-hust',
-      category: { name: 'Science', color: 'purple' }
+      category: { name: 'Science', color: 'green' }
     },
     {
       _id: 'mock-3',
@@ -77,7 +77,7 @@ export default async function HomePage({
       title: 'Data Structures & Algorithms (IT3011)',
       description: 'Strengthen problem-solving with sorting, searching, and advanced tree-based structures.',
       slug: 'ctdl-gt-hust',
-      category: { name: 'Computer Science', color: 'indigo' }
+      category: { name: 'Computer Science', color: 'teal' }
     }
   ];
 

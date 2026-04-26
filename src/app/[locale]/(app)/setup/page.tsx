@@ -68,21 +68,21 @@ export default function SetupPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Checking setup status...</p>
+          <div className="h-12 w-12 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust mx-auto" />
+          <p className="mt-4 text-neutral-600">Checking setup status...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-neutral-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-gray-900">RinKuzu Setup</h1>
-          <p className="mt-2 text-gray-600">Initial application setup</p>
+          <h1 className="text-3xl font-bold text-neutral-900">RinKuzu Setup</h1>
+          <p className="mt-2 text-neutral-600">Initial application setup</p>
         </div>
 
         <Card>
@@ -115,10 +115,10 @@ export default function SetupPage() {
               <div className="space-y-4">
                 <div className="text-center py-8">
                   <div className="text-4xl mb-4">✅</div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  <h3 className="text-lg font-semibold text-neutral-900 mb-2">
                     Setup Already Complete
                   </h3>
-                  <p className="text-gray-600 mb-4">
+                  <p className="text-neutral-600 mb-4">
                     An admin account already exists. You can proceed to login.
                   </p>
                 </div>
@@ -138,20 +138,20 @@ export default function SetupPage() {
               </div>
             ) : setupStatus?.setupAllowed ? (
               <div className="space-y-6">
-                <div className="bg-blue-50 rounded-lg p-4">
-                  <h3 className="text-lg font-semibold text-blue-900 mb-2">
+                <div className="bg-green-50 rounded-lg p-4">
+                  <h3 className="text-lg font-semibold text-green-800 mb-2">
                     Default Admin Account
                   </h3>
-                  <div className="text-sm text-blue-800 space-y-1">
+                  <div className="text-sm text-green-700 space-y-1">
                     <p><strong>Email:</strong> admin@quizcreator.com</p>
                     <p><strong>Password:</strong> ***REMOVED***</p>
-                    <p className="text-xs mt-2 text-blue-600">
+                    <p className="text-xs mt-2 text-brand-trust">
                       ⚠️ Please change the password after first login
                     </p>
                   </div>
                 </div>
 
-                <div className="text-sm text-gray-600">
+                <div className="text-sm text-neutral-600">
                   <p><strong>System Status:</strong></p>
                   <ul className="mt-2 space-y-1">
                     <li>• Admin exists: {setupStatus.adminExists ? 'Yes' : 'No'}</li>
@@ -169,7 +169,7 @@ export default function SetupPage() {
                 </Button>
 
                 <div className="text-center">
-                  <Link href="/" className="text-sm text-blue-600 hover:text-blue-800">
+                  <Link href="/" className="text-sm text-brand-trust hover:text-green-700">
                     ← Back to Home
                   </Link>
                 </div>
@@ -178,15 +178,15 @@ export default function SetupPage() {
               <div className="space-y-4">
                 <div className="text-center py-8">
                   <div className="text-4xl mb-4">🔒</div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  <h3 className="text-lg font-semibold text-neutral-900 mb-2">
                     Setup Not Allowed
                   </h3>
-                  <p className="text-gray-600 mb-4">
+                  <p className="text-neutral-600 mb-4">
                     Admin setup is only allowed for new installations or when no admin exists.
                   </p>
                 </div>
                 
-                <div className="text-sm text-gray-600">
+                <div className="text-sm text-neutral-600">
                   <p><strong>Current Status:</strong></p>
                   <ul className="mt-2 space-y-1">
                     <li>• Admin exists: {setupStatus?.adminExists ? 'Yes' : 'No'}</li>
@@ -214,7 +214,7 @@ export default function SetupPage() {
         {/* Security Notice */}
         <Card>
           <CardContent className="p-4">
-            <div className="text-center text-xs text-gray-500">
+            <div className="text-center text-xs text-neutral-500">
               <p className="font-semibold mb-1">🔐 Security Notice</p>
               <p>
                 This setup page is only available for initial installation.

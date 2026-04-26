@@ -130,24 +130,24 @@ export default function StatsModal({
   };
 
   const renderCategoryItem = (category: any, index: number) => (
-    <div key={category._id || index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+    <div key={category._id || index} className="flex items-center justify-between p-4 bg-neutral-50 rounded-lg hover:bg-neutral-100 transition-colors">
       <div className="flex items-center space-x-4">
-        <span className="text-sm font-medium text-gray-500">#{index + 1 + (pagination.page - 1) * pagination.limit}</span>
+        <span className="text-sm font-medium text-neutral-500">#{index + 1 + (pagination.page - 1) * pagination.limit}</span>
         <div
           className="w-4 h-4 rounded-full"
           style={{ backgroundColor: category.color }}
         />
         <div>
-          <h4 className="font-medium text-gray-900">{category.name}</h4>
-          <p className="text-sm text-gray-600">{category.description}</p>
+          <h4 className="font-medium text-neutral-900">{category.name}</h4>
+          <p className="text-sm text-neutral-600">{category.description}</p>
         </div>
       </div>
       <div className="text-right">
         <div className="text-sm font-medium">{category.totalQuizzes || category.quizCount} quiz</div>
-        <div className="text-xs text-gray-500">
+        <div className="text-xs text-neutral-500">
           {category.publishedQuizzes} {t('published')} • {category.totalQuestions} {t('questionsCount')}
         </div>
-        <div className="text-xs text-gray-400">
+        <div className="text-xs text-neutral-400">
           {category.isActive ? (
             <span className="text-green-600">{t('active')}</span>
           ) : (
@@ -159,30 +159,30 @@ export default function StatsModal({
   );
 
   const renderCreatorItem = (creator: any, index: number) => (
-    <div key={creator._id || index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+    <div key={creator._id || index} className="flex items-center justify-between p-4 bg-neutral-50 rounded-lg hover:bg-neutral-100 transition-colors">
       <div className="flex items-center space-x-4">
-        <span className="text-sm font-medium text-gray-500">#{index + 1 + (pagination.page - 1) * pagination.limit}</span>
-        <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-blue-600 rounded-full flex items-center justify-center">
+        <span className="text-sm font-medium text-neutral-500">#{index + 1 + (pagination.page - 1) * pagination.limit}</span>
+        <div className="w-8 h-8 bg-gradient-to-br from-green-400 to-brand-trust rounded-full flex items-center justify-center">
           <span className="text-white text-sm font-medium">
             {creator.email[0].toUpperCase()}
           </span>
         </div>
         <div>
-          <h4 className="font-medium text-gray-900">{creator.email}</h4>
-          <div className="flex items-center space-x-2 text-xs text-gray-500">
+          <h4 className="font-medium text-neutral-900">{creator.email}</h4>
+          <div className="flex items-center space-x-2 text-xs text-neutral-500">
             <span>{t('joined')}: {formatDate(creator.joinedAt)}</span>
             {creator.role === 'admin' && (
-              <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded">Admin</span>
+              <span className="px-2 py-1 bg-orange-100 text-orange-800 rounded">Admin</span>
             )}
           </div>
         </div>
       </div>
       <div className="text-right">
         <div className="text-sm font-medium">{creator.quizCount} quiz</div>
-        <div className="text-xs text-gray-500">
+        <div className="text-xs text-neutral-500">
           {creator.totalQuestions} {t('questionsCount')} • {Math.round(creator.successRate || 0)}% {t('successRate')}
         </div>
-        <div className="text-xs text-gray-400">
+        <div className="text-xs text-neutral-400">
           <span className="text-green-600">{creator.publishedQuizzes} {t('published')}</span> •
           <span className="text-yellow-600 ml-1">{creator.pendingQuizzes} {t('pendingApproval')}</span>
         </div>
@@ -194,10 +194,10 @@ export default function StatsModal({
     const { type: activityType, data: activityData, date } = activity;
 
     return (
-      <div key={index} className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${activityType === 'user' ? 'bg-blue-100 text-blue-600' :
+      <div key={index} className="flex items-center space-x-4 p-4 bg-neutral-50 rounded-lg hover:bg-neutral-100 transition-colors">
+        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${activityType === 'user' ? 'bg-green-100 text-brand-trust' :
           activityType === 'quiz' ? 'bg-green-100 text-green-600' :
-            'bg-purple-100 text-purple-600'
+            'bg-green-100 text-brand-trust'
           }`}>
           {activityType === 'user' && (
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -219,27 +219,27 @@ export default function StatsModal({
         <div className="flex-1">
           {activityType === 'user' && (
             <div>
-              <h4 className="font-medium text-gray-900">{t('newUser')}: {activityData.email}</h4>
-              <p className="text-sm text-gray-600">{t('registered')}</p>
+              <h4 className="font-medium text-neutral-900">{t('newUser')}: {activityData.email}</h4>
+              <p className="text-sm text-neutral-600">{t('registered')}</p>
             </div>
           )}
           {activityType === 'quiz' && (
             <div>
-              <h4 className="font-medium text-gray-900">{activityData.title}</h4>
-              <p className="text-sm text-gray-600">
+              <h4 className="font-medium text-neutral-900">{activityData.title}</h4>
+              <p className="text-sm text-neutral-600">
                 {t('by')} {activityData.author?.email} • {activityData.category?.name} • {activityData.questionCount} {t('questionsCount')}
               </p>
             </div>
           )}
           {activityType === 'attempt' && (
             <div>
-              <h4 className="font-medium text-gray-900">{activityData.quiz?.title}</h4>
-              <p className="text-sm text-gray-600">
+              <h4 className="font-medium text-neutral-900">{activityData.quiz?.title}</h4>
+              <p className="text-sm text-neutral-600">
                 {activityData.user?.email || t('anonymous')} • Score: {activityData.score}% • {activityData.answeredQuestions} {t('answeredQuestions')}
               </p>
             </div>
           )}
-          <p className="text-xs text-gray-400">{formatDate(date)}</p>
+          <p className="text-xs text-neutral-400">{formatDate(date)}</p>
         </div>
 
         {activityType === 'quiz' && (
@@ -269,7 +269,7 @@ export default function StatsModal({
     if (loading && data.length === 0) {
       return (
         <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
         </div>
       );
     }
@@ -292,7 +292,7 @@ export default function StatsModal({
     if (data.length === 0) {
       return (
         <div className="text-center py-8">
-          <p className="text-gray-500">{t('noData')}</p>
+          <p className="text-neutral-500">{t('noData')}</p>
         </div>
       );
     }
@@ -334,8 +334,8 @@ export default function StatsModal({
     <Modal isOpen={isOpen} onClose={onClose} size="wide">
       <div className="p-6">
         <div className="mb-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">{title}</h2>
-          <p className="text-gray-600">
+          <h2 className="text-2xl font-bold text-neutral-900 mb-2">{title}</h2>
+          <p className="text-neutral-600">
             {t('showing', { count: data.length, total: pagination.total })}
           </p>
         </div>
@@ -359,7 +359,7 @@ export default function StatsModal({
           {/* Sort Options */}
           {getSortOptions().length > 0 && (
             <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-600">{t('sortBy')}</span>
+              <span className="text-sm text-neutral-600">{t('sortBy')}</span>
               <div className="flex space-x-2">
                 {getSortOptions().map(option => (
                   <button
@@ -367,8 +367,8 @@ export default function StatsModal({
                     onClick={() => handleSortChange(option.value)}
                     className={`px-3 py-1 text-sm rounded-lg transition-colors ${
                       sortBy === option.value
-                        ? 'bg-blue-100 text-blue-700'
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        ? 'bg-green-100 text-brand-trust'
+                        : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
                     }`}
                   >
                     {option.label}
@@ -394,8 +394,8 @@ export default function StatsModal({
         {/* Loading More */}
         {loading && data.length > 0 && (
           <div className="text-center py-4">
-            <div className="inline-flex items-center text-sm text-gray-600">
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+            <div className="inline-flex items-center text-sm text-neutral-600">
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust mr-2" />
               {t('loadingMore')}
             </div>
           </div>

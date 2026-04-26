@@ -3,15 +3,19 @@
 import dynamic from 'next/dynamic';
 import { useEffect, useState } from 'react';
 
-const DashboardMascot3D = dynamic(
-  () => import('./DashboardMascot3D'),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="h-full w-full rounded-full bg-slate-100 animate-pulse" aria-hidden="true" />
-    ),
-  }
-);
+const DashboardMascot3D = dynamic(() => import('./DashboardMascot3D'), {
+  ssr: false,
+  loading: () => <MascotPlaceholder />,
+});
+
+function MascotPlaceholder() {
+  return (
+    <div
+      className="h-full w-full rounded-full bg-gradient-to-br from-neutral-100 to-neutral-200 animate-pulse"
+      aria-hidden="true"
+    />
+  );
+}
 
 export function DashboardHeroMascot() {
   const [shouldLoadMascot, setShouldLoadMascot] = useState(false);
@@ -45,13 +49,9 @@ export function DashboardHeroMascot() {
 
   return (
     <div className="relative z-10 hidden h-72 w-72 shrink-0 items-center justify-center lg:flex">
-      <div className="absolute inset-0 rounded-full bg-teal-50/50 blur-3xl" />
-      <div className="relative z-20 h-full w-full cursor-grab active:cursor-grabbing">
-        {shouldLoadMascot ? (
-          <DashboardMascot3D />
-        ) : (
-          <div className="h-full w-full rounded-full bg-slate-100" aria-hidden="true" />
-        )}
+      <div className="absolute inset-0 rounded-full bg-green-50/50 blur-3xl" />
+      <div className="relative z-20 h-full w-full">
+        {shouldLoadMascot ? <DashboardMascot3D /> : <MascotPlaceholder />}
       </div>
     </div>
   );

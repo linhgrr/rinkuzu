@@ -176,18 +176,18 @@ export default function DraftEditClient({ initialDraft, initialCategory, locale 
   // Mobile redirect message
   if (isMobile) {
     return (
-      <div className="min-h-screen bg-gray-50 px-4 py-6 flex flex-col items-center justify-center text-center">
-        <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mb-5">
-          <HiOutlineDesktopComputer className="w-10 h-10 text-blue-500" />
+      <div className="min-h-screen bg-neutral-50 px-4 py-6 flex flex-col items-center justify-center text-center">
+        <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mb-5">
+          <HiOutlineDesktopComputer className="w-10 h-10 text-brand-trust" />
         </div>
-        <h1 className="text-xl font-bold text-gray-900 mb-2">Mở trên máy tính</h1>
-        <p className="text-gray-500 mb-6 max-w-xs">
+        <h1 className="text-xl font-bold text-neutral-900 mb-2">Mở trên máy tính</h1>
+        <p className="text-neutral-500 mb-6 max-w-xs">
           Để chỉnh sửa chi tiết câu hỏi, vui lòng sử dụng máy tính.
         </p>
         <Link
           href={`/${locale}`}
-          className="px-6 py-3 rounded-full bg-blue-500 text-white font-medium
-                     hover:bg-blue-600 transition-colors inline-flex items-center gap-2"
+          className="px-6 py-3 rounded-full bg-green-500 text-white font-medium
+                     hover:bg-brand-trust transition-colors inline-flex items-center gap-2"
         >
           <HiOutlineArrowLeft className="w-5 h-5" />
           Về trang chủ
@@ -197,7 +197,7 @@ export default function DraftEditClient({ initialDraft, initialCategory, locale 
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-neutral-50">
       <div className="flex">
         {/* Left Side - Form Content */}
         <div className={`transition-all duration-300 ${showPDFViewer && pdfUrl ? 'w-1/2' : 'w-full'}`}>
@@ -206,13 +206,13 @@ export default function DraftEditClient({ initialDraft, initialCategory, locale 
             <div className="mb-8">
               <Link
                 href={`/${locale}`}
-                className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-4"
+                className="inline-flex items-center gap-1 text-sm text-neutral-500 hover:text-neutral-700 mb-4"
               >
                 <HiOutlineArrowLeft className="w-4 h-4" />
                 Quay lại
               </Link>
-              <h1 className="text-2xl font-bold text-gray-900">Chỉnh sửa Quiz</h1>
-              <p className="text-gray-500 mt-1 flex items-center gap-2">
+              <h1 className="text-2xl font-bold text-neutral-900">Chỉnh sửa Quiz</h1>
+              <p className="text-neutral-500 mt-1 flex items-center gap-2">
                 <HiOutlineQuestionMarkCircle className="w-4 h-4" />
                 {questions.length} câu hỏi được trích xuất
               </p>
@@ -242,9 +242,9 @@ export default function DraftEditClient({ initialDraft, initialCategory, locale 
             />
 
             {/* Questions */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
+            <div className="bg-white rounded-2xl shadow-sm border border-neutral-100 p-6 mb-6">
               <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                <HiOutlineCollection className="w-5 h-5 text-blue-500" />
+                <HiOutlineCollection className="w-5 h-5 text-brand-trust" />
                 Câu hỏi ({questions.length})
               </h2>
 
@@ -268,7 +268,7 @@ export default function DraftEditClient({ initialDraft, initialCategory, locale 
                 <Button
                   onClick={() => setShowPDFViewer(!showPDFViewer)}
                   variant="outline"
-                  className="flex items-center gap-2 text-blue-600 border-blue-200 hover:bg-blue-50"
+                  className="flex items-center gap-2 text-brand-trust border-green-200 hover:bg-green-50"
                 >
                   {showPDFViewer ? (
                     <><HiOutlineEyeOff className="w-4 h-4" /> Ẩn PDF</>
@@ -280,8 +280,8 @@ export default function DraftEditClient({ initialDraft, initialCategory, locale 
               <div className="flex gap-3 ml-auto">
                 <button
                   onClick={() => router.push(`/${locale}`)}
-                  className="px-6 py-3 rounded-xl border border-gray-200 text-gray-700
-                       hover:bg-gray-50 transition-colors flex items-center gap-2"
+                  className="px-6 py-3 rounded-xl border border-neutral-200 text-neutral-700
+                       hover:bg-neutral-50 transition-colors flex items-center gap-2"
                 >
                   <HiOutlineX className="w-4 h-4" />
                   Hủy
@@ -289,8 +289,8 @@ export default function DraftEditClient({ initialDraft, initialCategory, locale 
                 <button
                   onClick={handleSubmit}
                   disabled={isSubmitting || !selectedCategory || questions.length === 0}
-                  className="px-6 py-3 rounded-xl bg-blue-500 text-white font-medium
-                       hover:bg-blue-600 disabled:opacity-50 transition-colors flex items-center gap-2"
+                  className="px-6 py-3 rounded-xl bg-green-500 text-white font-medium
+                       hover:bg-brand-trust disabled:opacity-50 transition-colors flex items-center gap-2"
                 >
                   {isSubmitting ? (
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -306,7 +306,7 @@ export default function DraftEditClient({ initialDraft, initialCategory, locale 
 
         {/* Right Side - PDF Viewer */}
         {showPDFViewer && pdfUrl && (
-          <div className="w-1/2 h-screen sticky top-0 p-4 bg-white border-l border-gray-200">
+          <div className="w-1/2 h-screen sticky top-0 p-4 bg-white border-l border-neutral-200">
             <PDFViewer
               pdfDataUrl={pdfDataUrl}
               pdfUrl={pdfUrl}
@@ -341,11 +341,11 @@ function QuestionEditor({
   };
 
   return (
-    <div className="p-4 rounded-xl border border-gray-100 bg-gray-50">
+    <div className="p-4 rounded-xl border border-neutral-100 bg-neutral-50">
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="flex-1">
-          <span className="text-xs font-medium text-gray-500 uppercase flex items-center gap-1.5">
-            <div className="w-5 h-5 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-[10px]">
+          <span className="text-xs font-medium text-neutral-500 uppercase flex items-center gap-1.5">
+            <div className="w-5 h-5 bg-green-100 text-brand-trust rounded-full flex items-center justify-center text-[10px]">
               {index + 1}
             </div>
             Câu {index + 1} • {question.type === 'single' ? 'Một đáp án' : 'Nhiều đáp án'}
@@ -357,8 +357,8 @@ function QuestionEditor({
                 value={editedQuestion}
                 onChange={(e) => setEditedQuestion(e.target.value)}
                 rows={2}
-                className="flex-1 px-3 py-2 rounded-lg border border-gray-200
-                         focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                className="flex-1 px-3 py-2 rounded-lg border border-neutral-200
+                         focus:ring-2 focus:ring-brand-trust focus:border-transparent resize-none"
               />
               <button
                 onClick={handleSave}
@@ -368,13 +368,13 @@ function QuestionEditor({
               </button>
               <button
                 onClick={() => setIsEditing(false)}
-                className="p-2 text-gray-400 hover:bg-gray-100 rounded-lg"
+                className="p-2 text-neutral-400 hover:bg-neutral-100 rounded-lg"
               >
                 <HiOutlineX className="w-5 h-5" />
               </button>
             </div>
           ) : (
-            <p className="mt-1 text-gray-900">{question.question}</p>
+            <p className="mt-1 text-neutral-900">{question.question}</p>
           )}
         </div>
 
@@ -382,13 +382,13 @@ function QuestionEditor({
           <div className="flex items-center gap-1">
             <button
               onClick={() => setIsEditing(true)}
-              className="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"
+              className="p-2 text-neutral-400 hover:text-brand-trust hover:bg-green-50 rounded-lg transition-colors"
             >
               <HiOutlinePencil className="w-4 h-4" />
             </button>
             <button
               onClick={onDelete}
-              className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+              className="p-2 text-neutral-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
             >
               <HiOutlineTrash className="w-4 h-4" />
             </button>
@@ -408,7 +408,7 @@ function QuestionEditor({
               key={optIdx}
               className={`px-3 py-2 rounded-lg text-sm ${isCorrect
                 ? 'bg-green-100 text-green-800'
-                : 'bg-white text-gray-600'
+                : 'bg-white text-neutral-600'
                 }`}
             >
               {opt}

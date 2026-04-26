@@ -121,12 +121,12 @@ export default function AdaptiveLearningUpload() {
                 <Button
                     variant="ghost"
                     onClick={() => router.back()}
-                    className="text-slate-500 hover:text-slate-900 -ml-4 mb-6 font-medium bg-transparent"
+                    className="text-neutral-500 hover:text-neutral-900 -ml-4 mb-6 font-medium bg-transparent"
                 >
                     <HiOutlineArrowLeft className="w-5 h-5 mr-2" /> {t('uploadPage.back')}
                 </Button>
-                <h1 className="text-3xl md:text-4xl font-medium tracking-tight text-slate-900 mb-3">{t('uploadPage.startLearning')}</h1>
-                <p className="text-slate-500 text-base md:text-lg leading-relaxed max-w-2xl">
+                <h1 className="text-3xl md:text-4xl font-medium tracking-tight text-neutral-900 mb-3">{t('uploadPage.startLearning')}</h1>
+                <p className="text-neutral-500 text-base md:text-lg leading-relaxed max-w-2xl">
                     {t('uploadPage.description')}
                 </p>
             </div>
@@ -140,7 +140,7 @@ export default function AdaptiveLearningUpload() {
             <div className="max-w-3xl mx-auto space-y-10">
                 <div className="space-y-5">
                     <div className="flex flex-col space-y-3">
-                        <label htmlFor="subjectName" className="font-semibold text-slate-900 text-base">
+                        <label htmlFor="subjectName" className="font-semibold text-neutral-900 text-base">
                             {t('uploadPage.subjectName')} <span className="text-red-500">*</span>
                         </label>
                         <input
@@ -149,7 +149,7 @@ export default function AdaptiveLearningUpload() {
                             placeholder={t('uploadPage.subjectNamePlaceholder')}
                             value={subjectName}
                             onChange={(e) => setSubjectName(e.target.value)}
-                            className="px-4 py-3 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-slate-900 focus:border-slate-900 outline-none w-full bg-slate-50 hover:bg-white transition-all font-medium"
+                            className="px-4 py-3 text-sm border border-neutral-300 rounded-md focus:ring-2 focus:ring-brand-trust focus:border-brand-trust outline-none w-full bg-neutral-50 hover:bg-white transition-all font-medium"
                             disabled={isUploading}
                         />
                         {error && !subjectName.trim() && (
@@ -159,8 +159,8 @@ export default function AdaptiveLearningUpload() {
 
                     <div
                         {...getRootProps()}
-                        className={`relative group rounded-lg border border-dashed transition-all duration-200 overflow-hidden
-                            ${isDragActive ? 'border-slate-900 bg-slate-100 cursor-copy' : 'border-slate-300 bg-slate-50 hover:border-slate-500 cursor-pointer'}
+                        className={`upload-dropzone relative group cursor-pointer transition-all duration-200 overflow-hidden
+                            ${isDragActive ? '!border-brand-action bg-orange-50/30 cursor-copy' : ''}
                             ${isUploading ? 'pointer-events-none' : ''}`}
                     >
                         <input {...getInputProps()} />
@@ -168,19 +168,19 @@ export default function AdaptiveLearningUpload() {
                         <div className="p-16 md:p-20 flex flex-col items-center justify-center text-center">
                             {!isUploading ? (
                                 <>
-                                    <div className={`w-16 h-16 rounded-md flex items-center justify-center mb-6 transition-transform duration-200 group-hover:scale-105 border ${isDragActive ? 'bg-slate-200 text-slate-900 border-slate-300' : 'bg-white text-slate-500 border-slate-200 group-hover:text-slate-900'
+                                    <div className={`w-16 h-16 rounded-md flex items-center justify-center mb-6 transition-transform duration-200 group-hover:scale-105 border ${isDragActive ? 'bg-orange-100 text-brand-action border-brand-action/30' : 'bg-white text-brand-action border-orange-200 group-hover:text-brand-action-hover'
                                         }`}>
                                         <HiOutlineCloudUpload className="h-8 w-8" />
                                     </div>
-                                    <h3 className="text-xl font-medium tracking-tight text-slate-900 mb-2">
+                                    <h3 className="text-xl font-medium tracking-tight text-neutral-900 mb-2">
                                         {isDragActive ? t('dropPdfHere') : t('dragDropPdf')}
                                     </h3>
-                                    <p className="text-slate-500 mb-6 text-sm">
+                                    <p className="text-neutral-500 mb-6 text-sm">
                                         {t('uploadPage.uploadMaterialDescription')}
                                     </p>
                                     <Button
-                                        variant="outline"
-                                        className="rounded-md px-6 py-4 border-slate-200 font-medium text-sm hover:bg-slate-50 hover:text-slate-900 transition-all"
+                                        variant="primary"
+                                        className="rounded-md px-6 py-4 font-medium text-sm transition-all"
                                         onClick={handleOpenFileDialog}
                                     >
                                         {t('browseFiles')}
@@ -188,16 +188,16 @@ export default function AdaptiveLearningUpload() {
                                 </>
                             ) : (
                                 <div className="w-full max-w-sm">
-                                    <div className="w-16 h-16 mx-auto rounded-md bg-slate-100 border border-slate-200 text-slate-900 flex items-center justify-center mb-6 animate-pulse">
+                                    <div className="w-16 h-16 mx-auto rounded-md bg-neutral-100 border border-neutral-200 text-neutral-900 flex items-center justify-center mb-6 animate-pulse">
                                         <HiOutlineDocumentText className="w-8 h-8" />
                                     </div>
-                                    <h3 className="text-lg font-medium tracking-tight text-slate-900 mb-3">{t('uploadPage.uploading')}</h3>
-                                    <div className="flex items-center justify-between text-xs font-medium text-slate-500 mb-2.5 px-1 tracking-widest uppercase">
+                                    <h3 className="text-lg font-medium tracking-tight text-neutral-900 mb-3">{t('uploadPage.uploading')}</h3>
+                                    <div className="flex items-center justify-between text-xs font-medium text-neutral-500 mb-2.5 px-1 tracking-widest uppercase">
                                         <span>{t('uploadingFile')}</span>
-                                        <span className="tabular-nums font-bold text-slate-900">{uploadProgress}%</span>
+                                        <span className="tabular-nums font-bold text-neutral-900">{uploadProgress}%</span>
                                     </div>
-                                    <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
-                                        <div className="bg-slate-900 h-full rounded-full transition-all duration-300 ease-out" style={{ width: `${uploadProgress}%` }} />
+                                    <div className="w-full bg-neutral-100 rounded-full h-1.5 overflow-hidden">
+                                        <div className="bg-brand-trust h-full rounded-full transition-all duration-300 ease-out" style={{ width: `${uploadProgress}%` }} />
                                     </div>
                                 </div>
                             )}

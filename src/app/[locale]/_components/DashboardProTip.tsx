@@ -11,13 +11,13 @@ interface ProTipCardProps {
 
 export function ProTipCard({ title, content, ctaLabel, ctaHref }: ProTipCardProps) {
   return (
-    <Card className="p-6 bg-slate-900 text-white border-0 shadow-xl overflow-hidden relative group">
+    <Card className="p-6 bg-neutral-900 text-white border-0 shadow-xl overflow-hidden relative group">
       <div className="relative z-10">
-        <div className="w-14 h-14 bg-teal-100 rounded-full flex items-center justify-center text-teal-600 mb-4 group-hover:scale-110 transition-transform">
-          <HiOutlineLightBulb className="w-6 h-6 text-teal-600" />
+        <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center text-brand-trust mb-4 group-hover:scale-110 transition-transform">
+          <HiOutlineLightBulb className="w-6 h-6 text-brand-trust" />
         </div>
         <h3 className="font-bold text-lg mb-2">{title}</h3>
-        <p className="text-sm text-slate-400 mb-4 leading-relaxed font-medium">
+        <p className="text-sm text-neutral-400 mb-4 leading-relaxed font-medium">
           {content}
         </p>
         <Link

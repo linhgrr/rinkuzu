@@ -81,21 +81,21 @@ export default async function AuthorPage({ params }: Props) {
 
       <main className="min-h-screen bg-white">
         {/* Hero */}
-        <section className="bg-[#fbfbfd] py-20 md:py-28">
+        <section className="bg-[var(--bg-section)] py-20 md:py-28">
           <div className="max-w-3xl mx-auto px-6">
-            <nav className="flex items-center gap-2 text-sm text-[#414d60] mb-12">
-              <Link href="/" className="hover:text-[#1e242c] transition-colors">Home</Link>
+            <nav className="flex items-center gap-2 text-sm text-[var(--text-muted)] mb-12">
+              <Link href="/" className="hover:text-[var(--text-primary)] transition-colors">Home</Link>
               <span>/</span>
-              <Link href="/blog" className="hover:text-[#1e242c] transition-colors">Blog</Link>
+              <Link href="/blog" className="hover:text-[var(--text-primary)] transition-colors">Blog</Link>
               <span>/</span>
-              <Link href="/blog/authors" className="hover:text-[#1e242c] transition-colors">Authors</Link>
+              <Link href="/blog/authors" className="hover:text-[var(--text-primary)] transition-colors">Authors</Link>
               <span>/</span>
-              <span className="text-[#1e242c]">{author.name}</span>
+              <span className="text-[var(--text-primary)]">{author.name}</span>
             </nav>
 
             <div className="flex flex-col sm:flex-row gap-8 items-start">
               <div className="flex-shrink-0">
-                <div className="w-28 h-28 md:w-36 md:h-36 rounded-2xl overflow-hidden bg-gray-100 shadow-md">
+                <div className="w-28 h-28 md:w-36 md:h-36 rounded-2xl overflow-hidden bg-neutral-100 shadow-md">
                   <Image
                     src={author.imageUrl}
                     alt={`${author.name} — ${author.role}`}
@@ -106,13 +106,13 @@ export default async function AuthorPage({ params }: Props) {
                 </div>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold uppercase tracking-wider text-teal-600 mb-2">
+                <p className="text-xs font-semibold uppercase tracking-wider text-brand-trust mb-2">
                   {author.role}
                 </p>
-                <h1 className="text-3xl md:text-4xl font-bold text-[#1e242c] mb-3 leading-tight">
+                <h1 className="text-3xl md:text-4xl font-bold text-[var(--text-primary)] mb-3 leading-tight">
                   {author.name}
                 </h1>
-                <p className="text-[#414d60] leading-relaxed text-base md:text-lg">
+                <p className="text-[var(--text-muted)] leading-relaxed text-base md:text-lg">
                   {author.shortBio}
                 </p>
                 {author.links.length > 0 && (
@@ -123,7 +123,7 @@ export default async function AuthorPage({ params }: Props) {
                         href={link.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-sm text-teal-600 hover:underline"
+                        className="text-sm text-brand-trust hover:underline"
                       >
                         {link.label}
                       </a>
@@ -138,24 +138,24 @@ export default async function AuthorPage({ params }: Props) {
         {/* Articles by this author */}
         <section className="py-16 md:py-24">
           <div className="max-w-3xl mx-auto px-6">
-            <h2 className="text-xl font-bold text-[#1e242c] mb-8">Articles by {author.name}</h2>
+            <h2 className="text-xl font-bold text-[var(--text-primary)] mb-8">Articles by {author.name}</h2>
             <div className="space-y-6">
               {/* AI Quiz Generation article */}
               <Link
                 href="/blog/ai-powered-quiz-generation-guide"
-                className="group flex gap-5 p-5 rounded-2xl border border-gray-200 hover:border-teal-200 hover:shadow-md transition-all"
+                className="group flex gap-5 p-5 rounded-2xl border border-neutral-200 hover:border-green-200 hover:shadow-md transition-all"
               >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-teal-600 bg-teal-50 px-2 py-0.5 rounded-full">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-brand-trust bg-green-50 px-2 py-0.5 rounded-full">
                       AI in Education
                     </span>
-                    <span className="text-xs text-[#414d60]">March 27, 2026</span>
+                    <span className="text-xs text-[var(--text-muted)]">March 27, 2026</span>
                   </div>
-                  <h3 className="text-base font-semibold text-[#1e242c] group-hover:text-teal-600 transition-colors leading-snug mb-1">
+                  <h3 className="text-base font-semibold text-[var(--text-primary)] group-hover:text-brand-trust transition-colors leading-snug mb-1">
                     How AI Transforms PDF Learning into Adaptive Quizzes
                   </h3>
-                  <p className="text-sm text-[#414d60] leading-relaxed line-clamp-2">
+                  <p className="text-sm text-[var(--text-muted)] leading-relaxed line-clamp-2">
                     Discover how RinKuzu&apos;s ALSS system — SAINT-Bloom, Dueling DQN, and Gemini — transforms any PDF lecture into a personalized adaptive quiz journey.
                   </p>
                 </div>
@@ -164,19 +164,19 @@ export default async function AuthorPage({ params }: Props) {
               {/* Knowledge Graphs article */}
               <Link
                 href="/blog/knowledge-graphs-adaptive-learning-pdfs"
-                className="group flex gap-5 p-5 rounded-2xl border border-gray-200 hover:border-teal-200 hover:shadow-md transition-all"
+                className="group flex gap-5 p-5 rounded-2xl border border-neutral-200 hover:border-green-200 hover:shadow-md transition-all"
               >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-teal-600 bg-teal-50 px-2 py-0.5 rounded-full">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-brand-trust bg-green-50 px-2 py-0.5 rounded-full">
                       Learning Science
                     </span>
-                    <span className="text-xs text-[#414d60]">March 20, 2026</span>
+                    <span className="text-xs text-[var(--text-muted)]">March 20, 2026</span>
                   </div>
-                  <h3 className="text-base font-semibold text-[#1e242c] group-hover:text-teal-600 transition-colors leading-snug mb-1">
+                  <h3 className="text-base font-semibold text-[var(--text-primary)] group-hover:text-brand-trust transition-colors leading-snug mb-1">
                     Knowledge Graphs and Bloom&apos;s Taxonomy: A Complete Guide
                   </h3>
-                  <p className="text-sm text-[#414d60] leading-relaxed line-clamp-2">
+                  <p className="text-sm text-[var(--text-muted)] leading-relaxed line-clamp-2">
                     Learn how prerequisite knowledge graphs combined with Bloom&apos;s six cognitive levels create a scientifically-grounded adaptive learning path for any PDF document.
                   </p>
                 </div>

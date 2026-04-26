@@ -60,13 +60,13 @@ export default function TestImageUploadPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-neutral-50 py-8">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">
+          <h1 className="text-3xl font-bold text-neutral-900">
             Image Upload Test & Debug
           </h1>
-          <p className="text-gray-600 mt-2">
+          <p className="text-neutral-600 mt-2">
             Test drag & drop, click to upload, and paste (Ctrl+V) functionality with real-time logging
           </p>
         </div>
@@ -102,8 +102,8 @@ export default function TestImageUploadPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 {['Option A', 'Option B', 'Option C', 'Option D'].map((option, index) => (
-                  <div key={index} className="border border-gray-200 rounded-lg p-4">
-                    <h4 className="font-medium text-gray-900 mb-3">
+                  <div key={index} className="border border-neutral-200 rounded-lg p-4">
+                    <h4 className="font-medium text-neutral-900 mb-3">
                       {option}
                     </h4>
                     <OptionImageUpload
@@ -112,7 +112,7 @@ export default function TestImageUploadPage() {
                       onImageRemoved={() => removeOptionImage(index)}
                     />
                     {optionImages[index] && (
-                      <div className="mt-2 p-2 bg-blue-50 rounded text-xs text-blue-700 break-all">
+                      <div className="mt-2 p-2 bg-green-50 rounded text-xs text-brand-trust break-all">
                         ✅ Image: {optionImages[index]}
                       </div>
                     )}
@@ -121,9 +121,9 @@ export default function TestImageUploadPage() {
               </CardContent>
             </Card>
 
-            <div className="bg-gray-100 rounded-lg p-4">
-              <h3 className="font-medium text-gray-900 mb-2">How to test:</h3>
-              <ul className="text-sm text-gray-600 space-y-1">
+            <div className="bg-neutral-100 rounded-lg p-4">
+              <h3 className="font-medium text-neutral-900 mb-2">How to test:</h3>
+              <ul className="text-sm text-neutral-600 space-y-1">
                 <li>• <strong>Click to upload:</strong> Click on the upload area and select an image file</li>
                 <li>• <strong>Drag & drop:</strong> Drag an image file from your computer and drop it on the upload area</li>
                 <li>• <strong>Paste:</strong> Copy an image (Ctrl+C) and then click on the upload area and paste (Ctrl+V)</li>
@@ -150,9 +150,9 @@ export default function TestImageUploadPage() {
               </CardHeader>
               <CardContent>
                 {/* Current State */}
-                <div className="mb-4 p-3 bg-blue-50 rounded-lg">
-                  <h4 className="font-medium text-blue-900 mb-2">Current State:</h4>
-                  <div className="text-sm text-blue-800 space-y-1">
+                <div className="mb-4 p-3 bg-green-50 rounded-lg">
+                  <h4 className="font-medium text-green-800 mb-2">Current State:</h4>
+                  <div className="text-sm text-green-700 space-y-1">
                     <div>Question Image: {questionImage ? '✅ Yes' : '❌ No'}</div>
                     <div>Option Images: {optionImages.filter(Boolean).length}/4</div>
                     <div>Total Images: {(questionImage ? 1 : 0) + optionImages.filter(Boolean).length}</div>
@@ -161,13 +161,13 @@ export default function TestImageUploadPage() {
 
                 {/* Activity Logs */}
                 <div>
-                  <h4 className="font-medium text-gray-900 mb-2">Activity Logs:</h4>
-                  <div className="h-64 overflow-y-auto bg-gray-50 rounded p-2 text-xs font-mono">
+                  <h4 className="font-medium text-neutral-900 mb-2">Activity Logs:</h4>
+                  <div className="h-64 overflow-y-auto bg-neutral-50 rounded p-2 text-xs font-mono">
                     {logs.length === 0 ? (
-                      <div className="text-gray-500 italic">No activity yet...</div>
+                      <div className="text-neutral-500 italic">No activity yet...</div>
                     ) : (
                       logs.map((log, index) => (
-                        <div key={index} className="mb-1 text-gray-700">
+                        <div key={index} className="mb-1 text-neutral-700">
                           {log}
                         </div>
                       ))
@@ -183,7 +183,7 @@ export default function TestImageUploadPage() {
                 <CardTitle>ImgBB Service Test</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-sm text-gray-600 space-y-2">
+                <div className="text-sm text-neutral-600 space-y-2">
                   <div>API Key: {process.env.NODE_ENV === 'development' ? 'db3e6e11...' : 'Hidden'}</div>
                   <div>Endpoint: https://api.imgbb.com/1/upload</div>
                   <div>Timeout: 30 seconds</div>

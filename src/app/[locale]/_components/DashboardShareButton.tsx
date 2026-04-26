@@ -37,7 +37,7 @@ export function DashboardShareButton({
     <Button
       variant="outline"
       onClick={handleShare}
-      className="hidden min-h-[44px] items-center gap-2 rounded-full border-gray-300 font-medium transition-all duration-300 hover:bg-gray-100 sm:flex"
+      className="hidden min-h-[44px] items-center gap-2 rounded-full border-neutral-300 font-medium transition-all duration-300 hover:bg-neutral-100 sm:flex"
     >
       {successMessage} <HiOutlineShare className="h-4 w-4" />
     </Button>

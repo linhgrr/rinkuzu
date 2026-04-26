@@ -170,10 +170,10 @@ export default function FlashcardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">{t('loadingQuiz')}</p>
+          <div className="h-12 w-12 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust mx-auto" />
+          <p className="mt-4 text-neutral-600">{t('loadingQuiz')}</p>
         </div>
       </div>
     );
@@ -181,11 +181,11 @@ export default function FlashcardPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
         <Card className="max-w-md">
           <CardContent className="p-6 text-center">
             <h2 className="text-xl font-semibold text-red-600 mb-4">{tCommon('error')}</h2>
-            <p className="text-gray-600 mb-4">{error}</p>
+            <p className="text-neutral-600 mb-4">{error}</p>
             <Link href="/quizzes">
               <Button>{tCommon('browseQuizzes')}</Button>
             </Link>
@@ -197,11 +197,11 @@ export default function FlashcardPage() {
 
   if (!quiz) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
         <Card className="max-w-md">
           <CardContent className="p-6 text-center">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">{t('quizNotFound')}</h2>
-            <p className="text-gray-600 mb-4">{t('quizNotFound')}</p>
+            <h2 className="text-xl font-semibold text-neutral-900 mb-4">{t('quizNotFound')}</h2>
+            <p className="text-neutral-600 mb-4">{t('quizNotFound')}</p>
             <Link href="/quizzes">
               <Button>{tCommon('browseQuizzes')}</Button>
             </Link>
@@ -218,7 +218,7 @@ export default function FlashcardPage() {
 
   if (showResults) {
     return (
-      <div className="min-h-screen bg-gray-50 overflow-hidden">
+      <div className="min-h-screen bg-neutral-50 overflow-hidden">
         {/* Navigation */}
         <nav className="bg-white shadow-sm border-b">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -244,31 +244,31 @@ export default function FlashcardPage() {
 
         <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">{t('flashcards')}</h1>
-            <p className="text-gray-600">{quiz.title}</p>
+            <h1 className="text-3xl font-bold text-neutral-900 mb-2">{t('flashcards')}</h1>
+            <p className="text-neutral-600">{quiz.title}</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <Card>
               <CardContent className="p-6 text-center">
                 <div className="text-3xl font-bold text-green-600 mb-2">{getKnownCount()}</div>
-                <div className="text-sm text-gray-600">{tCommon('questions')}</div>
+                <div className="text-sm text-neutral-600">{tCommon('questions')}</div>
               </CardContent>
             </Card>
 
             <Card>
               <CardContent className="p-6 text-center">
                 <div className="text-3xl font-bold text-red-600 mb-2">{getUnknownCount()}</div>
-                <div className="text-sm text-gray-600">{tCommon('questions')}</div>
+                <div className="text-sm text-neutral-600">{tCommon('questions')}</div>
               </CardContent>
             </Card>
 
             <Card>
               <CardContent className="p-6 text-center">
-                <div className="text-3xl font-bold text-blue-600 mb-2">
+                <div className="text-3xl font-bold text-brand-trust mb-2">
                   {Math.round((getKnownCount() / quiz.questions.length) * 100)}%
                 </div>
-                <div className="text-sm text-gray-600">{t('mastery')}</div>
+                <div className="text-sm text-neutral-600">{t('mastery')}</div>
               </CardContent>
             </Card>
           </div>
@@ -284,10 +284,10 @@ export default function FlashcardPage() {
                     const question = quiz.questions[questionIndex];
                     return (
                       <div key={index} className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                        <div className="font-medium text-gray-900">
+                        <div className="font-medium text-neutral-900">
                           {t('question')} {questionIndex + 1}
                         </div>
-                        <div className="text-sm text-gray-600 mt-1">
+                        <div className="text-sm text-neutral-600 mt-1">
                           {question.question.substring(0, 100)}...
                         </div>
                       </div>
@@ -300,11 +300,11 @@ export default function FlashcardPage() {
 
           <div className="flex justify-center space-x-4">
             {getUnknownCount() > 0 ? (
-              <Button onClick={continuePractice} className="bg-blue-600 hover:bg-blue-700">
+              <Button onClick={continuePractice} className="bg-brand-trust hover:bg-brand-trust-hover">
                 {t('practiceContinue')}
               </Button>
             ) : (
-              <Button onClick={resetProgress} className="bg-blue-600 hover:bg-blue-700">
+              <Button onClick={resetProgress} className="bg-brand-trust hover:bg-brand-trust-hover">
                 {t('start')}
               </Button>
             )}
@@ -323,7 +323,7 @@ export default function FlashcardPage() {
   const currentQuestion = getCurrentQuestion();
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center relative">
+    <div className="min-h-screen bg-neutral-50 flex flex-col items-center relative">
       {/* Fixed top bar with counters and progress */}
       <div className="fixed top-20 left-0 right-0 z-50 flex items-center justify-between px-4">
         <div className="bg-red-100 text-red-700 px-4 py-2 rounded-full shadow-lg text-sm font-medium">
@@ -333,16 +333,16 @@ export default function FlashcardPage() {
         {/* Progress Bar */}
         <div className="flex-1 mx-8">
           <div className="flex justify-between items-center mb-2">
-            <span className="text-sm font-medium text-gray-700">
+            <span className="text-sm font-medium text-neutral-700">
               {t('progress')}: {progress.currentIndex + 1} {t('of')} {currentQuestions.length}
             </span>
-            <span className="text-sm font-medium text-gray-700">
+            <span className="text-sm font-medium text-neutral-700">
               {getProgressPercentage()}%
             </span>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-2">
+          <div className="w-full bg-neutral-200 rounded-full h-2">
             <div
-              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+              className="bg-brand-trust h-2 rounded-full transition-all duration-300"
               style={{ width: `${getProgressPercentage()}%` }}
             ></div>
           </div>

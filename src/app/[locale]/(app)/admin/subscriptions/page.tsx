@@ -1,23 +1,21 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { useSession, signOut } from 'next-auth/react'
+import { useSession } from 'next-auth/react'
 import { usePathname } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { Button } from '@/components/ui/Button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, Badge } from '@/components/ui/Card'
 import { Modal } from '@/components/ui/Modal'
 import { Input } from '@/components/ui/Input'
 import Pagination from '@/components/ui/Pagination'
 import Sidebar from '@/components/Sidebar'
 import {
-  HiChevronDown,
-  HiOutlineMenu,
-  HiOutlineLogout,
   HiOutlineSearch,
   HiOutlineEye
 } from '@/components/icons'
+import Navigation from '@/components/Navigation'
 
 interface Subscription {
   _id: string
@@ -46,7 +44,6 @@ export default function AdminSubscriptionsPage() {
   const tCommon = useTranslations('common')
   const { data: session } = useSession()
   const pathname = usePathname()
-  const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
 
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([])
@@ -163,31 +160,31 @@ export default function AdminSubscriptionsPage() {
     setShowDetailModal(true)
   }
 
-  const getStatusBadgeColor = (status: string) => {
+  const getStatusBadge = (status: string) => {
     switch (status) {
       case 'active':
-        return 'bg-green-100 text-green-800'
+        return <Badge variant="success">{status}</Badge>;
       case 'pending':
-        return 'bg-yellow-100 text-yellow-800'
+        return <Badge variant="warning">{status}</Badge>;
       case 'cancelled':
-        return 'bg-red-100 text-red-800'
+        return <Badge variant="danger">{status}</Badge>;
       case 'expired':
-        return 'bg-gray-100 text-gray-800'
+        return <Badge variant="default">{status}</Badge>;
       default:
-        return 'bg-gray-100 text-gray-800'
+        return <Badge variant="default">{status}</Badge>;
     }
   }
 
-  const getTypeBadgeColor = (type: string) => {
+  const getTypeBadge = (type: string) => {
     switch (type) {
       case 'lifetime':
-        return 'bg-purple-100 text-purple-800'
+        return <Badge variant="success">{type}</Badge>;
       case 'yearly':
-        return 'bg-blue-100 text-blue-800'
+        return <Badge variant="success">{type}</Badge>;
       case 'monthly':
-        return 'bg-indigo-100 text-indigo-800'
+        return <Badge variant="info">{type}</Badge>;
       default:
-        return 'bg-gray-100 text-gray-800'
+        return <Badge variant="default">{type}</Badge>;
     }
   }
 
@@ -210,114 +207,7 @@ export default function AdminSubscriptionsPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Navigation */}
-      <nav className="bg-white/80 backdrop-blur-md border-b border-gray-100 sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            {/* Logo */}
-            <div className="flex items-center">
-              <Link href="/" className="flex items-center">
-                <div className="h-10 flex items-center justify-center">
-                  <img src="/images/auth_logo.png" alt="RinKuzu Logo" className="h-10 w-auto object-contain" />
-                </div>
-              </Link>
-              <span className="ml-3 px-2 py-1 bg-red-100 text-red-800 text-xs font-medium rounded">
-                {t('admin')}
-              </span>
-            </div>
-
-            {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center space-x-8">
-              {session ? (
-                <>
-                  <Link href="/" className="text-gray-600 hover:text-gray-900 transition-colors">
-                    {t('allQuizzes')}
-                  </Link>
-
-                  {/* User Menu */}
-                  <div className="relative">
-                    <button
-                      onClick={() => setIsMenuOpen(!isMenuOpen)}
-                      className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors"
-                    >
-                      <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
-                        <span className="text-white text-sm font-medium">
-                          {session.user?.email?.charAt(0).toUpperCase()}
-                        </span>
-                      </div>
-                      <HiChevronDown className={`w-4 h-4 transition-transform ${isMenuOpen ? 'rotate-180' : ''}`} />
-                    </button>
-
-                    {isMenuOpen && (
-                      <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-100 py-1">
-                        <button
-                          onClick={() => signOut()}
-                          className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                        >
-                          {t('loggingOut')}
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </>
-              ) : (
-                <div className="flex items-center space-x-4">
-                  <Link href="/login">
-                    <Button variant="ghost" className="text-gray-600 hover:text-gray-900">
-                      {tCommon('signIn')}
-                    </Button>
-                  </Link>
-                  <Link href="/register">
-                    <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-0">
-                      {tCommon('getStarted')}
-                    </Button>
-                  </Link>
-                </div>
-              )}
-            </div>
-
-            {/* Mobile menu button */}
-            <div className="md:hidden">
-              <button
-                onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className="text-gray-600 hover:text-gray-900"
-              >
-                <HiOutlineMenu className="w-6 h-6" />
-              </button>
-            </div>
-          </div>
-
-          {/* Mobile Navigation */}
-          {isMenuOpen && (
-            <div className="md:hidden border-t border-gray-100 py-4">
-              <div className="space-y-2">
-                {session ? (
-                  <>
-                    <Link href="/" className="block px-4 py-2 text-gray-600 hover:text-gray-900">
-                      {t('allQuizzes')}
-                    </Link>
-                    <button
-                      onClick={() => signOut()}
-                      className="block w-full text-left px-4 py-2 text-gray-600 hover:text-gray-900"
-                    >
-                      {t('loggingOut')}
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <Link href="/login" className="block px-4 py-2 text-gray-600 hover:text-gray-900">
-                      {tCommon('signIn')}
-                    </Link>
-                    <Link href="/register" className="block px-4 py-2 text-gray-600 hover:text-gray-900">
-                      {tCommon('getStarted')}
-                    </Link>
-                  </>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-      </nav>
+      <Navigation />
 
       {/* Sidebar */}
       <Sidebar
@@ -330,14 +220,17 @@ export default function AdminSubscriptionsPage() {
       <main className={`py-8 transition-all duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-16'} max-w-none px-4 sm:px-6 lg:px-8`}>
         {loading ? (
           <div className="flex justify-center py-12">
-            <div className="text-gray-500">{tCommon('loading')}</div>
+            <div className="flex flex-col items-center gap-3">
+              <div className="h-12 w-12 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
+              <div className="text-sm text-neutral-500">{tCommon('loading')}</div>
+            </div>
           </div>
         ) : (
           <div className="max-w-6xl mx-auto">
               <div className="flex justify-between items-center mb-8">
                 <div>
-                  <h1 className="text-3xl font-bold text-gray-900">{t('subscriptions')}</h1>
-                  <p className="mt-2 text-gray-600">
+                  <h1 className="text-3xl font-bold text-neutral-900">{t('subscriptions')}</h1>
+                  <p className="mt-2 text-neutral-600">
                     Manage user subscriptions and payment statuses
                   </p>
                 </div>
@@ -391,8 +284,8 @@ export default function AdminSubscriptionsPage() {
                   <button
                     onClick={() => handleStatusFilter('')}
                     className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${!statusFilter
-                        ? 'bg-blue-100 text-blue-700 border border-blue-200'
-                        : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                        ? 'bg-green-100 text-brand-trust border border-green-200'
+                        : 'text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100'
                       }`}
                   >
                     All Subscriptions
@@ -402,8 +295,8 @@ export default function AdminSubscriptionsPage() {
                       key={status}
                       onClick={() => handleStatusFilter(status)}
                       className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors capitalize ${statusFilter === status
-                          ? 'bg-blue-100 text-blue-700 border border-blue-200'
-                          : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                          ? 'bg-green-100 text-brand-trust border border-green-200'
+                          : 'text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100'
                         }`}
                     >
                       {status}
@@ -425,16 +318,19 @@ export default function AdminSubscriptionsPage() {
                 <CardContent>
                   {loading ? (
                     <div className="flex justify-center py-8">
-                      <div className="text-gray-500">{t('loadingStatistics')}</div>
+                      <div className="flex flex-col items-center gap-3">
+                        <div className="h-12 w-12 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
+                        <div className="text-sm text-neutral-500">{t('loadingStatistics')}</div>
+                      </div>
                     </div>
                   ) : subscriptions.length === 0 ? (
                     <div className="text-center py-8">
-                      <div className="text-gray-500">{t('noUsersFound')}</div>
+                      <div className="text-neutral-500">{t('noUsersFound')}</div>
                     </div>
                   ) : (
                     <div className="overflow-x-auto">
                       <table className="w-full text-sm text-left">
-                        <thead className="text-xs text-gray-700 uppercase bg-gray-50">
+                        <thead className="text-xs text-neutral-700 uppercase bg-neutral-50">
                           <tr>
                             <th scope="col" className="px-6 py-3">User</th>
                             <th scope="col" className="px-6 py-3">Type</th>
@@ -447,27 +343,23 @@ export default function AdminSubscriptionsPage() {
                         </thead>
                         <tbody>
                           {subscriptions.map((subscription) => (
-                            <tr key={subscription._id} className="bg-white border-b hover:bg-gray-50">
-                              <td className="px-6 py-4 font-medium text-gray-900">
+                            <tr key={subscription._id} className="bg-white border-b hover:bg-neutral-50">
+                              <td className="px-6 py-4 font-medium text-neutral-900">
                                 {subscription.userEmail}
                               </td>
                               <td className="px-6 py-4">
-                                <span className={`px-2 py-1 text-xs font-medium rounded-full capitalize ${getTypeBadgeColor(subscription.type)}`}>
-                                  {subscription.type}
-                                </span>
+                                {getTypeBadge(subscription.type)}
                               </td>
                               <td className="px-6 py-4">
                                 {formatCurrency(subscription.amount)}
                               </td>
                               <td className="px-6 py-4">
-                                <span className={`px-2 py-1 text-xs font-medium rounded-full capitalize ${getStatusBadgeColor(subscription.status)}`}>
-                                  {subscription.status}
-                                </span>
+                                {getStatusBadge(subscription.status)}
                               </td>
-                              <td className="px-6 py-4 text-gray-500">
+                              <td className="px-6 py-4 text-neutral-500">
                                 {formatDate(subscription.startDate)}
                               </td>
-                              <td className="px-6 py-4 text-gray-500">
+                              <td className="px-6 py-4 text-neutral-500">
                                 {subscription.endDate ? formatDate(subscription.endDate) : 'N/A'}
                               </td>
                               <td className="px-6 py-4">
@@ -475,7 +367,7 @@ export default function AdminSubscriptionsPage() {
                                   variant="outline"
                                   size="sm"
                                   onClick={() => openDetailModal(subscription)}
-                                  className="text-blue-600 hover:text-blue-700"
+                                  className="text-brand-trust hover:text-brand-trust"
                                 >
                                   <HiOutlineEye className="w-4 h-4 mr-1" /> View Details
                                 </Button>
@@ -513,78 +405,74 @@ export default function AdminSubscriptionsPage() {
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-neutral-700 mb-1">
                   User Email
                 </label>
-                <p className="text-sm text-gray-900">{selectedSubscription.userEmail}</p>
+                <p className="text-sm text-neutral-900">{selectedSubscription.userEmail}</p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-neutral-700 mb-1">
                   Subscription Type
                 </label>
-                <span className={`px-2 py-1 text-xs font-medium rounded-full capitalize ${getTypeBadgeColor(selectedSubscription.type)}`}>
-                  {selectedSubscription.type}
-                </span>
+                {getTypeBadge(selectedSubscription.type)}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-neutral-700 mb-1">
                   Amount
                 </label>
-                <p className="text-sm text-gray-900">{formatCurrency(selectedSubscription.amount)}</p>
+                <p className="text-sm text-neutral-900">{formatCurrency(selectedSubscription.amount)}</p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-neutral-700 mb-1">
                   Status
                 </label>
-                <span className={`px-2 py-1 text-xs font-medium rounded-full capitalize ${getStatusBadgeColor(selectedSubscription.status)}`}>
-                  {selectedSubscription.status}
-                </span>
+                {getStatusBadge(selectedSubscription.status)}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-neutral-700 mb-1">
                   PayOS Order ID
                 </label>
-                <p className="text-sm text-gray-900 font-mono">{selectedSubscription.payosOrderId}</p>
+                <p className="text-sm text-neutral-900 font-mono">{selectedSubscription.payosOrderId}</p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-neutral-700 mb-1">
                   PayOS Transaction ID
                 </label>
-                <p className="text-sm text-gray-900 font-mono">
+                <p className="text-sm text-neutral-900 font-mono">
                   {selectedSubscription.payosTransactionId || 'N/A'}
                 </p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-neutral-700 mb-1">
                   Start Date
                 </label>
-                <p className="text-sm text-gray-900">{formatDate(selectedSubscription.startDate)}</p>
+                <p className="text-sm text-neutral-900">{formatDate(selectedSubscription.startDate)}</p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-neutral-700 mb-1">
                   End Date
                 </label>
-                <p className="text-sm text-gray-900">
+                <p className="text-sm text-neutral-900">
                   {selectedSubscription.endDate ? formatDate(selectedSubscription.endDate) : 'Lifetime'}
                 </p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-neutral-700 mb-1">
                   Created At
                 </label>
-                <p className="text-sm text-gray-900">{formatDate(selectedSubscription.createdAt)}</p>
+                <p className="text-sm text-neutral-900">{formatDate(selectedSubscription.createdAt)}</p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-neutral-700 mb-1">
                   Updated At
                 </label>
-                <p className="text-sm text-gray-900">{formatDate(selectedSubscription.updatedAt)}</p>
+                <p className="text-sm text-neutral-900">{formatDate(selectedSubscription.updatedAt)}</p>
               </div>
             </div>
 
             {/* Status Update Actions */}
             <div className="border-t pt-4">
-              <label className="block text-sm font-medium text-gray-700 mb-3">
+              <label className="block text-sm font-medium text-neutral-700 mb-3">
                 Update Status
               </label>
               <div className="flex gap-2">

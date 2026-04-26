@@ -89,10 +89,10 @@ export default function ReviewPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-[#f5f5f7]">
+            <div className="min-h-screen flex items-center justify-center bg-neutral-50">
                 <div className="animate-pulse flex flex-col items-center">
-                    <div className="w-12 h-12 bg-gray-200 rounded-xl mb-4"></div>
-                    <div className="h-4 bg-gray-200 w-32 rounded"></div>
+                    <div className="w-12 h-12 bg-neutral-200 rounded-xl mb-4"></div>
+                    <div className="h-4 bg-neutral-200 w-32 rounded"></div>
                 </div>
             </div>
         );
@@ -100,15 +100,15 @@ export default function ReviewPage() {
 
     if (completed) {
         return (
-            <div className="min-h-screen bg-[#f5f5f7]">
+            <div className="min-h-screen bg-neutral-50">
                 <Navigation />
                 <div className="max-w-2xl mx-auto px-4 py-12">
                     <Card className="p-8 text-center animate-fadeInUp">
                         <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
                             <HiOutlineEmojiHappy className="text-4xl text-green-600" />
                         </div>
-                        <h1 className="text-2xl md:text-3xl font-bold text-[#1d1d1f] mb-4">{t('allDone')}</h1>
-                        <p className="text-lg md:text-xl text-[#86868b] mb-8">
+                        <h1 className="text-2xl md:text-3xl font-bold text-[var(--text-primary)] mb-4">{t('allDone')}</h1>
+                        <p className="text-lg md:text-xl text-[var(--text-muted)] mb-8">
                             {t('reviewedQuestions', { count: stats.reviewedCount, xp: stats.xpGained })}
                         </p>
                         <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
@@ -127,15 +127,15 @@ export default function ReviewPage() {
 
     if (questions.length === 0) {
         return (
-            <div className="min-h-screen bg-[#f5f5f7]">
+            <div className="min-h-screen bg-neutral-50">
                 <Navigation />
                 <div className="max-w-2xl mx-auto px-4 py-12 text-center">
                     <Card className="p-12">
-                        <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <HiOutlineCheckCircle className="w-8 h-8 text-[#0071e3]" />
+                        <div className="w-16 h-16 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <HiOutlineCheckCircle className="w-8 h-8 text-brand-trust" />
                         </div>
                         <h2 className="text-2xl font-semibold mb-2">{t('noCards')}</h2>
-                        <p className="text-[#86868b] mb-6">{t('comeBack')}</p>
+                        <p className="text-[var(--text-muted)] mb-6">{t('comeBack')}</p>
                         <Button onClick={() => router.push(ROUTES.DASHBOARD)}>{t('backToDashboard')}</Button>
                     </Card>
                 </div>
@@ -146,11 +146,11 @@ export default function ReviewPage() {
     const currentQuestion = questions[currentIndex];
 
     return (
-        <div className="min-h-screen bg-[#f5f5f7] flex flex-col">
+        <div className="min-h-screen bg-neutral-50 flex flex-col">
             <Navigation />
 
             <div className="flex-1 flex flex-col items-center justify-center p-4">
-                <div className="w-full max-w-2xl mb-4 flex justify-between items-center text-sm font-medium text-[#86868b]">
+                <div className="w-full max-w-2xl mb-4 flex justify-between items-center text-sm font-medium text-[var(--text-muted)]">
                     <span>{t('questionProgress', { current: currentIndex + 1, total: questions.length })}</span>
                     <span>{t('xpEarned', { xp: stats.xpGained })}</span>
                 </div>

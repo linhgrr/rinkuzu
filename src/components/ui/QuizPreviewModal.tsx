@@ -51,15 +51,15 @@ export function QuizPreviewModal({ isOpen, onClose, title, questions }: QuizPrev
     <Modal isOpen={isOpen} onClose={onClose} size="large">
       <div className="p-6">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-gray-900">{t('title')}</h2>
+          <h2 className="text-2xl font-bold text-neutral-900">{t('title')}</h2>
           <Button variant="ghost" onClick={onClose}>
             ✕
           </Button>
         </div>
 
         <div className="mb-4">
-          <h3 className="text-lg font-semibold text-gray-800 mb-2">{title}</h3>
-          <div className="text-sm text-gray-600">
+          <h3 className="text-lg font-semibold text-neutral-800 mb-2">{title}</h3>
+          <div className="text-sm text-neutral-600">
             {t('questionOf', { current: currentQuestionIndex + 1, total: questions.length })}
           </div>
         </div>
@@ -69,11 +69,11 @@ export function QuizPreviewModal({ isOpen, onClose, title, questions }: QuizPrev
             <CardTitle className="flex items-center space-x-2">
               <span>{currentQuestion.question}</span>
               {currentQuestion.type === 'single' ? (
-                <span className="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
+                <span className="inline-flex items-center px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs">
                   📝 {t('singleChoice')}
                 </span>
               ) : (
-                <span className="inline-flex items-center px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-xs">
+                <span className="inline-flex items-center px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">
                   ☑️ {t('multipleChoice')}
                 </span>
               )}
@@ -105,7 +105,7 @@ export function QuizPreviewModal({ isOpen, onClose, title, questions }: QuizPrev
                     className={`p-3 rounded-lg border-2 ${
                       isCorrect
                         ? 'border-green-500 bg-green-50'
-                        : 'border-gray-200 bg-gray-50'
+                        : 'border-neutral-200 bg-neutral-50'
                     }`}
                   >
                     <div className="flex items-center space-x-3">
@@ -114,7 +114,7 @@ export function QuizPreviewModal({ isOpen, onClose, title, questions }: QuizPrev
                       } border-2 flex items-center justify-center ${
                         isCorrect
                           ? 'border-green-500 bg-green-500'
-                          : 'border-gray-300'
+                          : 'border-neutral-300'
                       }`}>
                         {isCorrect && (
                           currentQuestion.type === 'single' ? (
@@ -127,7 +127,7 @@ export function QuizPreviewModal({ isOpen, onClose, title, questions }: QuizPrev
                         )}
                       </div>
                       <div className="flex-1">
-                      <span className={`${isCorrect ? 'font-medium text-green-800' : 'text-gray-700'}`}>
+                      <span className={`${isCorrect ? 'font-medium text-green-800' : 'text-neutral-700'}`}>
                         {option}
                       </span>
                         {/* Display option image if exists */}
@@ -151,9 +151,9 @@ export function QuizPreviewModal({ isOpen, onClose, title, questions }: QuizPrev
               })}
             </div>
 
-            <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-              <div className="text-sm font-medium text-blue-900 mb-1">{t('correctAnswers')}:</div>
-              <div className="text-sm text-blue-800">{getCorrectAnswerText(currentQuestion)}</div>
+            <div className="mt-4 p-3 bg-green-50 rounded-lg">
+              <div className="text-sm font-medium text-green-800 mb-1">{t('correctAnswers')}:</div>
+              <div className="text-sm text-green-700">{getCorrectAnswerText(currentQuestion)}</div>
             </div>
           </CardContent>
         </Card>
@@ -168,7 +168,7 @@ export function QuizPreviewModal({ isOpen, onClose, title, questions }: QuizPrev
             ← {tQuiz('previous')}
           </Button>
 
-          <div className="text-sm text-gray-600">
+          <div className="text-sm text-neutral-600">
             {currentQuestionIndex + 1} / {questions.length}
           </div>
 
@@ -183,7 +183,7 @@ export function QuizPreviewModal({ isOpen, onClose, title, questions }: QuizPrev
 
         {/* Question Overview */}
         <div className="border-t pt-4">
-          <h4 className="text-sm font-medium text-gray-900 mb-3">{t('questionOverview')}</h4>
+          <h4 className="text-sm font-medium text-neutral-900 mb-3">{t('questionOverview')}</h4>
           <div className="grid grid-cols-10 gap-2">
             {questions.map((_, index) => (
               <button
@@ -191,8 +191,8 @@ export function QuizPreviewModal({ isOpen, onClose, title, questions }: QuizPrev
                 onClick={() => setCurrentQuestionIndex(index)}
                 className={`w-8 h-8 rounded text-xs font-medium transition-colors ${
                   index === currentQuestionIndex
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    ? 'bg-brand-action text-white'
+                    : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
                 }`}
               >
                 {index + 1}

@@ -1,25 +1,23 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useSession, signOut } from 'next-auth/react';
+import { useSession } from 'next-auth/react';
 import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, Badge } from '@/components/ui/Card';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { Modal } from '@/components/ui/Modal';
 import Sidebar from '@/components/Sidebar';
 import {
-  HiChevronDown,
-  HiOutlineMenu,
-  HiOutlineLogout,
   HiOutlinePlus,
   HiOutlineSearch,
   HiOutlinePencil,
   HiOutlineTrash
 } from '@/components/icons';
+import Navigation from '@/components/Navigation';
 
 interface Category {
   _id: string;
@@ -46,7 +44,6 @@ export default function AdminCategoriesPage() {
   const tCommon = useTranslations('common');
   const { data: session } = useSession();
   const pathname = usePathname();
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -71,7 +68,7 @@ export default function AdminCategoriesPage() {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    color: '#3B82F6',
+    color: '#009d8c',
     isActive: true
   });
 
@@ -123,7 +120,7 @@ export default function AdminCategoriesPage() {
     setFormData({
       name: '',
       description: '',
-      color: '#3B82F6',
+      color: '#009d8c',
       isActive: true
     });
   };
@@ -231,8 +228,8 @@ export default function AdminCategoriesPage() {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">{tCommon('loading')}</p>
+          <div className="h-12 w-12 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust mx-auto" />
+          <p className="mt-4 text-neutral-600">{tCommon('loading')}</p>
         </div>
       </div>
     );
@@ -240,84 +237,7 @@ export default function AdminCategoriesPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Navigation - giống như trang admin khác */}
-      <nav className="bg-white/80 backdrop-blur-md border-b border-gray-100 sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            {/* Logo */}
-            <div className="flex items-center">
-              <Link href="/" className="flex items-center">
-                <div className="h-10 flex items-center justify-center">
-                  <img src="/images/auth_logo.png" alt="RinKuzu Logo" className="h-10 w-auto object-contain" />
-                </div>
-              </Link>
-              <span className="ml-3 px-2 py-1 bg-red-100 text-red-800 text-xs font-medium rounded">
-                {t('admin')}
-              </span>
-            </div>
-
-            {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center space-x-8">
-              <Link href="/" className="text-gray-600 hover:text-gray-900 transition-colors">
-                {t('allQuizzes')}
-              </Link>
-
-              {/* User Menu */}
-              <div className="relative">
-                <button
-                  onClick={() => setIsMenuOpen(!isMenuOpen)}
-                  className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors"
-                >
-                  <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
-                    <span className="text-white text-sm font-medium">
-                      {session?.user?.email?.charAt(0).toUpperCase()}
-                    </span>
-                  </div>
-                  <HiChevronDown className={`w-4 h-4 transition-transform ${isMenuOpen ? 'rotate-180' : ''}`} />
-                </button>
-
-                {isMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-100 py-1">
-                    <button
-                      onClick={() => signOut()}
-                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                    >
-                      {t('loggingOut')}
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Mobile menu button */}
-            <div className="md:hidden">
-              <button
-                onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className="text-gray-600 hover:text-gray-900"
-              >
-                <HiOutlineMenu className="w-6 h-6" />
-              </button>
-            </div>
-          </div>
-
-          {/* Mobile Navigation */}
-          {isMenuOpen && (
-            <div className="md:hidden border-t border-gray-100 py-4">
-              <div className="space-y-2">
-                <Link href="/" className="block px-4 py-2 text-gray-600 hover:text-gray-900">
-                  {t('allQuizzes')}
-                </Link>
-                <button
-                  onClick={() => signOut()}
-                  className="block w-full text-left px-4 py-2 text-gray-600 hover:text-gray-900"
-                >
-                  {t('loggingOut')}
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      </nav>
+      <Navigation />
 
       {/* Sidebar */}
       <Sidebar
@@ -333,8 +253,8 @@ export default function AdminCategoriesPage() {
           {/* Header */}
           <div className="flex justify-between items-center mb-8">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">{t('categories')}</h1>
-              <p className="mt-2 text-gray-600">
+              <h1 className="text-3xl font-bold text-neutral-900">{t('categories')}</h1>
+              <p className="mt-2 text-neutral-600">
                 {t('manageQuizCategories')}
               </p>
             </div>
@@ -384,7 +304,7 @@ export default function AdminCategoriesPage() {
           {/* Loading */}
           {loading && (
             <div className="flex justify-center py-12">
-              <div className="text-gray-500">{t('loadingStatistics')}</div>
+              <div className="text-neutral-500">{t('loadingStatistics')}</div>
             </div>
           )}
 
@@ -393,27 +313,27 @@ export default function AdminCategoriesPage() {
             <Card className="mb-8">
               <CardContent className="p-0">
                 <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
+                  <table className="min-w-full divide-y divide-neutral-200">
+                    <thead className="bg-neutral-50">
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
                           {t('category')}
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
                           {t('description')}
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
                           {t('status')}
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
                           {t('created')}
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
                           {t('actions')}
                         </th>
                       </tr>
                     </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
+                    <tbody className="bg-white divide-y divide-neutral-200">
                       {categories.map((category) => (
                         <tr key={category._id}>
                           <td className="px-6 py-4 whitespace-nowrap">
@@ -423,14 +343,14 @@ export default function AdminCategoriesPage() {
                                 style={{ backgroundColor: category.color }}
                               ></div>
                               <div>
-                                <div className="text-sm font-medium text-gray-900">
+                                <div className="text-sm font-medium text-neutral-900">
                                   {category.name}
                                 </div>
                               </div>
                             </div>
                           </td>
                           <td className="px-6 py-4">
-                            <div className="text-sm text-gray-900">
+                            <div className="text-sm text-neutral-900">
                               {category.description || t('noDescription')}
                             </div>
                           </td>
@@ -442,9 +362,9 @@ export default function AdminCategoriesPage() {
                               {category.isActive ? t('active') : t('inactive')}
                             </span>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-500">
                             <div>{formatDate(category.createdAt)}</div>
-                            <div className="text-xs">by {category.createdBy.email}</div>
+                            <div className="text-xs">by {category.createdBy?.email || 'Unknown'}</div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm space-x-2">
                             <Button
@@ -475,8 +395,8 @@ export default function AdminCategoriesPage() {
           {/* No Results */}
           {!loading && categories.length === 0 && (
             <div className="text-center py-12">
-              <h3 className="mt-2 text-sm font-medium text-gray-900">{t('noCategoriesFound')}</h3>
-              <p className="mt-1 text-sm text-gray-500">
+              <h3 className="mt-2 text-sm font-medium text-neutral-900">{t('noCategoriesFound')}</h3>
+              <p className="mt-1 text-sm text-neutral-500">
                 {searchTerm
                   ? t('tryAdjustingSearch')
                   : t('getStartedCategory')
@@ -494,7 +414,7 @@ export default function AdminCategoriesPage() {
 
           {/* Pagination */}
           {!loading && pagination.totalPages > 1 && (
-            <div className="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6 rounded-lg">
+            <div className="flex items-center justify-between border-t border-neutral-200 bg-white px-4 py-3 sm:px-6 rounded-lg">
               <div className="flex flex-1 justify-between sm:hidden">
                 <Button
                   onClick={() => handlePageChange(pagination.page - 1)}
@@ -513,7 +433,7 @@ export default function AdminCategoriesPage() {
               </div>
               <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
                 <div>
-                  <p className="text-sm text-gray-700">
+                  <p className="text-sm text-neutral-700">
                     {tCommon('showingResults', {
                       from: ((pagination.page - 1) * pagination.limit) + 1,
                       to: Math.min(pagination.page * pagination.limit, pagination.total),
@@ -582,7 +502,7 @@ export default function AdminCategoriesPage() {
           >
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="name" className="block text-sm font-medium text-neutral-700 mb-1">
                   {t('nameRequired')}
                 </label>
                 <Input
@@ -597,7 +517,7 @@ export default function AdminCategoriesPage() {
               </div>
 
               <div>
-                <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="description" className="block text-sm font-medium text-neutral-700 mb-1">
                   {t('descriptionOptional')}
                 </label>
                 <textarea
@@ -607,12 +527,12 @@ export default function AdminCategoriesPage() {
                   placeholder={t('enterCategoryDescription')}
                   maxLength={200}
                   rows={3}
-                  className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="block w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-brand-trust"
                 />
               </div>
 
               <div>
-                <label htmlFor="color" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="color" className="block text-sm font-medium text-neutral-700 mb-1">
                   {t('color')}
                 </label>
                 <div className="flex items-center space-x-3">
@@ -621,13 +541,13 @@ export default function AdminCategoriesPage() {
                     type="color"
                     value={formData.color}
                     onChange={(e) => setFormData(prev => ({ ...prev, color: e.target.value }))}
-                    className="w-12 h-8 rounded border border-gray-300"
+                    className="w-12 h-8 rounded border border-neutral-300"
                   />
                   <Input
                     type="text"
                     value={formData.color}
                     onChange={(e) => setFormData(prev => ({ ...prev, color: e.target.value }))}
-                    placeholder="#3B82F6"
+                    placeholder="#009d8c"
                     className="flex-1"
                   />
                 </div>
@@ -639,9 +559,9 @@ export default function AdminCategoriesPage() {
                   type="checkbox"
                   checked={formData.isActive}
                   onChange={(e) => setFormData(prev => ({ ...prev, isActive: e.target.checked }))}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  className="h-4 w-4 text-brand-trust focus:ring-brand-trust border-neutral-300 rounded"
                 />
-                <label htmlFor="isActive" className="ml-2 block text-sm text-gray-900">
+                <label htmlFor="isActive" className="ml-2 block text-sm text-neutral-900">
                   {t('activeStatus')}
                 </label>
               </div>

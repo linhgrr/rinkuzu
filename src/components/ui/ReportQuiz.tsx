@@ -82,39 +82,39 @@ export default function ReportQuiz({ quizSlug, quizTitle }: ReportQuizProps) {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">{t('submitted')}</h3>
-              <p className="text-gray-600">{t('thankYou')}</p>
+              <h3 className="text-lg font-medium text-neutral-900 mb-2">{t('submitted')}</h3>
+              <p className="text-neutral-600">{t('thankYou')}</p>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-neutral-700 mb-2">
                   {t('quiz')}: <span className="font-semibold">{quizTitle}</span>
                 </label>
-                <p className="text-sm text-gray-500 mb-4">
+                <p className="text-sm text-neutral-500 mb-4">
                   {t('describeIssue')}
                 </p>
               </div>
 
               <div>
-                <label htmlFor="content" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="content" className="block text-sm font-medium text-neutral-700 mb-2">
                   {t('reportDetails')} *
                 </label>
                 <textarea
                   id="content"
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                  className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-brand-trust focus:border-transparent resize-none"
                   rows={6}
                   maxLength={2000}
                   placeholder={t('placeholder')}
                   required
                 />
                 <div className="flex justify-between mt-1">
-                  <span className="text-xs text-gray-500">
+                  <span className="text-xs text-neutral-500">
                     {t('describeClearly')}
                   </span>
-                  <span className="text-xs text-gray-500">
+                  <span className="text-xs text-neutral-500">
                     {content.length}/2000
                   </span>
                 </div>

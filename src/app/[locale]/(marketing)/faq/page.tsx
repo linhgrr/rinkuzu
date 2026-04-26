@@ -110,12 +110,12 @@ export default async function FAQPage({ params }: Props) {
       <JsonLd id="faq-schema" data={plainFaqSchema} />
 
       {/* Hero */}
-      <section className="bg-[#fbfbfd] py-20 text-center">
+      <section className="bg-[var(--bg-section)] py-20 text-center">
         <div className="max-w-2xl mx-auto px-6">
-          <h1 className="text-4xl md:text-5xl font-bold text-[#1d1d1f] mb-4">
+          <h1 className="text-4xl md:text-5xl font-bold text-[var(--text-primary)] mb-4">
             Frequently Asked Questions
           </h1>
-          <p className="text-[#86868b] text-lg">
+          <p className="text-[var(--text-muted)] text-lg">
             Everything you need to know about RinKuzu — AI-powered adaptive learning from PDFs.
           </p>
         </div>
@@ -124,7 +124,7 @@ export default async function FAQPage({ params }: Props) {
       {/* FAQ Categories + Intro */}
       <section className="max-w-4xl mx-auto px-6 py-16">
         {/* Intro paragraph */}
-        <div className="prose prose-slate max-w-none mb-16 text-[#414d60] leading-relaxed">
+        <div className="prose prose-slate max-w-none mb-16 text-[var(--text-muted)] leading-relaxed">
           {FAQ_INTRO.split('\n\n').map((para, i) => (
             <p key={i} className="mb-4 text-base md:text-lg">{para}</p>
           ))}
@@ -136,7 +136,7 @@ export default async function FAQPage({ params }: Props) {
             <a
               key={cat.id}
               href={`#${cat.id}`}
-              className="px-4 py-2 rounded-full bg-gray-100 text-sm font-medium text-[#414d60] hover:bg-teal-50 hover:text-teal-700 transition-colors"
+              className="px-4 py-2 rounded-full bg-neutral-100 text-sm font-medium text-[var(--text-muted)] hover:bg-green-50 hover:text-brand-trust-hover transition-colors"
             >
               {cat.label}
             </a>
@@ -146,7 +146,7 @@ export default async function FAQPage({ params }: Props) {
         {/* Category sections with anchor IDs */}
         {FAQ_CATEGORIES.map((cat) => (
           <div key={cat.id} id={cat.id} className="mb-16">
-            <h2 className="text-xl font-bold text-[#1e242c] mb-6 pb-3 border-b border-gray-100">
+            <h2 className="text-xl font-bold text-[var(--text-primary)] mb-6 pb-3 border-b border-neutral-100">
               {cat.label}
             </h2>
             <div className="space-y-4">
@@ -154,9 +154,9 @@ export default async function FAQPage({ params }: Props) {
                 const faq = faqs[parseInt(num) - 1];
                 if (!faq) return null;
                 return (
-                  <div key={num} className="bg-gray-50 rounded-2xl p-6">
-                    <h3 className="font-semibold text-[#1e242c] mb-2">{faq.q}</h3>
-                    <p className="text-[#414d60] leading-relaxed">{faq.a}</p>
+                  <div key={num} className="bg-neutral-50 rounded-2xl p-6">
+                    <h3 className="font-semibold text-[var(--text-primary)] mb-2">{faq.q}</h3>
+                    <p className="text-[var(--text-muted)] leading-relaxed">{faq.a}</p>
                   </div>
                 );
               })}
@@ -166,10 +166,10 @@ export default async function FAQPage({ params }: Props) {
       </section>
 
       {/* CTA */}
-      <section className="bg-[#1d1d1f] text-white py-16 text-center">
+      <section className="bg-[var(--text-primary)] text-white py-16 text-center">
         <div className="max-w-xl mx-auto px-6 space-y-4">
           <h2 className="text-2xl font-semibold">Still have questions?</h2>
-          <p className="text-gray-400">
+          <p className="text-neutral-400">
             Our AI tutor Rin-chan is available 24/7. Or reach us at{' '}
             <a href="mailto:support@rinkuzu.com" className="underline hover:text-white">
               support@rinkuzu.com
@@ -178,7 +178,7 @@ export default async function FAQPage({ params }: Props) {
           </p>
           <Link
             href="/register"
-            className="inline-block bg-white text-[#1d1d1f] font-semibold px-8 py-3 rounded-full hover:bg-gray-100 transition-colors"
+            className="inline-block bg-white text-[var(--text-primary)] font-semibold px-8 py-3 rounded-full hover:bg-neutral-100 transition-colors"
           >
             Get Started Free
           </Link>

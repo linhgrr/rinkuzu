@@ -4,32 +4,25 @@ import { cn } from '@/lib/utils';
 const Card = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement> & {
-    variant?: 'default' | 'elevated' | 'bordered' | 'interactive' | 'glass' | 'gradient';
+    variant?: 'default' | 'interactive' | 'elevated' | 'bordered' | 'glass' | 'gradient';
     hover?: boolean;
   }
 >(({ className, variant = 'default', hover = false, ...props }, ref) => {
   const variants = {
-    default: 'bg-white border border-gray-100 shadow-apple-sm',
-    elevated: 'bg-white shadow-apple-md',
-    bordered: 'bg-white border border-gray-200',
-    interactive: 'bg-white border border-gray-100 shadow-apple-sm cursor-pointer',
-    glass: 'bg-white/80 backdrop-blur-xl border border-gray-100 shadow-apple-sm',
-    gradient: 'bg-white border border-gray-100 shadow-apple-sm',
+    default: 'card',
+    interactive: 'feature-card card-interactive',
+    elevated: 'card shadow-[var(--shadow-md)]',
+    bordered: 'card border-[var(--border-strong)] shadow-none',
+    glass: 'card bg-white/80 backdrop-blur-xl',
+    gradient: 'card', // gracefully map deprecated variants
   };
-
-  const hoverEffects = hover
-    ? 'active:scale-[0.99]'
-    : variant === 'interactive'
-      ? 'active:scale-[0.99]'
-      : '';
 
   return (
     <div
       ref={ref}
       className={cn(
-        'rounded-2xl transition-[transform,box-shadow] duration-300 ease-apple',
         variants[variant],
-        hoverEffects,
+        hover && variant !== 'interactive' ? 'hover:shadow-[var(--shadow-sm)] hover:-translate-y-[1px] transition-all duration-[180ms] ease-[cubic-bezier(0.2,0,0,1)]' : '',
         className
       )}
       {...props}
@@ -44,7 +37,7 @@ const CardHeader = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn('flex flex-col gap-1.5 p-5 pb-0', className)}
+    className={cn('flex flex-col gap-1.5 px-6 pt-6 pb-0', className)}
     {...props}
   />
 ));
@@ -57,17 +50,17 @@ const CardTitle = React.forwardRef<
   }
 >(({ className, size = 'md', ...props }, ref) => {
   const sizes = {
-    sm: 'text-base font-semibold',
-    md: 'text-lg font-semibold',
-    lg: 'text-xl font-semibold',
-    xl: 'text-2xl font-semibold',
+    sm: 'text-[16px] font-semibold tracking-[-0.015em]',
+    md: 'text-[18px] font-semibold tracking-[-0.015em]',
+    lg: 'text-[24px] font-semibold tracking-[-0.025em]',
+    xl: 'text-[32px] font-[700] tracking-[-0.025em]',
   };
 
   return (
     <h3
       ref={ref}
       className={cn(
-        'text-[#1d1d1f] tracking-tight',
+        'text-neutral-900',
         sizes[size],
         className
       )}
@@ -83,7 +76,7 @@ const CardDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <p
     ref={ref}
-    className={cn('text-sm text-[#86868b] leading-relaxed', className)}
+    className={cn('text-[14px] text-neutral-500 leading-[1.5]', className)}
     {...props}
   />
 ));
@@ -93,7 +86,7 @@ const CardContent = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => (
-  <div ref={ref} className={cn('p-5 pt-3', className)} {...props} />
+  <div ref={ref} className={cn('p-6 pt-4', className)} {...props} />
 ));
 CardContent.displayName = 'CardContent';
 
@@ -103,40 +96,40 @@ const CardFooter = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn('flex items-center p-5 pt-0', className)}
+    className={cn('flex items-center p-6 pt-0', className)}
     {...props}
   />
 ));
 CardFooter.displayName = 'CardFooter';
 
-// Apple-like Badge component
+// Badge component matching DESIGN.md
 const Badge = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement> & {
-    variant?: 'default' | 'success' | 'warning' | 'danger' | 'info' | 'purple';
+    variant?: 'default' | 'success' | 'warning' | 'danger' | 'info' | 'purple' | 'ai';
     size?: 'sm' | 'md' | 'lg';
   }
 >(({ className, variant = 'default', size = 'sm', children, ...props }, ref) => {
   const variants = {
-    default: 'bg-gray-100 text-[#86868b]',
-    success: 'bg-[#34c759]/10 text-[#248a3d]',
-    warning: 'bg-[#ff9500]/10 text-[#c93400]',
-    danger: 'bg-[#ff3b30]/10 text-[#ff3b30]',
-    info: 'bg-[#0071e3]/10 text-[#0071e3]',
-    purple: 'bg-[#af52de]/10 text-[#8944ab]',
+    default: 'badge-gray',
+    success: 'badge-success',
+    warning: 'badge-warning',
+    danger: 'bg-[rgba(229,72,77,0.1)] text-red-500', // incorrect state
+    info: 'badge-info',
+    purple: 'badge-success', // Re-mapped to brand green
+    ai: 'badge-ai',
   };
 
   const sizes = {
-    sm: 'px-2.5 py-1 text-xs',
-    md: 'px-3 py-1.5 text-sm',
-    lg: 'px-4 py-2 text-sm',
+    sm: 'badge h-[24px] px-[10px] text-[12px]',
+    md: 'badge h-[28px] px-[12px] text-[14px]',
+    lg: 'badge h-[32px] px-[16px] text-[14px]',
   };
 
   return (
     <div
       ref={ref}
       className={cn(
-        'inline-flex items-center rounded-full font-medium',
         variants[variant],
         sizes[size],
         className

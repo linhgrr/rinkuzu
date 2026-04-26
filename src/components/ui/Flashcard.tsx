@@ -287,7 +287,7 @@ export function Flashcard({
           >
             {/* Front Side */}
             <Card
-              className="absolute w-full h-full flex flex-col justify-between items-center bg-white shadow-2xl rounded-2xl border-2 border-gray-100"
+              className="absolute w-full h-full flex flex-col justify-between items-center bg-white shadow-2xl rounded-2xl border-2 border-neutral-100"
               style={{
                 backfaceVisibility: 'hidden',
                 WebkitBackfaceVisibility: 'hidden'
@@ -296,19 +296,19 @@ export function Flashcard({
 
               <CardContent className="flex flex-col h-full py-10 px-14 justify-between">
                 <div className="flex-1 flex flex-col justify-center">
-                  <h3 className="text-2xl font-bold text-gray-900 mb-8 text-center leading-relaxed break-words">
+                  <h3 className="text-2xl font-bold text-neutral-900 mb-8 text-center leading-relaxed break-words">
                     {question}
                   </h3>
                   <div className="space-y-4">
                     {options.map((option, index) => (
                       <div
                         key={index}
-                        className="flex items-center space-x-3 p-4 bg-gray-50 rounded-lg border border-gray-200 text-lg break-words"
+                        className="flex items-center space-x-3 p-4 bg-neutral-50 rounded-lg border border-neutral-200 text-lg break-words"
                       >
-                        <span className="text-lg font-medium text-gray-600 w-6">
+                        <span className="text-lg font-medium text-neutral-600 w-6">
                           {String.fromCharCode(65 + index)}.
                         </span>
-                        <span className="text-gray-700 flex-1 break-words">{option}</span>
+                        <span className="text-neutral-700 flex-1 break-words">{option}</span>
                       </div>
                     ))}
                   </div>
@@ -334,7 +334,7 @@ export function Flashcard({
                     <span className="text-green-800 font-semibold text-lg break-words">{getCorrectAnswerText()}</span>
                   </div>
                   <div className="space-y-2">
-                    <h4 className="font-medium text-gray-900">{t('allAnswers')}</h4>
+                    <h4 className="font-medium text-neutral-900">{t('allAnswers')}</h4>
                     {options.map((option, index) => {
                       const isCorrect = type === 'single'
                         ? (typeof correctIndex === 'number' && index === correctIndex)
@@ -344,14 +344,14 @@ export function Flashcard({
                           key={index}
                           className={`flex items-center space-x-3 p-3 rounded-lg border text-base break-words ${isCorrect
                             ? 'bg-green-50 border-green-200'
-                            : 'bg-gray-50 border-gray-200'
+                            : 'bg-neutral-50 border-neutral-200'
                             }`}
                         >
-                          <span className={`text-base font-medium w-6 ${isCorrect ? 'text-green-600' : 'text-gray-600'
+                          <span className={`text-base font-medium w-6 ${isCorrect ? 'text-green-600' : 'text-neutral-600'
                             }`}>
                             {String.fromCharCode(65 + index)}.
                           </span>
-                          <span className={`flex-1 break-words ${isCorrect ? 'text-green-800 font-medium' : 'text-gray-700'
+                          <span className={`flex-1 break-words ${isCorrect ? 'text-green-800 font-medium' : 'text-neutral-700'
                             }`}>
                             {option}
                           </span>

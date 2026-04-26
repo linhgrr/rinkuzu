@@ -40,13 +40,13 @@ export function GuestLanding({ quizzes, isAuthenticated = false }: GuestLandingP
         <HeroSection isAuthenticated={isAuthenticated} />
         <FeatureSection />
         <HowItWorksSection />
-        <section id="quizzes" className="bg-[#fbfbfd] py-24 md:py-32">
+        <section id="quizzes" className="bg-[var(--bg-section)] py-24 md:py-32">
           <div className="max-w-6xl mx-auto px-6">
             <div className="max-w-3xl mb-16">
-              <h2 className="text-3xl md:text-5xl font-semibold tracking-tight text-[#1d1d1f] mb-4">
+              <h2 className="text-3xl md:text-5xl font-semibold tracking-tight text-[var(--text-primary)] mb-4">
                 {t('featured_quizzes')}
               </h2>
-              <p className="text-[#86868b] text-lg md:text-xl font-medium">
+              <p className="text-[var(--text-muted)] text-lg md:text-xl font-medium">
                 {t('featured_quizzes_description')}
               </p>
             </div>
@@ -56,7 +56,7 @@ export function GuestLanding({ quizzes, isAuthenticated = false }: GuestLandingP
                 <Link
                   key={quiz._id}
                   href={`/quiz/${quiz.slug}`}
-                  className="group block rounded-3xl bg-white border border-gray-200 p-8 shadow-sm transition-all hover:shadow-xl hover:-translate-y-1"
+                  className="group block rounded-3xl bg-white border border-neutral-200 p-8 shadow-sm transition-all hover:shadow-xl hover:-translate-y-1"
                 >
                   <div className="flex flex-col h-full">
                     <span
@@ -68,13 +68,13 @@ export function GuestLanding({ quizzes, isAuthenticated = false }: GuestLandingP
                     >
                       {quiz.category.name}
                     </span>
-                    <h3 className="text-xl font-semibold text-[#1d1d1f] mb-3 group-hover:text-[#0071e3] transition-colors">
+                    <h3 className="text-xl font-semibold text-[var(--text-primary)] mb-3 group-hover:text-brand-trust transition-colors">
                       {quiz.title}
                     </h3>
-                    <p className="text-[#86868b] text-sm line-clamp-2 mb-6 flex-grow">
+                    <p className="text-[var(--text-muted)] text-sm line-clamp-2 mb-6 flex-grow">
                       {quiz.description}
                     </p>
-                    <div className="flex items-center text-[#0071e3] font-semibold text-sm">
+                    <div className="flex items-center text-brand-trust font-semibold text-sm">
                       {t('start_quiz')}
                       <svg
                         className="ml-1 w-4 h-4 transition-transform group-hover:translate-x-1"
@@ -105,13 +105,13 @@ export function GuestLanding({ quizzes, isAuthenticated = false }: GuestLandingP
             <div className="flex flex-wrap justify-center gap-4">
               <Link
                 href="/adaptive-learning"
-                className="inline-flex items-center justify-center rounded-full bg-white px-8 py-4 font-semibold text-black hover:bg-gray-100 transition-colors duration-200 text-lg"
+                className="inline-flex items-center justify-center rounded-full bg-white px-8 py-4 font-semibold text-black hover:bg-neutral-100 transition-colors duration-200 text-lg"
               >
                 {t('get_started_free')}
               </Link>
               <Link
                 href="/pricing"
-                className="inline-flex items-center justify-center rounded-full border border-gray-700 bg-transparent px-8 py-4 font-semibold text-white hover:bg-gray-800 transition-colors duration-200 text-lg"
+                className="inline-flex items-center justify-center rounded-full border border-neutral-700 bg-transparent px-8 py-4 font-semibold text-white hover:bg-neutral-800 transition-colors duration-200 text-lg"
               >
                 {t('view_pricing')}
               </Link>

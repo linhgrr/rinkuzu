@@ -159,13 +159,13 @@ export function CategorySelector({
           placeholder={placeholder}
           required={required}
           disabled={disabled}
-          className={`pr-20 ${error ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''} ${disabled ? 'bg-gray-50 text-gray-500' : ''}`}
+          className={`pr-20 ${error ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''} ${disabled ? 'bg-neutral-50 text-neutral-500' : ''}`}
         />
 
         {/* Loading indicator */}
         {loading && (
           <div className="absolute right-12 top-1/2 transform -translate-y-1/2">
-            <div className="animate-spin h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full"></div>
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
           </div>
         )}
 
@@ -174,7 +174,7 @@ export function CategorySelector({
           <button
             type="button"
             onClick={clearSelection}
-            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
             aria-label="Clear selection"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -193,28 +193,28 @@ export function CategorySelector({
           ></div>
           <span>Selected: {value.name}</span>
           {value.description && (
-            <span className="text-gray-500">- {value.description}</span>
+            <span className="text-neutral-500">- {value.description}</span>
           )}
         </div>
       )}
 
       {/* Dropdown */}
       {showDropdown && !disabled && (
-        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+        <div className="absolute z-50 w-full mt-1 bg-white border border-neutral-300 rounded-md shadow-lg max-h-60 overflow-auto">
           {loading && (
-            <div className="px-4 py-3 text-sm text-gray-500 text-center">
+            <div className="px-4 py-3 text-sm text-neutral-500 text-center">
               Searching…
             </div>
           )}
 
           {!loading && categories.length === 0 && searchTerm && (
-            <div className="px-4 py-3 text-sm text-gray-500 text-center">
+            <div className="px-4 py-3 text-sm text-neutral-500 text-center">
               No categories found for &quot;{searchTerm}&quot;
             </div>
           )}
 
           {!loading && categories.length === 0 && !searchTerm && (
-            <div className="px-4 py-3 text-sm text-gray-500 text-center">
+            <div className="px-4 py-3 text-sm text-neutral-500 text-center">
               Start typing to search categories...
             </div>
           )}
@@ -226,7 +226,7 @@ export function CategorySelector({
                   key={category._id}
                   type="button"
                   onClick={() => handleCategorySelect(category)}
-                  className="w-full px-4 py-2 text-left hover:bg-gray-50 focus:bg-gray-50 focus:outline-none transition-colors"
+                  className="w-full px-4 py-2 text-left hover:bg-neutral-50 focus:bg-neutral-50 focus:outline-none transition-colors"
                 >
                   <div className="flex items-center space-x-3">
                     <div
@@ -234,11 +234,11 @@ export function CategorySelector({
                       style={{ backgroundColor: category.color }}
                     ></div>
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium text-gray-900 truncate">
+                      <div className="text-sm font-medium text-neutral-900 truncate">
                         {category.name}
                       </div>
                       {category.description && (
-                        <div className="text-xs text-gray-500 truncate">
+                        <div className="text-xs text-neutral-500 truncate">
                           {category.description}
                         </div>
                       )}
@@ -258,7 +258,7 @@ export function CategorySelector({
 
       {/* Required indicator */}
       {required && (
-        <p className="mt-1 text-xs text-gray-500">
+        <p className="mt-1 text-xs text-neutral-500">
           * Category selection is required
         </p>
       )}

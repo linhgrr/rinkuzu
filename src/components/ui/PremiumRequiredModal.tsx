@@ -29,9 +29,9 @@ export function PremiumRequiredModal({ isOpen, onClose }: PremiumRequiredModalPr
     <Modal isOpen={isOpen} onClose={onClose} title={t('required')}>
       <div className="p-6">
         <div className="text-center mb-6">
-          <div className="w-16 h-16 bg-gradient-to-br from-purple-100 to-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <div className="w-16 h-16 bg-gradient-to-br from-green-100 to-green-50 rounded-full flex items-center justify-center mx-auto mb-4">
             <svg
-              className="w-8 h-8 text-purple-600"
+              className="w-8 h-8 text-brand-trust"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -44,17 +44,17 @@ export function PremiumRequiredModal({ isOpen, onClose }: PremiumRequiredModalPr
               />
             </svg>
           </div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+          <h3 className="text-lg font-semibold text-neutral-900 mb-2">
             {t('subscriptionRequired')}
           </h3>
-          <p className="text-gray-600">
+          <p className="text-neutral-600">
             {t('privateQuizMessage')}
           </p>
         </div>
 
-        <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-lg p-4 mb-6">
-          <h4 className="font-medium text-gray-900 mb-2">{t('benefits')}</h4>
-          <ul className="space-y-2 text-sm text-gray-700">
+        <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-4 mb-6">
+          <h4 className="font-medium text-neutral-900 mb-2">{t('benefits')}</h4>
+          <ul className="space-y-2 text-sm text-neutral-700">
             <li className="flex items-center">
               <svg className="w-4 h-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />

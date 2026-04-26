@@ -33,15 +33,15 @@ export default function BlogLayout({ children }: { children: React.ReactNode }) 
   return (
     <div className="min-h-screen bg-white">
       {/* Blog Header */}
-      <section className="bg-[#fbfbfd] py-12 border-b border-gray-100">
+      <section className="bg-[var(--bg-section)] py-12 border-b border-neutral-100">
         <div className="max-w-6xl mx-auto px-6">
-          <nav className="flex items-center gap-2 text-sm text-[#414d60] mb-8">
-            <Link href="/" className="hover:text-[#1e242c] transition-colors">Home</Link>
+          <nav className="flex items-center gap-2 text-sm text-[var(--text-muted)] mb-8">
+            <Link href="/" className="hover:text-[var(--text-primary)] transition-colors">Home</Link>
             <span>/</span>
-            <span className="text-[#1e242c] font-medium">Blog</span>
+            <span className="text-[var(--text-primary)] font-medium">Blog</span>
           </nav>
-          <h1 className="text-3xl md:text-4xl font-bold text-[#1e242c] mb-4">RinKuzu Blog</h1>
-          <p className="text-[#414d60] max-w-xl">
+          <h1 className="text-3xl md:text-4xl font-bold text-[var(--text-primary)] mb-4">RinKuzu Blog</h1>
+          <p className="text-[var(--text-muted)] max-w-xl">
             Insights on adaptive learning, AI in education, and how to get the most from your study materials.
           </p>
         </div>
@@ -55,23 +55,23 @@ export default function BlogLayout({ children }: { children: React.ReactNode }) 
               <Link
                 key={post.slug}
                 href={`/blog/${post.slug}`}
-                className="group rounded-3xl border border-gray-200 overflow-hidden hover:shadow-lg transition-all hover:-translate-y-0.5"
+                className="group rounded-3xl border border-neutral-200 overflow-hidden hover:shadow-lg transition-all hover:-translate-y-0.5"
               >
-                <div className="bg-[#fbfbfd] border-b border-gray-100 p-8">
+                <div className="bg-[var(--bg-section)] border-b border-neutral-100 p-8">
                   <div className="flex items-center gap-3 mb-3">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-teal-600 bg-teal-50 px-3 py-1 rounded-full">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-brand-trust bg-green-50 px-3 py-1 rounded-full">
                       {post.category}
                     </span>
-                    <span className="text-xs text-[#414d60]">{post.date}</span>
+                    <span className="text-xs text-[var(--text-muted)]">{post.date}</span>
                   </div>
-                  <h2 className="text-xl font-bold text-[#1e242c] mb-2 group-hover:text-teal-600 transition-colors leading-snug">
+                  <h2 className="text-xl font-bold text-[var(--text-primary)] mb-2 group-hover:text-brand-trust transition-colors leading-snug">
                     {post.title}
                   </h2>
-                  <p className="text-[#414d60] text-sm leading-relaxed line-clamp-2">{post.description}</p>
+                  <p className="text-[var(--text-muted)] text-sm leading-relaxed line-clamp-2">{post.description}</p>
                 </div>
                 <div className="px-8 py-4 flex items-center justify-between">
-                  <span className="text-xs text-[#414d60]">{post.readTime}</span>
-                  <span className="text-sm font-semibold text-teal-600 group-hover:underline">Read article →</span>
+                  <span className="text-xs text-[var(--text-muted)]">{post.readTime}</span>
+                  <span className="text-sm font-semibold text-brand-trust group-hover:underline">Read article →</span>
                 </div>
               </Link>
             ))}

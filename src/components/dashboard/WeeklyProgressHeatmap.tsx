@@ -38,11 +38,11 @@ function formatDateKey(date: Date): string {
 }
 
 function getIntensityClass(questions: number): string {
-  if (questions === 0) return 'bg-slate-50';
-  if (questions <= 5) return 'bg-slate-200';
-  if (questions <= 10) return 'bg-slate-400';
-  if (questions <= 20) return 'bg-slate-600';
-  return 'bg-slate-900';
+  if (questions === 0) return 'bg-neutral-50';
+  if (questions <= 5) return 'bg-neutral-200';
+  if (questions <= 10) return 'bg-neutral-400';
+  if (questions <= 20) return 'bg-neutral-600';
+  return 'bg-neutral-900';
 }
 
 const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
@@ -86,26 +86,26 @@ export function WeeklyProgressHeatmap({
   };
 
   return (
-    <Card className="p-6 rounded-2xl shadow-sm border-gray-100/50 bg-white">
+    <Card className="p-6 rounded-2xl shadow-sm border-neutral-100/50 bg-white">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="font-semibold text-[#1d1d1f]">{labels.weeklyProgress}</h3>
+        <h3 className="font-semibold text-[var(--text-primary)]">{labels.weeklyProgress}</h3>
         <div className="flex items-center gap-2">
           <button
             onClick={handlePrevWeek}
-            className="p-1 rounded-full hover:bg-gray-100 transition-colors"
+            className="p-1 rounded-full hover:bg-neutral-100 transition-colors"
           >
-            <HiOutlineChevronLeft className="w-5 h-5 text-gray-600" />
+            <HiOutlineChevronLeft className="w-5 h-5 text-neutral-600" />
           </button>
-          <span className="text-sm text-[#86868b] min-w-[100px] text-center">
+          <span className="text-sm text-[var(--text-muted)] min-w-[100px] text-center">
             {isCurrentWeek ? labels.thisWeek : weekLabel}
           </span>
           <button
             onClick={handleNextWeek}
             disabled={weekOffset >= 0}
-            className={`p-1 rounded-full transition-colors ${weekOffset >= 0 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-gray-100'
+            className={`p-1 rounded-full transition-colors ${weekOffset >= 0 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-neutral-100'
               }`}
           >
-            <HiOutlineChevronRight className="w-5 h-5 text-gray-600" />
+            <HiOutlineChevronRight className="w-5 h-5 text-neutral-600" />
           </button>
         </div>
       </div>
@@ -119,7 +119,7 @@ export function WeeklyProgressHeatmap({
 
           return (
             <div key={dateKey} className="flex flex-col items-center gap-2">
-              <span className="text-xs text-[#86868b] font-medium">
+              <span className="text-xs text-[var(--text-muted)] font-medium">
                 {DAY_LABELS[i]}
               </span>
               <div
@@ -131,14 +131,14 @@ export function WeeklyProgressHeatmap({
         })}
       </div>
 
-      <div className="flex items-center justify-center gap-2 mt-4 text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+      <div className="flex items-center justify-center gap-2 mt-4 text-[10px] text-neutral-400 font-bold uppercase tracking-widest">
         <span>{labels.less}</span>
         <div className="flex gap-1.5">
-          <div className="w-3 h-3 rounded-sm bg-slate-50 border border-slate-100" />
-          <div className="w-3 h-3 rounded-sm bg-slate-200" />
-          <div className="w-3 h-3 rounded-sm bg-slate-400" />
-          <div className="w-3 h-3 rounded-sm bg-slate-600" />
-          <div className="w-3 h-3 rounded-sm bg-slate-900" />
+          <div className="w-3 h-3 rounded-sm bg-neutral-50 border border-neutral-100" />
+          <div className="w-3 h-3 rounded-sm bg-neutral-200" />
+          <div className="w-3 h-3 rounded-sm bg-neutral-400" />
+          <div className="w-3 h-3 rounded-sm bg-neutral-600" />
+          <div className="w-3 h-3 rounded-sm bg-neutral-900" />
         </div>
         <span>{labels.more}</span>
       </div>

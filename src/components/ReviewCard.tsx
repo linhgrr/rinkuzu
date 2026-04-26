@@ -47,13 +47,13 @@ export default function ReviewCard({ question, onResult }: ReviewCardProps) {
                         onClick={() => setIsFlipped(true)}
                     >
                         <div className="text-center">
-                            <span className="inline-block px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold mb-4">
+                            <span className="inline-block px-3 py-1 bg-green-100 text-brand-trust-hover rounded-full text-xs font-semibold mb-4">
                                 {t('question')}
                             </span>
-                            <h3 className="text-xl md:text-2xl font-medium text-[#1d1d1f] mb-8 leading-relaxed">
+                            <h3 className="text-xl md:text-2xl font-medium text-[var(--text-primary)] mb-8 leading-relaxed">
                                 {question.text}
                             </h3>
-                            <p className="text-[#86868b] text-sm animate-pulse">
+                            <p className="text-[var(--text-muted)] text-sm animate-pulse">
                                 {t('tapToSeeAnswer')}
                             </p>
                         </div>
@@ -65,7 +65,7 @@ export default function ReviewCard({ question, onResult }: ReviewCardProps) {
                     <Card className="absolute inset-0 w-full h-full backface-hidden rotate-y-180 flex flex-col p-4 md:p-8">
                         <div className="flex-1 overflow-y-auto">
                             {/* Question Text Repeated Small */}
-                            <p className="text-xs md:text-sm text-[#86868b] mb-4 md:mb-6 pb-3 md:pb-4 border-b">
+                            <p className="text-xs md:text-sm text-[var(--text-muted)] mb-4 md:mb-6 pb-3 md:pb-4 border-b">
                                 {question.text}
                             </p>
 
@@ -78,11 +78,11 @@ export default function ReviewCard({ question, onResult }: ReviewCardProps) {
                                             key={idx}
                                             className={`p-3 md:p-4 rounded-xl border ${isCorrect
                                                 ? 'bg-green-50 border-green-200 text-green-800'
-                                                : 'bg-gray-50 border-gray-100 text-gray-500'
+                                                : 'bg-neutral-50 border-neutral-100 text-neutral-500'
                                                 }`}
                                         >
                                             <div className="flex items-start">
-                                                <div className={`w-5 h-5 mt-0.5 rounded-full border flex items-center justify-center mr-3 flex-shrink-0 ${isCorrect ? 'bg-green-500 border-green-500 text-white' : 'border-gray-300'
+                                                <div className={`w-5 h-5 mt-0.5 rounded-full border flex items-center justify-center mr-3 flex-shrink-0 ${isCorrect ? 'bg-green-500 border-green-500 text-white' : 'border-neutral-300'
                                                     }`}>
                                                     {isCorrect && <HiCheck className="w-3 h-3" strokeWidth={3} aria-hidden="true" />}
                                                 </div>
@@ -119,14 +119,14 @@ export default function ReviewCard({ question, onResult }: ReviewCardProps) {
                             </button>
 
                             <button
-                                className="flex flex-col items-center p-2 rounded-lg hover:bg-blue-50 active:bg-blue-100 transition-colors group min-h-[68px]"
+                                className="flex flex-col items-center p-2 rounded-lg hover:bg-green-50 active:bg-green-100 transition-colors group min-h-[68px]"
                                 onClick={() => onResult('good')}
                                 aria-label="Rate as Good - Press 3"
                             >
-                                <div className="w-10 h-10 md:w-11 md:h-11 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mb-1 md:mb-2 group-hover:scale-110 transition-transform">
+                                <div className="w-10 h-10 md:w-11 md:h-11 rounded-full bg-green-100 text-green-600 flex items-center justify-center mb-1 md:mb-2 group-hover:scale-110 transition-transform">
                                     <span className="font-bold text-sm md:text-base">3</span>
                                 </div>
-                                <span className="text-[10px] md:text-xs font-medium text-blue-600">{t('good')}</span>
+                                <span className="text-[10px] md:text-xs font-medium text-green-600">{t('good')}</span>
                             </button>
 
                             <button

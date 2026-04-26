@@ -40,7 +40,7 @@ export function Modal({ isOpen, onClose, children, title, description, className
         
         {/* Modal */}
         <div className={cn(
-          'relative bg-white rounded-lg shadow-lg w-full mx-4 max-h-[90vh] overflow-y-auto overscroll-contain',
+          'relative bg-white rounded-xl shadow-lg w-full mx-4 max-h-[90vh] overflow-y-auto overscroll-contain',
           sizeClasses[size],
           className
         )}>
@@ -48,10 +48,10 @@ export function Modal({ isOpen, onClose, children, title, description, className
           {(title || description) && (
             <div className="p-6 border-b">
               {title && (
-                <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
+                <h2 className="text-lg font-semibold text-neutral-900">{title}</h2>
               )}
               {description && (
-                <p className="mt-1 text-sm text-gray-500">{description}</p>
+                <p className="mt-1 text-sm text-neutral-500">{description}</p>
               )}
             </div>
           )}
@@ -71,7 +71,7 @@ export function Modal({ isOpen, onClose, children, title, description, className
           {/* Close button */}
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+            className="absolute top-4 right-4 text-neutral-400 hover:text-neutral-600"
             aria-label="Close modal"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">

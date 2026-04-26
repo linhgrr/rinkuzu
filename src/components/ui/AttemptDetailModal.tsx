@@ -115,9 +115,9 @@ export default function AttemptDetailModal({
       <div className="max-w-4xl mx-auto">
         <div className="bg-white rounded-lg shadow-xl max-h-[90vh] overflow-hidden">
           {/* Header */}
-          <div className="p-6 border-b border-gray-200">
+          <div className="p-6 border-b border-neutral-200">
             <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-gray-900">
+              <h2 className="text-2xl font-bold text-neutral-900">
                 {t('title')}
               </h2>
               <Button variant="ghost" onClick={onClose}>
@@ -129,8 +129,8 @@ export default function AttemptDetailModal({
 
             {attempt && (
               <div className="mt-4">
-                <h3 className="text-lg font-semibold text-gray-800">{attempt.quiz.title}</h3>
-                <div className="flex items-center space-x-4 mt-2 text-sm text-gray-600">
+                <h3 className="text-lg font-semibold text-neutral-800">{attempt.quiz.title}</h3>
+                <div className="flex items-center space-x-4 mt-2 text-sm text-neutral-600">
                   <span>📊 {t('score')}: {attempt.score}%</span>
                   <span>📝 {attempt.quiz.questions.length} {t('questions')}</span>
                   <span>🕒 {formatDate(attempt.takenAt)}</span>
@@ -143,7 +143,7 @@ export default function AttemptDetailModal({
           <div className="overflow-y-auto max-h-[calc(90vh-140px)]">
             {loading ? (
               <div className="flex justify-center py-12">
-                <div className="text-gray-500">{tCommon('loading')}</div>
+                <div className="text-neutral-500">{tCommon('loading')}</div>
               </div>
             ) : error ? (
               <div className="p-6">
@@ -160,7 +160,7 @@ export default function AttemptDetailModal({
                       <div className="text-xl font-bold text-green-600">
                         {attempt.quiz.questions.filter(q => q.isCorrect).length}
                       </div>
-                      <div className="text-sm text-gray-600">{t('correctAnswers')}</div>
+                      <div className="text-sm text-neutral-600">{t('correctAnswers')}</div>
                     </CardContent>
                   </Card>
                   <Card>
@@ -168,15 +168,15 @@ export default function AttemptDetailModal({
                       <div className="text-xl font-bold text-red-600">
                         {attempt.quiz.questions.filter(q => !q.isCorrect).length}
                       </div>
-                      <div className="text-sm text-gray-600">{t('incorrectAnswers')}</div>
+                      <div className="text-sm text-neutral-600">{t('incorrectAnswers')}</div>
                     </CardContent>
                   </Card>
                   <Card>
                     <CardContent className="text-center py-4">
-                      <div className="text-xl font-bold text-blue-600">
+                      <div className="text-xl font-bold text-brand-trust">
                         {attempt.score}%
                       </div>
-                      <div className="text-sm text-gray-600">{t('totalScore')}</div>
+                      <div className="text-sm text-neutral-600">{t('totalScore')}</div>
                     </CardContent>
                   </Card>
                 </div>
@@ -210,7 +210,7 @@ export default function AttemptDetailModal({
 
                         {/* User Answer */}
                         <div>
-                          <h5 className="font-medium text-gray-900 mb-2">{t('yourAnswer')}:</h5>
+                          <h5 className="font-medium text-neutral-900 mb-2">{t('yourAnswer')}:</h5>
                           <div className={`p-3 rounded-lg ${question.isCorrect ? 'bg-green-50' : 'bg-red-50'}`}>
                             <div className={question.isCorrect ? 'text-green-800' : 'text-red-800'}>
                               {getAnswerText(question, question.userAnswer)}
@@ -221,7 +221,7 @@ export default function AttemptDetailModal({
                         {/* Correct Answer (if wrong) */}
                         {!question.isCorrect && (
                           <div>
-                            <h5 className="font-medium text-gray-900 mb-2">{t('correctAnswer')}:</h5>
+                            <h5 className="font-medium text-neutral-900 mb-2">{t('correctAnswer')}:</h5>
                             <div className="p-3 rounded-lg bg-green-50">
                               <div className="text-green-800">
                                 {getCorrectAnswerText(question)}
@@ -232,7 +232,7 @@ export default function AttemptDetailModal({
 
                         {/* All Options */}
                         <div>
-                          <h5 className="font-medium text-gray-900 mb-2">{t('allOptions')}:</h5>
+                          <h5 className="font-medium text-neutral-900 mb-2">{t('allOptions')}:</h5>
                           <div className="space-y-2">
                             {question.options.map((option, optionIndex) => {
                               const isUserChoice = question.type === 'single' 
@@ -251,7 +251,7 @@ export default function AttemptDetailModal({
                                       ? 'border-green-500 bg-green-50' 
                                       : isUserChoice 
                                         ? 'border-red-500 bg-red-50'
-                                        : 'border-gray-200'
+                                        : 'border-neutral-200'
                                   }`}
                                 >
                                   <div className="flex items-center justify-between">

@@ -24,8 +24,8 @@ export function HowItWorks() {
             const Icon = step.Icon;
             return (
               <div key={step.key} className="text-center rounded-2xl border border-white/10 bg-white/5 p-8">
-                <div className="w-16 h-16 rounded-full bg-teal-500/10 border border-teal-500/20 flex items-center justify-center mx-auto mb-6">
-                  <Icon className="w-7 h-7 text-teal-400" aria-hidden="true" />
+                <div className="w-16 h-16 rounded-full bg-green-500/10 border border-brand-trust/20 flex items-center justify-center mx-auto mb-6">
+                  <Icon className="w-7 h-7 text-green-400" aria-hidden="true" />
                 </div>
                 <h3 className="text-white font-semibold text-xl mb-3">{t(`${step.key}.title`)}</h3>
                 <p className="text-white/60 text-sm leading-relaxed">{t(`${step.key}.description`)}</p>

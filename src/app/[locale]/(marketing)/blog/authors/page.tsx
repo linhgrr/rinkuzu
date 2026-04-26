@@ -30,19 +30,19 @@ export default async function AuthorsPage({ params }: Props) {
 
   return (
     <main className="min-h-screen bg-white">
-      <header className="bg-[#fbfbfd] border-b border-gray-100">
+      <header className="bg-[var(--bg-section)] border-b border-neutral-100">
         <div className="max-w-3xl mx-auto px-6 pt-16 pb-12">
-          <nav className="flex items-center gap-2 text-sm text-[#414d60] mb-8">
-            <Link href="/" className="hover:text-[#1e242c] transition-colors">Home</Link>
+          <nav className="flex items-center gap-2 text-sm text-[var(--text-muted)] mb-8">
+            <Link href="/" className="hover:text-[var(--text-primary)] transition-colors">Home</Link>
             <span>/</span>
-            <Link href="/blog" className="hover:text-[#1e242c] transition-colors">Blog</Link>
+            <Link href="/blog" className="hover:text-[var(--text-primary)] transition-colors">Blog</Link>
             <span>/</span>
-            <span className="text-[#1e242c]">Authors</span>
+            <span className="text-[var(--text-primary)]">Authors</span>
           </nav>
-          <h1 className="text-3xl md:text-5xl font-bold text-[#1e242c] leading-tight mb-4">
+          <h1 className="text-3xl md:text-5xl font-bold text-[var(--text-primary)] leading-tight mb-4">
             Authors
           </h1>
-          <p className="text-lg text-[#414d60] leading-relaxed">
+          <p className="text-lg text-[var(--text-muted)] leading-relaxed">
             Meet the researchers and engineers writing about adaptive learning and AI in education.
           </p>
         </div>
@@ -55,9 +55,9 @@ export default async function AuthorsPage({ params }: Props) {
               <Link
                 key={author.slug}
                 href={`/blog/authors/${author.slug}`}
-                className="group rounded-3xl border border-gray-200 overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all"
+                className="group rounded-3xl border border-neutral-200 overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all"
               >
-                <div className="relative h-40 overflow-hidden bg-gray-50">
+                <div className="relative h-40 overflow-hidden bg-neutral-50">
                   <Image
                     src={author.imageUrl}
                     alt={author.name}
@@ -67,13 +67,13 @@ export default async function AuthorsPage({ params }: Props) {
                   />
                 </div>
                 <div className="p-6">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-teal-600 mb-1">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-brand-trust mb-1">
                     {author.role}
                   </p>
-                  <h2 className="text-lg font-bold text-[#1e242c] mb-2 group-hover:text-teal-600 transition-colors">
+                  <h2 className="text-lg font-bold text-[var(--text-primary)] mb-2 group-hover:text-brand-trust transition-colors">
                     {author.name}
                   </h2>
-                  <p className="text-sm text-[#414d60] leading-relaxed">
+                  <p className="text-sm text-[var(--text-muted)] leading-relaxed">
                     {author.shortBio}
                   </p>
                 </div>

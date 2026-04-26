@@ -1,23 +1,21 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useSession, signOut } from 'next-auth/react';
+import { useSession } from 'next-auth/react';
 import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, Badge } from '@/components/ui/Card';
 import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
 import Pagination from '@/components/ui/Pagination';
 import Sidebar from '@/components/Sidebar';
 import {
-  HiChevronDown,
-  HiOutlineMenu,
   HiOutlineSearch,
-  HiOutlineCheck,
-  HiOutlineLogout
+  HiOutlineCheck
 } from '@/components/icons';
+import Navigation from '@/components/Navigation';
 
 interface User {
   _id: string;
@@ -53,7 +51,6 @@ export default function AdminUsersPage() {
   const tCommon = useTranslations('common');
   const { data: session } = useSession();
   const pathname = usePathname();
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   const [users, setUsers] = useState<User[]>([]);
@@ -268,15 +265,15 @@ export default function AdminUsersPage() {
     setShowSubscriptionModal(true);
   };
 
-  const getRoleBadgeColor = (role: string) => {
-    return role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800';
+  const getRoleBadge = (role: string, label: string) => {
+    return role === 'admin' ? <Badge variant="warning">{label}</Badge> : <Badge variant="success">{label}</Badge>;
   };
 
-  const getSubscriptionBadgeColor = (subscription?: User['subscription']) => {
-    if (!subscription) return 'bg-gray-100 text-gray-800';
-    if (!subscription.isActive) return 'bg-red-100 text-red-800';
-    if (subscription.type === 'lifetime') return 'bg-purple-100 text-purple-800';
-    return 'bg-green-100 text-green-800';
+  const getSubscriptionBadge = (subscription?: User['subscription'], text?: string) => {
+    if (!subscription) return <Badge variant="default">{text}</Badge>;
+    if (!subscription.isActive) return <Badge variant="danger">{text}</Badge>;
+    if (subscription.type === 'lifetime') return <Badge variant="warning">{text}</Badge>;
+    return <Badge variant="success">{text}</Badge>;
   };
 
   const getSubscriptionText = (subscription?: User['subscription']) => {
@@ -300,115 +297,7 @@ export default function AdminUsersPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Navigation - giống như trang chính */}
-      <nav className="bg-white/80 backdrop-blur-md border-b border-gray-100 sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            {/* Logo */}
-            <div className="flex items-center">
-              <Link href="/" className="flex items-center">
-                <div className="h-10 flex items-center justify-center">
-                  <img src="/images/auth_logo.png" alt="RinKuzu Logo" className="h-10 w-auto object-contain" />
-                </div>
-              </Link>
-              <span className="ml-3 px-2 py-1 bg-red-100 text-red-800 text-xs font-medium rounded">
-                {t('admin')}
-              </span>
-            </div>
-
-            {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center space-x-8">
-              {session ? (
-                <>
-                  <Link href="/" className="text-gray-600 hover:text-gray-900 transition-colors">
-                    {t('allQuizzes')}
-                  </Link>
-
-                  {/* User Menu */}
-                  <div className="relative">
-                    <button
-                      onClick={() => setIsMenuOpen(!isMenuOpen)}
-                      className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors"
-                    >
-                      <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
-                        <span className="text-white text-sm font-medium">
-                          {session.user?.email?.charAt(0).toUpperCase()}
-                        </span>
-                      </div>
-                      <HiChevronDown className={`w-4 h-4 transition-transform ${isMenuOpen ? 'rotate-180' : ''}`} />
-                    </button>
-
-                    {isMenuOpen && (
-                      <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-100 py-1">
-                        <button
-                          onClick={() => signOut()}
-                          className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                        >
-                          {t('loggingOut')}
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </>
-              ) : (
-                <div className="flex items-center space-x-4">
-                  <Link href="/login">
-                    <Button variant="ghost" className="text-gray-600 hover:text-gray-900">
-                      {tCommon('signIn')}
-                    </Button>
-                  </Link>
-                  <Link href="/register">
-                    <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-0">
-                      {tCommon('getStarted')}
-                    </Button>
-                  </Link>
-                </div>
-              )}
-            </div>
-
-            {/* Mobile menu button */}
-            <div className="md:hidden">
-              <button
-                onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className="text-gray-600 hover:text-gray-900"
-                aria-label="Toggle mobile menu"
-              >
-                <HiOutlineMenu className="w-6 h-6" />
-              </button>
-            </div>
-          </div>
-
-          {/* Mobile Navigation */}
-          {isMenuOpen && (
-            <div className="md:hidden border-t border-gray-100 py-4">
-              <div className="space-y-2">
-                {session ? (
-                  <>
-                    <Link href="/" className="block px-4 py-2 text-gray-600 hover:text-gray-900">
-                      {t('allQuizzes')}
-                    </Link>
-                    <button
-                      onClick={() => signOut()}
-                      className="block w-full text-left px-4 py-2 text-gray-600 hover:text-gray-900"
-                    >
-                      {t('loggingOut')}
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <Link href="/login" className="block px-4 py-2 text-gray-600 hover:text-gray-900">
-                      {tCommon('signIn')}
-                    </Link>
-                    <Link href="/register" className="block px-4 py-2 text-gray-600 hover:text-gray-900">
-                      {tCommon('getStarted')}
-                    </Link>
-                  </>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-      </nav>
+      <Navigation />
 
       {/* Sidebar */}
       <Sidebar
@@ -421,14 +310,17 @@ export default function AdminUsersPage() {
       <main className={`py-8 transition-all duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-16'} max-w-none px-4 sm:px-6 lg:px-8`}>
         {loading ? (
           <div className="flex justify-center py-12">
-            <div className="text-gray-500">{tCommon('loading')}</div>
+            <div className="flex flex-col items-center gap-3">
+              <div className="h-12 w-12 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
+              <div className="text-sm text-neutral-500">{tCommon('loading')}</div>
+            </div>
           </div>
         ) : (
           <div className="max-w-6xl mx-auto">
               <div className="flex justify-between items-center mb-8">
                 <div>
-                  <h1 className="text-3xl font-bold text-gray-900">{t('userManagement')}</h1>
-                  <p className="mt-2 text-gray-600">
+                  <h1 className="text-3xl font-bold text-neutral-900">{t('userManagement')}</h1>
+                  <p className="mt-2 text-neutral-600">
                     {t('manageUserAccounts')}
                   </p>
                 </div>
@@ -481,35 +373,35 @@ export default function AdminUsersPage() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <Card>
                   <CardContent className="p-6">
-                    <div className="text-2xl font-bold text-gray-900">
+                    <div className="text-2xl font-bold text-neutral-900">
                       {pagination.total}
                     </div>
-                    <p className="text-gray-600">{t('totalUsers')}</p>
+                    <p className="text-neutral-600">{t('totalUsers')}</p>
                   </CardContent>
                 </Card>
 
                 <Card>
                   <CardContent className="p-6">
-                    <div className="text-2xl font-bold text-purple-600">
+                    <div className="text-2xl font-bold text-brand-action">
                       {users.filter(u => u.role === 'admin').length}
                     </div>
-                    <p className="text-gray-600">{t('administratorsCurrentPage')}</p>
+                    <p className="text-neutral-600">{t('administratorsCurrentPage')}</p>
                   </CardContent>
                 </Card>
 
                 <Card>
                   <CardContent className="p-6">
-                    <div className="text-2xl font-bold text-blue-600">
+                    <div className="text-2xl font-bold text-brand-trust">
                       {users.filter(u => u.role === 'user').length}
                     </div>
-                    <p className="text-gray-600">{t('regularUsersCurrentPage')}</p>
+                    <p className="text-neutral-600">{t('regularUsersCurrentPage')}</p>
                   </CardContent>
                 </Card>
               </div>
 
               {/* Results Info */}
               <div className="flex items-center justify-between mb-6">
-                <p className="text-gray-600">
+                <p className="text-neutral-600">
                   {t('showingUsers', { count: users.length, total: pagination.total })}
                   {searchTerm && (
                     <span className="ml-2">
@@ -517,7 +409,7 @@ export default function AdminUsersPage() {
                     </span>
                   )}
                 </p>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-neutral-500">
                   {t('page')} {pagination.page} {t('of')} {pagination.totalPages}
                 </p>
               </div>
@@ -532,55 +424,51 @@ export default function AdminUsersPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
+                    <table className="min-w-full divide-y divide-neutral-200">
+                      <thead className="bg-neutral-50">
                         <tr>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
                             {t('user')}
                           </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
                             {t('role')}
                           </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
                             {t('subscription')}
                           </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
                             {t('created')}
                           </th>
-                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-6 py-3 text-right text-xs font-medium text-neutral-500 uppercase tracking-wider">
                             {t('actions')}
                           </th>
                         </tr>
                       </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
+                      <tbody className="bg-white divide-y divide-neutral-200">
                         {users.map((user) => (
-                          <tr key={user._id} className="hover:bg-gray-50">
+                          <tr key={user._id} className="hover:bg-neutral-50">
                             <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="text-sm font-medium text-gray-900">
+                              <div className="text-sm font-medium text-neutral-900">
                                 {user.email}
                                 {user.email === session?.user?.email && (
-                                  <span className="ml-2 text-xs text-gray-500">{t('you')}</span>
+                                  <span className="ml-2 text-xs text-neutral-500">{t('you')}</span>
                                 )}
                               </div>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
-                              <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getRoleBadgeColor(user.role)}`}>
-                                {user.role === 'admin' ? t('administrator') : t('user')}
-                              </span>
+                              {getRoleBadge(user.role, user.role === 'admin' ? t('administrator') : t('user'))}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="flex items-center space-x-2">
-                                <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getSubscriptionBadgeColor(user.subscription)}`}>
-                                  {getSubscriptionText(user.subscription)}
-                                </span>
+                                {getSubscriptionBadge(user.subscription, getSubscriptionText(user.subscription))}
                                 {user.subscription?.startDate && (
-                                  <span className="text-xs text-gray-500">
+                                  <span className="text-xs text-neutral-500">
                                     {formatDate(user.subscription.startDate)}
                                   </span>
                                 )}
                               </div>
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-500">
                               {new Date(user.createdAt).toLocaleDateString()}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -623,7 +511,7 @@ export default function AdminUsersPage() {
                     </table>
 
                     {users.length === 0 && (
-                      <div className="text-center py-8 text-gray-500">
+                      <div className="text-center py-8 text-neutral-500">
                         {searchTerm ? t('noUsersMatching', { term: searchTerm }) : t('noUsersFound')}
                       </div>
                     )}
@@ -653,7 +541,7 @@ export default function AdminUsersPage() {
         title={t('changeUserRole')}
       >
         <div className="space-y-4">
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-neutral-600">
             {t('changeRoleConfirm', { email: selectedUser?.email || '', role: newRole || '' })}
           </p>
 
@@ -682,7 +570,7 @@ export default function AdminUsersPage() {
         title={t('deleteUser')}
       >
         <div className="space-y-4">
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-neutral-600">
             {t('deleteUserConfirm', { email: selectedUser?.email || '' })}
           </p>
 
@@ -712,7 +600,7 @@ export default function AdminUsersPage() {
         title={t('addSubscriptionTitle')}
       >
         <div className="space-y-4">
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-neutral-600">
             {t('selectPlan', { email: selectedUser?.email || '' })}
           </p>
 
@@ -721,8 +609,8 @@ export default function AdminUsersPage() {
               <div
                 key={plan._id}
                 className={`p-4 border rounded-lg cursor-pointer transition-colors ${selectedPlanId === plan._id
-                  ? 'border-blue-500 bg-blue-50'
-                  : 'border-gray-200 hover:border-gray-300'
+                  ? 'border-green-500 bg-green-50'
+                  : 'border-neutral-200 hover:border-neutral-300'
                   }`}
                 onClick={() => {
                   setSelectedPlanId(plan._id);
@@ -731,12 +619,12 @@ export default function AdminUsersPage() {
               >
                 <div className="flex justify-between items-center">
                   <div>
-                    <h3 className="font-medium text-gray-900">{plan.name}</h3>
-                    <p className="text-sm text-gray-600">{formatCurrency(plan.price)}</p>
-                    <p className="text-xs text-gray-500">{plan.duration}</p>
+                    <h3 className="font-medium text-neutral-900">{plan.name}</h3>
+                    <p className="text-sm text-neutral-600">{formatCurrency(plan.price)}</p>
+                    <p className="text-xs text-neutral-500">{plan.duration}</p>
                   </div>
                   {selectedPlanId === plan._id && (
-                    <div className="text-blue-600">
+                    <div className="text-brand-trust">
                       <HiOutlineCheck className="w-5 h-5" />
                     </div>
                   )}
@@ -746,10 +634,10 @@ export default function AdminUsersPage() {
           </div>
 
           {selectedPlanId && (
-            <div className="p-4 bg-gray-50 rounded-lg">
-              <h4 className="font-medium text-gray-900 mb-2">{t('selectedPlanDetails')}</h4>
+            <div className="p-4 bg-neutral-50 rounded-lg">
+              <h4 className="font-medium text-neutral-900 mb-2">{t('selectedPlanDetails')}</h4>
               {plans.find(p => p._id === selectedPlanId) && (
-                <div className="text-sm text-gray-600">
+                <div className="text-sm text-neutral-600">
                   <p><strong>{t('plan')}</strong> {plans.find(p => p._id === selectedPlanId)?.name}</p>
                   <p><strong>{t('price')}</strong> {formatCurrency(plans.find(p => p._id === selectedPlanId)?.price || 0)}</p>
                   <p><strong>{t('duration')}</strong> {plans.find(p => p._id === selectedPlanId)?.duration}</p>

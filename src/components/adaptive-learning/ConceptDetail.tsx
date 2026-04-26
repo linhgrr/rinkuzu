@@ -57,11 +57,7 @@ export default function ConceptDetailPanel({ concept, onClose }: ConceptDetailPa
         return { label: t('conceptDetail.notStarted'), className: 'bg-neutral-100 text-neutral-600' };
     }, [concept.status, t]);
 
-    const masteryBarClass = concept.status === 'locked'
-        ? 'bg-neutral-400'
-        : concept.mastery >= 0.75
-            ? 'bg-brand-trust'
-            : 'bg-brand-trust';
+    const masteryBarClass = concept.status === 'locked' ? 'bg-neutral-400' : 'bg-brand-trust';
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm" onClick={onClose} onKeyDown={handleKeyDown}>

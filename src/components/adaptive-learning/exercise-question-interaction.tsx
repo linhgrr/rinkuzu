@@ -9,6 +9,12 @@ import { DynamicMarkdownRenderer } from '@/components/ui/DynamicMarkdownRenderer
 import { getExercisePromptSections } from './exercise-prompt'
 import type { Exercise, SubmitAnswerPayload } from './types'
 
+const REORDER_INITIAL = { opacity: 0, y: 10 }
+const REORDER_ANIMATE = { opacity: 1, y: 0 }
+const REORDER_EXIT = { opacity: 0, y: -10 }
+const REORDER_DRAG = { scale: 1.02, boxShadow: 'var(--shadow-md)', zIndex: 50 }
+const REORDER_TRANSITION = { type: 'spring' as const, stiffness: 500, damping: 30, mass: 1 }
+
 const OptionCard = memo(function OptionCard({
   active,
   badge,
@@ -313,20 +319,11 @@ export function ExerciseInteraction({
               key={item}
               value={item}
               layout
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              whileDrag={{ 
-                scale: 1.02, 
-                boxShadow: 'var(--shadow-md)',
-                zIndex: 50 
-              }}
-              transition={{
-                type: 'spring',
-                stiffness: 500,
-                damping: 30,
-                mass: 1
-              }}
+              initial={REORDER_INITIAL}
+              animate={REORDER_ANIMATE}
+              exit={REORDER_EXIT}
+              whileDrag={REORDER_DRAG}
+              transition={REORDER_TRANSITION}
               className="group relative flex items-center gap-3 rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md cursor-grab active:cursor-grabbing"
             >
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-neutral-50 font-medium text-neutral-500 group-hover:bg-green-50 group-hover:text-brand-trust">

@@ -92,9 +92,13 @@ export default function AdaptiveLearningUpload() {
 
     const onDrop = useCallback((acceptedFiles: File[]) => {
         if (acceptedFiles.length > 0) {
+            if (!subjectName.trim()) {
+                setError(t('uploadPage.subjectRequiredBeforeSelectFile'));
+                return;
+            }
             void handleUpload(acceptedFiles[0]);
         }
-    }, [handleUpload]);
+    }, [handleUpload, subjectName, t]);
 
     const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
         onDrop,

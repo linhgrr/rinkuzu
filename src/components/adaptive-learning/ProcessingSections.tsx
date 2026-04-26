@@ -70,9 +70,9 @@ export const ProcessingStatusCard = ({
         </div>
       )}
 
-      <h2 className="mb-2 text-2xl font-medium tracking-tight text-neutral-900">
+      <h1 className="mb-2 text-2xl font-medium tracking-tight text-neutral-900">
         {error ? t('processing.failedTitle') : t('processing.title')}
-      </h2>
+      </h1>
       <p className="mb-6 text-sm text-neutral-500">{filename}</p>
 
       {!error && (

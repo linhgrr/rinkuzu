@@ -13,15 +13,13 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
           {/* Brand */}
           <div className="space-y-6">
-            <div className="inline-block rounded-lg bg-white/90 px-3 py-1.5">
-              <Image
-                src="/images/navbar_logo.webp"
-                alt="RinKuzu Logo"
-                width={120}
-                height={32}
-                className="h-8 w-auto object-contain"
-              />
-            </div>
+            <Image
+              src="/images/auth_logo.webp"
+              alt="RinKuzu Logo"
+              width={48}
+              height={48}
+              className="h-12 w-12 object-contain"
+            />
             <p className="text-white/50 text-sm leading-relaxed">
               AI-powered adaptive learning platform. Transform any PDF into a personalized quiz journey with knowledge graphs and Bloom&apos;s Taxonomy.
             </p>
@@ -41,7 +39,7 @@ export function Footer() {
                 { label: t('links.blog'), href: '/blog' },
               ].map((link) => (
                 <li key={link.href}>
-                  <Link href={link.href} className="text-white/50 text-sm hover:text-white transition-colors">
+                  <Link href={link.href} className="text-white/50 text-sm hover:text-brand-action transition-colors">
                     {link.label}
                   </Link>
                 </li>
@@ -62,7 +60,7 @@ export function Footer() {
                 { label: t('contact'), href: '/contact' },
               ].map((link) => (
                 <li key={link.href}>
-                  <Link href={link.href} className="text-white/50 text-sm hover:text-white transition-colors">
+                  <Link href={link.href} className="text-white/50 text-sm hover:text-brand-action transition-colors">
                     {link.label}
                   </Link>
                 </li>

@@ -234,9 +234,9 @@ export const ExerciseQuestionView = ({
       <div className="flex flex-col lg:col-span-8">
         <Card className="flex-1 rounded-xl border border-neutral-200 bg-white shadow-sm">
           <div className="flex items-center justify-between border-b border-neutral-100 px-5 sm:px-6 py-4 bg-neutral-50/50 rounded-t-[20px]">
-            <div className={`flex items-center gap-2 rounded-md ${bloomColor} px-2.5 py-1 box-border`}>
-              <div className="h-2 w-2 rounded-full bg-white opacity-80" />
-              <span className="text-[10px] font-bold uppercase tracking-widest text-white">
+            <div className={`flex items-center gap-2 rounded-md ${bloomColor} px-3 py-1.5 box-border shadow-sm`}>
+              <div className="h-2 w-2 rounded-full bg-white/90" />
+              <span className="text-xs font-bold uppercase tracking-wider">
                 {t('exercise.bloomBadge', { level: concept.bloom_level, label: localizedBloomLabel })}
               </span>
             </div>

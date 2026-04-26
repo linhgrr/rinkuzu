@@ -131,8 +131,8 @@ export const DashboardHeader = ({
 }: DashboardHeaderProps) => (
   <div className="mb-12 flex flex-col items-start justify-between gap-6 md:flex-row md:items-center">
     <div>
-      <span className={`text-3xl font-black text-neutral-900`}>Adaptive Scholar</span>
-      <p className="mt-1 font-medium text-neutral-600">{t('brandSubtitle')}</p>
+      <span className={`text-4xl font-bold tracking-tight text-neutral-900`}>Adaptive Scholar</span>
+      <p className="mt-1 text-lg text-neutral-600">{t('brandSubtitle')}</p>
       <div className="mt-4 flex flex-wrap items-center gap-2">
         {apiOnline === false && <DashboardStatusPill tone="warning" text={t('connectionLimited')} />}
         {error && <DashboardStatusPill tone="error" text={error} />}
@@ -238,7 +238,7 @@ export const HeroSection = ({ subject, loading, loadingJobId, onGoUpload, onOpen
 export const DailyProgressCard = ({ dailyGoalProgress, t }: DailyProgressCardProps) => (
   <section className="flex h-full flex-col justify-between rounded-2xl border border-neutral-200 bg-white p-8 shadow-sm lg:col-span-4">
     <div>
-      <h2 className={`mb-8 text-3xl font-bold text-neutral-900`}>{t('dailyProgressTitle')}</h2>
+      <h2 className={`mb-8 text-2xl font-bold tracking-tight text-neutral-900`}>{t('dailyProgressTitle')}</h2>
       <div className="space-y-8">
         <div className="flex items-center gap-5">
           <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-green-100 shadow-inner">
@@ -371,8 +371,8 @@ export const LibrarySection = ({
     <section className="mb-16">
       <div className="mb-8 flex items-end justify-between gap-4">
         <div>
-          <h2 className={`text-3xl font-black text-neutral-900`}>{t('knowledgeLibrary')}</h2>
-          <p className="text-neutral-600">{t('knowledgeLibrarySubtitle')}</p>
+          <h2 className={`text-3xl font-bold tracking-tight text-neutral-900`}>{t('knowledgeLibrary')}</h2>
+          <p className="text-base text-neutral-600">{t('knowledgeLibrarySubtitle')}</p>
         </div>
         <div className="flex items-center gap-2">
           <div className="relative hidden sm:block">

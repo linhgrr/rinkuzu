@@ -107,11 +107,11 @@ export default function MobileCreatePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 px-4 py-6 pb-24">
+    <div className="min-h-screen bg-neutral-50 px-4 py-6 pb-24">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">{t('createQuiz')}</h1>
-        <p className="text-gray-500 mt-1">{t('uploadDescription')}</p>
+        <h1 className="text-2xl font-bold text-neutral-900">{t('createQuiz')}</h1>
+        <p className="text-neutral-500 mt-1">{t('uploadDescription')}</p>
       </div>
 
       {/* Upload Zone */}
@@ -121,7 +121,7 @@ export default function MobileCreatePage() {
           relative rounded-2xl border-2 border-dashed p-8
           flex flex-col items-center justify-center
           min-h-[200px] transition-all duration-200 cursor-pointer
-          ${isDragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-200 bg-white'}
+          ${isDragActive ? 'border-green-500 bg-green-50' : 'border-neutral-200 bg-white'}
           ${file ? 'border-green-500 bg-green-50' : ''}
           ${isUploading ? 'opacity-50 pointer-events-none' : ''}
         `}
@@ -131,8 +131,8 @@ export default function MobileCreatePage() {
         {file ? (
           <div className="text-center">
             <HiOutlineDocumentText className="w-14 h-14 text-green-500 mx-auto" />
-            <p className="mt-3 font-medium text-gray-900">{file.name}</p>
-            <p className="text-sm text-gray-500">
+            <p className="mt-3 font-medium text-neutral-900">{file.name}</p>
+            <p className="text-sm text-neutral-500">
               {(file.size / 1024 / 1024).toFixed(2)} MB
             </p>
             <button
@@ -150,11 +150,11 @@ export default function MobileCreatePage() {
           </div>
         ) : (
           <div className="text-center">
-            <HiOutlineUpload className="w-14 h-14 text-gray-400 mx-auto" />
-            <p className="mt-3 font-medium text-gray-700">
+            <HiOutlineUpload className="w-14 h-14 text-neutral-400 mx-auto" />
+            <p className="mt-3 font-medium text-neutral-700">
               {isDragActive ? t('dropPDFHere') : t('clickToUpload')}
             </p>
-            <p className="text-sm text-gray-500">{t('supportedFormats')}</p>
+            <p className="text-sm text-neutral-500">{t('supportedFormats')}</p>
           </div>
         )}
       </div>
@@ -162,7 +162,7 @@ export default function MobileCreatePage() {
       {/* Title Input */}
       {file && (
         <div className="mt-5">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-neutral-700 mb-2">
             {t('quizTitle')}
           </label>
           <input
@@ -170,9 +170,9 @@ export default function MobileCreatePage() {
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder={t('enterTitle')}
-            className="w-full px-4 py-3.5 rounded-xl border border-gray-200
-                         bg-white text-gray-900 placeholder-gray-400
-                         focus:ring-2 focus:ring-blue-500 focus:border-transparent
+            className="w-full px-4 py-3.5 rounded-xl border border-neutral-200
+                         bg-white text-neutral-900 placeholder-neutral-400
+                         focus:ring-2 focus:ring-brand-trust focus:border-transparent
                          transition-all duration-200"
             disabled={isUploading}
           />
@@ -182,7 +182,7 @@ export default function MobileCreatePage() {
       {/* Description Input */}
       {file && (
         <div className="mt-5">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-neutral-700 mb-2">
             {t('descriptionOptional')}
           </label>
           <Textarea
@@ -190,9 +190,9 @@ export default function MobileCreatePage() {
             onChange={(e) => setDescription(e.target.value)}
             placeholder={t('provideContext')}
             rows={3}
-            className="w-full px-4 py-3.5 rounded-xl border border-gray-200
-                         bg-white text-gray-900 placeholder-gray-400
-                         focus:ring-2 focus:ring-blue-500 focus:border-transparent
+            className="w-full px-4 py-3.5 rounded-xl border border-neutral-200
+                         bg-white text-neutral-900 placeholder-neutral-400
+                         focus:ring-2 focus:ring-brand-trust focus:border-transparent
                          transition-all duration-200"
             disabled={isUploading}
           />
@@ -202,7 +202,7 @@ export default function MobileCreatePage() {
       {/* Category Selector */}
       {file && (
         <div className="mt-5">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-neutral-700 mb-2">
             {t('category')}
           </label>
           <CategorySelector
@@ -218,7 +218,7 @@ export default function MobileCreatePage() {
       {/* AI Prompt Input */}
       {file && (
         <div className="mt-5">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-neutral-700 mb-2">
             {t('aiPromptLabel')}
           </label>
           <textarea
@@ -226,13 +226,13 @@ export default function MobileCreatePage() {
             onChange={(e) => setAiPrompt(e.target.value)}
             placeholder={t('aiPromptPlaceholder')}
             rows={3}
-            className="w-full px-4 py-3.5 rounded-xl border border-gray-200
-                         bg-white text-gray-900 placeholder-gray-400
-                         focus:ring-2 focus:ring-blue-500 focus:border-transparent
+            className="w-full px-4 py-3.5 rounded-xl border border-neutral-200
+                         bg-white text-neutral-900 placeholder-neutral-400
+                         focus:ring-2 focus:ring-brand-trust focus:border-transparent
                          transition-all duration-200"
             disabled={isUploading}
           />
-          <p className="text-xs text-gray-500 mt-2">
+          <p className="text-xs text-neutral-500 mt-2">
             {t('aiPromptHelper')}
           </p>
         </div>
@@ -243,9 +243,9 @@ export default function MobileCreatePage() {
         <button
           onClick={handleSubmit}
           disabled={isUploading}
-          className="w-full mt-6 py-4 rounded-full bg-blue-500 text-white
+          className="w-full mt-6 py-4 rounded-full bg-green-500 text-white
                        font-semibold flex items-center justify-center gap-2
-                       hover:bg-blue-600 active:scale-[0.98] disabled:opacity-50
+                       hover:bg-brand-trust active:scale-[0.98] disabled:opacity-50
                        transition-all duration-200"
         >
           {isUploading ? (
@@ -263,11 +263,11 @@ export default function MobileCreatePage() {
       )}
 
       {/* Desktop Hint */}
-      <div className="mt-8 p-4 rounded-xl bg-gray-100 flex items-start gap-3">
-        <HiOutlineDesktopComputer className="w-6 h-6 text-gray-500 flex-shrink-0 mt-0.5" />
+      <div className="mt-8 p-4 rounded-xl bg-neutral-100 flex items-start gap-3">
+        <HiOutlineDesktopComputer className="w-6 h-6 text-neutral-500 flex-shrink-0 mt-0.5" />
         <div>
-          <p className="text-sm font-medium text-gray-700">{t('editTitleDescription')}</p>
-          <p className="text-sm text-gray-500 mt-0.5">
+          <p className="text-sm font-medium text-neutral-700">{t('editTitleDescription')}</p>
+          <p className="text-sm text-neutral-500 mt-0.5">
             {t('reviewQuestions')}
           </p>
         </div>

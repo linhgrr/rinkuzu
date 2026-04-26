@@ -19,14 +19,14 @@ function SessionRow({ item, onOpen }: SessionRowProps) {
   const accuracy = Math.round(item.accuracy * 100)
   const grade = accuracy >= 80 ? 'A+' : accuracy >= 60 ? 'B' : 'C'
   const gradeColor = accuracy >= 80
-    ? 'border-gray-200 bg-gray-100 text-gray-900'
+    ? 'border-neutral-200 bg-neutral-100 text-neutral-900'
     : accuracy >= 60
-      ? 'border-gray-100 bg-gray-50 text-gray-700'
-      : 'border-gray-100 bg-gray-50 text-gray-500'
+      ? 'border-neutral-100 bg-neutral-50 text-neutral-700'
+      : 'border-neutral-100 bg-neutral-50 text-neutral-500'
 
   return (
     <div
-      className="group flex cursor-pointer flex-col gap-4 rounded-lg border border-gray-200 bg-white p-5 transition-colors duration-200 hover:border-gray-800 sm:flex-row sm:items-center sm:justify-between"
+      className="group flex cursor-pointer flex-col gap-4 rounded-lg border border-neutral-200 bg-white p-5 transition-colors duration-200 hover:border-neutral-800 sm:flex-row sm:items-center sm:justify-between"
       onClick={() => onOpen(item.job_id)}
     >
       <div className="flex items-center gap-4">
@@ -35,20 +35,20 @@ function SessionRow({ item, onOpen }: SessionRowProps) {
         </div>
         <div>
           <div className="mb-1 flex items-center gap-3">
-            <span className="max-w-[200px] truncate text-base font-medium text-gray-900" title={item.subject_id || item.filename || item.job_id}>
+            <span className="max-w-[200px] truncate text-base font-medium text-neutral-900" title={item.subject_id || item.filename || item.job_id}>
               {item.subject_id || item.filename || item.job_id.substring(0, 8)}
             </span>
             {item.status === 'completed' ? (
-              <span className="inline-flex items-center rounded-md bg-gray-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-gray-700">
+              <span className="inline-flex items-center rounded-md bg-neutral-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-neutral-700">
                 {t('history.completed')}
               </span>
             ) : (
-              <span className="inline-flex items-center rounded-md border border-gray-200 bg-gray-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-gray-600">
+              <span className="inline-flex items-center rounded-md border border-neutral-200 bg-neutral-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-neutral-600">
                 {t('history.step', { step: item.step, total: item.max_steps })}
               </span>
             )}
           </div>
-          <div className="font-mono text-xs text-gray-500">
+          <div className="font-mono text-xs text-neutral-500">
             {formatSessionHistoryDate(item.updated_at, locale)}
           </div>
         </div>
@@ -56,22 +56,22 @@ function SessionRow({ item, onOpen }: SessionRowProps) {
 
       <div className="flex items-center gap-8 sm:gap-10">
         <div className="hidden flex-col items-end md:flex">
-          <span className="mb-1.5 text-[10px] font-bold uppercase tracking-widest text-gray-500">{t('history.correct')}</span>
-          <span className="text-sm font-mono text-gray-900">{item.total_correct}/{item.total_answered}</span>
+          <span className="mb-1.5 text-[10px] font-bold uppercase tracking-widest text-neutral-500">{t('history.correct')}</span>
+          <span className="text-sm font-mono text-neutral-900">{item.total_correct}/{item.total_answered}</span>
         </div>
         <div className="flex flex-col items-end">
-          <span className="mb-1.5 text-[10px] font-bold uppercase tracking-widest text-gray-500">{t('stats.averageMastery')}</span>
+          <span className="mb-1.5 text-[10px] font-bold uppercase tracking-widest text-neutral-500">{t('stats.averageMastery')}</span>
           <div className="flex items-center gap-3">
-            <div className="h-1.5 w-20 overflow-hidden rounded-full border border-gray-200 bg-gray-100">
+            <div className="h-1.5 w-20 overflow-hidden rounded-full border border-neutral-200 bg-neutral-100">
               <div
-                className={`h-full rounded-full ${accuracy >= 70 ? 'bg-gray-900' : 'bg-gray-400'}`}
+                className={`h-full rounded-full ${accuracy >= 70 ? 'bg-neutral-900' : 'bg-neutral-400'}`}
                 style={{ width: `${Math.round(item.avg_mastery * 100)}%` }}
               />
             </div>
-            <span className="w-9 text-right font-mono text-sm text-gray-900">{Math.round(item.avg_mastery * 100)}%</span>
+            <span className="w-9 text-right font-mono text-sm text-neutral-900">{Math.round(item.avg_mastery * 100)}%</span>
           </div>
         </div>
-        <div className="hidden h-8 w-8 items-center justify-center text-gray-400 transition-colors group-hover:text-gray-900 sm:flex">
+        <div className="hidden h-8 w-8 items-center justify-center text-neutral-400 transition-colors group-hover:text-neutral-900 sm:flex">
           <HiArrowRight className="h-4 w-4" />
         </div>
       </div>
@@ -80,8 +80,8 @@ function SessionRow({ item, onOpen }: SessionRowProps) {
 }
 
 export const SessionHistoryLoadingState = ({ message }: { message: string }) => (
-  <div className="flex items-center justify-center gap-3 py-12 text-gray-500">
-    <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-300 border-t-gray-900" />
+  <div className="flex items-center justify-center gap-3 py-12 text-neutral-500">
+    <div className="h-5 w-5 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
     <span className="text-sm">{message}</span>
   </div>
 )
@@ -93,10 +93,10 @@ export const SessionHistoryErrorState = ({ message }: { message: string }) => (
 )
 
 export const SessionHistoryEmptyState = ({ hint, message }: { hint: string; message: string }) => (
-  <div className="flex flex-col items-center gap-2 py-12 text-center text-gray-400">
+  <div className="flex flex-col items-center gap-2 py-12 text-center text-neutral-400">
     <HiOutlineAcademicCap className="h-10 w-10 opacity-40" />
     <p className="text-sm">{message}</p>
-    <p className="text-xs text-gray-300">{hint}</p>
+    <p className="text-xs text-neutral-300">{hint}</p>
   </div>
 )
 

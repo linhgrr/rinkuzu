@@ -87,7 +87,7 @@ export default function ProfileQuizzes() {
             case 'pending': return 'bg-yellow-100 text-yellow-800';
             case 'published': return 'bg-green-100 text-green-800';
             case 'rejected': return 'bg-red-100 text-red-800';
-            default: return 'bg-gray-100 text-gray-800';
+            default: return 'bg-neutral-100 text-neutral-800';
         }
     };
 
@@ -96,7 +96,7 @@ export default function ProfileQuizzes() {
             case 'pending': return <HiOutlineClock className="w-5 h-5 text-yellow-500" />;
             case 'published': return <HiOutlineCheckCircle className="w-5 h-5 text-green-500" />;
             case 'rejected': return <HiOutlineXCircle className="w-5 h-5 text-red-500" />;
-            default: return <HiOutlineDocumentText className="w-5 h-5 text-gray-500" />;
+            default: return <HiOutlineDocumentText className="w-5 h-5 text-neutral-500" />;
         }
     };
 
@@ -139,7 +139,10 @@ export default function ProfileQuizzes() {
     if (loading && quizzes.length === 0) {
         return (
             <div className="flex justify-center py-12">
-                <div className="text-gray-500">{tCommon('loading')}</div>
+                <div className="flex flex-col items-center gap-3">
+                    <div className="h-8 w-8 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
+                    <div className="text-sm text-neutral-500">{tCommon('loading')}</div>
+                </div>
             </div>
         )
     }
@@ -148,8 +151,8 @@ export default function ProfileQuizzes() {
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
-                    <h2 className="text-2xl font-bold text-gray-900">{t('myQuizzes')}</h2>
-                    <p className="mt-1 text-gray-600">
+                    <h2 className="text-2xl font-bold text-neutral-900">{t('myQuizzes')}</h2>
+                    <p className="mt-1 text-neutral-600">
                         {t('manageQuizzes')}
                     </p>
                 </div>
@@ -161,7 +164,7 @@ export default function ProfileQuizzes() {
                             setFilter(e.target.value as any);
                             setPagination(prev => ({ ...prev, page: 1 }));
                         }}
-                        className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 flex-1 sm:flex-none"
+                        className="rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-brand-trust focus:outline-none focus:ring-2 focus:ring-brand-trust flex-1 sm:flex-none"
                     >
                         <option value="all">{t('allStatus')}</option>
                         <option value="pending">{t('pending')}</option>
@@ -178,8 +181,8 @@ export default function ProfileQuizzes() {
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <Card>
                     <CardContent className="p-4 text-center">
-                        <div className="text-2xl font-bold text-gray-900">{pagination.total}</div>
-                        <div className="text-xs text-gray-600">{tCommon('total')}</div>
+                        <div className="text-2xl font-bold text-neutral-900">{pagination.total}</div>
+                        <div className="text-xs text-neutral-600">{tCommon('total')}</div>
                     </CardContent>
                 </Card>
                 <Card>
@@ -187,7 +190,7 @@ export default function ProfileQuizzes() {
                         <div className="text-2xl font-bold text-yellow-600">
                             {quizzes.filter(q => q.status === 'pending').length}
                         </div>
-                        <div className="text-xs text-gray-600">{t('pending')}</div>
+                        <div className="text-xs text-neutral-600">{t('pending')}</div>
                     </CardContent>
                 </Card>
                 <Card>
@@ -195,7 +198,7 @@ export default function ProfileQuizzes() {
                         <div className="text-2xl font-bold text-green-600">
                             {quizzes.filter(q => q.status === 'published').length}
                         </div>
-                        <div className="text-xs text-gray-600">{t('published')}</div>
+                        <div className="text-xs text-neutral-600">{t('published')}</div>
                     </CardContent>
                 </Card>
                 <Card>
@@ -203,7 +206,7 @@ export default function ProfileQuizzes() {
                         <div className="text-2xl font-bold text-red-600">
                             {quizzes.filter(q => q.status === 'rejected').length}
                         </div>
-                        <div className="text-xs text-gray-600">{t('rejected')}</div>
+                        <div className="text-xs text-neutral-600">{t('rejected')}</div>
                     </CardContent>
                 </Card>
             </div>
@@ -220,12 +223,12 @@ export default function ProfileQuizzes() {
                     <Card>
                         <CardContent className="text-center py-12">
                             <div className="flex justify-center mb-4">
-                                <HiOutlineDocumentText className="w-12 h-12 text-gray-400" />
+                                <HiOutlineDocumentText className="w-12 h-12 text-neutral-400" />
                             </div>
-                            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                            <h3 className="text-lg font-semibold text-neutral-900 mb-2">
                                 {t('noQuizzes')}
                             </h3>
-                            <p className="text-gray-600 mb-6">
+                            <p className="text-neutral-600 mb-6">
                                 {t('createFirst')}
                             </p>
                             <Link href="/create">
@@ -243,7 +246,7 @@ export default function ProfileQuizzes() {
                                             <CardTitle className="text-lg truncate">{quiz.title}</CardTitle>
                                             <span className="text-xl shrink-0">{getStatusIcon(quiz.status)}</span>
                                             {quiz.isPrivate && (
-                                                <span className="flex items-center text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full shrink-0">
+                                                <span className="flex items-center text-xs bg-neutral-100 text-neutral-600 px-2 py-0.5 rounded-full shrink-0">
                                                     <HiOutlineLockClosed className="w-3 h-3 mr-1" /> {t('private')}
                                                 </span>
                                             )}
@@ -254,7 +257,7 @@ export default function ProfileQuizzes() {
                                         <CardDescription className="mt-1 text-sm line-clamp-2">
                                             {quiz.description || t('noDescription')}
                                         </CardDescription>
-                                        <div className="mt-2 flex items-center space-x-2 text-xs text-gray-500 flex-wrap">
+                                        <div className="mt-2 flex items-center space-x-2 text-xs text-neutral-500 flex-wrap">
                                             <span>{quiz.questions.length} Qs</span>
                                             <span>•</span>
                                             <span style={{ color: (quiz.category as any)?.color }}>
@@ -267,7 +270,7 @@ export default function ProfileQuizzes() {
 
                                     <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
                                         <Link href={`/quiz/${quiz.slug}`}>
-                                            <Button size="sm" variant="outline" className="text-blue-600 hover:text-blue-700 border-blue-200 hover:border-blue-300">
+                                            <Button size="sm" variant="outline" className="text-brand-action hover:text-brand-action-hover border-orange-200 hover:border-orange-300">
                                                 <HiOutlinePlay className="w-4 h-4" />
                                             </Button>
                                         </Link>

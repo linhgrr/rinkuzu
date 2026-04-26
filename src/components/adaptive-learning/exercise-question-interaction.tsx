@@ -25,20 +25,20 @@ function OptionCard({
       type="button"
       onClick={onClick}
       className={`group relative flex w-full cursor-pointer items-start gap-4 rounded-[12px] border p-4 text-left transition-all duration-200 sm:p-5 ${active
-        ? 'border-teal-600 bg-teal-50 shadow-sm'
-        : 'border-slate-200 bg-white hover:border-slate-400 active:scale-[0.99]'
+        ? 'border-brand-action bg-orange-50 shadow-sm'
+        : 'border-neutral-200 bg-white hover:border-neutral-400 active:scale-[0.99]'
       }`}
     >
-      {active && <div className="absolute inset-0 rounded-xl bg-teal-500/10" />}
+      {active && <div className="absolute inset-0 rounded-xl bg-orange-500/10" />}
       <div
         className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 text-xs font-semibold transition-colors sm:h-8 sm:w-8 sm:text-sm ${active
-          ? 'border-teal-600 bg-teal-600 text-white'
-          : 'border-slate-300 text-slate-500 group-hover:border-slate-400'
+          ? 'border-brand-action bg-brand-action text-white'
+          : 'border-neutral-300 text-neutral-500 group-hover:border-neutral-400'
         }`}
       >
         {badge}
       </div>
-      <span className={`text-base leading-relaxed transition-colors duration-200 ${active ? 'font-medium text-slate-900' : 'text-slate-700'}`}>
+      <span className={`text-base leading-relaxed transition-colors duration-200 ${active ? 'font-medium text-neutral-900' : 'text-neutral-700'}`}>
         <DynamicMarkdownRenderer content={value} />
       </span>
     </button>
@@ -114,7 +114,7 @@ function MatchingInteraction({
 
   return (
     <div ref={containerRef} className="space-y-4">
-      <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+      <div className="rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-600">
         {t('exercise.interactions.matchingInstruction')}
       </div>
       <div className="grid grid-cols-2 gap-4 sm:gap-6">
@@ -125,12 +125,12 @@ function MatchingInteraction({
               key={`left-${index}-${item}`}
               data-matching-card="true"
               style={sharedCardStyle}
-              className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 shadow-sm"
+              className="flex items-center gap-3 rounded-xl border border-neutral-200 bg-white p-3 shadow-sm"
             >
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-50 text-xs font-bold text-slate-500">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-neutral-50 text-xs font-bold text-neutral-500">
                 {index + 1}
               </div>
-              <div className="flex-1 text-sm text-slate-700">
+              <div className="flex-1 text-sm text-neutral-700">
                 <DynamicMarkdownRenderer content={item} />
               </div>
             </div>
@@ -154,13 +154,13 @@ function MatchingInteraction({
                 value={entry}
                 data-matching-card="true"
                 style={sharedCardStyle}
-                className="group flex cursor-grab items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 shadow-sm transition-colors hover:border-teal-500/50 active:cursor-grabbing"
+                className="group flex cursor-grab items-center gap-3 rounded-xl border border-neutral-200 bg-white p-3 shadow-sm transition-colors hover:border-brand-trust/50 active:cursor-grabbing"
               >
-                <GripVertical className="h-4 w-4 shrink-0 text-slate-300" />
-                <div className="flex-1 text-right text-sm text-slate-700">
+                <GripVertical className="h-4 w-4 shrink-0 text-neutral-300" />
+                <div className="flex-1 text-right text-sm text-neutral-700">
                   <DynamicMarkdownRenderer content={entry.value} />
                 </div>
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-50 text-xs font-bold text-slate-500">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-neutral-50 text-xs font-bold text-neutral-500">
                   {String.fromCharCode(65 + index)}
                 </div>
               </Reorder.Item>
@@ -210,7 +210,7 @@ export function ExerciseInteraction({
   if (exercise.exercise_type === 'true_false') {
     return (
       <div className="grid gap-3 sm:gap-4">
-        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 text-base leading-relaxed text-slate-800">
+        <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-5 text-base leading-relaxed text-neutral-800">
           <DynamicMarkdownRenderer content={promptSections.primary} />
         </div>
         {[
@@ -232,7 +232,7 @@ export function ExerciseInteraction({
   if (exercise.exercise_type === 'fill_blank') {
     return (
       <div className="space-y-4">
-        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 text-base leading-relaxed text-slate-800">
+        <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-5 text-base leading-relaxed text-neutral-800">
           <DynamicMarkdownRenderer content={promptSections.primary} />
         </div>
         <textarea
@@ -240,7 +240,7 @@ export function ExerciseInteraction({
           onChange={event => onSetBlankAnswer(event.target.value)}
           rows={3}
           placeholder={t('exercise.interactions.fillBlankPlaceholder')}
-          className="min-h-[120px] w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none transition-colors focus:border-teal-600"
+          className="min-h-[120px] w-full rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-base text-neutral-900 outline-none transition-colors focus:border-brand-trust focus:ring-2 focus:ring-[var(--focus-ring-soft)]"
         />
         {exercise.hint ? (
           <div className="overflow-hidden rounded-xl border border-amber-200 bg-amber-50">
@@ -276,7 +276,7 @@ export function ExerciseInteraction({
     const selectedChoices = new Set(answerDraft.choices || [])
     return (
       <div className="space-y-3 sm:space-y-4">
-        <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+        <div className="rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-600">
           {t('exercise.interactions.multiCorrectInstruction')}
         </div>
         <div className="grid gap-3 sm:gap-4">
@@ -298,7 +298,7 @@ export function ExerciseInteraction({
     const ordering = answerDraft.ordering || exercise.items
     return (
       <div className="space-y-4">
-        <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+        <div className="rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-600">
           {t('exercise.interactions.orderingInstruction')}
         </div>
         <Reorder.Group
@@ -317,7 +317,7 @@ export function ExerciseInteraction({
               exit={{ opacity: 0, y: -10 }}
               whileDrag={{ 
                 scale: 1.02, 
-                boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+                boxShadow: 'var(--shadow-md)',
                 zIndex: 50 
               }}
               transition={{
@@ -326,12 +326,12 @@ export function ExerciseInteraction({
                 damping: 30,
                 mass: 1
               }}
-              className="group relative flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md cursor-grab active:cursor-grabbing"
+              className="group relative flex items-center gap-3 rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md cursor-grab active:cursor-grabbing"
             >
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-50 font-medium text-slate-500 group-hover:bg-indigo-50 group-hover:text-indigo-600">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-neutral-50 font-medium text-neutral-500 group-hover:bg-green-50 group-hover:text-brand-trust">
                 {index + 1}
               </div>
-              <div className="flex-1 text-slate-700">
+              <div className="flex-1 text-neutral-700">
                 <DynamicMarkdownRenderer content={item} />
               </div>
               <div className="flex items-center gap-2">
@@ -339,7 +339,7 @@ export function ExerciseInteraction({
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8 text-slate-400 hover:text-indigo-600"
+                    className="h-8 w-8 text-neutral-400 hover:text-brand-trust"
                     disabled={index === 0}
                     onClick={(e) => {
                       e.stopPropagation()
@@ -351,7 +351,7 @@ export function ExerciseInteraction({
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8 text-slate-400 hover:text-indigo-600"
+                    className="h-8 w-8 text-neutral-400 hover:text-brand-trust"
                     disabled={index === ordering.length - 1}
                     onClick={(e) => {
                       e.stopPropagation()
@@ -361,7 +361,7 @@ export function ExerciseInteraction({
                     <ChevronDown className="h-4 w-4" />
                   </Button>
                 </div>
-                <div className="cursor-grab p-1 text-slate-300 group-hover:text-slate-400">
+                <div className="cursor-grab p-1 text-neutral-300 group-hover:text-neutral-400">
                   <GripVertical className="h-5 w-5" />
                 </div>
               </div>
@@ -392,7 +392,7 @@ export function ExerciseInteraction({
           onChange={event => onSetTextAnswer(event.target.value)}
           rows={8}
           placeholder={t('exercise.interactions.shortAnswerPlaceholder')}
-          className="min-h-[220px] w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none transition-colors focus:border-teal-600"
+          className="min-h-[220px] w-full rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-base text-neutral-900 outline-none transition-colors focus:border-brand-trust focus:ring-2 focus:ring-[var(--focus-ring-soft)]"
         />
       </div>
     )

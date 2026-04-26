@@ -32,7 +32,7 @@ const CategorySchema = new mongoose.Schema({
   },
   color: {
     type: String,
-    default: '#3B82F6', // Default blue color
+    default: '#009d8c', // Default blue color
     match: /^#[0-9A-F]{6}$/i // Hex color validation
   },
   isActive: {

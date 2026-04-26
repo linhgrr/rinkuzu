@@ -421,10 +421,10 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">{t('loadingQuiz')}...</p>
+          <div className="h-12 w-12 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust mx-auto" />
+          <p className="mt-4 text-neutral-600">{t('loadingQuiz')}...</p>
         </div>
       </div>
     );
@@ -432,13 +432,13 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
 
   if (error || !result) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
         <Card className="max-w-md">
           <CardHeader>
             <CardTitle className="text-center text-red-600">{t('error', { ns: 'common' })}</CardTitle>
           </CardHeader>
           <CardContent className="text-center">
-            <p className="text-gray-600 mb-4">{error}</p>
+            <p className="text-neutral-600 mb-4">{error}</p>
             <Link href="/">
               <Button>{t('backHome')}</Button>
             </Link>
@@ -458,14 +458,14 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-neutral-50">
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="text-center">
-            <h1 className="text-2xl font-bold text-gray-900">{t('quizComplete')}</h1>
-            <p className="mt-2 text-gray-600">{result.quiz.title}</p>
-            <p className="text-sm text-gray-500">
+            <h1 className="text-2xl font-bold text-neutral-900">{t('quizComplete')}</h1>
+            <p className="mt-2 text-neutral-600">{result.quiz.title}</p>
+            <p className="text-sm text-neutral-500">
               {t('completedOn')} {new Date(result.takenAt).toLocaleDateString('vi-VN', {
                 year: 'numeric',
                 month: 'long',
@@ -490,31 +490,31 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
                 {result.score}%
               </div>
               
-              <div className="text-xl text-gray-700">
+              <div className="text-xl text-neutral-700">
                 {getScoreMessage(result.score)}
               </div>
 
-              <div className="flex justify-center space-x-8 text-sm text-gray-600">
+              <div className="flex justify-center space-x-8 text-sm text-neutral-600">
                 <div className="text-center">
-                  <div className="font-semibold text-lg text-gray-900">{correctCount}</div>
+                  <div className="font-semibold text-lg text-neutral-900">{correctCount}</div>
                   <div>{tProfile('correct')}</div>
                 </div>
                 <div className="text-center">
-                  <div className="font-semibold text-lg text-gray-900">{incorrectCount}</div>
+                  <div className="font-semibold text-lg text-neutral-900">{incorrectCount}</div>
                   <div>{t('incorrect')}</div>
                 </div>
                 <div className="text-center">
-                  <div className="font-semibold text-lg text-gray-900">{unansweredCount}</div>
+                  <div className="font-semibold text-lg text-neutral-900">{unansweredCount}</div>
                   <div>{t('unanswered')}</div>
                 </div>
                 <div className="text-center">
-                  <div className="font-semibold text-lg text-gray-900">{totalQuestions}</div>
+                  <div className="font-semibold text-lg text-neutral-900">{totalQuestions}</div>
                   <div>{t('total', { ns: 'common' })}</div>
                 </div>
               </div>
 
               {/* Score visualization */}
-              <div className="w-full bg-gray-200 rounded-full h-4 mt-6">
+              <div className="w-full bg-neutral-200 rounded-full h-4 mt-6">
                 <div
                   className={`h-4 rounded-full transition-all duration-1000 ${
                     result.score >= 80 ? 'bg-green-500' :
@@ -542,13 +542,13 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
                 <div className="text-2xl font-bold text-red-600">{incorrectCount}</div>
                 <div className="text-sm text-red-700">{t('incorrect')}</div>
               </div>
-              <div className="text-center p-4 bg-gray-50 rounded-lg">
-                <div className="text-2xl font-bold text-gray-600">{unansweredCount}</div>
-                <div className="text-sm text-gray-700">{t('unanswered')}</div>
+              <div className="text-center p-4 bg-neutral-50 rounded-lg">
+                <div className="text-2xl font-bold text-neutral-600">{unansweredCount}</div>
+                <div className="text-sm text-neutral-700">{t('unanswered')}</div>
               </div>
-              <div className="text-center p-4 bg-blue-50 rounded-lg">
-                <div className="text-2xl font-bold text-blue-600">{result.score}%</div>
-                <div className="text-sm text-blue-700">{tProfile('avgScore')}</div>
+              <div className="text-center p-4 bg-green-50 rounded-lg">
+                <div className="text-2xl font-bold text-brand-trust">{result.score}%</div>
+                <div className="text-sm text-brand-trust">{tProfile('avgScore')}</div>
               </div>
             </div>
             
@@ -557,15 +557,15 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
               const { totalTurns, questionsWithChat } = getChatStats();
               return totalTurns > 0 ? (
                 <div className="border-t pt-4">
-                  <h4 className="text-sm font-medium text-gray-700 mb-3">💬 {tProfile('chatWithRinChan')} Statistics</h4>
+                  <h4 className="text-sm font-medium text-neutral-700 mb-3">💬 {tProfile('chatWithRinChan')} Statistics</h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="text-center p-3 bg-purple-50 rounded-lg">
-                      <div className="text-xl font-bold text-purple-600">{totalTurns}</div>
-                      <div className="text-sm text-purple-700">Total Chat Turns</div>
+                    <div className="text-center p-3 bg-green-50 rounded-lg">
+                      <div className="text-xl font-bold text-brand-trust">{totalTurns}</div>
+                      <div className="text-sm text-green-700">Total Chat Turns</div>
                     </div>
-                    <div className="text-center p-3 bg-indigo-50 rounded-lg">
-                      <div className="text-xl font-bold text-indigo-600">{questionsWithChat}</div>
-                      <div className="text-sm text-indigo-700">Questions Discussed</div>
+                    <div className="text-center p-3 bg-green-50 rounded-lg">
+                      <div className="text-xl font-bold text-brand-trust">{questionsWithChat}</div>
+                      <div className="text-sm text-green-700">Questions Discussed</div>
                     </div>
                   </div>
                 </div>
@@ -587,7 +587,7 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
               <span className="font-medium">{bookmarkMessage}</span>
               <button 
                 onClick={() => setBookmarkMessage('')}
-                className="text-gray-500 hover:text-gray-700"
+                className="text-neutral-500 hover:text-neutral-700"
               >
                 ✕
               </button>
@@ -616,7 +616,7 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
                       ? 'border-green-200 bg-green-50' 
                       : isAnswered
                         ? 'border-red-200 bg-red-50'
-                        : 'border-gray-200 bg-gray-50'
+                        : 'border-neutral-200 bg-neutral-50'
                   }`}
                 >
                   <div className="mb-3">
@@ -628,7 +628,7 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
                         className={`${
                           bookmarkedQuestions.has(index)
                             ? 'text-yellow-600 border-yellow-200 bg-yellow-50 hover:bg-yellow-100'
-                            : 'text-gray-600 border-gray-200 hover:bg-gray-50'
+                            : 'text-neutral-600 border-neutral-200 hover:bg-neutral-50'
                         }`}
                         title={bookmarkedQuestions.has(index) ? 'Remove bookmark' : 'Bookmark this question'}
                       >
@@ -643,11 +643,11 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
                       <Button
                         variant="outline"
                         onClick={() => openAIModal(questionResult, index)}
-                        className="text-purple-600 border-purple-200 hover:bg-purple-50 hover:border-purple-300"
+                        className="text-brand-trust border-green-200 hover:bg-green-50 hover:border-green-300"
                       >
                         {t('askRinChan')}
                         {chatHistories[index] && chatHistories[index].length > 0 && (
-                          <span className="ml-1 px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full text-xs">
+                          <span className="ml-1 px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs">
                             {Math.floor(chatHistories[index].length / 2)}
                           </span>
                         )}
@@ -656,14 +656,14 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
 
 
                     <div className="flex items-start justify-between mb-2">
-                      <h3 className="font-semibold text-gray-900 flex-1">
+                      <h3 className="font-semibold text-neutral-900 flex-1">
                         {index + 1}. {questionResult.question}
                       </h3>
                       <div className="flex items-center space-x-2">
                         <span className={`px-2 py-1 rounded text-xs font-medium ${
                           questionResult.type === 'single'
-                            ? 'bg-blue-100 text-blue-800'
-                            : 'bg-purple-100 text-purple-800'
+                            ? 'bg-green-100 text-green-700'
+                            : 'bg-green-100 text-green-800'
                         }`}>
                           {questionResult.type === 'single' ? tProfile('singleChoice') : tProfile('multipleChoice')}
                         </span>
@@ -672,7 +672,7 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
                             ? 'bg-green-100 text-green-800'
                             : isAnswered
                               ? 'bg-red-100 text-red-800'
-                              : 'bg-gray-100 text-gray-600'
+                              : 'bg-neutral-100 text-neutral-600'
                         }`}>
                           {questionResult.isCorrect
                             ? `✓ ${tProfile('correct')}`
@@ -693,15 +693,15 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
 
                   <div className="space-y-2">
                     <div className="text-sm">
-                      <span className="font-medium text-gray-700">{t('yourAnswer')}: </span>
-                      <span className={questionResult.isCorrect ? 'text-green-600' : isAnswered ? 'text-red-600' : 'text-gray-500'}>
+                      <span className="font-medium text-neutral-700">{t('yourAnswer')}: </span>
+                      <span className={questionResult.isCorrect ? 'text-green-600' : isAnswered ? 'text-red-600' : 'text-neutral-500'}>
                         {formatAnswer(questionResult.userAnswer, questionResult.options, questionResult.type, isAnswered)}
                       </span>
                     </div>
 
                     {!questionResult.isCorrect && (
                       <div className="text-sm">
-                        <span className="font-medium text-gray-700">{tProfile('correct')}: </span>
+                        <span className="font-medium text-neutral-700">{tProfile('correct')}: </span>
                         <span className="text-green-600">
                           {formatCorrectAnswer(questionResult)}
                         </span>
@@ -709,7 +709,7 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
                     )}
 
                     <div className="mt-3">
-                      <p className="text-sm text-gray-600 font-medium mb-2">{t('allOptions')}:</p>
+                      <p className="text-sm text-neutral-600 font-medium mb-2">{t('allOptions')}:</p>
                       <div className="grid grid-cols-1 gap-1">
                         {questionResult.options.map((option, optIdx) => {
                           let isUserAnswer = false;
@@ -735,11 +735,11 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
                                   ? 'bg-green-100 border-green-300 text-green-800' 
                                   : isUserAnswer 
                                     ? 'bg-red-100 border-red-300 text-red-800'
-                                    : 'bg-gray-50 border-gray-200 text-gray-700'
+                                    : 'bg-neutral-50 border-neutral-200 text-neutral-700'
                               }`}
                             >
                               <div className="flex-1">
-                                <span className="text-gray-900">{optionText}</span>
+                                <span className="text-neutral-900">{optionText}</span>
 
                                 {questionResult.optionImages?.[optIdx] && (
                                   <div className="mt-2">
@@ -787,9 +787,9 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
         >
           <div className="space-y-4">
             {/* Question Context */}
-            <div className="border rounded-lg p-4 bg-gray-50">
+            <div className="border rounded-lg p-4 bg-neutral-50">
               <h4 className="font-medium mb-2">{aiQuestionData?.question}</h4>
-              <div className="text-sm text-gray-600">
+              <div className="text-sm text-neutral-600">
                 {aiQuestionData?.options?.map((opt: string, idx: number) => (
                   <div key={idx} className="mb-1">
                     {String.fromCharCode(65 + idx)}. {opt}
@@ -802,7 +802,7 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
             {chatHistories[currentQuestionIndex] && chatHistories[currentQuestionIndex].length > 0 && (
               <div className="border rounded-lg p-4 bg-white max-h-[60vh] overflow-y-auto chat-history-container">
                 <div className="flex justify-between items-center mb-3">
-                  <h4 className="font-medium text-gray-900">
+                  <h4 className="font-medium text-neutral-900">
                     Chat History 
                    
                   </h4>
@@ -821,15 +821,15 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
                       key={idx}
                       className={`p-3 rounded-lg ${
                         message.role === 'user'
-                          ? 'bg-blue-50 border-l-4 border-blue-400'
-                          : 'bg-purple-50 border-l-4 border-purple-400'
+                          ? 'bg-green-50 border-l-4 border-green-400'
+                          : 'bg-green-50 border-l-4 border-green-400'
                       }`}
                     >
                       <div className="flex justify-between items-start mb-1">
-                        <span className="text-sm font-medium text-gray-700">
+                        <span className="text-sm font-medium text-neutral-700">
                           {message.role === 'user' ? tProfile('you') : `🎓 ${tProfile('rinChan')}`}
                         </span>
-                        <span className="text-xs text-gray-500">
+                        <span className="text-xs text-neutral-500">
                           {new Date(message.timestamp).toLocaleTimeString()}
                         </span>
                       </div>
@@ -845,16 +845,16 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
                   
                   {/* Loading indicator when AI is thinking */}
                   {loadingAI && (
-                    <div className="p-3 rounded-lg bg-purple-50 border-l-4 border-purple-400">
+                    <div className="p-3 rounded-lg bg-green-50 border-l-4 border-green-400">
                       <div className="flex items-center space-x-2">
-                        <span className="text-sm font-medium text-gray-700">🎓 {tProfile('rinChan')}</span>
+                        <span className="text-sm font-medium text-neutral-700">🎓 {tProfile('rinChan')}</span>
                         <div className="flex space-x-1">
-                          <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce"></div>
-                          <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                          <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                          <div className="w-2 h-2 bg-green-400 rounded-full animate-bounce"></div>
+                          <div className="w-2 h-2 bg-green-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                          <div className="w-2 h-2 bg-green-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                         </div>
                       </div>
-                      <div className="text-sm text-gray-600 mt-1">{tProfile('thinking')}...</div>
+                      <div className="text-sm text-neutral-600 mt-1">{tProfile('thinking')}...</div>
                     </div>
                   )}
                 </div>
@@ -863,19 +863,19 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
 
             {/* New Message Input */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-neutral-700 mb-2">
                 {t('askRinChan')}:
               </label>
               <textarea
                 value={userQuestion}
                 onChange={(e) => setUserQuestion(e.target.value)}
                 onKeyDown={handleKeyPress}
-                className="w-full p-3 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full p-3 border border-neutral-300 rounded-lg resize-none focus:ring-2 focus:ring-brand-trust focus:border-transparent"
                 rows={3}
                 placeholder={t('questionPlaceholder')}
                 disabled={loadingAI}
               />
-              <div className="flex justify-between text-xs text-gray-500 mt-1">
+              <div className="flex justify-between text-xs text-neutral-500 mt-1">
                 <span>💡 {t('leaveEmptyGeneral')}</span>
                 <span>Press Ctrl+Enter {t('send', { ns: 'common' })}</span>
               </div>

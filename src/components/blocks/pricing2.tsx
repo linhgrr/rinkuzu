@@ -98,11 +98,18 @@ const Pricing2 = ({
                         Yearly
                     </div>
                     <div className="flex flex-col items-stretch justify-center gap-6 md:flex-row">
-                        {plans.map((plan) => (
+                        {plans.map((plan) => {
+                            const isFeatured = plan.id === 'premium' || plan.id === 'pro';
+                            return (
                             <Card
                                 key={plan.id}
-                                className="flex w-full md:w-80 flex-col justify-between text-left"
+                                className={`flex w-full md:w-80 flex-col justify-between text-left ${isFeatured ? 'pricing-card-featured' : ''}`}
                             >
+                                {isFeatured && (
+                                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 pricing-popular-badge px-4 py-1 rounded-full text-xs font-semibold">
+                                        Popular
+                                    </div>
+                                )}
                                 <CardHeader>
                                     <CardTitle>
                                         <p>{plan.name}</p>
@@ -127,28 +134,28 @@ const Pricing2 = ({
                                 </CardHeader>
                                 <CardContent>
                                     <Separator className="mb-6" />
-                                    {plan.id === "pro" && (
-                                        <p className="mb-3 font-semibold">
-                                            Everything in Plus, and:
+                                    {isFeatured && plan.id !== 'free' && (
+                                        <p className="mb-3 font-semibold text-green-700">
+                                            Everything in Free, and:
                                         </p>
                                     )}
                                     <ul className="space-y-4">
                                         {plan.features.map((feature, index) => (
                                             <li key={index} className="flex items-center gap-2">
-                                                <CircleCheck className="size-4" />
+                                                <CircleCheck className="size-4 text-green-500 flex-shrink-0" />
                                                 <span>{feature.text}</span>
                                             </li>
                                         ))}
                                     </ul>
                                 </CardContent>
                                 <CardFooter className="mt-auto">
-                                    <Button className="w-full" onClick={() => window.open(plan.button.url, "_blank")}>
+                                    <Button variant={isFeatured ? 'primary' : 'secondary'} className="w-full" onClick={() => { if (plan.button.url.startsWith('http') || plan.button.url.startsWith('mailto')) { window.open(plan.button.url, '_blank'); } else { window.location.href = plan.button.url; } }}>
                                         {plan.button.text}
                                         <ArrowRight className="ml-2 size-4" />
                                     </Button>
                                 </CardFooter>
                             </Card>
-                        ))}
+                        )})}
                     </div>
                 </div>
             </div>

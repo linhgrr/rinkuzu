@@ -42,9 +42,9 @@ const UserMenu = memo(function UserMenu({ session, isOpen, onToggle, onClose, me
     <div className="relative ml-2" ref={menuRef}>
       <button
         onClick={onToggle}
-        className="flex items-center gap-2 p-1.5 rounded-full hover:bg-gray-100 transition-colors"
+        className="flex items-center gap-2 p-1.5 rounded-full hover:bg-neutral-100 transition-colors"
       >
-        <div className="w-7 h-7 bg-[#0071e3] rounded-full flex items-center justify-center text-white text-sm font-medium">
+        <div className="w-7 h-7 bg-brand-trust rounded-full flex items-center justify-center text-white text-sm font-medium">
           {session.user?.email?.charAt(0).toUpperCase()}
         </div>
       </button>
@@ -53,18 +53,18 @@ const UserMenu = memo(function UserMenu({ session, isOpen, onToggle, onClose, me
         <>
           <div className="fixed inset-0 z-10" onClick={onClose} />
 
-          <div className="absolute right-0 mt-2 w-72 bg-white rounded-2xl shadow-apple-xl border border-gray-100 overflow-hidden z-20 animate-scaleIn origin-top-right">
+          <div className="absolute right-0 mt-2 w-72 bg-white rounded-2xl shadow-[var(--shadow-lg)] border border-neutral-100 overflow-hidden z-20 animate-scaleIn origin-top-right">
             {/* User Header */}
-            <div className="px-5 py-4 border-b border-gray-100">
+            <div className="px-5 py-4 border-b border-neutral-100">
               <div className="flex items-center gap-3">
-                <div className="w-11 h-11 bg-[#0071e3] rounded-full flex items-center justify-center text-white font-semibold text-lg">
+                <div className="w-11 h-11 bg-brand-trust rounded-full flex items-center justify-center text-white font-semibold text-lg">
                   {session.user?.email?.charAt(0).toUpperCase()}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-[#1d1d1f] truncate">
+                  <p className="text-sm font-semibold text-neutral-900 truncate">
                     {session.user?.email?.split('@')[0]}
                   </p>
-                  <p className="text-xs text-[#86868b] truncate">
+                  <p className="text-xs text-neutral-500 truncate">
                     {session.user?.email}
                   </p>
                 </div>
@@ -75,37 +75,37 @@ const UserMenu = memo(function UserMenu({ session, isOpen, onToggle, onClose, me
             <div className="py-2">
               <Link
                 href="/profile?tab=history"
-                className="flex items-center gap-3 px-5 py-2.5 text-sm text-[#1d1d1f] hover:bg-gray-50 transition-colors cursor-pointer"
+                className="flex items-center gap-3 px-5 py-2.5 text-sm text-neutral-900 hover:bg-neutral-50 transition-colors cursor-pointer"
                 onClick={onClose}
               >
-                <HiOutlineClock className="w-5 h-5 text-[#86868b]" />
+                <HiOutlineClock className="w-5 h-5 text-neutral-500" />
                 {t('history')}
               </Link>
 
               <Link
                 href="/profile?tab=bookmarks"
-                className="flex items-center gap-3 px-5 py-2.5 text-sm text-[#1d1d1f] hover:bg-gray-50 transition-colors cursor-pointer"
+                className="flex items-center gap-3 px-5 py-2.5 text-sm text-neutral-900 hover:bg-neutral-50 transition-colors cursor-pointer"
                 onClick={onClose}
               >
-                <HiOutlineBookmark className="w-5 h-5 text-[#86868b]" />
+                <HiOutlineBookmark className="w-5 h-5 text-neutral-500" />
                 {t('bookmarks')}
               </Link>
 
               <Link
                 href="/subscription"
-                className="flex items-center gap-3 px-5 py-2.5 text-sm text-[#1d1d1f] hover:bg-gray-50 transition-colors cursor-pointer"
+                className="flex items-center gap-3 px-5 py-2.5 text-sm text-neutral-900 hover:bg-neutral-50 transition-colors cursor-pointer"
                 onClick={onClose}
               >
-                <HiOutlineSparkles className="w-5 h-5 text-[#86868b]" />
+                <HiOutlineSparkles className="w-5 h-5 text-neutral-500" />
                 {t('premium')}
               </Link>
 
               {(session.user as any)?.role === 'admin' && (
                 <>
-                  <div className="h-px bg-gray-100 my-2" />
+                  <div className="h-px bg-neutral-100 my-2" />
                   <Link
                     href="/admin/queue"
-                    className="flex items-center gap-3 px-5 py-2.5 text-sm text-[#af52de] hover:bg-purple-50 transition-colors cursor-pointer"
+                    className="flex items-center gap-3 px-5 py-2.5 text-sm text-brand-trust hover:bg-green-50 transition-colors cursor-pointer"
                     onClick={onClose}
                   >
                     <HiOutlineDocumentText className="w-5 h-5" />
@@ -113,7 +113,7 @@ const UserMenu = memo(function UserMenu({ session, isOpen, onToggle, onClose, me
                   </Link>
                   <Link
                     href="/admin/users"
-                    className="flex items-center gap-3 px-5 py-2.5 text-sm text-[#af52de] hover:bg-purple-50 transition-colors cursor-pointer"
+                    className="flex items-center gap-3 px-5 py-2.5 text-sm text-brand-trust hover:bg-green-50 transition-colors cursor-pointer"
                     onClick={onClose}
                   >
                     <HiOutlineUsers className="w-5 h-5" />
@@ -121,7 +121,7 @@ const UserMenu = memo(function UserMenu({ session, isOpen, onToggle, onClose, me
                   </Link>
                   <Link
                     href="/admin/categories"
-                    className="flex items-center gap-3 px-5 py-2.5 text-sm text-[#af52de] hover:bg-purple-50 transition-colors cursor-pointer"
+                    className="flex items-center gap-3 px-5 py-2.5 text-sm text-brand-trust hover:bg-green-50 transition-colors cursor-pointer"
                     onClick={onClose}
                   >
                     <HiOutlineTag className="w-5 h-5" />
@@ -132,10 +132,10 @@ const UserMenu = memo(function UserMenu({ session, isOpen, onToggle, onClose, me
             </div>
 
             {/* Sign Out */}
-            <div className="border-t border-gray-100 p-2">
+            <div className="border-t border-neutral-100 p-2">
               <button
                 onClick={handleSignOut}
-                className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-[#ff3b30] hover:bg-red-50 rounded-xl transition-colors cursor-pointer"
+                className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 rounded-xl transition-colors cursor-pointer"
               >
                 <HiOutlineLogout className="w-5 h-5" />
                 {t('signOut')}
@@ -168,7 +168,7 @@ const MobileMenu = memo(function MobileMenu({ session, isOpen, onClose, isAuthLo
 
   if (isAuthLoading) {
     return (
-      <div className="md:hidden border-t border-gray-100 py-4 animate-fadeIn">
+      <div className="md:hidden border-t border-neutral-100 py-4 animate-fadeIn">
         <div className="px-4 py-2">
           <div className="h-4 w-28 rounded skeleton-shimmer mb-3" />
           <div className="h-4 w-20 rounded skeleton-shimmer mb-3" />
@@ -179,52 +179,52 @@ const MobileMenu = memo(function MobileMenu({ session, isOpen, onClose, isAuthLo
   }
 
   return (
-    <div className="md:hidden border-t border-gray-100 py-4 animate-fadeIn">
+    <div className="md:hidden border-t border-neutral-100 py-4 animate-fadeIn">
       <div className="space-y-1">
         {session ? (
           <>
             {/* User Info */}
-            <div className="flex items-center gap-3 px-3 py-3 mb-3 bg-gray-50 rounded-2xl">
-              <div className="w-10 h-10 bg-[#0071e3] rounded-full flex items-center justify-center text-white font-medium">
+            <div className="flex items-center gap-3 px-3 py-3 mb-3 bg-neutral-50 rounded-2xl">
+              <div className="w-10 h-10 bg-brand-trust rounded-full flex items-center justify-center text-white font-medium">
                 {session.user?.email?.charAt(0).toUpperCase()}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-[#1d1d1f] truncate">{session.user?.email}</p>
-                <p className="text-xs text-[#86868b]">
+                <p className="text-sm font-medium text-neutral-900 truncate">{session.user?.email}</p>
+                <p className="text-xs text-neutral-500">
                   {(session.user as any)?.role === 'admin' ? tAuth('administrator') : tAuth('user')}
                 </p>
               </div>
             </div>
 
-            <Link href="/" className="block px-4 py-3 text-sm font-medium text-[#1d1d1f] hover:bg-gray-50 rounded-xl transition-colors" onClick={onClose}>
+            <Link href="/" className="block px-4 py-3 text-sm font-medium text-neutral-900 hover:bg-neutral-50 rounded-xl transition-colors" onClick={onClose}>
               {t('home')}
             </Link>
-            <Link href="/create" className="block px-4 py-3 text-sm font-medium text-[#1d1d1f] hover:bg-gray-50 rounded-xl transition-colors" onClick={onClose}>
+            <Link href="/create" className="block px-4 py-3 text-sm font-medium text-neutral-900 hover:bg-neutral-50 rounded-xl transition-colors" onClick={onClose}>
               {t('createQuiz')}
             </Link>
-            <Link href="/explore" className="block px-4 py-3 text-sm font-medium text-[#1d1d1f] hover:bg-gray-50 rounded-xl transition-colors" onClick={onClose}>
+            <Link href="/explore" className="block px-4 py-3 text-sm font-medium text-neutral-900 hover:bg-neutral-50 rounded-xl transition-colors" onClick={onClose}>
               {t('explore')}
             </Link>
-            <Link href="/profile?tab=quizzes" className="block px-4 py-3 text-sm font-medium text-[#1d1d1f] hover:bg-gray-50 rounded-xl transition-colors" onClick={onClose}>
+            <Link href="/profile?tab=quizzes" className="block px-4 py-3 text-sm font-medium text-neutral-900 hover:bg-neutral-50 rounded-xl transition-colors" onClick={onClose}>
               {t('profile')}
             </Link>
-            <Link href="/profile?tab=history" className="block px-4 py-3 text-sm font-medium text-[#1d1d1f] hover:bg-gray-50 rounded-xl transition-colors" onClick={onClose}>
+            <Link href="/profile?tab=history" className="block px-4 py-3 text-sm font-medium text-neutral-900 hover:bg-neutral-50 rounded-xl transition-colors" onClick={onClose}>
               {t('history')}
             </Link>
-            <Link href="/profile?tab=bookmarks" className="block px-4 py-3 text-sm font-medium text-[#1d1d1f] hover:bg-gray-50 rounded-xl transition-colors" onClick={onClose}>
+            <Link href="/profile?tab=bookmarks" className="block px-4 py-3 text-sm font-medium text-neutral-900 hover:bg-neutral-50 rounded-xl transition-colors" onClick={onClose}>
               {t('bookmarks')}
             </Link>
 
             {(session.user as any)?.role === 'admin' && (
               <>
-                <div className="h-px bg-gray-200 my-3" />
-                <Link href="/admin/queue" className="block px-4 py-3 text-sm font-medium text-[#af52de] hover:bg-purple-50 rounded-xl transition-colors" onClick={onClose}>
+                <div className="h-px bg-neutral-200 my-3" />
+                <Link href="/admin/queue" className="block px-4 py-3 text-sm font-medium text-brand-trust hover:bg-green-50 rounded-xl transition-colors" onClick={onClose}>
                   {t('adminPanel')}
                 </Link>
               </>
             )}
 
-            <div className="h-px bg-gray-200 my-3" />
+            <div className="h-px bg-neutral-200 my-3" />
 
             {/* Language Switcher in Mobile */}
             <div className="px-4 py-2">
@@ -233,20 +233,20 @@ const MobileMenu = memo(function MobileMenu({ session, isOpen, onClose, isAuthLo
 
             <button
               onClick={handleSignOut}
-              className="w-full text-left px-4 py-3 text-sm font-medium text-[#ff3b30] hover:bg-red-50 rounded-xl transition-colors"
+              className="w-full text-left px-4 py-3 text-sm font-medium text-red-500 hover:bg-red-50 rounded-xl transition-colors"
             >
               {t('signOut')}
             </button>
           </>
         ) : (
           <>
-            <Link href="/login" className="block px-4 py-3 text-sm font-medium text-[#1d1d1f] hover:bg-gray-50 rounded-xl transition-colors" onClick={onClose}>
+            <Link href="/login" className="block px-4 py-3 text-sm font-medium text-neutral-900 hover:bg-neutral-50 rounded-xl transition-colors" onClick={onClose}>
               {t('signIn')}
             </Link>
-            <Link href="/register" className="block px-4 py-3 text-sm font-medium text-[#0071e3] hover:bg-blue-50 rounded-xl transition-colors" onClick={onClose}>
+            <Link href="/register" className="block px-4 py-3 text-sm font-medium text-brand-action hover:bg-orange-50 rounded-xl transition-colors" onClick={onClose}>
               {t('getStarted')}
             </Link>
-            <div className="h-px bg-gray-200 my-3" />
+            <div className="h-px bg-neutral-200 my-3" />
             <div className="px-4 py-2">
               <LanguageSwitcher />
             </div>
@@ -330,9 +330,9 @@ export default function NavigationClient({
 
   const navClasses = transparent
     ? isScrolled
-      ? 'backdrop-blur-xl bg-white/80 border-b border-gray-200/50 shadow-sm'
+      ? 'nav-blur'
       : 'bg-transparent border-transparent'
-    : 'backdrop-blur-xl bg-white/80 border-b border-gray-200/50 shadow-sm';
+    : 'nav-blur';
 
   const positionClass = transparent ? 'fixed' : 'sticky';
 
@@ -386,12 +386,12 @@ export default function NavigationClient({
           <div className="md:hidden">
             <button
               onClick={handleMobileMenuToggle}
-              className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+              className="p-2 rounded-full hover:bg-neutral-100 transition-colors"
             >
               {isMenuOpen ? (
-                <HiOutlineX className="w-5 h-5 text-[#1d1d1f]" />
+                <HiOutlineX className="w-5 h-5 text-neutral-900" />
               ) : (
-                <HiOutlineMenu className="w-5 h-5 text-[#1d1d1f]" />
+                <HiOutlineMenu className="w-5 h-5 text-neutral-900" />
               )}
             </button>
           </div>

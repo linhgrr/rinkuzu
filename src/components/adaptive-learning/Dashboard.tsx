@@ -72,7 +72,7 @@ export default function AdaptiveLearningDashboard({
   )
 
   return (
-    <div className={`${inter.className} min-h-screen bg-[#faf8ff] text-[#131b2e]`}>
+    <div className={`${inter.className} min-h-screen bg-neutral-50 text-[var(--text-primary)]`}>
       <DashboardToast toastMsg={toastMsg} />
 
       <main className="mx-auto w-full max-w-7xl p-8 md:p-12">

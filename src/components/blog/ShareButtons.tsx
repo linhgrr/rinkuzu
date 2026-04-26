@@ -53,15 +53,15 @@ export const ShareButtons = ({ url, title }: ShareButtonsProps) => {
   };
 
   return (
-    <div className="flex items-center gap-2 py-6 border-y border-gray-100 my-8">
-      <span className="text-sm font-medium text-gray-500 mr-2">Share this post:</span>
+    <div className="flex items-center gap-2 py-6 border-y border-neutral-100 my-8">
+      <span className="text-sm font-medium text-neutral-500 mr-2">Share this post:</span>
       <div className="flex gap-2">
         {shareLinks.map((link) => (
           <Button
             key={link.name}
             variant="outline"
             size="icon"
-            className={`h-9 w-9 rounded-full ${link.color} transition-colors duration-200 border-gray-200`}
+            className={`h-9 w-9 rounded-full ${link.color} transition-colors duration-200 border-neutral-200`}
             onClick={() => window.open(link.href, '_blank', 'noopener,noreferrer')}
             title={`Share on ${link.name}`}
           >
@@ -71,7 +71,7 @@ export const ShareButtons = ({ url, title }: ShareButtonsProps) => {
         <Button
           variant="outline"
           size="icon"
-          className="h-9 w-9 rounded-full hover:bg-gray-100 transition-colors duration-200 border-gray-200"
+          className="h-9 w-9 rounded-full hover:bg-neutral-100 transition-colors duration-200 border-neutral-200"
           onClick={copyToClipboard}
           title="Copy link"
         >

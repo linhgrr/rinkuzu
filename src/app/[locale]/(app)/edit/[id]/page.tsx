@@ -257,10 +257,10 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading quiz...</p>
+          <div className="h-12 w-12 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust mx-auto" />
+          <p className="mt-4 text-neutral-600">Loading quiz...</p>
         </div>
       </div>
     );
@@ -268,13 +268,13 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
 
   if (error && !quiz) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
         <Card className="max-w-md">
           <CardHeader>
             <CardTitle className="text-center text-red-600">Error</CardTitle>
           </CardHeader>
           <CardContent className="text-center">
-            <p className="text-gray-600 mb-4">{error}</p>
+            <p className="text-neutral-600 mb-4">{error}</p>
             <Link href="/pending">
               <Button>Back to My Quizzes</Button>
             </Link>
@@ -294,13 +294,13 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
 
   if (!isAdmin && !isAuthor) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
         <Card className="max-w-md">
           <CardHeader>
             <CardTitle className="text-center text-red-600">Access Denied</CardTitle>
           </CardHeader>
           <CardContent className="text-center">
-            <p className="text-gray-600 mb-4">You do not have permission to edit this quiz.</p>
+            <p className="text-neutral-600 mb-4">You do not have permission to edit this quiz.</p>
             <Link href="/pending">
               <Button>Back to My Quizzes</Button>
             </Link>
@@ -316,7 +316,7 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
   return (
     <div className="min-h-screen bg-white">
       {/* Navigation - giống như trang chính */}
-      <nav className="bg-white/80 backdrop-blur-md border-b border-gray-100 sticky top-0 z-50">
+      <nav className="bg-white/80 backdrop-blur-md border-b border-neutral-100 sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
@@ -332,7 +332,7 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
             <div className="hidden md:flex items-center space-x-8">
               {session ? (
                 <>
-                  <Link href="/" className="text-gray-600 hover:text-gray-900 transition-colors">
+                  <Link href="/" className="text-neutral-600 hover:text-neutral-900 transition-colors">
                     All Quizzes
                   </Link>
 
@@ -340,9 +340,9 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
                   <div className="relative">
                     <button
                       onClick={() => setIsMenuOpen(!isMenuOpen)}
-                      className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors"
+                      className="flex items-center space-x-2 text-neutral-600 hover:text-neutral-900 transition-colors"
                     >
-                      <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+                      <div className="w-8 h-8 bg-gradient-to-br from-brand-trust to-green-600 rounded-full flex items-center justify-center">
                         <span className="text-white text-sm font-medium">
                           {session.user?.email?.charAt(0).toUpperCase()}
                         </span>
@@ -351,10 +351,10 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
                     </button>
 
                     {isMenuOpen && (
-                      <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-100 py-1">
+                      <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-neutral-100 py-1">
                         <button
                           onClick={() => signOut()}
-                          className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                          className="block w-full text-left px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50"
                         >
                           <HiOutlineLogout className="inline-block mr-2" /> Sign Out
                         </button>
@@ -365,12 +365,12 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
               ) : (
                 <div className="flex items-center space-x-4">
                   <Link href="/login">
-                    <Button variant="ghost" className="text-gray-600 hover:text-gray-900">
+                    <Button variant="ghost" className="text-neutral-600 hover:text-neutral-900">
                       Sign In
                     </Button>
                   </Link>
                   <Link href="/register">
-                    <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-0">
+                    <Button className="bg-gradient-to-r from-brand-trust to-green-700 hover:from-brand-trust-hover hover:to-green-800 text-white border-0">
                       Get Started
                     </Button>
                   </Link>
@@ -382,7 +382,7 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
             <div className="md:hidden">
               <button
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className="text-gray-600 hover:text-gray-900"
+                className="text-neutral-600 hover:text-neutral-900"
               >
                 <HiOutlineMenu className="w-6 h-6" />
               </button>
@@ -391,26 +391,26 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
 
           {/* Mobile Navigation */}
           {isMenuOpen && (
-            <div className="md:hidden border-t border-gray-100 py-4">
+            <div className="md:hidden border-t border-neutral-100 py-4">
               <div className="space-y-2">
                 {session ? (
                   <>
-                    <Link href="/" className="block px-4 py-2 text-gray-600 hover:text-gray-900">
+                    <Link href="/" className="block px-4 py-2 text-neutral-600 hover:text-neutral-900">
                       All Quizzes
                     </Link>
                     <button
                       onClick={() => signOut()}
-                      className="block w-full text-left px-4 py-2 text-gray-600 hover:text-gray-900"
+                      className="block w-full text-left px-4 py-2 text-neutral-600 hover:text-neutral-900"
                     >
                       Sign Out
                     </button>
                   </>
                 ) : (
                   <>
-                    <Link href="/login" className="block px-4 py-2 text-gray-600 hover:text-gray-900">
+                    <Link href="/login" className="block px-4 py-2 text-neutral-600 hover:text-neutral-900">
                       Sign In
                     </Link>
-                    <Link href="/register" className="block px-4 py-2 text-gray-600 hover:text-gray-900">
+                    <Link href="/register" className="block px-4 py-2 text-neutral-600 hover:text-neutral-900">
                       Get Started
                     </Link>
                   </>
@@ -436,8 +436,8 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
             <div className="max-w-4xl mx-auto">
               <div className="mb-8 flex items-center justify-between">
                 <div>
-                  <h1 className="text-3xl font-bold text-gray-900">Edit Quiz</h1>
-                  <p className="mt-2 text-gray-600">
+                  <h1 className="text-3xl font-bold text-neutral-900">Edit Quiz</h1>
+                  <p className="mt-2 text-neutral-600">
                     Make changes to your quiz information
                   </p>
                 </div>
@@ -446,7 +446,7 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
                   <Button
                     onClick={() => setShowPDFViewer(!showPDFViewer)}
                     variant="outline"
-                    className="flex items-center gap-2 text-blue-600 border-blue-200 hover:bg-blue-50"
+                    className="flex items-center gap-2 text-brand-trust border-green-200 hover:bg-green-50"
                   >
                     {showPDFViewer ? (
                       <><HiOutlineEyeOff className="w-4 h-4" /> Hide PDF</>
@@ -462,8 +462,8 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="text-lg font-semibold text-gray-900">Quiz Status</h3>
-                      <p className="text-sm text-gray-600">Current approval status</p>
+                      <h3 className="text-lg font-semibold text-neutral-900">Quiz Status</h3>
+                      <p className="text-sm text-neutral-600">Current approval status</p>
                     </div>
                     <span className={`px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1.5 ${quiz.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
                       quiz.status === 'published' ? 'bg-green-100 text-green-800' :
@@ -483,12 +483,12 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
                 <Card className="mb-6">
                   <CardContent className="p-6">
                     <div className="flex items-start space-x-3">
-                      <div className="text-blue-600">
+                      <div className="text-brand-trust">
                         <HiOutlineInformationCircle className="w-6 h-6" />
                       </div>
                       <div>
-                        <h3 className="text-lg font-semibold text-gray-900">Read Only</h3>
-                        <p className="text-sm text-gray-600">
+                        <h3 className="text-lg font-semibold text-neutral-900">Read Only</h3>
+                        <p className="text-sm text-neutral-600">
                           This quiz cannot be edited because it is already published. Only admins can edit published quizzes.
                         </p>
                       </div>
@@ -500,7 +500,7 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
               <Card className="max-w-2xl">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <HiOutlinePencilAlt className="w-5 h-5 text-blue-500" />
+                    <HiOutlinePencilAlt className="w-5 h-5 text-brand-trust" />
                     Quiz Information
                   </CardTitle>
                   <CardDescription>
@@ -547,9 +547,9 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
 
                     {/* Quiz Questions Info */}
                     <div className="border-t pt-6">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Quiz Content</h3>
-                      <div className="bg-gray-50 rounded-lg p-4">
-                        <div className="text-sm text-gray-600">
+                      <h3 className="text-lg font-semibold text-neutral-900 mb-4">Quiz Content</h3>
+                      <div className="bg-neutral-50 rounded-lg p-4">
+                        <div className="text-sm text-neutral-600">
                           <p><strong>Questions:</strong> {quiz.questions.length}</p>
                           <p><strong>Created:</strong> {new Date(quiz.createdAt).toLocaleDateString()}</p>
                           {quiz.status === 'published' && (
@@ -557,7 +557,7 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
                           )}
                         </div>
                       </div>
-                      <p className="mt-2 text-xs text-gray-500">
+                      <p className="mt-2 text-xs text-neutral-500">
                         Note: Questions cannot be edited after creation. Create a new quiz to change questions.
                       </p>
                     </div>
@@ -569,7 +569,7 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
                           <div className="flex justify-between items-center">
                             <div>
                               <CardTitle className="text-lg flex items-center gap-2">
-                                <HiOutlineDocumentText className="w-5 h-5 text-blue-500" />
+                                <HiOutlineDocumentText className="w-5 h-5 text-brand-trust" />
                                 Questions ({editableQuestions.length})
                               </CardTitle>
                               <CardDescription>Edit questions below</CardDescription>
@@ -585,7 +585,7 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
                             <div key={index} className="border p-4 rounded-lg space-y-4">
                               <div className="flex justify-between items-start">
                                 <h4 className="font-medium flex items-center gap-2">
-                                  <div className="w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs">
+                                  <div className="w-6 h-6 bg-green-100 text-brand-trust rounded-full flex items-center justify-center text-xs">
                                     {index + 1}
                                   </div>
                                   Question {index + 1}
@@ -687,7 +687,7 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
                   </CardHeader>
                   <CardContent>
                     <div className="flex items-center space-x-4">
-                      <code className="flex-1 bg-gray-100 px-3 py-2 rounded text-sm">
+                      <code className="flex-1 bg-neutral-100 px-3 py-2 rounded text-sm">
                         {`${typeof window !== 'undefined' ? window.location.origin : ''}/quiz/${quiz.slug}`}
                       </code>
                       <Button
@@ -714,7 +714,7 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
           {showPDFViewer && pdfUrl && (
             <div className="hidden lg:block lg:w-1/2 lg:pl-4">
               <div className="sticky top-24 h-[calc(100vh-6rem)]">
-                <Card className="h-full flex flex-col shadow-2xl border-2 border-blue-200 bg-white">
+                <Card className="h-full flex flex-col shadow-2xl border-2 border-green-200 bg-white">
                   <CardHeader className="flex-shrink-0 pb-3">
                     <div className="flex items-center justify-between">
                       <CardTitle className="text-lg">PDF Reference</CardTitle>
@@ -722,7 +722,7 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
                         onClick={() => setShowPDFViewer(false)}
                         variant="ghost"
                         size="sm"
-                        className="text-gray-500 hover:text-gray-700"
+                        className="text-neutral-500 hover:text-neutral-700"
                       >
                         ✕
                       </Button>

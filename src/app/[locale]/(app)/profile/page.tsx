@@ -31,8 +31,8 @@ const TabButton = memo(function TabButton({ id, label, icon, isActive, onClick }
         <button
             onClick={handleClick}
             className={`flex items-center justify-center gap-1.5 md:gap-2 px-3 md:px-6 py-2.5 min-h-[44px] rounded-lg text-xs md:text-sm font-medium transition-all duration-200 whitespace-nowrap flex-1 ${isActive
-                    ? 'bg-white text-[#0071e3] shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
+                    ? 'bg-white text-brand-trust shadow-sm'
+                    : 'text-neutral-600 hover:text-neutral-900 hover:bg-white/50'
                 }`}
         >
             {icon}
@@ -72,7 +72,7 @@ function ProfileContent() {
     }, []);
 
     return (
-        <div className="min-h-screen bg-[#f5f5f7] pb-24 md:pb-8">
+        <div className="min-h-screen bg-neutral-50 pb-24 md:pb-8">
             {/* Navigation - Using shared component */}
             <Navigation />
 
@@ -92,9 +92,9 @@ function ProfileContent() {
                 <div className="max-w-5xl mx-auto">
                     {/* Header / Tabs */}
                     <div className="mb-6 md:mb-8">
-                        <h1 className="text-2xl md:text-3xl font-bold text-[#1d1d1f] mb-4 md:mb-6">{t('title')}</h1>
+                        <h1 className="text-2xl md:text-3xl font-bold text-[var(--text-primary)] mb-4 md:mb-6">{t('title')}</h1>
 
-                        <div className="flex space-x-1 bg-gray-100 p-1 rounded-xl w-full max-w-2xl overflow-x-auto scrollbar-hide">
+                        <div className="flex space-x-1 bg-neutral-100 p-1 rounded-xl w-full max-w-2xl overflow-x-auto scrollbar-hide">
                             {TABS.map((tab) => (
                                 <TabButton
                                     key={tab.id}
@@ -109,7 +109,7 @@ function ProfileContent() {
                     </div>
 
                     {/* Content */}
-                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 md:p-6 min-h-[400px] md:min-h-[500px]">
+                    <div className="bg-white rounded-2xl shadow-sm border border-neutral-100 p-4 md:p-6 min-h-[400px] md:min-h-[500px]">
                         {visitedTabs.has('quizzes') && (
                             <div className={activeTab === 'quizzes' ? '' : 'hidden'}>
                                 <ProfileQuizzes />
@@ -136,10 +136,10 @@ function ProfileFallback() {
     const tCommon = useTranslations('common');
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-[#f5f5f7]">
+        <div className="min-h-screen flex items-center justify-center bg-neutral-50">
             <div className="text-center animate-pulse">
-                <div className="w-12 h-12 bg-gray-200 rounded-xl mx-auto mb-4" />
-                <p className="text-[#86868b]">{tCommon('loading')}</p>
+                <div className="w-12 h-12 bg-neutral-200 rounded-xl mx-auto mb-4" />
+                <p className="text-[var(--text-muted)]">{tCommon('loading')}</p>
             </div>
         </div>
     );

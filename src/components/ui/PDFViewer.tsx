@@ -30,7 +30,7 @@ export default function PDFViewer({ pdfDataUrl, onClose, pdfUrl, showHeader = tr
     <div className="h-full flex flex-col">
       {showHeader && (
         <div className="flex items-center justify-between mb-3">
-          <h3 className="font-semibold text-gray-900">PDF Reference</h3>
+          <h3 className="font-semibold text-neutral-900">PDF Reference</h3>
           <div className="flex gap-2">
             <Button
               onClick={() => pdfUrl && window.open(pdfUrl, '_blank')}
@@ -50,11 +50,11 @@ export default function PDFViewer({ pdfDataUrl, onClose, pdfUrl, showHeader = tr
           </div>
         </div>
       )}
-      <div className="flex-1 border border-gray-200 rounded overflow-hidden bg-gray-100 flex items-center justify-center relative min-h-[400px]">
+      <div className="flex-1 border border-neutral-200 rounded overflow-hidden bg-neutral-100 flex items-center justify-center relative min-h-[400px]">
         {displayUrl ? (
           <>
             {isLoading && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-gray-400 bg-gray-100 z-10">
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-neutral-400 bg-neutral-100 z-10">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-current"></div>
                 <span>Loading PDF...</span>
               </div>
@@ -67,7 +67,7 @@ export default function PDFViewer({ pdfDataUrl, onClose, pdfUrl, showHeader = tr
             />
           </>
         ) : (
-          <div className="flex flex-col items-center gap-2 text-gray-400">
+          <div className="flex flex-col items-center gap-2 text-neutral-400">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-current"></div>
             <span>Loading PDF...</span>
           </div>

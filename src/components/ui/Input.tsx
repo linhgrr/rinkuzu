@@ -3,7 +3,7 @@ import { HiOutlineExclamationCircle } from '@/components/icons';
 import { cn } from '@/lib/utils';
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
-  variant?: 'default' | 'glass' | 'outlined' | 'filled';
+  variant?: 'default' | 'glass' | 'outlined' | 'filled'; // Keeping for compatibility but standardizing visuals
   inputSize?: 'sm' | 'md' | 'lg';
   error?: string;
   label?: string;
@@ -25,19 +25,6 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
   }, ref) => {
     const inputId = id || label?.toLowerCase().replace(/\s+/g, '-');
 
-    const variants = {
-      default: 'bg-white/80 backdrop-blur-sm border border-gray-200 hover:border-gray-300 focus:border-primary focus:ring-primary/20',
-      glass: 'bg-white/20 backdrop-blur-md border border-white/30 hover:border-white/40 focus:border-white/60 focus:ring-white/20',
-      outlined: 'bg-transparent border-2 border-gray-300 hover:border-gray-400 focus:border-primary focus:ring-primary/20',
-      filled: 'bg-gray-50 border border-transparent hover:bg-gray-100 focus:bg-white focus:border-primary focus:ring-primary/20',
-    };
-
-    const sizes = {
-      sm: 'h-10 px-3 py-2 text-sm',
-      md: 'h-12 px-4 py-3 text-sm',
-      lg: 'h-14 px-5 py-4 text-base',
-    };
-
     const iconSizes = {
       sm: 'w-4 h-4',
       md: 'w-5 h-5',
@@ -49,7 +36,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         {label && (
           <label
             htmlFor={inputId}
-            className="block text-sm font-semibold text-gray-700 mb-2"
+            className="block text-[12px] font-semibold text-neutral-700 mb-1"
           >
             {label}
           </label>
@@ -57,7 +44,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
 
         <div className="relative">
           {icon && iconPosition === 'left' && (
-            <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+            <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400">
               <div className={iconSizes[inputSize]}>
                 {icon}
               </div>
@@ -67,12 +54,12 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           <input
             id={inputId}
             className={cn(
-              'w-full rounded-xl font-medium text-gray-900 transition-all duration-300 focus:outline-none focus:ring-2 disabled:cursor-not-allowed disabled:opacity-50 placeholder:text-gray-400',
-              variants[variant],
-              sizes[inputSize],
+              'input',
+              inputSize === 'sm' && 'h-[36px] text-[14px]',
+              inputSize === 'lg' && 'h-[52px] text-[16px]',
               icon && iconPosition === 'left' && 'pl-10',
               icon && iconPosition === 'right' && 'pr-10',
-              error && 'border-red-300 focus:border-red-500 focus:ring-red-200',
+              error && 'border-red-500 focus:border-red-500 focus:shadow-[0_0_0_3px_rgba(229,72,77,0.22)]',
               className
             )}
             ref={ref}
@@ -80,7 +67,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           />
 
           {icon && iconPosition === 'right' && (
-            <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+            <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-neutral-400">
               <div className={iconSizes[inputSize]}>
                 {icon}
               </div>
@@ -89,7 +76,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         </div>
 
         {error && (
-          <p className="mt-2 text-sm text-red-600 flex items-center">
+          <p className="mt-1.5 text-sm text-red-500 flex items-center">
             <HiOutlineExclamationCircle className="w-4 h-4 mr-1 flex-shrink-0" />
             {error}
           </p>
@@ -112,19 +99,12 @@ const Textarea = React.forwardRef<
 >(({ className, variant = 'default', error, label, id, ...props }, ref) => {
   const textareaId = id || label?.toLowerCase().replace(/\s+/g, '-');
 
-  const variants = {
-    default: 'bg-white/80 backdrop-blur-sm border border-gray-200 hover:border-gray-300 focus:border-primary focus:ring-primary/20',
-    glass: 'bg-white/20 backdrop-blur-md border border-white/30 hover:border-white/40 focus:border-white/60 focus:ring-white/20',
-    outlined: 'bg-transparent border-2 border-gray-300 hover:border-gray-400 focus:border-primary focus:ring-primary/20',
-    filled: 'bg-gray-50 border border-transparent hover:bg-gray-100 focus:bg-white focus:border-primary focus:ring-primary/20',
-  };
-
   return (
     <div className="w-full">
       {label && (
         <label
           htmlFor={textareaId}
-          className="block text-sm font-semibold text-gray-700 mb-2"
+          className="block text-[12px] font-semibold text-neutral-700 mb-1"
         >
           {label}
         </label>
@@ -133,9 +113,8 @@ const Textarea = React.forwardRef<
       <textarea
         id={textareaId}
         className={cn(
-          'w-full rounded-xl px-4 py-3 font-medium text-gray-900 transition-all duration-300 focus:outline-none focus:ring-2 disabled:cursor-not-allowed disabled:opacity-50 placeholder:text-gray-400 resize-none',
-          variants[variant],
-          error && 'border-red-300 focus:border-red-500 focus:ring-red-200',
+          'input !h-auto min-h-[100px] py-3 resize-y',
+          error && 'border-red-500 focus:border-red-500 focus:shadow-[0_0_0_3px_rgba(229,72,77,0.22)]',
           className
         )}
         ref={ref}
@@ -143,7 +122,7 @@ const Textarea = React.forwardRef<
       />
 
       {error && (
-        <p className="mt-2 text-sm text-red-600 flex items-center">
+        <p className="mt-1.5 text-sm text-red-500 flex items-center">
           <HiOutlineExclamationCircle className="w-4 h-4 mr-1 flex-shrink-0" />
           {error}
         </p>

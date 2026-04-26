@@ -128,20 +128,20 @@ export default function AttemptDetailPage() {
           <div className="mb-8">
             <div className="flex items-center justify-between">
               <div>
-                <nav className="flex items-center space-x-2 text-sm text-gray-500 mb-2">
-                  <Link href={historyLink} className="hover:text-gray-700">
+                <nav className="flex items-center space-x-2 text-sm text-neutral-500 mb-2">
+                  <Link href={historyLink} className="hover:text-neutral-700">
                     Lịch sử Quiz
                   </Link>
                   <span>/</span>
-                  <span className="text-gray-900">Chi tiết kết quả</span>
+                  <span className="text-neutral-900">Chi tiết kết quả</span>
                 </nav>
-                <h1 className="text-3xl font-bold text-gray-900">
+                <h1 className="text-3xl font-bold text-neutral-900">
                   Chi Tiết Kết Quả
                 </h1>
                 {attempt && (
                   <div className="mt-2">
-                    <h2 className="text-xl font-semibold text-gray-800">{attempt.quiz.title}</h2>
-                    <div className="flex items-center space-x-4 mt-2 text-sm text-gray-600">
+                    <h2 className="text-xl font-semibold text-neutral-800">{attempt.quiz.title}</h2>
+                    <div className="flex items-center space-x-4 mt-2 text-sm text-neutral-600">
                       <span className="inline-flex items-center gap-1.5">
                         <HiOutlineChartBar className="w-4 h-4" />
                         Điểm: {attempt.score}%
@@ -185,7 +185,7 @@ export default function AttemptDetailPage() {
           {/* Content */}
           {loading ? (
             <div className="flex justify-center py-12">
-              <div className="text-gray-500">Đang tải...</div>
+              <div className="text-neutral-500">Đang tải...</div>
             </div>
           ) : error ? (
             <div className="mb-6">
@@ -194,10 +194,10 @@ export default function AttemptDetailPage() {
                   <div className="mb-4 flex justify-center text-red-600">
                     <HiOutlineXCircle className="w-8 h-8" />
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  <h3 className="text-lg font-semibold text-neutral-900 mb-2">
                     Có lỗi xảy ra
                   </h3>
-                  <p className="text-gray-600 mb-4">{error}</p>
+                  <p className="text-neutral-600 mb-4">{error}</p>
                   <Link href={historyLink}>
                     <Button>Quay lại lịch sử</Button>
                   </Link>
@@ -213,7 +213,7 @@ export default function AttemptDetailPage() {
                     <div className="text-3xl font-bold text-green-600">
                       {attempt.quiz.questions.filter(q => q.isCorrect).length}
                     </div>
-                    <div className="text-sm text-gray-600 mt-1">Câu đúng</div>
+                    <div className="text-sm text-neutral-600 mt-1">Câu đúng</div>
                   </CardContent>
                 </Card>
                 <Card>
@@ -221,15 +221,15 @@ export default function AttemptDetailPage() {
                     <div className="text-3xl font-bold text-red-600">
                       {attempt.quiz.questions.filter(q => !q.isCorrect).length}
                     </div>
-                    <div className="text-sm text-gray-600 mt-1">Câu sai</div>
+                    <div className="text-sm text-neutral-600 mt-1">Câu sai</div>
                   </CardContent>
                 </Card>
                 <Card>
                   <CardContent className="text-center py-6">
-                    <div className="text-3xl font-bold text-blue-600">
+                    <div className="text-3xl font-bold text-brand-trust">
                       {attempt.score}%
                     </div>
-                    <div className="text-sm text-gray-600 mt-1">Tổng điểm</div>
+                    <div className="text-sm text-neutral-600 mt-1">Tổng điểm</div>
                   </CardContent>
                 </Card>
               </div>
@@ -263,8 +263,8 @@ export default function AttemptDetailPage() {
                     <CardContent className="space-y-6">
                       {/* Question */}
                       <div>
-                        <h4 className="font-medium text-gray-900 mb-3">Câu hỏi:</h4>
-                        <div className="bg-gray-50 p-4 rounded-lg">
+                        <h4 className="font-medium text-neutral-900 mb-3">Câu hỏi:</h4>
+                        <div className="bg-neutral-50 p-4 rounded-lg">
                           <MarkdownRenderer content={question.question} />
                           {question.questionImage && (
                             <div className="mt-3">
@@ -276,7 +276,7 @@ export default function AttemptDetailPage() {
 
                       {/* User Answer */}
                       <div>
-                        <h5 className="font-medium text-gray-900 mb-3">Câu trả lời của bạn:</h5>
+                        <h5 className="font-medium text-neutral-900 mb-3">Câu trả lời của bạn:</h5>
                         <div className={`p-4 rounded-lg ${question.isCorrect ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
                           <div className={`font-medium ${question.isCorrect ? 'text-green-800' : 'text-red-800'}`}>
                             {getAnswerText(question, question.userAnswer)}
@@ -287,7 +287,7 @@ export default function AttemptDetailPage() {
                       {/* Correct Answer (if wrong) */}
                       {!question.isCorrect && (
                         <div>
-                          <h5 className="font-medium text-gray-900 mb-3">Đáp án đúng:</h5>
+                          <h5 className="font-medium text-neutral-900 mb-3">Đáp án đúng:</h5>
                           <div className="p-4 rounded-lg bg-green-50 border border-green-200">
                             <div className="text-green-800 font-medium">
                               {getCorrectAnswerText(question)}
@@ -298,7 +298,7 @@ export default function AttemptDetailPage() {
 
                       {/* All Options */}
                       <div>
-                        <h5 className="font-medium text-gray-900 mb-3">Tất cả các lựa chọn:</h5>
+                        <h5 className="font-medium text-neutral-900 mb-3">Tất cả các lựa chọn:</h5>
                         <div className="space-y-3">
                           {question.options.map((option, optionIndex) => {
                             const isUserChoice = question.type === 'single' 
@@ -317,7 +317,7 @@ export default function AttemptDetailPage() {
                                     ? 'border-green-500 bg-green-50' 
                                     : isUserChoice 
                                       ? 'border-red-500 bg-red-50'
-                                      : 'border-gray-200 bg-gray-50'
+                                      : 'border-neutral-200 bg-neutral-50'
                                 }`}
                               >
                                 <div className="flex items-center justify-between">
@@ -370,7 +370,7 @@ export default function AttemptDetailPage() {
               </div>
 
               {/* Footer Actions */}
-              <div className="flex justify-center space-x-4 pt-8 border-t border-gray-200">
+              <div className="flex justify-center space-x-4 pt-8 border-t border-neutral-200">
                 <Link href={historyLink}>
                   <Button variant="outline" size="lg">
                     <span className="inline-flex items-center gap-2">

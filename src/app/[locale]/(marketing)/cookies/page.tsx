@@ -20,12 +20,12 @@ export default async function CookiesPage({ params }: Props) {
 
   return (
     <section className="max-w-4xl mx-auto space-y-4">
-      <h1 className="text-3xl font-bold text-slate-900">Cookie Policy</h1>
-      <p className="text-slate-600">
+      <h1 className="text-3xl font-bold text-neutral-900">Cookie Policy</h1>
+      <p className="text-neutral-600">
         We use cookies to maintain sessions, analyze performance, and improve learning experience.
       </p>
-      <h2 className="text-xl font-semibold text-slate-900">Cookie types</h2>
-      <ul className="text-slate-600 space-y-1">
+      <h2 className="text-xl font-semibold text-neutral-900">Cookie types</h2>
+      <ul className="text-neutral-600 space-y-1">
         <li>- Essential cookies for authentication and security.</li>
         <li>- Analytics cookies for product performance insights.</li>
       </ul>

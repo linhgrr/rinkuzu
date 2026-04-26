@@ -213,32 +213,32 @@ export default async function BlogPost({ params }: Props) {
       <JsonLd id="breadcrumb-schema" data={breadcrumbSchema} />
 
       {/* Hero */}
-      <header className="bg-[#fbfbfd] border-b border-gray-100">
+      <header className="bg-[var(--bg-section)] border-b border-neutral-100">
         <div className="max-w-3xl mx-auto px-6 pt-16 pb-12">
-          <nav className="flex items-center gap-2 text-sm text-[#414d60] mb-8">
-            <Link href="/" className="hover:text-[#1e242c] transition-colors">Home</Link>
+          <nav className="flex items-center gap-2 text-sm text-[var(--text-muted)] mb-8">
+            <Link href="/" className="hover:text-[var(--text-primary)] transition-colors">Home</Link>
             <span>/</span>
-            <Link href="/blog" className="hover:text-[#1e242c] transition-colors">Blog</Link>
+            <Link href="/blog" className="hover:text-[var(--text-primary)] transition-colors">Blog</Link>
             <span>/</span>
-            <span className="text-[#1e242c]">AI & PDFs</span>
+            <span className="text-[var(--text-primary)]">AI & PDFs</span>
           </nav>
           <div className="flex items-center gap-3 mb-4">
-            <span className="text-xs font-semibold uppercase tracking-wider text-teal-600 bg-teal-50 px-3 py-1 rounded-full">
+            <span className="text-xs font-semibold uppercase tracking-wider text-brand-trust bg-green-50 px-3 py-1 rounded-full">
               AI in Education
             </span>
-            <span className="text-xs text-[#414d60]">March 27, 2026 · 9 min read</span>
+            <span className="text-xs text-[var(--text-muted)]">March 27, 2026 · 9 min read</span>
           </div>
-          <h1 className="text-3xl md:text-5xl font-bold text-[#1e242c] leading-tight mb-6">
+          <h1 className="text-3xl md:text-5xl font-bold text-[var(--text-primary)] leading-tight mb-6">
             {postTitle}
           </h1>
-          <p className="text-xl text-[#414d60] leading-relaxed font-medium">
+          <p className="text-xl text-[var(--text-muted)] leading-relaxed font-medium">
             Discover how RinKuzu&apos;s ALSS system — SAINT-Bloom, Dueling DQN, and Gemini — transforms any PDF lecture into a personalized adaptive quiz journey.
           </p>
-          <div className="flex items-center gap-3 mt-8 pt-6 border-t border-gray-100">
-            <div className="w-11 h-11 rounded-full bg-[#1d1d1f] flex items-center justify-center text-white font-bold text-sm ring-4 ring-white shadow-sm">RK</div>
+          <div className="flex items-center gap-3 mt-8 pt-6 border-t border-neutral-100">
+            <div className="w-11 h-11 rounded-full bg-[var(--text-primary)] flex items-center justify-center text-white font-bold text-sm ring-4 ring-white shadow-sm">RK</div>
             <div>
-              <Link href="/blog/authors/rinkuzu-team" className="text-sm font-semibold text-[#1e242c] hover:text-teal-600 transition-colors">RinKuzu Team</Link>
-              <p className="text-xs text-[#414d60]">AI Learning Platform</p>
+              <Link href="/blog/authors/rinkuzu-team" className="text-sm font-semibold text-[var(--text-primary)] hover:text-brand-trust transition-colors">RinKuzu Team</Link>
+              <p className="text-xs text-[var(--text-muted)]">AI Learning Platform</p>
             </div>
           </div>
         </div>
@@ -267,36 +267,36 @@ export default async function BlogPost({ params }: Props) {
           <ShareButtons url={postUrl} title={postTitle} />
 
           {/* CTA */}
-          <div className="mt-16 bg-gradient-to-br from-[#1d1d1f] to-[#2d2d2f] rounded-[2rem] p-10 text-white relative overflow-hidden shadow-xl">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-teal-500/10 rounded-full blur-3xl -mr-32 -mt-32"></div>
-            <div className="absolute bottom-0 left-0 w-64 h-64 bg-teal-500/10 rounded-full blur-3xl -ml-32 -mb-32"></div>
+          <div className="mt-16 bg-gradient-to-br from-[var(--text-primary)] to-[#2d2d2f] rounded-[2rem] p-10 text-white relative overflow-hidden shadow-xl">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-green-500/10 rounded-full blur-3xl -mr-32 -mt-32"></div>
+            <div className="absolute bottom-0 left-0 w-64 h-64 bg-green-500/10 rounded-full blur-3xl -ml-32 -mb-32"></div>
             <div className="relative z-10 text-center max-w-xl mx-auto">
               <h3 className="text-2xl md:text-3xl font-bold mb-4">Start your adaptive journey today</h3>
-              <p className="text-gray-300 text-lg mb-8">
+              <p className="text-neutral-300 text-lg mb-8">
                 Upload your first PDF and see the ALSS pipeline in action. Join students mastering complex topics with RinKuzu.
               </p>
               <Link
                 href="/register"
-                className="inline-flex items-center justify-center rounded-full bg-teal-500 text-[#1d1d1f] font-bold px-10 py-4 hover:bg-teal-400 transition-all hover:scale-105 shadow-lg shadow-teal-500/20 active:scale-95"
+                className="inline-flex items-center justify-center rounded-full bg-brand-trust text-white font-bold px-10 py-4 hover:bg-brand-trust-hover transition-all hover:scale-105 shadow-lg shadow-green-500/20 active:scale-95"
               >
                 Get Started Free
               </Link>
-              <p className="mt-4 text-xs text-gray-400">No credit card required · Free plan available</p>
+              <p className="mt-4 text-xs text-neutral-400">No credit card required · Free plan available</p>
             </div>
           </div>
 
           {/* Post navigation */}
-          <div className="mt-16 pt-10 border-t border-gray-100 flex flex-col sm:flex-row justify-between items-center gap-6">
+          <div className="mt-16 pt-10 border-t border-neutral-100 flex flex-col sm:flex-row justify-between items-center gap-6">
             <div className="flex flex-col gap-1 w-full sm:w-auto">
-              <span className="text-xs uppercase tracking-widest text-gray-400 font-bold">Previous</span>
-              <span className="text-gray-300">No previous post</span>
+              <span className="text-xs uppercase tracking-widest text-neutral-400 font-bold">Previous</span>
+              <span className="text-neutral-300">No previous post</span>
             </div>
             <Link
               href="/blog/knowledge-graphs-adaptive-learning-pdfs"
               className="flex flex-col gap-1 text-right group w-full sm:w-auto"
             >
-              <span className="text-xs uppercase tracking-widest text-gray-400 font-bold">Next Article</span>
-              <span className="text-[#1d1d1f] font-bold group-hover:text-teal-600 transition-colors">
+              <span className="text-xs uppercase tracking-widest text-neutral-400 font-bold">Next Article</span>
+              <span className="text-[var(--text-primary)] font-bold group-hover:text-brand-trust transition-colors">
                 Knowledge Graphs & Bloom&apos;s Taxonomy →
               </span>
             </Link>

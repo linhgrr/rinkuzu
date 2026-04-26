@@ -54,13 +54,13 @@ export function FloatingDraftProgress() {
       {isExpanded && (
         <div
           className="mb-3 w-80 rounded-2xl bg-white/95 backdrop-blur-xl
-                       shadow-xl border border-gray-200/60 overflow-hidden"
+                       shadow-xl border border-neutral-200/60 overflow-hidden"
         >
-          <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-            <h3 className="font-semibold text-sm text-gray-900">{t('processingPDF')}</h3>
+          <div className="px-4 py-3 border-b border-neutral-100 flex items-center justify-between">
+            <h3 className="font-semibold text-sm text-neutral-900">{t('processingPDF')}</h3>
             <button
               onClick={() => setIsExpanded(false)}
-              className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+              className="p-1 text-neutral-400 hover:text-neutral-600 transition-colors"
             >
               <HiOutlineX className="w-4 h-4" />
             </button>
@@ -84,26 +84,26 @@ export function FloatingDraftProgress() {
       <button
         onClick={() => setIsExpanded(!isExpanded)}
         className="flex items-center gap-2.5 px-4 py-2.5 rounded-full
-                   bg-white/95 backdrop-blur-xl shadow-lg border border-gray-200/60
+                   bg-white/95 backdrop-blur-xl shadow-lg border border-neutral-200/60
                    hover:shadow-xl active:scale-[0.97] transition-all duration-200"
       >
         {processingCount > 0 ? (
           <div className="relative">
-            <HiOutlineDocumentText className="w-5 h-5 text-blue-500" />
-            <span className="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
+            <HiOutlineDocumentText className="w-5 h-5 text-brand-action" />
+            <span className="absolute -top-1 -right-1 w-2 h-2 bg-brand-action rounded-full animate-pulse" />
           </div>
         ) : (
           <HiOutlineCheckCircle className="w-5 h-5 text-green-500" />
         )}
 
-        <span className="text-sm font-medium text-gray-700">
+        <span className="text-sm font-medium text-neutral-700">
           {processingCount > 0
             ? t('processingFiles', { count: processingCount })
             : t('quizzesReady', { count: completedCount })}
         </span>
 
         <HiOutlineChevronUp
-          className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isExpanded ? '' : 'rotate-180'
+          className={`w-4 h-4 text-neutral-400 transition-transform duration-200 ${isExpanded ? '' : 'rotate-180'
             }`}
         />
       </button>
@@ -153,15 +153,15 @@ function DraftItem({
     : 0;
 
   return (
-    <div className="px-4 py-3 border-b border-gray-50 last:border-0">
+    <div className="px-4 py-3 border-b border-neutral-50 last:border-0">
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <p className="font-medium text-sm text-gray-900 truncate">
+            <p className="font-medium text-sm text-neutral-900 truncate">
               {draft.title}
             </p>
             {draft.expiresAt && (
-              <span className="text-xs text-gray-400 flex-shrink-0">
+              <span className="text-xs text-neutral-400 flex-shrink-0">
                 ~ {getTimeRemaining(draft.expiresAt, t)}
               </span>
             )}
@@ -169,9 +169,9 @@ function DraftItem({
 
           {draft.status === 'processing' || draft.status === 'uploading' ? (
             <>
-              <div className="mt-2 h-1.5 bg-gray-100 rounded-full overflow-hidden flex">
+              <div className="mt-2 h-1.5 bg-neutral-100 rounded-full overflow-hidden flex">
                 <div
-                  className="h-full bg-blue-500 transition-[width] duration-300"
+                  className="h-full bg-brand-trust transition-[width] duration-300"
                   style={{ width: `${progress}%` }}
                 />
                 {errorProgress > 0 && (
@@ -182,7 +182,7 @@ function DraftItem({
                 )}
               </div>
               <div className="mt-1.5 flex items-center justify-between">
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-neutral-500">
                   {t('chunksCompleted', { completed: draft.chunksProcessed, total: draft.chunksTotal })}
                   {(draft.chunksError || 0) > 0 && (
                     <span className="text-red-500"> • {t('errors', { count: draft.chunksError })}</span>
@@ -201,7 +201,7 @@ function DraftItem({
             <Link
               href={`/draft/${draft.id}/edit`}
               className="mt-1.5 inline-flex items-center gap-1.5 text-xs
-                         text-blue-600 hover:text-blue-700 font-medium"
+                         text-brand-trust hover:text-brand-trust-hover font-medium"
             >
               <HiOutlineCheckCircle className="w-3.5 h-3.5" />
               {t('clickToEdit', { count: draft.questionsCount })}
@@ -219,7 +219,7 @@ function DraftItem({
         {draft.status === 'completed' && (
           <button
             onClick={onRemove}
-            className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors"
+            className="p-1.5 text-neutral-400 hover:text-neutral-600 transition-colors"
           >
             <HiOutlineX className="w-4 h-4" />
           </button>

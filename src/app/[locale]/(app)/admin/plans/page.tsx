@@ -1,26 +1,24 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { useSession, signOut } from 'next-auth/react'
+import { useSession } from 'next-auth/react'
 import { usePathname } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { Button } from '@/components/ui/Button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, Badge } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
 import Sidebar from '@/components/Sidebar'
 import { SubscriptionDurationType, PREDEFINED_DURATIONS, DurationUtils } from '@/types/subscription'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { Modal } from '@/components/ui/Modal'
 import {
-  HiChevronDown,
-  HiOutlineMenu,
-  HiOutlineLogout,
   HiOutlinePlus,
   HiOutlineTrash,
   HiOutlineCheck,
   HiOutlineX
 } from '@/components/icons'
+import Navigation from '@/components/Navigation'
 
 interface Plan {
   _id: string;
@@ -52,7 +50,6 @@ export default function AdminPlansPage() {
   const tCommon = useTranslations('common')
   const { data: session } = useSession()
   const pathname = usePathname()
-  const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
 
   const [plans, setPlans] = useState<Plan[]>([])
@@ -291,114 +288,7 @@ export default function AdminPlansPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Navigation */}
-      <nav className="bg-white/80 backdrop-blur-md border-b border-gray-100 sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            {/* Logo */}
-            <div className="flex items-center">
-              <Link href="/" className="flex items-center">
-                <div className="h-10 flex items-center justify-center">
-                  <img src="/images/auth_logo.png" alt="RinKuzu Logo" className="h-10 w-auto object-contain" />
-                </div>
-              </Link>
-              <span className="ml-3 px-2 py-1 bg-red-100 text-red-800 text-xs font-medium rounded">
-                {t('admin')}
-              </span>
-            </div>
-
-            {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center space-x-8">
-              {session ? (
-                <>
-                  <Link href="/" className="text-gray-600 hover:text-gray-900 transition-colors">
-                    {t('allQuizzes')}
-                  </Link>
-
-                  {/* User Menu */}
-                  <div className="relative">
-                    <button
-                      onClick={() => setIsMenuOpen(!isMenuOpen)}
-                      className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors"
-                    >
-                      <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
-                        <span className="text-white text-sm font-medium">
-                          {session.user?.email?.charAt(0).toUpperCase()}
-                        </span>
-                      </div>
-                      <HiChevronDown className={`w-4 h-4 transition-transform ${isMenuOpen ? 'rotate-180' : ''}`} />
-                    </button>
-
-                    {isMenuOpen && (
-                      <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-100 py-1">
-                        <button
-                          onClick={() => signOut()}
-                          className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                        >
-                          {t('loggingOut')}
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </>
-              ) : (
-                <div className="flex items-center space-x-4">
-                  <Link href="/login">
-                    <Button variant="ghost" className="text-gray-600 hover:text-gray-900">
-                      {tCommon('signIn')}
-                    </Button>
-                  </Link>
-                  <Link href="/register">
-                    <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-0">
-                      {tCommon('getStarted')}
-                    </Button>
-                  </Link>
-                </div>
-              )}
-            </div>
-
-            {/* Mobile menu button */}
-            <div className="md:hidden">
-              <button
-                onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className="text-gray-600 hover:text-gray-900"
-              >
-                <HiOutlineMenu className="w-6 h-6" />
-              </button>
-            </div>
-          </div>
-
-          {/* Mobile Navigation */}
-          {isMenuOpen && (
-            <div className="md:hidden border-t border-gray-100 py-4">
-              <div className="space-y-2">
-                {session ? (
-                  <>
-                    <Link href="/" className="block px-4 py-2 text-gray-600 hover:text-gray-900">
-                      {t('allQuizzes')}
-                    </Link>
-                    <button
-                      onClick={() => signOut()}
-                      className="block w-full text-left px-4 py-2 text-gray-600 hover:text-gray-900"
-                    >
-                      {t('loggingOut')}
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <Link href="/login" className="block px-4 py-2 text-gray-600 hover:text-gray-900">
-                      {tCommon('signIn')}
-                    </Link>
-                    <Link href="/register" className="block px-4 py-2 text-gray-600 hover:text-gray-900">
-                      {tCommon('getStarted')}
-                    </Link>
-                  </>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-      </nav>
+      <Navigation />
 
       {/* Sidebar */}
       <Sidebar
@@ -411,14 +301,17 @@ export default function AdminPlansPage() {
       <main className={`py-8 transition-all duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-16'} max-w-none px-4 sm:px-6 lg:px-8`}>
         {loading ? (
           <div className="flex justify-center py-12">
-            <div className="text-gray-500">{tCommon('loading')}</div>
+            <div className="flex flex-col items-center gap-3">
+              <div className="h-12 w-12 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
+              <div className="text-sm text-neutral-500">{tCommon('loading')}</div>
+            </div>
           </div>
         ) : (
           <div className="max-w-6xl mx-auto">
               <div className="flex justify-between items-center mb-8">
                 <div>
-                  <h1 className="text-3xl font-bold text-gray-900">{t('plans')}</h1>
-                  <p className="mt-2 text-gray-600">
+                  <h1 className="text-3xl font-bold text-neutral-900">{t('plans')}</h1>
+                  <p className="mt-2 text-neutral-600">
                     Manage subscription plans and pricing
                   </p>
                 </div>
@@ -450,7 +343,7 @@ export default function AdminPlansPage() {
                   <div className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-sm font-medium text-neutral-700 mb-2">
                           Plan Name *
                         </label>
                         <Input
@@ -462,7 +355,7 @@ export default function AdminPlansPage() {
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-sm font-medium text-neutral-700 mb-2">
                           Price (VND) *
                         </label>
                         <Input
@@ -477,13 +370,13 @@ export default function AdminPlansPage() {
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-sm font-medium text-neutral-700 mb-2">
                           Duration *
                         </label>
                         <select
                           value={createForm.duration}
                           onChange={e => setCreateForm({ ...createForm, duration: e.target.value })}
-                          className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          className="w-full p-2 border border-neutral-300 rounded-md focus:ring-2 focus:ring-brand-trust focus:border-green-500"
                           title="Select plan duration"
                         >
                           {Object.entries(PREDEFINED_DURATIONS).map(([key, duration]) => (
@@ -494,13 +387,13 @@ export default function AdminPlansPage() {
                         </select>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-sm font-medium text-neutral-700 mb-2">
                           Status
                         </label>
                         <select
                           value={createForm.isActive.toString()}
                           onChange={e => setCreateForm({ ...createForm, isActive: e.target.value === 'true' })}
-                          className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          className="w-full p-2 border border-neutral-300 rounded-md focus:ring-2 focus:ring-brand-trust focus:border-green-500"
                           title="Select plan status"
                         >
                           <option value="true">Active</option>
@@ -509,7 +402,7 @@ export default function AdminPlansPage() {
                       </div>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-sm font-medium text-neutral-700 mb-2">
                         Features
                       </label>
                       {createForm.features.map((feature, index) => (
@@ -555,7 +448,7 @@ export default function AdminPlansPage() {
                       <Button
                         type="submit"
                         disabled={createLoading}
-                        className="bg-blue-600 hover:bg-blue-700 text-white"
+                        className="bg-brand-trust hover:bg-brand-trust-hover text-white"
                       >
                         {createLoading ? 'Creating…' : tCommon('create') + ' Plan'}
                       </Button>
@@ -581,11 +474,14 @@ export default function AdminPlansPage() {
               {/* Plans Grid */}
               {loading ? (
                 <div className="flex justify-center py-12">
-                  <div className="text-gray-500">{t('loadingStatistics')}</div>
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="h-12 w-12 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
+                    <div className="text-sm text-neutral-500">{t('loadingStatistics')}</div>
+                  </div>
                 </div>
               ) : plans.length === 0 ? (
                 <div className="text-center py-12">
-                  <div className="text-gray-500">{t('noUsersFound')}</div>
+                  <div className="text-neutral-500">{t('noUsersFound')}</div>
                 </div>
               ) : (
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -610,7 +506,7 @@ export default function AdminPlansPage() {
                           <div className="flex items-center space-x-2">
                             <span className={`px-2 py-1 text-xs font-medium rounded-full ${plan.isActive
                                 ? 'bg-green-100 text-green-800'
-                                : 'bg-gray-100 text-gray-800'
+                                : 'bg-neutral-100 text-neutral-800'
                               }`}>
                               {plan.isActive ? 'Active' : 'Inactive'}
                             </span>
@@ -622,7 +518,7 @@ export default function AdminPlansPage() {
                         <div className="mb-6">
                           {editingPlan === plan._id ? (
                             <div className="space-y-2">
-                              <label className="block text-sm font-medium text-gray-700">
+                              <label className="block text-sm font-medium text-neutral-700">
                                 Price (VND)
                               </label>
                               <Input
@@ -633,7 +529,7 @@ export default function AdminPlansPage() {
                               />
                             </div>
                           ) : (
-                            <div className="text-3xl font-bold text-gray-900">
+                            <div className="text-3xl font-bold text-neutral-900">
                               {formatCurrency(plan.price)}
                             </div>
                           )}
@@ -641,7 +537,7 @@ export default function AdminPlansPage() {
 
                         {/* Features */}
                         <div className="space-y-3">
-                          <h4 className="font-medium text-gray-900">Features:</h4>
+                          <h4 className="font-medium text-neutral-900">Features:</h4>
                           {editingPlan === plan._id ? (
                             <div className="space-y-2">
                               {(editForm.features || []).map((feature, index) => (
@@ -676,7 +572,7 @@ export default function AdminPlansPage() {
                           ) : (
                             <ul className="space-y-2">
                               {plan.features.map((feature, index) => (
-                                <li key={index} className="flex items-center text-sm text-gray-600">
+                                <li key={index} className="flex items-center text-sm text-neutral-600">
                                   <HiOutlineCheck className="w-4 h-4 mr-2 text-green-500" />
                                   {feature}
                                 </li>
@@ -695,7 +591,7 @@ export default function AdminPlansPage() {
                                 onChange={(e) => setEditForm({ ...editForm, isActive: e.target.checked })}
                                 className="mr-2"
                               />
-                              <span className="text-sm text-gray-700">Active</span>
+                              <span className="text-sm text-neutral-700">Active</span>
                             </label>
                           </div>
                         )}
@@ -731,8 +627,8 @@ export default function AdminPlansPage() {
                         </div>
 
                         {/* Plan Info */}
-                        <div className="mt-4 pt-4 border-t border-gray-100">
-                          <div className="text-xs text-gray-500 space-y-1">
+                        <div className="mt-4 pt-4 border-t border-neutral-100">
+                          <div className="text-xs text-neutral-500 space-y-1">
                             <div>{t('created')}: {new Date(plan.createdAt).toLocaleDateString()}</div>
                             <div>{t('updated')}: {new Date(plan.updatedAt).toLocaleDateString()}</div>
                           </div>

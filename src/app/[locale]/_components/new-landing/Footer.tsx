@@ -8,18 +8,18 @@ export function Footer() {
   const t = useTranslations('landing.footer');
 
   return (
-    <footer className="bg-[#0d0d0d] border-t border-white/10">
+    <footer className="bg-neutral-900 border-t border-white/10" style={{ backgroundColor: '#181815' }}>
       <div className="max-w-7xl mx-auto px-6 py-16">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
           {/* Brand */}
           <div className="space-y-6">
-            <div>
+            <div className="inline-block rounded-lg bg-white/90 px-3 py-1.5">
               <Image
                 src="/images/navbar_logo.webp"
                 alt="RinKuzu Logo"
                 width={120}
                 height={32}
-                className="h-8 w-auto object-contain brightness-0 invert"
+                className="h-8 w-auto object-contain"
               />
             </div>
             <p className="text-white/50 text-sm leading-relaxed">
@@ -82,9 +82,9 @@ export function Footer() {
                 placeholder={t('newsletter.placeholder')}
                 aria-label={t('newsletter.placeholder')}
                 autoComplete="email"
-                className="flex-1 bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-teal-500/50 transition-colors"
+                className="flex-1 bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-brand-trust/50 transition-colors"
               />
-              <button className="bg-teal-500 text-black text-sm font-bold px-4 py-2 rounded-lg hover:bg-teal-400 transition-colors whitespace-nowrap">
+              <button className="bg-brand-trust text-white text-sm font-bold px-4 py-2 rounded-lg hover:bg-brand-trust-hover transition-colors whitespace-nowrap">
                 {t('newsletter.button')}
               </button>
             </div>

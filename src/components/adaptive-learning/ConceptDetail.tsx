@@ -11,29 +11,29 @@ interface ConceptDetailPanelProps {
 }
 
 const BLOOM_KEYS = ['remember', 'understand', 'apply', 'analyze', 'evaluate', 'create'] as const;
-const BLOOM_COLORS = ['bg-slate-500', 'bg-teal-500', 'bg-emerald-500', 'bg-amber-500', 'bg-orange-500', 'bg-rose-500'];
+const BLOOM_COLORS = ['bg-neutral-500', 'bg-green-500', 'bg-teal-500', 'bg-amber-500', 'bg-orange-500', 'bg-rose-500'];
 
 export default function ConceptDetailPanel({ concept, onClose }: ConceptDetailPanelProps) {
     const t = useTranslations('adaptiveLearning');
 
     const status = useMemo(() => {
         if (concept.status === 'locked') {
-            return { label: t('knowledgeGraph.legend.locked'), className: 'bg-gray-100 text-gray-600' };
+            return { label: t('knowledgeGraph.legend.locked'), className: 'bg-neutral-100 text-neutral-600' };
         }
         if (concept.status === 'mastered') {
             return { label: t('conceptDetail.mastered'), className: 'bg-green-100 text-green-700' };
         }
         if (concept.status === 'in_progress') {
-            return { label: t('conceptDetail.inProgress'), className: 'bg-teal-100 text-teal-700' };
+            return { label: t('conceptDetail.inProgress'), className: 'bg-green-100 text-brand-trust-hover' };
         }
-        return { label: t('conceptDetail.notStarted'), className: 'bg-gray-100 text-gray-600' };
+        return { label: t('conceptDetail.notStarted'), className: 'bg-neutral-100 text-neutral-600' };
     }, [concept.status, t]);
 
     const masteryBarClass = concept.status === 'locked'
-        ? 'bg-gray-400'
+        ? 'bg-neutral-400'
         : concept.mastery >= 0.75
-            ? 'bg-green-500'
-            : 'bg-teal-500';
+            ? 'bg-brand-trust'
+            : 'bg-brand-trust';
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm" onClick={onClose}>
@@ -41,57 +41,57 @@ export default function ConceptDetailPanel({ concept, onClose }: ConceptDetailPa
                 className="mx-4 max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-xl bg-white shadow-2xl"
                 onClick={(event) => event.stopPropagation()}
             >
-                <div className="sticky top-0 z-10 flex items-start justify-between rounded-t-xl border-b border-gray-100 bg-white px-6 py-4">
+                <div className="sticky top-0 z-10 flex items-start justify-between rounded-t-xl border-b border-neutral-100 bg-white px-6 py-4">
                     <div>
-                        <h2 className="text-xl font-bold text-gray-900">{concept.name}</h2>
+                        <h2 className="text-xl font-bold text-neutral-900">{concept.name}</h2>
                         <div className="mt-1 flex items-center gap-2">
                             <span className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${status.className}`}>
                                 {status.label}
                             </span>
                             {concept.visit_count > 0 ? (
-                                <span className="text-xs text-gray-500">{t('conceptDetail.visits', { count: concept.visit_count })}</span>
+                                <span className="text-xs text-neutral-500">{t('conceptDetail.visits', { count: concept.visit_count })}</span>
                             ) : null}
                         </div>
                     </div>
-                    <button aria-label={t('common.close') || "Close"} onClick={onClose} className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg p-1 transition-colors hover:bg-gray-100">
-                        <HiOutlineX className="h-5 w-5 text-gray-400" />
+                    <button aria-label={t('common.close') || "Close"} onClick={onClose} className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg p-1 transition-colors hover:bg-neutral-100">
+                        <HiOutlineX className="h-5 w-5 text-neutral-400" />
                     </button>
                 </div>
 
                 <div className="space-y-6 px-6 py-5">
                     {concept.definition ? (
                         <div>
-                            <h3 className="mb-2 text-sm font-bold uppercase tracking-wider text-gray-500">{t('conceptDetail.definition')}</h3>
-                            <p className="text-sm leading-relaxed text-gray-700">{concept.definition}</p>
+                            <h3 className="mb-2 text-sm font-bold uppercase tracking-wider text-neutral-500">{t('conceptDetail.definition')}</h3>
+                            <p className="text-sm leading-relaxed text-neutral-700">{concept.definition}</p>
                         </div>
                     ) : null}
 
                     <div>
-                        <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-gray-500">{t('conceptDetail.overallMastery')}</h3>
+                        <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-neutral-500">{t('conceptDetail.overallMastery')}</h3>
                         <div className="flex items-center gap-3">
-                            <div className="h-4 flex-1 overflow-hidden rounded-full bg-gray-100">
+                            <div className="h-4 flex-1 overflow-hidden rounded-full bg-neutral-100">
                                 <div
                                     className={`h-full rounded-full transition-all ${masteryBarClass}`}
                                     style={{ width: `${concept.mastery * 100}%` }}
                                 />
                             </div>
-                            <span className="text-lg font-bold text-gray-900">{Math.round(concept.mastery * 100)}%</span>
+                            <span className="text-lg font-bold text-neutral-900">{Math.round(concept.mastery * 100)}%</span>
                         </div>
                     </div>
 
                     <div>
-                        <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-gray-500">{t('conceptDetail.bloomBreakdown')}</h3>
+                        <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-neutral-500">{t('conceptDetail.bloomBreakdown')}</h3>
                         <div className="space-y-2">
                             {concept.bloom_mastery.map((value, index) => (
                                 <div key={index} className="flex items-center gap-3">
-                                    <span className="w-20 truncate text-xs font-medium text-gray-600">{t(`bloom.${BLOOM_KEYS[index]}`)}</span>
-                                    <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-gray-100">
+                                    <span className="w-20 truncate text-xs font-medium text-neutral-600">{t(`bloom.${BLOOM_KEYS[index]}`)}</span>
+                                    <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-neutral-100">
                                         <div
-                                            className={`h-full rounded-full transition-all ${BLOOM_COLORS[index] || 'bg-gray-400'}`}
+                                            className={`h-full rounded-full transition-all ${BLOOM_COLORS[index] || 'bg-neutral-400'}`}
                                             style={{ width: `${value * 100}%` }}
                                         />
                                     </div>
-                                    <span className="w-10 text-right text-xs font-bold text-gray-600">{Math.round(value * 100)}%</span>
+                                    <span className="w-10 text-right text-xs font-bold text-neutral-600">{Math.round(value * 100)}%</span>
                                 </div>
                             ))}
                         </div>
@@ -99,21 +99,21 @@ export default function ConceptDetailPanel({ concept, onClose }: ConceptDetailPa
 
                     {concept.prerequisites.length > 0 ? (
                         <div>
-                            <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-gray-500">
+                            <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-neutral-500">
                                 {t('conceptDetail.prerequisites', { count: concept.prerequisites.length })}
                             </h3>
                             <div className="space-y-2">
                                 {concept.prerequisites.map((prereq) => (
-                                    <div key={prereq.id} className="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2">
+                                    <div key={prereq.id} className="flex items-center justify-between rounded-lg bg-neutral-50 px-3 py-2">
                                         <div className="flex items-center gap-2">
                                             {prereq.mastery >= 0.75 ? (
                                                 <HiCheck className="h-4 w-4 text-green-500" />
                                             ) : (
-                                                <div className="h-4 w-4 rounded-full border-2 border-gray-300" />
+                                                <div className="h-4 w-4 rounded-full border-2 border-neutral-300" />
                                             )}
-                                            <span className="text-sm text-gray-700">{prereq.name}</span>
+                                            <span className="text-sm text-neutral-700">{prereq.name}</span>
                                         </div>
-                                        <span className={`text-xs font-bold ${prereq.mastery >= 0.75 ? 'text-green-600' : 'text-gray-500'}`}>
+                                        <span className={`text-xs font-bold ${prereq.mastery >= 0.75 ? 'text-green-600' : 'text-neutral-500'}`}>
                                             {Math.round(prereq.mastery * 100)}%
                                         </span>
                                     </div>
@@ -124,12 +124,12 @@ export default function ConceptDetailPanel({ concept, onClose }: ConceptDetailPa
 
                     {concept.dependents.length > 0 ? (
                         <div>
-                            <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-gray-500">
+                            <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-neutral-500">
                                 {t('conceptDetail.unlocks', { count: concept.dependents.length })}
                             </h3>
                             <div className="flex flex-wrap gap-2">
                                 {concept.dependents.map((dependent) => (
-                                    <span key={dependent.id} className="rounded-full bg-teal-50 px-3 py-1 text-xs font-medium text-teal-700">
+                                    <span key={dependent.id} className="rounded-full bg-green-50 px-3 py-1 text-xs font-medium text-brand-trust-hover">
                                         {dependent.name}
                                     </span>
                                 ))}

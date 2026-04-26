@@ -131,45 +131,45 @@ export default function SubscriptionPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">{t('loading')}</p>
+          <div className="h-12 w-12 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust mx-auto" />
+          <p className="mt-4 text-neutral-600">{t('loading')}</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24 md:pb-8">
+    <div className="min-h-screen bg-neutral-50 pb-24 md:pb-8">
       <Navigation />
       <div className="py-6 md:py-8">
         <div className="max-w-6xl mx-auto px-4">
           <div className="text-center mb-6 md:mb-8">
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2 md:mb-4">
+            <h1 className="text-2xl md:text-3xl font-bold text-neutral-900 mb-2 md:mb-4">
               {t('upgrade')} <HiOutlineStar className="inline-block text-yellow-500 mb-1" />
             </h1>
-            <p className="text-base md:text-lg text-gray-600">
+            <p className="text-base md:text-lg text-neutral-600">
               {t('subtitle')}
             </p>
           </div>
 
           {/* Current Subscription Status */}
           {subscriptionStatus?.subscription && (
-            <Card className="mb-6 md:mb-8 p-4 md:p-6 bg-blue-50 border-blue-200">
-              <h2 className="text-lg md:text-xl font-semibold text-blue-900 mb-3 md:mb-4">
+            <Card className="mb-6 md:mb-8 p-4 md:p-6 bg-green-50 border-green-200">
+              <h2 className="text-lg md:text-xl font-semibold text-green-800 mb-3 md:mb-4">
                 {t('currentPlan')} <HiOutlineShieldCheck className="inline-block ml-1" />
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
                 <div>
-                  <p className="text-sm text-blue-700">{t('title')}</p>
-                  <p className="font-medium text-blue-900">
+                  <p className="text-sm text-brand-trust">{t('title')}</p>
+                  <p className="font-medium text-green-800">
                     {subscriptionStatus.subscription.type}
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm text-blue-700">{t('expiresOn')}</p>
-                  <p className="font-medium text-blue-900">
+                  <p className="text-sm text-brand-trust">{t('expiresOn')}</p>
+                  <p className="font-medium text-green-800">
                     {subscriptionStatus.subscription.endDate
                       ? formatDate(subscriptionStatus.subscription.endDate)
                       : '-'}
@@ -192,20 +192,20 @@ export default function SubscriptionPage() {
                 )}
 
                 <div className="text-center mb-4 md:mb-6">
-                  <h3 className="text-xl md:text-2xl font-bold text-gray-900 mb-2">
+                  <h3 className="text-xl md:text-2xl font-bold text-neutral-900 mb-2">
                     {plan.name}
                   </h3>
-                  <div className="text-2xl md:text-4xl font-bold text-blue-600 mb-2">
+                  <div className="text-2xl md:text-4xl font-bold text-brand-trust mb-2">
                     {formatPrice(plan.price)}
                   </div>
-                  <p className="text-sm md:text-base text-gray-600">{plan.durationDisplay || plan.duration}</p>
+                  <p className="text-sm md:text-base text-neutral-600">{plan.durationDisplay || plan.duration}</p>
                 </div>
 
                 <ul className="space-y-2 md:space-y-3 mb-6 md:mb-8">
                   {plan.features.map((feature, index) => (
                     <li key={index} className="flex items-start">
                       <HiOutlineCheck className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
-                      <span className="text-gray-700">{feature}</span>
+                      <span className="text-neutral-700">{feature}</span>
                     </li>
                   ))}
                 </ul>
@@ -229,7 +229,7 @@ export default function SubscriptionPage() {
             title={t('subscribe')}
             message={(
               <div className="space-y-4">
-                <p className="text-gray-700">
+                <p className="text-neutral-700">
                   {selectedPlan?.name} - {selectedPlan ? formatPrice(selectedPlan.price) : ''}
                 </p>
               </div>

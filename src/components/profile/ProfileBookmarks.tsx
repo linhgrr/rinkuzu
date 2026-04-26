@@ -295,7 +295,10 @@ export default function ProfileBookmarks() {
     if (loading && bookmarks.length === 0) {
         return (
             <div className="flex justify-center py-12">
-                <div className="text-gray-500">{tCommon('loadingBookmarks')}</div>
+                <div className="flex flex-col items-center gap-3">
+                    <div className="h-8 w-8 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
+                    <div className="text-sm text-neutral-500">{tCommon('loadingBookmarks')}</div>
+                </div>
             </div>
         )
     }
@@ -303,8 +306,8 @@ export default function ProfileBookmarks() {
     return (
         <div className="space-y-6">
             <div>
-                <h2 className="text-2xl font-bold text-gray-900">{t('bookmarkedQuestions')}</h2>
-                <p className="mt-1 text-gray-600">{t('bookmarkedDescription')}</p>
+                <h2 className="text-2xl font-bold text-neutral-900">{t('bookmarkedQuestions')}</h2>
+                <p className="mt-1 text-neutral-600">{t('bookmarkedDescription')}</p>
             </div>
 
             {error && (
@@ -315,10 +318,10 @@ export default function ProfileBookmarks() {
                 <Card>
                     <CardContent className="text-center py-12">
                         <div className="flex justify-center mb-4">
-                            <HiOutlineTag className="text-gray-400 w-12 h-12" />
+                            <HiOutlineTag className="text-neutral-400 w-12 h-12" />
                         </div>
-                        <h3 className="text-lg font-medium text-gray-900 mb-2">{t('noBookmarks')}</h3>
-                        <p className="text-gray-600 mb-6">{t('exploreQuizzes')}</p>
+                        <h3 className="text-lg font-medium text-neutral-900 mb-2">{t('noBookmarks')}</h3>
+                        <p className="text-neutral-600 mb-6">{t('exploreQuizzes')}</p>
                         <Link href={ROUTES.DASHBOARD}>
                             <Button>{tCommon('browseQuizzes')}</Button>
                         </Link>
@@ -333,16 +336,16 @@ export default function ProfileBookmarks() {
                                     <div className="flex-1 min-w-0">
                                         <CardTitle className="text-lg">{bookmark.question.text}</CardTitle>
                                         <div className="flex items-center space-x-2 mt-2 flex-wrap gap-y-1">
-                                            <div className="text-sm text-gray-600">
-                                                <Link href={`/quiz/${bookmark.quiz.slug}`} className="text-blue-600 hover:underline">
+                                            <div className="text-sm text-neutral-600">
+                                                <Link href={`/quiz/${bookmark.quiz.slug}`} className="text-brand-action hover:underline">
                                                     {bookmark.quiz.title}
                                                 </Link>
                                             </div>
-                                            <span className={`px-2 py-0.5 rounded text-xs font-medium ${bookmark.question.type === 'single' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'
+                                            <span className={`px-2 py-0.5 rounded text-xs font-medium ${bookmark.question.type === 'single' ? 'bg-orange-100 text-orange-800' : 'bg-green-100 text-green-800'
                                                 }`}>
                                                 {bookmark.question.type === 'single' ? t('singleChoice') : t('multipleChoice')}
                                             </span>
-                                            <span className="text-xs text-gray-500">{new Date(bookmark.createdAt).toLocaleDateString()}</span>
+                                            <span className="text-xs text-neutral-500">{new Date(bookmark.createdAt).toLocaleDateString()}</span>
                                         </div>
                                     </div>
                                     <div className="flex gap-2 w-full sm:w-auto">
@@ -363,10 +366,10 @@ export default function ProfileBookmarks() {
                             <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
                                 <div className="space-y-3">
                                     <div className="text-sm">
-                                        <span className="font-medium text-gray-700">{t('correct')}: </span>
+                                        <span className="font-medium text-neutral-700">{t('correct')}: </span>
                                         <span className="text-green-600">{formatCorrectAnswer(bookmark.question)}</span>
                                     </div>
-                                    <div className="mt-2 text-sm text-gray-600">
+                                    <div className="mt-2 text-sm text-neutral-600">
                                         <div className="grid grid-cols-1 gap-1">
                                             {bookmark.question.options.map((option, optIdx) => (
                                                 <div key={optIdx} className="opacity-75">
@@ -402,7 +405,7 @@ export default function ProfileBookmarks() {
                 >
                     {/* Simplified Modal Content for brevity in this rewrite, assuming logic carried over */}
                     <div className="space-y-4">
-                        <div className="border rounded-lg p-4 bg-gray-50 max-h-[30vh] overflow-y-auto">
+                        <div className="border rounded-lg p-4 bg-neutral-50 max-h-[30vh] overflow-y-auto">
                             <p className="font-medium">{currentBookmark.question.text}</p>
                             <ul className="text-sm mt-2 space-y-1">
                                 {currentBookmark.question.options.map((o, i) => (
@@ -414,12 +417,12 @@ export default function ProfileBookmarks() {
                         {/* Chat History Area */}
                         <div className="border rounded-lg p-4 bg-white h-[40vh] overflow-y-auto chat-history-container">
                             {chatHistories[currentBookmark._id]?.map((msg, idx) => (
-                                <div key={idx} className={`p-2 rounded mb-2 text-sm ${msg.role === 'user' ? 'bg-blue-50 ml-8' : 'bg-purple-50 mr-8'}`}>
+                                <div key={idx} className={`p-2 rounded mb-2 text-sm ${msg.role === 'user' ? 'bg-orange-50 ml-8' : 'bg-green-50 mr-8'}`}>
                                     <div className="font-bold text-xs mb-1">{msg.role === 'user' ? t('you') : t('rinChan')}</div>
                                     {msg.role === 'assistant' ? <MarkdownRenderer content={msg.content} /> : msg.content}
                                 </div>
                             ))}
-                            {loadingAI && <div className="text-xs text-gray-500 animate-pulse">{t('thinking')}</div>}
+                            {loadingAI && <div className="text-xs text-neutral-500 animate-pulse">{t('thinking')}</div>}
                         </div>
 
                         <div className="flex gap-2">

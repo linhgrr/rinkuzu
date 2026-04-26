@@ -92,10 +92,10 @@ export default async function PricingPage({ params }: Props) {
       <JsonLd id="pricing-faq-schema" data={faqSchema} />
 
       {/* Hero */}
-      <section className="bg-[#fbfbfd] py-20 text-center">
+      <section className="bg-[var(--bg-section)] py-20 text-center">
         <div className="max-w-2xl mx-auto px-6">
-          <h1 className="text-4xl md:text-5xl font-bold text-[#1d1d1f] mb-4">Simple, Transparent Pricing</h1>
-          <p className="text-[#86868b] text-lg">
+          <h1 className="text-4xl md:text-5xl font-bold text-[var(--text-primary)] mb-4">Simple, Transparent Pricing</h1>
+          <p className="text-[var(--text-muted)] text-lg">
             Start free. Upgrade when you&apos;re ready for full adaptive learning.
           </p>
         </div>
@@ -150,14 +150,14 @@ export default async function PricingPage({ params }: Props) {
       />
 
       {/* Pricing FAQ */}
-      <section className="py-20 bg-[#fbfbfd]">
+      <section className="py-20 bg-[var(--bg-section)]">
         <div className="max-w-2xl mx-auto px-6">
-          <h2 className="text-3xl font-bold text-[#1d1d1f] mb-10 text-center">Pricing Questions</h2>
+          <h2 className="text-3xl font-bold text-[var(--text-primary)] mb-10 text-center">Pricing Questions</h2>
           <div className="space-y-6">
             {pricingFaqs.map((faq) => (
-              <div key={faq.q} className="bg-white rounded-2xl border border-gray-200 p-6">
-                <h3 className="font-semibold text-[#1d1d1f] mb-2">{faq.q}</h3>
-                <p className="text-[#86868b] leading-relaxed">{faq.a}</p>
+              <div key={faq.q} className="bg-white rounded-2xl border border-neutral-200 p-6">
+                <h3 className="font-semibold text-[var(--text-primary)] mb-2">{faq.q}</h3>
+                <p className="text-[var(--text-muted)] leading-relaxed">{faq.a}</p>
               </div>
             ))}
           </div>
@@ -165,17 +165,17 @@ export default async function PricingPage({ params }: Props) {
       </section>
 
       {/* Bottom CTA */}
-      <section className="bg-[#1d1d1f] text-white py-16 text-center">
+      <section className="bg-gradient-to-br from-orange-50 via-white to-green-50 py-16 text-center border-t border-neutral-100">
         <div className="max-w-xl mx-auto px-6 space-y-4">
-          <h2 className="text-2xl font-semibold">Not sure which plan is right for you?</h2>
-          <p className="text-gray-400">
+          <h2 className="text-2xl font-semibold text-neutral-900">Not sure which plan is right for you?</h2>
+          <p className="text-neutral-600">
             Start with the free plan — no credit card required. Upgrade anytime.
           </p>
           <a
-            href="/faq"
-            className="inline-block border border-white/30 text-white font-semibold px-8 py-3 rounded-full hover:bg-white/10 transition-colors"
+            href="/register"
+            className="inline-block bg-brand-action text-white font-semibold px-8 py-3 rounded-full hover:bg-brand-action-hover transition-colors shadow-sm"
           >
-            Read the FAQ
+            Get Started Free
           </a>
         </div>
       </section>

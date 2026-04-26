@@ -134,17 +134,17 @@ export default function CategoryPage({ params }: CategoryPageProps) {
 
   const getCategoryColor = (color: string) => {
     const colorMap: { [key: string]: string } = {
-      'blue': 'bg-blue-100 text-blue-700 border-blue-200',
-      'green': 'bg-emerald-100 text-emerald-700 border-emerald-200',
+      'blue': 'bg-green-100 text-brand-trust border-green-200',
+      'green': 'bg-green-100 text-green-700 border-green-200',
       'purple': 'bg-violet-100 text-violet-700 border-violet-200',
       'red': 'bg-red-100 text-red-700 border-red-200',
       'yellow': 'bg-yellow-100 text-yellow-700 border-yellow-200',
       'indigo': 'bg-indigo-100 text-indigo-700 border-indigo-200',
       'pink': 'bg-pink-100 text-pink-700 border-pink-200',
-      'gray': 'bg-gray-100 text-gray-700 border-gray-200',
+      'gray': 'bg-neutral-100 text-neutral-700 border-neutral-200',
       'cyan': 'bg-cyan-100 text-cyan-700 border-cyan-200',
       'orange': 'bg-orange-100 text-orange-700 border-orange-200',
-      'teal': 'bg-teal-100 text-teal-700 border-teal-200',
+      'teal': 'bg-green-100 text-brand-trust-hover border-green-200',
     };
     return colorMap[color?.toLowerCase()] || colorMap['purple'];
   };
@@ -195,12 +195,12 @@ export default function CategoryPage({ params }: CategoryPageProps) {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-8">
         {/* Breadcrumb */}
-        <nav className="flex items-center space-x-2 text-sm text-gray-500 mb-6">
-          <Link href="/" className="hover:text-gray-700">{tNav('home')}</Link>
+        <nav className="flex items-center space-x-2 text-sm text-neutral-500 mb-6">
+          <Link href="/" className="hover:text-neutral-700">{tNav('home')}</Link>
           <span>›</span>
-          <Link href="/categories" className="hover:text-gray-700">{t('title')}</Link>
+          <Link href="/categories" className="hover:text-neutral-700">{t('title')}</Link>
           <span>›</span>
-          <span className="text-gray-900 font-medium">{category?.name}</span>
+          <span className="text-neutral-900 font-medium">{category?.name}</span>
         </nav>
 
         {/* Category Header */}
@@ -214,8 +214,8 @@ export default function CategoryPage({ params }: CategoryPageProps) {
                 {category.name.charAt(0)}
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">{category.name}</h1>
-                <p className="text-gray-600 mt-1">
+                <h1 className="text-3xl font-bold text-neutral-900">{category.name}</h1>
+                <p className="text-neutral-600 mt-1">
                   {category.description} • {t('quizCount', { count: category.quizCount })}
                 </p>
               </div>
@@ -261,7 +261,7 @@ export default function CategoryPage({ params }: CategoryPageProps) {
 
         {/* Results Info */}
         <div className="flex items-center justify-between mb-8">
-          <p className="text-gray-600">
+          <p className="text-neutral-600">
             Showing {quizzes.length} of {pagination.total} quizzes
             {searchTerm && (
               <span className="ml-2">
@@ -275,7 +275,7 @@ export default function CategoryPage({ params }: CategoryPageProps) {
             )}
           </p>
           {loading && (
-            <span className="text-sm text-gray-500">{tCommon('loading')}...</span>
+            <span className="text-sm text-neutral-500">{tCommon('loading')}...</span>
           )}
 
           {(searchTerm) && (
@@ -286,7 +286,7 @@ export default function CategoryPage({ params }: CategoryPageProps) {
                 setPagination(prev => ({ ...prev, page: 1 }));
                 fetchCategoryAndQuizzes(1, '');
               }}
-              className="text-violet-600 hover:text-violet-700"
+              className="text-brand-trust hover:text-brand-trust-hover"
             >
               Clear filters
             </Button>
@@ -296,11 +296,11 @@ export default function CategoryPage({ params }: CategoryPageProps) {
         {/* Quizzes Grid */}
         {quizzes.length === 0 ? (
           <Card variant="glass" className="p-12 text-center">
-            <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mx-auto mb-6">
-              <HiOutlineInbox className="w-8 h-8 text-gray-400" />
+            <div className="w-20 h-20 bg-gradient-to-br from-neutral-100 to-neutral-200 rounded-full flex items-center justify-center mx-auto mb-6">
+              <HiOutlineInbox className="w-8 h-8 text-neutral-400" />
             </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-3">No quizzes found</h3>
-            <p className="text-gray-600 mb-6">
+            <h3 className="text-xl font-semibold text-neutral-900 mb-3">No quizzes found</h3>
+            <p className="text-neutral-600 mb-6">
               {searchTerm
                 ? `No quizzes match "${searchTerm}" in ${category?.name}`
                 : `No quizzes available in ${category?.name} yet`
@@ -341,11 +341,11 @@ export default function CategoryPage({ params }: CategoryPageProps) {
                         {quiz.category?.name}
                       </Badge>
                     </div>
-                    <span className="text-xs text-gray-500">
+                    <span className="text-xs text-neutral-500">
                       {quiz.questionCount} {tQuiz('questions')}
                     </span>
                   </div>
-                  <CardTitle size="md" className="group-hover:text-violet-600 transition-colors">
+                  <CardTitle size="md" className="group-hover:text-brand-trust transition-colors">
                     {quiz.title}
                   </CardTitle>
                   <CardDescription className="line-clamp-2">
@@ -353,7 +353,7 @@ export default function CategoryPage({ params }: CategoryPageProps) {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
+                  <div className="flex items-center justify-between text-sm text-neutral-500 mb-4">
                     <span>By {(quiz.author?.email || 'unknown').split('@')[0]}</span>
                     <span>{formatDate(quiz.createdAt)}</span>
                   </div>

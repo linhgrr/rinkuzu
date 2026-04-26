@@ -49,17 +49,17 @@ export default async function BlogIndexPage({ params }: Props) {
   return (
     <article className="min-h-screen bg-white">
       {/* Hero */}
-      <header className="bg-[#fbfbfd] border-b border-gray-100">
+      <header className="bg-[var(--bg-section)] border-b border-neutral-100">
         <div className="max-w-3xl mx-auto px-6 pt-16 pb-12">
-          <nav className="flex items-center gap-2 text-sm text-[#414d60] mb-8">
-            <Link href="/" className="hover:text-[#1e242c] transition-colors">Home</Link>
+          <nav className="flex items-center gap-2 text-sm text-[var(--text-muted)] mb-8">
+            <Link href="/" className="hover:text-[var(--text-primary)] transition-colors">Home</Link>
             <span>/</span>
-            <span className="text-[#1e242c] font-medium">Blog</span>
+            <span className="text-[var(--text-primary)] font-medium">Blog</span>
           </nav>
-          <h1 className="text-3xl md:text-5xl font-bold text-[#1e242c] leading-tight mb-4">
+          <h1 className="text-3xl md:text-5xl font-bold text-[var(--text-primary)] leading-tight mb-4">
             RinKuzu Blog
           </h1>
-          <p className="text-lg text-[#414d60] leading-relaxed max-w-2xl">
+          <p className="text-lg text-[var(--text-muted)] leading-relaxed max-w-2xl">
             Insights on adaptive learning, AI in education, knowledge graphs, and how RinKuzu transforms any PDF lecture into a personalized study journey.
           </p>
         </div>
@@ -71,10 +71,10 @@ export default async function BlogIndexPage({ params }: Props) {
           <Link
             key={post.slug}
             href={`/blog/${post.slug}`}
-            className="group block rounded-3xl overflow-hidden border border-gray-200 hover:shadow-xl hover:-translate-y-1 transition-all"
+            className="group block rounded-3xl overflow-hidden border border-neutral-200 hover:shadow-xl hover:-translate-y-1 transition-all"
           >
             {/* Thumbnail */}
-            <div className="relative aspect-[16/7] overflow-hidden bg-gray-50">
+            <div className="relative aspect-[16/7] overflow-hidden bg-neutral-50">
               <Image
                 src={post.image}
                 alt={post.imageAlt}
@@ -87,18 +87,18 @@ export default async function BlogIndexPage({ params }: Props) {
             {/* Card body */}
             <div className="p-8">
               <div className="flex items-center gap-3 mb-3">
-                <span className="text-xs font-semibold uppercase tracking-wider text-teal-600 bg-teal-50 px-3 py-1 rounded-full">
+                <span className="text-xs font-semibold uppercase tracking-wider text-brand-trust bg-green-50 px-3 py-1 rounded-full">
                   {post.category}
                 </span>
-                <span className="text-xs text-[#414d60]">{post.date} · {post.readTime}</span>
+                <span className="text-xs text-[var(--text-muted)]">{post.date} · {post.readTime}</span>
               </div>
-              <h2 className="text-xl md:text-2xl font-bold text-[#1e242c] mb-3 group-hover:text-teal-600 transition-colors leading-snug">
+              <h2 className="text-xl md:text-2xl font-bold text-[var(--text-primary)] mb-3 group-hover:text-brand-trust transition-colors leading-snug">
                 {post.title}
               </h2>
-              <p className="text-[#414d60] leading-relaxed line-clamp-3 mb-4">
+              <p className="text-[var(--text-muted)] leading-relaxed line-clamp-3 mb-4">
                 {post.description}
               </p>
-              <span className="text-sm font-semibold text-teal-600 group-hover:underline">
+              <span className="text-sm font-semibold text-brand-trust group-hover:underline">
                 Read article →
               </span>
             </div>

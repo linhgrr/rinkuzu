@@ -32,7 +32,7 @@ export function FAQ() {
               key={faq.id}
               className={`rounded-xl border transition-all ${
                 openId === faq.id
-                  ? 'border-teal-500/30 bg-teal-500/5'
+                  ? 'border-brand-trust/30 bg-green-500/5'
                   : 'border-white/10 bg-white/5'
               }`}
             >
@@ -42,7 +42,7 @@ export function FAQ() {
                 aria-expanded={openId === faq.id}
               >
                 <span className="text-white font-medium pr-4">{faq.q}</span>
-                <span className="text-teal-400 shrink-0">
+                <span className="text-green-400 shrink-0">
                   {openId === faq.id ? (
                     <HiOutlineMinus className="w-5 h-5" />
                   ) : (

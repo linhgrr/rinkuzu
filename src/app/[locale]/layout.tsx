@@ -133,7 +133,7 @@ export default async function LocaleLayout({
         <link rel="preconnect" href="https://www.googletagmanager.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://www.google-analytics.com" crossOrigin="anonymous" />
       </head>
-      <body className={`${inter.className} min-h-screen antialiased bg-[#f5f5f7]`}>
+      <body className={`${inter.className} min-h-screen antialiased bg-neutral-50`}>
         <NextIntlClientProvider messages={messages}>
           <JsonLd id="org-schema" data={organizationSchema} />
           <JsonLd id="website-schema" data={websiteSchema} />

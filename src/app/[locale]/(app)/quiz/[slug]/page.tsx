@@ -475,11 +475,11 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
         <Navigation />
         <div className="flex items-center justify-center min-h-[70vh]">
           <div className="text-center">
-            <div className="inline-flex items-center justify-center p-4 bg-gradient-to-br from-violet-500/10 to-purple-600/10 rounded-2xl mb-6">
-              <div className="animate-spin rounded-full h-8 w-8 border-2 border-violet-600 border-t-transparent"></div>
+            <div className="inline-flex items-center justify-center p-4 bg-gradient-to-br from-green-500/10 to-brand-trust/10 rounded-2xl mb-6">
+              <div className="h-8 w-8 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
             </div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">{t('loadingQuiz')}</h2>
-            <p className="text-gray-600">{t('preparingQuiz')}</p>
+            <h2 className="text-xl font-semibold text-neutral-900 mb-2">{t('loadingQuiz')}</h2>
+            <p className="text-neutral-600">{t('preparingQuiz')}</p>
           </div>
         </div>
       </div>
@@ -499,7 +499,7 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
               <CardTitle className="text-red-600 text-xl">{t('quizNotFound')}</CardTitle>
             </CardHeader>
             <CardContent className="text-center">
-              <p className="text-gray-600 mb-6">{error}</p>
+              <p className="text-neutral-600 mb-6">{error}</p>
               <Link href="/">
                 <Button variant="gradient" className="w-full">
                   <HiOutlineArrowLeft className="w-4 h-4 mr-2" />
@@ -521,11 +521,11 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
         <div className="flex items-center justify-center min-h-[70vh] px-4">
           <Card variant="glass" className="max-w-md w-full backdrop-blur-xl border-white/30 shadow-xl">
             <CardHeader className="text-center">
-              <div className="inline-flex items-center justify-center p-3 bg-gradient-to-br from-violet-500/10 to-purple-600/10 rounded-2xl mb-4 mx-auto w-fit">
-                <HiOutlineDocumentText className="w-6 h-6 text-violet-600" />
+              <div className="inline-flex items-center justify-center p-3 bg-gradient-to-br from-green-500/10 to-brand-trust/10 rounded-2xl mb-4 mx-auto w-fit">
+                <HiOutlineDocumentText className="w-6 h-6 text-brand-trust" />
               </div>
-              <CardTitle className="text-2xl gradient-text mb-2">{t('quizAccess')}</CardTitle>
-              <p className="text-gray-600">{t('loadingQuizInfo')}</p>
+              <CardTitle className="text-2xl text-neutral-900 mb-2">{t('quizAccess')}</CardTitle>
+              <p className="text-neutral-600">{t('loadingQuizInfo')}</p>
             </CardHeader>
           </Card>
         </div>
@@ -547,18 +547,18 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
         <div className="flex items-center justify-center min-h-[80vh] px-4">
           <Card variant="glass" className="max-w-lg w-full backdrop-blur-xl border-white/30 shadow-xl animate-fadeInUp">
             <CardHeader className="text-center">
-              <div className="inline-flex items-center justify-center p-3 bg-gradient-to-br from-violet-500/10 to-purple-600/10 rounded-2xl mb-4 mx-auto w-fit">
-                <HiOutlineDocumentText className="w-6 h-6 text-violet-600" />
+              <div className="inline-flex items-center justify-center p-3 bg-gradient-to-br from-green-500/10 to-brand-trust/10 rounded-2xl mb-4 mx-auto w-fit">
+                <HiOutlineDocumentText className="w-6 h-6 text-brand-trust" />
               </div>
-              <CardTitle className="text-2xl gradient-text mb-2">{quiz.title}</CardTitle>
+              <CardTitle className="text-2xl text-neutral-900 mb-2">{quiz.title}</CardTitle>
               {quiz.description && (
-                <p className="text-gray-600">{quiz.description}</p>
+                <p className="text-neutral-600">{quiz.description}</p>
               )}
             </CardHeader>
             <CardContent>
               <div className="space-y-6">
                 {/* Quiz Info */}
-                <div className="flex justify-center space-x-8 py-4 bg-gray-50/50 rounded-xl">
+                <div className="flex justify-center space-x-8 py-4 bg-neutral-50/50 rounded-xl">
                   <div className="text-center">
                     <Badge variant="purple" className="mb-1">
                       {quiz.questions.length} {t('questions')}
@@ -581,11 +581,11 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
                 )}
 
                 {/* Login Suggestion */}
-                <Card variant="bordered" className="border-blue-200 bg-blue-50 p-4">
-                  <div className="text-center text-blue-700">
-                    <HiOutlineLightBulb className="w-6 h-6 mx-auto mb-2 text-blue-600" />
+                <Card variant="bordered" className="border-green-200 bg-green-50 p-4">
+                  <div className="text-center text-brand-trust">
+                    <HiOutlineLightBulb className="w-6 h-6 mx-auto mb-2 text-brand-trust" />
                     <p className="text-sm font-medium">
-                      <Link href="/login" className="underline hover:text-blue-800">{t('login')}</Link> {t('loginToTrack')}
+                      <Link href="/login" className="underline hover:text-green-700">{t('login')}</Link> {t('loginToTrack')}
                     </p>
                   </div>
                 </Card>
@@ -605,7 +605,7 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
                       <HiOutlineMail className="w-5 h-5" />
                     }
                   />
-                  <p className="mt-2 text-xs text-gray-500">
+                  <p className="mt-2 text-xs text-neutral-500">
                     {t('weWillUseEmail')}
                   </p>
                 </div>
@@ -701,7 +701,7 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
       {!isMobile && (
       <div className="min-h-screen">
       {/* Quiz Header - Full screen experience without navigation */}
-      <div className="border-b border-gray-200/50 bg-white/80 backdrop-blur-sm sticky top-0 z-40">
+      <div className="border-b border-neutral-200/50 bg-white/80 backdrop-blur-sm sticky top-0 z-40">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
@@ -714,7 +714,7 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
                 {t('exitQuiz')}
               </Button>
               <div>
-                <h1 className="text-lg font-semibold text-gray-900">{quiz.title}</h1>
+                <h1 className="text-lg font-semibold text-neutral-900">{quiz.title}</h1>
                 <p className="text-sm">
                   {session?.user?.email ? (
                     <Badge variant="success" className="text-xs">
@@ -733,10 +733,10 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
             <div className="flex items-center space-x-4">
               <ReportQuiz quizSlug={params.slug} quizTitle={quiz.title} />
               <div className="text-right">
-                <div className="text-sm font-semibold text-gray-700">
+                <div className="text-sm font-semibold text-neutral-700">
                   {t('question')} {currentQuestionIndex + 1} {t('of', { ns: 'common' })} {quiz.questions.length}
                 </div>
-                <div className="text-xs text-gray-500">
+                <div className="text-xs text-neutral-500">
                   {answeredQuestions} {t('of', { ns: 'common' })} {quiz.questions.length} {t('answered')}
                 </div>
               </div>
@@ -745,13 +745,13 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
 
           {/* Progress bar */}
           <div className="mt-4">
-            <div className="flex items-center justify-between text-xs text-gray-600 mb-2">
+            <div className="flex items-center justify-between text-xs text-neutral-600 mb-2">
               <span>{t('progress')}</span>
               <span>{progress}% {t('complete')}</span>
             </div>
-            <div className="bg-gray-200 rounded-full h-3 overflow-hidden">
+            <div className="bg-neutral-200 rounded-full h-3 overflow-hidden">
               <div
-                className="bg-gradient-to-r from-violet-500 to-purple-600 h-3 rounded-full transition-all duration-500 ease-out"
+                className="bg-gradient-to-r from-brand-trust to-green-600 h-3 rounded-full transition-all duration-500 ease-out"
                 style={{ width: `${progress}%` }}
               ></div>
             </div>
@@ -768,7 +768,7 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
               <CardHeader>
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
-                    <div className="text-xl font-semibold [&_p]:text-xl [&_p]:text-gray-900 [&_p]:m-0">
+                    <div className="text-xl font-semibold [&_p]:text-xl [&_p]:text-neutral-900 [&_p]:m-0">
                       <MarkdownRenderer content={currentQuestion.question} />
                     </div>
                   </div>
@@ -776,7 +776,7 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
                     <Button
                       variant="outline"
                       onClick={openAIModal}
-                      className="text-purple-600 border-purple-200 hover:bg-purple-50 hover:border-purple-300"
+                      className="text-brand-trust border-green-200 hover:bg-green-50 hover:border-green-300"
                     >
                       {t('askRinChan')}
                     </Button>
@@ -791,7 +791,7 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
                           setShowMobileDiscussion(true);
                         }
                       }}
-                      className="text-blue-600 border-blue-200 hover:bg-blue-50 hover:border-blue-300"
+                      className="text-brand-trust border-green-200 hover:bg-green-50 hover:border-green-300"
                       title={t('discussion')}
                     >
                       {t('discussion')}
@@ -826,8 +826,8 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
                       <label
                         key={index}
                         className={`flex items-center p-4 rounded-lg border-2 cursor-pointer transition-colors ${isSelected
-                          ? 'border-blue-500 bg-blue-50'
-                          : 'border-gray-200 hover:border-gray-300'
+                          ? 'border-green-500 bg-green-50'
+                          : 'border-neutral-200 hover:border-neutral-300'
                           }`}
                       >
                         <input
@@ -840,8 +840,8 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
                         />
                         <div className={`w-4 h-4 mr-3 flex items-center justify-center border-2 ${currentQuestion.type === 'single' ? 'rounded-full' : 'rounded'
                           } ${isSelected
-                            ? 'border-blue-500 bg-blue-500'
-                            : 'border-gray-300'
+                            ? 'border-green-500 bg-green-500'
+                            : 'border-neutral-300'
                           }`}>
                           {isSelected && (
                             currentQuestion.type === 'single' ? (
@@ -854,7 +854,7 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
                           )}
                         </div>
                         <div className="flex-1">
-                          <div className="text-gray-900 [&_p]:m-0 [&_p]:text-base [&_p]:text-gray-900">
+                          <div className="text-neutral-900 [&_p]:m-0 [&_p]:text-base [&_p]:text-neutral-900">
                             <MarkdownRenderer content={option} />
                           </div>
                           {/* Display option image if exists */}
@@ -888,7 +888,7 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
                     {t('previous')}
                   </Button>
 
-                  <div className="text-sm text-gray-600">
+                  <div className="text-sm text-neutral-600">
                     {currentQuestionIndex + 1} / {quiz.questions.length}
                   </div>
 
@@ -934,10 +934,10 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
                         key={index}
                         onClick={() => setCurrentQuestionIndex(index)}
                         className={`w-8 h-8 rounded text-xs font-medium transition-colors ${index === currentQuestionIndex
-                          ? 'bg-blue-600 text-white'
+                          ? 'bg-brand-trust text-white'
                           : isAnswered
                             ? 'bg-green-100 text-green-800 border border-green-300'
-                            : 'bg-gray-100 text-gray-600 border border-gray-300'
+                            : 'bg-neutral-100 text-neutral-600 border border-neutral-300'
                           }`}
                       >
                         {index + 1}
@@ -947,7 +947,7 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
                 </div>
                 <div className="mt-4 flex items-center space-x-6 text-xs">
                   <div className="flex items-center">
-                    <div className="w-3 h-3 bg-blue-600 rounded mr-2"></div>
+                    <div className="w-3 h-3 bg-brand-trust rounded mr-2"></div>
                     <span>{t('current')}</span>
                   </div>
                   <div className="flex items-center">
@@ -955,7 +955,7 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
                     <span>{t('answered')}</span>
                   </div>
                   <div className="flex items-center">
-                    <div className="w-3 h-3 bg-gray-100 border border-gray-300 rounded mr-2"></div>
+                    <div className="w-3 h-3 bg-neutral-100 border border-neutral-300 rounded mr-2"></div>
                     <span>{t('notAnswered')}</span>
                   </div>
                 </div>
@@ -999,7 +999,7 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
           size="small"
         >
           <div className="space-y-4">
-            <p className="text-gray-700">
+            <p className="text-neutral-700">
               {t('exitQuizWarning')}
             </p>
 
@@ -1044,16 +1044,16 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
         >
           <div className="space-y-4">
             {/* Current Question Display */}
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <h4 className="font-medium text-gray-900 mb-2">{t('currentQuestion')}</h4>
-              <div className="text-sm text-gray-700 [&_p]:mb-0 [&_p]:text-sm [&_p]:text-gray-700">
+            <div className="bg-neutral-50 p-4 rounded-lg">
+              <h4 className="font-medium text-neutral-900 mb-2">{t('currentQuestion')}</h4>
+              <div className="text-sm text-neutral-700 [&_p]:mb-0 [&_p]:text-sm [&_p]:text-neutral-700">
                 {quiz && <MarkdownRenderer content={currentQuestion.question} />}
               </div>
               <div className="mt-2 space-y-1">
                 {quiz && currentQuestion.options.map((option, index) => (
-                  <div key={index} className="text-xs text-gray-600 flex items-start space-x-2">
+                  <div key={index} className="text-xs text-neutral-600 flex items-start space-x-2">
                     <span className="mt-0.5">{String.fromCharCode(65 + index)}.</span>
-                    <div className="flex-1 [&_p]:m-0 [&_p]:text-xs [&_p]:text-gray-600">
+                    <div className="flex-1 [&_p]:m-0 [&_p]:text-xs [&_p]:text-neutral-600">
                       <MarkdownRenderer content={option} />
                     </div>
                     {currentQuestion.optionImages?.[index] && (
@@ -1071,7 +1071,7 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
 
             {/* User Question Input */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-neutral-700 mb-2">
                 {t('askSpecificQuestion')}
               </label>
               <Input
@@ -1080,7 +1080,7 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
                 placeholder={t('questionPlaceholder')}
                 className="w-full"
               />
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-neutral-500 mt-1">
                 {t('leaveEmptyGeneral')}
               </p>
             </div>
@@ -1090,7 +1090,7 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
               onClick={askAI}
               loading={loadingAI}
               disabled={loadingAI}
-              className="w-full bg-purple-600 hover:bg-purple-700 text-white"
+              className="w-full bg-brand-trust hover:bg-brand-trust-hover text-white"
             >
               {loadingAI ? t('gettingExplanation') : t('getRinChanExplanation')}
             </Button>
@@ -1113,7 +1113,7 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
             )}
 
             {/* Disclaimer */}
-            <div className="text-xs text-gray-500 bg-yellow-50 p-3 rounded-md">
+            <div className="text-xs text-neutral-500 bg-yellow-50 p-3 rounded-md">
               {t('aiNote')}
             </div>
           </div>

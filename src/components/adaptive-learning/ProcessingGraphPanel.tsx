@@ -25,13 +25,13 @@ interface ConceptNodeData extends Record<string, unknown> {
 
 const ConceptNode = memo(function ConceptNode({ data }: NodeProps<Node<ConceptNodeData>>) {
   return (
-    <div className="min-w-[120px] rounded-md border border-slate-300 bg-white px-3 py-2 transition-all duration-200">
-      <Handle type="target" position={Position.Top} className="!h-1 !w-1 !bg-slate-400" />
-      <div className="text-center text-[10px] font-mono tracking-wider text-slate-700">
+    <div className="min-w-[120px] rounded-md border border-neutral-300 bg-white px-3 py-2 transition-all duration-200">
+      <Handle type="target" position={Position.Top} className="!h-1 !w-1 !bg-neutral-400" />
+      <div className="text-center text-[10px] font-mono tracking-wider text-neutral-700">
         {data.label.length > 25 ? `${data.label.substring(0, 23)}...` : data.label}
       </div>
-      <div className="pointer-events-none absolute -inset-0.5 animate-pulse rounded-md border border-slate-400/30" />
-      <Handle type="source" position={Position.Bottom} className="!h-1 !w-1 !bg-slate-400" />
+      <div className="pointer-events-none absolute -inset-0.5 animate-pulse rounded-md border border-neutral-400/30" />
+      <Handle type="source" position={Position.Bottom} className="!h-1 !w-1 !bg-neutral-400" />
     </div>
   )
 })
@@ -96,8 +96,8 @@ function PartialGraphFlow({ partialGraph }: { partialGraph?: PipelineJobStatus['
       target: e.target,
       type: 'default',
       animated: true,
-      style: { stroke: '#94A3B8', strokeWidth: 2 },
-      markerEnd: { type: MarkerType.ArrowClosed, color: '#94A3B8' },
+      style: { stroke: 'var(--neutral-400)', strokeWidth: 2 },
+      markerEnd: { type: MarkerType.ArrowClosed, color: 'var(--neutral-400)' },
     }))
   }, [partialGraph])
 
@@ -115,9 +115,9 @@ function PartialGraphFlow({ partialGraph }: { partialGraph?: PipelineJobStatus['
 
   if (!partialGraph || nodes.length === 0) {
     return (
-      <div className="flex h-full w-full items-center justify-center text-sm text-slate-400">
+      <div className="flex h-full w-full items-center justify-center text-sm text-neutral-400">
         <div className="flex flex-col items-center gap-3">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-300 border-t-slate-600" />
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
           {t('processing.waitingForConcepts')}
         </div>
       </div>
@@ -134,13 +134,13 @@ function PartialGraphFlow({ partialGraph }: { partialGraph?: PipelineJobStatus['
       minZoom={0.2}
       maxZoom={2}
       proOptions={{ hideAttribution: true }}
-      className="bg-slate-50/30"
+      className="bg-neutral-50/30"
       nodesDraggable={false}
       nodesConnectable={false}
       elementsSelectable={false}
     >
-      <Background color="#E2E8F0" gap={16} size={1} />
-      <Controls showInteractive={false} className="border-slate-200 fill-slate-500" />
+      <Background color="var(--neutral-200)" gap={16} size={1} />
+      <Controls showInteractive={false} className="border-neutral-200 fill-neutral-500" />
     </ReactFlow>
   )
 }

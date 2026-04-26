@@ -29,10 +29,10 @@ export function ImageDisplay({
     <div className={`relative inline-block ${className}`}>
       {isLoading && (
         <div 
-          className="absolute inset-0 flex items-center justify-center bg-gray-100 rounded-lg"
+          className="absolute inset-0 flex items-center justify-center bg-neutral-100 rounded-lg"
           style={{ width: maxWidth, height: maxHeight }}
         >
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
         </div>
       )}
       <Image
@@ -40,7 +40,7 @@ export function ImageDisplay({
         alt={alt}
         width={maxWidth}
         height={maxHeight}
-        className={`rounded-lg shadow-sm border border-gray-200 ${isLoading ? 'opacity-0' : 'opacity-100'} transition-opacity duration-200`}
+        className={`rounded-lg shadow-sm border border-neutral-200 ${isLoading ? 'opacity-0' : 'opacity-100'} transition-opacity duration-200`}
         style={{
           maxWidth: '100%',
           height: 'auto',
@@ -72,7 +72,7 @@ export function QuestionImage({ src, alt, className = '' }: QuestionImageProps) 
       maxWidth={600}
       maxHeight={400}
       fallback={
-        <div className="text-sm text-gray-500 italic mb-4">
+        <div className="text-sm text-neutral-500 italic mb-4">
           📷 Question contains an image that couldn&apos;t be loaded
         </div>
       }
@@ -95,7 +95,7 @@ export function OptionImage({ src, alt, className = '' }: OptionImageProps) {
       maxWidth={200}
       maxHeight={150}
       fallback={
-        <div className="text-xs text-gray-400 italic ml-2">
+        <div className="text-xs text-neutral-400 italic ml-2">
           🖼️ Image option
         </div>
       }

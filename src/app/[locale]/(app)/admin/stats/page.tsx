@@ -1,18 +1,16 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useSession, signOut } from 'next-auth/react';
+import { useSession } from 'next-auth/react';
 import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, Badge } from '@/components/ui/Card';
+import Navigation from '@/components/Navigation';
 import Sidebar from '@/components/Sidebar';
 import StatsModal from '@/components/ui/StatsModal';
 import {
-  HiChevronDown,
-  HiOutlineMenu,
-  HiOutlineLogout,
   HiOutlineUsers,
   HiOutlineDocumentText,
   HiOutlineChartBar,
@@ -88,7 +86,6 @@ export default function AdminStatsPage() {
   const tCommon = useTranslations('common');
   const { data: session } = useSession();
   const pathname = usePathname();
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   const [stats, setStats] = useState<AdminStats | null>(null);
@@ -140,50 +137,27 @@ export default function AdminStatsPage() {
     });
   };
 
-  const getStatusBadgeColor = (status: string) => {
+  const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'published': return 'bg-green-100 text-green-800';
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'rejected': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'published': return <Badge variant="success">{status}</Badge>;
+      case 'pending': return <Badge variant="warning">{status}</Badge>;
+      case 'rejected': return <Badge variant="danger">{status}</Badge>;
+      default: return <Badge variant="default">{status}</Badge>;
     }
   };
 
   if (loading) {
     return (
       <div className="min-h-screen bg-white">
-        <nav className="bg-white/80 backdrop-blur-md border-b border-gray-100 sticky top-0 z-50">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center h-16">
-              <div className="flex items-center">
-                <Link href="/" className="flex items-center">
-                  <div className="h-10 flex items-center justify-center">
-                    <img src="/images/auth_logo.png" alt="RinKuzu Logo" className="h-10 w-auto object-contain" />
-                  </div>
-                </Link>
-              </div>
-              <div className="flex items-center space-x-4">
-                <span className="text-sm text-gray-600">{session?.user?.email}</span>
-                <Button
-                  onClick={() => signOut()}
-                  variant="outline"
-                  size="sm"
-                >
-                  {tCommon('logout')}
-                </Button>
-              </div>
-            </div>
-          </div>
-        </nav>
-
+        <Navigation />
         <div className="flex">
           <Sidebar isOpen={isSidebarOpen} onToggle={() => setIsSidebarOpen(!isSidebarOpen)} currentPath={pathname} />
           <main className={`flex-1 transition-all duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-16'}`}>
             <div className="p-8">
               <div className="flex items-center justify-center min-h-[400px]">
                 <div className="text-center">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-                  <p className="mt-4 text-gray-600">{t('loadingStatistics')}</p>
+                  <div className="h-12 w-12 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust mx-auto" />
+                  <p className="mt-4 text-neutral-600">{t('loadingStatistics')}</p>
                 </div>
               </div>
             </div>
@@ -195,50 +169,7 @@ export default function AdminStatsPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Navigation - giống như trang admin khác */}
-      <nav className="bg-white/80 backdrop-blur-md border-b border-gray-100 sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            {/* Logo */}
-            <div className="flex items-center">
-              <Link href="/" className="flex items-center">
-                <div className="h-10 flex items-center justify-center">
-                  <img src="/images/auth_logo.png" alt="RinKuzu Logo" className="h-10 w-auto object-contain" />
-                </div>
-              </Link>
-            </div>
-
-            {/* User Menu */}
-            <div className="relative">
-              <button
-                onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
-              >
-                <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-blue-600 rounded-full flex items-center justify-center">
-                  <span className="text-white text-sm font-medium">
-                    {session?.user?.email?.[0]?.toUpperCase()}
-                  </span>
-                </div>
-                <span className="text-gray-700 font-medium hidden sm:block">
-                  {session?.user?.email}
-                </span>
-                <HiChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${isMenuOpen ? 'rotate-180' : ''}`} />
-              </button>
-
-              {isMenuOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
-                  <button
-                    onClick={() => signOut()}
-                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                  >
-                    {t('loggingOut')}
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </nav>
+      <Navigation />
 
       <div className="flex">
         <Sidebar isOpen={isSidebarOpen} onToggle={() => setIsSidebarOpen(!isSidebarOpen)} currentPath={pathname} />
@@ -247,8 +178,8 @@ export default function AdminStatsPage() {
         <main className={`flex-1 transition-all duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-16'}`}>
           <div className="p-8">
             <div className="mb-8">
-              <h1 className="text-3xl font-bold text-gray-900">{t('statistics')}</h1>
-              <p className="text-gray-600 mt-2">{t('systemStatistics')}</p>
+              <h1 className="text-3xl font-bold text-neutral-900">{t('statistics')}</h1>
+              <p className="text-neutral-600 mt-2">{t('systemStatistics')}</p>
             </div>
 
             {error && (
@@ -263,41 +194,41 @@ export default function AdminStatsPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                   <Card>
                     <CardHeader className="pb-2">
-                      <CardTitle className="text-sm font-medium text-gray-600">{t('totalUsersCount')}</CardTitle>
+                      <CardTitle className="text-sm font-medium text-neutral-600">{t('totalUsersCount')}</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="text-2xl font-bold text-blue-600">{stats?.overview?.totalUsers || 0}</div>
-                      <p className="text-xs text-gray-500">{t('newThisMonth', { count: stats?.timeBasedStats?.thisMonth?.newUsers || 0 })}</p>
+                      <div className="text-2xl font-bold text-brand-trust">{stats?.overview?.totalUsers || 0}</div>
+                      <p className="text-xs text-neutral-500">{t('newThisMonth', { count: stats?.timeBasedStats?.thisMonth?.newUsers || 0 })}</p>
                     </CardContent>
                   </Card>
 
                   <Card>
                     <CardHeader className="pb-2">
-                      <CardTitle className="text-sm font-medium text-gray-600">{t('totalQuizzes')}</CardTitle>
+                      <CardTitle className="text-sm font-medium text-neutral-600">{t('totalQuizzes')}</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <div className="text-2xl font-bold text-green-600">{stats?.overview?.totalQuizzes || 0}</div>
-                      <p className="text-xs text-gray-500">{t('publishedCount', { count: stats?.overview?.publishedQuizzes || 0 })}</p>
+                      <p className="text-xs text-neutral-500">{t('publishedCount', { count: stats?.overview?.publishedQuizzes || 0 })}</p>
                     </CardContent>
                   </Card>
 
                   <Card>
                     <CardHeader className="pb-2">
-                      <CardTitle className="text-sm font-medium text-gray-600">{t('attemptsCount')}</CardTitle>
+                      <CardTitle className="text-sm font-medium text-neutral-600">{t('attemptsCount')}</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="text-2xl font-bold text-purple-600">{stats?.overview?.totalAttempts || 0}</div>
-                      <p className="text-xs text-gray-500">{t('attempts', { count: stats?.timeBasedStats?.thisMonth?.attempts || 0 })}</p>
+                      <div className="text-2xl font-bold text-brand-action">{stats?.overview?.totalAttempts || 0}</div>
+                      <p className="text-xs text-neutral-500">{t('attempts', { count: stats?.timeBasedStats?.thisMonth?.attempts || 0 })}</p>
                     </CardContent>
                   </Card>
 
                   <Card>
                     <CardHeader className="pb-2">
-                      <CardTitle className="text-sm font-medium text-gray-600">{t('averageScore')}</CardTitle>
+                      <CardTitle className="text-sm font-medium text-neutral-600">{t('averageScore')}</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="text-2xl font-bold text-orange-600">{Math.round(stats.scoreStats.averageScore)}%</div>
-                      <p className="text-xs text-gray-500">{t('highestScore', { score: stats.scoreStats.highestScore })}</p>
+                      <div className="text-2xl font-bold text-brand-trust">{Math.round(stats.scoreStats.averageScore)}%</div>
+                      <p className="text-xs text-neutral-500">{t('highestScore', { score: stats.scoreStats.highestScore })}</p>
                     </CardContent>
                   </Card>
                 </div>
@@ -310,12 +241,12 @@ export default function AdminStatsPage() {
                   </CardHeader>
                   <CardContent>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                      <div className="text-center p-4 bg-blue-50 rounded-lg">
-                        <h3 className="font-medium text-blue-900 mb-2">{t('today')}</h3>
+                      <div className="text-center p-4 bg-green-50 rounded-lg">
+                        <h3 className="font-medium text-green-800 mb-2">{t('today')}</h3>
                         <div className="space-y-1">
-                          <p className="text-sm text-blue-700">{t('newUsers', { count: stats.timeBasedStats.today.newUsers })}</p>
-                          <p className="text-sm text-blue-700">{t('newQuizzes', { count: stats.timeBasedStats.today.newQuizzes })}</p>
-                          <p className="text-sm text-blue-700">{t('attempts', { count: stats.timeBasedStats.today.attempts })}</p>
+                          <p className="text-sm text-brand-trust">{t('newUsers', { count: stats.timeBasedStats.today.newUsers })}</p>
+                          <p className="text-sm text-brand-trust">{t('newQuizzes', { count: stats.timeBasedStats.today.newQuizzes })}</p>
+                          <p className="text-sm text-brand-trust">{t('attempts', { count: stats.timeBasedStats.today.attempts })}</p>
                         </div>
                       </div>
                       <div className="text-center p-4 bg-green-50 rounded-lg">
@@ -326,12 +257,12 @@ export default function AdminStatsPage() {
                           <p className="text-sm text-green-700">{t('attempts', { count: stats.timeBasedStats.thisWeek.attempts })}</p>
                         </div>
                       </div>
-                      <div className="text-center p-4 bg-purple-50 rounded-lg">
-                        <h3 className="font-medium text-purple-900 mb-2">{t('thisMonth')}</h3>
+                      <div className="text-center p-4 bg-green-50 rounded-lg">
+                        <h3 className="font-medium text-brand-trust mb-2">{t('thisMonth')}</h3>
                         <div className="space-y-1">
-                          <p className="text-sm text-purple-700">{t('newUsers', { count: stats.timeBasedStats.thisMonth.newUsers })}</p>
-                          <p className="text-sm text-purple-700">{t('newQuizzes', { count: stats.timeBasedStats.thisMonth.newQuizzes })}</p>
-                          <p className="text-sm text-purple-700">{t('attempts', { count: stats.timeBasedStats.thisMonth.attempts })}</p>
+                          <p className="text-sm text-green-700">{t('newUsers', { count: stats.timeBasedStats.thisMonth.newUsers })}</p>
+                          <p className="text-sm text-green-700">{t('newQuizzes', { count: stats.timeBasedStats.thisMonth.newQuizzes })}</p>
+                          <p className="text-sm text-green-700">{t('attempts', { count: stats.timeBasedStats.thisMonth.attempts })}</p>
                         </div>
                       </div>
                     </div>
@@ -346,9 +277,9 @@ export default function AdminStatsPage() {
                   </CardHeader>
                   <CardContent>
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                      <div className="text-center p-4 bg-gray-50 rounded-lg">
-                        <div className="text-2xl font-bold text-gray-900">{stats.overview.totalQuizzes}</div>
-                        <p className="text-sm text-gray-600">{t('totalCount')}</p>
+                      <div className="text-center p-4 bg-neutral-50 rounded-lg">
+                        <div className="text-2xl font-bold text-neutral-900">{stats.overview.totalQuizzes}</div>
+                        <p className="text-sm text-neutral-600">{t('totalCount')}</p>
                       </div>
                       <div className="text-center p-4 bg-green-50 rounded-lg">
                         <div className="text-2xl font-bold text-green-600">{stats.overview.publishedQuizzes}</div>
@@ -385,9 +316,9 @@ export default function AdminStatsPage() {
                     <CardContent>
                       <div className="space-y-3">
                         {stats.topCategories.slice(0, 5).map((category, index) => (
-                          <div key={category.name} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                          <div key={category.name} className="flex items-center justify-between p-3 bg-neutral-50 rounded-lg">
                             <div className="flex items-center space-x-3">
-                              <span className="text-sm font-medium text-gray-500">#{index + 1}</span>
+                              <span className="text-sm font-medium text-neutral-500">#{index + 1}</span>
                               <div
                                 className="w-4 h-4 rounded-full"
                                 style={{ backgroundColor: category.color }}
@@ -396,7 +327,7 @@ export default function AdminStatsPage() {
                             </div>
                             <div className="text-right text-sm">
                               <div className="font-medium">{category.quizCount} {t('quiz')}</div>
-                              <div className="text-gray-500">{category.totalQuestions} {t('questions')}</div>
+                              <div className="text-neutral-500">{category.totalQuestions} {t('questions')}</div>
                             </div>
                           </div>
                         ))}
@@ -421,14 +352,14 @@ export default function AdminStatsPage() {
                     <CardContent>
                       <div className="space-y-3">
                         {stats.topCreators.slice(0, 5).map((creator, index) => (
-                          <div key={creator.email} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                          <div key={creator.email} className="flex items-center justify-between p-3 bg-neutral-50 rounded-lg">
                             <div className="flex items-center space-x-3">
-                              <span className="text-sm font-medium text-gray-500">#{index + 1}</span>
+                              <span className="text-sm font-medium text-neutral-500">#{index + 1}</span>
                               <span className="font-medium">{creator.email}</span>
                             </div>
                             <div className="text-right text-sm">
                               <div className="font-medium">{creator.quizCount} {t('quiz')}</div>
-                              <div className="text-gray-500">{creator.totalQuestions} {t('questions')}</div>
+                              <div className="text-neutral-500">{creator.totalQuestions} {t('questions')}</div>
                             </div>
                           </div>
                         ))}
@@ -456,12 +387,12 @@ export default function AdminStatsPage() {
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                       {/* Recent Users */}
                       <div>
-                        <h4 className="font-medium mb-3 text-blue-600">{t('newUsers', { count: '' })}</h4>
+                        <h4 className="font-medium mb-3 text-brand-trust">{t('newUsers', { count: '' })}</h4>
                         <div className="space-y-2">
                           {stats.recentActivity.users.slice(0, 5).map((user, index) => (
-                            <div key={index} className="text-sm p-2 bg-blue-50 rounded">
+                            <div key={index} className="text-sm p-2 bg-green-50 rounded">
                               <div className="font-medium">{user.email}</div>
-                              <div className="text-gray-500">{formatDate(user.createdAt)}</div>
+                              <div className="text-neutral-500">{formatDate(user.createdAt)}</div>
                             </div>
                           ))}
                         </div>
@@ -475,10 +406,8 @@ export default function AdminStatsPage() {
                             <div key={index} className="text-sm p-2 bg-green-50 rounded">
                               <div className="font-medium truncate">{quiz.title}</div>
                               <div className="flex items-center space-x-2 text-xs">
-                                <span className={`px-2 py-1 rounded ${getStatusBadgeColor(quiz.status)}`}>
-                                  {quiz.status}
-                                </span>
-                                <span className="text-gray-500">{formatDate(quiz.createdAt)}</span>
+                                {getStatusBadge(quiz.status)}
+                                <span className="text-neutral-500">{formatDate(quiz.createdAt)}</span>
                               </div>
                             </div>
                           ))}
@@ -487,18 +416,18 @@ export default function AdminStatsPage() {
 
                       {/* Recent Attempts */}
                       <div>
-                        <h4 className="font-medium mb-3 text-purple-600">{t('recentAttempts')}</h4>
+                        <h4 className="font-medium mb-3 text-brand-trust">{t('recentAttempts')}</h4>
                         <div className="space-y-2">
                           {stats.recentActivity.attempts.slice(0, 5).map((attempt, index) => (
-                            <div key={index} className="text-sm p-2 bg-purple-50 rounded">
+                            <div key={index} className="text-sm p-2 bg-green-50 rounded">
                               <div className="font-medium truncate">{attempt.quiz.title}</div>
                               <div className="flex items-center justify-between text-xs">
-                                <span className="text-gray-500">
+                                <span className="text-neutral-500">
                                   {attempt.user?.email || t('anonymous')}
                                 </span>
                                 <span className="font-medium">{attempt.score}%</span>
                               </div>
-                              <div className="text-gray-500 text-xs">{formatDate(attempt.takenAt)}</div>
+                              <div className="text-neutral-500 text-xs">{formatDate(attempt.takenAt)}</div>
                             </div>
                           ))}
                         </div>
@@ -527,7 +456,7 @@ export default function AdminStatsPage() {
                         </thead>
                         <tbody>
                           {stats.categoryStats.slice(0, 10).map((category, index) => (
-                            <tr key={category.name} className="border-b hover:bg-gray-50">
+                            <tr key={category.name} className="border-b hover:bg-neutral-50">
                               <td className="py-3 px-4">
                                 <div className="flex items-center space-x-3">
                                   <div

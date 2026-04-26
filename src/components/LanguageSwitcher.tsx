@@ -52,8 +52,8 @@ export const LanguageSwitcher = memo(function LanguageSwitcher({
             onClick={() => handleLocaleChange(loc)}
             className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
               locale === loc
-                ? 'bg-[#0071e3] text-white'
-                : 'text-gray-600 hover:bg-gray-100'
+                ? 'bg-brand-trust text-white'
+                : 'text-neutral-600 hover:bg-neutral-100'
             }`}
           >
             {localeFlags[loc]} {localeLabels[loc]}
@@ -67,7 +67,7 @@ export const LanguageSwitcher = memo(function LanguageSwitcher({
     <div className={`relative ${className}`} ref={dropdownRef}>
       <button
         onClick={toggleDropdown}
-        className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors"
+        className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-neutral-700 hover:bg-neutral-100 transition-colors"
         aria-label={tCommon('changeLanguage')}
       >
         <span className="text-base">{localeFlags[locale]}</span>
@@ -85,15 +85,15 @@ export const LanguageSwitcher = memo(function LanguageSwitcher({
       {isOpen && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setIsOpen(false)} />
-          <div className="absolute right-0 mt-2 w-40 bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden z-20 animate-scaleIn origin-top-right">
+          <div className="absolute right-0 mt-2 w-40 bg-white rounded-xl shadow-[var(--shadow-md)] border border-neutral-100 overflow-hidden z-20 animate-scaleIn origin-top-right">
             {locales.map((loc) => (
               <button
                 key={loc}
                 onClick={() => handleLocaleChange(loc)}
                 className={`w-full flex items-center gap-3 px-4 py-3 text-sm transition-colors ${
                   locale === loc
-                    ? 'bg-blue-50 text-[#0071e3] font-medium'
-                    : 'text-gray-700 hover:bg-gray-50'
+                    ? 'bg-green-50 text-brand-trust font-medium'
+                    : 'text-neutral-700 hover:bg-neutral-50'
                 }`}
               >
                 <span className="text-base">{localeFlags[loc]}</span>

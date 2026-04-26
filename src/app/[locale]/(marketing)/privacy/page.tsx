@@ -22,31 +22,31 @@ export default async function PrivacyPage({ params }: Props) {
   return (
     <section className="max-w-4xl mx-auto space-y-10 py-16 px-6">
       <div>
-        <h1 className="text-3xl font-bold text-slate-900 mb-2">Privacy Policy</h1>
-        <p className="text-sm text-slate-500">Last updated: March 27, 2026</p>
+        <h1 className="text-3xl font-bold text-neutral-900 mb-2">Privacy Policy</h1>
+        <p className="text-sm text-neutral-500">Last updated: March 27, 2026</p>
       </div>
 
-      <p className="text-slate-700 leading-relaxed">
+      <p className="text-neutral-700 leading-relaxed">
         RinKuzu (&ldquo;we,&rdquo; &ldquo;us,&rdquo; or &ldquo;our&rdquo;) is committed to protecting your personal data.
         This Privacy Policy explains how Hanoi University of Science and Technology (&ldquo;HUST&rdquo;), operating the RinKuzu
         platform at <strong>https://www.rinkuzu.app</strong>, collects, uses, discloses, and safeguards information
         when you use our AI-powered adaptive learning services.
       </p>
 
-      <div className="space-y-8 text-slate-700 leading-relaxed">
+      <div className="space-y-8 text-neutral-700 leading-relaxed">
 
         {/* Section 1 */}
         <div>
-          <h2 className="text-xl font-semibold text-slate-900 mb-3">1. Information We Collect</h2>
+          <h2 className="text-xl font-semibold text-neutral-900 mb-3">1. Information We Collect</h2>
           <div className="space-y-3">
-            <h3 className="font-medium text-slate-800">1.1 Account Information</h3>
+            <h3 className="font-medium text-neutral-800">1.1 Account Information</h3>
             <p>
               When you register for RinKuzu, you provide: full name, email address, password (hashed using bcrypt),
               and optional profile information such as institution, role (student, teacher, or other), and profile photo.
               If you register via a third-party OAuth provider (e.g., Google), we receive your name and email from that provider.
             </p>
 
-            <h3 className="font-medium text-slate-800">1.2 Uploaded Learning Materials</h3>
+            <h3 className="font-medium text-neutral-800">1.2 Uploaded Learning Materials</h3>
             <p>
               When you upload PDF documents for quiz generation, we process and store: the content of uploaded PDFs,
               extracted text, and structured metadata (chapter titles, page count, file name, upload timestamp).
@@ -54,7 +54,7 @@ export default async function PrivacyPage({ params }: Props) {
               to other platform users. You retain full ownership of content you upload.
             </p>
 
-            <h3 className="font-medium text-slate-800">1.3 Learning Activity Data</h3>
+            <h3 className="font-medium text-neutral-800">1.3 Learning Activity Data</h3>
             <p>
               We collect: quiz performance data (answers submitted, correctness, time spent per question),
               Bloom&apos;s Taxonomy mastery levels, knowledge graph progress data, session duration,
@@ -62,7 +62,7 @@ export default async function PrivacyPage({ params }: Props) {
               your learning experience and improve our AI models.
             </p>
 
-            <h3 className="font-medium text-slate-800">1.4 Technical and Usage Data</h3>
+            <h3 className="font-medium text-neutral-800">1.4 Technical and Usage Data</h3>
             <p>
               Automatically collected: IP address, browser type and version, operating system, device identifiers,
               pages visited, referring URLs, clickstream data, and error logs. We use Google Analytics 4
@@ -70,11 +70,11 @@ export default async function PrivacyPage({ params }: Props) {
               individual users without their consent.
             </p>
 
-            <h3 className="font-medium text-slate-800">1.5 Cookies</h3>
+            <h3 className="font-medium text-neutral-800">1.5 Cookies</h3>
             <p>
               RinKuzu uses essential cookies (authentication, security, session management) and optional analytics
               cookies. We do not use advertising or tracking cookies. Full details are available in our{' '}
-              <a href="/cookies" className="text-teal-600 hover:underline">Cookie Policy</a>.
+              <a href="/cookies" className="text-brand-trust hover:underline">Cookie Policy</a>.
               You may disable non-essential cookies through your browser settings.
             </p>
           </div>
@@ -82,7 +82,7 @@ export default async function PrivacyPage({ params }: Props) {
 
         {/* Section 2 */}
         <div>
-          <h2 className="text-xl font-semibold text-slate-900 mb-3">2. How We Use Your Information</h2>
+          <h2 className="text-xl font-semibold text-neutral-900 mb-3">2. How We Use Your Information</h2>
           <ul className="list-disc pl-6 space-y-2">
             <li>Providing and maintaining your RinKuzu account and personalized learning sessions</li>
             <li>Generating adaptive quizzes from your uploaded PDF materials using Google Gemini AI</li>
@@ -96,7 +96,7 @@ export default async function PrivacyPage({ params }: Props) {
 
         {/* Section 3 */}
         <div>
-          <h2 className="text-xl font-semibold text-slate-900 mb-3">3. Legal Basis for Processing (GDPR)</h2>
+          <h2 className="text-xl font-semibold text-neutral-900 mb-3">3. Legal Basis for Processing (GDPR)</h2>
           <p className="mb-3">If you are located in the European Economic Area, we process your personal data under:</p>
           <ul className="list-disc pl-6 space-y-2">
             <li><strong>Contract performance (Art. 6(1)(b)):</strong> Processing necessary to provide our service to you</li>
@@ -108,7 +108,7 @@ export default async function PrivacyPage({ params }: Props) {
 
         {/* Section 4 */}
         <div>
-          <h2 className="text-xl font-semibold text-slate-900 mb-3">4. Data Retention</h2>
+          <h2 className="text-xl font-semibold text-neutral-900 mb-3">4. Data Retention</h2>
           <p className="mb-3">
             We retain your personal data for as long as your account is active and for a period of up to{' '}
             <strong>3 years</strong> after account deletion, unless a longer retention period is required by law.
@@ -125,21 +125,21 @@ export default async function PrivacyPage({ params }: Props) {
 
         {/* Section 5 */}
         <div>
-          <h2 className="text-xl font-semibold text-slate-900 mb-3">5. Third-Party Data Processors</h2>
+          <h2 className="text-xl font-semibold text-neutral-900 mb-3">5. Third-Party Data Processors</h2>
           <p className="mb-3">
             We use the following third-party services, each acting as a data processor under GDPR:
           </p>
           <div className="overflow-x-auto">
-            <table className="w-full text-sm border border-slate-200 rounded-lg overflow-hidden">
-              <thead className="bg-slate-50">
+            <table className="w-full text-sm border border-neutral-200 rounded-lg overflow-hidden">
+              <thead className="bg-neutral-50">
                 <tr>
-                  <th className="text-left p-3 font-semibold text-slate-700">Service</th>
-                  <th className="text-left p-3 font-semibold text-slate-700">Purpose</th>
-                  <th className="text-left p-3 font-semibold text-slate-700">Data Shared</th>
-                  <th className="text-left p-3 font-semibold text-slate-700">Location</th>
+                  <th className="text-left p-3 font-semibold text-neutral-700">Service</th>
+                  <th className="text-left p-3 font-semibold text-neutral-700">Purpose</th>
+                  <th className="text-left p-3 font-semibold text-neutral-700">Data Shared</th>
+                  <th className="text-left p-3 font-semibold text-neutral-700">Location</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-neutral-100">
                 <tr>
                   <td className="p-3">Google Gemini AI</td>
                   <td className="p-3">PDF analysis, quiz generation, answer evaluation</td>
@@ -179,7 +179,7 @@ export default async function PrivacyPage({ params }: Props) {
               </tbody>
             </table>
           </div>
-          <p className="mt-3 text-sm text-slate-500">
+          <p className="mt-3 text-sm text-neutral-500">
             All processors are bound by Data Processing Agreements (DPAs) incorporating standard contractual clauses
             approved by the European Commission.
           </p>
@@ -187,7 +187,7 @@ export default async function PrivacyPage({ params }: Props) {
 
         {/* Section 6 */}
         <div>
-          <h2 className="text-xl font-semibold text-slate-900 mb-3">6. International Data Transfers</h2>
+          <h2 className="text-xl font-semibold text-neutral-900 mb-3">6. International Data Transfers</h2>
           <p>
             Some third-party processors (notably Google Gemini AI) may process data outside the European Economic Area.
             Such transfers are protected by: (a) adequacy decisions by the European Commission, or
@@ -198,7 +198,7 @@ export default async function PrivacyPage({ params }: Props) {
 
         {/* Section 7 */}
         <div>
-          <h2 className="text-xl font-semibold text-slate-900 mb-3">7. Your Rights Under GDPR</h2>
+          <h2 className="text-xl font-semibold text-neutral-900 mb-3">7. Your Rights Under GDPR</h2>
           <p className="mb-3">If you are in the EEA, you have the right to:</p>
           <ul className="list-disc pl-6 space-y-2">
             <li><strong>Access:</strong> Request a copy of your personal data</li>
@@ -212,43 +212,43 @@ export default async function PrivacyPage({ params }: Props) {
           </ul>
           <p className="mt-3">
             To exercise any of these rights, contact us at{' '}
-            <a href="mailto:support@rinkuzu.com" className="text-teal-600 hover:underline">support@rinkuzu.com</a>.
+            <a href="mailto:support@rinkuzu.com" className="text-brand-trust hover:underline">support@rinkuzu.com</a>.
             We will respond within 30 days.
           </p>
         </div>
 
         {/* Section 8 */}
         <div>
-          <h2 className="text-xl font-semibold text-slate-900 mb-3">8. Vietnamese PDPA Compliance</h2>
+          <h2 className="text-xl font-semibold text-neutral-900 mb-3">8. Vietnamese PDPA Compliance</h2>
           <p>
             For users in Vietnam, we comply with Decree No. 13/2023/ND-CP on the Protection of Personal Data (PDPD).
             Under Vietnamese law, you have the right to: be informed of data processing purposes; consent to or withdraw
             consent for processing; access and correct your personal data; delete your personal data; and complain to
             competent authorities. Contact our Data Protection Officer at{' '}
-            <a href="mailto:dpo@rinkuzu.com" className="text-teal-600 hover:underline">dpo@rinkuzu.com</a>.
+            <a href="mailto:dpo@rinkuzu.com" className="text-brand-trust hover:underline">dpo@rinkuzu.com</a>.
           </p>
         </div>
 
         {/* Section 9 */}
         <div>
-          <h2 className="text-xl font-semibold text-slate-900 mb-3">9. Children&apos;s Privacy (COPPA Compliance)</h2>
+          <h2 className="text-xl font-semibold text-neutral-900 mb-3">9. Children&apos;s Privacy (COPPA Compliance)</h2>
           <p>
             RinKuzu&apos;s services are not directed to children under the age of 13 (&ldquo;Children&rdquo;).
             We do not knowingly collect personal data from children under 13 without verifiable parental consent.
             If you believe we have inadvertently collected such data, please contact us immediately at{' '}
-            <a href="mailto:support@rinkuzu.com" className="text-teal-600 hover:underline">support@rinkuzu.com</a>,
+            <a href="mailto:support@rinkuzu.com" className="text-brand-trust hover:underline">support@rinkuzu.com</a>,
             and we will promptly delete it.
           </p>
         </div>
 
         {/* Section 10 */}
         <div>
-          <h2 className="text-xl font-semibold text-slate-900 mb-3">10. AI-Generated Content and Automated Decisions</h2>
+          <h2 className="text-xl font-semibold text-neutral-900 mb-3">10. AI-Generated Content and Automated Decisions</h2>
           <p>
             RinKuzu uses Google Gemini AI to generate quizzes and evaluate answers. You have the right not to be
             subject to solely automated decisions that produce significant effects. If you believe an AI-generated
             evaluation has produced an unfair result, you may request human review by contacting{' '}
-            <a href="mailto:support@rinkuzu.com" className="text-teal-600 hover:underline">support@rinkuzu.com</a>.
+            <a href="mailto:support@rinkuzu.com" className="text-brand-trust hover:underline">support@rinkuzu.com</a>.
             We do not use AI-generated content to make automated decisions with legal or similarly significant effects
             without human oversight.
           </p>
@@ -256,7 +256,7 @@ export default async function PrivacyPage({ params }: Props) {
 
         {/* Section 11 */}
         <div>
-          <h2 className="text-xl font-semibold text-slate-900 mb-3">11. Data Security</h2>
+          <h2 className="text-xl font-semibold text-neutral-900 mb-3">11. Data Security</h2>
           <p>
             We implement industry-standard security measures: TLS 1.3 encryption in transit, AES-256 encryption at rest,
             bcrypt password hashing, role-based access control (RBAC), regular security audits,
@@ -267,8 +267,8 @@ export default async function PrivacyPage({ params }: Props) {
 
         {/* Section 12 */}
         <div>
-          <h2 className="text-xl font-semibold text-slate-900 mb-3">12. AI Training Disclaimer</h2>
-          <p className="bg-teal-50 border border-teal-100 rounded-lg p-4 font-medium text-teal-900">
+          <h2 className="text-xl font-semibold text-neutral-900 mb-3">12. AI Training Disclaimer</h2>
+          <p className="bg-green-50 border border-green-100 rounded-lg p-4 font-medium text-green-900">
             We do not use your personal data, uploaded learning materials, quiz content, or learning activity data
             to train, fine-tune, or improve any machine learning models or AI systems.
             Your content is processed solely for the purpose of providing the RinKuzu service to you.
@@ -277,8 +277,8 @@ export default async function PrivacyPage({ params }: Props) {
 
         {/* Section 13 */}
         <div>
-          <h2 className="text-xl font-semibold text-slate-900 mb-3">13. Data Controller Information</h2>
-          <div className="bg-slate-50 rounded-lg p-5 space-y-2 text-sm">
+          <h2 className="text-xl font-semibold text-neutral-900 mb-3">13. Data Controller Information</h2>
+          <div className="bg-neutral-50 rounded-lg p-5 space-y-2 text-sm">
             <p><strong>Data Controller:</strong> Hanoi University of Science and Technology (HUST)</p>
             <p><strong>Operating Name:</strong> RinKuzu</p>
             <p><strong>Address:</strong> Room 302, Building A1, 17 Dai Co Viet Street, Hai Ba Trung District, Hanoi, Vietnam</p>
@@ -290,7 +290,7 @@ export default async function PrivacyPage({ params }: Props) {
 
         {/* Section 14 */}
         <div>
-          <h2 className="text-xl font-semibold text-slate-900 mb-3">14. Changes to This Policy</h2>
+          <h2 className="text-xl font-semibold text-neutral-900 mb-3">14. Changes to This Policy</h2>
           <p>
             We may update this Privacy Policy from time to time. We will notify you of material changes by posting
             the new policy on this page and updating the &ldquo;Last updated&rdquo; date. For significant changes,
@@ -301,14 +301,14 @@ export default async function PrivacyPage({ params }: Props) {
 
         {/* Section 15 */}
         <div>
-          <h2 className="text-xl font-semibold text-slate-900 mb-3">15. Contact Us</h2>
+          <h2 className="text-xl font-semibold text-neutral-900 mb-3">15. Contact Us</h2>
           <p>
             If you have questions, concerns, or requests regarding this Privacy Policy or our data practices,
             please contact us:
           </p>
           <ul className="list-disc pl-6 mt-3 space-y-1">
-            <li>Email: <a href="mailto:support@rinkuzu.com" className="text-teal-600 hover:underline">support@rinkuzu.com</a></li>
-            <li>Data Protection Officer: <a href="mailto:dpo@rinkuzu.com" className="text-teal-600 hover:underline">dpo@rinkuzu.com</a></li>
+            <li>Email: <a href="mailto:support@rinkuzu.com" className="text-brand-trust hover:underline">support@rinkuzu.com</a></li>
+            <li>Data Protection Officer: <a href="mailto:dpo@rinkuzu.com" className="text-brand-trust hover:underline">dpo@rinkuzu.com</a></li>
             <li>Address: Room 302, Building A1, Hanoi University of Science and Technology, 17 Dai Co Viet, Hanoi, Vietnam</li>
           </ul>
         </div>

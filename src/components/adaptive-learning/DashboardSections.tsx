@@ -133,10 +133,10 @@ export const DashboardToast = ({ toastMsg }: ToastProps) => {
     return null
 
   return (
-    <div className={`fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-[1.25rem] border px-5 py-4 shadow-lg backdrop-blur ${toastMsg.type === 'error' ? 'border-red-200 bg-white/95 text-slate-900' : 'border-transparent bg-slate-900/95 text-white'}`}>
+    <div className={`fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-[1.25rem] border px-5 py-4 shadow-lg backdrop-blur ${toastMsg.type === 'error' ? 'border-red-200 bg-white/95 text-neutral-900' : 'border-transparent bg-brand-trust/95 text-white'}`}>
       {toastMsg.type === 'error'
         ? <FiZap className="h-5 w-5 shrink-0 text-red-500" aria-hidden="true" />
-        : <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10"><FiBookOpen className="h-5 w-5" aria-hidden="true" /></div>}
+        : <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/15"><FiBookOpen className="h-5 w-5" aria-hidden="true" /></div>}
       <span className="text-sm font-medium">{toastMsg.title}</span>
     </div>
   )
@@ -151,30 +151,30 @@ export const DashboardHeader = ({
 }: DashboardHeaderProps) => (
   <div className="mb-12 flex flex-col items-start justify-between gap-6 md:flex-row md:items-center">
     <div>
-      <span className={`${plusJakartaSans.className} text-3xl font-black text-[#131b2e]`}>Adaptive Scholar</span>
-      <p className="mt-1 font-medium text-[#3d4947]">{t('brandSubtitle')}</p>
+      <span className={`${plusJakartaSans.className} text-3xl font-black text-neutral-900`}>Adaptive Scholar</span>
+      <p className="mt-1 font-medium text-neutral-600">{t('brandSubtitle')}</p>
       <div className="mt-4 flex flex-wrap items-center gap-2">
         {apiOnline === false && <DashboardStatusPill tone="warning" text={t('connectionLimited')} />}
         {error && <DashboardStatusPill tone="error" text={error} />}
       </div>
     </div>
     <div className="flex flex-wrap items-center gap-4">
-      <div className="flex items-center gap-2 rounded-full bg-[#e2e7ff] px-4 py-2">
-        <FiZap className="h-4 w-4 text-[#fd761a]" aria-hidden="true" />
-        <span className="text-sm font-bold text-[#131b2e]">{t('dayStreak', { count: streakDays })}</span>
+      <div className="flex items-center gap-2 rounded-full bg-neutral-100 px-4 py-2">
+        <FiZap className="h-4 w-4 text-brand-trust" aria-hidden="true" />
+        <span className="text-sm font-bold text-neutral-900">{t('dayStreak', { count: streakDays })}</span>
       </div>
-      <div className="flex min-w-[9.5rem] items-center gap-3 rounded-full border border-[#bcc9c6]/30 bg-white px-4 py-2 shadow-sm">
-        <FiClock className="h-4 w-4 text-[#00685f]" aria-hidden="true" />
+      <div className="flex min-w-[9.5rem] items-center gap-3 rounded-full border border-neutral-300/60 bg-white px-4 py-2 shadow-sm">
+        <FiClock className="h-4 w-4 text-brand-trust" aria-hidden="true" />
         <div className="min-w-0">
-          <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#3d4947]">
+          <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-neutral-600">
             {t('dailyGoalProgress', { current: dailyGoalProgress.current, total: dailyGoalProgress.total })}
           </p>
-          <div className="mt-1 h-1.5 w-full rounded-full bg-[#eaedff]">
-            <div className="h-full rounded-full bg-[#00685f]" style={{ width: `${dailyGoalProgress.percent}%` }} />
+          <div className="mt-1 h-1.5 w-full rounded-full bg-neutral-100">
+            <div className="h-full rounded-full bg-brand-trust" style={{ width: `${dailyGoalProgress.percent}%` }} />
           </div>
         </div>
       </div>
-      {/* <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full border-2 border-[#008378] bg-[#f4fffc]">
+      {/* <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full border-2 border-brand-trust-hover bg-green-50">
         <Image src="/images/mascot_image.png" alt={t('avatarAlt')} width={48} height={48} className="h-full w-full object-contain" />
       </div> */}
     </div>
@@ -183,27 +183,27 @@ export const DashboardHeader = ({
 
 export const HeroSection = ({ subject, loading, loadingJobId, onGoUpload, onOpenSubject, t }: HeroProps) => {
   if (loading && !subject)
-    return <section className="h-[23rem] animate-pulse rounded-[1.75rem] border border-[#bcc9c6]/30 bg-white/60 lg:col-span-8" />
+    return <section className="h-[23rem] animate-pulse rounded-[1.75rem] border border-neutral-300/60 bg-white/60 lg:col-span-8" />
 
   if (!subject) {
     return (
-      <section className="relative overflow-hidden rounded-[1.75rem] border border-[#bcc9c6]/20 bg-gradient-to-br from-[#f4fffc] to-[#fff3ea] p-8 shadow-sm md:p-10 lg:col-span-8">
+      <section className="relative overflow-hidden rounded-[1.75rem] border border-neutral-200 bg-gradient-to-br from-green-50 to-green-50 p-8 shadow-sm md:p-10 lg:col-span-8">
         <div className="relative z-10 flex h-full flex-col justify-between gap-10">
           <div>
-            <span className="mb-4 inline-block rounded-full bg-[#00685f]/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.2em] text-[#00685f]">
+            <span className="mb-4 inline-block rounded-full bg-brand-trust/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.2em] text-brand-trust">
               {t('activeJourney')}
             </span>
-            <h1 className={`${plusJakartaSans.className} text-4xl font-black leading-tight text-[#131b2e] md:text-5xl`}>
+            <h1 className={`${plusJakartaSans.className} text-4xl font-black leading-tight text-neutral-900 md:text-5xl`}>
               {t('uploadMaterialTitle')}
             </h1>
-            <p className="mt-3 text-lg font-medium text-[#3d4947]">{t('uploadMaterialHint')}</p>
+            <p className="mt-3 text-lg font-medium text-neutral-600">{t('uploadMaterialHint')}</p>
           </div>
-          <Button onClick={onGoUpload} className="rounded-full bg-[#00685f] px-10 py-4 text-white shadow-lg shadow-[#00685f]/20 hover:bg-[#008378]">
+          <Button onClick={onGoUpload} className="rounded-full bg-brand-action px-10 py-4 text-white shadow-lg shadow-[var(--shadow-orange-glow)] hover:bg-brand-action-hover">
             <FiUploadCloud className="h-5 w-5" />
             {t('uploadDocument')}
           </Button>
         </div>
-        <div className="absolute -bottom-12 -right-12 h-80 w-80 rounded-full bg-[#fd761a]/10 blur-3xl" />
+        <div className="absolute -bottom-12 -right-12 h-80 w-80 rounded-full bg-green-500/10 blur-3xl" />
       </section>
     )
   }
@@ -211,30 +211,30 @@ export const HeroSection = ({ subject, loading, loadingJobId, onGoUpload, onOpen
   const isOpening = loadingJobId === subject.job_id
 
   return (
-    <section className="relative overflow-hidden rounded-[1.75rem] border border-[#bcc9c6]/20 bg-gradient-to-br from-[#f4fffc] to-[#fff3ea] p-8 shadow-sm md:p-10 lg:col-span-8">
+    <section className="relative overflow-hidden rounded-[1.75rem] border border-neutral-200 bg-gradient-to-br from-green-50 to-green-50 p-8 shadow-sm md:p-10 lg:col-span-8">
       <div className="relative z-10 flex h-full flex-col justify-between gap-10">
         <div>
-          <span className="mb-4 inline-block rounded-full bg-[#00685f]/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.2em] text-[#00685f]">
+          <span className="mb-4 inline-block rounded-full bg-brand-trust/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.2em] text-brand-trust">
             {t('activeJourney')}
           </span>
-          <h1 className={`${plusJakartaSans.className} text-4xl font-black leading-tight text-[#131b2e] md:text-5xl`}>
+          <h1 className={`${plusJakartaSans.className} text-4xl font-black leading-tight text-neutral-900 md:text-5xl`}>
             {subject.displayTitle}
           </h1>
-          <p className="mt-3 text-lg font-medium text-[#3d4947]">{t('pickUpDescription')}</p>
+          <p className="mt-3 text-lg font-medium text-neutral-600">{t('pickUpDescription')}</p>
         </div>
 
         <div>
           <div className="mb-3 flex items-end justify-between gap-4">
-            <span className="text-sm font-bold text-[#00685f]">{t('completePercent', { percent: subject.metrics.progressPercent })}</span>
-            <span className="text-xs font-bold text-[#3d4947]">
+            <span className="text-lg font-bold text-brand-trust">{t('completePercent', { percent: subject.metrics.progressPercent })}</span>
+            <span className="text-sm font-medium text-neutral-600">
               {subject.metrics.allConcepts > 0
                 ? t('conceptsToGo', { count: subject.metrics.remainingConcepts })
                 : t('progressPending')}
             </span>
           </div>
-          <div className="h-4 w-full overflow-hidden rounded-full bg-[#dae2fd]">
+          <div className="h-4 w-full overflow-hidden rounded-full bg-neutral-100">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-[#00685f] to-[#4ae176] shadow-[0_0_12px_rgba(0,104,95,0.3)]"
+              className="h-full rounded-full bg-gradient-to-r from-brand-trust to-green-400 shadow-[var(--shadow-green-glow)]"
               style={{ width: `${subject.metrics.progressPercent}%` }}
             />
           </div>
@@ -242,7 +242,7 @@ export const HeroSection = ({ subject, loading, loadingJobId, onGoUpload, onOpen
             <Button
               onClick={() => onOpenSubject(subject.job_id)}
               disabled={isOpening}
-              className="rounded-full bg-[#00685f] px-10 py-4 text-white shadow-lg shadow-[#00685f]/20 hover:bg-[#008378]"
+              className="rounded-full bg-brand-action px-10 py-4 text-white shadow-lg shadow-[var(--shadow-orange-glow)] hover:bg-brand-action-hover"
             >
               <FiPlay className="h-5 w-5" />
               {isOpening ? t('creatingSession') : t('continueLearning')}
@@ -251,70 +251,70 @@ export const HeroSection = ({ subject, loading, loadingJobId, onGoUpload, onOpen
               onClick={() => onOpenSubject(subject.job_id)}
               disabled={isOpening}
               variant="secondary"
-              className="rounded-full border border-[#bcc9c6]/50 bg-white/60 px-8 py-4 font-bold text-[#131b2e] backdrop-blur hover:bg-white"
+              className="rounded-full border border-neutral-300/70 bg-white/60 px-8 py-4 font-bold text-neutral-900 backdrop-blur hover:bg-white"
             >
               {t('viewSyllabus')}
             </Button>
           </div>
         </div>
       </div>
-      <div className="absolute -bottom-12 -right-12 h-80 w-80 rounded-full bg-[#fd761a]/10 blur-3xl transition-all duration-700" />
+      <div className="absolute -bottom-12 -right-12 h-80 w-80 rounded-full bg-green-500/10 blur-3xl transition-all duration-700" />
     </section>
   )
 }
 
 export const DailyProgressCard = ({ dailyGoalProgress, t }: DailyProgressCardProps) => (
-  <section className="flex h-full flex-col justify-between rounded-[1.75rem] border border-[#bcc9c6]/20 bg-white p-8 shadow-sm lg:col-span-4">
+  <section className="flex h-full flex-col justify-between rounded-[1.75rem] border border-neutral-200 bg-white p-8 shadow-sm lg:col-span-4">
     <div>
-      <h2 className={`${plusJakartaSans.className} mb-8 text-2xl font-bold text-[#131b2e]`}>{t('dailyProgressTitle')}</h2>
+      <h2 className={`${plusJakartaSans.className} mb-8 text-3xl font-bold text-neutral-900`}>{t('dailyProgressTitle')}</h2>
       <div className="space-y-8">
         <div className="flex items-center gap-5">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#ffdbca] shadow-inner">
-            <FiZap className="h-6 w-6 text-[#9d4300]" />
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-green-100 shadow-inner">
+            <FiZap className="h-6 w-6 text-brand-trust" />
           </div>
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#3d4947]">{t('earnedToday')}</p>
-            <p className="text-2xl font-black text-[#131b2e]">1,250 XP</p>
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-neutral-600">{t('earnedToday')}</p>
+            <p className="text-2xl font-extrabold text-neutral-900">1,250 XP</p>
           </div>
         </div>
         <div className="flex items-center gap-5">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#006b2d]/10 shadow-inner">
-            <FiBookOpen className="h-6 w-6 text-[#006b2d]" />
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-trust/10 shadow-inner">
+            <FiBookOpen className="h-6 w-6 text-brand-trust" />
           </div>
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#3d4947]">{t('achievements')}</p>
-            <p className="text-2xl font-black text-[#131b2e]">4 {t('unlocked')}</p>
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-neutral-600">{t('achievements')}</p>
+            <p className="text-2xl font-extrabold text-neutral-900">4 {t('unlocked')}</p>
           </div>
         </div>
       </div>
     </div>
 
-    <div className="mt-8 border-t border-[#bcc9c6]/30 pt-8">
+    <div className="mt-8 border-t border-neutral-300/60 pt-8">
       <div className="mb-3 flex items-center justify-between gap-4">
-        <span className="text-sm font-bold text-[#131b2e]">{t('levelArchitect')}</span>
-        <span className="text-xs font-medium text-[#3d4947]">
+        <span className="text-sm font-bold text-neutral-900">{t('levelArchitect')}</span>
+        <span className="text-xs font-medium text-neutral-600">
           {t('dailyGoalProgress', { current: dailyGoalProgress.current, total: dailyGoalProgress.total })}
         </span>
       </div>
-      <div className="h-2 w-full rounded-full bg-[#eaedff]">
+      <div className="h-2 w-full rounded-full bg-neutral-100">
         <div
-          className="h-full rounded-full bg-[#fd761a] shadow-[0_0_8px_rgba(253,118,26,0.3)]"
+          className="h-full rounded-full bg-brand-trust shadow-[var(--shadow-green-glow)]"
           style={{ width: `${Math.max(dailyGoalProgress.percent, 8)}%` }}
         />
       </div>
-      <p className="mt-3 text-xs font-medium text-[#3d4947]">{t('levelProgressHint')}</p>
+      <p className="mt-3 text-xs font-medium text-neutral-600">{t('levelProgressHint')}</p>
     </div>
   </section>
 )
 
 const UploadCard = ({ onGoUpload, t }: { onGoUpload: () => void, t: TranslateFn }) => (
-  <div className="group flex min-h-[21rem] flex-col items-center justify-center rounded-[1.75rem] border-2 border-dashed border-[#bcc9c6]/60 p-8 text-center transition-all duration-300 hover:border-[#00685f]/50 hover:bg-[#00685f]/5">
-    <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-[#fd761a]/10 transition-transform duration-300 group-hover:scale-110">
-      <FiUploadCloud className="h-10 w-10 text-[#fd761a]" />
+  <div className="group flex min-h-[21rem] flex-col items-center justify-center rounded-[1.75rem] border-2 border-dashed border-neutral-300 p-8 text-center transition-all duration-300 hover:border-brand-trust/50 hover:bg-brand-trust/5">
+    <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-green-500/10 transition-transform duration-300 group-hover:scale-110">
+      <FiUploadCloud className="h-10 w-10 text-brand-action" />
     </div>
-    <h3 className="mb-2 text-lg font-bold text-[#131b2e]">{t('uploadNewPdf')}</h3>
-    <p className="mb-6 text-sm text-[#3d4947]">{t('uploadDragDropHint')}</p>
-    <Button onClick={onGoUpload} className="rounded-full bg-[#fd761a] px-8 py-2.5 font-bold text-[#5c2400] shadow-md hover:bg-[#ff8b39]">
+    <h3 className="mb-2 text-xl font-bold text-neutral-900">{t('uploadNewPdf')}</h3>
+    <p className="mb-6 text-sm text-neutral-600">{t('uploadDragDropHint')}</p>
+    <Button onClick={onGoUpload} className="rounded-full bg-brand-action px-8 py-2.5 font-bold text-white shadow-md hover:bg-brand-action-hover">
       {t('chooseFile')}
     </Button>
   </div>
@@ -330,28 +330,28 @@ const SubjectLibraryCard = ({
   imageUrl,
   t,
 }: SubjectLibraryCardProps) => {
-  const progressBarClass = index % 3 === 1 ? 'bg-[#00873b]' : 'bg-[#00685f]'
+  const progressBarClass = index % 3 === 1 ? 'bg-brand-trust' : 'bg-brand-trust'
 
   return (
-    <div className="flex h-full flex-col justify-between rounded-[1.75rem] border border-[#bcc9c6]/20 bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:shadow-xl">
+    <div className="flex h-full flex-col justify-between rounded-[1.75rem] border border-neutral-200 bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:shadow-xl">
       <div className="mb-4">
-        <div className="mb-4 flex h-40 w-full items-center justify-center overflow-hidden rounded-2xl bg-[#f2f3ff]">
+        <div className="mb-4 flex h-40 w-full items-center justify-center overflow-hidden rounded-2xl bg-neutral-100">
           {imageUrl
             // The image source is discovered at runtime from an external API.
             // Keep a plain img here until the remote host set is stabilized in next.config.
             // eslint-disable-next-line @next/next/no-img-element
             ? <img src={imageUrl} alt={subject.displayTitle} className="h-full w-full object-cover opacity-70" loading="lazy" />
-            : <FiBookOpen className="h-12 w-12 text-[#bcc9c6]" />}
+            : <FiBookOpen className="h-12 w-12 text-neutral-300" />}
         </div>
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <h3 className="truncate text-lg font-bold text-[#131b2e]" title={subject.displayTitle}>{subject.displayTitle}</h3>
-            <p className="mt-1 text-xs font-medium uppercase tracking-tight text-[#3d4947]">{subject.lastOpenedLabel}</p>
+            <h3 className="truncate text-lg font-bold text-neutral-900" title={subject.displayTitle}>{subject.displayTitle}</h3>
+            <p className="mt-1 text-xs font-medium uppercase tracking-tight text-neutral-600">{subject.lastOpenedLabel}</p>
           </div>
           <button
             onClick={() => onDelete(subject)}
             disabled={loading || deleting}
-            className="rounded-full p-2 text-[#6d7a77] transition-colors hover:bg-red-50 hover:text-red-500"
+            className="rounded-full p-2 text-neutral-500 transition-colors hover:bg-red-50 hover:text-red-500"
             aria-label={t('deleteMaterial')}
             title={t('deleteMaterial')}
             type="button"
@@ -362,17 +362,17 @@ const SubjectLibraryCard = ({
       </div>
 
       <div>
-        <div className="mb-2 flex items-center justify-between text-[10px] font-bold text-[#00685f]">
+        <div className="mb-2 flex items-center justify-between text-[10px] font-bold text-brand-trust">
           <span>{subject.metrics.progressPercent}%</span>
           <span>{subject.progressLabel}</span>
         </div>
-        <div className="mb-6 h-1.5 w-full rounded-full bg-[#eaedff]">
+        <div className="mb-6 h-1.5 w-full rounded-full bg-neutral-100">
           <div className={`h-full rounded-full ${progressBarClass}`} style={{ width: `${subject.metrics.progressPercent}%` }} />
         </div>
         <Button
           onClick={() => onOpenSubject(subject.job_id)}
           disabled={loading}
-          className="w-full rounded-full bg-[#f2f3ff] py-3 text-sm font-bold text-[#00685f] hover:bg-[#00685f] hover:text-white"
+          className="w-full rounded-full bg-neutral-100 py-3 text-sm font-bold text-brand-trust hover:bg-brand-trust hover:text-white"
         >
           {loading ? t('creatingSession') : subject.ctaLabel}
         </Button>
@@ -399,24 +399,24 @@ export const LibrarySection = ({
     <section className="mb-16">
       <div className="mb-8 flex items-end justify-between gap-4">
         <div>
-          <h2 className={`${plusJakartaSans.className} text-3xl font-black text-[#131b2e]`}>{t('knowledgeLibrary')}</h2>
-          <p className="text-[#3d4947]">{t('knowledgeLibrarySubtitle')}</p>
+          <h2 className={`${plusJakartaSans.className} text-3xl font-black text-neutral-900`}>{t('knowledgeLibrary')}</h2>
+          <p className="text-neutral-600">{t('knowledgeLibrarySubtitle')}</p>
         </div>
         <div className="flex items-center gap-2">
           <div className="relative hidden sm:block">
-            <FiSearch className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#6d7a77]" />
+            <FiSearch className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-500" />
             <input
               type="text"
               placeholder={t('searchPlaceholder')}
               value={searchQuery}
               onChange={event => setSearchQuery(event.target.value)}
-              className="rounded-full border border-[#bcc9c6]/40 bg-white py-3 pl-10 pr-4 text-sm text-[#131b2e] outline-none transition focus:border-[#00685f] focus:ring-2 focus:ring-[#00685f]/10"
+              className="rounded-full border border-neutral-300/70 bg-white py-3 pl-10 pr-4 text-sm text-neutral-900 outline-none transition focus:border-brand-trust focus:ring-2 focus:ring-[var(--focus-ring-soft)]"
             />
           </div>
-          <button type="button" className="rounded-full p-3 text-[#6d7a77] transition-colors hover:bg-[#e2e7ff]" aria-label={t('gridView')}>
+          <button type="button" className="rounded-full p-3 text-neutral-500 transition-colors hover:bg-neutral-100" aria-label={t('gridView')}>
             <FiGrid className="h-5 w-5" />
           </button>
-          <button type="button" className="rounded-full p-3 text-[#6d7a77] transition-colors hover:bg-[#e2e7ff]" aria-label={t('listView')}>
+          <button type="button" className="rounded-full p-3 text-neutral-500 transition-colors hover:bg-neutral-100" aria-label={t('listView')}>
             <FiList className="h-5 w-5" />
           </button>
         </div>
@@ -426,7 +426,7 @@ export const LibrarySection = ({
         <UploadCard onGoUpload={onGoUpload} t={t} />
         {loading && subjects.length === 0
           ? Array.from({ length: 3 }).map((_, index) => (
-              <div key={`library-skeleton-${index}`} className="min-h-[21rem] animate-pulse rounded-[1.75rem] border border-[#bcc9c6]/20 bg-white/60" />
+              <div key={`library-skeleton-${index}`} className="min-h-[21rem] animate-pulse rounded-[1.75rem] border border-neutral-200 bg-white/60" />
             ))
           : subjects.map((subject, index) => (
               <SubjectLibraryCard
@@ -449,27 +449,27 @@ export const LibrarySection = ({
 export const RecommendationsSection = ({ t }: { t: TranslateFn }) => (
   <section className="mb-12">
     <div className="mb-8 flex items-center gap-4">
-      <h2 className={`${plusJakartaSans.className} text-3xl font-black text-[#131b2e]`}>{t('recommendedForYou')}</h2>
-      <span className="inline-flex items-center gap-1.5 rounded-full bg-[#00685f]/10 px-4 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-[#00685f]">
+      <h2 className={`${plusJakartaSans.className} text-3xl font-black text-neutral-900`}>{t('recommendedForYou')}</h2>
+      <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-trust/10 px-4 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-brand-trust">
         <FiZap className="h-4 w-4" />
         {t('aiPowered')}
       </span>
     </div>
     <div className="-mx-4 flex gap-8 overflow-x-auto px-4 pb-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       {DASHBOARD_RECOMMENDATIONS.map(item => (
-        <article key={item.titleKey} className="flex w-96 flex-none flex-col rounded-[1.75rem] border border-white/60 bg-[#f2f3ff] p-8 shadow-sm transition-shadow hover:shadow-md">
+        <article key={item.titleKey} className="flex w-96 flex-none flex-col rounded-[1.75rem] border border-white/60 bg-neutral-100 p-8 shadow-sm transition-shadow hover:shadow-md">
           <div className="mb-6 flex items-start justify-between gap-4">
-            <span className="rounded bg-white px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-[#3d4947]">{t(item.badgeKey)}</span>
-            <FiZap className="h-5 w-5 text-[#00685f]" />
+            <span className="rounded bg-white px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-neutral-600">{t(item.badgeKey)}</span>
+            <FiZap className="h-5 w-5 text-brand-trust" />
           </div>
-          <h4 className="mb-3 text-xl font-bold text-[#131b2e]">{t(item.titleKey)}</h4>
-          <p className="mb-6 leading-relaxed text-[#3d4947]">{t(item.descriptionKey)}</p>
+          <h4 className="mb-3 text-xl font-bold text-neutral-900">{t(item.titleKey)}</h4>
+          <p className="mb-6 leading-relaxed text-neutral-600">{t(item.descriptionKey)}</p>
           <div className="mt-auto flex items-center justify-between gap-4">
-            <span className="inline-flex items-center gap-1 text-xs font-bold text-[#3d4947]">
+            <span className="inline-flex items-center gap-1 text-xs font-bold text-neutral-600">
               <FiClock className="h-3.5 w-3.5" />
               {t(item.durationKey)}
             </span>
-            <button type="button" className="inline-flex items-center gap-1 text-sm font-bold text-[#00685f] transition-all hover:gap-2">
+            <button type="button" className="inline-flex items-center gap-1 text-sm font-bold text-brand-trust transition-all hover:gap-2">
               {t('viewDetails')}
               <FiArrowRight className="h-4 w-4" />
             </button>
@@ -484,7 +484,7 @@ export const FloatingUploadAction = ({ onClick, t }: FloatingUploadActionProps) 
   <button
     type="button"
     onClick={onClick}
-    className="group fixed bottom-10 right-10 z-50 flex h-20 w-20 items-center justify-center rounded-full bg-[#fd761a] text-[#5c2400] shadow-2xl transition-all active:scale-90 hover:w-48 hover:rounded-[2rem]"
+    className="group fixed bottom-10 right-10 z-50 flex h-20 w-20 items-center justify-center rounded-full bg-brand-action text-white shadow-2xl transition-all active:scale-90 hover:w-48 hover:rounded-[2rem]"
     aria-label={t('newLesson')}
     title={t('newLesson')}
   >
@@ -506,7 +506,7 @@ export const DashboardDeleteModal = ({
   <ConfirmModal
     isOpen={isOpen}
     title={t('deleteDocumentTitle')}
-    message={<span className="text-sm text-slate-500">{t('deleteConfirmDescription')}</span>}
+    message={<span className="text-sm text-neutral-500">{t('deleteConfirmDescription')}</span>}
     confirmText={t('deleteMaterial')}
     cancelText={cancelText}
     confirmVariant="destructive"

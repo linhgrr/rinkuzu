@@ -42,7 +42,7 @@ interface PaginationData {
 
 const CategoryBadgeVariant = (color: string) => {
     const map: Record<string, 'info' | 'success' | 'warning' | 'danger' | 'purple' | 'default'> = {
-        'bg-blue-100': 'info', 'bg-green-100': 'success', 'bg-yellow-100': 'warning',
+        'bg-neutral-100': 'info', 'bg-green-100': 'success', 'bg-yellow-100': 'warning',
         'bg-red-100': 'danger', 'bg-purple-100': 'purple'
     };
     return map[color] || 'default';
@@ -78,11 +78,11 @@ const QuizCard = memo(function QuizCard({ quiz, onClick }: QuizCardProps) {
                     <Badge variant={CategoryBadgeVariant(quiz.category?.color)}>
                         {quiz.category?.name || 'General'}
                     </Badge>
-                    <span className="text-xs text-gray-400">
+                    <span className="text-xs text-neutral-400">
                         {formatDisplayDate(quiz.createdAt)}
                     </span>
                 </div>
-                <CardTitle className="line-clamp-2 group-hover:text-blue-600 transition-colors">
+                <CardTitle className="line-clamp-2 group-hover:text-brand-trust transition-colors">
                     {quiz.title}
                 </CardTitle>
                 <CardDescription className="line-clamp-2">
@@ -90,11 +90,11 @@ const QuizCard = memo(function QuizCard({ quiz, onClick }: QuizCardProps) {
                 </CardDescription>
             </CardHeader>
             <CardContent className="mt-auto pt-0">
-                <div className="flex items-center justify-between text-sm text-gray-500 border-t pt-4 mt-2">
+                <div className="flex items-center justify-between text-sm text-neutral-500 border-t pt-4 mt-2">
                     <span className="flex items-center gap-1">
                         <HiOutlineQuestionMarkCircle className="w-4 h-4" /> {questionCount} {tQuiz('questions')}
                     </span>
-                    <span className="text-blue-600 font-medium group-hover:underline flex items-center gap-1">
+                    <span className="text-brand-trust font-medium group-hover:underline flex items-center gap-1">
                         {tQuiz('takeQuiz')} <HiOutlineArrowRight className="w-4 h-4" />
                     </span>
                 </div>
@@ -108,10 +108,10 @@ const LoadingSkeleton = memo(function LoadingSkeleton() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[1, 2, 3, 4, 5, 6].map(i => (
                 <Card key={i} className="animate-pulse">
-                    <div className="h-48 bg-gray-200 rounded-t-xl"></div>
+                    <div className="h-48 bg-neutral-200 rounded-t-xl"></div>
                     <CardContent className="p-4 space-y-3">
-                        <div className="h-6 bg-gray-200 rounded w-3/4"></div>
-                        <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                        <div className="h-6 bg-neutral-200 rounded w-3/4"></div>
+                        <div className="h-4 bg-neutral-200 rounded w-1/2"></div>
                     </CardContent>
                 </Card>
             ))}
@@ -124,9 +124,9 @@ const EmptyState = memo(function EmptyState({ onClear }: { onClear: () => void }
 
     return (
         <div className="text-center py-20">
-            <HiOutlineSearch className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-900">{t('noQuizzes')}</h3>
-            <p className="text-gray-500 mt-2">{t('tryAdjusting')}</p>
+            <HiOutlineSearch className="w-16 h-16 text-neutral-300 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-neutral-900">{t('noQuizzes')}</h3>
+            <p className="text-neutral-500 mt-2">{t('tryAdjusting')}</p>
             <Button
                 variant="ghost"
                 className="mt-4"
@@ -245,7 +245,7 @@ function ExploreContent() {
     }, [search, updateURL]);
 
     return (
-        <div className="min-h-screen bg-[#f5f5f7] pb-24 md:pb-8">
+        <div className="min-h-screen bg-neutral-50 pb-24 md:pb-8">
             <Navigation />
 
             {/* Sidebar - hidden on mobile */}
@@ -268,8 +268,8 @@ function ExploreContent() {
                     <div className="mb-8 space-y-4">
                         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                             <div>
-                                <h1 className="text-3xl font-bold text-gray-900">{t('title')}</h1>
-                                <p className="text-gray-600">{t('subtitle')}</p>
+                                <h1 className="text-3xl font-bold text-neutral-900">{t('title')}</h1>
+                                <p className="text-neutral-600">{t('subtitle')}</p>
                             </div>
                             <div className="w-full md:w-auto flex flex-col sm:flex-row gap-3">
                                 <div className="w-full sm:w-64">
@@ -278,7 +278,7 @@ function ExploreContent() {
                                         name="search"
                                         autoComplete="off"
                                         placeholder={t('searchPlaceholder')}
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                        className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-brand-trust outline-none"
                                         value={search}
                                         onChange={handleSearchChange}
                                         aria-label={t('searchPlaceholder')}
@@ -297,7 +297,7 @@ function ExploreContent() {
                             <div className="flex items-center gap-2">
                                 <Badge
                                     variant="default"
-                                    className="flex items-center gap-1 cursor-pointer hover:bg-gray-200"
+                                    className="flex items-center gap-1 cursor-pointer hover:bg-neutral-200"
                                     onClick={handleClearCategory}
                                     onKeyDown={(e: React.KeyboardEvent) => {
                                         if (e.key === 'Enter' || e.key === ' ') {
@@ -352,10 +352,10 @@ function ExploreFallback() {
     const t = useTranslations('common');
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-[#f5f5f7]">
+        <div className="min-h-screen flex items-center justify-center bg-neutral-50">
             <div className="text-center animate-pulse">
-                <div className="w-12 h-12 bg-gray-200 rounded-xl mx-auto mb-4" />
-                <p className="text-[#86868b]">{t('loading')}</p>
+                <div className="w-12 h-12 bg-neutral-200 rounded-xl mx-auto mb-4" />
+                <p className="text-[var(--text-muted)]">{t('loading')}</p>
             </div>
         </div>
     );

@@ -147,7 +147,7 @@ export function LoginForm({ locale }: LoginFormProps) {
                         type="submit"
                         loading={loading}
                         size="lg"
-                        className="w-full bg-teal-600 text-white hover:bg-teal-700 shadow-sm border-0"
+                        className="w-full"
                     >
                         {loading ? t('signingIn') : t('signInButton')}
                     </Button>
@@ -155,13 +155,13 @@ export function LoginForm({ locale }: LoginFormProps) {
             </form>
 
             {/* Sign Up Link */}
-            <div className="mt-8 pt-6 border-t border-gray-100">
+            <div className="mt-8 pt-6 border-t border-neutral-200">
                 <div className="text-center">
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-neutral-500">
                         {t('dontHaveAccount')}{' '}
                         <Link
                             href="/register"
-                            className="font-semibold text-teal-600 hover:text-teal-700 transition-colors"
+                            className="font-semibold text-brand-action hover:text-brand-action-hover transition-colors"
                         >
                             {t('createAccount')}
                         </Link>

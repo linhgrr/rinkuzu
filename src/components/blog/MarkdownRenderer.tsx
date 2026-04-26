@@ -23,7 +23,7 @@ const components: Components = {
     return (
       <h2
         id={id}
-        className="scroll-mt-24 text-2xl font-bold text-[#1e242c] mt-12 mb-6"
+        className="scroll-mt-24 text-2xl font-bold text-[var(--text-primary)] mt-12 mb-6"
       >
         {children}
       </h2>
@@ -35,51 +35,51 @@ const components: Components = {
     return (
       <h3
         id={id}
-        className="scroll-mt-24 text-xl font-semibold text-[#1e242c] mt-8 mb-4"
+        className="scroll-mt-24 text-xl font-semibold text-[var(--text-primary)] mt-8 mb-4"
       >
         {children}
       </h3>
     );
   },
   p: ({ children }) => (
-    <p className="mb-6 leading-relaxed text-[#414d60]">{children}</p>
+    <p className="mb-6 leading-relaxed text-[var(--text-muted)]">{children}</p>
   ),
   ul: ({ children }) => (
-    <ul className="list-disc pl-6 mb-6 space-y-2 text-[#414d60]">{children}</ul>
+    <ul className="list-disc pl-6 mb-6 space-y-2 text-[var(--text-muted)]">{children}</ul>
   ),
   ol: ({ children }) => (
-    <ol className="list-decimal pl-6 mb-6 space-y-2 text-[#414d60]">{children}</ol>
+    <ol className="list-decimal pl-6 mb-6 space-y-2 text-[var(--text-muted)]">{children}</ol>
   ),
-  li: ({ children }) => <li className="pl-1 text-[#414d60]">{children}</li>,
+  li: ({ children }) => <li className="pl-1 text-[var(--text-muted)]">{children}</li>,
   blockquote: ({ children }) => (
-    <blockquote className="border-l-4 border-teal-500 pl-6 py-3 italic text-[#5a6470] bg-gray-50 rounded-r-xl my-8">
+    <blockquote className="border-l-4 border-brand-trust pl-6 py-3 italic text-[var(--text-muted)] bg-neutral-50 rounded-r-xl my-8">
       {children}
     </blockquote>
   ),
   table: ({ children }) => (
-    <div className="overflow-x-auto my-8 ring-1 ring-gray-200 rounded-xl shadow-sm">
-      <table className="min-w-full divide-y divide-gray-200">{children}</table>
+    <div className="overflow-x-auto my-8 ring-1 ring-neutral-200 rounded-xl shadow-sm">
+      <table className="min-w-full divide-y divide-neutral-200">{children}</table>
     </div>
   ),
-  thead: ({ children }) => <thead className="bg-gray-50">{children}</thead>,
+  thead: ({ children }) => <thead className="bg-neutral-50">{children}</thead>,
   th: ({ children }) => (
-    <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+    <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider">
       {children}
     </th>
   ),
   td: ({ children }) => (
-    <td className="px-6 py-4 text-sm text-gray-600 border-t border-gray-100 align-top">
+    <td className="px-6 py-4 text-sm text-neutral-600 border-t border-neutral-100 align-top">
       {children}
     </td>
   ),
   tr: ({ children }) => (
-    <tr className="hover:bg-gray-50 transition-colors">{children}</tr>
+    <tr className="hover:bg-neutral-50 transition-colors">{children}</tr>
   ),
   code: ({ children, className }) => {
     // Inline code (no className = no language)
     if (!className) {
       return (
-        <code className="bg-gray-100 text-teal-700 px-1.5 py-0.5 rounded font-mono text-sm">
+        <code className="bg-neutral-100 text-brand-trust-hover px-1.5 py-0.5 rounded font-mono text-sm">
           {children}
         </code>
       );
@@ -92,14 +92,14 @@ const components: Components = {
     );
   },
   pre: ({ children }) => (
-    <pre className="bg-gray-900 text-gray-100 p-4 rounded-xl overflow-x-auto text-sm font-mono my-6">
+    <pre className="bg-neutral-900 text-neutral-100 p-4 rounded-xl overflow-x-auto text-sm font-mono my-6">
       {children}
     </pre>
   ),
   a: ({ href, children }) => (
     <a
       href={href}
-      className="text-teal-600 hover:text-teal-700 underline decoration-teal-600/30 hover:decoration-teal-600 underline-offset-4 transition-all"
+      className="text-brand-trust hover:text-brand-trust-hover underline decoration-teal-600/30 hover:decoration-teal-600 underline-offset-4 transition-all"
       target={href?.startsWith('http') ? '_blank' : undefined}
       rel={href?.startsWith('http') ? 'noopener noreferrer' : undefined}
     >
@@ -107,9 +107,9 @@ const components: Components = {
     </a>
   ),
   strong: ({ children }) => (
-    <strong className="font-semibold text-[#1e242c]">{children}</strong>
+    <strong className="font-semibold text-[var(--text-primary)]">{children}</strong>
   ),
-  hr: () => <hr className="my-10 border-gray-200" />,
+  hr: () => <hr className="my-10 border-neutral-200" />,
 };
 
 export const MarkdownRenderer = ({ content }: MarkdownRendererProps) => {

@@ -18,9 +18,9 @@ interface ExerciseProps {
 }
 
 const BLOOM_LEVEL_COLORS: Record<string, string> = {
-  Remember: 'bg-slate-100 text-slate-700',
-  Understand: 'bg-teal-100 text-teal-700',
-  Apply: 'bg-emerald-100 text-emerald-700',
+  Remember: 'bg-neutral-100 text-neutral-700',
+  Understand: 'bg-green-100 text-brand-trust-hover',
+  Apply: 'bg-teal-100 text-teal-700',
   Analyze: 'bg-amber-100 text-amber-700',
   Evaluate: 'bg-orange-100 text-orange-700',
   Create: 'bg-rose-100 text-rose-700',
@@ -77,8 +77,8 @@ export default function AdaptiveLearningExercise({ sessionId }: ExerciseProps) {
   const bloomColor = useMemo(() => {
     const itemInfo = concept || exercise
     if (!itemInfo)
-      return 'bg-slate-400 text-white'
-    return BLOOM_LEVEL_COLORS[itemInfo.bloom_label] || 'bg-slate-400 text-white'
+      return 'bg-neutral-400 text-white'
+    return BLOOM_LEVEL_COLORS[itemInfo.bloom_label] || 'bg-neutral-400 text-white'
   }, [exercise, concept])
 
   const localizedBloomLabel = useMemo(() => {

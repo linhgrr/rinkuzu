@@ -96,7 +96,10 @@ export default function ProfileHistory() {
     if (loading && attempts.length === 0) {
         return (
             <div className="flex justify-center py-12">
-                <div className="text-gray-500">{tCommon('loadingHistory')}</div>
+                <div className="flex flex-col items-center gap-3">
+                    <div className="h-8 w-8 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
+                    <div className="text-sm text-neutral-500">{tCommon('loadingHistory')}</div>
+                </div>
             </div>
         )
     }
@@ -104,8 +107,8 @@ export default function ProfileHistory() {
     return (
         <div className="space-y-6">
             <div>
-                <h2 className="text-2xl font-bold text-gray-900">{t('quizHistory')}</h2>
-                <p className="mt-1 text-gray-600">
+                <h2 className="text-2xl font-bold text-neutral-900">{t('quizHistory')}</h2>
+                <p className="mt-1 text-neutral-600">
                     {t('quizHistoryDescription')}
                 </p>
             </div>
@@ -120,12 +123,12 @@ export default function ProfileHistory() {
                 <Card>
                     <CardContent className="text-center py-12">
                         <div className="flex justify-center mb-4">
-                            <HiOutlineDocumentText className="w-16 h-16 text-gray-300" />
+                            <HiOutlineDocumentText className="w-16 h-16 text-neutral-300" />
                         </div>
-                        <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                        <h3 className="text-xl font-semibold text-neutral-900 mb-2">
                             {t('noHistory')}
                         </h3>
-                        <p className="text-gray-600 mb-6">
+                        <p className="text-neutral-600 mb-6">
                             {t('exploreQuizzes')}
                         </p>
                         <Link href={ROUTES.DASHBOARD}>
@@ -139,10 +142,10 @@ export default function ProfileHistory() {
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                         <Card>
                             <CardContent className="text-center py-4">
-                                <div className="text-xl font-bold text-blue-600">
+                                <div className="text-xl font-bold text-brand-trust">
                                     {pagination?.totalItems || attempts.length}
                                 </div>
-                                <div className="text-xs text-gray-600">{t('totalAttempts')}</div>
+                                <div className="text-xs text-neutral-600">{t('totalAttempts')}</div>
                             </CardContent>
                         </Card>
                         <Card>
@@ -150,7 +153,7 @@ export default function ProfileHistory() {
                                 <div className="text-xl font-bold text-green-600">
                                     {attempts.length > 0 ? Math.round(attempts.reduce((sum, a) => sum + a.score, 0) / attempts.length) : 0}%
                                 </div>
-                                <div className="text-xs text-gray-600">{t('avgScore')}</div>
+                                <div className="text-xs text-neutral-600">{t('avgScore')}</div>
                             </CardContent>
                         </Card>
                         {/* Simplified stats for mobile */}
@@ -166,7 +169,7 @@ export default function ProfileHistory() {
                                         <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
                                             <div className="flex-1">
                                                 <div className="flex items-center space-x-2 flex-wrap gap-y-1 mb-1">
-                                                    <h3 className="text-lg font-semibold text-gray-900 truncate max-w-[200px] sm:max-w-md">
+                                                    <h3 className="text-lg font-semibold text-neutral-900 truncate max-w-[200px] sm:max-w-md">
                                                         {attempt.quiz.title}
                                                     </h3>
                                                     <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${getScoreColor(attempt.score)}`}>
@@ -174,7 +177,7 @@ export default function ProfileHistory() {
                                                     </span>
                                                 </div>
 
-                                                <div className="flex items-center space-x-4 text-xs text-gray-500 mt-2">
+                                                <div className="flex items-center space-x-4 text-xs text-neutral-500 mt-2">
                                                     <span className="flex items-center gap-1"><HiOutlineDocumentText className="w-3 h-3" /> {tCommon('questionsCount', { count: attempt.quiz.totalQuestions })}</span>
                                                     <span className="flex items-center gap-1"><HiOutlineClock className="w-3 h-3" /> {formatDate(new Date(attempt.takenAt))}</span>
                                                 </div>
@@ -192,7 +195,7 @@ export default function ProfileHistory() {
                                                         <Button
                                                             variant="outline"
                                                             size="sm"
-                                                            className="bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-700"
+                                                            className="bg-neutral-50 hover:bg-neutral-100 border-neutral-200 text-neutral-700"
                                                         >
                                                             {t('details')}
                                                         </Button>

@@ -163,7 +163,7 @@ export function CategorySearch({ isCollapsed = false, onCategorySelect, showInHo
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className="w-full flex items-center justify-center p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+        className="w-full flex items-center justify-center p-2 text-neutral-600 hover:bg-neutral-100 rounded-lg transition-colors"
         title="Search Categories"
       >
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -185,47 +185,47 @@ export function CategorySearch({ isCollapsed = false, onCategorySelect, showInHo
           onChange={(e) => setSearchTerm(e.target.value)}
           onFocus={() => setIsOpen(true)}
           onKeyDown={handleKeyDown}
-          className="w-full pl-9 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full pl-9 pr-4 py-2 text-sm border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-trust focus:border-transparent"
         />
-        <svg className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="absolute left-3 top-2.5 w-4 h-4 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
         </svg>
       </div>
 
       {/* Dropdown */}
       {isOpen && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
+        <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-neutral-200 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
           {loading ? (
             <div className="p-4 text-center">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto"></div>
-              <p className="text-sm text-gray-500 mt-2">Loading categories...</p>
+              <div className="h-6 w-6 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust mx-auto" />
+              <p className="text-sm text-neutral-500 mt-2">Loading categories...</p>
             </div>
           ) : (
             <>
               {/* All Categories Option */}
               <button
                 onClick={() => handleCategorySelect(null)}
-                className={`w-full px-4 py-3 text-left hover:bg-gray-50 border-b border-gray-100 transition-colors ${
-                  selectedIndex === -1 ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
+                className={`w-full px-4 py-3 text-left hover:bg-neutral-50 border-b border-neutral-100 transition-colors ${
+                  selectedIndex === -1 ? 'text-green-50 text-brand-trust' : 'text-neutral-700'
                 }`}
               >
                 <div className="flex items-center">
-                  <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center mr-3">
+                  <div className="w-8 h-8 bg-gradient-to-br from-brand-trust to-green-600 rounded-full flex items-center justify-center mr-3">
                     <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                     </svg>
                   </div>
                   <div>
                     <div className="font-medium">All Categories</div>
-                    <div className="text-xs text-gray-500">Browse all available subjects</div>
+                    <div className="text-xs text-neutral-500">Browse all available subjects</div>
                   </div>
                 </div>
               </button>
 
               {/* Recent Categories Section */}
               {!searchTerm && recentCategories.length > 0 && (
-                <div className="px-4 py-2 bg-gray-50 border-b border-gray-100">
-                  <p className="text-xs font-medium text-gray-600 uppercase tracking-wide">Recent</p>
+                <div className="px-4 py-2 bg-neutral-50 border-b border-neutral-100">
+                  <p className="text-xs font-medium text-neutral-600 uppercase tracking-wide">Recent</p>
                 </div>
               )}
 
@@ -235,8 +235,8 @@ export function CategorySearch({ isCollapsed = false, onCategorySelect, showInHo
                   <button
                     key={category._id}
                     onClick={() => handleCategorySelect(category)}
-                    className={`w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors ${
-                      selectedIndex === index ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
+                    className={`w-full px-4 py-3 text-left hover:bg-neutral-50 transition-colors ${
+                      selectedIndex === index ? 'text-green-50 text-brand-trust' : 'text-neutral-700'
                     }`}
                   >
                     <div className="flex items-center">
@@ -248,7 +248,7 @@ export function CategorySearch({ isCollapsed = false, onCategorySelect, showInHo
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="font-medium truncate">{category.name}</div>
-                        <div className="text-xs text-gray-500 truncate">
+                        <div className="text-xs text-neutral-500 truncate">
                           {category.quizCount} quiz{category.quizCount !== 1 ? 'zes' : ''}
                           {category.description && ` • ${category.description}`}
                         </div>
@@ -257,8 +257,8 @@ export function CategorySearch({ isCollapsed = false, onCategorySelect, showInHo
                   </button>
                 ))
               ) : searchTerm ? (
-                <div className="p-4 text-center text-gray-500">
-                  <svg className="w-8 h-8 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="p-4 text-center text-neutral-500">
+                  <svg className="w-8 h-8 mx-auto mb-2 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
                   <p className="text-sm">No categories found</p>

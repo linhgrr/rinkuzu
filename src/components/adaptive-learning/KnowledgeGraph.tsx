@@ -17,6 +17,7 @@ import {
 } from '@xyflow/react';
 
 import dagre from 'dagre';
+import { Spinner } from '@/components/ui/Spinner';
 import { getConceptDetail } from './api-client';
 import { useKnowledgeGraph } from '@/hooks/useAdaptiveLearning';
 import type { ConceptDetail, KnowledgeGraphData, KnowledgeNode } from './types';
@@ -244,7 +245,7 @@ export default function KnowledgeGraph({ sessionId }: KnowledgeGraphProps) {
     if (loading) {
         return (
             <div className="flex h-[400px] w-full items-center justify-center rounded-xl border border-neutral-200 bg-white">
-                <div className="h-5 w-5 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
+                <Spinner />
             </div>
         );
     }

@@ -2,6 +2,7 @@
 
 import Image from 'next/image'
 import { Button } from '@/components/ui/Button'
+import { Spinner } from '@/components/ui/Spinner'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { DynamicMarkdownRenderer } from '@/components/ui/DynamicMarkdownRenderer'
 import {
@@ -81,7 +82,7 @@ function renderResultCorrectAnswer(exercise: Exercise, result: SubmitResult, t: 
 export const ResultLoadingState = ({ t }: { t: TranslateFn }) => (
   <div className="mx-auto flex min-h-[80vh] max-w-4xl items-center justify-center">
     <div className="space-y-3 text-center">
-      <div className="mx-auto h-7 w-7 animate-spin rounded-full border-2 border-neutral-200 border-t-brand-trust" />
+      <Spinner size="xl" className="mx-auto" />
       <p className="text-sm font-medium text-neutral-500">{t('exercise.loadingTitle')}</p>
     </div>
   </div>

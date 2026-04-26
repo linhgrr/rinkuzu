@@ -2,6 +2,7 @@
 
 import dynamic from 'next/dynamic'
 import { Button } from '@/components/ui/Button'
+import { Spinner } from '@/components/ui/Spinner'
 import {
   HiCheck,
   HiOutlineArrowLeft,
@@ -15,7 +16,7 @@ const ProcessingGraphPanel = dynamic(() => import('./ProcessingGraphPanel'), {
   loading: () => (
     <div className="flex h-full w-full items-center justify-center text-sm text-neutral-400">
       <div className="flex flex-col items-center gap-3">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
+        <Spinner size="lg" />
       </div>
     </div>
   ),
@@ -155,7 +156,7 @@ export const ProcessingStatusCard = ({
 
       {creatingSession && (
         <div className="mb-6 flex flex-col items-center justify-center gap-2 text-sm font-medium text-neutral-900">
-          <div className="h-4 w-4 animate-spin rounded-full border-2 border-neutral-200 border-t-brand-trust" />
+          <Spinner size="sm" />
           {t('processing.creatingSession')}
         </div>
       )}

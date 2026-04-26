@@ -2,6 +2,7 @@
 
 import React from 'react'
 import { Button } from '@/components/ui/Button'
+import { Spinner } from '@/components/ui/Spinner'
 import { Card, CardContent } from '@/components/ui/Card'
 import { HiArrowRight, HiBookOpen, HiLightBulb, HiOutlineX } from '@/components/icons'
 import { DynamicMarkdownRenderer } from '@/components/ui/DynamicMarkdownRenderer'
@@ -21,7 +22,7 @@ type LoadingStateProps = {
 export const ExerciseLoadingState = ({ t }: LoadingStateProps) => (
   <div className="mx-auto flex min-h-[80vh] max-w-5xl items-center justify-center">
     <div className="text-center">
-      <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-2 border-neutral-200 border-t-brand-trust" />
+      <Spinner size="2xl" className="mx-auto mb-4" />
       <p className="text-base font-medium text-neutral-900">{t('exercise.loadingTitle')}</p>
       <p className="mt-1 text-sm text-neutral-500">{t('exercise.loadingSubtitle')}</p>
     </div>

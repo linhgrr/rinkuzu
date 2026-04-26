@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { HiOutlineAcademicCap } from '@/components/icons';
+import { Spinner } from '@/components/ui/Spinner';
 import { useKnowledgeGraph, useMasteryMatrix } from '@/hooks/useAdaptiveLearning';
 import type { MasteryMatrixData, MasteryRow } from './types';
 
@@ -113,7 +114,7 @@ export default function MasteryMatrix({ sessionId, filterActiveOnly = false }: M
         return (
             <div className="rounded-md border border-neutral-200 bg-white p-8">
                 <div className="mb-4 flex items-center gap-3">
-                    <div className="h-5 w-5 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
+                    <Spinner />
                     <span className="text-neutral-500 font-medium">{t('masteryMatrix.loading')}</span>
                 </div>
             </div>

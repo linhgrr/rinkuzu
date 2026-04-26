@@ -2,6 +2,7 @@
 
 import Image from 'next/image'
 import { Button } from '@/components/ui/Button'
+import { Spinner } from '@/components/ui/Spinner'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { DynamicMarkdownRenderer } from '@/components/ui/DynamicMarkdownRenderer'
 import {
@@ -81,7 +82,7 @@ function renderResultCorrectAnswer(exercise: Exercise, result: SubmitResult, t: 
 export const ResultLoadingState = ({ t }: { t: TranslateFn }) => (
   <div className="mx-auto flex min-h-[80vh] max-w-4xl items-center justify-center">
     <div className="space-y-3 text-center">
-      <div className="mx-auto h-7 w-7 animate-spin rounded-full border-2 border-neutral-200 border-t-brand-trust" />
+      <Spinner size="xl" className="mx-auto" />
       <p className="text-sm font-medium text-neutral-500">{t('exercise.loadingTitle')}</p>
     </div>
   </div>
@@ -148,7 +149,7 @@ export const ResultContent = ({
 
     <div className="grid w-full grid-cols-1 gap-6 lg:grid-cols-3">
       <div className="space-y-6 lg:col-span-2">
-        <Card className="overflow-hidden rounded-[20px] border border-neutral-200 bg-white shadow-sm">
+        <Card className="overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-sm">
           <div className={`h-1.5 w-full ${isCorrect ? 'bg-brand-trust' : 'bg-red-300'}`} />
           <CardHeader className="border-b border-neutral-100 bg-neutral-50/50 px-6 py-3">
             <h3 className="font-medium tracking-tight text-neutral-900">{t('result.explanationTitle')}</h3>
@@ -194,7 +195,7 @@ export const ResultContent = ({
           </CardContent>
         </Card>
 
-        <Card className="overflow-hidden rounded-[20px] border border-neutral-200 bg-white shadow-sm">
+        <Card className="overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-sm">
           <CardContent className="p-6">
             <h3 className="mb-4 font-medium tracking-tight text-neutral-900">{t('result.masteryUpdate')}</h3>
             <div className="space-y-3">
@@ -235,7 +236,7 @@ export const ResultContent = ({
       </div>
 
       <div className="space-y-6">
-        <div className="rounded-[20px] border border-neutral-200 bg-white p-6 shadow-sm">
+        <div className="rounded-xl border border-neutral-200 bg-white p-6 shadow-sm">
           <h4 className="mb-4 text-[10px] font-bold uppercase tracking-widest text-neutral-500">{t('result.sessionStats')}</h4>
           <div className="space-y-4">
             <div className="flex items-center justify-between border-b border-neutral-100 pb-3">
@@ -254,7 +255,7 @@ export const ResultContent = ({
         </div>
 
         {result.session_completed ? (
-          <div className="rounded-[20px] border border-neutral-200 bg-neutral-50 p-6 text-center text-neutral-900 shadow-sm">
+          <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-6 text-center text-neutral-900 shadow-sm">
             <div className="mb-3 flex justify-center">
               <div className="rounded-full border border-neutral-300 bg-neutral-200 p-2 text-neutral-900">
                 <HiCheck className="h-5 w-5" />

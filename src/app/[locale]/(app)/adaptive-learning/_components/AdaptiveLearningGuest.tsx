@@ -10,20 +10,7 @@ type AdaptiveLearningGuestProps = {
   t: TranslateFn
 }
 
-const FAQ_ITEMS = [
-  {
-    question: 'How does adaptive learning work?',
-    answer: 'You upload a PDF, AI extracts concepts, builds prerequisite knowledge graph, then recommends Bloom-level exercises.',
-  },
-  {
-    question: 'Is it suitable for beginners?',
-    answer: 'Yes. The system adapts difficulty and unlocks lessons progressively from fundamentals to advanced topics.',
-  },
-  {
-    question: 'Can I learn multiple subjects?',
-    answer: 'Yes. You can create multiple sessions from different documents and track progress per subject.',
-  },
-] as const
+const FAQ_KEYS = ['howItWorks', 'forBeginners', 'multipleSubjects'] as const
 
 const getLocalizedPath = (locale: string, path: string) =>
   locale === defaultLocale ? path : `/${locale}${path}`
@@ -34,8 +21,13 @@ export default function AdaptiveLearningGuest({ locale, t }: AdaptiveLearningGue
   const uploadPath = getLocalizedPath(locale, '/adaptive-learning/upload')
   const callbackPath = getLocalizedPath(locale, '/adaptive-learning')
 
+  const faqItems = FAQ_KEYS.map(key => ({
+    question: t(`guest.faq.${key}.question`),
+    answer: t(`guest.faq.${key}.answer`),
+  }))
+
   const faqSchema = buildFaqSchema(
-    FAQ_ITEMS.map(item => ({ q: item.question, a: item.answer })),
+    faqItems.map(item => ({ q: item.question, a: item.answer })),
   )
 
   const softwareSchema = buildSoftwareApplicationSchema(locale)
@@ -47,7 +39,7 @@ export default function AdaptiveLearningGuest({ locale, t }: AdaptiveLearningGue
 
       <header className="space-y-4">
         <h1 className="text-3xl font-bold tracking-tight text-neutral-900 md:text-4xl">
-          AI Adaptive Learning for STEM subjects
+          {t('guest.heroTitle')}
         </h1>
         <p className="text-lg text-neutral-600">
           {t('dashboardDescription')}
@@ -57,13 +49,13 @@ export default function AdaptiveLearningGuest({ locale, t }: AdaptiveLearningGue
             href={`${loginPath}?callbackUrl=${encodeURIComponent(callbackPath)}`}
             className="inline-flex items-center rounded-lg bg-brand-action px-5 py-2.5 font-medium text-white hover:bg-brand-action-hover"
           >
-            Login to start learning
+            {t('guest.loginCta')}
           </Link>
           <Link
             href={registerPath}
             className="inline-flex items-center rounded-lg border border-neutral-300 px-5 py-2.5 font-medium text-neutral-700 hover:bg-neutral-50"
           >
-            Create account
+            {t('guest.registerCta')}
           </Link>
         </div>
       </header>
@@ -85,11 +77,11 @@ export default function AdaptiveLearningGuest({ locale, t }: AdaptiveLearningGue
 
       <section className="space-y-3">
         <h2 className="text-2xl font-semibold text-neutral-900">
-          Frequently asked questions
+          {t('guest.faqTitle')}
         </h2>
         <div className="space-y-3">
-          {FAQ_ITEMS.map(item => (
-            <article key={item.question} className="rounded-xl border border-neutral-200 bg-white p-5">
+          {faqItems.map((item, index) => (
+            <article key={FAQ_KEYS[index]} className="rounded-xl border border-neutral-200 bg-white p-5">
               <h3 className="mb-1 font-medium text-neutral-900">{item.question}</h3>
               <p className="text-sm text-neutral-600">{item.answer}</p>
             </article>
@@ -100,17 +92,17 @@ export default function AdaptiveLearningGuest({ locale, t }: AdaptiveLearningGue
       <div className="flex flex-col gap-4 rounded-xl bg-brand-trust p-6 text-white md:flex-row md:items-center md:justify-between">
         <div>
           <h2 className="text-xl font-semibold">
-            Ready to start your learning path?
+            {t('guest.ctaTitle')}
           </h2>
           <p className="mt-1 text-white/75">
-            Upload your first document and let AI build your personalized curriculum.
+            {t('guest.ctaDescription')}
           </p>
         </div>
         <Link
           href={`${loginPath}?callbackUrl=${encodeURIComponent(uploadPath)}`}
           className="inline-flex items-center justify-center rounded-lg bg-brand-action px-5 py-2.5 font-medium text-white hover:bg-brand-action-hover"
         >
-          Start now
+          {t('guest.startNow')}
         </Link>
       </div>
     </section>

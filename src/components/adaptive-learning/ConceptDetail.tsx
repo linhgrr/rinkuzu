@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { HiOutlineX, HiCheck } from '@/components/icons';
 import type { ConceptDetail } from './types';
@@ -15,6 +15,34 @@ const BLOOM_COLORS = ['bg-neutral-500', 'bg-green-500', 'bg-teal-500', 'bg-amber
 
 export default function ConceptDetailPanel({ concept, onClose }: ConceptDetailPanelProps) {
     const t = useTranslations('adaptiveLearning');
+    const dialogRef = useRef<HTMLDivElement>(null);
+    const closeButtonRef = useRef<HTMLButtonElement>(null);
+    const previousActiveElement = useRef<Element | null>(null);
+
+    useEffect(() => {
+        previousActiveElement.current = document.activeElement;
+        closeButtonRef.current?.focus();
+        return () => {
+            if (previousActiveElement.current instanceof HTMLElement)
+                previousActiveElement.current.focus();
+        };
+    }, []);
+
+    const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+        if (e.key === 'Escape') { e.stopPropagation(); onClose(); return; }
+        if (e.key !== 'Tab' || !dialogRef.current) return;
+
+        const focusable = dialogRef.current.querySelectorAll<HTMLElement>(
+            'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusable.length === 0) return;
+
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }, [onClose]);
 
     const status = useMemo(() => {
         if (concept.status === 'locked') {
@@ -29,15 +57,15 @@ export default function ConceptDetailPanel({ concept, onClose }: ConceptDetailPa
         return { label: t('conceptDetail.notStarted'), className: 'bg-neutral-100 text-neutral-600' };
     }, [concept.status, t]);
 
-    const masteryBarClass = concept.status === 'locked'
-        ? 'bg-neutral-400'
-        : concept.mastery >= 0.75
-            ? 'bg-brand-trust'
-            : 'bg-brand-trust';
+    const masteryBarClass = concept.status === 'locked' ? 'bg-neutral-400' : 'bg-brand-trust';
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm" onClick={onClose}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm" onClick={onClose} onKeyDown={handleKeyDown}>
             <div
+                ref={dialogRef}
+                role="dialog"
+                aria-modal="true"
+                aria-label={concept.name}
                 className="mx-4 max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-xl bg-white shadow-2xl"
                 onClick={(event) => event.stopPropagation()}
             >
@@ -53,7 +81,7 @@ export default function ConceptDetailPanel({ concept, onClose }: ConceptDetailPa
                             ) : null}
                         </div>
                     </div>
-                    <button aria-label={t('common.close') || "Close"} onClick={onClose} className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg p-1 transition-colors hover:bg-neutral-100">
+                    <button ref={closeButtonRef} aria-label={t('common.close') || "Close"} onClick={onClose} className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg p-1 transition-colors hover:bg-neutral-100">
                         <HiOutlineX className="h-5 w-5 text-neutral-400" />
                     </button>
                 </div>

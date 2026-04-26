@@ -447,7 +447,9 @@
     "range40To50": "40-50%",
     "range50To60": "50-60%",
     "range60To75": "60-75%",
-    "range75Plus": "75%+ (Mastered)"
+    "range75Plus": "75%+ (Mastered)",
+    "noData": "No mastery data yet",
+    "noDataHint": "Complete some exercises to see your mastery breakdown"
   },
   "conceptDetail": {
     "mastered": "Mastered",
@@ -501,6 +503,29 @@
     "result": {
       "title": "Result | Adaptive Learning",
       "description": "Exercise feedback"
+    }
+  },
+  "guest": {
+    "heroTitle": "AI Adaptive Learning for STEM subjects",
+    "loginCta": "Login to start learning",
+    "registerCta": "Create account",
+    "faqTitle": "Frequently asked questions",
+    "ctaTitle": "Ready to start your learning path?",
+    "ctaDescription": "Upload your first document and let AI build your personalized curriculum.",
+    "startNow": "Start now",
+    "faq": {
+      "howItWorks": {
+        "question": "How does adaptive learning work?",
+        "answer": "You upload a PDF, AI extracts concepts, builds prerequisite knowledge graph, then recommends Bloom-level exercises."
+      },
+      "forBeginners": {
+        "question": "Is it suitable for beginners?",
+        "answer": "Yes. The system adapts difficulty and unlocks lessons progressively from fundamentals to advanced topics."
+      },
+      "multipleSubjects": {
+        "question": "Can I learn multiple subjects?",
+        "answer": "Yes. You can create multiple sessions from different documents and track progress per subject."
+      }
     }
   }
 }

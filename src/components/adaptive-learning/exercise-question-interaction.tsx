@@ -1,15 +1,21 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { memo, useEffect, useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { Reorder } from 'framer-motion'
-import { ChevronDown, ChevronUp, GripVertical, Lightbulb } from 'lucide-react'
+import { HiChevronDown, HiChevronUp, HiOutlineDotsVertical, HiOutlineLightBulb } from '@/components/icons'
 import { Button } from '@/components/ui/Button'
 import { DynamicMarkdownRenderer } from '@/components/ui/DynamicMarkdownRenderer'
 import { getExercisePromptSections } from './exercise-prompt'
 import type { Exercise, SubmitAnswerPayload } from './types'
 
-function OptionCard({
+const REORDER_INITIAL = { opacity: 0, y: 10 }
+const REORDER_ANIMATE = { opacity: 1, y: 0 }
+const REORDER_EXIT = { opacity: 0, y: -10 }
+const REORDER_DRAG = { scale: 1.02, boxShadow: 'var(--shadow-md)', zIndex: 50 }
+const REORDER_TRANSITION = { type: 'spring' as const, stiffness: 500, damping: 30, mass: 1 }
+
+const OptionCard = memo(function OptionCard({
   active,
   badge,
   onClick,
@@ -24,7 +30,7 @@ function OptionCard({
     <button
       type="button"
       onClick={onClick}
-      className={`group relative flex w-full cursor-pointer items-start gap-4 rounded-[12px] border p-4 text-left transition-all duration-200 sm:p-5 ${active
+      className={`group relative flex w-full cursor-pointer items-start gap-4 rounded-lg border p-4 text-left transition-all duration-200 sm:p-5 ${active
         ? 'border-brand-action bg-orange-50 shadow-sm'
         : 'border-neutral-200 bg-white hover:border-neutral-400 active:scale-[0.99]'
       }`}
@@ -43,7 +49,7 @@ function OptionCard({
       </span>
     </button>
   )
-}
+})
 
 type MatchingInteractionProps = {
   leftItems: string[]
@@ -156,7 +162,7 @@ function MatchingInteraction({
                 style={sharedCardStyle}
                 className="group flex cursor-grab items-center gap-3 rounded-xl border border-neutral-200 bg-white p-3 shadow-sm transition-colors hover:border-brand-trust/50 active:cursor-grabbing"
               >
-                <GripVertical className="h-4 w-4 shrink-0 text-neutral-300" />
+                <HiOutlineDotsVertical className="h-4 w-4 shrink-0 text-neutral-300" />
                 <div className="flex-1 text-right text-sm text-neutral-700">
                   <DynamicMarkdownRenderer content={entry.value} />
                 </div>
@@ -240,6 +246,7 @@ export function ExerciseInteraction({
           onChange={event => onSetBlankAnswer(event.target.value)}
           rows={3}
           placeholder={t('exercise.interactions.fillBlankPlaceholder')}
+          aria-label={t('exercise.interactions.fillBlankPlaceholder')}
           className="min-h-[120px] w-full rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-base text-neutral-900 outline-none transition-colors focus:border-brand-trust focus:ring-2 focus:ring-[var(--focus-ring-soft)]"
         />
         {exercise.hint ? (
@@ -252,10 +259,10 @@ export function ExerciseInteraction({
               className="flex w-full items-center justify-between rounded-none px-4 py-3 text-left text-sm font-medium text-amber-900 hover:bg-amber-100/80"
             >
               <span className="flex items-center gap-2">
-                <Lightbulb className="h-4 w-4 shrink-0" />
+                <HiOutlineLightBulb className="h-4 w-4 shrink-0" />
                 <span>{isHintOpen ? t('exercise.interactions.hideHint') : t('exercise.interactions.showHint')}</span>
               </span>
-              {isHintOpen ? <ChevronUp className="h-4 w-4 shrink-0" /> : <ChevronDown className="h-4 w-4 shrink-0" />}
+              {isHintOpen ? <HiChevronUp className="h-4 w-4 shrink-0" /> : <HiChevronDown className="h-4 w-4 shrink-0" />}
             </Button>
             <div
               className={`grid transition-[grid-template-rows] duration-200 ease-out ${isHintOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}
@@ -312,20 +319,11 @@ export function ExerciseInteraction({
               key={item}
               value={item}
               layout
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              whileDrag={{ 
-                scale: 1.02, 
-                boxShadow: 'var(--shadow-md)',
-                zIndex: 50 
-              }}
-              transition={{
-                type: 'spring',
-                stiffness: 500,
-                damping: 30,
-                mass: 1
-              }}
+              initial={REORDER_INITIAL}
+              animate={REORDER_ANIMATE}
+              exit={REORDER_EXIT}
+              whileDrag={REORDER_DRAG}
+              transition={REORDER_TRANSITION}
               className="group relative flex items-center gap-3 rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md cursor-grab active:cursor-grabbing"
             >
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-neutral-50 font-medium text-neutral-500 group-hover:bg-green-50 group-hover:text-brand-trust">
@@ -346,7 +344,7 @@ export function ExerciseInteraction({
                       onMoveOrderingItem(index, index - 1)
                     }}
                   >
-                    <ChevronUp className="h-4 w-4" />
+                    <HiChevronUp className="h-4 w-4" />
                   </Button>
                   <Button
                     variant="ghost"
@@ -358,11 +356,11 @@ export function ExerciseInteraction({
                       onMoveOrderingItem(index, index + 1)
                     }}
                   >
-                    <ChevronDown className="h-4 w-4" />
+                    <HiChevronDown className="h-4 w-4" />
                   </Button>
                 </div>
                 <div className="cursor-grab p-1 text-neutral-300 group-hover:text-neutral-400">
-                  <GripVertical className="h-5 w-5" />
+                  <HiOutlineDotsVertical className="h-5 w-5" />
                 </div>
               </div>
             </Reorder.Item>
@@ -392,6 +390,7 @@ export function ExerciseInteraction({
           onChange={event => onSetTextAnswer(event.target.value)}
           rows={8}
           placeholder={t('exercise.interactions.shortAnswerPlaceholder')}
+          aria-label={t('exercise.interactions.shortAnswerPlaceholder')}
           className="min-h-[220px] w-full rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-base text-neutral-900 outline-none transition-colors focus:border-brand-trust focus:ring-2 focus:ring-[var(--focus-ring-soft)]"
         />
       </div>

@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { HiOutlineAcademicCap } from '@/components/icons';
 import { useKnowledgeGraph, useMasteryMatrix } from '@/hooks/useAdaptiveLearning';
 import type { MasteryMatrixData, MasteryRow } from './types';
 
@@ -120,7 +121,13 @@ export default function MasteryMatrix({ sessionId, filterActiveOnly = false }: M
     }
 
     if (!data || data.matrix.length === 0 || displayMatrix.length === 0) {
-        return null;
+        return (
+            <div className="flex h-[200px] w-full flex-col items-center justify-center gap-3 rounded-md border border-neutral-200 bg-neutral-50">
+                <HiOutlineAcademicCap className="h-10 w-10 text-neutral-300" />
+                <p className="text-sm text-neutral-500">{t('masteryMatrix.noData')}</p>
+                <p className="text-xs text-neutral-400">{t('masteryMatrix.noDataHint')}</p>
+            </div>
+        );
     }
 
     return (

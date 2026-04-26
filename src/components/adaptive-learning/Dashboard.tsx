@@ -11,7 +11,6 @@ import {
   FloatingUploadAction,
   HeroSection,
   LibrarySection,
-  RecommendationsSection,
 } from './DashboardSections'
 import { useAdaptiveDashboard } from './hooks/use-adaptive-dashboard'
 import { toDashboardSubject } from './dashboard-view-model'
@@ -109,7 +108,6 @@ export default function AdaptiveLearningDashboard({
           t={tDashboard}
         />
 
-        <RecommendationsSection t={tDashboard} />
       </main>
 
       <FloatingUploadAction onClick={handleGoUpload} t={tDashboard} />

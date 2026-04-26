@@ -1,5 +1,6 @@
 'use client'
 
+import { memo } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import {
   HiArrowRight,
@@ -13,7 +14,7 @@ interface SessionRowProps {
   onOpen: (id: string) => void
 }
 
-function SessionRow({ item, onOpen }: SessionRowProps) {
+const SessionRow = memo(function SessionRow({ item, onOpen }: SessionRowProps) {
   const t = useTranslations('adaptiveLearning')
   const locale = useLocale()
   const accuracy = Math.round(item.accuracy * 100)
@@ -80,7 +81,7 @@ function SessionRow({ item, onOpen }: SessionRowProps) {
       </div>
     </div>
   )
-}
+})
 
 export const SessionHistoryLoadingState = ({ message }: { message: string }) => (
   <div className="flex items-center justify-center gap-3 py-12 text-neutral-500">

@@ -15,7 +15,7 @@ import {
     useReactFlow,
     ReactFlowProvider
 } from '@xyflow/react';
-import '@xyflow/react/dist/style.css';
+
 import dagre from 'dagre';
 import { getConceptDetail } from './api-client';
 import { useKnowledgeGraph } from '@/hooks/useAdaptiveLearning';

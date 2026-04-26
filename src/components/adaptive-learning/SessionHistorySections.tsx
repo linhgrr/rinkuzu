@@ -1,6 +1,8 @@
 'use client'
 
+import { memo } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
+import { Spinner } from '@/components/ui/Spinner'
 import {
   HiArrowRight,
   HiOutlineAcademicCap,
@@ -13,7 +15,7 @@ interface SessionRowProps {
   onOpen: (id: string) => void
 }
 
-function SessionRow({ item, onOpen }: SessionRowProps) {
+const SessionRow = memo(function SessionRow({ item, onOpen }: SessionRowProps) {
   const t = useTranslations('adaptiveLearning')
   const locale = useLocale()
   const accuracy = Math.round(item.accuracy * 100)
@@ -26,8 +28,11 @@ function SessionRow({ item, onOpen }: SessionRowProps) {
 
   return (
     <div
-      className="group flex cursor-pointer flex-col gap-4 rounded-lg border border-neutral-200 bg-white p-5 transition-colors duration-200 hover:border-neutral-800 sm:flex-row sm:items-center sm:justify-between"
+      className="group flex cursor-pointer flex-col gap-4 rounded-lg border border-neutral-200 bg-white p-5 transition-colors duration-200 hover:border-neutral-800 sm:flex-row sm:items-center sm:justify-between focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-trust"
+      role="button"
+      tabIndex={0}
       onClick={() => onOpen(item.job_id)}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(item.job_id) } }}
     >
       <div className="flex items-center gap-4">
         <div className={`flex h-12 w-12 items-center justify-center rounded-md border font-mono text-lg font-medium ${gradeColor}`}>
@@ -77,11 +82,11 @@ function SessionRow({ item, onOpen }: SessionRowProps) {
       </div>
     </div>
   )
-}
+})
 
 export const SessionHistoryLoadingState = ({ message }: { message: string }) => (
   <div className="flex items-center justify-center gap-3 py-12 text-neutral-500">
-    <div className="h-5 w-5 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
+    <Spinner />
     <span className="text-sm">{message}</span>
   </div>
 )

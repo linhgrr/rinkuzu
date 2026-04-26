@@ -163,7 +163,7 @@ export default function AdaptiveLearningChatbot({
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-neutral-50" ref={scrollRef}>
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-neutral-50" ref={scrollRef} role="log" aria-live="polite">
                 {context && (
                     <div className="bg-white p-3 rounded-lg border border-neutral-200 text-xs text-neutral-500 mb-4">
                         <strong>{t('chatbot.context')}:</strong> {context}

@@ -2,6 +2,7 @@
 
 import dynamic from 'next/dynamic'
 import { Button } from '@/components/ui/Button'
+import { Spinner } from '@/components/ui/Spinner'
 import {
   HiArrowRight,
   HiOutlineAcademicCap,
@@ -19,7 +20,7 @@ import type { SessionHistoryDetail, SessionStatus } from './types'
 function SectionSkeleton() {
   return (
     <div className="flex h-[400px] w-full items-center justify-center rounded-xl border border-neutral-200 bg-white shadow-sm">
-      <div className="h-6 w-6 animate-spin rounded-full border-2 border-neutral-200 border-t-brand-trust" />
+      <Spinner size="lg" />
     </div>
   )
 }
@@ -37,7 +38,7 @@ const ExerciseHistoryTable = dynamic(
   {
     loading: () => (
       <div className="flex items-center justify-center gap-2 py-10 text-neutral-500">
-        <div className="h-5 w-5 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
+        <Spinner />
       </div>
     ),
     ssr: false,
@@ -93,10 +94,10 @@ export const SubjectDetailsHero = ({
   summary: string
   t: TranslateFn
 }) => (
-  <div className="relative overflow-hidden rounded-[24px] border border-neutral-200 bg-white p-5 shadow-sm sm:p-8 md:p-10">
+  <div className="relative overflow-hidden rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-8 md:p-10">
     <div className="relative flex flex-col justify-between gap-6 md:flex-row md:items-center">
       <div className="flex items-start gap-4">
-        <div className="shrink-0 rounded-[14px] border border-neutral-100 bg-neutral-50 p-3 shadow-xs sm:p-3.5">
+        <div className="shrink-0 rounded-lg border border-neutral-100 bg-neutral-50 p-3 shadow-xs sm:p-3.5">
           <HiOutlineBookOpen className="h-6 w-6 text-neutral-900 sm:h-7 sm:w-7" />
         </div>
         <div>
@@ -184,26 +185,45 @@ export const SubjectDetailsTabs = ({
   activeTab: SubjectTab
   onChange: (tab: SubjectTab) => void
   t: TranslateFn
-}) => (
-  <div className="max-w-full overflow-x-auto rounded-lg border border-neutral-200 bg-neutral-50 p-1 sm:w-fit [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-    <div className="flex gap-1">
-      {TAB_CONFIG.map(({ key, icon: Icon, labelKey }) => (
-        <button
-          key={key}
-          onClick={() => onChange(key)}
-          className={`flex min-h-[44px] cursor-pointer items-center gap-2 whitespace-nowrap rounded-[6px] px-4 py-2 text-sm font-medium transition-all duration-200 ${
-            activeTab === key
-              ? 'border border-neutral-200/50 bg-white text-neutral-900 shadow-sm'
-              : 'text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900'
-          }`}
-        >
-          <Icon className="h-4 w-4" aria-hidden="true" />
-          {t(labelKey)}
-        </button>
-      ))}
+}) => {
+  const handleKeyDown = (e: React.KeyboardEvent, currentIndex: number) => {
+    const tabs = TAB_CONFIG
+    let nextIndex = currentIndex
+    if (e.key === 'ArrowRight') nextIndex = (currentIndex + 1) % tabs.length
+    else if (e.key === 'ArrowLeft') nextIndex = (currentIndex - 1 + tabs.length) % tabs.length
+    else return
+    e.preventDefault()
+    onChange(tabs[nextIndex].key)
+    const nextButton = (e.currentTarget.parentElement?.children[nextIndex] as HTMLElement)
+    nextButton?.focus()
+  }
+
+  return (
+    <div className="max-w-full overflow-x-auto rounded-lg border border-neutral-200 bg-neutral-50 p-1 sm:w-fit [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+      <div className="flex gap-1" role="tablist">
+        {TAB_CONFIG.map(({ key, icon: Icon, labelKey }, index) => (
+          <button
+            key={key}
+            role="tab"
+            aria-selected={activeTab === key}
+            aria-controls={`tabpanel-${key}`}
+            tabIndex={activeTab === key ? 0 : -1}
+            onClick={() => onChange(key)}
+            onKeyDown={(e) => handleKeyDown(e, index)}
+            className={`flex min-h-[44px] cursor-pointer items-center gap-2 whitespace-nowrap rounded-sm px-4 py-2 text-sm font-medium transition-all duration-200 ${
+              activeTab === key
+                ? 'border border-neutral-200/50 bg-white text-neutral-900 shadow-sm'
+                : 'text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900'
+            }`}
+          >
+            <Icon className="h-4 w-4" aria-hidden="true" />
+            {t(labelKey)}
+          </button>
+        ))}
+      </div>
     </div>
-  </div>
-)
+  )
+}
 
 export const SubjectDetailsTabContent = ({
   activeTab,
@@ -218,14 +238,14 @@ export const SubjectDetailsTabContent = ({
   sessionId: string
   t: TranslateFn
 }) => (
-  <div className="space-y-8">
+  <div className="space-y-8" role="tabpanel" id={`tabpanel-${activeTab}`} aria-labelledby={`tab-${activeTab}`}>
     {activeTab === 'graph' && <KnowledgeGraph sessionId={sessionId} />}
     {activeTab === 'mastery' && <MasteryMatrix sessionId={sessionId} filterActiveOnly />}
     {activeTab === 'history' && (
       historyLoading
         ? (
             <div className="flex items-center justify-center gap-2 py-10 text-neutral-500">
-              <div className="h-5 w-5 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
+              <Spinner />
               <span className="text-sm">{t('history.loadingFromMongoDB')}</span>
             </div>
           )

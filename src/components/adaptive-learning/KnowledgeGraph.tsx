@@ -15,8 +15,9 @@ import {
     useReactFlow,
     ReactFlowProvider
 } from '@xyflow/react';
-import '@xyflow/react/dist/style.css';
+
 import dagre from 'dagre';
+import { Spinner } from '@/components/ui/Spinner';
 import { getConceptDetail } from './api-client';
 import { useKnowledgeGraph } from '@/hooks/useAdaptiveLearning';
 import type { ConceptDetail, KnowledgeGraphData, KnowledgeNode } from './types';
@@ -27,10 +28,10 @@ interface KnowledgeGraphProps {
 }
 
 function getNodeColor(status: KnowledgeNode['status']) {
-    if (status === 'mastered') return '#009d8c';
-    if (status === 'in_progress') return '#ff7a1a';
-    if (status === 'available') return '#ffffff';
-    return '#ececea';
+    if (status === 'mastered') return 'var(--brand-trust)';
+    if (status === 'in_progress') return 'var(--brand-action)';
+    if (status === 'available') return 'var(--bg-surface)';
+    return 'var(--border-default)';
 }
 
 function getMasteryOpacity(mastery: number) {
@@ -88,10 +89,9 @@ const nodeTypes = {
     concept: ConceptNode,
 };
 
-const dagreGraph = new dagre.graphlib.Graph();
-dagreGraph.setDefaultEdgeLabel(() => ({}));
-
 const getLayoutedElements = (nodes: Node<ConceptNodeData>[], edges: Edge[], direction = 'TB') => {
+    const dagreGraph = new dagre.graphlib.Graph();
+    dagreGraph.setDefaultEdgeLabel(() => ({}));
     dagreGraph.setGraph({ rankdir: direction, nodesep: 80, ranksep: 100 });
 
     nodes.forEach((node) => {
@@ -245,7 +245,7 @@ export default function KnowledgeGraph({ sessionId }: KnowledgeGraphProps) {
     if (loading) {
         return (
             <div className="flex h-[400px] w-full items-center justify-center rounded-xl border border-neutral-200 bg-white">
-                <div className="h-5 w-5 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
+                <Spinner />
             </div>
         );
     }

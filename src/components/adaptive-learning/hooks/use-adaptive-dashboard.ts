@@ -242,8 +242,16 @@ export const useAdaptiveDashboard = ({
 
     const hydrateDashboard = async () => {
       setError(null)
-      if (!didHydrateFromServer)
-        setLoading(true)
+
+      if (didHydrateFromServer) {
+        // Server already provided initial data — only check API health.
+        const healthResult = await checkApiHealth().catch(() => false)
+        if (isActive)
+          setApiOnline(healthResult)
+        return
+      }
+
+      setLoading(true)
 
       const [healthResult, subjectsResult, historyResult] = await Promise.allSettled([
         checkApiHealth(),
@@ -255,16 +263,6 @@ export const useAdaptiveDashboard = ({
         return
 
       applyHealthResult(healthResult)
-
-      if (didHydrateFromServer) {
-        if (subjectsResult.status === 'fulfilled')
-          setSubjects(subjectsResult.value)
-
-        if (historyResult.status === 'fulfilled')
-          setSessionHistory(historyResult.value)
-
-        return
-      }
 
       if (subjectsResult.status === 'fulfilled') {
         setSubjects(subjectsResult.value)

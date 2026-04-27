@@ -1,20 +1,20 @@
-'use client'
+'use client';
 
-import { useMemo } from 'react'
-import { useRouter } from 'next/navigation'
-import { useTranslations } from 'next-intl'
-import { ADAPTIVE_ROUTES } from './routes'
-import type { BloomLevel } from './types'
+import { useMemo } from 'react';
+import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
+import { ADAPTIVE_ROUTES } from './routes';
+import type { BloomLevel } from './types';
 import {
   ExerciseErrorState,
   ExerciseLoadingState,
   ExerciseQuestionView,
   ExerciseTheoryView,
-} from './exercise-renderers'
-import { useAdaptiveExerciseSession } from './hooks/use-adaptive-exercise-session'
+} from './exercise-renderers';
+import { useAdaptiveExerciseSession } from './hooks/use-adaptive-exercise-session';
 
 interface ExerciseProps {
-  sessionId: string
+  sessionId: string;
 }
 
 const BLOOM_LEVEL_COLORS: Record<string, string> = {
@@ -24,7 +24,7 @@ const BLOOM_LEVEL_COLORS: Record<string, string> = {
   Analyze: 'bg-amber-500 text-white',
   Evaluate: 'bg-orange-600 text-white',
   Create: 'bg-rose-600 text-white',
-}
+};
 
 const BLOOM_TRANSLATION_KEYS: Record<BloomLevel, string> = {
   Remember: 'remember',
@@ -33,11 +33,11 @@ const BLOOM_TRANSLATION_KEYS: Record<BloomLevel, string> = {
   Analyze: 'analyze',
   Evaluate: 'evaluate',
   Create: 'create',
-}
+};
 
 export default function AdaptiveLearningExercise({ sessionId }: ExerciseProps) {
-  const router = useRouter()
-  const t = useTranslations('adaptiveLearning')
+  const router = useRouter();
+  const t = useTranslations('adaptiveLearning');
 
   const {
     concept,
@@ -65,61 +65,57 @@ export default function AdaptiveLearningExercise({ sessionId }: ExerciseProps) {
     sessionId,
     router,
     t,
-  })
+  });
 
   const progressPercent = useMemo(() => {
-    const itemInfo = concept || exercise
-    if (!itemInfo || itemInfo.max_steps <= 0)
-      return 0
-    return (itemInfo.step / itemInfo.max_steps) * 100
-  }, [exercise, concept])
+    const itemInfo = concept || exercise;
+    if (!itemInfo || itemInfo.max_steps <= 0) return 0;
+    return (itemInfo.step / itemInfo.max_steps) * 100;
+  }, [exercise, concept]);
 
   const bloomColor = useMemo(() => {
-    const itemInfo = concept || exercise
-    if (!itemInfo)
-      return 'bg-neutral-400 text-white'
-    return BLOOM_LEVEL_COLORS[itemInfo.bloom_label] || 'bg-neutral-400 text-white'
-  }, [exercise, concept])
+    const itemInfo = concept || exercise;
+    if (!itemInfo) return 'bg-neutral-400 text-white';
+    return BLOOM_LEVEL_COLORS[itemInfo.bloom_label] || 'bg-neutral-400 text-white';
+  }, [exercise, concept]);
 
   const localizedBloomLabel = useMemo(() => {
-    const itemInfo = concept || exercise
-    if (!itemInfo)
-      return ''
-    return t(`bloom.${BLOOM_TRANSLATION_KEYS[itemInfo.bloom_label]}`)
-  }, [exercise, concept, t])
+    const itemInfo = concept || exercise;
+    if (!itemInfo) return '';
+    return t(`bloom.${BLOOM_TRANSLATION_KEYS[itemInfo.bloom_label]}`);
+  }, [exercise, concept, t]);
 
   const optionEntries = useMemo(() => {
-    if (!exercise)
-      return []
-    return Object.entries(exercise.options) as [string, string][]
-  }, [exercise])
+    if (!exercise) return [];
+    return Object.entries(exercise.options) as [string, string][];
+  }, [exercise]);
 
   const canSubmit = useMemo(() => {
-    if (!exercise)
-      return false
+    if (!exercise) return false;
 
     switch (exercise.exercise_type) {
       case 'mcq':
-        return Boolean(answerDraft.choice)
+        return Boolean(answerDraft.choice);
       case 'true_false':
-        return typeof answerDraft.boolean === 'boolean'
+        return typeof answerDraft.boolean === 'boolean';
       case 'fill_blank':
-        return Boolean(answerDraft.blanks?.some(value => value.trim().length > 0))
+        return Boolean(answerDraft.blanks?.some((value) => value.trim().length > 0));
       case 'multi_correct':
-        return Boolean(answerDraft.choices?.length)
+        return Boolean(answerDraft.choices?.length);
       case 'ordering':
-        return Boolean(answerDraft.ordering && answerDraft.ordering.length === exercise.items.length)
+        return Boolean(
+          answerDraft.ordering && answerDraft.ordering.length === exercise.items.length,
+        );
       case 'matching':
-        return Object.keys(answerDraft.matching || {}).length === exercise.pairs.length
+        return Object.keys(answerDraft.matching || {}).length === exercise.pairs.length;
       case 'short_answer':
-        return Boolean(answerDraft.text?.trim())
+        return Boolean(answerDraft.text?.trim());
       default:
-        return false
+        return false;
     }
-  }, [answerDraft, exercise])
+  }, [answerDraft, exercise]);
 
-  if (loadingConcept)
-    return <ExerciseLoadingState t={t as any} />
+  if (loadingConcept) return <ExerciseLoadingState t={t as any} />;
 
   if (error || !concept) {
     return (
@@ -129,7 +125,7 @@ export default function AdaptiveLearningExercise({ sessionId }: ExerciseProps) {
         onRetry={() => void loadData()}
         t={t as any}
       />
-    )
+    );
   }
 
   if (showTheory) {
@@ -142,7 +138,7 @@ export default function AdaptiveLearningExercise({ sessionId }: ExerciseProps) {
         onStartExercise={() => setShowTheory(false)}
         t={t as any}
       />
-    )
+    );
   }
 
   return (
@@ -169,5 +165,5 @@ export default function AdaptiveLearningExercise({ sessionId }: ExerciseProps) {
       submitting={submitting}
       t={t as any}
     />
-  )
+  );
 }

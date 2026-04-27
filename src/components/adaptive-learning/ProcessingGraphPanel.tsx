@@ -1,8 +1,8 @@
-'use client'
+'use client';
 
-import { memo, useEffect, useMemo } from 'react'
-import { useTranslations } from 'next-intl'
-import { Spinner } from '@/components/ui/Spinner'
+import { memo, useEffect, useMemo } from 'react';
+import { useTranslations } from 'next-intl';
+import { Spinner } from '@/components/ui/Spinner';
 import {
   Background,
   Controls,
@@ -15,13 +15,13 @@ import {
   ReactFlow,
   ReactFlowProvider,
   useReactFlow,
-} from '@xyflow/react'
+} from '@xyflow/react';
 
-import dagre from 'dagre'
-import type { PipelineJobStatus } from './types'
+import dagre from 'dagre';
+import type { PipelineJobStatus } from './types';
 
 interface ConceptNodeData extends Record<string, unknown> {
-  label: string
+  label: string;
 }
 
 const ConceptNode = memo(function ConceptNode({ data }: NodeProps<Node<ConceptNodeData>>) {
@@ -34,62 +34,60 @@ const ConceptNode = memo(function ConceptNode({ data }: NodeProps<Node<ConceptNo
       <div className="pointer-events-none absolute -inset-0.5 animate-pulse rounded-md border border-neutral-400/30" />
       <Handle type="source" position={Position.Bottom} className="!h-1 !w-1 !bg-neutral-400" />
     </div>
-  )
-})
+  );
+});
 
 const nodeTypes = {
   concept: ConceptNode,
-}
+};
 
 const getLayoutedElements = (nodes: Node<ConceptNodeData>[], edges: Edge[], direction = 'TB') => {
-  const dagreGraph = new dagre.graphlib.Graph()
-  dagreGraph.setDefaultEdgeLabel(() => ({}))
-  dagreGraph.setGraph({ rankdir: direction, nodesep: 60, ranksep: 80 })
+  const dagreGraph = new dagre.graphlib.Graph();
+  dagreGraph.setDefaultEdgeLabel(() => ({}));
+  dagreGraph.setGraph({ rankdir: direction, nodesep: 60, ranksep: 80 });
 
   nodes.forEach((node) => {
-    dagreGraph.setNode(node.id, { width: 140, height: 60 })
-  })
+    dagreGraph.setNode(node.id, { width: 140, height: 60 });
+  });
 
   edges.forEach((edge) => {
-    dagreGraph.setEdge(edge.source, edge.target)
-  })
+    dagreGraph.setEdge(edge.source, edge.target);
+  });
 
-  dagre.layout(dagreGraph)
+  dagre.layout(dagreGraph);
 
   nodes.forEach((node) => {
-    const nodeWithPosition = dagreGraph.node(node.id)
-    node.targetPosition = direction === 'LR' ? Position.Left : Position.Top
-    node.sourcePosition = direction === 'LR' ? Position.Right : Position.Bottom
+    const nodeWithPosition = dagreGraph.node(node.id);
+    node.targetPosition = direction === 'LR' ? Position.Left : Position.Top;
+    node.sourcePosition = direction === 'LR' ? Position.Right : Position.Bottom;
 
     node.position = {
       x: nodeWithPosition.x - 70,
       y: nodeWithPosition.y - 30,
-    }
+    };
 
-    return node
-  })
+    return node;
+  });
 
-  return { nodes, edges }
-}
+  return { nodes, edges };
+};
 
 function PartialGraphFlow({ partialGraph }: { partialGraph?: PipelineJobStatus['partial_graph'] }) {
-  const { fitView } = useReactFlow()
-  const t = useTranslations('adaptiveLearning')
+  const { fitView } = useReactFlow();
+  const t = useTranslations('adaptiveLearning');
 
   const initialNodes: Node<ConceptNodeData>[] = useMemo(() => {
-    if (!partialGraph?.nodes)
-      return []
+    if (!partialGraph?.nodes) return [];
     return partialGraph.nodes.map((n) => ({
       id: n.id,
       type: 'concept',
       position: { x: 0, y: 0 },
       data: { label: n.name },
-    }))
-  }, [partialGraph])
+    }));
+  }, [partialGraph]);
 
   const initialEdges: Edge[] = useMemo(() => {
-    if (!partialGraph?.edges)
-      return []
+    if (!partialGraph?.edges) return [];
     return partialGraph.edges.map((e, index) => ({
       id: `${e.source}-${e.target}-${index}`,
       source: e.source,
@@ -98,20 +96,19 @@ function PartialGraphFlow({ partialGraph }: { partialGraph?: PipelineJobStatus['
       animated: true,
       style: { stroke: 'var(--neutral-400)', strokeWidth: 2 },
       markerEnd: { type: MarkerType.ArrowClosed, color: 'var(--neutral-400)' },
-    }))
-  }, [partialGraph])
+    }));
+  }, [partialGraph]);
 
   const { nodes, edges } = useMemo(() => {
-    if (initialNodes.length === 0)
-      return { nodes: [], edges: [] }
-    return getLayoutedElements(initialNodes, initialEdges)
-  }, [initialNodes, initialEdges])
+    if (initialNodes.length === 0) return { nodes: [], edges: [] };
+    return getLayoutedElements(initialNodes, initialEdges);
+  }, [initialNodes, initialEdges]);
 
   useEffect(() => {
     if (nodes.length > 0) {
-      window.setTimeout(() => fitView({ padding: 0.3, duration: 800 }), 50)
+      window.setTimeout(() => fitView({ padding: 0.3, duration: 800 }), 50);
     }
-  }, [nodes, fitView])
+  }, [nodes, fitView]);
 
   if (!partialGraph || nodes.length === 0) {
     return (
@@ -121,7 +118,7 @@ function PartialGraphFlow({ partialGraph }: { partialGraph?: PipelineJobStatus['
           {t('processing.waitingForConcepts')}
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -142,13 +139,17 @@ function PartialGraphFlow({ partialGraph }: { partialGraph?: PipelineJobStatus['
       <Background color="var(--neutral-200)" gap={16} size={1} />
       <Controls showInteractive={false} className="border-neutral-200 fill-neutral-500" />
     </ReactFlow>
-  )
+  );
 }
 
-export default function ProcessingGraphPanel({ partialGraph }: { partialGraph?: PipelineJobStatus['partial_graph'] }) {
+export default function ProcessingGraphPanel({
+  partialGraph,
+}: {
+  partialGraph?: PipelineJobStatus['partial_graph'];
+}) {
   return (
     <ReactFlowProvider>
       <PartialGraphFlow partialGraph={partialGraph} />
     </ReactFlowProvider>
-  )
+  );
 }

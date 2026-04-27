@@ -4,11 +4,11 @@ const SIZES = {
   lg: 'h-6 w-6',
   xl: 'h-7 w-7',
   '2xl': 'h-8 w-8',
-} as const
+} as const;
 
 interface SpinnerProps {
-  size?: keyof typeof SIZES
-  className?: string
+  size?: keyof typeof SIZES;
+  className?: string;
 }
 
 export function Spinner({ size = 'md', className = '' }: SpinnerProps) {
@@ -20,5 +20,5 @@ export function Spinner({ size = 'md', className = '' }: SpinnerProps) {
     >
       <span className="sr-only">Loading…</span>
     </div>
-  )
+  );
 }

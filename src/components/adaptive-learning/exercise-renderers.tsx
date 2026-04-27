@@ -1,23 +1,23 @@
-'use client'
+'use client';
 
-import React from 'react'
-import { Button } from '@/components/ui/Button'
-import { Spinner } from '@/components/ui/Spinner'
-import { Card, CardContent } from '@/components/ui/Card'
-import { HiArrowRight, HiBookOpen, HiLightBulb, HiOutlineX } from '@/components/icons'
-import { DynamicMarkdownRenderer } from '@/components/ui/DynamicMarkdownRenderer'
-import { TextShimmer } from '@/components/ui/text-shimmer'
-import { ExerciseInteraction } from './exercise-question-interaction'
-import { getExercisePromptSections } from './exercise-prompt'
-import type { Exercise, NextConcept, SubmitAnswerPayload, TheoryData } from './types'
+import React from 'react';
+import { Button } from '@/components/ui/Button';
+import { Spinner } from '@/components/ui/Spinner';
+import { Card, CardContent } from '@/components/ui/Card';
+import { HiArrowRight, HiBookOpen, HiLightBulb, HiOutlineX } from '@/components/icons';
+import { DynamicMarkdownRenderer } from '@/components/ui/DynamicMarkdownRenderer';
+import { TextShimmer } from '@/components/ui/text-shimmer';
+import { ExerciseInteraction } from './exercise-question-interaction';
+import { getExercisePromptSections } from './exercise-prompt';
+import type { Exercise, NextConcept, SubmitAnswerPayload, TheoryData } from './types';
 
 type TranslateFn = ((key: string, values?: Record<string, any>) => string) & {
-  rich: (key: string, values: Record<string, any>) => React.ReactNode
-}
+  rich: (key: string, values: Record<string, any>) => React.ReactNode;
+};
 
 type LoadingStateProps = {
-  t: TranslateFn
-}
+  t: TranslateFn;
+};
 
 export const ExerciseLoadingState = ({ t }: LoadingStateProps) => (
   <div className="mx-auto flex min-h-[80vh] max-w-5xl items-center justify-center">
@@ -27,47 +27,54 @@ export const ExerciseLoadingState = ({ t }: LoadingStateProps) => (
       <p className="mt-1 text-sm text-neutral-500">{t('exercise.loadingSubtitle')}</p>
     </div>
   </div>
-)
+);
 
 type ErrorStateProps = {
-  message: string
-  onBack: () => void
-  onRetry: () => void
-  t: TranslateFn
-}
+  message: string;
+  onBack: () => void;
+  onRetry: () => void;
+  t: TranslateFn;
+};
 
 export const ExerciseErrorState = ({ message, onBack, onRetry, t }: ErrorStateProps) => (
   <div className="mx-auto flex min-h-[80vh] max-w-5xl items-center justify-center">
     <div className="space-y-4 text-center">
       <p className="text-lg text-red-500">{message}</p>
       <div className="flex justify-center gap-3">
-        <Button variant="outline" className="border-neutral-200 hover:bg-neutral-50 text-neutral-700" onClick={onBack}>
+        <Button
+          variant="outline"
+          className="border-neutral-200 hover:bg-neutral-50 text-neutral-700"
+          onClick={onBack}
+        >
           {t('exercise.backToDashboard')}
         </Button>
-        <Button className="bg-brand-trust hover:bg-brand-trust-hover shadow-none text-white transition-colors" onClick={onRetry}>
+        <Button
+          className="bg-brand-trust hover:bg-brand-trust-hover shadow-none text-white transition-colors"
+          onClick={onRetry}
+        >
           {t('exercise.tryAgain')}
         </Button>
       </div>
     </div>
   </div>
-)
+);
 
 type TheoryViewProps = {
-  concept: NextConcept
-  theory: TheoryData | null
-  loadingTheory: boolean
-  loadingExercise: boolean
-  onStartExercise: () => void
-  t: TranslateFn
-}
+  concept: NextConcept;
+  theory: TheoryData | null;
+  loadingTheory: boolean;
+  loadingExercise: boolean;
+  onStartExercise: () => void;
+  t: TranslateFn;
+};
 
 function getExerciseHeaderContent(exercise: Exercise): string | null {
-  const promptSections = getExercisePromptSections(exercise)
+  const promptSections = getExercisePromptSections(exercise);
   if (exercise.exercise_type === 'true_false' || exercise.exercise_type === 'fill_blank') {
-    return promptSections.lead
+    return promptSections.lead;
   }
 
-  return promptSections.primary
+  return promptSections.primary;
 }
 
 export const ExerciseTheoryView = ({
@@ -83,11 +90,15 @@ export const ExerciseTheoryView = ({
       <div className="mx-auto mb-5 md:mb-6 flex h-14 w-14 md:h-16 md:w-16 items-center justify-center rounded-xl bg-neutral-50 border border-neutral-200 text-neutral-900 shadow-sm">
         <HiBookOpen className="h-6 w-6 md:h-8 md:w-8" />
       </div>
-      <h1 className="mb-2 text-xl font-semibold tracking-tight text-neutral-900 md:text-3xl">{t('exercise.theory.reviewKnowledge')}</h1>
+      <h1 className="mb-2 text-xl font-semibold tracking-tight text-neutral-900 md:text-3xl">
+        {t('exercise.theory.reviewKnowledge')}
+      </h1>
       <p className="text-sm md:text-base text-neutral-500">
         {t.rich('exercise.theory.theoryReview', {
           concept: concept.concept_name,
-          highlight: (chunks: React.ReactNode) => <span className="font-medium text-neutral-900">{chunks}</span>,
+          highlight: (chunks: React.ReactNode) => (
+            <span className="font-medium text-neutral-900">{chunks}</span>
+          ),
         })}
       </p>
     </div>
@@ -105,7 +116,8 @@ export const ExerciseTheoryView = ({
           <>
             <div className="mb-8">
               <h3 className="mb-4 flex items-center gap-2 text-lg md:text-xl font-medium text-neutral-900 border-b border-neutral-100 pb-4">
-                <HiBookOpen className="h-5 w-5 text-neutral-900" /> {t('exercise.theory.basicTheory')}
+                <HiBookOpen className="h-5 w-5 text-neutral-900" />{' '}
+                {t('exercise.theory.basicTheory')}
               </h3>
               <div className="text-base md:text-lg leading-relaxed text-neutral-700">
                 <DynamicMarkdownRenderer content={theory.content} />
@@ -115,11 +127,15 @@ export const ExerciseTheoryView = ({
             {theory.examples && theory.examples.length > 0 && (
               <div>
                 <h3 className="mb-5 md:mb-6 flex items-center gap-2 text-base md:text-lg font-medium text-neutral-900">
-                  <HiLightBulb className="h-5 w-5 text-neutral-900" /> {t('exercise.theory.illustration')}
+                  <HiLightBulb className="h-5 w-5 text-neutral-900" />{' '}
+                  {t('exercise.theory.illustration')}
                 </h3>
                 <div className="grid gap-4 md:grid-cols-2">
                   {theory.examples.map((ex: string, idx: number) => (
-                    <div key={idx} className="rounded-xl bg-neutral-50 border border-neutral-200 p-5 md:p-6 transition-colors hover:border-neutral-300 shadow-sm">
+                    <div
+                      key={idx}
+                      className="rounded-xl bg-neutral-50 border border-neutral-200 p-5 md:p-6 transition-colors hover:border-neutral-300 shadow-sm"
+                    >
                       <div className="mb-2.5 text-[11px] font-bold text-neutral-500 uppercase tracking-widest flex items-center gap-1.5 before:content-[''] before:w-1.5 before:h-1.5 before:rounded-full before:bg-brand-trust">
                         {t('exercise.theory.example', { index: idx + 1 })}
                       </div>
@@ -133,7 +149,9 @@ export const ExerciseTheoryView = ({
             )}
           </>
         ) : (
-          <div className="py-12 text-center text-neutral-500">{t('exercise.theory.failedToLoad')}</div>
+          <div className="py-12 text-center text-neutral-500">
+            {t('exercise.theory.failedToLoad')}
+          </div>
         )}
       </Card>
 
@@ -154,31 +172,31 @@ export const ExerciseTheoryView = ({
       </div>
     </div>
   </div>
-)
+);
 
 export type ExerciseQuestionViewProps = {
-  concept: NextConcept
-  exercise: Exercise | null
-  loadingExercise: boolean
-  answerDraft: SubmitAnswerPayload
-  optionEntries: [string, string][]
-  progressPercent: number
-  bloomColor: string
-  localizedBloomLabel: string
-  onQuit: () => void
-  onSelectChoice: (value: string) => void
-  onToggleChoice: (value: string) => void
-  onSetBooleanAnswer: (value: boolean) => void
-  onSetBlankAnswer: (value: string) => void
-  onMoveOrderingItem: (fromIndex: number, toIndex: number) => void
-  onSetTextAnswer: (value: string) => void
-  onSetMatchingOrder: (leftItems: string[], rightItems: string[]) => void
-  onSetOrderingAnswer: (value: string[]) => void
-  onSubmit: () => void
-  canSubmit: boolean
-  submitting: boolean
-  t: TranslateFn
-}
+  concept: NextConcept;
+  exercise: Exercise | null;
+  loadingExercise: boolean;
+  answerDraft: SubmitAnswerPayload;
+  optionEntries: [string, string][];
+  progressPercent: number;
+  bloomColor: string;
+  localizedBloomLabel: string;
+  onQuit: () => void;
+  onSelectChoice: (value: string) => void;
+  onToggleChoice: (value: string) => void;
+  onSetBooleanAnswer: (value: boolean) => void;
+  onSetBlankAnswer: (value: string) => void;
+  onMoveOrderingItem: (fromIndex: number, toIndex: number) => void;
+  onSetTextAnswer: (value: string) => void;
+  onSetMatchingOrder: (leftItems: string[], rightItems: string[]) => void;
+  onSetOrderingAnswer: (value: string[]) => void;
+  onSubmit: () => void;
+  canSubmit: boolean;
+  submitting: boolean;
+  t: TranslateFn;
+};
 export const ExerciseQuestionView = ({
   concept,
   exercise,
@@ -215,10 +233,15 @@ export const ExerciseQuestionView = ({
         </Button>
         <div className="h-6 w-px bg-neutral-200" />
         <div className="flex flex-col">
-          <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 mb-1">{t('exercise.progress')}</span>
+          <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 mb-1">
+            {t('exercise.progress')}
+          </span>
           <div className="flex items-center gap-3">
             <div className="h-1.5 w-32 overflow-hidden rounded-full bg-neutral-100 border border-neutral-200">
-              <div className="h-full rounded-full bg-brand-trust transition-all duration-500 ease-out" style={{ width: `${progressPercent}%` }} />
+              <div
+                className="h-full rounded-full bg-brand-trust transition-all duration-500 ease-out"
+                style={{ width: `${progressPercent}%` }}
+              />
             </div>
             <span className="text-xs font-mono text-neutral-600">{concept.step}</span>
           </div>
@@ -226,7 +249,9 @@ export const ExerciseQuestionView = ({
       </div>
 
       <div className="flex items-center gap-3">
-        <span className="text-xs font-medium text-neutral-700 bg-neutral-50 border border-neutral-200 px-2.5 py-1 rounded-md">{concept.concept_name}</span>
+        <span className="text-xs font-medium text-neutral-700 bg-neutral-50 border border-neutral-200 px-2.5 py-1 rounded-md">
+          {concept.concept_name}
+        </span>
       </div>
     </div>
 
@@ -234,10 +259,15 @@ export const ExerciseQuestionView = ({
       <div className="flex flex-col lg:col-span-8">
         <Card className="flex-1 rounded-xl border border-neutral-200 bg-white shadow-sm">
           <div className="flex items-center justify-between border-b border-neutral-100 px-5 sm:px-6 py-4 bg-neutral-50/50 rounded-t-[20px]">
-            <div className={`flex items-center gap-2 rounded-md ${bloomColor} px-3 py-1.5 box-border shadow-sm`}>
+            <div
+              className={`flex items-center gap-2 rounded-md ${bloomColor} px-3 py-1.5 box-border shadow-sm`}
+            >
               <div className="h-2 w-2 rounded-full bg-white/90" />
               <span className="text-xs font-bold uppercase tracking-wider">
-                {t('exercise.bloomBadge', { level: concept.bloom_level, label: localizedBloomLabel })}
+                {t('exercise.bloomBadge', {
+                  level: concept.bloom_level,
+                  label: localizedBloomLabel,
+                })}
               </span>
             </div>
             <span className="text-xs font-mono text-neutral-500">
@@ -259,12 +289,12 @@ export const ExerciseQuestionView = ({
           ) : exercise ? (
             <CardContent className="p-5 sm:p-6 md:p-10">
               {(() => {
-                const headerContent = getExerciseHeaderContent(exercise)
+                const headerContent = getExerciseHeaderContent(exercise);
                 return headerContent ? (
                   <h2 className="mb-8 text-xl font-medium leading-relaxed text-neutral-900 tracking-tight">
                     <DynamicMarkdownRenderer content={headerContent} />
                   </h2>
-                ) : null
+                ) : null;
               })()}
               <ExerciseInteraction
                 answerDraft={answerDraft}
@@ -281,7 +311,9 @@ export const ExerciseQuestionView = ({
               />
             </CardContent>
           ) : (
-            <div className="py-12 text-center text-neutral-500">{t('exercise.failedToLoadContent')}</div>
+            <div className="py-12 text-center text-neutral-500">
+              {t('exercise.failedToLoadContent')}
+            </div>
           )}
         </Card>
       </div>
@@ -312,4 +344,4 @@ export const ExerciseQuestionView = ({
       </div>
     </div>
   </div>
-)
+);

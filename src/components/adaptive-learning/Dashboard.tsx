@@ -1,8 +1,8 @@
-'use client'
+'use client';
 
-import { useMemo } from 'react'
-import { Inter } from 'next/font/google'
-import { useTranslations } from 'next-intl'
+import { useMemo } from 'react';
+import { Inter } from 'next/font/google';
+import { useTranslations } from 'next-intl';
 import {
   DashboardDeleteModal,
   DashboardHeader,
@@ -11,17 +11,17 @@ import {
   FloatingUploadAction,
   HeroSection,
   LibrarySection,
-} from './DashboardSections'
-import { useAdaptiveDashboard } from './hooks/use-adaptive-dashboard'
-import { toDashboardSubject } from './dashboard-view-model'
-import type { PipelineJobHistoryItem, SessionHistoryItem } from './types'
+} from './DashboardSections';
+import { useAdaptiveDashboard } from './hooks/use-adaptive-dashboard';
+import { toDashboardSubject } from './dashboard-view-model';
+import type { PipelineJobHistoryItem, SessionHistoryItem } from './types';
 
-const inter = Inter({ subsets: ['latin'] })
+const inter = Inter({ subsets: ['latin'] });
 
 interface DashboardProps {
-  initialSubjects: PipelineJobHistoryItem[]
-  initialSessionHistory: SessionHistoryItem[]
-  didHydrateFromServer?: boolean
+  initialSubjects: PipelineJobHistoryItem[];
+  initialSessionHistory: SessionHistoryItem[];
+  didHydrateFromServer?: boolean;
 }
 
 export default function AdaptiveLearningDashboard({
@@ -29,9 +29,9 @@ export default function AdaptiveLearningDashboard({
   initialSessionHistory,
   didHydrateFromServer = false,
 }: DashboardProps) {
-  const tAdaptive = useTranslations('adaptiveLearning')
-  const tDashboard = useTranslations('adaptiveLearning.dashboard')
-  const locale = tAdaptive('common.locale_date')
+  const tAdaptive = useTranslations('adaptiveLearning');
+  const tDashboard = useTranslations('adaptiveLearning.dashboard');
+  const locale = tAdaptive('common.locale_date');
 
   const {
     apiOnline,
@@ -58,17 +58,17 @@ export default function AdaptiveLearningDashboard({
     didHydrateFromServer,
     t: tDashboard,
     tAdaptive,
-  })
+  });
 
   const dashboardSubjects = useMemo(
-    () => filteredSubjects.map(subject => toDashboardSubject(subject, locale, tDashboard)),
+    () => filteredSubjects.map((subject) => toDashboardSubject(subject, locale, tDashboard)),
     [filteredSubjects, locale, tDashboard],
-  )
+  );
 
   const upNextDashboardSubject = useMemo(
     () => (upNextSubject ? toDashboardSubject(upNextSubject, locale, tDashboard) : null),
     [locale, tDashboard, upNextSubject],
-  )
+  );
 
   return (
     <div className={`${inter.className} bg-neutral-50 pb-12 text-[var(--text-primary)]`}>
@@ -107,7 +107,6 @@ export default function AdaptiveLearningDashboard({
           onDelete={handleDeleteClick}
           t={tDashboard}
         />
-
       </main>
 
       <FloatingUploadAction onClick={handleGoUpload} t={tDashboard} />
@@ -121,5 +120,5 @@ export default function AdaptiveLearningDashboard({
         t={tDashboard}
       />
     </div>
-  )
+  );
 }

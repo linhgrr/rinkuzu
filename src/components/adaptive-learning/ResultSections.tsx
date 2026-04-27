@@ -1,39 +1,38 @@
-'use client'
+'use client';
 
-import Image from 'next/image'
-import { Button } from '@/components/ui/Button'
-import { Spinner } from '@/components/ui/Spinner'
-import { Card, CardContent, CardHeader } from '@/components/ui/Card'
-import { DynamicMarkdownRenderer } from '@/components/ui/DynamicMarkdownRenderer'
-import {
-  HiArrowRight,
-  HiCheck,
-  HiOutlineHome,
-  HiOutlineX,
-} from '@/components/icons'
-import type { SubmitResult, Exercise } from './types'
+import Image from 'next/image';
+import { Button } from '@/components/ui/Button';
+import { Spinner } from '@/components/ui/Spinner';
+import { Card, CardContent, CardHeader } from '@/components/ui/Card';
+import { DynamicMarkdownRenderer } from '@/components/ui/DynamicMarkdownRenderer';
+import { HiArrowRight, HiCheck, HiOutlineHome, HiOutlineX } from '@/components/icons';
+import type { SubmitResult, Exercise } from './types';
 
-type TranslateFn = (key: string, values?: Record<string, any>) => string
+type TranslateFn = (key: string, values?: Record<string, any>) => string;
 
 function normalizeMathContent(content: string): string {
-  if (!content)
-    return content
+  if (!content) return content;
 
-  return content
-    .replace(/\t(?=(imes|ext|frac|sqrt|cdot|vec|left|right|mathrm|mathbf|mathit|alpha|beta|gamma|delta|theta|lambda|mu|pi|rho|sigma|phi|omega|Delta))/g, '\\t')
+  return content.replace(
+    /\t(?=(imes|ext|frac|sqrt|cdot|vec|left|right|mathrm|mathbf|mathit|alpha|beta|gamma|delta|theta|lambda|mu|pi|rho|sigma|phi|omega|Delta))/g,
+    '\\t',
+  );
 }
 
 type ResultEmptyStateProps = {
-  onGoDashboard: () => void
-  t: TranslateFn
-}
+  onGoDashboard: () => void;
+  t: TranslateFn;
+};
 
 function renderResultCorrectAnswer(exercise: Exercise, result: SubmitResult, t: TranslateFn) {
   if (exercise.exercise_type === 'matching') {
     return (
       <div className="grid grid-cols-1 gap-2">
         {exercise.pairs.map((pair, idx) => (
-          <div key={idx} className="flex items-center justify-between rounded-lg border border-green-100 bg-white p-2">
+          <div
+            key={idx}
+            className="flex items-center justify-between rounded-lg border border-green-100 bg-white p-2"
+          >
             <div className="min-w-0 flex-1 text-xs text-neutral-600">
               <DynamicMarkdownRenderer content={normalizeMathContent(pair.left)} />
             </div>
@@ -44,14 +43,17 @@ function renderResultCorrectAnswer(exercise: Exercise, result: SubmitResult, t: 
           </div>
         ))}
       </div>
-    )
+    );
   }
 
   if (exercise.exercise_type === 'ordering' && Array.isArray(exercise.correct_answer)) {
     return (
       <div className="flex flex-wrap gap-2">
         {exercise.correct_answer.map((item, idx) => (
-          <div key={idx} className="flex items-center gap-2 rounded-lg border border-green-100 bg-white p-2 text-xs">
+          <div
+            key={idx}
+            className="flex items-center gap-2 rounded-lg border border-green-100 bg-white p-2 text-xs"
+          >
             <span className="flex h-5 w-5 items-center justify-center rounded-full bg-green-100 font-mono text-[10px] font-bold text-green-700">
               {idx + 1}
             </span>
@@ -61,22 +63,32 @@ function renderResultCorrectAnswer(exercise: Exercise, result: SubmitResult, t: 
           </div>
         ))}
       </div>
-    )
+    );
   }
 
   if (exercise.exercise_type === 'fill_blank' && Array.isArray(exercise.correct_answer)) {
-    return <DynamicMarkdownRenderer content={normalizeMathContent(exercise.correct_answer.join(', '))} />
+    return (
+      <DynamicMarkdownRenderer content={normalizeMathContent(exercise.correct_answer.join(', '))} />
+    );
   }
 
   if (exercise.exercise_type === 'multi_correct' && Array.isArray(exercise.correct_answer)) {
-    return <DynamicMarkdownRenderer content={normalizeMathContent(exercise.correct_answer.join(', '))} />
+    return (
+      <DynamicMarkdownRenderer content={normalizeMathContent(exercise.correct_answer.join(', '))} />
+    );
   }
 
   if (exercise.exercise_type === 'true_false' && typeof exercise.correct_answer === 'boolean') {
-    return <span>{exercise.correct_answer ? t('exercise.interactions.trueLabel') : t('exercise.interactions.falseLabel')}</span>
+    return (
+      <span>
+        {exercise.correct_answer
+          ? t('exercise.interactions.trueLabel')
+          : t('exercise.interactions.falseLabel')}
+      </span>
+    );
   }
 
-  return <DynamicMarkdownRenderer content={normalizeMathContent(result.correct_option)} />
+  return <DynamicMarkdownRenderer content={normalizeMathContent(result.correct_option)} />;
 }
 
 export const ResultLoadingState = ({ t }: { t: TranslateFn }) => (
@@ -86,7 +98,7 @@ export const ResultLoadingState = ({ t }: { t: TranslateFn }) => (
       <p className="text-sm font-medium text-neutral-500">{t('exercise.loadingTitle')}</p>
     </div>
   </div>
-)
+);
 
 export const ResultEmptyState = ({ onGoDashboard, t }: ResultEmptyStateProps) => (
   <div className="mx-auto flex min-h-[80vh] max-w-4xl items-center justify-center">
@@ -101,19 +113,19 @@ export const ResultEmptyState = ({ onGoDashboard, t }: ResultEmptyStateProps) =>
       </Button>
     </div>
   </div>
-)
+);
 
 type ResultContentProps = {
-  averageMasteryPercent: number
-  exercise: Exercise
-  isCorrect: boolean
-  masteryPercent: number
-  onGoDashboard: () => void
-  onHandleNext: () => void
-  onOpenChat: () => void
-  result: SubmitResult
-  t: TranslateFn
-}
+  averageMasteryPercent: number;
+  exercise: Exercise;
+  isCorrect: boolean;
+  masteryPercent: number;
+  onGoDashboard: () => void;
+  onHandleNext: () => void;
+  onOpenChat: () => void;
+  result: SubmitResult;
+  t: TranslateFn;
+};
 
 export const ResultContent = ({
   averageMasteryPercent,
@@ -152,7 +164,9 @@ export const ResultContent = ({
         <Card className="overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-sm">
           <div className={`h-1.5 w-full ${isCorrect ? 'bg-brand-trust' : 'bg-red-300'}`} />
           <CardHeader className="border-b border-neutral-100 bg-neutral-50/50 px-6 py-3">
-            <h3 className="font-medium tracking-tight text-neutral-900">{t('result.explanationTitle')}</h3>
+            <h3 className="font-medium tracking-tight text-neutral-900">
+              {t('result.explanationTitle')}
+            </h3>
           </CardHeader>
           <CardContent className="p-6">
             <div className="mb-4 text-sm leading-relaxed text-neutral-700">
@@ -197,16 +211,24 @@ export const ResultContent = ({
 
         <Card className="overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-sm">
           <CardContent className="p-6">
-            <h3 className="mb-4 font-medium tracking-tight text-neutral-900">{t('result.masteryUpdate')}</h3>
+            <h3 className="mb-4 font-medium tracking-tight text-neutral-900">
+              {t('result.masteryUpdate')}
+            </h3>
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <span className="rounded-md bg-neutral-100 px-2 py-1 text-xs text-neutral-600">
-                  {result.concept_name} <span className="text-neutral-400">/</span> {t('bloomLevel', { level: result.bloom_level })}
+                  {result.concept_name} <span className="text-neutral-400">/</span>{' '}
+                  {t('bloomLevel', { level: result.bloom_level })}
                 </span>
-                <span className="font-mono text-sm font-medium text-neutral-900">{masteryPercent}%</span>
+                <span className="font-mono text-sm font-medium text-neutral-900">
+                  {masteryPercent}%
+                </span>
               </div>
               <div className="h-1.5 w-full overflow-hidden rounded-full border border-neutral-200 bg-neutral-100">
-                <div className="h-full rounded-full bg-brand-trust transition-all duration-500" style={{ width: `${masteryPercent}%` }} />
+                <div
+                  className="h-full rounded-full bg-brand-trust transition-all duration-500"
+                  style={{ width: `${masteryPercent}%` }}
+                />
               </div>
               <div className="flex justify-between text-xs text-neutral-500">
                 <span>{t('result.averageMastery', { value: averageMasteryPercent })}</span>
@@ -237,19 +259,31 @@ export const ResultContent = ({
 
       <div className="space-y-6">
         <div className="rounded-xl border border-neutral-200 bg-white p-6 shadow-sm">
-          <h4 className="mb-4 text-[10px] font-bold uppercase tracking-widest text-neutral-500">{t('result.sessionStats')}</h4>
+          <h4 className="mb-4 text-[10px] font-bold uppercase tracking-widest text-neutral-500">
+            {t('result.sessionStats')}
+          </h4>
           <div className="space-y-4">
             <div className="flex items-center justify-between border-b border-neutral-100 pb-3">
-              <span className="text-xs font-medium text-neutral-700">{t('result.statsCorrect')}</span>
-              <span className="font-mono text-sm text-neutral-900">{result.stats.total_correct}</span>
+              <span className="text-xs font-medium text-neutral-700">
+                {t('result.statsCorrect')}
+              </span>
+              <span className="font-mono text-sm text-neutral-900">
+                {result.stats.total_correct}
+              </span>
             </div>
             <div className="flex items-center justify-between border-b border-neutral-100 pb-3">
               <span className="text-xs font-medium text-neutral-700">{t('result.statsTotal')}</span>
-              <span className="font-mono text-sm text-neutral-900">{result.stats.total_answered}</span>
+              <span className="font-mono text-sm text-neutral-900">
+                {result.stats.total_answered}
+              </span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-neutral-700">{t('result.statsAccuracy')}</span>
-              <span className="font-mono text-sm text-neutral-900">{Math.round(result.stats.accuracy * 100)}%</span>
+              <span className="text-xs font-medium text-neutral-700">
+                {t('result.statsAccuracy')}
+              </span>
+              <span className="font-mono text-sm text-neutral-900">
+                {Math.round(result.stats.accuracy * 100)}%
+              </span>
             </div>
           </div>
         </div>
@@ -270,4 +304,4 @@ export const ResultContent = ({
       </div>
     </div>
   </div>
-)
+);

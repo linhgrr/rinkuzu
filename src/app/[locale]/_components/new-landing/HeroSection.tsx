@@ -2,11 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import Navbar from "./Navbar";
-import { GlowPillButton } from "./Navbar";
+import Navbar, { GlowPillButton } from './Navbar';
 
 const VIDEO_URL =
-  "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260217_030345_246c0224-10a4-422c-b324-070b7c0eceda.mp4";
+  'https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260217_030345_246c0224-10a4-422c-b324-070b7c0eceda.mp4';
 
 const HeroSection = ({ isAuthenticated = false }: { isAuthenticated?: boolean }) => {
   const t = useTranslations('landing.hero');
@@ -60,8 +59,8 @@ const HeroSection = ({ isAuthenticated = false }: { isAuthenticated?: boolean })
             <div
               className="flex items-center gap-2 rounded-[20px] px-4 py-2 text-[13px] font-medium"
               style={{
-                background: "rgba(255,255,255,0.1)",
-                border: "1px solid rgba(255,255,255,0.2)",
+                background: 'rgba(255,255,255,0.1)',
+                border: '1px solid rgba(255,255,255,0.2)',
               }}
             >
               <span className="w-[4px] h-[4px] rounded-full bg-white" />
@@ -73,10 +72,10 @@ const HeroSection = ({ isAuthenticated = false }: { isAuthenticated?: boolean })
             <h1
               className="max-w-[700px] text-center text-[36px] md:text-[56px] font-medium leading-[1.28]"
               style={{
-                background: "linear-gradient(144.5deg, #ffffff 28%, rgba(0,0,0,0) 115%)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                backgroundClip: "text",
+                background: 'linear-gradient(144.5deg, #ffffff 28%, rgba(0,0,0,0) 115%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
               }}
             >
               {t('headline')}

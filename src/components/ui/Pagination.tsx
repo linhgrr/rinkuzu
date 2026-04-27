@@ -18,7 +18,7 @@ export function Pagination({
   onPageChange,
   showPageNumbers = true,
   maxPageNumbers = 5,
-  className = ''
+  className = '',
 }: PaginationProps) {
   if (totalPages <= 1) return null;
 
@@ -65,14 +65,12 @@ export function Pagination({
               >
                 1
               </Button>
-              {visiblePages[0] > 2 && (
-                <span className="px-1 text-neutral-500">…</span>
-              )}
+              {visiblePages[0] > 2 && <span className="px-1 text-neutral-500">…</span>}
             </>
           )}
 
           {/* Visible page numbers */}
-          {visiblePages.map(page => (
+          {visiblePages.map((page) => (
             <Button
               key={page}
               variant="outline"

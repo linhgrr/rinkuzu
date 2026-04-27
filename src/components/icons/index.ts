@@ -23,7 +23,11 @@ export { HiOutlinePlus, HiPlus } from 'react-icons/hi';
 export { HiOutlineSearch, HiSearch } from 'react-icons/hi';
 
 // Document icons
-export { HiOutlineDocumentText, HiOutlineDocument, HiOutlineDocumentDuplicate } from 'react-icons/hi';
+export {
+  HiOutlineDocumentText,
+  HiOutlineDocument,
+  HiOutlineDocumentDuplicate,
+} from 'react-icons/hi';
 
 // Clock/Time icons
 export { HiOutlineClock, HiClock } from 'react-icons/hi';
@@ -41,34 +45,63 @@ export { HiOutlineTag, HiTag } from 'react-icons/hi';
 export { HiOutlineCreditCard, HiOutlineCurrencyDollar, HiOutlineCash } from 'react-icons/hi';
 
 // Chart/Stats icons
-export { HiOutlineChartBar, HiOutlineChartPie, HiOutlineTrendingUp, HiOutlineTrendingDown } from 'react-icons/hi';
+export {
+  HiOutlineChartBar,
+  HiOutlineChartPie,
+  HiOutlineTrendingUp,
+  HiOutlineTrendingDown,
+} from 'react-icons/hi';
 
 // Collection icons
 export { HiOutlineCollection, HiCollection } from 'react-icons/hi';
 
 // Chevron icons
 export {
-  HiChevronRight, HiChevronLeft, HiChevronDown, HiChevronUp,
-  HiChevronDoubleLeft, HiChevronDoubleRight,
-  HiOutlineChevronLeft, HiOutlineChevronRight, HiOutlineChevronUp, HiOutlineChevronDown
+  HiChevronRight,
+  HiChevronLeft,
+  HiChevronDown,
+  HiChevronUp,
+  HiChevronDoubleLeft,
+  HiChevronDoubleRight,
+  HiOutlineChevronLeft,
+  HiOutlineChevronRight,
+  HiOutlineChevronUp,
+  HiOutlineChevronDown,
 } from 'react-icons/hi';
 
 // Cog/Settings icons
 export { HiOutlineCog, HiCog } from 'react-icons/hi';
 
 // Alert/Warning icons
-export { HiOutlineExclamationCircle, HiExclamationCircle, HiOutlineExclamation } from 'react-icons/hi';
+export {
+  HiOutlineExclamationCircle,
+  HiExclamationCircle,
+  HiOutlineExclamation,
+} from 'react-icons/hi';
 
 // Check/Success icons
-export { HiOutlineCheck, HiCheck, HiOutlineCheckCircle, HiCheckCircle, HiOutlineBadgeCheck } from 'react-icons/hi';
+export {
+  HiOutlineCheck,
+  HiCheck,
+  HiOutlineCheckCircle,
+  HiCheckCircle,
+  HiOutlineBadgeCheck,
+} from 'react-icons/hi';
 
 // X/Close icons
 export { HiOutlineX, HiX, HiOutlineXCircle } from 'react-icons/hi';
 
 // Arrow icons
 export {
-  HiOutlineArrowRight, HiOutlineArrowLeft, HiOutlineArrowUp, HiOutlineArrowDown,
-  HiArrowRight, HiArrowLeft, HiArrowUp, HiOutlineArrowNarrowRight, HiOutlineArrowNarrowLeft
+  HiOutlineArrowRight,
+  HiOutlineArrowLeft,
+  HiOutlineArrowUp,
+  HiOutlineArrowDown,
+  HiArrowRight,
+  HiArrowLeft,
+  HiArrowUp,
+  HiOutlineArrowNarrowRight,
+  HiOutlineArrowNarrowLeft,
 } from 'react-icons/hi';
 
 // Fire/Energy icons
@@ -105,7 +138,12 @@ export { HiOutlinePencil, HiPencil, HiOutlinePencilAlt } from 'react-icons/hi';
 export { HiOutlineEye, HiEye, HiOutlineEyeOff } from 'react-icons/hi';
 
 // Upload/Download icons
-export { HiOutlineUpload, HiOutlineDownload, HiOutlineCloudUpload, HiOutlineCloudDownload } from 'react-icons/hi';
+export {
+  HiOutlineUpload,
+  HiOutlineDownload,
+  HiOutlineCloudUpload,
+  HiOutlineCloudDownload,
+} from 'react-icons/hi';
 
 // Refresh icons
 export { HiOutlineRefresh, HiRefresh } from 'react-icons/hi';
@@ -126,7 +164,12 @@ export { HiOutlineExternalLink, HiExternalLink } from 'react-icons/hi';
 export { HiOutlineLink, HiLink } from 'react-icons/hi';
 
 // Chat icons
-export { HiOutlineChatAlt, HiOutlineChatAlt2, HiChatAlt, HiOutlineAnnotation } from 'react-icons/hi';
+export {
+  HiOutlineChatAlt,
+  HiOutlineChatAlt2,
+  HiChatAlt,
+  HiOutlineAnnotation,
+} from 'react-icons/hi';
 
 // Flag icons
 export { HiOutlineFlag, HiFlag } from 'react-icons/hi';
@@ -141,7 +184,12 @@ export { HiOutlineHeart, HiHeart } from 'react-icons/hi';
 export { HiOutlineThumbUp, HiThumbUp, HiOutlineThumbDown, HiThumbDown } from 'react-icons/hi';
 
 // Clipboard icons
-export { HiOutlineClipboard, HiOutlineClipboardCheck, HiOutlineClipboardList, HiOutlineClipboardCopy } from 'react-icons/hi';
+export {
+  HiOutlineClipboard,
+  HiOutlineClipboardCheck,
+  HiOutlineClipboardList,
+  HiOutlineClipboardCopy,
+} from 'react-icons/hi';
 
 // Folder icons
 export { HiOutlineFolder, HiOutlineFolderOpen, HiFolder, HiFolderOpen } from 'react-icons/hi';
@@ -153,7 +201,13 @@ export { HiOutlineAcademicCap, HiAcademicCap, HiOutlineBookOpen, HiBookOpen } fr
 export { HiOutlinePlay, HiPlay, HiOutlinePause, HiPause } from 'react-icons/hi';
 
 // Filter/Sort icons
-export { HiOutlineFilter, HiFilter, HiOutlineSortAscending, HiOutlineSortDescending, HiOutlineAdjustments } from 'react-icons/hi';
+export {
+  HiOutlineFilter,
+  HiFilter,
+  HiOutlineSortAscending,
+  HiOutlineSortDescending,
+  HiOutlineAdjustments,
+} from 'react-icons/hi';
 
 // Globe/World icons
 export { HiOutlineGlobe, HiGlobe, HiOutlineGlobeAlt } from 'react-icons/hi';
@@ -204,7 +258,12 @@ export { HiOutlineDuplicate, HiDuplicate } from 'react-icons/hi';
 export { HiOutlineSave, HiOutlineSaveAs } from 'react-icons/hi';
 
 // Dots icons
-export { HiOutlineDotsVertical, HiOutlineDotsHorizontal, HiDotsVertical, HiDotsHorizontal } from 'react-icons/hi';
+export {
+  HiOutlineDotsVertical,
+  HiOutlineDotsHorizontal,
+  HiDotsVertical,
+  HiDotsHorizontal,
+} from 'react-icons/hi';
 
 // QR Code icons
 export { HiOutlineQrcode, HiQrcode } from 'react-icons/hi';

@@ -1,4 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
+import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { uploadImageToImgBB } from '@/services/imageUploadService';
@@ -21,7 +22,7 @@ export function ImageUpload({
   placeholder,
   maxWidth = 400,
   maxHeight = 300,
-  className = ""
+  className = '',
 }: ImageUploadProps) {
   const t = useTranslations('upload');
   const [isUploading, setIsUploading] = useState(false);
@@ -29,45 +30,54 @@ export function ImageUpload({
   const [isHovered, setIsHovered] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleImageUpload = useCallback(async (file: File) => {
-    if (!file.type.startsWith('image/')) {
-      toast.error(t('pleaseSelectImage'));
-      return;
-    }
+  const handleImageUpload = useCallback(
+    async (file: File) => {
+      if (!file.type.startsWith('image/')) {
+        toast.error(t('pleaseSelectImage'));
+        return;
+      }
 
-    if (file.size > 10 * 1024 * 1024) { // 10MB limit
-      toast.error(t('imageTooLarge'));
-      return;
-    }
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error(t('imageTooLarge'));
+        return;
+      }
 
-    setIsUploading(true);
-    try {
-      const result = await uploadImageToImgBB(file, file.name);
-      onImageUploaded(result.displayUrl);
-    } catch (error: any) {
-      console.error('Failed to upload image:', error);
-      toast.error(t('failedToUpload') + ': ' + error.message);
-    } finally {
-      setIsUploading(false);
-    }
-  }, [onImageUploaded, t]);
+      setIsUploading(true);
+      try {
+        const result = await uploadImageToImgBB(file, file.name);
+        onImageUploaded(result.displayUrl);
+      } catch (error: any) {
+        console.error('Failed to upload image:', error);
+        toast.error(`${t('failedToUpload')}: ${error.message}`);
+      } finally {
+        setIsUploading(false);
+      }
+    },
+    [onImageUploaded, t],
+  );
 
-  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      handleImageUpload(file);
-    }
-  }, [handleImageUpload]);
+  const handleFileSelect = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (file) {
+        handleImageUpload(file);
+      }
+    },
+    [handleImageUpload],
+  );
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setDragActive(false);
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      setDragActive(false);
 
-    const file = e.dataTransfer.files?.[0];
-    if (file) {
-      handleImageUpload(file);
-    }
-  }, [handleImageUpload]);
+      const file = e.dataTransfer.files?.[0];
+      if (file) {
+        handleImageUpload(file);
+      }
+    },
+    [handleImageUpload],
+  );
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -79,21 +89,24 @@ export function ImageUpload({
     setDragActive(false);
   }, []);
 
-  const handlePaste = useCallback((e: React.ClipboardEvent) => {
-    const items = e.clipboardData?.items;
-    if (!items) return;
+  const handlePaste = useCallback(
+    (e: React.ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
 
-    for (let i = 0; i < items.length; i++) {
-      const item = items[i];
-      if (item.type.startsWith('image/')) {
-        const file = item.getAsFile();
-        if (file) {
-          handleImageUpload(file);
-          break;
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (item.type.startsWith('image/')) {
+          const file = item.getAsFile();
+          if (file) {
+            handleImageUpload(file);
+            break;
+          }
         }
       }
-    }
-  }, [handleImageUpload]);
+    },
+    [handleImageUpload],
+  );
 
   // Global paste handler for hover-based pasting
   useEffect(() => {
@@ -142,7 +155,7 @@ export function ImageUpload({
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
       >
-        <img
+        <Image
           src={currentImage}
           alt="Uploaded image"
           width={maxWidth}
@@ -153,7 +166,7 @@ export function ImageUpload({
             maxHeight: maxHeight,
             width: 'auto',
             height: 'auto',
-            objectFit: 'contain'
+            objectFit: 'contain',
           }}
         />
         <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -181,7 +194,8 @@ export function ImageUpload({
         className="hidden"
       />
 
-      <div
+      <button
+        type="button"
         onClick={handleClick}
         onDrop={handleDrop}
         onDragOver={handleDragOver}
@@ -189,13 +203,13 @@ export function ImageUpload({
         onPaste={handlePaste}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
-        tabIndex={0}
         className={`
           relative border-2 border-dashed rounded-lg p-6 text-center cursor-pointer
           transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-brand-trust
-          ${dragActive
-            ? 'border-brand-action bg-orange-50'
-            : 'border-neutral-300 hover:border-neutral-400 hover:bg-neutral-50'
+          ${
+            dragActive
+              ? 'border-brand-action bg-orange-50'
+              : 'border-neutral-300 hover:border-neutral-400 hover:bg-neutral-50'
           }
           ${isUploading ? 'pointer-events-none opacity-75' : ''}
         `}
@@ -226,15 +240,11 @@ export function ImageUpload({
               <span className="font-medium text-brand-action">{t('clickToUpload')}</span>
               <span> {t('orDragAndDrop')}</span>
             </div>
-            <p className="text-xs text-neutral-500">
-              {placeholder || t('clickToUpload')}
-            </p>
-            <p className="text-xs text-neutral-400">
-              {t('maxFileSize')}
-            </p>
+            <p className="text-xs text-neutral-500">{placeholder || t('clickToUpload')}</p>
+            <p className="text-xs text-neutral-400">{t('maxFileSize')}</p>
           </div>
         )}
-      </div>
+      </button>
     </div>
   );
 }

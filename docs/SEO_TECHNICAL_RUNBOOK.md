@@ -22,6 +22,7 @@ npm run build
 ```
 
 Expected:
+
 - `lint` passes with no blocking errors.
 - `build` succeeds and generates routes including `robots.txt` and `sitemap.xml`.
 
@@ -35,6 +36,7 @@ curl -s http://localhost:3000/robots.txt
 ```
 
 Expected:
+
 - `User-agent: *`
 - `Allow: /`
 - Private areas are in `Disallow`.
@@ -47,6 +49,7 @@ curl -s http://localhost:3000/sitemap.xml
 ```
 
 Expected:
+
 - Contains only canonical, indexable URLs.
 - Includes locale variants for public pages.
 - Excludes private/auth/admin paths.
@@ -58,6 +61,7 @@ curl -s http://localhost:3000 | rg "canonical|hreflang"
 ```
 
 Expected:
+
 - Canonical tag points to absolute site URL.
 - Alternate language links include `vi`, `en`, and `x-default`.
 
@@ -69,6 +73,7 @@ curl -s http://localhost:3000/faq | rg "FAQPage"
 ```
 
 Expected:
+
 - Homepage includes `Organization` and `WebSite` JSON-LD.
 - FAQ page includes `FAQPage` JSON-LD.
 
@@ -84,10 +89,12 @@ curl -I https://www.rinkuzu.app/sitemap.xml
 Expected: HTTP 200 for both.
 
 2. Validate structured data:
+
 - Google Rich Results Test: https://search.google.com/test/rich-results
 - Schema Validator: https://validator.schema.org/
 
 3. Search Console operations:
+
 - Submit sitemap: `https://www.rinkuzu.app/sitemap.xml`
 - Review Coverage weekly
 - Review Enhancements for rich results
@@ -102,6 +109,7 @@ Expected: HTTP 200 for both.
 ## Incident response
 
 If indexability regressions occur:
+
 1. Check recent changes in:
    - `src/lib/seo.ts`
    - `src/lib/seo.routes.ts`

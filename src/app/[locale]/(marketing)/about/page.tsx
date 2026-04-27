@@ -1,9 +1,8 @@
 import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
-import { buildLocalizedMetadata } from '@/lib/seo';
+import { buildLocalizedMetadata, siteUrl } from '@/lib/seo';
 import { JsonLd } from '@/components/seo/JsonLd';
-import { siteUrl } from '@/lib/seo';
 
 type Props = { params: Promise<{ locale: string }> };
 
@@ -14,7 +13,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     path: '/about',
     title: 'About RinKuzu — Our Mission to Make Learning Adaptive',
     description:
-      'RinKuzu is an AI-powered adaptive learning platform built by educators and engineers. Learn about our mission to transform how students master any subject using knowledge graphs and Bloom\'s Taxonomy.',
+      "RinKuzu is an AI-powered adaptive learning platform built by educators and engineers. Learn about our mission to transform how students master any subject using knowledge graphs and Bloom's Taxonomy.",
   });
 }
 
@@ -29,7 +28,8 @@ const teamSchema = {
     '@type': 'Organization',
     name: 'RinKuzu',
     url: siteUrl.origin,
-    description: 'AI-powered adaptive learning platform for students, teachers, and training teams.',
+    description:
+      'AI-powered adaptive learning platform for students, teachers, and training teams.',
     areaServed: 'Worldwide',
     knowsAbout: [
       'Adaptive Learning',
@@ -45,7 +45,7 @@ const values = [
   {
     icon: '🧠',
     title: 'Adaptive by Design',
-    body: 'Every learner is unique. RinKuzu uses Bayesian Knowledge Tracing to model each student\'s mastery and continuously adapts the learning path to target weak spots.',
+    body: "Every learner is unique. RinKuzu uses Bayesian Knowledge Tracing to model each student's mastery and continuously adapts the learning path to target weak spots.",
   },
   {
     icon: '📄',
@@ -59,7 +59,7 @@ const values = [
   },
   {
     icon: '🎯',
-    title: 'Bloom\'s Taxonomy',
+    title: "Bloom's Taxonomy",
     body: 'Practice spans all six cognitive levels — from basic recall to creative synthesis — ensuring deep mastery rather than surface-level recognition.',
   },
 ];
@@ -73,6 +73,7 @@ const stats = [
 
 export default async function AboutPage({ params }: Props) {
   const { locale } = await params;
+  void locale;
 
   return (
     <main className="min-h-screen bg-white">
@@ -82,12 +83,18 @@ export default async function AboutPage({ params }: Props) {
       {/* Hero */}
       <section className="bg-[var(--bg-section)] py-20 md:py-32 text-center">
         <div className="max-w-3xl mx-auto px-6">
-          <p className="text-sm font-semibold tracking-widest uppercase text-brand-trust mb-4">Our Story</p>
+          <p className="text-sm font-semibold tracking-widest uppercase text-brand-trust mb-4">
+            Our Story
+          </p>
           <h1 className="text-4xl md:text-6xl font-bold text-[var(--text-primary)] mb-6 leading-tight">
-            Learning Should Adapt to You,<br />Not the Other Way Around
+            Learning Should Adapt to You,
+            <br />
+            Not the Other Way Around
           </h1>
           <p className="text-lg text-[var(--text-muted)] leading-relaxed max-w-2xl mx-auto">
-            RinKuzu was built by educators and engineers who believe that great learning tools should meet students where they are — using AI to understand each learner&apos;s knowledge state and craft a personalized path forward.
+            RinKuzu was built by educators and engineers who believe that great learning tools
+            should meet students where they are — using AI to understand each learner&apos;s
+            knowledge state and craft a personalized path forward.
           </p>
         </div>
       </section>
@@ -96,18 +103,26 @@ export default async function AboutPage({ params }: Props) {
       <section className="py-16 md:py-24">
         <div className="max-w-6xl mx-auto px-6 grid md:grid-cols-2 gap-12 items-center">
           <div>
-            <p className="text-sm font-semibold tracking-widest uppercase text-brand-trust mb-3">Our Mission</p>
+            <p className="text-sm font-semibold tracking-widest uppercase text-brand-trust mb-3">
+              Our Mission
+            </p>
             <h2 className="text-3xl md:text-4xl font-bold text-[var(--text-primary)] mb-6 leading-tight">
               Turning Static PDFs Into Dynamic Learning Journeys
             </h2>
             <p className="text-[var(--text-muted)] leading-relaxed mb-4">
-              Most students have a folder of lecture notes, textbooks, and handouts — all the material they need to master a subject, but no structured way to practice it effectively.
+              Most students have a folder of lecture notes, textbooks, and handouts — all the
+              material they need to master a subject, but no structured way to practice it
+              effectively.
             </p>
             <p className="text-[var(--text-muted)] leading-relaxed mb-4">
-              RinKuzu bridges that gap. Upload a PDF and our AI does the work of an expert instructor: extracting key concepts, identifying what knowledge is required before other knowledge can be understood, and generating practice questions that target exactly where you need growth.
+              RinKuzu bridges that gap. Upload a PDF and our AI does the work of an expert
+              instructor: extracting key concepts, identifying what knowledge is required before
+              other knowledge can be understood, and generating practice questions that target
+              exactly where you need growth.
             </p>
             <p className="text-[var(--text-muted)] leading-relaxed">
-              The result is a learning experience that adapts to your pace, your strengths, and your gaps — turning any document into a personalized curriculum.
+              The result is a learning experience that adapts to your pace, your strengths, and your
+              gaps — turning any document into a personalized curriculum.
             </p>
           </div>
           {/* Visual */}
@@ -133,12 +148,19 @@ export default async function AboutPage({ params }: Props) {
       <section className="py-16 md:py-24 bg-[var(--bg-section)]">
         <div className="max-w-6xl mx-auto px-6">
           <div className="text-center mb-14">
-            <p className="text-sm font-semibold tracking-widest uppercase text-brand-trust mb-3">What We Stand For</p>
-            <h2 className="text-3xl md:text-4xl font-bold text-[var(--text-primary)]">Our Core Principles</h2>
+            <p className="text-sm font-semibold tracking-widest uppercase text-brand-trust mb-3">
+              What We Stand For
+            </p>
+            <h2 className="text-3xl md:text-4xl font-bold text-[var(--text-primary)]">
+              Our Core Principles
+            </h2>
           </div>
           <div className="grid md:grid-cols-2 gap-6 max-w-5xl mx-auto">
             {values.map((v) => (
-              <div key={v.title} className="rounded-3xl bg-white border border-neutral-200 p-8 shadow-sm hover:shadow-md transition-shadow">
+              <div
+                key={v.title}
+                className="rounded-3xl bg-white border border-neutral-200 p-8 shadow-sm hover:shadow-md transition-shadow"
+              >
                 <div className="text-3xl mb-4">{v.icon}</div>
                 <h3 className="text-xl font-bold text-[var(--text-primary)] mb-3">{v.title}</h3>
                 <p className="text-[var(--text-muted)] leading-relaxed">{v.body}</p>
@@ -178,27 +200,39 @@ export default async function AboutPage({ params }: Props) {
             </div>
           </div>
           <div className="order-1 md:order-2">
-            <p className="text-sm font-semibold tracking-widest uppercase text-brand-trust mb-3">Built on Research</p>
+            <p className="text-sm font-semibold tracking-widest uppercase text-brand-trust mb-3">
+              Built on Research
+            </p>
             <h2 className="text-3xl md:text-4xl font-bold text-[var(--text-primary)] mb-6 leading-tight">
               Grounded in Learning Science
             </h2>
             <div className="space-y-5">
               <div>
-                <h3 className="font-bold text-[var(--text-primary)] mb-1">Bayesian Knowledge Tracing (BKT)</h3>
+                <h3 className="font-bold text-[var(--text-primary)] mb-1">
+                  Bayesian Knowledge Tracing (BKT)
+                </h3>
                 <p className="text-[var(--text-muted)] text-sm leading-relaxed">
-                  RinKuzu models the probability you&apos;ve mastered each concept using BKT — the same framework used in intelligent tutoring systems. Every practice response updates your mastery estimate in real time.
+                  RinKuzu models the probability you&apos;ve mastered each concept using BKT — the
+                  same framework used in intelligent tutoring systems. Every practice response
+                  updates your mastery estimate in real time.
                 </p>
               </div>
               <div>
-                <h3 className="font-bold text-[var(--text-primary)] mb-1">Bloom&apos;s Taxonomy (1956)</h3>
+                <h3 className="font-bold text-[var(--text-primary)] mb-1">
+                  Bloom&apos;s Taxonomy (1956)
+                </h3>
                 <p className="text-[var(--text-muted)] text-sm leading-relaxed">
-                  Our question generation targets all six cognitive levels. This ensures learners develop both foundational recall and higher-order thinking — the combination that leads to lasting retention.
+                  Our question generation targets all six cognitive levels. This ensures learners
+                  develop both foundational recall and higher-order thinking — the combination that
+                  leads to lasting retention.
                 </p>
               </div>
               <div>
                 <h3 className="font-bold text-[var(--text-primary)] mb-1">Knowledge Graphs</h3>
                 <p className="text-[var(--text-muted)] text-sm leading-relaxed">
-                  By modeling concepts as nodes and prerequisite relationships as edges, RinKuzu can recommend what to study next with full awareness of what knowledge must come first.
+                  By modeling concepts as nodes and prerequisite relationships as edges, RinKuzu can
+                  recommend what to study next with full awareness of what knowledge must come
+                  first.
                 </p>
               </div>
             </div>
@@ -209,7 +243,9 @@ export default async function AboutPage({ params }: Props) {
       {/* CTA */}
       <section className="py-16 md:py-20 bg-[var(--bg-section)]">
         <div className="max-w-2xl mx-auto px-6 text-center space-y-6">
-          <h2 className="text-3xl md:text-4xl font-bold text-[var(--text-primary)]">Ready to Start Learning?</h2>
+          <h2 className="text-3xl md:text-4xl font-bold text-[var(--text-primary)]">
+            Ready to Start Learning?
+          </h2>
           <p className="text-[var(--text-muted)] text-lg">
             Join thousands of students and teachers who are mastering subjects faster with RinKuzu.
           </p>

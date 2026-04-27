@@ -3,6 +3,7 @@
 ## 1. Reward API Routes
 
 ### 1.1. Calculate Quiz Reward
+
 ```typescript
 // app/api/rewards/calculate/route.ts
 import { NextRequest, NextResponse } from 'next/server';
@@ -14,19 +15,13 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
     const { quizId, timeRange = 'daily' } = await request.json();
-    
+
     if (!quizId) {
-      return NextResponse.json(
-        { success: false, error: 'Quiz ID is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, error: 'Quiz ID is required' }, { status: 400 });
     }
 
     const rewardService = new RewardService();
@@ -34,20 +29,20 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      data: rewardData
+      data: rewardData,
     });
-
   } catch (error: any) {
     console.error('Calculate reward error:', error);
     return NextResponse.json(
       { success: false, error: error.message || 'Failed to calculate reward' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
 ```
 
 ### 1.2. Process All Rewards (Admin)
+
 ```typescript
 // app/api/admin/rewards/process/route.ts
 import { NextRequest, NextResponse } from 'next/server';
@@ -59,10 +54,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user || (session.user as any).role !== 'admin') {
-      return NextResponse.json(
-        { success: false, error: 'Admin access required' },
-        { status: 403 }
-      );
+      return NextResponse.json({ success: false, error: 'Admin access required' }, { status: 403 });
     }
 
     const { timeRange = 'daily' } = await request.json();
@@ -72,20 +64,20 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: `Rewards processed successfully for ${timeRange}`
+      message: `Rewards processed successfully for ${timeRange}`,
     });
-
   } catch (error: any) {
     console.error('Process rewards error:', error);
     return NextResponse.json(
       { success: false, error: error.message || 'Failed to process rewards' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
 ```
 
 ### 1.3. Get User Rewards
+
 ```typescript
 // app/api/user/rewards/route.ts
 import { NextRequest, NextResponse } from 'next/server';
@@ -98,10 +90,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
     await connectDB();
@@ -124,7 +113,7 @@ export async function GET(request: NextRequest) {
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit),
-      Reward.countDocuments(filter)
+      Reward.countDocuments(filter),
     ]);
 
     const totalPages = Math.ceil(total / limit);
@@ -138,16 +127,12 @@ export async function GET(request: NextRequest) {
         totalItems: total,
         itemsPerPage: limit,
         hasNextPage: page < totalPages,
-        hasPrevPage: page > 1
-      }
+        hasPrevPage: page > 1,
+      },
     });
-
   } catch (error: any) {
     console.error('Get user rewards error:', error);
-    return NextResponse.json(
-      { success: false, error: 'Failed to fetch rewards' },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: 'Failed to fetch rewards' }, { status: 500 });
   }
 }
 ```
@@ -155,6 +140,7 @@ export async function GET(request: NextRequest) {
 ## 2. Fraud Detection API Routes
 
 ### 2.1. Get Fraud Analytics (Admin)
+
 ```typescript
 // app/api/admin/fraud-analytics/route.ts
 import { NextRequest, NextResponse } from 'next/server';
@@ -166,10 +152,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user || (session.user as any).role !== 'admin') {
-      return NextResponse.json(
-        { success: false, error: 'Admin access required' },
-        { status: 403 }
-      );
+      return NextResponse.json({ success: false, error: 'Admin access required' }, { status: 403 });
     }
 
     const { searchParams } = new URL(request.url);
@@ -180,14 +163,19 @@ export async function GET(request: NextRequest) {
     const patterns = await auditLogService.getSuspiciousPatterns(timeRange as any);
 
     // Calculate summary stats
-    const totalFlagged = analytics.reduce((sum, day) => 
-      sum + day.actions.filter((a: any) => a.outcome === 'flagged').reduce((s, a) => s + a.count, 0), 0
+    const totalFlagged = analytics.reduce(
+      (sum, day) =>
+        sum +
+        day.actions.filter((a: any) => a.outcome === 'flagged').reduce((s, a) => s + a.count, 0),
+      0,
     );
 
-    const fraudRate = analytics.length > 0 ? 
-      (totalFlagged / analytics.reduce((sum, day) => 
-        sum + day.actions.reduce((s, a) => s + a.count, 0), 0
-      )) * 100 : 0;
+    const fraudRate =
+      analytics.length > 0
+        ? (totalFlagged /
+            analytics.reduce((sum, day) => sum + day.actions.reduce((s, a) => s + a.count, 0), 0)) *
+          100
+        : 0;
 
     return NextResponse.json({
       success: true,
@@ -198,22 +186,22 @@ export async function GET(request: NextRequest) {
           totalFlagged,
           fraudRate: Math.round(fraudRate * 100) / 100,
           suspiciousIPs: patterns.length,
-          timeRange
-        }
-      }
+          timeRange,
+        },
+      },
     });
-
   } catch (error: any) {
     console.error('Get fraud analytics error:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to fetch fraud analytics' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
 ```
 
 ### 2.2. Get Suspicious Patterns (Admin)
+
 ```typescript
 // app/api/admin/fraud-patterns/route.ts
 import { NextRequest, NextResponse } from 'next/server';
@@ -225,10 +213,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user || (session.user as any).role !== 'admin') {
-      return NextResponse.json(
-        { success: false, error: 'Admin access required' },
-        { status: 403 }
-      );
+      return NextResponse.json({ success: false, error: 'Admin access required' }, { status: 403 });
     }
 
     const { searchParams } = new URL(request.url);
@@ -239,14 +224,13 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      data: patterns
+      data: patterns,
     });
-
   } catch (error: any) {
     console.error('Get fraud patterns error:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to fetch fraud patterns' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -255,6 +239,7 @@ export async function GET(request: NextRequest) {
 ## 3. Admin Review API Routes
 
 ### 3.1. Get Pending Reward Reviews (Admin)
+
 ```typescript
 // app/api/admin/reward-reviews/route.ts
 import { NextRequest, NextResponse } from 'next/server';
@@ -267,10 +252,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user || (session.user as any).role !== 'admin') {
-      return NextResponse.json(
-        { success: false, error: 'Admin access required' },
-        { status: 403 }
-      );
+      return NextResponse.json({ success: false, error: 'Admin access required' }, { status: 403 });
     }
 
     await connectDB();
@@ -290,7 +272,7 @@ export async function GET(request: NextRequest) {
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit),
-      Reward.countDocuments({ status })
+      Reward.countDocuments({ status }),
     ]);
 
     const totalPages = Math.ceil(total / limit);
@@ -304,21 +286,21 @@ export async function GET(request: NextRequest) {
         totalItems: total,
         itemsPerPage: limit,
         hasNextPage: page < totalPages,
-        hasPrevPage: page > 1
-      }
+        hasPrevPage: page > 1,
+      },
     });
-
   } catch (error: any) {
     console.error('Get reward reviews error:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to fetch reward reviews' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
 ```
 
 ### 3.2. Review Reward (Admin)
+
 ```typescript
 // app/api/admin/reward-reviews/[id]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
@@ -328,46 +310,34 @@ import connectDB from '@/lib/mongoose';
 import Reward from '@/models/Reward';
 import User from '@/models/User';
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user || (session.user as any).role !== 'admin') {
-      return NextResponse.json(
-        { success: false, error: 'Admin access required' },
-        { status: 403 }
-      );
+      return NextResponse.json({ success: false, error: 'Admin access required' }, { status: 403 });
     }
 
     const { action, notes } = await request.json();
-    
+
     if (!['approve', 'reject'].includes(action)) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid action' },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, error: 'Invalid action' }, { status: 400 });
     }
 
     await connectDB();
 
     const reward = await Reward.findById(params.id);
     if (!reward) {
-      return NextResponse.json(
-        { success: false, error: 'Reward not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ success: false, error: 'Reward not found' }, { status: 404 });
     }
 
     const newStatus = action === 'approve' ? 'approved' : 'rejected';
-    
+
     // Update reward status
     await Reward.findByIdAndUpdate(params.id, {
       status: newStatus,
       reviewedBy: (session.user as any).id,
       reviewedAt: new Date(),
-      reviewNotes: notes
+      reviewNotes: notes,
     });
 
     // If approved, update user rewards
@@ -375,22 +345,18 @@ export async function POST(
       await User.findByIdAndUpdate(reward.userId, {
         $inc: {
           'rewards.totalPoints': reward.actualReward,
-          'rewards.earnedPoints': reward.actualReward
-        }
+          'rewards.earnedPoints': reward.actualReward,
+        },
       });
     }
 
     return NextResponse.json({
       success: true,
-      message: `Reward ${action}d successfully`
+      message: `Reward ${action}d successfully`,
     });
-
   } catch (error: any) {
     console.error('Review reward error:', error);
-    return NextResponse.json(
-      { success: false, error: 'Failed to review reward' },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: 'Failed to review reward' }, { status: 500 });
   }
 }
 ```
@@ -398,6 +364,7 @@ export async function POST(
 ## 4. Enhanced Quiz Attempt API
 
 ### 4.1. Submit Quiz Attempt with Fraud Detection
+
 ```typescript
 // app/api/quizzes/[slug]/attempt/route.ts (Updated)
 import { NextRequest, NextResponse } from 'next/server';
@@ -408,18 +375,15 @@ import { FraudDetectionService } from '@/services/fraud/FraudDetectionService';
 import { AuditLogService } from '@/services/logging/AuditLogService';
 import { generateSessionId, generateRequestId } from '@/lib/utils';
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { slug: string } }
-) {
+export async function POST(request: NextRequest, { params }: { params: { slug: string } }) {
   try {
     const session = await getServerSession(authOptions);
-    const { answers, timeSpent, timePerQuestion, answerChanges, mouseMovements, keyboardPatterns } = await request.json();
+    const { answers, timeSpent, timePerQuestion, answerChanges, mouseMovements, keyboardPatterns } =
+      await request.json();
 
     // Get client IP and user agent
-    const ipAddress = request.headers.get('x-forwarded-for') || 
-                     request.headers.get('x-real-ip') || 
-                     'unknown';
+    const ipAddress =
+      request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
     const userAgent = request.headers.get('user-agent') || 'unknown';
 
     // Generate session and request IDs
@@ -435,7 +399,7 @@ export async function POST(
       params.slug,
       answers,
       session,
-      session?.user?.email
+      session?.user?.email,
     );
 
     if (!attemptResult.success) {
@@ -447,7 +411,7 @@ export async function POST(
       quizId: attemptResult.data.quizId,
       userId: session?.user?.id || 'anonymous',
       userTrustScore: 50, // Default for anonymous users
-      userAge: 0 // Default for anonymous users
+      userAge: 0, // Default for anonymous users
     });
 
     // Determine fraud flags
@@ -478,7 +442,7 @@ export async function POST(
       fraudScore,
       fraudFlags,
       isFlagged: fraudScore > 70,
-      flaggedReason: fraudFlags.length > 0 ? fraudFlags.join(', ') : undefined
+      flaggedReason: fraudFlags.length > 0 ? fraudFlags.join(', ') : undefined,
     });
 
     await attempt.save();
@@ -501,7 +465,7 @@ export async function POST(
       userAgent,
       fraudScore,
       fraudFlags,
-      outcome: fraudScore > 70 ? 'flagged' : 'success'
+      outcome: fraudScore > 70 ? 'flagged' : 'success',
     });
 
     return NextResponse.json({
@@ -510,15 +474,14 @@ export async function POST(
         ...attemptResult.data,
         fraudScore,
         fraudFlags,
-        isFlagged: fraudScore > 70
-      }
+        isFlagged: fraudScore > 70,
+      },
     });
-
   } catch (error: any) {
     console.error('Submit quiz attempt error:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to submit quiz attempt' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -527,6 +490,7 @@ export async function POST(
 ## 5. User Dashboard API Routes
 
 ### 5.1. Get User Reward Stats
+
 ```typescript
 // app/api/user/reward-stats/route.ts
 import { NextRequest, NextResponse } from 'next/server';
@@ -540,20 +504,14 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
     await connectDB();
 
     const user = await User.findById((session.user as any).id);
     if (!user) {
-      return NextResponse.json(
-        { success: false, error: 'User not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ success: false, error: 'User not found' }, { status: 404 });
     }
 
     // Get reward statistics
@@ -561,7 +519,7 @@ export async function GET(request: NextRequest) {
       Reward.countDocuments({ userId: user._id }),
       Reward.countDocuments({ userId: user._id, status: 'pending_review' }),
       Reward.countDocuments({ userId: user._id, status: 'approved' }),
-      Reward.countDocuments({ userId: user._id, status: 'blocked' })
+      Reward.countDocuments({ userId: user._id, status: 'blocked' }),
     ]);
 
     // Get recent rewards
@@ -581,29 +539,29 @@ export async function GET(request: NextRequest) {
           tierMultiplier: user.rewards.tierMultiplier,
           trustScore: user.trustScore,
           fraudRiskScore: user.fraudFlags.riskScore,
-          isSuspended: user.fraudFlags.isSuspended
+          isSuspended: user.fraudFlags.isSuspended,
         },
         stats: {
           totalRewards,
           pendingRewards,
           approvedRewards,
-          blockedRewards
+          blockedRewards,
         },
-        recentRewards
-      }
+        recentRewards,
+      },
     });
-
   } catch (error: any) {
     console.error('Get user reward stats error:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to fetch reward stats' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
 ```
 
 ### 5.2. Get Quiz Performance
+
 ```typescript
 // app/api/user/quiz-performance/route.ts
 import { NextRequest, NextResponse } from 'next/server';
@@ -616,10 +574,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
     await connectDB();
@@ -636,7 +591,7 @@ export async function GET(request: NextRequest) {
         .sort({ 'rewardStats.totalAttempts': -1 })
         .skip(skip)
         .limit(limit),
-      Quiz.countDocuments({ author: (session.user as any).id, status: 'published' })
+      Quiz.countDocuments({ author: (session.user as any).id, status: 'published' }),
     ]);
 
     const totalPages = Math.ceil(total / limit);
@@ -650,15 +605,14 @@ export async function GET(request: NextRequest) {
         totalItems: total,
         itemsPerPage: limit,
         hasNextPage: page < totalPages,
-        hasPrevPage: page > 1
-      }
+        hasPrevPage: page > 1,
+      },
     });
-
   } catch (error: any) {
     console.error('Get quiz performance error:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to fetch quiz performance' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -667,6 +621,7 @@ export async function GET(request: NextRequest) {
 ## 6. Client-side Tracking
 
 ### 6.1. Client Logging Service
+
 ```typescript
 // lib/clientLogging.ts
 export class ClientLoggingService {
@@ -715,7 +670,7 @@ export class ClientLoggingService {
       mouseMovements: this.mouseMovements.slice(-100), // Keep last 100 movements
       keyboardPatterns: this.keyboardPatterns.slice(-50), // Keep last 50 patterns
       scrollPatterns: this.scrollPatterns.slice(-20), // Keep last 20 patterns
-      timeSpent: Date.now() - this.startTime
+      timeSpent: Date.now() - this.startTime,
     };
   }
 
@@ -725,7 +680,7 @@ export class ClientLoggingService {
     ctx!.textBaseline = 'top';
     ctx!.font = '14px Arial';
     ctx!.fillText('Device fingerprint', 2, 2);
-    
+
     const fingerprint = [
       navigator.userAgent,
       navigator.language,
@@ -733,7 +688,7 @@ export class ClientLoggingService {
       new Date().getTimezoneOffset(),
       canvas.toDataURL(),
     ].join('|');
-    
+
     return btoa(fingerprint).slice(0, 32);
   }
 
@@ -745,4 +700,4 @@ export class ClientLoggingService {
     this.startTime = Date.now();
   }
 }
-``` 
+```

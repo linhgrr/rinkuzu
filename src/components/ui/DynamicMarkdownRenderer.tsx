@@ -14,5 +14,5 @@ export const DynamicMarkdownRenderer = dynamic(
   {
     loading: () => <MarkdownSkeleton />,
     ssr: true, // Enable SSR for SEO
-  }
+  },
 );

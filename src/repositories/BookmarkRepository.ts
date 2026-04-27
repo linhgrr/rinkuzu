@@ -1,36 +1,39 @@
-import connectDB from '@/lib/mongoose'
-import Bookmark from '@/models/Bookmark'
-import { IBookmark, IBookmarkRepository } from '@/interfaces/repositories/IBookmarkRepository'
+import connectDB from '@/lib/mongoose';
+import Bookmark from '@/models/Bookmark';
+import { IBookmark, IBookmarkRepository } from '@/interfaces/repositories/IBookmarkRepository';
 
 export class BookmarkRepository implements IBookmarkRepository {
-  async findByUserEmail(userEmail: string, options?: {
-    page?: number
-    limit?: number
-  }): Promise<{
-    bookmarks: IBookmark[]
+  async findByUserEmail(
+    userEmail: string,
+    options?: {
+      page?: number;
+      limit?: number;
+    },
+  ): Promise<{
+    bookmarks: IBookmark[];
     pagination: {
-      currentPage: number
-      totalPages: number
-      totalItems: number
-      itemsPerPage: number
-      hasNextPage: boolean
-      hasPrevPage: boolean
-    }
+      currentPage: number;
+      totalPages: number;
+      totalItems: number;
+      itemsPerPage: number;
+      hasNextPage: boolean;
+      hasPrevPage: boolean;
+    };
   }> {
-    await connectDB()
-    
-    const page = options?.page || 1
-    const limit = options?.limit || 10
-    const skip = (page - 1) * limit
+    await connectDB();
 
-    const bookmarks = await Bookmark.find({ userEmail })
+    const page = options?.page || 1;
+    const limit = options?.limit || 10;
+    const skip = (page - 1) * limit;
+
+    const bookmarks = (await Bookmark.find({ userEmail })
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
-      .lean() as unknown as IBookmark[]
+      .lean()) as unknown as IBookmark[];
 
-    const totalItems = await Bookmark.countDocuments({ userEmail })
-    const totalPages = Math.ceil(totalItems / limit)
+    const totalItems = await Bookmark.countDocuments({ userEmail });
+    const totalPages = Math.ceil(totalItems / limit);
 
     return {
       bookmarks,
@@ -40,43 +43,47 @@ export class BookmarkRepository implements IBookmarkRepository {
         totalItems,
         itemsPerPage: limit,
         hasNextPage: page < totalPages,
-        hasPrevPage: page > 1
-      }
-    }
+        hasPrevPage: page > 1,
+      },
+    };
   }
 
-  async findByUserAndQuiz(userEmail: string, quizSlug: string, questionIndex: number): Promise<IBookmark | null> {
-    await connectDB()
-    return await Bookmark.findOne({
+  async findByUserAndQuiz(
+    userEmail: string,
+    quizSlug: string,
+    questionIndex: number,
+  ): Promise<IBookmark | null> {
+    await connectDB();
+    return (await Bookmark.findOne({
       userEmail,
       'quiz.slug': quizSlug,
-      questionIndex
-    }).lean() as unknown as IBookmark | null
+      questionIndex,
+    }).lean()) as unknown as IBookmark | null;
   }
 
   async create(bookmarkData: Partial<IBookmark>): Promise<IBookmark> {
-    await connectDB()
-    const bookmark = new Bookmark(bookmarkData)
-    return await bookmark.save() as unknown as IBookmark
+    await connectDB();
+    const bookmark = new Bookmark(bookmarkData);
+    return (await bookmark.save()) as unknown as IBookmark;
   }
 
   async deleteById(id: string): Promise<boolean> {
-    await connectDB()
-    const result = await Bookmark.findByIdAndDelete(id)
-    return !!result
+    await connectDB();
+    const result = await Bookmark.findByIdAndDelete(id);
+    return !!result;
   }
 
   async deleteByIdAndUser(id: string, userEmail: string): Promise<boolean> {
-    await connectDB()
+    await connectDB();
     const result = await Bookmark.findOneAndDelete({
       _id: id,
-      userEmail
-    })
-    return !!result
+      userEmail,
+    });
+    return !!result;
   }
 
   async count(userEmail: string): Promise<number> {
-    await connectDB()
-    return await Bookmark.countDocuments({ userEmail })
+    await connectDB();
+    return await Bookmark.countDocuments({ userEmail });
   }
-} 
+}

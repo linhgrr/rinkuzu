@@ -10,7 +10,9 @@ declare module 'pdfjs-dist' {
 
   export interface PDFPageProxy {
     getViewport(options: { scale: number }): PDFPageViewport;
-    render(options: { canvasContext: CanvasRenderingContext2D; viewport: PDFPageViewport }): { promise: Promise<void> };
+    render(options: { canvasContext: CanvasRenderingContext2D; viewport: PDFPageViewport }): {
+      promise: Promise<void>;
+    };
   }
 
   export interface PDFPageViewport {
@@ -28,4 +30,4 @@ declare module 'pdfjs-dist' {
 
   export function getDocument(options: GetDocumentOptions): GetDocumentResult;
   export const GlobalWorkerOptions: GlobalWorkerOptions;
-} 
+}

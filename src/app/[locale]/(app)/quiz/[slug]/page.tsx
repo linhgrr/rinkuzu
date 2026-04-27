@@ -17,13 +17,9 @@ import {
   HiOutlineUser,
   HiOutlineMail,
   HiOutlineExclamationCircle,
-  HiOutlineClock,
   HiOutlineDocumentText,
   HiOutlineLightningBolt,
-  HiOutlineChatAlt,
-  HiOutlineChevronLeft,
-  HiOutlineChevronRight,
-  HiOutlineRefresh
+  HiOutlineRefresh,
 } from '@/components/icons';
 import { DynamicMarkdownRenderer as MarkdownRenderer } from '@/components/ui/DynamicMarkdownRenderer';
 import { QuestionImage, OptionImage } from '@/components/ui/ImageDisplay';
@@ -85,24 +81,26 @@ function createQuizPlayerData(rawQuiz: IQuiz, log: (...args: unknown[]) => void)
       question.options.map((option, originalIndex) => ({
         option,
         originalIndex,
-      }))
+      })),
     );
 
     questionIndexMap[questionIndex] = item.originalIndex;
 
-    const shuffledOptions = optionsWithIndex.map(optionItem => optionItem.option);
-    const optionIndexMap = optionsWithIndex.map(optionItem => optionItem.originalIndex);
+    const shuffledOptions = optionsWithIndex.map((optionItem) => optionItem.option);
+    const optionIndexMap = optionsWithIndex.map((optionItem) => optionItem.originalIndex);
     const optionImages = question.optionImages
-      ? optionsWithIndex.map(optionItem => question.optionImages?.[optionItem.originalIndex])
+      ? optionsWithIndex.map((optionItem) => question.optionImages?.[optionItem.originalIndex])
       : undefined;
 
-    log(`\n=== Processing Question ${questionIndex + 1} (originally Q${item.originalIndex + 1}) ===`);
+    log(
+      `\n=== Processing Question ${questionIndex + 1} (originally Q${item.originalIndex + 1}) ===`,
+    );
     log('Original options:', question.options);
     log('Final shuffled options:', shuffledOptions);
     log('Option index map (new -> original):', optionIndexMap);
     log(
       'Was actually shuffled:',
-      !question.options.every((option, index) => option === shuffledOptions[index])
+      !question.options.every((option, index) => option === shuffledOptions[index]),
     );
 
     return {
@@ -132,9 +130,9 @@ function createQuizPlayerData(rawQuiz: IQuiz, log: (...args: unknown[]) => void)
     throw new Error(`Quiz data validation failed: ${validationErrors.join(', ')}`);
   }
 
-  const initialAnswers: QuizAnswer[] = questions.map(question => (
-    question.type === 'multiple' ? [] : -1
-  ));
+  const initialAnswers: QuizAnswer[] = questions.map((question) =>
+    question.type === 'multiple' ? [] : -1,
+  );
 
   log('Initial answers (based on shuffled questions):', initialAnswers);
   log('\n=== QUIZ LOADED ===');
@@ -161,7 +159,11 @@ function isQuestionAnswered(question: ShuffledQuizQuestion, answer: QuizAnswer):
   return Array.isArray(answer) && answer.length > 0;
 }
 
-function mapAnswersToOriginalOrder(quiz: QuizPlayerQuiz, answers: QuizAnswer[], log: (...args: unknown[]) => void) {
+function mapAnswersToOriginalOrder(
+  quiz: QuizPlayerQuiz,
+  answers: QuizAnswer[],
+  log: (...args: unknown[]) => void,
+) {
   log('=== SUBMITTING QUIZ ===');
   log('userAnswers:', answers);
   log('questionIndexMap:', quiz.questionIndexMap);
@@ -188,13 +190,17 @@ function mapAnswersToOriginalOrder(quiz: QuizPlayerQuiz, answers: QuizAnswer[], 
       throw new Error(`Invalid answer type for multiple choice question ${index + 1}`);
     }
 
-    answer.forEach(answerIndex => {
-      if (typeof answerIndex !== 'number' || answerIndex < 0 || answerIndex >= optionIndexMap.length) {
+    answer.forEach((answerIndex) => {
+      if (
+        typeof answerIndex !== 'number' ||
+        answerIndex < 0 ||
+        answerIndex >= optionIndexMap.length
+      ) {
         throw new Error(`Invalid answer for question ${index + 1}`);
       }
     });
 
-    return answer.map(answerIndex => optionIndexMap[answerIndex]);
+    return answer.map((answerIndex) => optionIndexMap[answerIndex]);
   });
 
   if (quiz.questionIndexMap.length !== convertedAnswers.length) {
@@ -219,7 +225,7 @@ function mapAnswersToOriginalOrder(quiz: QuizPlayerQuiz, answers: QuizAnswer[], 
 const DEBUG_QUIZ_FLOW = process.env.NODE_ENV !== 'production' && false;
 const debugLog = (...args: unknown[]) => {
   if (DEBUG_QUIZ_FLOW) {
-    console.log(...args);
+    console.warn(...args);
   }
 };
 
@@ -254,8 +260,6 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
   // Discussion states
   const [isDiscussionCollapsed, setIsDiscussionCollapsed] = useState(true);
   const [showMobileDiscussion, setShowMobileDiscussion] = useState(false);
-
-
 
   // Premium required modal
   const [showPremiumModal, setShowPremiumModal] = useState(false);
@@ -328,7 +332,7 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
 
       if (answerExists) {
         // Remove answer
-        newAnswers[currentQuestionIndex] = currentAnswers.filter(a => a !== answerIndex);
+        newAnswers[currentQuestionIndex] = currentAnswers.filter((a) => a !== answerIndex);
       } else {
         // Add answer
         newAnswers[currentQuestionIndex] = [...currentAnswers, answerIndex].sort();
@@ -349,39 +353,50 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
     }
   };
 
-  const submitQuizAnswers = useCallback(async (answersToSubmit: QuizAnswer[]) => {
-    if (!quiz) return;
+  const submitQuizAnswers = useCallback(
+    async (answersToSubmit: QuizAnswer[]) => {
+      if (!quiz) return;
 
-    const payload = {
-      answers: mapAnswersToOriginalOrder(quiz, answersToSubmit, debugLog),
-      userEmail: session?.user?.email || userEmail.trim(),
-    };
+      const payload = {
+        answers: mapAnswersToOriginalOrder(quiz, answersToSubmit, debugLog),
+        userEmail: session?.user?.email || userEmail.trim(),
+      };
 
-    debugLog('payload:', payload);
+      debugLog('payload:', payload);
 
-    const data = await fetchApiSuccess<{ attemptId: string; score: number }>(`/api/quiz/${params.slug}/attempt`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
-    });
+      const data = await fetchApiSuccess<{ attemptId: string; score: number }>(
+        `/api/quiz/${params.slug}/attempt`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload),
+        },
+      );
 
-    router.push(`/quiz/${params.slug}/result?attemptId=${data.data.attemptId}&score=${data.data.score}`);
-  }, [params.slug, quiz, router, session?.user?.email, userEmail]);
+      router.push(
+        `/quiz/${params.slug}/result?attemptId=${data.data.attemptId}&score=${data.data.score}`,
+      );
+    },
+    [params.slug, quiz, router, session?.user?.email, userEmail],
+  );
 
   // Handle quiz completion for mobile
-  const handleQuizComplete = useCallback(async (answers: QuizAnswer[]) => {
-    setSubmitting(true);
-    try {
-      await submitQuizAnswers(answers);
-    } catch (error) {
-      console.error('Quiz submission error:', error);
-      setError(error instanceof Error ? error.message : 'Failed to submit quiz');
-    } finally {
-      setSubmitting(false);
-    }
-  }, [submitQuizAnswers]);
+  const handleQuizComplete = useCallback(
+    async (answers: QuizAnswer[]) => {
+      setSubmitting(true);
+      try {
+        await submitQuizAnswers(answers);
+      } catch (error) {
+        console.error('Quiz submission error:', error);
+        setError(error instanceof Error ? error.message : 'Failed to submit quiz');
+      } finally {
+        setSubmitting(false);
+      }
+    },
+    [submitQuizAnswers],
+  );
 
   const completeSubmit = async () => {
     if (!quiz) return;
@@ -423,17 +438,20 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
 
     try {
       const currentQuestion = quiz.questions[currentQuestionIndex];
-      const explanation = await streamQuizAI({
-        question: currentQuestion.question,
-        options: currentQuestion.options,
-        userQuestion: userQuestion.trim() || undefined,
-        questionImage: currentQuestion.questionImage,
-        optionImages: currentQuestion.optionImages,
-      }, {
-        onContent: (_, fullContent) => {
-          setAIExplanation(fullContent);
+      const explanation = await streamQuizAI(
+        {
+          question: currentQuestion.question,
+          options: currentQuestion.options,
+          userQuestion: userQuestion.trim() || undefined,
+          questionImage: currentQuestion.questionImage,
+          optionImages: currentQuestion.optionImages,
         },
-      });
+        {
+          onContent: (_, fullContent) => {
+            setAIExplanation(fullContent);
+          },
+        },
+      );
 
       setAIExplanation(explanation);
     } catch (error: any) {
@@ -467,8 +485,6 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
     router.push('/');
   };
 
-
-
   if (loading) {
     return (
       <div className="min-h-screen">
@@ -491,7 +507,10 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
       <div className="min-h-screen">
         <Navigation />
         <div className="flex items-center justify-center min-h-[70vh] px-4">
-          <Card variant="glass" className="max-w-md w-full backdrop-blur-xl border-white/30 shadow-xl">
+          <Card
+            variant="glass"
+            className="max-w-md w-full backdrop-blur-xl border-white/30 shadow-xl"
+          >
             <CardHeader className="text-center">
               <div className="inline-flex items-center justify-center p-3 bg-red-100 rounded-2xl mb-4 mx-auto w-fit">
                 <HiOutlineExclamationCircle className="w-6 h-6 text-red-600" />
@@ -519,7 +538,10 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
       <div className="min-h-screen">
         <Navigation />
         <div className="flex items-center justify-center min-h-[70vh] px-4">
-          <Card variant="glass" className="max-w-md w-full backdrop-blur-xl border-white/30 shadow-xl">
+          <Card
+            variant="glass"
+            className="max-w-md w-full backdrop-blur-xl border-white/30 shadow-xl"
+          >
             <CardHeader className="text-center">
               <div className="inline-flex items-center justify-center p-3 bg-gradient-to-br from-green-500/10 to-brand-trust/10 rounded-2xl mb-4 mx-auto w-fit">
                 <HiOutlineDocumentText className="w-6 h-6 text-brand-trust" />
@@ -545,15 +567,16 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
       <div className="min-h-screen">
         <Navigation />
         <div className="flex items-center justify-center min-h-[80vh] px-4">
-          <Card variant="glass" className="max-w-lg w-full backdrop-blur-xl border-white/30 shadow-xl animate-fadeInUp">
+          <Card
+            variant="glass"
+            className="max-w-lg w-full backdrop-blur-xl border-white/30 shadow-xl animate-fadeInUp"
+          >
             <CardHeader className="text-center">
               <div className="inline-flex items-center justify-center p-3 bg-gradient-to-br from-green-500/10 to-brand-trust/10 rounded-2xl mb-4 mx-auto w-fit">
                 <HiOutlineDocumentText className="w-6 h-6 text-brand-trust" />
               </div>
               <CardTitle className="text-2xl text-neutral-900 mb-2">{quiz.title}</CardTitle>
-              {quiz.description && (
-                <p className="text-neutral-600">{quiz.description}</p>
-              )}
+              {quiz.description && <p className="text-neutral-600">{quiz.description}</p>}
             </CardHeader>
             <CardContent>
               <div className="space-y-6">
@@ -585,7 +608,10 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
                   <div className="text-center text-brand-trust">
                     <HiOutlineLightBulb className="w-6 h-6 mx-auto mb-2 text-brand-trust" />
                     <p className="text-sm font-medium">
-                      <Link href="/login" className="underline hover:text-green-700">{t('login')}</Link> {t('loginToTrack')}
+                      <Link href="/login" className="underline hover:text-green-700">
+                        {t('login')}
+                      </Link>{' '}
+                      {t('loginToTrack')}
                     </p>
                   </div>
                 </Card>
@@ -601,13 +627,9 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
                     placeholder={t('enterEmailAddress')}
                     required
                     variant="glass"
-                    icon={
-                      <HiOutlineMail className="w-5 h-5" />
-                    }
+                    icon={<HiOutlineMail className="w-5 h-5" />}
                   />
-                  <p className="mt-2 text-xs text-neutral-500">
-                    {t('weWillUseEmail')}
-                  </p>
+                  <p className="mt-2 text-xs text-neutral-500">{t('weWillUseEmail')}</p>
                 </div>
 
                 {/* Action Buttons */}
@@ -644,12 +666,12 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
   if (!quiz) return null;
 
   // Extract author name safely (can be string or IUser object)
-  const authorName = typeof quiz.author === 'string'
-    ? quiz.author
-    : (quiz.author as any)?.name || 'RinKuzu Community';
-  const categoryName = typeof quiz.category === 'string'
-    ? quiz.category
-    : (quiz.category as any)?.name || undefined;
+  const authorName =
+    typeof quiz.author === 'string'
+      ? quiz.author
+      : (quiz.author as any)?.name || 'RinKuzu Community';
+  const categoryName =
+    typeof quiz.category === 'string' ? quiz.category : (quiz.category as any)?.name || undefined;
 
   const currentQuestion = quiz.questions[currentQuestionIndex];
   const progress = Math.round(((currentQuestionIndex + 1) / quiz.questions.length) * 100);
@@ -671,7 +693,8 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
       />
 
       {/* Mobile Quiz Player */}
-      {isMobile && !showEmailInput && (
+      {isMobile &&
+        !showEmailInput &&
         (() => {
           const handleMobileComplete = (answers: Record<string, number | number[]>) => {
             const orderedAnswers: (number | number[])[] = quiz.questions.map((q: any) => {
@@ -694,445 +717,465 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
               onExit={() => router.push('/')}
             />
           );
-        })()
-      )}
+        })()}
 
       {/* Desktop Quiz Interface */}
       {!isMobile && (
-      <div className="min-h-screen">
-      {/* Quiz Header - Full screen experience without navigation */}
-      <div className="border-b border-neutral-200/50 bg-white/80 backdrop-blur-sm sticky top-0 z-40">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <Button
-                variant="outline"
-                onClick={openExitModal}
-                className="text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300"
-              >
-                <HiOutlineArrowLeft className="w-4 h-4 mr-2" />
-                {t('exitQuiz')}
-              </Button>
-              <div>
-                <h1 className="text-lg font-semibold text-neutral-900">{quiz.title}</h1>
-                <p className="text-sm">
-                  {session?.user?.email ? (
-                    <Badge variant="success" className="text-xs">
-                      <HiOutlineUser className="w-3 h-3 mr-1" />
-                      {session.user.email}
-                    </Badge>
-                  ) : (
-                    <Badge variant="default" className="text-xs">
-                      <HiOutlineMail className="w-3 h-3 mr-1" />
-                      {userEmail}
-                    </Badge>
-                  )}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              <ReportQuiz quizSlug={params.slug} quizTitle={quiz.title} />
-              <div className="text-right">
-                <div className="text-sm font-semibold text-neutral-700">
-                  {t('question')} {currentQuestionIndex + 1} {t('of', { ns: 'common' })} {quiz.questions.length}
-                </div>
-                <div className="text-xs text-neutral-500">
-                  {answeredQuestions} {t('of', { ns: 'common' })} {quiz.questions.length} {t('answered')}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Progress bar */}
-          <div className="mt-4">
-            <div className="flex items-center justify-between text-xs text-neutral-600 mb-2">
-              <span>{t('progress')}</span>
-              <span>{progress}% {t('complete')}</span>
-            </div>
-            <div className="bg-neutral-200 rounded-full h-3 overflow-hidden">
-              <div
-                className="bg-gradient-to-r from-brand-trust to-green-600 h-3 rounded-full transition-all duration-500 ease-out"
-                style={{ width: `${progress}%` }}
-              ></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Question with Discussion Panel */}
-      <main className={`${isDiscussionCollapsed ? 'max-w-4xl' : 'max-w-7xl'} mx-auto px-4 sm:px-6 lg:px-8 py-8 transition-all duration-300`}>
-        <div className="flex">
-          {/* Question Card */}
-          <div className={`flex-1 ${!isDiscussionCollapsed ? 'pr-6' : ''}`}>
-            <Card>
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <div className="text-xl font-semibold [&_p]:text-xl [&_p]:text-neutral-900 [&_p]:m-0">
-                      <MarkdownRenderer content={currentQuestion.question} />
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-2 ml-4">
-                    <Button
-                      variant="outline"
-                      onClick={openAIModal}
-                      className="text-brand-trust border-green-200 hover:bg-green-50 hover:border-green-300"
-                    >
-                      {t('askRinChan')}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        // On desktop, toggle the discussion panel
-                        if (window.innerWidth >= 768) {
-                          setIsDiscussionCollapsed(!isDiscussionCollapsed);
-                        } else {
-                          // On mobile, show the modal
-                          setShowMobileDiscussion(true);
-                        }
-                      }}
-                      className="text-brand-trust border-green-200 hover:bg-green-50 hover:border-green-300"
-                      title={t('discussion')}
-                    >
-                      {t('discussion')}
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Display question image if exists */}
-                {currentQuestion.questionImage && (
-                  <div className="mt-4">
-                    <QuestionImage
-                      src={currentQuestion.questionImage}
-                      alt={`Question ${currentQuestionIndex + 1} image`}
-                    />
-                  </div>
-                )}
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {currentQuestion.options.map((option, index) => {
-                    const currentAnswer = userAnswers[currentQuestionIndex];
-                    let isSelected = false;
-
-                    if (currentQuestion.type === 'single') {
-                      isSelected = currentAnswer === index;
-                    } else {
-                      // For multiple choice, ensure we have an array
-                      isSelected = Array.isArray(currentAnswer) && currentAnswer.includes(index);
-                    }
-
-                    return (
-                      <label
-                        key={index}
-                        className={`flex items-center p-4 rounded-lg border-2 cursor-pointer transition-colors ${isSelected
-                          ? 'border-green-500 bg-green-50'
-                          : 'border-neutral-200 hover:border-neutral-300'
-                          }`}
-                      >
-                        <input
-                          type={currentQuestion.type === 'single' ? 'radio' : 'checkbox'}
-                          name={`question-${currentQuestionIndex}`}
-                          value={index}
-                          checked={isSelected}
-                          onChange={() => selectAnswer(index)}
-                          className="sr-only"
-                        />
-                        <div className={`w-4 h-4 mr-3 flex items-center justify-center border-2 ${currentQuestion.type === 'single' ? 'rounded-full' : 'rounded'
-                          } ${isSelected
-                            ? 'border-green-500 bg-green-500'
-                            : 'border-neutral-300'
-                          }`}>
-                          {isSelected && (
-                            currentQuestion.type === 'single' ? (
-                              <div className="w-2 h-2 rounded-full bg-white"></div>
-                            ) : (
-                              <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                              </svg>
-                            )
-                          )}
-                        </div>
-                        <div className="flex-1">
-                          <div className="text-neutral-900 [&_p]:m-0 [&_p]:text-base [&_p]:text-neutral-900">
-                            <MarkdownRenderer content={option} />
-                          </div>
-                          {/* Display option image if exists */}
-                          {currentQuestion.optionImages?.[index] && (
-                            <div className="mt-2">
-                              <OptionImage
-                                src={currentQuestion.optionImages[index]!}
-                                alt={`Option ${String.fromCharCode(65 + index)} image`}
-                              />
-                            </div>
-                          )}
-                        </div>
-                      </label>
-                    );
-                  })}
-                </div>
-
-                {error && (
-                  <div className="mt-4 rounded-md bg-red-50 p-3">
-                    <div className="text-sm text-red-700">{error}</div>
-                  </div>
-                )}
-
-                {/* Navigation */}
-                <div className="flex justify-between items-center mt-8">
+        <div className="min-h-screen">
+          {/* Quiz Header - Full screen experience without navigation */}
+          <div className="border-b border-neutral-200/50 bg-white/80 backdrop-blur-sm sticky top-0 z-40">
+            <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
                   <Button
                     variant="outline"
-                    onClick={previousQuestion}
-                    disabled={currentQuestionIndex === 0}
+                    onClick={openExitModal}
+                    className="text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300"
                   >
-                    {t('previous')}
+                    <HiOutlineArrowLeft className="w-4 h-4 mr-2" />
+                    {t('exitQuiz')}
                   </Button>
-
-                  <div className="text-sm text-neutral-600">
-                    {currentQuestionIndex + 1} / {quiz.questions.length}
-                  </div>
-
-                  {currentQuestionIndex === quiz.questions.length - 1 ? (
-                    <Button
-                      onClick={submitQuiz}
-                      loading={submitting}
-                      className="bg-green-600 hover:bg-green-700"
-                    >
-                      {t('submitQuiz')}
-                    </Button>
-                  ) : (
-                    <Button
-                      onClick={nextQuestion}
-                      disabled={currentQuestionIndex === quiz.questions.length - 1}
-                    >
-                      {t('next')}
-                    </Button>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Question overview */}
-            <Card className="mt-6">
-              <CardHeader>
-                <CardTitle className="text-lg">{t('questionOverview')}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-10 gap-2">
-                  {quiz.questions.map((question, index) => {
-                    let isAnswered = false;
-                    const answer = userAnswers[index];
-
-                    if (question.type === 'single') {
-                      isAnswered = answer !== -1;
-                    } else {
-                      isAnswered = Array.isArray(answer) && answer.length > 0;
-                    }
-
-                    return (
-                      <button
-                        key={index}
-                        onClick={() => setCurrentQuestionIndex(index)}
-                        className={`w-8 h-8 rounded text-xs font-medium transition-colors ${index === currentQuestionIndex
-                          ? 'bg-brand-trust text-white'
-                          : isAnswered
-                            ? 'bg-green-100 text-green-800 border border-green-300'
-                            : 'bg-neutral-100 text-neutral-600 border border-neutral-300'
-                          }`}
-                      >
-                        {index + 1}
-                      </button>
-                    );
-                  })}
-                </div>
-                <div className="mt-4 flex items-center space-x-6 text-xs">
-                  <div className="flex items-center">
-                    <div className="w-3 h-3 bg-brand-trust rounded mr-2"></div>
-                    <span>{t('current')}</span>
-                  </div>
-                  <div className="flex items-center">
-                    <div className="w-3 h-3 bg-green-100 border border-green-300 rounded mr-2"></div>
-                    <span>{t('answered')}</span>
-                  </div>
-                  <div className="flex items-center">
-                    <div className="w-3 h-3 bg-neutral-100 border border-neutral-300 rounded mr-2"></div>
-                    <span>{t('notAnswered')}</span>
+                  <div>
+                    <h1 className="text-lg font-semibold text-neutral-900">{quiz.title}</h1>
+                    <p className="text-sm">
+                      {session?.user?.email ? (
+                        <Badge variant="success" className="text-xs">
+                          <HiOutlineUser className="w-3 h-3 mr-1" />
+                          {session.user.email}
+                        </Badge>
+                      ) : (
+                        <Badge variant="default" className="text-xs">
+                          <HiOutlineMail className="w-3 h-3 mr-1" />
+                          {userEmail}
+                        </Badge>
+                      )}
+                    </p>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Discussion Panel */}
-          <QuestionDiscussion
-            quizSlug={params.slug}
-            questionIndex={currentQuestionIndex}
-            isCollapsed={isDiscussionCollapsed}
-            onToggleCollapse={() => setIsDiscussionCollapsed(!isDiscussionCollapsed)}
-          />
-        </div>
-
-        {/* Mobile Discussion Modal */}
-        <Modal
-          isOpen={showMobileDiscussion}
-          onClose={() => setShowMobileDiscussion(false)}
-          title={`💬 ${t('discussion')}`}
-          size="large"
-          className="md:hidden"
-        >
-          <div className="h-96">
-            <QuestionDiscussion
-              quizSlug={params.slug}
-              questionIndex={currentQuestionIndex}
-              isCollapsed={false}
-              onToggleCollapse={() => setShowMobileDiscussion(false)}
-              isMobile={true}
-            />
-          </div>
-        </Modal>
-
-        {/* Exit Quiz Modal */}
-        <Modal
-          isOpen={showExitModal}
-          onClose={closeExitModal}
-          title={`⚠️ ${t('exitQuiz')}`}
-          size="small"
-        >
-          <div className="space-y-4">
-            <p className="text-neutral-700">
-              {t('exitQuizWarning')}
-            </p>
-
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-              <div className="flex items-start">
-                <svg className="w-5 h-5 text-yellow-600 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                </svg>
-                <div>
-                  <h4 className="text-sm font-medium text-yellow-800">{t('exitWarning')}</h4>
-                  <p className="text-sm text-yellow-700 mt-1">
-                    {t('exitWarningMessage', { answered: answeredQuestions, total: quiz.questions.length })}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex gap-3 pt-2">
-              <Button
-                variant="outline"
-                onClick={closeExitModal}
-                className="flex-1"
-              >
-                {t('continueQuiz')}
-              </Button>
-              <Button
-                onClick={exitQuiz}
-                className="flex-1 bg-red-600 hover:bg-red-700 text-white"
-              >
-                {t('exitQuiz')}
-              </Button>
-            </div>
-          </div>
-        </Modal>
-
-        {/* Ask AI Modal */}
-        <Modal
-          isOpen={showAIModal}
-          onClose={closeAIModal}
-          title={t('askRinChan')}
-          size="wide"
-        >
-          <div className="space-y-4">
-            {/* Current Question Display */}
-            <div className="bg-neutral-50 p-4 rounded-lg">
-              <h4 className="font-medium text-neutral-900 mb-2">{t('currentQuestion')}</h4>
-              <div className="text-sm text-neutral-700 [&_p]:mb-0 [&_p]:text-sm [&_p]:text-neutral-700">
-                {quiz && <MarkdownRenderer content={currentQuestion.question} />}
-              </div>
-              <div className="mt-2 space-y-1">
-                {quiz && currentQuestion.options.map((option, index) => (
-                  <div key={index} className="text-xs text-neutral-600 flex items-start space-x-2">
-                    <span className="mt-0.5">{String.fromCharCode(65 + index)}.</span>
-                    <div className="flex-1 [&_p]:m-0 [&_p]:text-xs [&_p]:text-neutral-600">
-                      <MarkdownRenderer content={option} />
+                <div className="flex items-center space-x-4">
+                  <ReportQuiz quizSlug={params.slug} quizTitle={quiz.title} />
+                  <div className="text-right">
+                    <div className="text-sm font-semibold text-neutral-700">
+                      {t('question')} {currentQuestionIndex + 1} {t('of', { ns: 'common' })}{' '}
+                      {quiz.questions.length}
                     </div>
-                    {currentQuestion.optionImages?.[index] && (
-                      <OptionImage src={currentQuestion.optionImages[index]!} alt={`Option ${index} image`} className="ml-1" />
-                    )}
+                    <div className="text-xs text-neutral-500">
+                      {answeredQuestions} {t('of', { ns: 'common' })} {quiz.questions.length}{' '}
+                      {t('answered')}
+                    </div>
                   </div>
-                ))}
-              </div>
-              {currentQuestion.questionImage && (
-                <div className="mt-3">
-                  <QuestionImage src={currentQuestion.questionImage} alt="Question img" />
                 </div>
-              )}
-            </div>
-
-            {/* User Question Input */}
-            <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-2">
-                {t('askSpecificQuestion')}
-              </label>
-              <Input
-                value={userQuestion}
-                onChange={(e) => setUserQuestion(e.target.value)}
-                placeholder={t('questionPlaceholder')}
-                className="w-full"
-              />
-              <p className="text-xs text-neutral-500 mt-1">
-                {t('leaveEmptyGeneral')}
-              </p>
-            </div>
-
-            {/* Ask Button */}
-            <Button
-              onClick={askAI}
-              loading={loadingAI}
-              disabled={loadingAI}
-              className="w-full bg-brand-trust hover:bg-brand-trust-hover text-white"
-            >
-              {loadingAI ? t('gettingExplanation') : t('getRinChanExplanation')}
-            </Button>
-
-            {/* AI Response */}
-            {aiError && (
-              <div className="rounded-md bg-red-50 p-3">
-                <div className="text-sm text-red-700">{aiError}</div>
               </div>
-            )}
 
-            {aiExplanation && (
-              <div className="rounded-md bg-green-50 p-4">
-                <h4 className="font-medium text-green-900 mb-3">{t('aiExplanation')}</h4>
-                <MarkdownRenderer
-                  content={aiExplanation}
-                  className="text-green-800"
+              {/* Progress bar */}
+              <div className="mt-4">
+                <div className="flex items-center justify-between text-xs text-neutral-600 mb-2">
+                  <span>{t('progress')}</span>
+                  <span>
+                    {progress}% {t('complete')}
+                  </span>
+                </div>
+                <div className="bg-neutral-200 rounded-full h-3 overflow-hidden">
+                  <div
+                    className="bg-gradient-to-r from-brand-trust to-green-600 h-3 rounded-full transition-all duration-500 ease-out"
+                    style={{ width: `${progress}%` }}
+                  ></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Question with Discussion Panel */}
+          <main
+            className={`${isDiscussionCollapsed ? 'max-w-4xl' : 'max-w-7xl'} mx-auto px-4 sm:px-6 lg:px-8 py-8 transition-all duration-300`}
+          >
+            <div className="flex">
+              {/* Question Card */}
+              <div className={`flex-1 ${!isDiscussionCollapsed ? 'pr-6' : ''}`}>
+                <Card>
+                  <CardHeader>
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <div className="text-xl font-semibold [&_p]:text-xl [&_p]:text-neutral-900 [&_p]:m-0">
+                          <MarkdownRenderer content={currentQuestion.question} />
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2 ml-4">
+                        <Button
+                          variant="outline"
+                          onClick={openAIModal}
+                          className="text-brand-trust border-green-200 hover:bg-green-50 hover:border-green-300"
+                        >
+                          {t('askRinChan')}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            // On desktop, toggle the discussion panel
+                            if (window.innerWidth >= 768) {
+                              setIsDiscussionCollapsed(!isDiscussionCollapsed);
+                            } else {
+                              // On mobile, show the modal
+                              setShowMobileDiscussion(true);
+                            }
+                          }}
+                          className="text-brand-trust border-green-200 hover:bg-green-50 hover:border-green-300"
+                          title={t('discussion')}
+                        >
+                          {t('discussion')}
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Display question image if exists */}
+                    {currentQuestion.questionImage && (
+                      <div className="mt-4">
+                        <QuestionImage
+                          src={currentQuestion.questionImage}
+                          alt={`Question ${currentQuestionIndex + 1} image`}
+                        />
+                      </div>
+                    )}
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {currentQuestion.options.map((option, index) => {
+                        const currentAnswer = userAnswers[currentQuestionIndex];
+                        let isSelected = false;
+
+                        if (currentQuestion.type === 'single') {
+                          isSelected = currentAnswer === index;
+                        } else {
+                          // For multiple choice, ensure we have an array
+                          isSelected =
+                            Array.isArray(currentAnswer) && currentAnswer.includes(index);
+                        }
+
+                        return (
+                          <label
+                            key={index}
+                            className={`flex items-center p-4 rounded-lg border-2 cursor-pointer transition-colors ${
+                              isSelected
+                                ? 'border-green-500 bg-green-50'
+                                : 'border-neutral-200 hover:border-neutral-300'
+                            }`}
+                          >
+                            <input
+                              type={currentQuestion.type === 'single' ? 'radio' : 'checkbox'}
+                              name={`question-${currentQuestionIndex}`}
+                              value={index}
+                              checked={isSelected}
+                              onChange={() => selectAnswer(index)}
+                              className="sr-only"
+                            />
+                            <div
+                              className={`w-4 h-4 mr-3 flex items-center justify-center border-2 ${
+                                currentQuestion.type === 'single' ? 'rounded-full' : 'rounded'
+                              } ${
+                                isSelected ? 'border-green-500 bg-green-500' : 'border-neutral-300'
+                              }`}
+                            >
+                              {isSelected &&
+                                (currentQuestion.type === 'single' ? (
+                                  <div className="w-2 h-2 rounded-full bg-white"></div>
+                                ) : (
+                                  <svg
+                                    className="w-3 h-3 text-white"
+                                    fill="currentColor"
+                                    viewBox="0 0 20 20"
+                                  >
+                                    <path
+                                      fillRule="evenodd"
+                                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                      clipRule="evenodd"
+                                    />
+                                  </svg>
+                                ))}
+                            </div>
+                            <div className="flex-1">
+                              <div className="text-neutral-900 [&_p]:m-0 [&_p]:text-base [&_p]:text-neutral-900">
+                                <MarkdownRenderer content={option} />
+                              </div>
+                              {/* Display option image if exists */}
+                              {currentQuestion.optionImages?.[index] && (
+                                <div className="mt-2">
+                                  <OptionImage
+                                    src={currentQuestion.optionImages[index]!}
+                                    alt={`Option ${String.fromCharCode(65 + index)} image`}
+                                  />
+                                </div>
+                              )}
+                            </div>
+                          </label>
+                        );
+                      })}
+                    </div>
+
+                    {error && (
+                      <div className="mt-4 rounded-md bg-red-50 p-3">
+                        <div className="text-sm text-red-700">{error}</div>
+                      </div>
+                    )}
+
+                    {/* Navigation */}
+                    <div className="flex justify-between items-center mt-8">
+                      <Button
+                        variant="outline"
+                        onClick={previousQuestion}
+                        disabled={currentQuestionIndex === 0}
+                      >
+                        {t('previous')}
+                      </Button>
+
+                      <div className="text-sm text-neutral-600">
+                        {currentQuestionIndex + 1} / {quiz.questions.length}
+                      </div>
+
+                      {currentQuestionIndex === quiz.questions.length - 1 ? (
+                        <Button
+                          onClick={submitQuiz}
+                          loading={submitting}
+                          className="bg-green-600 hover:bg-green-700"
+                        >
+                          {t('submitQuiz')}
+                        </Button>
+                      ) : (
+                        <Button
+                          onClick={nextQuestion}
+                          disabled={currentQuestionIndex === quiz.questions.length - 1}
+                        >
+                          {t('next')}
+                        </Button>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Question overview */}
+                <Card className="mt-6">
+                  <CardHeader>
+                    <CardTitle className="text-lg">{t('questionOverview')}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-10 gap-2">
+                      {quiz.questions.map((question, index) => {
+                        let isAnswered = false;
+                        const answer = userAnswers[index];
+
+                        if (question.type === 'single') {
+                          isAnswered = answer !== -1;
+                        } else {
+                          isAnswered = Array.isArray(answer) && answer.length > 0;
+                        }
+
+                        return (
+                          <button
+                            key={index}
+                            onClick={() => setCurrentQuestionIndex(index)}
+                            className={`w-8 h-8 rounded text-xs font-medium transition-colors ${
+                              index === currentQuestionIndex
+                                ? 'bg-brand-trust text-white'
+                                : isAnswered
+                                  ? 'bg-green-100 text-green-800 border border-green-300'
+                                  : 'bg-neutral-100 text-neutral-600 border border-neutral-300'
+                            }`}
+                          >
+                            {index + 1}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <div className="mt-4 flex items-center space-x-6 text-xs">
+                      <div className="flex items-center">
+                        <div className="w-3 h-3 bg-brand-trust rounded mr-2"></div>
+                        <span>{t('current')}</span>
+                      </div>
+                      <div className="flex items-center">
+                        <div className="w-3 h-3 bg-green-100 border border-green-300 rounded mr-2"></div>
+                        <span>{t('answered')}</span>
+                      </div>
+                      <div className="flex items-center">
+                        <div className="w-3 h-3 bg-neutral-100 border border-neutral-300 rounded mr-2"></div>
+                        <span>{t('notAnswered')}</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Discussion Panel */}
+              <QuestionDiscussion
+                quizSlug={params.slug}
+                questionIndex={currentQuestionIndex}
+                isCollapsed={isDiscussionCollapsed}
+                onToggleCollapse={() => setIsDiscussionCollapsed(!isDiscussionCollapsed)}
+              />
+            </div>
+
+            {/* Mobile Discussion Modal */}
+            <Modal
+              isOpen={showMobileDiscussion}
+              onClose={() => setShowMobileDiscussion(false)}
+              title={`💬 ${t('discussion')}`}
+              size="large"
+              className="md:hidden"
+            >
+              <div className="h-96">
+                <QuestionDiscussion
+                  quizSlug={params.slug}
+                  questionIndex={currentQuestionIndex}
+                  isCollapsed={false}
+                  onToggleCollapse={() => setShowMobileDiscussion(false)}
+                  isMobile={true}
                 />
               </div>
-            )}
+            </Modal>
 
-            {/* Disclaimer */}
-            <div className="text-xs text-neutral-500 bg-yellow-50 p-3 rounded-md">
-              {t('aiNote')}
-            </div>
-          </div>
-        </Modal>
+            {/* Exit Quiz Modal */}
+            <Modal
+              isOpen={showExitModal}
+              onClose={closeExitModal}
+              title={`⚠️ ${t('exitQuiz')}`}
+              size="small"
+            >
+              <div className="space-y-4">
+                <p className="text-neutral-700">{t('exitQuizWarning')}</p>
 
-        <ConfirmModal
-          isOpen={showSubmitConfirm}
-          title={`${t('submitQuiz')}?`}
-          message={t('unansweredWarning', { count: unansweredCount })}
-          confirmText={t('submit', { ns: 'common' })}
-          onCancel={() => setShowSubmitConfirm(false)}
-          onConfirm={async () => {
-            setShowSubmitConfirm(false);
-            await completeSubmit();
-          }}
-        />
-      </main>
-    </div>
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                  <div className="flex items-start">
+                    <svg
+                      className="w-5 h-5 text-yellow-600 mt-0.5 mr-2 flex-shrink-0"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    <div>
+                      <h4 className="text-sm font-medium text-yellow-800">{t('exitWarning')}</h4>
+                      <p className="text-sm text-yellow-700 mt-1">
+                        {t('exitWarningMessage', {
+                          answered: answeredQuestions,
+                          total: quiz.questions.length,
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 pt-2">
+                  <Button variant="outline" onClick={closeExitModal} className="flex-1">
+                    {t('continueQuiz')}
+                  </Button>
+                  <Button
+                    onClick={exitQuiz}
+                    className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                  >
+                    {t('exitQuiz')}
+                  </Button>
+                </div>
+              </div>
+            </Modal>
+
+            {/* Ask AI Modal */}
+            <Modal isOpen={showAIModal} onClose={closeAIModal} title={t('askRinChan')} size="wide">
+              <div className="space-y-4">
+                {/* Current Question Display */}
+                <div className="bg-neutral-50 p-4 rounded-lg">
+                  <h4 className="font-medium text-neutral-900 mb-2">{t('currentQuestion')}</h4>
+                  <div className="text-sm text-neutral-700 [&_p]:mb-0 [&_p]:text-sm [&_p]:text-neutral-700">
+                    {quiz && <MarkdownRenderer content={currentQuestion.question} />}
+                  </div>
+                  <div className="mt-2 space-y-1">
+                    {quiz &&
+                      currentQuestion.options.map((option, index) => (
+                        <div
+                          key={index}
+                          className="text-xs text-neutral-600 flex items-start space-x-2"
+                        >
+                          <span className="mt-0.5">{String.fromCharCode(65 + index)}.</span>
+                          <div className="flex-1 [&_p]:m-0 [&_p]:text-xs [&_p]:text-neutral-600">
+                            <MarkdownRenderer content={option} />
+                          </div>
+                          {currentQuestion.optionImages?.[index] && (
+                            <OptionImage
+                              src={currentQuestion.optionImages[index]!}
+                              alt={`Option ${index} image`}
+                              className="ml-1"
+                            />
+                          )}
+                        </div>
+                      ))}
+                  </div>
+                  {currentQuestion.questionImage && (
+                    <div className="mt-3">
+                      <QuestionImage src={currentQuestion.questionImage} alt="Question img" />
+                    </div>
+                  )}
+                </div>
+
+                {/* User Question Input */}
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                    {t('askSpecificQuestion')}
+                  </label>
+                  <Input
+                    value={userQuestion}
+                    onChange={(e) => setUserQuestion(e.target.value)}
+                    placeholder={t('questionPlaceholder')}
+                    className="w-full"
+                  />
+                  <p className="text-xs text-neutral-500 mt-1">{t('leaveEmptyGeneral')}</p>
+                </div>
+
+                {/* Ask Button */}
+                <Button
+                  onClick={askAI}
+                  loading={loadingAI}
+                  disabled={loadingAI}
+                  className="w-full bg-brand-trust hover:bg-brand-trust-hover text-white"
+                >
+                  {loadingAI ? t('gettingExplanation') : t('getRinChanExplanation')}
+                </Button>
+
+                {/* AI Response */}
+                {aiError && (
+                  <div className="rounded-md bg-red-50 p-3">
+                    <div className="text-sm text-red-700">{aiError}</div>
+                  </div>
+                )}
+
+                {aiExplanation && (
+                  <div className="rounded-md bg-green-50 p-4">
+                    <h4 className="font-medium text-green-900 mb-3">{t('aiExplanation')}</h4>
+                    <MarkdownRenderer content={aiExplanation} className="text-green-800" />
+                  </div>
+                )}
+
+                {/* Disclaimer */}
+                <div className="text-xs text-neutral-500 bg-yellow-50 p-3 rounded-md">
+                  {t('aiNote')}
+                </div>
+              </div>
+            </Modal>
+
+            <ConfirmModal
+              isOpen={showSubmitConfirm}
+              title={`${t('submitQuiz')}?`}
+              message={t('unansweredWarning', { count: unansweredCount })}
+              confirmText={t('submit', { ns: 'common' })}
+              onCancel={() => setShowSubmitConfirm(false)}
+              onConfirm={async () => {
+                setShowSubmitConfirm(false);
+                await completeSubmit();
+              }}
+            />
+          </main>
+        </div>
       )}
     </>
   );
-} 
+}

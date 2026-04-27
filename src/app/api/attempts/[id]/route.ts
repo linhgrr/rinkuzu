@@ -4,26 +4,23 @@ import { authOptions } from '@/lib/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
 import { AsyncRouteParams } from '@/types/next-route';
 
-export async function GET(
-  request: NextRequest,
-  { params }: AsyncRouteParams<{ id: string }>
-) {
+export async function GET(request: NextRequest, { params }: AsyncRouteParams<{ id: string }>) {
   try {
     const { id } = await params;
     const session = await getServerSession(authOptions);
     const { searchParams } = new URL(request.url);
     const userEmail = searchParams.get('userEmail');
-    
+
     // Check if user is authenticated or has userEmail
     if (!session?.user?.email && !userEmail) {
       return NextResponse.json(
         { success: false, error: 'Authentication required or userEmail parameter' },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
     const userService = serviceFactory.getUserService();
-    
+
     // Use session email if available, otherwise use userEmail from params
     const email = session?.user?.email || userEmail!;
     const result = await userService.getAttemptDetails(id, email);
@@ -31,7 +28,7 @@ export async function GET(
     if (!result.success) {
       return NextResponse.json(
         { success: false, error: result.error },
-        { status: result.statusCode || 400 }
+        { status: result.statusCode || 400 },
       );
     }
 
@@ -39,12 +36,8 @@ export async function GET(
       success: true,
       data: result.data,
     });
-
   } catch (error: any) {
     console.error('Get attempt details error:', error);
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
   }
 }

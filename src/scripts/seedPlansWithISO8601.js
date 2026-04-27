@@ -4,7 +4,7 @@ const mongoose = require('mongoose');
 const connectDB = async () => {
   try {
     await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/quiz_app');
-    console.log('Connected to MongoDB');
+    console.warn('Connected to MongoDB');
   } catch (error) {
     console.error('MongoDB connection error:', error);
     process.exit(1);
@@ -12,14 +12,17 @@ const connectDB = async () => {
 };
 
 // Plan schema
-const planSchema = new mongoose.Schema({
-  _id: String,
-  name: String,
-  price: Number,
-  duration: String, // ISO 8601 format
-  features: [String],
-  isActive: Boolean,
-}, { timestamps: true });
+const planSchema = new mongoose.Schema(
+  {
+    _id: String,
+    name: String,
+    price: Number,
+    duration: String, // ISO 8601 format
+    features: [String],
+    isActive: Boolean,
+  },
+  { timestamps: true },
+);
 
 const Plan = mongoose.model('Plan', planSchema);
 
@@ -34,9 +37,9 @@ const plansData = [
       'Access to private quizzes',
       'Basic analytics',
       'Email support',
-      'Mobile app access'
+      'Mobile app access',
     ],
-    isActive: true
+    isActive: true,
   },
   {
     _id: 'premium-quarterly',
@@ -49,9 +52,9 @@ const plansData = [
       'Priority email support',
       'Mobile app access',
       'Flashcards feature',
-      'Progress tracking'
+      'Progress tracking',
     ],
-    isActive: true
+    isActive: true,
   },
   {
     _id: 'pro-semi-annual',
@@ -66,9 +69,9 @@ const plansData = [
       'Flashcards feature',
       'Progress tracking',
       'Custom quiz categories',
-      'Export results'
+      'Export results',
     ],
-    isActive: true
+    isActive: true,
   },
   {
     _id: 'ultimate-annual',
@@ -85,9 +88,9 @@ const plansData = [
       'Custom quiz categories',
       'Export results',
       'AI-powered insights',
-      'Team collaboration'
+      'Team collaboration',
     ],
-    isActive: true
+    isActive: true,
   },
   {
     _id: 'lifetime-premium',
@@ -106,63 +109,63 @@ const plansData = [
       'Export results',
       'AI-powered insights',
       'Team collaboration',
-      'Early access to new features'
+      'Early access to new features',
     ],
-    isActive: true
-  }
+    isActive: true,
+  },
 ];
 
 async function seedPlans() {
   try {
     await connectDB();
-    
-    console.log('Seeding plans with ISO 8601 durations...');
-    
+
+    console.warn('Seeding plans with ISO 8601 durations...');
+
     // Clear existing plans (optional - remove in production)
     const existingCount = await Plan.countDocuments();
-    console.log(`Found ${existingCount} existing plans`);
-    
+    console.warn(`Found ${existingCount} existing plans`);
+
     for (const planData of plansData) {
       try {
         const existingPlan = await Plan.findById(planData._id);
-        
+
         if (existingPlan) {
           // Update existing plan
           await Plan.findByIdAndUpdate(planData._id, planData);
-          console.log(`✓ Updated plan: ${planData.name} (${planData.duration})`);
+          console.warn(`✓ Updated plan: ${planData.name} (${planData.duration})`);
         } else {
           // Create new plan
           await Plan.create(planData);
-          console.log(`✓ Created plan: ${planData.name} (${planData.duration})`);
+          console.warn(`✓ Created plan: ${planData.name} (${planData.duration})`);
         }
       } catch (error) {
         console.error(`✗ Failed to process plan ${planData.name}:`, error.message);
       }
     }
-    
+
     const totalPlans = await Plan.countDocuments();
-    console.log(`\n🎉 Seeding completed! Total plans: ${totalPlans}`);
-    
+    console.warn(`\n🎉 Seeding completed! Total plans: ${totalPlans}`);
+
     // Display summary
-    console.log('\nPlan Summary:');
+    console.warn('\nPlan Summary:');
     const plans = await Plan.find({}).sort({ price: 1 });
-    plans.forEach(plan => {
-      const durationDisplay = {
-        'P1M': '1 Month',
-        'P3M': '3 Months', 
-        'P6M': '6 Months',
-        'P1Y': '1 Year',
-        'PT0S': 'Lifetime'
-      }[plan.duration] || plan.duration;
-      
-      console.log(`- ${plan.name}: ${plan.price.toLocaleString()} VND (${durationDisplay})`);
+    plans.forEach((plan) => {
+      const durationDisplay =
+        {
+          P1M: '1 Month',
+          P3M: '3 Months',
+          P6M: '6 Months',
+          P1Y: '1 Year',
+          PT0S: 'Lifetime',
+        }[plan.duration] || plan.duration;
+
+      console.warn(`- ${plan.name}: ${plan.price.toLocaleString()} VND (${durationDisplay})`);
     });
-    
   } catch (error) {
     console.error('Seeding failed:', error);
   } finally {
     await mongoose.disconnect();
-    console.log('\nDisconnected from MongoDB');
+    console.warn('\nDisconnected from MongoDB');
   }
 }
 
@@ -170,27 +173,27 @@ async function seedPlans() {
 async function validatePlans() {
   try {
     await connectDB();
-    
-    console.log('Validating plans...');
+
+    console.warn('Validating plans...');
     const plans = await Plan.find({});
-    
+
     let validCount = 0;
     let invalidCount = 0;
-    
+
     for (const plan of plans) {
-      const isValidISO = /^(P\d+[YMD]|PT\d*[HMS]*)$/.test(plan.duration) || plan.duration === 'PT0S';
-      
+      const isValidISO =
+        /^(P\d+[YMD]|PT\d*[HMS]*)$/.test(plan.duration) || plan.duration === 'PT0S';
+
       if (isValidISO) {
-        console.log(`✓ ${plan.name}: ${plan.duration} (valid)`);
+        console.warn(`✓ ${plan.name}: ${plan.duration} (valid)`);
         validCount++;
       } else {
-        console.log(`✗ ${plan.name}: ${plan.duration} (invalid ISO 8601)`);
+        console.warn(`✗ ${plan.name}: ${plan.duration} (invalid ISO 8601)`);
         invalidCount++;
       }
     }
-    
-    console.log(`\nValidation Summary: ${validCount} valid, ${invalidCount} invalid`);
-    
+
+    console.warn(`\nValidation Summary: ${validCount} valid, ${invalidCount} invalid`);
   } catch (error) {
     console.error('Validation failed:', error);
   } finally {
@@ -206,7 +209,7 @@ if (command === 'seed') {
 } else if (command === 'validate') {
   validatePlans();
 } else {
-  console.log('Usage:');
-  console.log('  node seedPlansWithISO8601.js seed       # Create/update plans');
-  console.log('  node seedPlansWithISO8601.js validate   # Validate existing plans');
-} 
+  console.warn('Usage:');
+  console.warn('  node seedPlansWithISO8601.js seed       # Create/update plans');
+  console.warn('  node seedPlansWithISO8601.js validate   # Validate existing plans');
+}

@@ -1,82 +1,91 @@
-import connectDB from '@/lib/mongoose'
-import Quiz from '@/models/Quiz'
-import { IQuiz, IQuizRepository } from '@/interfaces/repositories/IQuizRepository'
-import { Types } from 'mongoose'
+import connectDB from '@/lib/mongoose';
+import Quiz from '@/models/Quiz';
+import { IQuiz, IQuizRepository } from '@/interfaces/repositories/IQuizRepository';
+import { Types } from 'mongoose';
 
 export class QuizRepository implements IQuizRepository {
   async findById(id: string): Promise<IQuiz | null> {
-    await connectDB()
-    return await Quiz.findById(id)
+    await connectDB();
+    return (await Quiz.findById(id)
       .populate('author', 'email')
       .populate('category', 'name color')
-      .lean() as unknown as IQuiz | null
+      .lean()) as unknown as IQuiz | null;
   }
 
   async findBySlug(slug: string): Promise<IQuiz | null> {
-    await connectDB()
-    return await Quiz.findOne({ slug })
+    await connectDB();
+    return (await Quiz.findOne({ slug })
       .populate('author', 'email')
       .populate('category', 'name color')
-      .lean() as unknown as IQuiz | null
+      .lean()) as unknown as IQuiz | null;
   }
 
   async findBySlugAndStatus(slug: string, status: string): Promise<IQuiz | null> {
-    await connectDB()
-    return await Quiz.findOne({ slug, status })
+    await connectDB();
+    return (await Quiz.findOne({ slug, status })
       .populate('author', 'email')
-      .lean() as unknown as IQuiz | null
+      .lean()) as unknown as IQuiz | null;
   }
 
   async create(quizData: Partial<IQuiz>): Promise<IQuiz> {
-    await connectDB()
-    const quiz = new Quiz(quizData)
-    return await quiz.save() as unknown as IQuiz
+    await connectDB();
+    const quiz = new Quiz(quizData);
+    return (await quiz.save()) as unknown as IQuiz;
   }
 
   async update(id: string, quizData: Partial<IQuiz>): Promise<IQuiz | null> {
-    await connectDB()
-    return await Quiz.findByIdAndUpdate(id, quizData, { new: true })
+    await connectDB();
+    return (await Quiz.findByIdAndUpdate(id, quizData, { new: true })
       .populate('author', 'email')
       .populate('category', 'name color')
-      .lean() as unknown as IQuiz | null
+      .lean()) as unknown as IQuiz | null;
   }
 
   async delete(id: string): Promise<boolean> {
-    await connectDB()
-    const result = await Quiz.findByIdAndDelete(id)
-    return !!result
+    await connectDB();
+    const result = await Quiz.findByIdAndDelete(id);
+    return !!result;
   }
 
-  async findAll(filter: any = {}, options: {
-    page?: number
-    limit?: number
-    sort?: any
-    populate?: string[]
-    compact?: boolean
-  } = {}): Promise<{
-    quizzes: IQuiz[]
+  async findAll(
+    filter: any = {},
+    options: {
+      page?: number;
+      limit?: number;
+      sort?: any;
+      populate?: string[];
+      compact?: boolean;
+    } = {},
+  ): Promise<{
+    quizzes: IQuiz[];
     pagination: {
-      page: number
-      limit: number
-      total: number
-      totalPages: number
-    }
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+    };
   }> {
-    await connectDB()
-    
-    const page = options.page || 1
-    const limit = options.limit || 10
-    const skip = (page - 1) * limit
-    const sort = options.sort || { createdAt: -1 }
+    await connectDB();
+
+    const page = options.page || 1;
+    const limit = options.limit || 10;
+    const skip = (page - 1) * limit;
+    const sort = options.sort || { createdAt: -1 };
 
     if (options.compact) {
-      const normalizedFilter = { ...filter }
+      const normalizedFilter = { ...filter };
 
-      if (typeof normalizedFilter.category === 'string' && Types.ObjectId.isValid(normalizedFilter.category)) {
-        normalizedFilter.category = new Types.ObjectId(normalizedFilter.category)
+      if (
+        typeof normalizedFilter.category === 'string' &&
+        Types.ObjectId.isValid(normalizedFilter.category)
+      ) {
+        normalizedFilter.category = new Types.ObjectId(normalizedFilter.category);
       }
-      if (typeof normalizedFilter.author === 'string' && Types.ObjectId.isValid(normalizedFilter.author)) {
-        normalizedFilter.author = new Types.ObjectId(normalizedFilter.author)
+      if (
+        typeof normalizedFilter.author === 'string' &&
+        Types.ObjectId.isValid(normalizedFilter.author)
+      ) {
+        normalizedFilter.author = new Types.ObjectId(normalizedFilter.author);
       }
 
       const [quizzes, total] = await Promise.all([
@@ -90,28 +99,28 @@ export class QuizRepository implements IQuizRepository {
               from: 'categories',
               localField: 'category',
               foreignField: '_id',
-              as: 'categoryDoc'
-            }
+              as: 'categoryDoc',
+            },
           },
           {
             $lookup: {
               from: 'users',
               localField: 'author',
               foreignField: '_id',
-              as: 'authorDoc'
-            }
+              as: 'authorDoc',
+            },
           },
           {
             $unwind: {
               path: '$categoryDoc',
-              preserveNullAndEmptyArrays: true
-            }
+              preserveNullAndEmptyArrays: true,
+            },
           },
           {
             $unwind: {
               path: '$authorDoc',
-              preserveNullAndEmptyArrays: true
-            }
+              preserveNullAndEmptyArrays: true,
+            },
           },
           {
             $project: {
@@ -123,22 +132,22 @@ export class QuizRepository implements IQuizRepository {
               isPrivate: 1,
               author: {
                 _id: { $ifNull: ['$authorDoc._id', '$author'] },
-                email: '$authorDoc.email'
+                email: '$authorDoc.email',
               },
               createdAt: 1,
               updatedAt: 1,
               category: {
                 _id: { $ifNull: ['$categoryDoc._id', '$category'] },
                 name: '$categoryDoc.name',
-                color: '$categoryDoc.color'
+                color: '$categoryDoc.color',
               },
               questionCount: { $size: { $ifNull: ['$questions', []] } },
-              questions: { $literal: [] }
-            }
-          }
+              questions: { $literal: [] },
+            },
+          },
         ]) as unknown as IQuiz[],
-        Quiz.countDocuments(normalizedFilter)
-      ])
+        Quiz.countDocuments(normalizedFilter),
+      ]);
 
       return {
         quizzes,
@@ -146,24 +155,24 @@ export class QuizRepository implements IQuizRepository {
           page,
           limit,
           total,
-          totalPages: Math.ceil(total / limit)
-        }
-      }
+          totalPages: Math.ceil(total / limit),
+        },
+      };
     }
 
-    let query = Quiz.find(filter)
-    
+    let query = Quiz.find(filter);
+
     if (options.populate?.includes('author')) {
-      query = query.populate('author', 'email')
+      query = query.populate('author', 'email');
     }
     if (options.populate?.includes('category')) {
-      query = query.populate('category', 'name color')
+      query = query.populate('category', 'name color');
     }
 
     const [quizzes, total] = await Promise.all([
       query.sort(sort).skip(skip).limit(limit).lean() as unknown as IQuiz[],
-      Quiz.countDocuments(filter)
-    ])
+      Quiz.countDocuments(filter),
+    ]);
 
     return {
       quizzes,
@@ -171,41 +180,46 @@ export class QuizRepository implements IQuizRepository {
         page,
         limit,
         total,
-        totalPages: Math.ceil(total / limit)
-      }
-    }
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 
   async findForPlay(slug: string): Promise<IQuiz | null> {
-    await connectDB()
-    return await Quiz.findOne({ 
-      slug, 
-      status: 'published' 
-    }).populate('author', 'email').lean() as unknown as IQuiz | null
+    await connectDB();
+    return (await Quiz.findOne({
+      slug,
+      status: 'published',
+    })
+      .populate('author', 'email')
+      .lean()) as unknown as IQuiz | null;
   }
 
-  async findUserQuizzes(userId: string, options: {
-    page?: number
-    limit?: number
-    status?: string
-  } = {}): Promise<{
-    quizzes: IQuiz[]
+  async findUserQuizzes(
+    userId: string,
+    options: {
+      page?: number;
+      limit?: number;
+      status?: string;
+    } = {},
+  ): Promise<{
+    quizzes: IQuiz[];
     pagination: {
-      page: number
-      limit: number
-      total: number
-      totalPages: number
-    }
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+    };
   }> {
-    await connectDB()
-    
-    const page = options.page || 1
-    const limit = options.limit || 10
-    const skip = (page - 1) * limit
-    
-    const filter: any = { author: userId }
+    await connectDB();
+
+    const page = options.page || 1;
+    const limit = options.limit || 10;
+    const skip = (page - 1) * limit;
+
+    const filter: any = { author: userId };
     if (options.status) {
-      filter.status = options.status
+      filter.status = options.status;
     }
 
     const [quizzes, total] = await Promise.all([
@@ -215,8 +229,8 @@ export class QuizRepository implements IQuizRepository {
         .skip(skip)
         .limit(limit)
         .lean() as unknown as IQuiz[],
-      Quiz.countDocuments(filter)
-    ])
+      Quiz.countDocuments(filter),
+    ]);
 
     return {
       quizzes,
@@ -224,64 +238,66 @@ export class QuizRepository implements IQuizRepository {
         page,
         limit,
         total,
-        totalPages: Math.ceil(total / limit)
-      }
-    }
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 
   async count(filter: any = {}): Promise<number> {
-    await connectDB()
-    return await Quiz.countDocuments(filter)
+    await connectDB();
+    return await Quiz.countDocuments(filter);
   }
 
   async countByStatus(): Promise<{ _id: string; count: number }[]> {
-    await connectDB()
+    await connectDB();
     return await Quiz.aggregate([
       {
         $group: {
           _id: '$status',
-          count: { $sum: 1 }
-        }
-      }
-    ])
+          count: { $sum: 1 },
+        },
+      },
+    ]);
   }
 
   async countByCategory(): Promise<{ _id: string; count: number }[]> {
-    await connectDB()
+    await connectDB();
     return await Quiz.aggregate([
       {
         $group: {
           _id: '$category',
-          count: { $sum: 1 }
-        }
+          count: { $sum: 1 },
+        },
       },
       {
         $lookup: {
           from: 'categories',
           localField: '_id',
           foreignField: '_id',
-          as: 'categoryInfo'
-        }
-      }
-    ])
+          as: 'categoryInfo',
+        },
+      },
+    ]);
   }
 
   async findRecentQuizzes(limit: number = 10): Promise<IQuiz[]> {
-    await connectDB()
-    return await Quiz.find({ status: 'published' })
+    await connectDB();
+    return (await Quiz.find({ status: 'published' })
       .populate('author', 'email')
       .populate('category', 'name color')
       .sort({ createdAt: -1 })
       .limit(limit)
-      .lean() as unknown as IQuiz[]
+      .lean()) as unknown as IQuiz[];
   }
 
   async updateStatus(id: string, status: string, reviewNote?: string): Promise<IQuiz | null> {
-    await connectDB()
-    const updateData: any = { status }
+    await connectDB();
+    const updateData: any = { status };
     if (reviewNote) {
-      updateData.reviewNote = reviewNote
+      updateData.reviewNote = reviewNote;
     }
-    return await Quiz.findByIdAndUpdate(id, updateData, { new: true }).lean() as unknown as IQuiz | null
+    return (await Quiz.findByIdAndUpdate(id, updateData, {
+      new: true,
+    }).lean()) as unknown as IQuiz | null;
   }
-} 
+}

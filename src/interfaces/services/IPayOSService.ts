@@ -68,10 +68,10 @@ export interface IPayOSService {
     returnUrl: string,
     cancelUrl: string,
     buyerEmail?: string,
-    buyerName?: string
+    buyerName?: string,
   ): Promise<PayOSPaymentResponse>;
-  
+
   verifyPayment(orderCode: number): Promise<PayOSVerifyResponse>;
   getPaymentInfo(orderCode: number): Promise<PayOSVerifyResponse>;
   testConnection(): Promise<boolean>;
-} 
+}

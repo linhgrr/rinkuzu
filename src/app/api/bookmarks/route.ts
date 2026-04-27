@@ -22,13 +22,13 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: result.bookmarks,
-      pagination: result.pagination
+      pagination: result.pagination,
     });
   } catch (error) {
     console.error('Error fetching bookmarks:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to fetch bookmarks' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -47,26 +47,29 @@ export async function POST(request: NextRequest) {
     const bookmark = await bookmarkService.createBookmark(session.user.email, {
       quiz,
       question,
-      questionIndex
+      questionIndex,
     });
 
     return NextResponse.json({
       success: true,
-      data: bookmark
+      data: bookmark,
     });
   } catch (error: any) {
     console.error('Error creating bookmark:', error);
-    
+
     if (error.message === 'Question already bookmarked') {
-      return NextResponse.json({
-        success: false,
-        error: error.message
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          success: false,
+          error: error.message,
+        },
+        { status: 400 },
+      );
     }
 
     return NextResponse.json(
       { success: false, error: 'Failed to create bookmark' },
-      { status: 500 }
+      { status: 500 },
     );
   }
-} 
+}

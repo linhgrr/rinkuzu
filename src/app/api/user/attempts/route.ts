@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     if (!session?.user?.email) {
       return NextResponse.json(
         { success: false, error: 'Authentication required' },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -30,20 +30,13 @@ export async function GET(request: NextRequest) {
       data: result.attempts,
       pagination: result.pagination,
     });
-
   } catch (error: any) {
     console.error('Get user attempts error:', error);
-    
+
     if (error.message === 'User not found') {
-      return NextResponse.json(
-        { success: false, error: error.message },
-        { status: 404 }
-      );
+      return NextResponse.json({ success: false, error: error.message }, { status: 404 });
     }
 
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
   }
-} 
+}

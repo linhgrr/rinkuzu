@@ -10,13 +10,13 @@ interface ImageDisplayProps {
   fallback?: React.ReactNode;
 }
 
-export function ImageDisplay({ 
-  src, 
-  alt, 
-  className = '', 
-  maxWidth = 400, 
+export function ImageDisplay({
+  src,
+  alt,
+  className = '',
+  maxWidth = 400,
   maxHeight = 300,
-  fallback 
+  fallback,
 }: ImageDisplayProps) {
   const [imageError, setImageError] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -28,7 +28,7 @@ export function ImageDisplay({
   return (
     <div className={`relative inline-block ${className}`}>
       {isLoading && (
-        <div 
+        <div
           className="absolute inset-0 flex items-center justify-center bg-neutral-100 rounded-lg"
           style={{ width: maxWidth, height: maxHeight }}
         >
@@ -44,7 +44,7 @@ export function ImageDisplay({
         style={{
           maxWidth: '100%',
           height: 'auto',
-          objectFit: 'contain'
+          objectFit: 'contain',
         }}
         onLoad={() => setIsLoading(false)}
         onError={() => {
@@ -94,11 +94,7 @@ export function OptionImage({ src, alt, className = '' }: OptionImageProps) {
       className={`ml-2 ${className}`}
       maxWidth={200}
       maxHeight={150}
-      fallback={
-        <div className="text-xs text-neutral-400 italic ml-2">
-          🖼️ Image option
-        </div>
-      }
+      fallback={<div className="text-xs text-neutral-400 italic ml-2">🖼️ Image option</div>}
     />
   );
-} 
+}

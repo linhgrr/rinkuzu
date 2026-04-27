@@ -29,7 +29,7 @@ function toEntry(
   path: string,
   changeFrequency: MetadataRoute.Sitemap[number]['changeFrequency'],
   priority: number,
-  lastModified = new Date()
+  lastModified = new Date(),
 ): SitemapEntry {
   return {
     url: canonicalFor(locale, path),
@@ -68,7 +68,15 @@ export default async function sitemap(): Promise<SitemapEntry[]> {
         if (!category?.slug || category.isActive === false) continue;
         const path = `/category/${category.slug}`;
         for (const { locale } of localeVariants(path)) {
-          pushEntry(toEntry(locale, path, 'weekly', 0.7, new Date(category.updatedAt || category.createdAt || Date.now())));
+          pushEntry(
+            toEntry(
+              locale,
+              path,
+              'weekly',
+              0.7,
+              new Date(category.updatedAt || category.createdAt || Date.now()),
+            ),
+          );
         }
       }
     }

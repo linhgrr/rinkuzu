@@ -51,9 +51,7 @@ export function FAQ() {
                 </span>
               </button>
               {openId === faq.id && (
-                <div className="px-6 pb-4 text-white/60 text-sm leading-relaxed">
-                  {faq.a}
-                </div>
+                <div className="px-6 pb-4 text-white/60 text-sm leading-relaxed">{faq.a}</div>
               )}
             </div>
           ))}

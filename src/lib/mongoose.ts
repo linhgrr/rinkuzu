@@ -39,4 +39,4 @@ async function connectDB(): Promise<typeof mongoose> {
   return cached.conn;
 }
 
-export default connectDB; 
+export default connectDB;

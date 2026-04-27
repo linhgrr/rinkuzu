@@ -1,0 +1,70 @@
+name: Frontend CI
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: .
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Format check
+        run: npm run format:check
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit tests (coverage gate)
+        run: npm run test:unit
+
+      - name: Integration tests
+        run: npm run test:integration
+
+      - name: Build
+        run: npm run build
+        env:
+          MONGO_URL: mongodb://localhost:27017/test
+          NEXTAUTH_SECRET: test-secret
+          NEXTAUTH_URL: http://localhost:3000
+          NEXT_PUBLIC_SITE_URL: http://localhost:3000
+          JWT_SECRET: test-jwt-secret
+          JWT_EXPIRES_IN: 30m
+          SESSION_MAX_AGE: '180000'
+          S3_ENDPOINT: https://localhost
+          S3_ACCESS_KEY: test
+          S3_SECRET_KEY: test
+          S3_BUCKET_NAME: test
+          NEXT_PUBLIC_API_URL: http://localhost:8000
+          ADAPTIVE_PROXY_TIMEOUT_MS: '60000'
+          INTERNAL_SERVICE_TOKEN: test-token
+          NEXT_IMAGE_UNOPTIMIZED: 'true'
+
+      - name: Install Playwright browsers
+        run: npm run test:e2e:install
+
+      - name: E2E smoke tests
+        run: npm run test:e2e
+        env:
+          PLAYWRIGHT_BASE_URL: http://127.0.0.1:3000

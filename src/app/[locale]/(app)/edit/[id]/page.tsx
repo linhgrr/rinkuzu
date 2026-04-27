@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useState, useEffect, useCallback } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter, usePathname } from 'next/navigation';
@@ -12,32 +13,21 @@ import { Input } from '@/components/ui/Input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import QuizMetaForm from '@/components/quiz/QuizMetaForm';
 import PDFViewer from '@/components/ui/PDFViewer';
-import { IQuiz, ICategory } from '@/types';
+import { IQuiz } from '@/types';
 import { QuestionImageUpload, OptionImageUpload } from '@/components/ui/ImageUpload';
-import { QuestionImage, OptionImage } from '@/components/ui/ImageDisplay';
 import Sidebar from '@/components/Sidebar';
 import {
   HiChevronDown,
   HiOutlineLogout,
   HiOutlineMenu,
   HiOutlineInformationCircle,
-  HiOutlineLockClosed,
-  HiOutlineEye,
   HiOutlineEyeOff,
   HiOutlineDocumentText,
   HiOutlinePlus,
   HiOutlineTrash,
   HiOutlineSave,
-  HiOutlineArrowLeft,
-  HiOutlineCheck,
-  HiOutlineX,
-  HiOutlinePlusCircle,
-  HiOutlineExternalLink,
   HiOutlineClipboardCopy,
-  HiOutlineLightBulb,
-  HiOutlineCollection,
-  HiOutlineTag,
-  HiOutlinePencilAlt
+  HiOutlinePencilAlt,
 } from '@/components/icons';
 
 interface EditQuizPageProps {
@@ -62,8 +52,8 @@ interface Category {
 }
 
 export default function EditQuizPage({ params }: EditQuizPageProps) {
-  const t = useTranslations('quiz');
-  const tCommon = useTranslations('common');
+  const _t = useTranslations('quiz');
+  const _tCommon = useTranslations('common');
   const { data: session } = useSession();
   const router = useRouter();
   const pathname = usePathname();
@@ -101,7 +91,7 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
       } else {
         setError(data.error || 'Quiz not found');
       }
-    } catch (error) {
+    } catch (_error) {
       setError('Failed to load quiz');
     } finally {
       setLoading(false);
@@ -148,13 +138,28 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
   };
 
   const addQuestion = () => {
-    setEditableQuestions([...editableQuestions, { question: '', options: ['', '', '', ''], type: 'single', correctIndex: 0, correctIndexes: [] }]);
+    setEditableQuestions([
+      ...editableQuestions,
+      {
+        question: '',
+        options: ['', '', '', ''],
+        type: 'single',
+        correctIndex: 0,
+        correctIndexes: [],
+      },
+    ]);
   };
-  const removeQuestion = (idx: number) => setEditableQuestions(editableQuestions.filter((_, i) => i !== idx));
+  const removeQuestion = (idx: number) =>
+    setEditableQuestions(editableQuestions.filter((_, i) => i !== idx));
 
   const toggleQuestionType = (idx: number, type: 'single' | 'multiple') => {
     const updated = [...editableQuestions];
-    updated[idx] = { ...updated[idx], type, correctIndex: type === 'single' ? (updated[idx].correctIndex ?? 0) : undefined, correctIndexes: type === 'multiple' ? (updated[idx].correctIndexes || []) : undefined };
+    updated[idx] = {
+      ...updated[idx],
+      type,
+      correctIndex: type === 'single' ? (updated[idx].correctIndex ?? 0) : undefined,
+      correctIndexes: type === 'multiple' ? updated[idx].correctIndexes || [] : undefined,
+    };
     setEditableQuestions(updated);
   };
 
@@ -165,7 +170,9 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
   const toggleMultipleCorrect = (qIdx: number, optIdx: number, checked: boolean) => {
     const updated = [...editableQuestions];
     const arr = updated[qIdx].correctIndexes || [];
-    updated[qIdx].correctIndexes = checked ? [...arr, optIdx].sort() : arr.filter(i => i !== optIdx);
+    updated[qIdx].correctIndexes = checked
+      ? [...arr, optIdx].sort()
+      : arr.filter((i) => i !== optIdx);
     setEditableQuestions(updated);
   };
 
@@ -189,11 +196,17 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
     try {
       const formattedQuestions = editableQuestions.map((q: Question) => {
         const base: any = {
-          question: q.question, options: q.options, type: q.type,
+          question: q.question,
+          options: q.options,
+          type: q.type,
           ...(q.questionImage ? { questionImage: q.questionImage } : {}),
-          ...(q.optionImages && q.optionImages.some(Boolean) ? { optionImages: q.optionImages } : {})
+          ...(q.optionImages && q.optionImages.some(Boolean)
+            ? { optionImages: q.optionImages }
+            : {}),
         };
-        return q.type === 'single' ? { ...base, correctIndex: q.correctIndex ?? 0 } : { ...base, correctIndexes: q.correctIndexes || [] };
+        return q.type === 'single'
+          ? { ...base, correctIndex: q.correctIndex ?? 0 }
+          : { ...base, correctIndexes: q.correctIndexes || [] };
       });
 
       const response = await fetch(`/api/quizzes/${params.id}`, {
@@ -221,7 +234,7 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
       } else {
         setError(data.error || 'Failed to update quiz');
       }
-    } catch (error) {
+    } catch (_error) {
       setError('An error occurred while updating the quiz');
     } finally {
       setSaving(false);
@@ -244,7 +257,7 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
       } else {
         setError(data.error || 'Failed to delete quiz');
       }
-    } catch (error) {
+    } catch (_error) {
       setError('An error occurred while deleting the quiz');
     } finally {
       setDeleting(false);
@@ -288,9 +301,10 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
 
   // Check if user can edit
   const isAdmin = (session.user as any)?.role === 'admin';
-  const isAuthor = typeof quiz.author === 'string'
-    ? quiz.author === (session.user as any).id
-    : (quiz.author as any)?._id === (session.user as any).id;
+  const isAuthor =
+    typeof quiz.author === 'string'
+      ? quiz.author === (session.user as any).id
+      : (quiz.author as any)?._id === (session.user as any).id;
 
   if (!isAdmin && !isAuthor) {
     return (
@@ -323,7 +337,13 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
             <div className="flex items-center">
               <Link href="/" className="flex items-center group">
                 <div className="h-10 flex items-center justify-center transition-transform group-hover:scale-105">
-                  <img src="/images/auth_logo.png" alt="RinKuzu Logo" className="h-10 w-auto object-contain" />
+                  <Image
+                    src="/images/auth_logo.png"
+                    alt="RinKuzu Logo"
+                    width={96}
+                    height={40}
+                    className="h-10 w-auto object-contain"
+                  />
                 </div>
               </Link>
             </div>
@@ -332,7 +352,10 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
             <div className="hidden md:flex items-center space-x-8">
               {session ? (
                 <>
-                  <Link href="/" className="text-neutral-600 hover:text-neutral-900 transition-colors">
+                  <Link
+                    href="/"
+                    className="text-neutral-600 hover:text-neutral-900 transition-colors"
+                  >
                     All Quizzes
                   </Link>
 
@@ -347,7 +370,9 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
                           {session.user?.email?.charAt(0).toUpperCase()}
                         </span>
                       </div>
-                      <HiChevronDown className={`w-4 h-4 transition-transform ${isMenuOpen ? 'rotate-180' : ''}`} />
+                      <HiChevronDown
+                        className={`w-4 h-4 transition-transform ${isMenuOpen ? 'rotate-180' : ''}`}
+                      />
                     </button>
 
                     {isMenuOpen && (
@@ -395,7 +420,10 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
               <div className="space-y-2">
                 {session ? (
                   <>
-                    <Link href="/" className="block px-4 py-2 text-neutral-600 hover:text-neutral-900">
+                    <Link
+                      href="/"
+                      className="block px-4 py-2 text-neutral-600 hover:text-neutral-900"
+                    >
                       All Quizzes
                     </Link>
                     <button
@@ -407,10 +435,16 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
                   </>
                 ) : (
                   <>
-                    <Link href="/login" className="block px-4 py-2 text-neutral-600 hover:text-neutral-900">
+                    <Link
+                      href="/login"
+                      className="block px-4 py-2 text-neutral-600 hover:text-neutral-900"
+                    >
                       Sign In
                     </Link>
-                    <Link href="/register" className="block px-4 py-2 text-neutral-600 hover:text-neutral-900">
+                    <Link
+                      href="/register"
+                      className="block px-4 py-2 text-neutral-600 hover:text-neutral-900"
+                    >
                       Get Started
                     </Link>
                   </>
@@ -429,17 +463,19 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
       />
 
       {/* Main Content - with flex layout for PDF viewer */}
-      <main className={`py-8 transition-all duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-16'} max-w-none px-4 sm:px-6 lg:px-8`}>
+      <main
+        className={`py-8 transition-all duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-16'} max-w-none px-4 sm:px-6 lg:px-8`}
+      >
         <div className="flex min-h-screen transition-all duration-300">
           {/* Left Side - Form Content (50% when PDF visible, full width when not) */}
-          <div className={`transition-all duration-300 ${showPDFViewer && pdfUrl ? 'lg:w-1/2 lg:pr-4' : 'w-full'}`}>
+          <div
+            className={`transition-all duration-300 ${showPDFViewer && pdfUrl ? 'lg:w-1/2 lg:pr-4' : 'w-full'}`}
+          >
             <div className="max-w-4xl mx-auto">
               <div className="mb-8 flex items-center justify-between">
                 <div>
                   <h1 className="text-3xl font-bold text-neutral-900">Edit Quiz</h1>
-                  <p className="mt-2 text-neutral-600">
-                    Make changes to your quiz information
-                  </p>
+                  <p className="mt-2 text-neutral-600">Make changes to your quiz information</p>
                 </div>
                 {/* PDF Viewer Toggle Button */}
                 {pdfUrl && (
@@ -449,9 +485,13 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
                     className="flex items-center gap-2 text-brand-trust border-green-200 hover:bg-green-50"
                   >
                     {showPDFViewer ? (
-                      <><HiOutlineEyeOff className="w-4 h-4" /> Hide PDF</>
+                      <>
+                        <HiOutlineEyeOff className="w-4 h-4" /> Hide PDF
+                      </>
                     ) : (
-                      <><HiOutlineDocumentText className="w-4 h-4" /> Show PDF</>
+                      <>
+                        <HiOutlineDocumentText className="w-4 h-4" /> Show PDF
+                      </>
                     )}
                   </Button>
                 )}
@@ -465,14 +505,24 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
                       <h3 className="text-lg font-semibold text-neutral-900">Quiz Status</h3>
                       <p className="text-sm text-neutral-600">Current approval status</p>
                     </div>
-                    <span className={`px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1.5 ${quiz.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                      quiz.status === 'published' ? 'bg-green-100 text-green-800' :
-                        'bg-red-100 text-red-800'
-                      }`}>
-                      <div className={`w-2 h-2 rounded-full ${quiz.status === 'pending' ? 'bg-yellow-500' :
-                        quiz.status === 'published' ? 'bg-green-500' :
-                          'bg-red-500'
-                        }`} />
+                    <span
+                      className={`px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1.5 ${
+                        quiz.status === 'pending'
+                          ? 'bg-yellow-100 text-yellow-800'
+                          : quiz.status === 'published'
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-red-100 text-red-800'
+                      }`}
+                    >
+                      <div
+                        className={`w-2 h-2 rounded-full ${
+                          quiz.status === 'pending'
+                            ? 'bg-yellow-500'
+                            : quiz.status === 'published'
+                              ? 'bg-green-500'
+                              : 'bg-red-500'
+                        }`}
+                      />
                       {quiz.status.charAt(0).toUpperCase() + quiz.status.slice(1)}
                     </span>
                   </div>
@@ -489,7 +539,8 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
                       <div>
                         <h3 className="text-lg font-semibold text-neutral-900">Read Only</h3>
                         <p className="text-sm text-neutral-600">
-                          This quiz cannot be edited because it is already published. Only admins can edit published quizzes.
+                          This quiz cannot be edited because it is already published. Only admins
+                          can edit published quizzes.
                         </p>
                       </div>
                     </div>
@@ -503,9 +554,7 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
                     <HiOutlinePencilAlt className="w-5 h-5 text-brand-trust" />
                     Quiz Information
                   </CardTitle>
-                  <CardDescription>
-                    Update the basic information about your quiz
-                  </CardDescription>
+                  <CardDescription>Update the basic information about your quiz</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <form onSubmit={handleSubmit} className="space-y-6">
@@ -527,7 +576,9 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
                       description={description}
                       onDescriptionChange={setDescription}
                       selectedCategory={selectedCategory}
-                      onCategoryChange={(category) => setSelectedCategory(category as Category | null)}
+                      onCategoryChange={(category) =>
+                        setSelectedCategory(category as Category | null)
+                      }
                       labels={{
                         title: 'Quiz Title',
                         titlePlaceholder: 'Enter a descriptive title for your quiz',
@@ -550,15 +601,23 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
                       <h3 className="text-lg font-semibold text-neutral-900 mb-4">Quiz Content</h3>
                       <div className="bg-neutral-50 rounded-lg p-4">
                         <div className="text-sm text-neutral-600">
-                          <p><strong>Questions:</strong> {quiz.questions.length}</p>
-                          <p><strong>Created:</strong> {new Date(quiz.createdAt).toLocaleDateString()}</p>
+                          <p>
+                            <strong>Questions:</strong> {quiz.questions.length}
+                          </p>
+                          <p>
+                            <strong>Created:</strong>{' '}
+                            {new Date(quiz.createdAt).toLocaleDateString()}
+                          </p>
                           {quiz.status === 'published' && (
-                            <p><strong>Slug:</strong> {quiz.slug}</p>
+                            <p>
+                              <strong>Slug:</strong> {quiz.slug}
+                            </p>
                           )}
                         </div>
                       </div>
                       <p className="mt-2 text-xs text-neutral-500">
-                        Note: Questions cannot be edited after creation. Create a new quiz to change questions.
+                        Note: Questions cannot be edited after creation. Create a new quiz to change
+                        questions.
                       </p>
                     </div>
 
@@ -574,7 +633,12 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
                               </CardTitle>
                               <CardDescription>Edit questions below</CardDescription>
                             </div>
-                            <Button onClick={addQuestion} size="sm" variant="default" className="flex items-center gap-2">
+                            <Button
+                              onClick={addQuestion}
+                              size="sm"
+                              variant="default"
+                              className="flex items-center gap-2"
+                            >
                               <HiOutlinePlus className="w-4 h-4" />
                               Add Question
                             </Button>
@@ -600,16 +664,37 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
                                   Remove
                                 </Button>
                               </div>
-                              <textarea value={q.question} onChange={e => updateQuestionField(index, 'question', e.target.value)} className="w-full border rounded p-2" rows={2} />
-                              <QuestionImageUpload currentImage={q.questionImage} onImageUploaded={url => updateQuestionImage(index, url)} onImageRemoved={() => removeQuestionImage(index)} />
+                              <textarea
+                                value={q.question}
+                                onChange={(e) =>
+                                  updateQuestionField(index, 'question', e.target.value)
+                                }
+                                className="w-full border rounded p-2"
+                                rows={2}
+                              />
+                              <QuestionImageUpload
+                                currentImage={q.questionImage}
+                                onImageUploaded={(url) => updateQuestionImage(index, url)}
+                                onImageRemoved={() => removeQuestionImage(index)}
+                              />
                               <div>
-                                <label className="text-sm font-medium mb-1">Question Type</label>
+                                <p className="text-sm font-medium mb-1">Question Type</p>
                                 <div className="flex space-x-4 mt-1">
                                   <label className="flex items-center">
-                                    <input type="radio" checked={q.type === 'single'} onChange={() => toggleQuestionType(index, 'single')} /> <span className="ml-2 text-sm">Single</span>
+                                    <input
+                                      type="radio"
+                                      checked={q.type === 'single'}
+                                      onChange={() => toggleQuestionType(index, 'single')}
+                                    />{' '}
+                                    <span className="ml-2 text-sm">Single</span>
                                   </label>
                                   <label className="flex items-center">
-                                    <input type="radio" checked={q.type === 'multiple'} onChange={() => toggleQuestionType(index, 'multiple')} /> <span className="ml-2 text-sm">Multiple</span>
+                                    <input
+                                      type="radio"
+                                      checked={q.type === 'multiple'}
+                                      onChange={() => toggleQuestionType(index, 'multiple')}
+                                    />{' '}
+                                    <span className="ml-2 text-sm">Multiple</span>
                                   </label>
                                 </div>
                               </div>
@@ -617,12 +702,33 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
                                 {q.options.map((opt, optIdx) => (
                                   <div key={optIdx} className="flex items-center space-x-2">
                                     {q.type === 'single' ? (
-                                      <input type="radio" name={`correct-${index}`} checked={q.correctIndex === optIdx} onChange={() => setSingleCorrect(index, optIdx)} />
+                                      <input
+                                        type="radio"
+                                        name={`correct-${index}`}
+                                        checked={q.correctIndex === optIdx}
+                                        onChange={() => setSingleCorrect(index, optIdx)}
+                                      />
                                     ) : (
-                                      <input type="checkbox" checked={q.correctIndexes?.includes(optIdx)} onChange={e => toggleMultipleCorrect(index, optIdx, e.target.checked)} />
+                                      <input
+                                        type="checkbox"
+                                        checked={q.correctIndexes?.includes(optIdx)}
+                                        onChange={(e) =>
+                                          toggleMultipleCorrect(index, optIdx, e.target.checked)
+                                        }
+                                      />
                                     )}
-                                    <Input value={opt} onChange={e => updateOption(index, optIdx, e.target.value)} className="flex-1" />
-                                    <OptionImageUpload currentImage={q.optionImages?.[optIdx]} onImageUploaded={url => updateOptionImage(index, optIdx, url)} onImageRemoved={() => removeOptionImage(index, optIdx)} />
+                                    <Input
+                                      value={opt}
+                                      onChange={(e) => updateOption(index, optIdx, e.target.value)}
+                                      className="flex-1"
+                                    />
+                                    <OptionImageUpload
+                                      currentImage={q.optionImages?.[optIdx]}
+                                      onImageUploaded={(url) =>
+                                        updateOptionImage(index, optIdx, url)
+                                      }
+                                      onImageRemoved={() => removeOptionImage(index, optIdx)}
+                                    />
                                   </div>
                                 ))}
                               </div>
@@ -646,7 +752,9 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
                             disabled={!title.trim()}
                             className="flex items-center gap-2"
                           >
-                            {saving ? 'Saving…' : (
+                            {saving ? (
+                              'Saving…'
+                            ) : (
                               <>
                                 <HiOutlineSave className="w-4 h-4" />
                                 Save Changes
@@ -664,7 +772,9 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
                           loading={deleting}
                           className="flex items-center gap-2"
                         >
-                          {deleting ? 'Deleting…' : (
+                          {deleting ? (
+                            'Deleting…'
+                          ) : (
                             <>
                               <HiOutlineTrash className="w-4 h-4" />
                               Delete Quiz
@@ -681,9 +791,7 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
                 <Card className="mt-6">
                   <CardHeader>
                     <CardTitle>Quiz Link</CardTitle>
-                    <CardDescription>
-                      Share this link with your students
-                    </CardDescription>
+                    <CardDescription>Share this link with your students</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="flex items-center space-x-4">
@@ -757,4 +865,4 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
       </main>
     </div>
   );
-} 
+}

@@ -10,7 +10,7 @@ export const authOptions: NextAuthOptions = {
       name: 'credentials',
       credentials: {
         email: { label: 'Email', type: 'email' },
-        password: { label: 'Password', type: 'password' }
+        password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
@@ -19,16 +19,13 @@ export const authOptions: NextAuthOptions = {
 
         try {
           await connectDB();
-          
+
           const user = await User.findOne({ email: credentials.email });
           if (!user) {
             return null;
           }
 
-          const isValidPassword = await verifyPassword(
-            credentials.password,
-            user.password
-          );
+          const isValidPassword = await verifyPassword(credentials.password, user.password);
 
           if (!isValidPassword) {
             return null;
@@ -43,8 +40,8 @@ export const authOptions: NextAuthOptions = {
           console.error('Auth error:', error);
           return null;
         }
-      }
-    })
+      },
+    }),
   ],
   session: {
     strategy: 'jwt',
@@ -69,4 +66,4 @@ export const authOptions: NextAuthOptions = {
     signIn: '/login',
   },
   secret: process.env.NEXTAUTH_SECRET,
-}; 
+};

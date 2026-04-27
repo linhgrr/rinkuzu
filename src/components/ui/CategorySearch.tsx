@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useDebounce } from '@/hooks/useDebounce';
 
@@ -18,7 +18,11 @@ interface CategorySearchProps {
   showInHomepage?: boolean;
 }
 
-export function CategorySearch({ isCollapsed = false, onCategorySelect, showInHomepage = false }: CategorySearchProps) {
+export function CategorySearch({
+  isCollapsed = false,
+  onCategorySelect,
+  showInHomepage = false,
+}: CategorySearchProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [categories, setCategories] = useState<Category[]>([]);
@@ -26,11 +30,11 @@ export function CategorySearch({ isCollapsed = false, onCategorySelect, showInHo
   const [loading, setLoading] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [recentCategories, setRecentCategories] = useState<Category[]>([]);
-  
+
   const searchRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
-  
+
   // Debounce search term để tránh search quá nhiều
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
@@ -43,14 +47,17 @@ export function CategorySearch({ isCollapsed = false, onCategorySelect, showInHo
   // Filter categories khi search term thay đổi
   useEffect(() => {
     if (debouncedSearchTerm.trim()) {
-      const filtered = categories.filter(category =>
-        category.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
-        category.description.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
+      const filtered = categories.filter(
+        (category) =>
+          category.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+          category.description.toLowerCase().includes(debouncedSearchTerm.toLowerCase()),
       );
       setFilteredCategories(filtered);
     } else {
       // Hiển thị recent categories nếu không có search term
-      setFilteredCategories(recentCategories.length > 0 ? recentCategories.slice(0, 5) : categories.slice(0, 8));
+      setFilteredCategories(
+        recentCategories.length > 0 ? recentCategories.slice(0, 5) : categories.slice(0, 8),
+      );
     }
     setSelectedIndex(-1);
   }, [debouncedSearchTerm, categories, recentCategories]);
@@ -60,7 +67,7 @@ export function CategorySearch({ isCollapsed = false, onCategorySelect, showInHo
       setLoading(true);
       const response = await fetch('/api/categories/stats');
       const data = await response.json();
-      
+
       if (data.success) {
         setCategories(data.data.allCategories);
       }
@@ -84,7 +91,10 @@ export function CategorySearch({ isCollapsed = false, onCategorySelect, showInHo
 
   const saveRecentCategory = (category: Category) => {
     try {
-      const recent = [...recentCategories.filter(c => c._id !== category._id), category].slice(0, 5);
+      const recent = [...recentCategories.filter((c) => c._id !== category._id), category].slice(
+        0,
+        5,
+      );
       setRecentCategories(recent);
       localStorage.setItem('recentCategories', JSON.stringify(recent));
     } catch (error) {
@@ -118,13 +128,11 @@ export function CategorySearch({ isCollapsed = false, onCategorySelect, showInHo
     switch (e.key) {
       case 'ArrowDown':
         e.preventDefault();
-        setSelectedIndex(prev => 
-          prev < filteredCategories.length - 1 ? prev + 1 : prev
-        );
+        setSelectedIndex((prev) => (prev < filteredCategories.length - 1 ? prev + 1 : prev));
         break;
       case 'ArrowUp':
         e.preventDefault();
-        setSelectedIndex(prev => prev > -1 ? prev - 1 : -1);
+        setSelectedIndex((prev) => (prev > -1 ? prev - 1 : -1));
         break;
       case 'Enter':
         e.preventDefault();
@@ -167,7 +175,12 @@ export function CategorySearch({ isCollapsed = false, onCategorySelect, showInHo
         title="Search Categories"
       >
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+          />
         </svg>
       </button>
     );
@@ -187,8 +200,18 @@ export function CategorySearch({ isCollapsed = false, onCategorySelect, showInHo
           onKeyDown={handleKeyDown}
           className="w-full pl-9 pr-4 py-2 text-sm border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-trust focus:border-transparent"
         />
-        <svg className="absolute left-3 top-2.5 w-4 h-4 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        <svg
+          className="absolute left-3 top-2.5 w-4 h-4 text-neutral-400"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+          />
         </svg>
       </div>
 
@@ -211,8 +234,18 @@ export function CategorySearch({ isCollapsed = false, onCategorySelect, showInHo
               >
                 <div className="flex items-center">
                   <div className="w-8 h-8 bg-gradient-to-br from-brand-trust to-green-600 rounded-full flex items-center justify-center mr-3">
-                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                    <svg
+                      className="w-4 h-4 text-white"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+                      />
                     </svg>
                   </div>
                   <div>
@@ -225,7 +258,9 @@ export function CategorySearch({ isCollapsed = false, onCategorySelect, showInHo
               {/* Recent Categories Section */}
               {!searchTerm && recentCategories.length > 0 && (
                 <div className="px-4 py-2 bg-neutral-50 border-b border-neutral-100">
-                  <p className="text-xs font-medium text-neutral-600 uppercase tracking-wide">Recent</p>
+                  <p className="text-xs font-medium text-neutral-600 uppercase tracking-wide">
+                    Recent
+                  </p>
                 </div>
               )}
 
@@ -236,11 +271,13 @@ export function CategorySearch({ isCollapsed = false, onCategorySelect, showInHo
                     key={category._id}
                     onClick={() => handleCategorySelect(category)}
                     className={`w-full px-4 py-3 text-left hover:bg-neutral-50 transition-colors ${
-                      selectedIndex === index ? 'text-green-50 text-brand-trust' : 'text-neutral-700'
+                      selectedIndex === index
+                        ? 'text-green-50 text-brand-trust'
+                        : 'text-neutral-700'
                     }`}
                   >
                     <div className="flex items-center">
-                      <div 
+                      <div
                         className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold mr-3"
                         style={{ backgroundColor: category.color }}
                       >
@@ -258,8 +295,18 @@ export function CategorySearch({ isCollapsed = false, onCategorySelect, showInHo
                 ))
               ) : searchTerm ? (
                 <div className="p-4 text-center text-neutral-500">
-                  <svg className="w-8 h-8 mx-auto mb-2 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  <svg
+                    className="w-8 h-8 mx-auto mb-2 text-neutral-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                    />
                   </svg>
                   <p className="text-sm">No categories found</p>
                   <p className="text-xs">Try a different search term</p>
@@ -273,4 +320,4 @@ export function CategorySearch({ isCollapsed = false, onCategorySelect, showInHo
   );
 }
 
-export default CategorySearch; 
+export default CategorySearch;

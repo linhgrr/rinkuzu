@@ -46,31 +46,35 @@ function PDFViewerComponent({ files, onClose }: { files: File[]; onClose: () => 
 
     const loadPDFs = async () => {
       setLoading(true);
-    setError('');
+      setError('');
 
-    try {
-      if (files.length === 1) {
-        const url = URL.createObjectURL(files[0]);
-        setPdfUrl(url);
-        setFileInfo(`1 file: ${files[0].name} (${(files[0].size / 1024 / 1024).toFixed(2)} MB)`);
-        setTotalPages(await getPdfPageCount(files[0]));
-      } else {
-        const merged = await mergePdfFiles(files);
-        const url = URL.createObjectURL(merged);
-        const names = files.map((f) => f.name).join(', ');
-        const totalSize = files.reduce((sum, f) => sum + f.size, 0);
+      try {
+        if (files.length === 1) {
+          const url = URL.createObjectURL(files[0]);
+          setPdfUrl(url);
+          setFileInfo(`1 file: ${files[0].name} (${(files[0].size / 1024 / 1024).toFixed(2)} MB)`);
+          setTotalPages(await getPdfPageCount(files[0]));
+        } else {
+          const merged = await mergePdfFiles(files);
+          const url = URL.createObjectURL(merged);
+          const names = files.map((f) => f.name).join(', ');
+          const totalSize = files.reduce((sum, f) => sum + f.size, 0);
 
-        setPdfUrl(url);
-        setTotalPages(await getPdfPageCount(new File([merged], 'merged.pdf', { type: 'application/pdf' })));
-        setFileInfo(`${files.length} files merged: ${names} (${(totalSize / 1024 / 1024).toFixed(2)} MB total)`);
+          setPdfUrl(url);
+          setTotalPages(
+            await getPdfPageCount(new File([merged], 'merged.pdf', { type: 'application/pdf' })),
+          );
+          setFileInfo(
+            `${files.length} files merged: ${names} (${(totalSize / 1024 / 1024).toFixed(2)} MB total)`,
+          );
+        }
+      } catch (err) {
+        console.error('Error loading PDFs:', err);
+        setError('Failed to load PDF files');
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      console.error('Error loading PDFs:', err);
-      setError('Failed to load PDF files');
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
 
     void loadPDFs();
   }, [files]);
@@ -88,7 +92,9 @@ function PDFViewerComponent({ files, onClose }: { files: File[]; onClose: () => 
       <div className="w-full h-full flex items-center justify-center bg-neutral-50">
         <div className="text-center">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust mx-auto mb-2" />
-          <p className="text-sm text-neutral-600">{files.length > 1 ? t('mergingPDFs', { count: files.length }) : t('loadingPDF')}</p>
+          <p className="text-sm text-neutral-600">
+            {files.length > 1 ? t('mergingPDFs', { count: files.length }) : t('loadingPDF')}
+          </p>
           <p className="text-xs text-neutral-500 mt-1">{t('thisWillTakeMoment')}</p>
         </div>
       </div>
@@ -124,7 +130,9 @@ function PDFViewerComponent({ files, onClose }: { files: File[]; onClose: () => 
         <div className="flex items-center justify-between text-sm">
           <div className="flex items-center space-x-2">
             <HiOutlineDocumentText className="w-4 h-4 text-brand-trust" />
-            <span className="text-neutral-700 font-medium">{totalPages} {t('pages')}</span>
+            <span className="text-neutral-700 font-medium">
+              {totalPages} {t('pages')}
+            </span>
           </div>
           <div className="flex items-center space-x-2">
             <button
@@ -147,16 +155,13 @@ function PDFViewerComponent({ files, onClose }: { files: File[]; onClose: () => 
             </button>
           </div>
         </div>
-        <p className="text-xs text-neutral-600 mt-1 truncate" title={fileInfo}>{fileInfo}</p>
+        <p className="text-xs text-neutral-600 mt-1 truncate" title={fileInfo}>
+          {fileInfo}
+        </p>
       </div>
 
       <div className="flex-1 bg-white">
-        <PDFViewer
-          pdfDataUrl={pdfUrl}
-          pdfUrl={pdfUrl}
-          onClose={onClose}
-          showHeader={false}
-        />
+        <PDFViewer pdfDataUrl={pdfUrl} pdfUrl={pdfUrl} onClose={onClose} showHeader={false} />
       </div>
     </div>
   );
@@ -327,9 +332,16 @@ export default function CreateQuizPage() {
 
       <main className="pt-20">
         <div className="flex min-h-screen transition-all duration-300">
-          <div className={`transition-all duration-300 ${showPDFViewer ? 'lg:w-1/2 lg:pr-4' : 'w-full'} px-4 sm:px-6 lg:px-8 pb-8`}>
+          <div
+            className={`transition-all duration-300 ${showPDFViewer ? 'lg:w-1/2 lg:pr-4' : 'w-full'} px-4 sm:px-6 lg:px-8 pb-8`}
+          >
             {error && (
-              <Card variant="bordered" className="border-red-200 bg-red-50 p-4 mb-6 max-w-2xl mx-auto" role="alert" aria-live="polite">
+              <Card
+                variant="bordered"
+                className="border-red-200 bg-red-50 p-4 mb-6 max-w-2xl mx-auto"
+                role="alert"
+                aria-live="polite"
+              >
                 <div className="flex items-center text-red-700">
                   <HiOutlineExclamationCircle className="w-5 h-5 mr-2 flex-shrink-0" />
                   <span className="text-sm font-medium">{error}</span>
@@ -338,7 +350,12 @@ export default function CreateQuizPage() {
             )}
 
             {success && (
-              <Card variant="bordered" className="border-green-200 bg-green-50 p-4 mb-6 max-w-2xl mx-auto" role="status" aria-live="polite">
+              <Card
+                variant="bordered"
+                className="border-green-200 bg-green-50 p-4 mb-6 max-w-2xl mx-auto"
+                role="status"
+                aria-live="polite"
+              >
                 <div className="flex items-center text-green-700">
                   <HiOutlineCheckCircle className="w-5 h-5 mr-2 flex-shrink-0" />
                   <span className="text-sm font-medium">{success}</span>
@@ -346,14 +363,24 @@ export default function CreateQuizPage() {
               </Card>
             )}
 
-            <Card variant="glass" className="max-w-2xl mx-auto backdrop-blur-xl border-white/30 shadow-xl">
+            <Card
+              variant="glass"
+              className="max-w-2xl mx-auto backdrop-blur-xl border-white/30 shadow-xl"
+            >
               <CardHeader className="text-center">
-                <CardTitle size="lg" className="text-neutral-900">{t('uploadPDFDocument')}</CardTitle>
+                <CardTitle size="lg" className="text-neutral-900">
+                  {t('uploadPDFDocument')}
+                </CardTitle>
                 <CardDescription className="text-base">{t('uploadDescription')}</CardDescription>
               </CardHeader>
 
               <CardContent className="pt-0">
-                <form onSubmit={(e) => { void handleBackgroundExtract(e); }} className="space-y-6">
+                <form
+                  onSubmit={(e) => {
+                    void handleBackgroundExtract(e);
+                  }}
+                  className="space-y-6"
+                >
                   <QuizMetaForm
                     title={title}
                     onTitleChange={setTitle}
@@ -383,31 +410,46 @@ export default function CreateQuizPage() {
                   />
 
                   <div>
-                    <label className="block text-sm font-semibold text-neutral-700 mb-3">{t('pdfDocument')}</label>
+                    <label className="block text-sm font-semibold text-neutral-700 mb-3">
+                      {t('pdfDocument')}
+                    </label>
                     <div
                       {...getRootProps()}
                       className={`border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all duration-300 ${isDragActive ? 'border-brand-action/60 bg-orange-50/50 scale-105' : 'border-neutral-300 hover:border-brand-action/40 hover:bg-orange-50/30'}`}
                     >
                       <input {...getInputProps()} />
                       <div className="space-y-4">
-                        <div className={`inline-flex items-center justify-center p-4 rounded-2xl ${isDragActive ? 'bg-orange-500/10' : 'bg-neutral-100'} transition-colors duration-300`}>
-                          <HiOutlineUpload className={`h-8 w-8 ${isDragActive ? 'text-brand-action' : 'text-neutral-400'}`} />
+                        <div
+                          className={`inline-flex items-center justify-center p-4 rounded-2xl ${isDragActive ? 'bg-orange-500/10' : 'bg-neutral-100'} transition-colors duration-300`}
+                        >
+                          <HiOutlineUpload
+                            className={`h-8 w-8 ${isDragActive ? 'text-brand-action' : 'text-neutral-400'}`}
+                          />
                         </div>
                         <div className="text-center">
                           {extracting ? (
                             <div className="flex items-center justify-center space-x-2">
                               <div className="h-5 w-5 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
-                              <p className="text-sm font-semibold text-brand-trust">{t('processingFiles')}</p>
+                              <p className="text-sm font-semibold text-brand-trust">
+                                {t('processingFiles')}
+                              </p>
                             </div>
                           ) : isDragActive ? (
-                            <p className="text-lg font-semibold text-brand-action">{t('dropPDFHere')}</p>
+                            <p className="text-lg font-semibold text-brand-action">
+                              {t('dropPDFHere')}
+                            </p>
                           ) : (
                             <div>
                               <p className="text-lg font-semibold text-neutral-700 mb-2">
-                                <span className="text-brand-action hover:text-brand-action-hover transition-colors">{t('clickToUpload')}</span> {t('dragAndDrop')}
+                                <span className="text-brand-action hover:text-brand-action-hover transition-colors">
+                                  {t('clickToUpload')}
+                                </span>{' '}
+                                {t('dragAndDrop')}
                               </p>
                               <p className="text-sm text-neutral-500">{t('multiplePDFAllowed')}</p>
-                              <p className="text-xs text-neutral-400 mt-1">{t('supportedFormats')}</p>
+                              <p className="text-xs text-neutral-400 mt-1">
+                                {t('supportedFormats')}
+                              </p>
                             </div>
                           )}
                         </div>
@@ -417,7 +459,9 @@ export default function CreateQuizPage() {
                     {pdfFiles.length > 0 && (
                       <div className="mt-4 space-y-2">
                         <div className="flex items-center justify-between mb-4">
-                          <h4 className="text-sm font-semibold text-neutral-700">{t('selectedFiles', { count: pdfFiles.length })}</h4>
+                          <h4 className="text-sm font-semibold text-neutral-700">
+                            {t('selectedFiles', { count: pdfFiles.length })}
+                          </h4>
                           <Button
                             type="button"
                             variant="ghost"
@@ -432,15 +476,26 @@ export default function CreateQuizPage() {
 
                         <div className="space-y-3 max-h-60 overflow-y-auto">
                           {pdfFiles.map((file, index) => (
-                            <Card key={`${file.name}-${index}`} variant="bordered" className="p-4 hover:shadow-md transition-shadow">
+                            <Card
+                              key={`${file.name}-${index}`}
+                              variant="bordered"
+                              className="p-4 hover:shadow-md transition-shadow"
+                            >
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center space-x-3 min-w-0 flex-1">
                                   <div className="p-2 bg-red-100 rounded-xl flex-shrink-0">
                                     <HiOutlineDocumentText className="h-6 w-6 text-red-600" />
                                   </div>
                                   <div className="min-w-0 flex-1">
-                                    <p className="text-sm font-semibold text-neutral-900 truncate" title={file.name}>{file.name}</p>
-                                    <p className="text-xs text-neutral-500">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                                    <p
+                                      className="text-sm font-semibold text-neutral-900 truncate"
+                                      title={file.name}
+                                    >
+                                      {file.name}
+                                    </p>
+                                    <p className="text-xs text-neutral-500">
+                                      {(file.size / 1024 / 1024).toFixed(2)} MB
+                                    </p>
                                   </div>
                                 </div>
                                 <Button
@@ -457,7 +512,9 @@ export default function CreateQuizPage() {
                           ))}
                         </div>
 
-                        <p className="text-xs text-neutral-500">Total size: {totalUploadedSizeMb} MB</p>
+                        <p className="text-xs text-neutral-500">
+                          Total size: {totalUploadedSizeMb} MB
+                        </p>
                       </div>
                     )}
                   </div>
@@ -471,7 +528,11 @@ export default function CreateQuizPage() {
                           onClick={() => setShowPDFViewer(!showPDFViewer)}
                           className="text-brand-trust border-green-200 hover:bg-green-50"
                         >
-                          {showPDFViewer ? <HiOutlineEyeOff className="w-4 h-4 mr-2" /> : <HiOutlineEye className="w-4 h-4 mr-2" />}
+                          {showPDFViewer ? (
+                            <HiOutlineEyeOff className="w-4 h-4 mr-2" />
+                          ) : (
+                            <HiOutlineEye className="w-4 h-4 mr-2" />
+                          )}
                           {showPDFViewer ? t('hidePDFPreview') : t('showPDFPreview')}
                         </Button>
                       </div>
@@ -520,8 +581,18 @@ export default function CreateQuizPage() {
                     {pdfFiles.length === 0 ? (
                       <div className="flex-1 flex items-center justify-center">
                         <div className="text-center text-neutral-500">
-                          <svg className="w-16 h-16 mx-auto mb-4 text-neutral-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          <svg
+                            className="w-16 h-16 mx-auto mb-4 text-neutral-300"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                            />
                           </svg>
                           <p className="text-sm">{t('uploadPDFToPreview')}</p>
                         </div>
@@ -529,7 +600,10 @@ export default function CreateQuizPage() {
                     ) : (
                       <div className="flex-1 border border-neutral-200 rounded overflow-hidden">
                         <div className="w-full h-full">
-                          <PDFViewerComponent files={pdfFiles} onClose={() => setShowPDFViewer(false)} />
+                          <PDFViewerComponent
+                            files={pdfFiles}
+                            onClose={() => setShowPDFViewer(false)}
+                          />
                         </div>
                       </div>
                     )}

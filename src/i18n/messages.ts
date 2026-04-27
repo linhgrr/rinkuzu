@@ -17,7 +17,7 @@ function getLocaleDirectory(locale: string): string {
 
 async function readNamespaceMessage(
   locale: string,
-  namespace: string
+  namespace: string,
 ): Promise<AbstractIntlMessages> {
   const filePath = path.join(getLocaleDirectory(locale), `${namespace}.json`);
   const content = await readFile(filePath, 'utf8');
@@ -26,21 +26,21 @@ async function readNamespaceMessage(
 
 export async function getLocaleMessages(
   locale: string,
-  namespaces?: readonly string[]
+  namespaces?: readonly string[],
 ): Promise<LocaleMessages> {
   const localeDirectory = getLocaleDirectory(locale);
   const resolvedNamespaces = namespaces?.length
     ? [...new Set(namespaces)]
     : (await readdir(localeDirectory))
-      .filter((entry) => entry.endsWith('.json'))
-      .map((entry) => entry.replace(/\.json$/u, ''))
-      .sort();
+        .filter((entry) => entry.endsWith('.json'))
+        .map((entry) => entry.replace(/\.json$/u, ''))
+        .sort();
 
   const entries = await Promise.all(
     resolvedNamespaces.map(async (namespace) => {
       const message = await readNamespaceMessage(locale, namespace);
       return [namespace, message] as const;
-    })
+    }),
   );
 
   return Object.fromEntries(entries);
@@ -48,7 +48,7 @@ export async function getLocaleMessages(
 
 export async function getScopedMessages(
   locale: string,
-  namespaces: readonly string[]
+  namespaces: readonly string[],
 ): Promise<LocaleMessages> {
   return getLocaleMessages(locale, namespaces);
 }

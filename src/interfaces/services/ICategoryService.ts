@@ -6,7 +6,12 @@ export interface ICategoryService {
     statusCode?: number;
   }>;
 
-  getCategoryBySlug(slug: string, page?: number, limit?: number, search?: string): Promise<{
+  getCategoryBySlug(
+    slug: string,
+    page?: number,
+    limit?: number,
+    search?: string,
+  ): Promise<{
     success: boolean;
     data?: any;
     error?: string;
@@ -26,4 +31,4 @@ export interface ICategoryService {
     error?: string;
     statusCode?: number;
   }>;
-} 
+}

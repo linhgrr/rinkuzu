@@ -15,7 +15,7 @@ import {
   HiOutlineTag,
   HiOutlineLogout,
   HiOutlineMenu,
-  HiOutlineX
+  HiOutlineX,
 } from '@/components/icons';
 import { NavLogo } from './NavLogo';
 import { NavLinks } from './NavLinks';
@@ -30,7 +30,13 @@ interface UserMenuProps {
   menuRef: React.RefObject<HTMLDivElement>;
 }
 
-const UserMenu = memo(function UserMenu({ session, isOpen, onToggle, onClose, menuRef }: UserMenuProps) {
+const UserMenu = memo(function UserMenu({
+  session,
+  isOpen,
+  onToggle,
+  onClose,
+  menuRef,
+}: UserMenuProps) {
   const t = useTranslations('nav');
 
   const handleSignOut = useCallback(() => {
@@ -51,7 +57,12 @@ const UserMenu = memo(function UserMenu({ session, isOpen, onToggle, onClose, me
 
       {isOpen && (
         <>
-          <div className="fixed inset-0 z-10" onClick={onClose} />
+          <button
+            type="button"
+            className="fixed inset-0 z-10"
+            onClick={onClose}
+            aria-label={t('closeMenu')}
+          />
 
           <div className="absolute right-0 mt-2 w-72 bg-white rounded-2xl shadow-[var(--shadow-lg)] border border-neutral-100 overflow-hidden z-20 animate-scaleIn origin-top-right">
             {/* User Header */}
@@ -64,9 +75,7 @@ const UserMenu = memo(function UserMenu({ session, isOpen, onToggle, onClose, me
                   <p className="text-sm font-semibold text-neutral-900 truncate">
                     {session.user?.email?.split('@')[0]}
                   </p>
-                  <p className="text-xs text-neutral-500 truncate">
-                    {session.user?.email}
-                  </p>
+                  <p className="text-xs text-neutral-500 truncate">{session.user?.email}</p>
                 </div>
               </div>
             </div>
@@ -155,7 +164,12 @@ interface MobileMenuProps {
   isAuthLoading?: boolean;
 }
 
-const MobileMenu = memo(function MobileMenu({ session, isOpen, onClose, isAuthLoading = false }: MobileMenuProps) {
+const MobileMenu = memo(function MobileMenu({
+  session,
+  isOpen,
+  onClose,
+  isAuthLoading = false,
+}: MobileMenuProps) {
   const t = useTranslations('nav');
   const tAuth = useTranslations('auth');
 
@@ -189,36 +203,66 @@ const MobileMenu = memo(function MobileMenu({ session, isOpen, onClose, isAuthLo
                 {session.user?.email?.charAt(0).toUpperCase()}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-neutral-900 truncate">{session.user?.email}</p>
+                <p className="text-sm font-medium text-neutral-900 truncate">
+                  {session.user?.email}
+                </p>
                 <p className="text-xs text-neutral-500">
                   {(session.user as any)?.role === 'admin' ? tAuth('administrator') : tAuth('user')}
                 </p>
               </div>
             </div>
 
-            <Link href="/" className="block px-4 py-3 text-sm font-medium text-neutral-900 hover:bg-neutral-50 rounded-xl transition-colors" onClick={onClose}>
+            <Link
+              href="/"
+              className="block px-4 py-3 text-sm font-medium text-neutral-900 hover:bg-neutral-50 rounded-xl transition-colors"
+              onClick={onClose}
+            >
               {t('home')}
             </Link>
-            <Link href="/create" className="block px-4 py-3 text-sm font-medium text-neutral-900 hover:bg-neutral-50 rounded-xl transition-colors" onClick={onClose}>
+            <Link
+              href="/create"
+              className="block px-4 py-3 text-sm font-medium text-neutral-900 hover:bg-neutral-50 rounded-xl transition-colors"
+              onClick={onClose}
+            >
               {t('createQuiz')}
             </Link>
-            <Link href="/explore" className="block px-4 py-3 text-sm font-medium text-neutral-900 hover:bg-neutral-50 rounded-xl transition-colors" onClick={onClose}>
+            <Link
+              href="/explore"
+              className="block px-4 py-3 text-sm font-medium text-neutral-900 hover:bg-neutral-50 rounded-xl transition-colors"
+              onClick={onClose}
+            >
               {t('explore')}
             </Link>
-            <Link href="/profile?tab=quizzes" className="block px-4 py-3 text-sm font-medium text-neutral-900 hover:bg-neutral-50 rounded-xl transition-colors" onClick={onClose}>
+            <Link
+              href="/profile?tab=quizzes"
+              className="block px-4 py-3 text-sm font-medium text-neutral-900 hover:bg-neutral-50 rounded-xl transition-colors"
+              onClick={onClose}
+            >
               {t('profile')}
             </Link>
-            <Link href="/profile?tab=history" className="block px-4 py-3 text-sm font-medium text-neutral-900 hover:bg-neutral-50 rounded-xl transition-colors" onClick={onClose}>
+            <Link
+              href="/profile?tab=history"
+              className="block px-4 py-3 text-sm font-medium text-neutral-900 hover:bg-neutral-50 rounded-xl transition-colors"
+              onClick={onClose}
+            >
               {t('history')}
             </Link>
-            <Link href="/profile?tab=bookmarks" className="block px-4 py-3 text-sm font-medium text-neutral-900 hover:bg-neutral-50 rounded-xl transition-colors" onClick={onClose}>
+            <Link
+              href="/profile?tab=bookmarks"
+              className="block px-4 py-3 text-sm font-medium text-neutral-900 hover:bg-neutral-50 rounded-xl transition-colors"
+              onClick={onClose}
+            >
               {t('bookmarks')}
             </Link>
 
             {(session.user as any)?.role === 'admin' && (
               <>
                 <div className="h-px bg-neutral-200 my-3" />
-                <Link href="/admin/queue" className="block px-4 py-3 text-sm font-medium text-brand-trust hover:bg-green-50 rounded-xl transition-colors" onClick={onClose}>
+                <Link
+                  href="/admin/queue"
+                  className="block px-4 py-3 text-sm font-medium text-brand-trust hover:bg-green-50 rounded-xl transition-colors"
+                  onClick={onClose}
+                >
                   {t('adminPanel')}
                 </Link>
               </>
@@ -240,10 +284,18 @@ const MobileMenu = memo(function MobileMenu({ session, isOpen, onClose, isAuthLo
           </>
         ) : (
           <>
-            <Link href="/login" className="block px-4 py-3 text-sm font-medium text-neutral-900 hover:bg-neutral-50 rounded-xl transition-colors" onClick={onClose}>
+            <Link
+              href="/login"
+              className="block px-4 py-3 text-sm font-medium text-neutral-900 hover:bg-neutral-50 rounded-xl transition-colors"
+              onClick={onClose}
+            >
               {t('signIn')}
             </Link>
-            <Link href="/register" className="block px-4 py-3 text-sm font-medium text-brand-action hover:bg-orange-50 rounded-xl transition-colors" onClick={onClose}>
+            <Link
+              href="/register"
+              className="block px-4 py-3 text-sm font-medium text-brand-action hover:bg-orange-50 rounded-xl transition-colors"
+              onClick={onClose}
+            >
               {t('getStarted')}
             </Link>
             <div className="h-px bg-neutral-200 my-3" />
@@ -311,7 +363,7 @@ export default function NavigationClient({
   }, [isUserMenuOpen]);
 
   const handleUserMenuToggle = useCallback(() => {
-    setIsUserMenuOpen(prev => !prev);
+    setIsUserMenuOpen((prev) => !prev);
   }, []);
 
   const handleUserMenuClose = useCallback(() => {
@@ -319,7 +371,7 @@ export default function NavigationClient({
   }, []);
 
   const handleMobileMenuToggle = useCallback(() => {
-    setIsMenuOpen(prev => !prev);
+    setIsMenuOpen((prev) => !prev);
   }, []);
 
   const handleMobileMenuClose = useCallback(() => {
@@ -341,7 +393,9 @@ export default function NavigationClient({
   }
 
   return (
-    <nav className={`${positionClass} top-0 left-0 right-0 z-50 transition-all duration-300 ${navClasses} ${className}`}>
+    <nav
+      className={`${positionClass} top-0 left-0 right-0 z-50 transition-all duration-300 ${navClasses} ${className}`}
+    >
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-14">
           {/* Logo - Static Component */}

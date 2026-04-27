@@ -57,13 +57,13 @@ export function DraftSyncProvider({ children }: { children: React.ReactNode }) {
 
     const checkAndResume = async () => {
       const drafts = getActiveDrafts();
-      const processingDrafts = drafts.filter(d => d.status === 'processing');
+      const processingDrafts = drafts.filter((d) => d.status === 'processing');
 
       for (const draft of processingDrafts) {
         // Only resume if not already being processed by this provider
         if (!processingDraftsRef.current.has(draft.id)) {
           processingDraftsRef.current.add(draft.id);
-          console.log(`DraftSyncProvider: Resuming processing for ${draft.id}`);
+          console.warn(`DraftSyncProvider: Resuming processing for ${draft.id}`);
 
           // Small delay to ensure navigation is complete
           setTimeout(() => {

@@ -30,4 +30,4 @@ export interface IAdminService {
 
   // Setup
   initializeSystem(): Promise<ServiceResult<any>>;
-} 
+}

@@ -47,10 +47,7 @@ function getIntensityClass(questions: number): string {
 
 const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
-export function WeeklyProgressHeatmap({
-  weeklyActivity,
-  labels,
-}: WeeklyProgressHeatmapProps) {
+export function WeeklyProgressHeatmap({ weeklyActivity, labels }: WeeklyProgressHeatmapProps) {
   const [weekOffset, setWeekOffset] = useState(0);
 
   const { weekDates, weekLabel, isCurrentWeek } = useMemo(() => {
@@ -70,8 +67,7 @@ export function WeeklyProgressHeatmap({
     const weekEnd = new Date(weekStart);
     weekEnd.setDate(weekStart.getDate() + 6);
 
-    const formatShort = (d: Date) =>
-      `${d.getDate()}/${d.getMonth() + 1}`;
+    const formatShort = (d: Date) => `${d.getDate()}/${d.getMonth() + 1}`;
 
     return {
       weekDates: dates,
@@ -102,8 +98,9 @@ export function WeeklyProgressHeatmap({
           <button
             onClick={handleNextWeek}
             disabled={weekOffset >= 0}
-            className={`p-1 rounded-full transition-colors ${weekOffset >= 0 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-neutral-100'
-              }`}
+            className={`p-1 rounded-full transition-colors ${
+              weekOffset >= 0 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-neutral-100'
+            }`}
           >
             <HiOutlineChevronRight className="w-5 h-5 text-neutral-600" />
           </button>
@@ -119,9 +116,7 @@ export function WeeklyProgressHeatmap({
 
           return (
             <div key={dateKey} className="flex flex-col items-center gap-2">
-              <span className="text-xs text-[var(--text-muted)] font-medium">
-                {DAY_LABELS[i]}
-              </span>
+              <span className="text-xs text-[var(--text-muted)] font-medium">{DAY_LABELS[i]}</span>
               <div
                 className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all ${getIntensityClass(questions)}`}
                 title={`${date.toLocaleDateString()}: ${questions} questions, ${xp} XP`}

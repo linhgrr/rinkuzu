@@ -1,19 +1,13 @@
-'use client'
+'use client';
 
-import { useState, useEffect, useCallback } from 'react'
-import { toast } from 'sonner'
-import { useTranslations } from 'next-intl'
-import Navigation from '@/components/Navigation'
-import { Card } from '@/components/ui/Card'
-import { Button } from '@/components/ui/Button'
-import { ConfirmModal } from '@/components/ui/ConfirmModal'
-import {
-  HiOutlineCheck,
-  HiOutlineShieldCheck,
-  HiOutlineClock,
-  HiOutlineStar,
-  HiOutlineLightBulb
-} from '@/components/icons'
+import { useState, useEffect, useCallback } from 'react';
+import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
+import Navigation from '@/components/Navigation';
+import { Card } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
+import { ConfirmModal } from '@/components/ui/ConfirmModal';
+import { HiOutlineCheck, HiOutlineShieldCheck, HiOutlineStar } from '@/components/icons';
 
 interface SubscriptionPlan {
   id: string;
@@ -26,72 +20,69 @@ interface SubscriptionPlan {
 
 interface SubscriptionStatus {
   subscription?: {
-    type: string
-    startDate?: string
-    endDate?: string
-    isActive: boolean
-  }
-  isPremium: boolean
+    type: string;
+    startDate?: string;
+    endDate?: string;
+    isActive: boolean;
+  };
+  isPremium: boolean;
 }
 
 export default function SubscriptionPage() {
-  const t = useTranslations('subscription')
-  const [plans, setPlans] = useState<SubscriptionPlan[]>([])
-  const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatus | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null)
-  const [showPaymentModal, setShowPaymentModal] = useState(false)
-  const [paymentLoading, setPaymentLoading] = useState(false)
+  const t = useTranslations('subscription');
+  const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
+  const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatus | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentLoading, setPaymentLoading] = useState(false);
 
   const fetchPlans = useCallback(async () => {
     try {
-      const response = await fetch('/api/subscription/plans')
-      const data = await response.json()
+      const response = await fetch('/api/subscription/plans');
+      const data = await response.json();
       if (data.success) {
-        setPlans(data.plans)
+        setPlans(data.plans);
       }
     } catch (error) {
-      console.error('Error fetching plans:', error)
+      console.error('Error fetching plans:', error);
     }
-  }, [])
+  }, []);
 
   const fetchSubscriptionStatus = useCallback(async () => {
     try {
-      const response = await fetch('/api/subscription/status')
-      const data = await response.json()
+      const response = await fetch('/api/subscription/status');
+      const data = await response.json();
       if (data.success) {
-        setSubscriptionStatus(data.data)
+        setSubscriptionStatus(data.data);
       }
     } catch (error) {
-      console.error('Error fetching subscription status:', error)
+      console.error('Error fetching subscription status:', error);
     }
-  }, [])
+  }, []);
 
   useEffect(() => {
     const loadInitialData = async () => {
-      setLoading(true)
+      setLoading(true);
       try {
-        await Promise.all([
-          fetchPlans(),
-          fetchSubscriptionStatus()
-        ])
+        await Promise.all([fetchPlans(), fetchSubscriptionStatus()]);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    loadInitialData()
-  }, [fetchPlans, fetchSubscriptionStatus])
+    loadInitialData();
+  }, [fetchPlans, fetchSubscriptionStatus]);
 
   const handlePurchase = async (plan: SubscriptionPlan) => {
-    setSelectedPlan(plan)
-    setShowPaymentModal(true)
-  }
+    setSelectedPlan(plan);
+    setShowPaymentModal(true);
+  };
 
   const confirmPurchase = async () => {
-    if (!selectedPlan) return
+    if (!selectedPlan) return;
 
-    setPaymentLoading(true)
+    setPaymentLoading(true);
     try {
       const response = await fetch('/api/subscription/create-payment', {
         method: 'POST',
@@ -99,35 +90,35 @@ export default function SubscriptionPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ planId: selectedPlan.id }),
-      })
+      });
 
-      const data = await response.json()
+      const data = await response.json();
       if (data.success) {
         // Redirect to PayOS payment page
-        window.location.href = data.data.paymentUrl
+        window.location.href = data.data.paymentUrl;
       } else {
-        toast.error(data.message || 'Failed to create payment request')
+        toast.error(data.message || 'Failed to create payment request');
       }
     } catch (error) {
-      console.error('Error creating payment:', error)
-      toast.error('Failed to create payment request')
+      console.error('Error creating payment:', error);
+      toast.error('Failed to create payment request');
     } finally {
-      setPaymentLoading(false)
-      setShowPaymentModal(false)
+      setPaymentLoading(false);
+      setShowPaymentModal(false);
     }
-  }
+  };
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('vi-VN', {
       style: 'currency',
       currency: 'VND',
-    }).format(price)
-  }
+    }).format(price);
+  };
 
   const formatDate = (dateString?: string) => {
-    if (!dateString) return 'N/A'
-    return new Date(dateString).toLocaleDateString('vi-VN')
-  }
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleDateString('vi-VN');
+  };
 
   if (loading) {
     return (
@@ -137,7 +128,7 @@ export default function SubscriptionPage() {
           <p className="mt-4 text-neutral-600">{t('loading')}</p>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -149,9 +140,7 @@ export default function SubscriptionPage() {
             <h1 className="text-2xl md:text-3xl font-bold text-neutral-900 mb-2 md:mb-4">
               {t('upgrade')} <HiOutlineStar className="inline-block text-yellow-500 mb-1" />
             </h1>
-            <p className="text-base md:text-lg text-neutral-600">
-              {t('subtitle')}
-            </p>
+            <p className="text-base md:text-lg text-neutral-600">{t('subtitle')}</p>
           </div>
 
           {/* Current Subscription Status */}
@@ -198,7 +187,9 @@ export default function SubscriptionPage() {
                   <div className="text-2xl md:text-4xl font-bold text-brand-trust mb-2">
                     {formatPrice(plan.price)}
                   </div>
-                  <p className="text-sm md:text-base text-neutral-600">{plan.durationDisplay || plan.duration}</p>
+                  <p className="text-sm md:text-base text-neutral-600">
+                    {plan.durationDisplay || plan.duration}
+                  </p>
                 </div>
 
                 <ul className="space-y-2 md:space-y-3 mb-6 md:mb-8">
@@ -216,9 +207,7 @@ export default function SubscriptionPage() {
                   className="w-full"
                   variant={index === 1 ? 'default' : 'outline'}
                 >
-                  {subscriptionStatus?.isPremium
-                    ? t('premiumPlan')
-                    : t('subscribe')}
+                  {subscriptionStatus?.isPremium ? t('premiumPlan') : t('subscribe')}
                 </Button>
               </Card>
             ))}
@@ -227,13 +216,13 @@ export default function SubscriptionPage() {
           <ConfirmModal
             isOpen={showPaymentModal}
             title={t('subscribe')}
-            message={(
+            message={
               <div className="space-y-4">
                 <p className="text-neutral-700">
                   {selectedPlan?.name} - {selectedPlan ? formatPrice(selectedPlan.price) : ''}
                 </p>
               </div>
-            )}
+            }
             confirmText={t('subscribe')}
             cancelText={t('cancel')}
             isLoading={paymentLoading}
@@ -243,5 +232,5 @@ export default function SubscriptionPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }

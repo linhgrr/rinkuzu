@@ -17,9 +17,7 @@ export function ProTipCard({ title, content, ctaLabel, ctaHref }: ProTipCardProp
           <HiOutlineLightBulb className="w-6 h-6 text-brand-trust" />
         </div>
         <h3 className="font-bold text-lg mb-2">{title}</h3>
-        <p className="text-sm text-neutral-400 mb-4 leading-relaxed font-medium">
-          {content}
-        </p>
+        <p className="text-sm text-neutral-400 mb-4 leading-relaxed font-medium">{content}</p>
         <Link
           href={ctaHref}
           className="mt-4 inline-flex w-full items-center justify-center rounded-full border border-white/20 bg-white/10 px-6 py-3 text-sm font-medium text-white transition-colors hover:border-orange-500 hover:bg-orange-500"

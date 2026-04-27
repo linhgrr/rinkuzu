@@ -1,7 +1,7 @@
-import { IUserService } from '@/interfaces/services/IUserService'
-import { IUserRepository } from '@/interfaces/repositories/IUserRepository'
-import { IAttemptRepository } from '@/interfaces/repositories/IAttemptRepository'
-import { IUser } from '@/types/index'
+import { IUserService } from '@/interfaces/services/IUserService';
+import { IUserRepository } from '@/interfaces/repositories/IUserRepository';
+import { IAttemptRepository } from '@/interfaces/repositories/IAttemptRepository';
+import { IUser } from '@/types/index';
 
 interface ServiceResult<T> {
   success: boolean;
@@ -13,34 +13,37 @@ interface ServiceResult<T> {
 export class UserService implements IUserService {
   constructor(
     private userRepository: IUserRepository,
-    private attemptRepository: IAttemptRepository
+    private attemptRepository: IAttemptRepository,
   ) {}
 
-  async getUserAttempts(userEmail: string, options?: { page?: number, limit?: number }): Promise<{
-    attempts: any[]
+  async getUserAttempts(
+    userEmail: string,
+    options?: { page?: number; limit?: number },
+  ): Promise<{
+    attempts: any[];
     pagination: {
-      currentPage: number
-      totalPages: number
-      totalItems: number
-      itemsPerPage: number
-      hasNextPage: boolean
-      hasPrevPage: boolean
-    }
+      currentPage: number;
+      totalPages: number;
+      totalItems: number;
+      itemsPerPage: number;
+      hasNextPage: boolean;
+      hasPrevPage: boolean;
+    };
   }> {
     try {
       // Find user first
-      const user = await this.userRepository.findByEmail(userEmail)
-      
+      const user = await this.userRepository.findByEmail(userEmail);
+
       if (!user) {
-        throw new Error('User not found')
+        throw new Error('User not found');
       }
 
-      const page = options?.page || 1
-      const limit = options?.limit || 10
-      const result = await this.attemptRepository.findByUser(user._id.toString(), { page, limit })
+      const page = options?.page || 1;
+      const limit = options?.limit || 10;
+      const result = await this.attemptRepository.findByUser(user._id.toString(), { page, limit });
 
       // Format attempts
-      const formattedAttempts = result.attempts.map(attempt => ({
+      const formattedAttempts = result.attempts.map((attempt) => ({
         _id: attempt._id,
         score: attempt.score,
         takenAt: attempt.takenAt,
@@ -50,51 +53,51 @@ export class UserService implements IUserService {
           description: attempt.quiz.description,
           totalQuestions: attempt.quiz.questions.length,
         },
-      }))
+      }));
 
       return {
         attempts: formattedAttempts,
-        pagination: result.pagination
-      }
+        pagination: result.pagination,
+      };
     } catch (error) {
-      console.error('Get user attempts error:', error)
-      throw error
+      console.error('Get user attempts error:', error);
+      throw error;
     }
   }
 
   async getUserById(id: string): Promise<IUser | null> {
-    return await this.userRepository.findById(id)
+    return await this.userRepository.findById(id);
   }
 
   async getUserByEmail(email: string): Promise<IUser | null> {
-    return await this.userRepository.findByEmail(email)
+    return await this.userRepository.findByEmail(email);
   }
 
   async updateUser(id: string, userData: Partial<IUser>): Promise<IUser | null> {
-    return await this.userRepository.update(id, userData)
+    return await this.userRepository.update(id, userData);
   }
 
   async deleteUser(id: string): Promise<boolean> {
-    return await this.userRepository.delete(id)
+    return await this.userRepository.delete(id);
   }
 
   async getAllUsers(options?: {
-    page?: number
-    limit?: number
-    search?: string
-    role?: string
+    page?: number;
+    limit?: number;
+    search?: string;
+    role?: string;
   }): Promise<{
-    users: IUser[]
+    users: IUser[];
     pagination: {
-      currentPage: number
-      totalPages: number
-      totalItems: number
-      itemsPerPage: number
-      hasNextPage: boolean
-      hasPrevPage: boolean
-    }
+      currentPage: number;
+      totalPages: number;
+      totalItems: number;
+      itemsPerPage: number;
+      hasNextPage: boolean;
+      hasPrevPage: boolean;
+    };
   }> {
-    return await this.userRepository.findAll(options)
+    return await this.userRepository.findAll(options);
   }
 
   async getAttemptDetails(attemptId: string, userEmail: string): Promise<ServiceResult<any>> {
@@ -102,7 +105,7 @@ export class UserService implements IUserService {
       // Find user
       const user = await this.userRepository.findByEmail(userEmail);
       let userId: string;
-      
+
       if (user) {
         // Logged in user
         userId = user._id.toString();
@@ -113,12 +116,12 @@ export class UserService implements IUserService {
 
       // Get attempt with quiz details
       const attempt = await this.attemptRepository.findByIdWithQuiz(attemptId, userId);
-      
+
       if (!attempt) {
         return {
           success: false,
           error: 'Attempt not found',
-          statusCode: 404
+          statusCode: 404,
         };
       }
 
@@ -141,27 +144,30 @@ export class UserService implements IUserService {
             questionImage: question.questionImage,
             optionImages: question.optionImages,
             userAnswer: attempt.answers[index],
-            isCorrect: question.type === 'single' 
-              ? attempt.answers[index] === question.correctIndex
-              : Array.isArray(attempt.answers[index]) && Array.isArray(question.correctIndexes)
-                ? question.correctIndexes.length === attempt.answers[index].length &&
-                  question.correctIndexes.every((idx: number) => attempt.answers[index].includes(idx))
-                : false
-          }))
+            isCorrect:
+              question.type === 'single'
+                ? attempt.answers[index] === question.correctIndex
+                : Array.isArray(attempt.answers[index]) && Array.isArray(question.correctIndexes)
+                  ? question.correctIndexes.length === attempt.answers[index].length &&
+                    question.correctIndexes.every((idx: number) =>
+                      attempt.answers[index].includes(idx),
+                    )
+                  : false,
+          })),
         },
       };
 
       return {
         success: true,
-        data: formattedAttempt
+        data: formattedAttempt,
       };
     } catch (error) {
       console.error('Get attempt details error:', error);
       return {
         success: false,
         error: 'Failed to get attempt details',
-        statusCode: 500
+        statusCode: 500,
       };
     }
   }
-} 
+}

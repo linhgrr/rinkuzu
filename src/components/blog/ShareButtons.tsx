@@ -1,15 +1,8 @@
 'use client';
 
-import React from 'react';
-import { 
-  Twitter, 
-  Linkedin, 
-  Facebook, 
-  Link as LinkIcon,
-  Check
-} from 'lucide-react';
+import React, { useState } from 'react';
+import { Twitter, Linkedin, Facebook, Link as LinkIcon, Check } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { useState } from 'react';
 import { toast } from 'sonner';
 
 interface ShareButtonsProps {
@@ -25,20 +18,20 @@ export const ShareButtons = ({ url, title }: ShareButtonsProps) => {
       name: 'Twitter',
       icon: <Twitter className="h-4 w-4" />,
       href: `https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(title)}`,
-      color: 'hover:bg-[#1DA1F2] hover:text-white'
+      color: 'hover:bg-[#1DA1F2] hover:text-white',
     },
     {
       name: 'LinkedIn',
       icon: <Linkedin className="h-4 w-4" />,
       href: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`,
-      color: 'hover:bg-[#0077b5] hover:text-white'
+      color: 'hover:bg-[#0077b5] hover:text-white',
     },
     {
       name: 'Facebook',
       icon: <Facebook className="h-4 w-4" />,
       href: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`,
-      color: 'hover:bg-[#4267B2] hover:text-white'
-    }
+      color: 'hover:bg-[#4267B2] hover:text-white',
+    },
   ];
 
   const copyToClipboard = async () => {
@@ -47,7 +40,7 @@ export const ShareButtons = ({ url, title }: ShareButtonsProps) => {
       setCopied(true);
       toast.success('Link copied to clipboard');
       setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
+    } catch (_err) {
       toast.error('Failed to copy link');
     }
   };

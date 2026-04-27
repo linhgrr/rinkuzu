@@ -22,8 +22,10 @@ const Card = React.forwardRef<
       ref={ref}
       className={cn(
         variants[variant],
-        hover && variant !== 'interactive' ? 'hover:shadow-[var(--shadow-sm)] hover:-translate-y-[1px] transition-all duration-[180ms] ease-[cubic-bezier(0.2,0,0,1)]' : '',
-        className
+        hover && variant !== 'interactive'
+          ? 'hover:shadow-[var(--shadow-sm)] hover:-translate-y-[1px] transition-all duration-[180ms] ease-[cubic-bezier(0.2,0,0,1)]'
+          : '',
+        className,
       )}
       {...props}
     />
@@ -31,16 +33,11 @@ const Card = React.forwardRef<
 });
 Card.displayName = 'Card';
 
-const CardHeader = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn('flex flex-col gap-1.5 px-6 pt-6 pb-0', className)}
-    {...props}
-  />
-));
+const CardHeader = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+  ({ className, ...props }, ref) => (
+    <div ref={ref} className={cn('flex flex-col gap-1.5 px-6 pt-6 pb-0', className)} {...props} />
+  ),
+);
 CardHeader.displayName = 'CardHeader';
 
 const CardTitle = React.forwardRef<
@@ -56,16 +53,12 @@ const CardTitle = React.forwardRef<
     xl: 'text-[32px] font-[700] tracking-[-0.025em]',
   };
 
+  const { children, ...restProps } = props;
+
   return (
-    <h3
-      ref={ref}
-      className={cn(
-        'text-neutral-900',
-        sizes[size],
-        className
-      )}
-      {...props}
-    />
+    <h3 ref={ref} className={cn('text-neutral-900', sizes[size], className)} {...restProps}>
+      {children}
+    </h3>
   );
 });
 CardTitle.displayName = 'CardTitle';
@@ -74,32 +67,22 @@ const CardDescription = React.forwardRef<
   HTMLParagraphElement,
   React.HTMLAttributes<HTMLParagraphElement>
 >(({ className, ...props }, ref) => (
-  <p
-    ref={ref}
-    className={cn('text-[14px] text-neutral-500 leading-[1.5]', className)}
-    {...props}
-  />
+  <p ref={ref} className={cn('text-[14px] text-neutral-500 leading-[1.5]', className)} {...props} />
 ));
 CardDescription.displayName = 'CardDescription';
 
-const CardContent = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  <div ref={ref} className={cn('p-6 pt-4', className)} {...props} />
-));
+const CardContent = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+  ({ className, ...props }, ref) => (
+    <div ref={ref} className={cn('p-6 pt-4', className)} {...props} />
+  ),
+);
 CardContent.displayName = 'CardContent';
 
-const CardFooter = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn('flex items-center p-6 pt-0', className)}
-    {...props}
-  />
-));
+const CardFooter = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+  ({ className, ...props }, ref) => (
+    <div ref={ref} className={cn('flex items-center p-6 pt-0', className)} {...props} />
+  ),
+);
 CardFooter.displayName = 'CardFooter';
 
 // Badge component matching DESIGN.md
@@ -127,15 +110,7 @@ const Badge = React.forwardRef<
   };
 
   return (
-    <div
-      ref={ref}
-      className={cn(
-        variants[variant],
-        sizes[size],
-        className
-      )}
-      {...props}
-    >
+    <div ref={ref} className={cn(variants[variant], sizes[size], className)} {...props}>
       {children}
     </div>
   );

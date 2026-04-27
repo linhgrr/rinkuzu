@@ -15,7 +15,7 @@ export function calculateLevel(totalXp: number): number {
  */
 export function xpForNextLevel(totalXp: number): number {
   const currentLevel = calculateLevel(totalXp);
-  const xpForCurrentLevel = (currentLevel - 1) * 100;
+  const _xpForCurrentLevel = (currentLevel - 1) * 100;
   const xpForNext = currentLevel * 100;
   return xpForNext - totalXp;
 }

@@ -12,7 +12,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     path: '/blog',
     title: 'RinKuzu Blog — Adaptive Learning, AI in Education & Knowledge Graphs',
     description:
-      'Insights on AI-powered adaptive learning, knowledge graph construction, Bloom\'s Taxonomy in practice, and how RinKuzu transforms any PDF into a personalized study path.',
+      "Insights on AI-powered adaptive learning, knowledge graph construction, Bloom's Taxonomy in practice, and how RinKuzu transforms any PDF into a personalized study path.",
   });
 }
 
@@ -21,13 +21,14 @@ const posts = [
     slug: 'ai-powered-quiz-generation-guide',
     title: 'How AI Transforms PDF Learning into Adaptive Quizzes',
     description:
-      'Discover how RinKuzu uses large language models, knowledge graphs, and Bayesian Knowledge Tracing to extract concepts from lecture PDFs and generate personalized quiz questions that adapt to each learner\'s mastery level.',
+      "Discover how RinKuzu uses large language models, knowledge graphs, and Bayesian Knowledge Tracing to extract concepts from lecture PDFs and generate personalized quiz questions that adapt to each learner's mastery level.",
     date: 'March 27, 2026',
     dateIso: '2026-03-27',
     readTime: '8 min read',
     category: 'AI in Education',
     image: 'https://images.unsplash.com/photo-1589998059171-988d887df646?w=800&q=80',
-    imageAlt: 'Open textbook with highlighted notes beside a laptop showing an AI learning interface',
+    imageAlt:
+      'Open textbook with highlighted notes beside a laptop showing an AI learning interface',
   },
   {
     slug: 'knowledge-graphs-adaptive-learning-pdfs',
@@ -39,12 +40,14 @@ const posts = [
     readTime: '10 min read',
     category: 'Learning Science',
     image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&q=80',
-    imageAlt: 'Abstract knowledge graph network visualization representing interconnected learning concepts',
+    imageAlt:
+      'Abstract knowledge graph network visualization representing interconnected learning concepts',
   },
 ];
 
 export default async function BlogIndexPage({ params }: Props) {
   const { locale } = await params;
+  void locale;
 
   return (
     <article className="min-h-screen bg-white">
@@ -52,7 +55,9 @@ export default async function BlogIndexPage({ params }: Props) {
       <header className="bg-[var(--bg-section)] border-b border-neutral-100">
         <div className="max-w-3xl mx-auto px-6 pt-16 pb-12">
           <nav className="flex items-center gap-2 text-sm text-[var(--text-muted)] mb-8">
-            <Link href="/" className="hover:text-[var(--text-primary)] transition-colors">Home</Link>
+            <Link href="/" className="hover:text-[var(--text-primary)] transition-colors">
+              Home
+            </Link>
             <span>/</span>
             <span className="text-[var(--text-primary)] font-medium">Blog</span>
           </nav>
@@ -60,7 +65,8 @@ export default async function BlogIndexPage({ params }: Props) {
             RinKuzu Blog
           </h1>
           <p className="text-lg text-[var(--text-muted)] leading-relaxed max-w-2xl">
-            Insights on adaptive learning, AI in education, knowledge graphs, and how RinKuzu transforms any PDF lecture into a personalized study journey.
+            Insights on adaptive learning, AI in education, knowledge graphs, and how RinKuzu
+            transforms any PDF lecture into a personalized study journey.
           </p>
         </div>
       </header>
@@ -90,7 +96,9 @@ export default async function BlogIndexPage({ params }: Props) {
                 <span className="text-xs font-semibold uppercase tracking-wider text-brand-trust bg-green-50 px-3 py-1 rounded-full">
                   {post.category}
                 </span>
-                <span className="text-xs text-[var(--text-muted)]">{post.date} · {post.readTime}</span>
+                <span className="text-xs text-[var(--text-muted)]">
+                  {post.date} · {post.readTime}
+                </span>
               </div>
               <h2 className="text-xl md:text-2xl font-bold text-[var(--text-primary)] mb-3 group-hover:text-brand-trust transition-colors leading-snug">
                 {post.title}

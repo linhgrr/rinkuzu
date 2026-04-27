@@ -1,9 +1,8 @@
 import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
-import { buildLocalizedMetadata } from '@/lib/seo';
+import { buildLocalizedMetadata, siteUrl } from '@/lib/seo';
 import { JsonLd } from '@/components/seo/JsonLd';
-import { siteUrl } from '@/lib/seo';
 import { ReadingProgressBar } from '@/components/blog/ReadingProgressBar';
 import { ShareButtons } from '@/components/blog/ShareButtons';
 import { TableOfContents } from '@/components/blog/TableOfContents';
@@ -28,7 +27,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     openGraph: {
       ...base.openGraph,
       title: 'How AI Transforms PDF Learning into Adaptive Quizzes | RinKuzu',
-      description: "Discover how RinKuzu's ALSS system transforms any PDF lecture into a personalized adaptive quiz journey.",
+      description:
+        "Discover how RinKuzu's ALSS system transforms any PDF lecture into a personalized adaptive quiz journey.",
       url: canonicalUrl,
       type: 'article',
       publishedTime: '2026-03-27T00:00:00.000Z',
@@ -46,7 +46,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     twitter: {
       card: 'summary_large_image',
       title: 'How AI Transforms PDF Learning into Adaptive Quizzes | RinKuzu',
-      description: "Discover how RinKuzu's ALSS system transforms any PDF lecture into a personalized adaptive quiz journey.",
+      description:
+        "Discover how RinKuzu's ALSS system transforms any PDF lecture into a personalized adaptive quiz journey.",
       images: ['https://images.unsplash.com/photo-1589998059171-988d887df646?w=1200&q=80'],
     },
   };
@@ -202,6 +203,7 @@ Start with the free plan — no credit card required. Your first personalized qu
 
 export default async function BlogPost({ params }: Props) {
   const { locale } = await params;
+  void locale;
   const postUrl = `${siteUrl.origin}/blog/ai-powered-quiz-generation-guide`;
   const postTitle = 'How AI Transforms PDF Learning into Adaptive Quizzes';
   const headings = extractHeadingsFromMarkdown(postContent);
@@ -216,9 +218,13 @@ export default async function BlogPost({ params }: Props) {
       <header className="bg-[var(--bg-section)] border-b border-neutral-100">
         <div className="max-w-3xl mx-auto px-6 pt-16 pb-12">
           <nav className="flex items-center gap-2 text-sm text-[var(--text-muted)] mb-8">
-            <Link href="/" className="hover:text-[var(--text-primary)] transition-colors">Home</Link>
+            <Link href="/" className="hover:text-[var(--text-primary)] transition-colors">
+              Home
+            </Link>
             <span>/</span>
-            <Link href="/blog" className="hover:text-[var(--text-primary)] transition-colors">Blog</Link>
+            <Link href="/blog" className="hover:text-[var(--text-primary)] transition-colors">
+              Blog
+            </Link>
             <span>/</span>
             <span className="text-[var(--text-primary)]">AI & PDFs</span>
           </nav>
@@ -232,12 +238,20 @@ export default async function BlogPost({ params }: Props) {
             {postTitle}
           </h1>
           <p className="text-xl text-[var(--text-muted)] leading-relaxed font-medium">
-            Discover how RinKuzu&apos;s ALSS system — SAINT-Bloom, Dueling DQN, and Gemini — transforms any PDF lecture into a personalized adaptive quiz journey.
+            Discover how RinKuzu&apos;s ALSS system — SAINT-Bloom, Dueling DQN, and Gemini —
+            transforms any PDF lecture into a personalized adaptive quiz journey.
           </p>
           <div className="flex items-center gap-3 mt-8 pt-6 border-t border-neutral-100">
-            <div className="w-11 h-11 rounded-full bg-[var(--text-primary)] flex items-center justify-center text-white font-bold text-sm ring-4 ring-white shadow-sm">RK</div>
+            <div className="w-11 h-11 rounded-full bg-[var(--text-primary)] flex items-center justify-center text-white font-bold text-sm ring-4 ring-white shadow-sm">
+              RK
+            </div>
             <div>
-              <Link href="/blog/authors/rinkuzu-team" className="text-sm font-semibold text-[var(--text-primary)] hover:text-brand-trust transition-colors">RinKuzu Team</Link>
+              <Link
+                href="/blog/authors/rinkuzu-team"
+                className="text-sm font-semibold text-[var(--text-primary)] hover:text-brand-trust transition-colors"
+              >
+                RinKuzu Team
+              </Link>
               <p className="text-xs text-[var(--text-muted)]">AI Learning Platform</p>
             </div>
           </div>
@@ -271,9 +285,12 @@ export default async function BlogPost({ params }: Props) {
             <div className="absolute top-0 right-0 w-64 h-64 bg-green-500/10 rounded-full blur-3xl -mr-32 -mt-32"></div>
             <div className="absolute bottom-0 left-0 w-64 h-64 bg-green-500/10 rounded-full blur-3xl -ml-32 -mb-32"></div>
             <div className="relative z-10 text-center max-w-xl mx-auto">
-              <h3 className="text-2xl md:text-3xl font-bold mb-4">Start your adaptive journey today</h3>
+              <h3 className="text-2xl md:text-3xl font-bold mb-4">
+                Start your adaptive journey today
+              </h3>
               <p className="text-neutral-300 text-lg mb-8">
-                Upload your first PDF and see the ALSS pipeline in action. Join students mastering complex topics with RinKuzu.
+                Upload your first PDF and see the ALSS pipeline in action. Join students mastering
+                complex topics with RinKuzu.
               </p>
               <Link
                 href="/register"
@@ -281,21 +298,27 @@ export default async function BlogPost({ params }: Props) {
               >
                 Get Started Free
               </Link>
-              <p className="mt-4 text-xs text-neutral-400">No credit card required · Free plan available</p>
+              <p className="mt-4 text-xs text-neutral-400">
+                No credit card required · Free plan available
+              </p>
             </div>
           </div>
 
           {/* Post navigation */}
           <div className="mt-16 pt-10 border-t border-neutral-100 flex flex-col sm:flex-row justify-between items-center gap-6">
             <div className="flex flex-col gap-1 w-full sm:w-auto">
-              <span className="text-xs uppercase tracking-widest text-neutral-400 font-bold">Previous</span>
+              <span className="text-xs uppercase tracking-widest text-neutral-400 font-bold">
+                Previous
+              </span>
               <span className="text-neutral-300">No previous post</span>
             </div>
             <Link
               href="/blog/knowledge-graphs-adaptive-learning-pdfs"
               className="flex flex-col gap-1 text-right group w-full sm:w-auto"
             >
-              <span className="text-xs uppercase tracking-widest text-neutral-400 font-bold">Next Article</span>
+              <span className="text-xs uppercase tracking-widest text-neutral-400 font-bold">
+                Next Article
+              </span>
               <span className="text-[var(--text-primary)] font-bold group-hover:text-brand-trust transition-colors">
                 Knowledge Graphs & Bloom&apos;s Taxonomy →
               </span>

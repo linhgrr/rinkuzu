@@ -13,7 +13,7 @@ export function signToken(payload: JWTPayload): string {
   const signOptions: SignOptions = {
     expiresIn: JWT_EXPIRES_IN_SECONDS,
   };
-  
+
   return jwt.sign(payload, JWT_SECRET, signOptions);
 }
 
@@ -35,4 +35,4 @@ export function decodeToken(token: string): JWTPayload | null {
     console.error('JWT decode error:', error);
     return null;
   }
-} 
+}

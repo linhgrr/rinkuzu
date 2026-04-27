@@ -1,71 +1,80 @@
-'use client'
+'use client';
 
-import { useCallback, useMemo, useState } from 'react'
-import { useLocale, useTranslations } from 'next-intl'
-import { Button } from '@/components/ui/Button'
-import { DynamicMarkdownRenderer } from '@/components/ui/DynamicMarkdownRenderer'
-import { Modal } from '@/components/ui/Modal'
-import { Pagination } from '@/components/ui/Pagination'
-import {
-  HiCheck,
-  HiOutlineEye,
-  HiOutlineX,
-} from '@/components/icons'
-import { buildExercisePromptText, getExercisePromptSections } from './exercise-prompt'
-import { BLOOM_LABELS } from './types'
-import type { ExerciseHistoryFull } from './types'
-import { formatSessionHistoryDate } from './session-history-utils'
+import { useCallback, useMemo, useState } from 'react';
+import { useLocale, useTranslations } from 'next-intl';
+import { Button } from '@/components/ui/Button';
+import { DynamicMarkdownRenderer } from '@/components/ui/DynamicMarkdownRenderer';
+import { Modal } from '@/components/ui/Modal';
+import { Pagination } from '@/components/ui/Pagination';
+import { HiCheck, HiOutlineEye, HiOutlineX } from '@/components/icons';
+import { buildExercisePromptText, getExercisePromptSections } from './exercise-prompt';
+import { BLOOM_LABELS } from './types';
+import type { ExerciseHistoryFull } from './types';
+import { formatSessionHistoryDate } from './session-history-utils';
 
-const PAGE_SIZE = 10
+const PAGE_SIZE = 10;
 
 interface ExerciseHistoryTableProps {
-  exercises: ExerciseHistoryFull[]
+  exercises: ExerciseHistoryFull[];
 }
 
 function renderExercisePrompt(exercise: ExerciseHistoryFull) {
-  const promptSections = getExercisePromptSections(exercise)
+  const promptSections = getExercisePromptSections(exercise);
   return (
     <div className="space-y-3">
       {promptSections.lead ? <DynamicMarkdownRenderer content={promptSections.lead} /> : null}
-      <div className={promptSections.lead ? 'rounded-lg border border-neutral-200 bg-neutral-50 p-3' : ''}>
+      <div
+        className={
+          promptSections.lead ? 'rounded-lg border border-neutral-200 bg-neutral-50 p-3' : ''
+        }
+      >
         <DynamicMarkdownRenderer content={promptSections.primary} />
       </div>
     </div>
-  )
+  );
 }
 
-function renderAnswerText(value: string | null | undefined, t: ReturnType<typeof useTranslations<'adaptiveLearning'>>) {
-  const normalizedValue = value?.trim()
+function renderAnswerText(
+  value: string | null | undefined,
+  t: ReturnType<typeof useTranslations<'adaptiveLearning'>>,
+) {
+  const normalizedValue = value?.trim();
   if (!normalizedValue) {
-    return <span>{t('history.table.noAnswer')}</span>
+    return <span>{t('history.table.noAnswer')}</span>;
   }
 
   if (normalizedValue === 'True') {
-    return <span>{t('exercise.interactions.trueLabel')}</span>
+    return <span>{t('exercise.interactions.trueLabel')}</span>;
   }
 
   if (normalizedValue === 'False') {
-    return <span>{t('exercise.interactions.falseLabel')}</span>
+    return <span>{t('exercise.interactions.falseLabel')}</span>;
   }
 
-  return <DynamicMarkdownRenderer content={normalizedValue} />
+  return <DynamicMarkdownRenderer content={normalizedValue} />;
 }
 
 function getSelectedChoiceKeys(userAnswer: string | null | undefined) {
   return new Set(
     (userAnswer || '')
       .split(',')
-      .map(choice => choice.trim().toUpperCase())
+      .map((choice) => choice.trim().toUpperCase())
       .filter(Boolean),
-  )
+  );
 }
 
-function renderCorrectAnswer(exercise: ExerciseHistoryFull, t: ReturnType<typeof useTranslations<'adaptiveLearning'>>) {
+function renderCorrectAnswer(
+  exercise: ExerciseHistoryFull,
+  t: ReturnType<typeof useTranslations<'adaptiveLearning'>>,
+) {
   if (exercise.exercise_type === 'matching' && exercise.pairs?.length) {
     return (
       <div className="space-y-2">
         {exercise.pairs.map((pair, idx) => (
-          <div key={`${pair.left}-${idx}`} className="flex items-center justify-between rounded-lg border border-green-100 bg-white p-2">
+          <div
+            key={`${pair.left}-${idx}`}
+            className="flex items-center justify-between rounded-lg border border-green-100 bg-white p-2"
+          >
             <div className="min-w-0 flex-1 text-xs text-neutral-600">
               <DynamicMarkdownRenderer content={pair.left} />
             </div>
@@ -76,14 +85,17 @@ function renderCorrectAnswer(exercise: ExerciseHistoryFull, t: ReturnType<typeof
           </div>
         ))}
       </div>
-    )
+    );
   }
 
   if (exercise.exercise_type === 'ordering' && Array.isArray(exercise.correct_answer)) {
     return (
       <div className="flex flex-wrap gap-2">
         {exercise.correct_answer.map((item, idx) => (
-          <div key={`${item}-${idx}`} className="flex items-center gap-2 rounded-lg border border-green-100 bg-white p-2 text-xs">
+          <div
+            key={`${item}-${idx}`}
+            className="flex items-center gap-2 rounded-lg border border-green-100 bg-white p-2 text-xs"
+          >
             <span className="flex h-5 w-5 items-center justify-center rounded-full bg-green-100 font-mono text-[10px] font-bold text-green-700">
               {idx + 1}
             </span>
@@ -93,115 +105,143 @@ function renderCorrectAnswer(exercise: ExerciseHistoryFull, t: ReturnType<typeof
           </div>
         ))}
       </div>
-    )
+    );
   }
 
   if (exercise.exercise_type === 'fill_blank' && Array.isArray(exercise.correct_answer)) {
-    return <DynamicMarkdownRenderer content={exercise.correct_answer.join(', ')} />
+    return <DynamicMarkdownRenderer content={exercise.correct_answer.join(', ')} />;
   }
 
   if (exercise.exercise_type === 'multi_correct' && Array.isArray(exercise.correct_answer)) {
-    return <DynamicMarkdownRenderer content={exercise.correct_answer.join(', ')} />
+    return <DynamicMarkdownRenderer content={exercise.correct_answer.join(', ')} />;
   }
 
   if (exercise.exercise_type === 'true_false' && typeof exercise.correct_answer === 'boolean') {
-    return <span>{exercise.correct_answer ? t('exercise.interactions.trueLabel') : t('exercise.interactions.falseLabel')}</span>
+    return (
+      <span>
+        {exercise.correct_answer
+          ? t('exercise.interactions.trueLabel')
+          : t('exercise.interactions.falseLabel')}
+      </span>
+    );
   }
 
-  return <DynamicMarkdownRenderer content={exercise.correct_option} />
+  return <DynamicMarkdownRenderer content={exercise.correct_option} />;
 }
 
-function renderSelectedChoicesSummary(exercise: ExerciseHistoryFull, t: ReturnType<typeof useTranslations<'adaptiveLearning'>>) {
-  const selectedChoices = Array.from(getSelectedChoiceKeys(exercise.user_answer))
+function renderSelectedChoicesSummary(
+  exercise: ExerciseHistoryFull,
+  t: ReturnType<typeof useTranslations<'adaptiveLearning'>>,
+) {
+  const selectedChoices = Array.from(getSelectedChoiceKeys(exercise.user_answer));
 
   if (!selectedChoices.length) {
-    return <span>{t('history.table.noAnswer')}</span>
+    return <span>{t('history.table.noAnswer')}</span>;
   }
 
   return (
     <div className="flex flex-wrap gap-2">
-      {selectedChoices.map(choice => {
-        const optionValue = exercise.options?.[choice]
+      {selectedChoices.map((choice) => {
+        const optionValue = exercise.options?.[choice];
         return (
-          <div key={choice} className="inline-flex items-center gap-2 rounded-md border border-neutral-200 bg-neutral-50 px-2.5 py-1 text-xs text-neutral-700">
+          <div
+            key={choice}
+            className="inline-flex items-center gap-2 rounded-md border border-neutral-200 bg-neutral-50 px-2.5 py-1 text-xs text-neutral-700"
+          >
             <span className="font-mono font-semibold text-neutral-500">{choice}</span>
             {optionValue ? <DynamicMarkdownRenderer content={optionValue} /> : null}
           </div>
-        )
+        );
       })}
     </div>
-  )
+  );
 }
 
 function renderSelectedOptions(
   exercise: ExerciseHistoryFull,
   t: ReturnType<typeof useTranslations<'adaptiveLearning'>>,
 ) {
-  const selectedChoices = getSelectedChoiceKeys(exercise.user_answer)
+  const selectedChoices = getSelectedChoiceKeys(exercise.user_answer);
 
   return (
     <div className="space-y-2.5">
       {Object.entries(exercise.options || {}).map(([key, value]) => {
-        const isUserAnswer = selectedChoices.has(key)
-        const isCorrect = exercise.exercise_type === 'multi_correct'
-          ? Array.isArray(exercise.correct_answer) && exercise.correct_answer.includes(key)
-          : key === exercise.correct_option
+        const isUserAnswer = selectedChoices.has(key);
+        const isCorrect =
+          exercise.exercise_type === 'multi_correct'
+            ? Array.isArray(exercise.correct_answer) && exercise.correct_answer.includes(key)
+            : key === exercise.correct_option;
 
         const optionClass = isCorrect
           ? 'border-green-200 bg-green-50/50 text-green-900'
           : isUserAnswer
             ? 'border-red-200 bg-red-50/50 text-red-900'
-            : 'border-neutral-200 bg-white text-neutral-700'
+            : 'border-neutral-200 bg-white text-neutral-700';
 
-        const badgeTone = isCorrect
-          ? 'bg-green-100 text-green-700'
-          : 'bg-red-100 text-red-700'
+        const badgeTone = isCorrect ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700';
 
         return (
-          <div key={key} className={`flex items-start gap-3 rounded-lg border p-3.5 text-sm transition-colors ${optionClass}`}>
-            <span className={`mt-0.5 w-6 shrink-0 font-bold ${isCorrect ? 'text-green-700' : isUserAnswer ? 'text-red-700' : 'text-neutral-500'}`}>{key}.</span>
+          <div
+            key={key}
+            className={`flex items-start gap-3 rounded-lg border p-3.5 text-sm transition-colors ${optionClass}`}
+          >
+            <span
+              className={`mt-0.5 w-6 shrink-0 font-bold ${isCorrect ? 'text-green-700' : isUserAnswer ? 'text-red-700' : 'text-neutral-500'}`}
+            >
+              {key}.
+            </span>
             <span className="flex-1 leading-relaxed">
               <DynamicMarkdownRenderer content={value} />
             </span>
             {isCorrect ? (
-              <div className={`mt-0.5 flex shrink-0 items-center gap-1.5 rounded px-2 py-0.5 text-xs font-bold ${badgeTone}`}>
+              <div
+                className={`mt-0.5 flex shrink-0 items-center gap-1.5 rounded px-2 py-0.5 text-xs font-bold ${badgeTone}`}
+              >
                 <HiCheck className="h-3.5 w-3.5" />
                 {t('history.table.correctBadge')}
               </div>
             ) : null}
             {isUserAnswer && !isCorrect ? (
-              <div className={`mt-0.5 flex shrink-0 items-center gap-1.5 rounded px-2 py-0.5 text-xs font-bold ${badgeTone}`}>
+              <div
+                className={`mt-0.5 flex shrink-0 items-center gap-1.5 rounded px-2 py-0.5 text-xs font-bold ${badgeTone}`}
+              >
                 <HiOutlineX className="h-3.5 w-3.5" />
                 {t('history.table.yourAnswerBadge')}
               </div>
             ) : null}
           </div>
-        )
+        );
       })}
     </div>
-  )
+  );
 }
 
 export function ExerciseHistoryTable({ exercises }: ExerciseHistoryTableProps) {
-  const t = useTranslations('adaptiveLearning')
-  const locale = useLocale()
-  const [currentPage, setCurrentPage] = useState(1)
-  const [selectedExercise, setSelectedExercise] = useState<ExerciseHistoryFull | null>(null)
+  const t = useTranslations('adaptiveLearning');
+  const locale = useLocale();
+  const [currentPage, setCurrentPage] = useState(1);
+  const [selectedExercise, setSelectedExercise] = useState<ExerciseHistoryFull | null>(null);
 
-  const getBloomLabel = useCallback((level: number) => {
-    const bloomLabel = BLOOM_LABELS[Math.max(0, Math.min(BLOOM_LABELS.length - 1, level - 1))] || 'Remember'
-    return t(`bloom.${bloomLabel.toLowerCase()}` as any)
-  }, [t])
+  const getBloomLabel = useCallback(
+    (level: number) => {
+      const bloomLabel =
+        BLOOM_LABELS[Math.max(0, Math.min(BLOOM_LABELS.length - 1, level - 1))] || 'Remember';
+      return t(`bloom.${bloomLabel.toLowerCase()}` as any);
+    },
+    [t],
+  );
 
   const paginatedExercises = useMemo(() => {
-    const start = (currentPage - 1) * PAGE_SIZE
-    return exercises.slice(start, start + PAGE_SIZE)
-  }, [currentPage, exercises])
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return exercises.slice(start, start + PAGE_SIZE);
+  }, [currentPage, exercises]);
 
-  const totalPages = Math.ceil(exercises.length / PAGE_SIZE)
+  const totalPages = Math.ceil(exercises.length / PAGE_SIZE);
 
   if (!exercises.length) {
-    return <p className="py-4 text-center text-sm text-neutral-400">{t('history.table.noExercise')}</p>
+    return (
+      <p className="py-4 text-center text-sm text-neutral-400">{t('history.table.noExercise')}</p>
+    );
   }
 
   return (
@@ -221,15 +261,23 @@ export function ExerciseHistoryTable({ exercises }: ExerciseHistoryTableProps) {
           </thead>
           <tbody className="divide-y divide-neutral-100">
             {paginatedExercises.map((exercise, index) => (
-              <tr key={exercise.exercise_id || index} className="transition-colors hover:bg-neutral-50">
-                <td className="px-5 py-3 font-mono text-xs text-neutral-500">{(currentPage - 1) * PAGE_SIZE + index + 1}</td>
+              <tr
+                key={exercise.exercise_id || index}
+                className="transition-colors hover:bg-neutral-50"
+              >
+                <td className="px-5 py-3 font-mono text-xs text-neutral-500">
+                  {(currentPage - 1) * PAGE_SIZE + index + 1}
+                </td>
                 <td className="px-5 py-3 font-medium text-neutral-900">{exercise.concept_name}</td>
                 <td className="px-5 py-3 text-xs text-neutral-500">
                   <span className="inline-flex items-center rounded-md bg-neutral-100 px-2 py-1 text-[11px] font-medium text-neutral-700">
                     {getBloomLabel(exercise.bloom_level)}
                   </span>
                 </td>
-                <td className="max-w-[280px] px-5 py-3 text-neutral-600" title={buildExercisePromptText(exercise)}>
+                <td
+                  className="max-w-[280px] px-5 py-3 text-neutral-600"
+                  title={buildExercisePromptText(exercise)}
+                >
                   <div className="line-clamp-2 text-sm [&_p]:m-0 [&_p]:inline">
                     <DynamicMarkdownRenderer content={buildExercisePromptText(exercise)} />
                   </div>
@@ -267,7 +315,11 @@ export function ExerciseHistoryTable({ exercises }: ExerciseHistoryTableProps) {
 
       {totalPages > 1 ? (
         <div className="py-2">
-          <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+          />
         </div>
       ) : null}
 
@@ -282,16 +334,24 @@ export function ExerciseHistoryTable({ exercises }: ExerciseHistoryTableProps) {
             <div className="grid grid-cols-2 gap-4 rounded-lg border border-neutral-100 bg-neutral-50 p-4 text-sm">
               <div>
                 <span className="font-medium text-neutral-500">{t('masteryMatrix.concept')}:</span>
-                <span className="ml-2 font-semibold text-neutral-900">{selectedExercise.concept_name}</span>
+                <span className="ml-2 font-semibold text-neutral-900">
+                  {selectedExercise.concept_name}
+                </span>
               </div>
               <div>
-                <span className="font-medium text-neutral-500">{t('history.table.bloomLevel')}:</span>
-                <span className="ml-2 font-semibold text-neutral-900">{getBloomLabel(selectedExercise.bloom_level)}</span>
+                <span className="font-medium text-neutral-500">
+                  {t('history.table.bloomLevel')}:
+                </span>
+                <span className="ml-2 font-semibold text-neutral-900">
+                  {getBloomLabel(selectedExercise.bloom_level)}
+                </span>
               </div>
             </div>
 
             <div>
-              <h4 className="mb-3 text-sm font-semibold text-neutral-900">{t('history.table.question')}</h4>
+              <h4 className="mb-3 text-sm font-semibold text-neutral-900">
+                {t('history.table.question')}
+              </h4>
               <div className="rounded-lg border border-neutral-200 bg-white p-4 text-sm text-neutral-800 shadow-sm">
                 {renderExercisePrompt(selectedExercise)}
               </div>
@@ -299,15 +359,21 @@ export function ExerciseHistoryTable({ exercises }: ExerciseHistoryTableProps) {
 
             {Object.keys(selectedExercise.options || {}).length > 0 ? (
               <div className="space-y-3">
-                <h4 className="mb-3 text-sm font-semibold text-neutral-900">{t('history.table.options')}</h4>
+                <h4 className="mb-3 text-sm font-semibold text-neutral-900">
+                  {t('history.table.options')}
+                </h4>
                 {renderSelectedOptions(selectedExercise, t)}
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="rounded-lg border border-neutral-200 bg-white p-4 text-sm text-neutral-800 shadow-sm">
-                    <div className="mb-1 text-xs font-bold uppercase tracking-wide text-neutral-500">{t('history.table.yourAnswerCard')}</div>
+                    <div className="mb-1 text-xs font-bold uppercase tracking-wide text-neutral-500">
+                      {t('history.table.yourAnswerCard')}
+                    </div>
                     {renderSelectedChoicesSummary(selectedExercise, t)}
                   </div>
                   <div className="rounded-lg border border-green-200 bg-green-50/50 p-4 text-sm text-green-900 shadow-sm">
-                    <div className="mb-1 text-xs font-bold uppercase tracking-wide text-green-700">{t('history.table.correctAnswerCard')}</div>
+                    <div className="mb-1 text-xs font-bold uppercase tracking-wide text-green-700">
+                      {t('history.table.correctAnswerCard')}
+                    </div>
                     {renderCorrectAnswer(selectedExercise, t)}
                   </div>
                 </div>
@@ -315,19 +381,26 @@ export function ExerciseHistoryTable({ exercises }: ExerciseHistoryTableProps) {
             ) : (
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="rounded-lg border border-neutral-200 bg-white p-4 text-sm text-neutral-800 shadow-sm">
-                  <div className="mb-1 text-xs font-bold uppercase tracking-wide text-neutral-500">{t('history.table.yourAnswerCard')}</div>
+                  <div className="mb-1 text-xs font-bold uppercase tracking-wide text-neutral-500">
+                    {t('history.table.yourAnswerCard')}
+                  </div>
                   <div>{renderAnswerText(selectedExercise.user_answer, t)}</div>
                 </div>
                 <div className="rounded-lg border border-green-200 bg-green-50/50 p-4 text-sm text-green-900 shadow-sm">
-                  <div className="mb-1 text-xs font-bold uppercase tracking-wide text-green-700">{t('history.table.correctAnswerCard')}</div>
+                  <div className="mb-1 text-xs font-bold uppercase tracking-wide text-green-700">
+                    {t('history.table.correctAnswerCard')}
+                  </div>
                   {renderCorrectAnswer(selectedExercise, t)}
                 </div>
               </div>
             )}
 
-            {selectedExercise.exercise_type === 'short_answer' && selectedExercise.rubric?.length ? (
+            {selectedExercise.exercise_type === 'short_answer' &&
+            selectedExercise.rubric?.length ? (
               <div>
-                <h4 className="mb-3 text-sm font-semibold text-neutral-900">{t('history.table.rubric')}</h4>
+                <h4 className="mb-3 text-sm font-semibold text-neutral-900">
+                  {t('history.table.rubric')}
+                </h4>
                 <div className="rounded-lg border border-amber-200 bg-amber-50/70 p-4 text-sm text-amber-950 shadow-sm">
                   <ul className="space-y-2">
                     {selectedExercise.rubric.map((criterion, index) => (
@@ -345,7 +418,9 @@ export function ExerciseHistoryTable({ exercises }: ExerciseHistoryTableProps) {
 
             {selectedExercise.explanation ? (
               <div>
-                <h4 className="mb-3 text-sm font-semibold text-neutral-900">{t('history.table.explanation')}</h4>
+                <h4 className="mb-3 text-sm font-semibold text-neutral-900">
+                  {t('history.table.explanation')}
+                </h4>
                 <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-5 text-sm leading-relaxed text-neutral-800 shadow-sm sm:p-6">
                   <DynamicMarkdownRenderer content={selectedExercise.explanation} />
                 </div>
@@ -361,5 +436,5 @@ export function ExerciseHistoryTable({ exercises }: ExerciseHistoryTableProps) {
         ) : null}
       </Modal>
     </div>
-  )
+  );
 }

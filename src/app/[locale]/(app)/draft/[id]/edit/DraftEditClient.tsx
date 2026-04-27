@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useDraftStore } from '@/store/useDraftStore';
@@ -17,7 +17,7 @@ import {
   HiOutlineDocumentText,
   HiOutlineCloudUpload,
   HiOutlineQuestionMarkCircle,
-  HiOutlineCollection
+  HiOutlineCollection,
 } from '@/components/icons';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
@@ -62,7 +62,7 @@ interface Props {
 
 export default function DraftEditClient({ initialDraft, initialCategory, locale }: Props) {
   const t = useTranslations('create');
-  const tCommon = useTranslations('common');
+  const _tCommon = useTranslations('common');
   const router = useRouter();
   const { removeDraft } = useDraftStore();
 
@@ -71,12 +71,12 @@ export default function DraftEditClient({ initialDraft, initialCategory, locale 
   const [description, setDescription] = useState('');
   const [isPrivate, setIsPrivate] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(initialCategory);
-  
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  
+
   // PDF viewer state
-  const [pdfUrl, setPdfUrl] = useState<string | null>(initialDraft.pdfData?.pdfUrl || null);
+  const [pdfUrl, _setPdfUrl] = useState<string | null>(initialDraft.pdfData?.pdfUrl || null);
   const [showPDFViewer, setShowPDFViewer] = useState(true);
   const [pdfDataUrl, setPdfDataUrl] = useState<string | null>(null);
 
@@ -95,7 +95,7 @@ export default function DraftEditClient({ initialDraft, initialCategory, locale 
         objectUrl = URL.createObjectURL(blob);
         setPdfDataUrl(objectUrl);
       } catch (err) {
-        console.error("Error loading PDF data:", err);
+        console.error('Error loading PDF data:', err);
         setPdfDataUrl(null);
       }
     };
@@ -118,9 +118,7 @@ export default function DraftEditClient({ initialDraft, initialCategory, locale 
   }, []);
 
   const handleQuestionEdit = (index: number, updates: Partial<DraftQuestion>) => {
-    setQuestions((prev) =>
-      prev.map((q, i) => (i === index ? { ...q, ...updates } : q))
-    );
+    setQuestions((prev) => prev.map((q, i) => (i === index ? { ...q, ...updates } : q)));
   };
 
   const handleDeleteQuestion = (index: number) => {
@@ -150,7 +148,7 @@ export default function DraftEditClient({ initialDraft, initialCategory, locale 
           description,
           questions,
           pdfUrl,
-          isPrivate
+          isPrivate,
         }),
       });
 
@@ -200,7 +198,9 @@ export default function DraftEditClient({ initialDraft, initialCategory, locale 
     <div className="min-h-screen bg-neutral-50">
       <div className="flex">
         {/* Left Side - Form Content */}
-        <div className={`transition-all duration-300 ${showPDFViewer && pdfUrl ? 'w-1/2' : 'w-full'}`}>
+        <div
+          className={`transition-all duration-300 ${showPDFViewer && pdfUrl ? 'w-1/2' : 'w-full'}`}
+        >
           <div className="max-w-4xl mx-auto px-6 py-8">
             {/* Header */}
             <div className="mb-8">
@@ -234,7 +234,7 @@ export default function DraftEditClient({ initialDraft, initialCategory, locale 
                 category: t('category'),
                 categoryPlaceholder: t('searchSelectCategory'),
                 privateLabel: t('privateQuiz'),
-                privateDescription: t('privateQuizDescription')
+                privateDescription: t('privateQuizDescription'),
               }}
               isPrivate={isPrivate}
               onPrivateChange={setIsPrivate}
@@ -271,9 +271,13 @@ export default function DraftEditClient({ initialDraft, initialCategory, locale 
                   className="flex items-center gap-2 text-brand-trust border-green-200 hover:bg-green-50"
                 >
                   {showPDFViewer ? (
-                    <><HiOutlineEyeOff className="w-4 h-4" /> Ẩn PDF</>
+                    <>
+                      <HiOutlineEyeOff className="w-4 h-4" /> Ẩn PDF
+                    </>
                   ) : (
-                    <><HiOutlineDocumentText className="w-4 h-4" /> Xem PDF</>
+                    <>
+                      <HiOutlineDocumentText className="w-4 h-4" /> Xem PDF
+                    </>
                   )}
                 </Button>
               )}
@@ -399,17 +403,17 @@ function QuestionEditor({
       {/* Options preview */}
       <div className="space-y-1.5">
         {question.options.map((opt, optIdx) => {
-          const isCorrect = question.type === 'single'
-            ? question.correctIndex === optIdx
-            : question.correctIndexes?.includes(optIdx);
+          const isCorrect =
+            question.type === 'single'
+              ? question.correctIndex === optIdx
+              : question.correctIndexes?.includes(optIdx);
 
           return (
             <div
               key={optIdx}
-              className={`px-3 py-2 rounded-lg text-sm ${isCorrect
-                ? 'bg-green-100 text-green-800'
-                : 'bg-white text-neutral-600'
-                }`}
+              className={`px-3 py-2 rounded-lg text-sm ${
+                isCorrect ? 'bg-green-100 text-green-800' : 'bg-white text-neutral-600'
+              }`}
             >
               {opt}
             </div>

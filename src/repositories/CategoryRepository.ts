@@ -1,6 +1,6 @@
-import connectDB from '@/lib/mongoose'
-import Category from '@/models/Category'
-import { ICategory, ICategoryRepository } from '@/interfaces/repositories/ICategoryRepository'
+import connectDB from '@/lib/mongoose';
+import Category from '@/models/Category';
+import { ICategory, ICategoryRepository } from '@/interfaces/repositories/ICategoryRepository';
 
 function normalizeSlug(value: string): string {
   return decodeURIComponent(value)
@@ -11,30 +11,31 @@ function normalizeSlug(value: string): string {
 
 export class CategoryRepository implements ICategoryRepository {
   async findById(id: string): Promise<ICategory | null> {
-    await connectDB()
-    return await Category.findById(id).lean() as unknown as ICategory | null
+    await connectDB();
+    return (await Category.findById(id).lean()) as unknown as ICategory | null;
   }
 
   async findBySlug(slug: string): Promise<ICategory | null> {
-    await connectDB()
+    await connectDB();
 
     const inputSlug = normalizeSlug(slug);
-    const bySlug = await Category.findOne(
+    const bySlug = (await Category.findOne(
       { slug: inputSlug, isActive: true },
-      '_id name slug description color isActive createdBy createdAt updatedAt'
-    ).lean() as unknown as ICategory | null;
+      '_id name slug description color isActive createdBy createdAt updatedAt',
+    ).lean()) as unknown as ICategory | null;
 
     if (bySlug) {
       return bySlug;
     }
 
     // Legacy fallback for records created before slug field existed.
-    const legacyCategories = await Category.find(
+    const legacyCategories = (await Category.find(
       { isActive: true },
-      '_id name slug description color isActive createdBy createdAt updatedAt'
-    ).lean() as unknown as ICategory[];
+      '_id name slug description color isActive createdBy createdAt updatedAt',
+    ).lean()) as unknown as ICategory[];
 
-    const legacyCategory = legacyCategories.find((cat) => normalizeSlug(cat.name) === inputSlug) ?? null;
+    const legacyCategory =
+      legacyCategories.find((cat) => normalizeSlug(cat.name) === inputSlug) ?? null;
 
     if (legacyCategory?._id && !legacyCategory.slug) {
       // Opportunistic backfill so subsequent reads hit indexed slug query.
@@ -44,45 +45,47 @@ export class CategoryRepository implements ICategoryRepository {
     return legacyCategory;
   }
 
-  async findAll(options: {
-    page?: number
-    limit?: number
-    search?: string
-    isActive?: boolean
-  } = {}): Promise<{
-    categories: ICategory[]
+  async findAll(
+    options: {
+      page?: number;
+      limit?: number;
+      search?: string;
+      isActive?: boolean;
+    } = {},
+  ): Promise<{
+    categories: ICategory[];
     pagination: {
-      currentPage: number
-      totalPages: number
-      totalItems: number
-      itemsPerPage: number
-      hasNextPage: boolean
-      hasPrevPage: boolean
-    }
+      currentPage: number;
+      totalPages: number;
+      totalItems: number;
+      itemsPerPage: number;
+      hasNextPage: boolean;
+      hasPrevPage: boolean;
+    };
   }> {
-    await connectDB()
-    
-    const page = options.page || 1
-    const limit = options.limit || 10
-    const skip = (page - 1) * limit
+    await connectDB();
+
+    const page = options.page || 1;
+    const limit = options.limit || 10;
+    const skip = (page - 1) * limit;
 
     // Build query
-    const query: any = {}
+    const query: any = {};
     if (options.search) {
-      query.name = { $regex: options.search, $options: 'i' }
+      query.name = { $regex: options.search, $options: 'i' };
     }
     if (typeof options.isActive === 'boolean') {
-      query.isActive = options.isActive
+      query.isActive = options.isActive;
     }
 
-    const categories = await Category.find(query)
+    const categories = (await Category.find(query)
       .sort({ name: 1 })
       .skip(skip)
       .limit(limit)
-      .lean() as unknown as ICategory[]
+      .lean()) as unknown as ICategory[];
 
-    const totalItems = await Category.countDocuments(query)
-    const totalPages = Math.ceil(totalItems / limit)
+    const totalItems = await Category.countDocuments(query);
+    const totalPages = Math.ceil(totalItems / limit);
 
     return {
       categories,
@@ -92,60 +95,62 @@ export class CategoryRepository implements ICategoryRepository {
         totalItems,
         itemsPerPage: limit,
         hasNextPage: page < totalPages,
-        hasPrevPage: page > 1
-      }
-    }
+        hasPrevPage: page > 1,
+      },
+    };
   }
 
   async findActive(): Promise<ICategory[]> {
-    await connectDB()
-    return await Category.find({ isActive: true })
+    await connectDB();
+    return (await Category.find({ isActive: true })
       .sort({ name: 1 })
-      .lean() as unknown as ICategory[]
+      .lean()) as unknown as ICategory[];
   }
 
   async search(query: string): Promise<ICategory[]> {
-    await connectDB()
-    return await Category.find({ 
+    await connectDB();
+    return (await Category.find({
       name: { $regex: query, $options: 'i' },
-      isActive: true
+      isActive: true,
     })
       .sort({ name: 1 })
-      .lean() as unknown as ICategory[]
+      .lean()) as unknown as ICategory[];
   }
 
   async create(categoryData: Partial<ICategory>): Promise<ICategory> {
-    await connectDB()
-    const category = new Category(categoryData)
-    return await category.save() as unknown as ICategory
+    await connectDB();
+    const category = new Category(categoryData);
+    return (await category.save()) as unknown as ICategory;
   }
 
   async update(id: string, categoryData: Partial<ICategory>): Promise<ICategory | null> {
-    await connectDB()
-    return await Category.findByIdAndUpdate(id, categoryData, { new: true }).lean() as unknown as ICategory | null
+    await connectDB();
+    return (await Category.findByIdAndUpdate(id, categoryData, {
+      new: true,
+    }).lean()) as unknown as ICategory | null;
   }
 
   async delete(id: string): Promise<boolean> {
-    await connectDB()
-    const result = await Category.findByIdAndDelete(id)
-    return !!result
+    await connectDB();
+    const result = await Category.findByIdAndDelete(id);
+    return !!result;
   }
 
   async count(filter: any = {}): Promise<number> {
-    await connectDB()
-    return await Category.countDocuments(filter)
+    await connectDB();
+    return await Category.countDocuments(filter);
   }
 
   async findWithQuizCount(): Promise<{ category: ICategory; quizCount: number }[]> {
-    await connectDB()
+    await connectDB();
     const result = await Category.aggregate([
       {
         $lookup: {
           from: 'quizzes',
           localField: '_id',
           foreignField: 'category',
-          as: 'quizzes'
-        }
+          as: 'quizzes',
+        },
       },
       {
         $project: {
@@ -157,15 +162,15 @@ export class CategoryRepository implements ICategoryRepository {
           createdBy: 1,
           createdAt: 1,
           updatedAt: 1,
-          quizCount: { $size: '$quizzes' }
-        }
+          quizCount: { $size: '$quizzes' },
+        },
       },
       {
-        $sort: { name: 1 }
-      }
-    ])
+        $sort: { name: 1 },
+      },
+    ]);
 
-    return result.map(item => ({
+    return result.map((item) => ({
       category: {
         _id: item._id,
         name: item.name,
@@ -175,17 +180,17 @@ export class CategoryRepository implements ICategoryRepository {
         isActive: item.isActive,
         createdBy: item.createdBy,
         createdAt: item.createdAt,
-        updatedAt: item.updatedAt
+        updatedAt: item.updatedAt,
       },
-      quizCount: item.quizCount
-    }))
+      quizCount: item.quizCount,
+    }));
   }
 
   async getStatsWithQuizCount(): Promise<any[]> {
-    await connectDB()
+    await connectDB();
     const result = await Category.aggregate([
       {
-        $match: { isActive: true }
+        $match: { isActive: true },
       },
       {
         $lookup: {
@@ -194,17 +199,17 @@ export class CategoryRepository implements ICategoryRepository {
           foreignField: 'category',
           pipeline: [
             {
-              $match: { 
+              $match: {
                 status: 'published',
-                isPrivate: { $ne: true }
-              }
+                isPrivate: { $ne: true },
+              },
             },
             {
-              $count: 'count'
-            }
+              $count: 'count',
+            },
           ],
-          as: 'quizzes'
-        }
+          as: 'quizzes',
+        },
       },
       {
         $project: {
@@ -217,24 +222,24 @@ export class CategoryRepository implements ICategoryRepository {
               $replaceAll: {
                 input: '$name',
                 find: ' ',
-                replacement: '-'
-              }
-            }
+                replacement: '-',
+              },
+            },
           },
           quizCount: {
-            $ifNull: [{ $arrayElemAt: ['$quizzes.count', 0] }, 0]
+            $ifNull: [{ $arrayElemAt: ['$quizzes.count', 0] }, 0],
           },
           isActive: 1,
           createdBy: 1,
           createdAt: 1,
-          updatedAt: 1
-        }
+          updatedAt: 1,
+        },
       },
       {
-        $sort: { quizCount: -1, name: 1 }
-      }
-    ])
+        $sort: { quizCount: -1, name: 1 },
+      },
+    ]);
 
-    return result
+    return result;
   }
-} 
+}

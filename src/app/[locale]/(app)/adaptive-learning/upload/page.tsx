@@ -4,22 +4,24 @@ import { getTranslations } from 'next-intl/server';
 import { buildLocalizedMetadata } from '@/lib/seo';
 import { AsyncRouteParams } from '@/types/next-route';
 
-export async function generateMetadata({ params }: AsyncRouteParams<{ locale: string }>): Promise<Metadata> {
-    const { locale } = await params;
-    const t = await getTranslations({ locale, namespace: 'adaptiveLearning.meta.upload' });
-    return buildLocalizedMetadata({
-        locale,
-        path: '/adaptive-learning/upload',
-        title: t('title'),
-        description: t('description'),
-        robots: {
-            index: false,
-            follow: false,
-            nocache: true,
-        },
-    });
+export async function generateMetadata({
+  params,
+}: AsyncRouteParams<{ locale: string }>): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: 'adaptiveLearning.meta.upload' });
+  return buildLocalizedMetadata({
+    locale,
+    path: '/adaptive-learning/upload',
+    title: t('title'),
+    description: t('description'),
+    robots: {
+      index: false,
+      follow: false,
+      nocache: true,
+    },
+  });
 }
 
 export default function AdaptiveLearningUploadPage() {
-    return <AdaptiveLearningUpload />;
+  return <AdaptiveLearningUpload />;
 }

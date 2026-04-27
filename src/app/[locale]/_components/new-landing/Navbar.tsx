@@ -17,31 +17,31 @@ const NAV_LINKS_EN = [
 
 export const GlowPillButton = ({
   label,
-  variant = "dark",
-  href = "#"
+  variant = 'dark',
+  href = '#',
 }: {
   label: string;
-  variant?: "dark" | "light";
+  variant?: 'dark' | 'light';
   href?: string;
 }) => {
-  const isDark = variant === "dark";
+  const isDark = variant === 'dark';
   return (
     <Link
       href={href}
       className="relative rounded-full inline-block cursor-pointer transition-opacity hover:opacity-90"
-      style={{ border: "0.6px solid rgba(255,255,255,0.8)" }}
+      style={{ border: '0.6px solid rgba(255,255,255,0.8)' }}
     >
       {/* Top glow streak */}
       <div
         className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-[1px] rounded-full"
         style={{
-          background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent)",
-          filter: "blur(1px)",
+          background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent)',
+          filter: 'blur(1px)',
         }}
       />
       <div
         className={`rounded-full px-[29px] py-[11px] text-[14px] font-medium ${
-          isDark ? "bg-black text-white" : "bg-white text-black"
+          isDark ? 'bg-black text-white' : 'bg-white text-black'
         }`}
       >
         {label}

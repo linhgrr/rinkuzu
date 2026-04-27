@@ -1,10 +1,4 @@
-export const MARKETING_MESSAGE_NAMESPACES = [
-  'auth',
-  'common',
-  'landing',
-  'nav',
-  'pwa',
-] as const;
+export const MARKETING_MESSAGE_NAMESPACES = ['auth', 'common', 'landing', 'nav', 'pwa'] as const;
 
 export const APP_MESSAGE_NAMESPACES = [
   'adaptiveLearning',

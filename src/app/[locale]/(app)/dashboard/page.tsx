@@ -7,15 +7,8 @@ import { DashboardPageShell } from '@/app/[locale]/_components/DashboardPageShel
 
 export const dynamic = 'force-dynamic';
 
-export default async function DashboardPage({
-  params,
-}: {
-  params: Promise<{ locale: string }>;
-}) {
-  const [{ locale }, session] = await Promise.all([
-    params,
-    getServerSession(authOptions),
-  ]);
+export default async function DashboardPage({ params }: { params: Promise<{ locale: string }> }) {
+  const [{ locale }, session] = await Promise.all([params, getServerSession(authOptions)]);
 
   if (!session?.user) {
     const loginPath = locale === defaultLocale ? '/login' : `/${locale}/login`;

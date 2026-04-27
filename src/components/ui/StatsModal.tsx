@@ -31,10 +31,10 @@ export default function StatsModal({
   title,
   type,
   apiEndpoint,
-  children
+  children,
 }: StatsModalProps) {
   const t = useTranslations('statsModal');
-  const tCommon = useTranslations('common');
+  const _tCommon = useTranslations('common');
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -44,49 +44,61 @@ export default function StatsModal({
     total: 0,
     totalPages: 0,
     hasNext: false,
-    hasPrev: false
+    hasPrev: false,
   });
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
-  const fetchData = useCallback(async (page: number = 1, search: string = '', resetData: boolean = true) => {
-    try {
-      setLoading(true);
-      if (resetData) setError('');
+  const fetchData = useCallback(
+    async (page: number = 1, search: string = '', resetData: boolean = true) => {
+      try {
+        setLoading(true);
+        if (resetData) setError('');
 
-      const params = new URLSearchParams({
-        page: page.toString(),
-        limit: pagination.limit.toString(),
-        ...(search && { search }),
-        ...(sortBy && { sortBy }),
-        sortOrder
-      });
+        const params = new URLSearchParams({
+          page: page.toString(),
+          limit: pagination.limit.toString(),
+          ...(search && { search }),
+          ...(sortBy && { sortBy }),
+          sortOrder,
+        });
 
-      const response = await fetch(`${apiEndpoint}${apiEndpoint.includes('?') ? '&' : '?'}${params}`);
-      const result = await response.json();
+        const response = await fetch(
+          `${apiEndpoint}${apiEndpoint.includes('?') ? '&' : '?'}${params}`,
+        );
+        const result = await response.json();
 
-      if (result.success) {
-        const dataKey = type === 'categories' ? 'categories' : type === 'creators' ? 'creators' : type === 'activity' ? 'activities' : 'data';
-        const newData = result.data[dataKey] || result.data.activities || [];
-        
-        if (resetData || page === 1) {
-          setData(newData);
+        if (result.success) {
+          const dataKey =
+            type === 'categories'
+              ? 'categories'
+              : type === 'creators'
+                ? 'creators'
+                : type === 'activity'
+                  ? 'activities'
+                  : 'data';
+          const newData = result.data[dataKey] || result.data.activities || [];
+
+          if (resetData || page === 1) {
+            setData(newData);
+          } else {
+            setData((prev) => [...prev, ...newData]);
+          }
+
+          setPagination(result.data.pagination);
+          setError('');
         } else {
-          setData(prev => [...prev, ...newData]);
+          setError(result.error || 'Failed to fetch data');
         }
-        
-        setPagination(result.data.pagination);
-        setError('');
-      } else {
-        setError(result.error || 'Failed to fetch data');
+      } catch (_error) {
+        setError('Failed to fetch data');
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      setError('Failed to fetch data');
-    } finally {
-      setLoading(false);
-    }
-  }, [apiEndpoint, pagination.limit, sortBy, sortOrder, type]);
+    },
+    [apiEndpoint, pagination.limit, sortBy, sortOrder, type],
+  );
 
   useEffect(() => {
     if (isOpen) {
@@ -125,27 +137,32 @@ export default function StatsModal({
       month: '2-digit',
       year: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     });
   };
 
   const renderCategoryItem = (category: any, index: number) => (
-    <div key={category._id || index} className="flex items-center justify-between p-4 bg-neutral-50 rounded-lg hover:bg-neutral-100 transition-colors">
+    <div
+      key={category._id || index}
+      className="flex items-center justify-between p-4 bg-neutral-50 rounded-lg hover:bg-neutral-100 transition-colors"
+    >
       <div className="flex items-center space-x-4">
-        <span className="text-sm font-medium text-neutral-500">#{index + 1 + (pagination.page - 1) * pagination.limit}</span>
-        <div
-          className="w-4 h-4 rounded-full"
-          style={{ backgroundColor: category.color }}
-        />
+        <span className="text-sm font-medium text-neutral-500">
+          #{index + 1 + (pagination.page - 1) * pagination.limit}
+        </span>
+        <div className="w-4 h-4 rounded-full" style={{ backgroundColor: category.color }} />
         <div>
           <h4 className="font-medium text-neutral-900">{category.name}</h4>
           <p className="text-sm text-neutral-600">{category.description}</p>
         </div>
       </div>
       <div className="text-right">
-        <div className="text-sm font-medium">{category.totalQuizzes || category.quizCount} quiz</div>
+        <div className="text-sm font-medium">
+          {category.totalQuizzes || category.quizCount} quiz
+        </div>
         <div className="text-xs text-neutral-500">
-          {category.publishedQuizzes} {t('published')} • {category.totalQuestions} {t('questionsCount')}
+          {category.publishedQuizzes} {t('published')} • {category.totalQuestions}{' '}
+          {t('questionsCount')}
         </div>
         <div className="text-xs text-neutral-400">
           {category.isActive ? (
@@ -159,18 +176,23 @@ export default function StatsModal({
   );
 
   const renderCreatorItem = (creator: any, index: number) => (
-    <div key={creator._id || index} className="flex items-center justify-between p-4 bg-neutral-50 rounded-lg hover:bg-neutral-100 transition-colors">
+    <div
+      key={creator._id || index}
+      className="flex items-center justify-between p-4 bg-neutral-50 rounded-lg hover:bg-neutral-100 transition-colors"
+    >
       <div className="flex items-center space-x-4">
-        <span className="text-sm font-medium text-neutral-500">#{index + 1 + (pagination.page - 1) * pagination.limit}</span>
+        <span className="text-sm font-medium text-neutral-500">
+          #{index + 1 + (pagination.page - 1) * pagination.limit}
+        </span>
         <div className="w-8 h-8 bg-gradient-to-br from-green-400 to-brand-trust rounded-full flex items-center justify-center">
-          <span className="text-white text-sm font-medium">
-            {creator.email[0].toUpperCase()}
-          </span>
+          <span className="text-white text-sm font-medium">{creator.email[0].toUpperCase()}</span>
         </div>
         <div>
           <h4 className="font-medium text-neutral-900">{creator.email}</h4>
           <div className="flex items-center space-x-2 text-xs text-neutral-500">
-            <span>{t('joined')}: {formatDate(creator.joinedAt)}</span>
+            <span>
+              {t('joined')}: {formatDate(creator.joinedAt)}
+            </span>
             {creator.role === 'admin' && (
               <span className="px-2 py-1 bg-orange-100 text-orange-800 rounded">Admin</span>
             )}
@@ -180,11 +202,17 @@ export default function StatsModal({
       <div className="text-right">
         <div className="text-sm font-medium">{creator.quizCount} quiz</div>
         <div className="text-xs text-neutral-500">
-          {creator.totalQuestions} {t('questionsCount')} • {Math.round(creator.successRate || 0)}% {t('successRate')}
+          {creator.totalQuestions} {t('questionsCount')} • {Math.round(creator.successRate || 0)}%{' '}
+          {t('successRate')}
         </div>
         <div className="text-xs text-neutral-400">
-          <span className="text-green-600">{creator.publishedQuizzes} {t('published')}</span> •
-          <span className="text-yellow-600 ml-1">{creator.pendingQuizzes} {t('pendingApproval')}</span>
+          <span className="text-green-600">
+            {creator.publishedQuizzes} {t('published')}
+          </span>{' '}
+          •
+          <span className="text-yellow-600 ml-1">
+            {creator.pendingQuizzes} {t('pendingApproval')}
+          </span>
         </div>
       </div>
     </div>
@@ -194,24 +222,47 @@ export default function StatsModal({
     const { type: activityType, data: activityData, date } = activity;
 
     return (
-      <div key={index} className="flex items-center space-x-4 p-4 bg-neutral-50 rounded-lg hover:bg-neutral-100 transition-colors">
-        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${activityType === 'user' ? 'bg-green-100 text-brand-trust' :
-          activityType === 'quiz' ? 'bg-green-100 text-green-600' :
-            'bg-green-100 text-brand-trust'
-          }`}>
+      <div
+        key={index}
+        className="flex items-center space-x-4 p-4 bg-neutral-50 rounded-lg hover:bg-neutral-100 transition-colors"
+      >
+        <div
+          className={`w-10 h-10 rounded-full flex items-center justify-center ${
+            activityType === 'user'
+              ? 'bg-green-100 text-brand-trust'
+              : activityType === 'quiz'
+                ? 'bg-green-100 text-green-600'
+                : 'bg-green-100 text-brand-trust'
+          }`}
+        >
           {activityType === 'user' && (
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+              />
             </svg>
           )}
           {activityType === 'quiz' && (
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+              />
             </svg>
           )}
           {activityType === 'attempt' && (
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+              />
             </svg>
           )}
         </div>
@@ -219,7 +270,9 @@ export default function StatsModal({
         <div className="flex-1">
           {activityType === 'user' && (
             <div>
-              <h4 className="font-medium text-neutral-900">{t('newUser')}: {activityData.email}</h4>
+              <h4 className="font-medium text-neutral-900">
+                {t('newUser')}: {activityData.email}
+              </h4>
               <p className="text-sm text-neutral-600">{t('registered')}</p>
             </div>
           )}
@@ -227,7 +280,8 @@ export default function StatsModal({
             <div>
               <h4 className="font-medium text-neutral-900">{activityData.title}</h4>
               <p className="text-sm text-neutral-600">
-                {t('by')} {activityData.author?.email} • {activityData.category?.name} • {activityData.questionCount} {t('questionsCount')}
+                {t('by')} {activityData.author?.email} • {activityData.category?.name} •{' '}
+                {activityData.questionCount} {t('questionsCount')}
               </p>
             </div>
           )}
@@ -235,7 +289,8 @@ export default function StatsModal({
             <div>
               <h4 className="font-medium text-neutral-900">{activityData.quiz?.title}</h4>
               <p className="text-sm text-neutral-600">
-                {activityData.user?.email || t('anonymous')} • Score: {activityData.score}% • {activityData.answeredQuestions} {t('answeredQuestions')}
+                {activityData.user?.email || t('anonymous')} • Score: {activityData.score}% •{' '}
+                {activityData.answeredQuestions} {t('answeredQuestions')}
               </p>
             </div>
           )}
@@ -243,20 +298,30 @@ export default function StatsModal({
         </div>
 
         {activityType === 'quiz' && (
-          <span className={`px-2 py-1 rounded text-xs ${activityData.status === 'published' ? 'bg-green-100 text-green-800' :
-            activityData.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-              'bg-red-100 text-red-800'
-            }`}>
+          <span
+            className={`px-2 py-1 rounded text-xs ${
+              activityData.status === 'published'
+                ? 'bg-green-100 text-green-800'
+                : activityData.status === 'pending'
+                  ? 'bg-yellow-100 text-yellow-800'
+                  : 'bg-red-100 text-red-800'
+            }`}
+          >
             {activityData.status}
           </span>
         )}
 
         {activityType === 'attempt' && (
           <div className="text-right">
-            <div className={`text-sm font-medium ${activityData.score >= 80 ? 'text-green-600' :
-              activityData.score >= 60 ? 'text-yellow-600' :
-                'text-red-600'
-              }`}>
+            <div
+              className={`text-sm font-medium ${
+                activityData.score >= 80
+                  ? 'text-green-600'
+                  : activityData.score >= 60
+                    ? 'text-yellow-600'
+                    : 'text-red-600'
+              }`}
+            >
               {activityData.score}%
             </div>
           </div>
@@ -278,11 +343,7 @@ export default function StatsModal({
       return (
         <div className="text-center py-8">
           <p className="text-red-600">{error}</p>
-          <Button
-            onClick={() => fetchData(1, searchTerm)}
-            className="mt-2"
-            size="sm"
-          >
+          <Button onClick={() => fetchData(1, searchTerm)} className="mt-2" size="sm">
             {t('retry')}
           </Button>
         </div>
@@ -301,10 +362,14 @@ export default function StatsModal({
       <div className="space-y-3">
         {data.map((item, index) => {
           switch (type) {
-            case 'categories': return renderCategoryItem(item, index);
-            case 'creators': return renderCreatorItem(item, index);
-            case 'activity': return renderActivityItem(item, index);
-            default: return null;
+            case 'categories':
+              return renderCategoryItem(item, index);
+            case 'creators':
+              return renderCreatorItem(item, index);
+            case 'activity':
+              return renderActivityItem(item, index);
+            default:
+              return null;
           }
         })}
       </div>
@@ -317,13 +382,13 @@ export default function StatsModal({
         return [
           { value: 'quizCount', label: t('quizCount') },
           { value: 'name', label: t('name') },
-          { value: 'createdAt', label: t('createdAt') }
+          { value: 'createdAt', label: t('createdAt') },
         ];
       case 'creators':
         return [
           { value: 'quizCount', label: t('quizCount') },
           { value: 'totalQuestions', label: t('totalQuestions') },
-          { value: 'joinedAt', label: t('joinedAt') }
+          { value: 'joinedAt', label: t('joinedAt') },
         ];
       default:
         return [];
@@ -361,7 +426,7 @@ export default function StatsModal({
             <div className="flex items-center space-x-4">
               <span className="text-sm text-neutral-600">{t('sortBy')}</span>
               <div className="flex space-x-2">
-                {getSortOptions().map(option => (
+                {getSortOptions().map((option) => (
                   <button
                     key={option.value}
                     onClick={() => handleSortChange(option.value)}
@@ -373,9 +438,7 @@ export default function StatsModal({
                   >
                     {option.label}
                     {sortBy === option.value && (
-                      <span className="ml-1">
-                        {sortOrder === 'desc' ? '↓' : '↑'}
-                      </span>
+                      <span className="ml-1">{sortOrder === 'desc' ? '↓' : '↑'}</span>
                     )}
                   </button>
                 ))}
@@ -387,9 +450,7 @@ export default function StatsModal({
         {children}
 
         {/* Content */}
-        <div className="max-h-96 overflow-y-auto">
-          {renderContent()}
-        </div>
+        <div className="max-h-96 overflow-y-auto">{renderContent()}</div>
 
         {/* Loading More */}
         {loading && data.length > 0 && (
@@ -405,17 +466,12 @@ export default function StatsModal({
         <div className="mt-6 flex justify-between items-center">
           <div className="flex space-x-2">
             {type === 'activity' && pagination.hasNext && (
-              <Button
-                onClick={handleLoadMore}
-                variant="outline"
-                disabled={loading}
-                size="sm"
-              >
+              <Button onClick={handleLoadMore} variant="outline" disabled={loading} size="sm">
                 {t('loadMore')}
               </Button>
             )}
           </div>
-          
+
           {type !== 'activity' && pagination.totalPages > 1 && (
             <Pagination
               currentPage={pagination.page}
@@ -427,4 +483,4 @@ export default function StatsModal({
       </div>
     </Modal>
   );
-} 
+}

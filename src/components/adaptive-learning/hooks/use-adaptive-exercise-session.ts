@@ -1,300 +1,293 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { AdaptiveApiError, getExercise, getNextConcept, getTheory, isSessionNotFoundError, submitAnswer } from '../api-client'
-import { ADAPTIVE_ROUTES } from '../routes'
-import { saveSessionExerciseOutcome } from '../session-storage'
-import type { Exercise, NextConcept, SubmitAnswerPayload, TheoryData } from '../types'
+import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  AdaptiveApiError,
+  getExercise,
+  getNextConcept,
+  getTheory,
+  isSessionNotFoundError,
+  submitAnswer,
+} from '../api-client';
+import { ADAPTIVE_ROUTES } from '../routes';
+import { saveSessionExerciseOutcome } from '../session-storage';
+import type { Exercise, NextConcept, SubmitAnswerPayload, TheoryData } from '../types';
 
 type RouterLike = {
-  push: (href: string) => void
-  replace: (href: string) => void
-  prefetch: (href: string) => void
-}
+  push: (href: string) => void;
+  replace: (href: string) => void;
+  prefetch: (href: string) => void;
+};
 
-type TranslateFn = (key: string, values?: Record<string, any>) => string
+type TranslateFn = (key: string, values?: Record<string, any>) => string;
 
 type UseAdaptiveExerciseSessionParams = {
-  sessionId: string
-  router: RouterLike
-  t: TranslateFn
-}
+  sessionId: string;
+  router: RouterLike;
+  t: TranslateFn;
+};
 
 function resolveExerciseFeedback(
   error: unknown,
   t: TranslateFn,
   intent: 'load' | 'submit',
 ): string {
-  const fallback = intent === 'load'
-    ? t('exercise.failedToLoadExercise')
-    : t('exercise.failedToSubmitAnswer')
+  const fallback =
+    intent === 'load' ? t('exercise.failedToLoadExercise') : t('exercise.failedToSubmitAnswer');
 
   if (error instanceof AdaptiveApiError) {
     if (
-      error.code === 'temporary_unavailable'
-      || error.code === 'request_aborted'
-      || error.code === 'network_error'
-      || error.code === 'upstream_html_error'
-      || error.code === 'invalid_response'
+      error.code === 'temporary_unavailable' ||
+      error.code === 'request_aborted' ||
+      error.code === 'network_error' ||
+      error.code === 'upstream_html_error' ||
+      error.code === 'invalid_response'
     ) {
-      return intent === 'load'
-        ? t('exercise.serviceUnavailable')
-        : t('exercise.submitUnavailable')
+      return intent === 'load' ? t('exercise.serviceUnavailable') : t('exercise.submitUnavailable');
     }
   }
 
-  return fallback
+  return fallback;
 }
 
-export const useAdaptiveExerciseSession = ({ sessionId, router, t }: UseAdaptiveExerciseSessionParams) => {
-  const [concept, setConcept] = useState<NextConcept | null>(null)
-  const [theory, setTheory] = useState<TheoryData | null>(null)
-  const [exercise, setExercise] = useState<Exercise | null>(null)
-  const [answerDraft, setAnswerDraft] = useState<SubmitAnswerPayload>({})
-  const [loadingConcept, setLoadingConcept] = useState(true)
-  const [loadingTheory, setLoadingTheory] = useState(false)
-  const [loadingExercise, setLoadingExercise] = useState(false)
-  const [submitting, setSubmitting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [showTheory, setShowTheory] = useState(false)
+export const useAdaptiveExerciseSession = ({
+  sessionId,
+  router,
+  t,
+}: UseAdaptiveExerciseSessionParams) => {
+  const [concept, setConcept] = useState<NextConcept | null>(null);
+  const [theory, setTheory] = useState<TheoryData | null>(null);
+  const [exercise, setExercise] = useState<Exercise | null>(null);
+  const [answerDraft, setAnswerDraft] = useState<SubmitAnswerPayload>({});
+  const [loadingConcept, setLoadingConcept] = useState(true);
+  const [loadingTheory, setLoadingTheory] = useState(false);
+  const [loadingExercise, setLoadingExercise] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [showTheory, setShowTheory] = useState(false);
 
-  const loadingRef = useRef(false)
-  const isMountedRef = useRef(true)
-  const activeRequestIdRef = useRef(0)
+  const loadingRef = useRef(false);
+  const isMountedRef = useRef(true);
+  const activeRequestIdRef = useRef(0);
 
   useEffect(() => {
-    isMountedRef.current = true
+    isMountedRef.current = true;
     return () => {
-      isMountedRef.current = false
-    }
-  }, [])
+      isMountedRef.current = false;
+    };
+  }, []);
 
   const loadData = useCallback(async () => {
-    if (!isMountedRef.current || loadingRef.current)
-      return
+    if (!isMountedRef.current || loadingRef.current) return;
 
-    loadingRef.current = true
-    const requestId = activeRequestIdRef.current + 1
-    activeRequestIdRef.current = requestId
+    loadingRef.current = true;
+    const requestId = activeRequestIdRef.current + 1;
+    activeRequestIdRef.current = requestId;
 
-    setLoadingConcept(true)
-    setError(null)
-    setAnswerDraft({})
-    setConcept(null)
-    setTheory(null)
-    setExercise(null)
-    setShowTheory(false)
+    setLoadingConcept(true);
+    setError(null);
+    setAnswerDraft({});
+    setConcept(null);
+    setTheory(null);
+    setExercise(null);
+    setShowTheory(false);
 
     const isLatestActiveRequest = () =>
-      isMountedRef.current && activeRequestIdRef.current === requestId
+      isMountedRef.current && activeRequestIdRef.current === requestId;
 
     try {
-      const nextConcept = await getNextConcept(sessionId)
-      if (!isLatestActiveRequest())
-        return
+      const nextConcept = await getNextConcept(sessionId);
+      if (!isLatestActiveRequest()) return;
 
-      setConcept(nextConcept)
-      setLoadingConcept(false)
+      setConcept(nextConcept);
+      setLoadingConcept(false);
 
       if (nextConcept.bloom_level <= 2) {
-        setShowTheory(true)
-        setLoadingTheory(true)
-        setLoadingExercise(true)
+        setShowTheory(true);
+        setLoadingTheory(true);
+        setLoadingExercise(true);
 
         const theoryPromise = getTheory(sessionId)
           .then((theoryData) => {
-            if (!isLatestActiveRequest())
-              return
-            setTheory(theoryData)
+            if (!isLatestActiveRequest()) return;
+            setTheory(theoryData);
           })
           .catch((reason) => {
-            if (!isLatestActiveRequest())
-              return
-            console.error('Failed to load theory:', reason)
+            if (!isLatestActiveRequest()) return;
+            console.error('Failed to load theory:', reason);
           })
           .finally(() => {
-            if (!isLatestActiveRequest())
-              return
-            setLoadingTheory(false)
-          })
+            if (!isLatestActiveRequest()) return;
+            setLoadingTheory(false);
+          });
 
         const exercisePromise = getExercise(sessionId)
           .then((exerciseData) => {
-            if (!isLatestActiveRequest())
-              return
-            setExercise(exerciseData)
+            if (!isLatestActiveRequest()) return;
+            setExercise(exerciseData);
             if (exerciseData.exercise_type === 'ordering') {
-              setAnswerDraft({ ordering: exerciseData.items })
+              setAnswerDraft({ ordering: exerciseData.items });
             }
             if (exerciseData.exercise_type === 'matching') {
-              const leftItems = exerciseData.pairs.map(p => p.left)
-              const rightItems = exerciseData.right_items
-              const matching: Record<string, string> = {}
+              const leftItems = exerciseData.pairs.map((p) => p.left);
+              const rightItems = exerciseData.right_items;
+              const matching: Record<string, string> = {};
               leftItems.forEach((left, i) => {
-                matching[left] = rightItems[i]
-              })
-              setAnswerDraft({ matching })
+                matching[left] = rightItems[i];
+              });
+              setAnswerDraft({ matching });
             }
           })
           .catch((reason) => {
-            if (!isLatestActiveRequest())
-              return
-            console.error('Failed to load exercise:', reason)
-            setError(resolveExerciseFeedback(reason, t, 'load'))
+            if (!isLatestActiveRequest()) return;
+            console.error('Failed to load exercise:', reason);
+            setError(resolveExerciseFeedback(reason, t, 'load'));
           })
           .finally(() => {
-            if (!isLatestActiveRequest())
-              return
-            setLoadingExercise(false)
-          })
+            if (!isLatestActiveRequest()) return;
+            setLoadingExercise(false);
+          });
 
-        await Promise.allSettled([theoryPromise, exercisePromise])
-      }
-      else {
-        setLoadingExercise(true)
-        const ex = await getExercise(sessionId)
-        if (!isLatestActiveRequest())
-          return
-        setExercise(ex)
+        await Promise.allSettled([theoryPromise, exercisePromise]);
+      } else {
+        setLoadingExercise(true);
+        const ex = await getExercise(sessionId);
+        if (!isLatestActiveRequest()) return;
+        setExercise(ex);
         if (ex.exercise_type === 'ordering') {
-          setAnswerDraft({ ordering: ex.items })
+          setAnswerDraft({ ordering: ex.items });
         }
         if (ex.exercise_type === 'matching') {
-          const leftItems = ex.pairs.map(p => p.left)
-          const rightItems = ex.right_items
-          const matching: Record<string, string> = {}
+          const leftItems = ex.pairs.map((p) => p.left);
+          const rightItems = ex.right_items;
+          const matching: Record<string, string> = {};
           leftItems.forEach((left, i) => {
-            matching[left] = rightItems[i]
-          })
-          setAnswerDraft({ matching })
+            matching[left] = rightItems[i];
+          });
+          setAnswerDraft({ matching });
         }
-        setLoadingExercise(false)
+        setLoadingExercise(false);
       }
-    }
-    catch (err) {
-      if (!isLatestActiveRequest())
-        return
+    } catch (err) {
+      if (!isLatestActiveRequest()) return;
 
       if (isSessionNotFoundError(err)) {
-        setError(t('exercise.failedToLoadExercise'))
-        setLoadingConcept(false)
-        setLoadingTheory(false)
-        setLoadingExercise(false)
-        return
+        setError(t('exercise.failedToLoadExercise'));
+        setLoadingConcept(false);
+        setLoadingTheory(false);
+        setLoadingExercise(false);
+        return;
       }
 
-      setError(resolveExerciseFeedback(err, t, 'load'))
-      setLoadingConcept(false)
-      setLoadingTheory(false)
-      setLoadingExercise(false)
+      setError(resolveExerciseFeedback(err, t, 'load'));
+      setLoadingConcept(false);
+      setLoadingTheory(false);
+      setLoadingExercise(false);
+    } finally {
+      loadingRef.current = false;
     }
-    finally {
-      loadingRef.current = false
-    }
-  }, [sessionId, t])
+  }, [sessionId, t]);
 
   useEffect(() => {
-    void loadData()
-  }, [loadData])
+    void loadData();
+  }, [loadData]);
 
   useEffect(() => {
-    router.prefetch(ADAPTIVE_ROUTES.dashboard)
-    router.prefetch(ADAPTIVE_ROUTES.result(sessionId))
-  }, [router, sessionId])
+    router.prefetch(ADAPTIVE_ROUTES.dashboard);
+    router.prefetch(ADAPTIVE_ROUTES.result(sessionId));
+  }, [router, sessionId]);
 
   const handleSubmit = useCallback(async () => {
-    if (!exercise)
-      return
+    if (!exercise) return;
 
     const hasAnswer = (() => {
       switch (exercise.exercise_type) {
         case 'mcq':
-          return Boolean(answerDraft.choice)
+          return Boolean(answerDraft.choice);
         case 'true_false':
-          return typeof answerDraft.boolean === 'boolean'
+          return typeof answerDraft.boolean === 'boolean';
         case 'fill_blank':
-          return Boolean(answerDraft.blanks?.some(value => value.trim().length > 0))
+          return Boolean(answerDraft.blanks?.some((value) => value.trim().length > 0));
         case 'multi_correct':
-          return Boolean(answerDraft.choices && answerDraft.choices.length > 0)
+          return Boolean(answerDraft.choices && answerDraft.choices.length > 0);
         case 'ordering':
-          return Boolean(answerDraft.ordering && answerDraft.ordering.length === exercise.items.length)
+          return Boolean(
+            answerDraft.ordering && answerDraft.ordering.length === exercise.items.length,
+          );
         case 'matching':
-          return Object.keys(answerDraft.matching || {}).length === exercise.pairs.length
+          return Object.keys(answerDraft.matching || {}).length === exercise.pairs.length;
         case 'short_answer':
-          return Boolean(answerDraft.text?.trim())
+          return Boolean(answerDraft.text?.trim());
         default:
-          return false
+          return false;
       }
-    })()
+    })();
 
-    if (!hasAnswer)
-      return
+    if (!hasAnswer) return;
 
-    setSubmitting(true)
+    setSubmitting(true);
     try {
-      router.prefetch(ADAPTIVE_ROUTES.result(sessionId))
-      const result = await submitAnswer(sessionId, answerDraft)
-      if (!isMountedRef.current)
-        return
+      router.prefetch(ADAPTIVE_ROUTES.result(sessionId));
+      const result = await submitAnswer(sessionId, answerDraft);
+      if (!isMountedRef.current) return;
 
-      saveSessionExerciseOutcome(sessionId, { result, exercise })
-      router.push(ADAPTIVE_ROUTES.result(sessionId))
-    }
-    catch (err) {
-      if (!isMountedRef.current)
-        return
+      saveSessionExerciseOutcome(sessionId, { result, exercise });
+      router.push(ADAPTIVE_ROUTES.result(sessionId));
+    } catch (err) {
+      if (!isMountedRef.current) return;
 
       if (isSessionNotFoundError(err)) {
-        setError(t('exercise.failedToSubmitAnswer'))
-        return
+        setError(t('exercise.failedToSubmitAnswer'));
+        return;
       }
 
-      setError(resolveExerciseFeedback(err, t, 'submit'))
+      setError(resolveExerciseFeedback(err, t, 'submit'));
+    } finally {
+      if (!isMountedRef.current) return;
+      setSubmitting(false);
     }
-    finally {
-      if (!isMountedRef.current)
-        return
-      setSubmitting(false)
-    }
-  }, [answerDraft, exercise, router, sessionId, t])
+  }, [answerDraft, exercise, router, sessionId, t]);
 
   const selectChoice = useCallback((choice: string) => {
-    setAnswerDraft({ choice })
-  }, [])
+    setAnswerDraft({ choice });
+  }, []);
 
   const toggleChoice = useCallback((choice: string) => {
     setAnswerDraft((current) => {
-      const existing = new Set(current.choices || [])
-      if (existing.has(choice))
-        existing.delete(choice)
-      else
-        existing.add(choice)
+      const existing = new Set(current.choices || []);
+      if (existing.has(choice)) existing.delete(choice);
+      else existing.add(choice);
 
-      return { choices: Array.from(existing).sort() }
-    })
-  }, [])
+      return { choices: Array.from(existing).sort() };
+    });
+  }, []);
 
   const setBooleanAnswer = useCallback((value: boolean) => {
-    setAnswerDraft({ boolean: value })
-  }, [])
+    setAnswerDraft({ boolean: value });
+  }, []);
 
   const setBlankAnswer = useCallback((value: string) => {
-    setAnswerDraft({ blanks: [value] })
-  }, [])
+    setAnswerDraft({ blanks: [value] });
+  }, []);
 
   const moveOrderingItem = useCallback((fromIndex: number, toIndex: number) => {
     setAnswerDraft((current) => {
-      const ordering = [...(current.ordering || [])]
-      if (fromIndex < 0 || toIndex < 0 || fromIndex >= ordering.length || toIndex >= ordering.length)
-        return current
+      const ordering = [...(current.ordering || [])];
+      if (
+        fromIndex < 0 ||
+        toIndex < 0 ||
+        fromIndex >= ordering.length ||
+        toIndex >= ordering.length
+      )
+        return current;
 
-      const [moved] = ordering.splice(fromIndex, 1)
-      ordering.splice(toIndex, 0, moved)
-      return { ordering }
-    })
-  }, [])
+      const [moved] = ordering.splice(fromIndex, 1);
+      ordering.splice(toIndex, 0, moved);
+      return { ordering };
+    });
+  }, []);
 
   const setTextAnswer = useCallback((value: string) => {
-    setAnswerDraft({ text: value })
-  }, [])
+    setAnswerDraft({ text: value });
+  }, []);
 
   const setMatchingAnswer = useCallback((left: string, right: string) => {
     setAnswerDraft((current) => ({
@@ -302,22 +295,22 @@ export const useAdaptiveExerciseSession = ({ sessionId, router, t }: UseAdaptive
         ...(current.matching || {}),
         [left]: right,
       },
-    }))
-  }, [])
+    }));
+  }, []);
 
   const setMatchingOrder = useCallback((leftItems: string[], rightItems: string[]) => {
-    setAnswerDraft((current) => {
-      const matching: Record<string, string> = {}
+    setAnswerDraft((_current) => {
+      const matching: Record<string, string> = {};
       leftItems.forEach((left, index) => {
-        matching[left] = rightItems[index]
-      })
-      return { matching }
-    })
-  }, [])
+        matching[left] = rightItems[index];
+      });
+      return { matching };
+    });
+  }, []);
 
   const setOrderingAnswer = useCallback((ordering: string[]) => {
-    setAnswerDraft({ ordering })
-  }, [])
+    setAnswerDraft({ ordering });
+  }, []);
 
   return {
     concept,
@@ -342,5 +335,5 @@ export const useAdaptiveExerciseSession = ({ sessionId, router, t }: UseAdaptive
     setOrderingAnswer,
     loadData,
     handleSubmit,
-  }
-}
+  };
+};

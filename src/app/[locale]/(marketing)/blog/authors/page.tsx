@@ -11,7 +11,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     locale,
     path: '/blog/authors',
     title: 'Blog Authors — RinKuzu',
-    description: 'Meet the researchers and engineers behind the RinKuzu Blog — writing about adaptive learning, AI in education, knowledge graphs, and Bloom\'s Taxonomy.',
+    description:
+      "Meet the researchers and engineers behind the RinKuzu Blog — writing about adaptive learning, AI in education, knowledge graphs, and Bloom's Taxonomy.",
   });
 }
 
@@ -20,22 +21,28 @@ const authors = [
     name: 'RinKuzu Team',
     slug: 'rinkuzu-team',
     role: 'Research & Engineering',
-    shortBio: 'Researchers and engineers building AI-powered adaptive learning systems from Hanoi University of Science and Technology.',
+    shortBio:
+      'Researchers and engineers building AI-powered adaptive learning systems from Hanoi University of Science and Technology.',
     imageUrl: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=400&q=80',
   },
 ];
 
 export default async function AuthorsPage({ params }: Props) {
   const { locale } = await params;
+  void locale;
 
   return (
     <main className="min-h-screen bg-white">
       <header className="bg-[var(--bg-section)] border-b border-neutral-100">
         <div className="max-w-3xl mx-auto px-6 pt-16 pb-12">
           <nav className="flex items-center gap-2 text-sm text-[var(--text-muted)] mb-8">
-            <Link href="/" className="hover:text-[var(--text-primary)] transition-colors">Home</Link>
+            <Link href="/" className="hover:text-[var(--text-primary)] transition-colors">
+              Home
+            </Link>
             <span>/</span>
-            <Link href="/blog" className="hover:text-[var(--text-primary)] transition-colors">Blog</Link>
+            <Link href="/blog" className="hover:text-[var(--text-primary)] transition-colors">
+              Blog
+            </Link>
             <span>/</span>
             <span className="text-[var(--text-primary)]">Authors</span>
           </nav>

@@ -7,15 +7,21 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, Badge } from '@/components/ui/Card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  Badge,
+} from '@/components/ui/Card';
 import Navigation from '@/components/Navigation';
 import {
   HiOutlineSearch,
   HiOutlineExclamationCircle,
-  HiOutlineEmojiHappy,
   HiOutlineInbox,
   HiOutlineLightningBolt,
-  HiOutlineRefresh
+  HiOutlineRefresh,
 } from '@/components/icons';
 
 interface Quiz {
@@ -70,44 +76,47 @@ export default function CategoryPage({ params }: CategoryPageProps) {
     page: 1,
     limit: 12,
     total: 0,
-    totalPages: 0
+    totalPages: 0,
   });
 
-  const fetchCategoryAndQuizzes = useCallback(async (page: number = 1, search: string = '') => {
-    try {
-      setLoading(true);
+  const fetchCategoryAndQuizzes = useCallback(
+    async (page: number = 1, search: string = '') => {
+      try {
+        setLoading(true);
 
-      // Build query parameters for category API
-      const queryParams = new URLSearchParams({
-        page: page.toString(),
-        limit: pagination.limit.toString()
-      });
+        // Build query parameters for category API
+        const queryParams = new URLSearchParams({
+          page: page.toString(),
+          limit: pagination.limit.toString(),
+        });
 
-      if (search.trim()) {
-        queryParams.append('search', search.trim());
+        if (search.trim()) {
+          queryParams.append('search', search.trim());
+        }
+
+        // Get category and quizzes in one API call
+        const response = await fetch(`/api/categories/${params.slug}?${queryParams}`);
+        const data = await response.json();
+
+        if (!data.success) {
+          setError(data.error || 'Category not found');
+          return;
+        }
+
+        const { category, quizzes, pagination: paginationData } = data.data;
+        setCategory(category);
+        setQuizzes(quizzes);
+        setPagination(paginationData);
+        setError('');
+      } catch (error) {
+        console.error('Error fetching category data:', error);
+        setError('An error occurred while fetching data');
+      } finally {
+        setLoading(false);
       }
-
-      // Get category and quizzes in one API call
-      const response = await fetch(`/api/categories/${params.slug}?${queryParams}`);
-      const data = await response.json();
-
-      if (!data.success) {
-        setError(data.error || 'Category not found');
-        return;
-      }
-
-      const { category, quizzes, pagination: paginationData } = data.data;
-      setCategory(category);
-      setQuizzes(quizzes);
-      setPagination(paginationData);
-      setError('');
-    } catch (error) {
-      console.error('Error fetching category data:', error);
-      setError('An error occurred while fetching data');
-    } finally {
-      setLoading(false);
-    }
-  }, [params.slug, pagination.limit]);
+    },
+    [params.slug, pagination.limit],
+  );
 
   useEffect(() => {
     fetchCategoryAndQuizzes();
@@ -115,12 +124,12 @@ export default function CategoryPage({ params }: CategoryPageProps) {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    setPagination(prev => ({ ...prev, page: 1 }));
+    setPagination((prev) => ({ ...prev, page: 1 }));
     fetchCategoryAndQuizzes(1, searchTerm);
   };
 
   const handlePageChange = (newPage: number) => {
-    setPagination(prev => ({ ...prev, page: newPage }));
+    setPagination((prev) => ({ ...prev, page: newPage }));
     fetchCategoryAndQuizzes(newPage, searchTerm);
   };
 
@@ -128,23 +137,23 @@ export default function CategoryPage({ params }: CategoryPageProps) {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
-      day: 'numeric'
+      day: 'numeric',
     });
   };
 
   const getCategoryColor = (color: string) => {
     const colorMap: { [key: string]: string } = {
-      'blue': 'bg-green-100 text-brand-trust border-green-200',
-      'green': 'bg-green-100 text-green-700 border-green-200',
-      'purple': 'bg-violet-100 text-violet-700 border-violet-200',
-      'red': 'bg-red-100 text-red-700 border-red-200',
-      'yellow': 'bg-yellow-100 text-yellow-700 border-yellow-200',
-      'indigo': 'bg-indigo-100 text-indigo-700 border-indigo-200',
-      'pink': 'bg-pink-100 text-pink-700 border-pink-200',
-      'gray': 'bg-neutral-100 text-neutral-700 border-neutral-200',
-      'cyan': 'bg-cyan-100 text-cyan-700 border-cyan-200',
-      'orange': 'bg-orange-100 text-orange-700 border-orange-200',
-      'teal': 'bg-green-100 text-brand-trust-hover border-green-200',
+      blue: 'bg-green-100 text-brand-trust border-green-200',
+      green: 'bg-green-100 text-green-700 border-green-200',
+      purple: 'bg-violet-100 text-violet-700 border-violet-200',
+      red: 'bg-red-100 text-red-700 border-red-200',
+      yellow: 'bg-yellow-100 text-yellow-700 border-yellow-200',
+      indigo: 'bg-indigo-100 text-indigo-700 border-indigo-200',
+      pink: 'bg-pink-100 text-pink-700 border-pink-200',
+      gray: 'bg-neutral-100 text-neutral-700 border-neutral-200',
+      cyan: 'bg-cyan-100 text-cyan-700 border-cyan-200',
+      orange: 'bg-orange-100 text-orange-700 border-orange-200',
+      teal: 'bg-green-100 text-brand-trust-hover border-green-200',
     };
     return colorMap[color?.toLowerCase()] || colorMap['purple'];
   };
@@ -196,9 +205,13 @@ export default function CategoryPage({ params }: CategoryPageProps) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-8">
         {/* Breadcrumb */}
         <nav className="flex items-center space-x-2 text-sm text-neutral-500 mb-6">
-          <Link href="/" className="hover:text-neutral-700">{tNav('home')}</Link>
+          <Link href="/" className="hover:text-neutral-700">
+            {tNav('home')}
+          </Link>
           <span>›</span>
-          <Link href="/categories" className="hover:text-neutral-700">{t('title')}</Link>
+          <Link href="/categories" className="hover:text-neutral-700">
+            {t('title')}
+          </Link>
           <span>›</span>
           <span className="text-neutral-900 font-medium">{category?.name}</span>
         </nav>
@@ -233,9 +246,7 @@ export default function CategoryPage({ params }: CategoryPageProps) {
                   placeholder={`${tCommon('search')} ${category?.name} quizzes...`}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  icon={
-                    <HiOutlineSearch className="w-5 h-5" />
-                  }
+                  icon={<HiOutlineSearch className="w-5 h-5" />}
                   className="w-full"
                 />
               </div>
@@ -248,7 +259,7 @@ export default function CategoryPage({ params }: CategoryPageProps) {
                   variant="outline"
                   onClick={() => {
                     setSearchTerm('');
-                    setPagination(prev => ({ ...prev, page: 1 }));
+                    setPagination((prev) => ({ ...prev, page: 1 }));
                     fetchCategoryAndQuizzes(1, '');
                   }}
                 >
@@ -274,16 +285,14 @@ export default function CategoryPage({ params }: CategoryPageProps) {
               </span>
             )}
           </p>
-          {loading && (
-            <span className="text-sm text-neutral-500">{tCommon('loading')}...</span>
-          )}
+          {loading && <span className="text-sm text-neutral-500">{tCommon('loading')}...</span>}
 
-          {(searchTerm) && (
+          {searchTerm && (
             <Button
               variant="ghost"
               onClick={() => {
                 setSearchTerm('');
-                setPagination(prev => ({ ...prev, page: 1 }));
+                setPagination((prev) => ({ ...prev, page: 1 }));
                 fetchCategoryAndQuizzes(1, '');
               }}
               className="text-brand-trust hover:text-brand-trust-hover"
@@ -303,15 +312,14 @@ export default function CategoryPage({ params }: CategoryPageProps) {
             <p className="text-neutral-600 mb-6">
               {searchTerm
                 ? `No quizzes match "${searchTerm}" in ${category?.name}`
-                : `No quizzes available in ${category?.name} yet`
-              }
+                : `No quizzes available in ${category?.name} yet`}
             </p>
             {searchTerm && (
               <Button
                 variant="gradient"
                 onClick={() => {
                   setSearchTerm('');
-                  setPagination(prev => ({ ...prev, page: 1 }));
+                  setPagination((prev) => ({ ...prev, page: 1 }));
                   fetchCategoryAndQuizzes(1, '');
                 }}
                 className="mx-auto"
@@ -348,9 +356,7 @@ export default function CategoryPage({ params }: CategoryPageProps) {
                   <CardTitle size="md" className="group-hover:text-brand-trust transition-colors">
                     {quiz.title}
                   </CardTitle>
-                  <CardDescription className="line-clamp-2">
-                    {quiz.description}
-                  </CardDescription>
+                  <CardDescription className="line-clamp-2">{quiz.description}</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center justify-between text-sm text-neutral-500 mb-4">
@@ -408,7 +414,7 @@ export default function CategoryPage({ params }: CategoryPageProps) {
                 return (
                   <Button
                     key={page}
-                    variant={pagination.page === page ? "gradient" : "outline"}
+                    variant={pagination.page === page ? 'gradient' : 'outline'}
                     onClick={() => handlePageChange(page)}
                     className="min-w-[40px]"
                   >
@@ -439,4 +445,4 @@ export default function CategoryPage({ params }: CategoryPageProps) {
       </div>
     </div>
   );
-} 
+}

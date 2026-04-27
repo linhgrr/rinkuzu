@@ -39,10 +39,10 @@ export default async function middleware(request: NextRequest) {
   const { locale, pathWithoutLocale } = getLocaleFromPath(request.nextUrl.pathname);
   const isAdminRoute = matchesPrefix(pathWithoutLocale, ADMIN_PREFIX);
   const isAuthRequiredRoute = AUTH_REQUIRED_PREFIXES.some((prefix) =>
-    matchesPrefix(pathWithoutLocale, prefix)
+    matchesPrefix(pathWithoutLocale, prefix),
   );
   const isGuestOnlyRoute = GUEST_ONLY_PREFIXES.some((prefix) =>
-    matchesPrefix(pathWithoutLocale, prefix)
+    matchesPrefix(pathWithoutLocale, prefix),
   );
 
   if (isAdminRoute || isAuthRequiredRoute || isGuestOnlyRoute) {
@@ -56,7 +56,7 @@ export default async function middleware(request: NextRequest) {
       const loginUrl = new URL(loginPath, request.url);
       loginUrl.searchParams.set(
         'callbackUrl',
-        `${request.nextUrl.pathname}${request.nextUrl.search}`
+        `${request.nextUrl.pathname}${request.nextUrl.search}`,
       );
       return NextResponse.redirect(loginUrl);
     }
@@ -80,9 +80,5 @@ export const config = {
   // - API routes
   // - Static files (images, etc.)
   // - Next.js internals
-  matcher: [
-    '/',
-    '/(vi|en)/:path*',
-    '/((?!api|_next|_vercel|.*\\..*).*)',
-  ],
+  matcher: ['/', '/(vi|en)/:path*', '/((?!api|_next|_vercel|.*\\..*).*)'],
 };

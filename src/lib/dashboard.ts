@@ -38,12 +38,15 @@ export interface DashboardStatsData {
   xpToNextLevel: number;
   levelProgress: number;
   dueCount: number;
-  weeklyActivity: Record<string, {
-    questionsReviewed: number;
-    xpEarned: number;
-    correctCount: number;
-    totalCount: number;
-  }>;
+  weeklyActivity: Record<
+    string,
+    {
+      questionsReviewed: number;
+      xpEarned: number;
+      correctCount: number;
+      totalCount: number;
+    }
+  >;
   totalQuestionsLearned?: number;
   totalReviewSessions?: number;
   averageAccuracy?: number;
@@ -77,9 +80,7 @@ type DashboardQuizAggregationResult = {
   } | null;
 };
 
-function toWeeklyActivityObject(
-  activity: unknown
-): DashboardStatsData['weeklyActivity'] {
+function toWeeklyActivityObject(activity: unknown): DashboardStatsData['weeklyActivity'] {
   if (!activity) {
     return {};
   }
@@ -97,7 +98,7 @@ function toWeeklyActivityObject(
 
 function trimWeeklyActivity(
   activity: DashboardStatsData['weeklyActivity'],
-  days: number = 14
+  days: number = 14,
 ): DashboardStatsData['weeklyActivity'] {
   const entries = Object.entries(activity);
   if (entries.length <= days) {
@@ -105,9 +106,7 @@ function trimWeeklyActivity(
   }
 
   // Keys are expected to be ISO-like day strings; lexical sorting is stable for this format.
-  const latestEntries = entries
-    .sort(([dayA], [dayB]) => dayB.localeCompare(dayA))
-    .slice(0, days);
+  const latestEntries = entries.sort(([dayA], [dayB]) => dayB.localeCompare(dayA)).slice(0, days);
 
   return Object.fromEntries(latestEntries);
 }
@@ -136,9 +135,9 @@ function normalizeId(value: unknown): string {
     }
 
     if (
-      typeof candidate.id === 'string'
-      || typeof candidate.id === 'number'
-      || typeof candidate.id === 'bigint'
+      typeof candidate.id === 'string' ||
+      typeof candidate.id === 'number' ||
+      typeof candidate.id === 'bigint'
     ) {
       return String(candidate.id);
     }
@@ -175,31 +174,32 @@ function serializeQuizForClient(rawQuiz: any): DashboardQuiz {
     isPrivate: rawQuiz?.isPrivate,
     createdAt: normalizeIsoDate(rawQuiz?.createdAt),
     updatedAt: rawQuiz?.updatedAt ? normalizeIsoDate(rawQuiz.updatedAt) : undefined,
-    questionCount: typeof rawQuiz?.questionCount === 'number'
-      ? rawQuiz.questionCount
-      : Array.isArray(rawQuiz?.questions)
-        ? rawQuiz.questions.length
-        : 0,
+    questionCount:
+      typeof rawQuiz?.questionCount === 'number'
+        ? rawQuiz.questionCount
+        : Array.isArray(rawQuiz?.questions)
+          ? rawQuiz.questions.length
+          : 0,
     questions: Array.isArray(rawQuiz?.questions) ? rawQuiz.questions : [],
     category: category
       ? {
-        _id: normalizeId(category?._id),
-        name: String(category?.name || ''),
-        color: String(category?.color || ''),
-      }
+          _id: normalizeId(category?._id),
+          name: String(category?.name || ''),
+          color: String(category?.color || ''),
+        }
       : null,
     author: author
       ? {
-        _id: author?._id ? normalizeId(author._id) : undefined,
-        email: author?.email ? String(author.email) : '',
-      }
+          _id: author?._id ? normalizeId(author._id) : undefined,
+          email: author?.email ? String(author.email) : '',
+        }
       : null,
   };
 }
 
 export async function getUserProgressStats(
   userId: string,
-  options?: { skipConnect?: boolean }
+  options?: { skipConnect?: boolean },
 ): Promise<DashboardStatsData> {
   if (!options?.skipConnect) {
     await connectDB();
@@ -210,14 +210,11 @@ export async function getUserProgressStats(
     'currentStreak longestStreak streakFreezeCount totalXp weeklyActivity totalQuestionsLearned totalReviewSessions averageAccuracy';
 
   const [uProgress, dueCount] = await Promise.all([
-    UserProgress.findOne({ userId })
-      .select(projection)
-      .lean<UserProgressStatsDoc>()
-      .exec(),
+    UserProgress.findOne({ userId }).select(projection).lean<UserProgressStatsDoc>().exec(),
     QuestionProgress.countDocuments({
       userId,
-      nextReviewDate: { $lte: now }
-    })
+      nextReviewDate: { $lte: now },
+    }),
   ]);
 
   if (!uProgress) {
@@ -254,11 +251,14 @@ export async function getUserProgressStats(
     weeklyActivity: trimWeeklyActivity(toWeeklyActivityObject(uProgress.weeklyActivity)),
     totalQuestionsLearned: uProgress.totalQuestionsLearned,
     totalReviewSessions: uProgress.totalReviewSessions,
-    averageAccuracy: uProgress.averageAccuracy
+    averageAccuracy: uProgress.averageAccuracy,
   };
 }
 
-async function getDashboardQuizList(filter: Record<string, unknown>, limit: number): Promise<DashboardQuiz[]> {
+async function getDashboardQuizList(
+  filter: Record<string, unknown>,
+  limit: number,
+): Promise<DashboardQuiz[]> {
   const quizzes = await Quiz.aggregate<DashboardQuizAggregationResult>([
     { $match: filter },
     { $sort: { createdAt: -1 } },
@@ -268,14 +268,14 @@ async function getDashboardQuizList(filter: Record<string, unknown>, limit: numb
         from: 'categories',
         localField: 'category',
         foreignField: '_id',
-        as: 'categoryDoc'
-      }
+        as: 'categoryDoc',
+      },
     },
     {
       $unwind: {
         path: '$categoryDoc',
-        preserveNullAndEmptyArrays: true
-      }
+        preserveNullAndEmptyArrays: true,
+      },
     },
     {
       $project: {
@@ -293,10 +293,10 @@ async function getDashboardQuizList(filter: Record<string, unknown>, limit: numb
         category: {
           _id: '$categoryDoc._id',
           name: '$categoryDoc.name',
-          color: '$categoryDoc.color'
-        }
-      }
-    }
+          color: '$categoryDoc.color',
+        },
+      },
+    },
   ]).exec();
 
   return quizzes.map(serializeQuizForClient);
@@ -307,10 +307,13 @@ const getCachedPublishedDashboardQuizzes = unstable_cache(
   ['dashboard-published-quizzes-v1'],
   {
     revalidate: 60,
-  }
+  },
 );
 
-export async function getDashboardBootstrapData(userId: string, _userRole?: string): Promise<{
+export async function getDashboardBootstrapData(
+  userId: string,
+  _userRole?: string,
+): Promise<{
   stats: DashboardStatsData;
   quizzes: DashboardQuiz[];
   yourQuizzes: DashboardQuiz[];

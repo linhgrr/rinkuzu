@@ -1,12 +1,12 @@
 You are a senior full-stack engineer.
 
 ────────────────────────────────────────────────
-🌟  Goal
+🌟 Goal
 ────────────────────────────────────────────────
 Build a web app that lets teachers create interactive quizzes from PDF files, with an admin approval flow.
 
 ────────────────────────────────────────────────
-🛠  Tech stack (hard constraints)
+🛠 Tech stack (hard constraints)
 ────────────────────────────────────────────────
 Framework: **Next.js 14** (App Router, server actions) – runs perfectly on Vercel  
 Language: TypeScript (ES2022)  
@@ -16,11 +16,12 @@ State (client): Zustand
 Styling: TailwindCSS  
 AI:**gemini-2.0-flash** via `@google/genai` SDK  
 PDF ⇆ Gemini: inline base64 ≤ 20 MB or URL (auto-detect)  
-Key rotation: array of API keys, round-robin + automatic retry ≤ 3  
+Key rotation: array of API keys, round-robin + automatic retry ≤ 3
 
 ────────────────────────────────────────────────
-🔑  Environment variables (.env.local)
+🔑 Environment variables (.env.local)
 ────────────────────────────────────────────────
+
 ```
 
 MONGO\_URL=mongodb+srv://nhatquangpx:[8sotamnhe@gymmanagement.8jghrjf.mongodb.net](mailto:8sotamnhe@gymmanagement.8jghrjf.mongodb.net)/?retryWrites=true\&w=majority\&appName=GymManagement
@@ -28,16 +29,17 @@ NEXTAUTH\_SECRET=supersecret
 GEMINI\_KEYS=key1,key2,key3
 JWT\_EXPIRES\_IN=30m
 
-````
+```
 
 ────────────────────────────────────────────────
-📄  Data models (Mongoose)
+📄 Data models (Mongoose)
 ────────────────────────────────────────────────
+
 ```ts
 // models/User.ts
 export interface IUser extends Document {
   email: string;
-  password: string;        // hashed (argon2)
+  password: string; // hashed (argon2)
   role: 'admin' | 'user';
 }
 
@@ -64,10 +66,10 @@ export interface IAttempt extends Document {
   answers: number[];
   takenAt: Date;
 }
-````
+```
 
 ────────────────────────────────────────────────
-📂  API routes (App Router)
+📂 API routes (App Router)
 ────────────────────────────────────────────────
 
 ```
@@ -85,10 +87,10 @@ GET    /api/user/attempts             # self history
 GET    /api/admin/users/[id]/attempts # admin view user history
 ```
 
-*All handlers are server actions located in `src/app/api/.../route.ts`.*
+_All handlers are server actions located in `src/app/api/.../route.ts`._
 
 ────────────────────────────────────────────────
-🏗  Gemini helper (key rotation + PDF logic)
+🏗 Gemini helper (key rotation + PDF logic)
 ────────────────────────────────────────────────
 
 ```ts
@@ -108,7 +110,9 @@ export async function extractQuestionsFromPdf(buffer: Buffer | string) {
       const ai = new GoogleGenAI({ apiKey: nextKey() });
 
       const contents = [
-        { text: 'Extract multiple-choice questions (JSON as [{"question":"...","options":["A","B","C","D"],"correctIndex":2}, …])' },
+        {
+          text: 'Extract multiple-choice questions (JSON as [{"question":"...","options":["A","B","C","D"],"correctIndex":2}, …])',
+        },
         typeof buffer === 'string'
           ? { text: buffer } // treat as URL
           : {
@@ -132,7 +136,7 @@ export async function extractQuestionsFromPdf(buffer: Buffer | string) {
 ```
 
 ────────────────────────────────────────────────
-🎨  Frontend routes & pages
+🎨 Frontend routes & pages
 ────────────────────────────────────────────────
 
 ```
@@ -148,10 +152,10 @@ export async function extractQuestionsFromPdf(buffer: Buffer | string) {
 /history                  -> MyHistory
 ```
 
-*Use `react-dropzone` for PDF uploads; call `/api/quizzes` via server action.*
+_Use `react-dropzone` for PDF uploads; call `/api/quizzes` via server action._
 
 ────────────────────────────────────────────────
-💾  Deployment on Vercel
+💾 Deployment on Vercel
 ────────────────────────────────────────────────
 
 1. Push repo to GitHub.
@@ -160,7 +164,7 @@ export async function extractQuestionsFromPdf(buffer: Buffer | string) {
 4. Done; API routes become serverless functions.
 
 ────────────────────────────────────────────────
-📦  Deliverables
+📦 Deliverables
 ────────────────────────────────────────────────
 
 1. Full Next.js project structure (`src/` with pages, components, lib, models).
@@ -169,7 +173,7 @@ export async function extractQuestionsFromPdf(buffer: Buffer | string) {
 4. `.env.example`.
 
 ────────────────────────────────────────────────
-🔄  Generation instructions
+🔄 Generation instructions
 ────────────────────────────────────────────────
 
 1. First output the file-tree.
@@ -178,4 +182,6 @@ export async function extractQuestionsFromPdf(buffer: Buffer | string) {
 
 ────────────────────────────────────────────────
 
-````
+```
+
+```

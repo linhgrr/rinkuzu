@@ -26,7 +26,7 @@ export function extractOpenAIDeltaContent(payload: any): string {
 
   if (Array.isArray(deltaContent)) {
     return deltaContent
-      .map(part => {
+      .map((part) => {
         if (typeof part === 'string') {
           return part;
         }
@@ -79,8 +79,8 @@ function parseSseEvent(event: string): {
 } {
   const dataLines = event
     .split(/\r?\n/)
-    .filter(line => line.startsWith('data:'))
-    .map(line => line.slice(5).trim());
+    .filter((line) => line.startsWith('data:'))
+    .map((line) => line.slice(5).trim());
 
   if (dataLines.length === 0) {
     return { chunk: '', isTerminal: false };
@@ -102,9 +102,7 @@ function parseSseEvent(event: string): {
 
   if (parsed?.error) {
     throw createStreamError(
-      typeof parsed.error === 'string'
-        ? parsed.error
-        : 'Streaming request failed',
+      typeof parsed.error === 'string' ? parsed.error : 'Streaming request failed',
     );
   }
 
@@ -121,7 +119,7 @@ interface ConsumeOpenAISseOptions<TBody> extends StreamTextOptions {
 
 export async function consumeOpenAISseResponse<TBody>(
   response: Response,
-  options: ConsumeOpenAISseOptions<TBody>
+  options: ConsumeOpenAISseOptions<TBody>,
 ): Promise<string> {
   const contentType = response.headers.get('Content-Type') || '';
 

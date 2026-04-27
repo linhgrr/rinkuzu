@@ -13,7 +13,6 @@
 
 </div>
 
-
 ## The Problem
 
 Learners often have PDF materials but lack a personalized practice path based on their mastery level. If you have used traditional quiz builders before, you are familiar with the “question creation” part; the new aspect of RinKuzu is the addition of an adaptive learning mode that follows a dynamic learning path instead of just doing a static quiz.
@@ -91,6 +90,7 @@ PAYOS_CHECKSUM_KEY=...
 NEXT_PUBLIC_GA_ID=
 NEXT_IMAGE_UNOPTIMIZED=false
 ```
+
 ### 2) Run frontend
 
 ```bash

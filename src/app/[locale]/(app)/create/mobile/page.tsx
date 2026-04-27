@@ -11,7 +11,6 @@ import {
   HiOutlineArrowRight,
   HiOutlineDesktopComputer,
   HiOutlineX,
-  HiOutlineTag,
 } from '@/components/icons';
 import { toast } from 'sonner';
 import { CategorySelector } from '@/components/ui/CategorySelector';
@@ -98,7 +97,6 @@ export default function MobileCreatePage() {
       // Navigate away first, then DraftSyncProvider will resume processing
       // This prevents the abort that happens when this component unmounts
       router.push('/dashboard');
-
     } catch (error: any) {
       toast.error(tCommon('error'), { description: error.message });
     } finally {
@@ -132,9 +130,7 @@ export default function MobileCreatePage() {
           <div className="text-center">
             <HiOutlineDocumentText className="w-14 h-14 text-green-500 mx-auto" />
             <p className="mt-3 font-medium text-neutral-900">{file.name}</p>
-            <p className="text-sm text-neutral-500">
-              {(file.size / 1024 / 1024).toFixed(2)} MB
-            </p>
+            <p className="text-sm text-neutral-500">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -202,9 +198,7 @@ export default function MobileCreatePage() {
       {/* Category Selector */}
       {file && (
         <div className="mt-5">
-          <label className="block text-sm font-medium text-neutral-700 mb-2">
-            {t('category')}
-          </label>
+          <label className="block text-sm font-medium text-neutral-700 mb-2">{t('category')}</label>
           <CategorySelector
             value={selectedCategory}
             onChange={setSelectedCategory}
@@ -232,9 +226,7 @@ export default function MobileCreatePage() {
                          transition-all duration-200"
             disabled={isUploading}
           />
-          <p className="text-xs text-neutral-500 mt-2">
-            {t('aiPromptHelper')}
-          </p>
+          <p className="text-xs text-neutral-500 mt-2">{t('aiPromptHelper')}</p>
         </div>
       )}
 
@@ -267,9 +259,7 @@ export default function MobileCreatePage() {
         <HiOutlineDesktopComputer className="w-6 h-6 text-neutral-500 flex-shrink-0 mt-0.5" />
         <div>
           <p className="text-sm font-medium text-neutral-700">{t('editTitleDescription')}</p>
-          <p className="text-sm text-neutral-500 mt-0.5">
-            {t('reviewQuestions')}
-          </p>
+          <p className="text-sm text-neutral-500 mt-0.5">{t('reviewQuestions')}</p>
         </div>
       </div>
     </div>

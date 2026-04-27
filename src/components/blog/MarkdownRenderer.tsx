@@ -21,10 +21,7 @@ const components: Components = {
     const text = String(children);
     const id = slugify(text);
     return (
-      <h2
-        id={id}
-        className="scroll-mt-24 text-2xl font-bold text-[var(--text-primary)] mt-12 mb-6"
-      >
+      <h2 id={id} className="scroll-mt-24 text-2xl font-bold text-[var(--text-primary)] mt-12 mb-6">
         {children}
       </h2>
     );
@@ -41,9 +38,7 @@ const components: Components = {
       </h3>
     );
   },
-  p: ({ children }) => (
-    <p className="mb-6 leading-relaxed text-[var(--text-muted)]">{children}</p>
-  ),
+  p: ({ children }) => <p className="mb-6 leading-relaxed text-[var(--text-muted)]">{children}</p>,
   ul: ({ children }) => (
     <ul className="list-disc pl-6 mb-6 space-y-2 text-[var(--text-muted)]">{children}</ul>
   ),
@@ -63,7 +58,10 @@ const components: Components = {
   ),
   thead: ({ children }) => <thead className="bg-neutral-50">{children}</thead>,
   th: ({ children }) => (
-    <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider">
+    <th
+      scope="col"
+      className="px-6 py-3 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider"
+    >
       {children}
     </th>
   ),
@@ -72,9 +70,7 @@ const components: Components = {
       {children}
     </td>
   ),
-  tr: ({ children }) => (
-    <tr className="hover:bg-neutral-50 transition-colors">{children}</tr>
-  ),
+  tr: ({ children }) => <tr className="hover:bg-neutral-50 transition-colors">{children}</tr>,
   code: ({ children, className }) => {
     // Inline code (no className = no language)
     if (!className) {
@@ -85,11 +81,7 @@ const components: Components = {
       );
     }
     // Block code
-    return (
-      <code className={className}>
-        {children}
-      </code>
-    );
+    return <code className={className}>{children}</code>;
   },
   pre: ({ children }) => (
     <pre className="bg-neutral-900 text-neutral-100 p-4 rounded-xl overflow-x-auto text-sm font-mono my-6">

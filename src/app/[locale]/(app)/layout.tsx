@@ -13,10 +13,9 @@ const PWAInstaller = dynamic(() => import('@/components/PWAInstaller'), {
   ssr: false,
 });
 
-const FloatingDraftProgress = dynamic(
-  () => import('@/components/FloatingDraftProgressIsland'),
-  { ssr: false }
-);
+const FloatingDraftProgress = dynamic(() => import('@/components/FloatingDraftProgressIsland'), {
+  ssr: false,
+});
 
 export default async function AppLayout({
   children,

@@ -7,10 +7,7 @@ import { AsyncRouteParams } from '@/types/next-route';
 const bookmarkService = serviceFactory.getBookmarkService();
 
 // DELETE - Remove bookmark
-export async function DELETE(
-  request: NextRequest,
-  { params }: AsyncRouteParams<{ id: string }>
-) {
+export async function DELETE(request: NextRequest, { params }: AsyncRouteParams<{ id: string }>) {
   try {
     const { id } = await params;
     const session = await getServerSession(authOptions);
@@ -22,21 +19,24 @@ export async function DELETE(
 
     return NextResponse.json({
       success: true,
-      message: 'Bookmark removed'
+      message: 'Bookmark removed',
     });
   } catch (error: any) {
     console.error('Error removing bookmark:', error);
-    
+
     if (error.message === 'Bookmark not found or unauthorized') {
-      return NextResponse.json({
-        success: false,
-        error: error.message
-      }, { status: 404 });
+      return NextResponse.json(
+        {
+          success: false,
+          error: error.message,
+        },
+        { status: 404 },
+      );
     }
 
     return NextResponse.json(
       { success: false, error: 'Failed to remove bookmark' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -11,6 +11,7 @@
 Thiết kế tối ưu hóa giao diện mobile và xử lý PDF background cho RinKuzu - nền tảng học tập PDF-to-Quiz.
 
 ### Mục tiêu chính
+
 1. **Mobile UI**: Simplified Create page + Swipe Quiz Player
 2. **Background PDF Processing**: User có thể browse app trong khi PDF được xử lý
 
@@ -18,15 +19,15 @@ Thiết kế tối ưu hóa giao diện mobile và xử lý PDF background cho R
 
 ## Quyết định thiết kế
 
-| Aspect | Decision | Rationale |
-|--------|----------|-----------|
-| **Mobile Create** | Simplified - chỉ upload + tên | Tập trung core action, edit chi tiết trên desktop |
-| **Quiz Player** | Swipe navigation | Mobile-native experience |
-| **Background UX** | Upload & Browse + Floating Progress | User tiếp tục dùng app, có indicator theo dõi |
-| **Notification** | In-app only | Đơn giản, đủ dùng |
-| **Processing** | Client-side orchestration + Service Worker | Free, không giới hạn, works với Vercel Hobby |
-| **Storage** | MongoDB DraftQuiz collection | Clean separation, auto-cleanup 48h |
-| **Resume** | Chunk-level progress | Resume từ chunk cuối nếu interrupt |
+| Aspect            | Decision                                   | Rationale                                         |
+| ----------------- | ------------------------------------------ | ------------------------------------------------- |
+| **Mobile Create** | Simplified - chỉ upload + tên              | Tập trung core action, edit chi tiết trên desktop |
+| **Quiz Player**   | Swipe navigation                           | Mobile-native experience                          |
+| **Background UX** | Upload & Browse + Floating Progress        | User tiếp tục dùng app, có indicator theo dõi     |
+| **Notification**  | In-app only                                | Đơn giản, đủ dùng                                 |
+| **Processing**    | Client-side orchestration + Service Worker | Free, không giới hạn, works với Vercel Hobby      |
+| **Storage**       | MongoDB DraftQuiz collection               | Clean separation, auto-cleanup 48h                |
+| **Resume**        | Chunk-level progress                       | Resume từ chunk cuối nếu interrupt                |
 
 ---
 
@@ -90,7 +91,7 @@ interface DraftQuiz {
     fileName: string;
     fileSize: number;
     totalPages: number;
-    base64?: string;          // Xóa sau khi xử lý xong
+    base64?: string; // Xóa sau khi xử lý xong
   };
 
   // Chunking info
@@ -98,13 +99,15 @@ interface DraftQuiz {
     total: number;
     processed: number;
     current: number;
-    chunkDetails: [{
-      index: number;
-      startPage: number;
-      endPage: number;
-      status: 'pending' | 'processing' | 'done' | 'error';
-      error?: string;
-    }];
+    chunkDetails: [
+      {
+        index: number;
+        startPage: number;
+        endPage: number;
+        status: 'pending' | 'processing' | 'done' | 'error';
+        error?: string;
+      },
+    ];
   };
 
   // Extracted questions
@@ -116,7 +119,7 @@ interface DraftQuiz {
   // Timestamps
   createdAt: Date;
   updatedAt: Date;
-  expiresAt: Date;            // Auto-delete sau 48h
+  expiresAt: Date; // Auto-delete sau 48h
 }
 ```
 
@@ -124,20 +127,21 @@ interface DraftQuiz {
 
 ## API Endpoints
 
-| Endpoint | Method | Purpose |
-|----------|--------|---------|
-| `/api/draft/create` | POST | Tạo draft, upload PDF, split chunks |
-| `/api/draft/[id]/process-chunk` | POST | Xử lý 1 chunk (<10s) |
-| `/api/draft/[id]` | GET | Lấy draft info + progress |
-| `/api/draft/list` | GET | Danh sách drafts của user |
-| `/api/draft/[id]/submit` | POST | Convert draft → Quiz |
-| `/api/draft/[id]` | DELETE | Xóa draft thủ công |
+| Endpoint                        | Method | Purpose                             |
+| ------------------------------- | ------ | ----------------------------------- |
+| `/api/draft/create`             | POST   | Tạo draft, upload PDF, split chunks |
+| `/api/draft/[id]/process-chunk` | POST   | Xử lý 1 chunk (<10s)                |
+| `/api/draft/[id]`               | GET    | Lấy draft info + progress           |
+| `/api/draft/list`               | GET    | Danh sách drafts của user           |
+| `/api/draft/[id]/submit`        | POST   | Convert draft → Quiz                |
+| `/api/draft/[id]`               | DELETE | Xóa draft thủ công                  |
 
 ---
 
 ## Mobile UI Specifications
 
 ### Create Page (Mobile)
+
 - Upload zone với drag & drop
 - Title input
 - Submit button
@@ -145,6 +149,7 @@ interface DraftQuiz {
 - Navigate away sau upload, processing tiếp tục background
 
 ### Quiz Player (Mobile)
+
 - Swipe left/right để chuyển câu
 - Tap để chọn đáp án
 - Progress dots header
@@ -152,6 +157,7 @@ interface DraftQuiz {
 - Framer Motion animations
 
 ### Floating Progress Indicator
+
 - Fixed bottom-right (above BottomNav on mobile)
 - Collapsed: Icon + count
 - Expanded: List of drafts với progress bars
@@ -161,12 +167,12 @@ interface DraftQuiz {
 
 ## Constraints & Trade-offs
 
-| Constraint | Impact | Mitigation |
-|------------|--------|------------|
-| Vercel Hobby 10s timeout | Không thể xử lý full PDF trong 1 request | Chunk-based processing |
-| Free tier only | Không dùng paid services | Client-side orchestration |
-| Service Worker limitations | Không chạy khi browser đóng | Resume from chunk cuối |
-| MongoDB Atlas free | 512MB storage | TTL index auto-cleanup 48h |
+| Constraint                 | Impact                                   | Mitigation                 |
+| -------------------------- | ---------------------------------------- | -------------------------- |
+| Vercel Hobby 10s timeout   | Không thể xử lý full PDF trong 1 request | Chunk-based processing     |
+| Free tier only             | Không dùng paid services                 | Client-side orchestration  |
+| Service Worker limitations | Không chạy khi browser đóng              | Resume from chunk cuối     |
+| MongoDB Atlas free         | 512MB storage                            | TTL index auto-cleanup 48h |
 
 ---
 

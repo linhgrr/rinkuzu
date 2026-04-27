@@ -15,6 +15,7 @@
 ### Task 1: Create DraftQuiz Model
 
 **Files:**
+
 - Create: `/src/models/DraftQuiz.ts`
 
 **Step 1: Create the DraftQuiz model file**
@@ -63,53 +64,62 @@ export interface IDraftQuiz extends Document {
   expiresAt: Date;
 }
 
-const ChunkDetailSchema = new Schema<IChunkDetail>({
-  index: { type: Number, required: true },
-  startPage: { type: Number, required: true },
-  endPage: { type: Number, required: true },
-  status: {
-    type: String,
-    enum: ['pending', 'processing', 'done', 'error'],
-    default: 'pending'
+const ChunkDetailSchema = new Schema<IChunkDetail>(
+  {
+    index: { type: Number, required: true },
+    startPage: { type: Number, required: true },
+    endPage: { type: Number, required: true },
+    status: {
+      type: String,
+      enum: ['pending', 'processing', 'done', 'error'],
+      default: 'pending',
+    },
+    error: { type: String },
   },
-  error: { type: String },
-}, { _id: false });
+  { _id: false },
+);
 
-const DraftQuestionSchema = new Schema<IDraftQuestion>({
-  question: { type: String, required: true, trim: true },
-  options: { type: [String], required: true },
-  correctIndex: { type: Number },
-  correctIndexes: { type: [Number] },
-  type: { type: String, enum: ['single', 'multiple'], required: true },
-  explanation: { type: String },
-}, { _id: false });
+const DraftQuestionSchema = new Schema<IDraftQuestion>(
+  {
+    question: { type: String, required: true, trim: true },
+    options: { type: [String], required: true },
+    correctIndex: { type: Number },
+    correctIndexes: { type: [Number] },
+    type: { type: String, enum: ['single', 'multiple'], required: true },
+    explanation: { type: String },
+  },
+  { _id: false },
+);
 
-const DraftQuizSchema = new Schema<IDraftQuiz>({
-  userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-  title: { type: String, required: true, trim: true, maxlength: 200 },
-  categoryId: { type: Schema.Types.ObjectId, ref: 'Category' },
-  pdfData: {
-    fileName: { type: String, required: true },
-    fileSize: { type: Number, required: true },
-    totalPages: { type: Number, required: true },
-    base64: { type: String },
+const DraftQuizSchema = new Schema<IDraftQuiz>(
+  {
+    userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    title: { type: String, required: true, trim: true, maxlength: 200 },
+    categoryId: { type: Schema.Types.ObjectId, ref: 'Category' },
+    pdfData: {
+      fileName: { type: String, required: true },
+      fileSize: { type: Number, required: true },
+      totalPages: { type: Number, required: true },
+      base64: { type: String },
+    },
+    chunks: {
+      total: { type: Number, required: true },
+      processed: { type: Number, default: 0 },
+      current: { type: Number, default: 0 },
+      chunkDetails: { type: [ChunkDetailSchema], required: true },
+    },
+    questions: { type: [DraftQuestionSchema], default: [] },
+    status: {
+      type: String,
+      enum: ['uploading', 'processing', 'completed', 'error', 'expired'],
+      default: 'uploading',
+    },
+    expiresAt: { type: Date, required: true },
   },
-  chunks: {
-    total: { type: Number, required: true },
-    processed: { type: Number, default: 0 },
-    current: { type: Number, default: 0 },
-    chunkDetails: { type: [ChunkDetailSchema], required: true },
+  {
+    timestamps: true,
   },
-  questions: { type: [DraftQuestionSchema], default: [] },
-  status: {
-    type: String,
-    enum: ['uploading', 'processing', 'completed', 'error', 'expired'],
-    default: 'uploading',
-  },
-  expiresAt: { type: Date, required: true },
-}, {
-  timestamps: true,
-});
+);
 
 // TTL index for auto-cleanup after 48 hours
 DraftQuizSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
@@ -117,7 +127,8 @@ DraftQuizSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 // Index for user queries
 DraftQuizSchema.index({ userId: 1, status: 1, createdAt: -1 });
 
-const DraftQuiz = mongoose.models.DraftQuiz || mongoose.model<IDraftQuiz>('DraftQuiz', DraftQuizSchema);
+const DraftQuiz =
+  mongoose.models.DraftQuiz || mongoose.model<IDraftQuiz>('DraftQuiz', DraftQuizSchema);
 
 export default DraftQuiz;
 ```
@@ -141,6 +152,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ### Task 2: Create Draft Create API
 
 **Files:**
+
 - Create: `/src/app/api/draft/create/route.ts`
 
 **Step 1: Create the API route**
@@ -172,22 +184,17 @@ export async function POST(request: NextRequest) {
     if (!title?.trim() || !pdfBase64 || !fileName) {
       return NextResponse.json(
         { error: 'Title, PDF data, and filename are required' },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     // Extract base64 data (remove data URL prefix if present)
-    const base64Data = pdfBase64.includes(',')
-      ? pdfBase64.split(',')[1]
-      : pdfBase64;
+    const base64Data = pdfBase64.includes(',') ? pdfBase64.split(',')[1] : pdfBase64;
 
     // Validate file size
     const buffer = Buffer.from(base64Data, 'base64');
     if (buffer.length > MAX_FILE_SIZE) {
-      return NextResponse.json(
-        { error: 'File size exceeds 50MB limit' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'File size exceeds 50MB limit' }, { status: 400 });
     }
 
     // Parse PDF to get page count
@@ -196,10 +203,7 @@ export async function POST(request: NextRequest) {
       const pdfDoc = await PDFDocument.load(buffer);
       totalPages = pdfDoc.getPageCount();
     } catch {
-      return NextResponse.json(
-        { error: 'Invalid PDF file' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Invalid PDF file' }, { status: 400 });
     }
 
     // Calculate chunks
@@ -264,7 +268,7 @@ export async function POST(request: NextRequest) {
       title: draft.title,
       chunks: {
         total: chunkDetails.length,
-        chunkDetails: chunkDetails.map(c => ({
+        chunkDetails: chunkDetails.map((c) => ({
           index: c.index,
           startPage: c.startPage,
           endPage: c.endPage,
@@ -274,13 +278,9 @@ export async function POST(request: NextRequest) {
       totalPages,
       expiresAt: draft.expiresAt,
     });
-
   } catch (error) {
     console.error('Draft create error:', error);
-    return NextResponse.json(
-      { error: 'Failed to create draft' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to create draft' }, { status: 500 });
   }
 }
 ```
@@ -304,6 +304,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ### Task 3: Create Process Chunk API
 
 **Files:**
+
 - Create: `/src/app/api/draft/[id]/process-chunk/route.ts`
 
 **Step 1: Create the API route**
@@ -318,10 +319,7 @@ import DraftQuiz from '@/models/DraftQuiz';
 import { PDFDocument } from 'pdf-lib';
 import { extractQuestionsFromPdf } from '@/lib/gemini';
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
@@ -331,10 +329,7 @@ export async function POST(
     const { chunkIndex } = await request.json();
 
     if (typeof chunkIndex !== 'number' || chunkIndex < 0) {
-      return NextResponse.json(
-        { error: 'Valid chunkIndex is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Valid chunkIndex is required' }, { status: 400 });
     }
 
     await connectDB();
@@ -349,21 +344,13 @@ export async function POST(
     }
 
     if (!draft.pdfData.base64) {
-      return NextResponse.json(
-        { error: 'PDF data not available' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'PDF data not available' }, { status: 400 });
     }
 
-    const chunkDetail = draft.chunks.chunkDetails.find(
-      (c: any) => c.index === chunkIndex
-    );
+    const chunkDetail = draft.chunks.chunkDetails.find((c: any) => c.index === chunkIndex);
 
     if (!chunkDetail) {
-      return NextResponse.json(
-        { error: 'Chunk not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Chunk not found' }, { status: 404 });
     }
 
     if (chunkDetail.status === 'done') {
@@ -386,8 +373,8 @@ export async function POST(
         $set: {
           'chunks.chunkDetails.$.status': 'processing',
           'chunks.current': chunkIndex,
-        }
-      }
+        },
+      },
     );
 
     try {
@@ -409,12 +396,10 @@ export async function POST(
       const extractedQuestions = await extractQuestionsFromPdf(chunkBuffer, 2);
 
       // Remove duplicates with existing questions
-      const existingHashes = new Set(
-        draft.questions.map((q: any) => hashQuestion(q))
-      );
+      const existingHashes = new Set(draft.questions.map((q: any) => hashQuestion(q)));
 
       const newQuestions = extractedQuestions.filter(
-        (q: any) => !existingHashes.has(hashQuestion(q))
+        (q: any) => !existingHashes.has(hashQuestion(q)),
       );
 
       // Update draft with new questions
@@ -425,7 +410,7 @@ export async function POST(
           $set: { 'chunks.chunkDetails.$.status': 'done' },
           $inc: { 'chunks.processed': 1 },
         },
-        { new: true }
+        { new: true },
       );
 
       const isComplete = updateResult!.chunks.processed >= updateResult!.chunks.total;
@@ -437,7 +422,7 @@ export async function POST(
           {
             $set: { status: 'completed' },
             $unset: { 'pdfData.base64': 1 },
-          }
+          },
         );
       }
 
@@ -451,7 +436,6 @@ export async function POST(
           totalQuestions: updateResult!.questions.length,
         },
       });
-
     } catch (extractError: any) {
       // Mark chunk as error
       await DraftQuiz.updateOne(
@@ -461,7 +445,7 @@ export async function POST(
             'chunks.chunkDetails.$.status': 'error',
             'chunks.chunkDetails.$.error': extractError.message,
           },
-        }
+        },
       );
 
       return NextResponse.json({
@@ -474,21 +458,16 @@ export async function POST(
         },
       });
     }
-
   } catch (error) {
     console.error('Process chunk error:', error);
-    return NextResponse.json(
-      { error: 'Failed to process chunk' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to process chunk' }, { status: 500 });
   }
 }
 
 function hashQuestion(q: any): string {
   const normalizedQuestion = q.question?.toLowerCase().trim().replace(/\s+/g, ' ') || '';
-  const normalizedOptions = q.options?.map((opt: string) =>
-    opt.toLowerCase().trim().replace(/\s+/g, ' ')
-  ).join('|') || '';
+  const normalizedOptions =
+    q.options?.map((opt: string) => opt.toLowerCase().trim().replace(/\s+/g, ' ')).join('|') || '';
   return `${normalizedQuestion}:::${normalizedOptions}`;
 }
 ```
@@ -507,6 +486,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ### Task 4: Create Draft Get/List/Delete APIs
 
 **Files:**
+
 - Create: `/src/app/api/draft/[id]/route.ts`
 - Create: `/src/app/api/draft/list/route.ts`
 
@@ -520,10 +500,7 @@ import { authOptions } from '@/lib/auth';
 import connectDB from '@/lib/mongodb';
 import DraftQuiz from '@/models/DraftQuiz';
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
@@ -542,20 +519,13 @@ export async function GET(
     }
 
     return NextResponse.json({ draft });
-
   } catch (error) {
     console.error('Get draft error:', error);
-    return NextResponse.json(
-      { error: 'Failed to get draft' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to get draft' }, { status: 500 });
   }
 }
 
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
@@ -574,13 +544,9 @@ export async function DELETE(
     }
 
     return NextResponse.json({ success: true });
-
   } catch (error) {
     console.error('Delete draft error:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete draft' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to delete draft' }, { status: 500 });
   }
 }
 ```
@@ -613,7 +579,7 @@ export async function GET(request: NextRequest) {
       .limit(20);
 
     return NextResponse.json({
-      drafts: drafts.map(d => ({
+      drafts: drafts.map((d) => ({
         _id: d._id.toString(),
         title: d.title,
         status: d.status,
@@ -626,13 +592,9 @@ export async function GET(request: NextRequest) {
         expiresAt: d.expiresAt,
       })),
     });
-
   } catch (error) {
     console.error('List drafts error:', error);
-    return NextResponse.json(
-      { error: 'Failed to list drafts' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to list drafts' }, { status: 500 });
   }
 }
 ```
@@ -651,6 +613,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ### Task 5: Create Draft Submit API
 
 **Files:**
+
 - Create: `/src/app/api/draft/[id]/submit/route.ts`
 
 **Step 1: Create the submit endpoint**
@@ -665,10 +628,7 @@ import DraftQuiz from '@/models/DraftQuiz';
 import Quiz from '@/models/Quiz';
 import { generateSlug } from '@/lib/utils';
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
@@ -679,10 +639,7 @@ export async function POST(
     const { title, categoryId, description, questions: editedQuestions } = body;
 
     if (!categoryId) {
-      return NextResponse.json(
-        { error: 'Category is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Category is required' }, { status: 400 });
     }
 
     await connectDB();
@@ -697,20 +654,14 @@ export async function POST(
     }
 
     if (draft.status !== 'completed') {
-      return NextResponse.json(
-        { error: 'Draft is not ready for submission' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Draft is not ready for submission' }, { status: 400 });
     }
 
     // Use edited questions if provided, otherwise use draft questions
     const questionsToUse = editedQuestions || draft.questions;
 
     if (!questionsToUse || questionsToUse.length === 0) {
-      return NextResponse.json(
-        { error: 'No questions to submit' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'No questions to submit' }, { status: 400 });
     }
 
     // Generate unique slug
@@ -747,13 +698,9 @@ export async function POST(
       quizId: quiz._id.toString(),
       slug: quiz.slug,
     });
-
   } catch (error) {
     console.error('Submit draft error:', error);
-    return NextResponse.json(
-      { error: 'Failed to submit draft' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to submit draft' }, { status: 500 });
   }
 }
 ```
@@ -774,6 +721,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ### Task 6: Create Draft Store (Zustand)
 
 **Files:**
+
 - Create: `/src/store/useDraftStore.ts`
 
 **Step 1: Create the store**
@@ -872,9 +820,7 @@ export const useDraftStore = create<DraftStore>()(
       clearCompletedDrafts: () =>
         set((state) => {
           const activeDrafts = Object.fromEntries(
-            Object.entries(state.activeDrafts).filter(
-              ([_, d]) => d.status !== 'completed'
-            )
+            Object.entries(state.activeDrafts).filter(([_, d]) => d.status !== 'completed'),
           );
           return { activeDrafts };
         }),
@@ -883,21 +829,19 @@ export const useDraftStore = create<DraftStore>()(
 
       getProcessingCount: () =>
         Object.values(get().activeDrafts).filter(
-          (d) => d.status === 'processing' || d.status === 'uploading'
+          (d) => d.status === 'processing' || d.status === 'uploading',
         ).length,
 
       getCompletedCount: () =>
-        Object.values(get().activeDrafts).filter(
-          (d) => d.status === 'completed'
-        ).length,
+        Object.values(get().activeDrafts).filter((d) => d.status === 'completed').length,
 
       hasActiveDrafts: () => Object.keys(get().activeDrafts).length > 0,
     }),
     {
       name: 'draft-storage',
       version: 1,
-    }
-  )
+    },
+  ),
 );
 ```
 
@@ -915,6 +859,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ### Task 7: Create PDF Processor Hook
 
 **Files:**
+
 - Create: `/src/hooks/usePdfProcessor.ts`
 
 **Step 1: Create the hook**
@@ -945,116 +890,118 @@ export function usePdfProcessor() {
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      Object.values(abortControllersRef.current).forEach(controller => {
+      Object.values(abortControllersRef.current).forEach((controller) => {
         controller.abort();
       });
     };
   }, []);
 
-  const processChunk = useCallback(async (
-    draftId: string,
-    chunkIndex: number,
-    signal?: AbortSignal
-  ): Promise<{ success: boolean; questions: any[]; isComplete: boolean; totalQuestions: number }> => {
-    const response = await fetch(`/api/draft/${draftId}/process-chunk`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chunkIndex }),
-      signal,
-    });
+  const processChunk = useCallback(
+    async (
+      draftId: string,
+      chunkIndex: number,
+      signal?: AbortSignal,
+    ): Promise<{
+      success: boolean;
+      questions: any[];
+      isComplete: boolean;
+      totalQuestions: number;
+    }> => {
+      const response = await fetch(`/api/draft/${draftId}/process-chunk`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chunkIndex }),
+        signal,
+      });
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to process chunk');
-    }
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to process chunk');
+      }
 
-    const result = await response.json();
-    return {
-      success: result.success,
-      questions: result.questions || [],
-      isComplete: result.progress?.isComplete || false,
-      totalQuestions: result.progress?.totalQuestions || 0,
-    };
-  }, []);
+      const result = await response.json();
+      return {
+        success: result.success,
+        questions: result.questions || [],
+        isComplete: result.progress?.isComplete || false,
+        totalQuestions: result.progress?.totalQuestions || 0,
+      };
+    },
+    [],
+  );
 
-  const startProcessing = useCallback(async (
-    draftId: string,
-    chunks: ChunkInfo[],
-    title: string
-  ) => {
-    if (processingRef.current[draftId]) {
-      console.log(`Draft ${draftId} is already being processed`);
-      return;
-    }
+  const startProcessing = useCallback(
+    async (draftId: string, chunks: ChunkInfo[], title: string) => {
+      if (processingRef.current[draftId]) {
+        console.log(`Draft ${draftId} is already being processed`);
+        return;
+      }
 
-    processingRef.current[draftId] = true;
-    const abortController = new AbortController();
-    abortControllersRef.current[draftId] = abortController;
+      processingRef.current[draftId] = true;
+      const abortController = new AbortController();
+      abortControllersRef.current[draftId] = abortController;
 
-    const pendingChunks = chunks
-      .filter(c => c.status === 'pending' || c.status === 'error')
-      .sort((a, b) => a.index - b.index);
+      const pendingChunks = chunks
+        .filter((c) => c.status === 'pending' || c.status === 'error')
+        .sort((a, b) => a.index - b.index);
 
-    let processedCount = chunks.filter(c => c.status === 'done').length;
-    let totalQuestions = 0;
+      let processedCount = chunks.filter((c) => c.status === 'done').length;
+      let totalQuestions = 0;
 
-    try {
-      for (const chunk of pendingChunks) {
-        if (abortController.signal.aborted) {
-          break;
-        }
+      try {
+        for (const chunk of pendingChunks) {
+          if (abortController.signal.aborted) {
+            break;
+          }
 
-        try {
-          const result = await processChunk(
-            draftId,
-            chunk.index,
-            abortController.signal
-          );
+          try {
+            const result = await processChunk(draftId, chunk.index, abortController.signal);
 
-          processedCount++;
-          totalQuestions = result.totalQuestions;
+            processedCount++;
+            totalQuestions = result.totalQuestions;
 
-          updateDraftProgress(draftId, {
-            chunksProcessed: processedCount,
-            questionsCount: totalQuestions,
-            status: 'processing',
-          });
-
-          if (result.isComplete) {
-            completeDraft(draftId, totalQuestions);
-            toast.success(`"${title}" đã sẵn sàng!`, {
-              description: `${totalQuestions} câu hỏi được trích xuất`,
-              action: {
-                label: 'Xem',
-                onClick: () => window.location.href = `/draft/${draftId}/edit`,
-              },
+            updateDraftProgress(draftId, {
+              chunksProcessed: processedCount,
+              questionsCount: totalQuestions,
+              status: 'processing',
             });
-            break;
-          }
 
-          // Small delay between chunks
-          await new Promise(r => setTimeout(r, 300));
+            if (result.isComplete) {
+              completeDraft(draftId, totalQuestions);
+              toast.success(`"${title}" đã sẵn sàng!`, {
+                description: `${totalQuestions} câu hỏi được trích xuất`,
+                action: {
+                  label: 'Xem',
+                  onClick: () => (window.location.href = `/draft/${draftId}/edit`),
+                },
+              });
+              break;
+            }
 
-        } catch (chunkError: any) {
-          if (chunkError.name === 'AbortError') {
-            break;
+            // Small delay between chunks
+            await new Promise((r) => setTimeout(r, 300));
+          } catch (chunkError: any) {
+            if (chunkError.name === 'AbortError') {
+              break;
+            }
+            console.error(`Chunk ${chunk.index} failed:`, chunkError);
+            // Continue with next chunk on error
           }
-          console.error(`Chunk ${chunk.index} failed:`, chunkError);
-          // Continue with next chunk on error
         }
+      } catch (error: any) {
+        if (error.name !== 'AbortError') {
+          setDraftError(draftId, error.message);
+          toast.error(`Lỗi xử lý "${title}"`, {
+            description: error.message,
+          });
+        }
+      } finally {
+        delete processingRef.current[draftId];
+        delete abortControllersRef.current[draftId];
       }
-    } catch (error: any) {
-      if (error.name !== 'AbortError') {
-        setDraftError(draftId, error.message);
-        toast.error(`Lỗi xử lý "${title}"`, {
-          description: error.message,
-        });
-      }
-    } finally {
-      delete processingRef.current[draftId];
-      delete abortControllersRef.current[draftId];
-    }
-  }, [processChunk, updateDraftProgress, completeDraft, setDraftError]);
+    },
+    [processChunk, updateDraftProgress, completeDraft, setDraftError],
+  );
 
   const stopProcessing = useCallback((draftId: string) => {
     const controller = abortControllersRef.current[draftId];
@@ -1063,26 +1010,25 @@ export function usePdfProcessor() {
     }
   }, []);
 
-  const resumeProcessing = useCallback(async (draftId: string) => {
-    try {
-      const response = await fetch(`/api/draft/${draftId}`);
-      if (!response.ok) throw new Error('Failed to fetch draft');
+  const resumeProcessing = useCallback(
+    async (draftId: string) => {
+      try {
+        const response = await fetch(`/api/draft/${draftId}`);
+        if (!response.ok) throw new Error('Failed to fetch draft');
 
-      const { draft } = await response.json();
+        const { draft } = await response.json();
 
-      if (draft.status === 'completed') {
-        return; // Already done
+        if (draft.status === 'completed') {
+          return; // Already done
+        }
+
+        await startProcessing(draftId, draft.chunks.chunkDetails, draft.title);
+      } catch (error) {
+        console.error('Resume processing error:', error);
       }
-
-      await startProcessing(
-        draftId,
-        draft.chunks.chunkDetails,
-        draft.title
-      );
-    } catch (error) {
-      console.error('Resume processing error:', error);
-    }
-  }, [startProcessing]);
+    },
+    [startProcessing],
+  );
 
   return {
     startProcessing,
@@ -1106,6 +1052,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ### Task 8: Create Floating Progress Component
 
 **Files:**
+
 - Create: `/src/components/FloatingDraftProgress.tsx`
 
 **Step 1: Create the component**
@@ -1306,6 +1253,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ### Task 9: Add FloatingDraftProgress to Layout
 
 **Files:**
+
 - Modify: `/src/app/layout.tsx`
 
 **Step 1: Add the component to root layout**
@@ -1336,6 +1284,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ### Task 10: Create Mobile Create Page
 
 **Files:**
+
 - Create: `/src/app/create/mobile/page.tsx`
 - Modify: `/src/app/create/page.tsx` (add mobile detection)
 
@@ -1636,6 +1585,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ### Task 11: Create Mobile Quiz Player Component
 
 **Files:**
+
 - Create: `/src/components/quiz/MobileQuizPlayer.tsx`
 
 **Step 1: Create the swipe-based quiz player**
@@ -1926,6 +1876,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ### Task 12: Integrate MobileQuizPlayer
 
 **Files:**
+
 - Modify: `/src/app/quiz/[slug]/page.tsx`
 
 **Step 1: Add mobile detection and conditional rendering**
@@ -1974,6 +1925,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ### Task 13: Create Draft Edit Page
 
 **Files:**
+
 - Create: `/src/app/draft/[id]/edit/page.tsx`
 
 **Step 1: Create the edit page (desktop-focused)**
@@ -2369,6 +2321,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ### Task 14: Add generateSlug utility
 
 **Files:**
+
 - Modify: `/src/lib/utils.ts`
 
 **Step 1: Add or verify generateSlug function exists**
@@ -2437,14 +2390,14 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 
 ## Summary
 
-| Phase | Tasks | Files Created/Modified |
-|-------|-------|----------------------|
-| **1. Backend** | 5 tasks | DraftQuiz model, 5 API routes |
-| **2. Client Infra** | 4 tasks | Zustand store, processor hook, floating UI |
-| **3. Mobile Create** | 1 task | Mobile create page |
-| **4. Quiz Player** | 2 tasks | MobileQuizPlayer component |
-| **5. Draft Edit** | 1 task | Draft edit page |
-| **6. Integration** | 2 tasks | Utils, testing |
+| Phase                | Tasks   | Files Created/Modified                     |
+| -------------------- | ------- | ------------------------------------------ |
+| **1. Backend**       | 5 tasks | DraftQuiz model, 5 API routes              |
+| **2. Client Infra**  | 4 tasks | Zustand store, processor hook, floating UI |
+| **3. Mobile Create** | 1 task  | Mobile create page                         |
+| **4. Quiz Player**   | 2 tasks | MobileQuizPlayer component                 |
+| **5. Draft Edit**    | 1 task  | Draft edit page                            |
+| **6. Integration**   | 2 tasks | Utils, testing                             |
 
 **Total: 15 tasks, ~25-30 small commits**
 

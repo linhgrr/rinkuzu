@@ -22,11 +22,7 @@ export async function generateMetadata({
   });
 }
 
-export default async function HomePage({
-  params,
-}: {
-  params: Promise<{ locale: string }>;
-}) {
+export default async function HomePage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   const session = await getServerSession(authOptions);
 
@@ -40,45 +36,49 @@ export default async function HomePage({
     {
       _id: 'mock-1',
       title: 'Calculus 1 (MI1111)',
-      description: 'A comprehensive set of derivative, integral, and application problems for university students.',
+      description:
+        'A comprehensive set of derivative, integral, and application problems for university students.',
       slug: 'giai-tich-1-hust',
-      category: { name: 'Mathematics', color: 'blue' }
+      category: { name: 'Mathematics', color: 'blue' },
     },
     {
       _id: 'mock-2',
       title: 'General Physics 1 (PH1110)',
-      description: 'Multiple-choice questions on Mechanics and Thermodynamics aligned with midterm and final exam formats.',
+      description:
+        'Multiple-choice questions on Mechanics and Thermodynamics aligned with midterm and final exam formats.',
       slug: 'vat-ly-1-hust',
-      category: { name: 'Science', color: 'green' }
+      category: { name: 'Science', color: 'green' },
     },
     {
       _id: 'mock-3',
       title: 'Introduction to C Programming (IT1110)',
-      description: 'Practice questions on data types, loops, arrays, and pointers in the C language.',
+      description:
+        'Practice questions on data types, loops, arrays, and pointers in the C language.',
       slug: 'lap-trinh-c-hust',
-      category: { name: 'Computer Science', color: 'green' }
+      category: { name: 'Computer Science', color: 'green' },
     },
     {
       _id: 'mock-4',
       title: 'Marxism-Leninism Philosophy (SSH1110)',
       description: 'Political theory review quizzes designed for first-year university students.',
       slug: 'triet-hoc-hust',
-      category: { name: 'Politics', color: 'red' }
+      category: { name: 'Politics', color: 'red' },
     },
     {
       _id: 'mock-5',
       title: 'Basic English (FL1100)',
       description: 'Listening and Reading practice following common university exam formats.',
       slug: 'tieng-anh-hust',
-      category: { name: 'Languages', color: 'orange' }
+      category: { name: 'Languages', color: 'orange' },
     },
     {
       _id: 'mock-6',
       title: 'Data Structures & Algorithms (IT3011)',
-      description: 'Strengthen problem-solving with sorting, searching, and advanced tree-based structures.',
+      description:
+        'Strengthen problem-solving with sorting, searching, and advanced tree-based structures.',
       slug: 'ctdl-gt-hust',
-      category: { name: 'Computer Science', color: 'teal' }
-    }
+      category: { name: 'Computer Science', color: 'teal' },
+    },
   ];
 
   return <GuestLanding quizzes={hustMockQuizzes} isAuthenticated={Boolean(session?.user)} />;

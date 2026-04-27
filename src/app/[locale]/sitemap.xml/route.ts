@@ -18,7 +18,7 @@ function toEntry(
   path: string,
   changeFrequency: MetadataRoute.Sitemap[number]['changeFrequency'],
   priority: number,
-  lastModified = new Date()
+  lastModified = new Date(),
 ): MetadataRoute.Sitemap[number] {
   return {
     url: canonicalFor(locale, path),
@@ -100,7 +100,7 @@ ${entries
     <lastmod>${new Date(e.lastModified || Date.now()).toISOString().split('T')[0]}</lastmod>
     <changefreq>${e.changeFrequency}</changefreq>
     <priority>${e.priority}</priority>
-  </url>`
+  </url>`,
   )
   .join('\n')}
 </urlset>`;

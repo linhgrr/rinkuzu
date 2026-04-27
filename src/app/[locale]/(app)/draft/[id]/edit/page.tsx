@@ -20,10 +20,10 @@ export default async function DraftEditPage({ params }: Props) {
 
   await connectDB();
 
-  const draft = await DraftQuiz.findOne({
+  const draft = (await DraftQuiz.findOne({
     _id: id,
     userId: (session!.user as any).id,
-  }).lean() as any;
+  }).lean()) as any;
 
   if (!draft) {
     notFound();

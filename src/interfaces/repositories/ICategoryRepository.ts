@@ -14,20 +14,20 @@ export interface ICategoryRepository {
   findById(id: string): Promise<ICategory | null>;
   findBySlug(slug: string): Promise<ICategory | null>;
   findAll(options?: {
-    page?: number
-    limit?: number
-    search?: string
-    isActive?: boolean
+    page?: number;
+    limit?: number;
+    search?: string;
+    isActive?: boolean;
   }): Promise<{
-    categories: ICategory[]
+    categories: ICategory[];
     pagination: {
-      currentPage: number
-      totalPages: number
-      totalItems: number
-      itemsPerPage: number
-      hasNextPage: boolean
-      hasPrevPage: boolean
-    }
+      currentPage: number;
+      totalPages: number;
+      totalItems: number;
+      itemsPerPage: number;
+      hasNextPage: boolean;
+      hasPrevPage: boolean;
+    };
   }>;
   findActive(): Promise<ICategory[]>;
   search(query: string): Promise<ICategory[]>;
@@ -37,4 +37,4 @@ export interface ICategoryRepository {
   delete(id: string): Promise<boolean>;
   count(filter: any): Promise<number>;
   findWithQuizCount(): Promise<{ category: ICategory; quizCount: number }[]>;
-} 
+}

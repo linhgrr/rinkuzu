@@ -15,7 +15,7 @@ const CategorySchema = new mongoose.Schema({
     required: true,
     unique: true,
     trim: true,
-    maxlength: 50
+    maxlength: 50,
   },
   slug: {
     type: String,
@@ -23,39 +23,39 @@ const CategorySchema = new mongoose.Schema({
     unique: true,
     lowercase: true,
     trim: true,
-    maxlength: 80
+    maxlength: 80,
   },
   description: {
     type: String,
     trim: true,
-    maxlength: 200
+    maxlength: 200,
   },
   color: {
     type: String,
     default: '#009d8c', // Default blue color
-    match: /^#[0-9A-F]{6}$/i // Hex color validation
+    match: /^#[0-9A-F]{6}$/i, // Hex color validation
   },
   isActive: {
     type: Boolean,
-    default: true
+    default: true,
   },
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true
+    required: true,
   },
   createdAt: {
     type: Date,
-    default: Date.now
+    default: Date.now,
   },
   updatedAt: {
     type: Date,
-    default: Date.now
-  }
+    default: Date.now,
+  },
 });
 
 // Update updatedAt on save
-CategorySchema.pre('save', function(next) {
+CategorySchema.pre('save', function (next) {
   if (this.isModified('name')) {
     this.slug = toSlug(this.name);
   }

@@ -7,12 +7,19 @@ export interface ISubscriptionRepository {
   findByUser(userId: string): Promise<ISubscription[]>;
   findExpiredSubscriptions(): Promise<ISubscription[]>;
   updateById(id: string, updateData: Partial<ISubscription>): Promise<ISubscription | null>;
-  updateByOrderId(orderId: string, updateData: Partial<ISubscription>): Promise<ISubscription | null>;
+  updateByOrderId(
+    orderId: string,
+    updateData: Partial<ISubscription>,
+  ): Promise<ISubscription | null>;
   deleteById(id: string): Promise<boolean>;
   deleteByOrderId(orderId: string): Promise<boolean>;
-  findWithPagination(filter: any, page: number, limit: number): Promise<{
+  findWithPagination(
+    filter: any,
+    page: number,
+    limit: number,
+  ): Promise<{
     subscriptions: ISubscription[];
     total: number;
     totalPages: number;
   }>;
-} 
+}

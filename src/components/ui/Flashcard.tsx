@@ -22,7 +22,7 @@ export function Flashcard({
   correctIndexes,
   type,
   onSwipe,
-  isLast
+  isLast: _isLast,
 }: FlashcardProps) {
   const t = useTranslations('flashcard');
   const [isFlipped, setIsFlipped] = useState(false);
@@ -42,10 +42,11 @@ export function Flashcard({
       switch (e.code) {
         case 'Space':
           e.preventDefault();
-          setIsFlipped(prev => !prev);
+          setIsFlipped((prev) => !prev);
           break;
         case 'ArrowLeft':
-          if (isFlipped) { // Only allow swipe if flipped? Or always? Design choice.
+          if (isFlipped) {
+            // Only allow swipe if flipped? Or always? Design choice.
             // Usually swipe is available anytime, but for Flashcard often you flip then swipe.
             // Let's allow anytime for power users, matching drag behavior which works anytime?
             // Actually drag works anytime.
@@ -61,8 +62,8 @@ export function Flashcard({
               setDragOffset({ x: 0, y: 0 });
             }, 300);
           } else {
-            // Should we force flip first? 
-            // If not flipped, "Don't Know" (Left) implies we don't know the answer. 
+            // Should we force flip first?
+            // If not flipped, "Don't Know" (Left) implies we don't know the answer.
             // "Know" (Right) implies we know it.
             // So we can arguably allow swipe without flip.
             // But let's stick to buttons visibility logic: Buttons only shown if flipped.
@@ -189,7 +190,7 @@ export function Flashcard({
     if (type === 'single' && typeof correctIndex === 'number') {
       return [options[correctIndex]];
     } else if (type === 'multiple' && correctIndexes) {
-      return correctIndexes.map(index => options[index]);
+      return correctIndexes.map((index) => options[index]);
     }
     return [];
   };
@@ -205,7 +206,7 @@ export function Flashcard({
     if (type === 'single' && typeof correctIndex === 'number') {
       return String.fromCharCode(65 + correctIndex);
     } else if (type === 'multiple' && correctIndexes) {
-      return correctIndexes.map(index => String.fromCharCode(65 + index)).join(', ');
+      return correctIndexes.map((index) => String.fromCharCode(65 + index)).join(', ');
     }
     return 'N/A';
   };
@@ -249,6 +250,9 @@ export function Flashcard({
       <div
         ref={cardRef}
         className="relative select-none"
+        role="button"
+        tabIndex={0}
+        aria-label={isFlipped ? t('showQuestion') : t('showAnswer')}
         style={{
           width: '75vw',
           maxWidth: '1000px',
@@ -269,20 +273,26 @@ export function Flashcard({
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
+        onClick={() => setIsFlipped(!isFlipped)}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            setIsFlipped(!isFlipped);
+          }
+        }}
       >
         <div
           className="relative w-full h-full cursor-pointer"
           style={{
             perspective: '1000px',
-            transformStyle: 'preserve-3d'
+            transformStyle: 'preserve-3d',
           }}
-          onClick={() => setIsFlipped(!isFlipped)}
         >
           <div
             className="relative w-full h-full transition-transform duration-300 ease-in-out"
             style={{
               transformStyle: 'preserve-3d',
-              transform: isFlipped ? 'rotateX(180deg)' : 'rotateX(0deg)'
+              transform: isFlipped ? 'rotateX(180deg)' : 'rotateX(0deg)',
             }}
           >
             {/* Front Side */}
@@ -290,10 +300,9 @@ export function Flashcard({
               className="absolute w-full h-full flex flex-col justify-between items-center bg-white shadow-2xl rounded-2xl border-2 border-neutral-100"
               style={{
                 backfaceVisibility: 'hidden',
-                WebkitBackfaceVisibility: 'hidden'
+                WebkitBackfaceVisibility: 'hidden',
               }}
             >
-
               <CardContent className="flex flex-col h-full py-10 px-14 justify-between">
                 <div className="flex-1 flex flex-col justify-center">
                   <h3 className="text-2xl font-bold text-neutral-900 mb-8 text-center leading-relaxed break-words">
@@ -322,41 +331,56 @@ export function Flashcard({
               style={{
                 backfaceVisibility: 'hidden',
                 WebkitBackfaceVisibility: 'hidden',
-                transform: 'rotateX(180deg)'
+                transform: 'rotateX(180deg)',
               }}
             >
-
               <CardContent className="flex flex-col h-full py-10 px-14 justify-between">
                 <div className="flex-1 flex flex-col justify-center">
-                  <h3 className="text-xl font-semibold text-green-700 mb-6 text-center">{t('correctAnswer')}</h3>
+                  <h3 className="text-xl font-semibold text-green-700 mb-6 text-center">
+                    {t('correctAnswer')}
+                  </h3>
                   <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4 text-center">
-                    <span className="text-green-600 font-bold text-lg mr-2">{getCorrectAnswerLetters()}</span>
-                    <span className="text-green-800 font-semibold text-lg break-words">{getCorrectAnswerText()}</span>
+                    <span className="text-green-600 font-bold text-lg mr-2">
+                      {getCorrectAnswerLetters()}
+                    </span>
+                    <span className="text-green-800 font-semibold text-lg break-words">
+                      {getCorrectAnswerText()}
+                    </span>
                   </div>
                   <div className="space-y-2">
                     <h4 className="font-medium text-neutral-900">{t('allAnswers')}</h4>
                     {options.map((option, index) => {
-                      const isCorrect = type === 'single'
-                        ? (typeof correctIndex === 'number' && index === correctIndex)
-                        : (correctIndexes && correctIndexes.includes(index));
+                      const isCorrect =
+                        type === 'single'
+                          ? typeof correctIndex === 'number' && index === correctIndex
+                          : correctIndexes && correctIndexes.includes(index);
                       return (
                         <div
                           key={index}
-                          className={`flex items-center space-x-3 p-3 rounded-lg border text-base break-words ${isCorrect
-                            ? 'bg-green-50 border-green-200'
-                            : 'bg-neutral-50 border-neutral-200'
-                            }`}
+                          className={`flex items-center space-x-3 p-3 rounded-lg border text-base break-words ${
+                            isCorrect
+                              ? 'bg-green-50 border-green-200'
+                              : 'bg-neutral-50 border-neutral-200'
+                          }`}
                         >
-                          <span className={`text-base font-medium w-6 ${isCorrect ? 'text-green-600' : 'text-neutral-600'
-                            }`}>
+                          <span
+                            className={`text-base font-medium w-6 ${
+                              isCorrect ? 'text-green-600' : 'text-neutral-600'
+                            }`}
+                          >
                             {String.fromCharCode(65 + index)}.
                           </span>
-                          <span className={`flex-1 break-words ${isCorrect ? 'text-green-800 font-medium' : 'text-neutral-700'
-                            }`}>
+                          <span
+                            className={`flex-1 break-words ${
+                              isCorrect ? 'text-green-800 font-medium' : 'text-neutral-700'
+                            }`}
+                          >
                             {option}
                           </span>
                           {isCorrect && (
-                            <span className="text-green-600" aria-hidden="true">✓</span>
+                            <span className="text-green-600" aria-hidden="true">
+                              ✓
+                            </span>
                           )}
                         </div>
                       );
@@ -421,4 +445,4 @@ export function Flashcard({
       </div>
     </div>
   );
-} 
+}

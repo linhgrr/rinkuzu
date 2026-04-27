@@ -4,10 +4,10 @@ import { ADAPTIVE_CACHE_TAGS, ADAPTIVE_CACHE_TTL_SECONDS } from '@/lib/adaptive-
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: Request) {
-    return proxyAdaptiveRequest(req, '/api/pipeline/status', {
-        cache: {
-            revalidateSeconds: ADAPTIVE_CACHE_TTL_SECONDS.pipelineStatus,
-            tags: [ADAPTIVE_CACHE_TAGS.pipelineStatus],
-        },
-    });
+  return proxyAdaptiveRequest(req, '/api/pipeline/status', {
+    cache: {
+      revalidateSeconds: ADAPTIVE_CACHE_TTL_SECONDS.pipelineStatus,
+      tags: [ADAPTIVE_CACHE_TAGS.pipelineStatus],
+    },
+  });
 }

@@ -1,7 +1,4 @@
-import {
-  buildAdaptiveServiceHeaders,
-  resolveAdaptiveApiUrl,
-} from '@/lib/adaptive-learning/config';
+import { buildAdaptiveServiceHeaders, resolveAdaptiveApiUrl } from '@/lib/adaptive-learning/config';
 
 type ExtractQuizResult = {
   questions: any[];
@@ -27,14 +24,9 @@ type ExtractApiResponse = {
  * Calls the Python quiz extraction endpoint for a PDF already stored on S3.
  */
 export async function extractQuizFromS3Key(
-  params: ExtractQuizFromS3KeyParams
+  params: ExtractQuizFromS3KeyParams,
 ): Promise<ExtractQuizResult> {
-  const {
-    s3Key,
-    userId,
-    userPrompt,
-    timeoutMs = 280000,
-  } = params;
+  const { s3Key, userId, userPrompt, timeoutMs = 280000 } = params;
 
   const formDataPayload = new FormData();
   formDataPayload.append('s3_key', s3Key);

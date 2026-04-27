@@ -63,11 +63,12 @@ const QuestionSchema = new Schema<IQuestion>({
     validate: {
       validator: function (this: IQuestion, value: number[]) {
         if (this.type === 'multiple') {
-          return value && value.length > 0 && value.every(i => i >= 0 && i < this.options.length);
+          return value && value.length > 0 && value.every((i) => i >= 0 && i < this.options.length);
         }
         return true;
       },
-      message: 'Multiple choice questions must have at least one valid correct index within options range',
+      message:
+        'Multiple choice questions must have at least one valid correct index within options range',
     },
   },
   questionImage: {
@@ -79,67 +80,72 @@ const QuestionSchema = new Schema<IQuestion>({
     validate: {
       validator: function (this: IQuestion, optionImages: (string | undefined)[]) {
         // If optionImages exists, it should have same length as options
-        return !optionImages || optionImages.length === 0 || optionImages.length === this.options.length;
+        return (
+          !optionImages || optionImages.length === 0 || optionImages.length === this.options.length
+        );
       },
       message: 'Option images array length must match options array length',
     },
   },
 });
 
-const QuizSchema = new Schema<IQuiz>({
-  title: {
-    type: String,
-    required: [true, 'Title is required'],
-    trim: true,
-    maxlength: [200, 'Title cannot exceed 200 characters'],
-  },
-  description: {
-    type: String,
-    trim: true,
-    maxlength: [1000, 'Description cannot exceed 1000 characters'],
-  },
-  category: {
-    type: Schema.Types.ObjectId,
-    ref: 'Category',
-    required: [true, 'Category is required'],
-  },
-  status: {
-    type: String,
-    enum: ['pending', 'published', 'rejected'],
-    default: 'pending',
-  },
-  author: {
-    type: Schema.Types.ObjectId,
-    ref: 'User',
-    required: [true, 'Author is required'],
-  },
-  slug: {
-    type: String,
-    required: [true, 'Slug is required'],
-    unique: true,
-    lowercase: true,
-  },
-  questions: {
-    type: [QuestionSchema],
-    required: [true, 'Questions are required'],
-    validate: {
-      validator: function (questions: IQuestion[]) {
-        return questions.length > 0;
+const QuizSchema = new Schema<IQuiz>(
+  {
+    title: {
+      type: String,
+      required: [true, 'Title is required'],
+      trim: true,
+      maxlength: [200, 'Title cannot exceed 200 characters'],
+    },
+    description: {
+      type: String,
+      trim: true,
+      maxlength: [1000, 'Description cannot exceed 1000 characters'],
+    },
+    category: {
+      type: Schema.Types.ObjectId,
+      ref: 'Category',
+      required: [true, 'Category is required'],
+    },
+    status: {
+      type: String,
+      enum: ['pending', 'published', 'rejected'],
+      default: 'pending',
+    },
+    author: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: [true, 'Author is required'],
+    },
+    slug: {
+      type: String,
+      required: [true, 'Slug is required'],
+      unique: true,
+      lowercase: true,
+    },
+    questions: {
+      type: [QuestionSchema],
+      required: [true, 'Questions are required'],
+      validate: {
+        validator: function (questions: IQuestion[]) {
+          return questions.length > 0;
+        },
+        message: 'At least one question is required',
       },
-      message: 'At least one question is required',
+    },
+    isPrivate: {
+      type: Boolean,
+      default: false,
+    },
+    pdfUrl: {
+      type: String,
+      trim: true,
     },
   },
-  isPrivate: {
-    type: Boolean,
-    default: false,
+  {
+    timestamps: true,
   },
-  pdfUrl: {
-    type: String,
-    trim: true,
-  },
-}, {
-  timestamps: true,
-});
+);
 
 // Indexes for better performance
 QuizSchema.index({ status: 1, createdAt: -1 });
@@ -153,4 +159,4 @@ QuizSchema.index({ author: 1, status: 1, createdAt: -1 });
 // Prevent re-compilation in development
 const Quiz = mongoose.models.Quiz || mongoose.model<IQuiz>('Quiz', QuizSchema);
 
-export default Quiz; 
+export default Quiz;

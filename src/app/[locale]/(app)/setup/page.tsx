@@ -32,7 +32,7 @@ export default function SetupPage() {
       } else {
         setError('Failed to check setup status');
       }
-    } catch (error) {
+    } catch (_error) {
       setError('Failed to check setup status');
     } finally {
       setLoading(false);
@@ -59,7 +59,7 @@ export default function SetupPage() {
       } else {
         setError(data.error || 'Failed to create admin account');
       }
-    } catch (error) {
+    } catch (_error) {
       setError('Failed to create admin account');
     } finally {
       setCreating(false);
@@ -91,13 +91,12 @@ export default function SetupPage() {
               {setupStatus?.adminExists ? '✅ Setup Complete' : '🚀 Admin Setup Required'}
             </CardTitle>
             <CardDescription className="text-center">
-              {setupStatus?.adminExists 
-                ? 'Admin account already exists' 
-                : 'Create the first admin account to get started'
-              }
+              {setupStatus?.adminExists
+                ? 'Admin account already exists'
+                : 'Create the first admin account to get started'}
             </CardDescription>
           </CardHeader>
-          
+
           <CardContent>
             {error && (
               <div className="mb-4 rounded-md bg-red-50 p-4">
@@ -122,12 +121,10 @@ export default function SetupPage() {
                     An admin account already exists. You can proceed to login.
                   </p>
                 </div>
-                
+
                 <div className="flex space-x-4">
                   <Link href="/login" className="flex-1">
-                    <Button className="w-full">
-                      Go to Login
-                    </Button>
+                    <Button className="w-full">Go to Login</Button>
                   </Link>
                   <Link href="/" className="flex-1">
                     <Button variant="outline" className="w-full">
@@ -143,8 +140,12 @@ export default function SetupPage() {
                     Default Admin Account
                   </h3>
                   <div className="text-sm text-green-700 space-y-1">
-                    <p><strong>Email:</strong> admin@quizcreator.com</p>
-                    <p><strong>Password:</strong> ***REMOVED***</p>
+                    <p>
+                      <strong>Email:</strong> admin@quizcreator.com
+                    </p>
+                    <p>
+                      <strong>Password:</strong> ***REMOVED***
+                    </p>
                     <p className="text-xs mt-2 text-brand-trust">
                       ⚠️ Please change the password after first login
                     </p>
@@ -152,7 +153,9 @@ export default function SetupPage() {
                 </div>
 
                 <div className="text-sm text-neutral-600">
-                  <p><strong>System Status:</strong></p>
+                  <p>
+                    <strong>System Status:</strong>
+                  </p>
                   <ul className="mt-2 space-y-1">
                     <li>• Admin exists: {setupStatus.adminExists ? 'Yes' : 'No'}</li>
                     <li>• Total users: {setupStatus.userCount}</li>
@@ -160,11 +163,7 @@ export default function SetupPage() {
                   </ul>
                 </div>
 
-                <Button 
-                  onClick={createAdminAccount}
-                  loading={creating}
-                  className="w-full"
-                >
+                <Button onClick={createAdminAccount} loading={creating} className="w-full">
                   {creating ? 'Creating Admin Account…' : 'Create Admin Account'}
                 </Button>
 
@@ -178,16 +177,16 @@ export default function SetupPage() {
               <div className="space-y-4">
                 <div className="text-center py-8">
                   <div className="text-4xl mb-4">🔒</div>
-                  <h3 className="text-lg font-semibold text-neutral-900 mb-2">
-                    Setup Not Allowed
-                  </h3>
+                  <h3 className="text-lg font-semibold text-neutral-900 mb-2">Setup Not Allowed</h3>
                   <p className="text-neutral-600 mb-4">
                     Admin setup is only allowed for new installations or when no admin exists.
                   </p>
                 </div>
-                
+
                 <div className="text-sm text-neutral-600">
-                  <p><strong>Current Status:</strong></p>
+                  <p>
+                    <strong>Current Status:</strong>
+                  </p>
                   <ul className="mt-2 space-y-1">
                     <li>• Admin exists: {setupStatus?.adminExists ? 'Yes' : 'No'}</li>
                     <li>• Total users: {setupStatus?.userCount}</li>
@@ -196,9 +195,7 @@ export default function SetupPage() {
 
                 <div className="flex space-x-4">
                   <Link href="/login" className="flex-1">
-                    <Button className="w-full">
-                      Login
-                    </Button>
+                    <Button className="w-full">Login</Button>
                   </Link>
                   <Link href="/" className="flex-1">
                     <Button variant="outline" className="w-full">
@@ -217,8 +214,8 @@ export default function SetupPage() {
             <div className="text-center text-xs text-neutral-500">
               <p className="font-semibold mb-1">🔐 Security Notice</p>
               <p>
-                This setup page is only available for initial installation.
-                After creating an admin account, please change the default password immediately.
+                This setup page is only available for initial installation. After creating an admin
+                account, please change the default password immediately.
               </p>
             </div>
           </CardContent>
@@ -226,4 +223,4 @@ export default function SetupPage() {
       </div>
     </div>
   );
-} 
+}

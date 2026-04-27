@@ -1,24 +1,24 @@
-'use client'
+'use client';
 
-import { Suspense } from 'react'
-import { useSearchParams, useRouter } from 'next/navigation'
-import { useTranslations } from 'next-intl'
-import { Card } from '@/components/ui/Card'
-import { Button } from '@/components/ui/Button'
+import { Suspense } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
+import { Card } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
 
 function PaymentCancelContent() {
-  const t = useTranslations('subscription')
-  const searchParams = useSearchParams()
-  const router = useRouter()
-  const orderCode = searchParams.get('orderCode')
+  const t = useTranslations('subscription');
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const orderCode = searchParams.get('orderCode');
 
   const handleGoHome = () => {
-    router.push('/')
-  }
+    router.push('/');
+  };
 
   const handleGoToSubscription = () => {
-    router.push('/subscription')
-  }
+    router.push('/subscription');
+  };
 
   return (
     <div className="min-h-screen bg-neutral-50 flex items-center justify-center py-8">
@@ -39,9 +39,7 @@ function PaymentCancelContent() {
               />
             </svg>
           </div>
-          <h1 className="text-2xl font-bold text-neutral-900 mb-4">
-            {t('paymentCancelledTitle')}
-          </h1>
+          <h1 className="text-2xl font-bold text-neutral-900 mb-4">{t('paymentCancelledTitle')}</h1>
           <p className="text-neutral-600 mb-6">
             {t('paymentCancelledMessage')}
             {orderCode && (
@@ -61,11 +59,11 @@ function PaymentCancelContent() {
         </Card>
       </div>
     </div>
-  )
+  );
 }
 
 function PaymentCancelLoading() {
-  const t = useTranslations('common')
+  const t = useTranslations('common');
   return (
     <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
       <div className="text-center">
@@ -73,7 +71,7 @@ function PaymentCancelLoading() {
         <p className="mt-4 text-neutral-600">{t('loading')}</p>
       </div>
     </div>
-  )
+  );
 }
 
 export default function PaymentCancelPage() {
@@ -81,5 +79,5 @@ export default function PaymentCancelPage() {
     <Suspense fallback={<PaymentCancelLoading />}>
       <PaymentCancelContent />
     </Suspense>
-  )
-} 
+  );
+}

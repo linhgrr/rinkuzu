@@ -17,6 +17,7 @@ src/shared/constants/
 ## Import và sử dụng
 
 ### Import tất cả từ central point:
+
 ```typescript
 import {
   COLORS,
@@ -24,14 +25,15 @@ import {
   API_ENDPOINTS,
   ROUTES,
   QUIZ_STATUS,
-  type EmotionType
-} from '@/shared/constants'
+  type EmotionType,
+} from '@/shared/constants';
 ```
 
 ### Hoặc import specific modules:
+
 ```typescript
-import { COLORS } from '@/shared/constants/ui'
-import { API_ENDPOINTS } from '@/shared/constants/api'
+import { COLORS } from '@/shared/constants/ui';
+import { API_ENDPOINTS } from '@/shared/constants/api';
 ```
 
 ## Ví dụ sử dụng
@@ -40,50 +42,50 @@ import { API_ENDPOINTS } from '@/shared/constants/api'
 
 ```typescript
 // Colors
-const categoryClass = COLORS.CATEGORY.blue
+const categoryClass = COLORS.CATEGORY.blue;
 // → 'bg-blue-100 text-blue-700 border-blue-200'
 
 // Animations
-const interval = ANIMATIONS.EMOTION_CHANGE_INTERVAL // → 8000ms
+const interval = ANIMATIONS.EMOTION_CHANGE_INTERVAL; // → 8000ms
 
 // Layout
-const defaultLimit = LAYOUT.PAGINATION.DEFAULT_LIMIT // → 12
+const defaultLimit = LAYOUT.PAGINATION.DEFAULT_LIMIT; // → 12
 ```
 
 ### 2. API Constants
 
 ```typescript
 // Endpoints
-const url = API_ENDPOINTS.QUIZ.BASE // → '/api/quizzes'
-const quizUrl = API_ENDPOINTS.QUIZ.BY_SLUG('my-quiz') // → '/api/quiz/my-quiz'
+const url = API_ENDPOINTS.QUIZ.BASE; // → '/api/quizzes'
+const quizUrl = API_ENDPOINTS.QUIZ.BY_SLUG('my-quiz'); // → '/api/quiz/my-quiz'
 
 // Query params
 const params = new URLSearchParams({
   [QUERY_PARAMS.STATUS]: QUIZ_STATUS.PUBLISHED,
-  [QUERY_PARAMS.PAGE]: '1'
-})
+  [QUERY_PARAMS.PAGE]: '1',
+});
 ```
 
 ### 3. Routes Constants
 
 ```typescript
 // Navigation
-router.push(ROUTES.LOGIN) // → '/login'
-router.push(ROUTES.QUIZ.VIEW('my-quiz')) // → '/quiz/my-quiz'
-router.push(ROUTES.QUIZ.FLASHCARDS('my-quiz')) // → '/quiz/my-quiz/flashcards'
+router.push(ROUTES.LOGIN); // → '/login'
+router.push(ROUTES.QUIZ.VIEW('my-quiz')); // → '/quiz/my-quiz'
+router.push(ROUTES.QUIZ.FLASHCARDS('my-quiz')); // → '/quiz/my-quiz/flashcards'
 ```
 
 ### 4. App Constants
 
 ```typescript
 // Configuration
-const appName = APP_CONFIG.NAME // → 'RinKuzu'
+const appName = APP_CONFIG.NAME; // → 'RinKuzu'
 
 // External APIs
-const emojiUrl = EXTERNAL_APIS.NEKOS_BEST.ENDPOINTS.EMOTION('happy')
+const emojiUrl = EXTERNAL_APIS.NEKOS_BEST.ENDPOINTS.EMOTION('happy');
 
 // Validation
-const minLength = VALIDATION.QUIZ.TITLE.MIN_LENGTH // → 3
+const minLength = VALIDATION.QUIZ.TITLE.MIN_LENGTH; // → 3
 ```
 
 ## Utility Functions
@@ -95,32 +97,34 @@ import {
   getCategoryColorClass,
   getRandomEmotion,
   formatDisplayDate,
-  createQuizSearchParams
-} from '@/shared/utils/constants'
+  createQuizSearchParams,
+} from '@/shared/utils/constants';
 
 // Category colors
-const colorClass = getCategoryColorClass('blue')
+const colorClass = getCategoryColorClass('blue');
 
 // Emotions
-const randomEmotion = getRandomEmotion()
-const nextEmotion = getNextEmotion(currentEmotion)
+const randomEmotion = getRandomEmotion();
+const nextEmotion = getNextEmotion(currentEmotion);
 
 // Date formatting
-const displayDate = formatDisplayDate(quiz.createdAt)
+const displayDate = formatDisplayDate(quiz.createdAt);
 
 // Search params
-const params = createQuizSearchParams(1, 12, 'published', 'search term')
+const params = createQuizSearchParams(1, 12, 'published', 'search term');
 ```
 
 ## Best Practices
 
 ### ✅ DO:
+
 - Sử dụng constants thay vì magic numbers/strings
 - Import từ central point (`@/shared/constants`)
 - Sử dụng TypeScript types được export
 - Thêm utility functions cho logic phức tạp
 
 ### ❌ DON'T:
+
 - Hardcode values trực tiếp trong components
 - Duplicate constants ở nhiều files
 - Ignore TypeScript types
@@ -131,8 +135,8 @@ const params = createQuizSearchParams(1, 12, 'published', 'search term')
 Tất cả constants được define với `as const` để đảm bảo type safety:
 
 ```typescript
-export const EMOTIONS = ['happy', 'wink', 'smile'] as const
-export type EmotionType = typeof EMOTIONS[number] // 'happy' | 'wink' | 'smile'
+export const EMOTIONS = ['happy', 'wink', 'smile'] as const;
+export type EmotionType = (typeof EMOTIONS)[number]; // 'happy' | 'wink' | 'smile'
 ```
 
 ## Extending Constants
@@ -150,12 +154,12 @@ Khi refactor code cũ:
 
 ```typescript
 // Before ❌
-const interval = 8000
-const url = '/api/quizzes'
-router.push('/quiz/' + slug)
+const interval = 8000;
+const url = '/api/quizzes';
+router.push('/quiz/' + slug);
 
-// After ✅  
-const interval = ANIMATIONS.EMOTION_CHANGE_INTERVAL
-const url = API_ENDPOINTS.QUIZ.BASE
-router.push(ROUTES.QUIZ.VIEW(slug))
-``` 
+// After ✅
+const interval = ANIMATIONS.EMOTION_CHANGE_INTERVAL;
+const url = API_ENDPOINTS.QUIZ.BASE;
+router.push(ROUTES.QUIZ.VIEW(slug));
+```

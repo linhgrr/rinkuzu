@@ -36,20 +36,21 @@ export default async function LoginPage({ params }: { params: Promise<{ locale: 
             <h1 className="text-2xl sm:text-4xl font-bold text-neutral-900 mb-2 sm:mb-3">
               {t('welcomeBack')}
             </h1>
-            <p className="text-base sm:text-lg text-neutral-600">
-              {t('signInContinue')}
-            </p>
+            <p className="text-base sm:text-lg text-neutral-600">{t('signInContinue')}</p>
           </div>
         </div>
 
         {/* Login Form */}
         <div className="sm:mx-auto sm:w-full sm:max-w-md">
-          <Card className="border-0 shadow-lg shadow-neutral-100/50 bg-white animate-fadeInUp" style={{ animationDelay: '200ms' }}>
+          <Card
+            className="border-0 shadow-lg shadow-neutral-100/50 bg-white animate-fadeInUp"
+            style={{ animationDelay: '200ms' }}
+          >
             <CardHeader className="text-center pb-4">
-              <CardTitle size="lg" className="text-neutral-900">{t('signIn')}</CardTitle>
-              <CardDescription className="text-base">
-                {t('enterCredentials')}
-              </CardDescription>
+              <CardTitle size="lg" className="text-neutral-900">
+                {t('signIn')}
+              </CardTitle>
+              <CardDescription className="text-base">{t('enterCredentials')}</CardDescription>
             </CardHeader>
 
             <LoginForm locale={locale} />
@@ -57,9 +58,7 @@ export default async function LoginPage({ params }: { params: Promise<{ locale: 
 
           {/* Additional Info */}
           <div className="mt-8 text-center animate-fadeInUp" style={{ animationDelay: '400ms' }}>
-            <p className="text-sm text-neutral-500">
-              {t('secureLogin')}
-            </p>
+            <p className="text-sm text-neutral-500">{t('secureLogin')}</p>
             <div className="flex items-center justify-center mt-4 space-x-4 text-xs text-neutral-400">
               <div className="flex items-center">
                 <HiOutlineShieldCheck className="w-4 h-4 mr-1" />
@@ -75,4 +74,4 @@ export default async function LoginPage({ params }: { params: Promise<{ locale: 
       </div>
     </div>
   );
-} 
+}

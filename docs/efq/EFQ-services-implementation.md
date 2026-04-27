@@ -21,8 +21,8 @@ export class RewardService {
    * Calculate reward for a quiz based on attempts
    */
   async calculateQuizReward(
-    quizId: string, 
-    timeRange: 'daily' | 'weekly' | 'monthly' = 'daily'
+    quizId: string,
+    timeRange: 'daily' | 'weekly' | 'monthly' = 'daily',
   ): Promise<{
     totalReward: number;
     validAttempts: number;
@@ -30,33 +30,31 @@ export class RewardService {
     rewardBreakdown: any;
   }> {
     const startDate = this.getStartDate(timeRange);
-    
+
     // Get all attempts for this quiz in the time range
     const attempts = await Attempt.find({
       quiz: quizId,
-      takenAt: { $gte: startDate }
+      takenAt: { $gte: startDate },
     }).populate('user');
 
     // Filter out fraud attempts
-    const validAttempts = attempts.filter(attempt => !attempt.isFlagged);
-    const fraudAttempts = attempts.filter(attempt => attempt.isFlagged);
+    const validAttempts = attempts.filter((attempt) => !attempt.isFlagged);
+    const fraudAttempts = attempts.filter((attempt) => attempt.isFlagged);
 
     // Calculate base reward
     const baseReward = validAttempts.length * this.getBaseRewardPerAttempt();
 
     // Calculate quality multipliers
     const qualityMultipliers = this.calculateQualityMultipliers(validAttempts);
-    
+
     // Calculate difficulty bonus
     const difficultyBonus = await this.calculateDifficultyBonus(quizId);
-    
+
     // Calculate popularity bonus
     const popularityBonus = this.calculatePopularityBonus(validAttempts.length);
 
     const totalReward = Math.round(
-      baseReward * 
-      qualityMultipliers.total * 
-      (1 + difficultyBonus + popularityBonus)
+      baseReward * qualityMultipliers.total * (1 + difficultyBonus + popularityBonus),
     );
 
     return {
@@ -68,8 +66,8 @@ export class RewardService {
         qualityMultipliers,
         difficultyBonus,
         popularityBonus,
-        totalReward
-      }
+        totalReward,
+      },
     };
   }
 
@@ -78,17 +76,17 @@ export class RewardService {
    */
   async processRewards(timeRange: 'daily' | 'weekly' | 'monthly' = 'daily'): Promise<void> {
     const startDate = this.getStartDate(timeRange);
-    
+
     // Get all published quizzes
-    const quizzes = await Quiz.find({ 
+    const quizzes = await Quiz.find({
       status: 'published',
-      'rewardStats.lastRewardCalculation': { $lt: startDate }
+      'rewardStats.lastRewardCalculation': { $lt: startDate },
     });
 
     for (const quiz of quizzes) {
       try {
         const rewardData = await this.calculateQuizReward(quiz._id, timeRange);
-        
+
         // Get quiz author
         const author = await User.findById(quiz.author);
         if (!author) continue;
@@ -101,8 +99,8 @@ export class RewardService {
             quizId: quiz._id,
             userId: author._id,
             userTrustScore: author.trustScore,
-            userAge: this.calculateUserAge(author.createdAt)
-          }
+            userAge: this.calculateUserAge(author.createdAt),
+          },
         );
 
         // Create reward record
@@ -118,7 +116,7 @@ export class RewardService {
           riskLevel: fraudResponse.riskLevel,
           action: fraudResponse.action,
           status: fraudResponse.reviewRequired ? 'pending_review' : 'approved',
-          reason: fraudResponse.reason
+          reason: fraudResponse.reason,
         });
 
         await reward.save();
@@ -137,9 +135,8 @@ export class RewardService {
           quizId: quiz._id,
           rewardData,
           fraudResponse,
-          timeRange
+          timeRange,
         });
-
       } catch (error) {
         console.error(`Error processing rewards for quiz ${quiz._id}:`, error);
       }
@@ -153,9 +150,9 @@ export class RewardService {
     await User.findByIdAndUpdate(userId, {
       $inc: {
         'rewards.totalPoints': points,
-        'rewards.earnedPoints': points
+        'rewards.earnedPoints': points,
       },
-      'rewards.lastRewardCalculation': new Date()
+      'rewards.lastRewardCalculation': new Date(),
     });
 
     // Update user tier based on total points
@@ -187,7 +184,7 @@ export class RewardService {
     if (newTier !== user.rewards.tier) {
       await User.findByIdAndUpdate(userId, {
         'rewards.tier': newTier,
-        'rewards.tierMultiplier': multiplier
+        'rewards.tierMultiplier': multiplier,
       });
     }
   }
@@ -210,18 +207,19 @@ export class RewardService {
     const scoreMultiplier = Math.max(0.5, Math.min(2.0, avgScore / 50));
 
     // Completion multiplier (0.5 - 1.5)
-    const completionRate = attempts.filter(a => a.score > 0).length / attempts.length;
+    const completionRate = attempts.filter((a) => a.score > 0).length / attempts.length;
     const completionMultiplier = Math.max(0.5, Math.min(1.5, completionRate * 1.5));
 
     // Time multiplier (0.5 - 1.2)
-    const avgTimeSpent = attempts.reduce((sum, attempt) => sum + attempt.timeSpent, 0) / attempts.length;
+    const avgTimeSpent =
+      attempts.reduce((sum, attempt) => sum + attempt.timeSpent, 0) / attempts.length;
     const timeMultiplier = Math.max(0.5, Math.min(1.2, avgTimeSpent / 300)); // 5 minutes baseline
 
     return {
       scoreMultiplier,
       completionMultiplier,
       timeMultiplier,
-      total: scoreMultiplier * completionMultiplier * timeMultiplier
+      total: scoreMultiplier * completionMultiplier * timeMultiplier,
     };
   }
 
@@ -288,8 +286,8 @@ export class RewardService {
     await Quiz.findByIdAndUpdate(quizId, {
       'rewardStats.lastRewardCalculation': new Date(),
       $inc: {
-        'rewardStats.totalRewardsPaid': rewardData.totalReward
-      }
+        'rewardStats.totalRewardsPaid': rewardData.totalReward,
+      },
     });
   }
 }
@@ -306,7 +304,7 @@ export class FraudDetectionService {
     LOW: 30,
     MEDIUM: 60,
     HIGH: 80,
-    CRITICAL: 100
+    CRITICAL: 100,
   };
 
   private readonly RESPONSE_CONFIG = {
@@ -317,7 +315,7 @@ export class FraudDetectionService {
       autoApproval: true,
       adminNotification: false,
       userNotification: false,
-      reason: 'Low risk - normal processing'
+      reason: 'Low risk - normal processing',
     },
     medium: {
       action: 'reduce_reward',
@@ -326,7 +324,7 @@ export class FraudDetectionService {
       autoApproval: true,
       adminNotification: true,
       userNotification: true,
-      reason: 'Suspicious activity detected - reduced reward'
+      reason: 'Suspicious activity detected - reduced reward',
     },
     high: {
       action: 'hold_reward',
@@ -335,7 +333,7 @@ export class FraudDetectionService {
       autoApproval: false,
       adminNotification: true,
       userNotification: true,
-      reason: 'High fraud risk - reward held for review'
+      reason: 'High fraud risk - reward held for review',
     },
     critical: {
       action: 'block_reward',
@@ -344,8 +342,8 @@ export class FraudDetectionService {
       autoApproval: false,
       adminNotification: true,
       userNotification: true,
-      reason: 'Critical fraud risk - reward blocked'
-    }
+      reason: 'Critical fraud risk - reward blocked',
+    },
   };
 
   /**
@@ -359,20 +357,20 @@ export class FraudDetectionService {
       userId: string;
       userTrustScore: number;
       userAge: number;
-    }
+    },
   ): Promise<FraudResponse> {
     // Calculate fraud score based on various factors
     const fraudScore = await this.calculateFraudScore(context);
-    
+
     // Determine risk level
     const riskLevel = this.calculateRiskLevel(fraudScore);
     const config = this.RESPONSE_CONFIG[riskLevel];
-    
+
     // Adjust reward based on context
     const adjustedRewardPercentage = this.adjustRewardBasedOnContext(
       config.rewardPercentage,
       fraudFlags,
-      context
+      context,
     );
 
     const response: FraudResponse = {
@@ -384,7 +382,7 @@ export class FraudDetectionService {
       adminNotification: config.adminNotification,
       userNotification: config.userNotification,
       reason: config.reason,
-      evidence: fraudFlags
+      evidence: fraudFlags,
     };
 
     return response;
@@ -404,7 +402,7 @@ export class FraudDetectionService {
     // Get recent attempts for this quiz
     const recentAttempts = await Attempt.find({
       quiz: context.quizId,
-      takenAt: { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } // Last 7 days
+      takenAt: { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) }, // Last 7 days
     });
 
     // Check for rapid attempts
@@ -444,14 +442,16 @@ export class FraudDetectionService {
   private checkRapidAttempts(attempts: IAttempt[]): boolean {
     if (attempts.length < 2) return false;
 
-    const sortedAttempts = attempts.sort((a, b) => 
-      new Date(a.takenAt).getTime() - new Date(b.takenAt).getTime()
+    const sortedAttempts = attempts.sort(
+      (a, b) => new Date(a.takenAt).getTime() - new Date(b.takenAt).getTime(),
     );
 
     for (let i = 1; i < sortedAttempts.length; i++) {
-      const timeDiff = new Date(sortedAttempts[i].takenAt).getTime() - 
-                      new Date(sortedAttempts[i-1].takenAt).getTime();
-      if (timeDiff < 300000) { // Less than 5 minutes
+      const timeDiff =
+        new Date(sortedAttempts[i].takenAt).getTime() -
+        new Date(sortedAttempts[i - 1].takenAt).getTime();
+      if (timeDiff < 300000) {
+        // Less than 5 minutes
         return true;
       }
     }
@@ -463,13 +463,13 @@ export class FraudDetectionService {
    */
   private checkSameIPAddresses(attempts: IAttempt[]): boolean {
     const ipCounts = new Map<string, number>();
-    attempts.forEach(attempt => {
+    attempts.forEach((attempt) => {
       if (attempt.ipAddress) {
         ipCounts.set(attempt.ipAddress, (ipCounts.get(attempt.ipAddress) || 0) + 1);
       }
     });
 
-    return Array.from(ipCounts.values()).some(count => count > 5);
+    return Array.from(ipCounts.values()).some((count) => count > 5);
   }
 
   /**
@@ -478,7 +478,7 @@ export class FraudDetectionService {
   private checkSimilarScores(attempts: IAttempt[]): boolean {
     if (attempts.length < 3) return false;
 
-    const scores = attempts.map(a => a.score).sort();
+    const scores = attempts.map((a) => a.score).sort();
     const variance = this.calculateVariance(scores);
 
     return variance < 15; // Very low variance = suspicious
@@ -489,7 +489,7 @@ export class FraudDetectionService {
    */
   private checkBotPatterns(attempts: IAttempt[]): boolean {
     // Check for consistent time spent
-    const timeSpent = attempts.map(a => a.timeSpent || 0);
+    const timeSpent = attempts.map((a) => a.timeSpent || 0);
     const avgTime = timeSpent.reduce((a, b) => a + b, 0) / timeSpent.length;
     const timeVariance = this.calculateVariance(timeSpent);
 
@@ -497,7 +497,7 @@ export class FraudDetectionService {
     if (timeVariance < 10 && avgTime < 60) return true;
 
     // Check for perfect scores too frequently
-    const perfectScores = attempts.filter(a => a.score === 100).length;
+    const perfectScores = attempts.filter((a) => a.score === 100).length;
     const perfectScoreRate = perfectScores / attempts.length;
 
     return perfectScoreRate > 0.3; // More than 30% perfect scores
@@ -508,7 +508,7 @@ export class FraudDetectionService {
    */
   private calculateVariance(numbers: number[]): number {
     const mean = numbers.reduce((a, b) => a + b, 0) / numbers.length;
-    const squaredDiffs = numbers.map(n => Math.pow(n - mean, 2));
+    const squaredDiffs = numbers.map((n) => Math.pow(n - mean, 2));
     const avgSquaredDiff = squaredDiffs.reduce((a, b) => a + b, 0) / squaredDiffs.length;
     return Math.sqrt(avgSquaredDiff);
   }
@@ -527,15 +527,15 @@ export class FraudDetectionService {
    * Adjust reward based on context
    */
   private adjustRewardBasedOnContext(
-    basePercentage: number, 
-    flags: string[], 
-    context: any
+    basePercentage: number,
+    flags: string[],
+    context: any,
   ): number {
     let adjustedPercentage = basePercentage;
 
     // Reduce reward for multiple suspicious flags
-    const suspiciousFlags = flags.filter(flag => 
-      ['rapid_attempts', 'same_ip_addresses', 'bot_patterns'].includes(flag)
+    const suspiciousFlags = flags.filter((flag) =>
+      ['rapid_attempts', 'same_ip_addresses', 'bot_patterns'].includes(flag),
     );
     if (suspiciousFlags.length > 2) {
       adjustedPercentage *= 0.7; // 30% reduction
@@ -750,27 +750,27 @@ export class AuditLogService {
    */
   async getFraudAnalytics(timeRange: 'day' | 'week' | 'month' = 'day') {
     const startDate = this.getStartDate(timeRange);
-    
+
     const analytics = await AuditLog.aggregate([
       {
         $match: {
           timestamp: { $gte: startDate },
-          action: { $in: ['quiz_attempt', 'fraud_detected'] }
-        }
+          action: { $in: ['quiz_attempt', 'fraud_detected'] },
+        },
       },
       {
         $group: {
           _id: {
             action: '$action',
             outcome: '$outcome',
-            day: { $dateToString: { format: '%Y-%m-%d', date: '$timestamp' } }
+            day: { $dateToString: { format: '%Y-%m-%d', date: '$timestamp' } },
           },
           count: { $sum: 1 },
           avgFraudScore: { $avg: '$fraudIndicators.riskScore' },
           uniqueUsers: { $addToSet: '$userId' },
           uniqueIPs: { $addToSet: '$ipAddress' },
-          uniqueDevices: { $addToSet: '$deviceFingerprint' }
-        }
+          uniqueDevices: { $addToSet: '$deviceFingerprint' },
+        },
       },
       {
         $group: {
@@ -783,12 +783,12 @@ export class AuditLogService {
               avgFraudScore: '$avgFraudScore',
               uniqueUsers: { $size: '$uniqueUsers' },
               uniqueIPs: { $size: '$uniqueIPs' },
-              uniqueDevices: { $size: '$uniqueDevices' }
-            }
-          }
-        }
+              uniqueDevices: { $size: '$uniqueDevices' },
+            },
+          },
+        },
       },
-      { $sort: { _id: 1 } }
+      { $sort: { _id: 1 } },
     ]);
 
     return analytics;
@@ -799,13 +799,13 @@ export class AuditLogService {
    */
   async getSuspiciousPatterns(timeRange: 'day' | 'week' | 'month' = 'day') {
     const startDate = this.getStartDate(timeRange);
-    
+
     const patterns = await AuditLog.aggregate([
       {
         $match: {
           timestamp: { $gte: startDate },
-          'fraudIndicators.riskScore': { $gte: 70 }
-        }
+          'fraudIndicators.riskScore': { $gte: 70 },
+        },
       },
       {
         $group: {
@@ -815,19 +815,16 @@ export class AuditLogService {
           avgTimeSpent: { $avg: '$timeSpent' },
           uniqueUsers: { $addToSet: '$userId' },
           fraudFlags: { $addToSet: '$fraudIndicators.flags' },
-          suspiciousPatterns: { $addToSet: '$fraudIndicators.suspiciousPatterns' }
-        }
+          suspiciousPatterns: { $addToSet: '$fraudIndicators.suspiciousPatterns' },
+        },
       },
       {
         $match: {
-          $or: [
-            { attempts: { $gte: 10 } },
-            { 'uniqueUsers.length': { $gte: 5 } }
-          ]
-        }
+          $or: [{ attempts: { $gte: 10 } }, { 'uniqueUsers.length': { $gte: 5 } }],
+        },
       },
       { $sort: { attempts: -1 } },
-      { $limit: 50 }
+      { $limit: 50 },
     ]);
 
     return patterns;
@@ -840,22 +837,22 @@ export class AuditLogService {
 
   private analyzeSuspiciousPatterns(data: any): string[] {
     const patterns: string[] = [];
-    
+
     // Analyze mouse movements
     if (data.mouseMovements.length < 10) {
       patterns.push('minimal_mouse_movement');
     }
-    
+
     // Analyze keyboard patterns
     if (data.keyboardPatterns.length < 5) {
       patterns.push('minimal_keyboard_activity');
     }
-    
+
     // Analyze time patterns
     if (data.timeSpent < 30) {
       patterns.push('too_fast_completion');
     }
-    
+
     return patterns;
   }
 
@@ -898,7 +895,7 @@ export function generateDeviceFingerprint(userAgent: string): string {
   ctx!.textBaseline = 'top';
   ctx!.font = '14px Arial';
   ctx!.fillText('Device fingerprint', 2, 2);
-  
+
   const fingerprint = [
     navigator.userAgent,
     navigator.language,
@@ -906,7 +903,7 @@ export function generateDeviceFingerprint(userAgent: string): string {
     new Date().getTimezoneOffset(),
     canvas.toDataURL(),
   ].join('|');
-  
+
   return btoa(fingerprint).slice(0, 32);
 }
 
@@ -923,7 +920,7 @@ export async function getGeoLocation(ipAddress: string): Promise<{
     // Use a free IP geolocation service
     const response = await fetch(`https://ipapi.co/${ipAddress}/json/`);
     const data = await response.json();
-    
+
     return {
       country: data.country_name,
       city: data.city,
@@ -949,4 +946,4 @@ export function generateSessionId(): string {
 export function generateRequestId(): string {
   return 'req_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
 }
-``` 
+```

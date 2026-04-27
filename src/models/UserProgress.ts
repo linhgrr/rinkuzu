@@ -31,46 +31,53 @@ export interface IUserProgress extends Document {
   weeklyActivity: Map<string, IDailyActivity>;
 }
 
-const DailyActivitySchema = new Schema({
-  questionsReviewed: { type: Number, default: 0 },
-  xpEarned: { type: Number, default: 0 },
-  correctCount: { type: Number, default: 0 },
-  totalCount: { type: Number, default: 0 }
-}, { _id: false });
-
-const UserProgressSchema = new Schema<IUserProgress>({
-  userId: {
-    type: String,
-    required: true,
-    unique: true,
-    index: true
+const DailyActivitySchema = new Schema(
+  {
+    questionsReviewed: { type: Number, default: 0 },
+    xpEarned: { type: Number, default: 0 },
+    correctCount: { type: Number, default: 0 },
+    totalCount: { type: Number, default: 0 },
   },
+  { _id: false },
+);
 
-  // Streaks
-  currentStreak: { type: Number, default: 0 },
-  longestStreak: { type: Number, default: 0 },
-  lastActiveDate: { type: Date, default: Date.now },
-  streakFreezeCount: { type: Number, default: 0 },
+const UserProgressSchema = new Schema<IUserProgress>(
+  {
+    userId: {
+      type: String,
+      required: true,
+      unique: true,
+      index: true,
+    },
 
-  // XP & Level
-  totalXp: { type: Number, default: 0 },
-  level: { type: Number, default: 1 }, // Deprecated
+    // Streaks
+    currentStreak: { type: Number, default: 0 },
+    longestStreak: { type: Number, default: 0 },
+    lastActiveDate: { type: Date, default: Date.now },
+    streakFreezeCount: { type: Number, default: 0 },
 
-  // Stats
-  totalQuestionsLearned: { type: Number, default: 0 },
-  totalQuizzesTaken: { type: Number, default: 0 },
-  totalReviewSessions: { type: Number, default: 0 },
-  lastSessionDate: { type: Date, default: null },
-  averageAccuracy: { type: Number, default: 0 },
+    // XP & Level
+    totalXp: { type: Number, default: 0 },
+    level: { type: Number, default: 1 }, // Deprecated
 
-  // Weekly activity
-  weeklyActivity: {
-    type: Map,
-    of: DailyActivitySchema,
-    default: {}
-  }
-}, {
-  timestamps: true
-});
+    // Stats
+    totalQuestionsLearned: { type: Number, default: 0 },
+    totalQuizzesTaken: { type: Number, default: 0 },
+    totalReviewSessions: { type: Number, default: 0 },
+    lastSessionDate: { type: Date, default: null },
+    averageAccuracy: { type: Number, default: 0 },
 
-export default mongoose.models.UserProgress || mongoose.model<IUserProgress>('UserProgress', UserProgressSchema);
+    // Weekly activity
+    weeklyActivity: {
+      type: Map,
+      of: DailyActivitySchema,
+      default: {},
+    },
+  },
+  {
+    timestamps: true,
+  },
+);
+
+export default mongoose.models.UserProgress ||
+  mongoose.model<IUserProgress>('UserProgress', UserProgressSchema);

@@ -12,17 +12,20 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
 }
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({
-    className,
-    variant = 'default',
-    inputSize = 'md',
-    error,
-    label,
-    icon,
-    iconPosition = 'left',
-    id,
-    ...props
-  }, ref) => {
+  (
+    {
+      className,
+      variant: _variant = 'default',
+      inputSize = 'md',
+      error,
+      label,
+      icon,
+      iconPosition = 'left',
+      id,
+      ...props
+    },
+    ref,
+  ) => {
     const inputId = id || label?.toLowerCase().replace(/\s+/g, '-');
 
     const iconSizes = {
@@ -45,9 +48,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         <div className="relative">
           {icon && iconPosition === 'left' && (
             <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400">
-              <div className={iconSizes[inputSize]}>
-                {icon}
-              </div>
+              <div className={iconSizes[inputSize]}>{icon}</div>
             </div>
           )}
 
@@ -59,8 +60,9 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
               inputSize === 'lg' && 'h-[52px] text-[16px]',
               icon && iconPosition === 'left' && 'pl-10',
               icon && iconPosition === 'right' && 'pr-10',
-              error && 'border-red-500 focus:border-red-500 focus:shadow-[0_0_0_3px_rgba(229,72,77,0.22)]',
-              className
+              error &&
+                'border-red-500 focus:border-red-500 focus:shadow-[0_0_0_3px_rgba(229,72,77,0.22)]',
+              className,
             )}
             ref={ref}
             {...props}
@@ -68,9 +70,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
 
           {icon && iconPosition === 'right' && (
             <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-neutral-400">
-              <div className={iconSizes[inputSize]}>
-                {icon}
-              </div>
+              <div className={iconSizes[inputSize]}>{icon}</div>
             </div>
           )}
         </div>
@@ -83,7 +83,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         )}
       </div>
     );
-  }
+  },
 );
 
 Input.displayName = 'Input';
@@ -96,7 +96,7 @@ const Textarea = React.forwardRef<
     error?: string;
     label?: string;
   }
->(({ className, variant = 'default', error, label, id, ...props }, ref) => {
+>(({ className, variant: _variant = 'default', error, label, id, ...props }, ref) => {
   const textareaId = id || label?.toLowerCase().replace(/\s+/g, '-');
 
   return (
@@ -114,8 +114,9 @@ const Textarea = React.forwardRef<
         id={textareaId}
         className={cn(
           'input !h-auto min-h-[100px] py-3 resize-y',
-          error && 'border-red-500 focus:border-red-500 focus:shadow-[0_0_0_3px_rgba(229,72,77,0.22)]',
-          className
+          error &&
+            'border-red-500 focus:border-red-500 focus:shadow-[0_0_0_3px_rgba(229,72,77,0.22)]',
+          className,
         )}
         ref={ref}
         {...props}
@@ -133,4 +134,4 @@ const Textarea = React.forwardRef<
 
 Textarea.displayName = 'Textarea';
 
-export { Input, Textarea }; 
+export { Input, Textarea };

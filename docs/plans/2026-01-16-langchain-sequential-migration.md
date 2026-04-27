@@ -12,26 +12,28 @@
 
 ## Files Overview
 
-| File | Action | Description |
-|------|--------|-------------|
-| `package.json` | Modify | Add LangChain dependencies |
-| `src/lib/langchain.ts` | Create | New LangChain service with key rotation |
-| `src/lib/gemini.ts` | Modify | Refactor to use LangChain, sequential processing |
-| `src/lib/pdfProcessor.ts` | Keep | No changes needed (utility functions) |
-| `src/services/largeFileUploadService.ts` | Modify | Remove parallel, use sequential |
-| `src/app/api/quiz/ask-ai/route.ts` | Modify | Use LangChain ChatGoogleGenerativeAI |
-| `src/app/api/quizzes/preview/route.ts` | Modify | Update imports, remove parallel file processing |
+| File                                     | Action | Description                                      |
+| ---------------------------------------- | ------ | ------------------------------------------------ |
+| `package.json`                           | Modify | Add LangChain dependencies                       |
+| `src/lib/langchain.ts`                   | Create | New LangChain service with key rotation          |
+| `src/lib/gemini.ts`                      | Modify | Refactor to use LangChain, sequential processing |
+| `src/lib/pdfProcessor.ts`                | Keep   | No changes needed (utility functions)            |
+| `src/services/largeFileUploadService.ts` | Modify | Remove parallel, use sequential                  |
+| `src/app/api/quiz/ask-ai/route.ts`       | Modify | Use LangChain ChatGoogleGenerativeAI             |
+| `src/app/api/quizzes/preview/route.ts`   | Modify | Update imports, remove parallel file processing  |
 
 ---
 
 ### Task 1: Install LangChain Dependencies
 
 **Files:**
+
 - Modify: `package.json`
 
 **Step 1: Install LangChain packages**
 
 Run:
+
 ```bash
 cd /home/linh/Downloads/rinkuzu && npm install @langchain/google-genai @langchain/core
 ```
@@ -41,6 +43,7 @@ Expected: Packages installed successfully, package.json updated
 **Step 2: Verify installation**
 
 Run:
+
 ```bash
 cat /home/linh/Downloads/rinkuzu/package.json | grep -A2 "@langchain"
 ```
@@ -59,6 +62,7 @@ git commit -m "deps: add @langchain/google-genai and @langchain/core"
 ### Task 2: Create LangChain Service with Key Rotation
 
 **Files:**
+
 - Create: `src/lib/langchain.ts`
 
 **Step 1: Create the LangChain service file**
@@ -72,7 +76,7 @@ if (!process.env.GEMINI_KEYS) {
   throw new Error('Please add your GEMINI_KEYS to .env.local');
 }
 
-const keys = process.env.GEMINI_KEYS!.split(',').map(k => k.trim());
+const keys = process.env.GEMINI_KEYS!.split(',').map((k) => k.trim());
 let keyIndex = 0;
 
 /**
@@ -116,6 +120,7 @@ export { HumanMessage, SystemMessage, AIMessage };
 **Step 2: Verify file created**
 
 Run:
+
 ```bash
 test -f /home/linh/Downloads/rinkuzu/src/lib/langchain.ts && echo "File exists"
 ```
@@ -134,6 +139,7 @@ git commit -m "feat: create LangChain service with key rotation"
 ### Task 3: Refactor gemini.ts - Core Extraction Function
 
 **Files:**
+
 - Modify: `src/lib/gemini.ts`
 
 **Step 1: Replace the entire gemini.ts with LangChain-based implementation**
@@ -146,7 +152,7 @@ import { PDFDocument } from 'pdf-lib';
 
 // Polyfill for Promise.withResolvers if not available (Node.js < v22)
 if (!(Promise as any).withResolvers) {
-  (Promise as any).withResolvers = function() {
+  (Promise as any).withResolvers = function () {
     let resolve: any, reject: any;
     const promise = new Promise((res, rej) => {
       resolve = res;
@@ -222,7 +228,10 @@ Answer Formatting Rules:
 /**
  * Extract questions from PDF using LangChain with retry logic
  */
-export async function extractQuestionsFromPdf(buffer: Buffer | string, maxRetries: number = 3): Promise<any[]> {
+export async function extractQuestionsFromPdf(
+  buffer: Buffer | string,
+  maxRetries: number = 3,
+): Promise<any[]> {
   const maxAttempts = Math.min(getKeysCount(), maxRetries);
 
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
@@ -235,7 +244,7 @@ export async function extractQuestionsFromPdf(buffer: Buffer | string, maxRetrie
         // Handle URL/text case
         messageContent = [
           { type: 'text', text: EXTRACTION_PROMPT },
-          { type: 'text', text: `Content: ${buffer}` }
+          { type: 'text', text: `Content: ${buffer}` },
         ];
       } else {
         // Handle PDF buffer case
@@ -246,16 +255,15 @@ export async function extractQuestionsFromPdf(buffer: Buffer | string, maxRetrie
             type: 'media',
             mimeType: 'application/pdf',
             data: base64Data,
-          }
+          },
         ];
       }
 
       const message = new HumanMessage({ content: messageContent });
       const result = await model.invoke([message]);
 
-      const text = typeof result.content === 'string'
-        ? result.content
-        : JSON.stringify(result.content);
+      const text =
+        typeof result.content === 'string' ? result.content : JSON.stringify(result.content);
 
       console.log('🤖 LangChain AI Response:', text);
 
@@ -285,11 +293,19 @@ export async function extractQuestionsFromPdf(buffer: Buffer | string, maxRetrie
             throw new Error('Invalid type');
           }
           if (q.type === 'single') {
-            if (typeof q.correctIndex !== 'number' || q.correctIndex < 0 || q.correctIndex >= q.options.length) {
+            if (
+              typeof q.correctIndex !== 'number' ||
+              q.correctIndex < 0 ||
+              q.correctIndex >= q.options.length
+            ) {
               throw new Error('Invalid correctIndex');
             }
           } else {
-            if (!Array.isArray(q.correctIndexes) || q.correctIndexes.length === 0 || q.correctIndexes.some((idx: number) => idx < 0 || idx >= q.options.length)) {
+            if (
+              !Array.isArray(q.correctIndexes) ||
+              q.correctIndexes.length === 0 ||
+              q.correctIndexes.some((idx: number) => idx < 0 || idx >= q.options.length)
+            ) {
               throw new Error('Invalid correctIndexes');
             }
           }
@@ -305,21 +321,25 @@ export async function extractQuestionsFromPdf(buffer: Buffer | string, maxRetrie
       }
 
       return validQuestions;
-
     } catch (error: any) {
       console.error(`Attempt ${attempt + 1} failed:`, error.message);
 
       // If the error is about invalid JSON or format, do not retry further
-      if (error.message?.includes('No valid JSON') || error.message?.includes('Invalid questions format')) {
+      if (
+        error.message?.includes('No valid JSON') ||
+        error.message?.includes('Invalid questions format')
+      ) {
         throw error;
       }
 
       if (attempt === maxAttempts - 1) {
-        throw new Error(`Failed to extract questions after ${maxAttempts} attempts: ${error.message}`);
+        throw new Error(
+          `Failed to extract questions after ${maxAttempts} attempts: ${error.message}`,
+        );
       }
 
       // Wait a bit before retrying
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
     }
   }
 
@@ -348,9 +368,7 @@ export async function generateQuizTitle(content: string): Promise<string> {
     const message = new HumanMessage(prompt);
     const result = await model.invoke([message]);
 
-    return typeof result.content === 'string'
-      ? result.content.trim()
-      : 'Generated Quiz';
+    return typeof result.content === 'string' ? result.content.trim() : 'Generated Quiz';
   } catch (error) {
     return 'Generated Quiz';
   }
@@ -367,18 +385,22 @@ export async function extractQuestionsFromPdfChunks(chunks: PDFChunk[]): Promise
 
   // Process chunks one by one (sequential)
   for (const chunk of chunks) {
-    console.log(`📋 Processing chunk ${chunk.chunkIndex} (pages ${chunk.startPage}-${chunk.endPage})...`);
+    console.log(
+      `📋 Processing chunk ${chunk.chunkIndex} (pages ${chunk.startPage}-${chunk.endPage})...`,
+    );
 
     try {
       const questions = await extractQuestionsFromPdf(chunk.buffer, 2);
 
-      console.log(`✅ Chunk ${chunk.chunkIndex} completed: ${questions.length} questions extracted`);
+      console.log(
+        `✅ Chunk ${chunk.chunkIndex} completed: ${questions.length} questions extracted`,
+      );
 
       results.push({
         questions,
         chunkIndex: chunk.chunkIndex,
         startPage: chunk.startPage,
-        endPage: chunk.endPage
+        endPage: chunk.endPage,
       });
     } catch (error) {
       console.error(`❌ Chunk ${chunk.chunkIndex} failed:`, error);
@@ -386,12 +408,12 @@ export async function extractQuestionsFromPdfChunks(chunks: PDFChunk[]): Promise
         questions: [],
         chunkIndex: chunk.chunkIndex,
         startPage: chunk.startPage,
-        endPage: chunk.endPage
+        endPage: chunk.endPage,
       });
     }
 
     // Small delay between chunks to avoid rate limiting
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise((resolve) => setTimeout(resolve, 500));
   }
 
   const processingTime = Date.now() - startTime;
@@ -400,7 +422,9 @@ export async function extractQuestionsFromPdfChunks(chunks: PDFChunk[]): Promise
   // Merge results and remove duplicates
   const mergedQuestions = mergeChunkResults(results);
 
-  console.log(`📊 Final result: ${mergedQuestions.length} unique questions from ${chunks.length} chunks`);
+  console.log(
+    `📊 Final result: ${mergedQuestions.length} unique questions from ${chunks.length} chunks`,
+  );
 
   return mergedQuestions;
 }
@@ -411,7 +435,7 @@ export async function extractQuestionsFromPdfChunks(chunks: PDFChunk[]): Promise
  */
 export async function extractQuestionsFromPdfOptimized(
   buffer: Buffer,
-  forceChunking: boolean = false
+  forceChunking: boolean = false,
 ): Promise<any[]> {
   const fileSize = buffer.length;
   const fileSizeMB = fileSize / (1024 * 1024);
@@ -449,7 +473,6 @@ export async function extractQuestionsFromPdfOptimized(
 
     // Process chunks SEQUENTIALLY
     return await extractQuestionsFromPdfChunks(chunks);
-
   } catch (error) {
     console.error('❌ Chunked processing failed, falling back to standard processing:', error);
     // Fallback to standard processing
@@ -461,6 +484,7 @@ export async function extractQuestionsFromPdfOptimized(
 **Step 2: Verify file updated**
 
 Run:
+
 ```bash
 grep -c "SEQUENTIAL" /home/linh/Downloads/rinkuzu/src/lib/gemini.ts
 ```
@@ -479,6 +503,7 @@ git commit -m "refactor: migrate gemini.ts to LangChain with sequential processi
 ### Task 4: Update largeFileUploadService.ts - Remove Parallel Processing
 
 **Files:**
+
 - Modify: `src/services/largeFileUploadService.ts`
 
 **Step 1: Replace the entire file with sequential processing version**
@@ -498,111 +523,118 @@ git commit -m "refactor: migrate gemini.ts to LangChain with sequential processi
  * - Real-time progress tracking
  */
 
-import { Question } from '@/types/quiz'
+import { Question } from '@/types/quiz';
 
 export interface UploadProgress {
-  currentChunk: number
-  totalChunks: number
-  currentFile: number
-  totalFiles: number
-  fileName: string
-  status: 'uploading' | 'processing' | 'completed' | 'error'
-  message: string
+  currentChunk: number;
+  totalChunks: number;
+  currentFile: number;
+  totalFiles: number;
+  fileName: string;
+  status: 'uploading' | 'processing' | 'completed' | 'error';
+  message: string;
 }
 
 export interface ChunkResult {
-  questions: Question[]
-  chunkIndex: number
-  fileName: string
-  success: boolean
-  error?: string
+  questions: Question[];
+  chunkIndex: number;
+  fileName: string;
+  success: boolean;
+  error?: string;
 }
 
-const CHUNK_SIZE = 4 // 4 pages per chunk
-const OVERLAP_PAGES = 1 // 1 page overlap
-const MAX_RETRIES = 3 // Maximum number of retries per chunk
-const INITIAL_RETRY_DELAY = 1000 // Initial delay in ms
-const RETRY_DELAY_MULTIPLIER = 2 // Multiply delay by this factor on each retry
-const CHUNK_DELAY = 500 // Delay between chunks in ms
+const CHUNK_SIZE = 4; // 4 pages per chunk
+const OVERLAP_PAGES = 1; // 1 page overlap
+const MAX_RETRIES = 3; // Maximum number of retries per chunk
+const INITIAL_RETRY_DELAY = 1000; // Initial delay in ms
+const RETRY_DELAY_MULTIPLIER = 2; // Multiply delay by this factor on each retry
+const CHUNK_DELAY = 500; // Delay between chunks in ms
 
 export interface ProcessingOptions {
-  chunkSize?: number
-  overlapPages?: number
-  maxRetries?: number
-  chunkDelay?: number
+  chunkSize?: number;
+  overlapPages?: number;
+  maxRetries?: number;
+  chunkDelay?: number;
 }
 
 /**
  * Sleep function for delays
  */
 function sleep(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms))
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /**
  * Split PDF into chunks by pages using pdf-lib
  */
-async function splitPdfIntoPageChunks(file: File, chunkSize: number, overlapPages: number): Promise<{ chunks: Blob[], pageRanges: { start: number, end: number }[] }> {
+async function splitPdfIntoPageChunks(
+  file: File,
+  chunkSize: number,
+  overlapPages: number,
+): Promise<{ chunks: Blob[]; pageRanges: { start: number; end: number }[] }> {
   try {
     // Dynamic import for pdf-lib
-    const { PDFDocument } = await import('pdf-lib')
+    const { PDFDocument } = await import('pdf-lib');
 
-    const arrayBuffer = await file.arrayBuffer()
-    const pdfDoc = await PDFDocument.load(arrayBuffer)
-    const totalPages = pdfDoc.getPageCount()
+    const arrayBuffer = await file.arrayBuffer();
+    const pdfDoc = await PDFDocument.load(arrayBuffer);
+    const totalPages = pdfDoc.getPageCount();
 
-    console.log(`📄 PDF has ${totalPages} pages, splitting into chunks of ${chunkSize} with ${overlapPages} overlap`)
+    console.log(
+      `📄 PDF has ${totalPages} pages, splitting into chunks of ${chunkSize} with ${overlapPages} overlap`,
+    );
 
-    const chunks: Blob[] = []
-    const pageRanges: { start: number, end: number }[] = []
+    const chunks: Blob[] = [];
+    const pageRanges: { start: number; end: number }[] = [];
 
     // If PDF is small, don't split
     if (totalPages <= chunkSize) {
-      const chunk = new Blob([arrayBuffer], { type: 'application/pdf' })
-      chunks.push(chunk)
-      pageRanges.push({ start: 1, end: totalPages })
-      return { chunks, pageRanges }
+      const chunk = new Blob([arrayBuffer], { type: 'application/pdf' });
+      chunks.push(chunk);
+      pageRanges.push({ start: 1, end: totalPages });
+      return { chunks, pageRanges };
     }
 
     // Create overlapping chunks by pages
-    let startPage = 1
-    let chunkIndex = 0
+    let startPage = 1;
+    let chunkIndex = 0;
 
     while (startPage <= totalPages) {
-      const endPage = Math.min(startPage + chunkSize - 1, totalPages)
+      const endPage = Math.min(startPage + chunkSize - 1, totalPages);
 
       // Create new PDF with selected pages
-      const newPdf = await PDFDocument.create()
+      const newPdf = await PDFDocument.create();
 
       // Copy pages (PDF pages are 0-indexed but our input is 1-indexed)
       for (let i = startPage - 1; i < endPage; i++) {
         if (i < pdfDoc.getPageCount()) {
-          const [copiedPage] = await newPdf.copyPages(pdfDoc, [i])
-          newPdf.addPage(copiedPage)
+          const [copiedPage] = await newPdf.copyPages(pdfDoc, [i]);
+          newPdf.addPage(copiedPage);
         }
       }
 
-      const newPdfBytes = await newPdf.save()
-      const chunk = new Blob([newPdfBytes], { type: 'application/pdf' })
+      const newPdfBytes = await newPdf.save();
+      const chunk = new Blob([newPdfBytes], { type: 'application/pdf' });
 
-      chunks.push(chunk)
-      pageRanges.push({ start: startPage, end: endPage })
+      chunks.push(chunk);
+      pageRanges.push({ start: startPage, end: endPage });
 
-      console.log(`📋 Created chunk ${chunkIndex + 1}: pages ${startPage}-${endPage}`)
+      console.log(`📋 Created chunk ${chunkIndex + 1}: pages ${startPage}-${endPage}`);
 
       // Move to next chunk with overlap
-      startPage = endPage - overlapPages + 1
-      chunkIndex++
+      startPage = endPage - overlapPages + 1;
+      chunkIndex++;
 
       // Break if we've reached the end
-      if (endPage >= totalPages) break
+      if (endPage >= totalPages) break;
     }
 
-    return { chunks, pageRanges }
-
+    return { chunks, pageRanges };
   } catch (error) {
-    console.error('❌ Error splitting PDF by pages:', error)
-    throw new Error(`Failed to split PDF by pages: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    console.error('❌ Error splitting PDF by pages:', error);
+    throw new Error(
+      `Failed to split PDF by pages: ${error instanceof Error ? error.message : 'Unknown error'}`,
+    );
   }
 }
 
@@ -613,20 +645,20 @@ function createQuestionHash(question: Question): string {
   // Create a normalized version of the question for hashing
   const normalizedQuestion = {
     question: question.question.trim().toLowerCase(),
-    options: question.options.map(opt => opt.trim().toLowerCase()).sort(),
-    type: question.type
-  }
+    options: question.options.map((opt) => opt.trim().toLowerCase()).sort(),
+    type: question.type,
+  };
 
   // Simple hash function
-  const str = JSON.stringify(normalizedQuestion)
-  let hash = 0
+  const str = JSON.stringify(normalizedQuestion);
+  let hash = 0;
   for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i)
-    hash = ((hash << 5) - hash) + char
-    hash = hash & hash // Convert to 32-bit integer
+    const char = str.charCodeAt(i);
+    hash = (hash << 5) - hash + char;
+    hash = hash & hash; // Convert to 32-bit integer
   }
 
-  return hash.toString()
+  return hash.toString();
 }
 
 /**
@@ -639,25 +671,29 @@ function createChunkFormData(
   fileName: string,
   title: string,
   description: string,
-  pageRange: { start: number, end: number }
+  pageRange: { start: number; end: number },
 ): FormData {
-  const formData = new FormData()
+  const formData = new FormData();
 
   // Create a new File object from the chunk with proper name
-  const chunkFile = new File([chunk], `${fileName}_chunk_${chunkIndex + 1}_pages_${pageRange.start}-${pageRange.end}.pdf`, {
-    type: 'application/pdf'
-  })
+  const chunkFile = new File(
+    [chunk],
+    `${fileName}_chunk_${chunkIndex + 1}_pages_${pageRange.start}-${pageRange.end}.pdf`,
+    {
+      type: 'application/pdf',
+    },
+  );
 
-  formData.append('pdfFile_0', chunkFile)
-  formData.append('fileCount', '1')
-  formData.append('title', title)
-  formData.append('description', description)
-  formData.append('chunkIndex', chunkIndex.toString())
-  formData.append('totalChunks', totalChunks.toString())
-  formData.append('originalFileName', fileName)
-  formData.append('pageRange', JSON.stringify(pageRange))
+  formData.append('pdfFile_0', chunkFile);
+  formData.append('fileCount', '1');
+  formData.append('title', title);
+  formData.append('description', description);
+  formData.append('chunkIndex', chunkIndex.toString());
+  formData.append('totalChunks', totalChunks.toString());
+  formData.append('originalFileName', fileName);
+  formData.append('pageRange', JSON.stringify(pageRange));
 
-  return formData
+  return formData;
 }
 
 /**
@@ -666,13 +702,13 @@ function createChunkFormData(
 async function uploadChunkWithRetry(
   formData: FormData,
   onProgress?: (progress: UploadProgress) => void,
-  maxRetries: number = MAX_RETRIES
+  maxRetries: number = MAX_RETRIES,
 ): Promise<ChunkResult> {
-  const chunkIndex = parseInt(formData.get('chunkIndex') as string)
-  const fileName = formData.get('originalFileName') as string
-  const pageRange = JSON.parse(formData.get('pageRange') as string)
+  const chunkIndex = parseInt(formData.get('chunkIndex') as string);
+  const fileName = formData.get('originalFileName') as string;
+  const pageRange = JSON.parse(formData.get('pageRange') as string);
 
-  let lastError: string = ''
+  let lastError: string = '';
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
@@ -683,25 +719,26 @@ async function uploadChunkWithRetry(
         totalFiles: 1,
         fileName,
         status: attempt === 0 ? 'uploading' : 'processing',
-        message: attempt === 0
-          ? `Uploading chunk ${chunkIndex + 1} (pages ${pageRange.start}-${pageRange.end})...`
-          : `Retrying chunk ${chunkIndex + 1} (attempt ${attempt + 1}/${maxRetries + 1})...`
-      })
+        message:
+          attempt === 0
+            ? `Uploading chunk ${chunkIndex + 1} (pages ${pageRange.start}-${pageRange.end})...`
+            : `Retrying chunk ${chunkIndex + 1} (attempt ${attempt + 1}/${maxRetries + 1})...`,
+      });
 
       const response = await fetch('/api/quizzes/preview', {
         method: 'POST',
         body: formData,
         signal: AbortSignal.timeout(300000), // 5 minutes timeout
-      })
+      });
 
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      const data = await response.json()
+      const data = await response.json();
 
       if (!data.success) {
-        throw new Error(data.error || 'Failed to extract questions from chunk')
+        throw new Error(data.error || 'Failed to extract questions from chunk');
       }
 
       onProgress?.({
@@ -711,54 +748,57 @@ async function uploadChunkWithRetry(
         totalFiles: 1,
         fileName,
         status: 'processing',
-        message: `Processing chunk ${chunkIndex + 1} (pages ${pageRange.start}-${pageRange.end})...`
-      })
+        message: `Processing chunk ${chunkIndex + 1} (pages ${pageRange.start}-${pageRange.end})...`,
+      });
 
       // Process questions to ensure correct format
       const processedQuestions = data.data.questions.map((q: any) => {
-        const questionType = q.type || 'single'
+        const questionType = q.type || 'single';
         let processedQuestion: Question = {
           question: q.question,
           options: q.options,
-          type: questionType
-        }
+          type: questionType,
+        };
 
         if (questionType === 'single') {
-          let finalCorrectAnswer = q.correctAnswer
+          let finalCorrectAnswer = q.correctAnswer;
 
           if (typeof finalCorrectAnswer === 'undefined') {
             if (typeof q.correctIndex === 'number') {
-              finalCorrectAnswer = q.correctIndex
+              finalCorrectAnswer = q.correctIndex;
             } else if (typeof q.originalCorrectIndex === 'number') {
-              finalCorrectAnswer = q.originalCorrectIndex
+              finalCorrectAnswer = q.originalCorrectIndex;
             } else {
-              finalCorrectAnswer = 0
+              finalCorrectAnswer = 0;
             }
           }
 
-          processedQuestion.correctIndex = finalCorrectAnswer
+          processedQuestion.correctIndex = finalCorrectAnswer;
         } else {
-          processedQuestion.correctIndexes = q.correctIndexes || q.correctAnswers || []
+          processedQuestion.correctIndexes = q.correctIndexes || q.correctAnswers || [];
         }
 
-        return processedQuestion
-      })
+        return processedQuestion;
+      });
 
-      console.log(`✅ Chunk ${chunkIndex + 1} (pages ${pageRange.start}-${pageRange.end}) processed successfully`)
+      console.log(
+        `✅ Chunk ${chunkIndex + 1} (pages ${pageRange.start}-${pageRange.end}) processed successfully`,
+      );
 
       return {
         questions: processedQuestions,
         chunkIndex,
         fileName,
-        success: true
-      }
-
+        success: true,
+      };
     } catch (error) {
-      lastError = error instanceof Error ? error.message : 'Unknown error'
+      lastError = error instanceof Error ? error.message : 'Unknown error';
 
       if (attempt < maxRetries) {
-        const delay = INITIAL_RETRY_DELAY * Math.pow(RETRY_DELAY_MULTIPLIER, attempt)
-        console.warn(`⚠️ Chunk ${chunkIndex + 1} failed (attempt ${attempt + 1}/${maxRetries + 1}): ${lastError}. Retrying in ${delay}ms...`)
+        const delay = INITIAL_RETRY_DELAY * Math.pow(RETRY_DELAY_MULTIPLIER, attempt);
+        console.warn(
+          `⚠️ Chunk ${chunkIndex + 1} failed (attempt ${attempt + 1}/${maxRetries + 1}): ${lastError}. Retrying in ${delay}ms...`,
+        );
 
         onProgress?.({
           currentChunk: chunkIndex + 1,
@@ -767,12 +807,14 @@ async function uploadChunkWithRetry(
           totalFiles: 1,
           fileName,
           status: 'error',
-          message: `Chunk ${chunkIndex + 1} failed, retrying in ${delay/1000}s... (${lastError})`
-        })
+          message: `Chunk ${chunkIndex + 1} failed, retrying in ${delay / 1000}s... (${lastError})`,
+        });
 
-        await sleep(delay)
+        await sleep(delay);
       } else {
-        console.error(`❌ Chunk ${chunkIndex + 1} failed after ${maxRetries + 1} attempts: ${lastError}`)
+        console.error(
+          `❌ Chunk ${chunkIndex + 1} failed after ${maxRetries + 1} attempts: ${lastError}`,
+        );
       }
     }
   }
@@ -782,42 +824,46 @@ async function uploadChunkWithRetry(
     chunkIndex,
     fileName,
     success: false,
-    error: `Failed after ${maxRetries + 1} attempts: ${lastError}`
-  }
+    error: `Failed after ${maxRetries + 1} attempts: ${lastError}`,
+  };
 }
 
 /**
  * Merge questions from multiple chunks, removing duplicates using hash
  */
 function mergeQuestionsFromChunks(chunkResults: ChunkResult[]): Question[] {
-  const allQuestions: Question[] = []
-  const seenHashes = new Set<string>()
+  const allQuestions: Question[] = [];
+  const seenHashes = new Set<string>();
 
   // Sort by chunk index to maintain order
   const sortedResults = chunkResults
-    .filter(result => result.success)
-    .sort((a, b) => a.chunkIndex - b.chunkIndex)
+    .filter((result) => result.success)
+    .sort((a, b) => a.chunkIndex - b.chunkIndex);
 
-  console.log(`🔄 Merging ${sortedResults.length} chunks with duplicate removal...`)
+  console.log(`🔄 Merging ${sortedResults.length} chunks with duplicate removal...`);
 
   for (const result of sortedResults) {
-    console.log(`📋 Processing chunk ${result.chunkIndex + 1}: ${result.questions.length} questions`)
+    console.log(
+      `📋 Processing chunk ${result.chunkIndex + 1}: ${result.questions.length} questions`,
+    );
 
     for (const question of result.questions) {
-      const questionHash = createQuestionHash(question)
+      const questionHash = createQuestionHash(question);
 
       if (!seenHashes.has(questionHash)) {
-        seenHashes.add(questionHash)
-        allQuestions.push(question)
-        console.log(`✅ Added question: "${question.question.substring(0, 50)}..."`)
+        seenHashes.add(questionHash);
+        allQuestions.push(question);
+        console.log(`✅ Added question: "${question.question.substring(0, 50)}..."`);
       } else {
-        console.log(`🚫 Skipped duplicate: "${question.question.substring(0, 50)}..."`)
+        console.log(`🚫 Skipped duplicate: "${question.question.substring(0, 50)}..."`);
       }
     }
   }
 
-  console.log(`🎯 Final result: ${allQuestions.length} unique questions from ${sortedResults.length} chunks`)
-  return allQuestions
+  console.log(
+    `🎯 Final result: ${allQuestions.length} unique questions from ${sortedResults.length} chunks`,
+  );
+  return allQuestions;
 }
 
 /**
@@ -825,19 +871,19 @@ function mergeQuestionsFromChunks(chunkResults: ChunkResult[]): Question[] {
  */
 async function processChunksSequentially(
   chunks: Blob[],
-  pageRanges: { start: number, end: number }[],
+  pageRanges: { start: number; end: number }[],
   fileName: string,
   title: string,
   description: string,
   onProgress?: (progress: UploadProgress) => void,
   maxRetries: number = MAX_RETRIES,
-  chunkDelay: number = CHUNK_DELAY
+  chunkDelay: number = CHUNK_DELAY,
 ): Promise<ChunkResult[]> {
-  const results: ChunkResult[] = []
-  let successfulChunks = 0
-  let failedChunks = 0
+  const results: ChunkResult[] = [];
+  let successfulChunks = 0;
+  let failedChunks = 0;
 
-  console.log(`🔄 Starting SEQUENTIAL processing of ${chunks.length} chunks`)
+  console.log(`🔄 Starting SEQUENTIAL processing of ${chunks.length} chunks`);
 
   onProgress?.({
     currentChunk: 0,
@@ -846,12 +892,12 @@ async function processChunksSequentially(
     totalFiles: 1,
     fileName,
     status: 'uploading',
-    message: `Starting sequential processing of ${chunks.length} chunks...`
-  })
+    message: `Starting sequential processing of ${chunks.length} chunks...`,
+  });
 
   for (let chunkIndex = 0; chunkIndex < chunks.length; chunkIndex++) {
-    const chunk = chunks[chunkIndex]
-    const pageRange = pageRanges[chunkIndex]
+    const chunk = chunks[chunkIndex];
+    const pageRange = pageRanges[chunkIndex];
 
     const formData = createChunkFormData(
       chunk,
@@ -860,25 +906,29 @@ async function processChunksSequentially(
       fileName,
       title,
       description,
-      pageRange
-    )
+      pageRange,
+    );
 
     try {
-      const result = await uploadChunkWithRetry(formData, (progress) => {
-        onProgress?.({
-          ...progress,
-          currentChunk: chunkIndex + 1,
-          totalChunks: chunks.length,
-          message: `${progress.message} (${chunkIndex + 1}/${chunks.length} chunks)`
-        })
-      }, maxRetries)
+      const result = await uploadChunkWithRetry(
+        formData,
+        (progress) => {
+          onProgress?.({
+            ...progress,
+            currentChunk: chunkIndex + 1,
+            totalChunks: chunks.length,
+            message: `${progress.message} (${chunkIndex + 1}/${chunks.length} chunks)`,
+          });
+        },
+        maxRetries,
+      );
 
-      results.push(result)
+      results.push(result);
 
       if (result.success) {
-        successfulChunks++
+        successfulChunks++;
       } else {
-        failedChunks++
+        failedChunks++;
       }
 
       onProgress?.({
@@ -888,29 +938,30 @@ async function processChunksSequentially(
         totalFiles: 1,
         fileName,
         status: 'processing',
-        message: `Completed ${chunkIndex + 1}/${chunks.length} chunks (${successfulChunks} success, ${failedChunks} failed)`
-      })
+        message: `Completed ${chunkIndex + 1}/${chunks.length} chunks (${successfulChunks} success, ${failedChunks} failed)`,
+      });
 
       // Add delay between chunks to avoid rate limiting
       if (chunkIndex < chunks.length - 1) {
-        await sleep(chunkDelay)
+        await sleep(chunkDelay);
       }
-
     } catch (error) {
-      console.error(`❌ Unexpected error processing chunk ${chunkIndex + 1}:`, error)
+      console.error(`❌ Unexpected error processing chunk ${chunkIndex + 1}:`, error);
       results.push({
         questions: [],
         chunkIndex,
         fileName,
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error'
-      })
-      failedChunks++
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+      failedChunks++;
     }
   }
 
-  console.log(`✅ All ${chunks.length} chunks processed sequentially: ${successfulChunks} success, ${failedChunks} failed`)
-  return results
+  console.log(
+    `✅ All ${chunks.length} chunks processed sequentially: ${successfulChunks} success, ${failedChunks} failed`,
+  );
+  return results;
 }
 
 /**
@@ -921,30 +972,30 @@ export async function extractQuestionsFromLargePDF(
   title: string,
   description: string,
   onProgress?: (progress: UploadProgress) => void,
-  options?: ProcessingOptions
+  options?: ProcessingOptions,
 ): Promise<{
-  title: string
-  description: string
-  questions: Question[]
-  fileNames: string[]
+  title: string;
+  description: string;
+  questions: Question[];
+  fileNames: string[];
 }> {
   // Use provided options or defaults
   const config = {
     chunkSize: options?.chunkSize ?? CHUNK_SIZE,
     overlapPages: options?.overlapPages ?? OVERLAP_PAGES,
     maxRetries: options?.maxRetries ?? MAX_RETRIES,
-    chunkDelay: options?.chunkDelay ?? CHUNK_DELAY
-  }
+    chunkDelay: options?.chunkDelay ?? CHUNK_DELAY,
+  };
 
-  console.log(`⚙️ Processing configuration (SEQUENTIAL):`, config)
+  console.log(`⚙️ Processing configuration (SEQUENTIAL):`, config);
 
-  const allQuestions: Question[] = []
-  const fileNames: string[] = []
+  const allQuestions: Question[] = [];
+  const fileNames: string[] = [];
 
   // Process files one by one (sequential)
   for (let fileIndex = 0; fileIndex < files.length; fileIndex++) {
-    const file = files[fileIndex]
-    const fileName = file.name
+    const file = files[fileIndex];
+    const fileName = file.name;
 
     onProgress?.({
       currentChunk: 0,
@@ -953,26 +1004,26 @@ export async function extractQuestionsFromLargePDF(
       totalFiles: files.length,
       fileName,
       status: 'uploading',
-      message: `Processing file ${fileIndex + 1}/${files.length}: ${fileName}`
-    })
+      message: `Processing file ${fileIndex + 1}/${files.length}: ${fileName}`,
+    });
 
     // Check if file needs to be split (larger than 4MB)
     if (file.size <= 4 * 1024 * 1024) {
       // Small file, process normally with retry
-      const formData = new FormData()
-      formData.append('pdfFile_0', file)
-      formData.append('fileCount', '1')
-      formData.append('title', title)
-      formData.append('description', description)
+      const formData = new FormData();
+      formData.append('pdfFile_0', file);
+      formData.append('fileCount', '1');
+      formData.append('title', title);
+      formData.append('description', description);
 
-      const result = await uploadChunkWithRetry(formData, onProgress, config.maxRetries)
+      const result = await uploadChunkWithRetry(formData, onProgress, config.maxRetries);
 
       if (result.success) {
-        allQuestions.push(...result.questions)
-        fileNames.push(fileName)
+        allQuestions.push(...result.questions);
+        fileNames.push(fileName);
       } else {
         // For small files, if it fails completely, throw error
-        throw new Error(`Failed to process ${fileName}: ${result.error}`)
+        throw new Error(`Failed to process ${fileName}: ${result.error}`);
       }
     } else {
       // Large file, split into page-based chunks
@@ -983,10 +1034,14 @@ export async function extractQuestionsFromLargePDF(
         totalFiles: files.length,
         fileName,
         status: 'uploading',
-        message: `Splitting ${fileName} into page-based chunks...`
-      })
+        message: `Splitting ${fileName} into page-based chunks...`,
+      });
 
-      const { chunks, pageRanges } = await splitPdfIntoPageChunks(file, config.chunkSize, config.overlapPages)
+      const { chunks, pageRanges } = await splitPdfIntoPageChunks(
+        file,
+        config.chunkSize,
+        config.overlapPages,
+      );
 
       onProgress?.({
         currentChunk: 0,
@@ -995,8 +1050,8 @@ export async function extractQuestionsFromLargePDF(
         totalFiles: files.length,
         fileName,
         status: 'uploading',
-        message: `Created ${chunks.length} chunks for ${fileName}`
-      })
+        message: `Created ${chunks.length} chunks for ${fileName}`,
+      });
 
       // Process chunks SEQUENTIALLY
       const chunkResults = await processChunksSequentially(
@@ -1007,32 +1062,34 @@ export async function extractQuestionsFromLargePDF(
         description,
         onProgress,
         config.maxRetries,
-        config.chunkDelay
-      )
+        config.chunkDelay,
+      );
 
       // Check if all chunks were successful
-      const failedChunks = chunkResults.filter(result => !result.success)
+      const failedChunks = chunkResults.filter((result) => !result.success);
       if (failedChunks.length > 0) {
         // Log failed chunks but continue if we have some successful chunks
-        const errorMessages = failedChunks.map(result =>
-          `Chunk ${result.chunkIndex + 1}: ${result.error}`
-        ).join('; ')
+        const errorMessages = failedChunks
+          .map((result) => `Chunk ${result.chunkIndex + 1}: ${result.error}`)
+          .join('; ');
 
-        console.warn(`⚠️ ${failedChunks.length} chunks failed: ${errorMessages}`)
+        console.warn(`⚠️ ${failedChunks.length} chunks failed: ${errorMessages}`);
 
         // Only throw error if ALL chunks failed
         if (failedChunks.length === chunkResults.length) {
-          throw new Error(`Failed to process ${fileName}: All chunks failed. ${errorMessages}`)
+          throw new Error(`Failed to process ${fileName}: All chunks failed. ${errorMessages}`);
         } else {
-          console.log(`✅ Continuing with ${chunkResults.length - failedChunks.length} successful chunks`)
+          console.log(
+            `✅ Continuing with ${chunkResults.length - failedChunks.length} successful chunks`,
+          );
         }
       }
 
       // Merge questions from all successful chunks with duplicate removal
-      const successfulChunks = chunkResults.filter(result => result.success)
-      const mergedQuestions = mergeQuestionsFromChunks(successfulChunks)
-      allQuestions.push(...mergedQuestions)
-      fileNames.push(fileName)
+      const successfulChunks = chunkResults.filter((result) => result.success);
+      const mergedQuestions = mergeQuestionsFromChunks(successfulChunks);
+      allQuestions.push(...mergedQuestions);
+      fileNames.push(fileName);
 
       onProgress?.({
         currentChunk: chunks.length,
@@ -1041,13 +1098,13 @@ export async function extractQuestionsFromLargePDF(
         totalFiles: files.length,
         fileName,
         status: 'completed',
-        message: `Completed processing ${fileName} (${mergedQuestions.length} unique questions extracted${failedChunks.length > 0 ? `, ${failedChunks.length} chunks skipped` : ''})`
-      })
+        message: `Completed processing ${fileName} (${mergedQuestions.length} unique questions extracted${failedChunks.length > 0 ? `, ${failedChunks.length} chunks skipped` : ''})`,
+      });
     }
 
     // Add delay between files
     if (fileIndex < files.length - 1) {
-      await sleep(config.chunkDelay)
+      await sleep(config.chunkDelay);
     }
   }
 
@@ -1058,21 +1115,22 @@ export async function extractQuestionsFromLargePDF(
     totalFiles: files.length,
     fileName: '',
     status: 'completed',
-    message: `All files processed successfully (${allQuestions.length} total unique questions)`
-  })
+    message: `All files processed successfully (${allQuestions.length} total unique questions)`,
+  });
 
   return {
     title,
     description,
     questions: allQuestions,
-    fileNames
-  }
+    fileNames,
+  };
 }
 ```
 
 **Step 2: Verify changes**
 
 Run:
+
 ```bash
 grep -c "SEQUENTIAL" /home/linh/Downloads/rinkuzu/src/services/largeFileUploadService.ts
 ```
@@ -1091,6 +1149,7 @@ git commit -m "refactor: convert largeFileUploadService to sequential processing
 ### Task 5: Update ask-ai Route to Use LangChain
 
 **Files:**
+
 - Modify: `src/app/api/quiz/ask-ai/route.ts`
 
 **Step 1: Replace the entire file with LangChain version**
@@ -1128,14 +1187,14 @@ function validateChatInput(userQuestion: string): { isValid: boolean; error?: st
     /roleplay|role\s*play/i,
     /pretend\s+to\s+be/i,
     /system\s*:|admin\s*:|root\s*:/i,
-    /<script|javascript|eval\(/i
+    /<script|javascript|eval\(/i,
   ];
 
   for (const pattern of suspiciousPatterns) {
     if (pattern.test(sanitized)) {
       return {
         isValid: false,
-        error: 'Rin-chan only helps with quiz questions. Please ask about the specific quiz topic!'
+        error: 'Rin-chan only helps with quiz questions. Please ask about the specific quiz topic!',
       };
     }
   }
@@ -1144,14 +1203,15 @@ function validateChatInput(userQuestion: string): { isValid: boolean; error?: st
   const offTopicPatterns = [
     /(hack|crack|break)\s+into/i,
     /personal\s+information/i,
-    /phone\s+number|address|email/i
+    /phone\s+number|address|email/i,
   ];
 
   for (const pattern of offTopicPatterns) {
     if (pattern.test(sanitized)) {
       return {
         isValid: false,
-        error: 'Rin-chan is here to help you understand quiz concepts. Please ask questions related to the quiz topic!'
+        error:
+          'Rin-chan is here to help you understand quiz concepts. Please ask questions related to the quiz topic!',
       };
     }
   }
@@ -1166,7 +1226,7 @@ async function summarizeChatHistory(chatHistory: ChatMessage[]): Promise<string>
 
     const chatText = chatHistory
       .slice(-6) // Last 3 turns (6 messages)
-      .map(msg => `${msg.role}: ${msg.content}`)
+      .map((msg) => `${msg.role}: ${msg.content}`)
       .join('\n\n');
 
     const summarizePrompt = `
@@ -1201,10 +1261,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
     const {
@@ -1213,13 +1270,13 @@ export async function POST(request: NextRequest) {
       userQuestion,
       questionImage,
       optionImages,
-      chatHistory = [] // Parameter for chat history
+      chatHistory = [], // Parameter for chat history
     } = await request.json();
 
     if (!question || !options || !Array.isArray(options)) {
       return NextResponse.json(
         { success: false, error: 'Question and options are required' },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -1227,10 +1284,7 @@ export async function POST(request: NextRequest) {
     if (userQuestion) {
       const validation = validateChatInput(userQuestion);
       if (!validation.isValid) {
-        return NextResponse.json(
-          { success: false, error: validation.error },
-          { status: 400 }
-        );
+        return NextResponse.json({ success: false, error: validation.error }, { status: 400 });
       }
     }
 
@@ -1239,7 +1293,7 @@ export async function POST(request: NextRequest) {
       question: question.substring(0, 100) + '...',
       userQuestion: userQuestion || 'General explanation',
       optionsCount: options.length,
-      chatHistoryLength: chatHistory.length
+      chatHistoryLength: chatHistory.length,
     });
 
     const maxRetries = 3;
@@ -1260,7 +1314,8 @@ export async function POST(request: NextRequest) {
 
         // Handle chat history summarization if needed
         let contextualInfo = '';
-        if (chatHistory.length > 6) { // More than 3 turns
+        if (chatHistory.length > 6) {
+          // More than 3 turns
           const summary = await summarizeChatHistory(chatHistory);
           contextualInfo = `\n\nPREVIOUS CONVERSATION SUMMARY:\n${summary}\n`;
         } else if (chatHistory.length > 0) {
@@ -1313,7 +1368,7 @@ Focus on educational value and conceptual understanding!
           if (b64) {
             messageContent.push({
               type: 'image_url',
-              image_url: { url: `data:image/jpeg;base64,${b64}` }
+              image_url: { url: `data:image/jpeg;base64,${b64}` },
             });
           }
         }
@@ -1326,7 +1381,7 @@ Focus on educational value and conceptual understanding!
             if (b64) {
               messageContent.push({
                 type: 'image_url',
-                image_url: { url: `data:image/jpeg;base64,${b64}` }
+                image_url: { url: `data:image/jpeg;base64,${b64}` },
               });
             }
           }
@@ -1335,13 +1390,14 @@ Focus on educational value and conceptual understanding!
         // Create messages array with LangChain format
         const messages = [
           new SystemMessage(systemPrompt),
-          new HumanMessage({ content: messageContent })
+          new HumanMessage({ content: messageContent }),
         ];
 
         const result = await model.invoke(messages);
-        const explanation = typeof result.content === 'string'
-          ? result.content.trim()
-          : JSON.stringify(result.content);
+        const explanation =
+          typeof result.content === 'string'
+            ? result.content.trim()
+            : JSON.stringify(result.content);
 
         console.log('✅ AI explanation generated successfully');
 
@@ -1350,29 +1406,29 @@ Focus on educational value and conceptual understanding!
           data: {
             explanation,
             timestamp: new Date().toISOString(),
-            turnCount: Math.floor(chatHistory.length / 2) + 1 // Track conversation turns
-          }
+            turnCount: Math.floor(chatHistory.length / 2) + 1, // Track conversation turns
+          },
         });
-
       } catch (error: any) {
         console.error(`Ask AI attempt ${attempt + 1} failed:`, error.message);
 
         if (attempt === maxRetries - 1) {
-          throw new Error(`Failed to get AI explanation after ${maxRetries} attempts: ${error.message}`);
+          throw new Error(
+            `Failed to get AI explanation after ${maxRetries} attempts: ${error.message}`,
+          );
         }
 
         // Wait a bit before retrying
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise((resolve) => setTimeout(resolve, 1000));
       }
     }
 
     throw new Error('All retry attempts failed');
-
   } catch (error: any) {
     console.error('Ask AI error:', error);
     return NextResponse.json(
       { success: false, error: error.message || 'Failed to get AI explanation' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -1381,6 +1437,7 @@ Focus on educational value and conceptual understanding!
 **Step 2: Verify changes**
 
 Run:
+
 ```bash
 grep "createLangChainModel" /home/linh/Downloads/rinkuzu/src/app/api/quiz/ask-ai/route.ts
 ```
@@ -1399,6 +1456,7 @@ git commit -m "refactor: migrate ask-ai route to LangChain"
 ### Task 6: Update Preview Route - Remove Parallel File Processing
 
 **Files:**
+
 - Modify: `src/app/api/quizzes/preview/route.ts`
 
 **Step 1: Update the file processing section to be sequential**
@@ -1409,7 +1467,9 @@ Find and replace the parallel processing block (lines ~122-160) with sequential 
 // Process files SEQUENTIALLY (not parallel)
 for (let index = 0; index < pdfFiles.length; index++) {
   const file = pdfFiles[index];
-  console.log(`📄 Processing file ${index + 1}/${pdfFiles.length}: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB)`);
+  console.log(
+    `📄 Processing file ${index + 1}/${pdfFiles.length}: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB)`,
+  );
 
   const buffer = Buffer.from(await file.arrayBuffer());
 
@@ -1429,7 +1489,7 @@ for (let index = 0; index < pdfFiles.length; index++) {
 
   // Small delay between files to avoid rate limiting
   if (index < pdfFiles.length - 1) {
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise((resolve) => setTimeout(resolve, 500));
   }
 }
 ```
@@ -1443,6 +1503,7 @@ processingMethod: 'sequential',
 **Step 2: Verify changes**
 
 Run:
+
 ```bash
 grep -c "Promise.all" /home/linh/Downloads/rinkuzu/src/app/api/quizzes/preview/route.ts
 ```
@@ -1461,11 +1522,13 @@ git commit -m "refactor: convert preview route to sequential file processing"
 ### Task 7: Add Question Type to types/quiz.ts (if missing)
 
 **Files:**
+
 - Check/Create: `src/types/quiz.ts`
 
 **Step 1: Check if Question type exists**
 
 Run:
+
 ```bash
 grep -r "export.*Question" /home/linh/Downloads/rinkuzu/src/types/
 ```
@@ -1501,6 +1564,7 @@ git commit -m "feat: add Question type definition"
 **Step 1: Run TypeScript check**
 
 Run:
+
 ```bash
 cd /home/linh/Downloads/rinkuzu && npx tsc --noEmit
 ```
@@ -1510,6 +1574,7 @@ Expected: No errors
 **Step 2: Run build**
 
 Run:
+
 ```bash
 cd /home/linh/Downloads/rinkuzu && npm run build
 ```
@@ -1519,6 +1584,7 @@ Expected: Build successful
 **Step 3: Test dev server**
 
 Run:
+
 ```bash
 cd /home/linh/Downloads/rinkuzu && npm run dev
 ```
@@ -1547,6 +1613,7 @@ After completing all tasks:
 7. ✅ Verified build passes
 
 **Key Changes:**
+
 - All `Promise.all` parallel processing → Sequential `for` loops
 - `@google/generative-ai` → `@langchain/google-genai`
 - Key rotation preserved via `getNextKey()` function

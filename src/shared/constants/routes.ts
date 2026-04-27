@@ -17,22 +17,22 @@ export const ROUTES = {
   QUIZ: {
     VIEW: (slug: string) => `/quiz/${slug}`,
     FLASHCARDS: (slug: string) => `/quiz/${slug}/flashcards`,
-    RESULT: (slug: string) => `/quiz/${slug}/result`
+    RESULT: (slug: string) => `/quiz/${slug}/result`,
   },
 
   CATEGORY: {
-    VIEW: (slug: string) => `/category/${slug}`
+    VIEW: (slug: string) => `/category/${slug}`,
   },
 
   EDIT: {
-    QUIZ: (id: string) => `/edit/${id}`
+    QUIZ: (id: string) => `/edit/${id}`,
   },
 
   HISTORY_DETAIL: (attemptId: string) => `/history/${attemptId}`,
 
   PAYMENT: {
     SUCCESS: '/payment/success',
-    CANCEL: '/payment/cancel'
+    CANCEL: '/payment/cancel',
   },
 
   // Admin routes
@@ -43,6 +43,6 @@ export const ROUTES = {
     REPORTS: '/admin/reports',
     STATS: '/admin/stats',
     SUBSCRIPTIONS: '/admin/subscriptions',
-    USERS: '/admin/users'
-  }
-} as const 
+    USERS: '/admin/users',
+  },
+} as const;

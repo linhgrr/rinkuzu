@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import {
@@ -31,6 +31,7 @@ export const useSubjectDetailsState = (sessionId: string, t: TranslateFn) => {
   const [didPrefetchStartLearning, setDidPrefetchStartLearning] = useState(false);
   const [startingSession, setStartingSession] = useState(false);
   const [sessionNotice, setSessionNotice] = useState<string | null>(null);
+  const historyDetailPromiseRef = useRef<Promise<SubjectHistoryDetail> | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -64,6 +65,17 @@ export const useSubjectDetailsState = (sessionId: string, t: TranslateFn) => {
     router.prefetch(ADAPTIVE_ROUTES.exercise(sessionId));
   }, [router, sessionId]);
 
+  const fetchHistoryDetail = useCallback(async () => {
+    if (!jobId) return null;
+    if (!historyDetailPromiseRef.current) {
+      historyDetailPromiseRef.current = getSubjectHistoryDetail(jobId).finally(() => {
+        historyDetailPromiseRef.current = null;
+      });
+    }
+
+    return historyDetailPromiseRef.current;
+  }, [jobId]);
+
   useEffect(() => {
     if (historyDetail || !jobId) return;
 
@@ -74,9 +86,9 @@ export const useSubjectDetailsState = (sessionId: string, t: TranslateFn) => {
     };
 
     const hydrateHistory = () => {
-      getSubjectHistoryDetail(jobId)
+      void fetchHistoryDetail()
         .then((detail) => {
-          if (mounted) setHistoryDetail(detail);
+          if (mounted && detail) setHistoryDetail(detail);
         })
         .catch(() => {
           // Ignore warm-up failures; explicit tab loading handles retry UX.
@@ -96,16 +108,16 @@ export const useSubjectDetailsState = (sessionId: string, t: TranslateFn) => {
         windowWithIdle.cancelIdleCallback(idleId);
       if (timeoutId !== undefined) window.clearTimeout(timeoutId);
     };
-  }, [historyDetail, jobId]);
+  }, [fetchHistoryDetail, historyDetail, jobId]);
 
   useEffect(() => {
     if (activeTab !== 'history' || historyDetail || !jobId) return;
 
     let mounted = true;
     setHistoryLoading(true);
-    getSubjectHistoryDetail(jobId)
+    void fetchHistoryDetail()
       .then((detail) => {
-        if (mounted) setHistoryDetail(detail);
+        if (mounted && detail) setHistoryDetail(detail);
       })
       .catch(() => {
         // Ignore if not persisted yet.
@@ -117,7 +129,7 @@ export const useSubjectDetailsState = (sessionId: string, t: TranslateFn) => {
     return () => {
       mounted = false;
     };
-  }, [activeTab, historyDetail, jobId]);
+  }, [activeTab, fetchHistoryDetail, historyDetail, jobId]);
 
   const summary = useMemo(() => {
     if (!status) return t('subjectDetails.summaryFallback');

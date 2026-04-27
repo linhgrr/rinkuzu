@@ -44,27 +44,23 @@ export default function AdaptiveLearningUpload() {
       if (!firstError) {
         const message = t('uploadPage.uploadFailed');
         setError(message);
-        toast.error(message);
         return;
       }
 
       if (firstError.code === 'file-too-large') {
         const message = t('uploadPage.errors.fileTooLarge', { maxSizeMb: 50 });
         setError(message);
-        toast.error(message);
         return;
       }
 
       if (firstError.code === 'file-invalid-type') {
         const message = t('uploadPage.errors.onlyPdf');
         setError(message);
-        toast.error(message);
         return;
       }
 
       const message = firstError.message || t('uploadPage.uploadFailed');
       setError(message);
-      toast.error(message);
     },
     [t],
   );
@@ -74,7 +70,6 @@ export default function AdaptiveLearningUpload() {
       if (!subjectName.trim()) {
         const message = t('uploadPage.subjectRequiredBeforeUpload');
         setError(message);
-        toast.error(message);
         return;
       }
 
@@ -117,7 +112,6 @@ export default function AdaptiveLearningUpload() {
         if (!subjectName.trim()) {
           const message = t('uploadPage.subjectRequiredBeforeSelectFile');
           setError(message);
-          toast.error(message);
           return;
         }
         void handleUpload(acceptedFiles[0]);
@@ -140,7 +134,6 @@ export default function AdaptiveLearningUpload() {
     if (!subjectName.trim()) {
       const message = t('uploadPage.subjectRequiredBeforeSelectFile');
       setError(message);
-      toast.error(message);
       return;
     }
     open();

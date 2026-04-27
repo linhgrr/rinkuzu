@@ -223,6 +223,7 @@ export const SubjectDetailsTabs = ({
         {TAB_CONFIG.map(({ key, icon: Icon, labelKey }, index) => (
           <button
             key={key}
+            id={`tab-${key}`}
             role="tab"
             aria-selected={activeTab === key}
             aria-controls={`tabpanel-${key}`}

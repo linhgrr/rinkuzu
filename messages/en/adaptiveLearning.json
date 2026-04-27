@@ -141,6 +141,7 @@
     "completedDailyGoal": "Completed daily goal",
     "yesterday": "Yesterday",
     "upNext": "UP NEXT",
+    "brandTitle": "Adaptive Scholar",
     "brandSubtitle": "Empowering your learning journey with AI.",
     "avatarAlt": "User avatar",
     "activeJourney": "Active Journey",
@@ -325,7 +326,7 @@
   },
   "exercise": {
     "loadingTitle": "AI is selecting the best exercise for you...",
-    "loadingSubtitle": "From Linhdz with iu iu",
+    "loadingSubtitle": "We are personalizing the next exercise for your current progress...",
     "noExerciseAvailable": "No exercise available",
     "theory": {
       "reviewKnowledge": "Review Knowledge",

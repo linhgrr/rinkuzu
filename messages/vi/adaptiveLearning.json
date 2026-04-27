@@ -141,6 +141,7 @@
     "completedDailyGoal": "Đã hoàn thành mục tiêu ngày",
     "yesterday": "Hôm qua",
     "upNext": "TIẾP THEO",
+    "brandTitle": "Adaptive Scholar",
     "brandSubtitle": "Đồng hành cùng hành trình học tập của bạn với AI.",
     "avatarAlt": "Ảnh đại diện người dùng",
     "activeJourney": "Hành trình đang học",
@@ -325,7 +326,7 @@
   },
   "exercise": {
     "loadingTitle": "AI đang chọn bài tập phù hợp nhất cho bạn...",
-    "loadingSubtitle": "From Linhdz with iu iu",
+    "loadingSubtitle": "Hệ thống đang cá nhân hóa bài tập theo tiến độ của bạn...",
     "noExerciseAvailable": "Hiện chưa có bài tập",
     "theory": {
       "reviewKnowledge": "Ôn tập kiến thức",

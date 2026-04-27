@@ -22,11 +22,13 @@ const REORDER_TRANSITION = { type: 'spring' as const, stiffness: 500, damping: 3
 
 const OptionCard = memo(function OptionCard({
   active,
+  ariaPressed,
   badge,
   onClick,
   value,
 }: {
   active: boolean;
+  ariaPressed?: boolean;
   badge: string;
   onClick: () => void;
   value: string;
@@ -35,6 +37,7 @@ const OptionCard = memo(function OptionCard({
     <button
       type="button"
       onClick={onClick}
+      aria-pressed={ariaPressed}
       className={`group relative flex w-full cursor-pointer items-start gap-4 rounded-lg border p-4 text-left transition-all duration-200 sm:p-5 ${
         active
           ? 'border-brand-action bg-orange-50 shadow-sm'
@@ -241,6 +244,7 @@ export function ExerciseInteraction({
           <OptionCard
             key={item.value}
             active={answerDraft.boolean === item.bool}
+            ariaPressed={answerDraft.boolean === item.bool}
             badge={item.label}
             onClick={() => onSetBooleanAnswer(item.bool)}
             value={item.value}
@@ -314,6 +318,7 @@ export function ExerciseInteraction({
             <OptionCard
               key={key}
               active={selectedChoices.has(key)}
+              ariaPressed={selectedChoices.has(key)}
               badge={key}
               onClick={() => onToggleChoice(key)}
               value={value}
@@ -366,6 +371,7 @@ export function ExerciseInteraction({
                       e.stopPropagation();
                       onMoveOrderingItem(index, index - 1);
                     }}
+                    aria-label={t('exercise.interactions.moveUp')}
                   >
                     <HiChevronUp className="h-4 w-4" />
                   </Button>
@@ -378,6 +384,7 @@ export function ExerciseInteraction({
                       e.stopPropagation();
                       onMoveOrderingItem(index, index + 1);
                     }}
+                    aria-label={t('exercise.interactions.moveDown')}
                   >
                     <HiChevronDown className="h-4 w-4" />
                   </Button>
@@ -436,6 +443,7 @@ export function ExerciseInteraction({
         <OptionCard
           key={key}
           active={answerDraft.choice === key}
+          ariaPressed={answerDraft.choice === key}
           badge={String.fromCharCode(65 + idx)}
           onClick={() => onSelectChoice(key)}
           value={value}

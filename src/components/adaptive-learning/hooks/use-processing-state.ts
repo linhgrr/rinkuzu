@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import {
   AdaptiveApiError,
   createSessionFromPipeline,
@@ -57,6 +58,7 @@ type ProcessingStats = {
 
 const BASE_POLL_DELAY_MS = 2_000;
 const MAX_POLL_DELAY_MS = 10_000;
+const TOAST_THROTTLE_WINDOW_MS = 4_000;
 
 export type ProcessingStep = {
   id: number;
@@ -92,6 +94,7 @@ export const useProcessingState = (t: TranslateFn) => {
   const creatingSessionRef = useRef(false);
   const retryDelayRef = useRef(BASE_POLL_DELAY_MS);
   const pollJobRef = useRef<(jobId: string) => void>(() => {});
+  const lastToastRef = useRef<{ message: string; at: number } | null>(null);
 
   const steps = useMemo<ProcessingStep[]>(
     () => [
@@ -259,6 +262,14 @@ export const useProcessingState = (t: TranslateFn) => {
     }, delayMs);
   }, []);
 
+  const pushThrottledToast = useCallback((message: string) => {
+    const now = Date.now();
+    const last = lastToastRef.current;
+    if (last && last.message === message && now - last.at < TOAST_THROTTLE_WINDOW_MS) return;
+    lastToastRef.current = { message, at: now };
+    toast.error(message);
+  }, []);
+
   const runFallbackProgress = useCallback(() => {
     const totalDuration = 5000;
     const interval = 50;
@@ -321,6 +332,7 @@ export const useProcessingState = (t: TranslateFn) => {
         localStorage.setItem('al_session_id', session.session_id);
         saveSessionJobMapping(session.session_id, jobId);
         localStorage.removeItem('al_pipeline_job_id');
+        toast.success(t('processing.status.completed'));
         timeoutRef.current = setTimeout(() => {
           router.push(ADAPTIVE_ROUTES.subject(session.session_id));
         }, 800);
@@ -330,7 +342,9 @@ export const useProcessingState = (t: TranslateFn) => {
 
         if (isRetryableAdaptiveError(err)) {
           clearPolling();
-          setNotice(getRetryNotice(err, 'createSession'));
+          const retryMessage = getRetryNotice(err, 'createSession');
+          setNotice(retryMessage);
+          pushThrottledToast(retryMessage);
           setError({
             message: t('processing.errors.sessionSetupUnconfirmed'),
             retryable: true,
@@ -340,15 +354,17 @@ export const useProcessingState = (t: TranslateFn) => {
           return 'deferred';
         }
 
+        const friendlyError = getFriendlyProcessingError(err);
         setError({
-          ...getFriendlyProcessingError(err),
+          ...friendlyError,
           action: 'dashboard',
         });
+        pushThrottledToast(friendlyError.message);
         clearPolling();
         return 'failed';
       }
     },
-    [clearPolling, getFriendlyProcessingError, getRetryNotice, router, t],
+    [clearPolling, getFriendlyProcessingError, getRetryNotice, pushThrottledToast, router, t],
   );
 
   const pollJob = useCallback(
@@ -375,7 +391,9 @@ export const useProcessingState = (t: TranslateFn) => {
         } else if (job.status === 'failed' || job.status === 'cancelled') {
           clearPolling();
           setNotice(job.retryable ? t('processing.notices.retryAfterFailure') : null);
-          setError(getTerminalProcessingError(job));
+          const terminalError = getTerminalProcessingError(job);
+          setError(terminalError);
+          pushThrottledToast(terminalError.message);
         } else {
           scheduleNextPoll(jobId, BASE_POLL_DELAY_MS);
         }
@@ -388,7 +406,9 @@ export const useProcessingState = (t: TranslateFn) => {
         }
 
         clearPolling();
-        setError(getFriendlyProcessingError(err));
+        const friendlyError = getFriendlyProcessingError(err);
+        setError(friendlyError);
+        pushThrottledToast(friendlyError.message);
       } finally {
         pollInFlightRef.current = false;
       }
@@ -401,6 +421,7 @@ export const useProcessingState = (t: TranslateFn) => {
       getTerminalProcessingError,
       handleCompletedJob,
       scheduleNextPoll,
+      pushThrottledToast,
       t,
       updateStats,
     ],

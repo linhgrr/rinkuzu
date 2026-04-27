@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import {
   createSessionFromPipeline,
   getSubjectHistoryDetail,
@@ -144,12 +145,14 @@ export const useSubjectDetailsState = (sessionId: string, t: TranslateFn) => {
       .then((session) => {
         localStorage.setItem('al_session_id', session.session_id);
         saveSessionJobMapping(session.session_id, jobId);
+        toast.success(t('processing.creatingSession'));
         router.push(ADAPTIVE_ROUTES.exercise(session.session_id));
       })
       .catch((error) => {
         console.error(`Error creating session from subject details: ${(error as Error).message}`);
         const feedback = getSessionStartFeedback(t, 'subjectDetails', error);
         setSessionNotice(feedback.message);
+        toast.error(feedback.message);
       })
       .finally(() => {
         setStartingSession(false);

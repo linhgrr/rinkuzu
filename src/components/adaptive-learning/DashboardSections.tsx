@@ -22,10 +22,6 @@ import type { PipelineJobHistoryItem } from './types';
 
 type TranslateFn = (key: string, values?: Record<string, any>) => string;
 
-type ToastProps = {
-  toastMsg: { title: string; type: 'error' | 'success' } | null;
-};
-
 type DashboardHeaderProps = {
   apiOnline: boolean | null;
   dailyGoalProgress: { current: number; total: number; percent: number };
@@ -97,26 +93,6 @@ const DashboardStatusPill = ({ tone, text }: { tone: 'error' | 'warning'; text: 
     {text}
   </div>
 );
-
-export const DashboardToast = ({ toastMsg }: ToastProps) => {
-  if (!toastMsg) return null;
-
-  return (
-    <div
-      role="alert"
-      className={`fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-xl border px-5 py-4 shadow-lg backdrop-blur animate-in fade-in slide-in-from-bottom-5 ${toastMsg.type === 'error' ? 'border-red-200 bg-white/95 text-neutral-900' : 'border-transparent bg-brand-trust/95 text-white'}`}
-    >
-      {toastMsg.type === 'error' ? (
-        <HiOutlineLightningBolt className="h-5 w-5 shrink-0 text-red-500" aria-hidden="true" />
-      ) : (
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/15">
-          <HiOutlineBookOpen className="h-5 w-5" aria-hidden="true" />
-        </div>
-      )}
-      <span className="text-sm font-medium">{toastMsg.title}</span>
-    </div>
-  );
-};
 
 export const DashboardHeader = ({
   apiOnline,

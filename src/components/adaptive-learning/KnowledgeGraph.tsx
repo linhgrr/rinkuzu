@@ -2,7 +2,6 @@
 
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { toast } from 'sonner';
 import {
   ReactFlow,
   Background,
@@ -208,6 +207,7 @@ export default function KnowledgeGraph({ sessionId }: KnowledgeGraphProps) {
   const t = useTranslations('adaptiveLearning');
   const { data: graphData, isLoading: loading } = useKnowledgeGraph(sessionId);
   const [selectedConcept, setSelectedConcept] = useState<ConceptDetail | null>(null);
+  const [graphError, setGraphError] = useState<string | null>(null);
   const conceptDetailCacheRef = useRef<Map<string, ConceptDetail>>(new Map());
 
   useEffect(() => {
@@ -225,6 +225,7 @@ export default function KnowledgeGraph({ sessionId }: KnowledgeGraphProps) {
 
       const cachedDetail = conceptDetailCacheRef.current.get(nodeId);
       if (cachedDetail) {
+        setGraphError(null);
         setSelectedConcept(cachedDetail);
         return;
       }
@@ -232,10 +233,10 @@ export default function KnowledgeGraph({ sessionId }: KnowledgeGraphProps) {
       try {
         const detail = await getConceptDetail(sessionId, nodeId);
         conceptDetailCacheRef.current.set(nodeId, detail);
+        setGraphError(null);
         setSelectedConcept(detail);
       } catch {
-        toast.error(t('processing.errors.generic'));
-        // Ignore temporary request errors; user can retry by clicking again.
+        setGraphError(t('processing.errors.generic'));
       }
     },
     [sessionId, t],
@@ -283,6 +284,14 @@ export default function KnowledgeGraph({ sessionId }: KnowledgeGraphProps) {
             {t('knowledgeGraph.title')}
           </h3>
           <p className="text-xs text-neutral-500 mt-1">{t('knowledgeGraph.clickNodeHint')}</p>
+          {graphError ? (
+            <p
+              role="alert"
+              className="pointer-events-auto mt-2 max-w-md rounded-md border border-red-100 bg-red-50 px-3 py-1.5 text-xs text-red-700"
+            >
+              {graphError}
+            </p>
+          ) : null}
         </div>
 
         <div className="pointer-events-none absolute bottom-4 right-5 z-10 flex gap-4 rounded-lg border border-neutral-200 bg-white/90 px-3 py-2 text-[10px] font-mono shadow-sm backdrop-blur-sm">

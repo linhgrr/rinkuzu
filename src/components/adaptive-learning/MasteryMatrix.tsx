@@ -52,6 +52,13 @@ function getMasteryTextColor(value: number): string {
   return 'text-neutral-700';
 }
 
+function getMasteryBand(value: number) {
+  if (value >= 0.75) return 'H';
+  if (value >= 0.6) return 'M';
+  if (value >= 0.4) return 'L';
+  return 'N';
+}
+
 function getAverage(values: number[]) {
   return values.reduce((sum, value) => sum + value, 0) / values.length;
 }
@@ -223,7 +230,7 @@ export default function MasteryMatrix({ sessionId, filterActiveOnly = false }: M
                           className={`mx-auto flex h-8 w-14 items-center justify-center rounded-md text-xs font-mono font-medium transition-colors ${getMasteryColor(value)} ${getMasteryTextColor(value)}`}
                           title={`${row.concept_name} - ${localizedLabel}: ${Math.round(value * 100)}%`}
                         >
-                          {Math.round(value * 100)}
+                          {Math.round(value * 100)} {getMasteryBand(value)}
                         </div>
                       </td>
                     );
@@ -265,6 +272,7 @@ export default function MasteryMatrix({ sessionId, filterActiveOnly = false }: M
         <div className="flex items-center gap-1">
           <div className="h-3 w-4 rounded bg-brand-trust" /> {t('masteryMatrix.range75Plus')}
         </div>
+        <span className="text-neutral-400">N: None · L: Low · M: Medium · H: High</span>
       </div>
     </div>
   );

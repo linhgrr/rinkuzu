@@ -84,21 +84,16 @@ export const ProcessingStatusCard = ({
         </div>
       )}
 
-      {!error && notice && (
-        <div className="mb-8 rounded-md border border-amber-200 bg-amber-50 p-4 text-left text-sm text-amber-800">
-          {notice}
-        </div>
-      )}
-
-      {error && (
-        <div className="mb-8 rounded-md border border-red-100 bg-red-50 p-4 text-left text-sm text-red-700">
-          {error.message}
-        </div>
-      )}
-
-      {error && notice && (
-        <div className="mb-8 rounded-md border border-amber-200 bg-amber-50 p-4 text-left text-sm text-amber-800">
-          {notice}
+      {(error || notice) && (
+        <div
+          className={`mb-8 rounded-md border p-4 text-left text-sm ${
+            error
+              ? 'border-red-100 bg-red-50 text-red-700'
+              : 'border-amber-200 bg-amber-50 text-amber-800'
+          }`}
+        >
+          {error ? error.message : notice}
+          {error && notice ? <p className="mt-2 text-amber-800">{notice}</p> : null}
         </div>
       )}
 

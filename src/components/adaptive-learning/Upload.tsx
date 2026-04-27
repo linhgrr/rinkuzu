@@ -30,7 +30,6 @@ export default function AdaptiveLearningUpload() {
           return t('uploadPage.errors.connectionInterrupted');
         if (err.code === 'temporary_unavailable') return t('uploadPage.errors.serviceUnavailable');
         if (err.code === 'conflict') return t('uploadPage.errors.conflict');
-        if (err.detail?.trim()) return err.detail;
       }
 
       return t('uploadPage.uploadFailed');

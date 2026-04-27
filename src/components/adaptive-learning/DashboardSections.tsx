@@ -54,6 +54,8 @@ type LibraryProps = {
   onGoUpload: () => void;
   onOpenSubject: (jobId: string) => void;
   onDelete: (job: PipelineJobHistoryItem) => void;
+  viewMode: 'grid' | 'list';
+  onViewModeChange: (mode: 'grid' | 'list') => void;
   t: TranslateFn;
 };
 
@@ -104,7 +106,7 @@ export const DashboardHeader = ({
   <div className="mb-12 flex flex-col items-start justify-between gap-6 md:flex-row md:items-center">
     <div>
       <SparklesText
-        text="Adaptive Scholar"
+        text={t('brandTitle')}
         sparklesCount={9}
         colors={{ first: '#8B5CF6', second: '#F472B6' }}
         className="text-4xl font-extrabold tracking-tight text-[#3b2ca5] md:text-5xl"
@@ -377,7 +379,7 @@ const SubjectLibraryCard = memo(function SubjectLibraryCard({
           <button
             onClick={() => onDelete(subject)}
             disabled={loading || deleting}
-            className="rounded-full p-2 text-neutral-500 transition-colors hover:bg-red-50 hover:text-red-500"
+            className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full p-2 text-neutral-500 transition-colors hover:bg-red-50 hover:text-red-500"
             aria-label={t('deleteMaterial')}
             title={t('deleteMaterial')}
             type="button"
@@ -410,6 +412,72 @@ const SubjectLibraryCard = memo(function SubjectLibraryCard({
   );
 });
 
+const SubjectLibraryListItem = memo(function SubjectLibraryListItem({
+  subject,
+  loading,
+  deleting,
+  onOpenSubject,
+  onDelete,
+  imageUrl,
+  t,
+}: SubjectLibraryCardProps) {
+  return (
+    <div className="flex flex-col gap-4 rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-5">
+      <div className="flex min-w-0 items-start gap-4">
+        <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-neutral-100">
+          {imageUrl ? (
+            // The image source is discovered at runtime from an external API.
+            // Keep a plain img here until the remote host set is stabilized in next.config.
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={imageUrl}
+              alt={subject.displayTitle}
+              className="h-full w-full object-cover opacity-75"
+              loading="lazy"
+            />
+          ) : (
+            <HiOutlineBookOpen className="h-8 w-8 text-neutral-300" />
+          )}
+        </div>
+        <div className="min-w-0">
+          <h3 className="truncate text-lg font-bold text-neutral-900" title={subject.displayTitle}>
+            {subject.displayTitle}
+          </h3>
+          <p className="mt-1 text-xs font-medium uppercase tracking-tight text-neutral-600">
+            {subject.lastOpenedLabel}
+          </p>
+          <p className="mt-2 text-sm font-semibold text-brand-trust">{subject.progressLabel}</p>
+          <div className="mt-2 h-1.5 w-full max-w-xs rounded-full bg-neutral-100">
+            <div
+              className="h-full rounded-full bg-brand-trust"
+              style={{ width: `${subject.metrics.progressPercent}%` }}
+            />
+          </div>
+        </div>
+      </div>
+      <div className="flex items-center justify-end gap-2 sm:justify-start">
+        <button
+          onClick={() => onDelete(subject)}
+          disabled={loading || deleting}
+          className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full p-2 text-neutral-500 transition-colors hover:bg-red-50 hover:text-red-500"
+          aria-label={t('deleteMaterial')}
+          title={t('deleteMaterial')}
+          type="button"
+        >
+          <HiOutlineTrash className="h-4 w-4" />
+        </button>
+        <Button
+          onClick={() => onOpenSubject(subject.job_id)}
+          disabled={loading}
+          className="rounded-full bg-neutral-100 px-5 py-2.5 text-sm font-bold text-brand-trust hover:bg-brand-trust hover:text-white"
+        >
+          {loading ? t('creatingSession') : subject.ctaLabel}
+        </Button>
+      </div>
+    </div>
+  );
+});
+
 export const LibrarySection = ({
   subjects,
   loading,
@@ -420,6 +488,8 @@ export const LibrarySection = ({
   onGoUpload,
   onOpenSubject,
   onDelete,
+  viewMode,
+  onViewModeChange,
   t,
 }: LibraryProps) => {
   const libraryImages = useRandomLibraryImages(subjects.length);
@@ -434,7 +504,7 @@ export const LibrarySection = ({
           <p className="text-base text-neutral-600">{t('knowledgeLibrarySubtitle')}</p>
         </div>
         <div className="flex items-center gap-2">
-          <div className="relative hidden sm:block">
+          <div className="relative">
             <HiOutlineSearch className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-500" />
             <input
               type="text"
@@ -442,27 +512,45 @@ export const LibrarySection = ({
               aria-label={t('searchPlaceholder')}
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
-              className="rounded-full border border-neutral-300/70 bg-white py-3 pl-10 pr-4 text-sm text-neutral-900 outline-none transition focus:border-brand-trust focus:ring-2 focus:ring-[var(--focus-ring-soft)]"
+              className="w-[10.5rem] rounded-full border border-neutral-300/70 bg-white py-3 pl-10 pr-4 text-sm text-neutral-900 outline-none transition focus:border-brand-trust focus:ring-2 focus:ring-[var(--focus-ring-soft)] sm:w-auto"
             />
           </div>
           <button
             type="button"
-            className="rounded-full p-3 text-neutral-500 transition-colors hover:bg-neutral-100"
+            className={`rounded-full p-3 transition-colors ${
+              viewMode === 'grid'
+                ? 'bg-neutral-100 text-neutral-900'
+                : 'text-neutral-500 hover:bg-neutral-100'
+            }`}
             aria-label={t('gridView')}
+            aria-pressed={viewMode === 'grid'}
+            onClick={() => onViewModeChange('grid')}
           >
             <HiOutlineViewGrid className="h-5 w-5" />
           </button>
           <button
             type="button"
-            className="rounded-full p-3 text-neutral-500 transition-colors hover:bg-neutral-100"
+            className={`rounded-full p-3 transition-colors ${
+              viewMode === 'list'
+                ? 'bg-neutral-100 text-neutral-900'
+                : 'text-neutral-500 hover:bg-neutral-100'
+            }`}
             aria-label={t('listView')}
+            aria-pressed={viewMode === 'list'}
+            onClick={() => onViewModeChange('list')}
           >
             <HiOutlineViewList className="h-5 w-5" />
           </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      <div
+        className={
+          viewMode === 'grid'
+            ? 'grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4'
+            : 'grid grid-cols-1 gap-4'
+        }
+      >
         <UploadCard onGoUpload={onGoUpload} t={t} />
         {loading && subjects.length === 0
           ? Array.from({ length: 3 }).map((_, index) => (
@@ -471,20 +559,27 @@ export const LibrarySection = ({
                 className="min-h-[21rem] animate-pulse rounded-2xl border border-neutral-200 bg-white/60"
               />
             ))
-          : subjects.map((subject, index) => (
-              <SubjectLibraryCard
-                key={subject.job_id}
-                subject={subject}
-                imageUrl={
-                  libraryImages.length > 0 ? libraryImages[index % libraryImages.length] : undefined
-                }
-                loading={loadingJobId === subject.job_id}
-                deleting={deletingJobId === subject.job_id}
-                onOpenSubject={onOpenSubject}
-                onDelete={onDelete}
-                t={t}
-              />
-            ))}
+          : subjects.map((subject, index) => {
+              const sharedProps = {
+                key: subject.job_id,
+                subject,
+                imageUrl:
+                  libraryImages.length > 0
+                    ? libraryImages[index % libraryImages.length]
+                    : undefined,
+                loading: loadingJobId === subject.job_id,
+                deleting: deletingJobId === subject.job_id,
+                onOpenSubject,
+                onDelete,
+                t,
+              };
+
+              return viewMode === 'grid' ? (
+                <SubjectLibraryCard {...sharedProps} />
+              ) : (
+                <SubjectLibraryListItem {...sharedProps} />
+              );
+            })}
       </div>
     </section>
   );
@@ -494,13 +589,15 @@ export const FloatingUploadAction = ({ onClick, t }: FloatingUploadActionProps) 
   <button
     type="button"
     onClick={onClick}
-    className="group fixed bottom-24 right-10 z-40 flex h-20 w-20 items-center justify-center rounded-full bg-brand-action text-white shadow-2xl transition-all active:scale-90 hover:w-48 hover:rounded-[2rem]"
+    className="group fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-brand-action text-white shadow-2xl transition-all active:scale-90 sm:h-16 sm:w-16 md:bottom-10 md:right-8 md:h-20 md:w-20 md:hover:w-48 md:hover:rounded-[2rem]"
     aria-label={t('newLesson')}
     title={t('newLesson')}
   >
     <div className="flex items-center gap-2">
       <HiOutlineCloudUpload className="h-8 w-8" />
-      <span className="hidden whitespace-nowrap font-bold group-hover:block">{t('newLesson')}</span>
+      <span className="hidden whitespace-nowrap font-bold md:group-hover:block">
+        {t('newLesson')}
+      </span>
     </div>
   </button>
 );

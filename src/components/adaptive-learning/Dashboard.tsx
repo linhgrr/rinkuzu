@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Inter } from 'next/font/google';
 import { useTranslations } from 'next-intl';
 import {
@@ -31,6 +31,7 @@ export default function AdaptiveLearningDashboard({
   const tAdaptive = useTranslations('adaptiveLearning');
   const tDashboard = useTranslations('adaptiveLearning.dashboard');
   const locale = tAdaptive('common.locale_date');
+  const [libraryViewMode, setLibraryViewMode] = useState<'grid' | 'list'>('grid');
 
   const {
     apiOnline,
@@ -101,6 +102,8 @@ export default function AdaptiveLearningDashboard({
           onGoUpload={handleGoUpload}
           onOpenSubject={handleOpenSubject}
           onDelete={handleDeleteClick}
+          viewMode={libraryViewMode}
+          onViewModeChange={setLibraryViewMode}
           t={tDashboard}
         />
       </main>

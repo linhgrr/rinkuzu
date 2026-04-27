@@ -303,6 +303,7 @@ export function ExerciseHistoryTable({ exercises }: ExerciseHistoryTableProps) {
                     onClick={() => setSelectedExercise(exercise)}
                     className="rounded-md p-1 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-900"
                     title={t('history.table.viewDetails')}
+                    aria-label={t('history.table.viewDetails')}
                   >
                     <HiOutlineEye className="h-5 w-5" />
                   </button>

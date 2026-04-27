@@ -62,11 +62,13 @@ async isUserPremium(userId: string): Promise<boolean> {
 ### 3. Automated Expiration Management
 
 #### Background Job
+
 - **Script**: `src/scripts/checkExpiredSubscriptions.js`
 - **Schedule**: Daily at 1:00 AM
 - **Function**: Finds and updates expired subscriptions
 
 #### Manual Trigger
+
 - **API Endpoint**: `POST /api/admin/subscriptions/check-expired`
 - **Access**: Admin only
 - **Usage**: Manual trigger for testing or emergency updates
@@ -74,6 +76,7 @@ async isUserPremium(userId: string): Promise<boolean> {
 ### 4. Expiration Process
 
 1. **Find Expired Subscriptions**:
+
    ```sql
    {
      isActive: true,
@@ -92,6 +95,7 @@ async isUserPremium(userId: string): Promise<boolean> {
 ## Duration Calculation
 
 ### Plan Duration Parsing
+
 ```typescript
 const durationText = plan.duration.toLowerCase();
 if (durationText.includes('tháng') || durationText.includes('month')) {
@@ -104,6 +108,7 @@ if (durationText.includes('tháng') || durationText.includes('month')) {
 ```
 
 ### Supported Duration Formats
+
 - `"1 tháng"` → 1 month
 - `"3 tháng"` → 3 months
 - `"12 tháng"` → 12 months
@@ -137,11 +142,13 @@ PAYOS_CHECKSUM_KEY=your_checksum_key
 ## Monitoring & Logging
 
 ### Log Messages
+
 - `Starting expired subscription check...`
 - `Expired subscription check completed successfully`
 - `Error checking expired subscriptions: [error]`
 
 ### Admin Dashboard
+
 - View subscription status in `/admin/subscriptions`
 - Manual status updates
 - Bulk operations support
@@ -149,16 +156,19 @@ PAYOS_CHECKSUM_KEY=your_checksum_key
 ## Best Practices
 
 ### 1. Error Handling
+
 - Graceful failure handling in background jobs
 - Comprehensive logging for debugging
 - Retry mechanism for failed updates
 
 ### 2. Performance
+
 - Efficient database queries with indexes
 - Batch processing for large datasets
 - Connection pooling for database operations
 
 ### 3. Testing
+
 - Unit tests for time calculation logic
 - Integration tests for expiration process
 - Mock external dependencies (PayOS)
@@ -166,12 +176,14 @@ PAYOS_CHECKSUM_KEY=your_checksum_key
 ## API Endpoints
 
 ### Check User Subscription Status
+
 ```
 GET /api/subscription/status
 Returns: { subscription, isPremium }
 ```
 
 ### Admin: Manual Expiration Check
+
 ```
 POST /api/admin/subscriptions/check-expired
 Access: Admin only
@@ -179,6 +191,7 @@ Returns: { success, message }
 ```
 
 ### Admin: View All Subscriptions
+
 ```
 GET /api/admin/subscriptions
 Query params: page, limit, status, search
@@ -188,6 +201,7 @@ Returns: paginated subscription list
 ## Database Schema
 
 ### Subscription Model
+
 ```typescript
 {
   user: ObjectId,
@@ -208,6 +222,7 @@ Returns: paginated subscription list
 ```
 
 ### User Subscription Field
+
 ```typescript
 user.subscription = {
   type: string,
@@ -249,4 +264,4 @@ curl -X GET /api/subscription/status
 
 # Admin trigger expiration check
 curl -X POST /api/admin/subscriptions/check-expired
-``` 
+```

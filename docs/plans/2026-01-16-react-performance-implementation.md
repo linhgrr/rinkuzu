@@ -15,6 +15,7 @@
 ### Task 1: Add optimizePackageImports to next.config.js
 
 **Files:**
+
 - Modify: `next.config.js`
 
 **Step 1: Read current next.config.js**
@@ -27,7 +28,7 @@ Check current configuration structure.
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   experimental: {
-    optimizePackageImports: ['react-icons', 'react-markdown', 'lucide-react']
+    optimizePackageImports: ['react-icons', 'react-markdown', 'lucide-react'],
   },
   // ... existing config
 };
@@ -52,6 +53,7 @@ git commit -m "perf: add optimizePackageImports for react-icons bundle optimizat
 ### Task 2: Install SWR
 
 **Files:**
+
 - Modify: `package.json`
 
 **Step 1: Install SWR**
@@ -75,6 +77,7 @@ git commit -m "chore: install swr for data fetching"
 ### Task 3: Create SWR fetcher utility
 
 **Files:**
+
 - Create: `src/lib/fetcher.ts`
 
 **Step 1: Create fetcher file**
@@ -119,6 +122,7 @@ git commit -m "feat: add SWR fetcher utilities"
 ### Task 4: Create memoized StatCard component
 
 **Files:**
+
 - Create: `src/components/shared/StatCard.tsx`
 
 **Step 1: Create shared directory**
@@ -140,19 +144,10 @@ interface StatCardProps {
   color: string;
 }
 
-export const StatCard = memo(function StatCard({
-  label,
-  value,
-  icon,
-  color,
-}: StatCardProps) {
+export const StatCard = memo(function StatCard({ label, value, icon, color }: StatCardProps) {
   return (
     <Card className="p-4 flex items-center gap-4">
-      <div
-        className={`w-12 h-12 rounded-xl flex items-center justify-center ${color}`}
-      >
-        {icon}
-      </div>
+      <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${color}`}>{icon}</div>
       <div>
         <p className="text-sm text-[#86868b] font-medium">{label}</p>
         <p className="text-2xl font-bold text-[#1d1d1f]">{value}</p>
@@ -174,6 +169,7 @@ git commit -m "feat: add memoized StatCard component"
 ### Task 5: Create memoized QuizCard component
 
 **Files:**
+
 - Create: `src/components/shared/QuizCard.tsx`
 
 **Step 1: Create QuizCard component**
@@ -183,13 +179,7 @@ git commit -m "feat: add memoized StatCard component"
 
 import { memo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import {
-  Card,
-  CardHeader,
-  CardContent,
-  CardTitle,
-  Badge,
-} from '@/components/ui/Card';
+import { Card, CardHeader, CardContent, CardTitle, Badge } from '@/components/ui/Card';
 import { ROUTES } from '@/shared/constants';
 import { formatDisplayDate } from '@/shared/utils/constants';
 
@@ -228,16 +218,9 @@ export const QuizCard = memo(function QuizCard({ quiz }: QuizCardProps) {
   }, [router, quiz.slug]);
 
   return (
-    <Card
-      variant="interactive"
-      className="flex flex-col justify-between"
-      onClick={handleClick}
-    >
+    <Card variant="interactive" className="flex flex-col justify-between" onClick={handleClick}>
       <CardHeader className="pb-2">
-        <Badge
-          variant={CategoryBadgeVariant(quiz.category?.color)}
-          className="w-fit mb-2"
-        >
+        <Badge variant={CategoryBadgeVariant(quiz.category?.color)} className="w-fit mb-2">
           {quiz.category?.name}
         </Badge>
         <CardTitle size="sm" className="line-clamp-2">
@@ -267,6 +250,7 @@ git commit -m "feat: add memoized QuizCard component"
 ### Task 6: Create skeleton components
 
 **Files:**
+
 - Create: `src/components/skeletons/StatsSkeleton.tsx`
 - Create: `src/components/skeletons/QuizListSkeleton.tsx`
 - Create: `src/components/skeletons/index.ts`
@@ -331,6 +315,7 @@ git commit -m "feat: add skeleton loading components"
 ### Task 7: Create useStats hook
 
 **Files:**
+
 - Create: `src/hooks/useStats.ts`
 
 **Step 1: Create useStats hook**
@@ -366,14 +351,10 @@ async function buyFreezeFetcher(url: string) {
 }
 
 export function useStats() {
-  const { data, error, isLoading, mutate } = useSWR<UserStats>(
-    '/api/progress/stats',
-    fetcher,
-    {
-      revalidateOnFocus: false,
-      dedupingInterval: 30000, // 30 seconds
-    }
-  );
+  const { data, error, isLoading, mutate } = useSWR<UserStats>('/api/progress/stats', fetcher, {
+    revalidateOnFocus: false,
+    dedupingInterval: 30000, // 30 seconds
+  });
 
   const { trigger: buyFreeze, isMutating: isBuyingFreeze } = useSWRMutation(
     '/api/shop/buy-freeze',
@@ -391,11 +372,11 @@ export function useStats() {
                     streakFreezeCount: response.data!.streakFreezeCount,
                   }
                 : current,
-            { revalidate: false }
+            { revalidate: false },
           );
         }
       },
-    }
+    },
   );
 
   return {
@@ -421,6 +402,7 @@ git commit -m "feat: add useStats SWR hook with optimistic updates"
 ### Task 8: Create useQuizzes hook
 
 **Files:**
+
 - Create: `src/hooks/useQuizzes.ts`
 
 **Step 1: Create useQuizzes hook**
@@ -458,14 +440,10 @@ interface QuizzesResponse {
 export function useQuizzes(limit?: number) {
   const url = limit ? `/api/quizzes?limit=${limit}` : '/api/quizzes';
 
-  const { data, error, isLoading, mutate } = useSWR<QuizzesResponse>(
-    url,
-    fetcher,
-    {
-      revalidateOnFocus: false,
-      dedupingInterval: 60000, // 1 minute
-    }
-  );
+  const { data, error, isLoading, mutate } = useSWR<QuizzesResponse>(url, fetcher, {
+    revalidateOnFocus: false,
+    dedupingInterval: 60000, // 1 minute
+  });
 
   return {
     quizzes: data?.data?.quizzes ?? [],
@@ -489,6 +467,7 @@ git commit -m "feat: add useQuizzes SWR hook"
 ### Task 9: Create hooks index export
 
 **Files:**
+
 - Create: `src/hooks/index.ts`
 
 **Step 1: Create index file**
@@ -515,9 +494,10 @@ git commit -m "feat: add hooks barrel export"
 ### Task 10: Create GuestLanding component
 
 **Files:**
+
 - Create: `src/app/_components/GuestLanding.tsx`
 
-**Step 1: Create _components directory**
+**Step 1: Create \_components directory**
 
 Run: `mkdir -p src/app/_components`
 
@@ -579,12 +559,10 @@ export function GuestLanding({ quizzes }: GuestLandingProps) {
     <div className="min-h-screen bg-[#f5f5f7]">
       <Navigation />
       <div className="max-w-6xl mx-auto px-4 py-16 text-center">
-        <h1 className="text-5xl font-semibold mb-6 tracking-tight">
-          Master any subject.
-        </h1>
+        <h1 className="text-5xl font-semibold mb-6 tracking-tight">Master any subject.</h1>
         <p className="text-xl text-[#86868b] mb-12 max-w-2xl mx-auto">
-          Create AI-powered quizzes from your study materials. Track progress
-          with Spaced Repetition.
+          Create AI-powered quizzes from your study materials. Track progress with Spaced
+          Repetition.
         </p>
         <div className="flex justify-center gap-4 mb-20">
           <Button size="lg" onClick={handleGetStarted}>
@@ -599,16 +577,11 @@ export function GuestLanding({ quizzes }: GuestLandingProps) {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left mb-12">
           {quizzes.slice(0, 3).map((quiz) => (
             <Card key={quiz._id} className="p-6">
-              <Badge
-                className="mb-2"
-                variant={CategoryBadgeVariant(quiz.category?.color)}
-              >
+              <Badge className="mb-2" variant={CategoryBadgeVariant(quiz.category?.color)}>
                 {quiz.category?.name}
               </Badge>
               <h3 className="font-semibold text-lg mb-2">{quiz.title}</h3>
-              <p className="text-sm text-[#86868b] line-clamp-2">
-                {quiz.description}
-              </p>
+              <p className="text-sm text-[#86868b] line-clamp-2">{quiz.description}</p>
             </Card>
           ))}
         </div>
@@ -636,6 +609,7 @@ git commit -m "feat: extract GuestLanding component with memoized callbacks"
 ### Task 11: Create DashboardClient component
 
 **Files:**
+
 - Create: `src/app/_components/DashboardClient.tsx`
 
 **Step 1: Create DashboardClient component**
@@ -693,8 +667,7 @@ const ProTipCard = memo(function ProTipCard() {
     <Card className="p-6 bg-gray-900 text-white">
       <h3 className="font-semibold mb-2">Pro Tip</h3>
       <p className="text-sm text-gray-300 mb-4">
-        Reviewing your cards daily helps move them to long-term memory via
-        Spaced Repetition.
+        Reviewing your cards daily helps move them to long-term memory via Spaced Repetition.
       </p>
       <Button
         size="sm"
@@ -731,11 +704,13 @@ export function DashboardClient({ userEmail }: DashboardClientProps) {
   const handleShare = useCallback(() => {
     const text = `I'm on a ${stats?.streak || 0} day streak learning with RinKuzu! 🚀 Earned ${stats?.xp || 0} XP so far.`;
     if (navigator.share) {
-      navigator.share({
-        title: 'My RinKuzu Progress',
-        text: text,
-        url: window.location.origin,
-      }).catch(console.error);
+      navigator
+        .share({
+          title: 'My RinKuzu Progress',
+          text: text,
+          url: window.location.origin,
+        })
+        .catch(console.error);
     } else {
       navigator.clipboard.writeText(text);
       alert('Progress copied to clipboard!');
@@ -769,15 +744,9 @@ export function DashboardClient({ userEmail }: DashboardClientProps) {
                 Welcome back, {userName}!{' '}
                 <HiOutlineLightBulb className="inline-block text-yellow-500" />
               </h1>
-              <p className="text-[#86868b]">
-                Here&apos;s what you should focus on today.
-              </p>
+              <p className="text-[#86868b]">Here&apos;s what you should focus on today.</p>
             </div>
-            <Button
-              variant="outline"
-              onClick={handleShare}
-              className="flex items-center gap-2"
-            >
+            <Button variant="outline" onClick={handleShare} className="flex items-center gap-2">
               Share Progress <HiOutlineShare className="w-4 h-4" />
             </Button>
           </div>
@@ -791,9 +760,7 @@ export function DashboardClient({ userEmail }: DashboardClientProps) {
                 <p className="text-blue-100 font-medium text-sm uppercase tracking-wide">
                   Daily Review
                 </p>
-                <h2 className="text-3xl font-bold mt-1">
-                  {stats?.dueCount || 0} questions due
-                </h2>
+                <h2 className="text-3xl font-bold mt-1">{stats?.dueCount || 0} questions due</h2>
               </div>
               <Button
                 onClick={handleStartReview}
@@ -826,9 +793,7 @@ export function DashboardClient({ userEmail }: DashboardClientProps) {
           <div className="lg:col-span-2 space-y-8">
             <section>
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold text-[#1d1d1f]">
-                  Continue Learning
-                </h2>
+                <h2 className="text-xl font-semibold text-[#1d1d1f]">Continue Learning</h2>
                 <Button variant="ghost" size="sm" onClick={handleViewAll}>
                   View All
                 </Button>
@@ -843,9 +808,7 @@ export function DashboardClient({ userEmail }: DashboardClientProps) {
                   <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mb-3">
                     <HiOutlinePlus className="w-6 h-6" />
                   </div>
-                  <h3 className="font-semibold text-blue-900">
-                    Create New Quiz
-                  </h3>
+                  <h3 className="font-semibold text-blue-900">Create New Quiz</h3>
                 </Card>
 
                 {/* Quizzes List */}
@@ -861,9 +824,7 @@ export function DashboardClient({ userEmail }: DashboardClientProps) {
               >
                 <div className="relative z-10 flex items-center justify-between">
                   <div>
-                    <h3 className="text-xl font-bold mb-1">
-                      Explore More Quizzes
-                    </h3>
+                    <h3 className="text-xl font-bold mb-1">Explore More Quizzes</h3>
                     <p className="text-indigo-100 text-sm">
                       Discover thousands of quizzes from the community.
                     </p>
@@ -907,9 +868,10 @@ git commit -m "feat: create DashboardClient with SWR hooks and memoized componen
 
 ---
 
-### Task 12: Create _components index export
+### Task 12: Create \_components index export
 
 **Files:**
+
 - Create: `src/app/_components/index.ts`
 
 **Step 1: Create index file**
@@ -931,6 +893,7 @@ git commit -m "feat: add _components index export"
 ### Task 13: Refactor Homepage to use new components
 
 **Files:**
+
 - Modify: `src/app/page.tsx`
 
 **Step 1: Refactor page.tsx**
@@ -987,6 +950,7 @@ git commit -m "refactor: simplify homepage with extracted components and SWR"
 ### Task 14: Create shared components index
 
 **Files:**
+
 - Create: `src/components/shared/index.ts`
 
 **Step 1: Create index file**
@@ -1029,6 +993,7 @@ git commit -m "chore: complete Phase 1 React performance refactor"
 ## Verification Checklist
 
 After implementation, verify:
+
 - [ ] `npm run build` passes
 - [ ] `npm run dev` works without errors
 - [ ] Homepage loads correctly for guests

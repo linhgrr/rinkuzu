@@ -12,7 +12,7 @@ export interface IUser extends Document {
   name?: string;
   role: 'admin' | 'user';
   isAnonymous?: boolean;
-  
+
   // Subscription (existing)
   subscription?: {
     type: string;
@@ -22,7 +22,7 @@ export interface IUser extends Document {
     payosOrderId?: string;
     payosTransactionId?: string;
   };
-  
+
   // EFQ Rewards (new)
   rewards: {
     totalPoints: number;
@@ -32,7 +32,7 @@ export interface IUser extends Document {
     tier: 'bronze' | 'silver' | 'gold' | 'platinum';
     tierMultiplier: number;
   };
-  
+
   // Fraud Detection (new)
   fraudFlags: {
     riskScore: number;
@@ -45,7 +45,7 @@ export interface IUser extends Document {
     lastBlockedAt?: Date;
     totalFlaggedAttempts: number;
   };
-  
+
   // Trust Score (new)
   trustScore: number;
   trustFactors: {
@@ -56,7 +56,7 @@ export interface IUser extends Document {
     reportCount: number;
     lastActivity: Date;
   };
-  
+
   createdAt: Date;
 }
 
@@ -70,7 +70,7 @@ const UserSchema = new Schema<IUser>({
   },
   password: {
     type: String,
-    required: function(this: IUser) {
+    required: function (this: IUser) {
       return !this.isAnonymous;
     },
     minlength: [6, 'Password must be at least 6 characters'],
@@ -88,7 +88,7 @@ const UserSchema = new Schema<IUser>({
     type: Boolean,
     default: false,
   },
-  
+
   // Subscription (existing)
   subscription: {
     type: {
@@ -111,7 +111,7 @@ const UserSchema = new Schema<IUser>({
       type: String,
     },
   },
-  
+
   // EFQ Rewards (new)
   rewards: {
     totalPoints: {
@@ -145,7 +145,7 @@ const UserSchema = new Schema<IUser>({
       max: 2.0,
     },
   },
-  
+
   // Fraud Detection (new)
   fraudFlags: {
     riskScore: {
@@ -174,7 +174,7 @@ const UserSchema = new Schema<IUser>({
       min: 0,
     },
   },
-  
+
   // Trust Score (new)
   trustScore: {
     type: Number,
@@ -208,7 +208,7 @@ const UserSchema = new Schema<IUser>({
       default: Date.now,
     },
   },
-  
+
   createdAt: {
     type: Date,
     default: Date.now,
@@ -240,7 +240,7 @@ export interface IQuiz extends Document {
   slug: string;
   questions: IQuestion[];
   isPrivate: boolean;
-  
+
   // EFQ Reward Stats (new)
   rewardStats: {
     totalAttempts: number;
@@ -253,7 +253,7 @@ export interface IQuiz extends Document {
     difficultyScore: number;
     popularityScore: number;
   };
-  
+
   // Fraud Detection (new)
   fraudIndicators: {
     riskScore: number;
@@ -261,133 +261,136 @@ export interface IQuiz extends Document {
     suspiciousIPs: string[];
     lastFraudCheck: Date;
   };
-  
+
   createdAt: Date;
   updatedAt: Date;
 }
 
-const QuizSchema = new Schema<IQuiz>({
-  title: {
-    type: String,
-    required: [true, 'Title is required'],
-    trim: true,
-    maxlength: [200, 'Title cannot exceed 200 characters'],
-  },
-  description: {
-    type: String,
-    trim: true,
-    maxlength: [1000, 'Description cannot exceed 1000 characters'],
-  },
-  category: {
-    type: Schema.Types.ObjectId,
-    ref: 'Category',
-    required: [true, 'Category is required'],
-  },
-  status: {
-    type: String,
-    enum: ['pending', 'published', 'rejected'],
-    default: 'pending',
-  },
-  author: {
-    type: Schema.Types.ObjectId,
-    ref: 'User',
-    required: [true, 'Author is required'],
-  },
-  slug: {
-    type: String,
-    required: [true, 'Slug is required'],
-    unique: true,
-    lowercase: true,
-  },
-  questions: {
-    type: [QuestionSchema],
-    required: [true, 'Questions are required'],
-    validate: {
-      validator: function(questions: IQuestion[]) {
-        return questions.length > 0;
+const QuizSchema = new Schema<IQuiz>(
+  {
+    title: {
+      type: String,
+      required: [true, 'Title is required'],
+      trim: true,
+      maxlength: [200, 'Title cannot exceed 200 characters'],
+    },
+    description: {
+      type: String,
+      trim: true,
+      maxlength: [1000, 'Description cannot exceed 1000 characters'],
+    },
+    category: {
+      type: Schema.Types.ObjectId,
+      ref: 'Category',
+      required: [true, 'Category is required'],
+    },
+    status: {
+      type: String,
+      enum: ['pending', 'published', 'rejected'],
+      default: 'pending',
+    },
+    author: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: [true, 'Author is required'],
+    },
+    slug: {
+      type: String,
+      required: [true, 'Slug is required'],
+      unique: true,
+      lowercase: true,
+    },
+    questions: {
+      type: [QuestionSchema],
+      required: [true, 'Questions are required'],
+      validate: {
+        validator: function (questions: IQuestion[]) {
+          return questions.length > 0;
+        },
+        message: 'At least one question is required',
       },
-      message: 'At least one question is required',
+    },
+    isPrivate: {
+      type: Boolean,
+      default: false,
+    },
+
+    // EFQ Reward Stats (new)
+    rewardStats: {
+      totalAttempts: {
+        type: Number,
+        default: 0,
+        min: 0,
+      },
+      validAttempts: {
+        type: Number,
+        default: 0,
+        min: 0,
+      },
+      averageScore: {
+        type: Number,
+        default: 0,
+        min: 0,
+        max: 100,
+      },
+      completionRate: {
+        type: Number,
+        default: 0,
+        min: 0,
+        max: 100,
+      },
+      averageTimeSpent: {
+        type: Number,
+        default: 0,
+        min: 0,
+      },
+      totalRewardsPaid: {
+        type: Number,
+        default: 0,
+        min: 0,
+      },
+      lastRewardCalculation: {
+        type: Date,
+        default: Date.now,
+      },
+      difficultyScore: {
+        type: Number,
+        default: 0,
+        min: 0,
+        max: 100,
+      },
+      popularityScore: {
+        type: Number,
+        default: 0,
+        min: 0,
+        max: 100,
+      },
+    },
+
+    // Fraud Detection (new)
+    fraudIndicators: {
+      riskScore: {
+        type: Number,
+        default: 0,
+        min: 0,
+        max: 100,
+      },
+      flaggedAttempts: {
+        type: Number,
+        default: 0,
+        min: 0,
+      },
+      suspiciousIPs: [String],
+      lastFraudCheck: {
+        type: Date,
+        default: Date.now,
+      },
     },
   },
-  isPrivate: {
-    type: Boolean,
-    default: false,
+  {
+    timestamps: true,
   },
-  
-  // EFQ Reward Stats (new)
-  rewardStats: {
-    totalAttempts: {
-      type: Number,
-      default: 0,
-      min: 0,
-    },
-    validAttempts: {
-      type: Number,
-      default: 0,
-      min: 0,
-    },
-    averageScore: {
-      type: Number,
-      default: 0,
-      min: 0,
-      max: 100,
-    },
-    completionRate: {
-      type: Number,
-      default: 0,
-      min: 0,
-      max: 100,
-    },
-    averageTimeSpent: {
-      type: Number,
-      default: 0,
-      min: 0,
-    },
-    totalRewardsPaid: {
-      type: Number,
-      default: 0,
-      min: 0,
-    },
-    lastRewardCalculation: {
-      type: Date,
-      default: Date.now,
-    },
-    difficultyScore: {
-      type: Number,
-      default: 0,
-      min: 0,
-      max: 100,
-    },
-    popularityScore: {
-      type: Number,
-      default: 0,
-      min: 0,
-      max: 100,
-    },
-  },
-  
-  // Fraud Detection (new)
-  fraudIndicators: {
-    riskScore: {
-      type: Number,
-      default: 0,
-      min: 0,
-      max: 100,
-    },
-    flaggedAttempts: {
-      type: Number,
-      default: 0,
-      min: 0,
-    },
-    suspiciousIPs: [String],
-    lastFraudCheck: {
-      type: Date,
-      default: Date.now,
-    },
-  },
-}, {
-  timestamps: true,
-});
+);
 
 // Indexes
 QuizSchema.index({ status: 1, createdAt: -1 });
@@ -411,14 +414,14 @@ export interface IAttempt extends Document {
   totalQuestions: number;
   answers: (number | number[])[];
   takenAt: Date;
-  
+
   // Enhanced logging fields (new)
   sessionId: string;
   requestId: string;
   ipAddress: string;
   userAgent: string;
   deviceFingerprint: string;
-  
+
   // Behavioral data (new)
   timeSpent: number;
   timePerQuestion: number[];
@@ -428,7 +431,7 @@ export interface IAttempt extends Document {
     newAnswer: number | number[];
     timestamp: number;
   }>;
-  
+
   // Mouse and keyboard tracking (new)
   mouseMovements: Array<{
     x: number;
@@ -440,14 +443,14 @@ export interface IAttempt extends Document {
     timestamp: number;
     timeBetweenKeys: number;
   }>;
-  
+
   // Fraud detection (new)
   fraudScore: number;
   fraudFlags: string[];
   isFlagged: boolean;
   flaggedAt?: Date;
   flaggedReason?: string;
-  
+
   // Reward calculation (new)
   rewardEarned: number;
   rewardMultiplier: number;
@@ -483,7 +486,7 @@ const AttemptSchema = new Schema<IAttempt>({
     type: Date,
     default: Date.now,
   },
-  
+
   // Enhanced logging fields (new)
   sessionId: {
     type: String,
@@ -509,42 +512,50 @@ const AttemptSchema = new Schema<IAttempt>({
     required: true,
     index: true,
   },
-  
+
   // Behavioral data (new)
   timeSpent: {
     type: Number,
     required: true,
     min: 0,
   },
-  timePerQuestion: [{
-    type: Number,
-    min: 0,
-  }],
-  answerChanges: [{
-    questionIndex: {
+  timePerQuestion: [
+    {
       type: Number,
-      required: true,
+      min: 0,
     },
-    oldAnswer: Schema.Types.Mixed,
-    newAnswer: Schema.Types.Mixed,
-    timestamp: {
-      type: Number,
-      required: true,
+  ],
+  answerChanges: [
+    {
+      questionIndex: {
+        type: Number,
+        required: true,
+      },
+      oldAnswer: Schema.Types.Mixed,
+      newAnswer: Schema.Types.Mixed,
+      timestamp: {
+        type: Number,
+        required: true,
+      },
     },
-  }],
-  
+  ],
+
   // Mouse and keyboard tracking (new)
-  mouseMovements: [{
-    x: Number,
-    y: Number,
-    timestamp: Number,
-  }],
-  keyboardPatterns: [{
-    key: String,
-    timestamp: Number,
-    timeBetweenKeys: Number,
-  }],
-  
+  mouseMovements: [
+    {
+      x: Number,
+      y: Number,
+      timestamp: Number,
+    },
+  ],
+  keyboardPatterns: [
+    {
+      key: String,
+      timestamp: Number,
+      timeBetweenKeys: Number,
+    },
+  ],
+
   // Fraud detection (new)
   fraudScore: {
     type: Number,
@@ -559,7 +570,7 @@ const AttemptSchema = new Schema<IAttempt>({
   },
   flaggedAt: Date,
   flaggedReason: String,
-  
+
   // Reward calculation (new)
   rewardEarned: {
     type: Number,
@@ -596,103 +607,106 @@ export interface IReward extends Document {
   userId: Types.ObjectId;
   quizId: Types.ObjectId;
   attemptId: Types.ObjectId;
-  
+
   // Reward calculation
   calculatedReward: number;
   actualReward: number;
   rewardPercentage: number;
-  
+
   // Fraud detection
   fraudScore: number;
   fraudFlags: string[];
   riskLevel: 'low' | 'medium' | 'high' | 'critical';
   action: 'allow_full_reward' | 'reduce_reward' | 'hold_reward' | 'block_reward' | 'suspend_user';
-  
+
   // Status
   status: 'pending_review' | 'approved' | 'rejected' | 'blocked';
   reason: string;
-  
+
   // Review process
   reviewedBy?: Types.ObjectId;
   reviewedAt?: Date;
   reviewNotes?: string;
-  
+
   // Timestamps
   createdAt: Date;
   updatedAt: Date;
 }
 
-const RewardSchema = new Schema<IReward>({
-  userId: {
-    type: Schema.Types.ObjectId,
-    ref: 'User',
-    required: true,
-    index: true,
+const RewardSchema = new Schema<IReward>(
+  {
+    userId: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+      index: true,
+    },
+    quizId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Quiz',
+      required: true,
+      index: true,
+    },
+    attemptId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Attempt',
+      required: true,
+      index: true,
+    },
+    calculatedReward: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+    actualReward: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+    rewardPercentage: {
+      type: Number,
+      required: true,
+      min: 0,
+      max: 100,
+    },
+    fraudScore: {
+      type: Number,
+      required: true,
+      min: 0,
+      max: 100,
+    },
+    fraudFlags: [String],
+    riskLevel: {
+      type: String,
+      required: true,
+      enum: ['low', 'medium', 'high', 'critical'],
+    },
+    action: {
+      type: String,
+      required: true,
+      enum: ['allow_full_reward', 'reduce_reward', 'hold_reward', 'block_reward', 'suspend_user'],
+    },
+    status: {
+      type: String,
+      required: true,
+      enum: ['pending_review', 'approved', 'rejected', 'blocked'],
+      default: 'pending_review',
+    },
+    reason: {
+      type: String,
+      required: true,
+    },
+    reviewedBy: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+    },
+    reviewedAt: Date,
+    reviewNotes: String,
   },
-  quizId: {
-    type: Schema.Types.ObjectId,
-    ref: 'Quiz',
-    required: true,
-    index: true,
+  {
+    timestamps: true,
   },
-  attemptId: {
-    type: Schema.Types.ObjectId,
-    ref: 'Attempt',
-    required: true,
-    index: true,
-  },
-  calculatedReward: {
-    type: Number,
-    required: true,
-    min: 0,
-  },
-  actualReward: {
-    type: Number,
-    required: true,
-    min: 0,
-  },
-  rewardPercentage: {
-    type: Number,
-    required: true,
-    min: 0,
-    max: 100,
-  },
-  fraudScore: {
-    type: Number,
-    required: true,
-    min: 0,
-    max: 100,
-  },
-  fraudFlags: [String],
-  riskLevel: {
-    type: String,
-    required: true,
-    enum: ['low', 'medium', 'high', 'critical'],
-  },
-  action: {
-    type: String,
-    required: true,
-    enum: ['allow_full_reward', 'reduce_reward', 'hold_reward', 'block_reward', 'suspend_user'],
-  },
-  status: {
-    type: String,
-    required: true,
-    enum: ['pending_review', 'approved', 'rejected', 'blocked'],
-    default: 'pending_review',
-  },
-  reason: {
-    type: String,
-    required: true,
-  },
-  reviewedBy: {
-    type: Schema.Types.ObjectId,
-    ref: 'User',
-  },
-  reviewedAt: Date,
-  reviewNotes: String,
-}, {
-  timestamps: true,
-});
+);
 
 // Indexes
 RewardSchema.index({ userId: 1, createdAt: -1 });
@@ -714,7 +728,13 @@ export interface IAuditLog extends Document {
   userEmail?: string;
   sessionId: string;
   requestId: string;
-  action: 'quiz_attempt' | 'quiz_creation' | 'user_login' | 'user_register' | 'reward_earned' | 'fraud_detected';
+  action:
+    | 'quiz_attempt'
+    | 'quiz_creation'
+    | 'user_login'
+    | 'user_register'
+    | 'reward_earned'
+    | 'fraud_detected';
   resourceType: 'quiz' | 'user' | 'attempt' | 'reward';
   resourceId?: string;
   ipAddress: string;
@@ -759,133 +779,151 @@ export interface IAuditLog extends Document {
   createdAt: Date;
 }
 
-const AuditLogSchema = new Schema<IAuditLog>({
-  userId: {
-    type: Schema.Types.Mixed,
-    ref: 'User',
-    required: false,
-  },
-  userEmail: {
-    type: String,
-    required: false,
-    lowercase: true,
-  },
-  sessionId: {
-    type: String,
-    required: true,
-    index: true,
-  },
-  requestId: {
-    type: String,
-    required: true,
-    index: true,
-  },
-  action: {
-    type: String,
-    required: true,
-    enum: ['quiz_attempt', 'quiz_creation', 'user_login', 'user_register', 'reward_earned', 'fraud_detected'],
-  },
-  resourceType: {
-    type: String,
-    required: true,
-    enum: ['quiz', 'user', 'attempt', 'reward'],
-  },
-  resourceId: {
-    type: String,
-    required: false,
-  },
-  ipAddress: {
-    type: String,
-    required: true,
-    index: true,
-  },
-  userAgent: {
-    type: String,
-    required: true,
-  },
-  deviceFingerprint: {
-    type: String,
-    required: true,
-    index: true,
-  },
-  geoLocation: {
-    country: String,
-    city: String,
-    latitude: Number,
-    longitude: Number,
-  },
-  timestamp: {
-    type: Date,
-    required: true,
-    index: true,
-  },
-  timeSpent: {
-    type: Number,
-    required: false,
-  },
-  timeOfDay: {
-    type: Number,
-    required: true,
-    min: 0,
-    max: 23,
-  },
-  dayOfWeek: {
-    type: Number,
-    required: true,
-    min: 0,
-    max: 6,
-  },
-  mouseMovements: [{
-    x: Number,
-    y: Number,
-    timestamp: Number,
-  }],
-  keyboardPatterns: [{
-    key: String,
-    timestamp: Number,
-    timeBetweenKeys: Number,
-  }],
-  scrollPatterns: [{
-    scrollY: Number,
-    timestamp: Number,
-  }],
-  quizAttemptData: {
-    quizId: String,
-    score: Number,
-    answers: [Schema.Types.Mixed],
-    correctAnswers: Number,
-    totalQuestions: Number,
-    timePerQuestion: [Number],
-    answerChanges: [{
-      questionIndex: Number,
-      oldAnswer: Schema.Types.Mixed,
-      newAnswer: Schema.Types.Mixed,
-      timestamp: Number,
-    }],
-  },
-  fraudIndicators: {
-    riskScore: {
-      type: Number,
-      min: 0,
-      max: 100,
+const AuditLogSchema = new Schema<IAuditLog>(
+  {
+    userId: {
+      type: Schema.Types.Mixed,
+      ref: 'User',
+      required: false,
     },
-    flags: [String],
-    suspiciousPatterns: [String],
-    machineLearningScore: Number,
+    userEmail: {
+      type: String,
+      required: false,
+      lowercase: true,
+    },
+    sessionId: {
+      type: String,
+      required: true,
+      index: true,
+    },
+    requestId: {
+      type: String,
+      required: true,
+      index: true,
+    },
+    action: {
+      type: String,
+      required: true,
+      enum: [
+        'quiz_attempt',
+        'quiz_creation',
+        'user_login',
+        'user_register',
+        'reward_earned',
+        'fraud_detected',
+      ],
+    },
+    resourceType: {
+      type: String,
+      required: true,
+      enum: ['quiz', 'user', 'attempt', 'reward'],
+    },
+    resourceId: {
+      type: String,
+      required: false,
+    },
+    ipAddress: {
+      type: String,
+      required: true,
+      index: true,
+    },
+    userAgent: {
+      type: String,
+      required: true,
+    },
+    deviceFingerprint: {
+      type: String,
+      required: true,
+      index: true,
+    },
+    geoLocation: {
+      country: String,
+      city: String,
+      latitude: Number,
+      longitude: Number,
+    },
+    timestamp: {
+      type: Date,
+      required: true,
+      index: true,
+    },
+    timeSpent: {
+      type: Number,
+      required: false,
+    },
+    timeOfDay: {
+      type: Number,
+      required: true,
+      min: 0,
+      max: 23,
+    },
+    dayOfWeek: {
+      type: Number,
+      required: true,
+      min: 0,
+      max: 6,
+    },
+    mouseMovements: [
+      {
+        x: Number,
+        y: Number,
+        timestamp: Number,
+      },
+    ],
+    keyboardPatterns: [
+      {
+        key: String,
+        timestamp: Number,
+        timeBetweenKeys: Number,
+      },
+    ],
+    scrollPatterns: [
+      {
+        scrollY: Number,
+        timestamp: Number,
+      },
+    ],
+    quizAttemptData: {
+      quizId: String,
+      score: Number,
+      answers: [Schema.Types.Mixed],
+      correctAnswers: Number,
+      totalQuestions: Number,
+      timePerQuestion: [Number],
+      answerChanges: [
+        {
+          questionIndex: Number,
+          oldAnswer: Schema.Types.Mixed,
+          newAnswer: Schema.Types.Mixed,
+          timestamp: Number,
+        },
+      ],
+    },
+    fraudIndicators: {
+      riskScore: {
+        type: Number,
+        min: 0,
+        max: 100,
+      },
+      flags: [String],
+      suspiciousPatterns: [String],
+      machineLearningScore: Number,
+    },
+    outcome: {
+      type: String,
+      required: true,
+      enum: ['success', 'failure', 'flagged', 'blocked'],
+    },
+    outcomeReason: String,
+    metadata: {
+      type: Schema.Types.Mixed,
+      default: {},
+    },
   },
-  outcome: {
-    type: String,
-    required: true,
-    enum: ['success', 'failure', 'flagged', 'blocked'],
+  {
+    timestamps: true,
   },
-  outcomeReason: String,
-  metadata: {
-    type: Schema.Types.Mixed,
-    default: {},
-  },
-}, {
-  timestamps: true,
-});
+);
 
 // Indexes for efficient queries
 AuditLogSchema.index({ userId: 1, timestamp: -1 });
@@ -896,4 +934,4 @@ AuditLogSchema.index({ 'fraudIndicators.riskScore': -1, timestamp: -1 });
 AuditLogSchema.index({ outcome: 1, timestamp: -1 });
 
 export default mongoose.models.AuditLog || mongoose.model<IAuditLog>('AuditLog', AuditLogSchema);
-``` 
+```

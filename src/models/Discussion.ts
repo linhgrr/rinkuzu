@@ -17,54 +17,61 @@ export interface IDiscussion extends Document {
   updatedAt: Date;
 }
 
-const DiscussionCommentSchema = new Schema<IDiscussionComment>({
-  author: {
-    type: Schema.Types.ObjectId,
-    ref: 'User',
-    required: [true, 'Author is required'],
+const DiscussionCommentSchema = new Schema<IDiscussionComment>(
+  {
+    author: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: [true, 'Author is required'],
+    },
+    authorEmail: {
+      type: String,
+      required: [true, 'Author email is required'],
+      trim: true,
+    },
+    content: {
+      type: String,
+      required: [true, 'Comment content is required'],
+      trim: true,
+      maxlength: [2000, 'Comment cannot exceed 2000 characters'],
+    },
+    isEdited: {
+      type: Boolean,
+      default: false,
+    },
   },
-  authorEmail: {
-    type: String,
-    required: [true, 'Author email is required'],
-    trim: true,
+  {
+    timestamps: true,
   },
-  content: {
-    type: String,
-    required: [true, 'Comment content is required'],
-    trim: true,
-    maxlength: [2000, 'Comment cannot exceed 2000 characters'],
-  },
-  isEdited: {
-    type: Boolean,
-    default: false,
-  },
-}, {
-  timestamps: true,
-});
+);
 
-const DiscussionSchema = new Schema<IDiscussion>({
-  quiz: {
-    type: Schema.Types.ObjectId,
-    ref: 'Quiz',
-    required: [true, 'Quiz is required'],
+const DiscussionSchema = new Schema<IDiscussion>(
+  {
+    quiz: {
+      type: Schema.Types.ObjectId,
+      ref: 'Quiz',
+      required: [true, 'Quiz is required'],
+    },
+    questionIndex: {
+      type: Number,
+      required: [true, 'Question index is required'],
+      min: [0, 'Question index must be non-negative'],
+    },
+    comments: {
+      type: [DiscussionCommentSchema],
+      default: [],
+    },
   },
-  questionIndex: {
-    type: Number,
-    required: [true, 'Question index is required'],
-    min: [0, 'Question index must be non-negative'],
+  {
+    timestamps: true,
   },
-  comments: {
-    type: [DiscussionCommentSchema],
-    default: [],
-  },
-}, {
-  timestamps: true,
-});
+);
 
 // Compound index for efficient queries
 DiscussionSchema.index({ quiz: 1, questionIndex: 1 });
 
 // Prevent re-compilation in development
-const Discussion = mongoose.models.Discussion || mongoose.model<IDiscussion>('Discussion', DiscussionSchema);
+const Discussion =
+  mongoose.models.Discussion || mongoose.model<IDiscussion>('Discussion', DiscussionSchema);
 
-export default Discussion; 
+export default Discussion;

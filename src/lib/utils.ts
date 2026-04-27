@@ -6,13 +6,16 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function generateSlug(title: string): string {
-  return title
-    .toLowerCase()
-    .replace(/[^a-z0-9\s-]/g, '')
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-')
-    .trim()
-    + '-' + Date.now().toString().slice(-6);
+  return (
+    title
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .trim() +
+    '-' +
+    Date.now().toString().slice(-6)
+  );
 }
 
 export function formatDate(date: Date, locale?: string): string {
@@ -26,16 +29,16 @@ export function formatDate(date: Date, locale?: string): string {
 }
 
 export function calculateScore(
-  userAnswers: (number | number[])[], 
-  questions: { type: 'single' | 'multiple'; correctIndex?: number; correctIndexes?: number[] }[]
+  userAnswers: (number | number[])[],
+  questions: { type: 'single' | 'multiple'; correctIndex?: number; correctIndexes?: number[] }[],
 ): number {
   let correct = 0;
   let answered = 0; // Track only answered questions for scoring
-  
+
   for (let i = 0; i < userAnswers.length; i++) {
     const question = questions[i];
     const userAnswer = userAnswers[i];
-    
+
     if (question.type === 'single') {
       // Skip unanswered questions (answer === -1)
       if (typeof userAnswer === 'number' && userAnswer !== -1) {
@@ -50,21 +53,20 @@ export function calculateScore(
         answered++;
         const userSet = new Set(userAnswer.sort());
         const correctSet = new Set(question.correctIndexes.sort());
-        
+
         // Check if arrays are equal
-        if (userSet.size === correctSet.size && 
-            [...userSet].every(x => correctSet.has(x))) {
+        if (userSet.size === correctSet.size && [...userSet].every((x) => correctSet.has(x))) {
           correct++;
         }
       }
     }
   }
-  
+
   // If no questions were answered, return 0
   if (answered === 0) {
     return 0;
   }
-  
+
   // Calculate percentage based on answered questions only
   return Math.round((correct / answered) * 100);
 }
@@ -104,5 +106,3 @@ export const fileToBuffer = (file: File): Promise<Buffer> => {
     reader.readAsArrayBuffer(file);
   });
 };
-
- 

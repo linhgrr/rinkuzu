@@ -110,6 +110,8 @@ const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  reactStrictMode: true,
+  output: 'standalone',
   poweredByHeader: false,
   async headers() {
     return [
@@ -209,11 +211,11 @@ const nextConfig = {
         hostname: 'images.unsplash.com',
         port: '',
         pathname: '/**',
-      }
+      },
     ],
     // Keep optimization enabled by default for better LCP/SEO.
     // Set NEXT_IMAGE_UNOPTIMIZED=true only when debugging image delivery issues.
-    unoptimized: process.env.NEXT_IMAGE_UNOPTIMIZED === 'true'
+    unoptimized: process.env.NEXT_IMAGE_UNOPTIMIZED === 'true',
   },
   env: {
     MONGO_URL: process.env.MONGO_URL,
@@ -221,16 +223,12 @@ const nextConfig = {
     JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN,
   },
   eslint: {
-    // Warning: This allows production builds to successfully complete even if
-    // your project has ESLint errors.
-    ignoreDuringBuilds: true,
+    ignoreDuringBuilds: false,
   },
   compiler: {
     // Drop verbose logs from production bundles while keeping actionable errors/warnings.
-    removeConsole: process.env.NODE_ENV === 'production'
-      ? { exclude: ['error', 'warn'] }
-      : false,
+    removeConsole: process.env.NODE_ENV === 'production' ? { exclude: ['error', 'warn'] } : false,
   },
-}
+};
 
 module.exports = withPWA(withNextIntl(nextConfig));

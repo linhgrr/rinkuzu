@@ -104,13 +104,18 @@ module.exports = {
         green: '0 18px 40px rgba(0,157,140,0.22)',
       },
       fontFamily: {
-        sans: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'sans-serif'],
+        sans: [
+          'Inter',
+          'ui-sans-serif',
+          'system-ui',
+          '-apple-system',
+          'BlinkMacSystemFont',
+          '"Segoe UI"',
+          'sans-serif',
+        ],
         mono: ['"JetBrains Mono"', '"SFMono-Regular"', 'Consolas', 'monospace'],
       },
     },
   },
-  plugins: [
-    require('@tailwindcss/typography'),
-    require('@tailwindcss/forms'),
-  ],
-}
+  plugins: [require('@tailwindcss/typography'), require('@tailwindcss/forms')],
+};

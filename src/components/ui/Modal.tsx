@@ -14,7 +14,15 @@ interface ModalProps {
   size?: 'small' | 'medium' | 'large' | 'wide' | 'full';
 }
 
-export function Modal({ isOpen, onClose, children, title, description, className, size = 'medium' }: ModalProps) {
+export function Modal({
+  isOpen,
+  onClose,
+  children,
+  title,
+  description,
+  className,
+  size = 'medium',
+}: ModalProps) {
   if (!isOpen) return null;
 
   const sizeClasses = {
@@ -22,7 +30,7 @@ export function Modal({ isOpen, onClose, children, title, description, className
     medium: 'max-w-md',
     large: 'max-w-4xl',
     wide: 'max-w-[85vw]',
-    full: 'max-w-7xl'
+    full: 'max-w-7xl',
   };
 
   return (
@@ -37,49 +45,50 @@ export function Modal({ isOpen, onClose, children, title, description, className
           tabIndex={-1}
           aria-label="Close modal"
         />
-        
+
         {/* Modal */}
-        <div className={cn(
-          'relative bg-white rounded-xl shadow-lg w-full mx-4 max-h-[90vh] overflow-y-auto overscroll-contain',
-          sizeClasses[size],
-          className
-        )}>
+        <div
+          className={cn(
+            'relative bg-white rounded-xl shadow-lg w-full mx-4 max-h-[90vh] overflow-y-auto overscroll-contain',
+            sizeClasses[size],
+            className,
+          )}
+        >
           {/* Header */}
           {(title || description) && (
             <div className="p-6 border-b">
-              {title && (
-                <h2 className="text-lg font-semibold text-neutral-900">{title}</h2>
-              )}
-              {description && (
-                <p className="mt-1 text-sm text-neutral-500">{description}</p>
-              )}
+              {title && <h2 className="text-lg font-semibold text-neutral-900">{title}</h2>}
+              {description && <p className="mt-1 text-sm text-neutral-500">{description}</p>}
             </div>
           )}
-          
+
           {/* Content */}
-          {!(title || description) && (
-            <div>
-              {children}
-            </div>
-          )}
-          {(title || description) && (
-            <div className="p-6">
-              {children}
-            </div>
-          )}
-          
+          {!(title || description) && <div>{children}</div>}
+          {(title || description) && <div className="p-6">{children}</div>}
+
           {/* Close button */}
           <button
             onClick={onClose}
             className="absolute top-4 right-4 text-neutral-400 hover:text-neutral-600"
             aria-label="Close modal"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         </div>
       </div>
     </Portal>
   );
-} 
+}

@@ -1,7 +1,17 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 
-export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'success' | 'destructive' | 'default' | 'outline' | 'link' | 'gradient' | 'accent';
+export type ButtonVariant =
+  | 'primary'
+  | 'secondary'
+  | 'ghost'
+  | 'success'
+  | 'destructive'
+  | 'default'
+  | 'outline'
+  | 'link'
+  | 'gradient'
+  | 'accent';
 export type ButtonSize = 'sm' | 'md' | 'lg' | 'xl' | 'icon';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -21,7 +31,8 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       outline: 'btn-secondary', // outline maps to secondary
       ghost: 'btn-ghost',
       success: 'btn-success',
-      destructive: 'bg-red-500 text-white hover:bg-red-600 focus-visible:ring-red-500 shadow-[var(--shadow-xs)] hover:shadow-[var(--shadow-sm)] transform active:translate-y-0 hover:-translate-y-[1px]',
+      destructive:
+        'bg-red-500 text-white hover:bg-red-600 focus-visible:ring-red-500 shadow-[var(--shadow-xs)] hover:shadow-[var(--shadow-sm)] transform active:translate-y-0 hover:-translate-y-[1px]',
       link: 'text-neutral-600 hover:text-brand-trust hover:underline underline-offset-4 p-0 h-auto bg-transparent',
       gradient: 'btn-primary', // gracefully map deprecated variants
       accent: 'btn-primary',
@@ -42,7 +53,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           variants[variant],
           variant !== 'link' && sizes[size],
           loading && 'opacity-70 pointer-events-none relative',
-          className
+          className,
         )}
         ref={ref}
         disabled={disabled || loading}
@@ -57,8 +68,19 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
               viewBox="0 0 24 24"
               aria-hidden="true"
             >
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              />
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              />
             </svg>
           </div>
         )}
@@ -67,7 +89,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         </span>
       </button>
     );
-  }
+  },
 );
 
 Button.displayName = 'Button';

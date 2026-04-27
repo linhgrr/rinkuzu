@@ -89,10 +89,10 @@ export default function PWAInstaller() {
   const shouldShowBanner = () => {
     const dismissed = localStorage.getItem('dismissedInstallBanner');
     if (!dismissed) return showInstallBanner;
-    
+
     const dismissedTime = parseInt(dismissed);
     const oneWeek = 7 * 24 * 60 * 60 * 1000;
-    return showInstallBanner && (Date.now() - dismissedTime > oneWeek);
+    return showInstallBanner && Date.now() - dismissedTime > oneWeek;
   };
 
   return (
@@ -100,9 +100,7 @@ export default function PWAInstaller() {
       {/* Offline Indicator */}
       {isOffline && (
         <div className="fixed top-0 left-0 right-0 bg-red-500 text-white text-center py-2 z-50">
-          <span className="text-sm">
-            📱 {t('offline')}
-          </span>
+          <span className="text-sm">📱 {t('offline')}</span>
         </div>
       )}
 
@@ -112,9 +110,7 @@ export default function PWAInstaller() {
           <div className="flex items-center justify-between">
             <div className="flex-1">
               <h3 className="font-semibold text-sm">{t('installRinKuzu')}</h3>
-              <p className="text-xs opacity-90 mt-1">
-                {t('addToHomeScreen')}
-              </p>
+              <p className="text-xs opacity-90 mt-1">{t('addToHomeScreen')}</p>
             </div>
             <div className="flex gap-2 ml-4">
               <button
@@ -143,11 +139,16 @@ export default function PWAInstaller() {
           title={t('installApp')}
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+            />
           </svg>
           {t('installApp')}
         </button>
       )}
     </>
   );
-} 
+}

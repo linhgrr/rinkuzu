@@ -20,10 +20,10 @@ interface CategorySelectorProps {
 export function CategorySelector({
   value,
   onChange,
-  placeholder = "Search and select category...",
+  placeholder = 'Search and select category...',
   error,
   required = false,
-  disabled = false
+  disabled = false,
 }: CategorySelectorProps) {
   const [searchTerm, setSearchTerm] = useState(value?.name || '');
   const [categories, setCategories] = useState<Category[]>([]);
@@ -57,7 +57,9 @@ export function CategorySelector({
 
     setLoading(true);
     try {
-      const response = await fetch(`/api/categories/search?q=${encodeURIComponent(query)}&limit=10`);
+      const response = await fetch(
+        `/api/categories/search?q=${encodeURIComponent(query)}&limit=10`,
+      );
       const data = await response.json();
 
       if (data.success) {
@@ -177,8 +179,19 @@ export function CategorySelector({
             className="absolute right-3 top-1/2 transform -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
             aria-label="Clear selection"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         )}
@@ -187,14 +200,9 @@ export function CategorySelector({
       {/* Selected category indicator */}
       {value && (
         <div className="mt-2 flex items-center space-x-2 text-sm text-green-600">
-          <div
-            className="w-3 h-3 rounded-full"
-            style={{ backgroundColor: value.color }}
-          ></div>
+          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: value.color }}></div>
           <span>Selected: {value.name}</span>
-          {value.description && (
-            <span className="text-neutral-500">- {value.description}</span>
-          )}
+          {value.description && <span className="text-neutral-500">- {value.description}</span>}
         </div>
       )}
 
@@ -202,9 +210,7 @@ export function CategorySelector({
       {showDropdown && !disabled && (
         <div className="absolute z-50 w-full mt-1 bg-white border border-neutral-300 rounded-md shadow-lg max-h-60 overflow-auto">
           {loading && (
-            <div className="px-4 py-3 text-sm text-neutral-500 text-center">
-              Searching…
-            </div>
+            <div className="px-4 py-3 text-sm text-neutral-500 text-center">Searching…</div>
           )}
 
           {!loading && categories.length === 0 && searchTerm && (
@@ -252,16 +258,12 @@ export function CategorySelector({
       )}
 
       {/* Error message */}
-      {error && (
-        <p className="mt-1 text-sm text-red-600">{error}</p>
-      )}
+      {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
 
       {/* Required indicator */}
       {required && (
-        <p className="mt-1 text-xs text-neutral-500">
-          * Category selection is required
-        </p>
+        <p className="mt-1 text-xs text-neutral-500">* Category selection is required</p>
       )}
     </div>
   );
-} 
+}

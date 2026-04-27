@@ -5,20 +5,17 @@ import { serviceFactory } from '@/lib/serviceFactory';
 import { AsyncRouteParams } from '@/types/next-route';
 
 // GET /api/quiz/[slug]/discussions - Get all discussions for a quiz
-export async function GET(
-  request: NextRequest,
-  { params }: AsyncRouteParams<{ slug: string }>
-) {
+export async function GET(request: NextRequest, { params }: AsyncRouteParams<{ slug: string }>) {
   try {
     const { slug } = await params;
     const quizService = serviceFactory.getQuizService();
-    
+
     const result = await quizService.getQuizDiscussions(slug);
 
     if (!result.success) {
       return NextResponse.json(
         { success: false, error: result.error },
-        { status: result.statusCode || 400 }
+        { status: result.statusCode || 400 },
       );
     }
 
@@ -30,23 +27,20 @@ export async function GET(
     console.error('Error fetching discussions:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to fetch discussions' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
 
 // POST /api/quiz/[slug]/discussions - Add a new comment to a question
-export async function POST(
-  request: NextRequest,
-  { params }: AsyncRouteParams<{ slug: string }>
-) {
+export async function POST(request: NextRequest, { params }: AsyncRouteParams<{ slug: string }>) {
   try {
     const { slug } = await params;
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
       return NextResponse.json(
         { success: false, error: 'Authentication required' },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -55,23 +49,23 @@ export async function POST(
     if (typeof questionIndex !== 'number' || !content?.trim()) {
       return NextResponse.json(
         { success: false, error: 'Question index and content are required' },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     const quizService = serviceFactory.getQuizService();
-    
+
     const result = await quizService.addDiscussionComment(
       slug,
       questionIndex,
       content.trim(),
-      session.user.email
+      session.user.email,
     );
 
     if (!result.success) {
       return NextResponse.json(
         { success: false, error: result.error },
-        { status: result.statusCode || 400 }
+        { status: result.statusCode || 400 },
       );
     }
 
@@ -81,9 +75,6 @@ export async function POST(
     });
   } catch (error) {
     console.error('Error adding comment:', error);
-    return NextResponse.json(
-      { success: false, error: 'Failed to add comment' },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: 'Failed to add comment' }, { status: 500 });
   }
-} 
+}

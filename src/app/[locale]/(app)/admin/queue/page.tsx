@@ -6,7 +6,14 @@ import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, Badge } from '@/components/ui/Card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  Badge,
+} from '@/components/ui/Card';
 import { Modal } from '@/components/ui/Modal';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { QuizPreviewModal } from '@/components/ui/QuizPreviewModal';
@@ -18,7 +25,7 @@ import {
   HiOutlineEye,
   HiOutlinePencil,
   HiOutlineTrash,
-  HiOutlineLockClosed
+  HiOutlineLockClosed,
 } from '@/components/icons';
 import Navigation from '@/components/Navigation';
 import Sidebar from '@/components/Sidebar';
@@ -34,7 +41,7 @@ export default function AdminQueuePage() {
   const t = useTranslations('admin');
   const tCommon = useTranslations('common');
   const tProfile = useTranslations('profile');
-  const { data: session } = useSession();
+  const { data: _session } = useSession();
   const pathname = usePathname();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [quizzes, setQuizzes] = useState<IQuiz[]>([]);
@@ -48,52 +55,58 @@ export default function AdminQueuePage() {
   const [rejectReason, setRejectReason] = useState('');
   const [filter, setFilter] = useState<'pending' | 'all'>('pending');
   const [deletingQuizId, setDeletingQuizId] = useState<string | null>(null);
-  const [deleteConfirmModal, setDeleteConfirmModal] = useState<{ show: boolean; quiz: IQuiz | null }>({
+  const [deleteConfirmModal, setDeleteConfirmModal] = useState<{
+    show: boolean;
+    quiz: IQuiz | null;
+  }>({
     show: false,
-    quiz: null
+    quiz: null,
   });
   const [pagination, setPagination] = useState<PaginationData>({
     page: 1,
     limit: 12,
     total: 0,
-    totalPages: 0
+    totalPages: 0,
   });
 
-  const fetchQuizzes = useCallback(async (page: number = 1) => {
-    try {
-      setLoading(true);
-      const params = new URLSearchParams({
-        page: page.toString(),
-        limit: pagination.limit.toString()
-      });
+  const fetchQuizzes = useCallback(
+    async (page: number = 1) => {
+      try {
+        setLoading(true);
+        const params = new URLSearchParams({
+          page: page.toString(),
+          limit: pagination.limit.toString(),
+        });
 
-      if (filter === 'pending') {
-        params.append('status', 'pending');
+        if (filter === 'pending') {
+          params.append('status', 'pending');
+        }
+
+        const response = await fetch(`/api/quizzes?${params}`);
+        const data = await response.json();
+
+        if (data.success) {
+          setQuizzes(data.data.quizzes);
+          setPagination(data.data.pagination);
+          setError('');
+        } else {
+          setError(data.error || 'Failed to fetch quizzes');
+        }
+      } catch (_error) {
+        setError('Failed to fetch quizzes');
+      } finally {
+        setLoading(false);
       }
-
-      const response = await fetch(`/api/quizzes?${params}`);
-      const data = await response.json();
-
-      if (data.success) {
-        setQuizzes(data.data.quizzes);
-        setPagination(data.data.pagination);
-        setError('');
-      } else {
-        setError(data.error || 'Failed to fetch quizzes');
-      }
-    } catch (error) {
-      setError('Failed to fetch quizzes');
-    } finally {
-      setLoading(false);
-    }
-  }, [filter, pagination.limit]);
+    },
+    [filter, pagination.limit],
+  );
 
   useEffect(() => {
     fetchQuizzes();
   }, [fetchQuizzes]);
 
   const handlePageChange = (newPage: number) => {
-    setPagination(prev => ({ ...prev, page: newPage }));
+    setPagination((prev) => ({ ...prev, page: newPage }));
     fetchQuizzes(newPage);
   };
 
@@ -107,13 +120,15 @@ export default function AdminQueuePage() {
       const data = await response.json();
 
       if (data.success) {
-        setQuizzes(quizzes.map(quiz =>
-          quiz._id === quizId ? { ...quiz, status: 'published' as any } : quiz
-        ));
+        setQuizzes(
+          quizzes.map((quiz) =>
+            quiz._id === quizId ? { ...quiz, status: 'published' as any } : quiz,
+          ),
+        );
       } else {
         setError(data.error || 'Failed to approve quiz');
       }
-    } catch (error) {
+    } catch (_error) {
       setError('Failed to approve quiz');
     } finally {
       setActionLoading(null);
@@ -138,16 +153,18 @@ export default function AdminQueuePage() {
       const data = await response.json();
 
       if (data.success) {
-        setQuizzes(quizzes.map(quiz =>
-          quiz._id === selectedQuiz._id ? { ...quiz, status: 'rejected' as any } : quiz
-        ));
+        setQuizzes(
+          quizzes.map((quiz) =>
+            quiz._id === selectedQuiz._id ? { ...quiz, status: 'rejected' as any } : quiz,
+          ),
+        );
         setShowRejectModal(false);
         setSelectedQuiz(null);
         setRejectReason('');
       } else {
         setError(data.error || 'Failed to reject quiz');
       }
-    } catch (error) {
+    } catch (_error) {
       setError('Failed to reject quiz');
     } finally {
       setActionLoading(null);
@@ -185,12 +202,12 @@ export default function AdminQueuePage() {
 
       if (data.success) {
         // Remove quiz from local state
-        setQuizzes(prev => prev.filter(q => q._id !== quizId));
+        setQuizzes((prev) => prev.filter((q) => q._id !== quizId));
         setError('');
       } else {
         setError(data.error || 'Failed to delete quiz');
       }
-    } catch (error) {
+    } catch (_error) {
       setError('An error occurred while deleting the quiz');
     } finally {
       setDeletingQuizId(null);
@@ -201,14 +218,18 @@ export default function AdminQueuePage() {
   const getStatusBadge = (status: string) => {
     const label = status.charAt(0).toUpperCase() + status.slice(1);
     switch (status) {
-      case 'pending': return <Badge variant="warning">{label}</Badge>;
-      case 'published': return <Badge variant="success">{label}</Badge>;
-      case 'rejected': return <Badge variant="danger">{label}</Badge>;
-      default: return <Badge variant="default">{label}</Badge>;
+      case 'pending':
+        return <Badge variant="warning">{label}</Badge>;
+      case 'published':
+        return <Badge variant="success">{label}</Badge>;
+      case 'rejected':
+        return <Badge variant="danger">{label}</Badge>;
+      default:
+        return <Badge variant="default">{label}</Badge>;
     }
   };
 
-  const pendingQuizzes = quizzes.filter(quiz => quiz.status === 'pending');
+  const _pendingQuizzes = quizzes.filter((quiz) => quiz.status === 'pending');
 
   return (
     <div className="min-h-screen bg-white">
@@ -222,7 +243,9 @@ export default function AdminQueuePage() {
       />
 
       {/* Main Content */}
-      <main className={`py-8 transition-all duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-16'} max-w-none px-4 sm:px-6 lg:px-8`}>
+      <main
+        className={`py-8 transition-all duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-16'} max-w-none px-4 sm:px-6 lg:px-8`}
+      >
         {loading ? (
           <div className="flex justify-center py-12">
             <div className="flex flex-col items-center gap-3">
@@ -232,233 +255,233 @@ export default function AdminQueuePage() {
           </div>
         ) : (
           <div className="max-w-6xl mx-auto">
-              <div className="flex justify-between items-center mb-8">
-                <div>
-                  <h1 className="text-3xl font-bold text-neutral-900">{t('adminQueue')}</h1>
-                  <p className="mt-2 text-neutral-600">
-                    {t('reviewManageQuizzes')}
-                  </p>
-                </div>
-
-                <div className="flex items-center space-x-4">
-                  <select
-                    value={filter}
-                    onChange={(e) => {
-                      setFilter(e.target.value as 'pending' | 'all');
-                      setPagination(prev => ({ ...prev, page: 1 }));
-                    }}
-                    className="rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-brand-trust"
-                  >
-                    <option value="pending">{t('pendingOnly')}</option>
-                    <option value="all">{t('allQuizzes')}</option>
-                  </select>
-                </div>
+            <div className="flex justify-between items-center mb-8">
+              <div>
+                <h1 className="text-3xl font-bold text-neutral-900">{t('adminQueue')}</h1>
+                <p className="mt-2 text-neutral-600">{t('reviewManageQuizzes')}</p>
               </div>
 
-              {/* Stats */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                <Card>
-                  <CardContent className="p-6">
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-yellow-600">
-                        {quizzes.filter(q => q.status === 'pending').length}
-                      </div>
-                      <div className="text-sm text-neutral-600">{t('pendingReviewCurrentPage')}</div>
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="p-6">
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-green-600">
-                        {quizzes.filter(q => q.status === 'published').length}
-                      </div>
-                      <div className="text-sm text-neutral-600">{t('publishedCurrentPage')}</div>
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="p-6">
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-red-600">
-                        {quizzes.filter(q => q.status === 'rejected').length}
-                      </div>
-                      <div className="text-sm text-neutral-600">{t('rejectedCurrentPage')}</div>
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="p-6">
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-brand-trust">
-                        {pagination.total}
-                      </div>
-                      <div className="text-sm text-neutral-600">{t('totalAll')}</div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Results Info */}
-              <div className="flex items-center justify-between mb-6">
-                <p className="text-neutral-600">
-                  {t('showingQuizzes', { count: quizzes.length, total: pagination.total })}
-                  {filter === 'pending' && (
-                    <span className="ml-2 text-yellow-600 font-medium">
-                      {t('pendingOnlyFilter')}
-                    </span>
-                  )}
-                </p>
-                <p className="text-sm text-neutral-500">
-                  {t('page')} {pagination.page} {t('of')} {pagination.totalPages}
-                </p>
-              </div>
-
-              {error && (
-                <div className="mb-6 rounded-md bg-red-50 p-4">
-                  <div className="text-sm text-red-700">{error}</div>
-                </div>
-              )}
-
-              {/* Quiz List */}
-              <div className="space-y-6">
-                {quizzes.length === 0 ? (
-                  <Card>
-                    <CardContent className="text-center py-12">
-                      <HiOutlineDocumentText className="text-4xl mx-auto mb-4 text-neutral-400" />
-                      <h3 className="text-lg font-semibold text-neutral-900 mb-2">
-                        {t('noQuizzesFound')}
-                      </h3>
-                      <p className="text-neutral-600">
-                        {filter === 'pending'
-                          ? t('noQuizzesWaiting')
-                          : t('noQuizzesCreated')
-                        }
-                      </p>
-                    </CardContent>
-                  </Card>
-                ) : (
-                  quizzes.map((quiz) => (
-                    <Card key={quiz._id}>
-                      <CardHeader>
-                        <div className="flex justify-between items-start">
-                          <div className="flex-1">
-                            <div className="flex items-center space-x-3">
-                              <CardTitle className="text-xl">{quiz.title}</CardTitle>
-                              {quiz.isPrivate && (
-                                <span className="text-sm bg-neutral-100 text-neutral-600 px-2 py-1 rounded-full flex items-center">
-                                  <HiOutlineLockClosed className="w-3 h-3 mr-1" /> {tProfile('private')}
-                                </span>
-                              )}
-                            </div>
-                            <CardDescription className="mt-2">
-                              {quiz.description || tProfile('noDescription')}
-                            </CardDescription>
-                            <div className="mt-3 flex items-center space-x-4 text-sm text-neutral-600">
-                              <span>{t('by')} {(quiz.author as any)?.email || 'Unknown'}</span>
-                              <span>•</span>
-                              <span
-                                className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full"
-                                style={{
-                                  backgroundColor: (quiz.category as any)?.color + '20',
-                                  color: (quiz.category as any)?.color
-                                }}
-                              >
-                                {(quiz.category as any)?.name || tProfile('noCategory')}
-                              </span>
-                              <span>•</span>
-                              <span>{quiz.questions.length} {t('questions')}</span>
-                              <span>•</span>
-                              <span>{t('createdDate')} {formatDate(new Date(quiz.createdAt))}</span>
-                            </div>
-                          </div>
-                          {getStatusBadge(quiz.status)}
-                        </div>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="flex items-center justify-between">
-                          <div className="flex space-x-4">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => openPreviewModal(quiz)}
-                            >
-                              <HiOutlineEye className="w-4 h-4 mr-1" /> {t('previewWithAnswers')}
-                            </Button>
-                            <Link
-                              href={`/quiz/${quiz.slug}`}
-                              className="text-brand-trust hover:text-green-700 text-sm font-medium inline-flex items-center"
-                            >
-                              {t('testQuiz')}
-                            </Link>
-                            <Link href={`/edit/${quiz._id}`}>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="text-brand-trust hover:text-brand-trust border-green-300 hover:border-green-400"
-                              >
-                                <HiOutlinePencil className="w-4 h-4 mr-1" /> {t('editQuiz')}
-                              </Button>
-                            </Link>
-                          </div>
-
-                          <div className="flex space-x-3">
-                            {quiz.status === 'pending' && (
-                              <>
-                                <Button
-                                  size="sm"
-                                  variant="destructive"
-                                  onClick={() => openRejectModal(quiz)}
-                                  disabled={actionLoading === quiz._id}
-                                >
-                                  {t('reject')}
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  onClick={() => approveQuiz(quiz._id)}
-                                  loading={actionLoading === quiz._id}
-                                  className="bg-green-600 hover:bg-green-700"
-                                >
-                                  {t('approve')}
-                                </Button>
-                              </>
-                            )}
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => openDeleteConfirm(quiz)}
-                              className="text-red-600 hover:text-red-700 border-red-300 hover:border-red-400"
-                              disabled={deletingQuizId === quiz._id}
-                            >
-                              {deletingQuizId === quiz._id ? (
-                                <>
-                                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-red-600 border-t-transparent mr-2"></div>
-                                  {t('deleting')}
-                                </>
-                              ) : (
-                                <><HiOutlineTrash className="w-4 h-4 mr-1" /> {t('delete')}</>
-                              )}
-                            </Button>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))
-                )}
-
-                {/* Pagination */}
-                {pagination.totalPages > 1 && (
-                  <div className="mt-8">
-                    <Pagination
-                      currentPage={pagination.page}
-                      totalPages={pagination.totalPages}
-                      onPageChange={handlePageChange}
-                      className="justify-center"
-                    />
-                  </div>
-                )}
+              <div className="flex items-center space-x-4">
+                <select
+                  value={filter}
+                  onChange={(e) => {
+                    setFilter(e.target.value as 'pending' | 'all');
+                    setPagination((prev) => ({ ...prev, page: 1 }));
+                  }}
+                  className="rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-brand-trust"
+                >
+                  <option value="pending">{t('pendingOnly')}</option>
+                  <option value="all">{t('allQuizzes')}</option>
+                </select>
               </div>
             </div>
+
+            {/* Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+              <Card>
+                <CardContent className="p-6">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-yellow-600">
+                      {quizzes.filter((q) => q.status === 'pending').length}
+                    </div>
+                    <div className="text-sm text-neutral-600">{t('pendingReviewCurrentPage')}</div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-6">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-green-600">
+                      {quizzes.filter((q) => q.status === 'published').length}
+                    </div>
+                    <div className="text-sm text-neutral-600">{t('publishedCurrentPage')}</div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-6">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-red-600">
+                      {quizzes.filter((q) => q.status === 'rejected').length}
+                    </div>
+                    <div className="text-sm text-neutral-600">{t('rejectedCurrentPage')}</div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-6">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-brand-trust">{pagination.total}</div>
+                    <div className="text-sm text-neutral-600">{t('totalAll')}</div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Results Info */}
+            <div className="flex items-center justify-between mb-6">
+              <p className="text-neutral-600">
+                {t('showingQuizzes', { count: quizzes.length, total: pagination.total })}
+                {filter === 'pending' && (
+                  <span className="ml-2 text-yellow-600 font-medium">{t('pendingOnlyFilter')}</span>
+                )}
+              </p>
+              <p className="text-sm text-neutral-500">
+                {t('page')} {pagination.page} {t('of')} {pagination.totalPages}
+              </p>
+            </div>
+
+            {error && (
+              <div className="mb-6 rounded-md bg-red-50 p-4">
+                <div className="text-sm text-red-700">{error}</div>
+              </div>
+            )}
+
+            {/* Quiz List */}
+            <div className="space-y-6">
+              {quizzes.length === 0 ? (
+                <Card>
+                  <CardContent className="text-center py-12">
+                    <HiOutlineDocumentText className="text-4xl mx-auto mb-4 text-neutral-400" />
+                    <h3 className="text-lg font-semibold text-neutral-900 mb-2">
+                      {t('noQuizzesFound')}
+                    </h3>
+                    <p className="text-neutral-600">
+                      {filter === 'pending' ? t('noQuizzesWaiting') : t('noQuizzesCreated')}
+                    </p>
+                  </CardContent>
+                </Card>
+              ) : (
+                quizzes.map((quiz) => (
+                  <Card key={quiz._id}>
+                    <CardHeader>
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-3">
+                            <CardTitle className="text-xl">{quiz.title}</CardTitle>
+                            {quiz.isPrivate && (
+                              <span className="text-sm bg-neutral-100 text-neutral-600 px-2 py-1 rounded-full flex items-center">
+                                <HiOutlineLockClosed className="w-3 h-3 mr-1" />{' '}
+                                {tProfile('private')}
+                              </span>
+                            )}
+                          </div>
+                          <CardDescription className="mt-2">
+                            {quiz.description || tProfile('noDescription')}
+                          </CardDescription>
+                          <div className="mt-3 flex items-center space-x-4 text-sm text-neutral-600">
+                            <span>
+                              {t('by')} {(quiz.author as any)?.email || 'Unknown'}
+                            </span>
+                            <span>•</span>
+                            <span
+                              className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full"
+                              style={{
+                                backgroundColor: (quiz.category as any)?.color + '20',
+                                color: (quiz.category as any)?.color,
+                              }}
+                            >
+                              {(quiz.category as any)?.name || tProfile('noCategory')}
+                            </span>
+                            <span>•</span>
+                            <span>
+                              {quiz.questions.length} {t('questions')}
+                            </span>
+                            <span>•</span>
+                            <span>
+                              {t('createdDate')} {formatDate(new Date(quiz.createdAt))}
+                            </span>
+                          </div>
+                        </div>
+                        {getStatusBadge(quiz.status)}
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex items-center justify-between">
+                        <div className="flex space-x-4">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => openPreviewModal(quiz)}
+                          >
+                            <HiOutlineEye className="w-4 h-4 mr-1" /> {t('previewWithAnswers')}
+                          </Button>
+                          <Link
+                            href={`/quiz/${quiz.slug}`}
+                            className="text-brand-trust hover:text-green-700 text-sm font-medium inline-flex items-center"
+                          >
+                            {t('testQuiz')}
+                          </Link>
+                          <Link href={`/edit/${quiz._id}`}>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-brand-trust hover:text-brand-trust border-green-300 hover:border-green-400"
+                            >
+                              <HiOutlinePencil className="w-4 h-4 mr-1" /> {t('editQuiz')}
+                            </Button>
+                          </Link>
+                        </div>
+
+                        <div className="flex space-x-3">
+                          {quiz.status === 'pending' && (
+                            <>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={() => openRejectModal(quiz)}
+                                disabled={actionLoading === quiz._id}
+                              >
+                                {t('reject')}
+                              </Button>
+                              <Button
+                                size="sm"
+                                onClick={() => approveQuiz(quiz._id)}
+                                loading={actionLoading === quiz._id}
+                                className="bg-green-600 hover:bg-green-700"
+                              >
+                                {t('approve')}
+                              </Button>
+                            </>
+                          )}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => openDeleteConfirm(quiz)}
+                            className="text-red-600 hover:text-red-700 border-red-300 hover:border-red-400"
+                            disabled={deletingQuizId === quiz._id}
+                          >
+                            {deletingQuizId === quiz._id ? (
+                              <>
+                                <div className="animate-spin rounded-full h-4 w-4 border-2 border-red-600 border-t-transparent mr-2"></div>
+                                {t('deleting')}
+                              </>
+                            ) : (
+                              <>
+                                <HiOutlineTrash className="w-4 h-4 mr-1" /> {t('delete')}
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
+
+              {/* Pagination */}
+              {pagination.totalPages > 1 && (
+                <div className="mt-8">
+                  <Pagination
+                    currentPage={pagination.page}
+                    totalPages={pagination.totalPages}
+                    onPageChange={handlePageChange}
+                    className="justify-center"
+                  />
+                </div>
+              )}
+            </div>
+          </div>
         )}
       </main>
 
@@ -545,8 +568,14 @@ export default function AdminQueuePage() {
         confirmVariant="destructive"
         onConfirm={() => deleteConfirmModal.quiz && handleDeleteQuiz(deleteConfirmModal.quiz._id)}
         onCancel={closeDeleteConfirm}
-        isLoading={!!(deletingQuizId && deleteConfirmModal.quiz && deletingQuizId === deleteConfirmModal.quiz._id)}
+        isLoading={
+          !!(
+            deletingQuizId &&
+            deleteConfirmModal.quiz &&
+            deletingQuizId === deleteConfirmModal.quiz._id
+          )
+        }
       />
     </div>
   );
-} 
+}

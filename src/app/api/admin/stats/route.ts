@@ -5,14 +5,14 @@ import { serviceFactory } from '@/lib/serviceFactory';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
 
     if (!session?.user || (session.user as any).role !== 'admin') {
       return NextResponse.json(
         { success: false, error: 'Unauthorized - Admin access required' },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -23,16 +23,21 @@ export async function GET(request: NextRequest) {
       adminService.getStats(),
       adminService.getActivityStats(),
       adminService.getCategoryStats(),
-      adminService.getCreatorStats()
+      adminService.getCreatorStats(),
     ]);
 
-    if (!statsResult.success || !activityResult.success || !categoryResult.success || !creatorResult.success) {
+    if (
+      !statsResult.success ||
+      !activityResult.success ||
+      !categoryResult.success ||
+      !creatorResult.success
+    ) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Failed to fetch statistics'
+          error: 'Failed to fetch statistics',
         },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -45,19 +50,18 @@ export async function GET(request: NextRequest) {
       topCreators: creatorResult.data,
       // Provide defaults for missing sections to prevent frontend crashes
       scoreStats: { averageScore: 0, highestScore: 0, lowestScore: 0 },
-      growthTrends: { users: [], quizzes: [], attempts: [] }
+      growthTrends: { users: [], quizzes: [], attempts: [] },
     };
 
     return NextResponse.json({
       success: true,
-      data: combinedStats
+      data: combinedStats,
     });
-
   } catch (error) {
     console.error('Error fetching admin stats:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to fetch statistics' },
-      { status: 500 }
+      { status: 500 },
     );
   }
-} 
+}

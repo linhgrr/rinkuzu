@@ -19,52 +19,52 @@ export interface IReport {
 const reportSchema = new mongoose.Schema<IReport>({
   quizId: {
     type: String,
-    required: true
+    required: true,
   },
   quizTitle: {
     type: String,
-    required: true
+    required: true,
   },
   quizSlug: {
     type: String,
-    required: true
+    required: true,
   },
   reporterEmail: {
     type: String,
-    required: true
+    required: true,
   },
   reporterName: {
     type: String,
-    required: true
+    required: true,
   },
   content: {
     type: String,
     required: true,
-    maxlength: 2000
+    maxlength: 2000,
   },
   status: {
     type: String,
     enum: ['pending', 'resolved', 'dismissed'],
-    default: 'pending'
+    default: 'pending',
   },
   createdAt: {
     type: Date,
-    default: Date.now
+    default: Date.now,
   },
   updatedAt: {
     type: Date,
-    default: Date.now
+    default: Date.now,
   },
   resolvedAt: {
-    type: Date
+    type: Date,
   },
   resolvedBy: {
-    type: String
+    type: String,
   },
   adminNotes: {
     type: String,
-    maxlength: 1000
-  }
+    maxlength: 1000,
+  },
 });
 
 // Index for efficient queries
@@ -73,4 +73,4 @@ reportSchema.index({ quizId: 1 });
 
 const Report = mongoose.models.Report || mongoose.model<IReport>('Report', reportSchema);
 
-export default Report; 
+export default Report;

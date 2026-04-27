@@ -11,46 +11,46 @@ export const COLORS = {
     gray: 'bg-neutral-100 text-neutral-700 border-neutral-200',
     cyan: 'bg-cyan-100 text-cyan-700 border-cyan-200',
     orange: 'bg-orange-100 text-orange-700 border-orange-200',
-    teal: 'bg-green-100 text-green-700 border-green-200'
-  }
-} as const
+    teal: 'bg-green-100 text-green-700 border-green-200',
+  },
+} as const;
 
 export const ANIMATIONS = {
   EMOTION_CHANGE_INTERVAL: 8000, // 8 seconds
   CARD_STAGGER_DELAY: 100, // 100ms per card
   LOADING_PULSE_DURATION: 3000,
   HOVER_TRANSITION: 500,
-  SPARKLE_DELAY: 100 // per sparkle
-} as const
+  SPARKLE_DELAY: 100, // per sparkle
+} as const;
 
 export const LAYOUT = {
   PAGINATION: {
     DEFAULT_LIMIT: 12,
-    DEFAULT_PAGE: 1
+    DEFAULT_PAGE: 1,
   },
   CARD: {
     MIN_WIDTH: 200,
     GRID_COLS: {
       MOBILE: 1,
       TABLET: 2,
-      DESKTOP: 3
-    }
+      DESKTOP: 3,
+    },
   },
   AVATAR: {
     SIZE: 160, // 40 * 4 (w-40 h-40)
-    BORDER_RADIUS: 9999 // rounded-full
-  }
-} as const
+    BORDER_RADIUS: 9999, // rounded-full
+  },
+} as const;
 
-export const EMOTIONS = ['happy', 'wink', 'smile', 'wave', 'dance'] as const
+export const EMOTIONS = ['happy', 'wink', 'smile', 'wave', 'dance'] as const;
 
 export const EMOTION_LABELS = {
   happy: '😊 Happy',
-  wink: '😉 Wink', 
+  wink: '😉 Wink',
   smile: '😄 Smile',
   wave: '👋 Wave',
-  dance: '💃 Dance'
-} as const
+  dance: '💃 Dance',
+} as const;
 
 export const MAGIC_EFFECTS = {
   SAKURA_COUNT: 6,
@@ -60,6 +60,6 @@ export const MAGIC_EFFECTS = {
     { left: '20%', top: '20%' },
     { left: '40%', top: '40%' },
     { left: '60%', top: '60%' },
-    { left: '80%', top: '80%' }
-  ]
-} as const 
+    { left: '80%', top: '80%' },
+  ],
+} as const;

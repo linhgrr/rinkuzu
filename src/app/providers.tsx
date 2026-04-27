@@ -22,4 +22,4 @@ export default function Providers({ children, session }: ProvidersProps) {
       <Toaster richColors position="top-right" />
     </SessionProvider>
   );
-} 
+}

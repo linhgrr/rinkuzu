@@ -20,7 +20,7 @@ export function TextShimmer({
         'bg-clip-text text-transparent',
         'bg-gradient-to-r from-neutral-500 via-white to-neutral-500 bg-[length:200%_auto]',
         'animate-text-shimmer',
-        className
+        className,
       )}
       style={{ animationDuration: `${duration}s`, ...style }}
       {...props}

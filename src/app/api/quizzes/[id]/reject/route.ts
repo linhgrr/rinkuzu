@@ -4,43 +4,33 @@ import { authOptions } from '@/lib/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
 import { AsyncRouteParams } from '@/types/next-route';
 
-export async function POST(
-  request: NextRequest,
-  { params }: AsyncRouteParams<{ id: string }>
-) {
+export async function POST(request: NextRequest, { params }: AsyncRouteParams<{ id: string }>) {
   try {
     const { id } = await params;
     const session = await getServerSession(authOptions);
     if (!session?.user || (session.user as any).role !== 'admin') {
-      return NextResponse.json(
-        { success: false, error: 'Admin access required' },
-        { status: 403 }
-      );
+      return NextResponse.json({ success: false, error: 'Admin access required' }, { status: 403 });
     }
 
     const { reason } = await request.json();
     const quizService = serviceFactory.getQuizService();
-    
+
     const result = await quizService.rejectQuiz(id, reason);
 
     if (!result.success) {
       return NextResponse.json(
         { success: false, error: result.error },
-        { status: result.statusCode || 400 }
+        { status: result.statusCode || 400 },
       );
     }
 
     return NextResponse.json({
       success: true,
       message: 'Quiz rejected successfully',
-      data: result.data
+      data: result.data,
     });
-
   } catch (error: any) {
     console.error('Reject quiz error:', error);
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
   }
 }

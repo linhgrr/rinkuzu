@@ -1,43 +1,50 @@
-import cron from 'node-cron'
-import { SubscriptionRepository } from '@/repositories/SubscriptionRepository'
-import { UserRepository } from '@/repositories/UserRepository'
-import { PayOSService } from '@/services/payment/PayOSService'
-import { SubscriptionService } from '@/services/subscription/SubscriptionService'
+import cron from 'node-cron';
+import { SubscriptionRepository } from '@/repositories/SubscriptionRepository';
+import { UserRepository } from '@/repositories/UserRepository';
+import { PayOSService } from '@/services/payment/PayOSService';
+import { SubscriptionService } from '@/services/subscription/SubscriptionService';
 
-const hasMongoUrl = Boolean(process.env.MONGO_URL)
+const hasMongoUrl = Boolean(process.env.MONGO_URL);
+const isNextBuildProcess =
+  process.env.NEXT_PHASE === 'phase-production-build' ||
+  process.argv.some((arg) => arg.includes('next') && arg.includes('build'));
+const shouldEnableScheduler = hasMongoUrl && !isNextBuildProcess;
 
 // Prevent multiple scheduler instances in dev (hot-reload) or across imports
-if (hasMongoUrl && !(global as any)._expiredSubscriptionSchedulerInitialized) {
-  (global as any)._expiredSubscriptionSchedulerInitialized = true
+if (shouldEnableScheduler && !(global as any)._expiredSubscriptionSchedulerInitialized) {
+  (global as any)._expiredSubscriptionSchedulerInitialized = true;
 
-  const subscriptionRepository = new SubscriptionRepository()
-  const userRepository = new UserRepository()
-  const payosService = new PayOSService()
+  const subscriptionRepository = new SubscriptionRepository();
+  const userRepository = new UserRepository();
+  const payosService = new PayOSService();
   const subscriptionService = new SubscriptionService(
     subscriptionRepository,
     userRepository,
-    payosService
-  )
+    payosService,
+  );
 
   // Run once on startup
-  void subscriptionService.checkAndUpdateExpiredSubscriptions()
-    .then(() => console.log('[Scheduler] Initial expired subscription check done'))
-    .catch(err => console.error('[Scheduler] Initial check failed', err))
+  void subscriptionService
+    .checkAndUpdateExpiredSubscriptions()
+    .then(() => console.warn('[Scheduler] Initial expired subscription check done'))
+    .catch((err) => console.error('[Scheduler] Initial check failed', err));
 
   // Schedule to run every day at 00:00 AM server time
   cron.schedule('0 0 * * *', async () => {
     try {
-      console.log('[Scheduler] Running daily expired subscription check')
-      await subscriptionService.checkAndUpdateExpiredSubscriptions()
-      console.log('[Scheduler] Completed daily expired subscription check')
+      console.warn('[Scheduler] Running daily expired subscription check');
+      await subscriptionService.checkAndUpdateExpiredSubscriptions();
+      console.warn('[Scheduler] Completed daily expired subscription check');
     } catch (err) {
-      console.error('[Scheduler] Failed during daily expired subscription check', err)
+      console.error('[Scheduler] Failed during daily expired subscription check', err);
     }
-  })
+  });
 
-  console.log('[Scheduler] Expired subscription scheduler initialized (runs daily at 00:00)')
+  console.warn('[Scheduler] Expired subscription scheduler initialized (runs daily at 00:00)');
 }
 
 if (!hasMongoUrl) {
-  console.warn('[Scheduler] Skipping expired subscription scheduler: MONGO_URL is not set')
+  console.warn('[Scheduler] Skipping expired subscription scheduler: MONGO_URL is not set');
+} else if (isNextBuildProcess) {
+  console.warn('[Scheduler] Skipping expired subscription scheduler during next build');
 }

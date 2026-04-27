@@ -22,7 +22,7 @@ export const TableOfContents = ({ headings }: TableOfContentsProps) => {
       {
         rootMargin: '-100px 0px -70% 0px',
         threshold: 0,
-      }
+      },
     );
 
     headings.forEach((item) => {

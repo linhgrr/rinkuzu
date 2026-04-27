@@ -17,14 +17,14 @@ import {
   HiOutlinePencil,
   HiOutlineTrash,
   HiOutlineCheck,
-  HiOutlineX
+  HiOutlineX,
 } from '@/components/icons';
 import { IReport } from '@/models/Report';
 
 export default function AdminReportsPage() {
   const t = useTranslations('admin');
   const tCommon = useTranslations('common');
-  const { data: session } = useSession();
+  const { data: _session } = useSession();
   const [reports, setReports] = useState<IReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -85,7 +85,7 @@ export default function AdminReportsPage() {
         },
         body: JSON.stringify({
           status,
-          adminNotes: adminNotes.trim()
+          adminNotes: adminNotes.trim(),
         }),
       });
 
@@ -143,7 +143,7 @@ export default function AdminReportsPage() {
       month: 'short',
       day: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     });
   };
 
@@ -190,7 +190,9 @@ export default function AdminReportsPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-neutral-900">{t('quizReports')}</h1>
-            <p className="mt-2 text-neutral-600">Manage and review user reports about quiz content</p>
+            <p className="mt-2 text-neutral-600">
+              Manage and review user reports about quiz content
+            </p>
           </div>
 
           {/* Filters */}
@@ -216,8 +218,7 @@ export default function AdminReportsPage() {
                 <p className="text-neutral-500">
                   {statusFilter === 'all'
                     ? 'No reports have been submitted yet.'
-                    : `No ${statusFilter} reports found.`
-                  }
+                    : `No ${statusFilter} reports found.`}
                 </p>
               </Card>
             ) : (
@@ -236,7 +237,8 @@ export default function AdminReportsPage() {
                         <div className="text-sm text-neutral-600 mb-3">
                           <div className="flex items-center gap-4 mb-1">
                             <span>
-                              <strong>Reporter:</strong> {report.reporterName} ({report.reporterEmail})
+                              <strong>Reporter:</strong> {report.reporterName} (
+                              {report.reporterEmail})
                             </span>
                             <span>
                               <strong>Date:</strong> {formatDate(report.createdAt)}
@@ -267,18 +269,12 @@ export default function AdminReportsPage() {
                       </div>
 
                       <div className="flex flex-col gap-2 ml-4">
-                        <Button
-                          variant="gradient"
-                          onClick={() => openReportModal(report)}
-                        >
+                        <Button variant="gradient" onClick={() => openReportModal(report)}>
                           <HiOutlineEye className="w-4 h-4 mr-1" /> Review
                         </Button>
 
                         <Link href={`/edit/${report.quizId}`}>
-                          <Button
-                            variant="accent"
-                            className="w-full"
-                          >
+                          <Button variant="accent" className="w-full">
                             <HiOutlinePencil className="w-4 h-4 mr-1" /> Edit Quiz
                           </Button>
                         </Link>
@@ -307,9 +303,16 @@ export default function AdminReportsPage() {
             <div className="mb-6">
               <h3 className="text-lg font-semibold mb-2">{selectedReport.quizTitle}</h3>
               <div className="text-sm text-neutral-600 mb-3">
-                <div><strong>Reporter:</strong> {selectedReport.reporterName} ({selectedReport.reporterEmail})</div>
-                <div><strong>Date:</strong> {formatDate(selectedReport.createdAt)}</div>
-                <div><strong>Status:</strong> {getStatusBadge(selectedReport.status)}</div>
+                <div>
+                  <strong>Reporter:</strong> {selectedReport.reporterName} (
+                  {selectedReport.reporterEmail})
+                </div>
+                <div>
+                  <strong>Date:</strong> {formatDate(selectedReport.createdAt)}
+                </div>
+                <div>
+                  <strong>Status:</strong> {getStatusBadge(selectedReport.status)}
+                </div>
               </div>
 
               <div className="bg-neutral-50 rounded-lg p-3 mb-4">
@@ -321,7 +324,10 @@ export default function AdminReportsPage() {
             </div>
 
             <div className="mb-6">
-              <label htmlFor="adminNotes" className="block text-sm font-medium text-neutral-700 mb-2">
+              <label
+                htmlFor="adminNotes"
+                className="block text-sm font-medium text-neutral-700 mb-2"
+              >
                 Admin Notes (Optional)
               </label>
               <textarea
@@ -333,17 +339,11 @@ export default function AdminReportsPage() {
                 maxLength={1000}
                 placeholder="Add internal notes about this report..."
               />
-              <div className="text-xs text-neutral-500 mt-1">
-                {adminNotes.length}/1000
-              </div>
+              <div className="text-xs text-neutral-500 mt-1">{adminNotes.length}/1000</div>
             </div>
 
             <div className="flex gap-3">
-              <Button
-                variant="outline"
-                onClick={closeReportModal}
-                className="flex-1"
-              >
+              <Button variant="outline" onClick={closeReportModal} className="flex-1">
                 Cancel
               </Button>
 
@@ -353,7 +353,13 @@ export default function AdminReportsPage() {
                 disabled={updating}
                 className="flex-1 bg-green-600 hover:bg-green-700"
               >
-                {updating ? 'Updating…' : <><HiOutlineCheck className="w-4 h-4 mr-1" /> Mark Resolved</>}
+                {updating ? (
+                  'Updating…'
+                ) : (
+                  <>
+                    <HiOutlineCheck className="w-4 h-4 mr-1" /> Mark Resolved
+                  </>
+                )}
               </Button>
 
               <Button
@@ -362,7 +368,13 @@ export default function AdminReportsPage() {
                 disabled={updating}
                 className="flex-1"
               >
-                {updating ? 'Updating…' : <><HiOutlineX className="w-4 h-4 mr-1" /> Dismiss</>}
+                {updating ? (
+                  'Updating…'
+                ) : (
+                  <>
+                    <HiOutlineX className="w-4 h-4 mr-1" /> Dismiss
+                  </>
+                )}
               </Button>
             </div>
           </div>
@@ -379,6 +391,6 @@ export default function AdminReportsPage() {
         onCancel={() => setReportToDelete(null)}
         onConfirm={confirmDeleteReport}
       />
-    </div >
+    </div>
   );
 }

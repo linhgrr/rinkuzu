@@ -95,9 +95,7 @@ export const useDraftStore = create<DraftStore>()(
       clearCompletedDrafts: () =>
         set((state) => {
           const activeDrafts = Object.fromEntries(
-            Object.entries(state.activeDrafts).filter(
-              ([_, d]) => d.status !== 'completed'
-            )
+            Object.entries(state.activeDrafts).filter(([_, d]) => d.status !== 'completed'),
           );
           return { activeDrafts };
         }),
@@ -109,24 +107,24 @@ export const useDraftStore = create<DraftStore>()(
             Object.entries(state.activeDrafts).filter(([_, d]) => {
               if (!d.expiresAt) return true; // Keep if no expiry
               return new Date(d.expiresAt) > now;
-            })
+            }),
           );
           return { activeDrafts };
         }),
 
       syncWithServer: (serverDrafts) =>
         set((state) => {
-          const serverIds = new Set(serverDrafts.map(d => d._id));
+          const serverIds = new Set(serverDrafts.map((d) => d._id));
 
           // Remove drafts that no longer exist on server
           const activeDrafts = Object.fromEntries(
             Object.entries(state.activeDrafts).filter(([id, _]) => {
               return serverIds.has(id);
-            })
+            }),
           );
 
           // Update status from server for existing drafts
-          serverDrafts.forEach(sd => {
+          serverDrafts.forEach((sd) => {
             if (activeDrafts[sd._id]) {
               activeDrafts[sd._id] = {
                 ...activeDrafts[sd._id],
@@ -143,19 +141,17 @@ export const useDraftStore = create<DraftStore>()(
 
       getProcessingCount: () =>
         Object.values(get().activeDrafts).filter(
-          (d) => d.status === 'processing' || d.status === 'uploading'
+          (d) => d.status === 'processing' || d.status === 'uploading',
         ).length,
 
       getCompletedCount: () =>
-        Object.values(get().activeDrafts).filter(
-          (d) => d.status === 'completed'
-        ).length,
+        Object.values(get().activeDrafts).filter((d) => d.status === 'completed').length,
 
       hasActiveDrafts: () => Object.keys(get().activeDrafts).length > 0,
     }),
     {
       name: 'draft-storage',
       version: 1,
-    }
-  )
+    },
+  ),
 );

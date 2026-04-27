@@ -1,20 +1,20 @@
-'use client'
+'use client';
 
-import dynamic from 'next/dynamic'
-import { useTranslations } from 'next-intl'
-import { ResultContent, ResultEmptyState, ResultLoadingState } from './ResultSections'
-import { useResultState } from './hooks/use-result-state'
+import dynamic from 'next/dynamic';
+import { useTranslations } from 'next-intl';
+import { ResultContent, ResultEmptyState, ResultLoadingState } from './ResultSections';
+import { useResultState } from './hooks/use-result-state';
 
 const AdaptiveLearningChatbot = dynamic(() => import('./Chatbot'), {
   ssr: false,
-})
+});
 
 interface ResultProps {
-  sessionId: string
+  sessionId: string;
 }
 
 export default function AdaptiveLearningResult({ sessionId }: ResultProps) {
-  const t = useTranslations('adaptiveLearning')
+  const t = useTranslations('adaptiveLearning');
   const {
     averageMasteryPercent,
     chatContext,
@@ -28,13 +28,11 @@ export default function AdaptiveLearningResult({ sessionId }: ResultProps) {
     masteryPercent,
     openChat,
     result,
-  } = useResultState(sessionId, t)
+  } = useResultState(sessionId, t);
 
-  if (hydrating)
-    return <ResultLoadingState t={t} />
+  if (hydrating) return <ResultLoadingState t={t} />;
 
-  if (!result || !exercise)
-    return <ResultEmptyState onGoDashboard={handleGoDashboard} t={t} />
+  if (!result || !exercise) return <ResultEmptyState onGoDashboard={handleGoDashboard} t={t} />;
 
   return (
     <>
@@ -56,5 +54,5 @@ export default function AdaptiveLearningResult({ sessionId }: ResultProps) {
         context={chatContext}
       />
     </>
-  )
+  );
 }

@@ -7,7 +7,7 @@ import DraftQuiz from '@/models/DraftQuiz';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!(session?.user as any)?.id) {
@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
     await connectDB();
 
     const drafts = await DraftQuiz.find({
-      userId: ((session!.user as any) as any).id,
+      userId: (session!.user as any as any).id,
       status: { $ne: 'expired' },
     })
       .select('title status chunks.total chunks.processed questions createdAt expiresAt')
@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
       .limit(20);
 
     return NextResponse.json({
-      drafts: drafts.map(d => ({
+      drafts: drafts.map((d) => ({
         _id: d._id.toString(),
         title: d.title,
         status: d.status,
@@ -38,12 +38,8 @@ export async function GET(request: NextRequest) {
         expiresAt: d.expiresAt,
       })),
     });
-
   } catch (error) {
     console.error('List drafts error:', error);
-    return NextResponse.json(
-      { error: 'Failed to list drafts' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to list drafts' }, { status: 500 });
   }
 }

@@ -1,62 +1,62 @@
-'use client'
+'use client';
 
-import { Suspense, useEffect, useState } from 'react'
-import { useSearchParams, useRouter } from 'next/navigation'
-import { useTranslations } from 'next-intl'
-import { Card } from '@/components/ui/Card'
-import { Button } from '@/components/ui/Button'
+import { Suspense, useEffect, useState } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
+import { Card } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
 
 function PaymentSuccessContent() {
-  const t = useTranslations('subscription')
-  const searchParams = useSearchParams()
-  const router = useRouter()
-  const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading')
-  const [message, setMessage] = useState('')
+  const t = useTranslations('subscription');
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
+  const [message, setMessage] = useState('');
 
   useEffect(() => {
-    const orderCode = searchParams.get('orderCode')
+    const orderCode = searchParams.get('orderCode');
     if (!orderCode) {
-      setStatus('error')
-      setMessage(t('errorTitle'))
-      return
+      setStatus('error');
+      setMessage(t('errorTitle'));
+      return;
     }
 
     const verifyPayment = async (orderCode: string) => {
-    try {
-      const response = await fetch('/api/subscription/verify', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ orderCode }),
-      })
+      try {
+        const response = await fetch('/api/subscription/verify', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ orderCode }),
+        });
 
-      const data = await response.json()
+        const data = await response.json();
 
-      if (data.success) {
-        setStatus('success')
-        setMessage(t('paymentSuccessMessage'))
-      } else {
-        setStatus('error')
-        setMessage(data.message || t('errorTitle'))
+        if (data.success) {
+          setStatus('success');
+          setMessage(t('paymentSuccessMessage'));
+        } else {
+          setStatus('error');
+          setMessage(data.message || t('errorTitle'));
+        }
+      } catch (error) {
+        console.error('Error verifying payment:', error);
+        setStatus('error');
+        setMessage(t('errorTitle'));
       }
-    } catch (error) {
-      console.error('Error verifying payment:', error)
-      setStatus('error')
-      setMessage(t('errorTitle'))
-    }
-  };
+    };
 
-    verifyPayment(orderCode)
-  }, [searchParams, t])
+    verifyPayment(orderCode);
+  }, [searchParams, t]);
 
   const handleGoHome = () => {
-    router.push('/')
-  }
+    router.push('/');
+  };
 
   const handleGoToSubscription = () => {
-    router.push('/subscription')
-  }
+    router.push('/subscription');
+  };
 
   if (status === 'loading') {
     return (
@@ -66,7 +66,7 @@ function PaymentSuccessContent() {
           <p className="mt-4 text-neutral-600">{t('verifyingPayment')}</p>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -93,9 +93,7 @@ function PaymentSuccessContent() {
               <h1 className="text-2xl font-bold text-neutral-900 mb-4">
                 {t('paymentSuccessTitle')}
               </h1>
-              <p className="text-neutral-600 mb-6">
-                {message}
-              </p>
+              <p className="text-neutral-600 mb-6">{message}</p>
               <div className="space-y-3">
                 <Button onClick={handleGoHome} className="w-full">
                   {t('backToHome')}
@@ -122,12 +120,8 @@ function PaymentSuccessContent() {
                   />
                 </svg>
               </div>
-              <h1 className="text-2xl font-bold text-neutral-900 mb-4">
-                {t('errorTitle')}
-              </h1>
-              <p className="text-neutral-600 mb-6">
-                {message}
-              </p>
+              <h1 className="text-2xl font-bold text-neutral-900 mb-4">{t('errorTitle')}</h1>
+              <p className="text-neutral-600 mb-6">{message}</p>
               <div className="space-y-3">
                 <Button onClick={handleGoHome} className="w-full">
                   {t('backToHome')}
@@ -141,11 +135,11 @@ function PaymentSuccessContent() {
         </Card>
       </div>
     </div>
-  )
+  );
 }
 
 function PaymentSuccessLoading() {
-  const t = useTranslations('common')
+  const t = useTranslations('common');
   return (
     <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
       <div className="text-center">
@@ -153,7 +147,7 @@ function PaymentSuccessLoading() {
         <p className="mt-4 text-neutral-600">{t('loading')}</p>
       </div>
     </div>
-  )
+  );
 }
 
 export default function PaymentSuccessPage() {
@@ -161,5 +155,5 @@ export default function PaymentSuccessPage() {
     <Suspense fallback={<PaymentSuccessLoading />}>
       <PaymentSuccessContent />
     </Suspense>
-  )
-} 
+  );
+}

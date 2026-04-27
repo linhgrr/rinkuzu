@@ -10,7 +10,12 @@ interface PDFViewerProps {
   showHeader?: boolean;
 }
 
-export default function PDFViewer({ pdfDataUrl, onClose, pdfUrl, showHeader = true }: PDFViewerProps) {
+export default function PDFViewer({
+  pdfDataUrl,
+  onClose,
+  pdfUrl,
+  showHeader = true,
+}: PDFViewerProps) {
   const [isLoading, setIsLoading] = useState(true);
 
   // Prefer inline source if provided, otherwise fallback to original URL.
@@ -40,11 +45,7 @@ export default function PDFViewer({ pdfDataUrl, onClose, pdfUrl, showHeader = tr
             >
               Mở tab mới
             </Button>
-            <Button
-              onClick={onClose}
-              size="sm"
-              variant="ghost"
-            >
+            <Button onClick={onClose} size="sm" variant="ghost">
               ✕
             </Button>
           </div>

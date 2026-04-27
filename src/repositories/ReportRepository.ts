@@ -1,53 +1,55 @@
-import connectDB from '@/lib/mongoose'
-import Report from '@/models/Report'
-import { IReport, IReportRepository } from '@/interfaces/repositories/IReportRepository'
+import connectDB from '@/lib/mongoose';
+import Report from '@/models/Report';
+import { IReport, IReportRepository } from '@/interfaces/repositories/IReportRepository';
 
 export class ReportRepository implements IReportRepository {
   async findById(id: string): Promise<IReport | null> {
-    await connectDB()
-    return await Report.findById(id)
+    await connectDB();
+    return (await Report.findById(id)
       .populate('quiz', 'title slug')
       .populate('reporter', 'email')
-      .lean() as unknown as IReport | null
+      .lean()) as unknown as IReport | null;
   }
 
-  async findAll(options: {
-    page?: number
-    limit?: number
-    status?: string
-  } = {}): Promise<{
-    reports: IReport[]
+  async findAll(
+    options: {
+      page?: number;
+      limit?: number;
+      status?: string;
+    } = {},
+  ): Promise<{
+    reports: IReport[];
     pagination: {
-      currentPage: number
-      totalPages: number
-      totalItems: number
-      itemsPerPage: number
-      hasNextPage: boolean
-      hasPrevPage: boolean
-    }
+      currentPage: number;
+      totalPages: number;
+      totalItems: number;
+      itemsPerPage: number;
+      hasNextPage: boolean;
+      hasPrevPage: boolean;
+    };
   }> {
-    await connectDB()
-    
-    const page = options.page || 1
-    const limit = options.limit || 10
-    const skip = (page - 1) * limit
+    await connectDB();
+
+    const page = options.page || 1;
+    const limit = options.limit || 10;
+    const skip = (page - 1) * limit;
 
     // Build query
-    const query: any = {}
+    const query: any = {};
     if (options.status) {
-      query.status = options.status
+      query.status = options.status;
     }
 
-    const reports = await Report.find(query)
+    const reports = (await Report.find(query)
       .populate('quiz', 'title slug')
       .populate('reporter', 'email')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
-      .lean() as unknown as IReport[]
+      .lean()) as unknown as IReport[];
 
-    const totalItems = await Report.countDocuments(query)
-    const totalPages = Math.ceil(totalItems / limit)
+    const totalItems = await Report.countDocuments(query);
+    const totalPages = Math.ceil(totalItems / limit);
 
     return {
       reports,
@@ -57,33 +59,33 @@ export class ReportRepository implements IReportRepository {
         totalItems,
         itemsPerPage: limit,
         hasNextPage: page < totalPages,
-        hasPrevPage: page > 1
-      }
-    }
+        hasPrevPage: page > 1,
+      },
+    };
   }
 
   async create(reportData: Partial<IReport>): Promise<IReport> {
-    await connectDB()
-    const report = new Report(reportData)
-    return await report.save() as unknown as IReport
+    await connectDB();
+    const report = new Report(reportData);
+    return (await report.save()) as unknown as IReport;
   }
 
   async update(id: string, reportData: Partial<IReport>): Promise<IReport | null> {
-    await connectDB()
-    return await Report.findByIdAndUpdate(id, reportData, { new: true })
+    await connectDB();
+    return (await Report.findByIdAndUpdate(id, reportData, { new: true })
       .populate('quiz', 'title slug')
       .populate('reporter', 'email')
-      .lean() as unknown as IReport | null
+      .lean()) as unknown as IReport | null;
   }
 
   async delete(id: string): Promise<boolean> {
-    await connectDB()
-    const result = await Report.findByIdAndDelete(id)
-    return !!result
+    await connectDB();
+    const result = await Report.findByIdAndDelete(id);
+    return !!result;
   }
 
   async count(filter: any = {}): Promise<number> {
-    await connectDB()
-    return await Report.countDocuments(filter)
+    await connectDB();
+    return await Report.countDocuments(filter);
   }
-} 
+}

@@ -1,13 +1,10 @@
 // /src/components/quiz/MobileQuizPlayer.tsx
 'use client';
 
+import Image from 'next/image';
 import { useState, useCallback, useRef, type TouchEvent } from 'react';
 import { useTranslations } from 'next-intl';
-import {
-  HiOutlineChevronLeft,
-  HiOutlineChevronRight,
-  HiOutlineCheck,
-} from '@/components/icons';
+import { HiOutlineChevronLeft, HiOutlineChevronRight, HiOutlineCheck } from '@/components/icons';
 
 interface Question {
   _id: string;
@@ -26,7 +23,7 @@ interface MobileQuizPlayerProps {
 export function MobileQuizPlayer({
   questions,
   onComplete,
-  onExit,
+  onExit: _onExit,
 }: MobileQuizPlayerProps) {
   const t = useTranslations('quiz');
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -94,7 +91,7 @@ export function MobileQuizPlayer({
         });
       }
     },
-    [currentQuestion]
+    [currentQuestion],
   );
 
   const isOptionSelected = useCallback(
@@ -105,7 +102,7 @@ export function MobileQuizPlayer({
       }
       return answer === optionIndex;
     },
-    [answers, currentQuestion._id]
+    [answers, currentQuestion._id],
   );
 
   const answeredCount = Object.keys(answers).length;
@@ -136,12 +133,13 @@ export function MobileQuizPlayer({
               {questions.map((q, i) => (
                 <div
                   key={q._id}
-                  className={`w-2 h-2 rounded-full transition-colors ${i === currentIndex
+                  className={`w-2 h-2 rounded-full transition-colors ${
+                    i === currentIndex
                       ? 'bg-brand-action'
                       : answers[q._id] !== undefined
                         ? 'bg-brand-trust'
                         : 'bg-neutral-200'
-                    }`}
+                  }`}
                 />
               ))}
             </div>
@@ -176,7 +174,7 @@ export function MobileQuizPlayer({
             {/* Question Image */}
             {currentQuestion.questionImage && (
               <div className="mb-4 rounded-xl overflow-hidden bg-neutral-100 flex-shrink-0">
-                <img
+                <Image
                   src={currentQuestion.questionImage}
                   alt={`Image for question ${currentIndex + 1}`}
                   width={400}
@@ -189,7 +187,9 @@ export function MobileQuizPlayer({
             {/* Question Text */}
             <div className="mb-4 flex-shrink-0">
               <span className="inline-block px-2.5 py-1 text-xs font-medium rounded-full bg-neutral-100 text-neutral-600 mb-2">
-                {currentQuestion.type === 'single' ? t('singleChoiceHelper') : t('multipleChoiceHelper')}
+                {currentQuestion.type === 'single'
+                  ? t('singleChoiceHelper')
+                  : t('multipleChoiceHelper')}
               </span>
               <p className="text-base font-medium text-neutral-900 leading-relaxed">
                 {currentQuestion.question}
@@ -204,10 +204,11 @@ export function MobileQuizPlayer({
                   onClick={() => handleOptionSelect(optIdx)}
                   className={`
                       w-full p-4 rounded-xl border-2 text-left transition-all duration-150
-                      ${isOptionSelected(optIdx)
-                      ? 'border-brand-action bg-orange-50'
-                      : 'border-neutral-100 bg-neutral-50 active:border-neutral-200 active:bg-neutral-100'
-                    }
+                      ${
+                        isOptionSelected(optIdx)
+                          ? 'border-brand-action bg-orange-50'
+                          : 'border-neutral-100 bg-neutral-50 active:border-neutral-200 active:bg-neutral-100'
+                      }
                     `}
                 >
                   <div className="flex items-center gap-3">
@@ -215,10 +216,11 @@ export function MobileQuizPlayer({
                       className={`
                           w-6 h-6 rounded-full border-2 flex items-center justify-center
                           flex-shrink-0 transition-all duration-150
-                          ${isOptionSelected(optIdx)
-                          ? 'border-brand-action bg-brand-action'
-                          : 'border-neutral-300 bg-white'
-                        }
+                          ${
+                            isOptionSelected(optIdx)
+                              ? 'border-brand-action bg-brand-action'
+                              : 'border-neutral-300 bg-white'
+                          }
                         `}
                     >
                       {isOptionSelected(optIdx) && (
@@ -247,9 +249,10 @@ export function MobileQuizPlayer({
           className={`
             w-full py-4 rounded-full font-semibold flex items-center justify-center gap-2
             transition-all duration-200 active:scale-[0.98]
-            ${answeredCount === questions.length
-              ? 'bg-brand-trust text-white active:bg-brand-trust-hover'
-              : 'bg-neutral-100 text-neutral-600 active:bg-neutral-200'
+            ${
+              answeredCount === questions.length
+                ? 'bg-brand-trust text-white active:bg-brand-trust-hover'
+                : 'bg-neutral-100 text-neutral-600 active:bg-neutral-200'
             }
           `}
         >

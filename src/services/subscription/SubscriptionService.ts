@@ -1,17 +1,21 @@
 import connectDB from '@/lib/mongoose';
-import User from '@/models/User';
 import Plan from '@/models/Plan';
-import { ISubscriptionService, SubscriptionPlan, PaymentRequest, SubscriptionActivation } from '@/interfaces/services/ISubscriptionService';
+import {
+  ISubscriptionService,
+  SubscriptionPlan,
+  PaymentRequest,
+  SubscriptionActivation,
+} from '@/interfaces/services/ISubscriptionService';
 import { IPayOSService } from '@/interfaces/services/IPayOSService';
 import { ISubscriptionRepository } from '@/interfaces/repositories/ISubscriptionRepository';
 import { IUserRepository } from '@/interfaces/repositories/IUserRepository';
-import { DurationUtils } from '@/types/subscription'
+import { DurationUtils } from '@/types/subscription';
 
 export class SubscriptionService implements ISubscriptionService {
   constructor(
     private subscriptionRepository: ISubscriptionRepository,
     private userRepository: IUserRepository,
-    private payosService: IPayOSService
+    private payosService: IPayOSService,
   ) {}
 
   async getUserSubscription(userId: string) {
@@ -35,10 +39,7 @@ export class SubscriptionService implements ISubscriptionService {
     return true;
   }
 
-  async createPaymentRequest(
-    userId: string,
-    planId: string
-  ): Promise<PaymentRequest> {
+  async createPaymentRequest(userId: string, planId: string): Promise<PaymentRequest> {
     await connectDB();
 
     const user = await this.userRepository.findById(userId);
@@ -81,14 +82,14 @@ export class SubscriptionService implements ISubscriptionService {
     const cancelUrl = `${baseUrl}/payment/cancel?orderCode=${orderCode}`;
 
     try {
-      console.log('Creating PayOS payment request:', {
+      console.warn('Creating PayOS payment request:', {
         orderCode,
         amount: plan.price,
         description: payosDescription,
         returnUrl,
         cancelUrl,
         buyerEmail: user.email,
-        buyerName: (user as any).name
+        buyerName: (user as any).name,
       });
 
       const paymentResponse = await this.payosService.createPayment(
@@ -98,10 +99,10 @@ export class SubscriptionService implements ISubscriptionService {
         returnUrl,
         cancelUrl,
         user.email,
-        (user as any).name
+        (user as any).name,
       );
 
-      console.log('PayOS payment response:', paymentResponse);
+      console.warn('PayOS payment response:', paymentResponse);
 
       if (paymentResponse.code !== '00') {
         console.error('PayOS payment error:', paymentResponse);
@@ -114,28 +115,27 @@ export class SubscriptionService implements ISubscriptionService {
       }
 
       // Update subscription with payment URL
-      await this.subscriptionRepository.updateByOrderId(
-        orderCode.toString(),
-        { payosPaymentUrl: paymentResponse.data.checkoutUrl }
-      );
+      await this.subscriptionRepository.updateByOrderId(orderCode.toString(), {
+        payosPaymentUrl: paymentResponse.data.checkoutUrl,
+      });
 
       return {
         orderCode,
         paymentUrl: paymentResponse.data.checkoutUrl,
         qrCode: paymentResponse.data.qrCode,
         amount: plan.price,
-        plan: plan
+        plan: plan,
       };
     } catch (error) {
       console.error('Error in createPaymentRequest:', error);
-      
+
       // Clean up the subscription record if payment creation failed
       try {
         await this.subscriptionRepository.deleteByOrderId(orderCode.toString());
       } catch (cleanupError) {
         console.error('Failed to cleanup subscription record:', cleanupError);
       }
-      
+
       throw error;
     }
   }
@@ -157,7 +157,7 @@ export class SubscriptionService implements ISubscriptionService {
 
     // Verify payment with PayOS
     const paymentInfo = await this.payosService.verifyPayment(orderCode);
-    
+
     if (paymentInfo.code !== '00') {
       throw new Error(paymentInfo.desc || 'Failed to verify payment');
     }
@@ -176,14 +176,14 @@ export class SubscriptionService implements ISubscriptionService {
       endDate = DurationUtils.calculateEndDate(startDate, plan.durationInfo.iso8601);
     } catch (error) {
       console.warn('Using fallback duration calculation for plan:', plan.name, error);
-      
+
       // Fallback to legacy parsing for existing plans
-    const durationText = plan.duration.toLowerCase();
-    if (durationText.includes('tháng') || durationText.includes('month')) {
-      const months = parseInt(durationText.match(/\d+/)?.[0] || '0');
-      if (months > 0) {
-        endDate = new Date(startDate);
-        endDate.setMonth(endDate.getMonth() + months);
+      const durationText = plan.duration.toLowerCase();
+      if (durationText.includes('tháng') || durationText.includes('month')) {
+        const months = parseInt(durationText.match(/\d+/)?.[0] || '0');
+        if (months > 0) {
+          endDate = new Date(startDate);
+          endDate.setMonth(endDate.getMonth() + months);
         }
       } else if (durationText === 'lifetime') {
         endDate = undefined; // Lifetime subscription
@@ -192,11 +192,11 @@ export class SubscriptionService implements ISubscriptionService {
 
     // Update subscription status
     await this.subscriptionRepository.updateByOrderId(orderCode.toString(), {
-        status: 'completed',
-        payosTransactionId: paymentInfo.data?.reference,
-        startDate,
-        endDate,
-        isActive: true,
+      status: 'completed',
+      payosTransactionId: paymentInfo.data?.reference,
+      startDate,
+      endDate,
+      isActive: true,
     });
 
     // Update user subscription
@@ -208,7 +208,7 @@ export class SubscriptionService implements ISubscriptionService {
         isActive: true,
         payosOrderId: orderCode.toString(),
         payosTransactionId: paymentInfo.data?.reference,
-      }
+      },
     });
 
     return {
@@ -218,7 +218,7 @@ export class SubscriptionService implements ISubscriptionService {
         startDate,
         endDate,
         isActive: true,
-      }
+      },
     };
   }
 
@@ -244,11 +244,13 @@ export class SubscriptionService implements ISubscriptionService {
 
     // Update subscription record - find the active subscription for this user
     const subscriptions = await this.subscriptionRepository.findByUser(userId);
-    const activeSubscription = subscriptions.find(sub => sub.status === 'completed' && sub.isActive);
-    
+    const activeSubscription = subscriptions.find(
+      (sub) => sub.status === 'completed' && sub.isActive,
+    );
+
     if (activeSubscription) {
       await this.subscriptionRepository.updateById((activeSubscription as any)._id.toString(), {
-        isActive: false
+        isActive: false,
       });
     }
 
@@ -257,35 +259,35 @@ export class SubscriptionService implements ISubscriptionService {
 
   async checkAndUpdateExpiredSubscriptions(): Promise<void> {
     const expiredSubscriptions = await this.subscriptionRepository.findExpiredSubscriptions();
-    
+
     for (const subscription of expiredSubscriptions) {
       // Update subscription to inactive
       await this.subscriptionRepository.updateById((subscription as any)._id.toString(), {
         isActive: false,
-        status: 'expired'
+        status: 'expired',
       });
-      
+
       // Update user subscription to inactive
       await this.userRepository.updateById(subscription.user.toString(), {
-        'subscription.isActive': false
+        'subscription.isActive': false,
       });
     }
   }
 
   async getSubscriptionPlans(): Promise<SubscriptionPlan[]> {
     await connectDB();
-    
+
     try {
       // Get plans from database
-      const plans = await Plan.find({ isActive: true }).lean() as any[];
-      
+      const plans = (await Plan.find({ isActive: true }).lean()) as any[];
+
       // Convert to SubscriptionPlan format
-      return plans.map(plan => ({
+      return plans.map((plan) => ({
         id: plan._id.toString(),
         name: plan.name,
         price: plan.price,
         duration: plan.duration,
-        features: plan.features
+        features: plan.features,
       }));
     } catch (error) {
       console.error('Error fetching plans from database:', error);
@@ -294,27 +296,30 @@ export class SubscriptionService implements ISubscriptionService {
     }
   }
 
-  async updateSubscriptionById(id: string, update: Partial<any>): Promise<{ success: boolean, data?: any, error?: string }> {
+  async updateSubscriptionById(
+    id: string,
+    update: Partial<any>,
+  ): Promise<{ success: boolean; data?: any; error?: string }> {
     try {
-      const updated = await this.subscriptionRepository.updateById(id, update)
+      const updated = await this.subscriptionRepository.updateById(id, update);
       if (!updated) {
-        return { success: false, error: 'Subscription not found' }
+        return { success: false, error: 'Subscription not found' };
       }
       // Nếu có userId, cập nhật luôn user.subscription
       if (update.isActive !== undefined || update.status) {
-        const sub = await this.subscriptionRepository.findById(id)
+        const sub = await this.subscriptionRepository.findById(id);
         if (sub && sub.user) {
           await this.userRepository.updateById(sub.user.toString(), {
             'subscription.isActive': update.isActive,
-            'subscription.status': update.status
-          })
+            'subscription.status': update.status,
+          });
         }
       }
-      return { success: true, data: updated }
+      return { success: true, data: updated };
     } catch (error) {
-      return { success: false, error: (error as any)?.message || 'Failed to update subscription' }
+      return { success: false, error: (error as any)?.message || 'Failed to update subscription' };
     }
   }
 }
 
-export default SubscriptionService; 
+export default SubscriptionService;

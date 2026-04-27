@@ -7,15 +7,21 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, Badge } from '@/components/ui/Card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  Badge,
+} from '@/components/ui/Card';
 import Navigation from '@/components/Navigation';
 import { ROUTES } from '@/shared/constants';
 import {
   HiOutlineSearch,
   HiOutlineExclamationCircle,
-  HiOutlineEmojiHappy,
   HiOutlineInbox,
-  HiOutlineArrowRight
+  HiOutlineArrowRight,
 } from '@/components/icons';
 
 interface Category {
@@ -66,9 +72,10 @@ export default function CategoriesPage() {
 
   useEffect(() => {
     if (searchTerm.trim()) {
-      const filtered = categories.filter(category =>
-        category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        category.description.toLowerCase().includes(searchTerm.toLowerCase())
+      const filtered = categories.filter(
+        (category) =>
+          category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          category.description.toLowerCase().includes(searchTerm.toLowerCase()),
       );
       setFilteredCategories(filtered);
     } else {
@@ -78,17 +85,17 @@ export default function CategoriesPage() {
 
   const getCategoryColor = (color: string) => {
     const colorMap: { [key: string]: string } = {
-      'blue': 'bg-green-50 text-brand-trust border-green-100',
-      'green': 'bg-green-100 text-green-700 border-green-200',
-      'purple': 'bg-green-100 text-green-700 border-green-200',
-      'red': 'bg-red-50 text-red-700 border-red-100',
-      'yellow': 'bg-yellow-50 text-yellow-700 border-yellow-100',
-      'indigo': 'bg-green-50 text-brand-trust border-green-100',
-      'pink': 'bg-pink-50 text-pink-700 border-pink-100',
-      'gray': 'bg-neutral-100 text-neutral-700 border-neutral-200',
-      'cyan': 'bg-cyan-50 text-cyan-700 border-cyan-100',
-      'orange': 'bg-orange-50 text-orange-700 border-orange-100',
-      'teal': 'bg-green-100 text-brand-trust-hover border-green-200',
+      blue: 'bg-green-50 text-brand-trust border-green-100',
+      green: 'bg-green-100 text-green-700 border-green-200',
+      purple: 'bg-green-100 text-green-700 border-green-200',
+      red: 'bg-red-50 text-red-700 border-red-100',
+      yellow: 'bg-yellow-50 text-yellow-700 border-yellow-100',
+      indigo: 'bg-green-50 text-brand-trust border-green-100',
+      pink: 'bg-pink-50 text-pink-700 border-pink-100',
+      gray: 'bg-neutral-100 text-neutral-700 border-neutral-200',
+      cyan: 'bg-cyan-50 text-cyan-700 border-cyan-100',
+      orange: 'bg-orange-50 text-orange-700 border-orange-100',
+      teal: 'bg-green-100 text-brand-trust-hover border-green-200',
     };
     return colorMap[color?.toLowerCase()] || colorMap['green'];
   };
@@ -138,14 +145,18 @@ export default function CategoriesPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 md:pt-20 pb-8">
         {/* Breadcrumb */}
         <nav className="flex items-center space-x-2 text-sm text-neutral-500 mb-4 md:mb-6">
-          <Link href={ROUTES.DASHBOARD} className="hover:text-neutral-700">{tNav('home')}</Link>
+          <Link href={ROUTES.DASHBOARD} className="hover:text-neutral-700">
+            {tNav('home')}
+          </Link>
           <span>›</span>
           <span className="text-neutral-900 font-medium">{t('title')}</span>
         </nav>
 
         {/* Header */}
         <div className="mb-6 md:mb-10">
-          <h1 className="text-4xl md:text-[48px] font-bold tracking-tight text-neutral-900 mb-3 md:mb-4">{t('title')}</h1>
+          <h1 className="text-4xl md:text-[48px] font-bold tracking-tight text-neutral-900 mb-3 md:mb-4">
+            {t('title')}
+          </h1>
           <p className="text-base md:text-xl text-neutral-600 max-w-2xl">
             Explore quizzes by subject and find what interests you most
           </p>
@@ -161,9 +172,7 @@ export default function CategoriesPage() {
                   placeholder={tCommon('search')}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  icon={
-                    <HiOutlineSearch className="w-5 h-5" />
-                  }
+                  icon={<HiOutlineSearch className="w-5 h-5" />}
                   className="w-full"
                 />
               </div>
@@ -201,16 +210,11 @@ export default function CategoriesPage() {
             <h3 className="text-xl font-semibold text-neutral-900 mb-3">{t('title')}</h3>
             <p className="text-neutral-600 mb-6">
               {searchTerm
-                ? "Try adjusting your search criteria or browse all categories."
-                : "No categories available yet."
-              }
+                ? 'Try adjusting your search criteria or browse all categories.'
+                : 'No categories available yet.'}
             </p>
             {searchTerm && (
-              <Button
-                variant="primary"
-                onClick={() => setSearchTerm('')}
-                className="mx-auto"
-              >
+              <Button variant="primary" onClick={() => setSearchTerm('')} className="mx-auto">
                 View All {t('title')}
               </Button>
             )}
@@ -228,11 +232,7 @@ export default function CategoriesPage() {
               >
                 <CardHeader>
                   <div className="flex items-center justify-between mb-3">
-                    <Badge
-                      variant="success"
-                      size="sm"
-                      className={getCategoryColor(category.color)}
-                    >
+                    <Badge variant="success" size="sm" className={getCategoryColor(category.color)}>
                       {category.name}
                     </Badge>
                     <span className="text-xs text-neutral-500">
@@ -242,9 +242,7 @@ export default function CategoriesPage() {
                   <CardTitle size="md" className="group-hover:text-brand-trust transition-colors">
                     {category.name}
                   </CardTitle>
-                  <CardDescription className="line-clamp-2">
-                    {category.description}
-                  </CardDescription>
+                  <CardDescription className="line-clamp-2">{category.description}</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center justify-between">
@@ -281,12 +279,10 @@ export default function CategoriesPage() {
         {/* Back to Home */}
         <div className="mt-12 text-center">
           <Link href="/">
-            <Button variant="outline">
-              ← {tCommon('back')}
-            </Button>
+            <Button variant="outline">← {tCommon('back')}</Button>
           </Link>
         </div>
       </div>
     </div>
   );
-} 
+}

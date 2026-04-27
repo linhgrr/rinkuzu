@@ -24,12 +24,15 @@ interface DashboardStats {
   xpToNextLevel: number;
   levelProgress: number;
   dueCount: number;
-  weeklyActivity: Record<string, {
-    questionsReviewed: number;
-    xpEarned: number;
-    correctCount: number;
-    totalCount: number;
-  }>;
+  weeklyActivity: Record<
+    string,
+    {
+      questionsReviewed: number;
+      xpEarned: number;
+      correctCount: number;
+      totalCount: number;
+    }
+  >;
   totalQuestionsLearned?: number;
   totalReviewSessions?: number;
   averageAccuracy?: number;
@@ -156,7 +159,9 @@ export async function DashboardPageShell({
 
             <section>
               <div className="mb-6 flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-[var(--text-primary)]">{tDashboard('continueLearning')}</h2>
+                <h2 className="text-2xl font-bold text-[var(--text-primary)]">
+                  {tDashboard('continueLearning')}
+                </h2>
                 <Link
                   href={ROUTES.PENDING_QUIZZES}
                   className="text-sm font-medium text-brand-trust transition-colors hover:text-brand-trust-hover hover:underline"
@@ -173,8 +178,12 @@ export async function DashboardPageShell({
                   <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-neutral-200 bg-white text-neutral-900 shadow-sm transition-transform group-hover:scale-105">
                     <HiOutlinePlus className="h-7 w-7" />
                   </div>
-                  <h3 className="font-bold text-neutral-900 group-hover:text-black">{tDashboard('createNewQuiz')}</h3>
-                  <p className="mt-1 text-xs font-medium uppercase tracking-tight text-neutral-500">{tDashboard('addYourQuestions')}</p>
+                  <h3 className="font-bold text-neutral-900 group-hover:text-black">
+                    {tDashboard('createNewQuiz')}
+                  </h3>
+                  <p className="mt-1 text-xs font-medium uppercase tracking-tight text-neutral-500">
+                    {tDashboard('addYourQuestions')}
+                  </p>
                 </Link>
 
                 {quizzes.slice(0, 3).map((quiz) => (
@@ -182,7 +191,9 @@ export async function DashboardPageShell({
                     key={quiz._id}
                     quiz={quiz}
                     locale={locale}
-                    questionCountLabel={tCommon('questionsCount', { count: quiz.questionCount ?? quiz.questions.length })}
+                    questionCountLabel={tCommon('questionsCount', {
+                      count: quiz.questionCount ?? quiz.questions.length,
+                    })}
                     uncategorizedLabel={tCommon('uncategorized')}
                     openLabel={tCommon('openQuiz')}
                   />
@@ -193,9 +204,15 @@ export async function DashboardPageShell({
                   className="group relative flex min-h-[160px] flex-col justify-center overflow-hidden rounded-2xl border border-neutral-200 bg-white/80 p-6 text-neutral-900 backdrop-blur-sm transition-all duration-300 hover:border-brand-trust hover:shadow-lg hover:shadow-green"
                 >
                   <div className="relative z-10">
-                    <div className="mb-2 inline-flex rounded bg-green-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-brand-trust-hover">{tDashboard('explore')}</div>
-                    <h3 className="mb-1 text-lg font-bold tracking-tight">{tDashboard('exploreCommunity')}</h3>
-                    <p className="mb-4 text-xs font-medium text-neutral-500">{tDashboard('discoverQuizzes')}</p>
+                    <div className="mb-2 inline-flex rounded bg-green-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-brand-trust-hover">
+                      {tDashboard('explore')}
+                    </div>
+                    <h3 className="mb-1 text-lg font-bold tracking-tight">
+                      {tDashboard('exploreCommunity')}
+                    </h3>
+                    <p className="mb-4 text-xs font-medium text-neutral-500">
+                      {tDashboard('discoverQuizzes')}
+                    </p>
                     <div className="flex h-10 w-10 items-center justify-center rounded-full border border-green-100 bg-green-50 shadow-sm transition-all duration-300 group-hover:translate-x-1 group-hover:bg-green-500">
                       <HiOutlineArrowRight className="h-5 w-5 text-brand-trust transition-colors group-hover:text-white" />
                     </div>
@@ -207,7 +224,9 @@ export async function DashboardPageShell({
 
             <section className="mt-8">
               <div className="mb-6 flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-[var(--text-primary)]">{tDashboard('yourQuizzes')}</h2>
+                <h2 className="text-2xl font-bold text-[var(--text-primary)]">
+                  {tDashboard('yourQuizzes')}
+                </h2>
                 <Link
                   href="/profile"
                   className="text-sm font-medium text-brand-trust transition-colors hover:text-brand-trust-hover hover:underline"
@@ -224,8 +243,12 @@ export async function DashboardPageShell({
                   <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-neutral-200 bg-white text-neutral-900 shadow-sm transition-transform group-hover:scale-105">
                     <HiOutlinePlus className="h-7 w-7" />
                   </div>
-                  <h3 className="font-bold text-neutral-900 group-hover:text-black">{tDashboard('createNewQuiz')}</h3>
-                  <p className="mt-1 text-xs font-medium uppercase tracking-tight text-neutral-500">{tDashboard('addYourQuestions')}</p>
+                  <h3 className="font-bold text-neutral-900 group-hover:text-black">
+                    {tDashboard('createNewQuiz')}
+                  </h3>
+                  <p className="mt-1 text-xs font-medium uppercase tracking-tight text-neutral-500">
+                    {tDashboard('addYourQuestions')}
+                  </p>
                 </Link>
 
                 {yourQuizzes.slice(0, 3).map((quiz) => (
@@ -233,7 +256,9 @@ export async function DashboardPageShell({
                     key={quiz._id}
                     quiz={quiz}
                     locale={locale}
-                    questionCountLabel={tCommon('questionsCount', { count: quiz.questionCount ?? quiz.questions.length })}
+                    questionCountLabel={tCommon('questionsCount', {
+                      count: quiz.questionCount ?? quiz.questions.length,
+                    })}
                     uncategorizedLabel={tCommon('uncategorized')}
                     openLabel={tCommon('openQuiz')}
                   />

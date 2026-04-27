@@ -7,10 +7,7 @@ import DraftQuiz from '@/models/DraftQuiz';
 import { deletePDF } from '@/lib/s3';
 import { AsyncRouteParams } from '@/types/next-route';
 
-export async function GET(
-  request: NextRequest,
-  { params }: AsyncRouteParams<{ id: string }>
-) {
+export async function GET(request: NextRequest, { params }: AsyncRouteParams<{ id: string }>) {
   try {
     const { id } = await params;
     const session = await getServerSession(authOptions);
@@ -20,10 +17,10 @@ export async function GET(
 
     await connectDB();
 
-    const draft = await DraftQuiz.findOne({
+    const draft = (await DraftQuiz.findOne({
       _id: id,
-      userId: ((session!.user as any) as any).id,
-    }).lean() as any;
+      userId: (session!.user as any as any).id,
+    }).lean()) as any;
 
     if (!draft) {
       return NextResponse.json({ error: 'Draft not found' }, { status: 404 });
@@ -40,20 +37,13 @@ export async function GET(
     }
 
     return NextResponse.json({ draft });
-
   } catch (error) {
     console.error('Get draft error:', error);
-    return NextResponse.json(
-      { error: 'Failed to get draft' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to get draft' }, { status: 500 });
   }
 }
 
-export async function DELETE(
-  request: NextRequest,
-  { params }: AsyncRouteParams<{ id: string }>
-) {
+export async function DELETE(request: NextRequest, { params }: AsyncRouteParams<{ id: string }>) {
   try {
     const { id } = await params;
     const session = await getServerSession(authOptions);
@@ -80,7 +70,7 @@ export async function DELETE(
     if (draft.pdfData?.pdfKey) {
       try {
         await deletePDF(draft.pdfData.pdfKey);
-        console.log('Deleted PDF from S3:', draft.pdfData.pdfKey);
+        console.warn('Deleted PDF from S3:', draft.pdfData.pdfKey);
       } catch (s3Error) {
         console.error('Failed to delete PDF from S3:', s3Error);
         // Don't fail the request, S3 cleanup is best-effort
@@ -88,12 +78,8 @@ export async function DELETE(
     }
 
     return NextResponse.json({ success: true });
-
   } catch (error) {
     console.error('Delete draft error:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete draft' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to delete draft' }, { status: 500 });
   }
 }

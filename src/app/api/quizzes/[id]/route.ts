@@ -5,18 +5,12 @@ import { serviceFactory } from '@/lib/serviceFactory';
 import { AsyncRouteParams } from '@/types/next-route';
 
 // GET /api/quizzes/[id] - Get specific quiz
-export async function GET(
-  request: NextRequest,
-  { params }: AsyncRouteParams<{ id: string }>
-) {
+export async function GET(request: NextRequest, { params }: AsyncRouteParams<{ id: string }>) {
   try {
     const { id } = await params;
     const session = await getServerSession(authOptions);
     if (!session?.user) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
     const quizService = serviceFactory.getQuizService();
@@ -24,13 +18,13 @@ export async function GET(
     const result = await quizService.getQuizById(
       id,
       session.user.email!,
-      (session.user as any).role
+      (session.user as any).role,
     );
 
     if (!result.success) {
       return NextResponse.json(
         { success: false, error: result.error },
-        { status: result.statusCode || 400 }
+        { status: result.statusCode || 400 },
       );
     }
 
@@ -46,7 +40,7 @@ export async function GET(
         if (pdfUrl.includes(marker)) {
           const key = pdfUrl.split(marker)[1];
           if (key) {
-            // Use a temporary variable to avoid mutating potentially frozen state if necessary, 
+            // Use a temporary variable to avoid mutating potentially frozen state if necessary,
             // but here we are constructing the response
             (data as any).pdfUrl = await getSignedPDFUrl(key);
           }
@@ -58,31 +52,21 @@ export async function GET(
 
     return NextResponse.json({
       success: true,
-      data: data
+      data: data,
     });
-
   } catch (error: any) {
     console.error('Get quiz error:', error);
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
   }
 }
 
 // PUT /api/quizzes/[id] - Update quiz (only author or admin)
-export async function PUT(
-  request: NextRequest,
-  { params }: AsyncRouteParams<{ id: string }>
-) {
+export async function PUT(request: NextRequest, { params }: AsyncRouteParams<{ id: string }>) {
   try {
     const { id } = await params;
     const session = await getServerSession(authOptions);
     if (!session?.user) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
     const quizData = await request.json();
@@ -92,43 +76,33 @@ export async function PUT(
       id,
       quizData,
       session.user.email!,
-      (session.user as any).role
+      (session.user as any).role,
     );
 
     if (!result.success) {
       return NextResponse.json(
         { success: false, error: result.error },
-        { status: result.statusCode || 400 }
+        { status: result.statusCode || 400 },
       );
     }
 
     return NextResponse.json({
       success: true,
-      data: result.data
+      data: result.data,
     });
-
   } catch (error: any) {
     console.error('Update quiz error:', error);
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
   }
 }
 
 // DELETE /api/quizzes/[id] - Delete quiz (only author or admin)
-export async function DELETE(
-  request: NextRequest,
-  { params }: AsyncRouteParams<{ id: string }>
-) {
+export async function DELETE(request: NextRequest, { params }: AsyncRouteParams<{ id: string }>) {
   try {
     const { id } = await params;
     const session = await getServerSession(authOptions);
     if (!session?.user) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
     const quizService = serviceFactory.getQuizService();
@@ -136,26 +110,22 @@ export async function DELETE(
     const result = await quizService.deleteQuiz(
       id,
       session.user.email!,
-      (session.user as any).role
+      (session.user as any).role,
     );
 
     if (!result.success) {
       return NextResponse.json(
         { success: false, error: result.error },
-        { status: result.statusCode || 400 }
+        { status: result.statusCode || 400 },
       );
     }
 
     return NextResponse.json({
       success: true,
-      message: 'Quiz deleted successfully'
+      message: 'Quiz deleted successfully',
     });
-
   } catch (error: any) {
     console.error('Delete quiz error:', error);
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
   }
 }

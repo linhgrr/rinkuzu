@@ -1,117 +1,122 @@
-import mongoose, { type HydratedDocument, type Model, Schema } from 'mongoose'
-import { DurationUtils } from '@/types/subscription'
+import mongoose, { type HydratedDocument, type Model, Schema } from 'mongoose';
+import { DurationUtils } from '@/types/subscription';
 
 export interface IPlan {
-  _id: string
-  name: string
-  price: number
-  duration: string // ISO 8601 format (P1M, P3M, P1Y, PT0S)
-  features: string[]
-  isActive: boolean
-  createdAt: Date
-  updatedAt: Date
-  
+  _id: string;
+  name: string;
+  price: number;
+  duration: string; // ISO 8601 format (P1M, P3M, P1Y, PT0S)
+  features: string[];
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+
   // Virtual fields
   readonly durationInfo: {
-    iso8601: string
-    displayName: string
-    months?: number
-  }
-  readonly isLifetime: boolean
+    iso8601: string;
+    displayName: string;
+    months?: number;
+  };
+  readonly isLifetime: boolean;
 }
 
-type PlanDocument = HydratedDocument<IPlan>
+type PlanDocument = HydratedDocument<IPlan>;
 
-const PlanSchema = new Schema<IPlan>({
-  _id: {
-    type: String,
-    required: true,
-  },
-  name: {
-    type: String,
-    required: true,
-  },
-  price: {
-    type: Number,
-    required: true,
-  },
-  duration: {
-    type: String,
-    required: true,
-    validate: {
-      validator: function(value: string) {
-        // Allow legacy formats during migration
-        try {
-          if (DurationUtils.isValidISO8601Duration(value)) {
-            return true
+const PlanSchema = new Schema<IPlan>(
+  {
+    _id: {
+      type: String,
+      required: true,
+    },
+    name: {
+      type: String,
+      required: true,
+    },
+    price: {
+      type: Number,
+      required: true,
+    },
+    duration: {
+      type: String,
+      required: true,
+      validate: {
+        validator: function (value: string) {
+          // Allow legacy formats during migration
+          try {
+            if (DurationUtils.isValidISO8601Duration(value)) {
+              return true;
+            }
+            // Check if it's a legacy format that can be converted
+            DurationUtils.fromLegacyDuration(value);
+            return true;
+          } catch {
+            return false;
           }
-          // Check if it's a legacy format that can be converted
-          DurationUtils.fromLegacyDuration(value)
-          return true
-        } catch {
-          return false
-        }
+        },
+        message:
+          'Invalid duration format. Use ISO 8601 format (P1M, P3M, P1Y) or legacy format for migration.',
       },
-      message: 'Invalid duration format. Use ISO 8601 format (P1M, P3M, P1Y) or legacy format for migration.'
-    }
+    },
+    features: {
+      type: [String],
+      default: [],
+    },
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
   },
-  features: {
-    type: [String],
-    default: [],
+  {
+    timestamps: true,
   },
-  isActive: {
-    type: Boolean,
-    default: true,
-  },
-}, {
-  timestamps: true
-})
+);
 
 // Virtual for duration info
 PlanSchema.virtual('durationInfo').get(function (this: PlanDocument) {
   try {
     // If already ISO 8601, use directly
     if (DurationUtils.isValidISO8601Duration(this.duration)) {
-      return DurationUtils.getDurationInfo(this.duration)
+      return DurationUtils.getDurationInfo(this.duration);
     }
-    
+
     // Convert legacy format
-    const iso8601 = DurationUtils.fromLegacyDuration(this.duration)
-    return DurationUtils.getDurationInfo(iso8601)
+    const iso8601 = DurationUtils.fromLegacyDuration(this.duration);
+    return DurationUtils.getDurationInfo(iso8601);
   } catch {
     return {
       iso8601: this.duration,
       displayName: this.duration,
-      months: undefined
-    }
+      months: undefined,
+    };
   }
-})
+});
 
 // Virtual for checking if lifetime
 PlanSchema.virtual('isLifetime').get(function (this: PlanDocument) {
-  const info = this.durationInfo
-  return info.months === undefined
-})
+  const info = this.durationInfo;
+  return info.months === undefined;
+});
 
 // Pre-save middleware to migrate legacy durations
-PlanSchema.pre('save', function(this: PlanDocument) {
+PlanSchema.pre('save', function (this: PlanDocument) {
   if (!DurationUtils.isValidISO8601Duration(this.duration)) {
     try {
-      this.duration = DurationUtils.fromLegacyDuration(this.duration)
+      this.duration = DurationUtils.fromLegacyDuration(this.duration);
     } catch (error) {
-      console.warn(`Could not migrate duration '${this.duration}' for plan ${this.name}:`, error)
+      console.warn(`Could not migrate duration '${this.duration}' for plan ${this.name}:`, error);
     }
   }
-})
+});
 
 PlanSchema.virtual('id').get(function (this: PlanDocument) {
-  return this._id
-})
+  return this._id;
+});
 
 // Ensure virtuals are included in JSON
-PlanSchema.set('toJSON', { virtuals: true })
-PlanSchema.set('toObject', { virtuals: true })
+PlanSchema.set('toJSON', { virtuals: true });
+PlanSchema.set('toObject', { virtuals: true });
 
-const Plan = (mongoose.models.Plan as Model<IPlan> | undefined) || mongoose.model<IPlan>('Plan', PlanSchema)
+const Plan =
+  (mongoose.models.Plan as Model<IPlan> | undefined) || mongoose.model<IPlan>('Plan', PlanSchema);
 
-export default Plan
+export default Plan;

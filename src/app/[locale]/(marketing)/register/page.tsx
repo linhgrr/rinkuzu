@@ -16,7 +16,7 @@ import {
   HiCheck,
   HiOutlineShieldCheck,
   HiOutlineInbox,
-  HiOutlineHeart
+  HiOutlineHeart,
 } from '@/components/icons';
 
 export default function RegisterPage() {
@@ -69,7 +69,7 @@ export default function RegisterPage() {
       } else {
         setError(data.error || t('registrationFailed'));
       }
-    } catch (error) {
+    } catch (_error) {
       setError(`${t('registrationError')}. ${t('checkConnectionAndRetry')}`);
     } finally {
       setLoading(false);
@@ -87,44 +87,67 @@ export default function RegisterPage() {
           <div className="text-center">
             <Link href="/" className="inline-flex items-center group">
               <div className="h-16 sm:h-20 flex items-center justify-center transition-transform group-hover:scale-105">
-                <Image src="/images/auth_logo.png" alt="RinKuzu Logo" width={80} height={80} className="h-16 sm:h-20 w-auto object-contain" />
+                <Image
+                  src="/images/auth_logo.png"
+                  alt="RinKuzu Logo"
+                  width={80}
+                  height={80}
+                  className="h-16 sm:h-20 w-auto object-contain"
+                />
               </div>
             </Link>
           </div>
 
           <div className="mt-8 text-center animate-fadeInUp">
             <h1 className="text-4xl font-bold text-neutral-900 mb-3">{t('joinRinKuzu')}</h1>
-            <p className="text-lg text-neutral-600">
-              {t('createAccountMessage')}
-            </p>
+            <p className="text-lg text-neutral-600">{t('createAccountMessage')}</p>
           </div>
         </div>
 
         {/* Register Form */}
         <div className="sm:mx-auto sm:w-full sm:max-w-md">
-          <Card className="border-0 shadow-lg shadow-neutral-100/50 bg-white animate-fadeInUp" style={{ animationDelay: '200ms' }}>
+          <Card
+            className="border-0 shadow-lg shadow-neutral-100/50 bg-white animate-fadeInUp"
+            style={{ animationDelay: '200ms' }}
+          >
             <CardHeader className="text-center pb-4">
-              <CardTitle size="lg" className="text-neutral-900">{t('createAccount')}</CardTitle>
-              <CardDescription className="text-base">
-                {t('enterDetails')}
-              </CardDescription>
+              <CardTitle size="lg" className="text-neutral-900">
+                {t('createAccount')}
+              </CardTitle>
+              <CardDescription className="text-base">{t('enterDetails')}</CardDescription>
             </CardHeader>
 
             <CardContent className="pt-0">
               <form className="space-y-6" onSubmit={handleSubmit}>
                 {error && (
-                  <Card variant="bordered" className="border-red-200 bg-red-50 p-4 animate-fadeInUp" role="alert" aria-live="polite">
+                  <Card
+                    variant="bordered"
+                    className="border-red-200 bg-red-50 p-4 animate-fadeInUp"
+                    role="alert"
+                    aria-live="polite"
+                  >
                     <div className="flex items-center text-red-700">
-                      <HiOutlineExclamationCircle className="w-5 h-5 mr-2 flex-shrink-0" aria-hidden="true" />
+                      <HiOutlineExclamationCircle
+                        className="w-5 h-5 mr-2 flex-shrink-0"
+                        aria-hidden="true"
+                      />
                       <span className="text-sm font-medium">{error}</span>
                     </div>
                   </Card>
                 )}
 
                 {success && (
-                  <Card variant="bordered" className="border-green-200 bg-green-50 p-4 animate-fadeInUp" role="status" aria-live="polite">
+                  <Card
+                    variant="bordered"
+                    className="border-green-200 bg-green-50 p-4 animate-fadeInUp"
+                    role="status"
+                    aria-live="polite"
+                  >
                     <div className="flex items-center text-green-700">
-                      <HiOutlineCheckCircle className="w-5 h-5 mr-2 flex-shrink-0" aria-hidden="true" />
+                      <HiOutlineCheckCircle
+                        className="w-5 h-5 mr-2 flex-shrink-0"
+                        aria-hidden="true"
+                      />
                       <span className="text-sm font-medium">{success}</span>
                     </div>
                   </Card>
@@ -142,9 +165,7 @@ export default function RegisterPage() {
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder={t('enterEmail')}
                     variant="default"
-                    icon={
-                      <HiOutlineMail className="w-5 h-5" />
-                    }
+                    icon={<HiOutlineMail className="w-5 h-5" />}
                   />
 
                   <Input
@@ -158,9 +179,7 @@ export default function RegisterPage() {
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder={t('enterPassword')}
                     variant="default"
-                    icon={
-                      <HiOutlineLockClosed className="w-5 h-5" />
-                    }
+                    icon={<HiOutlineLockClosed className="w-5 h-5" />}
                   />
 
                   <Input
@@ -174,15 +193,15 @@ export default function RegisterPage() {
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder={t('confirmYourPassword')}
                     variant="default"
-                    icon={
-                      <HiCheck className="w-5 h-5" />
-                    }
+                    icon={<HiCheck className="w-5 h-5" />}
                   />
                 </div>
 
                 {/* Password Requirements */}
                 <div className="bg-neutral-50 rounded-xl p-4 border border-neutral-200">
-                  <h4 className="text-sm font-semibold text-neutral-900 mb-2">{t('passwordRequirements')}</h4>
+                  <h4 className="text-sm font-semibold text-neutral-900 mb-2">
+                    {t('passwordRequirements')}
+                  </h4>
                   <ul className="text-xs text-neutral-700 space-y-1">
                     <li className="flex items-center">
                       <HiCheck className="w-3 h-3 mr-2 text-brand-trust" strokeWidth={3} />
@@ -196,12 +215,7 @@ export default function RegisterPage() {
                 </div>
 
                 <div className="pt-2">
-                  <Button
-                    type="submit"
-                    loading={loading}
-                    size="lg"
-                    className="w-full"
-                  >
+                  <Button type="submit" loading={loading} size="lg" className="w-full">
                     {loading ? t('creatingAccount') : t('createAccountButton')}
                   </Button>
                 </div>
@@ -226,9 +240,7 @@ export default function RegisterPage() {
 
           {/* Additional Info */}
           <div className="mt-8 text-center animate-fadeInUp" style={{ animationDelay: '400ms' }}>
-            <p className="text-sm text-neutral-500">
-              {t('agreeTerms')}
-            </p>
+            <p className="text-sm text-neutral-500">{t('agreeTerms')}</p>
             <div className="flex items-center justify-center mt-4 space-x-6 text-xs text-neutral-400">
               <div className="flex items-center">
                 <HiOutlineShieldCheck className="w-4 h-4 mr-1" />
@@ -248,4 +260,4 @@ export default function RegisterPage() {
       </div>
     </div>
   );
-} 
+}

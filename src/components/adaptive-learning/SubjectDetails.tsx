@@ -1,16 +1,16 @@
-'use client'
+'use client';
 
-import { useTranslations } from 'next-intl'
-import { useSubjectDetailsState } from './hooks/use-subject-details-state'
+import { useTranslations } from 'next-intl';
+import { useSubjectDetailsState } from './hooks/use-subject-details-state';
 import {
   SubjectDetailsBackButton,
   SubjectDetailsHero,
   SubjectDetailsTabContent,
   SubjectDetailsTabs,
-} from './SubjectDetailsSections'
+} from './SubjectDetailsSections';
 
 export default function SubjectDetails({ sessionId }: { sessionId: string }) {
-  const t = useTranslations('adaptiveLearning')
+  const t = useTranslations('adaptiveLearning');
   const {
     activeTab,
     filename,
@@ -25,7 +25,7 @@ export default function SubjectDetails({ sessionId }: { sessionId: string }) {
     startingSession,
     status,
     summary,
-  } = useSubjectDetailsState(sessionId, t)
+  } = useSubjectDetailsState(sessionId, t);
 
   return (
     <div className="space-y-8 pb-12">
@@ -53,5 +53,5 @@ export default function SubjectDetails({ sessionId }: { sessionId: string }) {
         t={t}
       />
     </div>
-  )
+  );
 }

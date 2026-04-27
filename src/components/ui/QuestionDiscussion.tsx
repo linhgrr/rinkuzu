@@ -4,8 +4,6 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
 import { Button } from './Button';
-import { Card, CardContent, CardHeader, CardTitle } from './Card';
-import { Input } from './Input';
 
 interface Comment {
   _id: string;
@@ -42,11 +40,11 @@ export function QuestionDiscussion({
   questionIndex,
   isCollapsed,
   onToggleCollapse,
-  isMobile = false
+  isMobile = false,
 }: QuestionDiscussionProps) {
   const { data: session } = useSession();
   const t = useTranslations('discussion');
-  const tCommon = useTranslations('common');
+  const _tCommon = useTranslations('common');
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
   const [loading, setLoading] = useState(true);
@@ -64,13 +62,13 @@ export function QuestionDiscussion({
 
         if (data.success) {
           const questionDiscussion = data.data.find(
-            (d: Discussion) => d.questionIndex === questionIndex
+            (d: Discussion) => d.questionIndex === questionIndex,
           );
           setComments(questionDiscussion?.comments || []);
         } else {
           setError(data.error || t('failedToLoad'));
         }
-      } catch (error) {
+      } catch (_error) {
         setError(t('failedToLoad'));
       } finally {
         setLoading(false);
@@ -116,7 +114,7 @@ export function QuestionDiscussion({
       } else {
         setError(data.error || t('failedToPost'));
       }
-    } catch (error) {
+    } catch (_error) {
       setError(t('failedToPost'));
     } finally {
       setSubmitting(false);
@@ -142,7 +140,13 @@ export function QuestionDiscussion({
   }
 
   return (
-    <div className={isMobile ? 'w-full h-full' : 'w-80 h-screen sticky top-0 border-l border-neutral-200 bg-white transition-all duration-300 hidden md:flex flex-col'}>
+    <div
+      className={
+        isMobile
+          ? 'w-full h-full'
+          : 'w-80 h-screen sticky top-0 border-l border-neutral-200 bg-white transition-all duration-300 hidden md:flex flex-col'
+      }
+    >
       {/* Header */}
       <div className="flex-shrink-0 p-3 border-b border-neutral-100 bg-neutral-50">
         <button
@@ -150,8 +154,18 @@ export function QuestionDiscussion({
           className="w-full flex items-center justify-between text-left"
         >
           <div className="flex items-center space-x-2">
-            <svg className="w-4 h-4 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+            <svg
+              className="w-4 h-4 text-neutral-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+              />
             </svg>
             <span className="text-sm font-medium text-neutral-900">{t('title')}</span>
             {commentCount > 0 && (
@@ -160,11 +174,18 @@ export function QuestionDiscussion({
               </span>
             )}
           </div>
-          <svg 
-            className="w-4 h-4 text-neutral-400 transition-transform" 
-            fill="none" stroke="currentColor" viewBox="0 0 24 24"
+          <svg
+            className="w-4 h-4 text-neutral-400 transition-transform"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
           >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M15 19l-7-7 7-7"
+            />
           </svg>
         </button>
       </div>
@@ -181,13 +202,9 @@ export function QuestionDiscussion({
               rows={2}
               maxLength={2000}
             />
-            {error && (
-              <p className="text-xs text-red-600">{error}</p>
-            )}
+            {error && <p className="text-xs text-red-600">{error}</p>}
             <div className="flex items-center justify-between">
-              <span className="text-xs text-neutral-400">
-                {newComment.length}/2000
-              </span>
+              <span className="text-xs text-neutral-400">{newComment.length}/2000</span>
               <Button
                 type="submit"
                 size="sm"
@@ -201,9 +218,7 @@ export function QuestionDiscussion({
           </form>
         ) : (
           <div className="text-center py-3">
-            <p className="text-xs text-neutral-500 mb-2">
-              {t('pleaseLoginToJoin')}
-            </p>
+            <p className="text-xs text-neutral-500 mb-2">{t('pleaseLoginToJoin')}</p>
             <Button size="sm" variant="outline" className="text-xs px-3 py-1">
               {t('logIn')}
             </Button>
@@ -213,43 +228,54 @@ export function QuestionDiscussion({
 
       {/* Comments List */}
       <div className="flex-1 overflow-y-auto p-3 space-y-3">
-            {loading ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="h-6 w-6 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
-              </div>
-            ) : comments.length === 0 ? (
-              <div className="text-center py-6 text-neutral-500">
-                <svg className="w-8 h-8 mx-auto mb-2 text-neutral-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                </svg>
-                <p className="text-xs">{t('noComments')}</p>
-                <p className="text-xs mt-1 text-neutral-400">{t('beFirstToDiscuss')}</p>
-              </div>
-            ) : (
-              comments.map((comment) => (
-                <div key={comment._id} className="bg-neutral-50 rounded-lg p-3 border border-neutral-100">
-                  <div className="flex items-start space-x-2 mb-2">
-                    <div className="w-5 h-5 bg-gradient-to-br from-green-400 to-brand-trust rounded-full flex items-center justify-center text-white text-xs font-medium flex-shrink-0">
-                      {comment.authorEmail.charAt(0).toUpperCase()}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium text-neutral-900 truncate">
-                          {comment.authorEmail.split('@')[0]}
-                        </span>
-                        <span className="text-xs text-neutral-500 flex-shrink-0">
-                          {formatDate(comment.createdAt)}
-                        </span>
-                      </div>
-                      <p className="text-xs text-neutral-700 leading-relaxed mt-1">
-                        {comment.content}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ))
-            )}
+        {loading ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
           </div>
+        ) : comments.length === 0 ? (
+          <div className="text-center py-6 text-neutral-500">
+            <svg
+              className="w-8 h-8 mx-auto mb-2 text-neutral-300"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1}
+                d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+              />
+            </svg>
+            <p className="text-xs">{t('noComments')}</p>
+            <p className="text-xs mt-1 text-neutral-400">{t('beFirstToDiscuss')}</p>
+          </div>
+        ) : (
+          comments.map((comment) => (
+            <div
+              key={comment._id}
+              className="bg-neutral-50 rounded-lg p-3 border border-neutral-100"
+            >
+              <div className="flex items-start space-x-2 mb-2">
+                <div className="w-5 h-5 bg-gradient-to-br from-green-400 to-brand-trust rounded-full flex items-center justify-center text-white text-xs font-medium flex-shrink-0">
+                  {comment.authorEmail.charAt(0).toUpperCase()}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-neutral-900 truncate">
+                      {comment.authorEmail.split('@')[0]}
+                    </span>
+                    <span className="text-xs text-neutral-500 flex-shrink-0">
+                      {formatDate(comment.createdAt)}
+                    </span>
+                  </div>
+                  <p className="text-xs text-neutral-700 leading-relaxed mt-1">{comment.content}</p>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
     </div>
   );
-} 
+}

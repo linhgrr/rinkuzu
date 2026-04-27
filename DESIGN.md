@@ -10,10 +10,10 @@ RinKuzu is an AI-powered adaptive learning platform that transforms PDFs into pe
 
 The system uses a professional SaaS foundation with a warm education-focused identity:
 
-* **Green = primary brand identity, learning progress, success, trust**
-* **Orange = focused action, motivation, CTA momentum**
-* **Neutral surfaces = clarity and focus**
-* **Soft depth = approachable intelligence**
+- **Green = primary brand identity, learning progress, success, trust**
+- **Orange = focused action, motivation, CTA momentum**
+- **Neutral surfaces = clarity and focus**
+- **Soft depth = approachable intelligence**
 
 This is not a generic orange/green theme. It is a green-led learning SaaS identity with orange reserved for high-intent action moments.
 
@@ -25,19 +25,19 @@ This is not a generic orange/green theme. It is a green-led learning SaaS identi
 
 RinKuzu should feel:
 
-* Smart but not intimidating
-* Energetic but not childish
-* Academic but not old-fashioned
-* Friendly but still trustworthy
-* AI-native without looking like a generic AI wrapper
+- Smart but not intimidating
+- Energetic but not childish
+- Academic but not old-fashioned
+- Friendly but still trustworthy
+- AI-native without looking like a generic AI wrapper
 
 The visual language should combine:
 
-* Clean SaaS layout discipline
-* Warm, student-friendly colors
-* Clear learning-state feedback
-* Subtle AI/graph-inspired visuals
-* Strong CTA hierarchy for sign-up and upload flows
+- Clean SaaS layout discipline
+- Warm, student-friendly colors
+- Clear learning-state feedback
+- Subtle AI/graph-inspired visuals
+- Strong CTA hierarchy for sign-up and upload flows
 
 ### 1.2 Core Visual Principles
 
@@ -64,9 +64,9 @@ Mascot or tutor moments should make difficult learning feel guided, not gamified
 
 The color system is split into **primitive tokens**, **semantic tokens**, and **component tokens**.
 
-* Primitive tokens are raw colors.
-* Semantic tokens describe meaning.
-* Component tokens describe actual UI usage.
+- Primitive tokens are raw colors.
+- Semantic tokens describe meaning.
+- Component tokens describe actual UI usage.
 
 This makes the system scalable for dark mode, rebranding, A/B testing, and future product surfaces.
 
@@ -80,9 +80,9 @@ Neutrals carry the majority of the interface. Green provides the product identit
 
 Recommended visual balance:
 
-* Neutrals: 70-80%
-* Green: 15-20%
-* Orange: 5-10%
+- Neutrals: 70-80%
+- Green: 15-20%
+- Orange: 5-10%
 
 This prevents orange from overpowering the product while keeping CTA moments highly visible.
 
@@ -191,7 +191,7 @@ This prevents orange from overpowering the product while keeping CTA moments hig
 ## 2.4 Dark Mode Tokens
 
 ```css
-[data-theme="dark"] {
+[data-theme='dark'] {
   --bg-page: #10110f;
   --bg-section: #151713;
   --bg-surface: #1b1d19;
@@ -203,9 +203,9 @@ This prevents orange from overpowering the product while keeping CTA moments hig
   --text-muted: #94948d;
   --text-inverse: #10110f;
 
-  --border-subtle: rgba(255,255,255,0.08);
-  --border-default: rgba(255,255,255,0.12);
-  --border-strong: rgba(255,255,255,0.2);
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-default: rgba(255, 255, 255, 0.12);
+  --border-strong: rgba(255, 255, 255, 0.2);
 
   --brand-primary: #34d399;
   --brand-primary-hover: #6ee7b7;
@@ -232,63 +232,63 @@ This prevents orange from overpowering the product while keeping CTA moments hig
 
 Use orange for:
 
-* Primary CTA buttons
-* Upload PDF action
-* Generate quiz action
-* Start learning action
-* Pricing upgrade buttons
-* Attention badges such as “AI Generated”, “New”, “Recommended”
-* Review-needed state
+- Primary CTA buttons
+- Upload PDF action
+- Generate quiz action
+- Start learning action
+- Pricing upgrade buttons
+- Attention badges such as “AI Generated”, “New”, “Recommended”
+- Review-needed state
 
 Do not use orange for:
 
-* Correct answers
-* Success confirmations
-* Passive card decoration
-* Long body text
-* Background-heavy sections unless very pale tint
-* Navigation links or active tab indicators
-* Streak badges, XP displays, or mastery scores (use green)
-* Card hover borders/shadows (use green)
-* Exercise indicators (use green for non-review contexts)
-* Score metrics or completion statistics (use green)
-* Decorative blobs, gradients, or background glows
+- Correct answers
+- Success confirmations
+- Passive card decoration
+- Long body text
+- Background-heavy sections unless very pale tint
+- Navigation links or active tab indicators
+- Streak badges, XP displays, or mastery scores (use green)
+- Card hover borders/shadows (use green)
+- Exercise indicators (use green for non-review contexts)
+- Score metrics or completion statistics (use green)
+- Decorative blobs, gradients, or background glows
 
 ### Green Usage
 
 Use green for:
 
-* Primary brand moments and product identity
-* Correct answers
-* Completed quiz state
-* Mastery progress
-* Learning streaks
-* Success toasts
-* Verified / trusted indicators
-* Focus rings
-* Progress bars where the meaning is improvement
-* Active tab indicators and navigation links
-* Card hover borders and shadows
-* Score metrics, XP displays, and completion statistics
-* Exercise/lesson indicator dots and status markers
-* Decorative background blobs, glows, and section gradients
+- Primary brand moments and product identity
+- Correct answers
+- Completed quiz state
+- Mastery progress
+- Learning streaks
+- Success toasts
+- Verified / trusted indicators
+- Focus rings
+- Progress bars where the meaning is improvement
+- Active tab indicators and navigation links
+- Card hover borders and shadows
+- Score metrics, XP displays, and completion statistics
+- Exercise/lesson indicator dots and status markers
+- Decorative background blobs, glows, and section gradients
 
 Do not use green for:
 
-* Generic conversion CTA
-* Pricing upgrade CTA unless the action is confirmation
-* Warning or review-needed states
+- Generic conversion CTA
+- Pricing upgrade CTA unless the action is confirmation
+- Warning or review-needed states
 
 ### Neutral Usage
 
 Use neutrals for:
 
-* Page background
-* Content cards
-* Text hierarchy
-* Borders
-* Tables
-* Dashboard panels
+- Page background
+- Content cards
+- Text hierarchy
+- Borders
+- Tables
+- Dashboard panels
 
 Neutrals should carry most of the UI weight. Accents should appear as intentional signals.
 
@@ -302,8 +302,9 @@ Use a modern sans-serif optimized for SaaS readability.
 
 ```css
 :root {
-  --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --font-mono: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+  --font-sans:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
 }
 ```
 
@@ -359,11 +360,11 @@ If using Next.js, load Inter through `next/font/google`.
 
 ## 3.4 Typography Rules
 
-* Hero headlines may use tight tracking.
-* Body text should never be tightly tracked.
-* Do not use orange or green for long paragraphs.
-* Use `font-weight: 650–800` for strong SaaS headlines.
-* Use mono font only for technical labels, file names, question IDs, and analytics metadata.
+- Hero headlines may use tight tracking.
+- Body text should never be tightly tracked.
+- Do not use orange or green for long paragraphs.
+- Use `font-weight: 650–800` for strong SaaS headlines.
+- Use mono font only for technical labels, file names, question IDs, and analytics metadata.
 
 ---
 
@@ -406,9 +407,9 @@ If using Next.js, load Inter through `next/font/google`.
 
 Use:
 
-* `1200px` for marketing pages
-* `1320px` for dashboards
-* `768px` for reading / quiz flows
+- `1200px` for marketing pages
+- `1320px` for dashboards
+- `768px` for reading / quiz flows
 
 ---
 
@@ -428,11 +429,11 @@ Use:
 
 Usage:
 
-* Buttons: `8px` or `9999px` for pill CTAs
-* Cards: `16px`
-* Hero cards: `24px`
-* Badges: `9999px`
-* Inputs: `10–12px`
+- Buttons: `8px` or `9999px` for pill CTAs
+- Cards: `16px`
+- Hero cards: `24px`
+- Badges: `9999px`
+- Inputs: `10–12px`
 
 ---
 
@@ -442,12 +443,12 @@ Usage:
 
 ```css
 :root {
-  --shadow-xs: 0 1px 2px rgba(24,24,21,0.04);
-  --shadow-sm: 0 4px 12px rgba(24,24,21,0.06);
-  --shadow-md: 0 10px 30px rgba(24,24,21,0.08);
-  --shadow-lg: 0 24px 60px rgba(24,24,21,0.12);
-  --shadow-orange-glow: 0 18px 40px rgba(255,122,26,0.24);
-  --shadow-green-glow: 0 18px 40px rgba(0,157,140,0.22);
+  --shadow-xs: 0 1px 2px rgba(24, 24, 21, 0.04);
+  --shadow-sm: 0 4px 12px rgba(24, 24, 21, 0.06);
+  --shadow-md: 0 10px 30px rgba(24, 24, 21, 0.08);
+  --shadow-lg: 0 24px 60px rgba(24, 24, 21, 0.12);
+  --shadow-orange-glow: 0 18px 40px rgba(255, 122, 26, 0.24);
+  --shadow-green-glow: 0 18px 40px rgba(0, 157, 140, 0.22);
 }
 ```
 
@@ -477,11 +478,11 @@ Use for the highest-priority action on a page. In button naming, `primary` means
 
 Examples:
 
-* Start Learning Now
-* Upload PDF
-* Generate Quiz
-* Get Started
-* Upgrade Plan
+- Start Learning Now
+- Upload PDF
+- Generate Quiz
+- Get Started
+- Upgrade Plan
 
 ```css
 .btn-primary {
@@ -499,7 +500,10 @@ Examples:
   font-weight: 650;
   line-height: 1;
   box-shadow: var(--shadow-xs);
-  transition: background 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+  transition:
+    background 160ms ease,
+    transform 160ms ease,
+    box-shadow 160ms ease;
 }
 
 .btn-primary:hover {
@@ -525,10 +529,10 @@ Use for lower-priority actions.
 
 Examples:
 
-* View Pricing
-* Learn More
-* See Examples
-* Back to Dashboard
+- View Pricing
+- Learn More
+- See Examples
+- Back to Dashboard
 
 ```css
 .btn-secondary {
@@ -543,7 +547,10 @@ Examples:
   color: var(--text-primary);
   font-size: 15px;
   font-weight: 600;
-  transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
+  transition:
+    border-color 160ms ease,
+    background 160ms ease,
+    transform 160ms ease;
 }
 
 .btn-secondary:hover {
@@ -558,9 +565,9 @@ Use only when the action confirms or completes something.
 
 Examples:
 
-* Mark as Mastered
-* Complete Review
-* Save Progress
+- Mark as Mastered
+- Complete Review
+- Save Progress
 
 ```css
 .btn-success {
@@ -593,27 +600,27 @@ Badges should be compact and semantically meaningful.
 }
 
 .badge-ai {
-  background: rgba(255,122,26,0.1);
+  background: rgba(255, 122, 26, 0.1);
   color: var(--orange-700);
 }
 
 .badge-success {
-  background: rgba(0,157,140,0.1);
+  background: rgba(0, 157, 140, 0.1);
   color: var(--green-700);
 }
 
 .badge-info {
-  background: rgba(59,130,246,0.1);
+  background: rgba(59, 130, 246, 0.1);
   color: var(--blue-500);
 }
 ```
 
 Usage examples:
 
-* Powered by Gemini AI → orange AI badge
-* Mastered → green success badge
-* New Course → blue info badge
-* Needs Review → orange review badge
+- Powered by Gemini AI → orange AI badge
+- Mastered → green success badge
+- New Course → blue info badge
+- Needs Review → orange review badge
 
 ---
 
@@ -639,13 +646,16 @@ Usage examples:
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-xl);
   padding: var(--space-6);
-  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    border-color 180ms ease;
 }
 
 .feature-card:hover {
   transform: translateY(-3px);
   box-shadow: var(--shadow-sm);
-  border-color: rgba(0,157,140,0.24);
+  border-color: rgba(0, 157, 140, 0.24);
 }
 ```
 
@@ -665,7 +675,9 @@ Feature cards can use orange icon containers for actions and green highlights fo
   background: var(--bg-surface);
   color: var(--text-primary);
   font-size: 15px;
-  transition: border-color 160ms ease, box-shadow 160ms ease;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease;
 }
 
 .input::placeholder {
@@ -681,9 +693,9 @@ Feature cards can use orange icon containers for actions and green highlights fo
 
 Form validation:
 
-* Correct / valid → green
-* Error → red
-* Needs attention → orange
+- Correct / valid → green
+- Error → red
+- Needs attention → orange
 
 ---
 
@@ -693,27 +705,30 @@ The upload flow is one of the most important conversion moments.
 
 ```css
 .upload-dropzone {
-  border: 1.5px dashed rgba(255,122,26,0.42);
-  background: linear-gradient(180deg, rgba(255,122,26,0.06), rgba(255,255,255,0.9));
+  border: 1.5px dashed rgba(255, 122, 26, 0.42);
+  background: linear-gradient(180deg, rgba(255, 122, 26, 0.06), rgba(255, 255, 255, 0.9));
   border-radius: var(--radius-2xl);
   padding: 40px;
   text-align: center;
-  transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
+  transition:
+    border-color 160ms ease,
+    background 160ms ease,
+    transform 160ms ease;
 }
 
 .upload-dropzone:hover,
-.upload-dropzone[data-dragging="true"] {
+.upload-dropzone[data-dragging='true'] {
   border-color: var(--brand-action);
-  background: rgba(255,122,26,0.09);
+  background: rgba(255, 122, 26, 0.09);
   transform: translateY(-2px);
 }
 ```
 
 Content rules:
 
-* Use orange for the upload icon and primary upload CTA.
-* Use green for upload success, parsing confidence, and completed progress signals.
-* Show file name, file size, parsing progress, and estimated generation step clearly.
+- Use orange for the upload icon and primary upload CTA.
+- Use green for upload success, parsing confidence, and completed progress signals.
+- Show file name, file size, parsing progress, and estimated generation step clearly.
 
 ---
 
@@ -735,33 +750,33 @@ Quiz cards should feel focused and calm.
 
 Question layout:
 
-* Question number: small muted label
-* Bloom level: badge
-* Difficulty: neutral or orange badge
-* Main question: strong H3/H4
-* Answer options: large clickable rows
-* Explanation: collapsible panel after answer
+- Question number: small muted label
+- Bloom level: badge
+- Difficulty: neutral or orange badge
+- Main question: strong H3/H4
+- Answer options: large clickable rows
+- Explanation: collapsible panel after answer
 
 Answer states:
 
 ```css
-.answer-option[data-state="default"] {
+.answer-option[data-state='default'] {
   border: 1px solid var(--border-default);
 }
 
-.answer-option[data-state="selected"] {
+.answer-option[data-state='selected'] {
   border-color: var(--brand-action);
-  background: rgba(255,122,26,0.08);
+  background: rgba(255, 122, 26, 0.08);
 }
 
-.answer-option[data-state="correct"] {
+.answer-option[data-state='correct'] {
   border-color: var(--state-correct);
-  background: rgba(0,157,140,0.1);
+  background: rgba(0, 157, 140, 0.1);
 }
 
-.answer-option[data-state="incorrect"] {
+.answer-option[data-state='incorrect'] {
   border-color: var(--state-incorrect);
-  background: rgba(229,72,77,0.08);
+  background: rgba(229, 72, 77, 0.08);
 }
 ```
 
@@ -783,11 +798,11 @@ Knowledge graph visuals should be structured, not chaotic.
 
 ### Graph Rules
 
-* Limit visible node count per view.
-* Cluster related concepts.
-* Use edge opacity to reduce noise.
-* Use green edges for mastered relationships only when meaningful.
-* Use orange only for the current path or recommendation.
+- Limit visible node count per view.
+- Cluster related concepts.
+- Use edge opacity to reduce noise.
+- Use green edges for mastered relationships only when meaningful.
+- Use orange only for the current path or recommendation.
 
 ```css
 .graph-node-current {
@@ -802,7 +817,7 @@ Knowledge graph visuals should be structured, not chaotic.
 }
 
 .graph-edge {
-  stroke: rgba(24,24,21,0.16);
+  stroke: rgba(24, 24, 21, 0.16);
 }
 ```
 
@@ -814,19 +829,19 @@ Analytics should look credible, not overly playful.
 
 Use:
 
-* Green for improvement and completed mastery.
-* Orange for recommended review areas.
-* Neutral for baseline gridlines and inactive data.
-* Blue/purple only when multiple categories need separation.
+- Green for improvement and completed mastery.
+- Orange for recommended review areas.
+- Neutral for baseline gridlines and inactive data.
+- Blue/purple only when multiple categories need separation.
 
 Dashboard cards:
 
-* Learning streak
-* Mastery score
-* Weak concepts
-* Bloom distribution
-* Quiz completion rate
-* Time spent learning
+- Learning streak
+- Mastery score
+- Weak concepts
+- Bloom distribution
+- Quiz completion rate
+- Time spent learning
 
 Metric card pattern:
 
@@ -852,25 +867,25 @@ Metric card pattern:
 
 Desktop navigation:
 
-* Logo left
-* Product links center/left
-* Login secondary
-* Get Started primary orange
+- Logo left
+- Product links center/left
+- Login secondary
+- Get Started primary orange
 
 ```css
 .navbar {
   height: 72px;
   border-bottom: 1px solid var(--border-subtle);
-  background: rgba(255,255,255,0.82);
+  background: rgba(255, 255, 255, 0.82);
   backdrop-filter: blur(12px);
 }
 ```
 
 Rules:
 
-* Keep nav calm and neutral.
-* Only the main CTA uses orange.
-* Use green only for the logo, brand mark, or subtle active-state trust cues.
+- Keep nav calm and neutral.
+- Only the main CTA uses orange.
+- Use green only for the logo, brand mark, or subtle active-state trust cues.
 
 ---
 
@@ -880,13 +895,13 @@ Pricing pages are conversion-critical.
 
 Recommended hierarchy:
 
-* Free plan: neutral card
-* Pro / popular plan: orange border + primary CTA
-* Team / teacher plan: green trust accent if positioned for institutions
+- Free plan: neutral card
+- Pro / popular plan: orange border + primary CTA
+- Team / teacher plan: green trust accent if positioned for institutions
 
 ```css
 .pricing-card-featured {
-  border: 1.5px solid rgba(255,122,26,0.45);
+  border: 1.5px solid rgba(255, 122, 26, 0.45);
   box-shadow: var(--shadow-md);
   position: relative;
 }
@@ -905,24 +920,24 @@ Rin-chan should feel helpful and warm.
 
 Chat interface:
 
-* User messages: neutral or pale orange
-* Rin-chan messages: white cards with subtle green trust accent
-* Explanation blocks: neutral card
-* Suggested next actions: orange CTA chips
-* Correct encouragement: green microcopy
+- User messages: neutral or pale orange
+- Rin-chan messages: white cards with subtle green trust accent
+- Explanation blocks: neutral card
+- Suggested next actions: orange CTA chips
+- Correct encouragement: green microcopy
 
 Tone:
 
-* Supportive
-* Concise
-* Encouraging
-* Never overly childish
+- Supportive
+- Concise
+- Encouraging
+- Never overly childish
 
 Example microcopy:
 
-* “Nice progress — this concept is almost mastered.”
-* “Let’s review one prerequisite before continuing.”
-* “You answered correctly. Want to try a harder Bloom-level question?”
+- “Nice progress — this concept is almost mastered.”
+- “Let’s review one prerequisite before continuing.”
+- “You answered correctly. Want to try a harder Bloom-level question?”
 
 ---
 
@@ -934,19 +949,19 @@ Example microcopy:
 
 Structure:
 
-* Small AI badge: “Powered by Gemini AI”
-* H1: mastery-focused value proposition
-* Subtitle: PDF → quiz → knowledge graph → mastery
-* Primary CTA: Start Learning Now / Upload PDF
-* Secondary CTA: View Demo / Browse Quizzes
-* Visual: upload + generated quiz + graph preview
+- Small AI badge: “Powered by Gemini AI”
+- H1: mastery-focused value proposition
+- Subtitle: PDF → quiz → knowledge graph → mastery
+- Primary CTA: Start Learning Now / Upload PDF
+- Secondary CTA: View Demo / Browse Quizzes
+- Visual: upload + generated quiz + graph preview
 
 Hero color usage:
 
-* Green brand impression through logo, trust markers, and progress cues
-* Orange CTA
-* Pale orange background glow
-* Green progress indicators in product preview
+- Green brand impression through logo, trust markers, and progress cues
+- Orange CTA
+- Pale orange background glow
+- Green progress indicators in product preview
 
 ### Feature Section
 
@@ -971,11 +986,11 @@ Use orange for step numbers and green for completion markers.
 
 Quiz cards should include:
 
-* Subject badge
-* Course title
-* Description
-* Difficulty / number of questions
-* Start Quiz CTA
+- Subject badge
+- Course title
+- Description
+- Difficulty / number of questions
+- Start Quiz CTA
 
 ### Final CTA
 
@@ -987,20 +1002,20 @@ Use a warm orange gradient background with a green success proof element.
 
 Dashboard layout:
 
-* Sidebar navigation
-* Top progress summary
-* Recommended next action
-* Recent quizzes
-* Weak concepts
-* Knowledge graph preview
+- Sidebar navigation
+- Top progress summary
+- Recommended next action
+- Recent quizzes
+- Weak concepts
+- Knowledge graph preview
 
 Primary action on dashboard:
 
-* Upload PDF / Generate Quiz → orange
+- Upload PDF / Generate Quiz → orange
 
 Success areas:
 
-* Mastery score / completed quizzes → green
+- Mastery score / completed quizzes → green
 
 ---
 
@@ -1008,18 +1023,18 @@ Success areas:
 
 Layout:
 
-* Centered quiz card
-* Progress bar top
-* Question content
-* Answer options
-* Explanation after submit
-* Next question CTA
+- Centered quiz card
+- Progress bar top
+- Question content
+- Answer options
+- Explanation after submit
+- Next question CTA
 
 Progress bar:
 
-* Neutral track
-* Green fill if progress indicates completion
-* Orange segment if current review mode
+- Neutral track
+- Green fill if progress indicates completion
+- Orange segment if current review mode
 
 ---
 
@@ -1029,12 +1044,12 @@ Use green as the dominant success state if the learner completed the quiz.
 
 Sections:
 
-* Score summary
-* Correct / incorrect breakdown
-* Bloom level performance
-* Weak concepts
-* Recommended next quiz
-* CTA: Review Mistakes (orange), Mark Completed (green)
+- Score summary
+- Correct / incorrect breakdown
+- Bloom level performance
+- Weak concepts
+- Recommended next quiz
+- CTA: Review Mistakes (orange), Mark Completed (green)
 
 ---
 
@@ -1042,18 +1057,18 @@ Sections:
 
 Goals:
 
-* Make plan comparison easy
-* Highlight the recommended plan
-* Use orange for conversion
-* Use green for trust proof
+- Make plan comparison easy
+- Highlight the recommended plan
+- Use orange for conversion
+- Use green for trust proof
 
 Components:
 
-* Plan cards
-* Popular badge
-* Feature table
-* FAQ
-* Security / privacy note
+- Plan cards
+- Popular badge
+- Feature table
+- FAQ
+- Security / privacy note
 
 ---
 
@@ -1085,12 +1100,12 @@ Motion should communicate responsiveness and learning progress.
 
 ## 8.3 Motion Rules
 
-* Buttons: 120–180ms
-* Cards hover: 180ms
-* Dialogs: 280ms
-* Quiz answer feedback: immediate, under 180ms
-* Graph transitions: 280–420ms
-* Avoid excessive mascot animation during focused quiz taking
+- Buttons: 120–180ms
+- Cards hover: 180ms
+- Dialogs: 280ms
+- Quiz answer feedback: immediate, under 180ms
+- Graph transitions: 280–420ms
+- Avoid excessive mascot animation during focused quiz taking
 
 ---
 
@@ -1098,29 +1113,29 @@ Motion should communicate responsiveness and learning progress.
 
 Icon style:
 
-* Rounded stroke icons
-* 1.75–2px stroke
-* Simple geometric shapes
-* Avoid overly playful emoji-style icons in core UI
+- Rounded stroke icons
+- 1.75–2px stroke
+- Simple geometric shapes
+- Avoid overly playful emoji-style icons in core UI
 
 Recommended icon roles:
 
-* Upload → orange
-* Check / mastery → green
-* Graph → neutral with green active node
-* AI / sparkle → orange or purple sparingly
-* Analytics → neutral/green
+- Upload → orange
+- Check / mastery → green
+- Graph → neutral with green active node
+- AI / sparkle → orange or purple sparingly
+- Analytics → neutral/green
 
 Icon containers:
 
 ```css
 .icon-box-orange {
-  background: rgba(255,122,26,0.1);
+  background: rgba(255, 122, 26, 0.1);
   color: var(--brand-action);
 }
 
 .icon-box-green {
-  background: rgba(0,157,140,0.1);
+  background: rgba(0, 157, 140, 0.1);
   color: var(--brand-trust);
 }
 ```
@@ -1131,25 +1146,25 @@ Icon containers:
 
 Illustrations should support the product story:
 
-* PDF transforms into quiz cards
-* Concepts become graph nodes
-* Student progresses through a learning path
-* Rin-chan guides without dominating the UI
+- PDF transforms into quiz cards
+- Concepts become graph nodes
+- Student progresses through a learning path
+- Rin-chan guides without dominating the UI
 
 Style:
 
-* Soft rounded shapes
-* Minimal linework
-* Warm orange highlights
-* Green success details
-* Neutral canvas
+- Soft rounded shapes
+- Minimal linework
+- Warm orange highlights
+- Green success details
+- Neutral canvas
 
 Avoid:
 
-* Neon cyber AI visuals
-* Overly childish school clipart
-* Busy knowledge graph backgrounds
-* Random decorative blobs without meaning
+- Neon cyber AI visuals
+- Overly childish school clipart
+- Busy knowledge graph backgrounds
+- Random decorative blobs without meaning
 
 ---
 
@@ -1159,53 +1174,53 @@ Avoid:
 
 RinKuzu should sound:
 
-* Helpful
-* Encouraging
-* Clear
-* Focused on mastery
-* Slightly warm, not overly cute
+- Helpful
+- Encouraging
+- Clear
+- Focused on mastery
+- Slightly warm, not overly cute
 
 ## 11.2 CTA Copy
 
 Preferred:
 
-* Start Learning Now
-* Generate Quiz
-* Upload PDF
-* Continue Learning
-* Review Mistakes
-* Master This Topic
-* View Knowledge Graph
+- Start Learning Now
+- Generate Quiz
+- Upload PDF
+- Continue Learning
+- Review Mistakes
+- Master This Topic
+- View Knowledge Graph
 
 Avoid:
 
-* Click Here
-* Submit
-* Go
-* Try Stuff
-* Magic Button
+- Click Here
+- Submit
+- Go
+- Try Stuff
+- Magic Button
 
 ## 11.3 Feedback Copy
 
 Correct answer:
 
-* “Correct — you’re building mastery.”
-* “Nice work. This concept is getting stronger.”
+- “Correct — you’re building mastery.”
+- “Nice work. This concept is getting stronger.”
 
 Incorrect answer:
 
-* “Not quite. Let’s review the key idea.”
-* “Close — this concept needs one more pass.”
+- “Not quite. Let’s review the key idea.”
+- “Close — this concept needs one more pass.”
 
 Upload success:
 
-* “Your PDF is ready. RinKuzu found the key concepts.”
+- “Your PDF is ready. RinKuzu found the key concepts.”
 
 Generation loading:
 
-* “Extracting concepts…”
-* “Building your knowledge graph…”
-* “Creating Bloom-level questions…”
+- “Extracting concepts…”
+- “Building your knowledge graph…”
+- “Creating Bloom-level questions…”
 
 ---
 
@@ -1215,25 +1230,27 @@ Generation loading:
 
 Minimum requirements:
 
-* Body text: WCAG AA
-* Button text: WCAG AA
-* Focus states: visible on all surfaces
-* Chart colors: must not rely on color alone
+- Body text: WCAG AA
+- Button text: WCAG AA
+- Focus states: visible on all surfaces
+- Chart colors: must not rely on color alone
 
 ## 12.2 Keyboard
 
 All interactive elements must support:
 
-* Tab focus
-* Enter / Space activation
-* Escape to close overlays
-* Arrow navigation where applicable
+- Tab focus
+- Enter / Space activation
+- Escape to close overlays
+- Arrow navigation where applicable
 
 ## 12.3 Reduced Motion
 
 ```css
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     scroll-behavior: auto !important;
@@ -1248,10 +1265,10 @@ Do not communicate correctness only with green/red.
 
 Use:
 
-* Icons
-* Text labels
-* Borders
-* Explanations
+- Icons
+- Text labels
+- Borders
+- Explanations
 
 ---
 
@@ -1371,7 +1388,7 @@ module.exports = {
   }
 
   ::selection {
-    background: rgba(255,122,26,0.22);
+    background: rgba(255, 122, 26, 0.22);
   }
 }
 ```
@@ -1386,27 +1403,27 @@ Recommended token layers:
 
 Raw values:
 
-* `--orange-500`
-* `--green-500`
-* `--neutral-900`
+- `--orange-500`
+- `--green-500`
+- `--neutral-900`
 
 ### 15.2 Semantic Tokens
 
 Meaning:
 
-* `--brand-action`
-* `--brand-primary`
-* `--brand-trust`
-* `--text-primary`
-* `--bg-surface`
+- `--brand-action`
+- `--brand-primary`
+- `--brand-trust`
+- `--text-primary`
+- `--bg-surface`
 
 ### 15.3 Component Tokens
 
 Component-specific usage:
 
-* `--button-primary-bg`
-* `--quiz-correct-bg`
-* `--graph-current-node-bg`
+- `--button-primary-bg`
+- `--quiz-correct-bg`
+- `--graph-current-node-bg`
 
 Example:
 
@@ -1420,8 +1437,8 @@ Example:
   --button-primary-bg-hover: var(--brand-action-hover);
   --button-primary-text: var(--text-inverse);
 
-  --quiz-answer-selected-bg: rgba(255,122,26,0.08);
-  --quiz-answer-correct-bg: rgba(0,157,140,0.1);
+  --quiz-answer-selected-bg: rgba(255, 122, 26, 0.08);
+  --quiz-answer-correct-bg: rgba(0, 157, 140, 0.1);
 
   --graph-node-current-bg: var(--brand-action);
   --graph-node-mastered-bg: var(--brand-trust);
@@ -1438,47 +1455,47 @@ This structure makes future redesigns safer.
 
 Primitive:
 
-* `Primitive/Orange/50`
-* `Primitive/Orange/500`
-* `Primitive/Green/500`
-* `Primitive/Neutral/900`
+- `Primitive/Orange/50`
+- `Primitive/Orange/500`
+- `Primitive/Green/500`
+- `Primitive/Neutral/900`
 
 Semantic:
 
-* `Semantic/Background/Page`
-* `Semantic/Background/Surface`
-* `Semantic/Text/Primary`
-* `Semantic/Text/Secondary`
-* `Semantic/Brand/Primary`
-* `Semantic/Brand/Action`
-* `Semantic/Brand/Trust`
-* `Semantic/State/Correct`
-* `Semantic/State/Review`
+- `Semantic/Background/Page`
+- `Semantic/Background/Surface`
+- `Semantic/Text/Primary`
+- `Semantic/Text/Secondary`
+- `Semantic/Brand/Primary`
+- `Semantic/Brand/Action`
+- `Semantic/Brand/Trust`
+- `Semantic/State/Correct`
+- `Semantic/State/Review`
 
 Component:
 
-* `Component/Button/Primary/Background`
-* `Component/Button/Success/Background`
-* `Component/Quiz/Answer/Correct`
-* `Component/Graph/Node/Current`
+- `Component/Button/Primary/Background`
+- `Component/Button/Success/Background`
+- `Component/Quiz/Answer/Correct`
+- `Component/Graph/Node/Current`
 
 ---
 
 ## 16.2 Text Styles
 
-* `Display/XL`
-* `Display/Default`
-* `Heading/H1`
-* `Heading/H2`
-* `Heading/H3`
-* `Heading/H4`
-* `Body/XL/Medium`
-* `Body/LG/Regular`
-* `Body/Base/Regular`
-* `Body/SM/Regular`
-* `Label/Base/Semibold`
-* `Label/Caption/Semibold`
-* `Mono/Caption`
+- `Display/XL`
+- `Display/Default`
+- `Heading/H1`
+- `Heading/H2`
+- `Heading/H3`
+- `Heading/H4`
+- `Body/XL/Medium`
+- `Body/LG/Regular`
+- `Body/Base/Regular`
+- `Body/SM/Regular`
+- `Label/Base/Semibold`
+- `Label/Caption/Semibold`
+- `Mono/Caption`
 
 ---
 
@@ -1486,27 +1503,27 @@ Component:
 
 Button:
 
-* `variant=primary | secondary | ghost | success | destructive`
-* `size=sm | md | lg`
-* `state=default | hover | active | disabled | loading`
+- `variant=primary | secondary | ghost | success | destructive`
+- `size=sm | md | lg`
+- `state=default | hover | active | disabled | loading`
 
 Badge:
 
-* `tone=orange | green | blue | red | neutral`
-* `size=sm | md`
+- `tone=orange | green | blue | red | neutral`
+- `size=sm | md`
 
 Quiz Answer:
 
-* `state=default | selected | correct | incorrect | disabled`
+- `state=default | selected | correct | incorrect | disabled`
 
 Card:
 
-* `variant=default | interactive | featured | muted`
+- `variant=default | interactive | featured | muted`
 
 Pricing Card:
 
-* `featured=true | false`
-* `plan=free | pro | team`
+- `featured=true | false`
+- `plan=free | pro | team`
 
 ---
 
@@ -1527,17 +1544,17 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 
 Rules:
 
-* The `brand-primary` design token maps to green.
-* `primary` button maps to orange because it represents the primary CTA/action.
-* `success` maps to green.
-* `loading` should disable click and show spinner.
-* Never use `success` as the default CTA variant.
+- The `brand-primary` design token maps to green.
+- `primary` button maps to orange because it represents the primary CTA/action.
+- `success` maps to green.
+- `loading` should disable click and show spinner.
+- Never use `success` as the default CTA variant.
 
 Implementation alignment:
 
-* Tailwind semantic colors should expose green-led `brand.primary` and orange `brand.action` tokens.
-* CSS variables should not keep Apple-blue as `--primary`, `--accent`, or `--ring` if the app is adopting this system.
-* The shared Button component should map `variant="primary"` to orange action styles and `variant="success"` to green trust/success styles.
+- Tailwind semantic colors should expose green-led `brand.primary` and orange `brand.action` tokens.
+- CSS variables should not keep Apple-blue as `--primary`, `--accent`, or `--ring` if the app is adopting this system.
+- The shared Button component should map `variant="primary"` to orange action styles and `variant="success"` to green trust/success styles.
 
 ---
 
@@ -1561,18 +1578,18 @@ interface QuizAnswerProps {
 
 Avoid:
 
-* Green conversion CTA on normal pages
-* Orange success messages
-* Red/green-only correctness without labels
-* Neon AI gradients everywhere
-* Dense knowledge graphs with too many nodes
-* Mascot taking focus during serious study flows
-* Multiple orange CTAs competing on one screen
-* Pricing pages where every plan looks equally important
-* Body text in saturated orange or green
-* Dashboard charts with too many unrelated colors
-* Orange for passive decoration, gradients, card hover states, or background blobs — orange is reserved for CTAs and review states only
-* Using orange for active tabs, navigation links, streaks, scores, or general UI accents — green serves these roles
+- Green conversion CTA on normal pages
+- Orange success messages
+- Red/green-only correctness without labels
+- Neon AI gradients everywhere
+- Dense knowledge graphs with too many nodes
+- Mascot taking focus during serious study flows
+- Multiple orange CTAs competing on one screen
+- Pricing pages where every plan looks equally important
+- Body text in saturated orange or green
+- Dashboard charts with too many unrelated colors
+- Orange for passive decoration, gradients, card hover states, or background blobs — orange is reserved for CTAs and review states only
+- Using orange for active tabs, navigation links, streaks, scores, or general UI accents — green serves these roles
 
 ---
 

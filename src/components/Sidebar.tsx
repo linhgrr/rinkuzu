@@ -5,9 +5,6 @@ import { useSession } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
 import { useState, useEffect } from 'react';
 import {
-  HiOutlineDocumentText,
-  HiOutlineClock,
-  HiOutlineBookmark,
   HiOutlineSearch,
   HiOutlineCollection,
   HiOutlineUser,
@@ -21,9 +18,8 @@ import {
   HiChevronDoubleLeft,
   HiChevronDoubleRight,
   HiOutlineCog,
-  HiOutlineAcademicCap
+  HiOutlineAcademicCap,
 } from '@/components/icons';
-import CategorySearch from '@/components/ui/CategorySearch';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -43,8 +39,8 @@ export default function Sidebar({ isOpen, onToggle, currentPath }: SidebarProps)
   const { data: session } = useSession();
   const t = useTranslations('nav');
   const [adminMenuOpen, setAdminMenuOpen] = useState(true);
-  const [categoryMenuOpen, setCategoryMenuOpen] = useState(true);
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [_categoryMenuOpen, _setCategoryMenuOpen] = useState(true);
+  const [_categories, setCategories] = useState<Category[]>([]);
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -65,7 +61,7 @@ export default function Sidebar({ isOpen, onToggle, currentPath }: SidebarProps)
     }
   }, [session]);
 
-  const getCategorySlug = (categoryName: string) => {
+  const _getCategorySlug = (categoryName: string) => {
     return categoryName.toLowerCase().replace(/\s+/g, '-');
   };
 
@@ -75,56 +71,59 @@ export default function Sidebar({ isOpen, onToggle, currentPath }: SidebarProps)
     {
       href: '/profile?tab=quizzes',
       labelKey: 'profile',
-      icon: <HiOutlineUser className="w-full h-full" />
+      icon: <HiOutlineUser className="w-full h-full" />,
     },
     {
       href: '/adaptive-learning',
       labelKey: 'adaptiveLearning',
-      icon: <HiOutlineAcademicCap className="w-full h-full" />
+      icon: <HiOutlineAcademicCap className="w-full h-full" />,
     },
     {
       href: '/explore',
       labelKey: 'exploreQuizzes',
-      icon: <HiOutlineSearch className="w-full h-full" />
-    }
+      icon: <HiOutlineSearch className="w-full h-full" />,
+    },
   ];
 
   const adminMenuItems = [
     {
       href: '/admin/queue',
       labelKey: 'quizQueue',
-      icon: <HiOutlineCollection className="w-full h-full" />
+      icon: <HiOutlineCollection className="w-full h-full" />,
     },
     {
       href: '/admin/users',
       labelKey: 'userManagement',
-      icon: <HiOutlineUsers className="w-full h-full" />
+      icon: <HiOutlineUsers className="w-full h-full" />,
     },
     {
       href: '/admin/categories',
       labelKey: 'categories',
-      icon: <HiOutlineTag className="w-full h-full" />
+      icon: <HiOutlineTag className="w-full h-full" />,
     },
     {
       href: '/admin/subscriptions',
       labelKey: 'subscriptions',
-      icon: <HiOutlineCreditCard className="w-full h-full" />
+      icon: <HiOutlineCreditCard className="w-full h-full" />,
     },
     {
       href: '/admin/plans',
       labelKey: 'pricingPlans',
-      icon: <HiOutlineCurrencyDollar className="w-full h-full" />
+      icon: <HiOutlineCurrencyDollar className="w-full h-full" />,
     },
     {
       href: '/admin/stats',
       labelKey: 'statistics',
-      icon: <HiOutlineChartBar className="w-full h-full" />
-    }
+      icon: <HiOutlineChartBar className="w-full h-full" />,
+    },
   ];
 
   return (
-    <div className={`fixed left-0 top-16 h-full bg-white border-r border-neutral-200 transition-all duration-300 z-40 ${isOpen ? 'w-64' : 'w-16'
-      }`}>
+    <div
+      className={`fixed left-0 top-16 h-full bg-white border-r border-neutral-200 transition-all duration-300 z-40 ${
+        isOpen ? 'w-64' : 'w-16'
+      }`}
+    >
       <div className="p-4">
         {/* Toggle Button */}
         <div className="mb-4">
@@ -155,17 +154,21 @@ export default function Sidebar({ isOpen, onToggle, currentPath }: SidebarProps)
             return (
               <Link
                 key={item.href}
-                href={item.labelKey === 'profile' && currentPath?.startsWith('/profile') ? currentPath : item.href}
-                className={`flex items-center px-3 py-2 text-sm rounded-lg transition-colors ${!isOpen ? 'justify-center' : ''
-                  } ${isActive
+                href={
+                  item.labelKey === 'profile' && currentPath?.startsWith('/profile')
+                    ? currentPath
+                    : item.href
+                }
+                className={`flex items-center px-3 py-2 text-sm rounded-lg transition-colors ${
+                  !isOpen ? 'justify-center' : ''
+                } ${
+                  isActive
                     ? 'bg-green-50 text-brand-trust border-r-2 border-brand-trust'
                     : 'text-neutral-700 hover:bg-neutral-100'
-                  }`}
+                }`}
                 title={!isOpen ? t(item.labelKey) : ''}
               >
-                <div className={`${isOpen ? 'w-5 h-5 mr-3' : 'w-6 h-6'}`}>
-                  {item.icon}
-                </div>
+                <div className={`${isOpen ? 'w-5 h-5 mr-3' : 'w-6 h-6'}`}>{item.icon}</div>
                 {isOpen && <span>{t(item.labelKey)}</span>}
               </Link>
             );
@@ -182,7 +185,9 @@ export default function Sidebar({ isOpen, onToggle, currentPath }: SidebarProps)
                     className="flex items-center justify-between w-full px-3 py-2 text-sm font-medium text-neutral-600 hover:bg-neutral-100 rounded-lg transition-colors"
                   >
                     <span>{t('adminPanel')}</span>
-                    <HiChevronRight className={`w-4 h-4 transition-transform ${adminMenuOpen ? 'rotate-90' : ''}`} />
+                    <HiChevronRight
+                      className={`w-4 h-4 transition-transform ${adminMenuOpen ? 'rotate-90' : ''}`}
+                    />
                   </button>
                 </div>
               ) : (
@@ -196,26 +201,29 @@ export default function Sidebar({ isOpen, onToggle, currentPath }: SidebarProps)
               {/* Admin menu items */}
               {(adminMenuOpen || !isOpen) && (
                 <div className={`space-y-1 ${isOpen ? 'ml-3' : ''}`}>
-                  {[...adminMenuItems, {
-                    href: '/admin/reports',
-                    labelKey: 'quizReports',
-                    icon: <HiOutlineExclamationCircle className="w-full h-full" />
-                  }].map((item) => {
+                  {[
+                    ...adminMenuItems,
+                    {
+                      href: '/admin/reports',
+                      labelKey: 'quizReports',
+                      icon: <HiOutlineExclamationCircle className="w-full h-full" />,
+                    },
+                  ].map((item) => {
                     const isActive = currentPath === item.href;
                     return (
                       <Link
                         key={item.href}
                         href={item.href}
-                        className={`flex items-center px-3 py-2 text-sm rounded-lg transition-colors ${!isOpen ? 'justify-center' : ''
-                          } ${isActive
+                        className={`flex items-center px-3 py-2 text-sm rounded-lg transition-colors ${
+                          !isOpen ? 'justify-center' : ''
+                        } ${
+                          isActive
                             ? 'bg-green-50 text-brand-trust border-r-2 border-brand-trust'
                             : 'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900'
-                          }`}
+                        }`}
                         title={!isOpen ? t(item.labelKey) : ''}
                       >
-                        <div className={`${isOpen ? 'w-4 h-4 mr-3' : 'w-5 h-5'}`}>
-                          {item.icon}
-                        </div>
+                        <div className={`${isOpen ? 'w-4 h-4 mr-3' : 'w-5 h-5'}`}>{item.icon}</div>
                         {isOpen && <span>{t(item.labelKey)}</span>}
                       </Link>
                     );
@@ -228,4 +236,4 @@ export default function Sidebar({ isOpen, onToggle, currentPath }: SidebarProps)
       </div>
     </div>
   );
-} 
+}

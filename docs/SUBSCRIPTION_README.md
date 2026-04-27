@@ -3,17 +3,20 @@
 ## Tổng Quan
 
 Hệ thống subscription đã được tích hợp vào ứng dụng quiz với PayOS để cung cấp 2 loại gói thanh toán:
+
 - **Premium 6 Tháng**: 199,000 VND
 - **Premium Trọn Đời**: 499,000 VND
 
 ## Tính Năng
 
 ### User Thường (Free)
+
 - Truy cập các quiz public
 - Giới hạn số lần làm quiz
 - Tính năng cơ bản
 
 ### User Premium
+
 - Truy cập tất cả quiz private
 - Không giới hạn số lần làm quiz
 - Thống kê chi tiết
@@ -23,6 +26,7 @@ Hệ thống subscription đã được tích hợp vào ứng dụng quiz với
 ## Cấu Trúc Database
 
 ### User Model (Cập nhật)
+
 ```typescript
 subscription?: {
   type: 'free' | 'premium_6months' | 'premium_lifetime';
@@ -35,6 +39,7 @@ subscription?: {
 ```
 
 ### Subscription Model (Mới)
+
 ```typescript
 {
   user: ObjectId;
@@ -55,23 +60,27 @@ subscription?: {
 ## API Endpoints
 
 ### 1. Lấy danh sách gói subscription
+
 ```
 GET /api/subscription/plans
 ```
 
 ### 2. Tạo yêu cầu thanh toán
+
 ```
 POST /api/subscription/create-payment
 Body: { planId: 'premium_6months' | 'premium_lifetime' }
 ```
 
 ### 3. Xác minh thanh toán
+
 ```
 POST /api/subscription/verify
 Body: { orderCode: string }
 ```
 
 ### 4. Lấy trạng thái subscription
+
 ```
 GET /api/subscription/status
 ```
@@ -79,20 +88,24 @@ GET /api/subscription/status
 ## Trang Web
 
 ### 1. Trang Subscription
+
 - **URL**: `/subscription`
 - **Chức năng**: Hiển thị các gói subscription và cho phép mua
 
 ### 2. Trang Thanh Toán Thành Công
+
 - **URL**: `/payment/success`
 - **Chức năng**: Xác minh và kích hoạt subscription
 
 ### 3. Trang Thanh Toán Bị Hủy
+
 - **URL**: `/payment/cancel`
 - **Chức năng**: Xử lý khi user hủy thanh toán
 
 ## Tích Hợp PayOS
 
 ### Environment Variables
+
 ```env
 PAYOS_CLIENT_ID=ef17ed2e-db7e-4c03-9ce4-c8a5842ce4b8
 PAYOS_API_KEY=20054436-2932-43a1-bf8e-611c165b97d6
@@ -100,11 +113,13 @@ PAYOS_CHECKSUM_KEY=6f67a787c6c86f0e9654eb56152513d9317df0fac2abec771bc909024c2b9
 ```
 
 ### PayOSService
+
 - Tạo yêu cầu thanh toán
 - Xác minh thanh toán
 - Xử lý webhook
 
 ### SubscriptionService
+
 - Quản lý subscription
 - Kiểm tra quyền truy cập
 - Xử lý thanh toán
@@ -112,12 +127,14 @@ PAYOS_CHECKSUM_KEY=6f67a787c6c86f0e9654eb56152513d9317df0fac2abec771bc909024c2b9
 ## Bảo Mật
 
 ### Kiểm Tra Quyền Truy Cập
+
 - Quiz private chỉ cho phép:
   - Admin
   - Tác giả quiz
   - User có subscription premium
 
 ### Validation
+
 - Kiểm tra subscription còn hạn
 - Xác minh thanh toán với PayOS
 - Bảo vệ API endpoints
@@ -134,11 +151,13 @@ PAYOS_CHECKSUM_KEY=6f67a787c6c86f0e9654eb56152513d9317df0fac2abec771bc909024c2b9
 ## Testing
 
 ### Chạy Test Script
+
 ```bash
 node src/scripts/testSubscription.js
 ```
 
 ### Test Cases
+
 - Tạo subscription
 - Kiểm tra quyền truy cập
 - Xác minh hết hạn
@@ -147,12 +166,14 @@ node src/scripts/testSubscription.js
 ## Monitoring
 
 ### Logs
+
 - Payment requests
 - Subscription activations
 - Access attempts
 - Error handling
 
 ### Metrics
+
 - Subscription conversions
 - Revenue tracking
 - User engagement
@@ -177,6 +198,7 @@ node src/scripts/testSubscription.js
    - Review permission logic
 
 ### Debug Commands
+
 ```bash
 # Check subscription status
 curl -X GET /api/subscription/status
@@ -199,5 +221,6 @@ curl -X POST /api/subscription/create-payment \
 ## Support
 
 Để hỗ trợ kỹ thuật hoặc báo cáo lỗi, vui lòng liên hệ:
+
 - Email: support@rinkuzu.com
-- Documentation: [PayOS API Docs](https://docs.payos.vn/) 
+- Documentation: [PayOS API Docs](https://docs.payos.vn/)

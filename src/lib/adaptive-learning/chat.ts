@@ -18,7 +18,7 @@ interface StreamAdaptiveTutorChatOptions {
 export async function streamAdaptiveTutorChat(
   sessionId: string,
   payload: AdaptiveTutorChatRequest,
-  options: StreamAdaptiveTutorChatOptions = {}
+  options: StreamAdaptiveTutorChatOptions = {},
 ): Promise<string> {
   const response = await fetch(`/api/adaptive-learning/session/${sessionId}/chat`, {
     method: 'POST',
@@ -30,6 +30,6 @@ export async function streamAdaptiveTutorChat(
   return consumeOpenAISseResponse<AdaptiveTutorChatResponse>(response, {
     onContent: options.onContent,
     extractErrorMessage: (body, status) => body.detail || body.error || `HTTP error ${status}`,
-    extractFallbackContent: body => body.explanation,
+    extractFallbackContent: (body) => body.explanation,
   });
 }

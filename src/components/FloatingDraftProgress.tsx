@@ -13,11 +13,11 @@ import {
   HiOutlineExclamationCircle,
   HiOutlineX,
   HiOutlineChevronUp,
-  HiOutlineRefresh,
 } from '@/components/icons';
 
 export function FloatingDraftProgress() {
-  const { getActiveDrafts, getProcessingCount, getCompletedCount, removeDraft, hasActiveDrafts } = useDraftStore();
+  const { getActiveDrafts, getProcessingCount, getCompletedCount, removeDraft, hasActiveDrafts } =
+    useDraftStore();
   const { stopProcessing } = usePdfProcessor();
   const t = useTranslations('draft');
   const [isExpanded, setIsExpanded] = useState(false);
@@ -103,15 +103,19 @@ export function FloatingDraftProgress() {
         </span>
 
         <HiOutlineChevronUp
-          className={`w-4 h-4 text-neutral-400 transition-transform duration-200 ${isExpanded ? '' : 'rotate-180'
-            }`}
+          className={`w-4 h-4 text-neutral-400 transition-transform duration-200 ${
+            isExpanded ? '' : 'rotate-180'
+          }`}
         />
       </button>
     </div>
   );
 }
 
-function getTimeRemaining(expiresAt: string, t: (key: string, params?: Record<string, any>) => string): string {
+function getTimeRemaining(
+  expiresAt: string,
+  t: (key: string, params?: Record<string, any>) => string,
+): string {
   const now = new Date();
   const expiry = new Date(expiresAt);
   const diffMs = expiry.getTime() - now.getTime();
@@ -144,22 +148,17 @@ function DraftItem({
   onCancel: () => void;
   t: (key: string, params?: Record<string, any>) => string;
 }) {
-  const progress = draft.chunksTotal > 0
-    ? (draft.chunksProcessed / draft.chunksTotal) * 100
-    : 0;
+  const progress = draft.chunksTotal > 0 ? (draft.chunksProcessed / draft.chunksTotal) * 100 : 0;
 
-  const errorProgress = draft.chunksTotal > 0
-    ? ((draft.chunksError || 0) / draft.chunksTotal) * 100
-    : 0;
+  const errorProgress =
+    draft.chunksTotal > 0 ? ((draft.chunksError || 0) / draft.chunksTotal) * 100 : 0;
 
   return (
     <div className="px-4 py-3 border-b border-neutral-50 last:border-0">
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <p className="font-medium text-sm text-neutral-900 truncate">
-              {draft.title}
-            </p>
+            <p className="font-medium text-sm text-neutral-900 truncate">{draft.title}</p>
             {draft.expiresAt && (
               <span className="text-xs text-neutral-400 flex-shrink-0">
                 ~ {getTimeRemaining(draft.expiresAt, t)}
@@ -183,11 +182,18 @@ function DraftItem({
               </div>
               <div className="mt-1.5 flex items-center justify-between">
                 <p className="text-xs text-neutral-500">
-                  {t('chunksCompleted', { completed: draft.chunksProcessed, total: draft.chunksTotal })}
+                  {t('chunksCompleted', {
+                    completed: draft.chunksProcessed,
+                    total: draft.chunksTotal,
+                  })}
                   {(draft.chunksError || 0) > 0 && (
-                    <span className="text-red-500"> • {t('errors', { count: draft.chunksError })}</span>
+                    <span className="text-red-500">
+                      {' '}
+                      • {t('errors', { count: draft.chunksError })}
+                    </span>
                   )}
-                  {' • '}{t('questionsGenerated', { count: draft.questionsCount })}
+                  {' • '}
+                  {t('questionsGenerated', { count: draft.questionsCount })}
                 </p>
                 <button
                   onClick={onCancel}

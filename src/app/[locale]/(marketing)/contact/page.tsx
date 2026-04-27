@@ -25,17 +25,18 @@ export default async function ContactPage({ params }: Props) {
       {/* Hero */}
       <div className="bg-[var(--bg-section)] border-b border-neutral-100 py-20 md:py-28">
         <div className="max-w-2xl mx-auto px-6 text-center">
-          <h1 className="text-3xl md:text-5xl font-bold text-[var(--text-primary)] mb-4">Get in Touch</h1>
+          <h1 className="text-3xl md:text-5xl font-bold text-[var(--text-primary)] mb-4">
+            Get in Touch
+          </h1>
           <p className="text-lg text-[var(--text-muted)] leading-relaxed">
-            Have questions about RinKuzu? Need help with your account? Interested in educator or institutional pricing?
-            We&apos;d love to hear from you.
+            Have questions about RinKuzu? Need help with your account? Interested in educator or
+            institutional pricing? We&apos;d love to hear from you.
           </p>
         </div>
       </div>
 
       <div className="max-w-5xl mx-auto px-6 py-16">
         <div className="grid md:grid-cols-2 gap-12">
-
           {/* Contact Methods */}
           <div className="space-y-8">
             <div className="flex gap-4">
@@ -44,7 +45,9 @@ export default async function ContactPage({ params }: Props) {
               </div>
               <div>
                 <h2 className="font-semibold text-[var(--text-primary)] mb-1">Email Support</h2>
-                <p className="text-sm text-[var(--text-muted)] mb-2">Best for: technical questions, bug reports, account issues</p>
+                <p className="text-sm text-[var(--text-muted)] mb-2">
+                  Best for: technical questions, bug reports, account issues
+                </p>
                 <a
                   href="mailto:support@rinkuzu.com"
                   className="text-brand-trust font-medium hover:text-brand-trust-hover hover:underline"
@@ -60,8 +63,13 @@ export default async function ContactPage({ params }: Props) {
               </div>
               <div>
                 <h2 className="font-semibold text-[var(--text-primary)] mb-1">AI Tutor Rin-chan</h2>
-                <p className="text-sm text-[var(--text-muted)] mb-2">Available 24/7 on the platform for instant answers to common questions</p>
-                <Link href="/register" className="text-brand-trust font-medium hover:text-brand-trust-hover hover:underline">
+                <p className="text-sm text-[var(--text-muted)] mb-2">
+                  Available 24/7 on the platform for instant answers to common questions
+                </p>
+                <Link
+                  href="/register"
+                  className="text-brand-trust font-medium hover:text-brand-trust-hover hover:underline"
+                >
                   Try Rin-chan →
                 </Link>
               </div>
@@ -72,9 +80,12 @@ export default async function ContactPage({ params }: Props) {
                 <span className="text-brand-trust text-lg">🎓</span>
               </div>
               <div>
-                <h2 className="font-semibold text-[var(--text-primary)] mb-1">Educator & Institutional Pricing</h2>
+                <h2 className="font-semibold text-[var(--text-primary)] mb-1">
+                  Educator & Institutional Pricing
+                </h2>
                 <p className="text-sm text-[var(--text-muted)] mb-2">
-                  Universities, schools, and corporate training programs — contact us for custom pricing and pilot programs.
+                  Universities, schools, and corporate training programs — contact us for custom
+                  pricing and pilot programs.
                 </p>
                 <a
                   href="mailto:support@rinkuzu.com?subject=Educator%20Pricing%20Inquiry"
@@ -92,10 +103,14 @@ export default async function ContactPage({ params }: Props) {
               <div>
                 <h2 className="font-semibold text-[var(--text-primary)] mb-1">Mailing Address</h2>
                 <p className="text-sm text-[var(--text-muted)] leading-relaxed">
-                  Room 302, Building A1<br />
-                  Hanoi University of Science and Technology<br />
-                  17 Dai Co Viet Street<br />
-                  Hai Ba Trung District<br />
+                  Room 302, Building A1
+                  <br />
+                  Hanoi University of Science and Technology
+                  <br />
+                  17 Dai Co Viet Street
+                  <br />
+                  Hai Ba Trung District
+                  <br />
                   Hanoi, Vietnam
                 </p>
               </div>
@@ -108,7 +123,8 @@ export default async function ContactPage({ params }: Props) {
               <div>
                 <h2 className="font-semibold text-[var(--text-primary)] mb-1">Bug Reports</h2>
                 <p className="text-sm text-[var(--text-muted)] mb-2">
-                  Found something that doesn&apos;t work as expected? Email us with steps to reproduce and we&apos;ll investigate.
+                  Found something that doesn&apos;t work as expected? Email us with steps to
+                  reproduce and we&apos;ll investigate.
                 </p>
                 <a
                   href="mailto:support@rinkuzu.com?subject=Bug%20Report"
@@ -131,11 +147,15 @@ export default async function ContactPage({ params }: Props) {
                 </div>
                 <div className="flex justify-between items-center py-2 border-b border-neutral-100">
                   <span className="text-[var(--text-muted)]">Educator inquiries</span>
-                  <span className="font-medium text-[var(--text-primary)]">Within 3 business days</span>
+                  <span className="font-medium text-[var(--text-primary)]">
+                    Within 3 business days
+                  </span>
                 </div>
                 <div className="flex justify-between items-center py-2 border-b border-neutral-100">
                   <span className="text-[var(--text-muted)]">Bug reports</span>
-                  <span className="font-medium text-[var(--text-primary)]">Within 5 business days</span>
+                  <span className="font-medium text-[var(--text-primary)]">
+                    Within 5 business days
+                  </span>
                 </div>
                 <div className="flex justify-between items-center py-2">
                   <span className="text-[var(--text-muted)]">Rin-chan (AI tutor)</span>
@@ -145,7 +165,9 @@ export default async function ContactPage({ params }: Props) {
             </div>
 
             <div className="bg-[var(--bg-section)] rounded-2xl p-6 border border-neutral-100">
-              <h2 className="font-semibold text-[var(--text-primary)] mb-4">Before You Contact Us</h2>
+              <h2 className="font-semibold text-[var(--text-primary)] mb-4">
+                Before You Contact Us
+              </h2>
               <p className="text-sm text-[var(--text-muted)] mb-4 leading-relaxed">
                 Many common questions are answered in our FAQ and documentation. Check these first:
               </p>
@@ -154,22 +176,34 @@ export default async function ContactPage({ params }: Props) {
                   href="/faq"
                   className="flex items-center justify-between p-3 rounded-xl border border-neutral-200 hover:border-green-200 hover:bg-green-50/30 transition-all group"
                 >
-                  <span className="text-sm font-medium text-[var(--text-primary)]">FAQ — Frequently Asked Questions</span>
-                  <span className="text-neutral-400 group-hover:text-brand-trust transition-colors">→</span>
+                  <span className="text-sm font-medium text-[var(--text-primary)]">
+                    FAQ — Frequently Asked Questions
+                  </span>
+                  <span className="text-neutral-400 group-hover:text-brand-trust transition-colors">
+                    →
+                  </span>
                 </Link>
                 <Link
                   href="/about"
                   className="flex items-center justify-between p-3 rounded-xl border border-neutral-200 hover:border-green-200 hover:bg-green-50/30 transition-all group"
                 >
-                  <span className="text-sm font-medium text-[var(--text-primary)]">About RinKuzu — Our Story & Research</span>
-                  <span className="text-neutral-400 group-hover:text-brand-trust transition-colors">→</span>
+                  <span className="text-sm font-medium text-[var(--text-primary)]">
+                    About RinKuzu — Our Story & Research
+                  </span>
+                  <span className="text-neutral-400 group-hover:text-brand-trust transition-colors">
+                    →
+                  </span>
                 </Link>
                 <Link
                   href="/pricing"
                   className="flex items-center justify-between p-3 rounded-xl border border-neutral-200 hover:border-green-200 hover:bg-green-50/30 transition-all group"
                 >
-                  <span className="text-sm font-medium text-[var(--text-primary)]">Pricing — Free vs. Premium</span>
-                  <span className="text-neutral-400 group-hover:text-brand-trust transition-colors">→</span>
+                  <span className="text-sm font-medium text-[var(--text-primary)]">
+                    Pricing — Free vs. Premium
+                  </span>
+                  <span className="text-neutral-400 group-hover:text-brand-trust transition-colors">
+                    →
+                  </span>
                 </Link>
               </div>
             </div>
@@ -178,7 +212,8 @@ export default async function ContactPage({ params }: Props) {
             <div className="bg-gradient-to-br from-[var(--text-primary)] to-[#2d2d2f] rounded-2xl p-6 text-white">
               <h2 className="font-semibold mb-2">Join 50,000+ learners on RinKuzu</h2>
               <p className="text-sm text-neutral-400 mb-4 leading-relaxed">
-                Upload your first PDF and experience AI-powered adaptive learning — free, no credit card required.
+                Upload your first PDF and experience AI-powered adaptive learning — free, no credit
+                card required.
               </p>
               <Link
                 href="/register"

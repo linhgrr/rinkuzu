@@ -29,23 +29,19 @@ export async function GET(request: NextRequest) {
       userRole: (session?.user as any)?.role,
       userId: (session?.user as any)?.id,
       onlyMine: !isGuest && mine !== null && mine !== 'false',
-      compact
+      compact,
     });
 
     return NextResponse.json({
       success: true,
       data: {
         quizzes: result.quizzes,
-        pagination: result.pagination
-      }
+        pagination: result.pagination,
+      },
     });
-
   } catch (error: any) {
     console.error('Get quizzes error:', error);
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -54,10 +50,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
     const { title, description, category, questions, isPrivate, pdfUrl } = await request.json();
@@ -68,34 +61,29 @@ export async function POST(request: NextRequest) {
       category,
       questions,
       isPrivate,
-      pdfUrl
+      pdfUrl,
     });
 
     return NextResponse.json(
       {
         success: true,
         message: 'Quiz created successfully and sent for approval',
-        data: quiz
+        data: quiz,
       },
-      { status: 201 }
+      { status: 201 },
     );
-
   } catch (error: any) {
     console.error('Create quiz error:', error);
 
-    if (error.message.includes('Title, category, and questions are required') ||
+    if (
+      error.message.includes('Title, category, and questions are required') ||
       error.message.includes('Invalid or inactive category selected') ||
       error.message.includes('Question') ||
-      error.message.includes('Type must be')) {
-      return NextResponse.json(
-        { success: false, error: error.message },
-        { status: 400 }
-      );
+      error.message.includes('Type must be')
+    ) {
+      return NextResponse.json({ success: false, error: error.message }, { status: 400 });
     }
 
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
   }
-} 
+}

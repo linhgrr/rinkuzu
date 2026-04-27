@@ -110,12 +110,16 @@ export default function QuizMetaForm({
             variant="glass"
             disabled={disabled}
           />
-          {labels.promptHelper && <p className="text-xs text-neutral-500 mt-2">{labels.promptHelper}</p>}
+          {labels.promptHelper && (
+            <p className="text-xs text-neutral-500 mt-2">{labels.promptHelper}</p>
+          )}
         </div>
       )}
 
       <div>
-        <label className="block text-sm font-semibold text-neutral-700 mb-3">{labels.category}</label>
+        <label className="block text-sm font-semibold text-neutral-700 mb-3">
+          {labels.category}
+        </label>
         <CategorySelector
           value={selectedCategory}
           onChange={onCategoryChange}
@@ -143,7 +147,9 @@ export default function QuizMetaForm({
                 <HiOutlineLockClosed className="w-4 h-4 mr-1 text-brand-trust" />
                 {labels.privateLabel}
               </span>
-              {labels.privateDescription && <p className="text-xs text-neutral-600 mt-1">{labels.privateDescription}</p>}
+              {labels.privateDescription && (
+                <p className="text-xs text-neutral-600 mt-1">{labels.privateDescription}</p>
+              )}
             </div>
           </label>
         </div>

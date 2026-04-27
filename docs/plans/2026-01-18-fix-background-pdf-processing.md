@@ -15,6 +15,7 @@
 ### Task 1.1: Remove base64 storage, use S3 only
 
 **Files:**
+
 - Modify: `src/app/api/draft/create/route.ts`
 - Modify: `src/models/DraftQuiz.ts`
 
@@ -44,10 +45,7 @@ try {
   await uploadPDF(buffer, pdfKey);
 } catch (s3Error) {
   console.error('S3 upload error:', s3Error);
-  return NextResponse.json(
-    { error: 'Failed to upload PDF. Please try again.' },
-    { status: 500 }
-  );
+  return NextResponse.json({ error: 'Failed to upload PDF. Please try again.' }, { status: 500 });
 }
 
 // Create draft without base64
@@ -89,6 +87,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ### Task 1.2: Update process-chunk to fetch from S3
 
 **Files:**
+
 - Modify: `src/app/api/draft/[id]/process-chunk/route.ts`
 - Modify: `src/lib/s3.ts`
 
@@ -134,10 +133,7 @@ import { getPDFBuffer } from '@/lib/s3';
 
 // NEW:
 if (!draft.pdfData.pdfKey) {
-  return NextResponse.json(
-    { error: 'PDF not available' },
-    { status: 400 }
-  );
+  return NextResponse.json({ error: 'PDF not available' }, { status: 400 });
 }
 
 let fullPdfBuffer: Buffer;
@@ -145,16 +141,14 @@ try {
   fullPdfBuffer = await getPDFBuffer(draft.pdfData.pdfKey);
 } catch (s3Error) {
   console.error('Failed to fetch PDF from S3:', s3Error);
-  return NextResponse.json(
-    { error: 'Failed to fetch PDF' },
-    { status: 500 }
-  );
+  return NextResponse.json({ error: 'Failed to fetch PDF' }, { status: 500 });
 }
 ```
 
 **Step 3: Remove base64 cleanup logic**
 
 Delete this code block from process-chunk (no longer needed):
+
 ```typescript
 // DELETE THIS:
 if (isComplete) {
@@ -162,17 +156,14 @@ if (isComplete) {
     { _id: params.id },
     {
       $set: { status: 'completed' },
-      $unset: { 'pdfData.base64': 1 },  // No longer exists
-    }
+      $unset: { 'pdfData.base64': 1 }, // No longer exists
+    },
   );
 }
 
 // REPLACE WITH:
 if (isComplete) {
-  await DraftQuiz.updateOne(
-    { _id: params.id },
-    { $set: { status: 'completed' } }
-  );
+  await DraftQuiz.updateOne({ _id: params.id }, { $set: { status: 'completed' } });
 }
 ```
 
@@ -201,6 +192,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ### Task 2.1: Add chunk locking to prevent duplicate processing
 
 **Files:**
+
 - Modify: `src/models/DraftQuiz.ts`
 - Modify: `src/app/api/draft/[id]/process-chunk/route.ts`
 
@@ -214,24 +206,27 @@ export interface IChunkDetail {
   endPage: number;
   status: 'pending' | 'processing' | 'done' | 'error';
   error?: string;
-  lockedAt?: Date;      // When processing started
-  lockedBy?: string;    // Unique request ID
+  lockedAt?: Date; // When processing started
+  lockedBy?: string; // Unique request ID
 }
 
 // Update ChunkDetailSchema
-const ChunkDetailSchema = new Schema<IChunkDetail>({
-  index: { type: Number, required: true },
-  startPage: { type: Number, required: true },
-  endPage: { type: Number, required: true },
-  status: {
-    type: String,
-    enum: ['pending', 'processing', 'done', 'error'],
-    default: 'pending'
+const ChunkDetailSchema = new Schema<IChunkDetail>(
+  {
+    index: { type: Number, required: true },
+    startPage: { type: Number, required: true },
+    endPage: { type: Number, required: true },
+    status: {
+      type: String,
+      enum: ['pending', 'processing', 'done', 'error'],
+      default: 'pending',
+    },
+    error: { type: String },
+    lockedAt: { type: Date },
+    lockedBy: { type: String },
   },
-  error: { type: String },
-  lockedAt: { type: Date },
-  lockedBy: { type: String },
-}, { _id: false });
+  { _id: false },
+);
 ```
 
 **Step 2: Implement atomic lock acquisition in process-chunk**
@@ -264,10 +259,10 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
           index: chunkIndex,
           $or: [
             { status: { $in: ['pending', 'error'] } },
-            { status: 'processing', lockedAt: { $lt: lockExpiry } }
-          ]
-        }
-      }
+            { status: 'processing', lockedAt: { $lt: lockExpiry } },
+          ],
+        },
+      },
     },
     {
       $set: {
@@ -275,9 +270,9 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
         'chunks.chunkDetails.$.lockedAt': now,
         'chunks.chunkDetails.$.lockedBy': requestId,
         'chunks.current': chunkIndex,
-      }
+      },
     },
-    { new: true }
+    { new: true },
   );
 
   if (!lockResult) {
@@ -307,11 +302,14 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     }
 
     // Another request is processing it
-    return NextResponse.json({
-      success: false,
-      error: 'Chunk is being processed by another request',
-      retryAfter: 5000,
-    }, { status: 409 });
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Chunk is being processed by another request',
+        retryAfter: 5000,
+      },
+      { status: 409 },
+    );
   }
 
   // We have the lock, proceed with processing...
@@ -340,6 +338,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ### Task 2.2: Add retry logic with exponential backoff
 
 **Files:**
+
 - Modify: `src/hooks/usePdfProcessor.ts`
 
 **Step 1: Add retry helper function**
@@ -353,7 +352,7 @@ const INITIAL_RETRY_DELAY = 1000;
 async function fetchWithRetry(
   url: string,
   options: RequestInit,
-  retries: number = MAX_RETRIES
+  retries: number = MAX_RETRIES,
 ): Promise<Response> {
   let lastError: Error | null = null;
 
@@ -365,7 +364,7 @@ async function fetchWithRetry(
       if (response.status === 409) {
         const data = await response.json();
         const retryAfter = data.retryAfter || INITIAL_RETRY_DELAY * Math.pow(2, attempt);
-        await new Promise(r => setTimeout(r, retryAfter));
+        await new Promise((r) => setTimeout(r, retryAfter));
         continue;
       }
 
@@ -380,7 +379,7 @@ async function fetchWithRetry(
 
       // Exponential backoff
       const delay = INITIAL_RETRY_DELAY * Math.pow(2, attempt);
-      await new Promise(r => setTimeout(r, delay));
+      await new Promise((r) => setTimeout(r, delay));
     }
   }
 
@@ -391,115 +390,114 @@ async function fetchWithRetry(
 **Step 2: Update processChunk to use retry**
 
 ```typescript
-const processChunk = useCallback(async (
-  draftId: string,
-  chunkIndex: number,
-  signal?: AbortSignal
-): Promise<{ success: boolean; questions: any[]; isComplete: boolean; totalQuestions: number }> => {
-  const response = await fetchWithRetry(
-    `/api/draft/${draftId}/process-chunk`,
-    {
+const processChunk = useCallback(
+  async (
+    draftId: string,
+    chunkIndex: number,
+    signal?: AbortSignal,
+  ): Promise<{
+    success: boolean;
+    questions: any[];
+    isComplete: boolean;
+    totalQuestions: number;
+  }> => {
+    const response = await fetchWithRetry(`/api/draft/${draftId}/process-chunk`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ chunkIndex }),
       signal,
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to process chunk');
     }
-  );
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || 'Failed to process chunk');
-  }
-
-  const result = await response.json();
-  return {
-    success: result.success !== false,
-    questions: result.questions || [],
-    isComplete: result.progress?.isComplete || false,
-    totalQuestions: result.progress?.totalQuestions || 0,
-  };
-}, []);
+    const result = await response.json();
+    return {
+      success: result.success !== false,
+      questions: result.questions || [],
+      isComplete: result.progress?.isComplete || false,
+      totalQuestions: result.progress?.totalQuestions || 0,
+    };
+  },
+  [],
+);
 ```
 
 **Step 3: Update startProcessing to handle chunk errors better**
 
 ```typescript
-const startProcessing = useCallback(async (
-  draftId: string,
-  chunks: ChunkInfo[],
-  title: string
-) => {
-  // ... existing lock check ...
+const startProcessing = useCallback(
+  async (draftId: string, chunks: ChunkInfo[], title: string) => {
+    // ... existing lock check ...
 
-  const pendingChunks = chunks
-    .filter(c => c.status === 'pending' || c.status === 'error' || c.status === 'processing')
-    .sort((a, b) => a.index - b.index);
+    const pendingChunks = chunks
+      .filter((c) => c.status === 'pending' || c.status === 'error' || c.status === 'processing')
+      .sort((a, b) => a.index - b.index);
 
-  // Also retry 'processing' chunks (might be stale locks)
+    // Also retry 'processing' chunks (might be stale locks)
 
-  let processedCount = chunks.filter(c => c.status === 'done').length;
-  let totalQuestions = 0;
-  let consecutiveErrors = 0;
-  const MAX_CONSECUTIVE_ERRORS = 3;
+    let processedCount = chunks.filter((c) => c.status === 'done').length;
+    let totalQuestions = 0;
+    let consecutiveErrors = 0;
+    const MAX_CONSECUTIVE_ERRORS = 3;
 
-  try {
-    for (const chunk of pendingChunks) {
-      if (abortController.signal.aborted) break;
+    try {
+      for (const chunk of pendingChunks) {
+        if (abortController.signal.aborted) break;
 
-      try {
-        const result = await processChunk(
-          draftId,
-          chunk.index,
-          abortController.signal
-        );
+        try {
+          const result = await processChunk(draftId, chunk.index, abortController.signal);
 
-        if (result.success) {
-          consecutiveErrors = 0; // Reset on success
-          processedCount++;
-          totalQuestions = result.totalQuestions;
+          if (result.success) {
+            consecutiveErrors = 0; // Reset on success
+            processedCount++;
+            totalQuestions = result.totalQuestions;
 
-          updateDraftProgress(draftId, {
-            chunksProcessed: processedCount,
-            questionsCount: totalQuestions,
-            status: 'processing',
-          });
+            updateDraftProgress(draftId, {
+              chunksProcessed: processedCount,
+              questionsCount: totalQuestions,
+              status: 'processing',
+            });
 
-          if (result.isComplete) {
-            completeDraft(draftId, totalQuestions);
-            toast.success(`"${title}" đã sẵn sàng!`, {
-              description: `${totalQuestions} câu hỏi được trích xuất`,
-              action: {
-                label: 'Xem',
-                onClick: () => window.location.href = `/draft/${draftId}/edit`,
-              },
+            if (result.isComplete) {
+              completeDraft(draftId, totalQuestions);
+              toast.success(`"${title}" đã sẵn sàng!`, {
+                description: `${totalQuestions} câu hỏi được trích xuất`,
+                action: {
+                  label: 'Xem',
+                  onClick: () => (window.location.href = `/draft/${draftId}/edit`),
+                },
+              });
+              break;
+            }
+          }
+
+          await new Promise((r) => setTimeout(r, 300));
+        } catch (chunkError: any) {
+          if (chunkError.name === 'AbortError') break;
+
+          consecutiveErrors++;
+          console.error(`Chunk ${chunk.index} failed:`, chunkError);
+
+          // Stop if too many consecutive errors
+          if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
+            setDraftError(draftId, `Quá nhiều lỗi liên tiếp: ${chunkError.message}`);
+            toast.error(`Lỗi xử lý "${title}"`, {
+              description: 'Vui lòng thử lại sau',
             });
             break;
           }
         }
-
-        await new Promise(r => setTimeout(r, 300));
-
-      } catch (chunkError: any) {
-        if (chunkError.name === 'AbortError') break;
-
-        consecutiveErrors++;
-        console.error(`Chunk ${chunk.index} failed:`, chunkError);
-
-        // Stop if too many consecutive errors
-        if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
-          setDraftError(draftId, `Quá nhiều lỗi liên tiếp: ${chunkError.message}`);
-          toast.error(`Lỗi xử lý "${title}"`, {
-            description: 'Vui lòng thử lại sau',
-          });
-          break;
-        }
       }
+    } finally {
+      delete processingRef.current[draftId];
+      delete abortControllersRef.current[draftId];
     }
-  } finally {
-    delete processingRef.current[draftId];
-    delete abortControllersRef.current[draftId];
-  }
-}, [processChunk, updateDraftProgress, completeDraft, setDraftError]);
+  },
+  [processChunk, updateDraftProgress, completeDraft, setDraftError],
+);
 ```
 
 **Step 4: Commit**
@@ -521,6 +519,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ### Task 2.3: Fix isComplete logic to handle errors
 
 **Files:**
+
 - Modify: `src/app/api/draft/[id]/process-chunk/route.ts`
 
 **Step 1: Update completion check to account for errors**
@@ -529,15 +528,13 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 // In process-chunk/route.ts, after updating chunk status
 
 // Count done + error as "attempted"
-const doneCount = updateResult!.chunks.chunkDetails.filter(
-  (c: any) => c.status === 'done'
-).length;
+const doneCount = updateResult!.chunks.chunkDetails.filter((c: any) => c.status === 'done').length;
 
 const errorCount = updateResult!.chunks.chunkDetails.filter(
-  (c: any) => c.status === 'error'
+  (c: any) => c.status === 'error',
 ).length;
 
-const allAttempted = (doneCount + errorCount) >= updateResult!.chunks.total;
+const allAttempted = doneCount + errorCount >= updateResult!.chunks.total;
 const hasQuestions = updateResult!.questions.length > 0;
 
 // Complete if all chunks attempted AND we have at least some questions
@@ -548,10 +545,10 @@ if (isComplete) {
     { _id: params.id },
     {
       $set: {
-        status: errorCount > 0 ? 'completed' : 'completed',  // Could add 'partial' status
+        status: errorCount > 0 ? 'completed' : 'completed', // Could add 'partial' status
         'chunks.processed': doneCount,
-      }
-    }
+      },
+    },
   );
 }
 
@@ -588,6 +585,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ### Task 3.1: Add expiresAt to client store and sync logic
 
 **Files:**
+
 - Modify: `src/store/useDraftStore.ts`
 
 **Step 1: Update DraftProgress interface**
@@ -604,7 +602,7 @@ export interface DraftProgress {
   questionsCount: number;
   error?: string;
   createdAt: string;
-  expiresAt: string;  // ADD THIS
+  expiresAt: string; // ADD THIS
 }
 ```
 
@@ -672,6 +670,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ### Task 3.2: Create DraftSyncProvider component
 
 **Files:**
+
 - Create: `src/components/providers/DraftSyncProvider.tsx`
 - Modify: `src/app/layout.tsx` or appropriate provider file
 
@@ -778,6 +777,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ### Task 3.3: Fix useEffect dependencies in FloatingDraftProgress
 
 **Files:**
+
 - Modify: `src/components/FloatingDraftProgress.tsx`
 
 **Step 1: Remove resume logic from FloatingDraftProgress**
@@ -829,6 +829,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ### Task 4.1: Add S3 cleanup on draft delete
 
 **Files:**
+
 - Modify: `src/app/api/draft/[id]/route.ts`
 
 **Step 1: Update DELETE handler to cleanup S3**
@@ -837,10 +838,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 // src/app/api/draft/[id]/route.ts
 import { deletePDF } from '@/lib/s3';
 
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const session = await getServerSession(authOptions);
     if (!(session?.user as any)?.id) {
@@ -874,13 +872,9 @@ export async function DELETE(
     }
 
     return NextResponse.json({ success: true });
-
   } catch (error) {
     console.error('Delete draft error:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete draft' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to delete draft' }, { status: 500 });
   }
 }
 ```
@@ -903,6 +897,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ### Task 4.2: Fix memory cleanup in usePdfProcessor
 
 **Files:**
+
 - Modify: `src/hooks/usePdfProcessor.ts`
 
 **Step 1: Update cleanup effect to clear refs completely**
@@ -914,7 +909,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 useEffect(() => {
   return () => {
     // Abort all controllers
-    Object.values(abortControllersRef.current).forEach(controller => {
+    Object.values(abortControllersRef.current).forEach((controller) => {
       controller.abort();
     });
     // Clear refs completely
@@ -955,6 +950,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ### Task 4.3: Add rollback on create API failure
 
 **Files:**
+
 - Modify: `src/app/api/draft/create/route.ts`
 
 **Step 1: Wrap creation in try-catch with S3 rollback**
@@ -1022,6 +1018,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ### Task 5.1: Improve question hash function
 
 **Files:**
+
 - Modify: `src/app/api/draft/[id]/process-chunk/route.ts`
 
 **Step 1: Create more robust hash function**
@@ -1050,18 +1047,20 @@ function hashQuestion(q: any): string {
  * Normalize text for comparison
  */
 function normalizeText(text: string): string {
-  return text
-    .toLowerCase()
-    .trim()
-    // Remove multiple spaces
-    .replace(/\s+/g, ' ')
-    // Remove common punctuation variations
-    .replace(/[.,;:!?'"()[\]{}]/g, '')
-    // Remove leading/trailing option markers (a., A), 1., etc.)
-    .replace(/^[a-zA-Z0-9][.)]\s*/, '')
-    // Normalize unicode
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '');
+  return (
+    text
+      .toLowerCase()
+      .trim()
+      // Remove multiple spaces
+      .replace(/\s+/g, ' ')
+      // Remove common punctuation variations
+      .replace(/[.,;:!?'"()[\]{}]/g, '')
+      // Remove leading/trailing option markers (a., A), 1., etc.)
+      .replace(/^[a-zA-Z0-9][.)]\s*/, '')
+      // Normalize unicode
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+  );
 }
 
 /**
@@ -1091,9 +1090,7 @@ function areSimilarQuestions(q1: any, q2: any): boolean {
 // Replace existing duplicate check with:
 
 // Build hash set from existing questions
-const existingHashes = new Set(
-  draft.questions.map((q: any) => hashQuestion(q))
-);
+const existingHashes = new Set(draft.questions.map((q: any) => hashQuestion(q)));
 
 // Filter new questions
 const newQuestions = extractedQuestions.filter((newQ: any) => {
@@ -1138,6 +1135,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ### Task 6.1: Add comprehensive submit validation
 
 **Files:**
+
 - Modify: `src/app/api/draft/[id]/submit/route.ts`
 
 **Step 1: Add validation functions**
@@ -1180,7 +1178,11 @@ function validateQuestions(questions: any[]): ValidationResult {
 
     // Validate correct answer
     if (q.type === 'single') {
-      if (typeof q.correctIndex !== 'number' || q.correctIndex < 0 || q.correctIndex >= q.options?.length) {
+      if (
+        typeof q.correctIndex !== 'number' ||
+        q.correctIndex < 0 ||
+        q.correctIndex >= q.options?.length
+      ) {
         errors.push(`${prefix}: Đáp án đúng không hợp lệ`);
       }
     } else if (q.type === 'multiple') {
@@ -1188,7 +1190,7 @@ function validateQuestions(questions: any[]): ValidationResult {
         errors.push(`${prefix}: Cần chọn ít nhất 1 đáp án đúng`);
       } else {
         const invalidIndexes = q.correctIndexes.filter(
-          (idx: number) => idx < 0 || idx >= q.options?.length
+          (idx: number) => idx < 0 || idx >= q.options?.length,
         );
         if (invalidIndexes.length > 0) {
           errors.push(`${prefix}: Có đáp án đúng không hợp lệ`);
@@ -1215,20 +1217,14 @@ function validateQuestions(questions: any[]): ValidationResult {
 **Step 2: Update submit handler to use validation**
 
 ```typescript
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
   // ... auth check ...
 
   const body = await request.json();
   const { title, categoryId, description, questions: editedQuestions } = body;
 
   if (!categoryId) {
-    return NextResponse.json(
-      { error: 'Vui lòng chọn danh mục' },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: 'Vui lòng chọn danh mục' }, { status: 400 });
   }
 
   await connectDB();
@@ -1249,10 +1245,13 @@ export async function POST(
   const validation = validateQuestions(questionsToUse);
 
   if (!validation.isValid) {
-    return NextResponse.json({
-      error: 'Validation failed',
-      details: validation.errors,
-    }, { status: 400 });
+    return NextResponse.json(
+      {
+        error: 'Validation failed',
+        details: validation.errors,
+      },
+      { status: 400 },
+    );
   }
 
   // ... rest of quiz creation ...
@@ -1289,6 +1288,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ### Task 7.1: Add expiry indicator to draft items
 
 **Files:**
+
 - Modify: `src/components/FloatingDraftProgress.tsx`
 
 **Step 1: Add time remaining helper**
@@ -1364,6 +1364,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ### Task 7.2: Fix progress display to show errors
 
 **Files:**
+
 - Modify: `src/components/FloatingDraftProgress.tsx`
 - Modify: `src/store/useDraftStore.ts`
 
@@ -1378,7 +1379,7 @@ export interface DraftProgress {
   status: 'uploading' | 'processing' | 'completed' | 'error';
   chunksTotal: number;
   chunksProcessed: number;
-  chunksError: number;  // ADD THIS
+  chunksError: number; // ADD THIS
   questionsCount: number;
   error?: string;
   createdAt: string;
@@ -1447,6 +1448,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ### Task 7.3: Update usePdfProcessor to track errors
 
 **Files:**
+
 - Modify: `src/hooks/usePdfProcessor.ts`
 
 **Step 1: Track and report chunk errors**
@@ -1492,6 +1494,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ### Task 8.1: Update mobile create to include expiresAt
 
 **Files:**
+
 - Modify: `src/app/create/mobile/page.tsx`
 
 **Step 1: Update addDraft call to include expiresAt**
@@ -1512,7 +1515,7 @@ addDraft({
   chunksError: 0,
   questionsCount: 0,
   createdAt: new Date().toISOString(),
-  expiresAt: expiresAt,  // ADD THIS
+  expiresAt: expiresAt, // ADD THIS
 });
 ```
 
@@ -1568,17 +1571,17 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 
 ## Summary
 
-| Phase | Tasks | Issues Fixed |
-|-------|-------|--------------|
-| 1. Storage | 2 tasks | #1, #2 |
-| 2. Chunk Reliability | 3 tasks | #4, #5, #9 |
-| 3. State Sync | 3 tasks | #3, #8, #13 |
-| 4. Cleanup | 3 tasks | #6, #11, #12 |
-| 5. Duplicates | 1 task | #10 |
-| 6. Submit Validation | 1 task | #14 |
-| 7. UI/UX | 3 tasks | #7, #15 |
-| 8. Mobile Fix | 1 task | - |
-| 9. Testing | 1 task | - |
+| Phase                | Tasks   | Issues Fixed |
+| -------------------- | ------- | ------------ |
+| 1. Storage           | 2 tasks | #1, #2       |
+| 2. Chunk Reliability | 3 tasks | #4, #5, #9   |
+| 3. State Sync        | 3 tasks | #3, #8, #13  |
+| 4. Cleanup           | 3 tasks | #6, #11, #12 |
+| 5. Duplicates        | 1 task  | #10          |
+| 6. Submit Validation | 1 task  | #14          |
+| 7. UI/UX             | 3 tasks | #7, #15      |
+| 8. Mobile Fix        | 1 task  | -            |
+| 9. Testing           | 1 task  | -            |
 
 **Total: 18 tasks**
 

@@ -34,18 +34,19 @@ const AttemptSchema = new Schema<IAttempt>({
     type: [Schema.Types.Mixed], // Can be number or array of numbers
     required: [true, 'Answers are required'],
     validate: {
-      validator: function(answers: (number | number[])[]) {
-        return answers.every(answer => {
+      validator: function (answers: (number | number[])[]) {
+        return answers.every((answer) => {
           if (Array.isArray(answer)) {
             // Multiple choice answer: allow empty array (unanswered) or any valid indexes
-            return answer.length === 0 || answer.every(a => typeof a === 'number' && a >= 0);
+            return answer.length === 0 || answer.every((a) => typeof a === 'number' && a >= 0);
           } else {
             // Single choice answer: allow -1 (unanswered) or any valid indexes
             return answer === -1 || (typeof answer === 'number' && answer >= 0);
           }
         });
       },
-      message: 'Single choice answers must be -1 (unanswered) or >= 0, multiple choice answers must be empty array (unanswered) or array of >= 0',
+      message:
+        'Single choice answers must be -1 (unanswered) or >= 0, multiple choice answers must be empty array (unanswered) or array of >= 0',
     },
   },
   takenAt: {
@@ -62,4 +63,4 @@ AttemptSchema.index({ user: 1, quiz: 1 });
 // Prevent re-compilation in development
 const Attempt = mongoose.models.Attempt || mongoose.model<IAttempt>('Attempt', AttemptSchema);
 
-export default Attempt; 
+export default Attempt;

@@ -5,7 +5,7 @@
 export async function mapWithConcurrency<T, R>(
   items: T[],
   concurrency: number,
-  mapper: (item: T, index: number) => Promise<R>
+  mapper: (item: T, index: number) => Promise<R>,
 ): Promise<R[]> {
   if (concurrency <= 0) {
     throw new Error('concurrency must be greater than 0');

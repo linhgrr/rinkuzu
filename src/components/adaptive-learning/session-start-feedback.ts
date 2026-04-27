@@ -1,8 +1,8 @@
-'use client'
+'use client';
 
-import { AdaptiveApiError } from './api-client'
+import { AdaptiveApiError } from './api-client';
 
-type TranslateFn = (key: string, values?: Record<string, any>) => string
+type TranslateFn = (key: string, values?: Record<string, any>) => string;
 
 export function getSessionStartFeedback(
   t: TranslateFn,
@@ -14,30 +14,30 @@ export function getSessionStartFeedback(
       return {
         message: t(`${prefix}.sessionNotReady`),
         retryable: true,
-      }
+      };
     }
 
     if (
-      error.code === 'temporary_unavailable'
-      || error.code === 'request_aborted'
-      || error.code === 'network_error'
+      error.code === 'temporary_unavailable' ||
+      error.code === 'request_aborted' ||
+      error.code === 'network_error'
     ) {
       return {
         message: t(`${prefix}.sessionUnavailable`),
         retryable: true,
-      }
+      };
     }
 
     if (error.code === 'not_found') {
       return {
         message: t(`${prefix}.sessionMissing`),
         retryable: false,
-      }
+      };
     }
   }
 
   return {
     message: t(`${prefix}.sessionOpenFailed`),
     retryable: false,
-  }
+  };
 }

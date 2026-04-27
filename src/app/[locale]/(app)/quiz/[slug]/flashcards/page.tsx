@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -36,14 +37,14 @@ export default function FlashcardPage() {
   const t = useTranslations('quiz');
   const tCommon = useTranslations('common');
   const params = useParams();
-  const router = useRouter();
+  const _router = useRouter();
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [progress, setProgress] = useState<FlashcardProgress>({
     known: [],
     unknown: [],
-    currentIndex: 0
+    currentIndex: 0,
   });
   const [showResults, setShowResults] = useState(false);
   const [currentQuestions, setCurrentQuestions] = useState<Question[]>([]);
@@ -67,7 +68,7 @@ export default function FlashcardPage() {
             setError(data.error || 'Failed to load quiz');
           }
         }
-      } catch (error) {
+      } catch (_error) {
         setError('Failed to load quiz');
       } finally {
         setLoading(false);
@@ -86,17 +87,17 @@ export default function FlashcardPage() {
     // Optimistic UI update
     if (direction === 'right') {
       // Known - add to known list
-      setProgress(prev => ({
+      setProgress((prev) => ({
         ...prev,
         known: [...prev.known, currentQuestionIndex],
-        currentIndex: prev.currentIndex + 1
+        currentIndex: prev.currentIndex + 1,
       }));
     } else {
       // Unknown - add to unknown list
-      setProgress(prev => ({
+      setProgress((prev) => ({
         ...prev,
         unknown: [...prev.unknown, currentQuestionIndex],
-        currentIndex: prev.currentIndex + 1
+        currentIndex: prev.currentIndex + 1,
       }));
     }
 
@@ -113,9 +114,9 @@ export default function FlashcardPage() {
           questionRef: {
             text: currentQuestion.question,
             options: currentQuestion.options,
-            correctIndexes: currentQuestion.correctIndexes || [currentQuestion.correctIndex]
-          }
-        })
+            correctIndexes: currentQuestion.correctIndexes || [currentQuestion.correctIndex],
+          },
+        }),
       });
     } catch (error) {
       console.error('Failed to submit SRS review from flashcard:', error);
@@ -130,14 +131,14 @@ export default function FlashcardPage() {
     setProgress({
       known: [],
       unknown: [],
-      currentIndex: 0
+      currentIndex: 0,
     });
     setShowResults(false);
   };
 
   const continuePractice = () => {
     // Tạo danh sách mới chỉ với các câu chưa biết
-    const unknownQuestions = progress.unknown.map(index => quiz!.questions[index]);
+    const unknownQuestions = progress.unknown.map((index) => quiz!.questions[index]);
 
     // Cập nhật danh sách câu hỏi hiện tại để chỉ chứa câu chưa biết
     setCurrentQuestions(unknownQuestions);
@@ -146,13 +147,14 @@ export default function FlashcardPage() {
     setProgress({
       known: [],
       unknown: [],
-      currentIndex: 0
+      currentIndex: 0,
     });
     setShowResults(false);
   };
 
   const getCurrentQuestion = () => {
-    if (currentQuestions.length === 0 || progress.currentIndex >= currentQuestions.length) return null;
+    if (currentQuestions.length === 0 || progress.currentIndex >= currentQuestions.length)
+      return null;
     return currentQuestions[progress.currentIndex];
   };
 
@@ -163,7 +165,7 @@ export default function FlashcardPage() {
 
   const getKnownCount = () => progress.known.length;
   const getUnknownCount = () => progress.unknown.length;
-  const getRemainingCount = () => {
+  const _getRemainingCount = () => {
     if (!quiz) return 0;
     return quiz.questions.length - progress.currentIndex;
   };
@@ -212,7 +214,11 @@ export default function FlashcardPage() {
   }
 
   // Show results when all questions are completed
-  if (currentQuestions.length > 0 && progress.currentIndex >= currentQuestions.length && !showResults) {
+  if (
+    currentQuestions.length > 0 &&
+    progress.currentIndex >= currentQuestions.length &&
+    !showResults
+  ) {
     setShowResults(true);
   }
 
@@ -226,7 +232,13 @@ export default function FlashcardPage() {
               <div className="flex items-center">
                 <Link href="/quizzes" className="flex items-center">
                   <div className="h-10 flex items-center justify-center">
-                    <img src="/images/auth_logo.png" alt="RinKuzu Logo" className="h-10 w-auto object-contain" />
+                    <Image
+                      src="/images/auth_logo.png"
+                      alt="RinKuzu Logo"
+                      width={96}
+                      height={40}
+                      className="h-10 w-auto object-contain"
+                    />
                   </div>
                 </Link>
               </div>
@@ -300,7 +312,10 @@ export default function FlashcardPage() {
 
           <div className="flex justify-center space-x-4">
             {getUnknownCount() > 0 ? (
-              <Button onClick={continuePractice} className="bg-brand-trust hover:bg-brand-trust-hover">
+              <Button
+                onClick={continuePractice}
+                className="bg-brand-trust hover:bg-brand-trust-hover"
+              >
                 {t('practiceContinue')}
               </Button>
             ) : (
@@ -336,9 +351,7 @@ export default function FlashcardPage() {
             <span className="text-sm font-medium text-neutral-700">
               {t('progress')}: {progress.currentIndex + 1} {t('of')} {currentQuestions.length}
             </span>
-            <span className="text-sm font-medium text-neutral-700">
-              {getProgressPercentage()}%
-            </span>
+            <span className="text-sm font-medium text-neutral-700">{getProgressPercentage()}%</span>
           </div>
           <div className="w-full bg-neutral-200 rounded-full h-2">
             <div
@@ -360,7 +373,13 @@ export default function FlashcardPage() {
             <div className="flex items-center">
               <Link href="/quizzes" className="flex items-center">
                 <div className="h-10 flex items-center justify-center">
-                  <img src="/images/auth_logo.png" alt="RinKuzu Logo" className="h-10 w-auto object-contain" />
+                  <Image
+                    src="/images/auth_logo.png"
+                    alt="RinKuzu Logo"
+                    width={96}
+                    height={40}
+                    className="h-10 w-auto object-contain"
+                  />
                 </div>
               </Link>
             </div>
@@ -378,7 +397,10 @@ export default function FlashcardPage() {
 
       <main className="w-full flex-1 flex flex-col items-center justify-center pt-20">
         {/* Flashcard (centered) */}
-        <div className="flex flex-col items-center justify-center min-h-[420px] w-full" style={{ minHeight: '420px' }}>
+        <div
+          className="flex flex-col items-center justify-center min-h-[420px] w-full"
+          style={{ minHeight: '420px' }}
+        >
           {currentQuestion && (
             <Flashcard
               key={`${progress.currentIndex}-${currentQuestion.question.substring(0, 50)}`}
@@ -395,10 +417,7 @@ export default function FlashcardPage() {
       </main>
 
       {/* Premium Required Modal */}
-      <PremiumRequiredModal
-        isOpen={showPremiumModal}
-        onClose={() => setShowPremiumModal(false)}
-      />
+      <PremiumRequiredModal isOpen={showPremiumModal} onClose={() => setShowPremiumModal(false)} />
     </div>
   );
-} 
+}

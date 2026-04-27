@@ -19,7 +19,7 @@ export function buildOrganizationSchema() {
     url: siteUrl.origin,
     logo: `${siteUrl.origin}/icons/icon-512x512.png`,
     description:
-      'RinKuzu is an AI-powered adaptive learning platform that transforms PDF documents into personalized quiz-based learning journeys using knowledge graphs and Bloom\'s Taxonomy.',
+      "RinKuzu is an AI-powered adaptive learning platform that transforms PDF documents into personalized quiz-based learning journeys using knowledge graphs and Bloom's Taxonomy.",
     contactPoint: {
       '@type': 'ContactPoint',
       email: 'support@rinkuzu.com',

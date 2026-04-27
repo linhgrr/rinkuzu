@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
     if (!title?.trim() || !fileName || !s3Key) {
       return NextResponse.json(
         { error: 'Title, filename, and s3Key are required' },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -45,40 +45,37 @@ export async function POST(request: NextRequest) {
       pdfKey = s3Key.trim().replace(/^\/+/, '');
       const expectedPrefix = `uploads/quiz_extract/${userId}/`;
       if (!pdfKey.startsWith(expectedPrefix)) {
-        return NextResponse.json(
-          { error: 'Invalid s3Key for current user' },
-          { status: 403 }
-        );
+        return NextResponse.json({ error: 'Invalid s3Key for current user' }, { status: 403 });
       }
 
-      const endpoint = process.env.S3_ENDPOINT || 'https://objectstorageapi.ap-southeast-1.clawcloudrun.com';
+      const endpoint =
+        process.env.S3_ENDPOINT || 'https://objectstorageapi.ap-southeast-1.clawcloudrun.com';
       const bucket = process.env.S3_BUCKET_NAME || 'rinkuzu-pdfs';
       pdfUrl = `${endpoint}/${bucket}/${pdfKey}`;
 
       const parsedFileSize = Number(rawFileSize);
       fileSize = Number.isFinite(parsedFileSize) && parsedFileSize > 0 ? parsedFileSize : 0;
       if (fileSize <= 0 || fileSize > MAX_FILE_SIZE) {
-        return NextResponse.json(
-          { error: 'Invalid file size (max 50MB)' },
-          { status: 400 }
-        );
+        return NextResponse.json({ error: 'Invalid file size (max 50MB)' }, { status: 400 });
       }
 
       const parsedTotalPages = Number(rawTotalPages);
-      totalPages = Number.isFinite(parsedTotalPages) && parsedTotalPages > 0 ? Math.floor(parsedTotalPages) : 1;
+      totalPages =
+        Number.isFinite(parsedTotalPages) && parsedTotalPages > 0
+          ? Math.floor(parsedTotalPages)
+          : 1;
     } else {
-      return NextResponse.json(
-        { error: 'Invalid s3Key' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Invalid s3Key' }, { status: 400 });
     }
 
-    const chunkDetails = [{
-      index: 0,
-      startPage: 1,
-      endPage: totalPages,
-      status: 'pending' as const,
-    }];
+    const chunkDetails = [
+      {
+        index: 0,
+        startPage: 1,
+        endPage: totalPages,
+        status: 'pending' as const,
+      },
+    ];
 
     await connectDB();
 
@@ -127,7 +124,7 @@ export async function POST(request: NextRequest) {
       title: draft.title,
       chunks: {
         total: chunkDetails.length,
-        chunkDetails: chunkDetails.map(c => ({
+        chunkDetails: chunkDetails.map((c) => ({
           index: c.index,
           startPage: c.startPage,
           endPage: c.endPage,
@@ -137,12 +134,8 @@ export async function POST(request: NextRequest) {
       totalPages,
       expiresAt: draft.expiresAt,
     });
-
   } catch (error) {
     console.error('Draft create error:', error);
-    return NextResponse.json(
-      { error: 'Failed to create draft' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to create draft' }, { status: 500 });
   }
 }

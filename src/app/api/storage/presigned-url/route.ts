@@ -36,11 +36,17 @@ export async function POST(request: NextRequest) {
     }
 
     if (contentType !== 'application/pdf') {
-      return NextResponse.json({ success: false, error: 'Only PDF files are supported' }, { status: 400 });
+      return NextResponse.json(
+        { success: false, error: 'Only PDF files are supported' },
+        { status: 400 },
+      );
     }
 
     if (!Number.isFinite(fileSize) || fileSize <= 0 || fileSize > MAX_FILE_SIZE) {
-      return NextResponse.json({ success: false, error: 'Invalid file size (max 50MB)' }, { status: 400 });
+      return NextResponse.json(
+        { success: false, error: 'Invalid file size (max 50MB)' },
+        { status: 400 },
+      );
     }
 
     let prefix = '';
@@ -49,7 +55,10 @@ export async function POST(request: NextRequest) {
     } else if (purpose === 'adaptive') {
       prefix = 'uploads/adaptive_pipeline';
     } else {
-      return NextResponse.json({ success: false, error: 'Invalid purpose specified' }, { status: 400 });
+      return NextResponse.json(
+        { success: false, error: 'Invalid purpose specified' },
+        { status: 400 },
+      );
     }
 
     const safeName = sanitizeFileName(fileName);

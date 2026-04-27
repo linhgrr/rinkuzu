@@ -7,15 +7,17 @@ This guide covers the migration from legacy string-based duration format to stan
 ## Problem with Legacy Format
 
 ### Before (Legacy String Format)
+
 ```javascript
 {
-  duration: "1 tháng"    // Inconsistent
-  duration: "3 months"   // Multiple languages
-  duration: "lifetime"   // Ad-hoc values
+  duration: '1 tháng'; // Inconsistent
+  duration: '3 months'; // Multiple languages
+  duration: 'lifetime'; // Ad-hoc values
 }
 ```
 
 ### Issues:
+
 - ❌ **Not standardized** - Multiple languages and formats
 - ❌ **Hard to calculate** - Requires string parsing
 - ❌ **Not machine-readable** - No international standard
@@ -25,16 +27,18 @@ This guide covers the migration from legacy string-based duration format to stan
 ## Solution: ISO 8601 Duration Format
 
 ### After (ISO 8601 Standard)
+
 ```javascript
 {
-  duration: "P1M"    // 1 month
-  duration: "P3M"    // 3 months  
-  duration: "P1Y"    // 1 year
-  duration: "PT0S"   // lifetime (special case)
+  duration: 'P1M'; // 1 month
+  duration: 'P3M'; // 3 months
+  duration: 'P1Y'; // 1 year
+  duration: 'PT0S'; // lifetime (special case)
 }
 ```
 
 ### Benefits:
+
 - ✅ **International standard** - ISO 8601 globally recognized
 - ✅ **Machine readable** - Easy parsing and calculation
 - ✅ **Type safe** - Proper validation
@@ -44,11 +48,12 @@ This guide covers the migration from legacy string-based duration format to stan
 ## ISO 8601 Duration Format
 
 ### Structure
+
 ```
 P[n]Y[n]M[n]DT[n]H[n]M[n]S
 │ │   │   │  │ │   │   │
 │ │   │   │  │ │   │   └─ Seconds
-│ │   │   │  │ │   └───── Minutes  
+│ │   │   │  │ │   └───── Minutes
 │ │   │   │  │ └───────── Hours
 │ │   │   │  └─────────── Time separator
 │ │   │   └──────────── Days
@@ -58,76 +63,88 @@ P[n]Y[n]M[n]DT[n]H[n]M[n]S
 ```
 
 ### Our Usage
+
 ```typescript
 enum SubscriptionDurationType {
-  MONTHLY = 'P1M',      // 1 month
-  QUARTERLY = 'P3M',    // 3 months
-  SEMI_ANNUAL = 'P6M',  // 6 months
-  ANNUAL = 'P1Y',       // 1 year
-  LIFETIME = 'PT0S'     // Special: infinite duration
+  MONTHLY = 'P1M', // 1 month
+  QUARTERLY = 'P3M', // 3 months
+  SEMI_ANNUAL = 'P6M', // 6 months
+  ANNUAL = 'P1Y', // 1 year
+  LIFETIME = 'PT0S', // Special: infinite duration
 }
 ```
 
 ## Migration Strategy
 
 ### 1. Backward Compatibility
+
 The system supports both old and new formats during transition:
 
 ```typescript
 // Plan model includes migration logic
-PlanSchema.pre('save', function(this: IPlan) {
+PlanSchema.pre('save', function (this: IPlan) {
   if (!DurationUtils.isValidISO8601Duration(this.duration)) {
     try {
-      this.duration = DurationUtils.fromLegacyDuration(this.duration)
+      this.duration = DurationUtils.fromLegacyDuration(this.duration);
     } catch (error) {
-      console.warn(`Could not migrate duration`)
+      console.warn(`Could not migrate duration`);
     }
   }
-})
+});
 ```
 
 ### 2. Virtual Properties
+
 Plans expose both formats for compatibility:
 
 ```typescript
-plan.duration        // "P1M" (ISO 8601)
-plan.durationInfo    // { iso8601: "P1M", displayName: "1 Month", months: 1 }
-plan.isLifetime      // false
+plan.duration; // "P1M" (ISO 8601)
+plan.durationInfo; // { iso8601: "P1M", displayName: "1 Month", months: 1 }
+plan.isLifetime; // false
 ```
 
 ### 3. Legacy Mapping
+
 ```typescript
 const LEGACY_DURATION_MAP = {
   '1 tháng': 'P1M',
-  '3 tháng': 'P3M', 
+  '3 tháng': 'P3M',
   '6 tháng': 'P6M',
   '12 tháng': 'P1Y',
-  'lifetime': 'PT0S'
-}
+  lifetime: 'PT0S',
+};
 ```
 
 ## Migration Process
 
 ### Step 1: Dry Run
+
 Preview what changes will be made:
+
 ```bash
 node src/scripts/migratePlanDurations.js dry-run
 ```
 
 ### Step 2: Execute Migration
+
 Apply the changes:
+
 ```bash
 node src/scripts/migratePlanDurations.js migrate
 ```
 
 ### Step 3: Seed New Plans
+
 Create plans with proper ISO 8601 format:
+
 ```bash
 node src/scripts/seedPlansWithISO8601.js seed
 ```
 
 ### Step 4: Validate
+
 Ensure all plans use correct format:
+
 ```bash
 node src/scripts/seedPlansWithISO8601.js validate
 ```
@@ -135,6 +152,7 @@ node src/scripts/seedPlansWithISO8601.js validate
 ## Updated Code Examples
 
 ### Duration Calculation
+
 ```typescript
 // Before (Legacy)
 const durationText = plan.duration.toLowerCase();
@@ -149,19 +167,21 @@ const endDate = DurationUtils.calculateEndDate(startDate, plan.duration);
 ```
 
 ### Plan Creation
+
 ```typescript
 // Before
 const plan = {
-  duration: "3 tháng"
-}
+  duration: '3 tháng',
+};
 
-// After  
+// After
 const plan = {
-  duration: SubscriptionDurationType.QUARTERLY // "P3M"
-}
+  duration: SubscriptionDurationType.QUARTERLY, // "P3M"
+};
 ```
 
 ### API Response
+
 ```typescript
 // Before
 {
@@ -173,7 +193,7 @@ const plan = {
   "duration": "P1M",
   "durationInfo": {
     "iso8601": "P1M",
-    "displayName": "1 Month", 
+    "displayName": "1 Month",
     "months": 1
   },
   "isLifetime": false
@@ -183,6 +203,7 @@ const plan = {
 ## Frontend Updates
 
 ### Display Duration
+
 ```typescript
 // Use the displayName for user-facing text
 const durationText = plan.durationInfo.displayName; // "1 Month"
@@ -192,37 +213,40 @@ const monthlyPrice = plan.price / (plan.durationInfo.months || 1);
 ```
 
 ### Duration Selection
+
 ```typescript
 const durations = [
   { value: 'P1M', label: '1 Month', months: 1 },
   { value: 'P3M', label: '3 Months', months: 3 },
   { value: 'P6M', label: '6 Months', months: 6 },
   { value: 'P1Y', label: '1 Year', months: 12 },
-  { value: 'PT0S', label: 'Lifetime', months: null }
+  { value: 'PT0S', label: 'Lifetime', months: null },
 ];
 ```
 
 ## Database Schema Changes
 
 ### Plan Model
+
 ```typescript
 interface IPlan {
-  duration: string // ISO 8601 format
-  
+  duration: string; // ISO 8601 format
+
   // Virtual fields
-  readonly durationInfo: Duration
-  readonly isLifetime: boolean
+  readonly durationInfo: Duration;
+  readonly isLifetime: boolean;
 }
 ```
 
 ### Validation
+
 ```typescript
 duration: {
   type: String,
   required: true,
   validate: {
     validator: function(value: string) {
-      return DurationUtils.isValidISO8601Duration(value) || 
+      return DurationUtils.isValidISO8601Duration(value) ||
              canConvertFromLegacy(value);
     }
   }
@@ -232,6 +256,7 @@ duration: {
 ## Testing
 
 ### Unit Tests
+
 ```typescript
 describe('DurationUtils', () => {
   it('should parse ISO 8601 durations correctly', () => {
@@ -240,7 +265,7 @@ describe('DurationUtils', () => {
     expect(DurationUtils.parseToMonths('P1Y')).toBe(12);
     expect(DurationUtils.parseToMonths('PT0S')).toBeUndefined();
   });
-  
+
   it('should convert legacy formats', () => {
     expect(DurationUtils.fromLegacyDuration('1 tháng')).toBe('P1M');
     expect(DurationUtils.fromLegacyDuration('lifetime')).toBe('PT0S');
@@ -249,14 +274,15 @@ describe('DurationUtils', () => {
 ```
 
 ### Integration Tests
+
 ```typescript
 describe('Plan Model', () => {
   it('should migrate legacy duration on save', async () => {
     const plan = new Plan({
       duration: '1 tháng',
-      name: 'Test Plan'
+      name: 'Test Plan',
     });
-    
+
     await plan.save();
     expect(plan.duration).toBe('P1M');
   });
@@ -274,15 +300,17 @@ If issues arise, revert by:
 ## Best Practices
 
 ### 1. Always Use Enums
+
 ```typescript
 // Good
-duration: SubscriptionDurationType.MONTHLY
+duration: SubscriptionDurationType.MONTHLY;
 
-// Bad  
-duration: "P1M"
+// Bad
+duration: 'P1M';
 ```
 
 ### 2. Use Utility Functions
+
 ```typescript
 // Good
 const endDate = DurationUtils.calculateEndDate(startDate, duration);
@@ -292,6 +320,7 @@ const endDate = new Date(startDate.getTime() + 30 * 24 * 60 * 60 * 1000);
 ```
 
 ### 3. Handle Lifetime Subscriptions
+
 ```typescript
 if (plan.isLifetime) {
   // No expiration date
@@ -302,6 +331,7 @@ if (plan.isLifetime) {
 ```
 
 ### 4. Validate Input
+
 ```typescript
 if (!DurationUtils.isValidISO8601Duration(duration)) {
   throw new Error('Invalid duration format');
@@ -322,6 +352,7 @@ if (!DurationUtils.isValidISO8601Duration(duration)) {
 ## Support
 
 For questions or issues:
+
 1. Check migration logs for errors
 2. Validate specific plans using utility functions
 3. Use admin panel to manually fix problematic plans
@@ -331,4 +362,4 @@ For questions or issues:
 
 - [ISO 8601 Duration Format](https://en.wikipedia.org/wiki/ISO_8601#Durations)
 - [PostgreSQL Interval Types](https://www.postgresql.org/docs/current/datatype-datetime.html)
-- [JavaScript Date Methods](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date) 
+- [JavaScript Date Methods](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date)

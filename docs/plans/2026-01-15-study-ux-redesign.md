@@ -66,6 +66,7 @@ Based on analysis of Quizlet, Anki, and Kahoot:
 ```
 
 **Components:**
+
 - **Daily Review Card** - Big, prominent CTA showing due reviews (SRS-based)
 - **Quick Stats** - 3 metrics: total learned, weak items, mastery %
 - **Continue Learning** - Quizzes in progress or needing review
@@ -77,14 +78,14 @@ Based on analysis of Quizlet, Anki, and Kahoot:
 
 Each question has a level (0-5) determining review intervals:
 
-| Level | Review Interval | Condition |
-|-------|-----------------|-----------|
-| 0 | Immediately | New or answered wrong |
-| 1 | 1 day | First correct answer |
-| 2 | 3 days | 2 correct in a row |
-| 3 | 7 days | 3 correct in a row |
-| 4 | 14 days | 4 correct in a row |
-| 5 | 30 days | Mastered |
+| Level | Review Interval | Condition             |
+| ----- | --------------- | --------------------- |
+| 0     | Immediately     | New or answered wrong |
+| 1     | 1 day           | First correct answer  |
+| 2     | 3 days          | 2 correct in a row    |
+| 3     | 7 days          | 3 correct in a row    |
+| 4     | 14 days         | 4 correct in a row    |
+| 5     | 30 days         | Mastered              |
 
 **User Flow - Daily Review:**
 
@@ -103,19 +104,20 @@ Each question has a level (0-5) determining review intervals:
 ### 3. Streak & Gamification System
 
 **Daily Streak:**
+
 - Complete at least 1 review session/day → maintain streak
 - Streak displayed in header: 🔥 5 ngày
 - Lose streak if miss 1 day (can use "Streak Freeze" - premium feature)
 
 **XP System:**
 
-| Action | XP |
-|--------|-----|
-| Correct answer | +10 |
-| Correct (rated "Easy") | +15 |
-| Complete quiz first time | +50 |
-| Complete daily review | +30 |
-| 7-day streak | +100 bonus |
+| Action                   | XP         |
+| ------------------------ | ---------- |
+| Correct answer           | +10        |
+| Correct (rated "Easy")   | +15        |
+| Complete quiz first time | +50        |
+| Complete daily review    | +30        |
+| 7-day streak             | +100 bonus |
 
 **Weekly Progress Visualization:**
 
@@ -171,6 +173,7 @@ Each question has a level (0-5) determining review intervals:
 ```
 
 **Mobile Gestures:**
+
 - Swipe up → Flip card
 - Swipe left → Wrong (reset level)
 - Swipe right → Correct (+1 level)
@@ -191,19 +194,19 @@ Each question has a level (0-5) determining review intervals:
 
 **Simplified User Journeys:**
 
-| Journey | Steps | Path |
-|---------|-------|------|
-| Daily Review | 2 taps | App → Dashboard → "Bắt đầu ôn tập" |
-| Quick Study | 3 taps | App → Select quiz → Flashcard/Quiz Mode |
-| Create Quiz | 2 taps | App → Bottom nav "Tạo" → Upload PDF |
+| Journey      | Steps  | Path                                    |
+| ------------ | ------ | --------------------------------------- |
+| Daily Review | 2 taps | App → Dashboard → "Bắt đầu ôn tập"      |
+| Quick Study  | 3 taps | App → Select quiz → Flashcard/Quiz Mode |
+| Create Quiz  | 2 taps | App → Bottom nav "Tạo" → Upload PDF     |
 
 **Page Consolidation:**
 
-| Current | Proposed |
-|---------|----------|
+| Current      | Proposed                              |
+| ------------ | ------------------------------------- |
 | `/bookmarks` | Merge into Dashboard "Câu hỏi đã lưu" |
-| `/history` | Merge into Profile tab |
-| `/pending` | Merge into Profile tab "Quiz của tôi" |
+| `/history`   | Merge into Profile tab                |
+| `/pending`   | Merge into Profile tab "Quiz của tôi" |
 
 ---
 
@@ -287,15 +290,15 @@ interface QuestionProgress {
   lessonId: ObjectId;
   questionId: ObjectId;
 
-  srsLevel: number;          // 0-5
+  srsLevel: number; // 0-5
   nextReviewDate: Date;
   lastReviewDate: Date;
   correctStreak: number;
   totalReviews: number;
   totalCorrect: number;
 
-  isBookmarked: boolean;     // Replaces Bookmark collection
-  notes: string;             // Personal notes
+  isBookmarked: boolean; // Replaces Bookmark collection
+  notes: string; // Personal notes
 }
 ```
 
@@ -314,36 +317,42 @@ POST /api/progress/streak     → Update streak
 ## Implementation Phases
 
 ### Phase 1: Foundation
+
 - [ ] Create UserProgress and QuestionProgress models
 - [ ] Implement SRS algorithm service
-- [ ] Create /api/review/* endpoints
-- [ ] Create /api/progress/* endpoints
+- [ ] Create /api/review/\* endpoints
+- [ ] Create /api/progress/\* endpoints
 
 ### Phase 2: Review Mode
+
 - [ ] Build /review page with flip card UI
 - [ ] Implement swipe gestures
 - [ ] Add rating buttons
 - [ ] Connect to SRS backend
 
 ### Phase 3: Dashboard
+
 - [ ] Redesign homepage for logged-in users
 - [ ] Add Daily Review card
 - [ ] Add Quick Stats section
 - [ ] Add Continue Learning section
 
 ### Phase 4: Gamification
+
 - [ ] Implement streak tracking
 - [ ] Add XP system
 - [ ] Create weekly activity visualization
 - [ ] Add streak animations
 
 ### Phase 5: Navigation
+
 - [ ] Add bottom navigation for mobile
 - [ ] Consolidate pages into Profile
 - [ ] Update navigation component
 - [ ] Add /explore page for guests
 
 ### Phase 6: Enhancement
+
 - [ ] Enhance flashcard mode with SRS
 - [ ] Add keyboard shortcuts for desktop
 - [ ] Implement Streak Freeze (premium)
@@ -353,13 +362,13 @@ POST /api/progress/streak     → Update streak
 
 ## Success Metrics
 
-| Metric | Current | Target |
-|--------|---------|--------|
-| Daily Active Users | - | +50% |
-| Session Duration | - | 8-12 min avg |
-| 7-day Retention | - | 40%+ |
-| Daily Review Completion | N/A | 60%+ |
-| Average Streak Length | N/A | 5+ days |
+| Metric                  | Current | Target       |
+| ----------------------- | ------- | ------------ |
+| Daily Active Users      | -       | +50%         |
+| Session Duration        | -       | 8-12 min avg |
+| 7-day Retention         | -       | 40%+         |
+| Daily Review Completion | N/A     | 60%+         |
+| Average Streak Length   | N/A     | 5+ days      |
 
 ---
 

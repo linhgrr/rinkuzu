@@ -10,9 +10,7 @@ export const ReadingProgressBar = () => {
       const currentProgress = window.scrollY;
       const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
       if (scrollHeight) {
-        setCompletion(
-          Number((currentProgress / scrollHeight).toFixed(2)) * 100
-        );
+        setCompletion(Number((currentProgress / scrollHeight).toFixed(2)) * 100);
       }
     };
 

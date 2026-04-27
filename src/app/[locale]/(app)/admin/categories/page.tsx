@@ -4,19 +4,13 @@ import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, Badge } from '@/components/ui/Card';
+import { Card, CardContent } from '@/components/ui/Card';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { Modal } from '@/components/ui/Modal';
 import Sidebar from '@/components/Sidebar';
-import {
-  HiOutlinePlus,
-  HiOutlineSearch,
-  HiOutlinePencil,
-  HiOutlineTrash
-} from '@/components/icons';
+import { HiOutlinePlus, HiOutlinePencil, HiOutlineTrash } from '@/components/icons';
 import Navigation from '@/components/Navigation';
 
 interface Category {
@@ -53,7 +47,7 @@ export default function AdminCategoriesPage() {
     page: 1,
     limit: 20,
     total: 0,
-    totalPages: 0
+    totalPages: 0,
   });
 
   // Modal states
@@ -69,37 +63,40 @@ export default function AdminCategoriesPage() {
     name: '',
     description: '',
     color: '#009d8c',
-    isActive: true
+    isActive: true,
   });
 
-  const fetchCategories = useCallback(async (page: number = 1, search: string = '') => {
-    try {
-      setLoading(true);
-      const params = new URLSearchParams({
-        page: page.toString(),
-        limit: pagination.limit.toString()
-      });
+  const fetchCategories = useCallback(
+    async (page: number = 1, search: string = '') => {
+      try {
+        setLoading(true);
+        const params = new URLSearchParams({
+          page: page.toString(),
+          limit: pagination.limit.toString(),
+        });
 
-      if (search.trim()) {
-        params.append('search', search.trim());
+        if (search.trim()) {
+          params.append('search', search.trim());
+        }
+
+        const response = await fetch(`/api/admin/categories?${params}`);
+        const data = await response.json();
+
+        if (data.success) {
+          setCategories(data.data.categories);
+          setPagination(data.data.pagination);
+          setError('');
+        } else {
+          setError(data.error || 'Failed to fetch categories');
+        }
+      } catch (_error) {
+        setError('An error occurred while fetching categories');
+      } finally {
+        setLoading(false);
       }
-
-      const response = await fetch(`/api/admin/categories?${params}`);
-      const data = await response.json();
-
-      if (data.success) {
-        setCategories(data.data.categories);
-        setPagination(data.data.pagination);
-        setError('');
-      } else {
-        setError(data.error || 'Failed to fetch categories');
-      }
-    } catch (error) {
-      setError('An error occurred while fetching categories');
-    } finally {
-      setLoading(false);
-    }
-  }, [pagination.limit]);
+    },
+    [pagination.limit],
+  );
 
   useEffect(() => {
     fetchCategories();
@@ -107,12 +104,12 @@ export default function AdminCategoriesPage() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    setPagination(prev => ({ ...prev, page: 1 }));
+    setPagination((prev) => ({ ...prev, page: 1 }));
     fetchCategories(1, searchTerm);
   };
 
   const handlePageChange = (newPage: number) => {
-    setPagination(prev => ({ ...prev, page: newPage }));
+    setPagination((prev) => ({ ...prev, page: newPage }));
     fetchCategories(newPage, searchTerm);
   };
 
@@ -121,7 +118,7 @@ export default function AdminCategoriesPage() {
       name: '',
       description: '',
       color: '#009d8c',
-      isActive: true
+      isActive: true,
     });
   };
 
@@ -135,7 +132,7 @@ export default function AdminCategoriesPage() {
       name: category.name,
       description: category.description,
       color: category.color,
-      isActive: category.isActive
+      isActive: category.isActive,
     });
     setEditingCategory(category);
     setShowEditModal(true);
@@ -181,7 +178,7 @@ export default function AdminCategoriesPage() {
       } else {
         setError(data.error || 'Failed to save category');
       }
-    } catch (error) {
+    } catch (_error) {
       setError('An error occurred while saving category');
     } finally {
       setSubmitting(false);
@@ -203,7 +200,7 @@ export default function AdminCategoriesPage() {
       } else {
         setError(data.error || 'Failed to delete category');
       }
-    } catch (error) {
+    } catch (_error) {
       setError('An error occurred while deleting category');
     } finally {
       setDeleting(false);
@@ -220,7 +217,7 @@ export default function AdminCategoriesPage() {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
-      day: 'numeric'
+      day: 'numeric',
     });
   };
 
@@ -247,16 +244,17 @@ export default function AdminCategoriesPage() {
       />
 
       {/* Main Content */}
-      <main className={`py-8 transition-all duration-300 ${session && isSidebarOpen ? 'ml-64' : session ? 'ml-16' : ''
-        } max-w-none px-4 sm:px-6 lg:px-8`}>
+      <main
+        className={`py-8 transition-all duration-300 ${
+          session && isSidebarOpen ? 'ml-64' : session ? 'ml-16' : ''
+        } max-w-none px-4 sm:px-6 lg:px-8`}
+      >
         <div className="max-w-6xl mx-auto">
           {/* Header */}
           <div className="flex justify-between items-center mb-8">
             <div>
               <h1 className="text-3xl font-bold text-neutral-900">{t('categories')}</h1>
-              <p className="mt-2 text-neutral-600">
-                {t('manageQuizCategories')}
-              </p>
+              <p className="mt-2 text-neutral-600">{t('manageQuizCategories')}</p>
             </div>
             <Button onClick={openCreateModal}>
               <HiOutlinePlus className="w-4 h-4 mr-2" /> {t('addCategory')}
@@ -284,7 +282,7 @@ export default function AdminCategoriesPage() {
                   variant="outline"
                   onClick={() => {
                     setSearchTerm('');
-                    setPagination(prev => ({ ...prev, page: 1 }));
+                    setPagination((prev) => ({ ...prev, page: 1 }));
                     fetchCategories(1, '');
                   }}
                 >
@@ -355,16 +353,21 @@ export default function AdminCategoriesPage() {
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${category.isActive
-                                ? 'bg-green-100 text-green-800'
-                                : 'bg-red-100 text-red-800'
-                              }`}>
+                            <span
+                              className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                category.isActive
+                                  ? 'bg-green-100 text-green-800'
+                                  : 'bg-red-100 text-red-800'
+                              }`}
+                            >
                               {category.isActive ? t('active') : t('inactive')}
                             </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-500">
                             <div>{formatDate(category.createdAt)}</div>
-                            <div className="text-xs">by {category.createdBy?.email || 'Unknown'}</div>
+                            <div className="text-xs">
+                              by {category.createdBy?.email || 'Unknown'}
+                            </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm space-x-2">
                             <Button
@@ -395,12 +398,11 @@ export default function AdminCategoriesPage() {
           {/* No Results */}
           {!loading && categories.length === 0 && (
             <div className="text-center py-12">
-              <h3 className="mt-2 text-sm font-medium text-neutral-900">{t('noCategoriesFound')}</h3>
+              <h3 className="mt-2 text-sm font-medium text-neutral-900">
+                {t('noCategoriesFound')}
+              </h3>
               <p className="mt-1 text-sm text-neutral-500">
-                {searchTerm
-                  ? t('tryAdjustingSearch')
-                  : t('getStartedCategory')
-                }
+                {searchTerm ? t('tryAdjustingSearch') : t('getStartedCategory')}
               </p>
               {!searchTerm && (
                 <div className="mt-6">
@@ -435,14 +437,17 @@ export default function AdminCategoriesPage() {
                 <div>
                   <p className="text-sm text-neutral-700">
                     {tCommon('showingResults', {
-                      from: ((pagination.page - 1) * pagination.limit) + 1,
+                      from: (pagination.page - 1) * pagination.limit + 1,
                       to: Math.min(pagination.page * pagination.limit, pagination.total),
-                      total: pagination.total
+                      total: pagination.total,
                     })}
                   </p>
                 </div>
                 <div>
-                  <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                  <nav
+                    className="isolate inline-flex -space-x-px rounded-md shadow-sm"
+                    aria-label="Pagination"
+                  >
                     <Button
                       onClick={() => handlePageChange(pagination.page - 1)}
                       disabled={pagination.page <= 1}
@@ -469,7 +474,7 @@ export default function AdminCategoriesPage() {
                         <Button
                           key={pageNum}
                           onClick={() => handlePageChange(pageNum)}
-                          variant={pagination.page === pageNum ? "default" : "outline"}
+                          variant={pagination.page === pageNum ? 'default' : 'outline'}
                           size="sm"
                           className="rounded-none"
                         >
@@ -509,7 +514,7 @@ export default function AdminCategoriesPage() {
                   id="name"
                   type="text"
                   value={formData.name}
-                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
                   placeholder={t('enterCategoryName')}
                   required
                   maxLength={50}
@@ -517,13 +522,18 @@ export default function AdminCategoriesPage() {
               </div>
 
               <div>
-                <label htmlFor="description" className="block text-sm font-medium text-neutral-700 mb-1">
+                <label
+                  htmlFor="description"
+                  className="block text-sm font-medium text-neutral-700 mb-1"
+                >
                   {t('descriptionOptional')}
                 </label>
                 <textarea
                   id="description"
                   value={formData.description}
-                  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, description: e.target.value }))
+                  }
                   placeholder={t('enterCategoryDescription')}
                   maxLength={200}
                   rows={3}
@@ -540,13 +550,13 @@ export default function AdminCategoriesPage() {
                     id="color"
                     type="color"
                     value={formData.color}
-                    onChange={(e) => setFormData(prev => ({ ...prev, color: e.target.value }))}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, color: e.target.value }))}
                     className="w-12 h-8 rounded border border-neutral-300"
                   />
                   <Input
                     type="text"
                     value={formData.color}
-                    onChange={(e) => setFormData(prev => ({ ...prev, color: e.target.value }))}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, color: e.target.value }))}
                     placeholder="#009d8c"
                     className="flex-1"
                   />
@@ -558,7 +568,7 @@ export default function AdminCategoriesPage() {
                   id="isActive"
                   type="checkbox"
                   checked={formData.isActive}
-                  onChange={(e) => setFormData(prev => ({ ...prev, isActive: e.target.checked }))}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, isActive: e.target.checked }))}
                   className="h-4 w-4 text-brand-trust focus:ring-brand-trust border-neutral-300 rounded"
                 />
                 <label htmlFor="isActive" className="ml-2 block text-sm text-neutral-900">
@@ -567,19 +577,10 @@ export default function AdminCategoriesPage() {
               </div>
 
               <div className="flex justify-end space-x-3 pt-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={closeModals}
-                  disabled={submitting}
-                >
+                <Button type="button" variant="outline" onClick={closeModals} disabled={submitting}>
                   {t('cancel')}
                 </Button>
-                <Button
-                  type="submit"
-                  loading={submitting}
-                  disabled={submitting}
-                >
+                <Button type="submit" loading={submitting} disabled={submitting}>
                   {editingCategory ? t('updateCategory') : t('createCategory')}
                 </Button>
               </div>
@@ -589,7 +590,9 @@ export default function AdminCategoriesPage() {
           <ConfirmModal
             isOpen={!!categoryToDelete}
             title={t('deleteCategory')}
-            message={categoryToDelete ? t('deleteCategoryConfirm', { name: categoryToDelete.name }) : ''}
+            message={
+              categoryToDelete ? t('deleteCategoryConfirm', { name: categoryToDelete.name }) : ''
+            }
             confirmText={t('delete')}
             confirmVariant="destructive"
             isLoading={deleting}

@@ -6,7 +6,20 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "next lint --max-warnings 0",
+    "typecheck": "next build --no-lint > /dev/null && tsc --noEmit",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest",
+    "test:unit": "vitest run --coverage src",
+    "test:integration": "vitest run tests/integration",
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:install": "playwright install --with-deps chromium",
+    "test:run": "vitest run --coverage",
+    "lint-staged": "lint-staged",
+    "prepare": "husky",
     "analyze-component": "node scripts/analyze-component.mjs",
     "refactor-component": "node scripts/refactor-component.mjs",
     "migrate:durations": "node src/scripts/migratePlanDurations.js migrate",
@@ -14,6 +27,15 @@
     "seed:plans": "node src/scripts/seedPlansWithISO8601.js seed",
     "validate:plans": "node src/scripts/seedPlansWithISO8601.js validate",
     "check:subscriptions": "node src/scripts/checkExpiredSubscriptions.js"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx,mjs,cjs}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,css}": [
+      "prettier --write"
+    ]
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.971.0",
@@ -76,7 +98,9 @@
     "zustand": "^4.5.4"
   },
   "devDependencies": {
-    "@typescript-eslint/parser": "^8.46.1",
+    "@commitlint/cli": "^20.5.2",
+    "@commitlint/config-conventional": "^20.5.0",
+    "@playwright/test": "^1.59.1",
     "@remotion/bundler": "^4.0.407",
     "@remotion/cli": "^4.0.407",
     "@remotion/google-fonts": "^4.0.407",
@@ -87,7 +111,19 @@
     "@types/jsonwebtoken": "^9.0.6",
     "@types/katex": "^0.16.8",
     "@types/node-cron": "^3.0.11",
+    "@typescript-eslint/eslint-plugin": "^8.59.0",
+    "@typescript-eslint/parser": "^8.46.1",
+    "@vitest/coverage-v8": "^4.1.5",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
     "eslint-plugin-sonarjs": "^3.0.5",
-    "remotion": "^4.0.407"
+    "eslint-plugin-unused-imports": "^4.4.1",
+    "husky": "^9.1.7",
+    "knip": "^6.7.0",
+    "lint-staged": "^16.4.0",
+    "prettier": "^3.8.3",
+    "remotion": "^4.0.407",
+    "vitest": "^4.1.5"
   }
 }

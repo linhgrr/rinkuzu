@@ -19,7 +19,7 @@ const MAX_ERRORS_BEFORE_ABORT = 3;
 async function fetchWithRetry(
   url: string,
   options: RequestInit,
-  retries: number = MAX_RETRIES
+  retries: number = MAX_RETRIES,
 ): Promise<Response> {
   let lastError: Error | null = null;
 
@@ -31,7 +31,7 @@ async function fetchWithRetry(
       if (response.status === 409) {
         const data = await response.json();
         const retryAfter = data.retryAfter || INITIAL_RETRY_DELAY * Math.pow(2, attempt);
-        await new Promise(r => setTimeout(r, retryAfter));
+        await new Promise((r) => setTimeout(r, retryAfter));
         continue;
       }
 
@@ -46,7 +46,7 @@ async function fetchWithRetry(
 
       // Exponential backoff
       const delay = INITIAL_RETRY_DELAY * Math.pow(2, attempt);
-      await new Promise(r => setTimeout(r, delay));
+      await new Promise((r) => setTimeout(r, delay));
     }
   }
 
@@ -61,7 +61,7 @@ export function usePdfProcessor() {
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      Object.values(abortControllersRef.current).forEach(controller => {
+      Object.values(abortControllersRef.current).forEach((controller) => {
         controller.abort();
       });
       // Clear refs completely
@@ -70,128 +70,128 @@ export function usePdfProcessor() {
     };
   }, []);
 
-  const processChunk = useCallback(async (
-    draftId: string,
-    chunkIndex: number,
-    signal?: AbortSignal
-  ): Promise<{ success: boolean; questions: any[]; isComplete: boolean; totalQuestions: number }> => {
-    const response = await fetchWithRetry(
-      `/api/draft/${draftId}/process-chunk`,
-      {
+  const processChunk = useCallback(
+    async (
+      draftId: string,
+      chunkIndex: number,
+      signal?: AbortSignal,
+    ): Promise<{
+      success: boolean;
+      questions: any[];
+      isComplete: boolean;
+      totalQuestions: number;
+    }> => {
+      const response = await fetchWithRetry(`/api/draft/${draftId}/process-chunk`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ chunkIndex }),
         signal,
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to process chunk');
       }
-    );
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to process chunk');
-    }
+      const result = await response.json();
+      return {
+        success: result.success !== false,
+        questions: result.questions || [],
+        isComplete: result.progress?.isComplete || false,
+        totalQuestions: result.progress?.totalQuestions || 0,
+      };
+    },
+    [],
+  );
 
-    const result = await response.json();
-    return {
-      success: result.success !== false,
-      questions: result.questions || [],
-      isComplete: result.progress?.isComplete || false,
-      totalQuestions: result.progress?.totalQuestions || 0,
-    };
-  }, []);
+  const startProcessing = useCallback(
+    async (draftId: string, chunks: ChunkInfo[], title: string) => {
+      if (processingRef.current[draftId]) {
+        console.warn(`Draft ${draftId} is already being processed`);
+        return;
+      }
 
-  const startProcessing = useCallback(async (
-    draftId: string,
-    chunks: ChunkInfo[],
-    title: string
-  ) => {
-    if (processingRef.current[draftId]) {
-      console.log(`Draft ${draftId} is already being processed`);
-      return;
-    }
+      processingRef.current[draftId] = true;
+      const abortController = new AbortController();
+      abortControllersRef.current[draftId] = abortController;
 
-    processingRef.current[draftId] = true;
-    const abortController = new AbortController();
-    abortControllersRef.current[draftId] = abortController;
+      // Also retry 'processing' chunks (might be stale locks)
+      const pendingChunks = chunks
+        .filter((c) => c.status === 'pending' || c.status === 'error' || c.status === 'processing')
+        .sort((a, b) => a.index - b.index);
 
-    // Also retry 'processing' chunks (might be stale locks)
-    const pendingChunks = chunks
-      .filter(c => c.status === 'pending' || c.status === 'error' || c.status === 'processing')
-      .sort((a, b) => a.index - b.index);
+      let processedCount = chunks.filter((c) => c.status === 'done').length;
+      let totalQuestions = 0;
+      let totalErrors = 0;
+      let hasCompleted = false;
+      let hasAbortedForErrors = false;
 
-    let processedCount = chunks.filter(c => c.status === 'done').length;
-    let totalQuestions = 0;
-    let totalErrors = 0;
-    let hasCompleted = false;
-    let hasAbortedForErrors = false;
-
-    try {
-      await mapWithConcurrency(pendingChunks, MAX_CONCURRENT_CHUNKS, async (chunk) => {
-        if (abortController.signal.aborted || hasCompleted || hasAbortedForErrors) {
-          return;
-        }
-
-        try {
-          const result = await processChunk(
-            draftId,
-            chunk.index,
-            abortController.signal
-          );
-
-          if (result.success) {
-            processedCount++;
-            totalQuestions = result.totalQuestions;
-
-            updateDraftProgress(draftId, {
-              chunksProcessed: processedCount,
-              questionsCount: totalQuestions,
-              status: 'processing',
-            });
-
-            if (result.isComplete) {
-              hasCompleted = true;
-              completeDraft(draftId, totalQuestions);
-              toast.success(`"${title}" đã sẵn sàng!`, {
-                description: `${totalQuestions} câu hỏi được trích xuất`,
-                action: {
-                  label: 'Xem',
-                  onClick: () => window.location.href = `/draft/${draftId}/edit`,
-                },
-              });
-              abortController.abort();
-              return;
-            }
-          }
-        } catch (chunkError: any) {
-          if (chunkError.name === 'AbortError') {
+      try {
+        await mapWithConcurrency(pendingChunks, MAX_CONCURRENT_CHUNKS, async (chunk) => {
+          if (abortController.signal.aborted || hasCompleted || hasAbortedForErrors) {
             return;
           }
 
-          totalErrors++;
-          console.error(`Chunk ${chunk.index} failed:`, chunkError);
+          try {
+            const result = await processChunk(draftId, chunk.index, abortController.signal);
 
-          // Stop if too many failures overall
-          if (totalErrors >= MAX_ERRORS_BEFORE_ABORT) {
-            hasAbortedForErrors = true;
-            setDraftError(draftId, `Quá nhiều lỗi khi xử lý chunk: ${chunkError.message}`);
-            toast.error(`Lỗi xử lý "${title}"`, {
-              description: 'Vui lòng thử lại sau',
-            });
-            abortController.abort();
+            if (result.success) {
+              processedCount++;
+              totalQuestions = result.totalQuestions;
+
+              updateDraftProgress(draftId, {
+                chunksProcessed: processedCount,
+                questionsCount: totalQuestions,
+                status: 'processing',
+              });
+
+              if (result.isComplete) {
+                hasCompleted = true;
+                completeDraft(draftId, totalQuestions);
+                toast.success(`"${title}" đã sẵn sàng!`, {
+                  description: `${totalQuestions} câu hỏi được trích xuất`,
+                  action: {
+                    label: 'Xem',
+                    onClick: () => (window.location.href = `/draft/${draftId}/edit`),
+                  },
+                });
+                abortController.abort();
+                return;
+              }
+            }
+          } catch (chunkError: any) {
+            if (chunkError.name === 'AbortError') {
+              return;
+            }
+
+            totalErrors++;
+            console.error(`Chunk ${chunk.index} failed:`, chunkError);
+
+            // Stop if too many failures overall
+            if (totalErrors >= MAX_ERRORS_BEFORE_ABORT) {
+              hasAbortedForErrors = true;
+              setDraftError(draftId, `Quá nhiều lỗi khi xử lý chunk: ${chunkError.message}`);
+              toast.error(`Lỗi xử lý "${title}"`, {
+                description: 'Vui lòng thử lại sau',
+              });
+              abortController.abort();
+            }
           }
-        }
-      });
-    } catch (error: any) {
-      if (error.name !== 'AbortError') {
-        setDraftError(draftId, error.message);
-        toast.error(`Lỗi xử lý "${title}"`, {
-          description: error.message,
         });
+      } catch (error: any) {
+        if (error.name !== 'AbortError') {
+          setDraftError(draftId, error.message);
+          toast.error(`Lỗi xử lý "${title}"`, {
+            description: error.message,
+          });
+        }
+      } finally {
+        delete processingRef.current[draftId];
+        delete abortControllersRef.current[draftId];
       }
-    } finally {
-      delete processingRef.current[draftId];
-      delete abortControllersRef.current[draftId];
-    }
-  }, [processChunk, updateDraftProgress, completeDraft, setDraftError]);
+    },
+    [processChunk, updateDraftProgress, completeDraft, setDraftError],
+  );
 
   const stopProcessing = useCallback((draftId: string) => {
     const controller = abortControllersRef.current[draftId];
@@ -202,26 +202,25 @@ export function usePdfProcessor() {
     delete processingRef.current[draftId];
   }, []);
 
-  const resumeProcessing = useCallback(async (draftId: string) => {
-    try {
-      const response = await fetch(`/api/draft/${draftId}`);
-      if (!response.ok) throw new Error('Failed to fetch draft');
+  const resumeProcessing = useCallback(
+    async (draftId: string) => {
+      try {
+        const response = await fetch(`/api/draft/${draftId}`);
+        if (!response.ok) throw new Error('Failed to fetch draft');
 
-      const { draft } = await response.json();
+        const { draft } = await response.json();
 
-      if (draft.status === 'completed') {
-        return; // Already done
+        if (draft.status === 'completed') {
+          return; // Already done
+        }
+
+        await startProcessing(draftId, draft.chunks.chunkDetails, draft.title);
+      } catch (error) {
+        console.error('Resume processing error:', error);
       }
-
-      await startProcessing(
-        draftId,
-        draft.chunks.chunkDetails,
-        draft.title
-      );
-    } catch (error) {
-      console.error('Resume processing error:', error);
-    }
-  }, [startProcessing]);
+    },
+    [startProcessing],
+  );
 
   return {
     startProcessing,

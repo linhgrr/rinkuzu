@@ -1,27 +1,28 @@
-'use client'
+'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { getSubjectHistoryDetailFresh } from '../api-client'
-import { ADAPTIVE_ROUTES } from '../routes'
-import { getJobIdForSession, getSessionExerciseOutcome } from '../session-storage'
-import { buildExercisePromptText } from '../exercise-prompt'
-import { BLOOM_LABELS } from '../types'
-import type { Exercise, SessionHistoryDetail, SubmitResult } from '../types'
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { getSubjectHistoryDetailFresh } from '../api-client';
+import { ADAPTIVE_ROUTES } from '../routes';
+import { getJobIdForSession, getSessionExerciseOutcome } from '../session-storage';
+import { buildExercisePromptText } from '../exercise-prompt';
+import { BLOOM_LABELS } from '../types';
+import type { Exercise, SessionHistoryDetail, SubmitResult } from '../types';
 
-type TranslateFn = (key: string, values?: Record<string, any>) => string
+type TranslateFn = (key: string, values?: Record<string, any>) => string;
 
 function deriveOutcomeFromHistory(
   detail: SessionHistoryDetail,
 ): { exercise: Exercise; result: SubmitResult } | null {
-  const answered = detail.exercise_history.filter(item => item.user_answer !== null)
-  if (answered.length === 0)
-    return null
+  const answered = detail.exercise_history.filter((item) => item.user_answer !== null);
+  if (answered.length === 0) return null;
 
-  const latest = answered.reduce((acc, item) => item.timestamp > acc.timestamp ? item : acc)
-  const bloomLabel = BLOOM_LABELS[Math.max(0, Math.min(BLOOM_LABELS.length - 1, latest.bloom_level - 1))] || 'Remember'
-  const conceptMastery = detail.concept_mastery[latest.concept_idx]
-  const masteryAfter = typeof conceptMastery === 'number' ? conceptMastery : detail.avg_mastery
+  const latest = answered.reduce((acc, item) => (item.timestamp > acc.timestamp ? item : acc));
+  const bloomLabel =
+    BLOOM_LABELS[Math.max(0, Math.min(BLOOM_LABELS.length - 1, latest.bloom_level - 1))] ||
+    'Remember';
+  const conceptMastery = detail.concept_mastery[latest.concept_idx];
+  const masteryAfter = typeof conceptMastery === 'number' ? conceptMastery : detail.avg_mastery;
 
   return {
     exercise: {
@@ -61,119 +62,108 @@ function deriveOutcomeFromHistory(
         accuracy: detail.accuracy,
       },
     },
-  }
+  };
 }
 
 export const useResultState = (sessionId: string, t: TranslateFn) => {
-  const router = useRouter()
-  const [result, setResult] = useState<SubmitResult | null>(null)
-  const [exercise, setExercise] = useState<Exercise | null>(null)
-  const [isChatOpen, setIsChatOpen] = useState(false)
-  const [hydrating, setHydrating] = useState(true)
+  const router = useRouter();
+  const [result, setResult] = useState<SubmitResult | null>(null);
+  const [exercise, setExercise] = useState<Exercise | null>(null);
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [hydrating, setHydrating] = useState(true);
 
   useEffect(() => {
-    router.prefetch(ADAPTIVE_ROUTES.dashboard)
-    router.prefetch(ADAPTIVE_ROUTES.exercise(sessionId))
-  }, [router, sessionId])
+    router.prefetch(ADAPTIVE_ROUTES.dashboard);
+    router.prefetch(ADAPTIVE_ROUTES.exercise(sessionId));
+  }, [router, sessionId]);
 
   useEffect(() => {
-    let cancelled = false
+    let cancelled = false;
 
     const hydrate = async () => {
-      setHydrating(true)
+      setHydrating(true);
 
       try {
-        const storedOutcome = getSessionExerciseOutcome(sessionId)
+        const storedOutcome = getSessionExerciseOutcome(sessionId);
         if (storedOutcome) {
           if (!cancelled) {
-            setResult(storedOutcome.result)
-            setExercise(storedOutcome.exercise)
+            setResult(storedOutcome.result);
+            setExercise(storedOutcome.exercise);
           }
-          return
+          return;
         }
 
-        const jobId = getJobIdForSession(sessionId)
-        if (!jobId)
-          return
+        const jobId = getJobIdForSession(sessionId);
+        if (!jobId) return;
 
-        const detail = await getSubjectHistoryDetailFresh(jobId)
-        if (cancelled)
-          return
+        const detail = await getSubjectHistoryDetailFresh(jobId);
+        if (cancelled) return;
 
-        const derivedOutcome = deriveOutcomeFromHistory(detail)
-        setResult(derivedOutcome?.result ?? null)
-        setExercise(derivedOutcome?.exercise ?? null)
-      }
-      catch {
+        const derivedOutcome = deriveOutcomeFromHistory(detail);
+        setResult(derivedOutcome?.result ?? null);
+        setExercise(derivedOutcome?.exercise ?? null);
+      } catch {
         if (!cancelled) {
-          setResult(null)
-          setExercise(null)
+          setResult(null);
+          setExercise(null);
         }
+      } finally {
+        if (!cancelled) setHydrating(false);
       }
-      finally {
-        if (!cancelled)
-          setHydrating(false)
-      }
-    }
+    };
 
-    void hydrate()
+    void hydrate();
 
     return () => {
-      cancelled = true
-    }
-  }, [sessionId])
+      cancelled = true;
+    };
+  }, [sessionId]);
 
-  const isCorrect = result?.is_correct ?? false
+  const isCorrect = result?.is_correct ?? false;
 
-  const masteryPercent = useMemo(
-    () => Math.round((result?.mastery_after ?? 0) * 100),
-    [result],
-  )
+  const masteryPercent = useMemo(() => Math.round((result?.mastery_after ?? 0) * 100), [result]);
 
   const averageMasteryPercent = useMemo(
     () => Math.round((result?.avg_mastery ?? 0) * 100),
     [result],
-  )
+  );
 
   const questionOptions = useMemo(() => {
-    if (!exercise)
-      return []
+    if (!exercise) return [];
 
     return Object.entries(exercise.options)
       .sort(([left], [right]) => left.localeCompare(right))
-      .map(([, value]) => value)
-  }, [exercise])
+      .map(([, value]) => value);
+  }, [exercise]);
 
   const chatContext = useMemo(() => {
-    if (!exercise || !result)
-      return ''
+    if (!exercise || !result) return '';
 
-    return `${t('chatbot.contextConcept')}: ${result.concept_name}\n${t('chatbot.contextQuestion')}: ${buildExercisePromptText(exercise)}`
-  }, [exercise, result, t])
+    return `${t('chatbot.contextConcept')}: ${result.concept_name}\n${t('chatbot.contextQuestion')}: ${buildExercisePromptText(exercise)}`;
+  }, [exercise, result, t]);
 
   const handleGoDashboard = useCallback(() => {
-    router.push(ADAPTIVE_ROUTES.dashboard)
-  }, [router])
+    router.push(ADAPTIVE_ROUTES.dashboard);
+  }, [router]);
 
   const handleNext = useCallback(() => {
-    if (!result)
-      return
+    if (!result) return;
 
     if (result.session_completed) {
-      router.push(ADAPTIVE_ROUTES.dashboard)
-      return
+      router.push(ADAPTIVE_ROUTES.dashboard);
+      return;
     }
 
-    router.push(ADAPTIVE_ROUTES.exercise(sessionId))
-  }, [result, router, sessionId])
+    router.push(ADAPTIVE_ROUTES.exercise(sessionId));
+  }, [result, router, sessionId]);
 
   const openChat = useCallback(() => {
-    setIsChatOpen(true)
-  }, [])
+    setIsChatOpen(true);
+  }, []);
 
   const closeChat = useCallback(() => {
-    setIsChatOpen(false)
-  }, [])
+    setIsChatOpen(false);
+  }, []);
 
   return {
     averageMasteryPercent,
@@ -189,5 +179,5 @@ export const useResultState = (sessionId: string, t: TranslateFn) => {
     openChat,
     questionOptions,
     result,
-  }
-}
+  };
+};

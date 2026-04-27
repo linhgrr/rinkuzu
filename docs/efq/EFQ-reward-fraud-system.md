@@ -9,24 +9,27 @@ Hệ thống EFQ khuyến khích người dùng đăng tải các đề thi ch�
 ## 2. Cơ Chế Reward (Thưởng Điểm)
 
 ### 2.1. Nguyên tắc tính điểm
+
 - **Reward dựa trên lượt làm quiz thực tế** (không phải chỉ upload là có điểm)
 - **Điểm thưởng có thể điều chỉnh theo chất lượng, độ khó, độ phổ biến**
 - **Có thể giảm, giữ lại hoặc chặn thưởng nếu phát hiện gian lận**
 
 ### 2.2. Công thức tính điểm cơ bản
+
 ```typescript
 interface QuizReward {
-  baseRewardPerAttempt: number;     // 1-5 điểm/lượt làm
-  averageScoreMultiplier: number;   // 0.5-2.0x dựa trên điểm trung bình
+  baseRewardPerAttempt: number; // 1-5 điểm/lượt làm
+  averageScoreMultiplier: number; // 0.5-2.0x dựa trên điểm trung bình
   completionRateMultiplier: number; // 0.5-1.5x dựa trên tỷ lệ hoàn thành
-  timeSpentMultiplier: number;      // 0.5-1.2x dựa trên thời gian làm
-  difficultyBonus: number;          // 1-3 điểm bonus cho đề khó
-  popularityBonus: number;          // 1-5 điểm bonus cho quiz phổ biến
-  totalReward: number;              // Tổng điểm thưởng
+  timeSpentMultiplier: number; // 0.5-1.2x dựa trên thời gian làm
+  difficultyBonus: number; // 1-3 điểm bonus cho đề khó
+  popularityBonus: number; // 1-5 điểm bonus cho quiz phổ biến
+  totalReward: number; // Tổng điểm thưởng
 }
 ```
 
 ### 2.3. Các yếu tố ảnh hưởng
+
 - **Số lượt làm hợp lệ** (đã qua fraud filter)
 - **Điểm trung bình của người làm** (càng cao càng tốt)
 - **Tỷ lệ hoàn thành** (completion rate)
@@ -35,16 +38,18 @@ interface QuizReward {
 - **Độ phổ biến** (số lượt làm, số người unique)
 
 ### 2.4. Reward tiers & bonus
+
 ```typescript
 const REWARD_TIERS = {
   BRONZE: { minAttempts: 10, multiplier: 1.0, bonus: 0 },
   SILVER: { minAttempts: 50, multiplier: 1.2, bonus: 100 },
   GOLD: { minAttempts: 100, multiplier: 1.5, bonus: 500 },
-  PLATINUM: { minAttempts: 200, multiplier: 2.0, bonus: 1000 }
-}
+  PLATINUM: { minAttempts: 200, multiplier: 2.0, bonus: 1000 },
+};
 ```
 
 ### 2.5. Quy trình trả thưởng
+
 - Tính reward định kỳ (hàng ngày/tuần/tháng)
 - Chỉ trả thưởng cho lượt làm hợp lệ (không gian lận)
 - Có thể giữ lại hoặc giảm thưởng nếu quiz bị flag gian lận
@@ -55,11 +60,13 @@ const REWARD_TIERS = {
 ## 3. Fraud Detection System (Phát hiện gian lận)
 
 ### 3.1. Mục tiêu
+
 - Phát hiện các hành vi gian lận (spam, auto, collusion, v.v.)
 - Đảm bảo chỉ trả thưởng cho lượt làm hợp lệ
 - Cảnh báo và hỗ trợ admin trong việc review
 
 ### 3.2. Các chỉ số và tín hiệu gian lận
+
 - **Rapid Attempts**: Nhiều lượt làm trong thời gian ngắn
 - **Same IP Addresses**: Nhiều lượt từ cùng IP
 - **Similar Scores**: Điểm số quá giống nhau
@@ -69,19 +76,19 @@ const REWARD_TIERS = {
 
 ### 3.3. Mức độ rủi ro & hành động xử lý
 
-| Risk Level | Reward Action      | User Impact         | Admin Action   |
-|------------|-------------------|---------------------|---------------|
-| Low (0-30) | Full reward       | Bình thường         | Không         |
-| Medium(31-60)| 50% reward      | Giảm thưởng         | Theo dõi      |
-| High(61-80)| Hold for review   | Giữ thưởng, cảnh báo| Manual review |
-| Critical(81-100)| Block reward  | Không thưởng, có thể khóa | Điều tra ngay |
+| Risk Level       | Reward Action   | User Impact               | Admin Action  |
+| ---------------- | --------------- | ------------------------- | ------------- |
+| Low (0-30)       | Full reward     | Bình thường               | Không         |
+| Medium(31-60)    | 50% reward      | Giảm thưởng               | Theo dõi      |
+| High(61-80)      | Hold for review | Giữ thưởng, cảnh báo      | Manual review |
+| Critical(81-100) | Block reward    | Không thưởng, có thể khóa | Điều tra ngay |
 
 ```typescript
 enum FraudRiskLevel {
-  LOW = 'low',           // 0-30
-  MEDIUM = 'medium',     // 31-60
-  HIGH = 'high',         // 61-80
-  CRITICAL = 'critical'  // 81-100
+  LOW = 'low', // 0-30
+  MEDIUM = 'medium', // 31-60
+  HIGH = 'high', // 61-80
+  CRITICAL = 'critical', // 81-100
 }
 
 enum FraudAction {
@@ -89,7 +96,7 @@ enum FraudAction {
   REDUCE_REWARD = 'reduce_reward',
   HOLD_REWARD = 'hold_reward',
   BLOCK_REWARD = 'block_reward',
-  SUSPEND_USER = 'suspend_user'
+  SUSPEND_USER = 'suspend_user',
 }
 
 interface FraudResponse {
@@ -106,12 +113,14 @@ interface FraudResponse {
 ```
 
 ### 3.4. Quy trình xử lý reward khi phát hiện gian lận
+
 - **Low risk**: Trả thưởng bình thường
 - **Medium risk**: Trả 50% thưởng, cảnh báo user
 - **High risk**: Giữ thưởng, yêu cầu admin review
 - **Critical risk**: Block thưởng, có thể khóa tài khoản, thông báo admin
 
 ### 3.5. Mô hình dữ liệu Reward & Fraud
+
 ```typescript
 export interface IReward {
   userId: string;
@@ -139,18 +148,26 @@ export interface IReward {
 ## 4. Logging & Data Collection (Ghi log & thu thập dữ liệu)
 
 ### 4.1. Mục tiêu
+
 - Thu thập dữ liệu hành vi để phục vụ phát hiện gian lận (rule-based & ML)
 - Làm audit trail cho compliance, debugging, và phân tích
 - Cải thiện accuracy của fraud detection qua thời gian
 
 ### 4.2. Mô hình AuditLog
+
 ```typescript
 export interface IAuditLog {
   userId?: string;
   userEmail?: string;
   sessionId: string;
   requestId: string;
-  action: 'quiz_attempt' | 'quiz_creation' | 'user_login' | 'user_register' | 'reward_earned' | 'fraud_detected';
+  action:
+    | 'quiz_attempt'
+    | 'quiz_creation'
+    | 'user_login'
+    | 'user_register'
+    | 'reward_earned'
+    | 'fraud_detected';
   resourceType: 'quiz' | 'user' | 'attempt' | 'reward';
   resourceId?: string;
   ipAddress: string;
@@ -197,6 +214,7 @@ export interface IAuditLog {
 ```
 
 ### 4.3. Các trường cần log
+
 - **Kỹ thuật**: IP, userAgent, deviceFingerprint, geoLocation
 - **Hành vi**: mouse, keyboard, scroll, timeSpent, answerChanges
 - **Quiz data**: score, answers, timePerQuestion
@@ -204,6 +222,7 @@ export interface IAuditLog {
 - **Kết quả**: outcome, reason
 
 ### 4.4. Ứng dụng
+
 - Làm training data cho ML model detect fraud
 - Phân tích pattern gian lận vs hợp lệ
 - Audit trail cho admin review
@@ -214,16 +233,19 @@ export interface IAuditLog {
 ## 5. Admin & User Dashboard, Business Logic Flow, API/model proposal
 
 ### 5.1. Admin Dashboard
+
 - **Fraud Analytics**: Thống kê số lượt flag, reward bị block, suspicious IP, fraud rate
 - **Reward Review**: Danh sách các reward pending review, approve/reject reward, xem chi tiết fraud evidence
 - **Suspicious Patterns**: Xem các IP, user, quiz có pattern bất thường
 
 ### 5.2. User Dashboard
+
 - **Reward History**: Xem tổng điểm, điểm đã nhận, điểm bị giữ lại, lịch sử rút thưởng
 - **Fraud Warning**: Thông báo nếu reward bị giảm/giữ/block do nghi ngờ gian lận
 - **Quiz Performance**: Thống kê lượt làm, điểm trung bình, reward earned cho từng quiz
 
 ### 5.3. Business Logic Flow
+
 1. User upload quiz → admin duyệt → quiz được publish
 2. User khác làm quiz → hệ thống ghi log hành vi, tính fraud score
 3. Định kỳ (hoặc real-time), hệ thống tính reward cho quiz owner dựa trên lượt làm hợp lệ
@@ -236,6 +258,7 @@ export interface IAuditLog {
 6. User được thông báo về trạng thái reward
 
 ### 5.4. API/model proposal (ví dụ)
+
 ```http
 POST /api/quizzes/:id/attempt         # Ghi nhận attempt, log hành vi
 POST /api/rewards/calculate           # Tính reward cho quiz owner
@@ -246,6 +269,7 @@ GET  /api/user/rewards                # Lịch sử reward của user
 ```
 
 ### 5.5. Hướng dẫn triển khai
+
 - Ưu tiên implement logging & fraud detection trước (càng nhiều data càng tốt)
 - Bắt đầu với rule-based fraud, sau đó bổ sung ML model khi đủ data
 - Tích hợp dashboard cho admin và user để tăng minh bạch
@@ -254,4 +278,4 @@ GET  /api/user/rewards                # Lịch sử reward của user
 
 ---
 
-**File này là blueprint tổng thể cho hệ thống EFQ reward + fraud detection. Có thể mở rộng, điều chỉnh theo thực tế triển khai.** 
+**File này là blueprint tổng thể cho hệ thống EFQ reward + fraud detection. Có thể mở rộng, điều chỉnh theo thực tế triển khai.**

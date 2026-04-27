@@ -1,11 +1,5 @@
 import { Link } from '@/i18n/routing';
-import {
-  Card,
-  CardHeader,
-  CardContent,
-  CardTitle,
-  Badge,
-} from '@/components/ui/Card';
+import { Card, CardHeader, CardContent, CardTitle, Badge } from '@/components/ui/Card';
 import { ROUTES } from '@/shared/constants';
 import { formatDisplayDate } from '@/shared/utils/constants';
 
@@ -59,10 +53,7 @@ export function QuizCard({
       >
         <CardHeader className="pb-3">
           <div className="mb-2 flex items-start justify-between">
-            <Badge
-              variant={categoryBadgeVariant(quiz.category?.color || '')}
-              className="w-fit"
-            >
+            <Badge variant={categoryBadgeVariant(quiz.category?.color || '')} className="w-fit">
               {quiz.category?.name || uncategorizedLabel}
             </Badge>
           </div>

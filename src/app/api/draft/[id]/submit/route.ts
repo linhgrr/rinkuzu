@@ -54,7 +54,11 @@ function validateQuestions(questions: any[]): ValidationResult {
 
     // Validate correct answer
     if (q.type === 'single') {
-      if (typeof q.correctIndex !== 'number' || q.correctIndex < 0 || q.correctIndex >= q.options?.length) {
+      if (
+        typeof q.correctIndex !== 'number' ||
+        q.correctIndex < 0 ||
+        q.correctIndex >= q.options?.length
+      ) {
         errors.push(`${prefix}: Đáp án đúng không hợp lệ`);
       }
     } else if (q.type === 'multiple') {
@@ -62,7 +66,7 @@ function validateQuestions(questions: any[]): ValidationResult {
         errors.push(`${prefix}: Cần chọn ít nhất 1 đáp án đúng`);
       } else {
         const invalidIndexes = q.correctIndexes.filter(
-          (idx: number) => idx < 0 || idx >= q.options?.length
+          (idx: number) => idx < 0 || idx >= q.options?.length,
         );
         if (invalidIndexes.length > 0) {
           errors.push(`${prefix}: Có đáp án đúng không hợp lệ`);
@@ -85,10 +89,7 @@ function validateQuestions(questions: any[]): ValidationResult {
   };
 }
 
-export async function POST(
-  request: NextRequest,
-  { params }: AsyncRouteParams<{ id: string }>
-) {
+export async function POST(request: NextRequest, { params }: AsyncRouteParams<{ id: string }>) {
   try {
     const { id } = await params;
     const session = await getServerSession(authOptions);
@@ -100,17 +101,14 @@ export async function POST(
     const { title, categoryId, description, questions: editedQuestions } = body;
 
     if (!categoryId) {
-      return NextResponse.json(
-        { error: 'Category is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Category is required' }, { status: 400 });
     }
 
     await connectDB();
 
     const draft = await DraftQuiz.findOne({
       _id: id,
-      userId: ((session!.user as any) as any).id,
+      userId: (session!.user as any as any).id,
     });
 
     if (!draft) {
@@ -124,10 +122,13 @@ export async function POST(
     const validation = validateQuestions(questionsToUse);
 
     if (!validation.isValid) {
-      return NextResponse.json({
-        error: 'Validation failed',
-        details: validation.errors,
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: 'Validation failed',
+          details: validation.errors,
+        },
+        { status: 400 },
+      );
     }
 
     // Generate unique slug
@@ -144,7 +145,7 @@ export async function POST(
       description: description || '',
       category: categoryId,
       status: 'pending', // Requires admin approval
-      author: ((session!.user as any) as any).id,
+      author: (session!.user as any as any).id,
       slug,
       questions: questionsToUse.map((q: any) => ({
         question: q.question,
@@ -163,7 +164,7 @@ export async function POST(
     if (draft.pdfData?.pdfKey) {
       try {
         await deletePDF(draft.pdfData.pdfKey);
-        console.log('Deleted PDF from S3 after submit:', draft.pdfData.pdfKey);
+        console.warn('Deleted PDF from S3 after submit:', draft.pdfData.pdfKey);
       } catch (s3Error) {
         console.error('Failed to delete PDF from S3 after submit:', s3Error);
         // Don't fail the request - quiz was created successfully
@@ -176,12 +177,8 @@ export async function POST(
       slug: quiz.slug,
       warnings: validation.warnings,
     });
-
   } catch (error) {
     console.error('Submit draft error:', error);
-    return NextResponse.json(
-      { error: 'Failed to submit draft' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to submit draft' }, { status: 500 });
   }
 }

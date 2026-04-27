@@ -5,6 +5,7 @@
 **Goal:** Fix all gamification bugs on the dashboard: Level calculation, Weekly Progress with real data + navigation + heat map, Accuracy moving average, display longestStreak, and increment totalReviewSessions.
 
 **Architecture:**
+
 - Add utility functions for level calculation and date helpers
 - Update API to calculate level dynamically and track accuracy properly
 - Replace static WeeklyProgress component with data-driven heat map with week navigation
@@ -17,6 +18,7 @@
 ## Task 1: Add Level Calculation Utility
 
 **Files:**
+
 - Create: `src/lib/gamification.ts`
 
 **Step 1: Create the utility file with level calculation**
@@ -72,6 +74,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ## Task 2: Add Date Helper Utilities
 
 **Files:**
+
 - Create: `src/lib/date-utils.ts`
 
 **Step 1: Create date utility functions**
@@ -164,6 +167,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ## Task 3: Update Stats API to Calculate Level Dynamically
 
 **Files:**
+
 - Modify: `src/app/api/progress/stats/route.ts`
 
 **Step 1: Update the API to use level calculation**
@@ -180,54 +184,53 @@ import { authOptions } from '@/lib/auth';
 import { calculateLevel, xpForNextLevel, levelProgress } from '@/lib/gamification';
 
 export async function GET() {
-    try {
-        const session = await getServerSession(authOptions);
+  try {
+    const session = await getServerSession(authOptions);
 
-        if (!session || !session.user) {
-            return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
-        }
-
-        await connectDB();
-        const userId = (session.user as any).id;
-
-        // Get stats
-        let uProgress = await UserProgress.findOne({ userId });
-
-        if (!uProgress) {
-            // Initialize if null
-            uProgress = await UserProgress.create({ userId });
-        }
-
-        // Get due count
-        const dueCount = await QuestionProgress.countDocuments({
-            userId,
-            nextReviewDate: { $lte: new Date() }
-        });
-
-        // Calculate level dynamically from XP
-        const level = calculateLevel(uProgress.totalXp);
-        const xpToNextLevel = xpForNextLevel(uProgress.totalXp);
-        const currentLevelProgress = levelProgress(uProgress.totalXp);
-
-        return NextResponse.json({
-            streak: uProgress.currentStreak,
-            longestStreak: uProgress.longestStreak,
-            streakFreezeCount: uProgress.streakFreezeCount,
-            xp: uProgress.totalXp,
-            level: level,
-            xpToNextLevel: xpToNextLevel,
-            levelProgress: currentLevelProgress,
-            dueCount: dueCount,
-            weeklyActivity: uProgress.weeklyActivity,
-            totalQuestionsLearned: uProgress.totalQuestionsLearned,
-            totalReviewSessions: uProgress.totalReviewSessions,
-            averageAccuracy: uProgress.averageAccuracy
-        });
-
-    } catch (error) {
-        console.error('Error fetching progress stats:', error);
-        return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
+    if (!session || !session.user) {
+      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
+
+    await connectDB();
+    const userId = (session.user as any).id;
+
+    // Get stats
+    let uProgress = await UserProgress.findOne({ userId });
+
+    if (!uProgress) {
+      // Initialize if null
+      uProgress = await UserProgress.create({ userId });
+    }
+
+    // Get due count
+    const dueCount = await QuestionProgress.countDocuments({
+      userId,
+      nextReviewDate: { $lte: new Date() },
+    });
+
+    // Calculate level dynamically from XP
+    const level = calculateLevel(uProgress.totalXp);
+    const xpToNextLevel = xpForNextLevel(uProgress.totalXp);
+    const currentLevelProgress = levelProgress(uProgress.totalXp);
+
+    return NextResponse.json({
+      streak: uProgress.currentStreak,
+      longestStreak: uProgress.longestStreak,
+      streakFreezeCount: uProgress.streakFreezeCount,
+      xp: uProgress.totalXp,
+      level: level,
+      xpToNextLevel: xpToNextLevel,
+      levelProgress: currentLevelProgress,
+      dueCount: dueCount,
+      weeklyActivity: uProgress.weeklyActivity,
+      totalQuestionsLearned: uProgress.totalQuestionsLearned,
+      totalReviewSessions: uProgress.totalReviewSessions,
+      averageAccuracy: uProgress.averageAccuracy,
+    });
+  } catch (error) {
+    console.error('Error fetching progress stats:', error);
+    return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
+  }
 }
 ```
 
@@ -250,6 +253,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ## Task 4: Update Review Submit API for Accuracy Tracking
 
 **Files:**
+
 - Modify: `src/app/api/review/submit/route.ts`
 
 **Step 1: Update accuracy calculation to use moving average**
@@ -257,58 +261,56 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 Find and replace the weekly activity update section (around lines 139-163) with proper accuracy tracking:
 
 ```typescript
-        // Weekly Activity Update
-        if (!uProgress.weeklyActivity) {
-            uProgress.weeklyActivity = new Map();
-        }
+// Weekly Activity Update
+if (!uProgress.weeklyActivity) {
+  uProgress.weeklyActivity = new Map();
+}
 
-        const activityKey = todayStr;
-        const currentActivity = uProgress.weeklyActivity.get(activityKey) || {
-            questionsReviewed: 0,
-            xpEarned: 0,
-            correctCount: 0,
-            totalCount: 0
-        };
+const activityKey = todayStr;
+const currentActivity = uProgress.weeklyActivity.get(activityKey) || {
+  questionsReviewed: 0,
+  xpEarned: 0,
+  correctCount: 0,
+  totalCount: 0,
+};
 
-        currentActivity.questionsReviewed += 1;
-        currentActivity.xpEarned += xpGain;
-        currentActivity.totalCount += 1;
-        if (['good', 'easy'].includes(rating)) {
-            currentActivity.correctCount += 1;
-        }
+currentActivity.questionsReviewed += 1;
+currentActivity.xpEarned += xpGain;
+currentActivity.totalCount += 1;
+if (['good', 'easy'].includes(rating)) {
+  currentActivity.correctCount += 1;
+}
 
-        uProgress.weeklyActivity.set(activityKey, currentActivity);
+uProgress.weeklyActivity.set(activityKey, currentActivity);
 
-        // Calculate 7-day moving average accuracy
-        const last7Days: string[] = [];
-        for (let i = 6; i >= 0; i--) {
-            const d = new Date(now);
-            d.setDate(d.getDate() - i);
-            last7Days.push(d.toISOString().split('T')[0]);
-        }
+// Calculate 7-day moving average accuracy
+const last7Days: string[] = [];
+for (let i = 6; i >= 0; i--) {
+  const d = new Date(now);
+  d.setDate(d.getDate() - i);
+  last7Days.push(d.toISOString().split('T')[0]);
+}
 
-        let totalCorrect = 0;
-        let totalReviews = 0;
-        for (const dayKey of last7Days) {
-            const dayActivity = uProgress.weeklyActivity.get(dayKey);
-            if (dayActivity) {
-                totalCorrect += dayActivity.correctCount || 0;
-                totalReviews += dayActivity.totalCount || 0;
-            }
-        }
+let totalCorrect = 0;
+let totalReviews = 0;
+for (const dayKey of last7Days) {
+  const dayActivity = uProgress.weeklyActivity.get(dayKey);
+  if (dayActivity) {
+    totalCorrect += dayActivity.correctCount || 0;
+    totalReviews += dayActivity.totalCount || 0;
+  }
+}
 
-        uProgress.averageAccuracy = totalReviews > 0
-            ? Math.round((totalCorrect / totalReviews) * 100)
-            : 0;
+uProgress.averageAccuracy = totalReviews > 0 ? Math.round((totalCorrect / totalReviews) * 100) : 0;
 
-        // Increment review session count (once per day)
-        const lastSessionDate = uProgress.lastSessionDate
-            ? new Date(uProgress.lastSessionDate).toISOString().split('T')[0]
-            : null;
-        if (lastSessionDate !== todayStr) {
-            uProgress.totalReviewSessions += 1;
-            uProgress.lastSessionDate = now;
-        }
+// Increment review session count (once per day)
+const lastSessionDate = uProgress.lastSessionDate
+  ? new Date(uProgress.lastSessionDate).toISOString().split('T')[0]
+  : null;
+if (lastSessionDate !== todayStr) {
+  uProgress.totalReviewSessions += 1;
+  uProgress.lastSessionDate = now;
+}
 ```
 
 **Step 2: Verify the changes**
@@ -330,6 +332,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ## Task 5: Update UserProgress Model Schema
 
 **Files:**
+
 - Modify: `src/models/UserProgress.ts`
 
 **Step 1: Update the schema to include new fields**
@@ -370,49 +373,56 @@ export interface IUserProgress extends Document {
   weeklyActivity: Map<string, IDailyActivity>;
 }
 
-const DailyActivitySchema = new Schema({
-  questionsReviewed: { type: Number, default: 0 },
-  xpEarned: { type: Number, default: 0 },
-  correctCount: { type: Number, default: 0 },
-  totalCount: { type: Number, default: 0 }
-}, { _id: false });
-
-const UserProgressSchema = new Schema<IUserProgress>({
-  userId: {
-    type: String,
-    required: true,
-    unique: true,
-    index: true
+const DailyActivitySchema = new Schema(
+  {
+    questionsReviewed: { type: Number, default: 0 },
+    xpEarned: { type: Number, default: 0 },
+    correctCount: { type: Number, default: 0 },
+    totalCount: { type: Number, default: 0 },
   },
+  { _id: false },
+);
 
-  // Streaks
-  currentStreak: { type: Number, default: 0 },
-  longestStreak: { type: Number, default: 0 },
-  lastActiveDate: { type: Date, default: Date.now },
-  streakFreezeCount: { type: Number, default: 0 },
+const UserProgressSchema = new Schema<IUserProgress>(
+  {
+    userId: {
+      type: String,
+      required: true,
+      unique: true,
+      index: true,
+    },
 
-  // XP & Level
-  totalXp: { type: Number, default: 0 },
-  level: { type: Number, default: 1 }, // Deprecated
+    // Streaks
+    currentStreak: { type: Number, default: 0 },
+    longestStreak: { type: Number, default: 0 },
+    lastActiveDate: { type: Date, default: Date.now },
+    streakFreezeCount: { type: Number, default: 0 },
 
-  // Stats
-  totalQuestionsLearned: { type: Number, default: 0 },
-  totalQuizzesTaken: { type: Number, default: 0 },
-  totalReviewSessions: { type: Number, default: 0 },
-  lastSessionDate: { type: Date, default: null },
-  averageAccuracy: { type: Number, default: 0 },
+    // XP & Level
+    totalXp: { type: Number, default: 0 },
+    level: { type: Number, default: 1 }, // Deprecated
 
-  // Weekly activity
-  weeklyActivity: {
-    type: Map,
-    of: DailyActivitySchema,
-    default: {}
-  }
-}, {
-  timestamps: true
-});
+    // Stats
+    totalQuestionsLearned: { type: Number, default: 0 },
+    totalQuizzesTaken: { type: Number, default: 0 },
+    totalReviewSessions: { type: Number, default: 0 },
+    lastSessionDate: { type: Date, default: null },
+    averageAccuracy: { type: Number, default: 0 },
 
-export default mongoose.models.UserProgress || mongoose.model<IUserProgress>('UserProgress', UserProgressSchema);
+    // Weekly activity
+    weeklyActivity: {
+      type: Map,
+      of: DailyActivitySchema,
+      default: {},
+    },
+  },
+  {
+    timestamps: true,
+  },
+);
+
+export default mongoose.models.UserProgress ||
+  mongoose.model<IUserProgress>('UserProgress', UserProgressSchema);
 ```
 
 **Step 2: Verify the changes**
@@ -434,6 +444,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ## Task 6: Update useStats Hook Interface
 
 **Files:**
+
 - Modify: `src/hooks/useStats.ts`
 
 **Step 1: Update the UserStats interface**
@@ -484,14 +495,10 @@ async function buyFreezeFetcher(url: string) {
 }
 
 export function useStats() {
-  const { data, error, isLoading, mutate } = useSWR<UserStats>(
-    '/api/progress/stats',
-    fetcher,
-    {
-      revalidateOnFocus: false,
-      dedupingInterval: 30000, // 30 seconds
-    }
-  );
+  const { data, error, isLoading, mutate } = useSWR<UserStats>('/api/progress/stats', fetcher, {
+    revalidateOnFocus: false,
+    dedupingInterval: 30000, // 30 seconds
+  });
 
   const { trigger: buyFreeze, isMutating: isBuyingFreeze } = useSWRMutation(
     '/api/shop/buy-freeze',
@@ -509,11 +516,11 @@ export function useStats() {
                     streakFreezeCount: response.data!.streakFreezeCount,
                   }
                 : current,
-            { revalidate: false }
+            { revalidate: false },
           );
         }
       },
-    }
+    },
   );
 
   return {
@@ -546,6 +553,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ## Task 7: Create WeeklyProgressHeatmap Component
 
 **Files:**
+
 - Create: `src/components/dashboard/WeeklyProgressHeatmap.tsx`
 
 **Step 1: Create the heat map component**
@@ -724,6 +732,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ## Task 8: Add Chevron Icons Export
 
 **Files:**
+
 - Modify: `src/components/icons/index.ts` (or wherever icons are exported)
 
 **Step 1: Check current icons file and add chevron exports**
@@ -756,6 +765,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ## Task 9: Update DashboardClient Component
 
 **Files:**
+
 - Modify: `src/app/_components/DashboardClient.tsx`
 
 **Step 1: Replace the entire DashboardClient with updated version**
@@ -1081,6 +1091,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 ## Task 10: Add New Icons Export
 
 **Files:**
+
 - Modify: `src/components/icons/index.ts`
 
 **Step 1: Add missing icon exports**
@@ -1088,10 +1099,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 Add these exports if not present:
 
 ```typescript
-export {
-  HiOutlineTrendingUp,
-  HiOutlineAcademicCap
-} from 'react-icons/hi';
+export { HiOutlineTrendingUp, HiOutlineAcademicCap } from 'react-icons/hi';
 ```
 
 **Step 2: Verify the exports**
@@ -1166,13 +1174,13 @@ git tag -a v1.1.0-gamification-fixes -m "Dashboard gamification bug fixes comple
 
 ## Summary of Changes
 
-| Bug | Status | Solution |
-|-----|--------|----------|
-| Level không tính | ✅ Fixed | `calculateLevel(xp) = floor(xp/100) + 1` |
-| Weekly Progress static | ✅ Fixed | New `WeeklyProgressHeatmap` component with real data |
-| Accuracy placeholder | ✅ Fixed | 7-day moving average calculation |
-| longestStreak không hiển thị | ✅ Fixed | Added "Best Streak" StatCard |
-| totalReviewSessions không tăng | ✅ Fixed | Increment once per day on review |
+| Bug                            | Status   | Solution                                             |
+| ------------------------------ | -------- | ---------------------------------------------------- |
+| Level không tính               | ✅ Fixed | `calculateLevel(xp) = floor(xp/100) + 1`             |
+| Weekly Progress static         | ✅ Fixed | New `WeeklyProgressHeatmap` component with real data |
+| Accuracy placeholder           | ✅ Fixed | 7-day moving average calculation                     |
+| longestStreak không hiển thị   | ✅ Fixed | Added "Best Streak" StatCard                         |
+| totalReviewSessions không tăng | ✅ Fixed | Increment once per day on review                     |
 
 ## Files Changed
 

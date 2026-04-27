@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
-import { buildLocalizedMetadata } from '@/lib/seo';
+import { buildLocalizedMetadata, siteUrl } from '@/lib/seo';
 import { Pricing2 } from '@/components/blocks/pricing2';
-import { siteUrl } from '@/lib/seo';
 import { buildFaqSchema } from '@/lib/structured-data';
 import { JsonLd } from '@/components/seo/JsonLd';
 
@@ -23,7 +22,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 const pricingFaqs = [
   {
     q: 'What is included in the free plan?',
-    a: 'The free plan includes unlimited basic PDF-to-quiz generation, adaptive practice sessions, mastery tracking, Bloom\'s Taxonomy level practice, community quiz browsing, and a personal dashboard. Everything you need to get started with AI-powered learning.',
+    a: "The free plan includes unlimited basic PDF-to-quiz generation, adaptive practice sessions, mastery tracking, Bloom's Taxonomy level practice, community quiz browsing, and a personal dashboard. Everything you need to get started with AI-powered learning.",
   },
   {
     q: 'How does the Premium plan work?',
@@ -47,7 +46,8 @@ export default async function PricingPage({ params }: Props) {
     '@type': 'WebPage',
     name: 'RinKuzu Pricing Plans',
     url: `${siteUrl.origin}/pricing`,
-    description: 'Compare RinKuzu Free and Premium plans for AI-powered adaptive learning from PDFs.',
+    description:
+      'Compare RinKuzu Free and Premium plans for AI-powered adaptive learning from PDFs.',
     mainEntity: {
       '@type': 'ItemList',
       name: 'RinKuzu Pricing Plans',
@@ -94,7 +94,9 @@ export default async function PricingPage({ params }: Props) {
       {/* Hero */}
       <section className="bg-[var(--bg-section)] py-20 text-center">
         <div className="max-w-2xl mx-auto px-6">
-          <h1 className="text-4xl md:text-5xl font-bold text-[var(--text-primary)] mb-4">Simple, Transparent Pricing</h1>
+          <h1 className="text-4xl md:text-5xl font-bold text-[var(--text-primary)] mb-4">
+            Simple, Transparent Pricing
+          </h1>
           <p className="text-[var(--text-muted)] text-lg">
             Start free. Upgrade when you&apos;re ready for full adaptive learning.
           </p>
@@ -116,7 +118,7 @@ export default async function PricingPage({ params }: Props) {
               { text: 'Unlimited PDF-to-quiz generation' },
               { text: 'Adaptive practice sessions' },
               { text: 'Knowledge graph visualization' },
-              { text: 'Bloom\'s Taxonomy mastery levels' },
+              { text: "Bloom's Taxonomy mastery levels" },
               { text: 'Progress tracking dashboard' },
               { text: 'Community quiz browsing' },
               { text: 'Community support' },
@@ -152,7 +154,9 @@ export default async function PricingPage({ params }: Props) {
       {/* Pricing FAQ */}
       <section className="py-20 bg-[var(--bg-section)]">
         <div className="max-w-2xl mx-auto px-6">
-          <h2 className="text-3xl font-bold text-[var(--text-primary)] mb-10 text-center">Pricing Questions</h2>
+          <h2 className="text-3xl font-bold text-[var(--text-primary)] mb-10 text-center">
+            Pricing Questions
+          </h2>
           <div className="space-y-6">
             {pricingFaqs.map((faq) => (
               <div key={faq.q} className="bg-white rounded-2xl border border-neutral-200 p-6">
@@ -167,7 +171,9 @@ export default async function PricingPage({ params }: Props) {
       {/* Bottom CTA */}
       <section className="bg-gradient-to-br from-orange-50 via-white to-green-50 py-16 text-center border-t border-neutral-100">
         <div className="max-w-xl mx-auto px-6 space-y-4">
-          <h2 className="text-2xl font-semibold text-neutral-900">Not sure which plan is right for you?</h2>
+          <h2 className="text-2xl font-semibold text-neutral-900">
+            Not sure which plan is right for you?
+          </h2>
           <p className="text-neutral-600">
             Start with the free plan — no credit card required. Upgrade anytime.
           </p>
@@ -182,4 +188,3 @@ export default async function PricingPage({ params }: Props) {
     </main>
   );
 }
-

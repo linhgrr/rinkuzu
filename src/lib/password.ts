@@ -5,7 +5,7 @@ export async function hashPassword(password: string): Promise<string> {
   try {
     const saltRounds = 12;
     return await bcrypt.hash(password, saltRounds);
-  } catch (error) {
+  } catch (_error) {
     throw new Error('Failed to hash password');
   }
 }
@@ -13,7 +13,7 @@ export async function hashPassword(password: string): Promise<string> {
 export async function verifyPassword(password: string, hash: string): Promise<boolean> {
   try {
     return await bcrypt.compare(password, hash);
-  } catch (error) {
+  } catch (_error) {
     return false;
   }
-} 
+}

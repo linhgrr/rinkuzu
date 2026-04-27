@@ -12,31 +12,21 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         success: true,
-        data: result
+        data: result,
       },
-      { status: 200 }
+      { status: 200 },
     );
-
   } catch (error: any) {
     console.error('Login error:', error);
-    
+
     if (error.message === 'Email and password are required') {
-      return NextResponse.json(
-        { success: false, error: error.message },
-        { status: 400 }
-      );
-    }
-    
-    if (error.message === 'Invalid credentials') {
-      return NextResponse.json(
-        { success: false, error: error.message },
-        { status: 401 }
-      );
+      return NextResponse.json({ success: false, error: error.message }, { status: 400 });
     }
 
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    );
+    if (error.message === 'Invalid credentials') {
+      return NextResponse.json({ success: false, error: error.message }, { status: 401 });
+    }
+
+    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
   }
-} 
+}

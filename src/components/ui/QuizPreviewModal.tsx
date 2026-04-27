@@ -42,7 +42,7 @@ export function QuizPreviewModal({ isOpen, onClose, title, questions }: QuizPrev
     if (question.type === 'single' && question.correctIndex !== undefined) {
       return question.options[question.correctIndex];
     } else if (question.type === 'multiple' && question.correctIndexes) {
-      return question.correctIndexes.map(idx => question.options[idx]).join(', ');
+      return question.correctIndexes.map((idx) => question.options[idx]).join(', ');
     }
     return t('noCorrectAnswer');
   };
@@ -78,12 +78,12 @@ export function QuizPreviewModal({ isOpen, onClose, title, questions }: QuizPrev
                 </span>
               )}
             </CardTitle>
-            
+
             {/* Display question image if exists */}
             {currentQuestion.questionImage && (
               <div className="mt-4">
-                <QuestionImage 
-                  src={currentQuestion.questionImage} 
+                <QuestionImage
+                  src={currentQuestion.questionImage}
                   alt={`Question ${currentQuestionIndex + 1} image`}
                 />
               </div>
@@ -109,32 +109,41 @@ export function QuizPreviewModal({ isOpen, onClose, title, questions }: QuizPrev
                     }`}
                   >
                     <div className="flex items-center space-x-3">
-                      <div className={`w-4 h-4 rounded ${
-                        currentQuestion.type === 'single' ? 'rounded-full' : 'rounded'
-                      } border-2 flex items-center justify-center ${
-                        isCorrect
-                          ? 'border-green-500 bg-green-500'
-                          : 'border-neutral-300'
-                      }`}>
-                        {isCorrect && (
-                          currentQuestion.type === 'single' ? (
+                      <div
+                        className={`w-4 h-4 rounded ${
+                          currentQuestion.type === 'single' ? 'rounded-full' : 'rounded'
+                        } border-2 flex items-center justify-center ${
+                          isCorrect ? 'border-green-500 bg-green-500' : 'border-neutral-300'
+                        }`}
+                      >
+                        {isCorrect &&
+                          (currentQuestion.type === 'single' ? (
                             <div className="w-2 h-2 rounded-full bg-white"></div>
                           ) : (
-                            <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            <svg
+                              className="w-3 h-3 text-white"
+                              fill="currentColor"
+                              viewBox="0 0 20 20"
+                            >
+                              <path
+                                fillRule="evenodd"
+                                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                clipRule="evenodd"
+                              />
                             </svg>
-                          )
-                        )}
+                          ))}
                       </div>
                       <div className="flex-1">
-                      <span className={`${isCorrect ? 'font-medium text-green-800' : 'text-neutral-700'}`}>
-                        {option}
-                      </span>
+                        <span
+                          className={`${isCorrect ? 'font-medium text-green-800' : 'text-neutral-700'}`}
+                        >
+                          {option}
+                        </span>
                         {/* Display option image if exists */}
                         {currentQuestion.optionImages?.[index] && (
                           <div className="mt-2">
-                            <OptionImage 
-                              src={currentQuestion.optionImages[index]!} 
+                            <OptionImage
+                              src={currentQuestion.optionImages[index]!}
                               alt={`Option ${String.fromCharCode(65 + index)} image`}
                             />
                           </div>
@@ -202,11 +211,9 @@ export function QuizPreviewModal({ isOpen, onClose, title, questions }: QuizPrev
         </div>
 
         <div className="flex justify-end mt-6">
-          <Button onClick={onClose}>
-            {t('closePreview')}
-          </Button>
+          <Button onClick={onClose}>{t('closePreview')}</Button>
         </div>
       </div>
     </Modal>
   );
-} 
+}

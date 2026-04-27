@@ -8,10 +8,7 @@ import { extractQuizFromS3Key } from '@/lib/quiz/extractApi';
 import { randomUUID } from 'crypto';
 import { AsyncRouteParams } from '@/types/next-route';
 
-export async function POST(
-  request: NextRequest,
-  { params }: AsyncRouteParams<{ id: string }>
-) {
+export async function POST(request: NextRequest, { params }: AsyncRouteParams<{ id: string }>) {
   try {
     const { id } = await params;
     const session = await getServerSession(authOptions);
@@ -23,18 +20,12 @@ export async function POST(
     try {
       const body = await request.json();
       chunkIndex = body.chunkIndex;
-    } catch (parseError) {
-      return NextResponse.json(
-        { error: 'Invalid or empty request body' },
-        { status: 400 }
-      );
+    } catch (_parseError) {
+      return NextResponse.json({ error: 'Invalid or empty request body' }, { status: 400 });
     }
 
     if (typeof chunkIndex !== 'number' || chunkIndex < 0) {
-      return NextResponse.json(
-        { error: 'Valid chunkIndex is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Valid chunkIndex is required' }, { status: 400 });
     }
 
     const LOCK_TIMEOUT_MS = 600000; // 10 minutes - extraction may take multiple minutes
@@ -58,10 +49,10 @@ export async function POST(
             index: chunkIndex,
             $or: [
               { status: { $in: ['pending', 'error'] } },
-              { status: 'processing', lockedAt: { $lt: lockExpiry } }
-            ]
-          }
-        }
+              { status: 'processing', lockedAt: { $lt: lockExpiry } },
+            ],
+          },
+        },
       },
       {
         $set: {
@@ -69,9 +60,9 @@ export async function POST(
           'chunks.chunkDetails.$.lockedAt': now,
           'chunks.chunkDetails.$.lockedBy': requestId,
           'chunks.current': chunkIndex,
-        }
+        },
       },
-      { new: true }
+      { new: true },
     );
 
     if (!lockResult) {
@@ -101,11 +92,14 @@ export async function POST(
       }
 
       // Another request is processing it
-      return NextResponse.json({
-        success: false,
-        error: 'Chunk is being processed by another request',
-        retryAfter: 5000,
-      }, { status: 409 });
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Chunk is being processed by another request',
+          retryAfter: 5000,
+        },
+        { status: 409 },
+      );
     }
 
     // We have the lock, use lockResult as draft
@@ -117,21 +111,13 @@ export async function POST(
     }
 
     if (!draft.pdfData.pdfKey) {
-      return NextResponse.json(
-        { error: 'PDF not available' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'PDF not available' }, { status: 400 });
     }
 
-    const chunkDetail = draft.chunks.chunkDetails.find(
-      (c: any) => c.index === chunkIndex
-    );
+    const chunkDetail = draft.chunks.chunkDetails.find((c: any) => c.index === chunkIndex);
 
     if (!chunkDetail) {
-      return NextResponse.json(
-        { error: 'Chunk not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Chunk not found' }, { status: 404 });
     }
 
     try {
@@ -154,23 +140,21 @@ export async function POST(
       });
 
       // Remove duplicates with existing questions
-      const existingHashes = new Set(
-        draft.questions.map((q: any) => hashQuestion(q))
-      );
+      const existingHashes = new Set(draft.questions.map((q: any) => hashQuestion(q)));
 
       const newQuestions = extractedQuestions.filter((newQ: any) => {
         const hash = hashQuestion(newQ);
 
         // Check exact hash match
         if (existingHashes.has(hash)) {
-          console.log('Duplicate (exact hash):', newQ.question?.substring(0, 50));
+          console.warn('Duplicate (exact hash):', newQ.question?.substring(0, 50));
           return false;
         }
 
         // Check fuzzy similarity with existing questions
         for (const existingQ of draft.questions) {
           if (areSimilarQuestions(newQ, existingQ)) {
-            console.log('Duplicate (similar):', newQ.question?.substring(0, 50));
+            console.warn('Duplicate (similar):', newQ.question?.substring(0, 50));
             return false;
           }
         }
@@ -191,19 +175,19 @@ export async function POST(
           },
           $inc: { 'chunks.processed': 1 },
         },
-        { new: true }
+        { new: true },
       );
 
       // Count done + error as "attempted"
       const doneCount = updateResult!.chunks.chunkDetails.filter(
-        (c: any) => c.status === 'done'
+        (c: any) => c.status === 'done',
       ).length;
 
       const errorCount = updateResult!.chunks.chunkDetails.filter(
-        (c: any) => c.status === 'error'
+        (c: any) => c.status === 'error',
       ).length;
 
-      const allAttempted = (doneCount + errorCount) >= updateResult!.chunks.total;
+      const allAttempted = doneCount + errorCount >= updateResult!.chunks.total;
       const hasQuestions = updateResult!.questions.length > 0;
 
       // Consider processing cycle complete once all chunk attempts finish.
@@ -217,8 +201,8 @@ export async function POST(
             $set: {
               status: finalStatus,
               'chunks.processed': doneCount,
-            }
-          }
+            },
+          },
         );
       }
 
@@ -233,7 +217,6 @@ export async function POST(
           totalQuestions: updateResult!.questions.length,
         },
       });
-
     } catch (extractError: any) {
       // Mark chunk as error
       await DraftQuiz.updateOne(
@@ -245,7 +228,7 @@ export async function POST(
             'chunks.chunkDetails.$.lockedAt': null,
             'chunks.chunkDetails.$.lockedBy': null,
           },
-        }
+        },
       );
 
       return NextResponse.json({
@@ -258,13 +241,9 @@ export async function POST(
         },
       });
     }
-
   } catch (error) {
     console.error('Process chunk error:', error);
-    return NextResponse.json(
-      { error: 'Failed to process chunk' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to process chunk' }, { status: 500 });
   }
 }
 
@@ -272,18 +251,20 @@ export async function POST(
  * Normalize text for comparison
  */
 function normalizeText(text: string): string {
-  return text
-    .toLowerCase()
-    .trim()
-    // Remove multiple spaces
-    .replace(/\s+/g, ' ')
-    // Remove common punctuation variations
-    .replace(/[.,;:!?'"()\[\]{}]/g, '')
-    // Remove leading/trailing option markers (a., A), 1., etc.)
-    .replace(/^[a-zA-Z0-9][.)\s]*/, '')
-    // Normalize unicode
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '');
+  return (
+    text
+      .toLowerCase()
+      .trim()
+      // Remove multiple spaces
+      .replace(/\s+/g, ' ')
+      // Remove common punctuation variations
+      .replace(/[.,;:!?'"()\[\]{}]/g, '')
+      // Remove leading/trailing option markers (a., A), 1., etc.)
+      .replace(/^[a-zA-Z0-9][.)\s]*/, '')
+      // Normalize unicode
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+  );
 }
 
 /**

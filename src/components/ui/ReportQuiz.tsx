@@ -23,11 +23,11 @@ export default function ReportQuiz({ quizSlug, quizTitle }: ReportQuizProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!content.trim()) return;
-    
+
     setIsSubmitting(true);
-    
+
     try {
       const response = await fetch(`/api/quiz/${quizSlug}/report`, {
         method: 'POST',
@@ -68,7 +68,12 @@ export default function ReportQuiz({ quizSlug, quizTitle }: ReportQuizProps) {
         title={t('reportThisQuiz')}
       >
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"
+          />
         </svg>
         {t('reportQuiz')}
       </button>
@@ -78,8 +83,18 @@ export default function ReportQuiz({ quizSlug, quizTitle }: ReportQuizProps) {
           {isSubmitted ? (
             <div className="text-center">
               <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                <svg
+                  className="w-6 h-6 text-green-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
                 </svg>
               </div>
               <h3 className="text-lg font-medium text-neutral-900 mb-2">{t('submitted')}</h3>
@@ -91,13 +106,14 @@ export default function ReportQuiz({ quizSlug, quizTitle }: ReportQuizProps) {
                 <label className="block text-sm font-medium text-neutral-700 mb-2">
                   {t('quiz')}: <span className="font-semibold">{quizTitle}</span>
                 </label>
-                <p className="text-sm text-neutral-500 mb-4">
-                  {t('describeIssue')}
-                </p>
+                <p className="text-sm text-neutral-500 mb-4">{t('describeIssue')}</p>
               </div>
 
               <div>
-                <label htmlFor="content" className="block text-sm font-medium text-neutral-700 mb-2">
+                <label
+                  htmlFor="content"
+                  className="block text-sm font-medium text-neutral-700 mb-2"
+                >
                   {t('reportDetails')} *
                 </label>
                 <textarea
@@ -111,12 +127,8 @@ export default function ReportQuiz({ quizSlug, quizTitle }: ReportQuizProps) {
                   required
                 />
                 <div className="flex justify-between mt-1">
-                  <span className="text-xs text-neutral-500">
-                    {t('describeClearly')}
-                  </span>
-                  <span className="text-xs text-neutral-500">
-                    {content.length}/2000
-                  </span>
+                  <span className="text-xs text-neutral-500">{t('describeClearly')}</span>
+                  <span className="text-xs text-neutral-500">{content.length}/2000</span>
                 </div>
               </div>
 
@@ -129,11 +141,7 @@ export default function ReportQuiz({ quizSlug, quizTitle }: ReportQuizProps) {
                 >
                   {tCommon('cancel')}
                 </Button>
-                <Button
-                  type="submit"
-                  disabled={!content.trim() || isSubmitting}
-                  className="flex-1"
-                >
+                <Button type="submit" disabled={!content.trim() || isSubmitting} className="flex-1">
                   {isSubmitting ? t('submitting') : t('submitReport')}
                 </Button>
               </div>
@@ -143,4 +151,4 @@ export default function ReportQuiz({ quizSlug, quizTitle }: ReportQuizProps) {
       </Modal>
     </>
   );
-} 
+}

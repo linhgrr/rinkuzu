@@ -14,7 +14,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     locale,
     path: `/quiz/${slug}`,
     title: 'Practice Quiz | RinKuzu',
-    description: 'Take interactive quizzes generated from learning materials and get instant feedback.',
+    description:
+      'Take interactive quizzes generated from learning materials and get instant feedback.',
   });
 
   try {

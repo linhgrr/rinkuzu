@@ -1,29 +1,29 @@
-'use client'
+'use client';
 
-import { Modal } from './Modal'
-import { Button } from './Button'
-import { useRouter } from 'next/navigation'
-import { useTranslations } from 'next-intl'
+import { Modal } from './Modal';
+import { Button } from './Button';
+import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 
 interface PremiumRequiredModalProps {
-  isOpen: boolean
-  onClose: () => void
+  isOpen: boolean;
+  onClose: () => void;
 }
 
 export function PremiumRequiredModal({ isOpen, onClose }: PremiumRequiredModalProps) {
-  const router = useRouter()
-  const t = useTranslations('premium')
-  const tCommon = useTranslations('common')
+  const router = useRouter();
+  const t = useTranslations('premium');
+  const tCommon = useTranslations('common');
 
   const handleUpgrade = () => {
-    onClose()
-    router.push('/subscription')
-  }
+    onClose();
+    router.push('/subscription');
+  };
 
   const handleGoHome = () => {
-    onClose()
-    router.push('/')
-  }
+    onClose();
+    router.push('/');
+  };
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={t('required')}>
@@ -47,9 +47,7 @@ export function PremiumRequiredModal({ isOpen, onClose }: PremiumRequiredModalPr
           <h3 className="text-lg font-semibold text-neutral-900 mb-2">
             {t('subscriptionRequired')}
           </h3>
-          <p className="text-neutral-600">
-            {t('privateQuizMessage')}
-          </p>
+          <p className="text-neutral-600">{t('privateQuizMessage')}</p>
         </div>
 
         <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-4 mb-6">
@@ -57,25 +55,41 @@ export function PremiumRequiredModal({ isOpen, onClose }: PremiumRequiredModalPr
           <ul className="space-y-2 text-sm text-neutral-700">
             <li className="flex items-center">
               <svg className="w-4 h-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                <path
+                  fillRule="evenodd"
+                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                  clipRule="evenodd"
+                />
               </svg>
               {t('benefitPrivateQuizzes')}
             </li>
             <li className="flex items-center">
               <svg className="w-4 h-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                <path
+                  fillRule="evenodd"
+                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                  clipRule="evenodd"
+                />
               </svg>
               {t('benefitUnlimitedAttempts')}
             </li>
             <li className="flex items-center">
               <svg className="w-4 h-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                <path
+                  fillRule="evenodd"
+                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                  clipRule="evenodd"
+                />
               </svg>
               {t('benefitDetailedStats')}
             </li>
             <li className="flex items-center">
               <svg className="w-4 h-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                <path
+                  fillRule="evenodd"
+                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                  clipRule="evenodd"
+                />
               </svg>
               {t('benefitPrioritySupport')}
             </li>
@@ -95,5 +109,5 @@ export function PremiumRequiredModal({ isOpen, onClose }: PremiumRequiredModalPr
         </div>
       </div>
     </Modal>
-  )
-} 
+  );
+}

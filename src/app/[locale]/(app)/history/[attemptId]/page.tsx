@@ -16,7 +16,7 @@ import {
   HiOutlineDocumentText,
   HiOutlineRefresh,
   HiOutlineX,
-  HiOutlineXCircle
+  HiOutlineXCircle,
 } from '@/components/icons';
 
 interface AttemptDetail {
@@ -45,7 +45,7 @@ interface AttemptDetail {
 export default function AttemptDetailPage() {
   const params = useParams();
   const attemptId = params.attemptId as string;
-  
+
   const [attempt, setAttempt] = useState<AttemptDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -64,7 +64,7 @@ export default function AttemptDetailPage() {
       } else {
         setError(data.error || 'Failed to fetch attempt details');
       }
-    } catch (error) {
+    } catch (_error) {
       setError('Failed to load attempt details');
     } finally {
       setLoading(false);
@@ -83,7 +83,7 @@ export default function AttemptDetailPage() {
       month: 'long',
       day: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     });
   };
 
@@ -95,7 +95,7 @@ export default function AttemptDetailPage() {
       return 'Không trả lời';
     } else {
       if (Array.isArray(answer) && answer.length > 0) {
-        return answer.map(idx => question.options[idx]).join(', ');
+        return answer.map((idx) => question.options[idx]).join(', ');
       }
       return 'Không trả lời';
     }
@@ -113,16 +113,18 @@ export default function AttemptDetailPage() {
   return (
     <div className="min-h-screen bg-white">
       {/* Sidebar */}
-      <Sidebar 
-        isOpen={isSidebarOpen} 
+      <Sidebar
+        isOpen={isSidebarOpen}
         onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
         currentPath="/history"
       />
 
       {/* Main Content */}
-      <main className={`py-8 transition-all duration-300 ${
-        isSidebarOpen ? 'ml-64' : 'ml-16'
-      } max-w-none px-4 sm:px-6 lg:px-8`}>
+      <main
+        className={`py-8 transition-all duration-300 ${
+          isSidebarOpen ? 'ml-64' : 'ml-16'
+        } max-w-none px-4 sm:px-6 lg:px-8`}
+      >
         <div className="max-w-4xl mx-auto">
           {/* Header */}
           <div className="mb-8">
@@ -135,9 +137,7 @@ export default function AttemptDetailPage() {
                   <span>/</span>
                   <span className="text-neutral-900">Chi tiết kết quả</span>
                 </nav>
-                <h1 className="text-3xl font-bold text-neutral-900">
-                  Chi Tiết Kết Quả
-                </h1>
+                <h1 className="text-3xl font-bold text-neutral-900">Chi Tiết Kết Quả</h1>
                 {attempt && (
                   <div className="mt-2">
                     <h2 className="text-xl font-semibold text-neutral-800">{attempt.quiz.title}</h2>
@@ -158,7 +158,7 @@ export default function AttemptDetailPage() {
                   </div>
                 )}
               </div>
-              
+
               <div className="flex space-x-3">
                 <Link href={historyLink}>
                   <Button variant="outline">
@@ -194,9 +194,7 @@ export default function AttemptDetailPage() {
                   <div className="mb-4 flex justify-center text-red-600">
                     <HiOutlineXCircle className="w-8 h-8" />
                   </div>
-                  <h3 className="text-lg font-semibold text-neutral-900 mb-2">
-                    Có lỗi xảy ra
-                  </h3>
+                  <h3 className="text-lg font-semibold text-neutral-900 mb-2">Có lỗi xảy ra</h3>
                   <p className="text-neutral-600 mb-4">{error}</p>
                   <Link href={historyLink}>
                     <Button>Quay lại lịch sử</Button>
@@ -211,7 +209,7 @@ export default function AttemptDetailPage() {
                 <Card>
                   <CardContent className="text-center py-6">
                     <div className="text-3xl font-bold text-green-600">
-                      {attempt.quiz.questions.filter(q => q.isCorrect).length}
+                      {attempt.quiz.questions.filter((q) => q.isCorrect).length}
                     </div>
                     <div className="text-sm text-neutral-600 mt-1">Câu đúng</div>
                   </CardContent>
@@ -219,16 +217,14 @@ export default function AttemptDetailPage() {
                 <Card>
                   <CardContent className="text-center py-6">
                     <div className="text-3xl font-bold text-red-600">
-                      {attempt.quiz.questions.filter(q => !q.isCorrect).length}
+                      {attempt.quiz.questions.filter((q) => !q.isCorrect).length}
                     </div>
                     <div className="text-sm text-neutral-600 mt-1">Câu sai</div>
                   </CardContent>
                 </Card>
                 <Card>
                   <CardContent className="text-center py-6">
-                    <div className="text-3xl font-bold text-brand-trust">
-                      {attempt.score}%
-                    </div>
+                    <div className="text-3xl font-bold text-brand-trust">{attempt.score}%</div>
                     <div className="text-sm text-neutral-600 mt-1">Tổng điểm</div>
                   </CardContent>
                 </Card>
@@ -237,15 +233,20 @@ export default function AttemptDetailPage() {
               {/* Questions */}
               <div className="space-y-8">
                 {attempt.quiz.questions.map((question, index) => (
-                  <Card key={index} className={`border-l-4 ${question.isCorrect ? 'border-green-500' : 'border-red-500'}`}>
+                  <Card
+                    key={index}
+                    className={`border-l-4 ${question.isCorrect ? 'border-green-500' : 'border-red-500'}`}
+                  >
                     <CardHeader>
                       <CardTitle className="flex items-center justify-between">
                         <span className="text-xl">Câu {index + 1}</span>
-                        <span className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-medium ${
-                          question.isCorrect 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-red-100 text-red-800'
-                        }`}>
+                        <span
+                          className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-medium ${
+                            question.isCorrect
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-red-100 text-red-800'
+                          }`}
+                        >
                           {question.isCorrect ? (
                             <span className="inline-flex items-center gap-1.5">
                               <HiOutlineCheck className="w-4 h-4" />
@@ -277,8 +278,12 @@ export default function AttemptDetailPage() {
                       {/* User Answer */}
                       <div>
                         <h5 className="font-medium text-neutral-900 mb-3">Câu trả lời của bạn:</h5>
-                        <div className={`p-4 rounded-lg ${question.isCorrect ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
-                          <div className={`font-medium ${question.isCorrect ? 'text-green-800' : 'text-red-800'}`}>
+                        <div
+                          className={`p-4 rounded-lg ${question.isCorrect ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}
+                        >
+                          <div
+                            className={`font-medium ${question.isCorrect ? 'text-green-800' : 'text-red-800'}`}
+                          >
                             {getAnswerText(question, question.userAnswer)}
                           </div>
                         </div>
@@ -301,28 +306,34 @@ export default function AttemptDetailPage() {
                         <h5 className="font-medium text-neutral-900 mb-3">Tất cả các lựa chọn:</h5>
                         <div className="space-y-3">
                           {question.options.map((option, optionIndex) => {
-                            const isUserChoice = question.type === 'single' 
-                              ? question.userAnswer === optionIndex
-                              : Array.isArray(question.userAnswer) && question.userAnswer.includes(optionIndex);
-                            
-                            const isCorrectChoice = question.type === 'single'
-                              ? question.correctIndex === optionIndex
-                              : question.correctIndexes?.includes(optionIndex);
+                            const isUserChoice =
+                              question.type === 'single'
+                                ? question.userAnswer === optionIndex
+                                : Array.isArray(question.userAnswer) &&
+                                  question.userAnswer.includes(optionIndex);
+
+                            const isCorrectChoice =
+                              question.type === 'single'
+                                ? question.correctIndex === optionIndex
+                                : question.correctIndexes?.includes(optionIndex);
 
                             return (
-                              <div 
+                              <div
                                 key={optionIndex}
                                 className={`p-4 rounded-lg border-2 ${
-                                  isCorrectChoice 
-                                    ? 'border-green-500 bg-green-50' 
-                                    : isUserChoice 
+                                  isCorrectChoice
+                                    ? 'border-green-500 bg-green-50'
+                                    : isUserChoice
                                       ? 'border-red-500 bg-red-50'
                                       : 'border-neutral-200 bg-neutral-50'
                                 }`}
                               >
                                 <div className="flex items-center justify-between">
                                   <div className="flex-1">
-                                    <span className="font-medium">{String.fromCharCode(65 + optionIndex)}.</span> {option}
+                                    <span className="font-medium">
+                                      {String.fromCharCode(65 + optionIndex)}.
+                                    </span>{' '}
+                                    {option}
                                   </div>
                                   <div className="flex space-x-2 ml-4">
                                     {isCorrectChoice && (
@@ -353,9 +364,9 @@ export default function AttemptDetailPage() {
                                 </div>
                                 {question.optionImages?.[optionIndex] && (
                                   <div className="mt-3">
-                                    <ImageDisplay 
-                                      src={question.optionImages[optionIndex]!} 
-                                      alt={`Option ${String.fromCharCode(65 + optionIndex)} image`} 
+                                    <ImageDisplay
+                                      src={question.optionImages[optionIndex]!}
+                                      alt={`Option ${String.fromCharCode(65 + optionIndex)} image`}
                                     />
                                   </div>
                                 )}
@@ -394,4 +405,4 @@ export default function AttemptDetailPage() {
       </main>
     </div>
   );
-} 
+}

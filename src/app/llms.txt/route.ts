@@ -15,7 +15,7 @@ import { NextResponse } from 'next/server';
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.rinkuzu.app';
 const SITE_NAME = 'RinKuzu';
 const DESCRIPTION =
-  'AI-powered adaptive learning platform that transforms PDF documents into personalized quiz-based learning journeys using knowledge graphs and Bloom\'s Taxonomy.';
+  "AI-powered adaptive learning platform that transforms PDF documents into personalized quiz-based learning journeys using knowledge graphs and Bloom's Taxonomy.";
 
 const LLM_CONTENT = `# ${SITE_NAME}
 

@@ -51,9 +51,12 @@ export async function fetchApiSuccess<
 
   if (!response.ok || payload?.success !== true) {
     throw new ApiResponseError(
-      payload?.error || payload?.detail || rawText || `Request failed with status ${response.status}`,
+      payload?.error ||
+        payload?.detail ||
+        rawText ||
+        `Request failed with status ${response.status}`,
       response.status,
-      payload ?? rawText
+      payload ?? rawText,
     );
   }
 

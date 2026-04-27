@@ -8,20 +8,27 @@ export function Footer() {
   const t = useTranslations('landing.footer');
 
   return (
-    <footer className="bg-neutral-900 border-t border-white/10" style={{ backgroundColor: '#181815' }}>
+    <footer
+      className="bg-neutral-900 border-t border-white/10"
+      style={{ backgroundColor: '#181815' }}
+    >
       <div className="max-w-7xl mx-auto px-6 py-16">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
           {/* Brand */}
           <div className="space-y-6">
-            <Image
-              src="/images/auth_logo.webp"
-              alt="RinKuzu Logo"
-              width={48}
-              height={48}
-              className="h-12 w-12 object-contain"
-            />
+            <Link href="/" className="inline-flex items-center">
+              <Image
+                src="/images/navbar_logo.webp"
+                alt="RinKuzu Logo"
+                width={160}
+                height={40}
+                className="h-10 w-auto object-contain"
+                priority={false}
+              />
+            </Link>
             <p className="text-white/50 text-sm leading-relaxed">
-              AI-powered adaptive learning platform. Transform any PDF into a personalized quiz journey with knowledge graphs and Bloom&apos;s Taxonomy.
+              AI-powered adaptive learning platform. Transform any PDF into a personalized quiz
+              journey with knowledge graphs and Bloom&apos;s Taxonomy.
             </p>
           </div>
 
@@ -39,7 +46,10 @@ export function Footer() {
                 { label: t('links.blog'), href: '/blog' },
               ].map((link) => (
                 <li key={link.href}>
-                  <Link href={link.href} className="text-white/50 text-sm hover:text-brand-action transition-colors">
+                  <Link
+                    href={link.href}
+                    className="text-white/50 text-sm transition-colors hover:text-[var(--brand-action)] focus-visible:text-[var(--brand-action)]"
+                  >
                     {link.label}
                   </Link>
                 </li>
@@ -60,7 +70,10 @@ export function Footer() {
                 { label: t('contact'), href: '/contact' },
               ].map((link) => (
                 <li key={link.href}>
-                  <Link href={link.href} className="text-white/50 text-sm hover:text-brand-action transition-colors">
+                  <Link
+                    href={link.href}
+                    className="text-white/50 text-sm transition-colors hover:text-[var(--brand-action)] focus-visible:text-[var(--brand-action)]"
+                  >
                     {link.label}
                   </Link>
                 </li>
@@ -90,12 +103,8 @@ export function Footer() {
         </div>
 
         <div className="pt-8 border-t border-white/10 flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-white/30 text-sm">
-            {t('copyright')}
-          </p>
-          <p className="text-white/30 text-sm">
-            support@rinkuzu.com
-          </p>
+          <p className="text-white/30 text-sm">{t('copyright')}</p>
+          <p className="text-white/30 text-sm">support@rinkuzu.com</p>
         </div>
       </div>
     </footer>

@@ -1,15 +1,11 @@
-'use client'
+'use client';
 
-import { useTranslations } from 'next-intl'
-import { useProcessingState } from './hooks/use-processing-state'
-import {
-  ProcessingGraphCard,
-  ProcessingStatusCard,
-  ProcessingTipCard,
-} from './ProcessingSections'
+import { useTranslations } from 'next-intl';
+import { useProcessingState } from './hooks/use-processing-state';
+import { ProcessingGraphCard, ProcessingStatusCard, ProcessingTipCard } from './ProcessingSections';
 
 export default function AdaptiveLearningProcessing() {
-  const t = useTranslations('adaptiveLearning')
+  const t = useTranslations('adaptiveLearning');
   const {
     creatingSession,
     currentStep,
@@ -23,7 +19,7 @@ export default function AdaptiveLearningProcessing() {
     stats,
     statusLabel,
     steps,
-  } = useProcessingState(t)
+  } = useProcessingState(t);
 
   return (
     <div className="mx-auto mt-8 flex w-full max-w-6xl flex-col items-stretch gap-8 pt-4 lg:flex-row">
@@ -45,9 +41,7 @@ export default function AdaptiveLearningProcessing() {
         {!error && <ProcessingTipCard t={t} />}
       </div>
 
-      {!error && showGraphPanel && (
-        <ProcessingGraphCard partialGraph={partialGraph} t={t} />
-      )}
+      {!error && showGraphPanel && <ProcessingGraphCard partialGraph={partialGraph} t={t} />}
     </div>
-  )
+  );
 }

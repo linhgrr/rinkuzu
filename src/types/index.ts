@@ -1,5 +1,3 @@
-import { Types } from 'mongoose';
-
 export interface IUser {
   _id: string;
   email: string;
@@ -98,4 +96,4 @@ export interface PaginatedResponse<T> {
   page: number;
   limit: number;
   totalPages: number;
-} 
+}

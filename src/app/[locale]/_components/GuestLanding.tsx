@@ -1,12 +1,7 @@
 import type { CSSProperties } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
-import {
-  HeroSection,
-  FeatureSection,
-  HowItWorksSection,
-  FaqSection,
-} from './new-landing';
+import { HeroSection, FeatureSection, HowItWorksSection, FaqSection } from './new-landing';
 
 interface Quiz {
   _id: string;
@@ -32,7 +27,8 @@ export function GuestLanding({ quizzes, isAuthenticated = false }: GuestLandingP
       className="min-h-screen bg-black"
       style={
         {
-          '--hero-heading-gradient': 'linear-gradient(144.5deg, #ffffff 28%, rgba(0, 0, 0, 0) 115%)',
+          '--hero-heading-gradient':
+            'linear-gradient(144.5deg, #ffffff 28%, rgba(0, 0, 0, 0) 115%)',
         } as CSSProperties
       }
     >

@@ -14,10 +14,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user || (session.user as any).role !== 'admin') {
-      return NextResponse.json(
-        { success: false, error: 'Admin access required' },
-        { status: 403 }
-      );
+      return NextResponse.json({ success: false, error: 'Admin access required' }, { status: 403 });
     }
 
     const url = new URL(request.url);
@@ -28,20 +25,16 @@ export async function GET(request: NextRequest) {
     const result = await userService.getAllUsers({
       page,
       limit,
-      search
+      search,
     });
 
     return NextResponse.json({
       success: true,
-      data: result
+      data: result,
     });
-
   } catch (error: any) {
     console.error('Get users error:', error);
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -50,10 +43,7 @@ export async function PUT(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user || (session.user as any).role !== 'admin') {
-      return NextResponse.json(
-        { success: false, error: 'Admin access required' },
-        { status: 403 }
-      );
+      return NextResponse.json({ success: false, error: 'Admin access required' }, { status: 403 });
     }
 
     const { userId, role } = await request.json();
@@ -61,7 +51,7 @@ export async function PUT(request: NextRequest) {
     if (!userId || !role) {
       return NextResponse.json(
         { success: false, error: 'User ID and role are required' },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -70,21 +60,17 @@ export async function PUT(request: NextRequest) {
     if (!result.success) {
       return NextResponse.json(
         { success: false, error: result.error },
-        { status: result.statusCode || 400 }
+        { status: result.statusCode || 400 },
       );
     }
 
     return NextResponse.json({
       success: true,
-      data: result.data
+      data: result.data,
     });
-
   } catch (error: any) {
     console.error('Update user role error:', error);
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -93,20 +79,14 @@ export async function DELETE(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user || (session.user as any).role !== 'admin') {
-      return NextResponse.json(
-        { success: false, error: 'Admin access required' },
-        { status: 403 }
-      );
+      return NextResponse.json({ success: false, error: 'Admin access required' }, { status: 403 });
     }
 
     const url = new URL(request.url);
     const userId = url.searchParams.get('userId');
 
     if (!userId) {
-      return NextResponse.json(
-        { success: false, error: 'User ID is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, error: 'User ID is required' }, { status: 400 });
     }
 
     const result = await adminService.deleteUser(userId, session.user.email!);
@@ -114,21 +94,17 @@ export async function DELETE(request: NextRequest) {
     if (!result.success) {
       return NextResponse.json(
         { success: false, error: result.error },
-        { status: result.statusCode || 400 }
+        { status: result.statusCode || 400 },
       );
     }
 
     return NextResponse.json({
       success: true,
-      message: 'User deleted successfully'
+      message: 'User deleted successfully',
     });
-
   } catch (error: any) {
     console.error('Delete user error:', error);
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -137,10 +113,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user || (session.user as any).role !== 'admin') {
-      return NextResponse.json(
-        { success: false, error: 'Admin access required' },
-        { status: 403 }
-      );
+      return NextResponse.json({ success: false, error: 'Admin access required' }, { status: 403 });
     }
 
     const { userId, planId, duration } = await request.json();
@@ -148,7 +121,7 @@ export async function POST(request: NextRequest) {
     if (!userId || !planId) {
       return NextResponse.json(
         { success: false, error: 'User ID and Plan ID are required' },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -157,19 +130,13 @@ export async function POST(request: NextRequest) {
     // Check if user exists
     const user = await User.findById(userId);
     if (!user) {
-      return NextResponse.json(
-        { success: false, error: 'User not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ success: false, error: 'User not found' }, { status: 404 });
     }
 
     // Check if plan exists
     const plan = await Plan.findById(planId);
     if (!plan) {
-      return NextResponse.json(
-        { success: false, error: 'Plan not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ success: false, error: 'Plan not found' }, { status: 404 });
     }
 
     // Calculate subscription dates
@@ -194,7 +161,7 @@ export async function POST(request: NextRequest) {
         isActive: true,
         payosOrderId: `admin_${Date.now()}`,
         payosTransactionId: `admin_${Date.now()}`,
-      }
+      },
     });
 
     // Create subscription record
@@ -223,15 +190,11 @@ export async function POST(request: NextRequest) {
         plan: plan.name,
         startDate,
         endDate,
-        isActive: true
-      }
+        isActive: true,
+      },
     });
-
   } catch (error: any) {
     console.error('Add subscription error:', error);
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
   }
-} 
+}

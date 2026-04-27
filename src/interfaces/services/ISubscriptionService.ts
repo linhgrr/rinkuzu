@@ -33,5 +33,8 @@ export interface ISubscriptionService {
   cancelSubscription(userId: string): Promise<{ success: boolean }>;
   getSubscriptionPlans(): Promise<SubscriptionPlan[]>;
   checkAndUpdateExpiredSubscriptions(): Promise<void>;
-  updateSubscriptionById(id: string, update: Partial<any>): Promise<{ success: boolean, data?: any, error?: string }>;
-} 
+  updateSubscriptionById(
+    id: string,
+    update: Partial<any>,
+  ): Promise<{ success: boolean; data?: any; error?: string }>;
+}

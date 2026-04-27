@@ -1,21 +1,23 @@
 import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
-import { buildLocalizedMetadata } from '@/lib/seo';
+import { buildLocalizedMetadata, siteUrl } from '@/lib/seo';
 import { JsonLd } from '@/components/seo/JsonLd';
-import { siteUrl } from '@/lib/seo';
 
 type Props = { params: Promise<{ locale: string; slug: string }> };
 
-const AUTHORS: Record<string, {
-  name: string;
-  slug: string;
-  role: string;
-  bio: string;
-  shortBio: string;
-  imageUrl: string;
-  links: { label: string; url: string }[];
-}> = {
+const AUTHORS: Record<
+  string,
+  {
+    name: string;
+    slug: string;
+    role: string;
+    bio: string;
+    shortBio: string;
+    imageUrl: string;
+    links: { label: string; url: string }[];
+  }
+> = {
   'rinkuzu-team': {
     name: 'RinKuzu Team',
     slug: 'rinkuzu-team',
@@ -70,6 +72,7 @@ function buildPersonSchema(author: (typeof AUTHORS)[string]) {
 
 export default async function AuthorPage({ params }: Props) {
   const { locale, slug } = await params;
+  void locale;
   const author = AUTHORS[slug];
   if (!author) return null;
 
@@ -84,11 +87,20 @@ export default async function AuthorPage({ params }: Props) {
         <section className="bg-[var(--bg-section)] py-20 md:py-28">
           <div className="max-w-3xl mx-auto px-6">
             <nav className="flex items-center gap-2 text-sm text-[var(--text-muted)] mb-12">
-              <Link href="/" className="hover:text-[var(--text-primary)] transition-colors">Home</Link>
+              <Link href="/" className="hover:text-[var(--text-primary)] transition-colors">
+                Home
+              </Link>
               <span>/</span>
-              <Link href="/blog" className="hover:text-[var(--text-primary)] transition-colors">Blog</Link>
+              <Link href="/blog" className="hover:text-[var(--text-primary)] transition-colors">
+                Blog
+              </Link>
               <span>/</span>
-              <Link href="/blog/authors" className="hover:text-[var(--text-primary)] transition-colors">Authors</Link>
+              <Link
+                href="/blog/authors"
+                className="hover:text-[var(--text-primary)] transition-colors"
+              >
+                Authors
+              </Link>
               <span>/</span>
               <span className="text-[var(--text-primary)]">{author.name}</span>
             </nav>
@@ -138,7 +150,9 @@ export default async function AuthorPage({ params }: Props) {
         {/* Articles by this author */}
         <section className="py-16 md:py-24">
           <div className="max-w-3xl mx-auto px-6">
-            <h2 className="text-xl font-bold text-[var(--text-primary)] mb-8">Articles by {author.name}</h2>
+            <h2 className="text-xl font-bold text-[var(--text-primary)] mb-8">
+              Articles by {author.name}
+            </h2>
             <div className="space-y-6">
               {/* AI Quiz Generation article */}
               <Link
@@ -156,7 +170,8 @@ export default async function AuthorPage({ params }: Props) {
                     How AI Transforms PDF Learning into Adaptive Quizzes
                   </h3>
                   <p className="text-sm text-[var(--text-muted)] leading-relaxed line-clamp-2">
-                    Discover how RinKuzu&apos;s ALSS system — SAINT-Bloom, Dueling DQN, and Gemini — transforms any PDF lecture into a personalized adaptive quiz journey.
+                    Discover how RinKuzu&apos;s ALSS system — SAINT-Bloom, Dueling DQN, and Gemini —
+                    transforms any PDF lecture into a personalized adaptive quiz journey.
                   </p>
                 </div>
               </Link>
@@ -177,7 +192,9 @@ export default async function AuthorPage({ params }: Props) {
                     Knowledge Graphs and Bloom&apos;s Taxonomy: A Complete Guide
                   </h3>
                   <p className="text-sm text-[var(--text-muted)] leading-relaxed line-clamp-2">
-                    Learn how prerequisite knowledge graphs combined with Bloom&apos;s six cognitive levels create a scientifically-grounded adaptive learning path for any PDF document.
+                    Learn how prerequisite knowledge graphs combined with Bloom&apos;s six cognitive
+                    levels create a scientifically-grounded adaptive learning path for any PDF
+                    document.
                   </p>
                 </div>
               </Link>

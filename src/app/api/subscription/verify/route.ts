@@ -4,11 +4,11 @@ import { ServiceFactory } from '@/lib/serviceFactory';
 export async function POST(request: NextRequest) {
   try {
     const { orderCode } = await request.json();
-    
+
     if (!orderCode) {
       return NextResponse.json(
         { success: false, message: 'Order code is required' },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     console.error('Error verifying payment:', error);
     return NextResponse.json(
       { success: false, message: error.message || 'Failed to verify payment' },
-      { status: 500 }
+      { status: 500 },
     );
   }
-} 
+}

@@ -1,16 +1,19 @@
-import { IQuizService, CreateQuizRequest, QuizListOptions } from '@/interfaces/services/IQuizService'
-import { IQuizRepository } from '@/interfaces/repositories/IQuizRepository'
-import { ICategoryRepository } from '@/interfaces/repositories/ICategoryRepository'
-import { IUserRepository } from '@/interfaces/repositories/IUserRepository'
-import { IAttemptRepository } from '@/interfaces/repositories/IAttemptRepository'
-import { IDiscussionRepository } from '@/interfaces/repositories/IDiscussionRepository'
-import { IReportRepository } from '@/interfaces/repositories/IReportRepository'
-import { generateSlug } from '@/lib/utils'
-import { IQuiz } from '@/interfaces/repositories/IQuizRepository'
-import { ServiceFactory } from '@/lib/serviceFactory'
-import QuestionProgress from '@/models/QuestionProgress'
-import UserProgress from '@/models/UserProgress'
-import connectDB from '@/lib/mongoose'
+import {
+  IQuizService,
+  CreateQuizRequest,
+  QuizListOptions,
+} from '@/interfaces/services/IQuizService';
+import { IQuizRepository, IQuiz } from '@/interfaces/repositories/IQuizRepository';
+import { ICategoryRepository } from '@/interfaces/repositories/ICategoryRepository';
+import { IUserRepository } from '@/interfaces/repositories/IUserRepository';
+import { IAttemptRepository } from '@/interfaces/repositories/IAttemptRepository';
+import { IDiscussionRepository } from '@/interfaces/repositories/IDiscussionRepository';
+import { IReportRepository } from '@/interfaces/repositories/IReportRepository';
+import { generateSlug } from '@/lib/utils';
+import { ServiceFactory } from '@/lib/serviceFactory';
+import QuestionProgress from '@/models/QuestionProgress';
+import UserProgress from '@/models/UserProgress';
+import connectDB from '@/lib/mongoose';
 
 interface ServiceResult<T> {
   success: boolean;
@@ -26,45 +29,53 @@ export class QuizService implements IQuizService {
     private userRepository: IUserRepository,
     private attemptRepository: IAttemptRepository,
     private discussionRepository: IDiscussionRepository,
-    private reportRepository: IReportRepository
-  ) { }
+    private reportRepository: IReportRepository,
+  ) {}
 
   async getQuizzes(options: QuizListOptions): Promise<{
-    quizzes: IQuiz[]
+    quizzes: IQuiz[];
     pagination: {
-      page: number
-      limit: number
-      total: number
-      totalPages: number
-    }
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+    };
   }> {
-    const { status, search, category, page = 1, limit = 10, isPrivate, userRole, userId, onlyMine, compact } = options
+    const {
+      status,
+      search,
+      category,
+      page = 1,
+      limit = 10,
+      isPrivate,
+      userRole: _userRole,
+      userId,
+      onlyMine,
+      compact,
+    } = options;
 
-    let filter: any = {}
+    let filter: any = {};
 
-    if (status) filter.status = status
-    if (typeof isPrivate === 'boolean') filter.isPrivate = isPrivate
+    if (status) filter.status = status;
+    if (typeof isPrivate === 'boolean') filter.isPrivate = isPrivate;
 
     // If caller wants only their own quizzes
     if (onlyMine && userId) {
-      filter.author = userId
+      filter.author = userId;
     }
 
     // Add category filter
     if (category && category.trim()) {
-      filter.category = category.trim()
+      filter.category = category.trim();
     }
 
     // Add search functionality
     if (search && search.trim()) {
-      const searchRegex = new RegExp(search.trim(), 'i')
-      filter.$and = filter.$and || []
+      const searchRegex = new RegExp(search.trim(), 'i');
+      filter.$and = filter.$and || [];
       filter.$and.push({
-        $or: [
-          { title: searchRegex },
-          { description: searchRegex }
-        ]
-      })
+        $or: [{ title: searchRegex }, { description: searchRegex }],
+      });
     }
 
     return await this.quizRepository.findAll(filter, {
@@ -72,79 +83,83 @@ export class QuizService implements IQuizService {
       limit,
       sort: { createdAt: -1 },
       populate: ['author', 'category'],
-      compact
-    })
+      compact,
+    });
   }
 
   async createQuiz(userId: string, quizData: CreateQuizRequest): Promise<IQuiz> {
-    const { title, description, category, questions, isPrivate, pdfUrl } = quizData
+    const { title, description, category, questions, isPrivate, pdfUrl } = quizData;
 
     if (!title || !category || !questions || !Array.isArray(questions) || questions.length === 0) {
-      throw new Error('Title, category, and questions are required')
+      throw new Error('Title, category, and questions are required');
     }
 
     // Validate category exists and is active
-    const categoryDoc = await this.categoryRepository.findById(category)
+    const categoryDoc = await this.categoryRepository.findById(category);
     if (!categoryDoc || !categoryDoc.isActive) {
-      throw new Error('Invalid or inactive category selected')
+      throw new Error('Invalid or inactive category selected');
     }
 
     // Validate questions format
     for (let i = 0; i < questions.length; i++) {
-      const question = questions[i]
+      const question = questions[i];
 
       if (!question.question || typeof question.question !== 'string') {
-        throw new Error(`Question ${i + 1}: Missing or invalid question text`)
+        throw new Error(`Question ${i + 1}: Missing or invalid question text`);
       }
 
       if (!question.options || !Array.isArray(question.options)) {
-        throw new Error(`Question ${i + 1}: Missing or invalid options array`)
+        throw new Error(`Question ${i + 1}: Missing or invalid options array`);
       }
 
       if (question.options.length < 2) {
-        throw new Error(`Question ${i + 1}: Need at least 2 options`)
+        throw new Error(`Question ${i + 1}: Need at least 2 options`);
       }
 
       // Check each option is a string
       for (let j = 0; j < question.options.length; j++) {
         if (typeof question.options[j] !== 'string') {
-          throw new Error(`Question ${i + 1}, Option ${j + 1}: Must be a string`)
+          throw new Error(`Question ${i + 1}, Option ${j + 1}: Must be a string`);
         }
       }
 
       // Validate question type and answers
-      const questionType = question.type || 'single'
+      const questionType = question.type || 'single';
       if (!['single', 'multiple'].includes(questionType)) {
-        throw new Error(`Question ${i + 1}: Type must be 'single' or 'multiple'`)
+        throw new Error(`Question ${i + 1}: Type must be 'single' or 'multiple'`);
       }
 
       if (questionType === 'single') {
-        if (typeof question.correctIndex !== 'number' ||
+        if (
+          typeof question.correctIndex !== 'number' ||
           question.correctIndex < 0 ||
-          question.correctIndex >= question.options.length) {
-          throw new Error(`Question ${i + 1}: Invalid correct answer index`)
+          question.correctIndex >= question.options.length
+        ) {
+          throw new Error(`Question ${i + 1}: Invalid correct answer index`);
         }
       } else {
         if (!Array.isArray(question.correctIndexes) || question.correctIndexes.length === 0) {
-          throw new Error(`Question ${i + 1}: Multiple choice questions need at least one correct answer`)
+          throw new Error(
+            `Question ${i + 1}: Multiple choice questions need at least one correct answer`,
+          );
         }
 
         for (const idx of question.correctIndexes) {
           if (typeof idx !== 'number' || idx < 0 || idx >= question.options.length) {
-            throw new Error(`Question ${i + 1}: Invalid correct answer index`)
+            throw new Error(`Question ${i + 1}: Invalid correct answer index`);
           }
         }
       }
     }
 
     // Generate unique slug
-    const baseSlug = generateSlug(title)
-    let slug = baseSlug
-    let counter = 1
+    const baseSlug = generateSlug(title);
+    let slug = baseSlug;
+    let counter = 1;
 
     while (await this.quizRepository.findBySlug(slug)) {
-      slug = `${baseSlug}-${counter}`
-      counter++
+      slug = `${baseSlug}-${counter}`;
+      counter++;
     }
 
     const quiz = await this.quizRepository.create({
@@ -156,13 +171,18 @@ export class QuizService implements IQuizService {
       questions,
       status: 'pending',
       isPrivate: !!isPrivate,
-      pdfUrl
-    })
+      pdfUrl,
+    });
 
-    return quiz
+    return quiz;
   }
 
-  async getQuizById(id: string, userEmail?: string, userRole?: string, userId?: string): Promise<ServiceResult<any>> {
+  async getQuizById(
+    id: string,
+    userEmail?: string,
+    userRole?: string,
+    userId?: string,
+  ): Promise<ServiceResult<any>> {
     try {
       const quiz = await this.quizRepository.findById(id);
 
@@ -170,7 +190,7 @@ export class QuizService implements IQuizService {
         return {
           success: false,
           error: 'Quiz not found',
-          statusCode: 404
+          statusCode: 404,
         };
       }
 
@@ -180,7 +200,7 @@ export class QuizService implements IQuizService {
           return {
             success: false,
             error: 'Authentication required to access private quiz',
-            statusCode: 401
+            statusCode: 401,
           };
         }
 
@@ -203,14 +223,14 @@ export class QuizService implements IQuizService {
             return {
               success: false,
               error: 'Premium subscription required to access private quizzes',
-              statusCode: 403
+              statusCode: 403,
             };
           }
         } else {
           return {
             success: false,
             error: 'Premium subscription required to access private quizzes',
-            statusCode: 403
+            statusCode: 403,
           };
         }
       }
@@ -221,7 +241,7 @@ export class QuizService implements IQuizService {
       return {
         success: false,
         error: 'Internal server error',
-        statusCode: 500
+        statusCode: 500,
       };
     }
   }
@@ -238,7 +258,7 @@ export class QuizService implements IQuizService {
         return {
           success: false,
           error: 'Quiz not found',
-          statusCode: 404
+          statusCode: 404,
         };
       }
 
@@ -252,7 +272,7 @@ export class QuizService implements IQuizService {
         return {
           success: false,
           error: 'Quiz is not available',
-          statusCode: 404
+          statusCode: 404,
         };
       }
 
@@ -262,7 +282,7 @@ export class QuizService implements IQuizService {
           return {
             success: false,
             error: 'Authentication required to access private quiz',
-            statusCode: 401
+            statusCode: 401,
           };
         }
 
@@ -284,7 +304,7 @@ export class QuizService implements IQuizService {
           return {
             success: false,
             error: 'Premium subscription required to access private quizzes',
-            statusCode: 403
+            statusCode: 403,
           };
         }
       }
@@ -306,8 +326,8 @@ export class QuizService implements IQuizService {
           options: q.options,
           type: q.type,
           questionImage: q.questionImage,
-          optionImages: q.optionImages
-        }))
+          optionImages: q.optionImages,
+        })),
       };
 
       return { success: true, data: quizForPlay };
@@ -316,12 +336,17 @@ export class QuizService implements IQuizService {
       return {
         success: false,
         error: 'Internal server error',
-        statusCode: 500
+        statusCode: 500,
       };
     }
   }
 
-  async updateQuiz(id: string, quizData: any, userEmail: string, userRole?: string): Promise<ServiceResult<any>> {
+  async updateQuiz(
+    id: string,
+    quizData: any,
+    userEmail: string,
+    userRole?: string,
+  ): Promise<ServiceResult<any>> {
     try {
       const quiz = await this.quizRepository.findById(id);
 
@@ -329,7 +354,7 @@ export class QuizService implements IQuizService {
         return {
           success: false,
           error: 'Quiz not found',
-          statusCode: 404
+          statusCode: 404,
         };
       }
 
@@ -343,7 +368,7 @@ export class QuizService implements IQuizService {
         return {
           success: false,
           error: 'Access denied',
-          statusCode: 403
+          statusCode: 403,
         };
       }
 
@@ -351,19 +376,23 @@ export class QuizService implements IQuizService {
 
       return {
         success: true,
-        data: updatedQuiz
+        data: updatedQuiz,
       };
     } catch (error) {
       console.error('Update quiz error:', error);
       return {
         success: false,
         error: 'Failed to update quiz',
-        statusCode: 500
+        statusCode: 500,
       };
     }
   }
 
-  async deleteQuiz(id: string, userEmail: string, userRole?: string): Promise<ServiceResult<boolean>> {
+  async deleteQuiz(
+    id: string,
+    userEmail: string,
+    userRole?: string,
+  ): Promise<ServiceResult<boolean>> {
     try {
       const quiz = await this.quizRepository.findById(id);
 
@@ -371,7 +400,7 @@ export class QuizService implements IQuizService {
         return {
           success: false,
           error: 'Quiz not found',
-          statusCode: 404
+          statusCode: 404,
         };
       }
 
@@ -385,7 +414,7 @@ export class QuizService implements IQuizService {
         return {
           success: false,
           error: 'Access denied',
-          statusCode: 403
+          statusCode: 403,
         };
       }
 
@@ -393,14 +422,14 @@ export class QuizService implements IQuizService {
 
       return {
         success: true,
-        data: result
+        data: result,
       };
     } catch (error) {
       console.error('Delete quiz error:', error);
       return {
         success: false,
         error: 'Failed to delete quiz',
-        statusCode: 500
+        statusCode: 500,
       };
     }
   }
@@ -411,14 +440,14 @@ export class QuizService implements IQuizService {
 
       return {
         success: true,
-        data: quiz
+        data: quiz,
       };
     } catch (error) {
       console.error('Approve quiz error:', error);
       return {
         success: false,
         error: 'Failed to approve quiz',
-        statusCode: 500
+        statusCode: 500,
       };
     }
   }
@@ -429,19 +458,23 @@ export class QuizService implements IQuizService {
 
       return {
         success: true,
-        data: quiz
+        data: quiz,
       };
     } catch (error) {
       console.error('Reject quiz error:', error);
       return {
         success: false,
         error: 'Failed to reject quiz',
-        statusCode: 500
+        statusCode: 500,
       };
     }
   }
 
-  async previewFromPdf(title: string, description: string, pdfFiles: File[]): Promise<ServiceResult<any>> {
+  async previewFromPdf(
+    title: string,
+    description: string,
+    _pdfFiles: File[],
+  ): Promise<ServiceResult<any>> {
     try {
       // This would typically process PDF files and extract questions
       // For now, return a mock preview
@@ -450,19 +483,24 @@ export class QuizService implements IQuizService {
         data: {
           title,
           description,
-          questions: []
-        }
+          questions: [],
+        },
       };
-    } catch (error) {
+    } catch (_error) {
       return {
         success: false,
         error: 'Failed to preview from PDF',
-        statusCode: 500
+        statusCode: 500,
       };
     }
   }
 
-  async reportQuiz(slug: string, content: string, reporterEmail: string, reporterName: string): Promise<ServiceResult<string>> {
+  async reportQuiz(
+    slug: string,
+    content: string,
+    reporterEmail: string,
+    reporterName: string,
+  ): Promise<ServiceResult<string>> {
     try {
       const quiz = await this.quizRepository.findBySlug(slug);
 
@@ -470,15 +508,15 @@ export class QuizService implements IQuizService {
         return {
           success: false,
           error: 'Quiz not found',
-          statusCode: 404
-        }
+          statusCode: 404,
+        };
       }
 
       if (!content || content.trim().length === 0) {
         return {
           success: false,
           error: 'Report content is required',
-          statusCode: 400
+          statusCode: 400,
         };
       }
 
@@ -487,27 +525,27 @@ export class QuizService implements IQuizService {
         reporter: reporterEmail,
         reason: content.trim(),
         description: reporterName,
-        status: 'pending'
+        status: 'pending',
       });
 
       if (!report || !report._id) {
         return {
           success: false,
           error: 'Report not created',
-          statusCode: 500
-        }
+          statusCode: 500,
+        };
       }
 
       return {
         success: true,
-        data: report._id.toString()
+        data: report._id.toString(),
       };
     } catch (error) {
       console.error('Report quiz error:', error);
       return {
         success: false,
         error: 'Failed to report quiz',
-        statusCode: 500
+        statusCode: 500,
       };
     }
   }
@@ -516,57 +554,58 @@ export class QuizService implements IQuizService {
     slug: string,
     answers: any[],
     session: any,
-    userEmail?: string
+    userEmail?: string,
   ): Promise<ServiceResult<any>> {
     try {
       const quiz = await this.quizRepository.findBySlug(slug);
-      
+
       if (!quiz || !quiz._id) {
         return {
           success: false,
           error: 'Quiz not found',
-          statusCode: 404
-        }
+          statusCode: 404,
+        };
       }
 
       // Check access permission for unpublished quiz
-      const authorId = (quiz.author as any)?._id 
-        ? (quiz.author as any)._id.toString() 
+      const authorId = (quiz.author as any)?._id
+        ? (quiz.author as any)._id.toString()
         : quiz.author?.toString();
       const userIdFromSession = session?.user?.id;
       const userRole = session?.user?.role;
-      const canAccessUnpublished = userRole === 'admin' || (!!userIdFromSession && authorId === userIdFromSession);
-      
+      const canAccessUnpublished =
+        userRole === 'admin' || (!!userIdFromSession && authorId === userIdFromSession);
+
       if (quiz.status !== 'published' && !canAccessUnpublished) {
         return {
           success: false,
           error: 'Quiz not found or not published',
-          statusCode: 404
-        }
+          statusCode: 404,
+        };
       }
 
       // Get or create user
-      let userId: string
+      let userId: string;
       if (session?.user?.email) {
         // Logged in user
-        const user = await this.userRepository.findByEmail(session.user.email)
+        const user = await this.userRepository.findByEmail(session.user.email);
         if (!user) {
           return {
             success: false,
             error: 'User not found',
-            statusCode: 404
-          }
+            statusCode: 404,
+          };
         }
-        userId = user._id.toString()
+        userId = user._id.toString();
       } else if (userEmail) {
         // Non-logged in user with email - use email as identifier
-        userId = userEmail
+        userId = userEmail;
       } else {
         return {
           success: false,
           error: 'User identification required',
-          statusCode: 400
-        }
+          statusCode: 400,
+        };
       }
 
       // Validate answers format
@@ -574,50 +613,52 @@ export class QuizService implements IQuizService {
         return {
           success: false,
           error: 'Invalid answers format',
-          statusCode: 400
-        }
+          statusCode: 400,
+        };
       }
 
       // Format answers according to validation rules
       const formattedAnswers = answers.map((answer, index) => {
-        const question = quiz.questions[index]
+        const question = quiz.questions[index];
 
         if (question.type === 'single') {
           // Single choice: -1 for unanswered, >= 0 for answered
-          return answer === -1 ? -1 : (typeof answer === 'number' && answer >= 0 ? answer : -1)
+          return answer === -1 ? -1 : typeof answer === 'number' && answer >= 0 ? answer : -1;
         } else if (question.type === 'multiple') {
           // Multiple choice: empty array for unanswered, array of >= 0 for answered
           if (!Array.isArray(answer) || answer.length === 0) {
-            return []
+            return [];
           }
-          return answer.filter(a => typeof a === 'number' && a >= 0)
+          return answer.filter((a) => typeof a === 'number' && a >= 0);
         }
-        return answer
-      })
+        return answer;
+      });
 
       // Calculate score
-      let correctAnswers = 0
-      const totalQuestions = quiz.questions.length
+      let correctAnswers = 0;
+      const totalQuestions = quiz.questions.length;
 
       for (let i = 0; i < totalQuestions; i++) {
-        const question = quiz.questions[i]
-        const userAnswer = formattedAnswers[i]
+        const question = quiz.questions[i];
+        const userAnswer = formattedAnswers[i];
 
         if (question.type === 'single') {
           if (userAnswer === question.correctIndex) {
-            correctAnswers++
+            correctAnswers++;
           }
         } else if (question.type === 'multiple') {
-          const userAnswers = Array.isArray(userAnswer) ? userAnswer.sort() : []
-          const correctAnswers_q = Array.isArray(question.correctIndexes) ? question.correctIndexes.sort() : []
+          const userAnswers = Array.isArray(userAnswer) ? userAnswer.sort() : [];
+          const correctAnswers_q = Array.isArray(question.correctIndexes)
+            ? question.correctIndexes.sort()
+            : [];
 
           if (JSON.stringify(userAnswers) === JSON.stringify(correctAnswers_q)) {
-            correctAnswers++
+            correctAnswers++;
           }
         }
       }
 
-      const score = Math.round((correctAnswers / totalQuestions) * 100)
+      const score = Math.round((correctAnswers / totalQuestions) * 100);
 
       // Save attempt
       const attempt = await this.attemptRepository.create({
@@ -626,8 +667,8 @@ export class QuizService implements IQuizService {
         answers: formattedAnswers,
         score,
         totalQuestions,
-        takenAt: new Date()
-      })
+        takenAt: new Date(),
+      });
 
       // === NEW: Update gamification stats ===
 
@@ -651,7 +692,9 @@ export class QuizService implements IQuizService {
             isCorrect = userAnswer === question.correctIndex;
           } else if (question.type === 'multiple') {
             const userAnswers = Array.isArray(userAnswer) ? userAnswer.sort() : [];
-            const correctAnswers_q = Array.isArray(question.correctIndexes) ? question.correctIndexes.sort() : [];
+            const correctAnswers_q = Array.isArray(question.correctIndexes)
+              ? question.correctIndexes.sort()
+              : [];
             isCorrect = JSON.stringify(userAnswers) === JSON.stringify(correctAnswers_q);
           }
 
@@ -668,7 +711,7 @@ export class QuizService implements IQuizService {
           const existing = await QuestionProgress.findOne({
             userId,
             quizSlug: slug,
-            questionId
+            questionId,
           });
 
           if (!existing) {
@@ -680,9 +723,10 @@ export class QuizService implements IQuizService {
               questionRef: {
                 text: wrong.question.question || wrong.question.text || '',
                 options: wrong.question.options || [],
-                correctIndexes: wrong.question.type === 'single'
-                  ? [wrong.question.correctIndex]
-                  : (wrong.question.correctIndexes || [])
+                correctIndexes:
+                  wrong.question.type === 'single'
+                    ? [wrong.question.correctIndex]
+                    : wrong.question.correctIndexes || [],
               },
               srsLevel: 0,
               interval: 0,
@@ -692,7 +736,7 @@ export class QuizService implements IQuizService {
               correctStreak: 0,
               totalReviews: 0,
               totalCorrect: 0,
-              history: []
+              history: [],
             });
           }
         }
@@ -762,7 +806,7 @@ export class QuizService implements IQuizService {
           questionsReviewed: 0,
           xpEarned: 0,
           correctCount: 0,
-          totalCount: 0
+          totalCount: 0,
         };
 
         currentActivity.questionsReviewed += totalQuestions;
@@ -790,9 +834,8 @@ export class QuizService implements IQuizService {
           }
         }
 
-        uProgress.averageAccuracy = totalQuestionsWeek > 0
-          ? Math.round((totalCorrectWeek / totalQuestionsWeek) * 100)
-          : 0;
+        uProgress.averageAccuracy =
+          totalQuestionsWeek > 0 ? Math.round((totalCorrectWeek / totalQuestionsWeek) * 100) : 0;
 
         await uProgress.save();
       }
@@ -805,16 +848,16 @@ export class QuizService implements IQuizService {
           score,
           correctAnswers,
           totalQuestions,
-          attemptId: attempt._id
-        }
-      }
+          attemptId: attempt._id,
+        },
+      };
     } catch (error: any) {
-      console.error('Submit quiz attempt error:', error)
+      console.error('Submit quiz attempt error:', error);
       return {
         success: false,
         error: 'Failed to submit quiz attempt',
-        statusCode: 500
-      }
+        statusCode: 500,
+      };
     }
   }
 
@@ -826,7 +869,7 @@ export class QuizService implements IQuizService {
         return {
           success: false,
           error: 'Quiz not found',
-          statusCode: 404
+          statusCode: 404,
         };
       }
 
@@ -835,7 +878,7 @@ export class QuizService implements IQuizService {
       // Create discussions for all questions if they don't exist
       const allDiscussions = [];
       for (let i = 0; i < quiz.questions.length; i++) {
-        const existingDiscussion = existingDiscussions.find(d => d.questionIndex === i);
+        const existingDiscussion = existingDiscussions.find((d) => d.questionIndex === i);
 
         if (existingDiscussion) {
           allDiscussions.push(existingDiscussion);
@@ -846,7 +889,7 @@ export class QuizService implements IQuizService {
             user: quiz.author,
             questionIndex: i,
             content: `Discussion for question ${i + 1}`,
-            comments: []
+            comments: [],
           });
           allDiscussions.push(newDiscussion);
         }
@@ -854,14 +897,14 @@ export class QuizService implements IQuizService {
 
       return {
         success: true,
-        data: allDiscussions
+        data: allDiscussions,
       };
     } catch (error) {
       console.error('Get quiz discussions error:', error);
       return {
         success: false,
         error: 'Failed to fetch discussions',
-        statusCode: 500
+        statusCode: 500,
       };
     }
   }
@@ -870,7 +913,7 @@ export class QuizService implements IQuizService {
     slug: string,
     questionIndex: number,
     content: string,
-    userEmail: string
+    userEmail: string,
   ): Promise<ServiceResult<any>> {
     try {
       const quiz = await this.quizRepository.findBySlug(slug);
@@ -879,7 +922,7 @@ export class QuizService implements IQuizService {
         return {
           success: false,
           error: 'Quiz not found',
-          statusCode: 404
+          statusCode: 404,
         };
       }
 
@@ -887,7 +930,7 @@ export class QuizService implements IQuizService {
         return {
           success: false,
           error: 'Invalid question index',
-          statusCode: 400
+          statusCode: 400,
         };
       }
 
@@ -896,13 +939,13 @@ export class QuizService implements IQuizService {
         return {
           success: false,
           error: 'User not found',
-          statusCode: 404
+          statusCode: 404,
         };
       }
 
       // Find or create discussion for this question
       let discussions = await this.discussionRepository.findByQuiz(quiz._id.toString());
-      let existingDiscussion = discussions.find(d => d.questionIndex === questionIndex);
+      let existingDiscussion = discussions.find((d) => d.questionIndex === questionIndex);
 
       if (!existingDiscussion) {
         // Create new discussion for this question
@@ -911,7 +954,7 @@ export class QuizService implements IQuizService {
           user: quiz.author,
           questionIndex,
           content: `Discussion for question ${questionIndex + 1}`,
-          comments: []
+          comments: [],
         });
       }
 
@@ -919,7 +962,7 @@ export class QuizService implements IQuizService {
         return {
           success: false,
           error: 'Failed to create or find discussion',
-          statusCode: 500
+          statusCode: 500,
         };
       }
 
@@ -929,44 +972,46 @@ export class QuizService implements IQuizService {
         authorEmail: user.email,
         content,
         isEdited: false,
-        createdAt: new Date()
+        createdAt: new Date(),
       };
 
       const updatedDiscussion = await this.discussionRepository.update(
         existingDiscussion._id.toString(),
         {
-          comments: [...(existingDiscussion.comments || []), commentData]
-        }
+          comments: [...(existingDiscussion.comments || []), commentData],
+        },
       );
 
       return {
         success: true,
-        data: updatedDiscussion
+        data: updatedDiscussion,
       };
     } catch (error) {
       console.error('Add discussion comment error:', error);
       return {
         success: false,
         error: 'Failed to add comment',
-        statusCode: 500
+        statusCode: 500,
       };
     }
   }
 
   async getQuizFlashcards(slug: string, session?: any): Promise<any> {
     const quiz = await this.quizRepository.findBySlug(slug);
-    
+
     if (!quiz) {
-      throw new Error('Quiz not found')
+      throw new Error('Quiz not found');
     }
 
     const isAdmin = session?.user?.role === 'admin';
-    const isAuthor = !!session?.user?.id && ((quiz.author as any)?._id
-      ? (quiz.author as any)._id.toString() === session.user.id
-      : quiz.author === session.user.id);
+    const isAuthor =
+      !!session?.user?.id &&
+      ((quiz.author as any)?._id
+        ? (quiz.author as any)._id.toString() === session.user.id
+        : quiz.author === session.user.id);
 
     if (quiz.status !== 'published' && !isAdmin && !isAuthor) {
-      throw new Error('Quiz not found or not published')
+      throw new Error('Quiz not found or not published');
     }
 
     // Check if quiz is private and user has access
@@ -985,21 +1030,22 @@ export class QuizService implements IQuizService {
     const flashcards = quiz.questions.map((q: any, index: number) => ({
       id: index,
       question: q.question,
-      answer: q.type === 'single'
-        ? q.options[q.correctIndex]
-        : q.correctIndexes.map((idx: number) => q.options[idx]).join(', '),
+      answer:
+        q.type === 'single'
+          ? q.options[q.correctIndex]
+          : q.correctIndexes.map((idx: number) => q.options[idx]).join(', '),
       type: q.type,
       questionImage: q.questionImage || null,
-      optionImages: q.optionImages || []
-    }))
+      optionImages: q.optionImages || [],
+    }));
 
     return {
       _id: quiz._id,
       title: quiz.title,
       description: quiz.description,
       slug: quiz.slug,
-      flashcards
-    }
+      flashcards,
+    };
   }
 
   async getQuizForFlashcards(slug: string, session: any): Promise<ServiceResult<any>> {
@@ -1010,20 +1056,22 @@ export class QuizService implements IQuizService {
         return {
           success: false,
           error: 'Quiz not found',
-          statusCode: 404
+          statusCode: 404,
         };
       }
 
       const isAdmin = session?.user?.role === 'admin';
-      const isAuthor = !!session?.user?.id && ((quiz.author as any)?._id
-        ? (quiz.author as any)._id.toString() === session.user.id
-        : quiz.author === session.user.id);
+      const isAuthor =
+        !!session?.user?.id &&
+        ((quiz.author as any)?._id
+          ? (quiz.author as any)._id.toString() === session.user.id
+          : quiz.author === session.user.id);
 
       if (quiz.status !== 'published' && !isAdmin && !isAuthor) {
         return {
           success: false,
           error: 'Quiz not found or not published',
-          statusCode: 404
+          statusCode: 404,
         };
       }
 
@@ -1033,7 +1081,7 @@ export class QuizService implements IQuizService {
           return {
             success: false,
             error: 'Access denied. This quiz is private.',
-            statusCode: 403
+            statusCode: 403,
           };
         }
 
@@ -1046,7 +1094,7 @@ export class QuizService implements IQuizService {
             return {
               success: false,
               error: 'Premium subscription required to access private quizzes',
-              statusCode: 403
+              statusCode: 403,
             };
           }
         }
@@ -1071,15 +1119,15 @@ export class QuizService implements IQuizService {
 
       return {
         success: true,
-        data: flashcardQuiz
+        data: flashcardQuiz,
       };
     } catch (error) {
       console.error('Get quiz for flashcards error:', error);
       return {
         success: false,
         error: 'Failed to get quiz for flashcards',
-        statusCode: 500
+        statusCode: 500,
       };
     }
   }
-} 
+}

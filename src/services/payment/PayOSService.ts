@@ -1,5 +1,10 @@
 import crypto from 'crypto';
-import { IPayOSService, PayOSPaymentRequest, PayOSPaymentResponse, PayOSVerifyResponse } from '@/interfaces/services/IPayOSService';
+import {
+  IPayOSService,
+  PayOSPaymentRequest,
+  PayOSPaymentResponse,
+  PayOSVerifyResponse,
+} from '@/interfaces/services/IPayOSService';
 
 export class PayOSService implements IPayOSService {
   private clientId: string;
@@ -19,35 +24,32 @@ export class PayOSService implements IPayOSService {
       console.error('Missing PayOS environment variables:', {
         clientId: !!this.clientId,
         apiKey: !!this.apiKey,
-        checksumKey: !!this.checksumKey
+        checksumKey: !!this.checksumKey,
       });
       throw new Error('PayOS configuration is incomplete');
     }
   }
 
   private generateSignature(data: string): string {
-    return crypto
-      .createHmac('sha256', this.checksumKey)
-      .update(data)
-      .digest('hex');
+    return crypto.createHmac('sha256', this.checksumKey).update(data).digest('hex');
   }
 
   private generatePaymentSignature(data: {
-    amount: number
-    cancelUrl: string
-    description: string
-    orderCode: number
-    returnUrl: string
+    amount: number;
+    cancelUrl: string;
+    description: string;
+    orderCode: number;
+    returnUrl: string;
   }): string {
     // PayOS requires the data string in alphabetical order of the keys
-    const rawSignature = `amount=${data.amount}&cancelUrl=${data.cancelUrl}&description=${data.description}&orderCode=${data.orderCode}&returnUrl=${data.returnUrl}`
-    return this.generateSignature(rawSignature)
+    const rawSignature = `amount=${data.amount}&cancelUrl=${data.cancelUrl}&description=${data.description}&orderCode=${data.orderCode}&returnUrl=${data.returnUrl}`;
+    return this.generateSignature(rawSignature);
   }
 
   private async makeRequest<T>(
     endpoint: string,
     method: 'GET' | 'POST' = 'POST',
-    body?: any
+    body?: any,
   ): Promise<T> {
     this.ensureConfigured();
     const url = `${this.baseUrl}${endpoint}`;
@@ -67,26 +69,26 @@ export class PayOSService implements IPayOSService {
     }
 
     try {
-      console.log('PayOS API Request:', {
+      console.warn('PayOS API Request:', {
         url,
         method,
         headers: { 'x-client-id': this.clientId, 'x-api-key': '***' },
-        body: body ? JSON.stringify(body) : undefined
+        body: body ? JSON.stringify(body) : undefined,
       });
 
       const response = await fetch(url, options);
       const responseText = await response.text();
-      
-      console.log('PayOS API Response:', {
+
+      console.warn('PayOS API Response:', {
         status: response.status,
         statusText: response.statusText,
-        body: responseText
+        body: responseText,
       });
 
       let data;
       try {
         data = JSON.parse(responseText);
-      } catch (parseError) {
+      } catch (_parseError) {
         console.error('Failed to parse PayOS response:', responseText);
         throw new Error(`Invalid response from PayOS API: ${responseText}`);
       }
@@ -113,7 +115,7 @@ export class PayOSService implements IPayOSService {
     returnUrl: string,
     cancelUrl: string,
     buyerEmail?: string,
-    buyerName?: string
+    buyerName?: string,
   ): Promise<PayOSPaymentResponse> {
     this.ensureConfigured();
     const paymentData = {
@@ -124,7 +126,7 @@ export class PayOSService implements IPayOSService {
       returnUrl,
       buyerEmail,
       buyerName,
-    }
+    };
 
     // Generate signature according to PayOS rule
     const signature = this.generatePaymentSignature({
@@ -133,43 +135,37 @@ export class PayOSService implements IPayOSService {
       description,
       orderCode,
       returnUrl,
-    })
+    });
 
     const requestBody: PayOSPaymentRequest = {
       ...paymentData,
       signature,
-    }
+    };
 
-    console.log('PayOS createPayment request body:', requestBody)
+    console.warn('PayOS createPayment request body:', requestBody);
 
-    return this.makeRequest<PayOSPaymentResponse>('/v2/payment-requests', 'POST', requestBody)
+    return this.makeRequest<PayOSPaymentResponse>('/v2/payment-requests', 'POST', requestBody);
   }
 
   async verifyPayment(orderCode: number): Promise<PayOSVerifyResponse> {
     this.ensureConfigured();
-    return this.makeRequest<PayOSVerifyResponse>(
-      `/v2/payment-requests/${orderCode}`,
-      'GET'
-    );
+    return this.makeRequest<PayOSVerifyResponse>(`/v2/payment-requests/${orderCode}`, 'GET');
   }
 
   async getPaymentInfo(orderCode: number): Promise<PayOSVerifyResponse> {
     this.ensureConfigured();
-    return this.makeRequest<PayOSVerifyResponse>(
-      `/v2/payment-requests/${orderCode}`,
-      'GET'
-    );
+    return this.makeRequest<PayOSVerifyResponse>(`/v2/payment-requests/${orderCode}`, 'GET');
   }
 
   async testConnection(): Promise<boolean> {
     try {
       this.ensureConfigured();
-      console.log('Testing PayOS API connection...');
-      console.log('Environment variables:', {
+      console.warn('Testing PayOS API connection...');
+      console.warn('Environment variables:', {
         clientId: this.clientId ? 'Set' : 'Missing',
         apiKey: this.apiKey ? 'Set' : 'Missing',
         checksumKey: this.checksumKey ? 'Set' : 'Missing',
-        baseUrl: this.baseUrl
+        baseUrl: this.baseUrl,
       });
 
       // Try to make a simple request to test the connection
@@ -177,7 +173,7 @@ export class PayOSService implements IPayOSService {
       const dataStr = JSON.stringify(testData);
       const signature = this.generateSignature(dataStr);
 
-      console.log('Test signature generated:', signature);
+      console.warn('Test signature generated:', signature);
       return true;
     } catch (error) {
       console.error('PayOS connection test failed:', error);
@@ -186,4 +182,4 @@ export class PayOSService implements IPayOSService {
   }
 }
 
-export default PayOSService; 
+export default PayOSService;

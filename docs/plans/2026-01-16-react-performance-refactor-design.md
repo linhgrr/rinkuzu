@@ -12,13 +12,13 @@ Refactor toàn bộ project RinKuzu theo Vercel React Best Practices (45 rules) 
 
 ## Current State Analysis
 
-| Metric | Current | Target |
-|--------|---------|--------|
-| Homepage data fetching | Client-side useEffect | Server Components + Suspense |
-| Bundle optimization | Barrel imports | Direct imports / optimizePackageImports |
-| Component memoization | None | React.memo for list items |
-| Data fetching pattern | Manual fetch | SWR for client mutations |
-| Loading states | Simple spinner | Skeleton components |
+| Metric                 | Current               | Target                                  |
+| ---------------------- | --------------------- | --------------------------------------- |
+| Homepage data fetching | Client-side useEffect | Server Components + Suspense            |
+| Bundle optimization    | Barrel imports        | Direct imports / optimizePackageImports |
+| Component memoization  | None                  | React.memo for list items               |
+| Data fetching pattern  | Manual fetch          | SWR for client mutations                |
+| Loading states         | Simple spinner        | Skeleton components                     |
 
 ### Issues Found
 
@@ -62,11 +62,13 @@ src/app/
 ```
 
 **Pattern applied:**
+
 - Server Components cho data fetching
 - Client Components chỉ cho interactivity
 - Suspense boundaries cho streaming
 
 **Rules applied:**
+
 - `server-parallel-fetching` - Fetch data song song trên server
 - `async-suspense-boundaries` - Streaming với Suspense
 - `server-serialization` - Chỉ pass data cần thiết xuống client
@@ -80,9 +82,9 @@ src/app/
 ```js
 module.exports = {
   experimental: {
-    optimizePackageImports: ['react-icons', 'react-markdown']
-  }
-}
+    optimizePackageImports: ['react-icons', 'react-markdown'],
+  },
+};
 ```
 
 **Dynamic imports for heavy components:**
@@ -92,13 +94,14 @@ module.exports = {
 import { PDFViewer } from '@/components/ui/PDFViewer';
 
 // After
-const PDFViewer = dynamic(
-  () => import('@/components/ui/PDFViewer').then(m => m.PDFViewer),
-  { ssr: false, loading: () => <PDFViewerSkeleton /> }
-);
+const PDFViewer = dynamic(() => import('@/components/ui/PDFViewer').then((m) => m.PDFViewer), {
+  ssr: false,
+  loading: () => <PDFViewerSkeleton />,
+});
 ```
 
 **Files to refactor:**
+
 - `src/app/page.tsx` - 6 icons
 - `src/components/Navigation.tsx` - 10 icons
 - `src/components/Sidebar.tsx`
@@ -107,6 +110,7 @@ const PDFViewer = dynamic(
 - `src/components/ui/MarkdownRenderer.tsx` - dynamic import
 
 **Rules applied:**
+
 - `bundle-barrel-imports` - optimizePackageImports
 - `bundle-dynamic-imports` - Lazy load heavy components
 - `bundle-defer-third-party` - Defer analytics
@@ -128,14 +132,10 @@ interface StatCardProps {
   color: string;
 }
 
-export const StatCard = memo(function StatCard({
-  label, value, icon, color
-}: StatCardProps) {
+export const StatCard = memo(function StatCard({ label, value, icon, color }: StatCardProps) {
   return (
     <Card className="p-4 flex items-center gap-4">
-      <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${color}`}>
-        {icon}
-      </div>
+      <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${color}`}>{icon}</div>
       <div>
         <p className="text-sm text-[#86868b] font-medium">{label}</p>
         <p className="text-2xl font-bold text-[#1d1d1f]">{value}</p>
@@ -149,18 +149,14 @@ export const StatCard = memo(function StatCard({
 
 ```tsx
 // Before
-<Button onClick={() => router.push(ROUTES.CREATE_QUIZ)}>
-  Create Quiz
-</Button>
+<Button onClick={() => router.push(ROUTES.CREATE_QUIZ)}>Create Quiz</Button>;
 
 // After
 const handleCreateQuiz = useCallback(() => {
   router.push(ROUTES.CREATE_QUIZ);
 }, [router]);
 
-<Button onClick={handleCreateQuiz}>
-  Create Quiz
-</Button>
+<Button onClick={handleCreateQuiz}>Create Quiz</Button>;
 ```
 
 **Functional setState:**
@@ -170,18 +166,23 @@ const handleCreateQuiz = useCallback(() => {
 setStats({
   ...stats,
   xp: data.data.xp,
-  streakFreezeCount: data.data.streakFreezeCount
+  streakFreezeCount: data.data.streakFreezeCount,
 });
 
 // After
-setStats(prev => prev ? ({
-  ...prev,
-  xp: data.data.xp,
-  streakFreezeCount: data.data.streakFreezeCount
-}) : null);
+setStats((prev) =>
+  prev
+    ? {
+        ...prev,
+        xp: data.data.xp,
+        streakFreezeCount: data.data.streakFreezeCount,
+      }
+    : null,
+);
 ```
 
 **Components to memoize:**
+
 - `StatCard` - renders multiple times, props rarely change
 - `QuizCard` - renders in lists
 - `Badge` - renders frequently
@@ -189,6 +190,7 @@ setStats(prev => prev ? ({
 - `CategoryBadge` - renders in lists
 
 **Rules applied:**
+
 - `rerender-memo` - Extract expensive work into memoized components
 - `rerender-functional-setstate` - Functional setState for stable callbacks
 - `rerender-lazy-state-init` - Lazy initialization for expensive values
@@ -237,7 +239,7 @@ export default async function HomePage() {
 import useSWR from 'swr';
 import { useSWRMutation } from 'swr/mutation';
 
-const fetcher = (url: string) => fetch(url).then(r => r.json());
+const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 export function useStats() {
   const { data, mutate } = useSWR('/api/progress/stats', fetcher);
@@ -253,19 +255,20 @@ export function useStats() {
         if (data.success) {
           mutate(); // Revalidate stats
         }
-      }
-    }
+      },
+    },
   );
 
   return {
     stats: data,
     buyFreeze,
-    isBuyingFreeze: isMutating
+    isBuyingFreeze: isMutating,
   };
 }
 ```
 
 **Rules applied:**
+
 - `async-suspense-boundaries` - Stream content with Suspense
 - `client-swr-dedup` - SWR for automatic deduplication
 - `async-parallel` - Promise.all for independent operations
@@ -318,34 +321,38 @@ src/
 
 ### Section 6: Quick Wins (Apply immediately)
 
-| Rule | File | Change |
-|------|------|--------|
-| `bundle-barrel-imports` | `next.config.js` | Add `optimizePackageImports: ['react-icons']` |
-| `rendering-conditional-render` | `page.tsx` | `{count && ...}` → `{count > 0 ? ... : null}` |
-| `rerender-lazy-state-init` | useState calls | `useState(expensive())` → `useState(() => expensive())` |
-| `js-tosorted-immutable` | Sort operations | `.sort()` → `.toSorted()` |
+| Rule                           | File             | Change                                                  |
+| ------------------------------ | ---------------- | ------------------------------------------------------- |
+| `bundle-barrel-imports`        | `next.config.js` | Add `optimizePackageImports: ['react-icons']`           |
+| `rendering-conditional-render` | `page.tsx`       | `{count && ...}` → `{count > 0 ? ... : null}`           |
+| `rerender-lazy-state-init`     | useState calls   | `useState(expensive())` → `useState(() => expensive())` |
+| `js-tosorted-immutable`        | Sort operations  | `.sort()` → `.toSorted()`                               |
 
 ---
 
 ## Implementation Priority
 
 ### Phase 1: Quick Wins (1-2 hours)
+
 1. Add `optimizePackageImports` to next.config.js
 2. Fix conditional rendering patterns
 3. Add React.memo to StatCard, Badge
 
 ### Phase 2: Architecture (4-6 hours)
+
 1. Convert Homepage to Server Component
 2. Create Suspense boundaries
 3. Create skeleton components
 4. Split Navigation into server/client parts
 
 ### Phase 3: Data Fetching (2-3 hours)
+
 1. Install SWR: `npm install swr`
 2. Create useStats, useQuizzes hooks
 3. Migrate mutations to useSWRMutation
 
 ### Phase 4: Full Component Refactor (4-6 hours)
+
 1. Memoize all list components
 2. Add useCallback to event handlers
 3. Create shared components folder
@@ -356,6 +363,7 @@ src/
 ## Verification
 
 After implementation, verify:
+
 - [ ] `npm run build` passes
 - [ ] `npm run dev` works without errors
 - [ ] Bundle size reduced (check with `npx @next/bundle-analyzer`)

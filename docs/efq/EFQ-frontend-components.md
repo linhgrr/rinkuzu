@@ -3,6 +3,7 @@
 ## 1. User Dashboard Components
 
 ### 1.1. User Reward Dashboard
+
 ```typescript
 // components/efq/UserRewardDashboard.tsx
 'use client';
@@ -159,8 +160,8 @@ export default function UserRewardDashboard() {
             <div className="text-2xl font-bold">{stats.user.trustScore}</div>
             <Progress value={stats.user.trustScore} className="mt-2" />
             <p className="text-xs text-gray-500 mt-1">
-              {stats.user.trustScore >= 80 ? 'Excellent' : 
-               stats.user.trustScore >= 60 ? 'Good' : 
+              {stats.user.trustScore >= 80 ? 'Excellent' :
+               stats.user.trustScore >= 60 ? 'Good' :
                stats.user.trustScore >= 40 ? 'Fair' : 'Poor'}
             </p>
           </CardContent>
@@ -174,16 +175,16 @@ export default function UserRewardDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.user.fraudRiskScore}</div>
-            <Progress 
-              value={stats.user.fraudRiskScore} 
+            <Progress
+              value={stats.user.fraudRiskScore}
               className="mt-2"
-              style={{ 
-                '--progress-color': stats.user.fraudRiskScore > 70 ? '#ef4444' : 
+              style={{
+                '--progress-color': stats.user.fraudRiskScore > 70 ? '#ef4444' :
                                    stats.user.fraudRiskScore > 40 ? '#f59e0b' : '#10b981'
               } as any}
             />
             <p className="text-xs text-gray-500 mt-1">
-              {stats.user.fraudRiskScore > 70 ? 'High Risk' : 
+              {stats.user.fraudRiskScore > 70 ? 'High Risk' :
                stats.user.fraudRiskScore > 40 ? 'Medium Risk' : 'Low Risk'}
             </p>
           </CardContent>
@@ -259,6 +260,7 @@ export default function UserRewardDashboard() {
 ```
 
 ### 1.2. Quiz Performance Component
+
 ```typescript
 // components/efq/QuizPerformance.tsx
 'use client';
@@ -423,7 +425,7 @@ export default function QuizPerformance() {
 
           {hasMore && (
             <div className="text-center">
-              <Button 
+              <Button
                 onClick={() => setPage(prev => prev + 1)}
                 variant="outline"
                 disabled={loading}
@@ -442,6 +444,7 @@ export default function QuizPerformance() {
 ## 2. Admin Dashboard Components
 
 ### 2.1. Admin Fraud Analytics Dashboard
+
 ```typescript
 // components/admin/FraudAnalyticsDashboard.tsx
 'use client';
@@ -692,6 +695,7 @@ export default function FraudAnalyticsDashboard() {
 ```
 
 ### 2.2. Admin Reward Review Component
+
 ```typescript
 // components/admin/RewardReviewPanel.tsx
 'use client';
@@ -903,7 +907,7 @@ export default function RewardReviewPanel() {
 
           {hasMore && (
             <div className="text-center">
-              <Button 
+              <Button
                 onClick={() => setPage(prev => prev + 1)}
                 variant="outline"
                 disabled={loading}
@@ -997,6 +1001,7 @@ export default function RewardReviewPanel() {
 ## 3. Enhanced Quiz Components
 
 ### 3.1. Quiz Attempt with Behavioral Tracking
+
 ```typescript
 // components/quiz/QuizAttemptTracker.tsx
 'use client';
@@ -1021,14 +1026,14 @@ export default function QuizAttemptTracker({ onComplete, quizId }: QuizAttemptTr
     timestamp: number;
   }>>([]);
   const [isComplete, setIsComplete] = useState(false);
-  
+
   const loggingService = useRef<ClientLoggingService>();
   const questionStartTime = useRef<number>(Date.now());
   const startTime = useRef<number>(Date.now());
 
   useEffect(() => {
     loggingService.current = new ClientLoggingService();
-    
+
     const timer = setInterval(() => {
       setTimeSpent(Date.now() - startTime.current);
     }, 1000);
@@ -1042,7 +1047,7 @@ export default function QuizAttemptTracker({ onComplete, quizId }: QuizAttemptTr
 
   const handleAnswerChange = (questionIndex: number, newAnswer: number | number[]) => {
     const oldAnswer = answers[questionIndex];
-    
+
     if (oldAnswer !== undefined && JSON.stringify(oldAnswer) !== JSON.stringify(newAnswer)) {
       setAnswerChanges(prev => [...prev, {
         questionIndex,
@@ -1060,7 +1065,7 @@ export default function QuizAttemptTracker({ onComplete, quizId }: QuizAttemptTr
   const handleNextQuestion = () => {
     const questionTime = Date.now() - questionStartTime.current;
     setTimePerQuestion(prev => [...prev, questionTime]);
-    
+
     if (currentQuestion < 10) { // Assuming 10 questions
       setCurrentQuestion(prev => prev + 1);
     } else {
@@ -1070,11 +1075,11 @@ export default function QuizAttemptTracker({ onComplete, quizId }: QuizAttemptTr
 
   const handleComplete = () => {
     if (isComplete) return;
-    
+
     setIsComplete(true);
-    
+
     const behavioralData = loggingService.current?.getBehavioralData();
-    
+
     onComplete({
       answers,
       timeSpent,
@@ -1103,7 +1108,7 @@ export default function QuizAttemptTracker({ onComplete, quizId }: QuizAttemptTr
         <h3 className="text-lg font-medium mb-4">
           Question {currentQuestion + 1}
         </h3>
-        
+
         {/* Question content would go here */}
         <div className="space-y-3">
           <label className="flex items-center space-x-2">
@@ -1158,7 +1163,7 @@ export default function QuizAttemptTracker({ onComplete, quizId }: QuizAttemptTr
         >
           Previous
         </button>
-        
+
         {currentQuestion < 9 ? (
           <button
             onClick={handleNextQuestion}
@@ -1179,4 +1184,4 @@ export default function QuizAttemptTracker({ onComplete, quizId }: QuizAttemptTr
     </div>
   );
 }
-``` 
+```

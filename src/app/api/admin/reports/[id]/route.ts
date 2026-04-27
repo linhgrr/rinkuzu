@@ -10,13 +10,13 @@ export async function PATCH(request: NextRequest, { params }: AsyncRouteParams<{
   try {
     const { id } = await params;
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user || (session.user as any)?.role !== 'admin') {
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
     }
 
     const { status } = await request.json();
-    
+
     if (!['pending', 'resolved', 'dismissed'].includes(status)) {
       return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
     }
@@ -25,31 +25,24 @@ export async function PATCH(request: NextRequest, { params }: AsyncRouteParams<{
     const result = await adminService.updateReportStatus(id, status);
 
     if (!result.success) {
-      return NextResponse.json(
-        { error: result.error },
-        { status: result.statusCode || 500 }
-      );
+      return NextResponse.json({ error: result.error }, { status: result.statusCode || 500 });
     }
 
     return NextResponse.json({
       success: true,
-      data: result.data
+      data: result.data,
     });
-
   } catch (error) {
     console.error('Error updating report:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
-export async function DELETE(
-  request: NextRequest,
-  { params }: AsyncRouteParams<{ id: string }>
-) {
+export async function DELETE(request: NextRequest, { params }: AsyncRouteParams<{ id: string }>) {
   try {
     const { id } = await params;
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user || (session.user as any)?.role !== 'admin') {
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
     }
@@ -58,19 +51,15 @@ export async function DELETE(
     const result = await adminService.deleteReport(id);
 
     if (!result.success) {
-      return NextResponse.json(
-        { error: result.error },
-        { status: result.statusCode || 500 }
-      );
+      return NextResponse.json({ error: result.error }, { status: result.statusCode || 500 });
     }
 
     return NextResponse.json({
       success: true,
-      message: 'Report deleted successfully'
+      message: 'Report deleted successfully',
     });
-
   } catch (error) {
     console.error('Error deleting report:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
-} 
+}

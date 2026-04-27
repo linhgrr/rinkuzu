@@ -1,0 +1,15 @@
+node_modules/
+.next/
+out/
+build/
+dist/
+coverage/
+public/sw.js
+public/workbox-*.js
+public/worker-*.js
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+.env
+.env.local
+.env.*.local

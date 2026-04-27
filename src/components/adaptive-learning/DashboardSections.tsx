@@ -1,6 +1,7 @@
 'use client';
 
 import { memo } from 'react';
+import Image from 'next/image';
 import {
   HiOutlineBookOpen,
   HiOutlineClock,
@@ -12,6 +13,7 @@ import {
   HiOutlineViewGrid,
   HiOutlineViewList,
 } from '@/components/icons';
+import { SparklesText } from '@/components/ui/sparkles-text';
 import { Button } from '@/components/ui/Button';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { useRandomLibraryImages } from './hooks/use-random-library-images';
@@ -125,8 +127,13 @@ export const DashboardHeader = ({
 }: DashboardHeaderProps) => (
   <div className="mb-12 flex flex-col items-start justify-between gap-6 md:flex-row md:items-center">
     <div>
-      <span className={`text-4xl font-bold tracking-tight text-neutral-900`}>Adaptive Scholar</span>
-      <p className="mt-1 text-lg text-neutral-600">{t('brandSubtitle')}</p>
+      <SparklesText
+        text="Adaptive Scholar"
+        sparklesCount={9}
+        colors={{ first: '#8B5CF6', second: '#F472B6' }}
+        className="text-4xl font-extrabold tracking-tight text-[#3b2ca5] md:text-5xl"
+      />
+      <p className="mt-2 text-lg font-medium text-neutral-600">{t('brandSubtitle')}</p>
       <div className="mt-4 flex flex-wrap items-center gap-2">
         {apiOnline === false && (
           <DashboardStatusPill tone="warning" text={t('connectionLimited')} />
@@ -135,14 +142,18 @@ export const DashboardHeader = ({
       </div>
     </div>
     <div className="flex flex-wrap items-center gap-4">
-      <div className="flex items-center gap-2 rounded-full bg-neutral-100 px-4 py-2">
-        <HiOutlineLightningBolt className="h-4 w-4 text-brand-trust" aria-hidden="true" />
+      <div className="flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-4 py-2.5 shadow-sm">
+        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-[#f8c56a] to-[#f39a2f] shadow-md">
+          <HiOutlineLightningBolt className="h-3.5 w-3.5 text-white" aria-hidden="true" />
+        </span>
         <span className="text-sm font-bold text-neutral-900">
           {t('dayStreak', { count: streakDays })}
         </span>
       </div>
-      <div className="flex min-w-[9.5rem] items-center gap-3 rounded-full border border-neutral-300/60 bg-white px-4 py-2 shadow-sm">
-        <HiOutlineClock className="h-4 w-4 text-brand-trust" aria-hidden="true" />
+      <div className="flex min-w-[9.5rem] items-center gap-3 rounded-full border border-neutral-300/60 bg-white px-4 py-2.5 shadow-sm">
+        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-[#45d2be] to-[#1cb0a2] shadow-md">
+          <HiOutlineClock className="h-3.5 w-3.5 text-white" aria-hidden="true" />
+        </span>
         <div className="min-w-0">
           <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-neutral-600">
             {t('dailyGoalProgress', {
@@ -181,15 +192,17 @@ export const HeroSection = ({
   if (!subject) {
     return (
       <section className="relative overflow-hidden rounded-2xl border border-neutral-200 bg-green-50 p-8 shadow-sm md:p-10 lg:col-span-8">
-        <div className="relative z-10 flex h-full flex-col justify-between gap-10">
+        <div className="relative z-10 flex h-full flex-col justify-between gap-10 lg:max-w-[58%]">
           <div>
             <span className="mb-4 inline-block rounded-full bg-brand-trust/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.2em] text-brand-trust">
               {t('activeJourney')}
             </span>
-            <h1 className={`text-4xl font-black leading-tight text-neutral-900 md:text-5xl`}>
+            <h1 className="text-4xl font-extrabold leading-tight text-neutral-900 md:text-5xl">
               {t('uploadMaterialTitle')}
             </h1>
-            <p className="mt-3 text-lg font-medium text-neutral-600">{t('uploadMaterialHint')}</p>
+            <p className="mt-3 max-w-xl text-lg font-medium text-neutral-600">
+              {t('uploadMaterialHint')}
+            </p>
           </div>
           <Button
             onClick={onGoUpload}
@@ -198,6 +211,16 @@ export const HeroSection = ({
             <HiOutlineCloudUpload className="h-5 w-5" />
             {t('uploadDocument')}
           </Button>
+        </div>
+        <div className="pointer-events-none absolute -bottom-2 right-0 hidden w-[20rem] translate-x-5 lg:block">
+          <Image
+            src="/images/green_boy.png"
+            alt={t('avatarAlt')}
+            width={420}
+            height={500}
+            className="h-auto w-full object-contain opacity-80"
+            priority={false}
+          />
         </div>
         <div className="absolute -bottom-12 -right-12 h-80 w-80 rounded-full bg-green-500/10 blur-3xl" />
       </section>
@@ -208,15 +231,17 @@ export const HeroSection = ({
 
   return (
     <section className="relative overflow-hidden rounded-2xl border border-neutral-200 bg-green-50 p-8 shadow-sm md:p-10 lg:col-span-8">
-      <div className="relative z-10 flex h-full flex-col justify-between gap-10">
+      <div className="relative z-10 flex h-full flex-col justify-between gap-10 lg:max-w-[54%]">
         <div>
           <span className="mb-4 inline-block rounded-full bg-brand-trust/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.2em] text-brand-trust">
             {t('activeJourney')}
           </span>
-          <h1 className={`text-4xl font-black leading-tight text-neutral-900 md:text-5xl`}>
+          <h1 className="text-4xl font-extrabold leading-tight text-neutral-900 md:text-5xl">
             {subject.displayTitle}
           </h1>
-          <p className="mt-3 text-lg font-medium text-neutral-600">{t('pickUpDescription')}</p>
+          <p className="mt-3 max-w-xl text-lg font-medium text-neutral-600">
+            {t('pickUpDescription')}
+          </p>
         </div>
 
         <div>
@@ -248,6 +273,16 @@ export const HeroSection = ({
           </div>
         </div>
       </div>
+      <div className="pointer-events-none absolute -bottom-4 right-0 hidden w-[25rem] translate-x-6 lg:block">
+        <Image
+          src="/images/green_boy.png"
+          alt={t('avatarAlt')}
+          width={520}
+          height={640}
+          className="h-auto w-full object-contain drop-shadow-[0_14px_28px_rgba(31,45,61,0.18)]"
+          priority
+        />
+      </div>
       <div className="absolute -bottom-12 -right-12 h-80 w-80 rounded-full bg-green-500/10 blur-3xl transition-all duration-700" />
     </section>
   );
@@ -256,13 +291,13 @@ export const HeroSection = ({
 export const DailyProgressCard = ({ dailyGoalProgress, t }: DailyProgressCardProps) => (
   <section className="flex h-full flex-col justify-between rounded-2xl border border-neutral-200 bg-white p-8 shadow-sm lg:col-span-4">
     <div>
-      <h2 className={`mb-8 text-2xl font-bold tracking-tight text-neutral-900`}>
+      <h2 className="mb-8 text-2xl font-extrabold tracking-tight text-neutral-900">
         {t('dailyProgressTitle')}
       </h2>
       <div className="space-y-8">
         <div className="flex items-center gap-5">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-green-100 shadow-inner">
-            <HiOutlineLightningBolt className="h-6 w-6 text-brand-trust" />
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#8ff2df] to-[#57d9c9] shadow-[0_10px_20px_rgba(44,192,170,0.25)]">
+            <HiOutlineLightningBolt className="h-6 w-6 text-white" />
           </div>
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-neutral-600">
@@ -272,8 +307,8 @@ export const DailyProgressCard = ({ dailyGoalProgress, t }: DailyProgressCardPro
           </div>
         </div>
         <div className="flex items-center gap-5">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-trust/10 shadow-inner">
-            <HiOutlineBookOpen className="h-6 w-6 text-brand-trust" />
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#ffcf77] to-[#f6a636] shadow-[0_10px_20px_rgba(246,166,54,0.24)]">
+            <HiOutlineBookOpen className="h-6 w-6 text-white" />
           </div>
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-neutral-600">

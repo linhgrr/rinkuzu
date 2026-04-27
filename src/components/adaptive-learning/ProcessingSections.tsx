@@ -1,16 +1,16 @@
-'use client'
+'use client';
 
-import dynamic from 'next/dynamic'
-import { Button } from '@/components/ui/Button'
-import { Spinner } from '@/components/ui/Spinner'
+import dynamic from 'next/dynamic';
+import { Button } from '@/components/ui/Button';
+import { Spinner } from '@/components/ui/Spinner';
 import {
   HiCheck,
   HiOutlineArrowLeft,
   HiOutlineExclamationCircle,
   HiOutlineSparkles,
-} from '@/components/icons'
-import type { PipelineJobStatus } from './types'
-import type { ProcessingStep } from './hooks/use-processing-state'
+} from '@/components/icons';
+import type { PipelineJobStatus } from './types';
+import type { ProcessingStep } from './hooks/use-processing-state';
 
 const ProcessingGraphPanel = dynamic(() => import('./ProcessingGraphPanel'), {
   loading: () => (
@@ -21,34 +21,34 @@ const ProcessingGraphPanel = dynamic(() => import('./ProcessingGraphPanel'), {
     </div>
   ),
   ssr: false,
-})
+});
 
-type TranslateFn = (key: string, values?: Record<string, any>) => string
+type TranslateFn = (key: string, values?: Record<string, any>) => string;
 
 type ProcessingStats = {
-  concepts_extracted: number
-  concepts_after_merge: number
-  relations_verified: number
-}
+  concepts_extracted: number;
+  concepts_after_merge: number;
+  relations_verified: number;
+};
 
 type ProcessingStatusCardProps = {
-  creatingSession: boolean
-  currentStep: number
+  creatingSession: boolean;
+  currentStep: number;
   error: {
-    message: string
-    retryable: boolean
-    code: string | null
-    action: 'upload' | 'dashboard'
-  } | null
-  filename: string
-  handleErrorAction: () => void
-  notice: string | null
-  progress: number
-  stats: ProcessingStats | null
-  statusLabel: string
-  steps: ProcessingStep[]
-  t: TranslateFn
-}
+    message: string;
+    retryable: boolean;
+    code: string | null;
+    action: 'upload' | 'dashboard';
+  } | null;
+  filename: string;
+  handleErrorAction: () => void;
+  notice: string | null;
+  progress: number;
+  stats: ProcessingStats | null;
+  statusLabel: string;
+  steps: ProcessingStep[];
+  t: TranslateFn;
+};
 
 export const ProcessingStatusCard = ({
   creatingSession,
@@ -78,7 +78,9 @@ export const ProcessingStatusCard = ({
 
       {!error && (
         <div className="mb-8 inline-flex items-center rounded-md border border-neutral-200 bg-neutral-50 px-4 py-1.5">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-900">{statusLabel}</p>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-900">
+            {statusLabel}
+          </p>
         </div>
       )}
 
@@ -104,15 +106,21 @@ export const ProcessingStatusCard = ({
         <div className="mb-8 grid grid-cols-3 gap-3">
           <div className="rounded-md border border-neutral-100 bg-neutral-50 p-3 text-center">
             <div className="text-xl font-mono text-neutral-900">{stats.concepts_extracted}</div>
-            <div className="mt-1 text-[10px] font-bold uppercase tracking-widest text-neutral-500">{t('processing.stats.extracted')}</div>
+            <div className="mt-1 text-[10px] font-bold uppercase tracking-widest text-neutral-500">
+              {t('processing.stats.extracted')}
+            </div>
           </div>
           <div className="rounded-md border border-neutral-100 bg-neutral-50 p-3 text-center">
             <div className="text-xl font-mono text-neutral-900">{stats.concepts_after_merge}</div>
-            <div className="mt-1 text-[10px] font-bold uppercase tracking-widest text-neutral-500">{t('processing.stats.afterMerge')}</div>
+            <div className="mt-1 text-[10px] font-bold uppercase tracking-widest text-neutral-500">
+              {t('processing.stats.afterMerge')}
+            </div>
           </div>
           <div className="rounded-md border border-neutral-100 bg-neutral-50 p-3 text-center">
             <div className="text-xl font-mono text-neutral-900">{stats.relations_verified}</div>
-            <div className="mt-1 text-[10px] font-bold uppercase tracking-widest text-neutral-500">{t('processing.stats.relations')}</div>
+            <div className="mt-1 text-[10px] font-bold uppercase tracking-widest text-neutral-500">
+              {t('processing.stats.relations')}
+            </div>
           </div>
         </div>
       )}
@@ -120,8 +128,8 @@ export const ProcessingStatusCard = ({
       {!error && (
         <div className="mx-auto mb-8 max-w-sm space-y-4 text-left">
           {steps.map((step) => {
-            const isCompleted = step.id < currentStep
-            const isActive = step.id === currentStep
+            const isCompleted = step.id < currentStep;
+            const isActive = step.id === currentStep;
 
             return (
               <div key={step.id} className="group flex items-center gap-3">
@@ -135,7 +143,9 @@ export const ProcessingStatusCard = ({
                   }`}
                 >
                   {isCompleted ? <HiCheck className="h-3 w-3" /> : null}
-                  {isActive ? <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-brand-action" /> : null}
+                  {isActive ? (
+                    <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-brand-action" />
+                  ) : null}
                 </div>
                 <span
                   className={`text-sm transition-colors duration-200 ${
@@ -149,7 +159,7 @@ export const ProcessingStatusCard = ({
                   {step.label}
                 </span>
               </div>
-            )
+            );
           })}
         </div>
       )}
@@ -178,37 +188,46 @@ export const ProcessingStatusCard = ({
 
       {error && (
         <div className="mt-8 flex justify-center">
-          <Button variant="outline" onClick={handleErrorAction} className="h-auto rounded-md border-neutral-200 px-6 py-2.5 text-sm font-medium transition-colors hover:bg-neutral-50">
+          <Button
+            variant="outline"
+            onClick={handleErrorAction}
+            className="h-auto rounded-md border-neutral-200 px-6 py-2.5 text-sm font-medium transition-colors hover:bg-neutral-50"
+          >
             <HiOutlineArrowLeft className="mr-2 h-4 w-4" />
-            {error.action === 'dashboard' ? t('processing.goToDashboard') : t('processing.tryAgain')}
+            {error.action === 'dashboard'
+              ? t('processing.goToDashboard')
+              : t('processing.tryAgain')}
           </Button>
         </div>
       )}
     </div>
   </div>
-)
+);
 
 export const ProcessingTipCard = ({ t }: { t: TranslateFn }) => (
   <div className="mx-auto mt-6 flex w-full items-start gap-2 rounded-xl border border-neutral-200 bg-white p-4 text-xs text-neutral-600 shadow-sm">
     <HiOutlineSparkles className="h-4 w-4 flex-shrink-0 text-neutral-400" />
     <p>
-      <strong className="text-neutral-900">{t('processing.didYouKnow')}</strong> {t('processing.didYouKnowDescription')}
+      <strong className="text-neutral-900">{t('processing.didYouKnow')}</strong>{' '}
+      {t('processing.didYouKnowDescription')}
     </p>
   </div>
-)
+);
 
 export const ProcessingGraphCard = ({
   partialGraph,
   t,
 }: {
-  partialGraph: PipelineJobStatus['partial_graph']
-  t: TranslateFn
+  partialGraph: PipelineJobStatus['partial_graph'];
+  t: TranslateFn;
 }) => (
   <div className="relative hidden h-[600px] w-full overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-sm lg:flex lg:w-[55%]">
     <div className="pointer-events-none absolute left-6 top-6 z-10">
-      <h3 className="text-sm font-medium tracking-wide text-neutral-900">{t('processing.knowledgeGraph')}</h3>
+      <h3 className="text-sm font-medium tracking-wide text-neutral-900">
+        {t('processing.knowledgeGraph')}
+      </h3>
       <p className="mt-0.5 text-xs text-neutral-500">{t('processing.visualizingStructures')}</p>
     </div>
     <ProcessingGraphPanel partialGraph={partialGraph} />
   </div>
-)
+);

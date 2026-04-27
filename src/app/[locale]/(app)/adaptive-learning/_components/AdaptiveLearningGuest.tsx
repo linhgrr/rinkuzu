@@ -1,36 +1,34 @@
-import Link from 'next/link'
-import { defaultLocale } from '@/i18n/config'
-import { JsonLd } from '@/components/seo/JsonLd'
-import { buildFaqSchema, buildSoftwareApplicationSchema } from '@/lib/structured-data'
+import Link from 'next/link';
+import { defaultLocale } from '@/i18n/config';
+import { JsonLd } from '@/components/seo/JsonLd';
+import { buildFaqSchema, buildSoftwareApplicationSchema } from '@/lib/structured-data';
 
-type TranslateFn = (key: string, values?: Record<string, any>) => string
+type TranslateFn = (key: string, values?: Record<string, any>) => string;
 
 type AdaptiveLearningGuestProps = {
-  locale: string
-  t: TranslateFn
-}
+  locale: string;
+  t: TranslateFn;
+};
 
-const FAQ_KEYS = ['howItWorks', 'forBeginners', 'multipleSubjects'] as const
+const FAQ_KEYS = ['howItWorks', 'forBeginners', 'multipleSubjects'] as const;
 
 const getLocalizedPath = (locale: string, path: string) =>
-  locale === defaultLocale ? path : `/${locale}${path}`
+  locale === defaultLocale ? path : `/${locale}${path}`;
 
 export default function AdaptiveLearningGuest({ locale, t }: AdaptiveLearningGuestProps) {
-  const loginPath = getLocalizedPath(locale, '/login')
-  const registerPath = getLocalizedPath(locale, '/register')
-  const uploadPath = getLocalizedPath(locale, '/adaptive-learning/upload')
-  const callbackPath = getLocalizedPath(locale, '/adaptive-learning')
+  const loginPath = getLocalizedPath(locale, '/login');
+  const registerPath = getLocalizedPath(locale, '/register');
+  const uploadPath = getLocalizedPath(locale, '/adaptive-learning/upload');
+  const callbackPath = getLocalizedPath(locale, '/adaptive-learning');
 
-  const faqItems = FAQ_KEYS.map(key => ({
+  const faqItems = FAQ_KEYS.map((key) => ({
     question: t(`guest.faq.${key}.question`),
     answer: t(`guest.faq.${key}.answer`),
-  }))
+  }));
 
-  const faqSchema = buildFaqSchema(
-    faqItems.map(item => ({ q: item.question, a: item.answer })),
-  )
+  const faqSchema = buildFaqSchema(faqItems.map((item) => ({ q: item.question, a: item.answer })));
 
-  const softwareSchema = buildSoftwareApplicationSchema(locale)
+  const softwareSchema = buildSoftwareApplicationSchema(locale);
 
   return (
     <section className="mx-auto max-w-4xl space-y-8">
@@ -41,9 +39,7 @@ export default function AdaptiveLearningGuest({ locale, t }: AdaptiveLearningGue
         <h1 className="text-3xl font-bold tracking-tight text-neutral-900 md:text-4xl">
           {t('guest.heroTitle')}
         </h1>
-        <p className="text-lg text-neutral-600">
-          {t('dashboardDescription')}
-        </p>
+        <p className="text-lg text-neutral-600">{t('dashboardDescription')}</p>
         <div className="flex flex-wrap gap-3">
           <Link
             href={`${loginPath}?callbackUrl=${encodeURIComponent(callbackPath)}`}
@@ -76,12 +72,13 @@ export default function AdaptiveLearningGuest({ locale, t }: AdaptiveLearningGue
       </div>
 
       <section className="space-y-3">
-        <h2 className="text-2xl font-semibold text-neutral-900">
-          {t('guest.faqTitle')}
-        </h2>
+        <h2 className="text-2xl font-semibold text-neutral-900">{t('guest.faqTitle')}</h2>
         <div className="space-y-3">
           {faqItems.map((item, index) => (
-            <article key={FAQ_KEYS[index]} className="rounded-xl border border-neutral-200 bg-white p-5">
+            <article
+              key={FAQ_KEYS[index]}
+              className="rounded-xl border border-neutral-200 bg-white p-5"
+            >
               <h3 className="mb-1 font-medium text-neutral-900">{item.question}</h3>
               <p className="text-sm text-neutral-600">{item.answer}</p>
             </article>
@@ -91,12 +88,8 @@ export default function AdaptiveLearningGuest({ locale, t }: AdaptiveLearningGue
 
       <div className="flex flex-col gap-4 rounded-xl bg-brand-trust p-6 text-white md:flex-row md:items-center md:justify-between">
         <div>
-          <h2 className="text-xl font-semibold">
-            {t('guest.ctaTitle')}
-          </h2>
-          <p className="mt-1 text-white/75">
-            {t('guest.ctaDescription')}
-          </p>
+          <h2 className="text-xl font-semibold">{t('guest.ctaTitle')}</h2>
+          <p className="mt-1 text-white/75">{t('guest.ctaDescription')}</p>
         </div>
         <Link
           href={`${loginPath}?callbackUrl=${encodeURIComponent(uploadPath)}`}
@@ -106,5 +99,5 @@ export default function AdaptiveLearningGuest({ locale, t }: AdaptiveLearningGue
         </Link>
       </div>
     </section>
-  )
+  );
 }

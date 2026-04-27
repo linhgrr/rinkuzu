@@ -1,15 +1,27 @@
 'use client';
 
 import React from 'react';
+import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/Button';
 import { Spinner } from '@/components/ui/Spinner';
 import { Card, CardContent } from '@/components/ui/Card';
 import { HiArrowRight, HiBookOpen, HiLightBulb, HiOutlineX } from '@/components/icons';
 import { DynamicMarkdownRenderer } from '@/components/ui/DynamicMarkdownRenderer';
 import { TextShimmer } from '@/components/ui/text-shimmer';
-import { ExerciseInteraction } from './exercise-question-interaction';
 import { getExercisePromptSections } from './exercise-prompt';
 import type { Exercise, NextConcept, SubmitAnswerPayload, TheoryData } from './types';
+
+const ExerciseInteraction = dynamic(
+  () => import('./exercise-question-interaction').then((module) => module.ExerciseInteraction),
+  {
+    loading: () => (
+      <div className="grid gap-3 sm:gap-4">
+        <div className="h-16 w-full animate-pulse rounded-xl bg-neutral-100" />
+        <div className="h-16 w-full animate-pulse rounded-xl bg-neutral-100" />
+      </div>
+    ),
+  },
+);
 
 type TranslateFn = ((key: string, values?: Record<string, any>) => string) & {
   rich: (key: string, values: Record<string, any>) => React.ReactNode;

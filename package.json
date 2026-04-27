@@ -7,13 +7,18 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "lint:fix": "next lint --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "tsc --noEmit",
     "analyze-component": "node scripts/analyze-component.mjs",
     "refactor-component": "node scripts/refactor-component.mjs",
     "migrate:durations": "node src/scripts/migratePlanDurations.js migrate",
     "migrate:durations:dry-run": "node src/scripts/migratePlanDurations.js dry-run",
     "seed:plans": "node src/scripts/seedPlansWithISO8601.js seed",
     "validate:plans": "node src/scripts/seedPlansWithISO8601.js validate",
-    "check:subscriptions": "node src/scripts/checkExpiredSubscriptions.js"
+    "check:subscriptions": "node src/scripts/checkExpiredSubscriptions.js",
+    "prepare": "husky"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.971.0",
@@ -76,7 +81,8 @@
     "zustand": "^4.5.4"
   },
   "devDependencies": {
-    "@typescript-eslint/parser": "^8.46.1",
+    "@commitlint/cli": "^20.5.2",
+    "@commitlint/config-conventional": "^20.5.0",
     "@remotion/bundler": "^4.0.407",
     "@remotion/cli": "^4.0.407",
     "@remotion/google-fonts": "^4.0.407",
@@ -87,7 +93,23 @@
     "@types/jsonwebtoken": "^9.0.6",
     "@types/katex": "^0.16.8",
     "@types/node-cron": "^3.0.11",
+    "@typescript-eslint/eslint-plugin": "^8.59.0",
+    "@typescript-eslint/parser": "^8.46.1",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
     "eslint-plugin-sonarjs": "^3.0.5",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0",
+    "prettier": "^3.8.3",
     "remotion": "^4.0.407"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx}": [
+      "eslint --fix --max-warnings=0",
+      "prettier --write"
+    ],
+    "*.{json,css,md}": [
+      "prettier --write"
+    ]
   }
 }

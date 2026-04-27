@@ -1,0 +1,21 @@
+# Dependencies
+node_modules/
+
+# Build output
+.next/
+out/
+build/
+dist/
+
+# PWA generated files
+public/sw.js
+public/workbox-*.js
+public/worker-*.js
+
+# Config files
+next.config.js
+postcss.config.js
+tailwind.config.js
+
+# Coverage
+coverage/

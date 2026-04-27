@@ -1,0 +1,35 @@
+# Dependencies
+node_modules/
+
+# Build output
+.next/
+out/
+build/
+dist/
+
+# PWA generated files
+public/sw.js
+public/workbox-*.js
+public/worker-*.js
+public/sw.js.map
+public/workbox-*.js.map
+public/worker-*.js.map
+
+# Package manager
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Auto-generated
+next-env.d.ts
+*.tsbuildinfo
+
+# Coverage
+coverage/
+
+# Other
+*.md
+*.json
+!.prettierrc
+!tsconfig.json
+!package.json

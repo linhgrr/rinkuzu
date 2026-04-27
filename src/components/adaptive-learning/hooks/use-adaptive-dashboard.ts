@@ -1,5 +1,6 @@
-import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useDeferredValue, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import {
   checkApiHealth,
   createSessionFromPipeline,
@@ -16,8 +17,6 @@ const DAILY_GOAL_TARGET = 3;
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
 type TranslateFn = (key: string, values?: Record<string, any>) => string;
-
-type ToastPayload = { title: string; type: 'error' | 'success' } | null;
 
 const toTimestampMs = (value: number): number => (value < 1_000_000_000_000 ? value * 1000 : value);
 
@@ -96,26 +95,7 @@ export const useAdaptiveDashboard = ({
   const [itemToDelete, setItemToDelete] = useState<PipelineJobHistoryItem | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [sessionHistory, setSessionHistory] = useState<SessionHistoryItem[]>(initialSessionHistory);
-  const [toastMsg, setToastMsg] = useState<ToastPayload>(null);
   const deferredSearchQuery = useDeferredValue(searchQuery);
-
-  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const showToast = useCallback((title: string, type: 'error' | 'success' = 'error') => {
-    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-
-    setToastMsg({ title, type });
-    toastTimerRef.current = setTimeout(() => {
-      setToastMsg(null);
-      toastTimerRef.current = null;
-    }, 5000);
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-    };
-  }, []);
 
   const refreshSubjects = useCallback(async () => {
     try {
@@ -139,15 +119,16 @@ export const useAdaptiveDashboard = ({
         const session = await createSessionFromPipeline(jobId, 50);
         localStorage.setItem('al_session_id', session.session_id);
         saveSessionJobMapping(session.session_id, jobId);
+        toast.success(t('creatingSession'));
         router.push(ADAPTIVE_ROUTES.subject(session.session_id));
       } catch (err) {
         console.error(`Error creating session: ${(err as Error).message}`);
         const feedback = getSessionStartFeedback(tAdaptive, 'dashboard', err);
-        showToast(feedback.message, 'error');
+        toast.error(feedback.message);
         setLoadingJobId(null);
       }
     },
-    [deletingJobId, loadingJobId, router, showToast, tAdaptive],
+    [deletingJobId, loadingJobId, router, t, tAdaptive],
   );
 
   const handleDeleteClick = useCallback((job: PipelineJobHistoryItem) => {
@@ -162,15 +143,15 @@ export const useAdaptiveDashboard = ({
       await deleteSubject(itemToDelete.job_id, true);
       await refreshSubjects();
       clearSelectedPipelineJob(itemToDelete.job_id);
-      showToast(t('deleteSuccess'), 'success');
+      toast.success(t('deleteSuccess'));
     } catch (err) {
       console.error(`Error deleting subject: ${(err as Error).message}`);
-      showToast(t('deleteFailed'), 'error');
+      toast.error(t('deleteFailed'));
     } finally {
       setDeletingJobId(null);
       setItemToDelete(null);
     }
-  }, [deletingJobId, itemToDelete, loadingJobId, refreshSubjects, showToast, t]);
+  }, [deletingJobId, itemToDelete, loadingJobId, refreshSubjects, t]);
 
   const handleCancelDelete = useCallback(() => {
     if (!deletingJobId) setItemToDelete(null);
@@ -289,7 +270,6 @@ export const useAdaptiveDashboard = ({
     sessionHistory,
     setSearchQuery,
     streakDays,
-    toastMsg,
     upNextSubject,
   };
 };

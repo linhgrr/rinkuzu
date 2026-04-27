@@ -6,7 +6,6 @@ import { useTranslations } from 'next-intl';
 import {
   DashboardDeleteModal,
   DashboardHeader,
-  DashboardToast,
   DailyProgressCard,
   FloatingUploadAction,
   HeroSection,
@@ -50,7 +49,6 @@ export default function AdaptiveLearningDashboard({
     searchQuery,
     setSearchQuery,
     streakDays,
-    toastMsg,
     upNextSubject,
   } = useAdaptiveDashboard({
     initialSubjects,
@@ -72,8 +70,6 @@ export default function AdaptiveLearningDashboard({
 
   return (
     <div className={`${inter.className} bg-neutral-50 pb-12 text-[var(--text-primary)]`}>
-      <DashboardToast toastMsg={toastMsg} />
-
       <main className="mx-auto w-full max-w-[92rem] px-4 py-8 sm:px-5 md:px-6 md:py-10 lg:px-8">
         <DashboardHeader
           apiOnline={apiOnline}

@@ -2,6 +2,7 @@
 
 import React, { useCallback, useState } from 'react';
 import { useDropzone, type FileRejection } from 'react-dropzone';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
 import {
   HiOutlineCloudUpload,
@@ -41,21 +42,29 @@ export default function AdaptiveLearningUpload() {
     (rejections: FileRejection[]) => {
       const firstError = rejections[0]?.errors[0];
       if (!firstError) {
-        setError(t('uploadPage.uploadFailed'));
+        const message = t('uploadPage.uploadFailed');
+        setError(message);
+        toast.error(message);
         return;
       }
 
       if (firstError.code === 'file-too-large') {
-        setError(t('uploadPage.errors.fileTooLarge', { maxSizeMb: 50 }));
+        const message = t('uploadPage.errors.fileTooLarge', { maxSizeMb: 50 });
+        setError(message);
+        toast.error(message);
         return;
       }
 
       if (firstError.code === 'file-invalid-type') {
-        setError(t('uploadPage.errors.onlyPdf'));
+        const message = t('uploadPage.errors.onlyPdf');
+        setError(message);
+        toast.error(message);
         return;
       }
 
-      setError(firstError.message || t('uploadPage.uploadFailed'));
+      const message = firstError.message || t('uploadPage.uploadFailed');
+      setError(message);
+      toast.error(message);
     },
     [t],
   );
@@ -63,7 +72,9 @@ export default function AdaptiveLearningUpload() {
   const handleUpload = useCallback(
     async (file: File) => {
       if (!subjectName.trim()) {
-        setError(t('uploadPage.subjectRequiredBeforeUpload'));
+        const message = t('uploadPage.subjectRequiredBeforeUpload');
+        setError(message);
+        toast.error(message);
         return;
       }
 
@@ -73,7 +84,9 @@ export default function AdaptiveLearningUpload() {
       try {
         const online = await checkApiHealth();
         if (!online) {
-          setError(t('uploadPage.backendOffline'));
+          const message = t('uploadPage.backendOffline');
+          setError(message);
+          toast.error(message);
           setIsUploading(false);
           return;
         }
@@ -83,11 +96,14 @@ export default function AdaptiveLearningUpload() {
         localStorage.setItem('al_pipeline_job_id', result.job_id);
         localStorage.setItem('al_pipeline_filename', file.name);
         localStorage.setItem('al_pipeline_subject_name', subjectName.trim());
+        toast.success(t('processing.status.queuedForProcessing'));
         setTimeout(() => {
           router.push(ADAPTIVE_ROUTES.processing);
         }, 500);
       } catch (err) {
-        setError(getFriendlyUploadError(err));
+        const message = getFriendlyUploadError(err);
+        setError(message);
+        toast.error(message);
         setIsUploading(false);
         setUploadProgress(0);
       }
@@ -99,7 +115,9 @@ export default function AdaptiveLearningUpload() {
     (acceptedFiles: File[]) => {
       if (acceptedFiles.length > 0) {
         if (!subjectName.trim()) {
-          setError(t('uploadPage.subjectRequiredBeforeSelectFile'));
+          const message = t('uploadPage.subjectRequiredBeforeSelectFile');
+          setError(message);
+          toast.error(message);
           return;
         }
         void handleUpload(acceptedFiles[0]);
@@ -120,7 +138,9 @@ export default function AdaptiveLearningUpload() {
   const handleOpenFileDialog = (event: React.MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation();
     if (!subjectName.trim()) {
-      setError(t('uploadPage.subjectRequiredBeforeSelectFile'));
+      const message = t('uploadPage.subjectRequiredBeforeSelectFile');
+      setError(message);
+      toast.error(message);
       return;
     }
     open();

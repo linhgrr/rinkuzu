@@ -2,6 +2,7 @@
 
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { toast } from 'sonner';
 import {
   ReactFlow,
   Background,
@@ -233,10 +234,11 @@ export default function KnowledgeGraph({ sessionId }: KnowledgeGraphProps) {
         conceptDetailCacheRef.current.set(nodeId, detail);
         setSelectedConcept(detail);
       } catch {
+        toast.error(t('processing.errors.generic'));
         // Ignore temporary request errors; user can retry by clicking again.
       }
     },
-    [sessionId],
+    [sessionId, t],
   );
 
   const legendItems = useMemo(

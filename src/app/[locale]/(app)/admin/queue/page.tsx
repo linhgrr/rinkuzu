@@ -360,7 +360,7 @@ export default function AdminQueuePage() {
                           <div className="flex items-center space-x-3">
                             <CardTitle className="text-xl">{quiz.title}</CardTitle>
                             {quiz.isPrivate && (
-                              <span className="text-sm bg-neutral-100 text-neutral-600 px-2 py-1 rounded-full flex items-center">
+                              <span className="inline-flex min-h-[28px] items-center rounded-full bg-neutral-100 px-3 text-[13px] font-medium text-neutral-600">
                                 <HiOutlineLockClosed className="w-3 h-3 mr-1" />{' '}
                                 {tProfile('private')}
                               </span>
@@ -375,7 +375,7 @@ export default function AdminQueuePage() {
                             </span>
                             <span>•</span>
                             <span
-                              className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full"
+                              className="inline-flex min-h-[28px] items-center rounded-full px-3 text-[13px] font-medium"
                               style={{
                                 backgroundColor: (quiz.category as any)?.color + '20',
                                 color: (quiz.category as any)?.color,
@@ -403,6 +403,7 @@ export default function AdminQueuePage() {
                             size="sm"
                             variant="outline"
                             onClick={() => openPreviewModal(quiz)}
+                            className="min-h-[36px] px-3"
                           >
                             <HiOutlineEye className="w-4 h-4 mr-1" /> {t('previewWithAnswers')}
                           </Button>
@@ -416,7 +417,7 @@ export default function AdminQueuePage() {
                             <Button
                               size="sm"
                               variant="outline"
-                              className="text-brand-trust hover:text-brand-trust border-green-300 hover:border-green-400"
+                              className="min-h-[36px] px-3 text-brand-trust hover:text-brand-trust border-green-300 hover:border-green-400"
                             >
                               <HiOutlinePencil className="w-4 h-4 mr-1" /> {t('editQuiz')}
                             </Button>
@@ -431,6 +432,7 @@ export default function AdminQueuePage() {
                                 variant="destructive"
                                 onClick={() => openRejectModal(quiz)}
                                 disabled={actionLoading === quiz._id}
+                                className="min-h-[36px] px-3"
                               >
                                 {t('reject')}
                               </Button>
@@ -438,7 +440,7 @@ export default function AdminQueuePage() {
                                 size="sm"
                                 onClick={() => approveQuiz(quiz._id)}
                                 loading={actionLoading === quiz._id}
-                                className="bg-green-600 hover:bg-green-700"
+                                className="min-h-[36px] bg-green-600 px-3 hover:bg-green-700"
                               >
                                 {t('approve')}
                               </Button>
@@ -448,7 +450,7 @@ export default function AdminQueuePage() {
                             size="sm"
                             variant="outline"
                             onClick={() => openDeleteConfirm(quiz)}
-                            className="text-red-600 hover:text-red-700 border-red-300 hover:border-red-400"
+                            className="min-h-[36px] px-3 text-red-600 hover:text-red-700 border-red-300 hover:border-red-400"
                             disabled={deletingQuizId === quiz._id}
                           >
                             {deletingQuizId === quiz._id ? (
@@ -519,6 +521,7 @@ export default function AdminQueuePage() {
                 setSelectedQuiz(null);
                 setRejectReason('');
               }}
+              className="min-h-[40px] px-4"
             >
               {t('cancel')}
             </Button>
@@ -527,6 +530,7 @@ export default function AdminQueuePage() {
               onClick={rejectQuiz}
               loading={actionLoading === selectedQuiz?._id}
               disabled={!rejectReason.trim()}
+              className="min-h-[40px] px-4"
             >
               {t('rejectQuizButton')}
             </Button>

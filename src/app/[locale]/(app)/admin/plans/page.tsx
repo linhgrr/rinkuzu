@@ -314,7 +314,7 @@ export default function AdminPlansPage() {
               <Button
                 onClick={() => setShowCreateForm(true)}
                 variant="default"
-                className="rounded-full shadow-md flex items-center gap-2 px-4 py-2"
+                className="flex min-h-[44px] items-center gap-2 rounded-full px-5 shadow-md"
                 title="Create New Plan"
               >
                 <HiOutlinePlus className="w-5 h-5" />
@@ -436,7 +436,7 @@ export default function AdminPlansPage() {
                           onClick={() => removeFeature(index, true)}
                           variant="outline"
                           size="sm"
-                          className="text-red-600 hover:text-red-700"
+                          className="min-h-[36px] px-3 text-red-600 hover:text-red-700"
                           title="Remove this feature"
                         >
                           <span className="sr-only">Remove this feature</span>
@@ -449,7 +449,7 @@ export default function AdminPlansPage() {
                       onClick={() => addFeature(true)}
                       variant="outline"
                       size="sm"
-                      className="mt-2"
+                      className="mt-2 min-h-[36px] px-3"
                     >
                       <HiOutlinePlus className="w-4 h-4 mr-1" /> Add Feature
                     </Button>
@@ -459,13 +459,14 @@ export default function AdminPlansPage() {
                       type="button"
                       onClick={() => setShowCreateForm(false)}
                       variant="outline"
+                      className="min-h-[40px] px-4"
                     >
                       Cancel
                     </Button>
                     <Button
                       type="submit"
                       disabled={createLoading}
-                      className="bg-brand-trust hover:bg-brand-trust-hover text-white"
+                      className="min-h-[40px] bg-brand-trust px-4 text-white hover:bg-brand-trust-hover"
                     >
                       {createLoading ? 'Creating…' : tCommon('create') + ' Plan'}
                     </Button>
@@ -522,7 +523,7 @@ export default function AdminPlansPage() {
                         </div>
                         <div className="flex items-center space-x-2">
                           <span
-                            className={`px-2 py-1 text-xs font-medium rounded-full ${
+                            className={`inline-flex min-h-[28px] items-center rounded-full px-3 text-[13px] font-medium ${
                               plan.isActive
                                 ? 'bg-green-100 text-green-800'
                                 : 'bg-neutral-100 text-neutral-800'
@@ -579,7 +580,7 @@ export default function AdminPlansPage() {
                                   variant="outline"
                                   size="sm"
                                   onClick={() => removeFeature(index)}
-                                  className="text-red-600 hover:text-red-700"
+                                  className="min-h-[36px] px-3 text-red-600 hover:text-red-700"
                                 >
                                   Remove
                                 </Button>
@@ -590,7 +591,7 @@ export default function AdminPlansPage() {
                               variant="outline"
                               size="sm"
                               onClick={() => addFeature(false)}
-                              className="w-full"
+                              className="min-h-[36px] w-full px-3"
                             >
                               Add Feature
                             </Button>
@@ -633,12 +634,16 @@ export default function AdminPlansPage() {
                           <>
                             <Button
                               onClick={() => handleSaveEdit(plan._id)}
-                              className="flex-1"
+                              className="min-h-[40px] flex-1 px-4"
                               variant="gradient"
                             >
                               Save Changes
                             </Button>
-                            <Button onClick={handleCancelEdit} variant="outline" className="flex-1">
+                            <Button
+                              onClick={handleCancelEdit}
+                              variant="outline"
+                              className="min-h-[40px] flex-1 px-4"
+                            >
                               Cancel
                             </Button>
                           </>
@@ -646,7 +651,7 @@ export default function AdminPlansPage() {
                           <Button
                             onClick={() => handleEdit(plan)}
                             variant="outline"
-                            className="w-full"
+                            className="min-h-[40px] w-full px-4"
                           >
                             Edit Plan
                           </Button>

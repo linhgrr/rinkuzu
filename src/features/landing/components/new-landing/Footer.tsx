@@ -51,7 +51,7 @@ export function Footer() {
                 <li key={link.href}>
                   <Link
                     href={link.href}
-                    className="text-sm font-medium leading-6 text-[#D6D7CF] visited:text-[#D6D7CF] transition-colors hover:text-brand-action focus-visible:text-brand-action visited:hover:text-brand-action"
+                    className="rounded-sm text-sm font-medium leading-6 text-[#D6D7CF] visited:text-[#D6D7CF] transition-colors hover:text-brand-action focus-visible:text-brand-action focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-action visited:hover:text-brand-action"
                   >
                     {link.label}
                   </Link>
@@ -75,7 +75,7 @@ export function Footer() {
                 <li key={link.href}>
                   <Link
                     href={link.href}
-                    className="text-sm font-medium leading-6 text-[#D6D7CF] visited:text-[#D6D7CF] transition-colors hover:text-brand-action focus-visible:text-brand-action visited:hover:text-brand-action"
+                    className="rounded-sm text-sm font-medium leading-6 text-[#D6D7CF] visited:text-[#D6D7CF] transition-colors hover:text-brand-action focus-visible:text-brand-action focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-action visited:hover:text-brand-action"
                   >
                     {link.label}
                   </Link>

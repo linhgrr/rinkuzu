@@ -78,7 +78,7 @@ const Navbar = ({ isAuthenticated = false }: { isAuthenticated?: boolean }) => {
                 key={link.labelKey}
                 href={link.href}
                 prefetch={false}
-                className="text-[14px] font-medium text-white hover:opacity-80 transition-opacity"
+                className="rounded-sm text-[14px] font-medium text-white transition-opacity hover:opacity-80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
               >
                 {t(link.labelKey)}
               </Link>
@@ -89,7 +89,10 @@ const Navbar = ({ isAuthenticated = false }: { isAuthenticated?: boolean }) => {
         {/* Right side */}
         <div className="flex items-center gap-4">
           {!isAuthenticated ? (
-            <Link href="/login" className="text-white text-[14px] font-medium hover:underline">
+            <Link
+              href="/login"
+              className="rounded-sm text-[14px] font-medium text-white hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+            >
               {t('login')}
             </Link>
           ) : null}
@@ -116,7 +119,10 @@ const Navbar = ({ isAuthenticated = false }: { isAuthenticated?: boolean }) => {
         </Link>
         <div className="flex items-center gap-3">
           {!isAuthenticated ? (
-            <Link href="/login" className="text-white text-[14px] font-medium">
+            <Link
+              href="/login"
+              className="rounded-sm text-[14px] font-medium text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+            >
               {t('login')}
             </Link>
           ) : null}
@@ -139,7 +145,7 @@ const Navbar = ({ isAuthenticated = false }: { isAuthenticated?: boolean }) => {
 
       {/* Mobile drawer */}
       {isMobileMenuOpen && (
-        <div className="md:hidden bg-black/95 border-t border-white/10 animate-fadeIn">
+        <div className="md:hidden bg-black/95 border-t border-white/10 animate-fadeIn overscroll-contain">
           <div className="px-6 py-4 space-y-1">
             {NAV_LINKS_EN.map((link) => (
               <Link
@@ -147,7 +153,7 @@ const Navbar = ({ isAuthenticated = false }: { isAuthenticated?: boolean }) => {
                 href={link.href}
                 prefetch={false}
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="block py-3 px-2 text-[15px] font-medium text-white/80 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
+                className="block rounded-lg px-2 py-3 text-[15px] font-medium text-white/80 transition-colors hover:bg-white/5 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
               >
                 {t(link.labelKey)}
               </Link>

@@ -23,7 +23,7 @@ const Card = React.forwardRef<
       className={cn(
         variants[variant],
         hover && variant !== 'interactive'
-          ? 'hover:shadow-[var(--shadow-sm)] hover:-translate-y-[1px] transition-all duration-[180ms] ease-[cubic-bezier(0.2,0,0,1)]'
+          ? 'transition-[transform,box-shadow] duration-[180ms] ease-[cubic-bezier(0.2,0,0,1)] hover:-translate-y-[1px] hover:shadow-[var(--shadow-sm)]'
           : '',
         className,
       )}
@@ -104,9 +104,9 @@ const Badge = React.forwardRef<
   };
 
   const sizes = {
-    sm: 'badge h-[28px] px-[12px] text-[13px]',
-    md: 'badge h-[28px] px-[12px] text-[14px]',
-    lg: 'badge h-[32px] px-[16px] text-[14px]',
+    sm: 'badge text-[13px]',
+    md: 'badge min-h-[30px] px-[14px] text-[13px]',
+    lg: 'badge min-h-[32px] px-[16px] text-[14px]',
   };
 
   return (

@@ -295,7 +295,7 @@ export default function AdminPlansPage() {
 
       {/* Main Content */}
       <main
-        className={`py-8 transition-all duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-16'} max-w-none px-4 sm:px-6 lg:px-8`}
+        className={`py-8 transition-[margin] duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-16'} max-w-none px-4 sm:px-6 lg:px-8`}
       >
         {loading ? (
           <div className="flex justify-center py-12">
@@ -621,7 +621,7 @@ export default function AdminPlansPage() {
                               onChange={(e) =>
                                 setEditForm({ ...editForm, isActive: e.target.checked })
                               }
-                              className="mr-2"
+                              className="mr-2 h-4 w-4 rounded border-neutral-300 text-brand-trust focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
                             />
                             <span className="text-sm text-neutral-700">Active</span>
                           </label>

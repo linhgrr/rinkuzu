@@ -14,7 +14,8 @@ import {
 } from '@/components/icons';
 import { toast } from 'sonner';
 import { CategorySelector } from '@/components/ui/CategorySelector';
-import { Textarea } from '@/components/ui/Input';
+import { Input, Textarea } from '@/components/ui/Input';
+import { Button } from '@/components/ui/Button';
 
 export default function MobileCreatePage() {
   const t = useTranslations('create');
@@ -118,7 +119,7 @@ export default function MobileCreatePage() {
         className={`
           relative rounded-2xl border-2 border-dashed p-8
           flex flex-col items-center justify-center
-          min-h-[200px] transition-all duration-200 cursor-pointer
+          min-h-[200px] cursor-pointer transition-[background-color,border-color] duration-200
           ${isDragActive ? 'border-green-500 bg-green-50' : 'border-neutral-200 bg-white'}
           ${file ? 'border-green-500 bg-green-50' : ''}
           ${isUploading ? 'opacity-50 pointer-events-none' : ''}
@@ -131,18 +132,21 @@ export default function MobileCreatePage() {
             <HiOutlineDocumentText className="w-14 h-14 text-green-500 mx-auto" />
             <p className="mt-3 font-medium text-neutral-900">{file.name}</p>
             <p className="text-sm text-neutral-500">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
-            <button
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
               onClick={(e) => {
                 e.stopPropagation();
                 setFile(null);
                 setTitle('');
                 setAiPrompt('');
               }}
-              className="mt-3 inline-flex items-center gap-1 text-sm text-red-500 hover:text-red-600"
+              className="mt-3 px-3 text-sm text-red-500 hover:text-red-600"
             >
               <HiOutlineX className="w-4 h-4" />
               {t('remove')}
-            </button>
+            </Button>
           </div>
         ) : (
           <div className="text-center">
@@ -161,15 +165,12 @@ export default function MobileCreatePage() {
           <label className="block text-sm font-medium text-neutral-700 mb-2">
             {t('quizTitle')}
           </label>
-          <input
+          <Input
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder={t('enterTitle')}
-            className="w-full px-4 py-3.5 rounded-xl border border-neutral-200
-                         bg-white text-neutral-900 placeholder-neutral-400
-                         focus:ring-2 focus:ring-brand-trust focus:border-transparent
-                         transition-all duration-200"
+            className="h-[52px] rounded-xl px-4"
             disabled={isUploading}
           />
         </div>
@@ -186,10 +187,7 @@ export default function MobileCreatePage() {
             onChange={(e) => setDescription(e.target.value)}
             placeholder={t('provideContext')}
             rows={3}
-            className="w-full px-4 py-3.5 rounded-xl border border-neutral-200
-                         bg-white text-neutral-900 placeholder-neutral-400
-                         focus:ring-2 focus:ring-brand-trust focus:border-transparent
-                         transition-all duration-200"
+            className="rounded-xl px-4 py-3"
             disabled={isUploading}
           />
         </div>
@@ -215,15 +213,12 @@ export default function MobileCreatePage() {
           <label className="block text-sm font-medium text-neutral-700 mb-2">
             {t('aiPromptLabel')}
           </label>
-          <textarea
+          <Textarea
             value={aiPrompt}
             onChange={(e) => setAiPrompt(e.target.value)}
             placeholder={t('aiPromptPlaceholder')}
             rows={3}
-            className="w-full px-4 py-3.5 rounded-xl border border-neutral-200
-                         bg-white text-neutral-900 placeholder-neutral-400
-                         focus:ring-2 focus:ring-brand-trust focus:border-transparent
-                         transition-all duration-200"
+            className="rounded-xl px-4 py-3"
             disabled={isUploading}
           />
           <p className="text-xs text-neutral-500 mt-2">{t('aiPromptHelper')}</p>
@@ -232,13 +227,12 @@ export default function MobileCreatePage() {
 
       {/* Submit Button */}
       {file && title.trim() && selectedCategory && (
-        <button
+        <Button
+          type="button"
           onClick={handleSubmit}
           disabled={isUploading}
-          className="w-full mt-6 py-4 rounded-full bg-green-500 text-white
-                       font-semibold flex items-center justify-center gap-2
-                       hover:bg-brand-trust active:scale-[0.98] disabled:opacity-50
-                       transition-all duration-200"
+          size="lg"
+          className="mt-6 w-full rounded-full bg-green-500 hover:bg-brand-trust"
         >
           {isUploading ? (
             <>
@@ -251,7 +245,7 @@ export default function MobileCreatePage() {
               <HiOutlineArrowRight className="w-5 h-5" />
             </>
           )}
-        </button>
+        </Button>
       )}
 
       {/* Desktop Hint */}

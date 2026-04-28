@@ -161,7 +161,7 @@ export default function AdminStatsPage() {
             currentPath={pathname}
           />
           <main
-            className={`flex-1 transition-all duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-16'}`}
+            className={`flex-1 transition-[margin] duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-16'}`}
           >
             <div className="p-8">
               <div className="flex items-center justify-center min-h-[400px]">
@@ -189,7 +189,9 @@ export default function AdminStatsPage() {
         />
 
         {/* Main Content */}
-        <main className={`flex-1 transition-all duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-16'}`}>
+        <main
+          className={`flex-1 transition-[margin] duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-16'}`}
+        >
           <div className="p-8">
             <div className="mb-8">
               <h1 className="text-3xl font-bold text-neutral-900">{t('statistics')}</h1>
@@ -375,6 +377,7 @@ export default function AdminStatsPage() {
                         variant="outline"
                         size="sm"
                         onClick={() => setShowCategoriesModal(true)}
+                        className="min-h-[36px] px-3"
                       >
                         {t('viewAll')}
                       </Button>
@@ -420,6 +423,7 @@ export default function AdminStatsPage() {
                         variant="outline"
                         size="sm"
                         onClick={() => setShowCreatorsModal(true)}
+                        className="min-h-[36px] px-3"
                       >
                         {t('viewAll')}
                       </Button>
@@ -459,7 +463,12 @@ export default function AdminStatsPage() {
                       <CardTitle>{t('recentActivity')}</CardTitle>
                       <CardDescription>{t('last30Days')}</CardDescription>
                     </div>
-                    <Button variant="outline" size="sm" onClick={() => setShowActivityModal(true)}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowActivityModal(true)}
+                      className="min-h-[36px] px-3"
+                    >
                       {t('viewAll')}
                     </Button>
                   </CardHeader>
@@ -565,7 +574,7 @@ export default function AdminStatsPage() {
                               </td>
                               <td className="text-center py-3 px-4">
                                 <span
-                                  className={`px-2 py-1 rounded text-xs ${
+                                  className={`inline-flex min-h-[28px] items-center rounded-full px-3 text-[13px] font-medium ${
                                     category.isActive
                                       ? 'bg-green-100 text-green-800'
                                       : 'bg-red-100 text-red-800'

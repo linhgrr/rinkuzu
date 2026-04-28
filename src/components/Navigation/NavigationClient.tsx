@@ -151,7 +151,7 @@ const UserMenu = memo(function UserMenu({
                 type="button"
                 variant="ghost"
                 onClick={handleSignOut}
-                className="flex h-auto w-full items-center justify-start gap-3 rounded-xl px-4 py-2.5 text-sm text-red-500 hover:bg-red-50"
+                className="h-10 w-full justify-start rounded-xl px-4 text-sm text-red-500 hover:bg-red-50"
               >
                 <HiOutlineLogout className="w-5 h-5" />
                 {t('signOut')}
@@ -286,7 +286,7 @@ const MobileMenu = memo(function MobileMenu({
               type="button"
               variant="ghost"
               onClick={handleSignOut}
-              className="h-auto w-full justify-start rounded-xl px-4 py-3 text-sm font-medium text-red-500 hover:bg-red-50"
+              className="h-10 w-full justify-start rounded-xl px-4 text-sm font-medium text-red-500 hover:bg-red-50"
             >
               {t('signOut')}
             </Button>

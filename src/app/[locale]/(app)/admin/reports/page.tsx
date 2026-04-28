@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/Button';
 import { Card, Badge } from '@/components/ui/Card';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { Modal } from '@/components/ui/Modal';
+import { Textarea } from '@/components/ui/Input';
 import {
   HiOutlineInbox,
   HiOutlineEye,
@@ -186,7 +187,7 @@ export default function AdminReportsPage() {
       />
 
       {/* Main content */}
-      <div className={`transition-all duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-16'}`}>
+      <div className={`transition-[margin] duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-16'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-neutral-900">{t('quizReports')}</h1>
@@ -202,7 +203,7 @@ export default function AdminReportsPage() {
                 key={status}
                 variant={statusFilter === status ? 'gradient' : 'outline'}
                 onClick={() => setStatusFilter(status)}
-                className="capitalize"
+                className="min-h-[40px] px-4 capitalize"
               >
                 {status === 'all' ? 'All Reports' : status}
               </Button>
@@ -269,12 +270,16 @@ export default function AdminReportsPage() {
                       </div>
 
                       <div className="flex flex-col gap-2 ml-4">
-                        <Button variant="gradient" onClick={() => openReportModal(report)}>
+                        <Button
+                          variant="gradient"
+                          onClick={() => openReportModal(report)}
+                          className="min-h-[36px] px-3"
+                        >
                           <HiOutlineEye className="w-4 h-4 mr-1" /> Review
                         </Button>
 
                         <Link href={`/edit/${report.quizId}`}>
-                          <Button variant="accent" className="w-full">
+                          <Button variant="accent" className="min-h-[36px] w-full px-3">
                             <HiOutlinePencil className="w-4 h-4 mr-1" /> Edit Quiz
                           </Button>
                         </Link>
@@ -282,7 +287,7 @@ export default function AdminReportsPage() {
                         <Button
                           variant="outline"
                           onClick={() => setReportToDelete(report)}
-                          className="text-red-600 border-red-200 hover:bg-red-50"
+                          className="min-h-[36px] border-red-200 px-3 text-red-600 hover:bg-red-50"
                         >
                           <HiOutlineTrash className="w-4 h-4 mr-1" /> Delete
                         </Button>
@@ -330,11 +335,11 @@ export default function AdminReportsPage() {
               >
                 Admin Notes (Optional)
               </label>
-              <textarea
+              <Textarea
                 id="adminNotes"
                 value={adminNotes}
                 onChange={(e) => setAdminNotes(e.target.value)}
-                className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-brand-trust focus:border-transparent resize-none"
+                className="resize-none"
                 rows={4}
                 maxLength={1000}
                 placeholder="Add internal notes about this report..."
@@ -343,7 +348,11 @@ export default function AdminReportsPage() {
             </div>
 
             <div className="flex gap-3">
-              <Button variant="outline" onClick={closeReportModal} className="flex-1">
+              <Button
+                variant="outline"
+                onClick={closeReportModal}
+                className="min-h-[40px] flex-1 px-4"
+              >
                 Cancel
               </Button>
 
@@ -351,7 +360,7 @@ export default function AdminReportsPage() {
                 variant="gradient"
                 onClick={() => updateReportStatus('resolved')}
                 disabled={updating}
-                className="flex-1 bg-green-600 hover:bg-green-700"
+                className="min-h-[40px] flex-1 bg-green-600 px-4 hover:bg-green-700"
               >
                 {updating ? (
                   'Updating…'
@@ -366,7 +375,7 @@ export default function AdminReportsPage() {
                 variant="outline"
                 onClick={() => updateReportStatus('dismissed')}
                 disabled={updating}
-                className="flex-1"
+                className="min-h-[40px] flex-1 px-4"
               >
                 {updating ? (
                   'Updating…'

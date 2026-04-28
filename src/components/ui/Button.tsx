@@ -32,18 +32,18 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       ghost: 'btn-ghost',
       success: 'btn-success',
       destructive:
-        'bg-red-500 text-white hover:bg-red-600 focus-visible:ring-red-500 shadow-[var(--shadow-xs)] hover:shadow-[var(--shadow-sm)] transform active:translate-y-0 hover:-translate-y-[1px]',
-      link: 'text-neutral-600 hover:text-brand-trust hover:underline underline-offset-4 p-0 h-auto bg-transparent',
+        'border border-transparent bg-red-500 text-white shadow-[var(--shadow-xs)] transition-[background-color,transform,box-shadow] hover:-translate-y-[1px] hover:bg-red-600 hover:shadow-[var(--shadow-sm)] focus-visible:outline focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[rgba(229,72,77,0.22)] active:translate-y-0',
+      link: 'h-auto rounded-none bg-transparent p-0 text-neutral-600 underline-offset-4 transition-colors hover:text-brand-trust hover:underline',
       gradient: 'btn-primary', // gracefully map deprecated variants
       accent: 'btn-primary',
     };
 
     const sizes: Record<string, string> = {
-      sm: 'h-[36px] px-4 text-[14px]',
+      sm: 'h-[36px] px-3.5 text-[14px]',
       md: '', // base size is defined in globals.css for these components
       lg: 'h-[52px] px-8 text-[16px] rounded-[var(--radius-lg)]',
       xl: 'h-[60px] px-10 text-[18px] rounded-[var(--radius-xl)]',
-      icon: 'h-[44px] w-[44px] p-0 rounded-full',
+      icon: 'h-[44px] w-[44px] p-0 rounded-[var(--radius-full)]',
     };
 
     return (

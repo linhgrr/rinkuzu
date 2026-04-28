@@ -559,6 +559,24 @@ Examples:
 }
 ```
 
+### Button Size Tiers
+
+Use these tiers consistently across the product:
+
+| Tier   |      Height |   Padding | Usage                                                  |
+| ------ | ----------: | --------: | ------------------------------------------------------ |
+| `sm`   |        36px | 0 12-14px | Dense table actions, pagination, compact modal actions |
+| `md`   |        44px |    0 18px | Default button size across app and admin               |
+| `lg`   |        52px | 0 24-32px | Hero actions, primary flow CTAs                        |
+| `icon` | 44px square |         0 | Icon-only buttons with full touch target               |
+
+Rules:
+
+- Do not create custom one-off button heights unless the interaction is truly special-purpose.
+- Table actions should prefer `sm`.
+- Modal footer buttons and toolbar actions should prefer `md`.
+- Marketing hero actions may use `lg` or pill variants, but should still map back to these heights.
+
 ### Success Button — Green
 
 Use only when the action confirms or completes something.
@@ -584,17 +602,17 @@ Examples:
 
 ## 6.2 Badges
 
-Badges should be compact and semantically meaningful.
+Badges should remain compact but readable enough for status-heavy product surfaces.
 
 ```css
 .badge {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  height: 24px;
-  padding: 0 10px;
+  height: 28px;
+  padding: 0 12px;
   border-radius: var(--radius-full);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 650;
   letter-spacing: 0.02em;
 }
@@ -621,6 +639,28 @@ Usage examples:
 - Mastered → green success badge
 - New Course → blue info badge
 - Needs Review → orange review badge
+
+### Badge vs Tag / Pill
+
+Use `Badge` for:
+
+- Status labels
+- Type labels
+- Small metadata emphasis
+- Semantic chips that map to system tone tokens
+
+Use `Tag` / `Pill` patterns for:
+
+- Category labels with dynamic user/content colors
+- Context pills like `You`, `Private`, `Featured`
+- Selectable chips and filter controls
+
+Guidelines:
+
+- `Badge` height defaults to `28px`.
+- `Tag/Pill` should usually be `28-32px` tall.
+- Use `12-13px` text for badges and tags.
+- Prefer `font-weight: 600-650` for small pills to keep them readable without looking bulky.
 
 ---
 
@@ -690,6 +730,12 @@ Feature cards can use orange icon containers for actions and green highlights fo
   outline: none;
 }
 ```
+
+Textarea guidance:
+
+- Textareas should reuse the same border, radius, color, and focus language as `.input`.
+- Default textarea vertical padding should feel roomier than single-line inputs, typically `10-12px`.
+- Avoid custom `focus:ring-*` patterns that bypass the tokenized focus shadow unless the surface truly needs a specialized contrast treatment.
 
 Form validation:
 
@@ -1107,6 +1153,19 @@ Motion should communicate responsiveness and learning progress.
 - Graph transitions: 280–420ms
 - Avoid excessive mascot animation during focused quiz taking
 
+Implementation rules:
+
+- Avoid `transition: all`.
+- Only transition the properties that actually change:
+  - `background-color`, `border-color`, `color`
+  - `box-shadow`
+  - `transform`
+  - `width` for progress bars when necessary
+- Prefer token-backed durations:
+  - quick feedback: `--duration-fast`
+  - standard hover/selection: `--duration-base`
+  - dialogs and graph motion: `--duration-slow` or `--duration-page`
+
 ---
 
 ## 9. Iconography
@@ -1243,6 +1302,13 @@ All interactive elements must support:
 - Enter / Space activation
 - Escape to close overlays
 - Arrow navigation where applicable
+
+Focus styling rules:
+
+- Default interactive elements should use `:focus-visible`, not always-on focus decoration.
+- The canonical focus treatment is green tokenized ring via `--focus-ring-soft`.
+- Do not mix multiple visual systems for focus across the same product surface.
+- `outline-none` and `focus:outline-none` are only acceptable when replaced by an equivalent or stronger visible focus style.
 
 ## 12.3 Reduced Motion
 

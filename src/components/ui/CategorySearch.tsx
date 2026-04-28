@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useDebounce } from '@/hooks/useDebounce';
+import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { CategoryOptionItem } from '@/components/ui/CategoryOptionItem';
 import { useDropdownOutside } from '@/components/ui/hooks/use-dropdown-outside';
@@ -157,10 +158,12 @@ export function CategorySearch({
 
   if (isCollapsed) {
     return (
-      <button
+      <Button
         type="button"
+        variant="ghost"
+        size="icon"
         onClick={() => setIsOpen(true)}
-        className="w-full flex items-center justify-center p-2 text-neutral-600 hover:bg-neutral-100 rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] focus-visible:ring-offset-2"
+        className="w-full text-neutral-600 hover:bg-neutral-100"
         title="Search Categories"
       >
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -171,7 +174,7 @@ export function CategorySearch({
             d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
           />
         </svg>
-      </button>
+      </Button>
     );
   }
 
@@ -218,7 +221,7 @@ export function CategorySearch({
               <button
                 type="button"
                 onClick={() => handleCategorySelect(null)}
-                className={`w-full border-b border-neutral-100 px-4 py-3 text-left transition-colors focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] focus-visible:ring-inset ${
+                className={`w-full border-b border-neutral-100 px-4 py-3 text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-inset focus-visible:outline-[var(--focus-ring)] ${
                   selectedIndex === -1
                     ? 'bg-neutral-100 text-brand-trust'
                     : 'text-neutral-700 hover:bg-neutral-50'

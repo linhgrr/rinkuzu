@@ -86,7 +86,7 @@ type FloatingUploadActionProps = {
 
 const DashboardStatusPill = ({ tone, text }: { tone: 'error' | 'warning'; text: string }) => (
   <div
-    className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold ${
+    className={`inline-flex min-h-[28px] items-center gap-2 rounded-full px-3 text-[13px] font-semibold ${
       tone === 'error'
         ? 'bg-red-50 text-red-700 ring-1 ring-red-200'
         : 'bg-amber-50 text-amber-700 ring-1 ring-amber-200'
@@ -185,7 +185,8 @@ export const HeroSection = ({
           </div>
           <Button
             onClick={onGoUpload}
-            className="rounded-full bg-brand-action px-10 py-4 text-white shadow-lg shadow-[var(--shadow-orange-glow)] hover:bg-brand-action-hover"
+            size="lg"
+            className="rounded-full bg-brand-action px-10 text-white shadow-lg shadow-[var(--shadow-orange-glow)] hover:bg-brand-action-hover"
           >
             <HiOutlineCloudUpload className="h-5 w-5" />
             {t('uploadDocument')}
@@ -244,7 +245,8 @@ export const HeroSection = ({
             <Button
               onClick={() => onOpenSubject(subject.job_id)}
               disabled={isOpening}
-              className="rounded-full bg-brand-action px-10 py-4 text-white shadow-lg shadow-[var(--shadow-orange-glow)] hover:bg-brand-action-hover"
+              size="lg"
+              className="rounded-full bg-brand-action px-10 text-white shadow-lg shadow-[var(--shadow-orange-glow)] hover:bg-brand-action-hover"
             >
               <HiOutlinePlay className="h-5 w-5" />
               {isOpening ? t('creatingSession') : t('continueLearning')}
@@ -329,7 +331,7 @@ const UploadCard = ({ onGoUpload, t }: { onGoUpload: () => void; t: TranslateFn 
     <p className="mb-6 text-sm text-neutral-600">{t('uploadDragDropHint')}</p>
     <Button
       onClick={onGoUpload}
-      className="rounded-full bg-brand-action px-8 py-2.5 font-bold text-white shadow-md hover:bg-brand-action-hover"
+      className="rounded-full bg-brand-action px-8 font-bold text-white shadow-md hover:bg-brand-action-hover"
     >
       {t('chooseFile')}
     </Button>
@@ -406,7 +408,7 @@ const SubjectLibraryCard = memo(function SubjectLibraryCard({
         <Button
           onClick={() => onOpenSubject(subject.job_id)}
           disabled={loading}
-          className="w-full rounded-full bg-neutral-100 py-3 text-sm font-bold text-brand-trust hover:bg-brand-trust hover:text-white"
+          className="w-full rounded-full bg-neutral-100 text-sm font-bold text-brand-trust hover:bg-brand-trust hover:text-white"
         >
           {loading ? t('creatingSession') : subject.ctaLabel}
         </Button>
@@ -474,7 +476,7 @@ const SubjectLibraryListItem = memo(function SubjectLibraryListItem({
         <Button
           onClick={() => onOpenSubject(subject.job_id)}
           disabled={loading}
-          className="rounded-full bg-neutral-100 px-5 py-2.5 text-sm font-bold text-brand-trust hover:bg-brand-trust hover:text-white"
+          className="rounded-full bg-neutral-100 px-5 text-sm font-bold text-brand-trust hover:bg-brand-trust hover:text-white"
         >
           {loading ? t('creatingSession') : subject.ctaLabel}
         </Button>

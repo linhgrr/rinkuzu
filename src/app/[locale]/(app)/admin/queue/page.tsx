@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
+import { Textarea } from '@/components/ui/Input';
 import {
   Card,
   CardContent,
@@ -244,7 +245,7 @@ export default function AdminQueuePage() {
 
       {/* Main Content */}
       <main
-        className={`py-8 transition-all duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-16'} max-w-none px-4 sm:px-6 lg:px-8`}
+        className={`py-8 transition-[margin] duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-16'} max-w-none px-4 sm:px-6 lg:px-8`}
       >
         {loading ? (
           <div className="flex justify-center py-12">
@@ -268,7 +269,7 @@ export default function AdminQueuePage() {
                     setFilter(e.target.value as 'pending' | 'all');
                     setPagination((prev) => ({ ...prev, page: 1 }));
                   }}
-                  className="rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-brand-trust"
+                  className="min-h-[40px] rounded-md border border-neutral-300 px-3 text-sm transition-[border-color,box-shadow] focus-visible:border-brand-trust focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_var(--focus-ring-soft)]"
                 >
                   <option value="pending">{t('pendingOnly')}</option>
                   <option value="all">{t('allQuizzes')}</option>
@@ -503,13 +504,13 @@ export default function AdminQueuePage() {
             <label htmlFor="reason" className="block text-sm font-medium text-neutral-700 mb-2">
               {t('rejectionReason')}
             </label>
-            <textarea
+            <Textarea
               id="reason"
               rows={4}
               value={rejectReason}
               onChange={(e) => setRejectReason(e.target.value)}
               placeholder={t('rejectReasonPlaceholder')}
-              className="block w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-brand-trust"
+              className="text-sm"
             />
           </div>
 

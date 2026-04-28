@@ -243,11 +243,13 @@
     justify-content: center;
     gap: 8px;
     border-radius: var(--radius-md);
+    white-space: nowrap;
     transition:
       background var(--duration-fast) var(--ease-standard),
       transform var(--duration-fast) var(--ease-standard),
       box-shadow var(--duration-fast) var(--ease-standard),
-      border-color var(--duration-fast) var(--ease-standard);
+      border-color var(--duration-fast) var(--ease-standard),
+      color var(--duration-fast) var(--ease-standard);
   }
 
   .btn:focus-visible {
@@ -389,6 +391,10 @@
   }
 
   .input:focus {
+    outline: none;
+  }
+
+  .input:focus-visible {
     border-color: var(--brand-trust);
     box-shadow: 0 0 0 3px var(--focus-ring-soft);
     outline: none;
@@ -398,13 +404,16 @@
   .badge {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 6px;
-    height: 24px;
-    padding: 0 10px;
+    min-height: 28px;
+    padding: 0 12px;
     border-radius: var(--radius-full);
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 650;
+    line-height: 1;
     letter-spacing: 0.02em;
+    white-space: nowrap;
   }
 
   .badge-ai {

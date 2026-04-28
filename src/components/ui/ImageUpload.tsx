@@ -173,8 +173,8 @@ export function ImageUpload({
           <Button
             onClick={onImageRemoved}
             variant="ghost"
-            size="sm"
-            className="bg-red-600 text-white hover:bg-red-700 rounded-full w-8 h-8 p-0"
+            size="icon"
+            className="h-9 w-9 bg-red-600 text-white hover:bg-red-700"
             aria-label="Remove image"
           >
             <span aria-hidden="true">✕</span>
@@ -204,8 +204,8 @@ export function ImageUpload({
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         className={`
-          relative border-2 border-dashed rounded-lg p-6 text-center cursor-pointer
-          transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-brand-trust
+          relative rounded-xl border-2 border-dashed p-6 text-center
+          transition-colors duration-200 focus-visible:outline focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring-soft)]
           ${
             dragActive
               ? 'border-brand-action bg-orange-50'

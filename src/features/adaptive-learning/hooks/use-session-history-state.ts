@@ -8,9 +8,9 @@ import {
   AdaptiveApiError,
   createSessionFromPipeline,
   getSubjectProgressHistory,
-} from '../api-client';
-import { saveSessionJobMapping } from '../session-storage';
-import type { SessionHistoryItem } from '../types';
+} from '@/features/adaptive-learning/lib/api-client';
+import { saveSessionJobMapping } from '../lib/session-storage';
+import type { SessionHistoryItem } from '@/features/adaptive-learning/types';
 
 export const useSessionHistoryState = () => {
   const router = useRouter();

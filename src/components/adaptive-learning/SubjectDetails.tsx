@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { useSubjectDetailsState } from './hooks/use-subject-details-state';
+import { useSubjectDetailsState } from '@/features/adaptive-learning/hooks/use-subject-details-state';
 import {
   SubjectDetailsBackButton,
   SubjectDetailsHero,

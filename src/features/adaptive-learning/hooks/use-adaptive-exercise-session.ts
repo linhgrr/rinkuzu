@@ -6,10 +6,15 @@ import {
   getTheory,
   isSessionNotFoundError,
   submitAnswer,
-} from '../api-client';
-import { ADAPTIVE_ROUTES } from '../routes';
-import { saveSessionExerciseOutcome } from '../session-storage';
-import type { Exercise, NextConcept, SubmitAnswerPayload, TheoryData } from '../types';
+} from '@/features/adaptive-learning/lib/api-client';
+import { ADAPTIVE_ROUTES } from '@/features/adaptive-learning/lib/routes';
+import { saveSessionExerciseOutcome } from '../lib/session-storage';
+import type {
+  Exercise,
+  NextConcept,
+  SubmitAnswerPayload,
+  TheoryData,
+} from '@/features/adaptive-learning/types';
 
 type RouterLike = {
   push: (href: string) => void;

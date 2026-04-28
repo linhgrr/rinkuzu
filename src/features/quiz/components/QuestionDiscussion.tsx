@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
-import { Button } from './Button';
-import { Textarea } from './Input';
+import { Button } from '@/components/ui/Button';
+import { Textarea } from '@/components/ui/Input';
 
 interface Comment {
   _id: string;

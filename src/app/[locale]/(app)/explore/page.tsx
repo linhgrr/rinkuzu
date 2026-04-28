@@ -18,7 +18,7 @@ import {
   Badge,
 } from '@/components/ui/Card';
 import Pagination from '@/components/ui/Pagination';
-import CategorySearch from '@/components/ui/CategorySearch';
+import CategorySearch from '@/features/categories/components/CategorySearch';
 import { formatDisplayDate } from '@/shared/utils/constants';
 import {
   HiOutlineSearch,

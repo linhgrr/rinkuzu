@@ -11,9 +11,12 @@ import {
   HeroSection,
   LibrarySection,
 } from './DashboardSections';
-import { useAdaptiveDashboard } from './hooks/use-adaptive-dashboard';
-import { toDashboardSubject } from './dashboard-view-model';
-import type { PipelineJobHistoryItem, SessionHistoryItem } from './types';
+import { useAdaptiveDashboard } from '@/features/adaptive-learning/hooks/use-adaptive-dashboard';
+import { toDashboardSubject } from '@/features/adaptive-learning/lib/dashboard-view-model';
+import type {
+  PipelineJobHistoryItem,
+  SessionHistoryItem,
+} from '@/features/adaptive-learning/types';
 
 const inter = Inter({ subsets: ['latin'] });
 

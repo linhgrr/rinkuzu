@@ -23,9 +23,9 @@ import {
 } from '@/components/icons';
 import { DynamicMarkdownRenderer as MarkdownRenderer } from '@/components/ui/DynamicMarkdownRenderer';
 import { QuestionImage, OptionImage } from '@/components/ui/ImageDisplay';
-import { QuestionDiscussion } from '@/components/ui/QuestionDiscussion';
-import ReportQuiz from '@/components/ui/ReportQuiz';
-import { PremiumRequiredModal } from '@/components/ui/PremiumRequiredModal';
+import { QuestionDiscussion } from '@/features/quiz/components/QuestionDiscussion';
+import ReportQuiz from '@/features/quiz/components/ReportQuiz';
+import { PremiumRequiredModal } from '@/features/quiz/components/PremiumRequiredModal';
 import { MobileQuizPlayer } from '@/components/quiz/MobileQuizPlayer';
 import { IQuiz } from '@/types';
 import { streamQuizAI } from '@/lib/quiz/ask-ai';

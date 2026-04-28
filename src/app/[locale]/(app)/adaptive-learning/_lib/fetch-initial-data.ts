@@ -1,7 +1,7 @@
 import type {
   PipelineJobHistoryItem,
   SessionHistoryItem,
-} from '@/components/adaptive-learning/types';
+} from '@/features/adaptive-learning/types';
 import {
   buildAdaptiveServiceHeaders,
   resolveAdaptiveApiUrl,

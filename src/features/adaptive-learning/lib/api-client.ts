@@ -16,7 +16,7 @@ import {
   DeleteSubjectResponse,
   NextConcept,
   TheoryData,
-} from './types';
+} from '@/features/adaptive-learning/types';
 
 const API_BASE = '';
 const DEFAULT_TIMEOUT_MS = 60_000;

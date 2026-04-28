@@ -1,6 +1,6 @@
 'use client';
 
-import { Button } from './Button';
+import { Button } from '@/components/ui/Button';
 import { HiChevronLeft, HiChevronRight } from '@/components/icons';
 
 interface PaginationProps {

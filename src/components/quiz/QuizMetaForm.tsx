@@ -1,7 +1,7 @@
 'use client';
 
 import { Input, Textarea } from '@/components/ui/Input';
-import { CategorySelector } from '@/components/ui/CategorySelector';
+import { CategorySelector } from '@/features/categories/components/CategorySelector';
 import { HiOutlineLockClosed, HiOutlineTag } from '@/components/icons';
 
 type CategoryLike = {

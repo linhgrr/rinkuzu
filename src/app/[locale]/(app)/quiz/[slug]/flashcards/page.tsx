@@ -7,8 +7,8 @@ import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
-import { Flashcard } from '@/components/ui/Flashcard';
-import { PremiumRequiredModal } from '@/components/ui/PremiumRequiredModal';
+import { Flashcard } from '@/features/quiz/components/Flashcard';
+import { PremiumRequiredModal } from '@/features/quiz/components/PremiumRequiredModal';
 
 interface Question {
   _id: string;

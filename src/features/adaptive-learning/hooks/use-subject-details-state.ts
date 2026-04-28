@@ -9,11 +9,11 @@ import {
   getSessionStatus,
   isSessionNotFoundError,
   prefetchStartLearningData,
-} from '../api-client';
-import { ADAPTIVE_ROUTES } from '../routes';
-import { getJobIdForSession, saveSessionJobMapping } from '../session-storage';
-import { getSessionStartFeedback } from '../session-start-feedback';
-import type { SessionStatus, SubjectHistoryDetail } from '../types';
+} from '@/features/adaptive-learning/lib/api-client';
+import { ADAPTIVE_ROUTES } from '@/features/adaptive-learning/lib/routes';
+import { getJobIdForSession, saveSessionJobMapping } from '../lib/session-storage';
+import { getSessionStartFeedback } from '../lib/session-start-feedback';
+import type { SessionStatus, SubjectHistoryDetail } from '@/features/adaptive-learning/types';
 
 type TranslateFn = (key: string, values?: Record<string, any>) => string;
 

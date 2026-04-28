@@ -12,8 +12,8 @@ import {
 import { Button } from '@/components/ui/Button';
 import { Textarea } from '@/components/ui/Input';
 import { DynamicMarkdownRenderer } from '@/components/ui/DynamicMarkdownRenderer';
-import { getExercisePromptSections } from './exercise-prompt';
-import type { Exercise, SubmitAnswerPayload } from './types';
+import { getExercisePromptSections } from '@/features/adaptive-learning/lib/exercise-prompt';
+import type { Exercise, SubmitAnswerPayload } from '@/features/adaptive-learning/types';
 
 const REORDER_INITIAL = { opacity: 0, y: 10 };
 const REORDER_ANIMATE = { opacity: 1, y: 0 };

@@ -3,7 +3,7 @@ import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { uploadImageToImgBB } from '@/services/imageUploadService';
-import { Button } from './Button';
+import { Button } from '@/components/ui/Button';
 
 interface ImageUploadProps {
   currentImage?: string;

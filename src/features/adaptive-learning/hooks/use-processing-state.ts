@@ -9,10 +9,10 @@ import {
   getPipelineJobStatus,
   isAdaptiveApiError,
   isRetryableAdaptiveError,
-} from '../api-client';
-import { ADAPTIVE_ROUTES } from '../routes';
-import { saveSessionJobMapping } from '../session-storage';
-import type { PipelineJobStatus, PipelineStatus } from '../types';
+} from '@/features/adaptive-learning/lib/api-client';
+import { ADAPTIVE_ROUTES } from '@/features/adaptive-learning/lib/routes';
+import { saveSessionJobMapping } from '../lib/session-storage';
+import type { PipelineJobStatus, PipelineStatus } from '@/features/adaptive-learning/types';
 
 const STATUS_TO_STEP: Record<PipelineStatus, number> = {
   pending: 0,

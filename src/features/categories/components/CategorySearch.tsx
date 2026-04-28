@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useDebounce } from '@/hooks/useDebounce';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { CategoryOptionItem } from '@/components/ui/CategoryOptionItem';
+import { CategoryOptionItem } from '@/features/categories/components/CategoryOptionItem';
 import { useDropdownOutside } from '@/components/ui/hooks/use-dropdown-outside';
 
 interface Category {

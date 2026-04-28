@@ -13,7 +13,7 @@ import {
   HiOutlineX,
 } from '@/components/icons';
 import { toast } from 'sonner';
-import { CategorySelector } from '@/components/ui/CategorySelector';
+import { CategorySelector } from '@/features/categories/components/CategorySelector';
 import { Input, Textarea } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 

@@ -18,9 +18,13 @@ import {
 
 import dagre from 'dagre';
 import { Spinner } from '@/components/ui/Spinner';
-import { getConceptDetail } from './api-client';
+import { getConceptDetail } from '@/features/adaptive-learning/lib/api-client';
 import { useKnowledgeGraph } from '@/hooks/useAdaptiveLearning';
-import type { ConceptDetail, KnowledgeGraphData, KnowledgeNode } from './types';
+import type {
+  ConceptDetail,
+  KnowledgeGraphData,
+  KnowledgeNode,
+} from '@/features/adaptive-learning/types';
 import ConceptDetailPanel from './ConceptDetail';
 
 interface KnowledgeGraphProps {

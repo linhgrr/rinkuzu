@@ -113,6 +113,21 @@ const nextConfig = {
   reactStrictMode: true,
   output: 'standalone',
   poweredByHeader: false,
+  async redirects() {
+    return [
+      {
+        source: '/:path*',
+        has: [
+          {
+            type: 'host',
+            value: 'rinkuzu.app',
+          },
+        ],
+        destination: 'https://www.rinkuzu.app/:path*',
+        permanent: true,
+      },
+    ];
+  },
   async headers() {
     return [
       {

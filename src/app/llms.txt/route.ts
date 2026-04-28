@@ -22,6 +22,14 @@ const LLM_CONTENT = `# ${SITE_NAME}
 ## Site Description
 ${SITE_NAME} is an AI-powered adaptive learning platform. ${DESCRIPTION}
 
+## AI Usage Policy
+- Canonical: ${SITE_URL}
+- Allow AI search and assistant retrieval/citation for public pages.
+- Do not use private user uploads or account-only content for indexing.
+- Do not use site content for model training without explicit written permission.
+- Preferred attribution: "${SITE_NAME}" with canonical URL to the cited page.
+- Last updated: 2026-04-28
+
 ## What ${SITE_NAME} Does
 1. Upload any PDF document (lecture notes, textbooks, internal docs)
 2. AI automatically extracts key concepts and builds a knowledge graph

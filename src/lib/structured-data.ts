@@ -58,6 +58,22 @@ export function buildWebsiteSchema(locale: Locale | string) {
   };
 }
 
+export function buildWebPageSchema(locale: Locale | string) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'WebPage',
+    name: 'AI Quiz Generator from PDF - Knowledge Graph | RinKuzu',
+    url: canonicalFor(locale, '/'),
+    description:
+      'Generate quizzes from PDFs with AI, build knowledge graph learning paths, and run adaptive practice sessions for students, teachers, and teams.',
+    inLanguage: locale,
+    primaryImageOfPage: {
+      '@type': 'ImageObject',
+      url: `${siteUrl.origin}/icons/icon-512x512.png`,
+    },
+  };
+}
+
 export function buildFaqSchema(items: FaqItem[]) {
   return {
     '@context': 'https://schema.org',

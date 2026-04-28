@@ -5,9 +5,9 @@ import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import Navigation from '@/components/Navigation';
 import Sidebar from '@/components/Sidebar';
-import ProfileQuizzes from '@/components/profile/ProfileQuizzes';
-import ProfileHistory from '@/components/profile/ProfileHistory';
-import ProfileBookmarks from '@/components/profile/ProfileBookmarks';
+import ProfileQuizzes from '@/features/profile/components/ProfileQuizzes';
+import ProfileHistory from '@/features/profile/components/ProfileHistory';
+import ProfileBookmarks from '@/features/profile/components/ProfileBookmarks';
 import { HiOutlineDocumentText, HiOutlineChartBar, HiOutlineBookmark } from '@/components/icons';
 
 type TabType = 'quizzes' | 'history' | 'bookmarks';

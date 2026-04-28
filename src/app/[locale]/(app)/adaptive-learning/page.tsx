@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { getServerSession } from 'next-auth';
 import { getTranslations } from 'next-intl/server';
-import AdaptiveLearningGuest from './_components/AdaptiveLearningGuest';
+import AdaptiveLearningGuest from '@/features/adaptive-learning/components/AdaptiveLearningGuest';
 import { fetchAdaptiveDashboardData } from './_lib/fetch-initial-data';
 import AdaptiveLearningDashboard from '@/components/adaptive-learning/Dashboard';
 import { authOptions } from '@/lib/auth';

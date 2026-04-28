@@ -26,7 +26,7 @@ import { QuestionImage, OptionImage } from '@/components/ui/ImageDisplay';
 import { QuestionDiscussion } from '@/features/quiz/components/QuestionDiscussion';
 import ReportQuiz from '@/features/quiz/components/ReportQuiz';
 import { PremiumRequiredModal } from '@/features/quiz/components/PremiumRequiredModal';
-import { MobileQuizPlayer } from '@/components/quiz/MobileQuizPlayer';
+import { MobileQuizPlayer } from '@/features/quiz/components/MobileQuizPlayer';
 import { IQuiz } from '@/types';
 import { streamQuizAI } from '@/lib/quiz/ask-ai';
 import { fetchApiSuccess } from '@/lib/api/client';

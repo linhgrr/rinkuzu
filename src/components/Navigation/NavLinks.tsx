@@ -34,7 +34,7 @@ export function NavLinks({ isAdmin = false }: NavLinksProps) {
         <Link
           key={link.href}
           href={link.href}
-          className="px-4 py-2 text-sm font-medium text-neutral-600 hover:text-brand-trust rounded-full transition-colors"
+          className="px-4 py-2 text-base font-semibold text-neutral-600 hover:text-brand-trust rounded-full transition-colors"
         >
           {t(link.labelKey)}
         </Link>
@@ -42,7 +42,7 @@ export function NavLinks({ isAdmin = false }: NavLinksProps) {
       {isAdmin && (
         <Link
           href="/admin/queue"
-          className="px-4 py-2 text-sm font-medium text-brand-trust hover:text-brand-trust-hover rounded-full transition-colors"
+          className="px-4 py-2 text-base font-semibold text-brand-trust hover:text-brand-trust-hover rounded-full transition-colors"
         >
           {t('admin')}
         </Link>

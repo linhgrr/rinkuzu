@@ -82,11 +82,12 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: '/images/navbar_logo.png', sizes: '32x32', type: 'image/png' },
-      { url: '/images/navbar_logo.png', sizes: '192x192', type: 'image/png' },
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
     ],
-    shortcut: ['/images/navbar_logo.png'],
-    apple: [{ url: '/images/navbar_logo.png', sizes: '180x180', type: 'image/png' }],
+    shortcut: ['/favicon.ico'],
+    apple: [{ url: '/icons/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
   },
   other: {
     'mobile-web-app-capable': 'yes',
@@ -126,11 +127,11 @@ export default async function LocaleLayout({
   return (
     <html lang={locale} className="scroll-smooth">
       <head>
-        <link rel="icon" href="/images/navbar_logo.png" sizes="32x32" type="image/png" />
-        <link rel="shortcut icon" href="/images/navbar_logo.png" type="image/png" />
+        <link rel="icon" href="/favicon.ico" sizes="any" />
+        <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon" />
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#ffffff" />
-        <link rel="apple-touch-icon" href="/images/navbar_logo.png" />
+        <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="RinKuzu" />

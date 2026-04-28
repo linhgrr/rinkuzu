@@ -457,7 +457,9 @@ export default function AdminUsersPage() {
                             <div className="text-sm font-medium text-neutral-900">
                               {user.email}
                               {user.email === session?.user?.email && (
-                                <span className="ml-2 text-xs text-neutral-500">{t('you')}</span>
+                                <span className="ml-2 inline-flex min-h-[28px] items-center rounded-full bg-neutral-100 px-3 text-[13px] font-medium text-neutral-600">
+                                  {t('you')}
+                                </span>
                               )}
                             </div>
                           </td>
@@ -474,7 +476,7 @@ export default function AdminUsersPage() {
                                 getSubscriptionText(user.subscription),
                               )}
                               {user.subscription?.startDate && (
-                                <span className="text-xs text-neutral-500">
+                                <span className="text-sm text-neutral-500">
                                   {formatDate(user.subscription.startDate)}
                                 </span>
                               )}
@@ -492,7 +494,7 @@ export default function AdminUsersPage() {
                                     size="sm"
                                     onClick={() => openSubscriptionModal(user)}
                                     disabled={actionLoading === user._id}
-                                    className="text-green-600 border-green-300 hover:bg-green-50"
+                                    className="min-h-[40px] px-3 text-green-600 border-green-300 hover:bg-green-50"
                                   >
                                     {t('addSubscription')}
                                   </Button>
@@ -501,6 +503,7 @@ export default function AdminUsersPage() {
                                     size="sm"
                                     onClick={() => openRoleModal(user)}
                                     disabled={actionLoading === user._id}
+                                    className="min-h-[40px] px-3"
                                   >
                                     {user.role === 'admin' ? t('makeUser') : t('makeAdmin')}
                                   </Button>
@@ -509,7 +512,7 @@ export default function AdminUsersPage() {
                                     size="sm"
                                     onClick={() => openDeleteModal(user)}
                                     disabled={actionLoading === user._id}
-                                    className="text-red-600 border-red-300 hover:bg-red-50"
+                                    className="min-h-[40px] px-3 text-red-600 border-red-300 hover:bg-red-50"
                                   >
                                     {t('delete')}
                                   </Button>
@@ -562,10 +565,15 @@ export default function AdminUsersPage() {
               variant="outline"
               onClick={() => setShowRoleModal(false)}
               disabled={actionLoading === selectedUser?._id}
+              className="min-h-[40px] px-4"
             >
               {t('cancel')}
             </Button>
-            <Button onClick={handleChangeRole} loading={actionLoading === selectedUser?._id}>
+            <Button
+              onClick={handleChangeRole}
+              loading={actionLoading === selectedUser?._id}
+              className="min-h-[40px] px-4"
+            >
               {t('changeRole')}
             </Button>
           </div>
@@ -588,13 +596,14 @@ export default function AdminUsersPage() {
               variant="outline"
               onClick={() => setShowDeleteModal(false)}
               disabled={actionLoading === selectedUser?._id}
+              className="min-h-[40px] px-4"
             >
               {t('cancel')}
             </Button>
             <Button
               onClick={handleDeleteUser}
               loading={actionLoading === selectedUser?._id}
-              className="bg-red-600 hover:bg-red-700"
+              className="min-h-[40px] bg-red-600 px-4 hover:bg-red-700"
             >
               {t('deleteUserButton')}
             </Button>
@@ -619,7 +628,7 @@ export default function AdminUsersPage() {
                 key={plan._id}
                 type="button"
                 variant="ghost"
-                className={`h-auto w-full justify-start rounded-lg border p-4 transition-colors ${
+                className={`min-h-[72px] w-full justify-start rounded-lg border p-4 transition-colors ${
                   selectedPlanId === plan._id
                     ? 'border-green-500 bg-green-50'
                     : 'border-neutral-200 hover:border-neutral-300'
@@ -635,7 +644,7 @@ export default function AdminUsersPage() {
                   <div>
                     <h3 className="font-medium text-neutral-900">{plan.name}</h3>
                     <p className="text-sm text-neutral-600">{formatCurrency(plan.price)}</p>
-                    <p className="text-xs text-neutral-500">{plan.duration}</p>
+                    <p className="text-sm text-neutral-500">{plan.duration}</p>
                   </div>
                   {selectedPlanId === plan._id && (
                     <div className="text-brand-trust">
@@ -683,6 +692,7 @@ export default function AdminUsersPage() {
               variant="outline"
               onClick={() => setShowSubscriptionModal(false)}
               disabled={actionLoading === selectedUser?._id}
+              className="min-h-[40px] px-4"
             >
               {t('cancel')}
             </Button>
@@ -690,6 +700,7 @@ export default function AdminUsersPage() {
               onClick={handleAddSubscription}
               loading={actionLoading === selectedUser?._id}
               disabled={!selectedPlanId}
+              className="min-h-[40px] px-4"
             >
               {t('addSubscriptionButton')}
             </Button>

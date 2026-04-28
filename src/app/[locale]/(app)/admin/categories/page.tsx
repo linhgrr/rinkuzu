@@ -354,7 +354,7 @@ export default function AdminCategoriesPage() {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span
-                              className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                              className={`inline-flex min-h-[28px] items-center rounded-full px-3 text-[13px] font-semibold ${
                                 category.isActive
                                   ? 'bg-green-100 text-green-800'
                                   : 'bg-red-100 text-red-800'
@@ -365,7 +365,7 @@ export default function AdminCategoriesPage() {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-500">
                             <div>{formatDate(category.createdAt)}</div>
-                            <div className="text-xs">
+                            <div className="text-sm text-neutral-500">
                               by {category.createdBy?.email || 'Unknown'}
                             </div>
                           </td>
@@ -374,6 +374,7 @@ export default function AdminCategoriesPage() {
                               size="sm"
                               variant="outline"
                               onClick={() => openEditModal(category)}
+                              className="min-h-[36px] px-3"
                             >
                               <HiOutlinePencil className="w-4 h-4" />
                             </Button>
@@ -381,7 +382,7 @@ export default function AdminCategoriesPage() {
                               size="sm"
                               variant="outline"
                               onClick={() => setCategoryToDelete(category)}
-                              className="text-red-600 hover:text-red-700"
+                              className="min-h-[36px] px-3 text-red-600 hover:text-red-700"
                             >
                               <HiOutlineTrash className="w-4 h-4" />
                             </Button>
@@ -422,6 +423,7 @@ export default function AdminCategoriesPage() {
                   onClick={() => handlePageChange(pagination.page - 1)}
                   disabled={pagination.page <= 1}
                   variant="outline"
+                  className="min-h-[40px] px-4"
                 >
                   {tCommon('previous')}
                 </Button>
@@ -429,6 +431,7 @@ export default function AdminCategoriesPage() {
                   onClick={() => handlePageChange(pagination.page + 1)}
                   disabled={pagination.page >= pagination.totalPages}
                   variant="outline"
+                  className="min-h-[40px] px-4"
                 >
                   {tCommon('next')}
                 </Button>
@@ -453,7 +456,7 @@ export default function AdminCategoriesPage() {
                       disabled={pagination.page <= 1}
                       variant="outline"
                       size="sm"
-                      className="rounded-r-none"
+                      className="min-h-[36px] rounded-r-none px-3"
                     >
                       {tCommon('previous')}
                     </Button>
@@ -476,7 +479,7 @@ export default function AdminCategoriesPage() {
                           onClick={() => handlePageChange(pageNum)}
                           variant={pagination.page === pageNum ? 'default' : 'outline'}
                           size="sm"
-                          className="rounded-none"
+                          className="min-h-[36px] rounded-none px-3"
                         >
                           {pageNum}
                         </Button>
@@ -488,7 +491,7 @@ export default function AdminCategoriesPage() {
                       disabled={pagination.page >= pagination.totalPages}
                       variant="outline"
                       size="sm"
-                      className="rounded-l-none"
+                      className="min-h-[36px] rounded-l-none px-3"
                     >
                       {tCommon('next')}
                     </Button>
@@ -537,7 +540,7 @@ export default function AdminCategoriesPage() {
                   placeholder={t('enterCategoryDescription')}
                   maxLength={200}
                   rows={3}
-                  className="block w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-brand-trust"
+                  className="block w-full rounded-md border border-neutral-300 px-3 py-2.5 text-sm focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-brand-trust"
                 />
               </div>
 
@@ -577,10 +580,21 @@ export default function AdminCategoriesPage() {
               </div>
 
               <div className="flex justify-end space-x-3 pt-4">
-                <Button type="button" variant="outline" onClick={closeModals} disabled={submitting}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={closeModals}
+                  disabled={submitting}
+                  className="min-h-[40px] px-4"
+                >
                   {t('cancel')}
                 </Button>
-                <Button type="submit" loading={submitting} disabled={submitting}>
+                <Button
+                  type="submit"
+                  loading={submitting}
+                  disabled={submitting}
+                  className="min-h-[40px] px-4"
+                >
                   {editingCategory ? t('updateCategory') : t('createCategory')}
                 </Button>
               </div>

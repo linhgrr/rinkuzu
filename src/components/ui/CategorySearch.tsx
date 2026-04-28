@@ -3,6 +3,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useDebounce } from '@/hooks/useDebounce';
+import { Input } from '@/components/ui/Input';
+import { CategoryOptionItem } from '@/components/ui/CategoryOptionItem';
+import { useDropdownOutside } from '@/components/ui/hooks/use-dropdown-outside';
 
 interface Category {
   _id: string;
@@ -150,28 +153,14 @@ export function CategorySearch({
     }
   };
 
-  // Click outside để đóng dropdown
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [isOpen]);
+  useDropdownOutside(dropdownRef, isOpen, () => setIsOpen(false));
 
   if (isCollapsed) {
     return (
       <button
+        type="button"
         onClick={() => setIsOpen(true)}
-        className="w-full flex items-center justify-center p-2 text-neutral-600 hover:bg-neutral-100 rounded-lg transition-colors"
+        className="w-full flex items-center justify-center p-2 text-neutral-600 hover:bg-neutral-100 rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] focus-visible:ring-offset-2"
         title="Search Categories"
       >
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -190,7 +179,7 @@ export function CategorySearch({
     <div className="relative w-full" ref={dropdownRef}>
       {/* Search Input */}
       <div className="relative">
-        <input
+        <Input
           ref={searchRef}
           type="text"
           placeholder="Search categories..."
@@ -198,7 +187,7 @@ export function CategorySearch({
           onChange={(e) => setSearchTerm(e.target.value)}
           onFocus={() => setIsOpen(true)}
           onKeyDown={handleKeyDown}
-          className="w-full pl-9 pr-4 py-2 text-sm border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-trust focus:border-transparent"
+          className="pl-9 pr-4 text-sm"
         />
         <svg
           className="absolute left-3 top-2.5 w-4 h-4 text-neutral-400"
@@ -227,9 +216,12 @@ export function CategorySearch({
             <>
               {/* All Categories Option */}
               <button
+                type="button"
                 onClick={() => handleCategorySelect(null)}
-                className={`w-full px-4 py-3 text-left hover:bg-neutral-50 border-b border-neutral-100 transition-colors ${
-                  selectedIndex === -1 ? 'text-green-50 text-brand-trust' : 'text-neutral-700'
+                className={`w-full border-b border-neutral-100 px-4 py-3 text-left transition-colors focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] focus-visible:ring-inset ${
+                  selectedIndex === -1
+                    ? 'bg-neutral-100 text-brand-trust'
+                    : 'text-neutral-700 hover:bg-neutral-50'
                 }`}
               >
                 <div className="flex items-center">
@@ -267,31 +259,14 @@ export function CategorySearch({
               {/* Categories List */}
               {filteredCategories.length > 0 ? (
                 filteredCategories.map((category, index) => (
-                  <button
+                  <CategoryOptionItem
                     key={category._id}
+                    title={category.name}
+                    subtitle={`${category.quizCount} quiz${category.quizCount !== 1 ? 'zes' : ''}${category.description ? ` • ${category.description}` : ''}`}
+                    color={category.color}
+                    selected={selectedIndex === index}
                     onClick={() => handleCategorySelect(category)}
-                    className={`w-full px-4 py-3 text-left hover:bg-neutral-50 transition-colors ${
-                      selectedIndex === index
-                        ? 'text-green-50 text-brand-trust'
-                        : 'text-neutral-700'
-                    }`}
-                  >
-                    <div className="flex items-center">
-                      <div
-                        className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold mr-3"
-                        style={{ backgroundColor: category.color }}
-                      >
-                        {category.name.charAt(0)}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium truncate">{category.name}</div>
-                        <div className="text-xs text-neutral-500 truncate">
-                          {category.quizCount} quiz{category.quizCount !== 1 ? 'zes' : ''}
-                          {category.description && ` • ${category.description}`}
-                        </div>
-                      </div>
-                    </div>
-                  </button>
+                  />
                 ))
               ) : searchTerm ? (
                 <div className="p-4 text-center text-neutral-500">

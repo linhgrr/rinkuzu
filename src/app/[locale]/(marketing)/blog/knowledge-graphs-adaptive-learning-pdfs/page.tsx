@@ -7,7 +7,7 @@ import { ReadingProgressBar } from '@/components/blog/ReadingProgressBar';
 import { ShareButtons } from '@/components/blog/ShareButtons';
 import { TableOfContents } from '@/components/blog/TableOfContents';
 import { extractHeadingsFromMarkdown } from '@/lib/blog-utils';
-import { MarkdownRenderer } from '@/components/blog/MarkdownRenderer';
+import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer';
 
 type Props = { params: Promise<{ locale: string }> };
 

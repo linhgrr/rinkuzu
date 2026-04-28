@@ -32,7 +32,7 @@ export function Flashcard({
   const [slideOut, setSlideOut] = useState<'left' | 'right' | null>(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [isNewCard, setIsNewCard] = useState(false);
-  const cardRef = useRef<HTMLDivElement>(null);
+  const cardRef = useRef<HTMLButtonElement>(null);
 
   // Keyboard support
   useEffect(() => {
@@ -247,11 +247,10 @@ export function Flashcard({
 
   return (
     <div className="w-full flex flex-col items-center justify-center overflow-hidden">
-      <div
+      <button
+        type="button"
         ref={cardRef}
-        className="relative select-none"
-        role="button"
-        tabIndex={0}
+        className="relative select-none border-0 bg-transparent p-0 text-left"
         aria-label={isFlipped ? t('showQuestion') : t('showAnswer')}
         style={{
           width: '75vw',
@@ -391,7 +390,7 @@ export function Flashcard({
             </Card>
           </div>
         </div>
-      </div>
+      </button>
 
       {/* Know/Don't Know buttons - always reserve space */}
       <div className="flex justify-center gap-8 mt-8 mb-2 w-full h-12">

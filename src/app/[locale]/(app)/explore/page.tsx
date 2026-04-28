@@ -2,11 +2,13 @@
 
 import { Suspense, useState, useEffect, useCallback, memo } from 'react';
 import { useSession } from 'next-auth/react';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import Navigation from '@/components/Navigation';
 import Sidebar from '@/components/Sidebar';
 import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
 import {
   Card,
   CardContent,
@@ -60,55 +62,44 @@ const CategoryBadgeVariant = (color: string) => {
 
 interface QuizCardProps {
   quiz: Quiz;
-  onClick: () => void;
+  href: string;
 }
 
-const QuizCard = memo(function QuizCard({ quiz, onClick }: QuizCardProps) {
+const QuizCard = memo(function QuizCard({ quiz, href }: QuizCardProps) {
   const tQuiz = useTranslations('quiz');
   const questionCount = quiz.questionCount ?? quiz.questions.length;
 
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        onClick();
-      }
-    },
-    [onClick],
-  );
-
   return (
-    <Card
-      className="flex flex-col h-full hover:shadow-lg transition-shadow cursor-pointer group"
-      onClick={onClick}
-      onKeyDown={handleKeyDown}
-      tabIndex={0}
-      role="button"
-      aria-label={`Open quiz: ${quiz.title}`}
-    >
-      <CardHeader className="pb-2">
-        <div className="flex justify-between items-start mb-2">
-          <Badge variant={CategoryBadgeVariant(quiz.category?.color)}>
-            {quiz.category?.name || 'General'}
-          </Badge>
-          <span className="text-xs text-neutral-400">{formatDisplayDate(quiz.createdAt)}</span>
-        </div>
-        <CardTitle className="line-clamp-2 group-hover:text-brand-trust transition-colors">
-          {quiz.title}
-        </CardTitle>
-        <CardDescription className="line-clamp-2">{quiz.description}</CardDescription>
-      </CardHeader>
-      <CardContent className="mt-auto pt-0">
-        <div className="flex items-center justify-between text-sm text-neutral-500 border-t pt-4 mt-2">
-          <span className="flex items-center gap-1">
-            <HiOutlineQuestionMarkCircle className="w-4 h-4" /> {questionCount} {tQuiz('questions')}
-          </span>
-          <span className="text-brand-trust font-medium group-hover:underline flex items-center gap-1">
-            {tQuiz('takeQuiz')} <HiOutlineArrowRight className="w-4 h-4" />
-          </span>
-        </div>
-      </CardContent>
-    </Card>
+    <Link href={href} className="block h-full focus-visible:outline-none">
+      <Card
+        className="group flex h-full cursor-pointer flex-col transition-shadow hover:shadow-lg focus-within:ring-2 focus-within:ring-[var(--focus-ring)] focus-within:ring-offset-2 focus-within:ring-offset-[var(--bg-page)]"
+        aria-label={`Open quiz: ${quiz.title}`}
+      >
+        <CardHeader className="pb-2">
+          <div className="mb-2 flex items-start justify-between">
+            <Badge variant={CategoryBadgeVariant(quiz.category?.color)}>
+              {quiz.category?.name || 'General'}
+            </Badge>
+            <span className="text-xs text-neutral-400">{formatDisplayDate(quiz.createdAt)}</span>
+          </div>
+          <CardTitle className="line-clamp-2 transition-colors group-hover:text-brand-trust">
+            {quiz.title}
+          </CardTitle>
+          <CardDescription className="line-clamp-2">{quiz.description}</CardDescription>
+        </CardHeader>
+        <CardContent className="mt-auto pt-0">
+          <div className="mt-2 flex items-center justify-between border-t pt-4 text-sm text-neutral-500">
+            <span className="flex items-center gap-1">
+              <HiOutlineQuestionMarkCircle className="h-4 w-4" /> {questionCount}{' '}
+              {tQuiz('questions')}
+            </span>
+            <span className="flex items-center gap-1 font-medium text-brand-trust group-hover:underline">
+              {tQuiz('takeQuiz')} <HiOutlineArrowRight className="h-4 w-4" />
+            </span>
+          </div>
+        </CardContent>
+      </Card>
+    </Link>
   );
 });
 
@@ -228,13 +219,6 @@ function ExploreContent() {
     [fetchQuizzes, search, categoryId, updateURL],
   );
 
-  const handleQuizClick = useCallback(
-    (slug: string) => {
-      router.push(`/quiz/${slug}`);
-    },
-    [router],
-  );
-
   const handleSidebarToggle = useCallback(() => {
     setIsSidebarOpen((prev) => !prev);
   }, []);
@@ -293,12 +277,11 @@ function ExploreContent() {
               </div>
               <div className="w-full md:w-auto flex flex-col sm:flex-row gap-3">
                 <div className="w-full sm:w-64">
-                  <input
+                  <Input
                     type="text"
                     name="search"
                     autoComplete="off"
                     placeholder={t('searchPlaceholder')}
-                    className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-brand-trust outline-none"
                     value={search}
                     onChange={handleSearchChange}
                     aria-label={t('searchPlaceholder')}
@@ -312,23 +295,17 @@ function ExploreContent() {
 
             {categoryId && (
               <div className="flex items-center gap-2">
-                <Badge
-                  variant="default"
-                  className="flex items-center gap-1 cursor-pointer hover:bg-neutral-200"
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-auto rounded-full border border-neutral-200 px-3 py-1 text-xs font-medium hover:bg-neutral-200"
                   onClick={handleClearCategory}
-                  onKeyDown={(e: React.KeyboardEvent) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      handleClearCategory();
-                    }
-                  }}
-                  tabIndex={0}
-                  role="button"
                   aria-label={t('clearCategoryFilter')}
                 >
                   {t('categoryFilterActive')}{' '}
                   <HiOutlineX className="inline-block ml-1" aria-hidden="true" />
-                </Badge>
+                </Button>
               </div>
             )}
           </div>
@@ -341,7 +318,7 @@ function ExploreContent() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {quizzes.map((quiz) => (
-                <QuizCard key={quiz._id} quiz={quiz} onClick={() => handleQuizClick(quiz.slug)} />
+                <QuizCard key={quiz._id} quiz={quiz} href={`/quiz/${quiz.slug}`} />
               ))}
             </div>
           )}

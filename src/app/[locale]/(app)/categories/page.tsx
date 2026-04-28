@@ -226,40 +226,35 @@ export default function CategoriesPage() {
                 key={category._id}
                 variant="default"
                 hover
-                className="group animate-fadeInUp cursor-pointer"
+                className="group animate-fadeInUp"
                 style={{ animationDelay: `${index * 100}ms` }}
-                onClick={() => router.push(`/category/${category.slug}`)}
               >
-                <CardHeader>
-                  <div className="flex items-center justify-between mb-3">
+                <CardHeader className="pb-4">
+                  <div className="flex items-center justify-between mb-2">
                     <Badge variant="success" size="sm" className={getCategoryColor(category.color)}>
-                      {category.name}
+                      {t('title')}
                     </Badge>
-                    <span className="text-xs text-neutral-500">
+                    <span className="text-xs font-medium text-neutral-500">
                       {t('quizCount', { count: category.quizCount })}
                     </span>
                   </div>
-                  <CardTitle size="md" className="group-hover:text-brand-trust transition-colors">
+                  <CardTitle
+                    size="md"
+                    className="line-clamp-2 text-neutral-900 group-hover:text-brand-trust"
+                  >
                     {category.name}
                   </CardTitle>
-                  <CardDescription className="line-clamp-2">{category.description}</CardDescription>
+                  <CardDescription className="line-clamp-2 mt-2">
+                    {category.description}
+                  </CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <div
-                        className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm"
-                        style={{ backgroundColor: category.color }}
-                      >
-                        {category.name.charAt(0)}
-                      </div>
-                      <span className="text-sm text-neutral-500">
-                        {t('quizCount', { count: category.quizCount })} available
-                      </span>
-                    </div>
-
+                <CardContent className="pt-4 border-t border-neutral-100">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-sm text-neutral-600">
+                      {t('quizCount', { count: category.quizCount })}
+                    </span>
                     <Button
-                      variant="primary"
+                      variant="outline"
                       size="sm"
                       onClick={(e) => {
                         e.stopPropagation();
@@ -267,7 +262,7 @@ export default function CategoriesPage() {
                       }}
                     >
                       <HiOutlineArrowRight className="w-4 h-4 mr-1" />
-                      Explore
+                      {tCommon('browseQuizzes')}
                     </Button>
                   </div>
                 </CardContent>

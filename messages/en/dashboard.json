@@ -47,5 +47,13 @@
   "failedToBuyFreeze": "Failed to buy freeze",
   "failedToConnectServer": "Failed to connect to server",
   "myRinKuzuProgress": "My RinKuzu Progress",
-  "explore": "Explore"
+  "explore": "Explore",
+  "yourProgression": "Your Progression",
+  "highAccuracyTip": "Tip: High accuracy sessions earn more XP.",
+  "activeStreak": "Active Streak",
+  "consistencyHub": "Consistency Hub",
+  "weekOne": "WEEK 1",
+  "nextRewardStreak": "Next Reward: Day {day} Streak",
+  "onboardingTipTitle": "Onboarding Tip",
+  "onboardingTipContent": "Focus on accuracy early on. Your adaptive engine will adjust difficulty automatically."
 }

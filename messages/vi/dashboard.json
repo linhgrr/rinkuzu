@@ -47,5 +47,13 @@
   "failedToBuyFreeze": "Mua đóng băng thất bại",
   "failedToConnectServer": "Không thể kết nối với máy chủ",
   "myRinKuzuProgress": "Tiến độ RinKuzu của tôi",
-  "explore": "Khám phá"
+  "explore": "Khám phá",
+  "yourProgression": "Tiến trình của bạn",
+  "highAccuracyTip": "Mẹo: Phiên học có độ chính xác cao sẽ nhận nhiều XP hơn.",
+  "activeStreak": "Chuỗi hiện tại",
+  "consistencyHub": "Mức độ đều đặn",
+  "weekOne": "TUẦN 1",
+  "nextRewardStreak": "Phần thưởng tiếp theo: Chuỗi {day} ngày",
+  "onboardingTipTitle": "Mẹo cho người mới",
+  "onboardingTipContent": "Hãy ưu tiên độ chính xác ở giai đoạn đầu. Hệ thống học thích ứng sẽ tự điều chỉnh độ khó cho bạn."
 }

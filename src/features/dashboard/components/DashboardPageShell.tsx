@@ -4,16 +4,20 @@ import { Link } from '@/i18n/routing';
 import { ROUTES } from '@/shared/constants';
 import { Card } from '@/components/ui/Card';
 import { getScopedMessages } from '@/i18n/messages';
-import { StatOverview } from '@/features/dashboard/components/StatOverview';
-import { StreakFreezeCard } from '@/features/dashboard/components/StreakFreezeCard';
-import { LevelBadge } from '@/features/dashboard/components/LevelBadge';
-import { WeeklyProgressHeatmap } from '@/features/dashboard/components/WeeklyProgressHeatmap';
 import { QuizCard } from '@/features/dashboard/components/QuizCard';
-import { HiOutlineArrowRight, HiOutlinePlus } from '@/components/icons';
+import { LevelBadge } from '@/features/dashboard/components/LevelBadge';
+import {
+  HiOutlineArrowRight,
+  HiOutlineChartBar,
+  HiOutlineCheckCircle,
+  HiOutlineChevronRight,
+  HiOutlineLightBulb,
+  HiOutlinePlus,
+  HiOutlineStar,
+} from '@/components/icons';
 import { TextShimmer } from '@/components/ui/text-shimmer';
 import { DashboardHeroMascot } from './DashboardHeroMascot';
 import { DashboardShareButton } from './DashboardShareButton';
-import { ProTipCard } from './DashboardProTip';
 
 interface DashboardStats {
   streak: number;
@@ -78,11 +82,42 @@ export async function DashboardPageShell({
     getTranslations({ locale, namespace: 'common' }),
     getScopedMessages(locale, ['dashboard']),
   ]);
-  const dashboardTemplates = dashboardMessages.dashboard as Record<string, string>;
+  void dashboardMessages;
 
   const userName = userEmail?.split('@')[0] || 'User';
   const weeklyActivity = stats?.weeklyActivity ?? {};
   const shareText = `I'm on a ${stats?.streak || 0} day streak learning with RinKuzu! Earned ${stats?.xp || 0} XP so far. Level ${stats?.level || 1}!`;
+  const levelProgress = Math.max(0, Math.min(100, stats?.levelProgress || 0));
+  const nextStreakMilestone = Math.max(5, Math.ceil((stats?.streak || 0) / 5) * 5);
+
+  const today = new Date();
+  const day = today.getDay();
+  const mondayOffset = day === 0 ? -6 : 1 - day;
+  const monday = new Date(today);
+  monday.setDate(today.getDate() + mondayOffset);
+  monday.setHours(0, 0, 0, 0);
+  const weekCells = Array.from({ length: 7 }).map((_, index) => {
+    const date = new Date(monday);
+    date.setDate(monday.getDate() + index);
+    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    const activity = weeklyActivity[key];
+    const questions = activity?.questionsReviewed || 0;
+    return {
+      label: ['M', 'T', 'W', 'T', 'F', 'S', 'S'][index],
+      isToday: date.toDateString() === today.toDateString(),
+      levelClass:
+        questions > 20
+          ? 'bg-neutral-900'
+          : questions > 10
+            ? 'bg-neutral-600'
+            : questions > 5
+              ? 'bg-neutral-400'
+              : questions > 0
+                ? 'bg-neutral-200'
+                : 'bg-neutral-100',
+      questions,
+    };
+  });
 
   return (
     <div className="min-h-screen bg-neutral-50 pb-12 font-sans selection:bg-neutral-900 selection:text-white">
@@ -145,17 +180,6 @@ export async function DashboardPageShell({
                 <DashboardHeroMascot />
               </div>
             </section>
-
-            <StatOverview
-              stats={stats}
-              labels={{
-                dailyStreak: tDashboard('dailyStreak'),
-                days: tDashboard('days'),
-                totalXP: tDashboard('totalXP'),
-                accuracy: tDashboard('accuracy'),
-                toReview: tDashboard('toReview'),
-              }}
-            />
 
             <section>
               <div className="mb-6 flex items-center justify-between">
@@ -268,67 +292,115 @@ export async function DashboardPageShell({
           </div>
 
           <div className="sticky top-24 h-fit space-y-6 self-start lg:col-span-4">
-            <Card className="rounded-2xl border-0 bg-white p-6 shadow-lg shadow-neutral-100/50">
-              <div className="mb-4 flex items-center gap-4">
-                <LevelBadge level={stats.level} className="shrink-0" />
-                <div>
-                  <h3 className="text-lg font-bold leading-tight text-neutral-900">
-                    {tDashboard('level')} {stats.level}
-                  </h3>
-                  <p className="text-sm text-neutral-500">{tDashboard('keepLearning')}</p>
+            <Card className="overflow-hidden rounded-2xl border border-neutral-200 bg-white p-0 shadow-sm">
+              <div className="border-b border-neutral-100 p-6">
+                <h3 className="flex items-center gap-2 text-lg font-bold text-neutral-900">
+                  <HiOutlineChartBar className="h-5 w-5 text-green-500" />
+                  {tDashboard('yourProgression')}
+                </h3>
+              </div>
+
+              <div className="space-y-6 p-5">
+                <div className="flex items-center gap-4">
+                  <LevelBadge level={stats.level} className="shrink-0" width={84} height={84} />
+
+                  <div className="min-w-0 flex-1">
+                    <div className="mb-2 flex items-end justify-between">
+                      <p className="text-sm font-bold text-neutral-800">
+                        {levelProgress}% to Level {stats.level + 1}
+                      </p>
+                      <span className="text-xs font-medium text-neutral-400">
+                        {stats.levelProgress * 10} / 1000 XP
+                      </span>
+                    </div>
+                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-neutral-100">
+                      <div
+                        className="h-full rounded-full bg-green-500 transition-all duration-700"
+                        style={{ width: `${levelProgress}%` }}
+                      />
+                    </div>
+                    <p className="mt-3 text-xs italic leading-relaxed text-neutral-500">
+                      {tDashboard('highAccuracyTip')}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 border-t border-neutral-100 pt-5">
+                  <div>
+                    <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                      {tDashboard('activeStreak')}
+                    </p>
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-3xl font-black text-orange-500">{stats.streak}</span>
+                      <span className="text-sm font-bold text-neutral-600">
+                        {tDashboard('days')}
+                      </span>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                      {tDashboard('accuracy')}
+                    </p>
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-3xl font-black text-green-600">
+                        {stats.averageAccuracy ?? 0}
+                      </span>
+                      <span className="text-sm font-bold text-neutral-600">%</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="border-t border-neutral-100 pt-5">
+                  <div className="mb-4 flex items-center justify-between">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                      {tDashboard('consistencyHub')}
+                    </p>
+                    <span className="text-[10px] font-bold text-green-600">
+                      {tDashboard('weekOne')}
+                    </span>
+                  </div>
+                  <div className="flex justify-between gap-1.5">
+                    {weekCells.map((cell) => (
+                      <div key={cell.label} className="flex flex-col items-center gap-1.5">
+                        <span className="text-[9px] font-bold text-neutral-400">{cell.label}</span>
+                        <div
+                          className={`flex h-9 w-9 items-center justify-center rounded-lg ${cell.isToday ? 'border-2 border-dashed border-orange-400 bg-orange-100' : cell.levelClass}`}
+                          title={`${cell.questions} questions`}
+                        >
+                          {cell.questions > 0 && !cell.isToday ? (
+                            <HiOutlineCheckCircle className="h-4 w-4 text-white" />
+                          ) : null}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm font-medium">
-                  <span className="text-neutral-600">{tDashboard('levelProgress')}</span>
-                  <span className="text-brand-trust">{stats.levelProgress}/100 XP</span>
+              <div className="flex items-center justify-between bg-neutral-900 p-4">
+                <div className="flex items-center gap-2">
+                  <HiOutlineStar className="h-4 w-4 text-orange-400" />
+                  <span className="text-xs font-bold text-white">
+                    {tDashboard('nextRewardStreak', { day: nextStreakMilestone })}
+                  </span>
                 </div>
-                <div className="h-2.5 w-full overflow-hidden rounded-full bg-neutral-100">
-                  <div
-                    className="h-full rounded-full bg-brand-trust transition-[width] duration-500 ease-out"
-                    style={{ width: `${stats.levelProgress}%` }}
-                  />
-                </div>
-                <p className="mt-2 text-center text-xs text-neutral-500">
-                  {tDashboard('xpNeeded', {
-                    xp: 100 - stats.levelProgress,
-                    level: stats.level + 1,
-                  })}
-                </p>
+                <HiOutlineChevronRight className="h-4 w-4 text-neutral-500" />
               </div>
             </Card>
 
-            <WeeklyProgressHeatmap
-              weeklyActivity={weeklyActivity}
-              labels={{
-                weeklyProgress: tDashboard('weeklyProgress'),
-                thisWeek: tDashboard('thisWeek'),
-                less: tCommon('less'),
-                more: tCommon('more'),
-              }}
-            />
-
-            <StreakFreezeCard
-              count={stats.streakFreezeCount || 0}
-              xp={stats.xp}
-              labels={{
-                streakFreeze: tDashboard('streakFreeze'),
-                streakFreezeEquipped: dashboardTemplates.streakFreezeEquipped,
-                streakFreezeNotEquipped: tDashboard('streakFreezeNotEquipped'),
-                buyXP: dashboardTemplates.buyXP,
-                maxedOut: tDashboard('maxedOut'),
-                failedToBuyFreeze: tDashboard('failedToBuyFreeze'),
-                failedToConnectServer: tDashboard('failedToConnectServer'),
-              }}
-            />
-
-            <ProTipCard
-              title={tDashboard('proTip')}
-              content={tDashboard('proTipContent')}
-              ctaLabel={tDashboard('readGuide')}
-              ctaHref="/adaptive-learning"
-            />
+            <Card className="rounded-2xl border border-neutral-200 bg-white p-6">
+              <div className="flex items-start gap-3">
+                <HiOutlineLightBulb className="mt-0.5 h-5 w-5 shrink-0 text-orange-500" />
+                <div>
+                  <h4 className="mb-1 text-sm font-bold text-neutral-900">
+                    {tDashboard('onboardingTipTitle')}
+                  </h4>
+                  <p className="text-xs leading-relaxed text-neutral-500">
+                    {tDashboard('onboardingTipContent')}
+                  </p>
+                </div>
+              </div>
+            </Card>
           </div>
         </div>
       </main>

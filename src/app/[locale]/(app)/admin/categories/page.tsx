@@ -5,7 +5,7 @@ import { useSession } from 'next-auth/react';
 import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
+import { Input, Textarea } from '@/components/ui/Input';
 import { Card, CardContent } from '@/components/ui/Card';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { Modal } from '@/components/ui/Modal';
@@ -245,7 +245,7 @@ export default function AdminCategoriesPage() {
 
       {/* Main Content */}
       <main
-        className={`py-8 transition-all duration-300 ${
+        className={`py-8 transition-[margin] duration-300 ${
           session && isSidebarOpen ? 'ml-64' : session ? 'ml-16' : ''
         } max-w-none px-4 sm:px-6 lg:px-8`}
       >
@@ -531,7 +531,7 @@ export default function AdminCategoriesPage() {
                 >
                   {t('descriptionOptional')}
                 </label>
-                <textarea
+                <Textarea
                   id="description"
                   value={formData.description}
                   onChange={(e) =>
@@ -540,7 +540,7 @@ export default function AdminCategoriesPage() {
                   placeholder={t('enterCategoryDescription')}
                   maxLength={200}
                   rows={3}
-                  className="block w-full rounded-md border border-neutral-300 px-3 py-2.5 text-sm focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-brand-trust"
+                  className="text-sm"
                 />
               </div>
 

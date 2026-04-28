@@ -39,7 +39,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         {label && (
           <label
             htmlFor={inputId}
-            className="block text-[12px] font-semibold text-neutral-700 mb-1"
+            className="mb-1 block text-[12px] font-semibold text-neutral-700"
           >
             {label}
           </label>
@@ -61,7 +61,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
               icon && iconPosition === 'left' && 'pl-10',
               icon && iconPosition === 'right' && 'pr-10',
               error &&
-                'border-red-500 focus:border-red-500 focus:shadow-[0_0_0_3px_rgba(229,72,77,0.22)]',
+                'border-red-500 focus-visible:border-red-500 focus-visible:shadow-[0_0_0_3px_rgba(229,72,77,0.22)]',
               className,
             )}
             ref={ref}
@@ -104,7 +104,7 @@ const Textarea = React.forwardRef<
       {label && (
         <label
           htmlFor={textareaId}
-          className="block text-[12px] font-semibold text-neutral-700 mb-1"
+          className="mb-1 block text-[12px] font-semibold text-neutral-700"
         >
           {label}
         </label>
@@ -113,9 +113,9 @@ const Textarea = React.forwardRef<
       <textarea
         id={textareaId}
         className={cn(
-          'input !h-auto min-h-[100px] py-3 resize-y',
+          'input !h-auto min-h-[100px] resize-y py-2.5',
           error &&
-            'border-red-500 focus:border-red-500 focus:shadow-[0_0_0_3px_rgba(229,72,77,0.22)]',
+            'border-red-500 focus-visible:border-red-500 focus-visible:shadow-[0_0_0_3px_rgba(229,72,77,0.22)]',
           className,
         )}
         ref={ref}

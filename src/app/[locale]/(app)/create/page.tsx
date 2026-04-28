@@ -135,24 +135,30 @@ function PDFViewerComponent({ files, onClose }: { files: File[]; onClose: () => 
             </span>
           </div>
           <div className="flex items-center space-x-2">
-            <button
+            <Button
+              type="button"
+              variant="outline"
               onClick={() => {
                 if (typeof window !== 'undefined') {
                   window.open(pdfUrl, '_blank');
                 }
               }}
-              className="px-2 py-1 text-xs bg-green-100 hover:bg-green-200 text-brand-trust rounded transition-colors"
+              size="sm"
+              className="min-h-[32px] border-green-200 bg-green-100 px-3 text-xs text-brand-trust hover:bg-green-200"
               title={t('openInNewTab')}
             >
               <HiOutlineExternalLink className="mr-1" /> {t('openInNewTab')}
-            </button>
-            <button
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
               onClick={onClose}
-              className="px-2 py-1 text-xs bg-red-100 hover:bg-red-200 text-red-700 rounded transition-colors"
+              size="sm"
+              className="min-h-[32px] border-red-200 bg-red-100 px-3 text-xs text-red-700 hover:bg-red-200"
               title={t('hidePreview')}
             >
               {tCommon('close')}
-            </button>
+            </Button>
           </div>
         </div>
         <p className="text-xs text-neutral-600 mt-1 truncate" title={fileInfo}>
@@ -331,9 +337,9 @@ export default function CreateQuizPage() {
       <Navigation />
 
       <main className="pt-20">
-        <div className="flex min-h-screen transition-all duration-300">
+        <div className="flex min-h-screen transition-[width] duration-300">
           <div
-            className={`transition-all duration-300 ${showPDFViewer ? 'lg:w-1/2 lg:pr-4' : 'w-full'} px-4 sm:px-6 lg:px-8 pb-8`}
+            className={`px-4 pb-8 transition-[width,padding] duration-300 sm:px-6 lg:px-8 ${showPDFViewer ? 'lg:w-1/2 lg:pr-4' : 'w-full'}`}
           >
             {error && (
               <Card
@@ -415,7 +421,7 @@ export default function CreateQuizPage() {
                     </label>
                     <div
                       {...getRootProps()}
-                      className={`border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all duration-300 ${isDragActive ? 'border-brand-action/60 bg-orange-50/50 scale-105' : 'border-neutral-300 hover:border-brand-action/40 hover:bg-orange-50/30'}`}
+                      className={`cursor-pointer rounded-2xl border-2 border-dashed p-8 text-center transition-[background-color,border-color,transform] duration-300 ${isDragActive ? 'scale-105 border-brand-action/60 bg-orange-50/50' : 'border-neutral-300 hover:border-brand-action/40 hover:bg-orange-50/30'}`}
                     >
                       <input {...getInputProps()} />
                       <div className="space-y-4">
@@ -467,7 +473,7 @@ export default function CreateQuizPage() {
                             variant="ghost"
                             size="sm"
                             onClick={() => setShowRemoveAllConfirm(true)}
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            className="px-3 text-red-600 hover:bg-red-50 hover:text-red-700"
                           >
                             <HiOutlineTrash className="w-4 h-4 mr-1" />
                             {tCommon('removeAll')}
@@ -503,7 +509,7 @@ export default function CreateQuizPage() {
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => removeFile(index)}
-                                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                  className="px-3 text-red-600 hover:bg-red-50 hover:text-red-700"
                                 >
                                   <HiOutlineX className="w-4 h-4" />
                                 </Button>
@@ -526,7 +532,7 @@ export default function CreateQuizPage() {
                           type="button"
                           variant="outline"
                           onClick={() => setShowPDFViewer(!showPDFViewer)}
-                          className="text-brand-trust border-green-200 hover:bg-green-50"
+                          className="min-h-[40px] border-green-200 px-4 text-brand-trust hover:bg-green-50"
                         >
                           {showPDFViewer ? (
                             <HiOutlineEyeOff className="w-4 h-4 mr-2" />

@@ -115,7 +115,7 @@ export const SubjectDetailsHero = ({
           onMouseEnter={onPrefetchStartLearning}
           onFocus={onPrefetchStartLearning}
           disabled={startingSession}
-          className="h-11 min-h-[44px] w-full gap-2 rounded-full bg-brand-action px-6 text-sm font-medium text-white shadow-sm transition-all hover:bg-brand-action-hover focus:ring-brand-trust active:scale-95 sm:w-auto sm:hover:scale-105 md:w-auto"
+          className="min-h-[44px] w-full gap-2 rounded-full bg-brand-action px-6 text-sm font-medium text-white shadow-sm transition-[background-color,transform,box-shadow] hover:bg-brand-action-hover active:scale-95 sm:w-auto sm:hover:scale-105 md:w-auto"
         >
           {startingSession ? (
             <>
@@ -230,7 +230,7 @@ export const SubjectDetailsTabs = ({
             tabIndex={activeTab === key ? 0 : -1}
             onClick={() => onChange(key)}
             onKeyDown={(e) => handleKeyDown(e, index)}
-            className={`flex min-h-[44px] cursor-pointer items-center gap-2 whitespace-nowrap rounded-sm px-4 py-2 text-sm font-medium transition-all duration-200 ${
+            className={`flex min-h-[44px] cursor-pointer items-center gap-2 whitespace-nowrap rounded-sm px-4 py-2 text-sm font-medium transition-[background-color,border-color,color,box-shadow] duration-200 ${
               activeTab === key
                 ? 'border border-neutral-200/50 bg-white text-neutral-900 shadow-sm'
                 : 'text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900'

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
 import { Button } from './Button';
+import { Textarea } from './Input';
 
 interface Comment {
   _id: string;
@@ -143,15 +144,17 @@ export function QuestionDiscussion({
     <div
       className={
         isMobile
-          ? 'w-full h-full'
-          : 'w-80 h-screen sticky top-0 border-l border-neutral-200 bg-white transition-all duration-300 hidden md:flex flex-col'
+          ? 'h-full w-full'
+          : 'sticky top-0 hidden h-screen w-80 flex-col border-l border-neutral-200 bg-white transition-[width,border-color] duration-300 md:flex'
       }
     >
       {/* Header */}
       <div className="flex-shrink-0 p-3 border-b border-neutral-100 bg-neutral-50">
-        <button
+        <Button
+          type="button"
           onClick={onToggleCollapse}
-          className="w-full flex items-center justify-between text-left"
+          variant="ghost"
+          className="h-auto w-full justify-between rounded-xl px-2 py-2 text-left"
         >
           <div className="flex items-center space-x-2">
             <svg
@@ -169,7 +172,7 @@ export function QuestionDiscussion({
             </svg>
             <span className="text-sm font-medium text-neutral-900">{t('title')}</span>
             {commentCount > 0 && (
-              <span className="bg-orange-100 text-orange-800 text-xs px-1.5 py-0.5 rounded-full">
+              <span className="inline-flex min-h-[28px] items-center rounded-full bg-orange-100 px-3 text-[13px] font-semibold text-orange-800">
                 {commentCount}
               </span>
             )}
@@ -187,18 +190,18 @@ export function QuestionDiscussion({
               d="M15 19l-7-7 7-7"
             />
           </svg>
-        </button>
+        </Button>
       </div>
 
       {/* Comment Form - Moved to top */}
       <div className="flex-shrink-0 border-b border-neutral-100 p-3 bg-white">
         {session?.user?.email ? (
           <form onSubmit={handleSubmitComment} className="space-y-2">
-            <textarea
+            <Textarea
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
               placeholder={t('sharePlaceholder')}
-              className="w-full px-2 py-2 border border-neutral-300 rounded-md text-xs resize-none focus:ring-1 focus:ring-brand-trust focus:border-brand-trust"
+              className="min-h-[80px] resize-none text-sm"
               rows={2}
               maxLength={2000}
             />
@@ -210,7 +213,7 @@ export function QuestionDiscussion({
                 size="sm"
                 loading={submitting}
                 disabled={!newComment.trim()}
-                className="bg-brand-action hover:bg-brand-action-hover text-white text-xs px-3 py-1"
+                className="px-3"
               >
                 {t('post')}
               </Button>
@@ -219,7 +222,7 @@ export function QuestionDiscussion({
         ) : (
           <div className="text-center py-3">
             <p className="text-xs text-neutral-500 mb-2">{t('pleaseLoginToJoin')}</p>
-            <Button size="sm" variant="outline" className="text-xs px-3 py-1">
+            <Button size="sm" variant="outline" className="px-3">
               {t('logIn')}
             </Button>
           </div>

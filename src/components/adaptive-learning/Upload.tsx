@@ -212,7 +212,7 @@ export default function AdaptiveLearningUpload() {
                   </p>
                   <Button
                     variant="primary"
-                    className="rounded-md px-6 py-4 text-sm font-medium"
+                    className="px-6 text-sm font-medium"
                     onClick={handleOpenFileDialog}
                   >
                     {t('browseFiles')}

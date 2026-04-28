@@ -25,7 +25,7 @@ export function ProTipCard({ title, content, ctaLabel, ctaHref }: ProTipCardProp
           {ctaLabel}
         </Link>
       </div>
-      <div className="absolute top-[-20%] right-[-10%] w-40 h-40 bg-white/5 rounded-full blur-2xl group-hover:bg-white/10 transition-all duration-300" />
+      <div className="absolute top-[-20%] right-[-10%] h-40 w-40 rounded-full bg-white/5 blur-2xl transition-colors duration-300 group-hover:bg-white/10" />
     </Card>
   );
 }

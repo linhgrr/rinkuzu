@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
-import { Input } from '@/components/ui/Input';
+import { Input, Textarea } from '@/components/ui/Input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import QuizMetaForm from '@/components/quiz/QuizMetaForm';
 import PDFViewer from '@/components/ui/PDFViewer';
@@ -361,9 +361,11 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
 
                   {/* User Menu */}
                   <div className="relative">
-                    <button
+                    <Button
+                      type="button"
+                      variant="ghost"
                       onClick={() => setIsMenuOpen(!isMenuOpen)}
-                      className="flex items-center space-x-2 text-neutral-600 hover:text-neutral-900 transition-colors"
+                      className="h-auto gap-2 px-0 text-neutral-600 hover:text-neutral-900"
                     >
                       <div className="w-8 h-8 bg-gradient-to-br from-brand-trust to-green-600 rounded-full flex items-center justify-center">
                         <span className="text-white text-sm font-medium">
@@ -373,16 +375,18 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
                       <HiChevronDown
                         className={`w-4 h-4 transition-transform ${isMenuOpen ? 'rotate-180' : ''}`}
                       />
-                    </button>
+                    </Button>
 
                     {isMenuOpen && (
                       <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-neutral-100 py-1">
-                        <button
+                        <Button
+                          type="button"
+                          variant="ghost"
                           onClick={() => signOut()}
-                          className="block w-full text-left px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50"
+                          className="h-10 w-full justify-start rounded-none px-4 text-sm text-neutral-700 hover:bg-neutral-50"
                         >
                           <HiOutlineLogout className="inline-block mr-2" /> Sign Out
-                        </button>
+                        </Button>
                       </div>
                     )}
                   </div>
@@ -405,12 +409,15 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
 
             {/* Mobile menu button */}
             <div className="md:hidden">
-              <button
+              <Button
+                type="button"
+                variant="ghost"
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
+                size="icon"
                 className="text-neutral-600 hover:text-neutral-900"
               >
                 <HiOutlineMenu className="w-6 h-6" />
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -426,12 +433,14 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
                     >
                       All Quizzes
                     </Link>
-                    <button
+                    <Button
+                      type="button"
+                      variant="ghost"
                       onClick={() => signOut()}
-                      className="block w-full text-left px-4 py-2 text-neutral-600 hover:text-neutral-900"
+                      className="h-10 w-full justify-start px-4 text-neutral-600 hover:text-neutral-900"
                     >
                       Sign Out
-                    </button>
+                    </Button>
                   </>
                 ) : (
                   <>
@@ -464,12 +473,12 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
 
       {/* Main Content - with flex layout for PDF viewer */}
       <main
-        className={`py-8 transition-all duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-16'} max-w-none px-4 sm:px-6 lg:px-8`}
+        className={`max-w-none px-4 py-8 transition-[margin] duration-300 sm:px-6 lg:px-8 ${isSidebarOpen ? 'ml-64' : 'ml-16'}`}
       >
-        <div className="flex min-h-screen transition-all duration-300">
+        <div className="flex min-h-screen transition-[width] duration-300">
           {/* Left Side - Form Content (50% when PDF visible, full width when not) */}
           <div
-            className={`transition-all duration-300 ${showPDFViewer && pdfUrl ? 'lg:w-1/2 lg:pr-4' : 'w-full'}`}
+            className={`transition-[width,padding] duration-300 ${showPDFViewer && pdfUrl ? 'lg:w-1/2 lg:pr-4' : 'w-full'}`}
           >
             <div className="max-w-4xl mx-auto">
               <div className="mb-8 flex items-center justify-between">
@@ -506,7 +515,7 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
                       <p className="text-sm text-neutral-600">Current approval status</p>
                     </div>
                     <span
-                      className={`px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1.5 ${
+                      className={`inline-flex min-h-[28px] items-center rounded-full px-3 text-[13px] font-medium ${
                         quiz.status === 'pending'
                           ? 'bg-yellow-100 text-yellow-800'
                           : quiz.status === 'published'
@@ -664,12 +673,12 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
                                   Remove
                                 </Button>
                               </div>
-                              <textarea
+                              <Textarea
                                 value={q.question}
                                 onChange={(e) =>
                                   updateQuestionField(index, 'question', e.target.value)
                                 }
-                                className="w-full border rounded p-2"
+                                className="min-h-[88px]"
                                 rows={2}
                               />
                               <QuestionImageUpload

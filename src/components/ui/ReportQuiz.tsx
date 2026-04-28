@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { Modal } from './Modal';
 import { Button } from './Button';
+import { Textarea } from './Input';
 
 interface ReportQuizProps {
   quizSlug: string;
@@ -62,9 +63,11 @@ export default function ReportQuiz({ quizSlug, quizTitle }: ReportQuizProps) {
 
   return (
     <>
-      <button
+      <Button
+        type="button"
+        variant="ghost"
         onClick={() => setIsOpen(true)}
-        className="inline-flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors duration-200"
+        className="h-[36px] px-3 text-sm text-red-600 hover:bg-red-50 hover:text-red-700"
         title={t('reportThisQuiz')}
       >
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -76,7 +79,7 @@ export default function ReportQuiz({ quizSlug, quizTitle }: ReportQuizProps) {
           />
         </svg>
         {t('reportQuiz')}
-      </button>
+      </Button>
 
       <Modal isOpen={isOpen} onClose={() => setIsOpen(false)} title={t('reportQuiz')}>
         <div>
@@ -116,11 +119,11 @@ export default function ReportQuiz({ quizSlug, quizTitle }: ReportQuizProps) {
                 >
                   {t('reportDetails')} *
                 </label>
-                <textarea
+                <Textarea
                   id="content"
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
-                  className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-brand-trust focus:border-transparent resize-none"
+                  className="resize-none"
                   rows={6}
                   maxLength={2000}
                   placeholder={t('placeholder')}

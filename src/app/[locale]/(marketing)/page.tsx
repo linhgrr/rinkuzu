@@ -12,13 +12,17 @@ export async function generateMetadata({
   params: Promise<{ locale: string }>;
 }): Promise<Metadata> {
   const { locale } = await params;
+  const isVi = locale === 'vi';
 
   return buildLocalizedMetadata({
     locale,
     path: '/',
-    title: 'AI Quiz Generator from PDF - Knowledge Graph | RinKuzu',
-    description:
-      'Generate quizzes from PDFs with AI, build knowledge graph learning paths, and run adaptive practice sessions for students and teachers.',
+    title: isVi
+      ? 'Tạo Quiz AI từ PDF - Đồ thị Kiến thức | RinKuzu'
+      : 'AI Quiz Generator from PDF - Knowledge Graph | RinKuzu',
+    description: isVi
+      ? 'Tạo quiz từ PDF bằng AI, học theo đồ thị kiến thức và luyện tập thích ứng cho học sinh, sinh viên và giáo viên.'
+      : 'Generate quizzes from PDFs with AI, build knowledge graph learning paths, and run adaptive practice sessions for students and teachers.',
   });
 }
 

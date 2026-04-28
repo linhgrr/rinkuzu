@@ -24,18 +24,10 @@ function buildHreflangLinks(path: string): HreflangLink[] {
   }));
 }
 
-function toEntry(
-  locale: string,
-  path: string,
-  changeFrequency: MetadataRoute.Sitemap[number]['changeFrequency'],
-  priority: number,
-  lastModified = new Date(),
-): SitemapEntry {
+function toEntry(locale: string, path: string, lastModified = new Date()): SitemapEntry {
   return {
     url: canonicalFor(locale, path),
     lastModified,
-    changeFrequency,
-    priority,
     links: buildHreflangLinks(path),
   };
 }
@@ -51,38 +43,12 @@ export default async function sitemap(): Promise<SitemapEntry[]> {
   };
 
   for (const route of INDEXABLE_STATIC_PUBLIC_ROUTES) {
-    const priority = route === '/' ? 1 : 0.8;
-    const changeFrequency = route === '/' ? 'daily' : 'weekly';
     for (const { locale } of localeVariants(route)) {
-      pushEntry(toEntry(locale, route, changeFrequency, priority));
+      pushEntry(toEntry(locale, route));
     }
   }
 
   const quizService = serviceFactory.getQuizService();
-  const categoryService = serviceFactory.getCategoryService();
-
-  try {
-    const categoryResult = await categoryService.getCategories();
-    if (categoryResult.success && Array.isArray(categoryResult.data)) {
-      for (const category of categoryResult.data) {
-        if (!category?.slug || category.isActive === false) continue;
-        const path = `/category/${category.slug}`;
-        for (const { locale } of localeVariants(path)) {
-          pushEntry(
-            toEntry(
-              locale,
-              path,
-              'weekly',
-              0.7,
-              new Date(category.updatedAt || category.createdAt || Date.now()),
-            ),
-          );
-        }
-      }
-    }
-  } catch (error) {
-    console.error('sitemap category generation failed', error);
-  }
 
   try {
     const quizResult = await quizService.getQuizzes({
@@ -99,7 +65,7 @@ export default async function sitemap(): Promise<SitemapEntry[]> {
       const quizUpdatedAt = (quiz as any).updatedAt || (quiz as any).createdAt;
 
       for (const { locale } of localeVariants(path)) {
-        pushEntry(toEntry(locale, path, 'weekly', 0.7, new Date(quizUpdatedAt || Date.now())));
+        pushEntry(toEntry(locale, path, new Date(quizUpdatedAt || Date.now())));
       }
     }
   } catch (error) {

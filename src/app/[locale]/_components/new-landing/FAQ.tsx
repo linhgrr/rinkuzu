@@ -4,6 +4,20 @@ import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { HiOutlinePlus, HiOutlineMinus } from '@/components/icons';
 
+function splitAnswerLead(text: string): { lead: string; rest: string } {
+  const normalized = text.trim();
+  const endOfLead = normalized.search(/[.!?]\s/);
+  if (endOfLead === -1) {
+    return { lead: normalized, rest: '' };
+  }
+
+  const splitIndex = endOfLead + 1;
+  return {
+    lead: normalized.slice(0, splitIndex).trim(),
+    rest: normalized.slice(splitIndex).trim(),
+  };
+}
+
 export function FAQ() {
   const t = useTranslations('landing.faq');
   const [openId, setOpenId] = useState<string | null>('1');
@@ -51,7 +65,17 @@ export function FAQ() {
                 </span>
               </button>
               {openId === faq.id && (
-                <div className="px-6 pb-4 text-white/60 text-sm leading-relaxed">{faq.a}</div>
+                <div className="px-6 pb-4 text-white/60 text-sm leading-relaxed">
+                  {(() => {
+                    const { lead, rest } = splitAnswerLead(faq.a);
+                    return (
+                      <>
+                        <p className="text-white/85">{lead}</p>
+                        {rest ? <p className="mt-2">{rest}</p> : null}
+                      </>
+                    );
+                  })()}
+                </div>
               )}
             </div>
           ))}

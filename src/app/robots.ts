@@ -18,9 +18,11 @@ export default function robots(): MetadataRoute.Robots {
       // AI / LLM crawlers — explicit welcome
       { userAgent: 'GPTBot', allow: '/', disallow: [] },
       { userAgent: 'ChatGPT-User', allow: '/', disallow: [] },
+      { userAgent: 'ClaudeBot', allow: '/', disallow: [] },
       { userAgent: 'Claude-WebBot', allow: '/', disallow: [] },
       { userAgent: 'Google-Extended', allow: '/', disallow: [] },
       { userAgent: 'OAI-SearchBot', allow: '/', disallow: [] },
+      { userAgent: 'PerplexityBot', allow: '/', disallow: [] },
       { userAgent: 'Diffbot', allow: '/', disallow: [] },
       { userAgent: 'Bytespider', allow: '/', disallow: [] },
       { userAgent: 'Applebot-Extended', allow: '/', disallow: [] },
@@ -32,6 +34,6 @@ export default function robots(): MetadataRoute.Robots {
       },
     ],
     sitemap: `${siteUrl.origin}/sitemap.xml`,
-    host: siteUrl.origin,
+    host: siteUrl.host,
   };
 }

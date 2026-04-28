@@ -16,15 +16,11 @@ import { INDEXABLE_STATIC_PUBLIC_ROUTES } from '@/lib/seo.routes';
 function toEntry(
   locale: Locale | string,
   path: string,
-  changeFrequency: MetadataRoute.Sitemap[number]['changeFrequency'],
-  priority: number,
   lastModified = new Date(),
 ): MetadataRoute.Sitemap[number] {
   return {
     url: canonicalFor(locale, path),
     lastModified,
-    changeFrequency,
-    priority,
   };
 }
 
@@ -41,28 +37,8 @@ export async function GET(): Promise<Response> {
   // Static public routes for each locale
   for (const locale of [...locales]) {
     for (const route of INDEXABLE_STATIC_PUBLIC_ROUTES) {
-      const priority = route === '/' ? 1 : 0.8;
-      const changeFrequency = route === '/' ? 'daily' : 'weekly';
-      pushEntry(toEntry(locale, route, changeFrequency, priority));
+      pushEntry(toEntry(locale, route));
     }
-  }
-
-  // Category pages
-  const categoryService = serviceFactory.getCategoryService();
-  try {
-    const categoryResult = await categoryService.getCategories();
-    if (categoryResult.success && Array.isArray(categoryResult.data)) {
-      for (const category of categoryResult.data) {
-        if (!category?.slug || category.isActive === false) continue;
-        const path = `/category/${category.slug}`;
-        const updatedAt = new Date(category.updatedAt || category.createdAt || Date.now());
-        for (const locale of [...locales]) {
-          pushEntry(toEntry(locale, path, 'weekly', 0.7, updatedAt));
-        }
-      }
-    }
-  } catch (error) {
-    console.error('locale sitemap: category generation failed', error);
   }
 
   // Published public quizzes
@@ -80,7 +56,7 @@ export async function GET(): Promise<Response> {
       const path = `/quiz/${quiz.slug}`;
       const quizDate = new Date((quiz as any).updatedAt || (quiz as any).createdAt || Date.now());
       for (const locale of [...locales]) {
-        pushEntry(toEntry(locale, path, 'weekly', 0.7, quizDate));
+        pushEntry(toEntry(locale, path, quizDate));
       }
     }
   } catch (error) {
@@ -98,8 +74,6 @@ ${entries
     (e) => `  <url>
     <loc>${e.url}</loc>
     <lastmod>${new Date(e.lastModified || Date.now()).toISOString().split('T')[0]}</lastmod>
-    <changefreq>${e.changeFrequency}</changefreq>
-    <priority>${e.priority}</priority>
   </url>`,
   )
   .join('\n')}

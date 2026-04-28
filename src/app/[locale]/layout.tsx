@@ -7,7 +7,12 @@ import { routing } from '@/i18n/routing';
 import { canonicalFor, languageAlternates, siteUrl } from '@/lib/seo';
 import { defaultLocale } from '@/i18n/config';
 import { JsonLd } from '@/components/seo/JsonLd';
-import { buildOrganizationSchema, buildWebsiteSchema } from '@/lib/structured-data';
+import {
+  buildOrganizationSchema,
+  buildSoftwareApplicationSchema,
+  buildWebPageSchema,
+  buildWebsiteSchema,
+} from '@/lib/structured-data';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
 
@@ -44,9 +49,9 @@ export const metadata: Metadata = {
     url: '/',
     images: [
       {
-        url: '/icons/icon-512x512.png',
-        width: 512,
-        height: 512,
+        url: '/images/navbar_logo.png',
+        width: 1200,
+        height: 630,
         alt: 'RinKuzu',
       },
     ],
@@ -56,7 +61,7 @@ export const metadata: Metadata = {
     title: 'AI Quiz Generator from PDF - Adaptive learning | RinKuzu',
     description:
       'Generate quizzes from PDFs with AI, build knowledge graph learning paths, and run adaptive practice sessions for students, teachers, and teams.',
-    images: ['/icons/icon-512x512.png'],
+    images: ['/images/navbar_logo.png'],
   },
   robots: {
     index: true,
@@ -77,10 +82,11 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: '/icons/icon-192x192.png', sizes: '192x192', type: 'image/png' },
-      { url: '/icons/icon-512x512.png', sizes: '512x512', type: 'image/png' },
+      { url: '/images/navbar_logo.png', sizes: '32x32', type: 'image/png' },
+      { url: '/images/navbar_logo.png', sizes: '192x192', type: 'image/png' },
     ],
-    apple: [{ url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
+    shortcut: ['/images/navbar_logo.png'],
+    apple: [{ url: '/images/navbar_logo.png', sizes: '180x180', type: 'image/png' }],
   },
   other: {
     'mobile-web-app-capable': 'yes',
@@ -113,14 +119,18 @@ export default async function LocaleLayout({
 
   const organizationSchema = buildOrganizationSchema();
   const websiteSchema = buildWebsiteSchema(locale);
+  const webpageSchema = buildWebPageSchema(locale);
+  const softwareApplicationSchema = buildSoftwareApplicationSchema(locale);
   const messages = await getMessages();
 
   return (
     <html lang={locale} className="scroll-smooth">
       <head>
+        <link rel="icon" href="/images/navbar_logo.png" sizes="32x32" type="image/png" />
+        <link rel="shortcut icon" href="/images/navbar_logo.png" type="image/png" />
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#ffffff" />
-        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        <link rel="apple-touch-icon" href="/images/navbar_logo.png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="RinKuzu" />
@@ -138,6 +148,8 @@ export default async function LocaleLayout({
         <NextIntlClientProvider messages={messages}>
           <JsonLd id="org-schema" data={organizationSchema} />
           <JsonLd id="website-schema" data={websiteSchema} />
+          <JsonLd id="webpage-schema" data={webpageSchema} />
+          <JsonLd id="software-app-schema" data={softwareApplicationSchema} />
           {children}
         </NextIntlClientProvider>
         {process.env.NEXT_PUBLIC_GA_ID ? (

@@ -10,3 +10,7 @@ Describe the change and the user or production impact.
 - [ ] Build passes locally
 - [ ] No secrets or generated artifacts are included
 - [ ] UI changes include screenshots when relevant
+- [ ] UI uses primitives (`Button`, `Input`, `Textarea`) unless documented exception
+- [ ] No `role="button"` on non-button elements
+- [ ] Focus styles use `focus-visible` + design token ring
+- [ ] Avoid `transition-all`; transition only required properties

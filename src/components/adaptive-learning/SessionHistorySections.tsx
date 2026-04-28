@@ -25,17 +25,10 @@ const SessionRow = memo(function SessionRow({ item, onOpen }: SessionRowProps) {
         : 'border-neutral-100 bg-neutral-50 text-neutral-500';
 
   return (
-    <div
-      className="group flex cursor-pointer flex-col gap-4 rounded-lg border border-neutral-200 bg-white p-5 transition-colors duration-200 hover:border-neutral-800 sm:flex-row sm:items-center sm:justify-between focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-trust"
-      role="button"
-      tabIndex={0}
+    <button
+      type="button"
+      className="group flex w-full cursor-pointer flex-col gap-4 rounded-lg border border-neutral-200 bg-white p-5 text-left transition-colors duration-200 hover:border-neutral-800 sm:flex-row sm:items-center sm:justify-between focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-page)]"
       onClick={() => onOpen(item.job_id)}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          onOpen(item.job_id);
-        }
-      }}
     >
       <div className="flex items-center gap-4">
         <div
@@ -96,7 +89,7 @@ const SessionRow = memo(function SessionRow({ item, onOpen }: SessionRowProps) {
           <HiArrowRight className="h-4 w-4" />
         </div>
       </div>
-    </div>
+    </button>
   );
 });
 

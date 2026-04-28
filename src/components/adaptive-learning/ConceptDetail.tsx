@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useRef } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { HiOutlineX, HiCheck } from '@/components/icons';
 import type { ConceptDetail } from './types';
@@ -35,16 +35,6 @@ export default function ConceptDetailPanel({ concept, onClose }: ConceptDetailPa
     };
   }, []);
 
-  const handleBackdropKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLDivElement>) => {
-      if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        onClose();
-      }
-    },
-    [onClose],
-  );
-
   const status = useMemo(() => {
     if (concept.status === 'locked') {
       return {
@@ -67,18 +57,13 @@ export default function ConceptDetailPanel({ concept, onClose }: ConceptDetailPa
   const masteryBarClass = concept.status === 'locked' ? 'bg-neutral-400' : 'bg-brand-trust';
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm"
-      role="button"
-      tabIndex={0}
-      aria-label={t('common.close') || 'Close'}
-      onClick={(event) => {
-        if (event.target === event.currentTarget) {
-          onClose();
-        }
-      }}
-      onKeyDown={handleBackdropKeyDown}
-    >
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
+      <button
+        type="button"
+        className="absolute inset-0"
+        aria-label={t('common.close') || 'Close'}
+        onClick={onClose}
+      />
       <div
         ref={dialogRef}
         role="dialog"

@@ -21,6 +21,7 @@ interface StatOverviewProps {
     accuracy: string;
     toReview: string;
   };
+  showDailyStreak?: boolean;
 }
 
 function StatCard({
@@ -51,16 +52,20 @@ function StatCard({
   );
 }
 
-export function StatOverview({ stats, labels }: StatOverviewProps) {
+export function StatOverview({ stats, labels, showDailyStreak = true }: StatOverviewProps) {
   return (
     <Card className="overflow-hidden rounded-2xl shadow-sm border-neutral-200 p-0 bg-neutral-100">
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-[1px]">
-        <StatCard
-          icon={<HiOutlineFire className="text-2xl text-orange-500" />}
-          eyebrow={labels.dailyStreak}
-          value={`${stats?.streak || 0} ${labels.days}`}
-          tone="border border-orange-100 bg-orange-50 text-orange-600"
-        />
+      <div
+        className={`grid grid-cols-2 gap-[1px] ${showDailyStreak ? 'sm:grid-cols-4' : 'sm:grid-cols-3'}`}
+      >
+        {showDailyStreak ? (
+          <StatCard
+            icon={<HiOutlineFire className="text-2xl text-orange-500" />}
+            eyebrow={labels.dailyStreak}
+            value={`${stats?.streak || 0} ${labels.days}`}
+            tone="border border-orange-100 bg-orange-50 text-orange-600"
+          />
+        ) : null}
         <StatCard
           icon={<HiOutlineLightningBolt className="text-2xl text-green-500" />}
           eyebrow={labels.totalXP}

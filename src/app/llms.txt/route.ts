@@ -57,7 +57,7 @@ ${SITE_NAME} is an AI-powered adaptive learning platform. ${DESCRIPTION}
 - Premium Plan: Full adaptive learning access, advanced quiz features, priority support
 
 ## Contact
-- Email: support@rinkuzu.com
+- Email: support@rinkuzu.app
 - Website: ${SITE_URL}
 
 ## Key Pages
@@ -77,8 +77,8 @@ ${SITE_NAME} is an AI-powered adaptive learning platform. ${DESCRIPTION}
 - Languages: Vietnamese and English (full bilingual interface)
 
 ## Contact Information
-- Email: support@rinkuzu.com
-- Data Protection Officer: dpo@rinkuzu.com
+- Email: support@rinkuzu.app
+- Data Protection Officer: dpo@rinkuzu.app
 - Address: Room 302, Building A1, Hanoi University of Science and Technology, 17 Dai Co Viet Street, Hai Ba Trung District, Hanoi, Vietnam
 - Website: ${SITE_URL}
 - Privacy Policy: ${SITE_URL}/privacy
@@ -111,7 +111,7 @@ Q: What is the AI tutor Rin-chan?
 A: Rin-chan is RinKuzu's built-in AI tutor. It explains any concept from your PDF in plain language, answers follow-up questions, and guides you through difficult topics — available 24/7 within the app.
 
 Q: Can teachers use RinKuzu for classroom assessment?
-A: Absolutely. Teachers can upload lecture PDFs to generate student quizzes, track class-wide performance, and identify concepts that need re-teaching. Contact support@rinkuzu.com for educator pricing and bulk access.
+A: Absolutely. Teachers can upload lecture PDFs to generate student quizzes, track class-wide performance, and identify concepts that need re-teaching. Contact support@rinkuzu.app for educator pricing and bulk access.
 
 Q: How is my data and privacy protected?
 A: Uploaded PDFs are processed securely and kept private by default. We never use your content to train AI models. RinKuzu is GDPR and Vietnamese PDPA compliant. See /privacy for full details.

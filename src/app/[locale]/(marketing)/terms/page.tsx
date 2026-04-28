@@ -68,8 +68,8 @@ export default async function TermsPage({ params }: Props) {
               You are solely responsible for maintaining the confidentiality of your login
               credentials (email and password) and for all activities that occur under your account.
               You must notify us immediately at{' '}
-              <a href="mailto:support@rinkuzu.com" className="text-brand-trust hover:underline">
-                support@rinkuzu.com
+              <a href="mailto:support@rinkuzu.app" className="text-brand-trust hover:underline">
+                support@rinkuzu.app
               </a>{' '}
               if you become aware of any unauthorized use of your account. We are not liable for any
               loss or damage arising from unauthorized use of your credentials.
@@ -126,8 +126,8 @@ export default async function TermsPage({ params }: Props) {
               The Premium plan provides additional features including: priority concept
               recommendation, advanced quiz analytics, team management, and priority email support.
               Pricing for Premium is determined on a per-user or team basis. Contact us at{' '}
-              <a href="mailto:support@rinkuzu.com" className="text-brand-trust hover:underline">
-                support@rinkuzu.com
+              <a href="mailto:support@rinkuzu.app" className="text-brand-trust hover:underline">
+                support@rinkuzu.app
               </a>{' '}
               for custom pricing for teams and institutions.
             </p>
@@ -416,8 +416,8 @@ export default async function TermsPage({ params }: Props) {
             </li>
             <li>
               Email:{' '}
-              <a href="mailto:support@rinkuzu.com" className="text-brand-trust hover:underline">
-                support@rinkuzu.com
+              <a href="mailto:support@rinkuzu.app" className="text-brand-trust hover:underline">
+                support@rinkuzu.app
               </a>
             </li>
             <li>Website: https://www.rinkuzu.app</li>

@@ -64,8 +64,8 @@ export default async function FAQPage({ params }: Props) {
     ? 'Dù bạn là học sinh, sinh viên đang ôn thi, giáo viên xây dựng bài đánh giá hay người đi làm đang nâng cao kỹ năng, RinKuzu được thiết kế để giúp bạn học nhanh hơn, thông minh hơn và cá nhân hóa hơn. Mục FAQ này giải thích từ cách AI tạo quiz từ PDF cho đến cách chúng tôi bảo vệ dữ liệu và hỗ trợ giảng dạy.'
     : "Whether you're a student preparing for exams, a teacher building assessments, or a professional upskilling, RinKuzu is designed to make learning faster, smarter, and more personal. This FAQ covers everything from how our AI generates quizzes from PDFs to how we protect your data and support educators in the classroom.";
   const faqSupportLine = isVi
-    ? 'Nếu chưa thấy câu trả lời phù hợp, hãy email support@rinkuzu.com. Đội ngũ của chúng tôi sẽ phản hồi trong vòng 24-48 giờ.'
-    : "If you can't find what you're looking for, email support@rinkuzu.com and our team will respond within 24-48 hours.";
+    ? 'Nếu chưa thấy câu trả lời phù hợp, hãy email support@rinkuzu.app. Đội ngũ của chúng tôi sẽ phản hồi trong vòng 24-48 giờ.'
+    : "If you can't find what you're looking for, email support@rinkuzu.app and our team will respond within 24-48 hours.";
   const registerHref = isVi ? '/register' : `/${locale}/register`;
 
   // Strip HTML tags from answers for plain-text schema
@@ -148,8 +148,8 @@ export default async function FAQPage({ params }: Props) {
             {isVi
               ? 'Trợ lý AI Rin-chan luôn sẵn sàng 24/7. Hoặc liên hệ với chúng tôi tại '
               : 'Our AI tutor Rin-chan is available 24/7. Or reach us at '}
-            <a href="mailto:support@rinkuzu.com" className="underline hover:text-white">
-              support@rinkuzu.com
+            <a href="mailto:support@rinkuzu.app" className="underline hover:text-white">
+              support@rinkuzu.app
             </a>
             .
           </p>

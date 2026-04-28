@@ -222,5 +222,5 @@ curl -X POST /api/subscription/create-payment \
 
 Để hỗ trợ kỹ thuật hoặc báo cáo lỗi, vui lòng liên hệ:
 
-- Email: support@rinkuzu.com
+- Email: support@rinkuzu.app
 - Documentation: [PayOS API Docs](https://docs.payos.vn/)

@@ -34,7 +34,7 @@ const pricingFaqs = [
   },
   {
     q: 'Is there a student or educator discount?',
-    a: 'Yes! Educators and students can contact us at support@rinkuzu.com for special pricing. We believe AI-powered learning should be accessible to everyone.',
+    a: 'Yes! Educators and students can contact us at support@rinkuzu.app for special pricing. We believe AI-powered learning should be accessible to everyone.',
   },
 ];
 
@@ -145,7 +145,7 @@ export default async function PricingPage({ params }: Props) {
             ],
             button: {
               text: 'Contact Sales',
-              url: 'mailto:support@rinkuzu.com',
+              url: 'mailto:support@rinkuzu.app',
             },
           },
         ]}

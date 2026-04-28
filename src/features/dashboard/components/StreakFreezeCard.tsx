@@ -17,6 +17,7 @@ interface StreakFreezeCardProps {
     failedToBuyFreeze: string;
     failedToConnectServer: string;
   };
+  embedded?: boolean;
 }
 
 interface BuyFreezeResponse {
@@ -38,7 +39,7 @@ function formatMessage(template: string, params: Record<string, string | number>
   );
 }
 
-export function StreakFreezeCard({ count, xp, labels }: StreakFreezeCardProps) {
+export function StreakFreezeCard({ count, xp, labels, embedded = false }: StreakFreezeCardProps) {
   const [buying, setBuying] = useState(false);
   const [currentCount, setCurrentCount] = useState(count);
   const [currentXp, setCurrentXp] = useState(xp);
@@ -68,8 +69,8 @@ export function StreakFreezeCard({ count, xp, labels }: StreakFreezeCardProps) {
     }
   };
 
-  return (
-    <Card className="p-5 flex items-center justify-between border-neutral-200 bg-white rounded-2xl shadow-sm hover:border-orange-400 hover:shadow-[0_0_15px_rgba(251,146,60,0.2)] transition-all duration-300">
+  const content = (
+    <>
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 bg-neutral-50 border border-neutral-100 rounded-xl flex items-center justify-center text-xl">
           ❄️
@@ -103,6 +104,20 @@ export function StreakFreezeCard({ count, xp, labels }: StreakFreezeCardProps) {
           </span>
         )}
       </div>
+    </>
+  );
+
+  if (embedded) {
+    return (
+      <div className="flex items-center justify-between rounded-xl border border-neutral-200/80 bg-neutral-50/70 p-4">
+        {content}
+      </div>
+    );
+  }
+
+  return (
+    <Card className="p-5 flex items-center justify-between border-neutral-200 bg-white rounded-2xl shadow-sm hover:border-orange-400 hover:shadow-[0_0_15px_rgba(251,146,60,0.2)] transition-all duration-300">
+      {content}
     </Card>
   );
 }

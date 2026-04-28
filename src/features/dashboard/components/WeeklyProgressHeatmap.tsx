@@ -19,6 +19,7 @@ interface WeeklyProgressHeatmapProps {
     less: string;
     more: string;
   };
+  embedded?: boolean;
 }
 
 function getWeekStart(date: Date): Date {
@@ -47,7 +48,11 @@ function getIntensityClass(questions: number): string {
 
 const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
-export function WeeklyProgressHeatmap({ weeklyActivity, labels }: WeeklyProgressHeatmapProps) {
+export function WeeklyProgressHeatmap({
+  weeklyActivity,
+  labels,
+  embedded = false,
+}: WeeklyProgressHeatmapProps) {
   const [weekOffset, setWeekOffset] = useState(0);
 
   const { weekDates, weekLabel, isCurrentWeek } = useMemo(() => {
@@ -81,8 +86,8 @@ export function WeeklyProgressHeatmap({ weeklyActivity, labels }: WeeklyProgress
     if (weekOffset < 0) setWeekOffset((prev) => prev + 1);
   };
 
-  return (
-    <Card className="p-6 rounded-2xl shadow-sm border-neutral-100/50 bg-white">
+  const content = (
+    <>
       <div className="flex items-center justify-between mb-4">
         <h3 className="font-semibold text-[var(--text-primary)]">{labels.weeklyProgress}</h3>
         <div className="flex items-center gap-2">
@@ -137,6 +142,16 @@ export function WeeklyProgressHeatmap({ weeklyActivity, labels }: WeeklyProgress
         </div>
         <span>{labels.more}</span>
       </div>
-    </Card>
+    </>
+  );
+
+  if (embedded) {
+    return (
+      <div className="rounded-xl border border-neutral-200/80 bg-neutral-50/70 p-4">{content}</div>
+    );
+  }
+
+  return (
+    <Card className="rounded-2xl border-neutral-100/50 bg-white p-6 shadow-sm">{content}</Card>
   );
 }

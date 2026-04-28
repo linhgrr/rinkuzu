@@ -286,8 +286,8 @@ export default async function PrivacyPage({ params }: Props) {
           </ul>
           <p className="mt-3">
             To exercise any of these rights, contact us at{' '}
-            <a href="mailto:support@rinkuzu.com" className="text-brand-trust hover:underline">
-              support@rinkuzu.com
+            <a href="mailto:support@rinkuzu.app" className="text-brand-trust hover:underline">
+              support@rinkuzu.app
             </a>
             . We will respond within 30 days.
           </p>
@@ -304,8 +304,8 @@ export default async function PrivacyPage({ params }: Props) {
             processing purposes; consent to or withdraw consent for processing; access and correct
             your personal data; delete your personal data; and complain to competent authorities.
             Contact our Data Protection Officer at{' '}
-            <a href="mailto:dpo@rinkuzu.com" className="text-brand-trust hover:underline">
-              dpo@rinkuzu.com
+            <a href="mailto:dpo@rinkuzu.app" className="text-brand-trust hover:underline">
+              dpo@rinkuzu.app
             </a>
             .
           </p>
@@ -321,8 +321,8 @@ export default async function PrivacyPage({ params }: Props) {
             (&ldquo;Children&rdquo;). We do not knowingly collect personal data from children under
             13 without verifiable parental consent. If you believe we have inadvertently collected
             such data, please contact us immediately at{' '}
-            <a href="mailto:support@rinkuzu.com" className="text-brand-trust hover:underline">
-              support@rinkuzu.com
+            <a href="mailto:support@rinkuzu.app" className="text-brand-trust hover:underline">
+              support@rinkuzu.app
             </a>
             , and we will promptly delete it.
           </p>
@@ -338,8 +338,8 @@ export default async function PrivacyPage({ params }: Props) {
             right not to be subject to solely automated decisions that produce significant effects.
             If you believe an AI-generated evaluation has produced an unfair result, you may request
             human review by contacting{' '}
-            <a href="mailto:support@rinkuzu.com" className="text-brand-trust hover:underline">
-              support@rinkuzu.com
+            <a href="mailto:support@rinkuzu.app" className="text-brand-trust hover:underline">
+              support@rinkuzu.app
             </a>
             . We do not use AI-generated content to make automated decisions with legal or similarly
             significant effects without human oversight.
@@ -391,10 +391,10 @@ export default async function PrivacyPage({ params }: Props) {
               <strong>Mã số thuế (Tax ID):</strong> [Vui lòng điền Mã số thuế của trường đại học]
             </p>
             <p>
-              <strong>Email:</strong> support@rinkuzu.com
+              <strong>Email:</strong> support@rinkuzu.app
             </p>
             <p>
-              <strong>Data Protection Officer:</strong> dpo@rinkuzu.com
+              <strong>Data Protection Officer:</strong> dpo@rinkuzu.app
             </p>
           </div>
         </div>
@@ -422,14 +422,14 @@ export default async function PrivacyPage({ params }: Props) {
           <ul className="list-disc pl-6 mt-3 space-y-1">
             <li>
               Email:{' '}
-              <a href="mailto:support@rinkuzu.com" className="text-brand-trust hover:underline">
-                support@rinkuzu.com
+              <a href="mailto:support@rinkuzu.app" className="text-brand-trust hover:underline">
+                support@rinkuzu.app
               </a>
             </li>
             <li>
               Data Protection Officer:{' '}
-              <a href="mailto:dpo@rinkuzu.com" className="text-brand-trust hover:underline">
-                dpo@rinkuzu.com
+              <a href="mailto:dpo@rinkuzu.app" className="text-brand-trust hover:underline">
+                dpo@rinkuzu.app
               </a>
             </li>
             <li>

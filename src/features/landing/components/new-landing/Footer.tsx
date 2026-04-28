@@ -110,7 +110,7 @@ export function Footer() {
 
         <div className="pt-7 border-t border-white/10 flex flex-col md:flex-row items-center justify-between gap-3">
           <p className="text-sm font-medium text-[#A9AAA2]">{t('copyright')}</p>
-          <p className="text-sm font-medium text-[#A9AAA2]">support@rinkuzu.com</p>
+          <p className="text-sm font-medium text-[#A9AAA2]">support@rinkuzu.app</p>
         </div>
       </div>
     </footer>

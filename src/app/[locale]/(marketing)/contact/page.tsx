@@ -49,10 +49,10 @@ export default async function ContactPage({ params }: Props) {
                   Best for: technical questions, bug reports, account issues
                 </p>
                 <a
-                  href="mailto:support@rinkuzu.com"
+                  href="mailto:support@rinkuzu.app"
                   className="text-brand-trust font-medium hover:text-brand-trust-hover hover:underline"
                 >
-                  support@rinkuzu.com
+                  support@rinkuzu.app
                 </a>
               </div>
             </div>
@@ -88,7 +88,7 @@ export default async function ContactPage({ params }: Props) {
                   pricing and pilot programs.
                 </p>
                 <a
-                  href="mailto:support@rinkuzu.com?subject=Educator%20Pricing%20Inquiry"
+                  href="mailto:support@rinkuzu.app?subject=Educator%20Pricing%20Inquiry"
                   className="text-brand-trust font-medium hover:text-brand-trust-hover hover:underline"
                 >
                   Email our team →
@@ -127,7 +127,7 @@ export default async function ContactPage({ params }: Props) {
                   reproduce and we&apos;ll investigate.
                 </p>
                 <a
-                  href="mailto:support@rinkuzu.com?subject=Bug%20Report"
+                  href="mailto:support@rinkuzu.app?subject=Bug%20Report"
                   className="text-brand-trust font-medium hover:text-brand-trust-hover hover:underline"
                 >
                   Report a bug →

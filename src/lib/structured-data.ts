@@ -22,7 +22,7 @@ export function buildOrganizationSchema() {
       "RinKuzu is an AI-powered adaptive learning platform that transforms PDF documents into personalized quiz-based learning journeys using knowledge graphs and Bloom's Taxonomy.",
     contactPoint: {
       '@type': 'ContactPoint',
-      email: 'support@rinkuzu.com',
+      email: 'support@rinkuzu.app',
       contactType: 'customer support',
     },
     address: {

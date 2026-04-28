@@ -290,11 +290,11 @@ export default function AdminSubscriptionsPage() {
               </form>
 
               {/* Status Filter Tabs */}
-              <div className="flex space-x-2">
+              <div className="flex flex-wrap gap-2">
                 <Button
                   onClick={() => handleStatusFilter('')}
                   variant="ghost"
-                  className={`h-auto rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+                  className={`min-h-[40px] rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
                     !statusFilter
                       ? 'bg-green-100 text-brand-trust border border-green-200'
                       : 'text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100'
@@ -307,7 +307,7 @@ export default function AdminSubscriptionsPage() {
                     key={status}
                     onClick={() => handleStatusFilter(status)}
                     variant="ghost"
-                    className={`h-auto rounded-lg px-4 py-2 text-sm font-medium capitalize transition-colors ${
+                    className={`min-h-[40px] rounded-lg px-4 py-2 text-sm font-medium capitalize transition-colors ${
                       statusFilter === status
                         ? 'bg-green-100 text-brand-trust border border-green-200'
                         : 'text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100'
@@ -391,7 +391,7 @@ export default function AdminSubscriptionsPage() {
                                 variant="outline"
                                 size="sm"
                                 onClick={() => openDetailModal(subscription)}
-                                className="text-brand-trust hover:text-brand-trust"
+                                className="min-h-[40px] px-3 text-brand-trust hover:text-brand-trust"
                               >
                                 <HiOutlineEye className="w-4 h-4 mr-1" /> View Details
                               </Button>
@@ -491,7 +491,7 @@ export default function AdminSubscriptionsPage() {
             {/* Status Update Actions */}
             <div className="border-t pt-4">
               <p className="block text-sm font-medium text-neutral-700 mb-3">Update Status</p>
-              <div className="flex gap-2">
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                 {['active', 'cancelled', 'expired'].map((status) => (
                   <Button
                     key={status}
@@ -502,7 +502,7 @@ export default function AdminSubscriptionsPage() {
                       actionLoading === selectedSubscription._id
                     }
                     onClick={() => handleUpdateStatus(selectedSubscription._id, status)}
-                    className={`capitalize ${
+                    className={`min-h-[40px] w-full justify-center px-3 text-sm font-medium capitalize ${
                       selectedSubscription.status === status ? 'opacity-50 cursor-not-allowed' : ''
                     }`}
                   >

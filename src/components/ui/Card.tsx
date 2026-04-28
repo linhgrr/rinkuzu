@@ -104,7 +104,7 @@ const Badge = React.forwardRef<
   };
 
   const sizes = {
-    sm: 'badge h-[24px] px-[10px] text-[12px]',
+    sm: 'badge h-[28px] px-[12px] text-[13px]',
     md: 'badge h-[28px] px-[12px] text-[14px]',
     lg: 'badge h-[32px] px-[16px] text-[14px]',
   };

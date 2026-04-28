@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
 import { defaultLocale } from '@/i18n/config';
 import { getDashboardBootstrapData } from '@/lib/dashboard';
-import { DashboardPageShell } from '@/app/[locale]/_components/DashboardPageShell';
+import { DashboardPageShell } from '@/features/dashboard/components/DashboardPageShell';
 
 export const dynamic = 'force-dynamic';
 

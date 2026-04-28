@@ -22,7 +22,7 @@ import {
 } from '@/components/icons';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import QuizMetaForm from '@/components/quiz/QuizMetaForm';
+import QuizMetaForm from '@/features/quiz/components/QuizMetaForm';
 
 const PDFViewer = dynamic(() => import('@/features/quiz/components/PDFViewer'), { ssr: false });
 

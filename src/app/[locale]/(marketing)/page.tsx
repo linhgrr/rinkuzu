@@ -2,7 +2,7 @@ import { getServerSession } from 'next-auth';
 import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
 import { defaultLocale } from '@/i18n/config';
-import { GuestLanding } from '@/app/[locale]/_components';
+import { GuestLanding } from '@/features/landing/components';
 import type { Metadata } from 'next';
 import { buildLocalizedMetadata } from '@/lib/seo';
 

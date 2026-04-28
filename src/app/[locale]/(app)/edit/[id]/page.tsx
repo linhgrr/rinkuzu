@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/Button';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { Input, Textarea } from '@/components/ui/Input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
-import QuizMetaForm from '@/components/quiz/QuizMetaForm';
+import QuizMetaForm from '@/features/quiz/components/QuizMetaForm';
 import PDFViewer from '@/features/quiz/components/PDFViewer';
 import { IQuiz } from '@/types';
 import { QuestionImageUpload, OptionImageUpload } from '@/components/ui/ImageUpload';

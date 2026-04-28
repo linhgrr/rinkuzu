@@ -68,7 +68,7 @@ export const LanguageSwitcher = memo(function LanguageSwitcher({
     <div className={`relative ${className}`} ref={dropdownRef}>
       <button
         onClick={toggleDropdown}
-        className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-neutral-700 hover:bg-neutral-100 transition-colors"
+        className="flex items-center gap-2 px-3.5 py-2 rounded-lg text-base font-semibold text-neutral-700 hover:bg-neutral-100 transition-colors"
         aria-label={tCommon('changeLanguage')}
       >
         <span className="text-base">{localeFlags[locale]}</span>

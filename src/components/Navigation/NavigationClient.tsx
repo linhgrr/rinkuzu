@@ -405,8 +405,8 @@ export default function NavigationClient({
     <nav
       className={`${positionClass} top-0 left-0 right-0 z-50 transition-colors duration-300 ${navClasses} ${className}`}
     >
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-14">
+      <div className="max-w-7xl mx-auto px-5 sm:px-7 lg:px-10">
+        <div className="flex justify-between items-center h-16 sm:h-[70px]">
           {/* Logo - Static Component */}
           <NavLogo />
 

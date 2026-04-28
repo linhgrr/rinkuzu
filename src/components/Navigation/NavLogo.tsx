@@ -8,14 +8,14 @@ import Image from 'next/image';
 export function NavLogo() {
   return (
     <Link href="/" className="flex items-center group">
-      <div className="h-10 flex items-center justify-center transition-transform group-hover:scale-105">
+      <div className="h-11 flex items-center justify-center transition-transform group-hover:scale-105">
         <Image
           src="/images/auth_logo.webp"
           alt="RinKuzu Logo"
-          width={150}
-          height={40}
-          sizes="150px"
-          className="h-10 w-auto object-contain"
+          width={165}
+          height={44}
+          sizes="165px"
+          className="h-11 w-auto object-contain"
         />
       </div>
     </Link>

@@ -10,6 +10,7 @@ import {
   HiOutlineLightBulb,
 } from '@/components/icons';
 import { Button } from '@/components/ui/Button';
+import { Textarea } from '@/components/ui/Input';
 import { DynamicMarkdownRenderer } from '@/components/ui/DynamicMarkdownRenderer';
 import { getExercisePromptSections } from './exercise-prompt';
 import type { Exercise, SubmitAnswerPayload } from './types';
@@ -38,7 +39,7 @@ const OptionCard = memo(function OptionCard({
       type="button"
       onClick={onClick}
       aria-pressed={ariaPressed}
-      className={`group relative flex w-full cursor-pointer items-start gap-4 rounded-lg border p-4 text-left transition-all duration-200 sm:p-5 ${
+      className={`group relative flex w-full cursor-pointer items-start gap-4 rounded-lg border p-4 text-left transition-[border-color,background-color,transform,box-shadow] duration-200 sm:p-5 ${
         active
           ? 'border-brand-action bg-orange-50 shadow-sm'
           : 'border-neutral-200 bg-white hover:border-neutral-400 active:scale-[0.99]'
@@ -260,13 +261,13 @@ export function ExerciseInteraction({
         <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-5 text-base leading-relaxed text-neutral-800">
           <DynamicMarkdownRenderer content={promptSections.primary} />
         </div>
-        <textarea
+        <Textarea
           value={answerDraft.blanks?.[0] || ''}
           onChange={(event) => onSetBlankAnswer(event.target.value)}
           rows={3}
           placeholder={t('exercise.interactions.fillBlankPlaceholder')}
           aria-label={t('exercise.interactions.fillBlankPlaceholder')}
-          className="min-h-[120px] w-full rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-base text-neutral-900 outline-none transition-colors focus:border-brand-trust focus:ring-2 focus:ring-[var(--focus-ring-soft)]"
+          className="min-h-[120px] w-full rounded-2xl border-neutral-200 bg-white px-4 py-3 text-base text-neutral-900"
         />
         {exercise.hint ? (
           <div className="overflow-hidden rounded-xl border border-amber-200 bg-amber-50">
@@ -425,13 +426,13 @@ export function ExerciseInteraction({
   if (exercise.exercise_type === 'short_answer') {
     return (
       <div className="space-y-4">
-        <textarea
+        <Textarea
           value={answerDraft.text || ''}
           onChange={(event) => onSetTextAnswer(event.target.value)}
           rows={8}
           placeholder={t('exercise.interactions.shortAnswerPlaceholder')}
           aria-label={t('exercise.interactions.shortAnswerPlaceholder')}
-          className="min-h-[220px] w-full rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-base text-neutral-900 outline-none transition-colors focus:border-brand-trust focus:ring-2 focus:ring-[var(--focus-ring-soft)]"
+          className="min-h-[220px] w-full rounded-2xl border-neutral-200 bg-white px-4 py-3 text-base text-neutral-900"
         />
       </div>
     );

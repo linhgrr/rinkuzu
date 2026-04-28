@@ -62,7 +62,7 @@ export default async function AuthorsPage({ params }: Props) {
               <Link
                 key={author.slug}
                 href={`/blog/authors/${author.slug}`}
-                className="group rounded-3xl border border-neutral-200 overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all"
+                className="group overflow-hidden rounded-3xl border border-neutral-200 transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-lg"
               >
                 <div className="relative h-40 overflow-hidden bg-neutral-50">
                   <Image

@@ -15,6 +15,7 @@ import {
 } from '@/components/icons';
 import { SparklesText } from '@/components/ui/sparkles-text';
 import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { useRandomLibraryImages } from './hooks/use-random-library-images';
 import type { DashboardSubject } from './dashboard-view-model';
@@ -261,7 +262,7 @@ export const HeroSection = ({
           priority
         />
       </div>
-      <div className="absolute -bottom-12 -right-12 h-80 w-80 rounded-full bg-green-500/10 blur-3xl transition-all duration-700" />
+      <div className="absolute -bottom-12 -right-12 h-80 w-80 rounded-full bg-green-500/10 blur-3xl transition-colors duration-700" />
     </section>
   );
 };
@@ -320,7 +321,7 @@ export const DailyProgressCard = ({ dailyGoalProgress, t }: DailyProgressCardPro
 );
 
 const UploadCard = ({ onGoUpload, t }: { onGoUpload: () => void; t: TranslateFn }) => (
-  <div className="group flex min-h-[21rem] flex-col items-center justify-center rounded-2xl border-2 border-dashed border-neutral-300 p-8 text-center transition-all duration-300 hover:border-brand-trust/50 hover:bg-brand-trust/5">
+  <div className="group flex min-h-[21rem] flex-col items-center justify-center rounded-2xl border-2 border-dashed border-neutral-300 p-8 text-center transition-colors duration-300 hover:border-brand-trust/50 hover:bg-brand-trust/5">
     <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-green-500/10 transition-transform duration-300 group-hover:scale-110">
       <HiOutlineCloudUpload className="h-10 w-10 text-brand-action" />
     </div>
@@ -347,7 +348,7 @@ const SubjectLibraryCard = memo(function SubjectLibraryCard({
   const progressBarClass = 'bg-brand-trust';
 
   return (
-    <div className="flex h-full flex-col justify-between rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:shadow-xl">
+    <div className="flex h-full flex-col justify-between rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm transition-[transform,box-shadow] duration-300 hover:-translate-y-1.5 hover:shadow-xl">
       <div className="mb-4">
         <div className="mb-4 flex h-40 w-full items-center justify-center overflow-hidden rounded-2xl bg-neutral-100">
           {imageUrl ? (
@@ -376,16 +377,18 @@ const SubjectLibraryCard = memo(function SubjectLibraryCard({
               {subject.lastOpenedLabel}
             </p>
           </div>
-          <button
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
             onClick={() => onDelete(subject)}
             disabled={loading || deleting}
-            className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full p-2 text-neutral-500 transition-colors hover:bg-red-50 hover:text-red-500"
+            className="text-neutral-500 hover:bg-red-50 hover:text-red-500"
             aria-label={t('deleteMaterial')}
             title={t('deleteMaterial')}
-            type="button"
           >
             <HiOutlineTrash className="h-4 w-4" />
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -456,16 +459,18 @@ const SubjectLibraryListItem = memo(function SubjectLibraryListItem({
         </div>
       </div>
       <div className="flex items-center justify-end gap-2 sm:justify-start">
-        <button
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
           onClick={() => onDelete(subject)}
           disabled={loading || deleting}
-          className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full p-2 text-neutral-500 transition-colors hover:bg-red-50 hover:text-red-500"
+          className="text-neutral-500 hover:bg-red-50 hover:text-red-500"
           aria-label={t('deleteMaterial')}
           title={t('deleteMaterial')}
-          type="button"
         >
           <HiOutlineTrash className="h-4 w-4" />
-        </button>
+        </Button>
         <Button
           onClick={() => onOpenSubject(subject.job_id)}
           disabled={loading}
@@ -506,18 +511,20 @@ export const LibrarySection = ({
         <div className="flex items-center gap-2">
           <div className="relative">
             <HiOutlineSearch className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-500" />
-            <input
+            <Input
               type="text"
               placeholder={t('searchPlaceholder')}
               aria-label={t('searchPlaceholder')}
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
-              className="w-[10.5rem] rounded-full border border-neutral-300/70 bg-white py-3 pl-10 pr-4 text-sm text-neutral-900 outline-none transition focus:border-brand-trust focus:ring-2 focus:ring-[var(--focus-ring-soft)] sm:w-auto"
+              className="w-[10.5rem] rounded-full border-neutral-300/70 bg-white pl-10 pr-4 sm:w-auto"
             />
           </div>
-          <button
+          <Button
             type="button"
-            className={`rounded-full p-3 transition-colors ${
+            variant="ghost"
+            size="icon"
+            className={`rounded-full ${
               viewMode === 'grid'
                 ? 'bg-neutral-100 text-neutral-900'
                 : 'text-neutral-500 hover:bg-neutral-100'
@@ -527,10 +534,12 @@ export const LibrarySection = ({
             onClick={() => onViewModeChange('grid')}
           >
             <HiOutlineViewGrid className="h-5 w-5" />
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
-            className={`rounded-full p-3 transition-colors ${
+            variant="ghost"
+            size="icon"
+            className={`rounded-full ${
               viewMode === 'list'
                 ? 'bg-neutral-100 text-neutral-900'
                 : 'text-neutral-500 hover:bg-neutral-100'
@@ -540,7 +549,7 @@ export const LibrarySection = ({
             onClick={() => onViewModeChange('list')}
           >
             <HiOutlineViewList className="h-5 w-5" />
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -586,10 +595,10 @@ export const LibrarySection = ({
 };
 
 export const FloatingUploadAction = ({ onClick, t }: FloatingUploadActionProps) => (
-  <button
+  <Button
     type="button"
     onClick={onClick}
-    className="group fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-brand-action text-white shadow-2xl transition-all active:scale-90 sm:h-16 sm:w-16 md:bottom-10 md:right-8 md:h-20 md:w-20 md:hover:w-48 md:hover:rounded-[2rem]"
+    className="group fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-brand-action text-white shadow-2xl transition-[width,border-radius,transform] active:scale-90 sm:h-16 sm:w-16 md:bottom-10 md:right-8 md:h-20 md:w-20 md:hover:w-48 md:hover:rounded-[2rem]"
     aria-label={t('newLesson')}
     title={t('newLesson')}
   >
@@ -599,7 +608,7 @@ export const FloatingUploadAction = ({ onClick, t }: FloatingUploadActionProps) 
         {t('newLesson')}
       </span>
     </div>
-  </button>
+  </Button>
 );
 
 export const DashboardDeleteModal = ({

@@ -1,6 +1,6 @@
 'use client';
 
-import { AdaptiveApiError } from './api-client';
+import { AdaptiveApiError } from '@/features/adaptive-learning/lib/api-client';
 
 type TranslateFn = (key: string, values?: Record<string, any>) => string;
 

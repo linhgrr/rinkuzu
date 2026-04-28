@@ -2,10 +2,10 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { Modal } from './Modal';
-import { Button } from './Button';
-import { Card, CardContent, CardHeader, CardTitle } from './Card';
-import { QuestionImage, OptionImage } from './ImageDisplay';
+import { Modal } from '@/components/ui/Modal';
+import { Button } from '@/components/ui/Button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { QuestionImage, OptionImage } from '@/components/ui/ImageDisplay';
 import { IQuestion } from '@/types';
 
 interface QuizPreviewModalProps {

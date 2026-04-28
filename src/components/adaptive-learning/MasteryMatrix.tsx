@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { HiOutlineAcademicCap } from '@/components/icons';
 import { Spinner } from '@/components/ui/Spinner';
 import { useKnowledgeGraph, useMasteryMatrix } from '@/hooks/useAdaptiveLearning';
-import type { MasteryRow } from './types';
+import type { MasteryRow } from '@/features/adaptive-learning/types';
 
 interface MasteryMatrixProps {
   sessionId: string;

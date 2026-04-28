@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { HiOutlineX, HiCheck } from '@/components/icons';
 import { Button } from '@/components/ui/Button';
-import type { ConceptDetail } from './types';
+import type { ConceptDetail } from '@/features/adaptive-learning/types';
 
 interface ConceptDetailPanelProps {
   concept: ConceptDetail;

@@ -12,7 +12,7 @@ import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { Input, Textarea } from '@/components/ui/Input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import QuizMetaForm from '@/components/quiz/QuizMetaForm';
-import PDFViewer from '@/components/ui/PDFViewer';
+import PDFViewer from '@/features/quiz/components/PDFViewer';
 import { IQuiz } from '@/types';
 import { QuestionImageUpload, OptionImageUpload } from '@/components/ui/ImageUpload';
 import Sidebar from '@/components/Sidebar';

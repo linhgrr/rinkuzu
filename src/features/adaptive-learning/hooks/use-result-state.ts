@@ -2,12 +2,16 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getSubjectHistoryDetailFresh } from '../api-client';
-import { ADAPTIVE_ROUTES } from '../routes';
-import { getJobIdForSession, getSessionExerciseOutcome } from '../session-storage';
-import { buildExercisePromptText } from '../exercise-prompt';
-import { BLOOM_LABELS } from '../types';
-import type { Exercise, SessionHistoryDetail, SubmitResult } from '../types';
+import { getSubjectHistoryDetailFresh } from '@/features/adaptive-learning/lib/api-client';
+import { ADAPTIVE_ROUTES } from '@/features/adaptive-learning/lib/routes';
+import { getJobIdForSession, getSessionExerciseOutcome } from '../lib/session-storage';
+import { buildExercisePromptText } from '@/features/adaptive-learning/lib/exercise-prompt';
+import { BLOOM_LABELS } from '@/features/adaptive-learning/types';
+import type {
+  Exercise,
+  SessionHistoryDetail,
+  SubmitResult,
+} from '@/features/adaptive-learning/types';
 
 type TranslateFn = (key: string, values?: Record<string, any>) => string;
 

@@ -15,7 +15,7 @@ import {
   HiOutlineLightningBolt,
   HiOutlineTrendingUp,
 } from '@/components/icons';
-import type { SessionHistoryDetail, SessionStatus } from './types';
+import type { SessionHistoryDetail, SessionStatus } from '@/features/adaptive-learning/types';
 
 function SectionSkeleton() {
   return (

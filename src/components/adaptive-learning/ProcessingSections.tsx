@@ -9,8 +9,8 @@ import {
   HiOutlineExclamationCircle,
   HiOutlineSparkles,
 } from '@/components/icons';
-import type { PipelineJobStatus } from './types';
-import type { ProcessingStep } from './hooks/use-processing-state';
+import type { PipelineJobStatus } from '@/features/adaptive-learning/types';
+import type { ProcessingStep } from '@/features/adaptive-learning/hooks/use-processing-state';
 
 const ProcessingGraphPanel = dynamic(() => import('./ProcessingGraphPanel'), {
   loading: () => (

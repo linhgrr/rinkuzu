@@ -12,8 +12,12 @@ import {
 } from '@/components/icons';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { AdaptiveApiError, checkApiHealth, uploadPdf } from './api-client';
-import { ADAPTIVE_ROUTES } from './routes';
+import {
+  AdaptiveApiError,
+  checkApiHealth,
+  uploadPdf,
+} from '@/features/adaptive-learning/lib/api-client';
+import { ADAPTIVE_ROUTES } from '@/features/adaptive-learning/lib/routes';
 
 export default function AdaptiveLearningUpload() {
   const router = useRouter();

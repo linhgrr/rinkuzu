@@ -7,10 +7,13 @@ import { DynamicMarkdownRenderer } from '@/components/ui/DynamicMarkdownRenderer
 import { Modal } from '@/components/ui/Modal';
 import { Pagination } from '@/components/ui/Pagination';
 import { HiCheck, HiOutlineEye, HiOutlineX } from '@/components/icons';
-import { buildExercisePromptText, getExercisePromptSections } from './exercise-prompt';
-import { BLOOM_LABELS } from './types';
-import type { ExerciseHistoryFull } from './types';
-import { formatSessionHistoryDate } from './session-history-utils';
+import {
+  buildExercisePromptText,
+  getExercisePromptSections,
+} from '@/features/adaptive-learning/lib/exercise-prompt';
+import { BLOOM_LABELS } from '@/features/adaptive-learning/types';
+import type { ExerciseHistoryFull } from '@/features/adaptive-learning/types';
+import { formatSessionHistoryDate } from '@/features/adaptive-learning/lib/session-history-utils';
 
 const PAGE_SIZE = 10;
 

@@ -1,4 +1,4 @@
-import type { Exercise, SubmitResult } from './types';
+import type { Exercise, SubmitResult } from '@/features/adaptive-learning/types';
 
 const RESULT_KEY_PREFIX = 'al_session_result';
 const EXERCISE_KEY_PREFIX = 'al_session_exercise';

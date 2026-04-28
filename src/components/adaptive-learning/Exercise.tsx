@@ -3,15 +3,15 @@
 import { useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { ADAPTIVE_ROUTES } from './routes';
-import type { BloomLevel } from './types';
+import { ADAPTIVE_ROUTES } from '@/features/adaptive-learning/lib/routes';
+import type { BloomLevel } from '@/features/adaptive-learning/types';
 import {
   ExerciseErrorState,
   ExerciseLoadingState,
   ExerciseQuestionView,
   ExerciseTheoryView,
 } from './exercise-renderers';
-import { useAdaptiveExerciseSession } from './hooks/use-adaptive-exercise-session';
+import { useAdaptiveExerciseSession } from '@/features/adaptive-learning/hooks/use-adaptive-exercise-session';
 
 interface ExerciseProps {
   sessionId: string;

@@ -4,9 +4,9 @@ import { useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
-import { Modal } from './Modal';
-import { Button } from './Button';
-import { Textarea } from './Input';
+import { Modal } from '@/components/ui/Modal';
+import { Button } from '@/components/ui/Button';
+import { Textarea } from '@/components/ui/Input';
 
 interface ReportQuizProps {
   quizSlug: string;

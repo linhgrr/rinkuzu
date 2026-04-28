@@ -5,7 +5,7 @@ import {
   getKnowledgeGraph,
   getMasteryMatrix,
   getConceptDetail,
-} from '@/components/adaptive-learning/api-client';
+} from '@/features/adaptive-learning/lib/api-client';
 
 export function useKnowledgeGraph(sessionId: string | undefined) {
   return useSWR(

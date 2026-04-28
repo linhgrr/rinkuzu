@@ -1,5 +1,5 @@
-import type { Exercise } from './types';
-import type { ExerciseHistoryFull } from './types/history';
+import type { Exercise } from '@/features/adaptive-learning/types';
+import type { ExerciseHistoryFull } from '@/features/adaptive-learning/types/history';
 
 /*
 Prompt contract used across current exercise, history detail, and chat context.

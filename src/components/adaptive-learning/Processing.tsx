@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { useProcessingState } from './hooks/use-processing-state';
+import { useProcessingState } from '@/features/adaptive-learning/hooks/use-processing-state';
 import { ProcessingGraphCard, ProcessingStatusCard, ProcessingTipCard } from './ProcessingSections';
 
 export default function AdaptiveLearningProcessing() {

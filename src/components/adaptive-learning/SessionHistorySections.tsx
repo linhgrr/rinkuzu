@@ -4,8 +4,8 @@ import { memo } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Spinner } from '@/components/ui/Spinner';
 import { HiArrowRight, HiOutlineAcademicCap } from '@/components/icons';
-import type { SessionHistoryItem } from './types';
-import { formatSessionHistoryDate } from './session-history-utils';
+import type { SessionHistoryItem } from '@/features/adaptive-learning/types';
+import { formatSessionHistoryDate } from '@/features/adaptive-learning/lib/session-history-utils';
 
 interface SessionRowProps {
   item: SessionHistoryItem;

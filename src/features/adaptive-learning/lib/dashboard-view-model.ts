@@ -1,4 +1,4 @@
-import type { PipelineJobHistoryItem } from './types';
+import type { PipelineJobHistoryItem } from '@/features/adaptive-learning/types';
 
 type TranslateFn = (key: string, values?: Record<string, any>) => string;
 

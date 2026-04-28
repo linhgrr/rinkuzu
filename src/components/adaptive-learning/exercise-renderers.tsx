@@ -8,8 +8,13 @@ import { Card, CardContent } from '@/components/ui/Card';
 import { HiArrowRight, HiBookOpen, HiLightBulb, HiOutlineX } from '@/components/icons';
 import { DynamicMarkdownRenderer } from '@/components/ui/DynamicMarkdownRenderer';
 import { TextShimmer } from '@/components/ui/text-shimmer';
-import { getExercisePromptSections } from './exercise-prompt';
-import type { Exercise, NextConcept, SubmitAnswerPayload, TheoryData } from './types';
+import { getExercisePromptSections } from '@/features/adaptive-learning/lib/exercise-prompt';
+import type {
+  Exercise,
+  NextConcept,
+  SubmitAnswerPayload,
+  TheoryData,
+} from '@/features/adaptive-learning/types';
 
 const ExerciseInteraction = dynamic(
   () => import('./exercise-question-interaction').then((module) => module.ExerciseInteraction),

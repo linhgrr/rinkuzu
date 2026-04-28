@@ -7,7 +7,7 @@ import {
   SessionHistoryList,
   SessionHistoryLoadingState,
 } from './SessionHistorySections';
-import { useSessionHistoryState } from './hooks/use-session-history-state';
+import { useSessionHistoryState } from '@/features/adaptive-learning/hooks/use-session-history-state';
 
 export default function SessionHistory() {
   const t = useTranslations('adaptiveLearning');

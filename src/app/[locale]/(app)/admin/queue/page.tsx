@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/Card';
 import { Modal } from '@/components/ui/Modal';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
-import { QuizPreviewModal } from '@/components/ui/QuizPreviewModal';
+import { QuizPreviewModal } from '@/features/quiz/components/QuizPreviewModal';
 import Pagination from '@/components/ui/Pagination';
 import { formatDate } from '@/lib/utils';
 import { IQuiz } from '@/types';

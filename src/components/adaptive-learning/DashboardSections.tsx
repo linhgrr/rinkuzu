@@ -17,9 +17,9 @@ import { SparklesText } from '@/components/ui/sparkles-text';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
-import { useRandomLibraryImages } from './hooks/use-random-library-images';
-import type { DashboardSubject } from './dashboard-view-model';
-import type { PipelineJobHistoryItem } from './types';
+import { useRandomLibraryImages } from '@/features/adaptive-learning/hooks/use-random-library-images';
+import type { DashboardSubject } from '@/features/adaptive-learning/lib/dashboard-view-model';
+import type { PipelineJobHistoryItem } from '@/features/adaptive-learning/types';
 
 type TranslateFn = (key: string, values?: Record<string, any>) => string;
 

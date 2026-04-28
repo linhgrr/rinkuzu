@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
-import { Modal } from './Modal';
-import { Button } from './Button';
-import { Input } from './Input';
+import { Modal } from '@/components/ui/Modal';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
 import Pagination from './Pagination';
 
 interface StatsModalProps {

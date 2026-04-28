@@ -18,7 +18,7 @@ import {
 } from '@xyflow/react';
 
 import dagre from 'dagre';
-import type { PipelineJobStatus } from './types';
+import type { PipelineJobStatus } from '@/features/adaptive-learning/types';
 
 interface ConceptNodeData extends Record<string, unknown> {
   label: string;

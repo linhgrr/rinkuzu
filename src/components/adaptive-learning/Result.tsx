@@ -3,7 +3,7 @@
 import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
 import { ResultContent, ResultEmptyState, ResultLoadingState } from './ResultSections';
-import { useResultState } from './hooks/use-result-state';
+import { useResultState } from '@/features/adaptive-learning/hooks/use-result-state';
 
 const AdaptiveLearningChatbot = dynamic(() => import('./Chatbot'), {
   ssr: false,

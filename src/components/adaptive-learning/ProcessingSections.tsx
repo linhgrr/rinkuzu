@@ -174,7 +174,7 @@ export const ProcessingStatusCard = ({
           </div>
           <div className="h-1.5 w-full overflow-hidden rounded-full border border-neutral-200 bg-neutral-100">
             <div
-              className="h-full rounded-full bg-brand-trust transition-all duration-500 ease-out"
+              className="h-full rounded-full bg-brand-trust transition-[width] duration-500 ease-out"
               style={{ width: `${progress}%` }}
             />
           </div>

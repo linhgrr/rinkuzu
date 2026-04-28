@@ -176,7 +176,7 @@ export const ExerciseTheoryView = ({
         <Button
           onClick={onStartExercise}
           disabled={loadingExercise}
-          className="w-full md:w-auto h-12 md:h-11 min-h-[48px] md:min-w-[200px] rounded-full bg-brand-action px-8 text-sm md:text-base font-medium text-white transition-all active:scale-[0.98] hover:bg-brand-action-hover shadow-md disabled:bg-neutral-200 disabled:text-neutral-400"
+          className="h-12 min-h-[48px] w-full rounded-full bg-brand-action px-8 text-sm font-medium text-white shadow-md transition-[background-color,transform] active:scale-[0.98] hover:bg-brand-action-hover disabled:bg-neutral-200 disabled:text-neutral-400 md:h-11 md:min-w-[200px] md:w-auto md:text-base"
         >
           {loadingExercise ? t('exercise.loadingTitle') : t('exercise.theory.startExercise')}
           {!loadingExercise && <HiArrowRight className="ml-2 h-4 w-4" />}
@@ -251,7 +251,7 @@ export const ExerciseQuestionView = ({
           <div className="flex items-center gap-3">
             <div className="h-1.5 w-32 overflow-hidden rounded-full bg-neutral-100 border border-neutral-200">
               <div
-                className="h-full rounded-full bg-brand-trust transition-all duration-500 ease-out"
+                className="h-full rounded-full bg-brand-trust transition-[width] duration-500 ease-out"
                 style={{ width: `${progressPercent}%` }}
               />
             </div>
@@ -344,7 +344,7 @@ export const ExerciseQuestionView = ({
               })}
             </p>
             <Button
-              className="w-full min-h-[48px] h-12 sm:h-11 sm:min-h-[44px] rounded-full bg-brand-action py-2 text-sm md:text-base font-medium text-white transition-all active:scale-[0.98] sm:hover:scale-[1.02] hover:bg-brand-action-hover justify-center shadow-sm"
+              className="h-12 min-h-[48px] w-full justify-center rounded-full bg-brand-action py-2 text-sm font-medium text-white shadow-sm transition-[background-color,transform] active:scale-[0.98] hover:bg-brand-action-hover sm:h-11 sm:min-h-[44px] sm:hover:scale-[1.02] md:text-base"
               onClick={onSubmit}
               disabled={!canSubmit || submitting}
             >

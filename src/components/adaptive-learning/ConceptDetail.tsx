@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { HiOutlineX, HiCheck } from '@/components/icons';
+import { Button } from '@/components/ui/Button';
 import type { ConceptDetail } from './types';
 
 interface ConceptDetailPanelProps {
@@ -87,14 +88,17 @@ export default function ConceptDetailPanel({ concept, onClose }: ConceptDetailPa
               ) : null}
             </div>
           </div>
-          <button
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
             ref={closeButtonRef}
             aria-label={t('common.close') || 'Close'}
             onClick={onClose}
-            className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg p-1 transition-colors hover:bg-neutral-100"
+            className="rounded-lg p-1 hover:bg-neutral-100"
           >
             <HiOutlineX className="h-5 w-5 text-neutral-400" />
-          </button>
+          </Button>
         </div>
 
         <div className="space-y-6 px-6 py-5">
@@ -114,7 +118,7 @@ export default function ConceptDetailPanel({ concept, onClose }: ConceptDetailPa
             <div className="flex items-center gap-3">
               <div className="h-4 flex-1 overflow-hidden rounded-full bg-neutral-100">
                 <div
-                  className={`h-full rounded-full transition-all ${masteryBarClass}`}
+                  className={`h-full rounded-full transition-[width] ${masteryBarClass}`}
                   style={{ width: `${concept.mastery * 100}%` }}
                 />
               </div>
@@ -136,7 +140,7 @@ export default function ConceptDetailPanel({ concept, onClose }: ConceptDetailPa
                   </span>
                   <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-neutral-100">
                     <div
-                      className={`h-full rounded-full transition-all ${BLOOM_COLORS[index] || 'bg-neutral-400'}`}
+                      className={`h-full rounded-full transition-[width] ${BLOOM_COLORS[index] || 'bg-neutral-400'}`}
                       style={{ width: `${value * 100}%` }}
                     />
                   </div>

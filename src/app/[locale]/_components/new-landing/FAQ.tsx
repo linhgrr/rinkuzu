@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { HiOutlinePlus, HiOutlineMinus } from '@/components/icons';
+import { Button } from '@/components/ui/Button';
 
 function splitAnswerLead(text: string): { lead: string; rest: string } {
   const normalized = text.trim();
@@ -44,14 +45,16 @@ export function FAQ() {
           {faqs.map((faq) => (
             <div
               key={faq.id}
-              className={`rounded-xl border transition-all ${
+              className={`rounded-xl border transition-colors ${
                 openId === faq.id
                   ? 'border-brand-trust/30 bg-green-500/5'
                   : 'border-white/10 bg-white/5'
               }`}
             >
-              <button
-                className="w-full px-6 py-4 flex items-center justify-between text-left"
+              <Button
+                type="button"
+                variant="ghost"
+                className="flex w-full items-center justify-between px-6 py-4 text-left text-white hover:bg-transparent"
                 onClick={() => setOpenId(openId === faq.id ? null : faq.id)}
                 aria-expanded={openId === faq.id}
               >
@@ -63,7 +66,7 @@ export function FAQ() {
                     <HiOutlinePlus className="w-5 h-5" />
                   )}
                 </span>
-              </button>
+              </Button>
               {openId === faq.id && (
                 <div className="px-6 pb-4 text-white/60 text-sm leading-relaxed">
                   {(() => {

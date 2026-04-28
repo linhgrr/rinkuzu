@@ -226,7 +226,7 @@ export const ResultContent = ({
               </div>
               <div className="h-1.5 w-full overflow-hidden rounded-full border border-neutral-200 bg-neutral-100">
                 <div
-                  className="h-full rounded-full bg-brand-trust transition-all duration-500"
+                  className="h-full rounded-full bg-brand-trust transition-[width] duration-500"
                   style={{ width: `${masteryPercent}%` }}
                 />
               </div>
@@ -248,7 +248,7 @@ export const ResultContent = ({
             {t('result.dashboard')}
           </Button>
           <Button
-            className="h-12 flex-[2] rounded-xl bg-brand-action font-semibold text-white shadow-md transition-all hover:bg-brand-action-hover focus:ring-brand-trust active:scale-[0.98]"
+            className="h-12 flex-[2] rounded-xl bg-brand-action font-semibold text-white shadow-md transition-[background-color,transform] hover:bg-brand-action-hover focus:ring-brand-trust active:scale-[0.98]"
             onClick={onHandleNext}
           >
             {result.session_completed ? t('result.sessionCompleteCta') : t('result.nextExercise')}

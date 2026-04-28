@@ -3,6 +3,8 @@
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import Image from 'next/image';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
 
 export function Footer() {
   const t = useTranslations('landing.footer');
@@ -28,7 +30,7 @@ export function Footer() {
             </Link>
             <p className="text-white/50 text-sm leading-relaxed">
               AI-powered adaptive learning platform. Transform any PDF into a personalized quiz
-              journey with knowledge graphs and Bloom&apos;s Taxonomy.
+              journey.
             </p>
           </div>
 
@@ -88,16 +90,19 @@ export function Footer() {
             </h4>
             <p className="text-white/50 text-sm">{t('newsletter.description')}</p>
             <div className="flex gap-2">
-              <input
+              <Input
                 type="email"
                 placeholder={t('newsletter.placeholder')}
                 aria-label={t('newsletter.placeholder')}
                 autoComplete="email"
-                className="flex-1 bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-brand-trust/50 transition-colors"
+                className="flex-1 rounded-lg border-white/10 bg-white/5 px-4 py-2 text-sm text-white placeholder:text-white/30 focus-visible:border-brand-trust/50"
               />
-              <button className="bg-brand-trust text-white text-sm font-bold px-4 py-2 rounded-lg hover:bg-brand-trust-hover transition-colors whitespace-nowrap">
+              <Button
+                type="button"
+                className="whitespace-nowrap rounded-lg bg-brand-trust px-4 py-2 text-sm font-bold text-white hover:bg-brand-trust-hover"
+              >
                 {t('newsletter.button')}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

@@ -52,7 +52,7 @@ export function GuestLanding({ quizzes, isAuthenticated = false }: GuestLandingP
                 <Link
                   key={quiz._id}
                   href={`/quiz/${quiz.slug}`}
-                  className="group block rounded-3xl bg-white border border-neutral-200 p-8 shadow-sm transition-all hover:shadow-xl hover:-translate-y-1"
+                  className="group block rounded-3xl border border-neutral-200 bg-white p-8 shadow-sm transition-[transform,box-shadow] hover:-translate-y-1 hover:shadow-xl"
                 >
                   <div className="flex flex-col h-full">
                     <span

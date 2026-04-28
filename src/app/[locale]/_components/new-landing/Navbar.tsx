@@ -5,6 +5,7 @@ import { Menu, X } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
+import { Button } from '@/components/ui/Button';
 
 const NAV_LINKS_EN = [
   { labelKey: 'navAiQuiz', href: '/adaptive-learning' },
@@ -119,9 +120,12 @@ const Navbar = ({ isAuthenticated = false }: { isAuthenticated?: boolean }) => {
               {t('login')}
             </Link>
           ) : null}
-          <button
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="p-1 rounded hover:bg-white/10 transition-colors"
+            className="rounded hover:bg-white/10"
             aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'}
           >
             {isMobileMenuOpen ? (
@@ -129,7 +133,7 @@ const Navbar = ({ isAuthenticated = false }: { isAuthenticated?: boolean }) => {
             ) : (
               <Menu size={22} className="text-white" />
             )}
-          </button>
+          </Button>
         </div>
       </div>
 

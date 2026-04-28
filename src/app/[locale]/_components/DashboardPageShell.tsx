@@ -108,8 +108,8 @@ export async function DashboardPageShell({
               />
             </div>
 
-            <section className="group relative overflow-hidden rounded-[2rem] border border-neutral-200 bg-white p-8 shadow-sm transition-all duration-500 hover:shadow-md md:p-12">
-              <div className="pointer-events-none absolute right-0 top-0 -mr-40 -mt-40 h-[40rem] w-[40rem] rounded-full bg-green-50/50 blur-3xl transition-all duration-500 group-hover:bg-green-100/50" />
+            <section className="group relative overflow-hidden rounded-[2rem] border border-neutral-200 bg-white p-8 shadow-sm transition-shadow duration-500 hover:shadow-md md:p-12">
+              <div className="pointer-events-none absolute right-0 top-0 -mr-40 -mt-40 h-[40rem] w-[40rem] rounded-full bg-green-50/50 blur-3xl transition-colors duration-500 group-hover:bg-green-100/50" />
 
               <div className="relative z-10 flex flex-col items-center justify-between gap-8 md:flex-row md:gap-12">
                 <div className="max-w-2xl flex-1">
@@ -128,14 +128,14 @@ export async function DashboardPageShell({
                   <div className="flex flex-col items-center gap-4 sm:flex-row">
                     <Link
                       href="/adaptive-learning"
-                      className="flex h-12 w-full items-center justify-center gap-2 whitespace-nowrap rounded-full border border-brand-action bg-brand-action px-8 text-base font-bold text-white shadow-lg transition-all duration-300 hover:bg-brand-action-hover hover:shadow-orange sm:w-auto"
+                      className="flex h-12 w-full items-center justify-center gap-2 whitespace-nowrap rounded-full border border-brand-action bg-brand-action px-8 text-base font-bold text-white shadow-lg transition-[background-color,box-shadow] duration-300 hover:bg-brand-action-hover hover:shadow-orange sm:w-auto"
                     >
                       <span>{tDashboard('startLearning')}</span>
                       <HiOutlineArrowRight className="h-5 w-5" />
                     </Link>
                     <Link
                       href="/review"
-                      className="flex h-12 w-full items-center justify-center whitespace-nowrap rounded-full border border-neutral-200 bg-white/80 px-8 text-base font-bold text-neutral-700 backdrop-blur-md transition-all duration-300 hover:bg-neutral-50 sm:w-auto"
+                      className="flex h-12 w-full items-center justify-center whitespace-nowrap rounded-full border border-neutral-200 bg-white/80 px-8 text-base font-bold text-neutral-700 backdrop-blur-md transition-colors duration-300 hover:bg-neutral-50 sm:w-auto"
                     >
                       {tDashboard('startReviewSession')}
                     </Link>
@@ -173,7 +173,7 @@ export async function DashboardPageShell({
               <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
                 <Link
                   href={ROUTES.CREATE_QUIZ}
-                  className="group flex min-h-[160px] flex-col items-center justify-center rounded-2xl border-2 border-dashed border-green-200 bg-neutral-50/50 p-6 text-center transition-all duration-300 hover:border-brand-trust hover:bg-green-50/50"
+                  className="group flex min-h-[160px] flex-col items-center justify-center rounded-2xl border-2 border-dashed border-green-200 bg-neutral-50/50 p-6 text-center transition-colors duration-300 hover:border-brand-trust hover:bg-green-50/50"
                 >
                   <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-neutral-200 bg-white text-neutral-900 shadow-sm transition-transform group-hover:scale-105">
                     <HiOutlinePlus className="h-7 w-7" />
@@ -201,7 +201,7 @@ export async function DashboardPageShell({
 
                 <Link
                   href={ROUTES.EXPLORE}
-                  className="group relative flex min-h-[160px] flex-col justify-center overflow-hidden rounded-2xl border border-neutral-200 bg-white/80 p-6 text-neutral-900 backdrop-blur-sm transition-all duration-300 hover:border-brand-trust hover:shadow-lg hover:shadow-green"
+                  className="group relative flex min-h-[160px] flex-col justify-center overflow-hidden rounded-2xl border border-neutral-200 bg-white/80 p-6 text-neutral-900 backdrop-blur-sm transition-[border-color,box-shadow] duration-300 hover:border-brand-trust hover:shadow-lg hover:shadow-green"
                 >
                   <div className="relative z-10">
                     <div className="mb-2 inline-flex rounded bg-green-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-brand-trust-hover">
@@ -213,11 +213,11 @@ export async function DashboardPageShell({
                     <p className="mb-4 text-xs font-medium text-neutral-500">
                       {tDashboard('discoverQuizzes')}
                     </p>
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full border border-green-100 bg-green-50 shadow-sm transition-all duration-300 group-hover:translate-x-1 group-hover:bg-green-500">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full border border-green-100 bg-green-50 shadow-sm transition-[background-color,transform] duration-300 group-hover:translate-x-1 group-hover:bg-green-500">
                       <HiOutlineArrowRight className="h-5 w-5 text-brand-trust transition-colors group-hover:text-white" />
                     </div>
                   </div>
-                  <div className="absolute -bottom-10 -right-10 h-32 w-32 rounded-full bg-green-50/50 blur-2xl transition-all duration-300 group-hover:bg-green-100/50" />
+                  <div className="absolute -bottom-10 -right-10 h-32 w-32 rounded-full bg-green-50/50 blur-2xl transition-colors duration-300 group-hover:bg-green-100/50" />
                 </Link>
               </div>
             </section>
@@ -238,7 +238,7 @@ export async function DashboardPageShell({
               <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
                 <Link
                   href={ROUTES.CREATE_QUIZ}
-                  className="group flex min-h-[160px] flex-col items-center justify-center rounded-2xl border-2 border-dashed border-green-200 bg-neutral-50/50 p-6 text-center transition-all duration-300 hover:border-brand-trust hover:bg-green-50/50"
+                  className="group flex min-h-[160px] flex-col items-center justify-center rounded-2xl border-2 border-dashed border-green-200 bg-neutral-50/50 p-6 text-center transition-colors duration-300 hover:border-brand-trust hover:bg-green-50/50"
                 >
                   <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-neutral-200 bg-white text-neutral-900 shadow-sm transition-transform group-hover:scale-105">
                     <HiOutlinePlus className="h-7 w-7" />
@@ -286,7 +286,7 @@ export async function DashboardPageShell({
                 </div>
                 <div className="h-2.5 w-full overflow-hidden rounded-full bg-neutral-100">
                   <div
-                    className="h-full rounded-full bg-brand-trust transition-all duration-500 ease-out"
+                    className="h-full rounded-full bg-brand-trust transition-[width] duration-500 ease-out"
                     style={{ width: `${stats.levelProgress}%` }}
                   />
                 </div>

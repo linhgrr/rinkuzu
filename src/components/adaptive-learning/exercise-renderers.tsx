@@ -5,7 +5,14 @@ import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/Button';
 import { Spinner } from '@/components/ui/Spinner';
 import { Card, CardContent } from '@/components/ui/Card';
-import { HiArrowRight, HiBookOpen, HiLightBulb, HiOutlineX } from '@/components/icons';
+import {
+  HiArrowRight,
+  HiBookOpen,
+  HiChevronDown,
+  HiChevronUp,
+  HiLightBulb,
+  HiOutlineX,
+} from '@/components/icons';
 import { DynamicMarkdownRenderer } from '@/components/ui/DynamicMarkdownRenderer';
 import { TextShimmer } from '@/components/ui/text-shimmer';
 import { getExercisePromptSections } from '@/features/adaptive-learning/lib/exercise-prompt';
@@ -214,6 +221,90 @@ export type ExerciseQuestionViewProps = {
   submitting: boolean;
   t: TranslateFn;
 };
+
+type ExerciseRationaleProps = {
+  exercise: Exercise;
+  localizedBloomLabel: string;
+  t: TranslateFn;
+};
+
+function formatPercent(mastery: number) {
+  return `${Math.round(mastery * 100)}%`;
+}
+
+function ExerciseRationale({ exercise, localizedBloomLabel, t }: ExerciseRationaleProps) {
+  const [isOpen, setIsOpen] = React.useState(false);
+  const rationale = exercise.recommendation_reason;
+
+  if (!rationale) return null;
+
+  return (
+    <div className="mb-6 overflow-hidden rounded-xl border border-brand-trust/20 bg-brand-trust/5">
+      <Button
+        type="button"
+        variant="ghost"
+        onClick={() => setIsOpen((open) => !open)}
+        aria-expanded={isOpen}
+        className="flex min-h-[56px] w-full items-start justify-between rounded-none px-4 py-3 text-left hover:bg-brand-trust/10"
+      >
+        <div className="pr-4">
+          <div className="mb-1 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-trust">
+            <HiLightBulb className="h-4 w-4 shrink-0" />
+            <span>{t('exercise.rationale.badge')}</span>
+          </div>
+          <p className="text-sm font-medium leading-6 text-neutral-900">
+            {t('exercise.rationale.summary', {
+              concept: rationale.concept_name,
+              level: localizedBloomLabel,
+            })}
+          </p>
+        </div>
+        {isOpen ? (
+          <HiChevronUp className="mt-1 h-4 w-4 shrink-0 text-neutral-500" />
+        ) : (
+          <HiChevronDown className="mt-1 h-4 w-4 shrink-0 text-neutral-500" />
+        )}
+      </Button>
+
+      <div
+        className={`grid transition-[grid-template-rows] duration-200 ease-out ${isOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}
+      >
+        <div className="overflow-hidden">
+          <div className="border-t border-brand-trust/15 px-4 py-4">
+            <p className="text-sm leading-6 text-neutral-700">
+              {rationale.satisfied_prereqs.length > 0
+                ? t('exercise.rationale.withPrereqs', {
+                    currentMastery: formatPercent(rationale.current_mastery),
+                    milestone: formatPercent(rationale.next_milestone),
+                  })
+                : t('exercise.rationale.foundationConcept', {
+                    currentMastery: formatPercent(rationale.current_mastery),
+                    milestone: formatPercent(rationale.next_milestone),
+                  })}
+            </p>
+
+            {rationale.satisfied_prereqs.length > 0 ? (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {rationale.satisfied_prereqs.map((prereq) => (
+                  <span
+                    key={prereq.name}
+                    className="inline-flex min-h-[28px] items-center rounded-full border border-neutral-200 bg-white px-3 py-1 text-xs font-medium text-neutral-700 shadow-sm"
+                  >
+                    {t('exercise.rationale.prereqChip', {
+                      name: prereq.name,
+                      mastery: formatPercent(prereq.mastery),
+                    })}
+                  </span>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export const ExerciseQuestionView = ({
   concept,
   exercise,
@@ -305,6 +396,11 @@ export const ExerciseQuestionView = ({
             </div>
           ) : exercise ? (
             <CardContent className="p-5 sm:p-6 md:p-10">
+              <ExerciseRationale
+                exercise={exercise}
+                localizedBloomLabel={localizedBloomLabel}
+                t={t}
+              />
               {(() => {
                 const headerContent = getExerciseHeaderContent(exercise);
                 return headerContent ? (

@@ -344,6 +344,13 @@
     "stepCounter": "Bài tập {current}",
     "bloomBadge": "Bloom {level}: {label}",
     "focusModeContext": "Khái niệm: {concept} ở mức {level}",
+    "rationale": {
+      "badge": "Vì sao bài này được chọn",
+      "summary": "Đang luyện {concept} ở mức {level}.",
+      "withPrereqs": "Bạn đang ở khoảng {currentMastery} mastery cho khái niệm này, và đã đạt các nền tảng liên quan. Mục tiêu tiếp theo là tiến tới mốc {milestone}.",
+      "foundationConcept": "Đây là một khái niệm nền tảng nên hệ thống ưu tiên cho bạn luyện trước. Bạn hiện ở khoảng {currentMastery} mastery và mục tiêu tiếp theo là {milestone}.",
+      "prereqChip": "{name} ({mastery})"
+    },
     "checking": "Đang kiểm tra...",
     "preparingExercise": "Đang chuẩn bị bài tập cho bạn...",
     "constructingChallenge": "Đang dựng thử thách tiếp theo...",

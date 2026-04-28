@@ -33,8 +33,10 @@ export default async function AppLayout({
   return (
     <NextIntlClientProvider messages={messages}>
       <Providers session={session}>
-        <MainLayoutWrapper>{children}</MainLayoutWrapper>
-        <GlobalFooter />
+        <MainLayoutWrapper>
+          {children}
+          <GlobalFooter />
+        </MainLayoutWrapper>
         <BottomNav />
         <FloatingDraftProgress />
         <PWAInstaller />

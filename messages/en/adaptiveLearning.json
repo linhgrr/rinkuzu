@@ -344,6 +344,13 @@
     "stepCounter": "Exercise {current}",
     "bloomBadge": "Bloom {level}: {label}",
     "focusModeContext": "Concept: {concept} at {level} level",
+    "rationale": {
+      "badge": "Why this concept?",
+      "summary": "You're practicing {concept} at the {level} level.",
+      "withPrereqs": "Your current mastery for this concept is about {currentMastery}, and you have already unlocked the supporting foundations. The next milestone is {milestone}.",
+      "foundationConcept": "This is a foundational concept, so the system is prioritizing it first. Your current mastery is about {currentMastery}, and the next milestone is {milestone}.",
+      "prereqChip": "{name} ({mastery})"
+    },
     "checking": "Checking...",
     "preparingExercise": "Preparing your exercise...",
     "constructingChallenge": "Constructing your challenge...",

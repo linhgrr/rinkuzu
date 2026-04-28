@@ -48,6 +48,20 @@ export interface MatchingPair {
   right: string;
 }
 
+export interface RecommendationPrerequisite {
+  name: string;
+  mastery: number;
+}
+
+export interface RecommendationReason {
+  concept_name: string;
+  bloom_level: number;
+  bloom_label: BloomLevel;
+  satisfied_prereqs: RecommendationPrerequisite[];
+  current_mastery: number;
+  next_milestone: number;
+}
+
 export interface SubmitAnswerPayload {
   choice?: string;
   choices?: string[];
@@ -82,6 +96,7 @@ export interface Exercise {
     content: string;
     examples: string[];
   };
+  recommendation_reason?: RecommendationReason | null;
 }
 
 export interface SubmitResult {

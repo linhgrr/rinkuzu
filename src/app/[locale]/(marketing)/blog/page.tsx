@@ -77,7 +77,7 @@ export default async function BlogIndexPage({ params }: Props) {
           <Link
             key={post.slug}
             href={`/blog/${post.slug}`}
-            className="group block rounded-3xl overflow-hidden border border-neutral-200 hover:shadow-xl hover:-translate-y-1 transition-all"
+            className="group block rounded-3xl overflow-hidden border border-neutral-200 transition-[transform,box-shadow] hover:-translate-y-1 hover:shadow-xl"
           >
             {/* Thumbnail */}
             <div className="relative aspect-[16/7] overflow-hidden bg-neutral-50">

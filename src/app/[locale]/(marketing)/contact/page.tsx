@@ -174,7 +174,7 @@ export default async function ContactPage({ params }: Props) {
               <div className="space-y-3">
                 <Link
                   href="/faq"
-                  className="flex items-center justify-between p-3 rounded-xl border border-neutral-200 hover:border-green-200 hover:bg-green-50/30 transition-all group"
+                  className="group flex items-center justify-between rounded-xl border border-neutral-200 p-3 transition-colors hover:border-green-200 hover:bg-green-50/30"
                 >
                   <span className="text-sm font-medium text-[var(--text-primary)]">
                     FAQ — Frequently Asked Questions
@@ -185,7 +185,7 @@ export default async function ContactPage({ params }: Props) {
                 </Link>
                 <Link
                   href="/about"
-                  className="flex items-center justify-between p-3 rounded-xl border border-neutral-200 hover:border-green-200 hover:bg-green-50/30 transition-all group"
+                  className="group flex items-center justify-between rounded-xl border border-neutral-200 p-3 transition-colors hover:border-green-200 hover:bg-green-50/30"
                 >
                   <span className="text-sm font-medium text-[var(--text-primary)]">
                     About RinKuzu — Our Story & Research
@@ -196,7 +196,7 @@ export default async function ContactPage({ params }: Props) {
                 </Link>
                 <Link
                   href="/pricing"
-                  className="flex items-center justify-between p-3 rounded-xl border border-neutral-200 hover:border-green-200 hover:bg-green-50/30 transition-all group"
+                  className="group flex items-center justify-between rounded-xl border border-neutral-200 p-3 transition-colors hover:border-green-200 hover:bg-green-50/30"
                 >
                   <span className="text-sm font-medium text-[var(--text-primary)]">
                     Pricing — Free vs. Premium
@@ -217,7 +217,7 @@ export default async function ContactPage({ params }: Props) {
               </p>
               <Link
                 href="/register"
-                className="inline-flex items-center justify-center rounded-full bg-brand-action text-white font-bold px-6 py-2.5 hover:bg-brand-action-hover transition-all text-sm"
+                className="inline-flex items-center justify-center rounded-full bg-brand-action px-6 py-2.5 text-sm font-bold text-white transition-colors hover:bg-brand-action-hover"
               >
                 Get Started Free
               </Link>

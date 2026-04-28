@@ -4,6 +4,7 @@ import React, { useCallback, useState } from 'react';
 import { useDropzone, type FileRejection } from 'react-dropzone';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
 import {
   HiOutlineCloudUpload,
   HiOutlineDocumentText,
@@ -169,13 +170,13 @@ export default function AdaptiveLearningUpload() {
             <label htmlFor="subjectName" className="font-semibold text-neutral-900 text-base">
               {t('uploadPage.subjectName')} <span className="text-red-500">*</span>
             </label>
-            <input
+            <Input
               id="subjectName"
               type="text"
               placeholder={t('uploadPage.subjectNamePlaceholder')}
               value={subjectName}
               onChange={(e) => setSubjectName(e.target.value)}
-              className="px-4 py-3 text-sm border border-neutral-300 rounded-md focus:ring-2 focus:ring-brand-trust focus:border-brand-trust outline-none w-full bg-neutral-50 hover:bg-white transition-all font-medium"
+              className="w-full bg-neutral-50 text-sm font-medium hover:bg-white"
               disabled={isUploading}
             />
             {error && !subjectName.trim() && (
@@ -185,7 +186,7 @@ export default function AdaptiveLearningUpload() {
 
           <div
             {...getRootProps()}
-            className={`upload-dropzone relative group cursor-pointer transition-all duration-200 overflow-hidden
+            className={`upload-dropzone relative group cursor-pointer transition-colors duration-200 overflow-hidden
                             ${isDragActive ? '!border-brand-action bg-orange-50/30 cursor-copy' : ''}
                             ${isUploading ? 'pointer-events-none' : ''}`}
           >
@@ -211,7 +212,7 @@ export default function AdaptiveLearningUpload() {
                   </p>
                   <Button
                     variant="primary"
-                    className="rounded-md px-6 py-4 font-medium text-sm transition-all"
+                    className="rounded-md px-6 py-4 text-sm font-medium"
                     onClick={handleOpenFileDialog}
                   >
                     {t('browseFiles')}
@@ -233,7 +234,7 @@ export default function AdaptiveLearningUpload() {
                   </div>
                   <div className="w-full bg-neutral-100 rounded-full h-1.5 overflow-hidden">
                     <div
-                      className="bg-brand-trust h-full rounded-full transition-all duration-300 ease-out"
+                      className="bg-brand-trust h-full rounded-full transition-[width] duration-300 ease-out"
                       style={{ width: `${uploadProgress}%` }}
                     />
                   </div>

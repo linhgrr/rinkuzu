@@ -322,7 +322,7 @@ export default function AdminUsersPage() {
 
       {/* Main Content */}
       <main
-        className={`py-8 transition-all duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-16'} max-w-none px-4 sm:px-6 lg:px-8`}
+        className={`py-8 transition-[margin] duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-16'} max-w-none px-4 sm:px-6 lg:px-8`}
       >
         {loading ? (
           <div className="flex justify-center py-12">
@@ -615,10 +615,11 @@ export default function AdminUsersPage() {
 
           <div className="space-y-3">
             {plans.map((plan) => (
-              <button
+              <Button
                 key={plan._id}
                 type="button"
-                className={`p-4 border rounded-lg cursor-pointer transition-colors ${
+                variant="ghost"
+                className={`h-auto w-full justify-start rounded-lg border p-4 transition-colors ${
                   selectedPlanId === plan._id
                     ? 'border-green-500 bg-green-50'
                     : 'border-neutral-200 hover:border-neutral-300'
@@ -642,7 +643,7 @@ export default function AdminUsersPage() {
                     </div>
                   )}
                 </div>
-              </button>
+              </Button>
             ))}
           </div>
 

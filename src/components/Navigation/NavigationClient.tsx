@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { isAdaptiveExerciseModePath } from '@/lib/routing/pathname';
+import { Button } from '@/components/ui/Button';
 import {
   HiOutlineClock,
   HiOutlineBookmark,
@@ -46,14 +47,18 @@ const UserMenu = memo(function UserMenu({
 
   return (
     <div className="relative ml-2" ref={menuRef}>
-      <button
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
         onClick={onToggle}
-        className="flex items-center gap-2 p-1.5 rounded-full hover:bg-neutral-100 transition-colors"
+        className="flex items-center gap-2 rounded-full"
+        aria-label="Toggle user menu"
       >
         <div className="w-7 h-7 bg-brand-trust rounded-full flex items-center justify-center text-white text-sm font-medium">
           {session.user?.email?.charAt(0).toUpperCase()}
         </div>
-      </button>
+      </Button>
 
       {isOpen && (
         <>
@@ -142,13 +147,15 @@ const UserMenu = memo(function UserMenu({
 
             {/* Sign Out */}
             <div className="border-t border-neutral-100 p-2">
-              <button
+              <Button
+                type="button"
+                variant="ghost"
                 onClick={handleSignOut}
-                className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 rounded-xl transition-colors cursor-pointer"
+                className="flex h-auto w-full items-center justify-start gap-3 rounded-xl px-4 py-2.5 text-sm text-red-500 hover:bg-red-50"
               >
                 <HiOutlineLogout className="w-5 h-5" />
                 {t('signOut')}
-              </button>
+              </Button>
             </div>
           </div>
         </>
@@ -275,12 +282,14 @@ const MobileMenu = memo(function MobileMenu({
               <LanguageSwitcher />
             </div>
 
-            <button
+            <Button
+              type="button"
+              variant="ghost"
               onClick={handleSignOut}
-              className="w-full text-left px-4 py-3 text-sm font-medium text-red-500 hover:bg-red-50 rounded-xl transition-colors"
+              className="h-auto w-full justify-start rounded-xl px-4 py-3 text-sm font-medium text-red-500 hover:bg-red-50"
             >
               {t('signOut')}
-            </button>
+            </Button>
           </>
         ) : (
           <>
@@ -394,7 +403,7 @@ export default function NavigationClient({
 
   return (
     <nav
-      className={`${positionClass} top-0 left-0 right-0 z-50 transition-all duration-300 ${navClasses} ${className}`}
+      className={`${positionClass} top-0 left-0 right-0 z-50 transition-colors duration-300 ${navClasses} ${className}`}
     >
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-14">
@@ -438,16 +447,20 @@ export default function NavigationClient({
 
           {/* Mobile menu button */}
           <div className="md:hidden">
-            <button
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
               onClick={handleMobileMenuToggle}
-              className="p-2 rounded-full hover:bg-neutral-100 transition-colors"
+              className="rounded-full"
+              aria-label={isMenuOpen ? 'Close menu' : 'Open menu'}
             >
               {isMenuOpen ? (
                 <HiOutlineX className="w-5 h-5 text-neutral-900" />
               ) : (
                 <HiOutlineMenu className="w-5 h-5 text-neutral-900" />
               )}
-            </button>
+            </Button>
           </div>
         </div>
 

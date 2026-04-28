@@ -4,6 +4,8 @@ import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import { useTranslations } from 'next-intl';
 import { HiOutlineX, HiArrowUp } from '@/components/icons';
 import Image from 'next/image';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
 import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer';
 import { streamAdaptiveTutorChat } from '@/lib/adaptive-learning/chat';
 
@@ -176,13 +178,16 @@ export default function AdaptiveLearningChatbot({
           />
           <span className="font-semibold">{t('chatbot.title')}</span>
         </div>
-        <button
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
           aria-label={t('common.close') || 'Close chat'}
           onClick={onClose}
-          className="flex min-h-[44px] min-w-[44px] items-center justify-center text-neutral-400 hover:text-neutral-600 rounded-lg transition-colors hover:bg-neutral-100"
+          className="text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600"
         >
           <HiOutlineX className="w-6 h-6" />
-        </button>
+        </Button>
       </div>
 
       {/* Messages */}
@@ -224,22 +229,23 @@ export default function AdaptiveLearningChatbot({
       {/* Input */}
       <div className="p-4 bg-white border-t border-neutral-100">
         <div className="relative">
-          <input
+          <Input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSend()}
             placeholder={t('chatbot.placeholder')}
-            className="w-full pl-4 pr-14 py-3 min-h-[44px] bg-white border border-neutral-200 rounded-md focus:outline-none focus:ring-1 focus:ring-neutral-900 focus:border-neutral-900 transition-colors text-sm"
+            className="min-h-[44px] border-neutral-200 bg-white py-3 pl-4 pr-14 text-sm focus-visible:ring-neutral-900"
           />
-          <button
+          <Button
+            type="button"
             onClick={handleSend}
             disabled={!input.trim() || isTyping}
             aria-label={t('chatbot.send') || 'Send message'}
-            className="absolute right-2 top-1/2 -translate-y-1/2 flex min-h-[40px] min-w-[40px] items-center justify-center bg-neutral-900 text-white rounded hover:bg-black disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="absolute right-2 top-1/2 min-h-[40px] min-w-[40px] -translate-y-1/2 rounded bg-neutral-900 p-0 text-white hover:bg-black"
           >
             <HiArrowUp className="w-4 h-4" />
-          </button>
+          </Button>
         </div>
       </div>
     </div>

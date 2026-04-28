@@ -61,7 +61,7 @@ export default function BlogLayout({ children }: { children: React.ReactNode }) 
               <Link
                 key={post.slug}
                 href={`/blog/${post.slug}`}
-                className="group rounded-3xl border border-neutral-200 overflow-hidden hover:shadow-lg transition-all hover:-translate-y-0.5"
+                className="group overflow-hidden rounded-3xl border border-neutral-200 transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-lg"
               >
                 <div className="bg-[var(--bg-section)] border-b border-neutral-100 p-8">
                   <div className="flex items-center gap-3 mb-3">

@@ -157,7 +157,7 @@ export default async function AuthorPage({ params }: Props) {
               {/* AI Quiz Generation article */}
               <Link
                 href="/blog/ai-powered-quiz-generation-guide"
-                className="group flex gap-5 p-5 rounded-2xl border border-neutral-200 hover:border-green-200 hover:shadow-md transition-all"
+                className="group flex gap-5 rounded-2xl border border-neutral-200 p-5 transition-[border-color,box-shadow] hover:border-green-200 hover:shadow-md"
               >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-2">
@@ -179,7 +179,7 @@ export default async function AuthorPage({ params }: Props) {
               {/* Knowledge Graphs article */}
               <Link
                 href="/blog/knowledge-graphs-adaptive-learning-pdfs"
-                className="group flex gap-5 p-5 rounded-2xl border border-neutral-200 hover:border-green-200 hover:shadow-md transition-all"
+                className="group flex gap-5 rounded-2xl border border-neutral-200 p-5 transition-[border-color,box-shadow] hover:border-green-200 hover:shadow-md"
               >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-2">

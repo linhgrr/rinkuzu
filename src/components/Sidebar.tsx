@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
 import { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/Button';
 import {
   HiOutlineSearch,
   HiOutlineCollection,
@@ -120,16 +121,18 @@ export default function Sidebar({ isOpen, onToggle, currentPath }: SidebarProps)
 
   return (
     <div
-      className={`fixed left-0 top-16 h-full bg-white border-r border-neutral-200 transition-all duration-300 z-40 ${
+      className={`fixed left-0 top-16 z-40 h-full border-r border-neutral-200 bg-white transition-[width] duration-300 ${
         isOpen ? 'w-64' : 'w-16'
       }`}
     >
       <div className="p-4">
         {/* Toggle Button */}
         <div className="mb-4">
-          <button
+          <Button
+            type="button"
+            variant="ghost"
             onClick={onToggle}
-            className="w-full flex items-center justify-center px-3 py-2 text-neutral-600 hover:bg-neutral-100 rounded-lg transition-colors"
+            className="h-auto w-full justify-center rounded-lg px-3 py-2 text-neutral-600 hover:bg-neutral-100"
             title={isOpen ? t('collapseSidebar') : t('expandSidebar')}
             aria-label={isOpen ? t('collapseSidebar') : t('expandSidebar')}
           >
@@ -138,7 +141,7 @@ export default function Sidebar({ isOpen, onToggle, currentPath }: SidebarProps)
             ) : (
               <HiChevronDoubleRight className="w-5 h-5" />
             )}
-          </button>
+          </Button>
         </div>
 
         <nav className="space-y-2">
@@ -180,15 +183,17 @@ export default function Sidebar({ isOpen, onToggle, currentPath }: SidebarProps)
               {/* Admin section header */}
               {isOpen ? (
                 <div className="mb-2">
-                  <button
+                  <Button
+                    type="button"
+                    variant="ghost"
                     onClick={() => setAdminMenuOpen(!adminMenuOpen)}
-                    className="flex items-center justify-between w-full px-3 py-2 text-sm font-medium text-neutral-600 hover:bg-neutral-100 rounded-lg transition-colors"
+                    className="h-auto w-full justify-between rounded-lg px-3 py-2 text-sm font-medium text-neutral-600 hover:bg-neutral-100"
                   >
                     <span>{t('adminPanel')}</span>
                     <HiChevronRight
                       className={`w-4 h-4 transition-transform ${adminMenuOpen ? 'rotate-90' : ''}`}
                     />
-                  </button>
+                  </Button>
                 </div>
               ) : (
                 <div className="mb-2 flex justify-center">

@@ -294,7 +294,7 @@ export default async function BlogPost({ params }: Props) {
               </p>
               <Link
                 href="/register"
-                className="inline-flex items-center justify-center rounded-full bg-brand-trust text-white font-bold px-10 py-4 hover:bg-brand-trust-hover transition-all hover:scale-105 shadow-lg shadow-green-500/20 active:scale-95"
+                className="inline-flex items-center justify-center rounded-full bg-brand-trust px-10 py-4 font-bold text-white shadow-lg shadow-green-500/20 transition-[background-color,transform] hover:scale-105 hover:bg-brand-trust-hover active:scale-95"
               >
                 Get Started Free
               </Link>

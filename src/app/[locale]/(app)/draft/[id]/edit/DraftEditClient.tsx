@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import { useDraftStore } from '@/store/useDraftStore';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
+import { Textarea } from '@/components/ui/Input';
 import {
   HiOutlineTrash,
   HiOutlinePencil,
@@ -199,7 +200,7 @@ export default function DraftEditClient({ initialDraft, initialCategory, locale 
       <div className="flex">
         {/* Left Side - Form Content */}
         <div
-          className={`transition-all duration-300 ${showPDFViewer && pdfUrl ? 'w-1/2' : 'w-full'}`}
+          className={`transition-[width] duration-300 ${showPDFViewer && pdfUrl ? 'w-1/2' : 'w-full'}`}
         >
           <div className="max-w-4xl mx-auto px-6 py-8">
             {/* Header */}
@@ -282,19 +283,20 @@ export default function DraftEditClient({ initialDraft, initialCategory, locale 
                 </Button>
               )}
               <div className="flex gap-3 ml-auto">
-                <button
+                <Button
+                  type="button"
+                  variant="outline"
                   onClick={() => router.push(`/${locale}`)}
-                  className="px-6 py-3 rounded-xl border border-neutral-200 text-neutral-700
-                       hover:bg-neutral-50 transition-colors flex items-center gap-2"
+                  className="flex items-center gap-2 px-6 py-3 text-neutral-700 hover:bg-neutral-50"
                 >
                   <HiOutlineX className="w-4 h-4" />
                   Hủy
-                </button>
-                <button
+                </Button>
+                <Button
+                  type="button"
                   onClick={handleSubmit}
                   disabled={isSubmitting || !selectedCategory || questions.length === 0}
-                  className="px-6 py-3 rounded-xl bg-green-500 text-white font-medium
-                       hover:bg-brand-trust disabled:opacity-50 transition-colors flex items-center gap-2"
+                  className="flex items-center gap-2 px-6 py-3"
                 >
                   {isSubmitting ? (
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -302,7 +304,7 @@ export default function DraftEditClient({ initialDraft, initialCategory, locale 
                     <HiOutlineCloudUpload className="w-5 h-5" />
                   )}
                   {isSubmitting ? 'Đang gửi…' : 'Gửi để duyệt'}
-                </button>
+                </Button>
               </div>
             </div>
           </div>
@@ -357,25 +359,30 @@ function QuestionEditor({
 
           {isEditing ? (
             <div className="mt-2 flex items-start gap-2">
-              <textarea
+              <Textarea
                 value={editedQuestion}
                 onChange={(e) => setEditedQuestion(e.target.value)}
                 rows={2}
-                className="flex-1 px-3 py-2 rounded-lg border border-neutral-200
-                         focus:ring-2 focus:ring-brand-trust focus:border-transparent resize-none"
+                className="flex-1 resize-none"
               />
-              <button
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
                 onClick={handleSave}
-                className="p-2 text-green-600 hover:bg-green-50 rounded-lg"
+                className="text-green-600 hover:bg-green-50"
               >
                 <HiOutlineCheck className="w-5 h-5" />
-              </button>
-              <button
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
                 onClick={() => setIsEditing(false)}
-                className="p-2 text-neutral-400 hover:bg-neutral-100 rounded-lg"
+                className="text-neutral-400 hover:bg-neutral-100"
               >
                 <HiOutlineX className="w-5 h-5" />
-              </button>
+              </Button>
             </div>
           ) : (
             <p className="mt-1 text-neutral-900">{question.question}</p>
@@ -384,18 +391,24 @@ function QuestionEditor({
 
         {!isEditing && (
           <div className="flex items-center gap-1">
-            <button
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
               onClick={() => setIsEditing(true)}
-              className="p-2 text-neutral-400 hover:text-brand-trust hover:bg-green-50 rounded-lg transition-colors"
+              className="text-neutral-400 hover:bg-green-50 hover:text-brand-trust"
             >
               <HiOutlinePencil className="w-4 h-4" />
-            </button>
-            <button
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
               onClick={onDelete}
-              className="p-2 text-neutral-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+              className="text-neutral-400 hover:bg-red-50 hover:text-red-500"
             >
               <HiOutlineTrash className="w-4 h-4" />
-            </button>
+            </Button>
           </div>
         )}
       </div>

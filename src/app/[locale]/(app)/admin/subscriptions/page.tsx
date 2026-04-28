@@ -226,7 +226,7 @@ export default function AdminSubscriptionsPage() {
 
       {/* Main Content */}
       <main
-        className={`py-8 transition-all duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-16'} max-w-none px-4 sm:px-6 lg:px-8`}
+        className={`py-8 transition-[margin] duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-16'} max-w-none px-4 sm:px-6 lg:px-8`}
       >
         {loading ? (
           <div className="flex justify-center py-12">
@@ -291,28 +291,30 @@ export default function AdminSubscriptionsPage() {
 
               {/* Status Filter Tabs */}
               <div className="flex space-x-2">
-                <button
+                <Button
                   onClick={() => handleStatusFilter('')}
-                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                  variant="ghost"
+                  className={`h-auto rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
                     !statusFilter
                       ? 'bg-green-100 text-brand-trust border border-green-200'
                       : 'text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100'
                   }`}
                 >
                   All Subscriptions
-                </button>
+                </Button>
                 {['pending', 'active', 'cancelled', 'expired'].map((status) => (
-                  <button
+                  <Button
                     key={status}
                     onClick={() => handleStatusFilter(status)}
-                    className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors capitalize ${
+                    variant="ghost"
+                    className={`h-auto rounded-lg px-4 py-2 text-sm font-medium capitalize transition-colors ${
                       statusFilter === status
                         ? 'bg-green-100 text-brand-trust border border-green-200'
                         : 'text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100'
                     }`}
                   >
                     {status}
-                  </button>
+                  </Button>
                 ))}
               </div>
             </div>

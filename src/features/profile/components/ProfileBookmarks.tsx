@@ -10,6 +10,7 @@ import { ROUTES } from '@/shared/constants';
 import { HiOutlineTag, HiOutlineTrash } from '@/components/icons';
 import Image from 'next/image';
 import { StreamingChatModal } from '@/features/quiz/components/chat/StreamingChatModal';
+import { QuestionOptionsPreview } from '@/features/quiz/components/shared/QuestionOptionsPreview';
 import { useStreamingChatSession } from '@/features/quiz/hooks/useStreamingChatSession';
 import { fetchApiSuccess } from '@/lib/api/client';
 
@@ -278,15 +279,12 @@ export default function ProfileBookmarks() {
                     <span className="font-medium text-neutral-700">{t('correct')}: </span>
                     <span className="text-green-600">{formatCorrectAnswer(bookmark.question)}</span>
                   </div>
-                  <div className="mt-2 text-sm text-neutral-600">
-                    <div className="grid grid-cols-1 gap-1">
-                      {bookmark.question.options.map((option, optIdx) => (
-                        <div key={optIdx} className="opacity-75">
-                          {String.fromCharCode(65 + optIdx)}. {option}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                  <QuestionOptionsPreview
+                    options={bookmark.question.options}
+                    className="mt-2 text-sm text-neutral-600"
+                    optionsClassName="grid grid-cols-1 gap-1"
+                    optionItemClassName="opacity-75"
+                  />
                 </div>
               </CardContent>
             </Card>
@@ -310,16 +308,12 @@ export default function ProfileBookmarks() {
           onClose={closeAIModal}
           title={t('chatWithRinChan')}
           questionContent={
-            <>
-              <p className="font-medium">{currentBookmark.question.text}</p>
-              <ul className="text-sm mt-2 space-y-1">
-                {currentBookmark.question.options.map((option, index) => (
-                  <li key={index}>
-                    {String.fromCharCode(65 + index)}. {option}
-                  </li>
-                ))}
-              </ul>
-            </>
+            <QuestionOptionsPreview
+              questionText={currentBookmark.question.text}
+              options={currentBookmark.question.options}
+              questionImage={currentBookmark.question.questionImage}
+              optionImages={currentBookmark.question.optionImages}
+            />
           }
           messages={getHistory(currentBookmark._id)}
           userLabel={t('you')}

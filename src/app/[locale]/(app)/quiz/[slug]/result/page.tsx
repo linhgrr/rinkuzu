@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { StreamingChatModal } from '@/features/quiz/components/chat/StreamingChatModal';
+import { QuestionOptionsPreview } from '@/features/quiz/components/shared/QuestionOptionsPreview';
 import { useStreamingChatSession } from '@/features/quiz/hooks/useStreamingChatSession';
 import { fetchApiSuccess } from '@/lib/api/client';
 
@@ -704,16 +705,12 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
           onClose={closeAIModal}
           title={tProfile('chatWithRinChan')}
           questionContent={
-            <>
-              <h4 className="font-medium mb-2">{aiQuestionData?.question}</h4>
-              <div className="text-sm text-neutral-600">
-                {aiQuestionData?.options?.map((opt: string, idx: number) => (
-                  <div key={idx} className="mb-1">
-                    {String.fromCharCode(65 + idx)}. {opt}
-                  </div>
-                ))}
-              </div>
-            </>
+            <QuestionOptionsPreview
+              questionText={aiQuestionData?.question}
+              options={aiQuestionData?.options || []}
+              questionImage={aiQuestionData?.questionImage}
+              optionImages={aiQuestionData?.optionImages}
+            />
           }
           messages={getHistory(currentQuestionIndex)}
           userLabel={tProfile('you')}

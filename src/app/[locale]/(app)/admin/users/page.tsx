@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
-import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
 import {
@@ -16,9 +15,11 @@ import {
 import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
 import Pagination from '@/components/ui/Pagination';
-import Sidebar from '@/components/Sidebar';
+import { LoadingState } from '@/components/ui/LoadingState';
+import { ErrorState } from '@/components/ui/ErrorState';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { AdminPageShell } from '@/components/admin/AdminPageShell';
 import { HiOutlineSearch, HiOutlineCheck } from '@/components/icons';
-import Navigation from '@/components/Navigation';
 
 interface User {
   _id: string;
@@ -53,8 +54,6 @@ export default function AdminUsersPage() {
   const t = useTranslations('admin');
   const tCommon = useTranslations('common');
   const { data: session } = useSession();
-  const pathname = usePathname();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   const [users, setUsers] = useState<User[]>([]);
   const [plans, setPlans] = useState<Plan[]>([]);
@@ -310,244 +309,224 @@ export default function AdminUsersPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white">
-      <Navigation />
-
-      {/* Sidebar */}
-      <Sidebar
-        isOpen={isSidebarOpen}
-        onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
-        currentPath={pathname}
-      />
-
-      {/* Main Content */}
-      <main
-        className={`py-8 transition-[margin] duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-16'} max-w-none px-4 sm:px-6 lg:px-8`}
-      >
-        {loading ? (
-          <div className="flex justify-center py-12">
-            <div className="flex flex-col items-center gap-3">
-              <div className="h-12 w-12 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
-              <div className="text-sm text-neutral-500">{tCommon('loading')}</div>
+    <AdminPageShell>
+      {loading ? (
+        <LoadingState text={tCommon('loading')} />
+      ) : (
+        <div className="max-w-6xl mx-auto">
+          <div className="flex justify-between items-center mb-8">
+            <div>
+              <h1 className="text-3xl font-bold text-neutral-900">{t('userManagement')}</h1>
+              <p className="mt-2 text-neutral-600">{t('manageUserAccounts')}</p>
             </div>
           </div>
-        ) : (
-          <div className="max-w-6xl mx-auto">
-            <div className="flex justify-between items-center mb-8">
-              <div>
-                <h1 className="text-3xl font-bold text-neutral-900">{t('userManagement')}</h1>
-                <p className="mt-2 text-neutral-600">{t('manageUserAccounts')}</p>
-              </div>
-            </div>
 
-            {/* Search */}
-            <div className="mb-6">
-              <form onSubmit={handleSearch} className="flex gap-4">
-                <div className="flex-1 max-w-md">
-                  <Input
-                    type="text"
-                    placeholder={t('searchUsers')}
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full"
-                  />
-                </div>
-                <Button type="submit" variant="gradient">
-                  <HiOutlineSearch className="w-4 h-4 mr-2" />
-                  {t('search')}
+          {/* Search */}
+          <div className="mb-6">
+            <form onSubmit={handleSearch} className="flex gap-4">
+              <div className="flex-1 max-w-md">
+                <Input
+                  type="text"
+                  placeholder={t('searchUsers')}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full"
+                />
+              </div>
+              <Button type="submit" variant="gradient">
+                <HiOutlineSearch className="w-4 h-4 mr-2" />
+                {t('search')}
+              </Button>
+              {searchTerm && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setSearchTerm('');
+                    fetchUsers(1, '');
+                  }}
+                >
+                  {tCommon('clear')}
                 </Button>
-                {searchTerm && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      setSearchTerm('');
-                      fetchUsers(1, '');
-                    }}
-                  >
-                    {tCommon('clear')}
-                  </Button>
-                )}
-              </form>
+              )}
+            </form>
+          </div>
+
+          {error && <ErrorState message={error} className="mb-6" />}
+
+          {success && (
+            <div className="rounded-md bg-green-50 p-4 mb-6">
+              <div className="text-sm text-green-700">{success}</div>
             </div>
+          )}
 
-            {error && (
-              <div className="rounded-md bg-red-50 p-4 mb-6">
-                <div className="text-sm text-red-700">{error}</div>
-              </div>
-            )}
-
-            {success && (
-              <div className="rounded-md bg-green-50 p-4 mb-6">
-                <div className="text-sm text-green-700">{success}</div>
-              </div>
-            )}
-
-            {/* Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-              <Card>
-                <CardContent className="p-6">
-                  <div className="text-2xl font-bold text-neutral-900">{pagination.total}</div>
-                  <p className="text-neutral-600">{t('totalUsers')}</p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-6">
-                  <div className="text-2xl font-bold text-brand-action">
-                    {users.filter((u) => u.role === 'admin').length}
-                  </div>
-                  <p className="text-neutral-600">{t('administratorsCurrentPage')}</p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-6">
-                  <div className="text-2xl font-bold text-brand-trust">
-                    {users.filter((u) => u.role === 'user').length}
-                  </div>
-                  <p className="text-neutral-600">{t('regularUsersCurrentPage')}</p>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Results Info */}
-            <div className="flex items-center justify-between mb-6">
-              <p className="text-neutral-600">
-                {t('showingUsers', { count: users.length, total: pagination.total })}
-                {searchTerm && <span className="ml-2">{t('matching', { term: searchTerm })}</span>}
-              </p>
-              <p className="text-sm text-neutral-500">
-                {t('page')} {pagination.page} {t('of')} {pagination.totalPages}
-              </p>
-            </div>
-
-            {/* Users Table */}
+          {/* Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <Card>
-              <CardHeader>
-                <CardTitle>{t('allUsers')}</CardTitle>
-                <CardDescription>{t('manageUserRoles')}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-neutral-200">
-                    <thead className="bg-neutral-50">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
-                          {t('user')}
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
-                          {t('role')}
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
-                          {t('subscription')}
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
-                          {t('created')}
-                        </th>
-                        <th className="px-6 py-3 text-right text-xs font-medium text-neutral-500 uppercase tracking-wider">
-                          {t('actions')}
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-neutral-200">
-                      {users.map((user) => (
-                        <tr key={user._id} className="hover:bg-neutral-50">
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm font-medium text-neutral-900">
-                              {user.email}
-                              {user.email === session?.user?.email && (
-                                <span className="ml-2 inline-flex min-h-[28px] items-center rounded-full bg-neutral-100 px-3 text-[13px] font-medium text-neutral-600">
-                                  {t('you')}
-                                </span>
-                              )}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            {getRoleBadge(
-                              user.role,
-                              user.role === 'admin' ? t('administrator') : t('user'),
-                            )}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center space-x-2">
-                              {getSubscriptionBadge(
-                                user.subscription,
-                                getSubscriptionText(user.subscription),
-                              )}
-                              {user.subscription?.startDate && (
-                                <span className="text-sm text-neutral-500">
-                                  {formatDate(user.subscription.startDate)}
-                                </span>
-                              )}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-500">
-                            {new Date(user.createdAt).toLocaleDateString()}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <div className="flex justify-end space-x-2">
-                              {user.email !== session?.user?.email && (
-                                <>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => openSubscriptionModal(user)}
-                                    disabled={actionLoading === user._id}
-                                    className="min-h-[40px] px-3 text-green-600 border-green-300 hover:bg-green-50"
-                                  >
-                                    {t('addSubscription')}
-                                  </Button>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => openRoleModal(user)}
-                                    disabled={actionLoading === user._id}
-                                    className="min-h-[40px] px-3"
-                                  >
-                                    {user.role === 'admin' ? t('makeUser') : t('makeAdmin')}
-                                  </Button>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => openDeleteModal(user)}
-                                    disabled={actionLoading === user._id}
-                                    className="min-h-[40px] px-3 text-red-600 border-red-300 hover:bg-red-50"
-                                  >
-                                    {t('delete')}
-                                  </Button>
-                                </>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-
-                  {users.length === 0 && (
-                    <div className="text-center py-8 text-neutral-500">
-                      {searchTerm ? t('noUsersMatching', { term: searchTerm }) : t('noUsersFound')}
-                    </div>
-                  )}
-                </div>
+              <CardContent className="p-6">
+                <div className="text-2xl font-bold text-neutral-900">{pagination.total}</div>
+                <p className="text-neutral-600">{t('totalUsers')}</p>
               </CardContent>
             </Card>
 
-            {/* Pagination */}
-            {pagination.totalPages > 1 && (
-              <div className="mt-8">
-                <Pagination
-                  currentPage={pagination.page}
-                  totalPages={pagination.totalPages}
-                  onPageChange={handlePageChange}
-                  className="justify-center"
-                />
-              </div>
-            )}
+            <Card>
+              <CardContent className="p-6">
+                <div className="text-2xl font-bold text-brand-action">
+                  {users.filter((u) => u.role === 'admin').length}
+                </div>
+                <p className="text-neutral-600">{t('administratorsCurrentPage')}</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-6">
+                <div className="text-2xl font-bold text-brand-trust">
+                  {users.filter((u) => u.role === 'user').length}
+                </div>
+                <p className="text-neutral-600">{t('regularUsersCurrentPage')}</p>
+              </CardContent>
+            </Card>
           </div>
-        )}
-      </main>
+
+          {/* Results Info */}
+          <div className="flex items-center justify-between mb-6">
+            <p className="text-neutral-600">
+              {t('showingUsers', { count: users.length, total: pagination.total })}
+              {searchTerm && <span className="ml-2">{t('matching', { term: searchTerm })}</span>}
+            </p>
+            <p className="text-sm text-neutral-500">
+              {t('page')} {pagination.page} {t('of')} {pagination.totalPages}
+            </p>
+          </div>
+
+          {/* Users Table */}
+          <Card>
+            <CardHeader>
+              <CardTitle>{t('allUsers')}</CardTitle>
+              <CardDescription>{t('manageUserRoles')}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-neutral-200">
+                  <thead className="bg-neutral-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
+                        {t('user')}
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
+                        {t('role')}
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
+                        {t('subscription')}
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
+                        {t('created')}
+                      </th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-neutral-500 uppercase tracking-wider">
+                        {t('actions')}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-neutral-200">
+                    {users.map((user) => (
+                      <tr key={user._id} className="hover:bg-neutral-50">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium text-neutral-900">
+                            {user.email}
+                            {user.email === session?.user?.email && (
+                              <span className="ml-2 inline-flex min-h-[28px] items-center rounded-full bg-neutral-100 px-3 text-[13px] font-medium text-neutral-600">
+                                {t('you')}
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {getRoleBadge(
+                            user.role,
+                            user.role === 'admin' ? t('administrator') : t('user'),
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center space-x-2">
+                            {getSubscriptionBadge(
+                              user.subscription,
+                              getSubscriptionText(user.subscription),
+                            )}
+                            {user.subscription?.startDate && (
+                              <span className="text-sm text-neutral-500">
+                                {formatDate(user.subscription.startDate)}
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-500">
+                          {new Date(user.createdAt).toLocaleDateString()}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <div className="flex justify-end space-x-2">
+                            {user.email !== session?.user?.email && (
+                              <>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => openSubscriptionModal(user)}
+                                  disabled={actionLoading === user._id}
+                                  className="min-h-[40px] px-3 text-green-600 border-green-300 hover:bg-green-50"
+                                >
+                                  {t('addSubscription')}
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => openRoleModal(user)}
+                                  disabled={actionLoading === user._id}
+                                  className="min-h-[40px] px-3"
+                                >
+                                  {user.role === 'admin' ? t('makeUser') : t('makeAdmin')}
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => openDeleteModal(user)}
+                                  disabled={actionLoading === user._id}
+                                  className="min-h-[40px] px-3 text-red-600 border-red-300 hover:bg-red-50"
+                                >
+                                  {t('delete')}
+                                </Button>
+                              </>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+
+                {users.length === 0 && (
+                  <EmptyState
+                    title={
+                      searchTerm ? t('noUsersMatching', { term: searchTerm }) : t('noUsersFound')
+                    }
+                    className="py-8"
+                  />
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Pagination */}
+          {pagination.totalPages > 1 && (
+            <div className="mt-8">
+              <Pagination
+                currentPage={pagination.page}
+                totalPages={pagination.totalPages}
+                onPageChange={handlePageChange}
+                className="justify-center"
+              />
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Change Role Modal */}
       <Modal
@@ -707,6 +686,6 @@ export default function AdminUsersPage() {
           </div>
         </div>
       </Modal>
-    </div>
+    </AdminPageShell>
   );
 }

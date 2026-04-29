@@ -2,10 +2,10 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { useDebounce } from '@/hooks/useDebounce';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { CategoryOptionItem } from '@/features/categories/components/CategoryOptionItem';
+import { useCategorySearch } from '@/features/categories/hooks/useCategorySearch';
 import { useDropdownOutside } from '@/components/ui/hooks/use-dropdown-outside';
 
 interface Category {
@@ -28,7 +28,6 @@ export function CategorySearch({
   showInHomepage = false,
 }: CategorySearchProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
   const [categories, setCategories] = useState<Category[]>([]);
   const [filteredCategories, setFilteredCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(false);
@@ -38,9 +37,7 @@ export function CategorySearch({
   const searchRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
-
-  // Debounce search term để tránh search quá nhiều
-  const debouncedSearchTerm = useDebounce(searchTerm, 300);
+  const { query, setQuery, debouncedQuery, reset } = useCategorySearch();
 
   // Fetch all categories khi component mount
   useEffect(() => {
@@ -50,11 +47,11 @@ export function CategorySearch({
 
   // Filter categories khi search term thay đổi
   useEffect(() => {
-    if (debouncedSearchTerm.trim()) {
+    if (debouncedQuery.trim()) {
       const filtered = categories.filter(
         (category) =>
-          category.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
-          category.description.toLowerCase().includes(debouncedSearchTerm.toLowerCase()),
+          category.name.toLowerCase().includes(debouncedQuery.toLowerCase()) ||
+          category.description.toLowerCase().includes(debouncedQuery.toLowerCase()),
       );
       setFilteredCategories(filtered);
     } else {
@@ -64,7 +61,7 @@ export function CategorySearch({
       );
     }
     setSelectedIndex(-1);
-  }, [debouncedSearchTerm, categories, recentCategories]);
+  }, [debouncedQuery, categories, recentCategories]);
 
   const fetchCategories = async () => {
     try {
@@ -123,7 +120,7 @@ export function CategorySearch({
       }
     }
     setIsOpen(false);
-    setSearchTerm('');
+    reset();
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -148,7 +145,7 @@ export function CategorySearch({
         break;
       case 'Escape':
         setIsOpen(false);
-        setSearchTerm('');
+        reset();
         setSelectedIndex(-1);
         break;
     }
@@ -186,8 +183,8 @@ export function CategorySearch({
           ref={searchRef}
           type="text"
           placeholder="Search categories..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
           onFocus={() => setIsOpen(true)}
           onKeyDown={handleKeyDown}
           className="pl-9 pr-4 text-sm"
@@ -251,7 +248,7 @@ export function CategorySearch({
               </button>
 
               {/* Recent Categories Section */}
-              {!searchTerm && recentCategories.length > 0 && (
+              {!query && recentCategories.length > 0 && (
                 <div className="px-4 py-2 bg-neutral-50 border-b border-neutral-100">
                   <p className="text-xs font-medium text-neutral-600 uppercase tracking-wide">
                     Recent
@@ -271,7 +268,7 @@ export function CategorySearch({
                     onClick={() => handleCategorySelect(category)}
                   />
                 ))
-              ) : searchTerm ? (
+              ) : query ? (
                 <div className="p-4 text-center text-neutral-500">
                   <svg
                     className="w-8 h-8 mx-auto mb-2 text-neutral-400"

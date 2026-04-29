@@ -88,6 +88,17 @@ export async function DashboardPageShell({
   const weeklyActivity = stats?.weeklyActivity ?? {};
   const shareText = `I'm on a ${stats?.streak || 0} day streak learning with RinKuzu! Earned ${stats?.xp || 0} XP so far. Level ${stats?.level || 1}!`;
   const levelProgress = Math.max(0, Math.min(100, stats?.levelProgress || 0));
+  const renderSectionHeader = (title: string, href: string) => (
+    <div className="mb-6 flex items-center justify-between">
+      <h2 className="text-2xl font-bold text-[var(--text-primary)]">{title}</h2>
+      <Link
+        href={href}
+        className="text-sm font-medium text-brand-trust transition-colors hover:text-brand-trust-hover hover:underline"
+      >
+        {tDashboard('viewAllQuizzes')}
+      </Link>
+    </div>
+  );
   const nextStreakMilestone = Math.max(5, Math.ceil((stats?.streak || 0) / 5) * 5);
 
   const today = new Date();
@@ -182,17 +193,7 @@ export async function DashboardPageShell({
             </section>
 
             <section>
-              <div className="mb-6 flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-[var(--text-primary)]">
-                  {tDashboard('continueLearning')}
-                </h2>
-                <Link
-                  href={ROUTES.PENDING_QUIZZES}
-                  className="text-sm font-medium text-brand-trust transition-colors hover:text-brand-trust-hover hover:underline"
-                >
-                  {tDashboard('viewAllQuizzes')}
-                </Link>
-              </div>
+              {renderSectionHeader(tDashboard('continueLearning'), ROUTES.PENDING_QUIZZES)}
 
               <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
                 <Link
@@ -247,17 +248,7 @@ export async function DashboardPageShell({
             </section>
 
             <section className="mt-8">
-              <div className="mb-6 flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-[var(--text-primary)]">
-                  {tDashboard('yourQuizzes')}
-                </h2>
-                <Link
-                  href="/profile"
-                  className="text-sm font-medium text-brand-trust transition-colors hover:text-brand-trust-hover hover:underline"
-                >
-                  {tDashboard('viewAllQuizzes')}
-                </Link>
-              </div>
+              {renderSectionHeader(tDashboard('yourQuizzes'), '/profile')}
 
               <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
                 <Link

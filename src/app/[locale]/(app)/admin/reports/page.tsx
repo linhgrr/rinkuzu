@@ -5,15 +5,15 @@ import { useSession } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import Link from 'next/link';
-import Navigation from '@/components/Navigation';
-import Sidebar from '@/components/Sidebar';
 import { Button } from '@/components/ui/Button';
 import { Card, Badge } from '@/components/ui/Card';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { Modal } from '@/components/ui/Modal';
 import { Textarea } from '@/components/ui/Input';
+import { LoadingState } from '@/components/ui/LoadingState';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { AdminPageShell } from '@/components/admin/AdminPageShell';
 import {
-  HiOutlineInbox,
   HiOutlineEye,
   HiOutlinePencil,
   HiOutlineTrash,
@@ -33,7 +33,6 @@ export default function AdminReportsPage() {
   const [showModal, setShowModal] = useState(false);
   const [adminNotes, setAdminNotes] = useState('');
   const [updating, setUpdating] = useState(false);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [reportToDelete, setReportToDelete] = useState<IReport | null>(null);
   const [deleting, setDeleting] = useState(false);
 
@@ -161,144 +160,127 @@ export default function AdminReportsPage() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen">
-        <Navigation />
-        <div className="flex items-center justify-center min-h-[80vh]">
-          <div className="text-center">
-            <div className="h-12 w-12 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust mx-auto" />
-            <p className="mt-4 text-neutral-600">{tCommon('loading')}</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-neutral-50">
-      <Navigation />
+    <AdminPageShell contentClassName="bg-neutral-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {loading ? (
+          <LoadingState text={tCommon('loading')} />
+        ) : (
+          <>
+            <div className="mb-8">
+              <h1 className="text-3xl font-bold text-neutral-900">{t('quizReports')}</h1>
+              <p className="mt-2 text-neutral-600">
+                Manage and review user reports about quiz content
+              </p>
+            </div>
 
-      {/* Sidebar */}
-      <Sidebar
-        isOpen={isSidebarOpen}
-        onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
-        currentPath="/admin/reports"
-      />
+            {/* Filters */}
+            <div className="mb-6 flex flex-wrap gap-2">
+              {['all', 'pending', 'resolved', 'dismissed'].map((status) => (
+                <Button
+                  key={status}
+                  variant={statusFilter === status ? 'gradient' : 'outline'}
+                  onClick={() => setStatusFilter(status)}
+                  className="min-h-[40px] px-4 capitalize"
+                >
+                  {status === 'all' ? 'All Reports' : status}
+                </Button>
+              ))}
+            </div>
 
-      {/* Main content */}
-      <div className={`transition-[margin] duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-16'}`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-neutral-900">{t('quizReports')}</h1>
-            <p className="mt-2 text-neutral-600">
-              Manage and review user reports about quiz content
-            </p>
-          </div>
-
-          {/* Filters */}
-          <div className="mb-6 flex flex-wrap gap-2">
-            {['all', 'pending', 'resolved', 'dismissed'].map((status) => (
-              <Button
-                key={status}
-                variant={statusFilter === status ? 'gradient' : 'outline'}
-                onClick={() => setStatusFilter(status)}
-                className="min-h-[40px] px-4 capitalize"
-              >
-                {status === 'all' ? 'All Reports' : status}
-              </Button>
-            ))}
-          </div>
-
-          {/* Reports List */}
-          <div className="space-y-4">
-            {reports.length === 0 ? (
-              <Card className="p-12 text-center">
-                <HiOutlineInbox className="w-12 h-12 text-neutral-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-neutral-900 mb-1">No Reports Found</h3>
-                <p className="text-neutral-500">
-                  {statusFilter === 'all'
-                    ? 'No reports have been submitted yet.'
-                    : `No ${statusFilter} reports found.`}
-                </p>
-              </Card>
-            ) : (
-              reports.map((report) => (
-                <Card key={report._id} className="hover:shadow-md transition-shadow">
-                  <div className="p-6">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h3 className="text-lg font-semibold text-neutral-900">
-                            {report.quizTitle}
-                          </h3>
-                          {getStatusBadge(report.status)}
-                        </div>
-
-                        <div className="text-sm text-neutral-600 mb-3">
-                          <div className="flex items-center gap-4 mb-1">
-                            <span>
-                              <strong>Reporter:</strong> {report.reporterName} (
-                              {report.reporterEmail})
-                            </span>
-                            <span>
-                              <strong>Date:</strong> {formatDate(report.createdAt)}
-                            </span>
+            {/* Reports List */}
+            <div className="space-y-4">
+              {reports.length === 0 ? (
+                <Card className="p-12">
+                  <EmptyState
+                    title="No Reports Found"
+                    description={
+                      statusFilter === 'all'
+                        ? 'No reports have been submitted yet.'
+                        : `No ${statusFilter} reports found.`
+                    }
+                  />
+                </Card>
+              ) : (
+                reports.map((report) => (
+                  <Card key={report._id} className="hover:shadow-md transition-shadow">
+                    <div className="p-6">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <h3 className="text-lg font-semibold text-neutral-900">
+                              {report.quizTitle}
+                            </h3>
+                            {getStatusBadge(report.status)}
                           </div>
-                        </div>
 
-                        <div className="bg-neutral-50 rounded-lg p-3 mb-4">
-                          <p className="text-sm text-neutral-700 whitespace-pre-wrap">
-                            {report.content}
-                          </p>
-                        </div>
+                          <div className="text-sm text-neutral-600 mb-3">
+                            <div className="flex items-center gap-4 mb-1">
+                              <span>
+                                <strong>Reporter:</strong> {report.reporterName} (
+                                {report.reporterEmail})
+                              </span>
+                              <span>
+                                <strong>Date:</strong> {formatDate(report.createdAt)}
+                              </span>
+                            </div>
+                          </div>
 
-                        {report.adminNotes && (
-                          <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
-                            <p className="text-sm font-medium text-green-800 mb-1">Admin Notes:</p>
-                            <p className="text-sm text-green-700 whitespace-pre-wrap">
-                              {report.adminNotes}
+                          <div className="bg-neutral-50 rounded-lg p-3 mb-4">
+                            <p className="text-sm text-neutral-700 whitespace-pre-wrap">
+                              {report.content}
                             </p>
                           </div>
-                        )}
 
-                        {report.resolvedAt && report.resolvedBy && (
-                          <div className="text-xs text-neutral-500">
-                            Resolved by {report.resolvedBy} on {formatDate(report.resolvedAt)}
-                          </div>
-                        )}
-                      </div>
+                          {report.adminNotes && (
+                            <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
+                              <p className="text-sm font-medium text-green-800 mb-1">
+                                Admin Notes:
+                              </p>
+                              <p className="text-sm text-green-700 whitespace-pre-wrap">
+                                {report.adminNotes}
+                              </p>
+                            </div>
+                          )}
 
-                      <div className="flex flex-col gap-2 ml-4">
-                        <Button
-                          variant="gradient"
-                          onClick={() => openReportModal(report)}
-                          className="min-h-[36px] px-3"
-                        >
-                          <HiOutlineEye className="w-4 h-4 mr-1" /> Review
-                        </Button>
+                          {report.resolvedAt && report.resolvedBy && (
+                            <div className="text-xs text-neutral-500">
+                              Resolved by {report.resolvedBy} on {formatDate(report.resolvedAt)}
+                            </div>
+                          )}
+                        </div>
 
-                        <Link href={`/edit/${report.quizId}`}>
-                          <Button variant="accent" className="min-h-[36px] w-full px-3">
-                            <HiOutlinePencil className="w-4 h-4 mr-1" /> Edit Quiz
+                        <div className="flex flex-col gap-2 ml-4">
+                          <Button
+                            variant="gradient"
+                            onClick={() => openReportModal(report)}
+                            className="min-h-[36px] px-3"
+                          >
+                            <HiOutlineEye className="w-4 h-4 mr-1" /> Review
                           </Button>
-                        </Link>
 
-                        <Button
-                          variant="outline"
-                          onClick={() => setReportToDelete(report)}
-                          className="min-h-[36px] border-red-200 px-3 text-red-600 hover:bg-red-50"
-                        >
-                          <HiOutlineTrash className="w-4 h-4 mr-1" /> Delete
-                        </Button>
+                          <Link href={`/edit/${report.quizId}`}>
+                            <Button variant="accent" className="min-h-[36px] w-full px-3">
+                              <HiOutlinePencil className="w-4 h-4 mr-1" /> Edit Quiz
+                            </Button>
+                          </Link>
+
+                          <Button
+                            variant="outline"
+                            onClick={() => setReportToDelete(report)}
+                            className="min-h-[36px] border-red-200 px-3 text-red-600 hover:bg-red-50"
+                          >
+                            <HiOutlineTrash className="w-4 h-4 mr-1" /> Delete
+                          </Button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </Card>
-              ))
-            )}
-          </div>
-        </div>
+                  </Card>
+                ))
+              )}
+            </div>
+          </>
+        )}
       </div>
 
       {/* Report Review Modal */}
@@ -400,6 +382,6 @@ export default function AdminReportsPage() {
         onCancel={() => setReportToDelete(null)}
         onConfirm={confirmDeleteReport}
       />
-    </div>
+    </AdminPageShell>
   );
 }

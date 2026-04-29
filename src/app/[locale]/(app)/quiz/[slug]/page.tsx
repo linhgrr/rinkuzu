@@ -21,9 +21,10 @@ import {
 import { PremiumRequiredModal } from '@/features/quiz/components/PremiumRequiredModal';
 import { DesktopQuizLayout } from '@/features/quiz/components/player/DesktopQuizLayout';
 import { MobileQuizLayout } from '@/features/quiz/components/player/MobileQuizLayout';
+import { useQuizAIExplain } from '@/features/quiz/hooks/useQuizAIExplain';
+import { useQuizSubmission } from '@/features/quiz/hooks/useQuizSubmission';
 import { useQuizViewport } from '@/features/quiz/hooks/useQuizViewport';
 import { IQuiz } from '@/types';
-import { streamQuizAI } from '@/lib/quiz/ask-ai';
 import { fetchApiSuccess } from '@/lib/api/client';
 import { QuizPageSchema } from '@/components/seo/QuizPageSchema';
 import { getUserDisplayName } from '@/components/user/UserAvatar';
@@ -236,18 +237,20 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
   const [showEmailInput, setShowEmailInput] = useState(true);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [userAnswers, setUserAnswers] = useState<QuizAnswer[]>([]);
-  const [submitting, setSubmitting] = useState(false);
-  const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
-  const [unansweredCount, setUnansweredCount] = useState(0);
 
   const { isMobile } = useQuizViewport();
 
-  // Ask AI states
-  const [showAIModal, setShowAIModal] = useState(false);
-  const [aiExplanation, setAIExplanation] = useState('');
-  const [userQuestion, setUserQuestion] = useState('');
-  const [loadingAI, setLoadingAI] = useState(false);
-  const [aiError, setAIError] = useState('');
+  const {
+    showAIModal,
+    aiExplanation,
+    userQuestion,
+    setUserQuestion,
+    loadingAI,
+    aiError,
+    askAI,
+    openAIModal,
+    closeAIModal,
+  } = useQuizAIExplain();
 
   // Exit quiz states
   const [showExitModal, setShowExitModal] = useState(false);
@@ -340,124 +343,28 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
     }
   };
 
-  const submitQuizAnswers = useCallback(
-    async (answersToSubmit: QuizAnswer[]) => {
-      if (!quiz) return;
-
-      const payload = {
-        answers: mapAnswersToOriginalOrder(quiz, answersToSubmit, debugLog),
-        userEmail: session?.user?.email || userEmail.trim(),
-      };
-
-      debugLog('payload:', payload);
-
-      const data = await fetchApiSuccess<{ attemptId: string; score: number }>(
-        `/api/quiz/${params.slug}/attempt`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(payload),
-        },
-      );
-
-      router.push(
-        `/quiz/${params.slug}/result?attemptId=${data.data.attemptId}&score=${data.data.score}`,
-      );
+  const {
+    submitting,
+    showSubmitConfirm,
+    setShowSubmitConfirm,
+    unansweredCount,
+    handleQuizComplete,
+    completeSubmit,
+    submitQuiz,
+  } = useQuizSubmission<QuizPlayerQuiz>({
+    slug: params.slug,
+    quiz,
+    userAnswers,
+    userEmail,
+    sessionEmail: session?.user?.email || undefined,
+    onSubmitSuccess: (attemptId, score) => {
+      router.push(`/quiz/${params.slug}/result?attemptId=${attemptId}&score=${score}`);
     },
-    [params.slug, quiz, router, session?.user?.email, userEmail],
-  );
-
-  // Handle quiz completion for mobile
-  const handleQuizComplete = useCallback(
-    async (answers: QuizAnswer[]) => {
-      setSubmitting(true);
-      try {
-        await submitQuizAnswers(answers);
-      } catch (error) {
-        console.error('Quiz submission error:', error);
-        setError(error instanceof Error ? error.message : 'Failed to submit quiz');
-      } finally {
-        setSubmitting(false);
-      }
-    },
-    [submitQuizAnswers],
-  );
-
-  const completeSubmit = async () => {
-    if (!quiz) return;
-
-    setSubmitting(true);
-    try {
-      await submitQuizAnswers(userAnswers);
-    } catch (error) {
-      console.error('Quiz submission error:', error);
-      setError(error instanceof Error ? error.message : 'Failed to submit quiz');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const submitQuiz = async () => {
-    if (!quiz) return;
-
-    const unanswered = userAnswers.filter((answer, index) => {
-      const question = quiz.questions[index];
-      return !isQuestionAnswered(question, answer);
-    }).length;
-
-    if (unanswered > 0) {
-      setUnansweredCount(unanswered);
-      setShowSubmitConfirm(true);
-      return;
-    }
-
-    await completeSubmit();
-  };
-
-  const askAI = async () => {
-    if (!quiz) return;
-
-    setLoadingAI(true);
-    setAIError('');
-    setAIExplanation('');
-
-    try {
-      const currentQuestion = quiz.questions[currentQuestionIndex];
-      const explanation = await streamQuizAI(
-        {
-          question: currentQuestion.question,
-          options: currentQuestion.options,
-          userQuestion: userQuestion.trim() || undefined,
-          questionImage: currentQuestion.questionImage,
-          optionImages: currentQuestion.optionImages,
-        },
-        {
-          onContent: (_, fullContent) => {
-            setAIExplanation(fullContent);
-          },
-        },
-      );
-
-      setAIExplanation(explanation);
-    } catch (error: any) {
-      setAIError(error.message || 'Failed to connect to AI service');
-    } finally {
-      setLoadingAI(false);
-    }
-  };
-
-  const openAIModal = () => {
-    setShowAIModal(true);
-    setUserQuestion('');
-    setAIExplanation('');
-    setAIError('');
-  };
-
-  const closeAIModal = () => {
-    setShowAIModal(false);
-  };
+    onSubmitError: (message) => setError(message),
+    mapAnswersToOriginalOrder: (currentQuiz, answersToSubmit) =>
+      mapAnswersToOriginalOrder(currentQuiz, answersToSubmit, debugLog),
+    isQuestionAnswered,
+  });
 
   // Exit quiz functions
   const openExitModal = () => {
@@ -720,7 +627,14 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
           closeAIModal={closeAIModal}
           userQuestion={userQuestion}
           setUserQuestion={setUserQuestion}
-          askAI={askAI}
+          askAI={() =>
+            askAI({
+              question: currentQuestion.question,
+              options: currentQuestion.options,
+              questionImage: currentQuestion.questionImage,
+              optionImages: currentQuestion.optionImages,
+            })
+          }
           loadingAI={loadingAI}
           aiError={aiError}
           aiExplanation={aiExplanation}

@@ -45,9 +45,10 @@ export default function BottomNav() {
   const isProtectedRoute = AUTH_REQUIRED_PREFIXES.some((prefix) =>
     matchesPrefix(pathWithoutLocale, prefix),
   );
+  const isQuizRoute = matchesPrefix(pathWithoutLocale, '/quiz');
 
   // Hide bottom navigation in exercise mode to prevent distractions
-  if (isAdaptiveExerciseModePath(pathname || '/')) {
+  if (isAdaptiveExerciseModePath(pathname || '/') || isQuizRoute) {
     return null;
   }
 

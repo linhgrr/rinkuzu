@@ -7,9 +7,8 @@ import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { Modal } from '@/components/ui/Modal';
-import { DynamicMarkdownRenderer as MarkdownRenderer } from '@/components/ui/DynamicMarkdownRenderer';
-import { streamQuizAI } from '@/lib/quiz/ask-ai';
+import { StreamingChatModal } from '@/features/quiz/components/chat/StreamingChatModal';
+import { useStreamingChatSession } from '@/features/quiz/hooks/useStreamingChatSession';
 import { fetchApiSuccess } from '@/lib/api/client';
 
 interface QuizResultPageProps {
@@ -39,18 +38,6 @@ interface QuizResult {
   };
 }
 
-// Chat message interface
-interface ChatMessage {
-  role: 'user' | 'assistant';
-  content: string;
-  timestamp: string;
-}
-
-// Chat history state for each question
-interface ChatHistoryState {
-  [questionIndex: number]: ChatMessage[];
-}
-
 interface BookmarkSummary {
   quiz: {
     slug: string;
@@ -70,38 +57,26 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
   const [showAIModal, setShowAIModal] = useState(false);
   const [aiQuestionData, setAIQuestionData] = useState<any>(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState<number>(-1);
-  const [userQuestion, setUserQuestion] = useState('');
-  const [loadingAI, setLoadingAI] = useState(false);
-  const [aiError, setAIError] = useState('');
-
-  // Multi-turn chat state
-  const [chatHistories, setChatHistories] = useState<ChatHistoryState>({});
+  const {
+    chatHistories,
+    userQuestion,
+    setUserQuestion,
+    loadingAI,
+    aiError,
+    setAIError,
+    ensureHistory,
+    clearHistory,
+    getHistory,
+    sendMessage,
+    totalTurns,
+  } = useStreamingChatSession({
+    persistenceKey: attemptId ? `chat-histories-${attemptId}` : undefined,
+  });
 
   // Bookmark states
   const [bookmarkedQuestions, setBookmarkedQuestions] = useState<Set<number>>(new Set());
   const [bookmarkLoading, setBookmarkLoading] = useState<Set<number>>(new Set());
   const [bookmarkMessage, setBookmarkMessage] = useState<string>('');
-
-  // Load chat histories from localStorage
-  useEffect(() => {
-    if (typeof window !== 'undefined' && attemptId) {
-      const savedChats = localStorage.getItem(`chat-histories-${attemptId}`);
-      if (savedChats) {
-        try {
-          setChatHistories(JSON.parse(savedChats));
-        } catch (error) {
-          console.error('Failed to load chat histories:', error);
-        }
-      }
-    }
-  }, [attemptId]);
-
-  // Save chat histories to localStorage
-  useEffect(() => {
-    if (typeof window !== 'undefined' && attemptId && Object.keys(chatHistories).length > 0) {
-      localStorage.setItem(`chat-histories-${attemptId}`, JSON.stringify(chatHistories));
-    }
-  }, [chatHistories, attemptId]);
 
   // Check which questions are already bookmarked
   const checkBookmarkedQuestions = async (resultData: QuizResult) => {
@@ -189,15 +164,7 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
     setShowAIModal(true);
 
     // Initialize chat history for this question if it doesn't exist
-    if (!chatHistories[questionIndex]) {
-      setChatHistories((prev) => ({
-        ...prev,
-        [questionIndex]: [],
-      }));
-    }
-
-    // Auto-scroll to bottom when modal opens (for existing chat history)
-    scrollToBottom(300); // Longer delay to ensure modal is fully rendered
+    ensureHistory(questionIndex);
   };
 
   const closeAIModal = () => {
@@ -207,106 +174,19 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
     setAIError('');
   };
 
-  const addMessageToHistory = (questionIndex: number, message: ChatMessage) => {
-    setChatHistories((prev) => ({
-      ...prev,
-      [questionIndex]: [...(prev[questionIndex] || []), message],
-    }));
-
-    // Auto-scroll to bottom when new message is added
-    scrollToBottom();
-  };
-
-  const updateLastAssistantMessage = (questionIndex: number, content: string) => {
-    setChatHistories((prev) => {
-      const history = [...(prev[questionIndex] || [])];
-
-      for (let i = history.length - 1; i >= 0; i -= 1) {
-        if (history[i]?.role === 'assistant') {
-          history[i] = { ...history[i], content };
-          break;
-        }
-      }
-
-      return {
-        ...prev,
-        [questionIndex]: history,
-      };
-    });
-    scrollToBottom(0);
-  };
-
-  const removeEmptyLastAssistantMessage = (questionIndex: number) => {
-    setChatHistories((prev) => {
-      const history = [...(prev[questionIndex] || [])];
-      const lastMessage = history[history.length - 1];
-
-      if (lastMessage?.role === 'assistant' && !lastMessage.content.trim()) {
-        history.pop();
-      }
-
-      return {
-        ...prev,
-        [questionIndex]: history,
-      };
-    });
-  };
-
   const askAI = async () => {
     if (!aiQuestionData || currentQuestionIndex === -1) return;
-
-    const trimmedQuestion = userQuestion.trim();
-    if (!trimmedQuestion) {
-      setAIError('Please enter a question to ask Rin-chan!');
-      return;
-    }
-
-    setLoadingAI(true);
-    setAIError('');
-
-    try {
-      // Add user message to chat history
-      const userMessage: ChatMessage = {
-        role: 'user',
-        content: trimmedQuestion,
-        timestamp: new Date().toISOString(),
-      };
-      addMessageToHistory(currentQuestionIndex, userMessage);
-
-      // Get current chat history for this question
-      const currentHistory = chatHistories[currentQuestionIndex] || [];
-      const nextHistory = [...currentHistory, userMessage];
-      const assistantTimestamp = new Date().toISOString();
-      addMessageToHistory(currentQuestionIndex, {
-        role: 'assistant',
-        content: '',
-        timestamp: assistantTimestamp,
-      });
-
-      const explanation = await streamQuizAI(
-        {
-          question: aiQuestionData.question,
-          options: aiQuestionData.options,
-          userQuestion: trimmedQuestion,
-          questionImage: aiQuestionData.questionImage,
-          optionImages: aiQuestionData.optionImages,
-          chatHistory: nextHistory,
-        },
-        {
-          onContent: (_, fullContent) => {
-            updateLastAssistantMessage(currentQuestionIndex, fullContent);
-          },
-        },
-      );
-
-      updateLastAssistantMessage(currentQuestionIndex, explanation);
-      setUserQuestion('');
-    } catch (err: any) {
-      removeEmptyLastAssistantMessage(currentQuestionIndex);
-      setAIError(err.message || 'Failed to connect to AI service. Please try again.');
-    } finally {
-      setLoadingAI(false);
-    }
+    await sendMessage({
+      historyKey: currentQuestionIndex,
+      payload: {
+        question: aiQuestionData.question,
+        options: aiQuestionData.options,
+        questionImage: aiQuestionData.questionImage,
+        optionImages: aiQuestionData.optionImages,
+      },
+      emptyQuestionErrorMessage: 'Please enter a question to ask Rin-chan!',
+      requestErrorMessage: 'Failed to connect to AI service. Please try again.',
+    });
   };
 
   // Handle keyboard shortcuts
@@ -319,21 +199,8 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
     }
   };
 
-  // Scroll to bottom of chat
-  const scrollToBottom = (delay: number = 100) => {
-    setTimeout(() => {
-      const chatContainer = document.querySelector('.chat-history-container');
-      if (chatContainer) {
-        chatContainer.scrollTop = chatContainer.scrollHeight;
-      }
-    }, delay);
-  };
-
   const clearChatHistory = (questionIndex: number) => {
-    setChatHistories((prev) => ({
-      ...prev,
-      [questionIndex]: [],
-    }));
+    clearHistory(questionIndex);
   };
 
   // Bookmark functions
@@ -402,12 +269,8 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
 
   // Get chat statistics
   const getChatStats = () => {
-    const totalTurns = Object.values(chatHistories).reduce(
-      (sum, history) => sum + Math.floor(history.length / 2),
-      0,
-    );
     const questionsWithChat = Object.keys(chatHistories).filter(
-      (key) => chatHistories[parseInt(key)].length > 0,
+      (key) => getHistory(key).length > 0,
     ).length;
 
     return { totalTurns, questionsWithChat };
@@ -679,9 +542,9 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
                           className="text-brand-trust border-green-200 hover:bg-green-50 hover:border-green-300"
                         >
                           {t('askRinChan')}
-                          {chatHistories[index] && chatHistories[index].length > 0 && (
+                          {getHistory(index).length > 0 && (
                             <span className="ml-1 px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs">
-                              {Math.floor(chatHistories[index].length / 2)}
+                              {Math.floor(getHistory(index).length / 2)}
                             </span>
                           )}
                         </Button>
@@ -835,17 +698,13 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
         </div>
       </main>
 
-      {/* AI Chat Modal */}
       {showAIModal && (
-        <Modal
+        <StreamingChatModal
           isOpen={showAIModal}
           onClose={closeAIModal}
           title={tProfile('chatWithRinChan')}
-          size="wide"
-        >
-          <div className="space-y-4">
-            {/* Question Context */}
-            <div className="border rounded-lg p-4 bg-neutral-50">
+          questionContent={
+            <>
               <h4 className="font-medium mb-2">{aiQuestionData?.question}</h4>
               <div className="text-sm text-neutral-600">
                 {aiQuestionData?.options?.map((opt: string, idx: number) => (
@@ -854,120 +713,28 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
                   </div>
                 ))}
               </div>
-            </div>
-
-            {/* Chat History */}
-            {chatHistories[currentQuestionIndex] &&
-              chatHistories[currentQuestionIndex].length > 0 && (
-                <div className="border rounded-lg p-4 bg-white max-h-[60vh] overflow-y-auto chat-history-container">
-                  <div className="flex justify-between items-center mb-3">
-                    <h4 className="font-medium text-neutral-900">Chat History</h4>
-                    <Button
-                      onClick={() => clearChatHistory(currentQuestionIndex)}
-                      variant="outline"
-                      size="sm"
-                      className="text-red-600 border-red-200 hover:bg-red-50"
-                    >
-                      {t('clear', { ns: 'common' })}
-                    </Button>
-                  </div>
-                  <div className="space-y-3">
-                    {chatHistories[currentQuestionIndex].map((message, idx) => (
-                      <div
-                        key={idx}
-                        className={`p-3 rounded-lg ${
-                          message.role === 'user'
-                            ? 'bg-green-50 border-l-4 border-green-400'
-                            : 'bg-green-50 border-l-4 border-green-400'
-                        }`}
-                      >
-                        <div className="flex justify-between items-start mb-1">
-                          <span className="text-sm font-medium text-neutral-700">
-                            {message.role === 'user'
-                              ? tProfile('you')
-                              : `🎓 ${tProfile('rinChan')}`}
-                          </span>
-                          <span className="text-xs text-neutral-500">
-                            {new Date(message.timestamp).toLocaleTimeString()}
-                          </span>
-                        </div>
-                        <div className="text-sm">
-                          {message.role === 'assistant' ? (
-                            <MarkdownRenderer content={message.content} />
-                          ) : (
-                            <p>{message.content}</p>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-
-                    {/* Loading indicator when AI is thinking */}
-                    {loadingAI && (
-                      <div className="p-3 rounded-lg bg-green-50 border-l-4 border-green-400">
-                        <div className="flex items-center space-x-2">
-                          <span className="text-sm font-medium text-neutral-700">
-                            🎓 {tProfile('rinChan')}
-                          </span>
-                          <div className="flex space-x-1">
-                            <div className="w-2 h-2 bg-green-400 rounded-full animate-bounce"></div>
-                            <div
-                              className="w-2 h-2 bg-green-400 rounded-full animate-bounce"
-                              style={{ animationDelay: '0.1s' }}
-                            ></div>
-                            <div
-                              className="w-2 h-2 bg-green-400 rounded-full animate-bounce"
-                              style={{ animationDelay: '0.2s' }}
-                            ></div>
-                          </div>
-                        </div>
-                        <div className="text-sm text-neutral-600 mt-1">
-                          {tProfile('thinking')}...
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-            {/* New Message Input */}
-            <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-2">
-                {t('askRinChan')}:
-              </label>
-              <textarea
-                value={userQuestion}
-                onChange={(e) => setUserQuestion(e.target.value)}
-                onKeyDown={handleKeyPress}
-                className="w-full p-3 border border-neutral-300 rounded-lg resize-none focus:ring-2 focus:ring-brand-trust focus:border-transparent"
-                rows={3}
-                placeholder={t('questionPlaceholder')}
-                disabled={loadingAI}
-              />
-              <div className="flex justify-between text-xs text-neutral-500 mt-1">
-                <span>💡 {t('leaveEmptyGeneral')}</span>
-                <span>Press Ctrl+Enter {t('send', { ns: 'common' })}</span>
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex">
-              <Button
-                onClick={askAI}
-                disabled={loadingAI || !userQuestion.trim()}
-                className="w-full"
-              >
-                {loadingAI ? tProfile('thinking') : t('askRinChan')}
-              </Button>
-            </div>
-
-            {/* Error Display */}
-            {aiError && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-                {aiError}
-              </div>
-            )}
-          </div>
-        </Modal>
+            </>
+          }
+          messages={getHistory(currentQuestionIndex)}
+          userLabel={tProfile('you')}
+          assistantLabel={`🎓 ${tProfile('rinChan')}`}
+          userQuestion={userQuestion}
+          onUserQuestionChange={setUserQuestion}
+          onKeyDown={handleKeyPress}
+          onSend={askAI}
+          sendDisabled={loadingAI || !userQuestion.trim()}
+          sendLabel={t('askRinChan')}
+          loadingLabel={tProfile('thinking')}
+          loadingAI={loadingAI}
+          aiError={aiError}
+          inputPlaceholder={t('questionPlaceholder')}
+          inputMode="textarea"
+          inputHintLeft={`💡 ${t('leaveEmptyGeneral')}`}
+          inputHintRight={`Press Ctrl+Enter ${t('send', { ns: 'common' })}`}
+          clearLabel={t('clear', { ns: 'common' })}
+          onClearHistory={() => clearChatHistory(currentQuestionIndex)}
+          showTimestamps
+        />
       )}
     </div>
   );

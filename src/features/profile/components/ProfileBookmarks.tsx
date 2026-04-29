@@ -5,13 +5,12 @@ import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
-import { Modal } from '@/components/ui/Modal';
-import { DynamicMarkdownRenderer as MarkdownRenderer } from '@/components/ui/DynamicMarkdownRenderer';
 import Pagination from '@/components/ui/Pagination';
 import { ROUTES } from '@/shared/constants';
 import { HiOutlineTag, HiOutlineTrash } from '@/components/icons';
 import Image from 'next/image';
-import { streamQuizAI } from '@/lib/quiz/ask-ai';
+import { StreamingChatModal } from '@/features/quiz/components/chat/StreamingChatModal';
+import { useStreamingChatSession } from '@/features/quiz/hooks/useStreamingChatSession';
 import { fetchApiSuccess } from '@/lib/api/client';
 
 const chatbotIcon =
@@ -47,16 +46,6 @@ interface PaginationInfo {
   hasPrevPage: boolean;
 }
 
-interface ChatMessage {
-  role: 'user' | 'assistant';
-  content: string;
-  timestamp: string;
-}
-
-interface ChatHistoryState {
-  [bookmarkId: string]: ChatMessage[];
-}
-
 export default function ProfileBookmarks() {
   const t = useTranslations('profile');
   const tCommon = useTranslations('common');
@@ -70,29 +59,19 @@ export default function ProfileBookmarks() {
   // AI Chat states
   const [showAIModal, setShowAIModal] = useState(false);
   const [currentBookmark, setCurrentBookmark] = useState<Bookmark | null>(null);
-  const [userQuestion, setUserQuestion] = useState('');
-  const [loadingAI, setLoadingAI] = useState(false);
-  const [_aiError, setAIError] = useState('');
-  const [chatHistories, setChatHistories] = useState<ChatHistoryState>({});
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const savedChats = localStorage.getItem('bookmark-chat-histories');
-      if (savedChats) {
-        try {
-          setChatHistories(JSON.parse(savedChats));
-        } catch (error) {
-          console.error('Failed to load chat histories:', error);
-        }
-      }
-    }
-  }, []);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined' && Object.keys(chatHistories).length > 0) {
-      localStorage.setItem('bookmark-chat-histories', JSON.stringify(chatHistories));
-    }
-  }, [chatHistories]);
+  const {
+    userQuestion,
+    setUserQuestion,
+    loadingAI,
+    aiError,
+    setAIError,
+    ensureHistory,
+    removeHistory,
+    getHistory,
+    sendMessage,
+  } = useStreamingChatSession({
+    persistenceKey: 'bookmark-chat-histories',
+  });
 
   const fetchBookmarks = useCallback(async () => {
     try {
@@ -125,11 +104,7 @@ export default function ProfileBookmarks() {
         method: 'DELETE',
       });
       setBookmarks((prev) => prev.filter((b) => b._id !== bookmarkId));
-      setChatHistories((prev) => {
-        const newHistories = { ...prev };
-        delete newHistories[bookmarkId];
-        return newHistories;
-      });
+      removeHistory(bookmarkId);
     } catch (error: any) {
       setError(error.message || 'Failed to remove bookmark');
     }
@@ -148,13 +123,7 @@ export default function ProfileBookmarks() {
     setUserQuestion('');
     setAIError('');
     setShowAIModal(true);
-    setChatHistories((prev) => {
-      if (!prev[bookmark._id]) {
-        return { ...prev, [bookmark._id]: [] };
-      }
-      return prev;
-    });
-    scrollToBottom(300);
+    ensureHistory(bookmark._id);
   };
 
   const closeAIModal = () => {
@@ -164,103 +133,19 @@ export default function ProfileBookmarks() {
     setAIError('');
   };
 
-  const addMessageToHistory = (bookmarkId: string, message: ChatMessage) => {
-    setChatHistories((prev) => ({
-      ...prev,
-      [bookmarkId]: [...(prev[bookmarkId] || []), message],
-    }));
-    scrollToBottom();
-  };
-
-  const updateLastAssistantMessage = (bookmarkId: string, content: string) => {
-    setChatHistories((prev) => {
-      const history = [...(prev[bookmarkId] || [])];
-
-      for (let i = history.length - 1; i >= 0; i -= 1) {
-        if (history[i]?.role === 'assistant') {
-          history[i] = { ...history[i], content };
-          break;
-        }
-      }
-
-      return {
-        ...prev,
-        [bookmarkId]: history,
-      };
-    });
-    scrollToBottom(0);
-  };
-
-  const removeEmptyLastAssistantMessage = (bookmarkId: string) => {
-    setChatHistories((prev) => {
-      const history = [...(prev[bookmarkId] || [])];
-      const lastMessage = history[history.length - 1];
-
-      if (lastMessage?.role === 'assistant' && !lastMessage.content.trim()) {
-        history.pop();
-      }
-
-      return {
-        ...prev,
-        [bookmarkId]: history,
-      };
-    });
-  };
-
   const askAI = async () => {
     if (!currentBookmark) return;
-    const trimmedQuestion = userQuestion.trim();
-    if (!trimmedQuestion) {
-      setAIError('Please enter a question!');
-      return;
-    }
-
-    setLoadingAI(true);
-    setAIError('');
-
-    try {
-      const userMessage: ChatMessage = {
-        role: 'user',
-        content: trimmedQuestion,
-        timestamp: new Date().toISOString(),
-      };
-      addMessageToHistory(currentBookmark._id, userMessage);
-      setUserQuestion('');
-
-      const currentHistory = chatHistories[currentBookmark._id] || [];
-      const nextHistory = [...currentHistory, userMessage];
-      const assistantTimestamp = new Date().toISOString();
-      addMessageToHistory(currentBookmark._id, {
-        role: 'assistant',
-        content: '',
-        timestamp: assistantTimestamp,
-      });
-
-      const explanation = await streamQuizAI(
-        {
-          question: currentBookmark.question.text,
-          options: currentBookmark.question.options,
-          userQuestion: trimmedQuestion,
-          questionImage: currentBookmark.question.questionImage,
-          optionImages: currentBookmark.question.optionImages,
-          chatHistory: nextHistory,
-        },
-        {
-          onContent: (_, fullContent) => {
-            updateLastAssistantMessage(currentBookmark._id, fullContent);
-          },
-        },
-      );
-
-      updateLastAssistantMessage(currentBookmark._id, explanation);
-    } catch (err: any) {
-      if (currentBookmark) {
-        removeEmptyLastAssistantMessage(currentBookmark._id);
-      }
-      setAIError(err.message || 'Failed to connect to AI service.');
-    } finally {
-      setLoadingAI(false);
-    }
+    await sendMessage({
+      historyKey: currentBookmark._id,
+      payload: {
+        question: currentBookmark.question.text,
+        options: currentBookmark.question.options,
+        questionImage: currentBookmark.question.questionImage,
+        optionImages: currentBookmark.question.optionImages,
+      },
+      emptyQuestionErrorMessage: 'Please enter a question!',
+      requestErrorMessage: 'Failed to connect to AI service.',
+    });
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -268,17 +153,6 @@ export default function ProfileBookmarks() {
       e.preventDefault();
       if (!loadingAI && userQuestion.trim()) askAI();
     }
-  };
-
-  const scrollToBottom = (delay: number = 100) => {
-    setTimeout(() => {
-      const chatContainer = document.querySelector('.chat-history-container');
-      if (chatContainer) chatContainer.scrollTop = chatContainer.scrollHeight;
-    }, delay);
-  };
-
-  const _clearChatHistory = (bookmarkId: string) => {
-    setChatHistories((prev) => ({ ...prev, [bookmarkId]: [] }));
   };
 
   const handlePageChange = (page: number) => {
@@ -379,8 +253,8 @@ export default function ProfileBookmarks() {
                         className="w-4 h-4"
                       />{' '}
                       {t('askAI')}{' '}
-                      {chatHistories[bookmark._id]?.length > 0 &&
-                        `(${Math.floor(chatHistories[bookmark._id].length / 2)})`}
+                      {getHistory(bookmark._id).length > 0 &&
+                        `(${Math.floor(getHistory(bookmark._id).length / 2)})`}
                     </Button>
                     <Button
                       variant="outline"
@@ -430,58 +304,38 @@ export default function ProfileBookmarks() {
         </div>
       )}
 
-      {/* AI Modal */}
       {showAIModal && currentBookmark && (
-        <Modal isOpen={showAIModal} onClose={closeAIModal} title={t('chatWithRinChan')} size="wide">
-          {/* Simplified Modal Content for brevity in this rewrite, assuming logic carried over */}
-          <div className="space-y-4">
-            <div className="border rounded-lg p-4 bg-neutral-50 max-h-[30vh] overflow-y-auto">
+        <StreamingChatModal
+          isOpen={showAIModal}
+          onClose={closeAIModal}
+          title={t('chatWithRinChan')}
+          questionContent={
+            <>
               <p className="font-medium">{currentBookmark.question.text}</p>
               <ul className="text-sm mt-2 space-y-1">
-                {currentBookmark.question.options.map((o, i) => (
-                  <li key={i}>
-                    {String.fromCharCode(65 + i)}. {o}
+                {currentBookmark.question.options.map((option, index) => (
+                  <li key={index}>
+                    {String.fromCharCode(65 + index)}. {option}
                   </li>
                 ))}
               </ul>
-            </div>
-
-            {/* Chat History Area */}
-            <div className="border rounded-lg p-4 bg-white h-[40vh] overflow-y-auto chat-history-container">
-              {chatHistories[currentBookmark._id]?.map((msg, idx) => (
-                <div
-                  key={idx}
-                  className={`p-2 rounded mb-2 text-sm ${msg.role === 'user' ? 'bg-orange-50 ml-8' : 'bg-green-50 mr-8'}`}
-                >
-                  <div className="font-bold text-xs mb-1">
-                    {msg.role === 'user' ? t('you') : t('rinChan')}
-                  </div>
-                  {msg.role === 'assistant' ? (
-                    <MarkdownRenderer content={msg.content} />
-                  ) : (
-                    msg.content
-                  )}
-                </div>
-              ))}
-              {loadingAI && (
-                <div className="text-xs text-neutral-500 animate-pulse">{t('thinking')}</div>
-              )}
-            </div>
-
-            <div className="flex gap-2">
-              <input
-                className="flex-1 border rounded px-3 py-2"
-                value={userQuestion}
-                onChange={(e) => setUserQuestion(e.target.value)}
-                onKeyDown={handleKeyPress}
-                placeholder={t('askQuestion')}
-              />
-              <Button onClick={askAI} disabled={loadingAI}>
-                {tCommon('send')}
-              </Button>
-            </div>
-          </div>
-        </Modal>
+            </>
+          }
+          messages={getHistory(currentBookmark._id)}
+          userLabel={t('you')}
+          assistantLabel={t('rinChan')}
+          userQuestion={userQuestion}
+          onUserQuestionChange={setUserQuestion}
+          onKeyDown={handleKeyPress}
+          onSend={askAI}
+          sendDisabled={loadingAI || !userQuestion.trim()}
+          sendLabel={tCommon('send')}
+          loadingLabel={t('thinking')}
+          loadingAI={loadingAI}
+          aiError={aiError}
+          inputPlaceholder={t('askQuestion')}
+          inputMode="input"
+        />
       )}
     </div>
   );

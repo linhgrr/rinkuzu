@@ -7,6 +7,7 @@ import { Input, Textarea } from '@/components/ui/Input';
 import { Card, CardContent } from '@/components/ui/Card';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { Modal } from '@/components/ui/Modal';
+import { ModalActions } from '@/components/ui/ModalActions';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
@@ -536,24 +537,14 @@ export default function AdminCategoriesPage() {
               </label>
             </div>
 
-            <div className="flex justify-end space-x-3 pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={closeModals}
-                disabled={submitting}
-                className="min-h-[40px] px-4"
-              >
-                {t('cancel')}
-              </Button>
-              <Button
-                type="submit"
-                loading={submitting}
-                disabled={submitting}
-                className="min-h-[40px] px-4"
-              >
-                {editingCategory ? t('updateCategory') : t('createCategory')}
-              </Button>
+            <div className="pt-4">
+              <ModalActions
+                cancelText={t('cancel')}
+                confirmText={editingCategory ? t('updateCategory') : t('createCategory')}
+                onCancel={closeModals}
+                confirmType="submit"
+                isLoading={submitting}
+              />
             </div>
           </form>
         </Modal>

@@ -15,6 +15,7 @@ import {
 import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
 import Pagination from '@/components/ui/Pagination';
+import { ModalActions } from '@/components/ui/ModalActions';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -539,23 +540,13 @@ export default function AdminUsersPage() {
             {t('changeRoleConfirm', { email: selectedUser?.email || '', role: newRole || '' })}
           </p>
 
-          <div className="flex justify-end space-x-3">
-            <Button
-              variant="outline"
-              onClick={() => setShowRoleModal(false)}
-              disabled={actionLoading === selectedUser?._id}
-              className="min-h-[40px] px-4"
-            >
-              {t('cancel')}
-            </Button>
-            <Button
-              onClick={handleChangeRole}
-              loading={actionLoading === selectedUser?._id}
-              className="min-h-[40px] px-4"
-            >
-              {t('changeRole')}
-            </Button>
-          </div>
+          <ModalActions
+            cancelText={t('cancel')}
+            confirmText={t('changeRole')}
+            onCancel={() => setShowRoleModal(false)}
+            onConfirm={handleChangeRole}
+            isLoading={actionLoading === selectedUser?._id}
+          />
         </div>
       </Modal>
 
@@ -570,23 +561,14 @@ export default function AdminUsersPage() {
             {t('deleteUserConfirm', { email: selectedUser?.email || '' })}
           </p>
 
-          <div className="flex justify-end space-x-3">
-            <Button
-              variant="outline"
-              onClick={() => setShowDeleteModal(false)}
-              disabled={actionLoading === selectedUser?._id}
-              className="min-h-[40px] px-4"
-            >
-              {t('cancel')}
-            </Button>
-            <Button
-              onClick={handleDeleteUser}
-              loading={actionLoading === selectedUser?._id}
-              className="min-h-[40px] bg-red-600 px-4 hover:bg-red-700"
-            >
-              {t('deleteUserButton')}
-            </Button>
-          </div>
+          <ModalActions
+            cancelText={t('cancel')}
+            confirmText={t('deleteUserButton')}
+            onCancel={() => setShowDeleteModal(false)}
+            onConfirm={handleDeleteUser}
+            isLoading={actionLoading === selectedUser?._id}
+            confirmVariant="destructive"
+          />
         </div>
       </Modal>
 
@@ -666,24 +648,14 @@ export default function AdminUsersPage() {
             </div>
           )}
 
-          <div className="flex justify-end space-x-3">
-            <Button
-              variant="outline"
-              onClick={() => setShowSubscriptionModal(false)}
-              disabled={actionLoading === selectedUser?._id}
-              className="min-h-[40px] px-4"
-            >
-              {t('cancel')}
-            </Button>
-            <Button
-              onClick={handleAddSubscription}
-              loading={actionLoading === selectedUser?._id}
-              disabled={!selectedPlanId}
-              className="min-h-[40px] px-4"
-            >
-              {t('addSubscriptionButton')}
-            </Button>
-          </div>
+          <ModalActions
+            cancelText={t('cancel')}
+            confirmText={t('addSubscriptionButton')}
+            onCancel={() => setShowSubscriptionModal(false)}
+            onConfirm={handleAddSubscription}
+            isLoading={actionLoading === selectedUser?._id}
+            isDisabled={!selectedPlanId}
+          />
         </div>
       </Modal>
     </AdminPageShell>

@@ -1,7 +1,8 @@
-import { useState, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Input } from '@/components/ui/Input';
 import { CategoryOptionItem } from '@/features/categories/components/CategoryOptionItem';
 import { useDropdownOutside } from '@/components/ui/hooks/use-dropdown-outside';
+import { useCategorySearch } from '@/features/categories/hooks/useCategorySearch';
 
 interface Category {
   _id: string;
@@ -27,16 +28,22 @@ export function CategorySelector({
   required = false,
   disabled = false,
 }: CategorySelectorProps) {
-  const [searchTerm, setSearchTerm] = useState(value?.name || '');
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
-  const [debounceTimer, setDebounceTimer] = useState<NodeJS.Timeout | null>(null);
+  const { query, setQuery, debouncedQuery } = useCategorySearch({
+    initialQuery: value?.name || '',
+    delay: 300,
+  });
 
   const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useDropdownOutside(dropdownRef, showDropdown, () => setShowDropdown(false));
+
+  useEffect(() => {
+    setQuery(value?.name || '');
+  }, [setQuery, value?.name]);
 
   // Debounced search function
   const searchCategories = async (query: string) => {
@@ -65,48 +72,30 @@ export function CategorySelector({
     }
   };
 
-  // Handle input change with debounce
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const query = e.target.value;
-    setSearchTerm(query);
+    const nextQuery = e.target.value;
+    setQuery(nextQuery);
     setShowDropdown(true);
 
     // If input is cleared and we had a selected value, clear the selection
-    if (!query && value) {
+    if (!nextQuery && value) {
       onChange(null);
     }
-
-    // Clear existing timer
-    if (debounceTimer) {
-      clearTimeout(debounceTimer);
-    }
-
-    // Set new timer for debounced search
-    const timer = setTimeout(() => {
-      searchCategories(query);
-    }, 300); // 300ms debounce
-
-    setDebounceTimer(timer);
   };
 
   // Handle category selection
   const handleCategorySelect = (category: Category) => {
-    setSearchTerm(category.name);
+    setQuery(category.name);
     setShowDropdown(false);
     onChange(category);
     setCategories([]);
-
-    // Clear search results
-    if (debounceTimer) {
-      clearTimeout(debounceTimer);
-    }
   };
 
   // Handle input focus
   const handleInputFocus = () => {
-    if (searchTerm && !value) {
+    if (query && !value) {
       setShowDropdown(true);
-      searchCategories(searchTerm);
+      searchCategories(query);
     }
   };
 
@@ -130,12 +119,17 @@ export function CategorySelector({
 
   // Clear selection
   const clearSelection = () => {
-    setSearchTerm('');
+    setQuery('');
     onChange(null);
     setCategories([]);
     setShowDropdown(false);
     inputRef.current?.focus();
   };
+
+  useEffect(() => {
+    if (!showDropdown) return;
+    searchCategories(debouncedQuery);
+  }, [debouncedQuery, showDropdown]);
 
   return (
     <div className="relative" ref={dropdownRef}>
@@ -143,7 +137,7 @@ export function CategorySelector({
         <Input
           ref={inputRef}
           type="text"
-          value={searchTerm}
+          value={query}
           onChange={handleInputChange}
           onFocus={handleInputFocus}
           onBlur={handleInputBlur}
@@ -162,7 +156,7 @@ export function CategorySelector({
         )}
 
         {/* Clear button */}
-        {(searchTerm || value) && (
+        {(query || value) && (
           <button
             type="button"
             onClick={clearSelection}
@@ -203,13 +197,13 @@ export function CategorySelector({
             <div className="px-4 py-3 text-sm text-neutral-500 text-center">Searching…</div>
           )}
 
-          {!loading && categories.length === 0 && searchTerm && (
+          {!loading && categories.length === 0 && query && (
             <div className="px-4 py-3 text-sm text-neutral-500 text-center">
-              No categories found for &quot;{searchTerm}&quot;
+              No categories found for &quot;{query}&quot;
             </div>
           )}
 
-          {!loading && categories.length === 0 && !searchTerm && (
+          {!loading && categories.length === 0 && !query && (
             <div className="px-4 py-3 text-sm text-neutral-500 text-center">
               Start typing to search categories...
             </div>

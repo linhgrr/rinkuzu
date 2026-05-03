@@ -16,15 +16,15 @@ const extractImageUrl = (item: unknown): string | null => {
   if (!item || typeof item !== 'object') return null;
 
   const record = item as Record<string, unknown>;
-  const direct = [record.image_url, record.url, record.imageUrl, record.src].find(
+  const direct = [record['image_url'], record['url'], record['imageUrl'], record['src']].find(
     (value) => typeof value === 'string' && value.length > 0,
   );
   if (typeof direct === 'string') return direct;
 
-  const image = record.image;
+  const image = record['image'];
   if (image && typeof image === 'object') {
     const nested = image as Record<string, unknown>;
-    const nestedUrl = [nested.url, nested.image_url, nested.src].find(
+    const nestedUrl = [nested['url'], nested['image_url'], nested['src']].find(
       (value) => typeof value === 'string' && value.length > 0,
     );
     if (typeof nestedUrl === 'string') return nestedUrl;
@@ -40,7 +40,7 @@ const normalizePayload = (payload: unknown): string[] => {
   if (!payload || typeof payload !== 'object') return [];
 
   const record = payload as Record<string, unknown>;
-  const candidateArrays = [record.items, record.images, record.data];
+  const candidateArrays = [record['items'], record['images'], record['data']];
   for (const candidate of candidateArrays) {
     if (Array.isArray(candidate))
       return candidate.map(extractImageUrl).filter((value): value is string => !!value);

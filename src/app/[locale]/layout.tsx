@@ -153,10 +153,10 @@ export default async function LocaleLayout({
           <JsonLd id="software-app-schema" data={softwareApplicationSchema} />
           {children}
         </NextIntlClientProvider>
-        {process.env.NEXT_PUBLIC_GA_ID ? (
+        {process.env['NEXT_PUBLIC_GA_ID'] ? (
           <>
             <Script
-              src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_ID}`}
+              src={`https://www.googletagmanager.com/gtag/js?id=${process.env['NEXT_PUBLIC_GA_ID']}`}
               strategy="afterInteractive"
             />
             <Script id="ga-init" strategy="afterInteractive">
@@ -164,7 +164,7 @@ export default async function LocaleLayout({
                 window.dataLayer = window.dataLayer || [];
                 function gtag(){dataLayer.push(arguments);}
                 gtag('js', new Date());
-                gtag('config', '${process.env.NEXT_PUBLIC_GA_ID}');
+                gtag('config', '${process.env['NEXT_PUBLIC_GA_ID']}');
               `}
             </Script>
           </>

@@ -260,14 +260,17 @@ export function DesktopQuizLayout({
                           <div className="text-neutral-900 [&_p]:m-0 [&_p]:text-base [&_p]:text-neutral-900">
                             <MarkdownRenderer content={option} />
                           </div>
-                          {currentQuestion.optionImages?.[index] && (
-                            <div className="mt-2">
-                              <OptionImage
-                                src={currentQuestion.optionImages[index]!}
-                                alt={`Option ${String.fromCharCode(65 + index)} image`}
-                              />
-                            </div>
-                          )}
+                          {(() => {
+                            const optionImage = currentQuestion.optionImages?.[index];
+                            return optionImage ? (
+                              <div className="mt-2">
+                                <OptionImage
+                                  src={optionImage}
+                                  alt={`Option ${String.fromCharCode(65 + index)} image`}
+                                />
+                              </div>
+                            ) : null;
+                          })()}
                         </div>
                       </label>
                     );
@@ -446,13 +449,16 @@ export function DesktopQuizLayout({
                     <div className="flex-1 [&_p]:m-0 [&_p]:text-xs [&_p]:text-neutral-600">
                       <MarkdownRenderer content={option} />
                     </div>
-                    {currentQuestion.optionImages?.[index] && (
-                      <OptionImage
-                        src={currentQuestion.optionImages[index]!}
-                        alt={`Option ${index} image`}
-                        className="ml-1"
-                      />
-                    )}
+                    {(() => {
+                      const optionImage = currentQuestion.optionImages?.[index];
+                      return optionImage ? (
+                        <OptionImage
+                          src={optionImage}
+                          alt={`Option ${index} image`}
+                          className="ml-1"
+                        />
+                      ) : null;
+                    })()}
                   </div>
                 ))}
               </div>

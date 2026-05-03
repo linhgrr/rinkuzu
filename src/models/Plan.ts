@@ -117,6 +117,7 @@ PlanSchema.set('toJSON', { virtuals: true });
 PlanSchema.set('toObject', { virtuals: true });
 
 const Plan =
-  (mongoose.models.Plan as Model<IPlan> | undefined) || mongoose.model<IPlan>('Plan', PlanSchema);
+  (mongoose.models['Plan'] as Model<IPlan> | undefined) ||
+  mongoose.model<IPlan>('Plan', PlanSchema);
 
 export default Plan;

@@ -113,6 +113,6 @@ DraftQuizSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 DraftQuizSchema.index({ userId: 1, status: 1, createdAt: -1 });
 
 const DraftQuiz =
-  mongoose.models.DraftQuiz || mongoose.model<IDraftQuiz>('DraftQuiz', DraftQuizSchema);
+  mongoose.models['DraftQuiz'] || mongoose.model<IDraftQuiz>('DraftQuiz', DraftQuizSchema);
 
 export default DraftQuiz;

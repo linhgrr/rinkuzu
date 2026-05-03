@@ -47,14 +47,14 @@ export const authOptions: NextAuthOptions = {
   ],
   session: {
     strategy: 'jwt',
-    maxAge: parseInt(process.env.SESSION_MAX_AGE || '180000') || 50 * 60 * 60, // 50 hours default
+    maxAge: parseInt(process.env['SESSION_MAX_AGE'] || '180000') || 50 * 60 * 60, // 50 hours default
   },
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
         token.role = (user as any).role;
-        token.avatar = (user as any).avatar;
-        token.displayName = (user as any).displayName;
+        token['avatar'] = (user as any).avatar;
+        token['displayName'] = (user as any).displayName;
       }
       return token;
     },
@@ -62,8 +62,8 @@ export const authOptions: NextAuthOptions = {
       if (token) {
         (session.user as any).id = token.sub;
         (session.user as any).role = token.role;
-        (session.user as any).avatar = token.avatar;
-        (session.user as any).displayName = token.displayName;
+        (session.user as any).avatar = token['avatar'];
+        (session.user as any).displayName = token['displayName'];
       }
       return session;
     },
@@ -71,5 +71,5 @@ export const authOptions: NextAuthOptions = {
   pages: {
     signIn: '/login',
   },
-  secret: process.env.NEXTAUTH_SECRET,
+  secret: process.env['NEXTAUTH_SECRET'],
 };

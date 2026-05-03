@@ -80,6 +80,7 @@ SubscriptionSchema.index({ payosOrderId: 1 }, { unique: true });
 
 // Prevent re-compilation in development
 const Subscription =
-  mongoose.models.Subscription || mongoose.model<ISubscription>('Subscription', SubscriptionSchema);
+  mongoose.models['Subscription'] ||
+  mongoose.model<ISubscription>('Subscription', SubscriptionSchema);
 
 export default Subscription;

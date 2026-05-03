@@ -74,8 +74,8 @@ export async function PUT(request: NextRequest) {
     await connectDB();
 
     const updateData: Record<string, string> = {};
-    if (displayName !== undefined) updateData.displayName = displayName.trim();
-    if (bio !== undefined) updateData.bio = bio.trim();
+    if (displayName !== undefined) updateData['displayName'] = displayName.trim();
+    if (bio !== undefined) updateData['bio'] = bio.trim();
 
     const user = await User.findOneAndUpdate({ email: session.user.email }, updateData, {
       new: true,

@@ -93,7 +93,8 @@ export async function POST(request: NextRequest, { params }: AsyncRouteParams<{ 
   try {
     const { id } = await params;
     const session = await getServerSession(authOptions);
-    if (!(session?.user as any)?.id) {
+    const userId = (session?.user as { id?: string } | undefined)?.id;
+    if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -108,7 +109,7 @@ export async function POST(request: NextRequest, { params }: AsyncRouteParams<{ 
 
     const draft = await DraftQuiz.findOne({
       _id: id,
-      userId: (session!.user as any as any).id,
+      userId,
     });
 
     if (!draft) {
@@ -145,7 +146,7 @@ export async function POST(request: NextRequest, { params }: AsyncRouteParams<{ 
       description: description || '',
       category: categoryId,
       status: 'pending', // Requires admin approval
-      author: (session!.user as any as any).id,
+      author: userId,
       slug,
       questions: questionsToUse.map((q: any) => ({
         question: q.question,

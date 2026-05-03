@@ -13,9 +13,9 @@ export class PayOSService implements IPayOSService {
   private baseUrl: string;
 
   constructor() {
-    this.clientId = process.env.PAYOS_CLIENT_ID || '';
-    this.apiKey = process.env.PAYOS_API_KEY || '';
-    this.checksumKey = process.env.PAYOS_CHECKSUM_KEY || '';
+    this.clientId = process.env['PAYOS_CLIENT_ID'] || '';
+    this.apiKey = process.env['PAYOS_API_KEY'] || '';
+    this.checksumKey = process.env['PAYOS_CHECKSUM_KEY'] || '';
     this.baseUrl = 'https://api-merchant.payos.vn';
   }
 

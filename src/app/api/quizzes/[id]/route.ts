@@ -12,14 +12,17 @@ export async function GET(request: NextRequest, { params }: AsyncRouteParams<{ i
     if (!session?.user) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
+    const userEmail = session.user.email;
+    if (!userEmail) {
+      return NextResponse.json(
+        { success: false, error: 'User email is required' },
+        { status: 400 },
+      );
+    }
 
     const quizService = serviceFactory.getQuizService();
 
-    const result = await quizService.getQuizById(
-      id,
-      session.user.email!,
-      (session.user as any).role,
-    );
+    const result = await quizService.getQuizById(id, userEmail, (session.user as any).role);
 
     if (!result.success) {
       return NextResponse.json(
@@ -68,6 +71,13 @@ export async function PUT(request: NextRequest, { params }: AsyncRouteParams<{ i
     if (!session?.user) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
+    const userEmail = session.user.email;
+    if (!userEmail) {
+      return NextResponse.json(
+        { success: false, error: 'User email is required' },
+        { status: 400 },
+      );
+    }
 
     const quizData = await request.json();
     const quizService = serviceFactory.getQuizService();
@@ -75,7 +85,7 @@ export async function PUT(request: NextRequest, { params }: AsyncRouteParams<{ i
     const result = await quizService.updateQuiz(
       id,
       quizData,
-      session.user.email!,
+      userEmail,
       (session.user as any).role,
     );
 
@@ -104,14 +114,17 @@ export async function DELETE(request: NextRequest, { params }: AsyncRouteParams<
     if (!session?.user) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
+    const userEmail = session.user.email;
+    if (!userEmail) {
+      return NextResponse.json(
+        { success: false, error: 'User email is required' },
+        { status: 400 },
+      );
+    }
 
     const quizService = serviceFactory.getQuizService();
 
-    const result = await quizService.deleteQuiz(
-      id,
-      session.user.email!,
-      (session.user as any).role,
-    );
+    const result = await quizService.deleteQuiz(id, userEmail, (session.user as any).role);
 
     if (!result.success) {
       return NextResponse.json(

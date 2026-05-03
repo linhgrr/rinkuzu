@@ -13,7 +13,7 @@ if (!cached) {
 }
 
 async function connectDB(): Promise<typeof mongoose> {
-  if (!process.env.MONGO_URL) {
+  if (!process.env['MONGO_URL']) {
     throw new Error('Please add your MONGO_URL to .env.local');
   }
 
@@ -26,7 +26,7 @@ async function connectDB(): Promise<typeof mongoose> {
       bufferCommands: false,
     };
 
-    cached.promise = mongoose.connect(process.env.MONGO_URL, opts);
+    cached.promise = mongoose.connect(process.env['MONGO_URL'], opts);
   }
 
   try {

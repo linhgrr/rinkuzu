@@ -2,13 +2,15 @@
 
 import Image from 'next/image';
 import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Flashcard } from '@/features/quiz/components/Flashcard';
 import { PremiumRequiredModal } from '@/features/quiz/components/PremiumRequiredModal';
+import { routePathSegment } from '@/lib/routing/routeParams';
+import { useRequiredRouteParam } from '@/lib/routing/useRequiredRouteParam';
 
 interface Question {
   _id: string;
@@ -36,7 +38,7 @@ interface FlashcardProgress {
 export default function FlashcardPage() {
   const t = useTranslations('quiz');
   const tCommon = useTranslations('common');
-  const params = useParams();
+  const encodedSlug = routePathSegment(useRequiredRouteParam('slug'));
   const _router = useRouter();
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [loading, setLoading] = useState(true);
@@ -55,7 +57,7 @@ export default function FlashcardPage() {
   useEffect(() => {
     const fetchQuiz = async () => {
       try {
-        const response = await fetch(`/api/quiz/${params.slug}/flashcards`);
+        const response = await fetch(`/api/quiz/${encodedSlug}/flashcards`);
         const data = await response.json();
 
         if (data.success) {
@@ -76,7 +78,7 @@ export default function FlashcardPage() {
     };
 
     void fetchQuiz();
-  }, [params.slug]);
+  }, [encodedSlug]);
 
   const handleSwipe = async (direction: 'left' | 'right') => {
     if (!quiz) return;
@@ -137,8 +139,13 @@ export default function FlashcardPage() {
   };
 
   const continuePractice = () => {
+    if (!quiz) return;
+
     // Tạo danh sách mới chỉ với các câu chưa biết
-    const unknownQuestions = progress.unknown.map((index) => quiz!.questions[index]);
+    const unknownQuestions = progress.unknown.flatMap((index) => {
+      const question = quiz.questions[index];
+      return question ? [question] : [];
+    });
 
     // Cập nhật danh sách câu hỏi hiện tại để chỉ chứa câu chưa biết
     setCurrentQuestions(unknownQuestions);

@@ -16,7 +16,6 @@ export async function GET(request: NextRequest) {
     if (!session?.user || (session.user as any).role !== 'admin') {
       return NextResponse.json({ success: false, error: 'Admin access required' }, { status: 403 });
     }
-
     const url = new URL(request.url);
     const page = parseInt(url.searchParams.get('page') || '1');
     const limit = parseInt(url.searchParams.get('limit') || '10');
@@ -45,6 +44,13 @@ export async function PUT(request: NextRequest) {
     if (!session?.user || (session.user as any).role !== 'admin') {
       return NextResponse.json({ success: false, error: 'Admin access required' }, { status: 403 });
     }
+    const adminEmail = session.user.email;
+    if (!adminEmail) {
+      return NextResponse.json(
+        { success: false, error: 'Admin email is required' },
+        { status: 400 },
+      );
+    }
 
     const { userId, role } = await request.json();
 
@@ -55,7 +61,7 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const result = await adminService.updateUserRole(userId, role, session.user.email!);
+    const result = await adminService.updateUserRole(userId, role, adminEmail);
 
     if (!result.success) {
       return NextResponse.json(
@@ -81,6 +87,13 @@ export async function DELETE(request: NextRequest) {
     if (!session?.user || (session.user as any).role !== 'admin') {
       return NextResponse.json({ success: false, error: 'Admin access required' }, { status: 403 });
     }
+    const adminEmail = session.user.email;
+    if (!adminEmail) {
+      return NextResponse.json(
+        { success: false, error: 'Admin email is required' },
+        { status: 400 },
+      );
+    }
 
     const url = new URL(request.url);
     const userId = url.searchParams.get('userId');
@@ -89,7 +102,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'User ID is required' }, { status: 400 });
     }
 
-    const result = await adminService.deleteUser(userId, session.user.email!);
+    const result = await adminService.deleteUser(userId, adminEmail);
 
     if (!result.success) {
       return NextResponse.json(

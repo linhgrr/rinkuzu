@@ -11,10 +11,8 @@ import { StreamingChatModal } from '@/features/quiz/components/chat/StreamingCha
 import { QuestionOptionsPreview } from '@/features/quiz/components/shared/QuestionOptionsPreview';
 import { useStreamingChatSession } from '@/features/quiz/hooks/useStreamingChatSession';
 import { fetchApiSuccess } from '@/lib/api/client';
-
-interface QuizResultPageProps {
-  params: { slug: string };
-}
+import { routePathSegment } from '@/lib/routing/routeParams';
+import { useRequiredRouteParam } from '@/lib/routing/useRequiredRouteParam';
 
 interface QuizResult {
   _id: string;
@@ -46,11 +44,12 @@ interface BookmarkSummary {
   questionIndex: number;
 }
 
-export default function QuizResultPage({ params }: QuizResultPageProps) {
+export default function QuizResultPage() {
   const t = useTranslations('quiz');
   const tProfile = useTranslations('profile');
   const searchParams = useSearchParams();
   const attemptId = searchParams.get('attemptId');
+  const encodedSlug = routePathSegment(useRequiredRouteParam('slug'));
 
   const [result, setResult] = useState<QuizResult | null>(null);
   const [loading, setLoading] = useState(true);
@@ -151,10 +150,12 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
 
   const formatCorrectAnswer = (question: QuizResult['quiz']['questions'][0]) => {
     if (question.type === 'single') {
-      return question.options[question.correctIndex!];
-    } else {
-      return question.correctIndexes!.map((idx) => question.options[idx]).join(', ');
+      return typeof question.correctIndex === 'number'
+        ? question.options[question.correctIndex] || ''
+        : '';
     }
+
+    return (question.correctIndexes || []).map((idx) => question.options[idx]).join(', ');
   };
 
   const openAIModal = (qData: any, questionIndex: number) => {
@@ -661,14 +662,17 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
                                 <div className="flex-1">
                                   <span className="text-neutral-900">{optionText}</span>
 
-                                  {questionResult.optionImages?.[optIdx] && (
-                                    <div className="mt-2">
-                                      <OptionImage
-                                        src={questionResult.optionImages[optIdx]!}
-                                        alt={`Option ${String.fromCharCode(65 + optIdx)} image`}
-                                      />
-                                    </div>
-                                  )}
+                                  {(() => {
+                                    const optionImage = questionResult.optionImages?.[optIdx];
+                                    return optionImage ? (
+                                      <div className="mt-2">
+                                        <OptionImage
+                                          src={optionImage}
+                                          alt={`Option ${String.fromCharCode(65 + optIdx)} image`}
+                                        />
+                                      </div>
+                                    ) : null;
+                                  })()}
                                 </div>
 
                                 {isCorrectAnswer && <span className="ml-2 text-green-600">✓</span>}
@@ -690,7 +694,7 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
 
         {/* Action Buttons */}
         <div className="flex justify-center space-x-4">
-          <Link href={`/quiz/${params.slug}`}>
+          <Link href={`/quiz/${encodedSlug}`}>
             <Button variant="outline">{tProfile('redo')}</Button>
           </Link>
           <Link href="/">

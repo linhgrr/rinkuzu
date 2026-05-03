@@ -157,6 +157,6 @@ QuizSchema.index({ author: 1, status: 1, createdAt: -1 });
 // slug index is already created via unique: true in schema
 
 // Prevent re-compilation in development
-const Quiz = mongoose.models.Quiz || mongoose.model<IQuiz>('Quiz', QuizSchema);
+const Quiz = mongoose.models['Quiz'] || mongoose.model<IQuiz>('Quiz', QuizSchema);
 
 export default Quiz;

@@ -336,6 +336,7 @@ export const useProcessingState = (t: TranslateFn) => {
         timeoutRef.current = setTimeout(() => {
           router.push(ADAPTIVE_ROUTES.subject(session.session_id));
         }, 800);
+        return 'created';
       } catch (err) {
         setCreatingSession(false);
         creatingSessionRef.current = false;

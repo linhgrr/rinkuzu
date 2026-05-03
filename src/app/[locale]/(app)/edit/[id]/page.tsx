@@ -14,6 +14,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import QuizMetaForm from '@/features/quiz/components/QuizMetaForm';
 import PDFViewer from '@/features/quiz/components/PDFViewer';
 import { IQuiz } from '@/types';
+import { routePathSegment } from '@/lib/routing/routeParams';
+import { useRequiredRouteParam } from '@/lib/routing/useRequiredRouteParam';
 import { QuestionImageUpload, OptionImageUpload } from '@/components/ui/ImageUpload';
 import Sidebar from '@/components/Sidebar';
 import {
@@ -29,10 +31,6 @@ import {
   HiOutlineClipboardCopy,
   HiOutlinePencilAlt,
 } from '@/components/icons';
-
-interface EditQuizPageProps {
-  params: { id: string };
-}
 
 interface Question {
   question: string;
@@ -51,12 +49,13 @@ interface Category {
   color?: string;
 }
 
-export default function EditQuizPage({ params }: EditQuizPageProps) {
+export default function EditQuizPage() {
   const _t = useTranslations('quiz');
   const _tCommon = useTranslations('common');
   const { data: session } = useSession();
   const router = useRouter();
   const pathname = usePathname();
+  const encodedQuizId = routePathSegment(useRequiredRouteParam('id'));
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [quiz, setQuiz] = useState<IQuiz | null>(null);
@@ -77,7 +76,7 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
 
   const fetchQuiz = useCallback(async () => {
     try {
-      const response = await fetch(`/api/quizzes/${params.id}`);
+      const response = await fetch(`/api/quizzes/${encodedQuizId}`);
       const data = await response.json();
 
       if (data.success) {
@@ -96,7 +95,7 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
     } finally {
       setLoading(false);
     }
-  }, [params.id]);
+  }, [encodedQuizId]);
 
   useEffect(() => {
     fetchQuiz();
@@ -124,16 +123,20 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
 
   const updateOptionImage = (qIdx: number, optIdx: number, url: string) => {
     const updated = [...editableQuestions];
-    if (!updated[qIdx].optionImages) {
-      updated[qIdx].optionImages = new Array(updated[qIdx].options.length).fill(undefined);
+    const question = updated[qIdx];
+    if (!question) return;
+
+    if (!question.optionImages) {
+      question.optionImages = new Array(question.options.length).fill(undefined);
     }
-    updated[qIdx].optionImages![optIdx] = url;
+    question.optionImages[optIdx] = url;
     setEditableQuestions(updated);
   };
 
   const removeOptionImage = (qIdx: number, optIdx: number) => {
     const updated = [...editableQuestions];
-    if (updated[qIdx].optionImages) updated[qIdx].optionImages![optIdx] = undefined;
+    const question = updated[qIdx];
+    if (question?.optionImages) question.optionImages[optIdx] = undefined;
     setEditableQuestions(updated);
   };
 
@@ -209,7 +212,7 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
           : { ...base, correctIndexes: q.correctIndexes || [] };
       });
 
-      const response = await fetch(`/api/quizzes/${params.id}`, {
+      const response = await fetch(`/api/quizzes/${encodedQuizId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -246,7 +249,7 @@ export default function EditQuizPage({ params }: EditQuizPageProps) {
     setError('');
 
     try {
-      const response = await fetch(`/api/quizzes/${params.id}`, {
+      const response = await fetch(`/api/quizzes/${encodedQuizId}`, {
         method: 'DELETE',
       });
 

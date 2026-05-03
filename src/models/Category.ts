@@ -73,4 +73,4 @@ CategorySchema.index({ name: 'text', description: 'text' });
 CategorySchema.index({ isActive: 1, name: 1 });
 CategorySchema.index({ slug: 1, isActive: 1 });
 
-export default mongoose.models.Category || mongoose.model('Category', CategorySchema);
+export default mongoose.models['Category'] || mongoose.model('Category', CategorySchema);

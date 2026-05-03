@@ -185,17 +185,21 @@ export async function POST(request: NextRequest, { params }: AsyncRouteParams<{ 
         { new: true },
       );
 
+      if (!updateResult) {
+        throw new Error('Draft chunk update failed');
+      }
+
       // Count done + error as "attempted"
-      const doneCount = updateResult!.chunks.chunkDetails.filter(
+      const doneCount = updateResult.chunks.chunkDetails.filter(
         (c: any) => c.status === 'done',
       ).length;
 
-      const errorCount = updateResult!.chunks.chunkDetails.filter(
+      const errorCount = updateResult.chunks.chunkDetails.filter(
         (c: any) => c.status === 'error',
       ).length;
 
-      const allAttempted = doneCount + errorCount >= updateResult!.chunks.total;
-      const hasQuestions = updateResult!.questions.length > 0;
+      const allAttempted = doneCount + errorCount >= updateResult.chunks.total;
+      const hasQuestions = updateResult.questions.length > 0;
 
       // Consider processing cycle complete once all chunk attempts finish.
       const isComplete = allAttempted;
@@ -218,10 +222,10 @@ export async function POST(request: NextRequest, { params }: AsyncRouteParams<{ 
         questions: newQuestions,
         progress: {
           processed: doneCount,
-          total: updateResult!.chunks.total,
+          total: updateResult.chunks.total,
           errors: errorCount,
           isComplete,
-          totalQuestions: updateResult!.questions.length,
+          totalQuestions: updateResult.questions.length,
         },
       });
     } catch (extractError: any) {

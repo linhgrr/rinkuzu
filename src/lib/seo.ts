@@ -12,7 +12,7 @@ function trimTrailingSlash(url: string): string {
 
 export const siteUrl = new URL(
   trimTrailingSlash(
-    process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXTAUTH_URL || FALLBACK_SITE_URL,
+    process.env['NEXT_PUBLIC_SITE_URL'] || process.env['NEXTAUTH_URL'] || FALLBACK_SITE_URL,
   ),
 );
 

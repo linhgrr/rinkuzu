@@ -32,6 +32,8 @@ export const LanguageSwitcher = memo(function LanguageSwitcher({
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
+
+    return undefined;
   }, [isOpen]);
 
   const handleLocaleChange = useCallback(

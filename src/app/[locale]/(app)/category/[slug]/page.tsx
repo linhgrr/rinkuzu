@@ -17,6 +17,8 @@ import {
   Badge,
 } from '@/components/ui/Card';
 import Navigation from '@/components/Navigation';
+import { routePathSegment } from '@/lib/routing/routeParams';
+import { useRequiredRouteParam } from '@/lib/routing/useRequiredRouteParam';
 import {
   HiOutlineSearch,
   HiOutlineExclamationCircle,
@@ -62,16 +64,13 @@ interface PaginationData {
   totalPages: number;
 }
 
-interface CategoryPageProps {
-  params: { slug: string };
-}
-
-export default function CategoryPage({ params }: CategoryPageProps) {
+export default function CategoryPage() {
   const t = useTranslations('categories');
   const tCommon = useTranslations('common');
   const tNav = useTranslations('nav');
   const tQuiz = useTranslations('quiz');
   const router = useRouter();
+  const encodedSlug = routePathSegment(useRequiredRouteParam('slug'));
   const [category, setCategory] = useState<Category | null>(null);
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [loading, setLoading] = useState(true);
@@ -100,7 +99,7 @@ export default function CategoryPage({ params }: CategoryPageProps) {
         }
 
         // Get category and quizzes in one API call
-        const response = await fetch(`/api/categories/${params.slug}?${queryParams}`);
+        const response = await fetch(`/api/categories/${encodedSlug}?${queryParams}`);
         const data = await response.json();
 
         if (!data.success) {
@@ -120,7 +119,7 @@ export default function CategoryPage({ params }: CategoryPageProps) {
         setLoading(false);
       }
     },
-    [params.slug, pagination.limit],
+    [encodedSlug, pagination.limit],
   );
 
   useEffect(() => {

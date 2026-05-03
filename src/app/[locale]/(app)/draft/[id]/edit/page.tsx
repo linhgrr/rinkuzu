@@ -14,7 +14,8 @@ type Props = AsyncRouteParams<{ id: string; locale: string }>;
 export default async function DraftEditPage({ params }: Props) {
   const { id, locale } = await params;
   const session = await getServerSession(authOptions);
-  if (!(session?.user as any)?.id) {
+  const userId = (session?.user as { id?: string } | undefined)?.id;
+  if (!userId) {
     redirect(`/${locale}/login`);
   }
 
@@ -22,7 +23,7 @@ export default async function DraftEditPage({ params }: Props) {
 
   const draft = (await DraftQuiz.findOne({
     _id: id,
-    userId: (session!.user as any).id,
+    userId,
   }).lean()) as any;
 
   if (!draft) {

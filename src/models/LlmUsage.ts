@@ -30,6 +30,7 @@ const LlmUsageSchema = new Schema<ILlmUsage>(
 LlmUsageSchema.index({ userId: 1, action: 1, window: 1, windowStart: 1 }, { unique: true });
 LlmUsageSchema.index({ expireAt: 1 }, { expireAfterSeconds: 0 });
 
-const LlmUsage = mongoose.models.LlmUsage || mongoose.model<ILlmUsage>('LlmUsage', LlmUsageSchema);
+const LlmUsage =
+  mongoose.models['LlmUsage'] || mongoose.model<ILlmUsage>('LlmUsage', LlmUsageSchema);
 
 export default LlmUsage;

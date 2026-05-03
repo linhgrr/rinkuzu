@@ -61,6 +61,6 @@ AttemptSchema.index({ quiz: 1, takenAt: -1 });
 AttemptSchema.index({ user: 1, quiz: 1 });
 
 // Prevent re-compilation in development
-const Attempt = mongoose.models.Attempt || mongoose.model<IAttempt>('Attempt', AttemptSchema);
+const Attempt = mongoose.models['Attempt'] || mongoose.model<IAttempt>('Attempt', AttemptSchema);
 
 export default Attempt;

@@ -8,16 +8,17 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 // S3-compatible storage configuration
 const s3Client = new S3Client({
-  endpoint: process.env.S3_ENDPOINT || 'https://objectstorageapi.ap-southeast-1.clawcloudrun.com',
+  endpoint:
+    process.env['S3_ENDPOINT'] || 'https://objectstorageapi.ap-southeast-1.clawcloudrun.com',
   region: 'ap-southeast-1',
   credentials: {
-    accessKeyId: process.env.S3_ACCESS_KEY || '',
-    secretAccessKey: process.env.S3_SECRET_KEY || '',
+    accessKeyId: process.env['S3_ACCESS_KEY'] || '',
+    secretAccessKey: process.env['S3_SECRET_KEY'] || '',
   },
   forcePathStyle: true, // Required for path-style addressing
 });
 
-const BUCKET_NAME = process.env.S3_BUCKET_NAME || 'rinkuzu-pdfs';
+const BUCKET_NAME = process.env['S3_BUCKET_NAME'] || 'rinkuzu-pdfs';
 
 /**
  * Upload a PDF file to S3
@@ -43,7 +44,7 @@ export async function uploadPDF(
 
   // Return the public URL
   const endpoint =
-    process.env.S3_ENDPOINT || 'https://objectstorageapi.ap-southeast-1.clawcloudrun.com';
+    process.env['S3_ENDPOINT'] || 'https://objectstorageapi.ap-southeast-1.clawcloudrun.com';
   return `${endpoint}/${BUCKET_NAME}/${key}`;
 }
 

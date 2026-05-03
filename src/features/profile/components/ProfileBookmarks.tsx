@@ -113,10 +113,12 @@ export default function ProfileBookmarks() {
 
   const formatCorrectAnswer = (question: Bookmark['question']) => {
     if (question.type === 'single') {
-      return question.options[question.correctIndex!];
-    } else {
-      return question.correctIndexes!.map((idx) => question.options[idx]).join(', ');
+      return typeof question.correctIndex === 'number'
+        ? question.options[question.correctIndex] || ''
+        : '';
     }
+
+    return (question.correctIndexes || []).map((idx) => question.options[idx]).join(', ');
   };
 
   const openAIModal = (bookmark: Bookmark) => {

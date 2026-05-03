@@ -311,10 +311,7 @@ export default function ProfileBookmarks() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-neutral-900">{t('bookmarkedQuestions')}</h2>
-        <p className="mt-1 text-neutral-600">{t('bookmarkedDescription')}</p>
-      </div>
+      <h2 className="text-2xl font-bold text-neutral-900">{t('bookmarkedQuestions')}</h2>
 
       {error && <div className="bg-red-50 p-4 rounded text-red-700 text-sm">{error}</div>}
 

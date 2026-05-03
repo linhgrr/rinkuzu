@@ -16,13 +16,20 @@ export async function GET(_request: NextRequest) {
     const subscription = await subscriptionService.getUserSubscription((session.user as any).id);
     const isPremium = await subscriptionService.isUserPremium((session.user as any).id);
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        subscription,
-        isPremium,
+    return NextResponse.json(
+      {
+        success: true,
+        data: {
+          subscription: isPremium ? subscription : null,
+          isPremium,
+        },
       },
-    });
+      {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate',
+        },
+      },
+    );
   } catch (error) {
     console.error('Error fetching subscription status:', error);
     return NextResponse.json(

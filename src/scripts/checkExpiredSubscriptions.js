@@ -1,26 +1,82 @@
-const cron = require('node-cron');
-const { ServiceFactory } = require('../lib/serviceFactory');
+const mongoose = require('mongoose');
+const { loadEnvConfig } = require('@next/env');
+
+loadEnvConfig(process.cwd());
+const mongoUrl = process.env.MONGO_URL || process.env.MONGODB_URI;
+
+const subscriptionSchema = new mongoose.Schema(
+  {
+    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    status: {
+      type: String,
+      enum: ['pending', 'completed', 'failed', 'cancelled', 'expired'],
+      default: 'pending',
+    },
+    endDate: Date,
+    isActive: { type: Boolean, default: false },
+  },
+  { timestamps: true, strict: false },
+);
+
+const userSchema = new mongoose.Schema(
+  {
+    subscription: {
+      isActive: { type: Boolean, default: false },
+    },
+  },
+  { strict: false },
+);
+
+const Subscription =
+  mongoose.models.Subscription || mongoose.model('Subscription', subscriptionSchema);
+const User = mongoose.models.User || mongoose.model('User', userSchema);
 
 async function checkExpiredSubscriptions() {
-  try {
-    console.warn('Starting expired subscription check...');
-
-    const subscriptionService = ServiceFactory.createSubscriptionService();
-    await subscriptionService.checkAndUpdateExpiredSubscriptions();
-
-    console.warn('Expired subscription check completed successfully');
-  } catch (error) {
-    console.error('Error checking expired subscriptions:', error);
+  if (!mongoUrl) {
+    throw new Error('MONGO_URL or MONGODB_URI is required');
   }
+
+  await mongoose.connect(mongoUrl, { bufferCommands: false });
+
+  const now = new Date();
+  const expiredSubscriptions = await Subscription.find({
+    isActive: true,
+    endDate: { $exists: true, $lte: now },
+    status: 'completed',
+  }).select('_id user');
+
+  for (const subscription of expiredSubscriptions) {
+    await Subscription.findByIdAndUpdate(subscription._id, {
+      isActive: false,
+      status: 'expired',
+    });
+
+    await User.findByIdAndUpdate(subscription.user, {
+      'subscription.isActive': false,
+    });
+  }
+
+  const usersOnlyResult = await User.updateMany(
+    {
+      'subscription.isActive': true,
+      'subscription.endDate': { $exists: true, $lte: now },
+    },
+    {
+      'subscription.isActive': false,
+    },
+  );
+
+  return expiredSubscriptions.length + usersOnlyResult.modifiedCount;
 }
 
-// Run immediately when script starts
-checkExpiredSubscriptions();
-
-// Schedule to run every day at 1 AM
-cron.schedule('0 1 * * *', () => {
-  console.warn('Running scheduled expired subscription check...');
-  checkExpiredSubscriptions();
-});
-
-console.warn('Expired subscription checker started. Will run daily at 1 AM.');
+checkExpiredSubscriptions()
+  .then((count) => {
+    console.warn(`Expired subscription check completed. Updated ${count} subscription(s).`);
+  })
+  .catch((error) => {
+    console.error('Error checking expired subscriptions:', error);
+    process.exitCode = 1;
+  })
+  .finally(async () => {
+    await mongoose.disconnect();
+  });

@@ -1,4 +1,5 @@
 import connectDB from '@/lib/mongoose';
+import crypto from 'crypto';
 import Plan from '@/models/Plan';
 import {
   ISubscriptionService,
@@ -20,7 +21,19 @@ export class SubscriptionService implements ISubscriptionService {
 
   async getUserSubscription(userId: string) {
     const user = await this.userRepository.findById(userId);
-    return (user as any)?.subscription;
+    const subscription = (user as any)?.subscription;
+    if (!subscription) return null;
+
+    if (this.isExpired(subscription)) {
+      await this.markUserSubscriptionExpired(userId, subscription);
+      return {
+        ...subscription,
+        isActive: false,
+        status: 'expired',
+      };
+    }
+
+    return subscription;
   }
 
   async isUserPremium(userId: string): Promise<boolean> {
@@ -32,7 +45,7 @@ export class SubscriptionService implements ISubscriptionService {
 
     // Check if subscription has end date
     if (subscription.endDate) {
-      return new Date() < subscription.endDate;
+      return !this.isExpired(subscription);
     }
 
     // If no end date, assume it's a lifetime subscription
@@ -49,18 +62,18 @@ export class SubscriptionService implements ISubscriptionService {
 
     // Get plan from database
     const plan = await Plan.findById(planId);
-    if (!plan) {
+    if (!plan || !plan.isActive) {
       throw new Error('Invalid subscription plan');
     }
 
     // Check if user already has an active subscription
-    const currentSubscription = await this.getUserSubscription(userId);
-    if (currentSubscription?.isActive) {
+    const hasActivePremium = await this.isUserPremium(userId);
+    if (hasActivePremium) {
       throw new Error('User already has an active subscription');
     }
 
-    // Generate unique numeric order code (PayOS requires positive number <= 9007199254740991)
-    const orderCode = Date.now();
+    // PayOS requires a positive safe integer. Add entropy and verify uniqueness.
+    const orderCode = await this.generateUniqueOrderCode();
 
     // PayOS description phải ≤ 25 ký tự
     const payosDescription = plan.name.length > 25 ? plan.name.substring(0, 25) : plan.name;
@@ -140,7 +153,10 @@ export class SubscriptionService implements ISubscriptionService {
     }
   }
 
-  async verifyAndActivateSubscription(orderCode: number): Promise<SubscriptionActivation> {
+  async verifyAndActivateSubscription(
+    orderCode: number,
+    userId: string,
+  ): Promise<SubscriptionActivation> {
     await connectDB();
 
     // Get subscription record
@@ -149,10 +165,28 @@ export class SubscriptionService implements ISubscriptionService {
       throw new Error('Subscription not found');
     }
 
-    // Get plan to determine duration
-    const plan = await Plan.findById(subscription.type);
-    if (!plan) {
-      throw new Error('Plan not found');
+    if (subscription.user.toString() !== userId) {
+      throw new Error('Subscription does not belong to current user');
+    }
+
+    if (subscription.status === 'completed') {
+      if (subscription.endDate && new Date(subscription.endDate) <= new Date()) {
+        throw new Error('Subscription already expired');
+      }
+
+      return {
+        success: true,
+        subscription: {
+          type: subscription.type,
+          startDate: subscription.startDate || subscription.createdAt,
+          endDate: subscription.endDate,
+          isActive: subscription.isActive,
+        },
+      };
+    }
+
+    if (subscription.status !== 'pending') {
+      throw new Error(`Cannot verify subscription with status ${subscription.status}`);
     }
 
     // Verify payment with PayOS
@@ -167,7 +201,80 @@ export class SubscriptionService implements ISubscriptionService {
       throw new Error('Payment not completed');
     }
 
+    if (String(paymentInfo.data?.orderCode) !== orderCode.toString()) {
+      throw new Error('Payment order code mismatch');
+    }
+
+    if (Number(paymentInfo.data?.amount) !== subscription.amount) {
+      throw new Error('Payment amount mismatch');
+    }
+
+    return this.activateSubscription(subscription, orderCode, paymentInfo.data?.reference);
+  }
+
+  async activateVerifiedSubscription(
+    orderCode: number,
+    paymentData: {
+      orderCode: string | number;
+      amount: string | number;
+      reference?: string;
+      status?: string;
+      code?: string;
+    },
+  ): Promise<SubscriptionActivation> {
+    await connectDB();
+
+    const subscription = await this.subscriptionRepository.findByOrderId(orderCode.toString());
+    if (!subscription) {
+      throw new Error('Subscription not found');
+    }
+
+    if (subscription.status === 'completed') {
+      return {
+        success: true,
+        subscription: {
+          type: subscription.type,
+          startDate: subscription.startDate || subscription.createdAt,
+          endDate: subscription.endDate,
+          isActive: subscription.isActive,
+        },
+      };
+    }
+
+    if (subscription.status !== 'pending') {
+      throw new Error(`Cannot activate subscription with status ${subscription.status}`);
+    }
+
+    if (String(paymentData.orderCode) !== orderCode.toString()) {
+      throw new Error('Payment order code mismatch');
+    }
+
+    if (Number(paymentData.amount) !== subscription.amount) {
+      throw new Error('Payment amount mismatch');
+    }
+
+    if (paymentData.status && paymentData.status !== 'PAID') {
+      throw new Error('Payment not completed');
+    }
+
+    if (paymentData.code && paymentData.code !== '00') {
+      throw new Error('Payment not successful');
+    }
+
+    return this.activateSubscription(subscription, orderCode, paymentData.reference);
+  }
+
+  private async activateSubscription(
+    subscription: any,
+    orderCode: number,
+    transactionReference?: string,
+  ): Promise<SubscriptionActivation> {
     // Calculate subscription dates using new duration system
+    const plan = await Plan.findById(subscription.type);
+    if (!plan) {
+      throw new Error('Plan not found');
+    }
+
     const startDate = new Date();
     let endDate: Date | undefined;
 
@@ -193,7 +300,7 @@ export class SubscriptionService implements ISubscriptionService {
     // Update subscription status
     await this.subscriptionRepository.updateByOrderId(orderCode.toString(), {
       status: 'completed',
-      payosTransactionId: paymentInfo.data?.reference,
+      payosTransactionId: transactionReference,
       startDate,
       endDate,
       isActive: true,
@@ -207,7 +314,7 @@ export class SubscriptionService implements ISubscriptionService {
         endDate,
         isActive: true,
         payosOrderId: orderCode.toString(),
-        payosTransactionId: paymentInfo.data?.reference,
+        payosTransactionId: transactionReference,
       },
     });
 
@@ -257,8 +364,9 @@ export class SubscriptionService implements ISubscriptionService {
     return { success: true };
   }
 
-  async checkAndUpdateExpiredSubscriptions(): Promise<void> {
+  async checkAndUpdateExpiredSubscriptions(): Promise<number> {
     const expiredSubscriptions = await this.subscriptionRepository.findExpiredSubscriptions();
+    const updatedUserIds = new Set<string>();
 
     for (const subscription of expiredSubscriptions) {
       // Update subscription to inactive
@@ -271,7 +379,19 @@ export class SubscriptionService implements ISubscriptionService {
       await this.userRepository.updateById(subscription.user.toString(), {
         'subscription.isActive': false,
       });
+      updatedUserIds.add(subscription.user.toString());
     }
+
+    const expiredUsers = await this.userRepository.findExpiredSubscriptionUsers();
+    for (const user of expiredUsers) {
+      await this.markUserSubscriptionExpired(
+        (user as any)._id.toString(),
+        (user as any).subscription,
+      );
+      updatedUserIds.add((user as any)._id.toString());
+    }
+
+    return updatedUserIds.size;
   }
 
   async getSubscriptionPlans(): Promise<SubscriptionPlan[]> {
@@ -301,23 +421,76 @@ export class SubscriptionService implements ISubscriptionService {
     update: Partial<any>,
   ): Promise<{ success: boolean; data?: any; error?: string }> {
     try {
-      const updated = await this.subscriptionRepository.updateById(id, update);
+      const allowedStatuses = ['pending', 'completed', 'failed', 'cancelled', 'expired'];
+      const sanitizedUpdate: Partial<any> = {};
+
+      if (update.status !== undefined) {
+        const normalizedStatus = update.status === 'active' ? 'completed' : update.status;
+        if (!allowedStatuses.includes(normalizedStatus)) {
+          return { success: false, error: 'Invalid subscription status' };
+        }
+        sanitizedUpdate.status = normalizedStatus;
+        sanitizedUpdate.isActive = normalizedStatus === 'completed';
+      }
+
+      if (update.isActive !== undefined) {
+        sanitizedUpdate.isActive = Boolean(update.isActive);
+      }
+
+      if (Object.keys(sanitizedUpdate).length === 0) {
+        return { success: false, error: 'No valid subscription fields provided' };
+      }
+
+      const updated = await this.subscriptionRepository.updateById(id, sanitizedUpdate);
       if (!updated) {
         return { success: false, error: 'Subscription not found' };
       }
       // Nếu có userId, cập nhật luôn user.subscription
-      if (update.isActive !== undefined || update.status) {
+      if (sanitizedUpdate.isActive !== undefined || sanitizedUpdate.status) {
         const sub = await this.subscriptionRepository.findById(id);
         if (sub && sub.user) {
           await this.userRepository.updateById(sub.user.toString(), {
-            'subscription.isActive': update.isActive,
-            'subscription.status': update.status,
+            ...(sanitizedUpdate.isActive !== undefined && {
+              'subscription.isActive': sanitizedUpdate.isActive,
+            }),
           });
         }
       }
       return { success: true, data: updated };
     } catch (error) {
       return { success: false, error: (error as any)?.message || 'Failed to update subscription' };
+    }
+  }
+
+  private async generateUniqueOrderCode(): Promise<number> {
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const orderCode = Date.now() * 1000 + crypto.randomInt(0, 1000);
+      const existing = await this.subscriptionRepository.findByOrderId(orderCode.toString());
+      if (!existing) return orderCode;
+    }
+
+    throw new Error('Failed to generate unique payment order code');
+  }
+
+  private isExpired(subscription: { endDate?: Date | string | null }): boolean {
+    if (!subscription.endDate) return false;
+    const endDate = new Date(subscription.endDate);
+    return Number.isFinite(endDate.getTime()) && endDate.getTime() <= Date.now();
+  }
+
+  private async markUserSubscriptionExpired(
+    userId: string,
+    subscription?: { payosOrderId?: string; endDate?: Date | string | null },
+  ) {
+    await this.userRepository.updateById(userId, {
+      'subscription.isActive': false,
+    });
+
+    if (subscription?.payosOrderId) {
+      await this.subscriptionRepository.updateByOrderId(subscription.payosOrderId, {
+        isActive: false,
+        status: 'expired',
+      });
     }
   }
 }

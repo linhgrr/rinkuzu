@@ -1,23 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import { ServiceFactory } from '@/lib/serviceFactory';
 
 export async function POST(request: NextRequest) {
   try {
-    // Basic authentication check (you may want to implement proper admin auth)
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+    const session = await getServerSession(authOptions);
+    const cronSecret = process.env.SUBSCRIPTION_CRON_SECRET;
+    const bearerToken = request.headers.get('authorization')?.replace(/^Bearer\s+/i, '');
+    const hasValidCronToken = Boolean(cronSecret && bearerToken === cronSecret);
+
+    if (!hasValidCronToken && (!session?.user || (session.user as any).role !== 'admin')) {
+      return NextResponse.json(
+        { success: false, message: 'Admin access required' },
+        { status: 403 },
+      );
     }
 
     // Get subscription service
     const subscriptionService = ServiceFactory.createSubscriptionService();
 
     // Check and update expired subscriptions
-    await subscriptionService.checkAndUpdateExpiredSubscriptions();
+    const updatedCount = await subscriptionService.checkAndUpdateExpiredSubscriptions();
 
     return NextResponse.json({
       success: true,
       message: 'Expired subscriptions checked and updated successfully',
+      data: { updatedCount },
     });
   } catch (error) {
     console.error('Error checking expired subscriptions:', error);

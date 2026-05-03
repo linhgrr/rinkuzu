@@ -1,4 +1,3 @@
-import dynamic from 'next/dynamic';
 import { getServerSession } from 'next-auth';
 import { NextIntlClientProvider } from 'next-intl';
 import Providers from '@/app/providers';
@@ -7,15 +6,8 @@ import { APP_MESSAGE_NAMESPACES } from '@/i18n/namespaces';
 import BottomNav from '@/components/BottomNav';
 import { GlobalFooter } from '@/components/GlobalFooter';
 import { MainLayoutWrapper } from '@/components/MainLayoutWrapper';
+import { ClientOnlyAppAddons } from '@/components/ClientOnlyAppAddons';
 import { authOptions } from '@/lib/auth';
-
-const PWAInstaller = dynamic(() => import('@/components/PWAInstaller'), {
-  ssr: false,
-});
-
-const FloatingDraftProgress = dynamic(() => import('@/components/FloatingDraftProgressIsland'), {
-  ssr: false,
-});
 
 export default async function AppLayout({
   children,
@@ -38,8 +30,7 @@ export default async function AppLayout({
           <GlobalFooter />
         </MainLayoutWrapper>
         <BottomNav />
-        <FloatingDraftProgress />
-        <PWAInstaller />
+        <ClientOnlyAppAddons />
       </Providers>
     </NextIntlClientProvider>
   );

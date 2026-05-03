@@ -113,6 +113,13 @@ const nextConfig = {
   reactStrictMode: true,
   output: 'standalone',
   poweredByHeader: false,
+  turbopack: {
+    root: __dirname,
+  },
+  serverExternalPackages: ['pdf-lib'],
+  outputFileTracingIncludes: {
+    '/*': ['./messages/**/*'],
+  },
   async redirects() {
     return [
       {
@@ -186,17 +193,18 @@ const nextConfig = {
       },
     ];
   },
-  // Server Actions are enabled by default in Next.js 14
+  // Server Actions are enabled by default.
   experimental: {
-    serverComponentsExternalPackages: ['pdf-lib'],
     optimizePackageImports: ['react-icons', 'react-markdown', 'lucide-react'],
-    outputFileTracingIncludes: {
-      '/*': ['./messages/**/*'],
-    },
   },
   images: {
-    domains: ['localhost'],
     remotePatterns: [
+      {
+        protocol: 'http',
+        hostname: 'localhost',
+        port: '',
+        pathname: '/**',
+      },
       {
         protocol: 'https',
         hostname: 'i.ibb.co',
@@ -236,9 +244,6 @@ const nextConfig = {
     MONGO_URL: process.env.MONGO_URL,
     NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
     JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN,
-  },
-  eslint: {
-    ignoreDuringBuilds: false,
   },
   compiler: {
     // Drop verbose logs from production bundles while keeping actionable errors/warnings.

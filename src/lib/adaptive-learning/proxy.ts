@@ -7,6 +7,12 @@ import {
   resolveAdaptiveApiUrl,
   resolveAdaptiveProxyTimeoutMs,
 } from './config';
+import {
+  buildLlmRateLimitHeaders,
+  buildLlmRateLimitResponse,
+  checkLlmRateLimit,
+  classifyAdaptiveLlmAction,
+} from '@/lib/llm/rate-limit';
 
 type ProxyOptions = {
   method?: string;
@@ -101,6 +107,13 @@ export async function proxyAdaptiveRequest(
     const headers: Record<string, string> = buildAdaptiveServiceHeaders(userId);
 
     const method = options?.method || req.method;
+
+    const llmAction = classifyAdaptiveLlmAction(targetPath, method);
+    const llmRateLimit = llmAction ? await checkLlmRateLimit(userId, llmAction) : null;
+    if (llmRateLimit && !llmRateLimit.allowed) {
+      return buildLlmRateLimitResponse(llmRateLimit);
+    }
+
     const contentType =
       options?.contentType === undefined ? req.headers.get('content-type') : options.contentType;
     if (contentType) {
@@ -155,9 +168,15 @@ export async function proxyAdaptiveRequest(
       );
     }
 
+    const responseHeaders = copyUpstreamResponseHeaders(response);
+    if (llmRateLimit) {
+      const rateLimitHeaders = buildLlmRateLimitHeaders(llmRateLimit);
+      Object.entries(rateLimitHeaders).forEach(([key, value]) => responseHeaders.set(key, value));
+    }
+
     return new NextResponse(response.body, {
       status: response.status,
-      headers: copyUpstreamResponseHeaders(response),
+      headers: responseHeaders,
     });
   } catch (error) {
     if (error instanceof Error && error.name === 'AbortError') {

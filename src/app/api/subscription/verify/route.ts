@@ -1,8 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import { ServiceFactory } from '@/lib/serviceFactory';
 
 export async function POST(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+    }
+
     const { orderCode } = await request.json();
 
     if (!orderCode) {
@@ -14,7 +21,14 @@ export async function POST(request: NextRequest) {
 
     const subscriptionService = ServiceFactory.createSubscriptionService();
     const numericOrderCode = typeof orderCode === 'string' ? Number(orderCode) : orderCode;
-    const result = await subscriptionService.verifyAndActivateSubscription(numericOrderCode);
+    if (!Number.isSafeInteger(numericOrderCode) || numericOrderCode <= 0) {
+      return NextResponse.json({ success: false, message: 'Invalid order code' }, { status: 400 });
+    }
+
+    const result = await subscriptionService.verifyAndActivateSubscription(
+      numericOrderCode,
+      (session.user as any).id,
+    );
 
     return NextResponse.json({ success: true, data: result });
   } catch (error: any) {

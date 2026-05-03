@@ -68,13 +68,14 @@ export interface IQuizService {
     userEmail?: string,
   ): Promise<ServiceResult<any>>;
 
-  getQuizDiscussions(slug: string): Promise<ServiceResult<any[]>>;
+  getQuizDiscussions(slug: string, session?: any): Promise<ServiceResult<any[]>>;
 
   addDiscussionComment(
     slug: string,
     questionIndex: number,
     content: string,
     userEmail: string,
+    session?: any,
   ): Promise<ServiceResult<any>>;
 
   getQuizForFlashcards(slug: string, session: any): Promise<ServiceResult<any>>;

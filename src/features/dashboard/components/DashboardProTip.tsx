@@ -1,4 +1,4 @@
-import { Link } from '@/i18n/routing';
+import { Link } from '@/i18n/navigation';
 import { Card } from '@/components/ui/Card';
 import { HiOutlineLightBulb } from '@/components/icons';
 

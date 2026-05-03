@@ -24,6 +24,7 @@ interface SubscriptionStatus {
     startDate?: string;
     endDate?: string;
     isActive: boolean;
+    status?: string;
   };
   isPremium: boolean;
 }
@@ -120,6 +121,9 @@ export default function SubscriptionPage() {
     return new Date(dateString).toLocaleDateString('vi-VN');
   };
 
+  const currentSubscription = subscriptionStatus?.subscription;
+  const hasActivePremium = Boolean(subscriptionStatus?.isPremium);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
@@ -137,24 +141,35 @@ export default function SubscriptionPage() {
       <div className="py-6 md:py-8">
         <div className="max-w-6xl mx-auto px-4">
           {/* Current Subscription Status */}
-          {subscriptionStatus?.subscription && (
-            <Card className="mb-6 md:mb-8 p-4 md:p-6 bg-green-50 border-green-200">
-              <h2 className="text-lg md:text-xl font-semibold text-green-800 mb-3 md:mb-4">
-                {t('currentPlan')} <HiOutlineShieldCheck className="inline-block ml-1" />
+          {currentSubscription && (
+            <Card
+              className={`mb-6 md:mb-8 p-4 md:p-6 ${
+                hasActivePremium ? 'bg-green-50 border-green-200' : 'bg-amber-50 border-amber-200'
+              }`}
+            >
+              <h2
+                className={`text-lg md:text-xl font-semibold mb-3 md:mb-4 ${
+                  hasActivePremium ? 'text-green-800' : 'text-amber-800'
+                }`}
+              >
+                {hasActivePremium ? t('currentPlan') : t('expiredStatus')}{' '}
+                <HiOutlineShieldCheck className="inline-block ml-1" />
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
                 <div>
                   <p className="text-sm text-brand-trust">{t('title')}</p>
-                  <p className="font-medium text-green-800">
-                    {subscriptionStatus.subscription.type}
+                  <p
+                    className={`font-medium ${hasActivePremium ? 'text-green-800' : 'text-amber-800'}`}
+                  >
+                    {currentSubscription.type}
                   </p>
                 </div>
                 <div>
                   <p className="text-sm text-brand-trust">{t('expiresOn')}</p>
-                  <p className="font-medium text-green-800">
-                    {subscriptionStatus.subscription.endDate
-                      ? formatDate(subscriptionStatus.subscription.endDate)
-                      : '-'}
+                  <p
+                    className={`font-medium ${hasActivePremium ? 'text-green-800' : 'text-amber-800'}`}
+                  >
+                    {currentSubscription.endDate ? formatDate(currentSubscription.endDate) : '-'}
                   </p>
                 </div>
               </div>

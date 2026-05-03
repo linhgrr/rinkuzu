@@ -8,6 +8,6 @@ export function isCacheSafeAdaptivePath(targetPath: string): boolean {
 }
 
 export function invalidateAdaptiveServiceCache(): void {
-  revalidateTag(ADAPTIVE_CACHE_TAGS.health);
-  revalidateTag(ADAPTIVE_CACHE_TAGS.pipelineStatus);
+  revalidateTag(ADAPTIVE_CACHE_TAGS.health, 'max');
+  revalidateTag(ADAPTIVE_CACHE_TAGS.pipelineStatus, 'max');
 }

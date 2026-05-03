@@ -54,3 +54,5 @@ export async function PATCH(request: NextRequest, { params }: AsyncRouteParams<{
     return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
   }
 }
+
+export const PUT = PATCH;

@@ -46,7 +46,7 @@ export class SubscriptionRepository implements ISubscriptionRepository {
     const now = new Date();
     return (await Subscription.find({
       isActive: true,
-      endDate: { $exists: true, $lt: now },
+      endDate: { $exists: true, $lte: now },
       status: 'completed',
     }).lean()) as unknown as ISubscription[];
   }

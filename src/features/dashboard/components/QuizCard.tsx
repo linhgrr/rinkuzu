@@ -1,4 +1,4 @@
-import { Link } from '@/i18n/routing';
+import { Link } from '@/i18n/navigation';
 import { Card, CardHeader, CardContent, CardTitle, Badge } from '@/components/ui/Card';
 import { ROUTES } from '@/shared/constants';
 import { formatDisplayDate } from '@/shared/utils/constants';

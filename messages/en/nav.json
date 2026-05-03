@@ -27,6 +27,8 @@
   "userManagement": "User Management",
   "subscriptions": "Subscriptions",
   "pricingPlans": "Pricing Plans",
+  "settings": "Settings",
   "statistics": "Statistics",
-  "quizReports": "Quiz Reports"
+  "quizReports": "Quiz Reports",
+  "closeMenu": "Close menu"
 }

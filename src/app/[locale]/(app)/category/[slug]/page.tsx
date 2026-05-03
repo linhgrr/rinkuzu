@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/Button';
+import { UserProfileLink } from '@/components/user/UserProfileLink';
 import { Input } from '@/components/ui/Input';
 import {
   Card,
@@ -35,7 +36,11 @@ interface Quiz {
     color: string;
   };
   author: {
+    _id: string;
     email: string;
+    name?: string;
+    displayName?: string;
+    avatar?: string;
   };
   createdAt: string;
   questionCount: number;
@@ -360,7 +365,15 @@ export default function CategoryPage({ params }: CategoryPageProps) {
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center justify-between text-sm text-neutral-500 mb-4">
-                    <span>By {(quiz.author?.email || 'unknown').split('@')[0]}</span>
+                    <div className="flex min-w-0 items-center gap-2">
+                      <span className="shrink-0">By</span>
+                      <UserProfileLink
+                        user={quiz.author}
+                        avatarSize={28}
+                        className="max-w-[65%] text-sm font-medium text-neutral-600"
+                        nameClassName="text-sm"
+                      />
+                    </div>
                     <span>{formatDate(quiz.createdAt)}</span>
                   </div>
 

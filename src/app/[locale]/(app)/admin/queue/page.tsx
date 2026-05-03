@@ -30,6 +30,7 @@ import {
 } from '@/components/icons';
 import Navigation from '@/components/Navigation';
 import Sidebar from '@/components/Sidebar';
+import { UserProfileLink } from '@/components/user/UserProfileLink';
 
 interface PaginationData {
   page: number;
@@ -371,9 +372,15 @@ export default function AdminQueuePage() {
                             {quiz.description || tProfile('noDescription')}
                           </CardDescription>
                           <div className="mt-3 flex items-center space-x-4 text-sm text-neutral-600">
-                            <span>
-                              {t('by')} {(quiz.author as any)?.email || 'Unknown'}
-                            </span>
+                            <div className="flex min-w-0 items-center gap-2">
+                              <span className="shrink-0">{t('by')}</span>
+                              <UserProfileLink
+                                user={quiz.author as any}
+                                avatarSize={24}
+                                className="max-w-[220px] text-sm text-neutral-600"
+                                nameClassName="text-sm"
+                              />
+                            </div>
                             <span>•</span>
                             <span
                               className="inline-flex min-h-[28px] items-center rounded-full px-3 text-[13px] font-medium"

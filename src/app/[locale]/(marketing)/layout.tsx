@@ -1,12 +1,8 @@
-import dynamic from 'next/dynamic';
 import { NextIntlClientProvider } from 'next-intl';
 import { getScopedMessages } from '@/i18n/messages';
 import { MARKETING_MESSAGE_NAMESPACES } from '@/i18n/namespaces';
 import { GlobalFooter } from '@/components/GlobalFooter';
-
-const PWAInstaller = dynamic(() => import('@/components/PWAInstaller'), {
-  ssr: false,
-});
+import { ClientOnlyMarketingAddons } from '@/components/ClientOnlyMarketingAddons';
 
 export default async function MarketingLayout({
   children,
@@ -22,7 +18,7 @@ export default async function MarketingLayout({
     <NextIntlClientProvider messages={messages}>
       {children}
       <GlobalFooter />
-      <PWAInstaller />
+      <ClientOnlyMarketingAddons />
     </NextIntlClientProvider>
   );
 }

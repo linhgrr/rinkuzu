@@ -13,7 +13,7 @@ export function DraftSyncProvider({ children }: { children: React.ReactNode }) {
   const { getActiveDrafts, cleanupExpiredDrafts, syncWithServer } = useDraftStore();
   const { resumeProcessing } = usePdfProcessor();
   const hasInitialized = useRef(false);
-  const syncIntervalRef = useRef<NodeJS.Timeout>();
+  const syncIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const processingDraftsRef = useRef<Set<string>>(new Set());
 
   // Initial sync on mount

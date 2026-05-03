@@ -46,6 +46,16 @@ export class PayOSService implements IPayOSService {
     return this.generateSignature(rawSignature);
   }
 
+  private redactRequestBody(body?: any): any {
+    if (!body) return undefined;
+    return {
+      ...body,
+      signature: body.signature ? '***' : undefined,
+      buyerEmail: body.buyerEmail ? '***' : undefined,
+      buyerName: body.buyerName ? '***' : undefined,
+    };
+  }
+
   private async makeRequest<T>(
     endpoint: string,
     method: 'GET' | 'POST' = 'POST',
@@ -73,7 +83,7 @@ export class PayOSService implements IPayOSService {
         url,
         method,
         headers: { 'x-client-id': this.clientId, 'x-api-key': '***' },
-        body: body ? JSON.stringify(body) : undefined,
+        body: this.redactRequestBody(body),
       });
 
       const response = await fetch(url, options);
@@ -82,7 +92,6 @@ export class PayOSService implements IPayOSService {
       console.warn('PayOS API Response:', {
         status: response.status,
         statusText: response.statusText,
-        body: responseText,
       });
 
       let data;
@@ -142,7 +151,7 @@ export class PayOSService implements IPayOSService {
       signature,
     };
 
-    console.warn('PayOS createPayment request body:', requestBody);
+    console.warn('PayOS createPayment request body:', this.redactRequestBody(requestBody));
 
     return this.makeRequest<PayOSPaymentResponse>('/v2/payment-requests', 'POST', requestBody);
   }

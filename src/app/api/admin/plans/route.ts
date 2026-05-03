@@ -39,10 +39,42 @@ export async function PATCH(request: NextRequest) {
 
     await connectDB();
     const update: any = {};
-    if (name !== undefined) update.name = name;
-    if (price !== undefined) update.price = price;
-    if (duration !== undefined) update.duration = duration;
-    if (features !== undefined) update.features = features;
+    if (name !== undefined) {
+      if (typeof name !== 'string' || name.trim() === '') {
+        return NextResponse.json(
+          { success: false, error: 'Plan name is required' },
+          { status: 400 },
+        );
+      }
+      update.name = name.trim();
+    }
+    if (price !== undefined) {
+      if (typeof price !== 'number' || !Number.isFinite(price) || price <= 0) {
+        return NextResponse.json(
+          { success: false, error: 'Plan price must be greater than 0' },
+          { status: 400 },
+        );
+      }
+      update.price = price;
+    }
+    if (duration !== undefined) {
+      if (typeof duration !== 'string' || !DurationUtils.isValidISO8601Duration(duration)) {
+        return NextResponse.json(
+          { success: false, error: 'Invalid duration format' },
+          { status: 400 },
+        );
+      }
+      update.duration = duration;
+    }
+    if (features !== undefined) {
+      if (!Array.isArray(features) || features.some((f) => typeof f !== 'string')) {
+        return NextResponse.json(
+          { success: false, error: 'Invalid plan features' },
+          { status: 400 },
+        );
+      }
+      update.features = features.map((f: string) => f.trim()).filter(Boolean);
+    }
     if (isActive !== undefined) update.isActive = isActive;
 
     const updated = await Plan.findByIdAndUpdate(id, update, { new: true, upsert: false }).lean();

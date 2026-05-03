@@ -8,9 +8,10 @@ import { AsyncRouteParams } from '@/types/next-route';
 export async function GET(request: NextRequest, { params }: AsyncRouteParams<{ slug: string }>) {
   try {
     const { slug } = await params;
+    const session = await getServerSession(authOptions);
     const quizService = serviceFactory.getQuizService();
 
-    const result = await quizService.getQuizDiscussions(slug);
+    const result = await quizService.getQuizDiscussions(slug, session);
 
     if (!result.success) {
       return NextResponse.json(
@@ -60,6 +61,7 @@ export async function POST(request: NextRequest, { params }: AsyncRouteParams<{ 
       questionIndex,
       content.trim(),
       session.user.email,
+      session,
     );
 
     if (!result.success) {

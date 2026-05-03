@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     // Verify plan exists in database
     await connectDB();
     const plan = await Plan.findById(planId);
-    if (!plan) {
+    if (!plan || !plan.isActive) {
       return NextResponse.json({ success: false, message: 'Invalid plan ID' }, { status: 400 });
     }
 

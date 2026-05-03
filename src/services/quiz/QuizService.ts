@@ -41,6 +41,36 @@ export class QuizService implements IQuizService {
     return undefined;
   }
 
+  private async checkPrivateQuizAccess(
+    quiz: IQuiz,
+    userId?: string,
+    userRole?: string,
+  ): Promise<ServiceResult<never> | null> {
+    if (!quiz.isPrivate) return null;
+
+    if (!userId) {
+      return {
+        success: false,
+        error: 'Authentication required to access private quiz',
+        statusCode: 401,
+      };
+    }
+
+    const authorId = this.getAuthorId(quiz.author);
+    if (userRole === 'admin' || authorId === userId) return null;
+
+    const subscriptionService = ServiceFactory.createSubscriptionService();
+    const isPremium = await subscriptionService.isUserPremium(userId);
+
+    if (isPremium) return null;
+
+    return {
+      success: false,
+      error: 'Premium subscription required to access private quizzes',
+      statusCode: 403,
+    };
+  }
+
   async getQuizzes(options: QuizListOptions): Promise<{
     quizzes: IQuiz[];
     pagination: {
@@ -589,6 +619,13 @@ export class QuizService implements IQuizService {
         };
       }
 
+      const privateAccessError = await this.checkPrivateQuizAccess(
+        quiz,
+        userIdFromSession,
+        userRole,
+      );
+      if (privateAccessError) return privateAccessError;
+
       // Get or create user
       let userId: string;
       if (session?.user?.email) {
@@ -866,7 +903,7 @@ export class QuizService implements IQuizService {
     }
   }
 
-  async getQuizDiscussions(slug: string): Promise<ServiceResult<any[]>> {
+  async getQuizDiscussions(slug: string, session?: any): Promise<ServiceResult<any[]>> {
     try {
       const quiz = await this.quizRepository.findBySlug(slug);
 
@@ -878,8 +915,24 @@ export class QuizService implements IQuizService {
         };
       }
 
+      const authorId = this.getAuthorId(quiz.author);
+      const userId = session?.user?.id;
+      const userRole = session?.user?.role;
+      const canAccessUnpublished = userRole === 'admin' || (!!userId && authorId === userId);
+
+      if (quiz.status !== 'published' && !canAccessUnpublished) {
+        return {
+          success: false,
+          error: 'Quiz not found',
+          statusCode: 404,
+        };
+      }
+
+      const privateAccessError = await this.checkPrivateQuizAccess(quiz, userId, userRole);
+      if (privateAccessError) return privateAccessError;
+
       const existingDiscussions = await this.discussionRepository.findByQuiz(quiz._id.toString());
-      const discussionOwnerId = this.getAuthorId(quiz.author);
+      const discussionOwnerId = authorId;
 
       if (!discussionOwnerId) {
         return {
@@ -928,6 +981,7 @@ export class QuizService implements IQuizService {
     questionIndex: number,
     content: string,
     userEmail: string,
+    session?: any,
   ): Promise<ServiceResult<any>> {
     try {
       const quiz = await this.quizRepository.findBySlug(slug);
@@ -940,6 +994,22 @@ export class QuizService implements IQuizService {
         };
       }
 
+      const authorId = this.getAuthorId(quiz.author);
+      const userId = session?.user?.id;
+      const userRole = session?.user?.role;
+      const canAccessUnpublished = userRole === 'admin' || (!!userId && authorId === userId);
+
+      if (quiz.status !== 'published' && !canAccessUnpublished) {
+        return {
+          success: false,
+          error: 'Quiz not found',
+          statusCode: 404,
+        };
+      }
+
+      const privateAccessError = await this.checkPrivateQuizAccess(quiz, userId, userRole);
+      if (privateAccessError) return privateAccessError;
+
       if (questionIndex < 0 || questionIndex >= quiz.questions.length) {
         return {
           success: false,
@@ -948,7 +1018,7 @@ export class QuizService implements IQuizService {
         };
       }
 
-      const discussionOwnerId = this.getAuthorId(quiz.author);
+      const discussionOwnerId = authorId;
       if (!discussionOwnerId) {
         return {
           success: false,

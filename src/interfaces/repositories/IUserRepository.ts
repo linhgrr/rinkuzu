@@ -19,5 +19,6 @@ export interface IUserRepository {
   }>;
   count(filter?: any): Promise<number>;
   countByRole(): Promise<{ _id: string; count: number }[]>;
+  findExpiredSubscriptionUsers(): Promise<IUser[]>;
   updateById(id: string, updateData: any): Promise<IUser | null>;
 }

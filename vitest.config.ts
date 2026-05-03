@@ -1,6 +1,12 @@
 import { defineConfig } from 'vitest/config';
+import path from 'node:path';
 
 export default defineConfig({
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, 'src'),
+    },
+  },
   test: {
     setupFiles: ['tests/setup/vitest.setup.ts'],
     coverage: {
@@ -15,5 +21,6 @@ export default defineConfig({
     },
     environment: 'node',
     include: ['src/**/*.{test,spec}.ts', 'tests/**/*.{test,spec}.ts'],
+    exclude: ['node_modules/**', '.next/**', 'tests/e2e/**'],
   },
 });

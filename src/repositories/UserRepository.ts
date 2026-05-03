@@ -104,6 +104,16 @@ export class UserRepository implements IUserRepository {
     ]);
   }
 
+  async findExpiredSubscriptionUsers(): Promise<IUser[]> {
+    await connectDB();
+    return (await User.find({
+      'subscription.isActive': true,
+      'subscription.endDate': { $exists: true, $lte: new Date() },
+    })
+      .select('_id subscription')
+      .lean()) as unknown as IUser[];
+  }
+
   async updateById(id: string, updateData: any): Promise<IUser | null> {
     await connectDB();
     return (await User.findByIdAndUpdate(id, updateData, {

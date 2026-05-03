@@ -26,7 +26,9 @@ export async function GET(request: NextRequest) {
     // Filter and paginate results based on search params
     let filteredResults = result;
     if (searchParamsObj.status) {
-      filteredResults = result.filter((sub: any) => sub.status === searchParamsObj.status);
+      const normalizedStatus =
+        searchParamsObj.status === 'active' ? 'completed' : searchParamsObj.status;
+      filteredResults = result.filter((sub: any) => sub.status === normalizedStatus);
     }
     if (searchParamsObj.search) {
       const searchLower = searchParamsObj.search.toLowerCase();

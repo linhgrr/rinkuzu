@@ -107,10 +107,30 @@ GET /api/subscription/status
 ### Environment Variables
 
 ```env
-PAYOS_CLIENT_ID=ef17ed2e-db7e-4c03-9ce4-c8a5842ce4b8
-PAYOS_API_KEY=***REMOVED***
-PAYOS_CHECKSUM_KEY=***REMOVED***
+PAYOS_CLIENT_ID=your-payos-client-id
+PAYOS_API_KEY=your-payos-api-key
+PAYOS_CHECKSUM_KEY=your-payos-checksum-key
+SUBSCRIPTION_CRON_SECRET=generate-a-long-random-secret
 ```
+
+### Production PayOS Webhook
+
+Configure this URL in the PayOS merchant dashboard:
+
+```text
+https://<your-production-domain>/api/subscription/webhook
+```
+
+The webhook endpoint verifies the PayOS HMAC signature with `PAYOS_CHECKSUM_KEY` before activating a subscription. The browser success page still verifies payment for UX, but production activation should rely on the signed webhook as the source of truth.
+
+### Key Rotation Checklist
+
+1. Generate new PayOS credentials in the PayOS merchant dashboard.
+2. Update production secrets: `PAYOS_CLIENT_ID`, `PAYOS_API_KEY`, `PAYOS_CHECKSUM_KEY`.
+3. Update `SUBSCRIPTION_CRON_SECRET` with a long random value.
+4. Redeploy the app and run the admin-only PayOS test endpoint.
+5. Revoke the old PayOS credentials after the new deployment is healthy.
+6. Never commit real PayOS values to docs, examples, or source control.
 
 ### PayOSService
 
@@ -144,9 +164,10 @@ PAYOS_CHECKSUM_KEY=***REMOVED***
 1. **User chọn gói** → `/subscription`
 2. **Tạo yêu cầu thanh toán** → PayOS API
 3. **Chuyển hướng đến PayOS** → Thanh toán
-4. **Callback thành công** → `/payment/success`
-5. **Xác minh thanh toán** → Kích hoạt subscription
-6. **Cập nhật user** → Truy cập premium features
+4. **PayOS webhook** → `/api/subscription/webhook`
+5. **Callback thành công** → `/payment/success`
+6. **Xác minh thanh toán** → Kích hoạt subscription idempotently
+7. **Cập nhật user** → Truy cập premium features
 
 ## Testing
 

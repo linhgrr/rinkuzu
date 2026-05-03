@@ -1,6 +1,6 @@
 import { getTranslations } from 'next-intl/server';
 import Navigation from '@/components/Navigation';
-import { Link } from '@/i18n/routing';
+import { Link } from '@/i18n/navigation';
 import { ROUTES } from '@/shared/constants';
 import { Card } from '@/components/ui/Card';
 import { getScopedMessages } from '@/i18n/messages';
@@ -114,6 +114,7 @@ export async function DashboardPageShell({
     const activity = weeklyActivity[key];
     const questions = activity?.questionsReviewed || 0;
     return {
+      key,
       label: ['M', 'T', 'W', 'T', 'F', 'S', 'S'][index],
       isToday: date.toDateString() === today.toDateString(),
       levelClass:
@@ -352,7 +353,7 @@ export async function DashboardPageShell({
                   </div>
                   <div className="flex justify-between gap-1.5">
                     {weekCells.map((cell) => (
-                      <div key={cell.label} className="flex flex-col items-center gap-1.5">
+                      <div key={cell.key} className="flex flex-col items-center gap-1.5">
                         <span className="text-[9px] font-bold text-neutral-400">{cell.label}</span>
                         <div
                           className={`flex h-9 w-9 items-center justify-center rounded-lg ${cell.isToday ? 'border-2 border-dashed border-orange-400 bg-orange-100' : cell.levelClass}`}

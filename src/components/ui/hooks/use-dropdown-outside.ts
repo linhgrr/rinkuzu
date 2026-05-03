@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import type React from 'react';
 
 export function useDropdownOutside<T extends HTMLElement>(
-  ref: React.RefObject<T>,
+  ref: React.RefObject<T | null>,
   enabled: boolean,
   onOutside: () => void,
 ) {

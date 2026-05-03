@@ -30,7 +30,7 @@ interface UserMenuProps {
   isOpen: boolean;
   onToggle: () => void;
   onClose: () => void;
-  menuRef: React.RefObject<HTMLDivElement>;
+  menuRef: React.RefObject<HTMLDivElement | null>;
 }
 
 const UserMenu = memo(function UserMenu({

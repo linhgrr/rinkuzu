@@ -7,12 +7,14 @@ import DraftQuiz from '@/models/DraftQuiz';
 import { extractQuizFromS3Key } from '@/lib/quiz/extractApi';
 import { randomUUID } from 'crypto';
 import { AsyncRouteParams } from '@/types/next-route';
+import { buildLlmRateLimitResponse, checkLlmRateLimit } from '@/lib/llm/rate-limit';
 
 export async function POST(request: NextRequest, { params }: AsyncRouteParams<{ id: string }>) {
   try {
     const { id } = await params;
     const session = await getServerSession(authOptions);
-    if (!(session?.user as any)?.id) {
+    const userId = (session?.user as any)?.id;
+    if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -26,6 +28,11 @@ export async function POST(request: NextRequest, { params }: AsyncRouteParams<{ 
 
     if (typeof chunkIndex !== 'number' || chunkIndex < 0) {
       return NextResponse.json({ error: 'Valid chunkIndex is required' }, { status: 400 });
+    }
+
+    const rateLimit = await checkLlmRateLimit(userId, 'quiz_extract');
+    if (!rateLimit.allowed) {
+      return buildLlmRateLimitResponse(rateLimit);
     }
 
     const LOCK_TIMEOUT_MS = 600000; // 10 minutes - extraction may take multiple minutes
@@ -43,7 +50,7 @@ export async function POST(request: NextRequest, { params }: AsyncRouteParams<{ 
     const lockResult = await DraftQuiz.findOneAndUpdate(
       {
         _id: id,
-        userId: (session!.user as any).id,
+        userId,
         'chunks.chunkDetails': {
           $elemMatch: {
             index: chunkIndex,
@@ -69,7 +76,7 @@ export async function POST(request: NextRequest, { params }: AsyncRouteParams<{ 
       // Could not acquire lock - check why
       const draft = await DraftQuiz.findOne({
         _id: id,
-        userId: (session!.user as any).id,
+        userId,
       });
 
       if (!draft) {
@@ -134,7 +141,7 @@ export async function POST(request: NextRequest, { params }: AsyncRouteParams<{ 
 
       const { questions: extractedQuestions } = await extractQuizFromS3Key({
         s3Key: draft.pdfData.pdfKey,
-        userId: session!.user?.id || 'unknown',
+        userId,
         userPrompt: draft.prompt,
         timeoutMs: 280000,
       });

@@ -28,11 +28,21 @@ export interface ISubscriptionService {
   getUserSubscription(userId: string): Promise<any>;
   isUserPremium(userId: string): Promise<boolean>;
   createPaymentRequest(userId: string, planId: string): Promise<PaymentRequest>;
-  verifyAndActivateSubscription(orderCode: number): Promise<SubscriptionActivation>;
+  verifyAndActivateSubscription(orderCode: number, userId: string): Promise<SubscriptionActivation>;
+  activateVerifiedSubscription(
+    orderCode: number,
+    paymentData: {
+      orderCode: string | number;
+      amount: string | number;
+      reference?: string;
+      status?: string;
+      code?: string;
+    },
+  ): Promise<SubscriptionActivation>;
   getSubscriptionHistory(userId: string): Promise<any[]>;
   cancelSubscription(userId: string): Promise<{ success: boolean }>;
   getSubscriptionPlans(): Promise<SubscriptionPlan[]>;
-  checkAndUpdateExpiredSubscriptions(): Promise<void>;
+  checkAndUpdateExpiredSubscriptions(): Promise<number>;
   updateSubscriptionById(
     id: string,
     update: Partial<any>,

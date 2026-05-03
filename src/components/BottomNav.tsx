@@ -142,7 +142,9 @@ export default function BottomNav() {
             <span
               className={`text-xs font-bold ${isActive ? 'text-brand-trust' : 'text-neutral-500'}`}
             >
-              {session.user?.email?.[0].toUpperCase()}
+              {((session.user as any)?.displayName || session.user?.email || 'U')
+                .charAt(0)
+                .toUpperCase()}
             </span>
           </div>
         ),

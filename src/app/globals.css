@@ -542,7 +542,7 @@
   }
 
   .nav-blur {
-    height: 72px;
+    min-height: 72px;
     border-bottom: 1px solid var(--border-subtle);
     background: rgba(255, 255, 255, 0.82);
     backdrop-filter: blur(12px);

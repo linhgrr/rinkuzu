@@ -4,6 +4,9 @@ export interface IUser extends Document {
   email: string;
   password?: string;
   name?: string;
+  displayName?: string;
+  bio?: string;
+  avatar?: string;
   role: 'admin' | 'user';
   isAnonymous?: boolean;
   subscription?: {
@@ -46,6 +49,17 @@ const UserSchema = new Schema<IUser>({
   name: {
     type: String,
     required: false,
+  },
+  displayName: {
+    type: String,
+    maxlength: [50, 'Display name must be at most 50 characters'],
+  },
+  bio: {
+    type: String,
+    maxlength: [160, 'Bio must be at most 160 characters'],
+  },
+  avatar: {
+    type: String,
   },
   role: {
     type: String,

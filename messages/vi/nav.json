@@ -27,6 +27,8 @@
   "userManagement": "Quản lý người dùng",
   "subscriptions": "Gói đăng ký",
   "pricingPlans": "Bảng giá",
+  "settings": "Cài đặt",
   "statistics": "Thống kê",
-  "quizReports": "Báo cáo Quiz"
+  "quizReports": "Báo cáo Quiz",
+  "closeMenu": "Đóng menu"
 }

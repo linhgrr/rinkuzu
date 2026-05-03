@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
@@ -29,6 +30,8 @@ const AUTH_REQUIRED_PREFIXES = [
   '/category',
   '/subscription',
   '/history',
+  '/my-quizzes',
+  '/bookmarks',
   '/draft',
   '/edit',
   '/admin',
@@ -121,17 +124,27 @@ export default function BottomNav() {
     {
       href: '/profile',
       labelKey: 'profile',
-      icon: (isActive: boolean) => (
-        <div
-          className={`w-6 h-6 rounded-full flex items-center justify-center border-2 ${isActive ? 'border-brand-trust' : 'border-neutral-400'}`}
-        >
-          <span
-            className={`text-xs font-bold ${isActive ? 'text-brand-trust' : 'text-neutral-500'}`}
+      icon: (isActive: boolean) =>
+        (session.user as any)?.avatar ? (
+          <Image
+            src={(session.user as any).avatar}
+            alt=""
+            width={24}
+            height={24}
+            className={`w-6 h-6 rounded-full object-cover border-2 ${isActive ? 'border-brand-trust' : 'border-neutral-400'}`}
+            unoptimized
+          />
+        ) : (
+          <div
+            className={`w-6 h-6 rounded-full flex items-center justify-center border-2 ${isActive ? 'border-brand-trust' : 'border-neutral-400'}`}
           >
-            {session.user?.email?.[0].toUpperCase()}
-          </span>
-        </div>
-      ),
+            <span
+              className={`text-xs font-bold ${isActive ? 'text-brand-trust' : 'text-neutral-500'}`}
+            >
+              {session.user?.email?.[0].toUpperCase()}
+            </span>
+          </div>
+        ),
     },
   ];
 

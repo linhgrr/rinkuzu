@@ -310,7 +310,7 @@ export default function FlashcardPage() {
             </Card>
           )}
 
-          <div className="flex justify-center space-x-4">
+          <div className="flex flex-wrap justify-center gap-3">
             {getUnknownCount() > 0 ? (
               <Button
                 onClick={continuePractice}
@@ -340,18 +340,20 @@ export default function FlashcardPage() {
   return (
     <div className="min-h-screen bg-neutral-50 flex flex-col items-center relative">
       {/* Fixed top bar with counters and progress */}
-      <div className="fixed top-20 left-0 right-0 z-50 flex items-center justify-between px-4">
-        <div className="bg-red-100 text-red-700 px-4 py-2 rounded-full shadow-lg text-sm font-medium">
+      <div className="fixed top-20 left-0 right-0 z-50 flex items-center justify-between px-2 sm:px-4">
+        <div className="bg-red-100 text-red-700 px-2.5 py-1.5 sm:px-4 sm:py-2 rounded-full shadow-lg text-xs sm:text-sm font-medium whitespace-nowrap">
           {t('unknown')}: {getUnknownCount()}
         </div>
 
         {/* Progress Bar */}
-        <div className="flex-1 mx-8">
+        <div className="flex-1 mx-2 sm:mx-8">
           <div className="flex justify-between items-center mb-2">
-            <span className="text-sm font-medium text-neutral-700">
-              {t('progress')}: {progress.currentIndex + 1} {t('of')} {currentQuestions.length}
+            <span className="text-xs sm:text-sm font-medium text-neutral-700">
+              {progress.currentIndex + 1}/{currentQuestions.length}
             </span>
-            <span className="text-sm font-medium text-neutral-700">{getProgressPercentage()}%</span>
+            <span className="text-xs sm:text-sm font-medium text-neutral-700">
+              {getProgressPercentage()}%
+            </span>
           </div>
           <div className="w-full bg-neutral-200 rounded-full h-2">
             <div
@@ -361,7 +363,7 @@ export default function FlashcardPage() {
           </div>
         </div>
 
-        <div className="bg-green-100 text-green-700 px-4 py-2 rounded-full shadow-lg text-sm font-medium">
+        <div className="bg-green-100 text-green-700 px-2.5 py-1.5 sm:px-4 sm:py-2 rounded-full shadow-lg text-xs sm:text-sm font-medium whitespace-nowrap">
           {t('known')}: {getKnownCount()}
         </div>
       </div>
@@ -383,12 +385,16 @@ export default function FlashcardPage() {
                 </div>
               </Link>
             </div>
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2 sm:space-x-4">
               <Link href={`/quiz/${quiz.slug}`}>
-                <Button variant="outline">{t('takeQuiz')}</Button>
+                <Button variant="outline" size="sm">
+                  {t('takeQuiz')}
+                </Button>
               </Link>
-              <Link href="/quizzes">
-                <Button variant="outline">{tCommon('browseQuizzes')}</Button>
+              <Link href="/quizzes" className="hidden sm:block">
+                <Button variant="outline" size="sm">
+                  {tCommon('browseQuizzes')}
+                </Button>
               </Link>
             </div>
           </div>

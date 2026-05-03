@@ -58,7 +58,9 @@ export function FAQ() {
                 onClick={() => setOpenId(openId === faq.id ? null : faq.id)}
                 aria-expanded={openId === faq.id}
               >
-                <span className="text-white font-medium pr-4">{faq.q}</span>
+                <span className="text-white font-medium pr-4 whitespace-normal text-left">
+                  {faq.q}
+                </span>
                 <span className="text-green-400 shrink-0">
                   {openId === faq.id ? (
                     <HiOutlineMinus className="w-5 h-5" aria-hidden="true" />

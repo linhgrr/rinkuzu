@@ -31,6 +31,7 @@ import { IQuiz } from '@/types';
 import { streamQuizAI } from '@/lib/quiz/ask-ai';
 import { fetchApiSuccess } from '@/lib/api/client';
 import { QuizPageSchema } from '@/components/seo/QuizPageSchema';
+import { getUserDisplayName } from '@/components/user/UserAvatar';
 
 interface QuizPlayerPageProps {
   params: { slug: string };
@@ -669,7 +670,7 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
   const authorName =
     typeof quiz.author === 'string'
       ? quiz.author
-      : (quiz.author as any)?.name || 'RinKuzu Community';
+      : getUserDisplayName(quiz.author as any) || 'RinKuzu Community';
   const categoryName =
     typeof quiz.category === 'string' ? quiz.category : (quiz.category as any)?.name || undefined;
 

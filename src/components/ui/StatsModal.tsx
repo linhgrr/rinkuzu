@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { UserProfileLink } from '@/components/user/UserProfileLink';
 import Pagination from './Pagination';
 
 interface StatsModalProps {
@@ -279,10 +280,21 @@ export default function StatsModal({
           {activityType === 'quiz' && (
             <div>
               <h4 className="font-medium text-neutral-900">{activityData.title}</h4>
-              <p className="text-sm text-neutral-600">
-                {t('by')} {activityData.author?.email} • {activityData.category?.name} •{' '}
-                {activityData.questionCount} {t('questionsCount')}
-              </p>
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-neutral-600">
+                <span className="shrink-0">{t('by')}</span>
+                <UserProfileLink
+                  user={activityData.author || {}}
+                  avatarSize={20}
+                  className="max-w-[220px] text-sm text-neutral-600"
+                  nameClassName="text-sm"
+                />
+                <span>•</span>
+                <span>{activityData.category?.name}</span>
+                <span>•</span>
+                <span>
+                  {activityData.questionCount} {t('questionsCount')}
+                </span>
+              </div>
             </div>
           )}
           {activityType === 'attempt' && (

@@ -1,3 +1,5 @@
+import { IUserPreview } from '@/types/index';
+
 export interface IDiscussion {
   _id?: string;
   quiz: string;
@@ -5,7 +7,7 @@ export interface IDiscussion {
   questionIndex: number;
   content: string;
   comments?: Array<{
-    author: string;
+    author: string | IUserPreview;
     authorEmail: string;
     content: string;
     isEdited: boolean;

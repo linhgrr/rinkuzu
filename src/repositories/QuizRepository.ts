@@ -7,7 +7,7 @@ export class QuizRepository implements IQuizRepository {
   async findById(id: string): Promise<IQuiz | null> {
     await connectDB();
     return (await Quiz.findById(id)
-      .populate('author', 'email')
+      .populate('author', 'email name displayName avatar')
       .populate('category', 'name color')
       .lean()) as unknown as IQuiz | null;
   }
@@ -15,7 +15,7 @@ export class QuizRepository implements IQuizRepository {
   async findBySlug(slug: string): Promise<IQuiz | null> {
     await connectDB();
     return (await Quiz.findOne({ slug })
-      .populate('author', 'email')
+      .populate('author', 'email name displayName avatar')
       .populate('category', 'name color')
       .lean()) as unknown as IQuiz | null;
   }
@@ -23,7 +23,7 @@ export class QuizRepository implements IQuizRepository {
   async findBySlugAndStatus(slug: string, status: string): Promise<IQuiz | null> {
     await connectDB();
     return (await Quiz.findOne({ slug, status })
-      .populate('author', 'email')
+      .populate('author', 'email name displayName avatar')
       .lean()) as unknown as IQuiz | null;
   }
 
@@ -36,7 +36,7 @@ export class QuizRepository implements IQuizRepository {
   async update(id: string, quizData: Partial<IQuiz>): Promise<IQuiz | null> {
     await connectDB();
     return (await Quiz.findByIdAndUpdate(id, quizData, { new: true })
-      .populate('author', 'email')
+      .populate('author', 'email name displayName avatar')
       .populate('category', 'name color')
       .lean()) as unknown as IQuiz | null;
   }
@@ -133,6 +133,9 @@ export class QuizRepository implements IQuizRepository {
               author: {
                 _id: { $ifNull: ['$authorDoc._id', '$author'] },
                 email: '$authorDoc.email',
+                name: '$authorDoc.name',
+                displayName: '$authorDoc.displayName',
+                avatar: '$authorDoc.avatar',
               },
               createdAt: 1,
               updatedAt: 1,
@@ -163,7 +166,7 @@ export class QuizRepository implements IQuizRepository {
     let query = Quiz.find(filter);
 
     if (options.populate?.includes('author')) {
-      query = query.populate('author', 'email');
+      query = query.populate('author', 'email name displayName avatar');
     }
     if (options.populate?.includes('category')) {
       query = query.populate('category', 'name color');
@@ -191,7 +194,7 @@ export class QuizRepository implements IQuizRepository {
       slug,
       status: 'published',
     })
-      .populate('author', 'email')
+      .populate('author', 'email name displayName avatar')
       .lean()) as unknown as IQuiz | null;
   }
 

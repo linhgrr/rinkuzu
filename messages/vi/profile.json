@@ -104,5 +104,12 @@
   "errorUploadingAvatar": "Không thể tải ảnh lên",
   "errorRemovingAvatar": "Không thể xóa ảnh đại diện",
   "avatarInvalidType": "Chỉ chấp nhận ảnh JPG, PNG hoặc WebP",
-  "avatarTooLarge": "Kích thước ảnh phải nhỏ hơn 2MB"
+  "avatarTooLarge": "Kích thước ảnh phải nhỏ hơn 2MB",
+  "publicProfile": "Hồ sơ công khai",
+  "publicProfileDescription": "Thông tin cơ bản thành viên này chia sẻ công khai",
+  "publicProfileQuizDescription": "Các quiz đã xuất bản của người tạo này",
+  "publicProfileNoBio": "Thành viên này chưa thêm phần giới thiệu.",
+  "publishedQuizzes": "Quiz đã xuất bản",
+  "publishedQuizzesCount": "{count} quiz",
+  "noPublicQuizzes": "Chưa có quiz công khai nào"
 }

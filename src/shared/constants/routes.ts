@@ -24,6 +24,10 @@ export const ROUTES = {
     VIEW: (slug: string) => `/category/${slug}`,
   },
 
+  USER: {
+    PROFILE: (userId: string) => `/users/${userId}`,
+  },
+
   EDIT: {
     QUIZ: (id: string) => `/edit/${id}`,
   },

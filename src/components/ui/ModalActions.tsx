@@ -24,13 +24,13 @@ export function ModalActions({
   confirmVariant = 'primary',
 }: ModalActionsProps) {
   return (
-    <div className="flex justify-end space-x-3">
+    <div className="mt-6 flex flex-col-reverse gap-3 border-t border-neutral-100 pt-5 sm:flex-row sm:justify-end">
       <Button
         type="button"
         variant="outline"
         onClick={onCancel}
         disabled={isLoading}
-        className="min-h-[40px] px-4"
+        className="min-h-11 w-full justify-center px-5 sm:w-auto"
       >
         {cancelText}
       </Button>
@@ -41,8 +41,8 @@ export function ModalActions({
         disabled={isDisabled}
         className={
           confirmVariant === 'destructive'
-            ? 'min-h-[40px] bg-red-600 px-4 hover:bg-red-700'
-            : 'min-h-[40px] px-4'
+            ? 'min-h-11 w-full justify-center bg-red-600 px-5 hover:bg-red-700 sm:w-auto'
+            : 'min-h-11 w-full justify-center px-5 sm:w-auto'
         }
       >
         {confirmText}

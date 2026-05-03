@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback, memo } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { isAdaptiveExerciseModePath } from '@/lib/routing/pathname';
@@ -17,6 +18,7 @@ import {
   HiOutlineLogout,
   HiOutlineMenu,
   HiOutlineX,
+  HiOutlineCog,
 } from '@/components/icons';
 import { NavLogo } from './NavLogo';
 import { NavLinks } from './NavLinks';
@@ -55,9 +57,20 @@ const UserMenu = memo(function UserMenu({
         className="flex items-center gap-2 rounded-full"
         aria-label="Toggle user menu"
       >
-        <div className="w-7 h-7 bg-brand-trust rounded-full flex items-center justify-center text-white text-sm font-medium">
-          {session.user?.email?.charAt(0).toUpperCase()}
-        </div>
+        {(session.user as any)?.avatar ? (
+          <Image
+            src={(session.user as any).avatar}
+            alt=""
+            width={28}
+            height={28}
+            className="w-7 h-7 rounded-full object-cover"
+            unoptimized
+          />
+        ) : (
+          <div className="w-7 h-7 bg-brand-trust rounded-full flex items-center justify-center text-white text-sm font-medium">
+            {session.user?.email?.charAt(0).toUpperCase()}
+          </div>
+        )}
       </Button>
 
       {isOpen && (
@@ -73,12 +86,23 @@ const UserMenu = memo(function UserMenu({
             {/* User Header */}
             <div className="px-5 py-4 border-b border-neutral-100">
               <div className="flex items-center gap-3">
-                <div className="w-11 h-11 bg-brand-trust rounded-full flex items-center justify-center text-white font-semibold text-lg">
-                  {session.user?.email?.charAt(0).toUpperCase()}
-                </div>
+                {(session.user as any)?.avatar ? (
+                  <Image
+                    src={(session.user as any).avatar}
+                    alt=""
+                    width={44}
+                    height={44}
+                    className="w-11 h-11 rounded-full object-cover"
+                    unoptimized
+                  />
+                ) : (
+                  <div className="w-11 h-11 bg-brand-trust rounded-full flex items-center justify-center text-white font-semibold text-lg">
+                    {session.user?.email?.charAt(0).toUpperCase()}
+                  </div>
+                )}
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-neutral-900 truncate">
-                    {session.user?.email?.split('@')[0]}
+                    {(session.user as any)?.displayName || session.user?.email?.split('@')[0]}
                   </p>
                   <p className="text-xs text-neutral-500 truncate">{session.user?.email}</p>
                 </div>
@@ -88,7 +112,16 @@ const UserMenu = memo(function UserMenu({
             {/* Menu Items */}
             <div className="py-2">
               <Link
-                href="/profile?tab=history"
+                href="/my-quizzes"
+                className="flex items-center gap-3 px-5 py-2.5 text-sm text-neutral-900 hover:bg-neutral-50 transition-colors cursor-pointer"
+                onClick={onClose}
+              >
+                <HiOutlineDocumentText className="w-5 h-5 text-neutral-500" />
+                {t('myQuizzes')}
+              </Link>
+
+              <Link
+                href="/history"
                 className="flex items-center gap-3 px-5 py-2.5 text-sm text-neutral-900 hover:bg-neutral-50 transition-colors cursor-pointer"
                 onClick={onClose}
               >
@@ -97,7 +130,7 @@ const UserMenu = memo(function UserMenu({
               </Link>
 
               <Link
-                href="/profile?tab=bookmarks"
+                href="/bookmarks"
                 className="flex items-center gap-3 px-5 py-2.5 text-sm text-neutral-900 hover:bg-neutral-50 transition-colors cursor-pointer"
                 onClick={onClose}
               >
@@ -112,6 +145,17 @@ const UserMenu = memo(function UserMenu({
               >
                 <HiOutlineSparkles className="w-5 h-5 text-neutral-500" />
                 {t('premium')}
+              </Link>
+
+              <div className="h-px bg-neutral-100 my-1" />
+
+              <Link
+                href="/profile"
+                className="flex items-center gap-3 px-5 py-2.5 text-sm text-neutral-900 hover:bg-neutral-50 transition-colors cursor-pointer"
+                onClick={onClose}
+              >
+                <HiOutlineCog className="w-5 h-5 text-neutral-500" />
+                {t('settings')}
               </Link>
 
               {(session.user as any)?.role === 'admin' && (
@@ -241,25 +285,32 @@ const MobileMenu = memo(function MobileMenu({
               {t('explore')}
             </Link>
             <Link
-              href="/profile?tab=quizzes"
+              href="/my-quizzes"
               className="block px-4 py-3 text-sm font-medium text-neutral-900 hover:bg-neutral-50 rounded-xl transition-colors"
               onClick={onClose}
             >
-              {t('profile')}
+              {t('myQuizzes')}
             </Link>
             <Link
-              href="/profile?tab=history"
+              href="/history"
               className="block px-4 py-3 text-sm font-medium text-neutral-900 hover:bg-neutral-50 rounded-xl transition-colors"
               onClick={onClose}
             >
               {t('history')}
             </Link>
             <Link
-              href="/profile?tab=bookmarks"
+              href="/bookmarks"
               className="block px-4 py-3 text-sm font-medium text-neutral-900 hover:bg-neutral-50 rounded-xl transition-colors"
               onClick={onClose}
             >
               {t('bookmarks')}
+            </Link>
+            <Link
+              href="/profile"
+              className="block px-4 py-3 text-sm font-medium text-neutral-900 hover:bg-neutral-50 rounded-xl transition-colors"
+              onClick={onClose}
+            >
+              {t('settings')}
             </Link>
 
             {(session.user as any)?.role === 'admin' && (

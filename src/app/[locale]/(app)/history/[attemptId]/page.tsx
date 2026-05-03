@@ -50,7 +50,7 @@ export default function AttemptDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const historyLink = '/profile?tab=history';
+  const historyLink = '/history';
 
   const fetchAttemptDetail = useCallback(async () => {
     setLoading(true);

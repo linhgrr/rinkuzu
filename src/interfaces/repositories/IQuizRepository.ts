@@ -1,9 +1,11 @@
+import { IUserPreview } from '@/types/index';
+
 export interface IQuiz {
   _id?: string;
   title: string;
   description?: string;
   slug: string;
-  author: string;
+  author: string | IUserPreview;
   category: string;
   questions: any[];
   status: 'pending' | 'published' | 'rejected';

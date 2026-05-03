@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/Button';
 import {
   HiOutlineSearch,
   HiOutlineCollection,
-  HiOutlineUser,
   HiOutlineUsers,
   HiOutlineTag,
   HiOutlineCreditCard,
@@ -20,6 +19,9 @@ import {
   HiChevronDoubleRight,
   HiOutlineCog,
   HiOutlineAcademicCap,
+  HiOutlineDocumentText,
+  HiOutlineClock,
+  HiOutlineBookmark,
 } from '@/components/icons';
 
 interface SidebarProps {
@@ -70,9 +72,19 @@ export default function Sidebar({ isOpen, onToggle, currentPath }: SidebarProps)
 
   const menuItems = [
     {
-      href: '/profile?tab=quizzes',
-      labelKey: 'profile',
-      icon: <HiOutlineUser className="w-full h-full" />,
+      href: '/my-quizzes',
+      labelKey: 'myQuizzes',
+      icon: <HiOutlineDocumentText className="w-full h-full" />,
+    },
+    {
+      href: '/history',
+      labelKey: 'history',
+      icon: <HiOutlineClock className="w-full h-full" />,
+    },
+    {
+      href: '/bookmarks',
+      labelKey: 'bookmarks',
+      icon: <HiOutlineBookmark className="w-full h-full" />,
     },
     {
       href: '/adaptive-learning',
@@ -83,6 +95,11 @@ export default function Sidebar({ isOpen, onToggle, currentPath }: SidebarProps)
       href: '/explore',
       labelKey: 'exploreQuizzes',
       icon: <HiOutlineSearch className="w-full h-full" />,
+    },
+    {
+      href: '/profile',
+      labelKey: 'settings',
+      icon: <HiOutlineCog className="w-full h-full" />,
     },
   ];
 
@@ -147,21 +164,15 @@ export default function Sidebar({ isOpen, onToggle, currentPath }: SidebarProps)
         <nav className="space-y-2">
           {/* Regular menu items */}
           {menuItems.map((item) => {
-            const isExactActive = currentPath === item.href;
-            const isPathActive = item.href.includes('?')
-              ? currentPath?.startsWith(item.href.split('?')[0])
-              : currentPath === item.href;
-
-            const isActive = isExactActive || (item.labelKey === 'profile' && isPathActive);
+            const isActive =
+              item.href === '/history'
+                ? currentPath?.startsWith('/history')
+                : currentPath === item.href;
 
             return (
               <Link
                 key={item.href}
-                href={
-                  item.labelKey === 'profile' && currentPath?.startsWith('/profile')
-                    ? currentPath
-                    : item.href
-                }
+                href={item.href}
                 className={`flex items-center px-3 py-2 text-sm rounded-lg transition-colors ${
                   !isOpen ? 'justify-center' : ''
                 } ${

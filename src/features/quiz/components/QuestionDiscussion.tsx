@@ -5,12 +5,16 @@ import { useSession } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
 import { Textarea } from '@/components/ui/Input';
+import { UserProfileLink } from '@/components/user/UserProfileLink';
 
 interface Comment {
   _id: string;
   author: {
     _id: string;
     email: string;
+    name?: string;
+    displayName?: string;
+    avatar?: string;
   };
   authorEmail: string;
   content: string;
@@ -260,14 +264,17 @@ export function QuestionDiscussion({
               className="bg-neutral-50 rounded-lg p-3 border border-neutral-100"
             >
               <div className="flex items-start space-x-2 mb-2">
-                <div className="w-5 h-5 bg-gradient-to-br from-green-400 to-brand-trust rounded-full flex items-center justify-center text-white text-xs font-medium flex-shrink-0">
-                  {comment.authorEmail.charAt(0).toUpperCase()}
-                </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-neutral-900 truncate">
-                      {comment.authorEmail.split('@')[0]}
-                    </span>
+                    <UserProfileLink
+                      user={{
+                        ...comment.author,
+                        email: comment.author?.email || comment.authorEmail,
+                      }}
+                      avatarSize={24}
+                      className="max-w-[65%] text-xs font-medium text-neutral-900"
+                      nameClassName="text-xs font-medium text-neutral-900"
+                    />
                     <span className="text-xs text-neutral-500 flex-shrink-0">
                       {formatDate(comment.createdAt)}
                     </span>

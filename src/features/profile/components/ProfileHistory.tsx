@@ -108,10 +108,7 @@ export default function ProfileHistory() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-neutral-900">{t('quizHistory')}</h2>
-        <p className="mt-1 text-neutral-600">{t('quizHistoryDescription')}</p>
-      </div>
+      <h2 className="text-2xl font-bold text-neutral-900">{t('quizHistory')}</h2>
 
       {error && (
         <div className="rounded-md bg-red-50 p-4">

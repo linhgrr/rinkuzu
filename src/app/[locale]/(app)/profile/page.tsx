@@ -34,7 +34,6 @@ function ProfileContent() {
             <h1 className="text-2xl md:text-3xl font-bold text-[var(--text-primary)]">
               {t('settingsTitle')}
             </h1>
-            <p className="text-sm text-neutral-500 mt-1">{t('settingsDesc')}</p>
           </div>
 
           <ProfileSettings />

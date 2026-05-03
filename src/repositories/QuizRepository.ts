@@ -286,7 +286,7 @@ export class QuizRepository implements IQuizRepository {
   async findRecentQuizzes(limit: number = 10): Promise<IQuiz[]> {
     await connectDB();
     return (await Quiz.find({ status: 'published' })
-      .populate('author', 'email')
+      .populate('author', 'email name displayName avatar')
       .populate('category', 'name color')
       .sort({ createdAt: -1 })
       .limit(limit)

@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { useState, useCallback, useRef, type TouchEvent } from 'react';
 import { useTranslations } from 'next-intl';
 import { HiOutlineChevronLeft, HiOutlineChevronRight, HiOutlineCheck } from '@/components/icons';
+import { ConfirmModal } from '@/components/ui/ConfirmModal';
 
 interface Question {
   _id: string;
@@ -106,6 +107,15 @@ export function MobileQuizPlayer({
   );
 
   const answeredCount = Object.keys(answers).length;
+  const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
+
+  const handleComplete = useCallback(() => {
+    if (answeredCount < questions.length) {
+      setShowSubmitConfirm(true);
+    } else {
+      onComplete(answers);
+    }
+  }, [answeredCount, questions.length, onComplete, answers]);
 
   return (
     <div className="fixed inset-0 bg-neutral-50 flex flex-col z-50">
@@ -245,7 +255,7 @@ export function MobileQuizPlayer({
 
         {/* Complete button */}
         <button
-          onClick={() => onComplete(answers)}
+          onClick={handleComplete}
           className={`
             w-full py-4 rounded-full font-semibold flex items-center justify-center gap-2
             transition-all duration-200 active:scale-[0.98]
@@ -259,6 +269,18 @@ export function MobileQuizPlayer({
           {t('complete')} ({answeredCount}/{questions.length} {t('answered')})
         </button>
       </div>
+
+      <ConfirmModal
+        isOpen={showSubmitConfirm}
+        title={`${t('submitQuiz')}?`}
+        message={t('unansweredWarning', { count: questions.length - answeredCount })}
+        confirmText={t('submit', { ns: 'common' })}
+        onCancel={() => setShowSubmitConfirm(false)}
+        onConfirm={() => {
+          setShowSubmitConfirm(false);
+          onComplete(answers);
+        }}
+      />
     </div>
   );
 }

@@ -413,6 +413,8 @@ export default function NavigationClient({
       handleScroll(); // Initial check
       return () => window.removeEventListener('scroll', handleScroll);
     }
+
+    return undefined;
   }, [transparent]);
 
   useEffect(() => {
@@ -426,6 +428,8 @@ export default function NavigationClient({
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
+
+    return undefined;
   }, [isUserMenuOpen]);
 
   const handleUserMenuToggle = useCallback(() => {

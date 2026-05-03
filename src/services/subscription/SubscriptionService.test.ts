@@ -24,20 +24,20 @@ function createService(overrides: Partial<any> = {}) {
     updateById: vi.fn(),
     updateByOrderId: vi.fn(),
     deleteByOrderId: vi.fn(),
-    ...overrides.subscriptionRepository,
+    ...overrides['subscriptionRepository'],
   };
   const userRepository = {
     findById: vi.fn(),
     findExpiredSubscriptionUsers: vi.fn().mockResolvedValue([]),
     updateById: vi.fn(),
-    ...overrides.userRepository,
+    ...overrides['userRepository'],
   };
   const payosService = {
     createPayment: vi.fn(),
     verifyPayment: vi.fn(),
     getPaymentInfo: vi.fn(),
     testConnection: vi.fn(),
-    ...overrides.payosService,
+    ...overrides['payosService'],
   };
 
   return {

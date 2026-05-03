@@ -33,6 +33,8 @@ export default function PWAInstaller() {
 
       return () => clearTimeout(timer);
     }
+
+    return undefined;
   }, []);
 
   useEffect(() => {

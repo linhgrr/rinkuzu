@@ -4,9 +4,9 @@ import { UserRepository } from '@/repositories/UserRepository';
 import { PayOSService } from '@/services/payment/PayOSService';
 import { SubscriptionService } from '@/services/subscription/SubscriptionService';
 
-const hasMongoUrl = Boolean(process.env.MONGO_URL);
+const hasMongoUrl = Boolean(process.env['MONGO_URL']);
 const isNextBuildProcess =
-  process.env.NEXT_PHASE === 'phase-production-build' ||
+  process.env['NEXT_PHASE'] === 'phase-production-build' ||
   process.argv.some((arg) => arg.includes('next') && arg.includes('build'));
 const shouldEnableScheduler = hasMongoUrl && !isNextBuildProcess;
 

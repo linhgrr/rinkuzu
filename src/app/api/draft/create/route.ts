@@ -12,7 +12,8 @@ const EXPIRY_HOURS = 48;
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!(session?.user as any)?.id) {
+    const userId = (session?.user as { id?: string } | undefined)?.id;
+    if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -35,7 +36,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const userId = (session!.user as any).id;
     let pdfKey = '';
     let pdfUrl = '';
     let fileSize = 0;
@@ -49,8 +49,8 @@ export async function POST(request: NextRequest) {
       }
 
       const endpoint =
-        process.env.S3_ENDPOINT || 'https://objectstorageapi.ap-southeast-1.clawcloudrun.com';
-      const bucket = process.env.S3_BUCKET_NAME || 'rinkuzu-pdfs';
+        process.env['S3_ENDPOINT'] || 'https://objectstorageapi.ap-southeast-1.clawcloudrun.com';
+      const bucket = process.env['S3_BUCKET_NAME'] || 'rinkuzu-pdfs';
       pdfUrl = `${endpoint}/${bucket}/${pdfKey}`;
 
       const parsedFileSize = Number(rawFileSize);

@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint . --max-warnings 0",
-    "typecheck": "next build > /dev/null && tsc --noEmit",
+    "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "vitest",
@@ -18,7 +18,7 @@
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:install": "playwright install --with-deps chromium",
     "test:run": "vitest run --coverage",
-    "precommit:full": "npm run check:node && npm run check:install && npm run format:check && npm run lint && npm run test:unit && npm run test:integration && npm run build",
+    "precommit:full": "npm run check:node && npm run check:install && npm run check:routes && npm run typecheck:strict && npm run format:check && npm run lint && npm run test:unit && npm run test:integration && npm run build",
     "lint-staged": "lint-staged",
     "prepare": "husky",
     "analyze-component": "node scripts/analyze-component.mjs",
@@ -29,7 +29,9 @@
     "validate:plans": "node src/scripts/seedPlansWithISO8601.js validate",
     "check:subscriptions": "node src/scripts/checkExpiredSubscriptions.js",
     "check:node": "node -e \"const major=Number(process.versions.node.split('.')[0]); if (major < 22) { console.error('Node.js >=22 is required. Current: '+process.version); process.exit(1); }\"",
-    "check:install": "npm ci --dry-run"
+    "check:install": "npm ci --dry-run",
+    "typecheck:strict": "tsc --noEmit --pretty false",
+    "check:routes": "node scripts/check-route-param-safety.mjs"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx,mjs,cjs}": [

@@ -71,6 +71,6 @@ const reportSchema = new mongoose.Schema<IReport>({
 reportSchema.index({ status: 1, createdAt: -1 });
 reportSchema.index({ quizId: 1 });
 
-const Report = mongoose.models.Report || mongoose.model<IReport>('Report', reportSchema);
+const Report = mongoose.models['Report'] || mongoose.model<IReport>('Report', reportSchema);
 
 export default Report;

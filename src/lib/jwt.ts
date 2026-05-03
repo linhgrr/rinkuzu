@@ -1,6 +1,6 @@
 import jwt, { SignOptions } from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+const JWT_SECRET = process.env['JWT_SECRET'] || 'your-secret-key-change-in-production';
 const JWT_EXPIRES_IN_SECONDS = 7 * 24 * 60 * 60; // 7 days in seconds
 
 export interface JWTPayload {

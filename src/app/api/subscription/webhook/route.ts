@@ -25,7 +25,7 @@ function isValidSignature(data: Record<string, unknown>, signature: string, chec
 
 export async function POST(request: NextRequest) {
   try {
-    const checksumKey = process.env.PAYOS_CHECKSUM_KEY;
+    const checksumKey = process.env['PAYOS_CHECKSUM_KEY'];
     if (!checksumKey) {
       return NextResponse.json(
         { success: false, message: 'Webhook is not configured' },
@@ -55,17 +55,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true, message: 'Webhook ignored' });
     }
 
-    const orderCode = Number(body.data.orderCode);
+    const orderCode = Number(body.data['orderCode']);
     if (!Number.isSafeInteger(orderCode) || orderCode <= 0) {
       return NextResponse.json({ success: false, message: 'Invalid order code' }, { status: 400 });
     }
 
     const subscriptionService = ServiceFactory.createSubscriptionService();
     await subscriptionService.activateVerifiedSubscription(orderCode, {
-      orderCode: body.data.orderCode as string | number,
-      amount: body.data.amount as string | number,
-      reference: body.data.reference as string | undefined,
-      code: body.data.code as string | undefined,
+      orderCode: body.data['orderCode'] as string | number,
+      amount: body.data['amount'] as string | number,
+      reference: body.data['reference'] as string | undefined,
+      code: body.data['code'] as string | undefined,
     });
 
     return NextResponse.json({ success: true });

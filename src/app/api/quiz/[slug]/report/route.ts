@@ -12,6 +12,10 @@ export async function POST(request: NextRequest, { params }: AsyncRouteParams<{ 
     if (!session?.user) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
+    const userEmail = session.user.email;
+    if (!userEmail) {
+      return NextResponse.json({ error: 'User email is required' }, { status: 400 });
+    }
 
     const { content } = await request.json();
 
@@ -31,8 +35,8 @@ export async function POST(request: NextRequest, { params }: AsyncRouteParams<{ 
     const result = await quizService.reportQuiz(
       slug,
       content.trim(),
-      session.user.email!,
-      session.user.name || session.user.email || 'Anonymous',
+      userEmail,
+      session.user.name || userEmail,
     );
 
     if (!result.success) {

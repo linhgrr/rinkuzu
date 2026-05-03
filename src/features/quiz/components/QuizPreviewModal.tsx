@@ -140,14 +140,17 @@ export function QuizPreviewModal({ isOpen, onClose, title, questions }: QuizPrev
                           {option}
                         </span>
                         {/* Display option image if exists */}
-                        {currentQuestion.optionImages?.[index] && (
-                          <div className="mt-2">
-                            <OptionImage
-                              src={currentQuestion.optionImages[index]!}
-                              alt={`Option ${String.fromCharCode(65 + index)} image`}
-                            />
-                          </div>
-                        )}
+                        {(() => {
+                          const optionImage = currentQuestion.optionImages?.[index];
+                          return optionImage ? (
+                            <div className="mt-2">
+                              <OptionImage
+                                src={optionImage}
+                                alt={`Option ${String.fromCharCode(65 + index)} image`}
+                              />
+                            </div>
+                          ) : null;
+                        })()}
                       </div>
                       {isCorrect && (
                         <span className="ml-auto text-green-600 text-sm font-medium">

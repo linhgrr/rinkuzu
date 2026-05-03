@@ -10,14 +10,15 @@ export const dynamic = 'force-dynamic';
 export async function GET(_request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!(session?.user as any)?.id) {
+    const userId = (session?.user as { id?: string } | undefined)?.id;
+    if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     await connectDB();
 
     const drafts = await DraftQuiz.find({
-      userId: (session!.user as any as any).id,
+      userId,
       status: { $ne: 'expired' },
     })
       .select('title status chunks.total chunks.processed questions createdAt expiresAt')

@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -18,6 +17,8 @@ import {
   HiOutlineX,
   HiOutlineXCircle,
 } from '@/components/icons';
+import { routePathSegment } from '@/lib/routing/routeParams';
+import { useRequiredRouteParam } from '@/lib/routing/useRequiredRouteParam';
 
 interface AttemptDetail {
   _id: string;
@@ -43,8 +44,8 @@ interface AttemptDetail {
 }
 
 export default function AttemptDetailPage() {
-  const params = useParams();
-  const attemptId = params.attemptId as string;
+  const attemptId = useRequiredRouteParam('attemptId');
+  const encodedAttemptId = routePathSegment(attemptId);
 
   const [attempt, setAttempt] = useState<AttemptDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -56,7 +57,7 @@ export default function AttemptDetailPage() {
     setLoading(true);
     setError('');
     try {
-      const response = await fetch(`/api/attempts/${attemptId}`);
+      const response = await fetch(`/api/attempts/${encodedAttemptId}`);
       const data = await response.json();
 
       if (data.success) {
@@ -69,7 +70,7 @@ export default function AttemptDetailPage() {
     } finally {
       setLoading(false);
     }
-  }, [attemptId]);
+  }, [encodedAttemptId]);
 
   useEffect(() => {
     if (attemptId) {
@@ -362,14 +363,17 @@ export default function AttemptDetailPage() {
                                     )}
                                   </div>
                                 </div>
-                                {question.optionImages?.[optionIndex] && (
-                                  <div className="mt-3">
-                                    <ImageDisplay
-                                      src={question.optionImages[optionIndex]!}
-                                      alt={`Option ${String.fromCharCode(65 + optionIndex)} image`}
-                                    />
-                                  </div>
-                                )}
+                                {(() => {
+                                  const optionImage = question.optionImages?.[optionIndex];
+                                  return optionImage ? (
+                                    <div className="mt-3">
+                                      <ImageDisplay
+                                        src={optionImage}
+                                        alt={`Option ${String.fromCharCode(65 + optionIndex)} image`}
+                                      />
+                                    </div>
+                                  ) : null;
+                                })()}
                               </div>
                             );
                           })}

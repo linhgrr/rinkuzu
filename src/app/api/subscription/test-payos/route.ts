@@ -25,9 +25,9 @@ export async function GET() {
       success: true,
       message: 'PayOS service is working correctly',
       environment: {
-        clientId: !!process.env.PAYOS_CLIENT_ID,
-        apiKey: !!process.env.PAYOS_API_KEY,
-        checksumKey: !!process.env.PAYOS_CHECKSUM_KEY,
+        clientId: !!process.env['PAYOS_CLIENT_ID'],
+        apiKey: !!process.env['PAYOS_API_KEY'],
+        checksumKey: !!process.env['PAYOS_CHECKSUM_KEY'],
         baseUrl: 'https://api-merchant.payos.vn',
       },
     });

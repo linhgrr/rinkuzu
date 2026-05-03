@@ -6,7 +6,7 @@ import { ServiceFactory } from '@/lib/serviceFactory';
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    const cronSecret = process.env.SUBSCRIPTION_CRON_SECRET;
+    const cronSecret = process.env['SUBSCRIPTION_CRON_SECRET'];
     const bearerToken = request.headers.get('authorization')?.replace(/^Bearer\s+/i, '');
     const hasValidCronToken = Boolean(cronSecret && bearerToken === cronSecret);
 

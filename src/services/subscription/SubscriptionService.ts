@@ -90,7 +90,7 @@ export class SubscriptionService implements ISubscriptionService {
     });
 
     // Create payment request with PayOS
-    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3001';
+    const baseUrl = process.env['NEXTAUTH_URL'] || 'http://localhost:3001';
     const returnUrl = `${baseUrl}/payment/success?orderCode=${orderCode}`;
     const cancelUrl = `${baseUrl}/payment/cancel?orderCode=${orderCode}`;
 
@@ -424,17 +424,17 @@ export class SubscriptionService implements ISubscriptionService {
       const allowedStatuses = ['pending', 'completed', 'failed', 'cancelled', 'expired'];
       const sanitizedUpdate: Partial<any> = {};
 
-      if (update.status !== undefined) {
-        const normalizedStatus = update.status === 'active' ? 'completed' : update.status;
+      if (update['status'] !== undefined) {
+        const normalizedStatus = update['status'] === 'active' ? 'completed' : update['status'];
         if (!allowedStatuses.includes(normalizedStatus)) {
           return { success: false, error: 'Invalid subscription status' };
         }
-        sanitizedUpdate.status = normalizedStatus;
-        sanitizedUpdate.isActive = normalizedStatus === 'completed';
+        sanitizedUpdate['status'] = normalizedStatus;
+        sanitizedUpdate['isActive'] = normalizedStatus === 'completed';
       }
 
-      if (update.isActive !== undefined) {
-        sanitizedUpdate.isActive = Boolean(update.isActive);
+      if (update['isActive'] !== undefined) {
+        sanitizedUpdate['isActive'] = Boolean(update['isActive']);
       }
 
       if (Object.keys(sanitizedUpdate).length === 0) {
@@ -446,12 +446,12 @@ export class SubscriptionService implements ISubscriptionService {
         return { success: false, error: 'Subscription not found' };
       }
       // Nếu có userId, cập nhật luôn user.subscription
-      if (sanitizedUpdate.isActive !== undefined || sanitizedUpdate.status) {
+      if (sanitizedUpdate['isActive'] !== undefined || sanitizedUpdate['status']) {
         const sub = await this.subscriptionRepository.findById(id);
         if (sub && sub.user) {
           await this.userRepository.updateById(sub.user.toString(), {
-            ...(sanitizedUpdate.isActive !== undefined && {
-              'subscription.isActive': sanitizedUpdate.isActive,
+            ...(sanitizedUpdate['isActive'] !== undefined && {
+              'subscription.isActive': sanitizedUpdate['isActive'],
             }),
           });
         }

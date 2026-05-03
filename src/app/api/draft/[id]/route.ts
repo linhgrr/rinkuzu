@@ -11,7 +11,8 @@ export async function GET(request: NextRequest, { params }: AsyncRouteParams<{ i
   try {
     const { id } = await params;
     const session = await getServerSession(authOptions);
-    if (!(session?.user as any)?.id) {
+    const userId = (session?.user as { id?: string } | undefined)?.id;
+    if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -19,7 +20,7 @@ export async function GET(request: NextRequest, { params }: AsyncRouteParams<{ i
 
     const draft = (await DraftQuiz.findOne({
       _id: id,
-      userId: (session!.user as any as any).id,
+      userId,
     }).lean()) as any;
 
     if (!draft) {
@@ -47,7 +48,8 @@ export async function DELETE(request: NextRequest, { params }: AsyncRouteParams<
   try {
     const { id } = await params;
     const session = await getServerSession(authOptions);
-    if (!(session?.user as any)?.id) {
+    const userId = (session?.user as { id?: string } | undefined)?.id;
+    if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -56,7 +58,7 @@ export async function DELETE(request: NextRequest, { params }: AsyncRouteParams<
     // Find draft first to get pdfKey
     const draft = await DraftQuiz.findOne({
       _id: id,
-      userId: (session!.user as any).id,
+      userId,
     });
 
     if (!draft) {

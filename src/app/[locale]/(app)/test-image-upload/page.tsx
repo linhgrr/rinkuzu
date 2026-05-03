@@ -201,7 +201,7 @@ export default function TestImageUploadPage() {
               <CardContent>
                 <div className="text-sm text-neutral-600 space-y-2">
                   <div>
-                    API Key: {process.env.NODE_ENV === 'development' ? 'db3e6e11...' : 'Hidden'}
+                    API Key: {process.env['NODE_ENV'] === 'development' ? 'db3e6e11...' : 'Hidden'}
                   </div>
                   <div>Endpoint: https://api.imgbb.com/1/upload</div>
                   <div>Timeout: 30 seconds</div>

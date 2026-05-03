@@ -22,7 +22,13 @@ export async function GET(request: NextRequest, { params }: AsyncRouteParams<{ i
     const userService = serviceFactory.getUserService();
 
     // Use session email if available, otherwise use userEmail from params
-    const email = session?.user?.email || userEmail!;
+    const email = session?.user?.email ?? userEmail;
+    if (!email) {
+      return NextResponse.json(
+        { success: false, error: 'Authentication required or userEmail parameter' },
+        { status: 401 },
+      );
+    }
     const result = await userService.getAttemptDetails(id, email);
 
     if (!result.success) {

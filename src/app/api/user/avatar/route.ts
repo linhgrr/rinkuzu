@@ -97,7 +97,7 @@ export async function PUT(request: NextRequest) {
     );
 
     const endpoint =
-      process.env.S3_ENDPOINT || 'https://objectstorageapi.ap-southeast-1.clawcloudrun.com';
+      process.env['S3_ENDPOINT'] || 'https://objectstorageapi.ap-southeast-1.clawcloudrun.com';
     const avatarUrl = `${endpoint}/${BUCKET_NAME}/${key}`;
 
     await User.updateOne({ email: session.user.email }, { avatar: avatarUrl });

@@ -10,7 +10,10 @@ import {
 export function useKnowledgeGraph(sessionId: string | undefined) {
   return useSWR(
     sessionId ? `/api/adaptive-learning/session/${sessionId}/graph` : null,
-    () => getKnowledgeGraph(sessionId!),
+    () => {
+      if (!sessionId) throw new Error('sessionId is required');
+      return getKnowledgeGraph(sessionId);
+    },
     {
       revalidateOnFocus: false,
       // SWR caches based on the key
@@ -21,7 +24,10 @@ export function useKnowledgeGraph(sessionId: string | undefined) {
 export function useMasteryMatrix(sessionId: string | undefined) {
   return useSWR(
     sessionId ? `/api/adaptive-learning/session/${sessionId}/mastery-matrix` : null,
-    () => getMasteryMatrix(sessionId!),
+    () => {
+      if (!sessionId) throw new Error('sessionId is required');
+      return getMasteryMatrix(sessionId);
+    },
     {
       revalidateOnFocus: false,
     },
@@ -33,7 +39,10 @@ export function useConceptDetail(sessionId: string | undefined, conceptId: strin
     sessionId && conceptId
       ? `/api/adaptive-learning/session/${sessionId}/concept/${conceptId}`
       : null,
-    () => getConceptDetail(sessionId!, conceptId!),
+    () => {
+      if (!sessionId || !conceptId) throw new Error('sessionId and conceptId are required');
+      return getConceptDetail(sessionId, conceptId);
+    },
     {
       revalidateOnFocus: false,
       dedupingInterval: 300000, // cache for 5 minutes

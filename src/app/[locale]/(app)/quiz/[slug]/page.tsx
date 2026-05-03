@@ -26,12 +26,10 @@ import { useQuizSubmission } from '@/features/quiz/hooks/useQuizSubmission';
 import { useQuizViewport } from '@/features/quiz/hooks/useQuizViewport';
 import { IQuiz } from '@/types';
 import { fetchApiSuccess } from '@/lib/api/client';
+import { routePathSegment } from '@/lib/routing/routeParams';
+import { useRequiredRouteParam } from '@/lib/routing/useRequiredRouteParam';
 import { QuizPageSchema } from '@/components/seo/QuizPageSchema';
 import { getUserDisplayName } from '@/components/user/UserAvatar';
-
-interface QuizPlayerPageProps {
-  params: { slug: string };
-}
 
 type ShuffledQuizQuestion = IQuiz['questions'][number] & {
   optionIndexMap: number[];
@@ -219,17 +217,19 @@ function mapAnswersToOriginalOrder(
   return originalOrderAnswers;
 }
 
-const DEBUG_QUIZ_FLOW = process.env.NODE_ENV !== 'production' && false;
+const DEBUG_QUIZ_FLOW = process.env['NODE_ENV'] !== 'production' && false;
 const debugLog = (...args: unknown[]) => {
   if (DEBUG_QUIZ_FLOW) {
     console.warn(...args);
   }
 };
 
-export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
+export default function QuizPlayerPage() {
   const t = useTranslations('quiz');
   const { data: session } = useSession();
   const router = useRouter();
+  const slug = useRequiredRouteParam('slug');
+  const encodedSlug = routePathSegment(slug);
   const [quiz, setQuiz] = useState<QuizPlayerQuiz | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -272,7 +272,7 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
 
   const fetchQuiz = useCallback(async () => {
     try {
-      const data = await fetchApiSuccess<IQuiz>(`/api/quiz/${params.slug}/play`);
+      const data = await fetchApiSuccess<IQuiz>(`/api/quiz/${encodedSlug}/play`);
       const { quiz: nextQuiz, initialAnswers } = createQuizPlayerData(data.data, debugLog);
       setQuiz(nextQuiz);
       setUserAnswers(initialAnswers);
@@ -285,7 +285,7 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
     } finally {
       setLoading(false);
     }
-  }, [params.slug]);
+  }, [encodedSlug]);
 
   useEffect(() => {
     fetchQuiz();
@@ -332,7 +332,7 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
   };
 
   const nextQuestion = () => {
-    if (currentQuestionIndex < quiz!.questions.length - 1) {
+    if (quiz && currentQuestionIndex < quiz.questions.length - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
     }
   };
@@ -352,13 +352,13 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
     completeSubmit,
     submitQuiz,
   } = useQuizSubmission<QuizPlayerQuiz>({
-    slug: params.slug,
+    slug,
     quiz,
     userAnswers,
     userEmail,
     sessionEmail: session?.user?.email || undefined,
     onSubmitSuccess: (attemptId, score) => {
-      router.push(`/quiz/${params.slug}/result?attemptId=${attemptId}&score=${score}`);
+      router.push(`/quiz/${encodedSlug}/result?attemptId=${attemptId}&score=${score}`);
     },
     onSubmitError: (message) => setError(message),
     mapAnswersToOriginalOrder: (currentQuiz, answersToSubmit) =>
@@ -540,7 +540,7 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
                         {t('backHome')}
                       </Button>
                     </Link>
-                    <Link href={`/quiz/${params.slug}/flashcards`}>
+                    <Link href={`/quiz/${encodedSlug}/flashcards`}>
                       <Button variant="accent" className="w-full">
                         <HiOutlineRefresh className="w-4 h-4 mr-2" />
                         {t('flashcards')}
@@ -578,7 +578,7 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
     <>
       {/* Quiz schema for SEO — SoftwareApplication + Course */}
       <QuizPageSchema
-        quizSlug={params.slug}
+        quizSlug={slug}
         quizTitle={quiz.title}
         quizDescription={quiz.description}
         authorName={authorName}
@@ -597,7 +597,7 @@ export default function QuizPlayerPage({ params }: QuizPlayerPageProps) {
 
       {!isMobile && (
         <DesktopQuizLayout
-          slug={params.slug}
+          slug={slug}
           quizTitle={quiz.title}
           questions={quiz.questions}
           sessionEmail={session?.user?.email}

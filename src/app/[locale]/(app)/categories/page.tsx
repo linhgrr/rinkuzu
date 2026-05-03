@@ -157,9 +157,6 @@ export default function CategoriesPage() {
           <h1 className="text-4xl md:text-[48px] font-bold tracking-tight text-neutral-900 mb-3 md:mb-4">
             {t('title')}
           </h1>
-          <p className="text-base md:text-xl text-neutral-600 max-w-2xl">
-            Explore quizzes by subject and find what interests you most
-          </p>
         </div>
 
         {/* Search */}

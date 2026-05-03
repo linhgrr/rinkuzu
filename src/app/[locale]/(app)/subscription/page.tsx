@@ -140,7 +140,6 @@ export default function SubscriptionPage() {
             <h1 className="text-2xl md:text-3xl font-bold text-neutral-900 mb-2 md:mb-4">
               {t('upgrade')} <HiOutlineStar className="inline-block text-yellow-500 mb-1" />
             </h1>
-            <p className="text-base md:text-lg text-neutral-600">{t('subtitle')}</p>
           </div>
 
           {/* Current Subscription Status */}

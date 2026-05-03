@@ -214,7 +214,6 @@ export default function ProfileSettings() {
             <HiOutlineUser className="w-5 h-5 text-brand-trust" />
             <h2 className="text-lg font-semibold text-neutral-900">{t('personalInfo')}</h2>
           </div>
-          <p className="text-sm text-neutral-500 mt-1">{t('personalInfoDesc')}</p>
         </div>
         <div className="p-6 space-y-6">
           {/* Avatar */}
@@ -335,7 +334,6 @@ export default function ProfileSettings() {
             <HiOutlineLockClosed className="w-5 h-5 text-brand-trust" />
             <h2 className="text-lg font-semibold text-neutral-900">{t('changePassword')}</h2>
           </div>
-          <p className="text-sm text-neutral-500 mt-1">{t('changePasswordDesc')}</p>
         </div>
         <div className="p-6 space-y-4">
           <Input

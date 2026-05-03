@@ -34,7 +34,6 @@ function BookmarksContent() {
             <h1 className="text-2xl md:text-3xl font-bold text-[var(--text-primary)]">
               {t('bookmarkedQuestions')}
             </h1>
-            <p className="text-sm text-neutral-500 mt-1">{t('bookmarkedDescription')}</p>
           </div>
 
           <div className="bg-white rounded-2xl shadow-sm border border-neutral-100 p-4 md:p-6 min-h-[400px] md:min-h-[500px]">

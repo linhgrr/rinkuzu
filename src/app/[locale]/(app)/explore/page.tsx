@@ -273,7 +273,6 @@ function ExploreContent() {
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div>
                 <h1 className="text-3xl font-bold text-neutral-900">{t('title')}</h1>
-                <p className="text-neutral-600">{t('subtitle')}</p>
               </div>
               <div className="w-full md:w-auto flex flex-col sm:flex-row gap-3">
                 <div className="w-full sm:w-64">

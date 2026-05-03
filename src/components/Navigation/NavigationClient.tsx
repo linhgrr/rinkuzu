@@ -68,7 +68,9 @@ const UserMenu = memo(function UserMenu({
           />
         ) : (
           <div className="w-7 h-7 bg-brand-trust rounded-full flex items-center justify-center text-white text-sm font-medium">
-            {session.user?.email?.charAt(0).toUpperCase()}
+            {((session.user as any)?.displayName || session.user?.email || 'U')
+              .charAt(0)
+              .toUpperCase()}
           </div>
         )}
       </Button>
@@ -97,7 +99,9 @@ const UserMenu = memo(function UserMenu({
                   />
                 ) : (
                   <div className="w-11 h-11 bg-brand-trust rounded-full flex items-center justify-center text-white font-semibold text-lg">
-                    {session.user?.email?.charAt(0).toUpperCase()}
+                    {((session.user as any)?.displayName || session.user?.email || 'U')
+                      .charAt(0)
+                      .toUpperCase()}
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
@@ -251,11 +255,13 @@ const MobileMenu = memo(function MobileMenu({
             {/* User Info */}
             <div className="flex items-center gap-3 px-3 py-3 mb-3 bg-neutral-50 rounded-2xl">
               <div className="w-10 h-10 bg-brand-trust rounded-full flex items-center justify-center text-white font-medium">
-                {session.user?.email?.charAt(0).toUpperCase()}
+                {((session.user as any)?.displayName || session.user?.email || 'U')
+                  .charAt(0)
+                  .toUpperCase()}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-neutral-900 truncate">
-                  {session.user?.email}
+                  {(session.user as any)?.displayName || session.user?.email?.split('@')[0]}
                 </p>
                 <p className="text-xs text-neutral-500">
                   {(session.user as any)?.role === 'admin' ? tAuth('administrator') : tAuth('user')}

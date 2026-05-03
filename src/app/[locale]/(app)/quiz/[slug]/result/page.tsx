@@ -375,7 +375,7 @@ export default function QuizResultPage({ params }: QuizResultPageProps) {
 
               <div className="text-xl text-neutral-700">{getScoreMessage(result.score)}</div>
 
-              <div className="flex justify-center space-x-8 text-sm text-neutral-600">
+              <div className="grid grid-cols-2 gap-4 sm:flex sm:justify-center sm:space-x-8 text-sm text-neutral-600">
                 <div className="text-center">
                   <div className="font-semibold text-lg text-neutral-900">{correctCount}</div>
                   <div>{tProfile('correct')}</div>

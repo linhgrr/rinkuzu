@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { Types } from 'mongoose';
 import Navigation from '@/components/Navigation';
-import { UserAvatar, getUserDisplayName } from '@/components/user/UserAvatar';
+import { UserAvatar, UserIdentity, getUserDisplayName } from '@/components/user/UserAvatar';
 import {
   Badge,
   Card,
@@ -77,8 +77,10 @@ export default async function PublicUserProfilePage({
     notFound();
   }
 
-  const displayName = getUserDisplayName(user);
-  const quizzes = (rawQuizzes as PublicQuizRecord[]).map((quiz) => ({
+  const profileUser = user as unknown as UserIdentity & { bio?: string; createdAt?: Date | string };
+  const displayName = getUserDisplayName(profileUser);
+  const publicQuizRecords = rawQuizzes as unknown as PublicQuizRecord[];
+  const quizzes = publicQuizRecords.map((quiz) => ({
     _id: String(quiz._id),
     title: quiz.title,
     description: quiz.description || '',
@@ -97,7 +99,7 @@ export default async function PublicUserProfilePage({
     year: 'numeric',
     month: 'long',
     day: 'numeric',
-  }).format(new Date(user.createdAt));
+  }).format(new Date(profileUser.createdAt || new Date()));
 
   return (
     <div className="min-h-screen bg-neutral-50">
@@ -107,7 +109,7 @@ export default async function PublicUserProfilePage({
         <div className="grid gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
           <Card className="h-fit overflow-hidden border-neutral-200 shadow-sm">
             <CardContent className="flex flex-col items-center gap-4 p-8 text-center">
-              <UserAvatar user={user} size={112} />
+              <UserAvatar user={profileUser} size={112} />
               <div className="space-y-2">
                 <h1 className="text-2xl font-bold text-neutral-900">{displayName}</h1>
                 <p className="text-sm text-neutral-500">{t('publicProfile')}</p>
@@ -139,7 +141,7 @@ export default async function PublicUserProfilePage({
               </CardHeader>
               <CardContent>
                 <p className="whitespace-pre-wrap text-sm leading-7 text-neutral-700">
-                  {user.bio?.trim() || t('publicProfileNoBio')}
+                  {profileUser.bio?.trim() || t('publicProfileNoBio')}
                 </p>
               </CardContent>
             </Card>

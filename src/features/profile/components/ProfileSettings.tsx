@@ -55,7 +55,6 @@ export default function ProfileSettings() {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
 
@@ -338,25 +337,14 @@ export default function ProfileSettings() {
         <div className="p-6 space-y-4">
           <Input
             label={t('currentPassword')}
-            type={showCurrentPassword ? 'text' : 'password'}
+            type="password"
             value={currentPassword}
             onChange={(e) => setCurrentPassword(e.target.value)}
             placeholder={t('currentPasswordPlaceholder')}
+            autoComplete="current-password"
             icon={<HiOutlineLockClosed className="w-full h-full" />}
             iconPosition="left"
           />
-          <button
-            type="button"
-            onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-            className="text-xs text-neutral-500 hover:text-neutral-700 -mt-2 flex items-center gap-1"
-          >
-            {showCurrentPassword ? (
-              <HiOutlineEyeOff className="w-3.5 h-3.5" />
-            ) : (
-              <HiOutlineEye className="w-3.5 h-3.5" />
-            )}
-            {showCurrentPassword ? t('hidePassword') : t('showPassword')}
-          </button>
 
           <Input
             label={t('newPassword')}
@@ -364,6 +352,7 @@ export default function ProfileSettings() {
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
             placeholder={t('newPasswordPlaceholder')}
+            autoComplete="new-password"
             icon={<HiOutlineLockClosed className="w-full h-full" />}
             error={
               newPassword.length > 0 && newPassword.length < 6 ? t('passwordMinLength') : undefined
@@ -388,6 +377,7 @@ export default function ProfileSettings() {
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             placeholder={t('confirmNewPasswordPlaceholder')}
+            autoComplete="new-password"
             icon={<HiOutlineLockClosed className="w-full h-full" />}
             error={
               confirmPassword.length > 0 && confirmPassword !== newPassword

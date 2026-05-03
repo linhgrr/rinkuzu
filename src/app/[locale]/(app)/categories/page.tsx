@@ -152,13 +152,6 @@ export default function CategoriesPage() {
           <span className="text-neutral-900 font-medium">{t('title')}</span>
         </nav>
 
-        {/* Header */}
-        <div className="mb-6 md:mb-10">
-          <h1 className="text-4xl md:text-[48px] font-bold tracking-tight text-neutral-900 mb-3 md:mb-4">
-            {t('title')}
-          </h1>
-        </div>
-
         {/* Search */}
         <div className="mb-8 md:mb-12">
           <Card variant="default" className="p-4 md:p-6 shadow-sm">

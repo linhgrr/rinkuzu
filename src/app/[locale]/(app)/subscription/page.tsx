@@ -7,7 +7,7 @@ import Navigation from '@/components/Navigation';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
-import { HiOutlineCheck, HiOutlineShieldCheck, HiOutlineStar } from '@/components/icons';
+import { HiOutlineCheck, HiOutlineShieldCheck } from '@/components/icons';
 
 interface SubscriptionPlan {
   id: string;
@@ -136,12 +136,6 @@ export default function SubscriptionPage() {
       <Navigation />
       <div className="py-6 md:py-8">
         <div className="max-w-6xl mx-auto px-4">
-          <div className="text-center mb-6 md:mb-8">
-            <h1 className="text-2xl md:text-3xl font-bold text-neutral-900 mb-2 md:mb-4">
-              {t('upgrade')} <HiOutlineStar className="inline-block text-yellow-500 mb-1" />
-            </h1>
-          </div>
-
           {/* Current Subscription Status */}
           {subscriptionStatus?.subscription && (
             <Card className="mb-6 md:mb-8 p-4 md:p-6 bg-green-50 border-green-200">

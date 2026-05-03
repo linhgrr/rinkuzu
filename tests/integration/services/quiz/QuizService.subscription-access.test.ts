@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { QuizService } from './QuizService';
+import { QuizService } from '@/services/quiz/QuizService';
 import { ServiceFactory } from '@/lib/serviceFactory';
 
 vi.mock('@/lib/serviceFactory', () => ({

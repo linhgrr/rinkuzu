@@ -268,12 +268,9 @@ function ExploreContent() {
         }`}
       >
         <div className={session ? 'max-w-6xl mx-auto' : ''}>
-          {/* Header & Search */}
+          {/* Search */}
           <div className="mb-8 space-y-4">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-              <div>
-                <h1 className="text-3xl font-bold text-neutral-900">{t('title')}</h1>
-              </div>
+            <div className="flex flex-col md:flex-row justify-end items-start md:items-center gap-4">
               <div className="w-full md:w-auto flex flex-col sm:flex-row gap-3">
                 <div className="w-full sm:w-64">
                   <Input

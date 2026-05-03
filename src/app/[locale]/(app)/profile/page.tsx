@@ -9,7 +9,6 @@ import ProfileSettings from '@/features/profile/components/ProfileSettings';
 
 function ProfileContent() {
   const pathname = usePathname();
-  const t = useTranslations('profile');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   const handleSidebarToggle = useCallback(() => {
@@ -30,12 +29,6 @@ function ProfileContent() {
         }`}
       >
         <div className="max-w-3xl mx-auto">
-          <div className="mb-6 md:mb-8">
-            <h1 className="text-2xl md:text-3xl font-bold text-[var(--text-primary)]">
-              {t('settingsTitle')}
-            </h1>
-          </div>
-
           <ProfileSettings />
         </div>
       </main>

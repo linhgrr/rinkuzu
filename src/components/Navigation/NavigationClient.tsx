@@ -237,7 +237,7 @@ const MobileMenu = memo(function MobileMenu({
 
   if (isAuthLoading) {
     return (
-      <div className="md:hidden border-t border-neutral-100 py-4 animate-fadeIn">
+      <div className="md:hidden border-t border-neutral-100 bg-white py-4 animate-fadeIn">
         <div className="px-4 py-2">
           <div className="h-4 w-28 rounded skeleton-shimmer mb-3" />
           <div className="h-4 w-20 rounded skeleton-shimmer mb-3" />
@@ -248,7 +248,7 @@ const MobileMenu = memo(function MobileMenu({
   }
 
   return (
-    <div className="md:hidden border-t border-neutral-100 py-4 animate-fadeIn">
+    <div className="md:hidden border-t border-neutral-100 bg-white py-4 animate-fadeIn">
       <div className="space-y-1">
         {session ? (
           <>

@@ -9,14 +9,14 @@ export class DiscussionRepository implements IDiscussionRepository {
   async findById(id: string): Promise<IDiscussion | null> {
     await connectDB();
     return (await Discussion.findById(id)
-      .populate('comments.author', 'email')
+      .populate('comments.author', 'email name displayName avatar')
       .lean()) as unknown as IDiscussion | null;
   }
 
   async findByQuiz(quizId: string): Promise<IDiscussion[]> {
     await connectDB();
     return (await Discussion.find({ quiz: quizId })
-      .populate('comments.author', 'email')
+      .populate('comments.author', 'email name displayName avatar')
       .sort({ questionIndex: 1, createdAt: 1 })
       .lean()) as unknown as IDiscussion[];
   }
@@ -26,14 +26,14 @@ export class DiscussionRepository implements IDiscussionRepository {
     const discussion = new Discussion(discussionData);
     const saved = await discussion.save();
     return (await Discussion.findById(saved._id)
-      .populate('comments.author', 'email')
+      .populate('comments.author', 'email name displayName avatar')
       .lean()) as unknown as IDiscussion;
   }
 
   async update(id: string, discussionData: Partial<IDiscussion>): Promise<IDiscussion | null> {
     await connectDB();
     return (await Discussion.findByIdAndUpdate(id, discussionData, { new: true })
-      .populate('comments.author', 'email')
+      .populate('comments.author', 'email name displayName avatar')
       .lean()) as unknown as IDiscussion | null;
   }
 

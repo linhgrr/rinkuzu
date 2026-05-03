@@ -32,6 +32,15 @@ export class QuizService implements IQuizService {
     private reportRepository: IReportRepository,
   ) {}
 
+  private getAuthorId(author: IQuiz['author'] | undefined): string | undefined {
+    if (!author) return undefined;
+    if (typeof author === 'string') return author;
+    if (typeof author === 'object' && '_id' in author && author._id) {
+      return author._id.toString();
+    }
+    return undefined;
+  }
+
   async getQuizzes(options: QuizListOptions): Promise<{
     quizzes: IQuiz[];
     pagination: {
@@ -210,7 +219,7 @@ export class QuizService implements IQuizService {
         }
 
         // Author can access their own private quizzes
-        if (quiz.author.toString() === userId) {
+        if (this.getAuthorId(quiz.author) === userId) {
           return { success: true, data: quiz };
         }
 
@@ -262,9 +271,7 @@ export class QuizService implements IQuizService {
         };
       }
 
-      const authorId = (quiz.author as any)?._id
-        ? (quiz.author as any)._id.toString()
-        : quiz.author?.toString();
+      const authorId = this.getAuthorId(quiz.author);
       const isAuthor = !!userId && authorId === userId;
       const canAccessUnpublished = userRole === 'admin' || isAuthor;
 
@@ -292,7 +299,7 @@ export class QuizService implements IQuizService {
         }
 
         // Author can access their own private quizzes
-        if (quiz.author.toString() === userId) {
+        if (authorId === userId) {
           return { success: true, data: quiz };
         }
 
@@ -568,9 +575,7 @@ export class QuizService implements IQuizService {
       }
 
       // Check access permission for unpublished quiz
-      const authorId = (quiz.author as any)?._id
-        ? (quiz.author as any)._id.toString()
-        : quiz.author?.toString();
+      const authorId = this.getAuthorId(quiz.author);
       const userIdFromSession = session?.user?.id;
       const userRole = session?.user?.role;
       const canAccessUnpublished =
@@ -874,6 +879,15 @@ export class QuizService implements IQuizService {
       }
 
       const existingDiscussions = await this.discussionRepository.findByQuiz(quiz._id.toString());
+      const discussionOwnerId = this.getAuthorId(quiz.author);
+
+      if (!discussionOwnerId) {
+        return {
+          success: false,
+          error: 'Quiz author not found',
+          statusCode: 500,
+        };
+      }
 
       // Create discussions for all questions if they don't exist
       const allDiscussions = [];
@@ -886,7 +900,7 @@ export class QuizService implements IQuizService {
           // Create empty discussion for this question
           const newDiscussion = await this.discussionRepository.create({
             quiz: quiz._id.toString(),
-            user: quiz.author,
+            user: discussionOwnerId,
             questionIndex: i,
             content: `Discussion for question ${i + 1}`,
             comments: [],
@@ -934,6 +948,15 @@ export class QuizService implements IQuizService {
         };
       }
 
+      const discussionOwnerId = this.getAuthorId(quiz.author);
+      if (!discussionOwnerId) {
+        return {
+          success: false,
+          error: 'Quiz author not found',
+          statusCode: 500,
+        };
+      }
+
       const user = await this.userRepository.findByEmail(userEmail);
       if (!user) {
         return {
@@ -951,7 +974,7 @@ export class QuizService implements IQuizService {
         // Create new discussion for this question
         existingDiscussion = await this.discussionRepository.create({
           quiz: quiz._id.toString(),
-          user: quiz.author,
+          user: discussionOwnerId,
           questionIndex,
           content: `Discussion for question ${questionIndex + 1}`,
           comments: [],

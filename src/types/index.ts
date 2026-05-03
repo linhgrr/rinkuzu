@@ -1,7 +1,16 @@
+export interface IUserPreview {
+  _id: string;
+  email?: string;
+  name?: string;
+  displayName?: string;
+  avatar?: string;
+}
+
 export interface IUser {
   _id: string;
   email: string;
   password: string;
+  name?: string;
   displayName?: string;
   bio?: string;
   avatar?: string;
@@ -36,7 +45,7 @@ export interface IQuiz {
   description?: string;
   category: string | ICategory;
   status: 'pending' | 'published' | 'rejected';
-  author: string | IUser;
+  author: string | IUser | IUserPreview;
   slug: string;
   questions: IQuestion[];
   isPrivate: boolean;

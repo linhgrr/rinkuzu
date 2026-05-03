@@ -18,7 +18,7 @@
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:install": "playwright install --with-deps chromium",
     "test:run": "vitest run --coverage",
-    "precommit:full": "npm run format:check && npm run lint && npm run test:unit && npm run test:integration && npm run build",
+    "precommit:full": "npm run check:node && npm run check:install && npm run format:check && npm run lint && npm run test:unit && npm run test:integration && npm run build",
     "lint-staged": "lint-staged",
     "prepare": "husky",
     "analyze-component": "node scripts/analyze-component.mjs",
@@ -27,7 +27,9 @@
     "migrate:durations:dry-run": "node src/scripts/migratePlanDurations.js dry-run",
     "seed:plans": "node src/scripts/seedPlansWithISO8601.js seed",
     "validate:plans": "node src/scripts/seedPlansWithISO8601.js validate",
-    "check:subscriptions": "node src/scripts/checkExpiredSubscriptions.js"
+    "check:subscriptions": "node src/scripts/checkExpiredSubscriptions.js",
+    "check:node": "node -e \"const major=Number(process.versions.node.split('.')[0]); if (major < 22) { console.error('Node.js >=22 is required. Current: '+process.version); process.exit(1); }\"",
+    "check:install": "npm ci --dry-run"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx,mjs,cjs}": [
@@ -130,5 +132,9 @@
   "overrides": {
     "postcss": "^8.5.13",
     "uuid": "^14.0.0"
+  },
+  "engines": {
+    "node": ">=22.0.0",
+    "npm": ">=10.5.1"
   }
 }

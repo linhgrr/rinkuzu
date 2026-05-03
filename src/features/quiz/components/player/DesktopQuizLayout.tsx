@@ -508,7 +508,9 @@ export function DesktopQuizLayout({
           isOpen={showSubmitConfirm}
           title={`${t('submitQuiz')}?`}
           message={t('unansweredWarning', { count: unansweredCount })}
-          confirmText={t('submit', { ns: 'common' })}
+          confirmText={t('submit')}
+          cancelText={t('cancel')}
+          confirmVariant="primary"
           onCancel={() => setShowSubmitConfirm(false)}
           onConfirm={async () => {
             setShowSubmitConfirm(false);

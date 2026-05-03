@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useTranslations } from 'next-intl';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 
@@ -27,36 +28,43 @@ interface ConfirmModalProps {
 
 export function ConfirmModal({
   isOpen,
-  title = 'Xác nhận',
+  title,
   message,
-  confirmText = 'Xác nhận',
-  cancelText = 'Hủy',
+  confirmText,
+  cancelText,
   confirmVariant = 'destructive',
   onConfirm,
   onCancel,
   isLoading = false,
 }: ConfirmModalProps) {
+  const tCommon = useTranslations('common');
+  const resolvedTitle = title ?? tCommon('confirm');
+  const resolvedConfirmText = confirmText ?? tCommon('confirm');
+  const resolvedCancelText = cancelText ?? tCommon('cancel');
+
   return (
-    <Modal isOpen={isOpen} onClose={isLoading ? () => {} : onCancel} title={title}>
-      <div className="space-y-6">
-        <div className="text-base text-neutral-600 leading-relaxed">{message}</div>
-        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end mt-8 pt-5 border-t border-neutral-100">
+    <Modal isOpen={isOpen} onClose={isLoading ? () => {} : onCancel} title={resolvedTitle}>
+      <div className="space-y-5">
+        <div className="break-words text-[15px] leading-7 text-neutral-600 sm:text-base">
+          {message}
+        </div>
+        <div className="mt-6 flex flex-col-reverse gap-3 border-t border-neutral-100 pt-5 sm:flex-row sm:justify-end">
           <Button
             variant="outline"
             onClick={onCancel}
             disabled={isLoading}
-            className="sm:w-auto w-full font-medium"
+            className="min-h-11 w-full justify-center px-5 font-medium sm:w-auto"
           >
-            {cancelText}
+            {resolvedCancelText}
           </Button>
           <Button
             variant={confirmVariant}
             onClick={onConfirm}
             loading={isLoading}
             disabled={isLoading}
-            className="sm:w-auto w-full font-medium"
+            className="min-h-11 w-full justify-center px-5 font-medium sm:w-auto"
           >
-            {confirmText}
+            {resolvedConfirmText}
           </Button>
         </div>
       </div>

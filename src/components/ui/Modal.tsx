@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 import { Portal } from './Portal';
 
@@ -23,6 +24,8 @@ export function Modal({
   className,
   size = 'medium',
 }: ModalProps) {
+  const tCommon = useTranslations('common');
+
   if (!isOpen) return null;
 
   const sizeClasses = {
@@ -35,43 +38,45 @@ export function Modal({
 
   return (
     <Portal>
-      <div className="fixed inset-0 z-[9999] flex items-center justify-center">
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6">
         {/* Backdrop */}
         <button
           type="button"
           className="absolute inset-0 bg-black/50"
           onClick={onClose}
-          aria-label="Close modal"
+          aria-label={tCommon('close')}
         />
 
         {/* Modal */}
         <div
           className={cn(
-            'relative bg-white rounded-xl shadow-lg w-full mx-4 max-h-[90vh] overflow-y-auto overscroll-contain',
+            'relative w-full overflow-y-auto overscroll-contain rounded-2xl bg-white shadow-2xl ring-1 ring-black/5 max-h-[calc(100vh-2rem)] sm:max-h-[90vh]',
             sizeClasses[size],
             className,
           )}
         >
           {/* Header */}
           {(title || description) && (
-            <div className="p-6 border-b">
-              {title && <h2 className="text-lg font-semibold text-neutral-900">{title}</h2>}
+            <div className="border-b border-neutral-100 p-5 pr-14 sm:p-6 sm:pr-16">
+              {title && (
+                <h2 className="text-lg font-semibold leading-7 text-neutral-900">{title}</h2>
+              )}
               {description && <p className="mt-1 text-sm text-neutral-500">{description}</p>}
             </div>
           )}
 
           {/* Content */}
           {!(title || description) && <div>{children}</div>}
-          {(title || description) && <div className="p-6">{children}</div>}
+          {(title || description) && <div className="p-5 sm:p-6">{children}</div>}
 
           {/* Close button */}
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 text-neutral-400 hover:text-neutral-600"
-            aria-label="Close modal"
+            className="absolute right-3 top-3 flex h-11 w-11 items-center justify-center rounded-full text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-trust"
+            aria-label={tCommon('close')}
           >
             <svg
-              className="w-6 h-6"
+              className="h-5 w-5"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"

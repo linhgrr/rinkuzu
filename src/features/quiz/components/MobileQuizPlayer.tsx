@@ -274,7 +274,9 @@ export function MobileQuizPlayer({
         isOpen={showSubmitConfirm}
         title={`${t('submitQuiz')}?`}
         message={t('unansweredWarning', { count: questions.length - answeredCount })}
-        confirmText={t('submit', { ns: 'common' })}
+        confirmText={t('submit')}
+        cancelText={t('cancel')}
+        confirmVariant="primary"
         onCancel={() => setShowSubmitConfirm(false)}
         onConfirm={() => {
           setShowSubmitConfirm(false);

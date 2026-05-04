@@ -1,4 +1,3 @@
-import '@/schedulers/expiredSubscriptionScheduler';
 import { QuizService } from '@/services/quiz/QuizService';
 import { UserService } from '@/services/user/UserService';
 import { AuthService } from '@/services/auth/AuthService';

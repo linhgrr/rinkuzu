@@ -57,6 +57,10 @@ export default function AdminPlansPage() {
   const [editingPlan, setEditingPlan] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Partial<Plan>>({});
   const [planToDelete, setPlanToDelete] = useState<{ id: string; name: string } | null>(null);
+  const [featureToRemove, setFeatureToRemove] = useState<{
+    index: number;
+    isCreate: boolean;
+  } | null>(null);
   const [deleting, setDeleting] = useState(false);
 
   // New plan creation state
@@ -433,7 +437,7 @@ export default function AdminPlansPage() {
                         />
                         <Button
                           type="button"
-                          onClick={() => removeFeature(index, true)}
+                          onClick={() => setFeatureToRemove({ index, isCreate: true })}
                           variant="outline"
                           size="sm"
                           className="min-h-[36px] px-3 text-red-600 hover:text-red-700"
@@ -579,7 +583,7 @@ export default function AdminPlansPage() {
                                   type="button"
                                   variant="outline"
                                   size="sm"
-                                  onClick={() => removeFeature(index)}
+                                  onClick={() => setFeatureToRemove({ index, isCreate: false })}
                                   className="min-h-[36px] px-3 text-red-600 hover:text-red-700"
                                 >
                                   Remove
@@ -691,6 +695,23 @@ export default function AdminPlansPage() {
         isLoading={deleting}
         onCancel={() => setPlanToDelete(null)}
         onConfirm={confirmDeletePlan}
+      />
+      <ConfirmModal
+        isOpen={!!featureToRemove}
+        title="Remove feature?"
+        message={
+          featureToRemove
+            ? `Remove feature ${featureToRemove.index + 1}? This change is not saved until you save the plan.`
+            : ''
+        }
+        confirmText="Remove"
+        confirmVariant="destructive"
+        onCancel={() => setFeatureToRemove(null)}
+        onConfirm={() => {
+          if (!featureToRemove) return;
+          removeFeature(featureToRemove.index, featureToRemove.isCreate);
+          setFeatureToRemove(null);
+        }}
       />
     </div>
   );

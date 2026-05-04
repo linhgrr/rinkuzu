@@ -14,5 +14,8 @@
   "maxFileSize": "PNG, JPG, GIF up to 10MB",
   "pleaseSelectImage": "Please select an image file",
   "imageTooLarge": "Image file size must be less than 10MB",
-  "failedToUpload": "Failed to upload image"
+  "failedToUpload": "Failed to upload image",
+  "removeImage": "Remove image",
+  "removeImageTitle": "Remove image?",
+  "removeImageConfirm": "Remove this image from the question? You can upload another image later."
 }

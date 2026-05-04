@@ -53,10 +53,8 @@
   "askQuestion": "Ask a question about this...",
   "noDescription": "No description provided",
   "noCategory": "No Category",
-
   "settingsTitle": "Account Settings",
   "settingsDesc": "Manage your personal information and account security",
-
   "personalInfo": "Personal Information",
   "personalInfoDesc": "Update your avatar and display information",
   "displayName": "Display Name",
@@ -67,11 +65,9 @@
   "joinDate": "Joined",
   "saveChanges": "Save Changes",
   "saving": "Saving...",
-
   "changeAvatar": "Change Photo",
   "removeAvatar": "Remove Photo",
   "uploading": "Uploading...",
-
   "changePassword": "Change Password",
   "changePasswordDesc": "Keep your account secure",
   "currentPassword": "Current Password",
@@ -85,7 +81,6 @@
   "hidePassword": "Hide password",
   "passwordMinLength": "Password must be at least 6 characters",
   "passwordsDoNotMatch": "Passwords do not match",
-
   "accountSection": "Account",
   "subscription": "Subscription",
   "premiumActive": "Premium plan active",
@@ -93,7 +88,6 @@
   "managePlan": "Manage",
   "upgradePlan": "Upgrade",
   "accountType": "Account Type",
-
   "profileUpdated": "Profile updated successfully",
   "passwordChanged": "Password changed successfully",
   "avatarUpdated": "Avatar updated successfully",
@@ -111,5 +105,9 @@
   "publicProfileNoBio": "This member has not added a bio yet.",
   "publishedQuizzes": "Published quizzes",
   "publishedQuizzesCount": "{count} quizzes",
-  "noPublicQuizzes": "No published quizzes yet"
+  "noPublicQuizzes": "No published quizzes yet",
+  "removeBookmarkTitle": "Remove bookmark?",
+  "removeBookmarkConfirm": "Remove the bookmark from \"{title}\"? You can bookmark it again later.",
+  "removeAvatarConfirmTitle": "Remove profile photo?",
+  "removeAvatarConfirmMessage": "This will remove your current profile photo from your account."
 }

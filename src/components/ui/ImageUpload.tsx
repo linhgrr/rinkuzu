@@ -4,6 +4,7 @@ import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { uploadImageToImgBB } from '@/services/imageUploadService';
 import { Button } from '@/components/ui/Button';
+import { ConfirmModal } from '@/components/ui/ConfirmModal';
 
 interface ImageUploadProps {
   currentImage?: string;
@@ -28,6 +29,7 @@ export function ImageUpload({
   const [isUploading, setIsUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleImageUpload = useCallback(
@@ -150,37 +152,50 @@ export function ImageUpload({
 
   if (currentImage) {
     return (
-      <div
-        className={`relative group ${className}`}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
-      >
-        <Image
-          src={currentImage}
-          alt="Uploaded image"
-          width={maxWidth}
-          height={maxHeight}
-          className="rounded-lg border border-neutral-200 shadow-sm"
-          style={{
-            maxWidth: maxWidth,
-            maxHeight: maxHeight,
-            width: 'auto',
-            height: 'auto',
-            objectFit: 'contain',
+      <>
+        <div
+          className={`relative group ${className}`}
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
+        >
+          <Image
+            src={currentImage}
+            alt="Uploaded image"
+            width={maxWidth}
+            height={maxHeight}
+            className="rounded-lg border border-neutral-200 shadow-sm"
+            style={{
+              maxWidth: maxWidth,
+              maxHeight: maxHeight,
+              width: 'auto',
+              height: 'auto',
+              objectFit: 'contain',
+            }}
+          />
+          <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <Button
+              onClick={() => setShowRemoveConfirm(true)}
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 bg-red-600 text-white hover:bg-red-700"
+              aria-label={t('removeImage')}
+            >
+              <span aria-hidden="true">✕</span>
+            </Button>
+          </div>
+        </div>
+        <ConfirmModal
+          isOpen={showRemoveConfirm}
+          title={t('removeImageTitle')}
+          message={t('removeImageConfirm')}
+          confirmText={t('removeImage')}
+          onCancel={() => setShowRemoveConfirm(false)}
+          onConfirm={() => {
+            onImageRemoved();
+            setShowRemoveConfirm(false);
           }}
         />
-        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-          <Button
-            onClick={onImageRemoved}
-            variant="ghost"
-            size="icon"
-            className="h-9 w-9 bg-red-600 text-white hover:bg-red-700"
-            aria-label="Remove image"
-          >
-            <span aria-hidden="true">✕</span>
-          </Button>
-        </div>
-      </div>
+      </>
     );
   }
 

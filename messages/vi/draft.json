@@ -12,5 +12,10 @@
   "questionsGenerated": "{count} câu hỏi",
   "cancel": "Hủy",
   "clickToEdit": "{count} câu hỏi – Bấm để chỉnh sửa",
-  "processingError": "Lỗi xử lý"
+  "processingError": "Lỗi xử lý",
+  "remove": "Xóa",
+  "cancelConfirmTitle": "Hủy xử lý?",
+  "cancelConfirmMessage": "Hủy xử lý \"{title}\" và xóa bản nháp này khỏi máy chủ?",
+  "removeReadyDraftTitle": "Xóa bản nháp đã sẵn sàng?",
+  "removeReadyDraftMessage": "Xóa \"{title}\" khỏi danh sách tiến trình nổi? Bản nháp chỉnh sửa vẫn có thể mở từ trang của nó."
 }

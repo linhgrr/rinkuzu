@@ -203,6 +203,8 @@
     font-family: var(--font-sans);
     background: var(--bg-page);
     color: var(--text-primary);
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
   }
 
   body {
@@ -212,6 +214,14 @@
     color: var(--text-primary);
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
+  }
+
+  @media (display-mode: standalone), (display-mode: fullscreen) {
+    html,
+    body {
+      overscroll-behavior: none;
+      touch-action: pan-x pan-y;
+    }
   }
 
   a {

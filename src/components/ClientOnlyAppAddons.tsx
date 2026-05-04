@@ -1,6 +1,7 @@
 'use client';
 
 import PWAInstaller from '@/components/PWAInstaller';
+import PWAZoomGuard from '@/components/PWAZoomGuard';
 import FloatingDraftProgress from '@/components/FloatingDraftProgressIsland';
 
 export function ClientOnlyAppAddons() {
@@ -8,6 +9,7 @@ export function ClientOnlyAppAddons() {
     <>
       <FloatingDraftProgress />
       <PWAInstaller />
+      <PWAZoomGuard />
     </>
   );
 }

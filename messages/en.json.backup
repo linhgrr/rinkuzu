@@ -105,7 +105,7 @@
     "freePlan": "Free Forever"
   },
   "dashboard": {
-    "welcome": "Welcome back, {name}! 👋",
+    "welcome": "Welcome back, {name}! ",
     "keepMomentum": "You're doing great! Keep up the momentum.",
     "dailyGoal": "Daily Goal",
     "questionsDue": "{count} questions due",

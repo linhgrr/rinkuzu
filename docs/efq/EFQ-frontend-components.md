@@ -84,10 +84,10 @@ export default function UserRewardDashboard() {
 
   const getTierIcon = (tier: string) => {
     switch (tier) {
-      case 'platinum': return '💎';
-      case 'gold': return '🥇';
-      case 'silver': return '🥈';
-      default: return '🥉';
+      case 'platinum': return '';
+      case 'gold': return '';
+      case 'silver': return '';
+      default: return '';
     }
   };
 
@@ -106,7 +106,7 @@ export default function UserRewardDashboard() {
         <Card className="border-red-200 bg-red-50">
           <CardContent className="p-4">
             <div className="flex items-center text-red-700">
-              <span className="mr-2">⚠️</span>
+              <span className="mr-2"></span>
               <span>Your account is suspended due to suspicious activity. Rewards are temporarily blocked.</span>
             </div>
           </CardContent>

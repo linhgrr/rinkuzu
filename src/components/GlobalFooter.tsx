@@ -8,5 +8,9 @@ export function GlobalFooter() {
   const pathname = usePathname();
   if (!pathname) return null;
   if (shouldHideGlobalFooter(pathname)) return null;
-  return <FooterSection />;
+  return (
+    <div className="hidden md:block">
+      <FooterSection />
+    </div>
+  );
 }

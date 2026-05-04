@@ -91,20 +91,20 @@ class RefactorPromptBuilder {
 
     return `
 ╔════════════════════════════════════════════════════════════════════════════╗
-║                 🔧 REFACTOR DIFY COMPONENT                                  ║
+║                  REFACTOR DIFY COMPONENT                                  ║
 ╚════════════════════════════════════════════════════════════════════════════╝
 
-📍 Component: ${analysis.name}
-📂 Path: ${analysis.path}
+ Component: ${analysis.name}
+ Path: ${analysis.path}
 
-📊 Complexity Analysis:
+ Complexity Analysis:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Total Complexity:    ${analysis.complexity}/100 ${getComplexityLevel(analysis.complexity)}
 Max Func Complexity: ${analysis.maxComplexity}/100 ${getComplexityLevel(analysis.maxComplexity)}
-Lines:               ${analysis.lineCount} ${analysis.lineCount > 300 ? '⚠️ TOO LARGE' : ''}
+Lines:               ${analysis.lineCount} ${analysis.lineCount > 300 ? ' TOO LARGE' : ''}
 Usage:               ${analysis.usageCount} reference${analysis.usageCount !== 1 ? 's' : ''}
 
-📈 Code Metrics:
+ Code Metrics:
   useState calls:    ${analysis.stateCount}
   useEffect calls:   ${analysis.effectCount}
   useCallback calls: ${analysis.callbackCount}
@@ -113,7 +113,7 @@ Usage:               ${analysis.usageCount} reference${analysis.usageCount !== 1
   Nested ternaries:  ${analysis.nestedTernaries}
   Modal components:  ${analysis.hasModals}
 
-🔍 Features Detected:
+ Features Detected:
   ${analysis.hasState ? '✓' : '✗'} Local state (useState/useReducer)
   ${analysis.hasEffects ? '✓' : '✗'} Side effects (useEffect)
   ${analysis.hasCallbacks ? '✓' : '✗'} Callbacks (useCallback)
@@ -126,12 +126,12 @@ Usage:               ${analysis.usageCount} reference${analysis.usageCount !== 1
   ${analysis.hasAhooks ? '✓' : '✗'} ahooks
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-🎯 RECOMMENDED REFACTORING ACTIONS:
+ RECOMMENDED REFACTORING ACTIONS:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ${refactorActions.map((action, i) => `${i + 1}. ${action}`).join('\n')}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-📋 PROMPT FOR AI ASSISTANT (COPY THIS TO YOUR AI ASSISTANT):
+ PROMPT FOR AI ASSISTANT (COPY THIS TO YOUR AI ASSISTANT):
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Please refactor the component at @${analysis.path}
@@ -169,55 +169,55 @@ After refactoring, verify:
     // Priority 1: Extract hooks for complex state management
     if (analysis.stateCount >= 3 || (analysis.stateCount >= 2 && analysis.effectCount >= 2)) {
       actions.push(
-        `🪝 EXTRACT CUSTOM HOOK: ${analysis.stateCount} useState + ${analysis.effectCount} useEffect detected. Extract related state and effects into a custom hook (e.g., \`use${analysis.name}State.ts\`)`,
+        ` EXTRACT CUSTOM HOOK: ${analysis.stateCount} useState + ${analysis.effectCount} useEffect detected. Extract related state and effects into a custom hook (e.g., \`use${analysis.name}State.ts\`)`,
       );
     }
 
     // Priority 2: Extract API/data logic
     if (analysis.hasAPI)
       actions.push(
-        '🌐 EXTRACT DATA HOOK: Move API calls and data fetching logic into a dedicated hook using React Query',
+        ' EXTRACT DATA HOOK: Move API calls and data fetching logic into a dedicated hook using React Query',
       );
 
     // Priority 3: Split large components
     if (analysis.lineCount > 300) {
       actions.push(
-        `📦 SPLIT COMPONENT: ${analysis.lineCount} lines exceeds limit. Extract UI sections into sub-components`,
+        ` SPLIT COMPONENT: ${analysis.lineCount} lines exceeds limit. Extract UI sections into sub-components`,
       );
     }
 
     // Priority 4: Extract modal management
     if (analysis.hasModals >= 2) {
       actions.push(
-        `🔲 EXTRACT MODAL MANAGEMENT: ${analysis.hasModals} modal-related patterns detected. Create a useModalState hook or separate modal components`,
+        ` EXTRACT MODAL MANAGEMENT: ${analysis.hasModals} modal-related patterns detected. Create a useModalState hook or separate modal components`,
       );
     }
 
     // Priority 5: Simplify conditionals
     if (analysis.conditionalBlocks > 10 || analysis.nestedTernaries >= 2) {
       actions.push(
-        '🔀 SIMPLIFY CONDITIONALS: Use lookup tables, early returns, or extract complex conditions into named functions',
+        ' SIMPLIFY CONDITIONALS: Use lookup tables, early returns, or extract complex conditions into named functions',
       );
     }
 
     // Priority 6: Extract callbacks
     if (analysis.callbackCount >= 4) {
       actions.push(
-        `⚡ CONSOLIDATE CALLBACKS: ${analysis.callbackCount} useCallback calls. Consider extracting related callbacks into a custom hook`,
+        ` CONSOLIDATE CALLBACKS: ${analysis.callbackCount} useCallback calls. Consider extracting related callbacks into a custom hook`,
       );
     }
 
     // Priority 7: Context provider extraction
     if (analysis.hasContext && analysis.complexity > 50) {
       actions.push(
-        '🎯 EXTRACT CONTEXT LOGIC: Move context provider logic into separate files or split into domain-specific contexts',
+        ' EXTRACT CONTEXT LOGIC: Move context provider logic into separate files or split into domain-specific contexts',
       );
     }
 
     // Priority 8: Memoization review
     if (analysis.memoCount >= 3 && analysis.complexity > 50) {
       actions.push(
-        `📝 REVIEW MEMOIZATION: ${analysis.memoCount} useMemo calls. Extract complex computations into utility functions or hooks`,
+        ` REVIEW MEMOIZATION: ${analysis.memoCount} useMemo calls. Extract complex computations into utility functions or hooks`,
       );
     }
 
@@ -225,11 +225,11 @@ After refactoring, verify:
     if (actions.length === 0) {
       if (analysis.complexity > 50) {
         actions.push(
-          '🔍 ANALYZE FUNCTIONS: Review individual functions for complexity and extract helper functions',
+          ' ANALYZE FUNCTIONS: Review individual functions for complexity and extract helper functions',
         );
       } else {
         actions.push(
-          '✅ Component complexity is acceptable. Consider minor improvements for maintainability',
+          ' Component complexity is acceptable. Consider minor improvements for maintainability',
         );
       }
     }
@@ -283,7 +283,7 @@ After refactoring, verify:
 
 function showHelp() {
   console.log(`
-🔧 Component Refactor Tool - Generate refactoring prompts for AI assistants
+ Component Refactor Tool - Generate refactoring prompts for AI assistants
 
 Usage:
   node refactor-component.js <component-path> [options]
@@ -301,10 +301,10 @@ Examples:
   pnpm refactor-component app/components/tools/mcp/modal.tsx --json
 
 Complexity Thresholds:
-  🟢 0-25:   Simple (no refactoring needed)
-  🟡 26-50:  Medium (consider minor refactoring)
-  🟠 51-75:  Complex (should refactor)
-  🔴 76-100: Very Complex (must refactor)
+   0-25:   Simple (no refactoring needed)
+   26-50:  Medium (consider minor refactoring)
+   51-75:  Complex (should refactor)
+   76-100: Very Complex (must refactor)
 
 For complete refactoring guidelines, see:
   .claude/skills/component-refactoring/SKILL.md
@@ -338,7 +338,7 @@ function main() {
   let absolutePath = path.resolve(process.cwd(), componentPath);
 
   if (!fs.existsSync(absolutePath)) {
-    console.error(`❌ Error: Path not found: ${componentPath}`);
+    console.error(` Error: Path not found: ${componentPath}`);
     process.exit(1);
   }
 
@@ -350,7 +350,7 @@ function main() {
     } else {
       const availableFiles = listAnalyzableFiles(absolutePath);
       console.error(
-        `❌ Error: Directory does not contain a recognizable entry file: ${componentPath}`,
+        ` Error: Directory does not contain a recognizable entry file: ${componentPath}`,
       );
       if (availableFiles.length > 0) {
         console.error(`\n   Available files to analyze:`);
@@ -377,15 +377,15 @@ function main() {
   if (analysis.complexity <= 25 && analysis.lineCount <= 200) {
     console.log(`
 ╔════════════════════════════════════════════════════════════════════════════╗
-║                 ✅ COMPONENT IS WELL-STRUCTURED                             ║
+║                  COMPONENT IS WELL-STRUCTURED                             ║
 ╚════════════════════════════════════════════════════════════════════════════╝
 
-📍 Component: ${analysis.name}
-📂 Path: ${analysis.path}
+ Component: ${analysis.name}
+ Path: ${analysis.path}
 
-📊 Metrics:
+ Metrics:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Complexity: ${analysis.complexity}/100 🟢 Simple
+Complexity: ${analysis.complexity}/100  Simple
 Lines: ${analysis.lineCount} ✓ Within limits
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -414,7 +414,7 @@ You can proceed with testing using: pnpm analyze-component ${componentPath}
     });
 
     if (result.status === 0) {
-      console.log('\n📋 Refactoring prompt copied to clipboard!');
+      console.log('\n Refactoring prompt copied to clipboard!');
       console.log('   Paste it in your AI assistant:');
       console.log('   - Cursor: Cmd+L (Chat) or Cmd+I (Composer)');
       console.log('   - GitHub Copilot Chat: Cmd+I');

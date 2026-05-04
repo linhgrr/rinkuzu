@@ -43,22 +43,22 @@ const teamSchema = {
 
 const values = [
   {
-    icon: '🧠',
+    icon: 'AI',
     title: 'Adaptive by Design',
     body: "Every learner is unique. RinKuzu uses Bayesian Knowledge Tracing to model each student's mastery and continuously adapts the learning path to target weak spots.",
   },
   {
-    icon: '📄',
+    icon: 'PDF',
     title: 'PDF-First',
     body: 'Your existing materials are the best study guides. Upload any lecture PDF and our AI extracts and structures the knowledge — no manual question writing needed.',
   },
   {
-    icon: '🔗',
+    icon: 'KG',
     title: 'Knowledge Graphs',
     body: 'We visualize prerequisite relationships between concepts so learners understand not just what to study, but why concepts build on each other.',
   },
   {
-    icon: '🎯',
+    icon: 'BT',
     title: "Bloom's Taxonomy",
     body: 'Practice spans all six cognitive levels — from basic recall to creative synthesis — ensuring deep mastery rather than surface-level recognition.',
   },

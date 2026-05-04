@@ -3370,7 +3370,7 @@
                 "height": 20
               },
               "snippet": "<p class=\"text-gray-400 text-sm\">",
-              "nodeLabel": "© 2026 RinKuzu. All rights reserved.",
+              "nodeLabel": " 2026 RinKuzu. All rights reserved.",
               "explanation": "Fix any of the following:\n  Element has insufficient color contrast of 3.62 (foreground color: #86868b, background color: #ffffff, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1"
             },
             "subItems": {

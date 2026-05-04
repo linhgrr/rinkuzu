@@ -22,14 +22,14 @@ class TestPromptBuilder {
 
     return `
 ╔════════════════════════════════════════════════════════════════════════════╗
-║                 📋 GENERATE TEST FOR DIFY COMPONENT                         ║
+║                  GENERATE TEST FOR DIFY COMPONENT                         ║
 ╚════════════════════════════════════════════════════════════════════════════╝
 
-📍 Component: ${analysis.name}
-📂 Path: ${analysis.path}
-🎯 Test File: ${testPath}
+ Component: ${analysis.name}
+ Path: ${analysis.path}
+ Test File: ${testPath}
 
-📊 Component Analysis:
+ Component Analysis:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Type:               ${analysis.type}
 Total Complexity:   ${analysis.complexity}/100 ${getComplexityLevel(analysis.complexity)}
@@ -54,7 +54,7 @@ Features Detected:
   ${analysis.hasImperativeHandle ? '✓' : '✗'} Imperative handle
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-📝 TASK:
+ TASK:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Please generate a comprehensive test file for this component at:
@@ -67,7 +67,7 @@ ${this.getSpecificGuidelines(analysis)}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-📋 PROMPT FOR AI ASSISTANT (COPY THIS TO YOUR AI ASSISTANT):
+ PROMPT FOR AI ASSISTANT (COPY THIS TO YOUR AI ASSISTANT):
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Generate a comprehensive test file for all files in @${path.dirname(analysis.path)}
@@ -107,21 +107,21 @@ Create the test file at: ${testPath}
 
     // ===== Test Priority Guidance =====
     if (analysis.priority.level.includes('CRITICAL')) {
-      guidelines.push('🔴 CRITICAL PRIORITY component:');
+      guidelines.push(' CRITICAL PRIORITY component:');
       guidelines.push(`   - Used in ${analysis.usageCount} places across the codebase`);
       guidelines.push('   - Changes will have WIDE impact');
       guidelines.push('   - Require comprehensive test coverage');
       guidelines.push('   - Add regression tests for all use cases');
       guidelines.push('   - Consider integration tests with dependent components');
     } else if (analysis.usageCount > 50) {
-      guidelines.push('🟠 VERY HIGH USAGE component:');
+      guidelines.push(' VERY HIGH USAGE component:');
       guidelines.push(`   - Referenced ${analysis.usageCount} times in the codebase`);
       guidelines.push('   - Changes may affect many parts of the application');
       guidelines.push('   - Comprehensive test coverage is CRITICAL');
       guidelines.push('   - Add tests for all common usage patterns');
       guidelines.push('   - Consider regression tests');
     } else if (analysis.usageCount > 20) {
-      guidelines.push('🟡 HIGH USAGE component:');
+      guidelines.push(' HIGH USAGE component:');
       guidelines.push(`   - Referenced ${analysis.usageCount} times in the codebase`);
       guidelines.push('   - Test coverage is important to prevent widespread bugs');
       guidelines.push('   - Add tests for common usage patterns');
@@ -129,12 +129,12 @@ Create the test file at: ${testPath}
 
     // ===== Complexity Warning =====
     if (analysis.complexity > 75) {
-      guidelines.push(`🔴 HIGH Total Complexity (${analysis.complexity}/100). Consider:`);
+      guidelines.push(` HIGH Total Complexity (${analysis.complexity}/100). Consider:`);
       guidelines.push('   - Splitting component into smaller pieces before testing');
       guidelines.push('   - Creating integration tests for complex workflows');
       guidelines.push('   - Using test.each() for data-driven tests');
     } else if (analysis.complexity > 50) {
-      guidelines.push(`⚠️  MODERATE Total Complexity (${analysis.complexity}/100). Consider:`);
+      guidelines.push(`  MODERATE Total Complexity (${analysis.complexity}/100). Consider:`);
       guidelines.push('   - Breaking tests into multiple describe blocks');
       guidelines.push('   - Testing integration scenarios');
       guidelines.push('   - Grouping related test cases');
@@ -143,13 +143,13 @@ Create the test file at: ${testPath}
     // ===== Max Function Complexity Warning =====
     if (analysis.maxComplexity > 75) {
       guidelines.push(
-        `🔴 HIGH Single Function Complexity (max: ${analysis.maxComplexity}/100). Consider:`,
+        ` HIGH Single Function Complexity (max: ${analysis.maxComplexity}/100). Consider:`,
       );
       guidelines.push('   - Breaking down the complex function into smaller helpers');
       guidelines.push('   - Extracting logic into custom hooks or utility functions');
     } else if (analysis.maxComplexity > 50) {
       guidelines.push(
-        `⚠️  MODERATE Single Function Complexity (max: ${analysis.maxComplexity}/100). Consider:`,
+        `  MODERATE Single Function Complexity (max: ${analysis.maxComplexity}/100). Consider:`,
       );
       guidelines.push('   - Simplifying conditional logic');
       guidelines.push('   - Using early returns to reduce nesting');
@@ -157,18 +157,18 @@ Create the test file at: ${testPath}
 
     // ===== State Management =====
     if (analysis.hasState && analysis.hasEffects) {
-      guidelines.push('🔄 State + Effects detected:');
+      guidelines.push(' State + Effects detected:');
       guidelines.push('   - Test state initialization and updates');
       guidelines.push('   - Test useEffect dependencies array');
       guidelines.push('   - Test cleanup functions (return from useEffect)');
       guidelines.push('   - Use waitFor() for async state changes');
     } else if (analysis.hasState) {
-      guidelines.push('📊 State management detected:');
+      guidelines.push(' State management detected:');
       guidelines.push('   - Test initial state values');
       guidelines.push('   - Test all state transitions');
       guidelines.push('   - Test state reset/cleanup scenarios');
     } else if (analysis.hasEffects) {
-      guidelines.push('⚡ Side effects detected:');
+      guidelines.push(' Side effects detected:');
       guidelines.push('   - Test effect execution conditions');
       guidelines.push('   - Verify dependencies array correctness');
       guidelines.push('   - Test cleanup on unmount');
@@ -181,7 +181,7 @@ Create the test file at: ${testPath}
       if (analysis.hasMemo) features.push('useMemo');
       if (analysis.hasComponentMemo) features.push('React.memo');
 
-      guidelines.push(`🚀 Performance optimization (${features.join(', ')}):`);
+      guidelines.push(` Performance optimization (${features.join(', ')}):`);
       guidelines.push('   - Verify callbacks maintain referential equality');
       guidelines.push('   - Test memoization dependencies');
       guidelines.push('   - Ensure expensive computations are cached');
@@ -192,7 +192,7 @@ Create the test file at: ${testPath}
 
     // ===== Ref Forwarding =====
     if (analysis.hasForwardRef || analysis.hasImperativeHandle) {
-      guidelines.push('🔗 Ref forwarding detected:');
+      guidelines.push(' Ref forwarding detected:');
       guidelines.push('   - Test ref attachment to DOM elements');
       if (analysis.hasImperativeHandle) {
         guidelines.push('   - Test all exposed imperative methods');
@@ -202,7 +202,7 @@ Create the test file at: ${testPath}
 
     // ===== Suspense and Lazy Loading =====
     if (analysis.hasSuspense) {
-      guidelines.push('⏳ Suspense/Lazy loading detected:');
+      guidelines.push(' Suspense/Lazy loading detected:');
       guidelines.push('   - Test fallback UI during loading');
       guidelines.push('   - Test component behavior after lazy load completes');
       guidelines.push('   - Test error boundaries with failed loads');
@@ -210,7 +210,7 @@ Create the test file at: ${testPath}
 
     // ===== Portal =====
     if (analysis.hasPortal) {
-      guidelines.push('🚪 Portal rendering detected:');
+      guidelines.push(' Portal rendering detected:');
       guidelines.push('   - Test content renders in portal target');
       guidelines.push('   - Test portal cleanup on unmount');
       guidelines.push('   - Verify event bubbling through portal');
@@ -218,7 +218,7 @@ Create the test file at: ${testPath}
 
     // ===== API Calls =====
     if (analysis.hasAPI) {
-      guidelines.push('🌐 API calls detected:');
+      guidelines.push(' API calls detected:');
       guidelines.push('   - Mock API calls/hooks (useQuery, useMutation, fetch, etc.)');
       guidelines.push('   - Test loading, success, and error states');
       guidelines.push('   - Focus on component behavior, not the data fetching lib');
@@ -226,7 +226,7 @@ Create the test file at: ${testPath}
 
     // ===== ahooks =====
     if (analysis.hasAhooks) {
-      guidelines.push('🪝 ahooks detected (mock only, no need to test the lib):');
+      guidelines.push(' ahooks detected (mock only, no need to test the lib):');
       guidelines.push('   - Mock ahooks utilities (useBoolean, useRequest, etc.)');
       guidelines.push('   - Focus on testing how your component uses the hooks');
       guidelines.push('   - Use fake timers if debounce/throttle is involved');
@@ -234,7 +234,7 @@ Create the test file at: ${testPath}
 
     // ===== Routing =====
     if (analysis.hasRouter) {
-      guidelines.push('🔀 Next.js routing detected:');
+      guidelines.push(' Next.js routing detected:');
       guidelines.push('   - Mock useRouter, usePathname, useSearchParams');
       guidelines.push('   - Test navigation behavior and parameters');
       guidelines.push('   - Test query string handling');
@@ -243,7 +243,7 @@ Create the test file at: ${testPath}
 
     // ===== Event Handlers =====
     if (analysis.hasEvents) {
-      guidelines.push('🎯 Event handlers detected:');
+      guidelines.push(' Event handlers detected:');
       guidelines.push('   - Test all onClick, onChange, onSubmit handlers');
       guidelines.push('   - Test keyboard events (Enter, Escape, etc.)');
       guidelines.push('   - Verify event.preventDefault() calls if needed');
@@ -252,7 +252,7 @@ Create the test file at: ${testPath}
 
     // ===== Domain-Specific Components =====
     if (analysis.path.includes('workflow')) {
-      guidelines.push('⚙️  Workflow component:');
+      guidelines.push('  Workflow component:');
       guidelines.push('   - Test node configuration and validation');
       guidelines.push('   - Test data flow and variable passing');
       guidelines.push('   - Test edge connections and graph structure');
@@ -260,7 +260,7 @@ Create the test file at: ${testPath}
     }
 
     if (analysis.path.includes('dataset')) {
-      guidelines.push('📚 Dataset component:');
+      guidelines.push(' Dataset component:');
       guidelines.push('   - Test file upload and validation');
       guidelines.push('   - Test pagination and data loading');
       guidelines.push('   - Test search and filtering');
@@ -268,7 +268,7 @@ Create the test file at: ${testPath}
     }
 
     if (analysis.path.includes('app/configuration') || analysis.path.includes('config')) {
-      guidelines.push('⚙️  Configuration component:');
+      guidelines.push('  Configuration component:');
       guidelines.push('   - Test form validation thoroughly');
       guidelines.push('   - Test save/reset functionality');
       guidelines.push('   - Test required vs optional fields');
@@ -277,7 +277,7 @@ Create the test file at: ${testPath}
 
     // ===== File Size Warning =====
     if (analysis.lineCount > 500) {
-      guidelines.push('📏 Large component (500+ lines):');
+      guidelines.push(' Large component (500+ lines):');
       guidelines.push('   - Consider splitting into smaller components');
       guidelines.push('   - Test major sections separately');
       guidelines.push('   - Use helper functions to reduce test complexity');
@@ -299,17 +299,17 @@ class TestReviewPromptBuilder {
 
     return `
 ╔════════════════════════════════════════════════════════════════════════════╗
-║                 ✅ REVIEW TEST FOR DIFY COMPONENT                           ║
+║                  REVIEW TEST FOR DIFY COMPONENT                           ║
 ╚════════════════════════════════════════════════════════════════════════════╝
 
-📂 Component Path: ${analysis.path}
-🧪 Test File: ${testPath}
+ Component Path: ${analysis.path}
+ Test File: ${testPath}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-📝 REVIEW TASK:
+ REVIEW TASK:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-📋 PROMPT FOR AI ASSISTANT (COPY THIS TO YOUR AI ASSISTANT):
+ PROMPT FOR AI ASSISTANT (COPY THIS TO YOUR AI ASSISTANT):
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 You are reviewing the frontend test coverage for @${analysis.path}.
@@ -345,7 +345,7 @@ Output format:
 
 function showHelp() {
   console.log(`
-📋 Component Analyzer - Generate test prompts for AI assistants
+ Component Analyzer - Generate test prompts for AI assistants
 
 Usage:
   node analyze-component.js <component-path> [options]
@@ -403,7 +403,7 @@ function main() {
 
   // Check if path exists
   if (!fs.existsSync(absolutePath)) {
-    console.error(`❌ Error: Path not found: ${componentPath}`);
+    console.error(` Error: Path not found: ${componentPath}`);
     process.exit(1);
   }
 
@@ -417,7 +417,7 @@ function main() {
       // List available files for user to choose
       const availableFiles = listAnalyzableFiles(absolutePath);
       console.error(
-        `❌ Error: Directory does not contain a recognizable entry file: ${componentPath}`,
+        ` Error: Directory does not contain a recognizable entry file: ${componentPath}`,
       );
       if (availableFiles.length > 0) {
         console.error(`\n   Available files to analyze:`);
@@ -441,20 +441,20 @@ function main() {
   if (!isReviewMode && !isJsonMode && (analysis.complexity > 75 || analysis.lineCount > 300)) {
     console.log(`
 ╔════════════════════════════════════════════════════════════════════════════╗
-║                     ⚠️  COMPONENT TOO COMPLEX TO TEST                       ║
+║                       COMPONENT TOO COMPLEX TO TEST                       ║
 ╚════════════════════════════════════════════════════════════════════════════╝
 
-📍 Component: ${analysis.name}
-📂 Path: ${analysis.path}
+ Component: ${analysis.name}
+ Path: ${analysis.path}
 
-📊 Component Metrics:
+ Component Metrics:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Total Complexity:     ${analysis.complexity}/100 ${analysis.complexity > 75 ? '🔴 TOO HIGH' : analysis.complexity > 50 ? '⚠️  WARNING' : '🟢 OK'}
-Max Func Complexity:  ${analysis.maxComplexity}/100 ${analysis.maxComplexity > 75 ? '🔴 TOO HIGH' : analysis.maxComplexity > 50 ? '⚠️  WARNING' : '🟢 OK'}
-Lines:                ${analysis.lineCount} ${analysis.lineCount > 300 ? '🔴 TOO LARGE' : '🟢 OK'}
+Total Complexity:     ${analysis.complexity}/100 ${analysis.complexity > 75 ? ' TOO HIGH' : analysis.complexity > 50 ? '  WARNING' : ' OK'}
+Max Func Complexity:  ${analysis.maxComplexity}/100 ${analysis.maxComplexity > 75 ? ' TOO HIGH' : analysis.maxComplexity > 50 ? '  WARNING' : ' OK'}
+Lines:                ${analysis.lineCount} ${analysis.lineCount > 300 ? ' TOO LARGE' : ' OK'}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-🚫 RECOMMENDATION: REFACTOR BEFORE TESTING
+ RECOMMENDATION: REFACTOR BEFORE TESTING
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 This component is too complex to test effectively. Please consider:
@@ -479,7 +479,7 @@ This component is too complex to test effectively. Please consider:
    - Generate tests for the refactored components
    - Tests will be easier to write and maintain
 
-💡 TIP: Aim for components with:
+ TIP: Aim for components with:
    - Cognitive Complexity < 50/100 (preferably < 25/100)
    - Line count < 300 (preferably < 200)
    - Single responsibility principle
@@ -502,7 +502,7 @@ This component is too complex to test effectively. Please consider:
     const absoluteTestPath = path.resolve(process.cwd(), testPath);
 
     if (!fs.existsSync(absoluteTestPath)) {
-      console.error(`❌ Error: Test file not found: ${testPath}`);
+      console.error(` Error: Test file not found: ${testPath}`);
       process.exit(1);
     }
 
@@ -538,7 +538,7 @@ This component is too complex to test effectively. Please consider:
     });
 
     if (result.status === 0) {
-      console.log('\n📋 Prompt copied to clipboard!');
+      console.log('\n Prompt copied to clipboard!');
       console.log('   Paste it in your AI assistant:');
       console.log('   - Cursor: Cmd+L (Chat) or Cmd+I (Composer)');
       console.log('   - GitHub Copilot Chat: Cmd+I');

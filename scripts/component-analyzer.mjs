@@ -354,10 +354,10 @@ export class ComponentAnalyzer {
    * - Usage Score: 0-100 (based on reference count)
    *
    * Priority Levels (0-100):
-   * - 0-25: 🟢 LOW
-   * - 26-50: 🟡 MEDIUM
-   * - 51-75: 🟠 HIGH
-   * - 76-100: 🔴 CRITICAL
+   * - 0-25:  LOW
+   * - 26-50:  MEDIUM
+   * - 51-75:  HIGH
+   * - 76-100:  CRITICAL
    */
   calculateTestPriority(complexity, usageCount) {
     const complexityScore = complexity;
@@ -385,10 +385,10 @@ export class ComponentAnalyzer {
    * Get priority level based on score (0-100 scale)
    */
   getPriorityLevel(score) {
-    if (score > 75) return '🔴 CRITICAL';
-    if (score > 50) return '🟠 HIGH';
-    if (score > 25) return '🟡 MEDIUM';
-    return '🟢 LOW';
+    if (score > 75) return ' CRITICAL';
+    if (score > 50) return ' HIGH';
+    if (score > 25) return ' MEDIUM';
+    return ' LOW';
   }
 }
 
@@ -465,7 +465,7 @@ export function listAnalyzableFiles(dirPath) {
  * Extract copy content from prompt (for clipboard)
  */
 export function extractCopyContent(prompt) {
-  const marker = '📋 PROMPT FOR AI ASSISTANT (COPY THIS TO YOUR AI ASSISTANT):';
+  const marker = ' PROMPT FOR AI ASSISTANT (COPY THIS TO YOUR AI ASSISTANT):';
   const markerIndex = prompt.indexOf(marker);
   if (markerIndex === -1) return '';
 
@@ -493,8 +493,8 @@ export function extractCopyContent(prompt) {
  * Get complexity level label
  */
 export function getComplexityLevel(score) {
-  if (score <= 25) return '🟢 Simple';
-  if (score <= 50) return '🟡 Medium';
-  if (score <= 75) return '🟠 Complex';
-  return '🔴 Very Complex';
+  if (score <= 25) return ' Simple';
+  if (score <= 50) return ' Medium';
+  if (score <= 75) return ' Complex';
+  return ' Very Complex';
 }

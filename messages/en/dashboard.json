@@ -3,7 +3,7 @@
   "heroDescription": "Personalized quizzes, flashcards, and smart review tools to help you learn faster.",
   "getFreeStarted": "Get Started for Free",
   "logIn": "Log In",
-  "welcome": "Welcome back, {name}! 👋",
+  "welcome": "Welcome back, {name}!",
   "keepMomentum": "You're doing great! Keep up the momentum.",
   "dailyGoal": "Daily Goal",
   "questionsDue": "{count} questions due",

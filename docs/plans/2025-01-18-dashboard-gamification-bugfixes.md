@@ -841,7 +841,7 @@ export function DashboardClient({ userEmail }: DashboardClientProps) {
   }, [router]);
 
   const handleShare = useCallback(() => {
-    const text = `I'm on a ${stats?.streak || 0} day streak learning with RinKuzu! 🚀 Earned ${stats?.xp || 0} XP so far. Level ${stats?.level || 1}!`;
+    const text = `I'm on a ${stats?.streak || 0} day streak learning with RinKuzu!  Earned ${stats?.xp || 0} XP so far. Level ${stats?.level || 1}!`;
     if (navigator.share) {
       navigator.share({
         title: 'My RinKuzu Progress',
@@ -1174,13 +1174,13 @@ git tag -a v1.1.0-gamification-fixes -m "Dashboard gamification bug fixes comple
 
 ## Summary of Changes
 
-| Bug                            | Status   | Solution                                             |
-| ------------------------------ | -------- | ---------------------------------------------------- |
-| Level không tính               | ✅ Fixed | `calculateLevel(xp) = floor(xp/100) + 1`             |
-| Weekly Progress static         | ✅ Fixed | New `WeeklyProgressHeatmap` component with real data |
-| Accuracy placeholder           | ✅ Fixed | 7-day moving average calculation                     |
-| longestStreak không hiển thị   | ✅ Fixed | Added "Best Streak" StatCard                         |
-| totalReviewSessions không tăng | ✅ Fixed | Increment once per day on review                     |
+| Bug                            | Status | Solution                                             |
+| ------------------------------ | ------ | ---------------------------------------------------- |
+| Level không tính               | Fixed  | `calculateLevel(xp) = floor(xp/100) + 1`             |
+| Weekly Progress static         | Fixed  | New `WeeklyProgressHeatmap` component with real data |
+| Accuracy placeholder           | Fixed  | 7-day moving average calculation                     |
+| longestStreak không hiển thị   | Fixed  | Added "Best Streak" StatCard                         |
+| totalReviewSessions không tăng | Fixed  | Increment once per day on review                     |
 
 ## Files Changed
 

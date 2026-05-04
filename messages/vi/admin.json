@@ -152,6 +152,6 @@
   "adminDeleteQuiz": "Xóa Quiz",
   "deleteQuizConfirm": "Bạn có chắc chắn muốn xóa quiz này?",
   "author": "Tác giả:",
-  "deleteQuizWarning": "⚠️ Cảnh báo: Hành động này không thể hoàn tác.",
+  "deleteQuizWarning": "Cảnh báo: Hành động này không thể hoàn tác.",
   "deleteQuizButton": "Xóa Quiz"
 }

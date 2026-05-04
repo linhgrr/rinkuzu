@@ -88,7 +88,7 @@ export default function SetupPage() {
         <Card>
           <CardHeader>
             <CardTitle className="text-center">
-              {setupStatus?.adminExists ? '✅ Setup Complete' : '🚀 Admin Setup Required'}
+              {setupStatus?.adminExists ? 'Setup Complete' : 'Admin Setup Required'}
             </CardTitle>
             <CardDescription className="text-center">
               {setupStatus?.adminExists
@@ -113,7 +113,9 @@ export default function SetupPage() {
             {setupStatus?.adminExists ? (
               <div className="space-y-4">
                 <div className="text-center py-8">
-                  <div className="text-4xl mb-4">✅</div>
+                  <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-100 text-sm font-bold text-green-700">
+                    OK
+                  </div>
                   <h3 className="text-lg font-semibold text-neutral-900 mb-2">
                     Setup Already Complete
                   </h3>
@@ -147,7 +149,7 @@ export default function SetupPage() {
                       <strong>Password:</strong> linhdzqua148
                     </p>
                     <p className="text-xs mt-2 text-brand-trust">
-                      ⚠️ Please change the password after first login
+                      Please change the password after first login
                     </p>
                   </div>
                 </div>
@@ -176,7 +178,9 @@ export default function SetupPage() {
             ) : (
               <div className="space-y-4">
                 <div className="text-center py-8">
-                  <div className="text-4xl mb-4">🔒</div>
+                  <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-neutral-100 text-sm font-bold text-neutral-700">
+                    LOCK
+                  </div>
                   <h3 className="text-lg font-semibold text-neutral-900 mb-2">Setup Not Allowed</h3>
                   <p className="text-neutral-600 mb-4">
                     Admin setup is only allowed for new installations or when no admin exists.
@@ -212,7 +216,7 @@ export default function SetupPage() {
         <Card>
           <CardContent className="p-4">
             <div className="text-center text-xs text-neutral-500">
-              <p className="font-semibold mb-1">🔐 Security Notice</p>
+              <p className="font-semibold mb-1">Security Notice</p>
               <p>
                 This setup page is only available for initial installation. After creating an admin
                 account, please change the default password immediately.

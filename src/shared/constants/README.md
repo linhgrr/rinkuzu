@@ -116,14 +116,14 @@ const params = createQuizSearchParams(1, 12, 'published', 'search term');
 
 ## Best Practices
 
-### ✅ DO:
+### DO:
 
 - Sử dụng constants thay vì magic numbers/strings
 - Import từ central point (`@/shared/constants`)
 - Sử dụng TypeScript types được export
 - Thêm utility functions cho logic phức tạp
 
-### ❌ DON'T:
+### DON'T:
 
 - Hardcode values trực tiếp trong components
 - Duplicate constants ở nhiều files
@@ -153,12 +153,12 @@ Khi thêm constants mới:
 Khi refactor code cũ:
 
 ```typescript
-// Before ❌
+// Before
 const interval = 8000;
 const url = '/api/quizzes';
 router.push('/quiz/' + slug);
 
-// After ✅
+// After
 const interval = ANIMATIONS.EMOTION_CHANGE_INTERVAL;
 const url = API_ENDPOINTS.QUIZ.BASE;
 router.push(ROUTES.QUIZ.VIEW(slug));

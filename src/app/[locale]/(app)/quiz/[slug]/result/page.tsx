@@ -46,6 +46,8 @@ interface BookmarkSummary {
   questionIndex: number;
 }
 
+type BookmarkMessageTone = 'success' | 'warning' | 'error';
+
 export default function QuizResultPage() {
   const t = useTranslations('quiz');
   const tProfile = useTranslations('profile');
@@ -80,6 +82,7 @@ export default function QuizResultPage() {
   const [bookmarkIdsByQuestion, setBookmarkIdsByQuestion] = useState<Record<number, string>>({});
   const [bookmarkLoading, setBookmarkLoading] = useState<Set<number>>(new Set());
   const [bookmarkMessage, setBookmarkMessage] = useState<string>('');
+  const [bookmarkMessageTone, setBookmarkMessageTone] = useState<BookmarkMessageTone>('success');
   const [bookmarkToRemove, setBookmarkToRemove] = useState<number | null>(null);
 
   // Check which questions are already bookmarked
@@ -130,11 +133,11 @@ export default function QuizResultPage() {
   };
 
   const getScoreMessage = (score: number) => {
-    if (score >= 90) return `${tProfile('excellent')} 🎉`;
-    if (score >= 80) return `${tProfile('great')} 👍`;
-    if (score >= 70) return `${tProfile('good')} 👌`;
-    if (score >= 60) return `${tProfile('pass')} 📚`;
-    return `${tProfile('needsWork')} 💪`;
+    if (score >= 90) return tProfile('excellent');
+    if (score >= 80) return tProfile('great');
+    if (score >= 70) return tProfile('good');
+    if (score >= 60) return tProfile('pass');
+    return tProfile('needsWork');
   };
 
   const formatAnswer = (
@@ -217,7 +220,8 @@ export default function QuizResultPage() {
     if (!result) return;
     const bookmarkId = bookmarkIdsByQuestion[questionIndex];
     if (!bookmarkId) {
-      setBookmarkMessage('❌ Bookmark not found, please refresh and try again');
+      setBookmarkMessageTone('error');
+      setBookmarkMessage('Bookmark not found, please refresh and try again');
       setTimeout(() => setBookmarkMessage(''), 3000);
       return;
     }
@@ -237,10 +241,12 @@ export default function QuizResultPage() {
         return next;
       });
       setBookmarkToRemove(null);
-      setBookmarkMessage('✅ Bookmark removed');
+      setBookmarkMessageTone('success');
+      setBookmarkMessage('Bookmark removed');
     } catch (error: any) {
       console.error('Error removing bookmark:', error);
-      setBookmarkMessage(error.message || '❌ Network error, please try again');
+      setBookmarkMessageTone('error');
+      setBookmarkMessage(error.message || 'Network error, please try again');
     } finally {
       setBookmarkLoading((prev) => {
         const newSet = new Set(prev);
@@ -291,14 +297,17 @@ export default function QuizResultPage() {
       if (created.data?._id) {
         setBookmarkIdsByQuestion((prev) => ({ ...prev, [questionIndex]: created.data._id }));
       }
-      setBookmarkMessage('✅ Question bookmarked successfully!');
+      setBookmarkMessageTone('success');
+      setBookmarkMessage('Question bookmarked successfully!');
     } catch (error: any) {
       console.error('Error toggling bookmark:', error);
 
       if (error.message === 'Question already bookmarked') {
-        setBookmarkMessage('⚠️ This question is already bookmarked');
+        setBookmarkMessageTone('warning');
+        setBookmarkMessage('This question is already bookmarked');
       } else {
-        setBookmarkMessage('❌ Network error, please try again');
+        setBookmarkMessageTone('error');
+        setBookmarkMessage('Network error, please try again');
       }
 
       setTimeout(() => setBookmarkMessage(''), 3000);
@@ -486,7 +495,7 @@ export default function QuizResultPage() {
                 return totalTurns > 0 ? (
                   <div className="border-t pt-4">
                     <h4 className="text-sm font-medium text-neutral-700 mb-3">
-                      💬 {tProfile('chatWithRinChan')} Statistics
+                      {tProfile('chatWithRinChan')} Statistics
                     </h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="text-center p-3 bg-green-50 rounded-lg">
@@ -510,9 +519,9 @@ export default function QuizResultPage() {
         {bookmarkMessage && (
           <div
             className={`mb-4 p-4 rounded-lg border ${
-              bookmarkMessage.includes('✅')
+              bookmarkMessageTone === 'success'
                 ? 'bg-green-50 border-green-200 text-green-800'
-                : bookmarkMessage.includes('⚠️')
+                : bookmarkMessageTone === 'warning'
                   ? 'bg-yellow-50 border-yellow-200 text-yellow-800'
                   : 'bg-red-50 border-red-200 text-red-800'
             }`}
@@ -573,11 +582,11 @@ export default function QuizResultPage() {
                           }
                         >
                           {bookmarkLoading.has(index) ? (
-                            <span className="animate-spin">⏳</span>
+                            <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
                           ) : bookmarkedQuestions.has(index) ? (
-                            '⭐'
+                            t('bookmarked')
                           ) : (
-                            '☆'
+                            t('bookmark')
                           )}
                         </Button>
                         <Button
@@ -760,7 +769,7 @@ export default function QuizResultPage() {
           }
           messages={getHistory(currentQuestionIndex)}
           userLabel={tProfile('you')}
-          assistantLabel={`🎓 ${tProfile('rinChan')}`}
+          assistantLabel={tProfile('rinChan')}
           userQuestion={userQuestion}
           onUserQuestionChange={setUserQuestion}
           onKeyDown={handleKeyPress}
@@ -772,7 +781,7 @@ export default function QuizResultPage() {
           aiError={aiError}
           inputPlaceholder={t('questionPlaceholder')}
           inputMode="textarea"
-          inputHintLeft={`💡 ${t('leaveEmptyGeneral')}`}
+          inputHintLeft={t('leaveEmptyGeneral')}
           inputHintRight={`Press Ctrl+Enter ${t('send', { ns: 'common' })}`}
           clearLabel={t('clear', { ns: 'common' })}
           onClearHistory={() => clearChatHistory(currentQuestionIndex)}

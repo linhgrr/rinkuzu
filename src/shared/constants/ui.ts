@@ -45,11 +45,11 @@ export const LAYOUT = {
 export const EMOTIONS = ['happy', 'wink', 'smile', 'wave', 'dance'] as const;
 
 export const EMOTION_LABELS = {
-  happy: '😊 Happy',
-  wink: '😉 Wink',
-  smile: '😄 Smile',
-  wave: '👋 Wave',
-  dance: '💃 Dance',
+  happy: 'Happy',
+  wink: 'Wink',
+  smile: 'Smile',
+  wave: 'Wave',
+  dance: 'Dance',
 } as const;
 
 export const MAGIC_EFFECTS = {

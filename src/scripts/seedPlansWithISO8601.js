@@ -144,7 +144,7 @@ async function seedPlans() {
     }
 
     const totalPlans = await Plan.countDocuments();
-    console.warn(`\n🎉 Seeding completed! Total plans: ${totalPlans}`);
+    console.warn(`\n Seeding completed! Total plans: ${totalPlans}`);
 
     // Display summary
     console.warn('\nPlan Summary:');

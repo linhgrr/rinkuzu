@@ -1,12 +1,12 @@
 You are a senior full-stack engineer.
 
 ────────────────────────────────────────────────
-🌟 Goal
+Goal
 ────────────────────────────────────────────────
 Build a web app that lets teachers create interactive quizzes from PDF files, with an admin approval flow.
 
 ────────────────────────────────────────────────
-🛠 Tech stack (hard constraints)
+Tech stack (hard constraints)
 ────────────────────────────────────────────────
 Framework: **Next.js 14** (App Router, server actions) – runs perfectly on Vercel  
 Language: TypeScript (ES2022)  
@@ -19,7 +19,7 @@ PDF ⇆ Gemini: inline base64 ≤ 20 MB or URL (auto-detect)
 Key rotation: array of API keys, round-robin + automatic retry ≤ 3
 
 ────────────────────────────────────────────────
-🔑 Environment variables (.env.local)
+Environment variables (.env.local)
 ────────────────────────────────────────────────
 
 ```
@@ -32,7 +32,7 @@ JWT\_EXPIRES\_IN=30m
 ```
 
 ────────────────────────────────────────────────
-📄 Data models (Mongoose)
+Data models (Mongoose)
 ────────────────────────────────────────────────
 
 ```ts
@@ -69,7 +69,7 @@ export interface IAttempt extends Document {
 ```
 
 ────────────────────────────────────────────────
-📂 API routes (App Router)
+API routes (App Router)
 ────────────────────────────────────────────────
 
 ```
@@ -90,7 +90,7 @@ GET    /api/admin/users/[id]/attempts # admin view user history
 _All handlers are server actions located in `src/app/api/.../route.ts`._
 
 ────────────────────────────────────────────────
-🏗 Gemini helper (key rotation + PDF logic)
+Gemini helper (key rotation + PDF logic)
 ────────────────────────────────────────────────
 
 ```ts
@@ -136,7 +136,7 @@ export async function extractQuestionsFromPdf(buffer: Buffer | string) {
 ```
 
 ────────────────────────────────────────────────
-🎨 Frontend routes & pages
+Frontend routes & pages
 ────────────────────────────────────────────────
 
 ```
@@ -155,7 +155,7 @@ export async function extractQuestionsFromPdf(buffer: Buffer | string) {
 _Use `react-dropzone` for PDF uploads; call `/api/quizzes` via server action._
 
 ────────────────────────────────────────────────
-💾 Deployment on Vercel
+Deployment on Vercel
 ────────────────────────────────────────────────
 
 1. Push repo to GitHub.
@@ -164,7 +164,7 @@ _Use `react-dropzone` for PDF uploads; call `/api/quizzes` via server action._
 4. Done; API routes become serverless functions.
 
 ────────────────────────────────────────────────
-📦 Deliverables
+Deliverables
 ────────────────────────────────────────────────
 
 1. Full Next.js project structure (`src/` with pages, components, lib, models).
@@ -173,7 +173,7 @@ _Use `react-dropzone` for PDF uploads; call `/api/quizzes` via server action._
 4. `.env.example`.
 
 ────────────────────────────────────────────────
-🔄 Generation instructions
+Generation instructions
 ────────────────────────────────────────────────
 
 1. First output the file-tree.

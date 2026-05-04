@@ -21,24 +21,24 @@ export default function TestImageUploadPage() {
   };
 
   const updateQuestionImage = (imageUrl: string) => {
-    addLog(`📸 Question image updated: ${imageUrl}`);
+    addLog(`Question image updated: ${imageUrl}`);
     setQuestionImage(imageUrl);
   };
 
   const removeQuestionImage = () => {
-    addLog(`🗑️ Question image removed`);
+    addLog(`Question image removed`);
     setQuestionImage(undefined);
   };
 
   const updateOptionImage = (index: number, imageUrl: string) => {
-    addLog(`📸 Option ${index + 1} image updated: ${imageUrl}`);
+    addLog(`Option ${index + 1} image updated: ${imageUrl}`);
     const updated = [...optionImages];
     updated[index] = imageUrl;
     setOptionImages(updated);
   };
 
   const removeOptionImage = (index: number) => {
-    addLog(`🗑️ Option ${index + 1} image removed`);
+    addLog(`Option ${index + 1} image removed`);
     const updated = [...optionImages];
     updated[index] = undefined;
     setOptionImages(updated);
@@ -58,9 +58,9 @@ export default function TestImageUploadPage() {
         totalImages: (questionImage ? 1 : 0) + optionImages.filter(Boolean).length,
       },
     };
-    console.warn('📋 Current state:', state);
+    console.warn('Current state:', state);
     addLog(
-      `📋 State exported - Q: ${!!questionImage}, Options: ${optionImages.filter(Boolean).length}`,
+      `State exported - Q: ${!!questionImage}, Options: ${optionImages.filter(Boolean).length}`,
     );
   };
 
@@ -91,7 +91,7 @@ export default function TestImageUploadPage() {
                 {questionImage && (
                   <div className="mt-4 p-3 bg-green-50 rounded-lg">
                     <p className="text-sm text-green-700">
-                      ✅ Question image uploaded:
+                      Question image uploaded:
                       <br />
                       <code className="text-xs break-all">{questionImage}</code>
                     </p>
@@ -115,7 +115,7 @@ export default function TestImageUploadPage() {
                     />
                     {optionImages[index] && (
                       <div className="mt-2 p-2 bg-green-50 rounded text-xs text-brand-trust break-all">
-                        ✅ Image: {optionImages[index]}
+                        Image: {optionImages[index]}
                       </div>
                     )}
                   </div>
@@ -167,7 +167,7 @@ export default function TestImageUploadPage() {
                 <div className="mb-4 p-3 bg-green-50 rounded-lg">
                   <h4 className="font-medium text-green-800 mb-2">Current State:</h4>
                   <div className="text-sm text-green-700 space-y-1">
-                    <div>Question Image: {questionImage ? '✅ Yes' : '❌ No'}</div>
+                    <div>Question Image: {questionImage ? 'Yes' : 'No'}</div>
                     <div>Option Images: {optionImages.filter(Boolean).length}/4</div>
                     <div>
                       Total Images: {(questionImage ? 1 : 0) + optionImages.filter(Boolean).length}

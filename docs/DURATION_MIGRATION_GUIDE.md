@@ -18,11 +18,11 @@ This guide covers the migration from legacy string-based duration format to stan
 
 ### Issues:
 
-- ❌ **Not standardized** - Multiple languages and formats
-- ❌ **Hard to calculate** - Requires string parsing
-- ❌ **Not machine-readable** - No international standard
-- ❌ **Difficult to extend** - Adding new durations is complex
-- ❌ **Query inefficient** - Database operations are slow
+- **Not standardized** - Multiple languages and formats
+- **Hard to calculate** - Requires string parsing
+- **Not machine-readable** - No international standard
+- **Difficult to extend** - Adding new durations is complex
+- **Query inefficient** - Database operations are slow
 
 ## Solution: ISO 8601 Duration Format
 
@@ -39,11 +39,11 @@ This guide covers the migration from legacy string-based duration format to stan
 
 ### Benefits:
 
-- ✅ **International standard** - ISO 8601 globally recognized
-- ✅ **Machine readable** - Easy parsing and calculation
-- ✅ **Type safe** - Proper validation
-- ✅ **Database efficient** - Better indexing and querying
-- ✅ **Future proof** - Easy to extend with new durations
+- **International standard** - ISO 8601 globally recognized
+- **Machine readable** - Easy parsing and calculation
+- **Type safe** - Proper validation
+- **Database efficient** - Better indexing and querying
+- **Future proof** - Easy to extend with new durations
 
 ## ISO 8601 Duration Format
 

@@ -7,6 +7,7 @@ import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { StreamingChatModal } from '@/features/quiz/components/chat/StreamingChatModal';
 import { QuestionOptionsPreview } from '@/features/quiz/components/shared/QuestionOptionsPreview';
 import { useStreamingChatSession } from '@/features/quiz/hooks/useStreamingChatSession';
@@ -38,6 +39,7 @@ interface QuizResult {
 }
 
 interface BookmarkSummary {
+  _id: string;
   quiz: {
     slug: string;
   };
@@ -75,20 +77,25 @@ export default function QuizResultPage() {
 
   // Bookmark states
   const [bookmarkedQuestions, setBookmarkedQuestions] = useState<Set<number>>(new Set());
+  const [bookmarkIdsByQuestion, setBookmarkIdsByQuestion] = useState<Record<number, string>>({});
   const [bookmarkLoading, setBookmarkLoading] = useState<Set<number>>(new Set());
   const [bookmarkMessage, setBookmarkMessage] = useState<string>('');
+  const [bookmarkToRemove, setBookmarkToRemove] = useState<number | null>(null);
 
   // Check which questions are already bookmarked
   const checkBookmarkedQuestions = async (resultData: QuizResult) => {
     try {
       const data = await fetchApiSuccess<BookmarkSummary[]>('/api/bookmarks');
       const bookmarkedSet = new Set<number>();
+      const bookmarkIds: Record<number, string> = {};
       data.data.forEach((bookmark) => {
         if (bookmark.quiz.slug === resultData.quiz.slug) {
           bookmarkedSet.add(bookmark.questionIndex);
+          bookmarkIds[bookmark.questionIndex] = bookmark._id;
         }
       });
       setBookmarkedQuestions(bookmarkedSet);
+      setBookmarkIdsByQuestion(bookmarkIds);
     } catch (error) {
       console.error('Failed to check bookmarked questions:', error);
     }
@@ -206,50 +213,85 @@ export default function QuizResultPage() {
   };
 
   // Bookmark functions
-  const toggleBookmark = async (questionIndex: number, questionData: any) => {
+  const removeBookmark = async (questionIndex: number) => {
     if (!result) return;
+    const bookmarkId = bookmarkIdsByQuestion[questionIndex];
+    if (!bookmarkId) {
+      setBookmarkMessage('❌ Bookmark not found, please refresh and try again');
+      setTimeout(() => setBookmarkMessage(''), 3000);
+      return;
+    }
 
     setBookmarkLoading((prev) => new Set(prev).add(questionIndex));
 
     try {
-      if (bookmarkedQuestions.has(questionIndex)) {
-        // Remove bookmark - we need to find the bookmark ID first
-        // For now, we'll skip this functionality as it requires a more complex implementation
-        console.warn('Remove bookmark functionality not implemented yet');
-        return;
-      } else {
-        // Add bookmark
-        const bookmarkData = {
-          quiz: {
-            title: result.quiz.title,
-            slug: result.quiz.slug,
-            description: result.quiz.description,
-          },
-          question: {
-            text: questionData.question,
-            options: questionData.options,
-            type: questionData.type,
-            correctIndex: questionData.correctIndex,
-            correctIndexes: questionData.correctIndexes,
-            questionImage: questionData.questionImage,
-            optionImages: questionData.optionImages,
-          },
-          questionIndex: questionIndex,
-        };
+      await fetchApiSuccess<null>(`/api/bookmarks/${bookmarkId}`, { method: 'DELETE' });
+      setBookmarkedQuestions((prev) => {
+        const next = new Set(prev);
+        next.delete(questionIndex);
+        return next;
+      });
+      setBookmarkIdsByQuestion((prev) => {
+        const next = { ...prev };
+        delete next[questionIndex];
+        return next;
+      });
+      setBookmarkToRemove(null);
+      setBookmarkMessage('✅ Bookmark removed');
+    } catch (error: any) {
+      console.error('Error removing bookmark:', error);
+      setBookmarkMessage(error.message || '❌ Network error, please try again');
+    } finally {
+      setBookmarkLoading((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(questionIndex);
+        return newSet;
+      });
+      setTimeout(() => setBookmarkMessage(''), 3000);
+    }
+  };
 
-        await fetchApiSuccess<null>('/api/bookmarks', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(bookmarkData),
-        });
-        setBookmarkedQuestions((prev) => new Set(prev).add(questionIndex));
-        setBookmarkMessage('✅ Question bookmarked successfully!');
+  const toggleBookmark = async (questionIndex: number, questionData: any) => {
+    if (!result) return;
 
-        // Auto-hide message after 3 seconds
-        setTimeout(() => setBookmarkMessage(''), 3000);
+    if (bookmarkedQuestions.has(questionIndex)) {
+      setBookmarkToRemove(questionIndex);
+      return;
+    }
+
+    setBookmarkLoading((prev) => new Set(prev).add(questionIndex));
+
+    try {
+      const bookmarkData = {
+        quiz: {
+          title: result.quiz.title,
+          slug: result.quiz.slug,
+          description: result.quiz.description,
+        },
+        question: {
+          text: questionData.question,
+          options: questionData.options,
+          type: questionData.type,
+          correctIndex: questionData.correctIndex,
+          correctIndexes: questionData.correctIndexes,
+          questionImage: questionData.questionImage,
+          optionImages: questionData.optionImages,
+        },
+        questionIndex: questionIndex,
+      };
+
+      const created = await fetchApiSuccess<BookmarkSummary>('/api/bookmarks', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(bookmarkData),
+      });
+      setBookmarkedQuestions((prev) => new Set(prev).add(questionIndex));
+      if (created.data?._id) {
+        setBookmarkIdsByQuestion((prev) => ({ ...prev, [questionIndex]: created.data._id }));
       }
+      setBookmarkMessage('✅ Question bookmarked successfully!');
     } catch (error: any) {
       console.error('Error toggling bookmark:', error);
 
@@ -737,6 +779,16 @@ export default function QuizResultPage() {
           showTimestamps
         />
       )}
+
+      <ConfirmModal
+        isOpen={bookmarkToRemove !== null}
+        title={t('removeBookmarkTitle')}
+        message={t('removeBookmarkConfirm')}
+        confirmText={t('removeBookmark')}
+        onCancel={() => setBookmarkToRemove(null)}
+        onConfirm={() => bookmarkToRemove !== null && removeBookmark(bookmarkToRemove)}
+        isLoading={bookmarkToRemove !== null && bookmarkLoading.has(bookmarkToRemove)}
+      />
     </div>
   );
 }

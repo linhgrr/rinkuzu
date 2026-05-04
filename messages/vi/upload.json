@@ -14,5 +14,8 @@
   "maxFileSize": "PNG, JPG, GIF tối đa 10MB",
   "pleaseSelectImage": "Vui lòng chọn file hình ảnh",
   "imageTooLarge": "Kích thước file hình ảnh phải nhỏ hơn 10MB",
-  "failedToUpload": "Không thể tải hình ảnh"
+  "failedToUpload": "Không thể tải hình ảnh",
+  "removeImage": "Xóa ảnh",
+  "removeImageTitle": "Xóa ảnh?",
+  "removeImageConfirm": "Xóa ảnh này khỏi câu hỏi? Bạn có thể tải ảnh khác lên sau."
 }

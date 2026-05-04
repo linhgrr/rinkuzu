@@ -63,6 +63,7 @@ export default function EditQuizPage() {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [questionToRemove, setQuestionToRemove] = useState<number | null>(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [title, setTitle] = useState('');
@@ -669,7 +670,7 @@ export default function EditQuizPage() {
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  onClick={() => removeQuestion(index)}
+                                  onClick={() => setQuestionToRemove(index)}
                                   className="text-red-500 hover:text-red-600 hover:bg-red-50 rounded-full px-3"
                                 >
                                   <HiOutlineTrash className="w-4 h-4 mr-1" />
@@ -872,6 +873,24 @@ export default function EditQuizPage() {
           onConfirm={async () => {
             setShowDeleteConfirm(false);
             await handleDelete();
+          }}
+        />
+        <ConfirmModal
+          isOpen={questionToRemove !== null}
+          title="Remove question?"
+          message={
+            questionToRemove !== null
+              ? `Remove question ${questionToRemove + 1}? This change is not saved until you click Save.`
+              : ''
+          }
+          confirmText="Remove"
+          confirmVariant="destructive"
+          onCancel={() => setQuestionToRemove(null)}
+          onConfirm={() => {
+            if (questionToRemove !== null) {
+              removeQuestion(questionToRemove);
+              setQuestionToRemove(null);
+            }
           }}
         />
       </main>

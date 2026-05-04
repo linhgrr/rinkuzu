@@ -13,5 +13,12 @@
   "allOptions": "Các lựa chọn",
   "youChose": "Bạn chọn",
   "youChoseCorrectly": "Bạn chọn đúng",
-  "notAnswered": "Không trả lời"
+  "notAnswered": "Không trả lời",
+  "history": "Lịch sử Quiz",
+  "loadError": "Không thể tải chi tiết lượt làm",
+  "retryQuiz": "Làm lại Quiz",
+  "backToHistory": "Quay lại lịch sử",
+  "questionPrompt": "Câu hỏi",
+  "questionImageAlt": "Ảnh câu hỏi",
+  "optionImageAlt": "Ảnh lựa chọn {option}"
 }

@@ -107,5 +107,8 @@
   "unknownQuestions": "Câu hỏi chưa biết",
   "youChoseCorrect": "Bạn đã chọn đúng",
   "yourAnswer": "Câu trả lời của bạn",
-  "yourChoice": "Bạn đã chọn"
+  "yourChoice": "Bạn đã chọn",
+  "removeBookmarkTitle": "Xóa câu hỏi đã lưu?",
+  "removeBookmarkConfirm": "Xóa câu hỏi này khỏi danh sách đã lưu?",
+  "removeBookmark": "Xóa câu hỏi đã lưu"
 }

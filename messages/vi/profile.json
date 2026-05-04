@@ -53,10 +53,8 @@
   "askQuestion": "Đặt câu hỏi về vấn đề này...",
   "noDescription": "Chưa có mô tả",
   "noCategory": "Chưa có danh mục",
-
   "settingsTitle": "Cài đặt tài khoản",
   "settingsDesc": "Quản lý thông tin cá nhân và bảo mật tài khoản của bạn",
-
   "personalInfo": "Thông tin cá nhân",
   "personalInfoDesc": "Cập nhật ảnh đại diện và thông tin hiển thị",
   "displayName": "Tên hiển thị",
@@ -67,11 +65,9 @@
   "joinDate": "Ngày tham gia",
   "saveChanges": "Lưu thay đổi",
   "saving": "Đang lưu...",
-
   "changeAvatar": "Đổi ảnh",
   "removeAvatar": "Xóa ảnh",
   "uploading": "Đang tải...",
-
   "changePassword": "Đổi mật khẩu",
   "changePasswordDesc": "Đảm bảo tài khoản của bạn luôn an toàn",
   "currentPassword": "Mật khẩu hiện tại",
@@ -85,7 +81,6 @@
   "hidePassword": "Ẩn mật khẩu",
   "passwordMinLength": "Mật khẩu phải có ít nhất 6 ký tự",
   "passwordsDoNotMatch": "Mật khẩu xác nhận không khớp",
-
   "accountSection": "Tài khoản",
   "subscription": "Gói đăng ký",
   "premiumActive": "Đang sử dụng gói Premium",
@@ -93,7 +88,6 @@
   "managePlan": "Quản lý",
   "upgradePlan": "Nâng cấp",
   "accountType": "Loại tài khoản",
-
   "profileUpdated": "Cập nhật thông tin thành công",
   "passwordChanged": "Đổi mật khẩu thành công",
   "avatarUpdated": "Cập nhật ảnh đại diện thành công",
@@ -111,5 +105,9 @@
   "publicProfileNoBio": "Thành viên này chưa thêm phần giới thiệu.",
   "publishedQuizzes": "Quiz đã xuất bản",
   "publishedQuizzesCount": "{count} quiz",
-  "noPublicQuizzes": "Chưa có quiz công khai nào"
+  "noPublicQuizzes": "Chưa có quiz công khai nào",
+  "removeBookmarkTitle": "Xóa câu hỏi đã lưu?",
+  "removeBookmarkConfirm": "Xóa câu hỏi đã lưu khỏi \"{title}\"? Bạn vẫn có thể lưu lại sau.",
+  "removeAvatarConfirmTitle": "Xóa ảnh đại diện?",
+  "removeAvatarConfirmMessage": "Ảnh đại diện hiện tại sẽ bị xóa khỏi tài khoản của bạn."
 }

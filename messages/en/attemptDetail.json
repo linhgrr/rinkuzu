@@ -13,5 +13,12 @@
   "allOptions": "All Options",
   "youChose": "You chose",
   "youChoseCorrectly": "You chose correctly",
-  "notAnswered": "Not answered"
+  "notAnswered": "Not answered",
+  "history": "Quiz History",
+  "loadError": "Failed to load attempt details",
+  "retryQuiz": "Retake Quiz",
+  "backToHistory": "Back to history",
+  "questionPrompt": "Question",
+  "questionImageAlt": "Question image",
+  "optionImageAlt": "Option {option} image"
 }

@@ -107,5 +107,8 @@
   "practiceContinue": "Practice Continue",
   "total": "Total",
   "singleChoiceHelper": "Select one answer",
-  "multipleChoiceHelper": "Select multiple answers"
+  "multipleChoiceHelper": "Select multiple answers",
+  "removeBookmarkTitle": "Remove bookmark?",
+  "removeBookmarkConfirm": "Remove this question from your bookmarks?",
+  "removeBookmark": "Remove bookmark"
 }

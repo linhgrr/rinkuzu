@@ -7,6 +7,7 @@ import { usePdfProcessor } from '@/hooks/usePdfProcessor';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
+import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import {
   HiOutlineDocumentText,
   HiOutlineCheckCircle,
@@ -22,6 +23,8 @@ export function FloatingDraftProgress() {
   const t = useTranslations('draft');
   const [isExpanded, setIsExpanded] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [draftToCancel, setDraftToCancel] = useState<DraftProgress | null>(null);
+  const [draftToRemove, setDraftToRemove] = useState<DraftProgress | null>(null);
 
   const drafts = getActiveDrafts();
   const processingCount = getProcessingCount();
@@ -71,8 +74,8 @@ export function FloatingDraftProgress() {
               <DraftItem
                 key={draft.id}
                 draft={draft}
-                onRemove={() => removeDraft(draft.id)}
-                onCancel={() => handleCancel(draft.id, draft.title)}
+                onRemove={() => setDraftToRemove(draft)}
+                onCancel={() => setDraftToCancel(draft)}
                 t={t}
               />
             ))}
@@ -108,6 +111,30 @@ export function FloatingDraftProgress() {
           }`}
         />
       </button>
+      <ConfirmModal
+        isOpen={!!draftToCancel}
+        title={t('cancelConfirmTitle')}
+        message={draftToCancel ? t('cancelConfirmMessage', { title: draftToCancel.title }) : ''}
+        confirmText={t('cancel')}
+        onCancel={() => setDraftToCancel(null)}
+        onConfirm={async () => {
+          if (!draftToCancel) return;
+          await handleCancel(draftToCancel.id, draftToCancel.title);
+          setDraftToCancel(null);
+        }}
+      />
+      <ConfirmModal
+        isOpen={!!draftToRemove}
+        title={t('removeReadyDraftTitle')}
+        message={draftToRemove ? t('removeReadyDraftMessage', { title: draftToRemove.title }) : ''}
+        confirmText={t('remove')}
+        onCancel={() => setDraftToRemove(null)}
+        onConfirm={() => {
+          if (!draftToRemove) return;
+          removeDraft(draftToRemove.id);
+          setDraftToRemove(null);
+        }}
+      />
     </div>
   );
 }

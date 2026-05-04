@@ -12,5 +12,10 @@
   "questionsGenerated": "{count} questions",
   "cancel": "Cancel",
   "clickToEdit": "{count} questions – Click to edit",
-  "processingError": "Processing error"
+  "processingError": "Processing error",
+  "remove": "Remove",
+  "cancelConfirmTitle": "Cancel processing?",
+  "cancelConfirmMessage": "Cancel processing \"{title}\" and delete its draft from the server?",
+  "removeReadyDraftTitle": "Remove ready draft?",
+  "removeReadyDraftMessage": "Remove \"{title}\" from the floating progress list? The editable draft remains available from its page."
 }

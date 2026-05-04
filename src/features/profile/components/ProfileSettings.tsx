@@ -7,6 +7,7 @@ import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/Button';
+import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { Input, Textarea } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
 import { Separator } from '@/components/ui/Separator';
@@ -60,6 +61,7 @@ export default function ProfileSettings() {
 
   // Avatar
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [showRemoveAvatarConfirm, setShowRemoveAvatarConfirm] = useState(false);
 
   const fetchProfile = useCallback(async () => {
     try {
@@ -176,6 +178,7 @@ export default function ProfileSettings() {
       const data = await res.json();
       if (data.success) {
         setProfile((prev) => (prev ? { ...prev, avatar: '' } : prev));
+        setShowRemoveAvatarConfirm(false);
         toast.success(t('avatarRemoved'));
       } else {
         toast.error(data.error || t('errorRemovingAvatar'));
@@ -264,7 +267,7 @@ export default function ProfileSettings() {
                   type="button"
                   variant="ghost"
                   size="sm"
-                  onClick={handleRemoveAvatar}
+                  onClick={() => setShowRemoveAvatarConfirm(true)}
                   disabled={uploadingAvatar}
                   className="text-red-500 hover:text-red-600 hover:bg-red-50"
                 >
@@ -446,6 +449,15 @@ export default function ProfileSettings() {
           </div>
         </div>
       </Card>
+      <ConfirmModal
+        isOpen={showRemoveAvatarConfirm}
+        title={t('removeAvatarConfirmTitle')}
+        message={t('removeAvatarConfirmMessage')}
+        confirmText={t('removeAvatar')}
+        onCancel={() => setShowRemoveAvatarConfirm(false)}
+        onConfirm={handleRemoveAvatar}
+        isLoading={uploadingAvatar}
+      />
     </div>
   );
 }

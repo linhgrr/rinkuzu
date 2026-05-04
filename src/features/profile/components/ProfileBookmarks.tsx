@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import Pagination from '@/components/ui/Pagination';
 import { ROUTES } from '@/shared/constants';
 import { HiOutlineTag, HiOutlineTrash } from '@/components/icons';
@@ -55,6 +56,8 @@ export default function ProfileBookmarks() {
   const [error, setError] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState<PaginationInfo | null>(null);
+  const [bookmarkToRemove, setBookmarkToRemove] = useState<Bookmark | null>(null);
+  const [removingBookmarkId, setRemovingBookmarkId] = useState<string | null>(null);
   const itemsPerPage = 10;
 
   // AI Chat states
@@ -100,14 +103,18 @@ export default function ProfileBookmarks() {
   }, [fetchBookmarks]);
 
   const removeBookmark = async (bookmarkId: string) => {
+    setRemovingBookmarkId(bookmarkId);
     try {
       await fetchApiSuccess<null>(`/api/bookmarks/${bookmarkId}`, {
         method: 'DELETE',
       });
       setBookmarks((prev) => prev.filter((b) => b._id !== bookmarkId));
       removeHistory(bookmarkId);
+      setBookmarkToRemove(null);
     } catch (error: any) {
       setError(error.message || 'Failed to remove bookmark');
+    } finally {
+      setRemovingBookmarkId(null);
     }
   };
 
@@ -259,7 +266,7 @@ export default function ProfileBookmarks() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => removeBookmark(bookmark._id)}
+                      onClick={() => setBookmarkToRemove(bookmark)}
                       className="text-red-600 border-red-200 hover:bg-red-50 flex items-center gap-1.5"
                     >
                       <HiOutlineTrash className="w-4 h-4" /> {tCommon('remove')}
@@ -330,6 +337,18 @@ export default function ProfileBookmarks() {
           inputMode="input"
         />
       )}
+
+      <ConfirmModal
+        isOpen={!!bookmarkToRemove}
+        title={t('removeBookmarkTitle')}
+        message={
+          bookmarkToRemove ? t('removeBookmarkConfirm', { title: bookmarkToRemove.quiz.title }) : ''
+        }
+        confirmText={tCommon('remove')}
+        onCancel={() => setBookmarkToRemove(null)}
+        onConfirm={() => bookmarkToRemove && removeBookmark(bookmarkToRemove._id)}
+        isLoading={!!bookmarkToRemove && removingBookmarkId === bookmarkToRemove._id}
+      />
     </div>
   );
 }

@@ -144,7 +144,12 @@ export default function ReportQuiz({ quizSlug, quizTitle }: ReportQuizProps) {
                 >
                   {tCommon('cancel')}
                 </Button>
-                <Button type="submit" disabled={!content.trim() || isSubmitting} className="flex-1">
+                <Button
+                  type="submit"
+                  loading={isSubmitting}
+                  disabled={!content.trim() || isSubmitting}
+                  className="flex-1"
+                >
                   {isSubmitting ? t('submitting') : t('submitReport')}
                 </Button>
               </div>

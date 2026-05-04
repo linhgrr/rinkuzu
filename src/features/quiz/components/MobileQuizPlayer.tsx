@@ -17,36 +17,42 @@ interface Question {
 
 interface MobileQuizPlayerProps {
   questions: Question[];
-  onComplete: (answers: Record<string, number | number[]>) => void;
+  onComplete: (answers: Record<string, number | number[]>) => boolean | Promise<boolean>;
   onExit?: () => void;
+  submitting?: boolean;
+  submissionError?: string;
 }
 
 export function MobileQuizPlayer({
   questions,
   onComplete,
   onExit: _onExit,
+  submitting = false,
+  submissionError,
 }: MobileQuizPlayerProps) {
   const t = useTranslations('quiz');
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number | number[]>>({});
+  const [submitIntent, setSubmitIntent] = useState(false);
   const touchStartXRef = useRef<number | null>(null);
   const touchCurrentXRef = useRef<number | null>(null);
+  const isSubmitting = submitting || submitIntent;
 
   const currentQuestion = questions[currentIndex];
   const isFirst = currentIndex === 0;
   const isLast = currentIndex === questions.length - 1;
 
   const goNext = useCallback(() => {
-    if (!isLast) {
+    if (!isLast && !isSubmitting) {
       setCurrentIndex((prev) => prev + 1);
     }
-  }, [isLast]);
+  }, [isLast, isSubmitting]);
 
   const goPrev = useCallback(() => {
-    if (!isFirst) {
+    if (!isFirst && !isSubmitting) {
       setCurrentIndex((prev) => prev - 1);
     }
-  }, [isFirst]);
+  }, [isFirst, isSubmitting]);
 
   const handleTouchStart = useCallback((event: TouchEvent<HTMLDivElement>) => {
     const touchX = event.touches[0]?.clientX;
@@ -59,6 +65,10 @@ export function MobileQuizPlayer({
   }, []);
 
   const handleTouchEnd = useCallback(() => {
+    if (isSubmitting) {
+      return;
+    }
+
     if (touchStartXRef.current === null || touchCurrentXRef.current === null) {
       return;
     }
@@ -74,10 +84,14 @@ export function MobileQuizPlayer({
 
     touchStartXRef.current = null;
     touchCurrentXRef.current = null;
-  }, [goNext, goPrev, isFirst, isLast]);
+  }, [goNext, goPrev, isFirst, isLast, isSubmitting]);
 
   const handleOptionSelect = useCallback(
     (optionIndex: number) => {
+      if (isSubmitting) {
+        return;
+      }
+
       const qId = currentQuestion._id;
 
       if (currentQuestion.type === 'single') {
@@ -92,7 +106,7 @@ export function MobileQuizPlayer({
         });
       }
     },
-    [currentQuestion],
+    [currentQuestion, isSubmitting],
   );
 
   const isOptionSelected = useCallback(
@@ -109,22 +123,44 @@ export function MobileQuizPlayer({
   const answeredCount = Object.keys(answers).length;
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
 
+  const submitCurrentAnswers = useCallback(async () => {
+    if (isSubmitting) {
+      return;
+    }
+
+    setSubmitIntent(true);
+    try {
+      const submitted = await onComplete(answers);
+      if (submitted) {
+        setShowSubmitConfirm(false);
+      }
+    } catch (error) {
+      console.error('Quiz submission error:', error);
+    } finally {
+      setSubmitIntent(false);
+    }
+  }, [answers, isSubmitting, onComplete]);
+
   const handleComplete = useCallback(() => {
+    if (isSubmitting) {
+      return;
+    }
+
     if (answeredCount < questions.length) {
       setShowSubmitConfirm(true);
     } else {
-      onComplete(answers);
+      void submitCurrentAnswers();
     }
-  }, [answeredCount, questions.length, onComplete, answers]);
+  }, [answeredCount, isSubmitting, questions.length, submitCurrentAnswers]);
 
   return (
-    <div className="fixed inset-0 bg-neutral-50 flex flex-col z-50">
+    <div className="fixed inset-0 bg-neutral-50 flex flex-col z-50" aria-busy={isSubmitting}>
       {/* Header */}
       <div className="flex-shrink-0 px-4 py-3 bg-white border-b border-neutral-100 safe-area-top">
         <div className="flex items-center justify-between">
           <button
             onClick={goPrev}
-            disabled={isFirst}
+            disabled={isFirst || isSubmitting}
             className="p-2 -ml-2 rounded-full active:bg-neutral-100 transition-colors"
             aria-label="Previous question"
           >
@@ -157,7 +193,7 @@ export function MobileQuizPlayer({
 
           <button
             onClick={goNext}
-            disabled={isLast}
+            disabled={isLast || isSubmitting}
             className="p-2 -mr-2 rounded-full active:bg-neutral-100 transition-colors"
             aria-label="Next question"
           >
@@ -212,8 +248,10 @@ export function MobileQuizPlayer({
                 <button
                   key={optIdx}
                   onClick={() => handleOptionSelect(optIdx)}
+                  disabled={isSubmitting}
                   className={`
                       w-full p-4 rounded-xl border-2 text-left transition-all duration-150
+                      disabled:pointer-events-none disabled:opacity-70
                       ${
                         isOptionSelected(optIdx)
                           ? 'border-brand-action bg-orange-50'
@@ -253,35 +291,79 @@ export function MobileQuizPlayer({
           ← {t('previous')} / {t('next')} →
         </p>
 
+        {submissionError && (
+          <div className="mb-3 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-medium leading-5 text-red-700">
+            {submissionError}
+          </div>
+        )}
+
         {/* Complete button */}
         <button
           onClick={handleComplete}
+          disabled={isSubmitting}
           className={`
             w-full py-4 rounded-full font-semibold flex items-center justify-center gap-2
             transition-all duration-200 active:scale-[0.98]
+            disabled:cursor-not-allowed disabled:opacity-80 disabled:active:scale-100
             ${
               answeredCount === questions.length
                 ? 'bg-brand-trust text-white active:bg-brand-trust-hover'
-                : 'bg-neutral-100 text-neutral-600 active:bg-neutral-200'
+                : isSubmitting
+                  ? 'bg-brand-trust text-white'
+                  : 'bg-neutral-100 text-neutral-600 active:bg-neutral-200'
             }
           `}
         >
-          {t('complete')} ({answeredCount}/{questions.length} {t('answered')})
+          {isSubmitting ? (
+            <>
+              <svg
+                className="h-5 w-5 animate-spin"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                />
+              </svg>
+              {t('submitting')}
+            </>
+          ) : (
+            `${t('complete')} (${answeredCount}/${questions.length} ${t('answered')})`
+          )}
         </button>
       </div>
 
       <ConfirmModal
         isOpen={showSubmitConfirm}
         title={`${t('submitQuiz')}?`}
-        message={t('unansweredWarning', { count: questions.length - answeredCount })}
+        message={
+          <div className="space-y-3">
+            <p>{t('unansweredWarning', { count: questions.length - answeredCount })}</p>
+            {submissionError && (
+              <p className="rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-sm font-medium leading-5 text-red-700">
+                {submissionError}
+              </p>
+            )}
+          </div>
+        }
         confirmText={t('submit')}
         cancelText={t('cancel')}
         confirmVariant="primary"
+        isLoading={isSubmitting}
         onCancel={() => setShowSubmitConfirm(false)}
-        onConfirm={() => {
-          setShowSubmitConfirm(false);
-          onComplete(answers);
-        }}
+        onConfirm={() => void submitCurrentAnswers()}
       />
     </div>
   );

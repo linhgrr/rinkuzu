@@ -47,7 +47,7 @@ interface DesktopQuizLayoutProps {
   selectAnswer: (index: number) => void;
   previousQuestion: () => void;
   nextQuestion: () => void;
-  submitQuiz: () => Promise<void>;
+  submitQuiz: () => Promise<boolean>;
   submitting: boolean;
   showAIModal: boolean;
   closeAIModal: () => void;
@@ -60,7 +60,7 @@ interface DesktopQuizLayoutProps {
   showSubmitConfirm: boolean;
   setShowSubmitConfirm: (show: boolean) => void;
   unansweredCount: number;
-  completeSubmit: () => Promise<void>;
+  completeSubmit: () => Promise<boolean>;
   t: (key: string, values?: Record<string, string | number | Date>) => string;
 }
 
@@ -517,11 +517,9 @@ export function DesktopQuizLayout({
           confirmText={t('submit')}
           cancelText={t('cancel')}
           confirmVariant="primary"
+          isLoading={submitting}
           onCancel={() => setShowSubmitConfirm(false)}
-          onConfirm={async () => {
-            setShowSubmitConfirm(false);
-            await completeSubmit();
-          }}
+          onConfirm={() => void completeSubmit()}
         />
       </main>
     </div>

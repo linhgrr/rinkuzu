@@ -360,6 +360,7 @@ export default function QuizPlayerPage() {
     onSubmitSuccess: (attemptId, score) => {
       router.push(`/quiz/${encodedSlug}/result?attemptId=${attemptId}&score=${score}`);
     },
+    onSubmitStart: () => setError(''),
     onSubmitError: (message) => setError(message),
     mapAnswersToOriginalOrder: (currentQuiz, answersToSubmit) =>
       mapAnswersToOriginalOrder(currentQuiz, answersToSubmit, debugLog),
@@ -592,6 +593,8 @@ export default function QuizPlayerPage() {
           quiz={quiz}
           onComplete={handleQuizComplete}
           onExit={() => router.push('/')}
+          submitting={submitting}
+          error={error}
         />
       )}
 

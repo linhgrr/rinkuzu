@@ -164,7 +164,7 @@ export async function DashboardPageShell({
                     {tDashboard('masterAnySubject')}
                     <br />
                     <TextShimmer className="font-semibold" duration={8}>
-                      {`✨ ${tDashboard('aiPowered')}`}
+                      {tDashboard('aiPowered')}
                     </TextShimmer>
                   </h2>
 

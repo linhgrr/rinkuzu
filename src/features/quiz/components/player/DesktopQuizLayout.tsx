@@ -375,7 +375,7 @@ export function DesktopQuizLayout({
         <Modal
           isOpen={showMobileDiscussion}
           onClose={() => setShowMobileDiscussion(false)}
-          title={`💬 ${t('discussion')}`}
+          title={t('discussion')}
           size="large"
           className="md:hidden"
         >
@@ -390,12 +390,7 @@ export function DesktopQuizLayout({
           </div>
         </Modal>
 
-        <Modal
-          isOpen={showExitModal}
-          onClose={closeExitModal}
-          title={`⚠️ ${t('exitQuiz')}`}
-          size="small"
-        >
+        <Modal isOpen={showExitModal} onClose={closeExitModal} title={t('exitQuiz')} size="small">
           <div className="space-y-4">
             <p className="text-neutral-700">{t('exitQuizWarning')}</p>
 

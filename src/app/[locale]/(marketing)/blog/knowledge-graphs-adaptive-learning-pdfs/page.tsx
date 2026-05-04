@@ -189,9 +189,9 @@ This creates a two-dimensional learning map:
 
 | Concept | Remember | Understand | Apply | Analyze | Evaluate | Create |
 |---|---|---|---|---|---|---|
-| Limits | ✅ | ✅ | ✅ | ✅ | — | — |
-| Derivatives | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Integrals | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Limits | Yes | Yes | Yes | Yes | — | — |
+| Derivatives | Yes | Yes | Yes | Yes | Yes | Yes |
+| Integrals | Yes | Yes | Yes | Yes | Yes | Yes |
 
 (Earlier concepts are limited to lower Bloom levels; later concepts can reach Analyze, Evaluate, and Create.)
 

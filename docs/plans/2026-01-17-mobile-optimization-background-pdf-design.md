@@ -38,7 +38,7 @@ Thiết kế tối ưu hóa giao diện mobile và xử lý PDF background cho R
 │                        CLIENT (Browser)                         │
 ├─────────────────────────────────────────────────────────────────┤
 │  ┌─────────────┐    ┌──────────────┐    ┌───────────────────┐  │
-│  │ Create Page │───▶│ PDF Manager  │───▶│  Service Worker   │  │
+│  │ Create Page │───│ PDF Manager  │───│  Service Worker   │  │
 │  │ (Upload UI) │    │   (Zustand)  │    │ (Background Sync) │  │
 │  └─────────────┘    └──────────────┘    └───────────────────┘  │
 │         │                  │                      │             │

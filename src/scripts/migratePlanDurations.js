@@ -77,10 +77,10 @@ async function migratePlanDurations() {
     console.warn(`- Errors: ${errorCount} plans`);
 
     if (errorCount === 0) {
-      console.warn('\n🎉 Migration completed successfully!');
+      console.warn('\n Migration completed successfully!');
     } else {
       console.warn(
-        '\n⚠️  Migration completed with some errors. Please review the failed plans manually.',
+        '\n  Migration completed with some errors. Please review the failed plans manually.',
       );
     }
   } catch (error) {
@@ -114,7 +114,7 @@ async function dryRunMigration() {
         } else {
           const iso8601Duration = DurationUtils.fromLegacyDuration(currentDuration);
           console.warn(
-            `📝 Plan "${plan.name}" - Will change: "${currentDuration}" → "${iso8601Duration}"`,
+            ` Plan "${plan.name}" - Will change: "${currentDuration}" → "${iso8601Duration}"`,
           );
           changes.push({
             planName: plan.name,
@@ -123,7 +123,7 @@ async function dryRunMigration() {
           });
         }
       } catch (error) {
-        console.error(`❌ Plan "${plan.name}" - Cannot convert "${plan.duration}":`, error.message);
+        console.error(` Plan "${plan.name}" - Cannot convert "${plan.duration}":`, error.message);
       }
     }
 

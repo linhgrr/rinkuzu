@@ -7,7 +7,7 @@
 
 ---
 
-## 🏆 SEO Health Score: 37 / 100 — Poor
+## SEO Health Score: 37 / 100 — Poor
 
 | Category                 | Score | Weight | Weighted     |
 | ------------------------ | ----- | ------ | ------------ |
@@ -22,11 +22,11 @@
 
 ---
 
-## 🔴 Critical Issues
+## Critical Issues
 
 ### 1. All SEO Assets Point to Wrong Domain (CRITICAL — 1 fix resolves 8 issues)
 
-> **Status:** ✅ Fixed — `FALLBACK_SITE_URL` updated to `https://www.rinkuzu.app` in `src/lib/seo.ts`. Also set `NEXT_PUBLIC_SITE_URL=https://www.rinkuzu.app` in Vercel environment variables for production.
+> **Status:** Fixed — `FALLBACK_SITE_URL` updated to `https://www.rinkuzu.app` in `src/lib/seo.ts`. Also set `NEXT_PUBLIC_SITE_URL=https://www.rinkuzu.app` in Vercel environment variables for production.
 
 Every canonical, Open Graph, hreflang, sitemap URL, robots.txt directive, and JSON-LD schema points to `quizz-ck.vercel.app` instead of `www.rinkuzu.app`.
 
@@ -41,7 +41,7 @@ Every canonical, Open Graph, hreflang, sitemap URL, robots.txt directive, and JS
 | Sitemap `<loc>`     | 86 URLs on `quizz-ck.vercel.app`  | All on `www.rinkuzu.app`      |
 | All JSON-LD schemas | `quizz-ck.vercel.app`             | `www.rinkuzu.app`             |
 
-**Fix:** ✅ Done. Set `NEXT_PUBLIC_SITE_URL=https://www.rinkuzu.app` in **Vercel → Project → Environment Variables → Production**, then redeploy.
+**Fix:** Done. Set `NEXT_PUBLIC_SITE_URL=https://www.rinkuzu.app` in **Vercel → Project → Environment Variables → Production**, then redeploy.
 
 ---
 
@@ -49,16 +49,16 @@ Every canonical, Open Graph, hreflang, sitemap URL, robots.txt directive, and JS
 
 RinKuzu is classified as YMYL (Educational content). Google holds YMYL pages to the highest E-E-A-T standards.
 
-| Signal                   | Status                                                                |
-| ------------------------ | --------------------------------------------------------------------- |
-| Named author / expert    | ❌ None — only "RinKuzu Team" (anonymous)                             |
-| Author bio pages         | ❌ 404 `/about`, `/team`, `/authors`                                  |
-| Named team members       | ❌ None                                                               |
-| Third-party testimonials | ❌ Only 1 placeholder ("Nguyễn Văn A")                                |
-| Press coverage           | ❌ None                                                               |
-| Case studies             | ❌ None                                                               |
-| Blog / articles          | ❌ Does not exist (8-week content plan documented but never executed) |
-| Company credentials      | ❌ None — fake address + phone in footer                              |
+| Signal                   | Status                                                             |
+| ------------------------ | ------------------------------------------------------------------ |
+| Named author / expert    | None — only "RinKuzu Team" (anonymous)                             |
+| Author bio pages         | 404 `/about`, `/team`, `/authors`                                  |
+| Named team members       | None                                                               |
+| Third-party testimonials | Only 1 placeholder ("Nguyễn Văn A")                                |
+| Press coverage           | None                                                               |
+| Case studies             | None                                                               |
+| Blog / articles          | Does not exist (8-week content plan documented but never executed) |
+| Company credentials      | None — fake address + phone in footer                              |
 
 **Fake footer data confirmed:**
 
@@ -95,7 +95,7 @@ Schema.org expects one instance per type per page.
 
 ---
 
-## 🟠 High Priority Issues
+## High Priority Issues
 
 ### 5. Render-Blocking CSS — 150ms wasted
 
@@ -131,7 +131,7 @@ Mobile users can only see "Login" and "Get Started" — no way to reach `/pricin
 
 ---
 
-## 🟡 Medium Priority Issues
+## Medium Priority Issues
 
 | #   | Issue                                                                  | Fix Effort |
 | --- | ---------------------------------------------------------------------- | ---------- |
@@ -150,38 +150,38 @@ Mobile users can only see "Login" and "Get Started" — no way to reach `/pricin
 
 ---
 
-## 🟢 Quick Wins (Phase 1 — Already Applied)
+## Quick Wins (Phase 1 — Already Applied)
 
-| #   | Fix                                                    | Status                                                   | Effort |
-| --- | ------------------------------------------------------ | -------------------------------------------------------- | ------ |
-| 1   | Set `NEXT_PUBLIC_SITE_URL` in Vercel → redeploy        | ✅ Done (user confirmed)                                 | 5 min  |
-| 2   | Remove or replace fake address + phone in footer       | ✅ Done (`Footer.tsx`)                                   | 10 min |
-| 3   | Fix `$NaN` pricing display                             | ✅ Done (`pricing2.tsx`)                                 | 15 min |
-| 4   | Create `src/app/llms.txt/route.ts`                     | ✅ Done                                                  | 1 hr   |
-| 5   | Add AI crawler rules to `src/app/robots.ts`            | ✅ Done                                                  | 15 min |
-| 6   | Add `sameAs` social links to Organization schema       | ✅ Done (commented, ready to uncomment)                  | 15 min |
-| 7   | Add Offer schema to pricing page                       | ✅ Done (`availability` + `url` in `structured-data.ts`) | 30 min |
-| 8   | Add mobile hamburger to landing nav                    | ✅ Done (`Navbar.tsx`)                                   | 2 hrs  |
-| 9   | Reduce hero CTA `pt-[200px]` → `pt-[120px]` for mobile | ✅ Done (`HeroSection.tsx`)                              | 10 min |
-| 10  | Remove dead social link icons                          | ✅ Done (commented out, placeholder ready)               | 10 min |
-| 11  | Add CSP + Permissions-Policy headers                   | ✅ Done (`next.config.js`)                               | 30 min |
-| 12  | Remove duplicate SoftwareApplication schema            | ✅ Done (`GuestLanding.tsx`)                             | 5 min  |
-| 13  | Add Organization description field                     | ✅ Done (`structured-data.ts`)                           | 5 min  |
+| #   | Fix                                                    | Status                                                | Effort |
+| --- | ------------------------------------------------------ | ----------------------------------------------------- | ------ |
+| 1   | Set `NEXT_PUBLIC_SITE_URL` in Vercel → redeploy        | Done (user confirmed)                                 | 5 min  |
+| 2   | Remove or replace fake address + phone in footer       | Done (`Footer.tsx`)                                   | 10 min |
+| 3   | Fix `$NaN` pricing display                             | Done (`pricing2.tsx`)                                 | 15 min |
+| 4   | Create `src/app/llms.txt/route.ts`                     | Done                                                  | 1 hr   |
+| 5   | Add AI crawler rules to `src/app/robots.ts`            | Done                                                  | 15 min |
+| 6   | Add `sameAs` social links to Organization schema       | Done (commented, ready to uncomment)                  | 15 min |
+| 7   | Add Offer schema to pricing page                       | Done (`availability` + `url` in `structured-data.ts`) | 30 min |
+| 8   | Add mobile hamburger to landing nav                    | Done (`Navbar.tsx`)                                   | 2 hrs  |
+| 9   | Reduce hero CTA `pt-[200px]` → `pt-[120px]` for mobile | Done (`HeroSection.tsx`)                              | 10 min |
+| 10  | Remove dead social link icons                          | Done (commented out, placeholder ready)               | 10 min |
+| 11  | Add CSP + Permissions-Policy headers                   | Done (`next.config.js`)                               | 30 min |
+| 12  | Remove duplicate SoftwareApplication schema            | Done (`GuestLanding.tsx`)                             | 5 min  |
+| 13  | Add Organization description field                     | Done (`structured-data.ts`)                           | 5 min  |
 
-## 🟡 Phase 2 — On-Page Optimization (Applied)
+## Phase 2 — On-Page Optimization (Applied)
 
-| #   | Fix                                               | Status                                              | Effort |
-| --- | ------------------------------------------------- | --------------------------------------------------- | ------ |
-| 14  | Add `HowTo` schema on "How It Works" section      | ✅ Done (`HowItWorks.tsx`)                          | 15 min |
-| 15  | Expand FAQ accordion from 4 → 15 questions        | ✅ Done (`FAQ.tsx` + translations)                  | 30 min |
-| 16  | Add pricing page rich content + FAQ + schema      | ✅ Done (`pricing/page.tsx`)                        | 1 hr   |
-| 17  | Fix fake testimonial "John Doe" placeholder       | ✅ Done (`Testimonials.tsx` — descriptive alt text) | 5 min  |
-| 18  | Create `/en/sitemap.xml` locale sitemap           | ✅ Done (`sitemap.xml/route.ts`)                    | 30 min |
-| 19  | Remove orphaned `footer.address` translation keys | ✅ Done (en + vi `landing.json`)                    | 2 min  |
+| #   | Fix                                               | Status                                           | Effort |
+| --- | ------------------------------------------------- | ------------------------------------------------ | ------ |
+| 14  | Add `HowTo` schema on "How It Works" section      | Done (`HowItWorks.tsx`)                          | 15 min |
+| 15  | Expand FAQ accordion from 4 → 15 questions        | Done (`FAQ.tsx` + translations)                  | 30 min |
+| 16  | Add pricing page rich content + FAQ + schema      | Done (`pricing/page.tsx`)                        | 1 hr   |
+| 17  | Fix fake testimonial "John Doe" placeholder       | Done (`Testimonials.tsx` — descriptive alt text) | 5 min  |
+| 18  | Create `/en/sitemap.xml` locale sitemap           | Done (`sitemap.xml/route.ts`)                    | 30 min |
+| 19  | Remove orphaned `footer.address` translation keys | Done (en + vi `landing.json`)                    | 2 min  |
 
 ---
 
-## ✅ What's Working Well
+## What's Working Well
 
 - HSTS preload (1-year, includes subdomains) — excellent security
 - Next.js Image optimization enabled (`/_next/image`)
@@ -198,11 +198,11 @@ Mobile users can only see "Login" and "Get Started" — no way to reach `/pricin
 
 ---
 
-## 📋 Prioritized Roadmap
+## Prioritized Roadmap
 
 ### Phase 1: Foundation Fix (Week 1) — Fix Critical Misconfigurations
 
-- [x] **Set `NEXT_PUBLIC_SITE_URL=https://www.rinkuzu.app`** in Vercel env vars → redeploy ✅ (confirmed live: robots.txt Host + Sitemap now correct, sitemap 0 old-domain URLs)
+- [x] **Set `NEXT_PUBLIC_SITE_URL=https://www.rinkuzu.app`** in Vercel env vars → redeploy (confirmed live: robots.txt Host + Sitemap now correct, sitemap 0 old-domain URLs)
 - [ ] Remove or replace fake address + phone in footer (Footer.tsx)
 - [ ] Fix `$NaN` pricing display — validate billing API response
 - [ ] Remove dead social link icons from footer
@@ -227,11 +227,11 @@ Mobile users can only see "Login" and "Get Started" — no way to reach `/pricin
 
 ### Phase 3: E-E-A-T & Content (Weeks 3–6)
 
-- [x] Create `/about` page with team info ✅ (`src/app/[locale]/(marketing)/about/page.tsx`)
-- [x] Create author profile pages with Person + Author schema ✅ (`/blog/authors`, `/blog/authors/[slug]`)
-- [x] Create first pillar blog post: "How AI Transforms PDF Learning into Adaptive Quizzes" ✅ (`src/app/[locale]/(marketing)/blog/ai-powered-quiz-generation-guide/page.tsx`)
-- [x] Create second pillar blog post: "Knowledge Graphs and Bloom's Taxonomy: A Complete Guide" ✅ (`src/app/[locale]/(marketing)/blog/knowledge-graphs-adaptive-learning-pdfs/page.tsx`)
-- [x] Fix `/blog` 404: add blog listing page ✅ (`src/app/[locale]/(marketing)/blog/page.tsx`)
+- [x] Create `/about` page with team info (`src/app/[locale]/(marketing)/about/page.tsx`)
+- [x] Create author profile pages with Person + Author schema (`/blog/authors`, `/blog/authors/[slug]`)
+- [x] Create first pillar blog post: "How AI Transforms PDF Learning into Adaptive Quizzes" (`src/app/[locale]/(marketing)/blog/ai-powered-quiz-generation-guide/page.tsx`)
+- [x] Create second pillar blog post: "Knowledge Graphs and Bloom's Taxonomy: A Complete Guide" (`src/app/[locale]/(marketing)/blog/knowledge-graphs-adaptive-learning-pdfs/page.tsx`)
+- [x] Fix `/blog` 404: add blog listing page (`src/app/[locale]/(marketing)/blog/page.tsx`)
 - [ ] Add real testimonials with photos and institutional affiliations
 - [ ] Create Product Hunt launch page
 - [ ] Set up LinkedIn company page and founder profile
@@ -249,7 +249,7 @@ Mobile users can only see "Login" and "Get Started" — no way to reach `/pricin
 
 ---
 
-## 📁 Code Files to Modify
+## Code Files to Modify
 
 | File                                                          | Action                                                       |
 | ------------------------------------------------------------- | ------------------------------------------------------------ |
@@ -269,7 +269,7 @@ Mobile users can only see "Login" and "Get Started" — no way to reach `/pricin
 
 ---
 
-## 🎯 Target Metrics (6 months)
+## Target Metrics (6 months)
 
 | Metric               | Current | Target |
 | -------------------- | ------- | ------ |

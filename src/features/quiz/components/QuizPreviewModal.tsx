@@ -70,11 +70,11 @@ export function QuizPreviewModal({ isOpen, onClose, title, questions }: QuizPrev
               <span>{currentQuestion.question}</span>
               {currentQuestion.type === 'single' ? (
                 <span className="inline-flex items-center px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs">
-                  📝 {t('singleChoice')}
+                  {t('singleChoice')}
                 </span>
               ) : (
                 <span className="inline-flex items-center px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">
-                  ☑️ {t('multipleChoice')}
+                  {t('multipleChoice')}
                 </span>
               )}
             </CardTitle>

@@ -702,7 +702,7 @@ export function DashboardClient({ userEmail }: DashboardClientProps) {
   }, [router]);
 
   const handleShare = useCallback(() => {
-    const text = `I'm on a ${stats?.streak || 0} day streak learning with RinKuzu! 🚀 Earned ${stats?.xp || 0} XP so far.`;
+    const text = `I'm on a ${stats?.streak || 0} day streak learning with RinKuzu!  Earned ${stats?.xp || 0} XP so far.`;
     if (navigator.share) {
       navigator
         .share({

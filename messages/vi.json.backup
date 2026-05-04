@@ -105,7 +105,7 @@
     "freePlan": "Miễn phí mãi mãi"
   },
   "dashboard": {
-    "welcome": "Chào mừng trở lại, {name}! 👋",
+    "welcome": "Chào mừng trở lại, {name}! ",
     "keepMomentum": "Bạn đang làm rất tốt! Hãy tiếp tục nhé.",
     "dailyGoal": "Mục tiêu hàng ngày",
     "questionsDue": "{count} câu hỏi cần ôn tập",

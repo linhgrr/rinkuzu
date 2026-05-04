@@ -418,7 +418,7 @@
     "xpEarned": "XP nhận được",
     "xpEarnedValue": "+{xp} XP",
     "streak": "Chuỗi",
-    "streakValue": "🔥 {count} ngày",
+    "streakValue": "{count} ngày",
     "noResultDataFound": "Không tìm thấy dữ liệu kết quả",
     "masteryUpdate": "Cập nhật độ thành thạo",
     "averageMastery": "Độ thành thạo trung bình: {value}%",

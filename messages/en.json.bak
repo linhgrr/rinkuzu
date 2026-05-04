@@ -113,7 +113,7 @@
     "freePlan": "Free Forever"
   },
   "dashboard": {
-    "welcome": "Welcome back, {name}! 👋",
+    "welcome": "Welcome back, {name}! ",
     "keepMomentum": "You're doing great! Keep up the momentum.",
     "dailyGoal": "Daily Goal",
     "questionsDue": "{count} questions due",
@@ -536,7 +536,7 @@
     "adminDeleteQuiz": "Delete Quiz",
     "deleteQuizConfirm": "Are you sure you want to delete this quiz?",
     "author": "Author:",
-    "deleteQuizWarning": "⚠️ Warning: This action cannot be undone.",
+    "deleteQuizWarning": " Warning: This action cannot be undone.",
     "deleteQuizButton": "Delete Quiz"
   },
   "errors": {

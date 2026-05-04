@@ -50,10 +50,10 @@
 
 ## 8. Hoàn thành
 
-✅ **Tích hợp PayOS payment system hoàn tất**
-✅ **Admin panel cho subscription & plans hoàn tất**
-✅ **UI đồng bộ với các trang admin khác**
-✅ **Sidebar navigation cho admin pages**
-✅ **Sử dụng tiếng Anh cho admin interface**
-✅ **Loại bỏ hardcode plans - sử dụng database**
-✅ **Sửa lỗi admin plans page**
+**Tích hợp PayOS payment system hoàn tất**
+**Admin panel cho subscription & plans hoàn tất**
+**UI đồng bộ với các trang admin khác**
+**Sidebar navigation cho admin pages**
+**Sử dụng tiếng Anh cho admin interface**
+**Loại bỏ hardcode plans - sử dụng database**
+**Sửa lỗi admin plans page**

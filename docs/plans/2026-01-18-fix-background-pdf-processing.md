@@ -1335,7 +1335,7 @@ function DraftItem({ draft, onRemove, onRetry, onCancel }: {...}) {
             </p>
             {draft.expiresAt && (
               <span className="text-xs text-gray-400 flex-shrink-0">
-                ⏱ {getTimeRemaining(draft.expiresAt)}
+                 {getTimeRemaining(draft.expiresAt)}
               </span>
             )}
           </div>

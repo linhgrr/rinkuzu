@@ -40,10 +40,10 @@ Based on analysis of Quizlet, Anki, and Kahoot:
 │  [Nav Bar]                                                   │
 ├─────────────────────────────────────────────────────────────┤
 │                                                              │
-│  Chào buổi sáng, [Tên]! 🔥 5 ngày streak                    │
+│  Chào buổi sáng, [Tên]!  5 ngày streak                    │
 │                                                              │
 │  ┌─────────────────────────────────────────────────────┐    │
-│  │  📚 HÔM NAY CẦN ÔN                                   │    │
+│  │   HÔM NAY CẦN ÔN                                   │    │
 │  │  12 câu hỏi đến hạn • ~5 phút                        │    │
 │  │                        [Bắt đầu ôn tập →]            │    │
 │  └─────────────────────────────────────────────────────┘    │
@@ -106,7 +106,7 @@ Each question has a level (0-5) determining review intervals:
 **Daily Streak:**
 
 - Complete at least 1 review session/day → maintain streak
-- Streak displayed in header: 🔥 5 ngày
+- Streak displayed in header: 5 ngày
 - Lose streak if miss 1 day (can use "Streak Freeze" - premium feature)
 
 **XP System:**
@@ -138,7 +138,7 @@ Each question has a level (0-5) determining review intervals:
 
 ```
 ┌─────────────────────────────────────────┐
-│  ← Thoát          3/12         ⏱ 2:34   │
+│  ← Thoát          3/12          2:34   │
 ├─────────────────────────────────────────┤
 │                                         │
 │                                         │
@@ -157,7 +157,7 @@ Each question has a level (0-5) determining review intervals:
 
 ```
 ┌─────────────────────────────────────────┐
-│  ← Thoát          3/12         ⏱ 2:34   │
+│  ← Thoát          3/12          2:34   │
 ├─────────────────────────────────────────┤
 │                                         │
 │     Thủ đô của Việt Nam là gì?         │
@@ -168,7 +168,7 @@ Each question has a level (0-5) determining review intervals:
 │                                         │
 ├─────────────────────────────────────────┤
 │  [Sai]   [Khó]   [Đúng]   [Dễ]         │
-│   🔴      🟡       🟢       ⚡           │
+│                                  │
 └─────────────────────────────────────────┘
 ```
 
@@ -187,7 +187,7 @@ Each question has a level (0-5) determining review intervals:
 
 ```
 ┌─────────────────────────────────────────┐
-│  🏠        📚        ➕        👤       │
+│                                 │
 │  Home    Ôn tập    Tạo     Profile     │
 └─────────────────────────────────────────┘
 ```

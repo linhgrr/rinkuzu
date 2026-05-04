@@ -73,7 +73,7 @@ export function QuestionImage({ src, alt, className = '' }: QuestionImageProps) 
       maxHeight={400}
       fallback={
         <div className="text-sm text-neutral-500 italic mb-4">
-          📷 Question contains an image that couldn&apos;t be loaded
+          Question contains an image that couldn&apos;t be loaded
         </div>
       }
     />
@@ -94,7 +94,7 @@ export function OptionImage({ src, alt, className = '' }: OptionImageProps) {
       className={`ml-2 ${className}`}
       maxWidth={200}
       maxHeight={150}
-      fallback={<div className="text-xs text-neutral-400 italic ml-2">🖼️ Image option</div>}
+      fallback={<div className="text-xs text-neutral-400 italic ml-2">Image option</div>}
     />
   );
 }

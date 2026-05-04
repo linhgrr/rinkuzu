@@ -13,6 +13,6 @@ export const localeLabels: Record<Locale, string> = {
 
 // Locale flags for UI
 export const localeFlags: Record<Locale, string> = {
-  vi: '🇻🇳',
-  en: '🇬🇧',
+  vi: 'VI',
+  en: 'EN',
 };

@@ -41,7 +41,7 @@ export default async function ContactPage({ params }: Props) {
           <div className="space-y-8">
             <div className="flex gap-4">
               <div className="flex-shrink-0 w-10 h-10 rounded-full bg-green-50 flex items-center justify-center">
-                <span className="text-brand-trust text-lg">✉</span>
+                <span className="text-brand-trust text-xs font-bold">MAIL</span>
               </div>
               <div>
                 <h2 className="font-semibold text-[var(--text-primary)] mb-1">Email Support</h2>
@@ -59,7 +59,7 @@ export default async function ContactPage({ params }: Props) {
 
             <div className="flex gap-4">
               <div className="flex-shrink-0 w-10 h-10 rounded-full bg-green-50 flex items-center justify-center">
-                <span className="text-brand-trust text-lg">💬</span>
+                <span className="text-brand-trust text-xs font-bold">AI</span>
               </div>
               <div>
                 <h2 className="font-semibold text-[var(--text-primary)] mb-1">AI Tutor Rin-chan</h2>
@@ -77,7 +77,7 @@ export default async function ContactPage({ params }: Props) {
 
             <div className="flex gap-4">
               <div className="flex-shrink-0 w-10 h-10 rounded-full bg-green-50 flex items-center justify-center">
-                <span className="text-brand-trust text-lg">🎓</span>
+                <span className="text-brand-trust text-xs font-bold">EDU</span>
               </div>
               <div>
                 <h2 className="font-semibold text-[var(--text-primary)] mb-1">
@@ -98,7 +98,7 @@ export default async function ContactPage({ params }: Props) {
 
             <div className="flex gap-4">
               <div className="flex-shrink-0 w-10 h-10 rounded-full bg-green-50 flex items-center justify-center">
-                <span className="text-brand-trust text-lg">📍</span>
+                <span className="text-brand-trust text-xs font-bold">HQ</span>
               </div>
               <div>
                 <h2 className="font-semibold text-[var(--text-primary)] mb-1">Mailing Address</h2>
@@ -118,7 +118,7 @@ export default async function ContactPage({ params }: Props) {
 
             <div className="flex gap-4">
               <div className="flex-shrink-0 w-10 h-10 rounded-full bg-green-50 flex items-center justify-center">
-                <span className="text-brand-trust text-lg">🐛</span>
+                <span className="text-brand-trust text-xs font-bold">BUG</span>
               </div>
               <div>
                 <h2 className="font-semibold text-[var(--text-primary)] mb-1">Bug Reports</h2>

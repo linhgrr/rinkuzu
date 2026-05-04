@@ -1,6 +1,7 @@
 'use client';
 
 import { MobileQuizPlayer } from '@/features/quiz/components/MobileQuizPlayer';
+import { mapMobileAnswersToOrderedAnswers } from '@/features/quiz/lib/mobileAnswerMapping';
 import { IQuiz } from '@/types';
 
 type QuizAnswer = number | number[];
@@ -21,13 +22,7 @@ export function MobileQuizLayout({ quiz, onComplete, onExit }: MobileQuizLayoutP
   }));
 
   const handleMobileComplete = (answers: Record<string, number | number[]>) => {
-    const orderedAnswers: QuizAnswer[] = quiz.questions.map((question, index) => {
-      const questionId = `q-${index}`;
-      const answer = answers[questionId];
-      return answer !== undefined ? answer : -1;
-    });
-
-    onComplete(orderedAnswers);
+    onComplete(mapMobileAnswersToOrderedAnswers(quiz, answers));
   };
 
   return (

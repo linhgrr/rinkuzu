@@ -572,7 +572,6 @@ export const LibrarySection = ({
             ))
           : subjects.map((subject, index) => {
               const sharedProps = {
-                key: subject.job_id,
                 subject,
                 imageUrl:
                   libraryImages.length > 0
@@ -586,9 +585,9 @@ export const LibrarySection = ({
               };
 
               return viewMode === 'grid' ? (
-                <SubjectLibraryCard {...sharedProps} />
+                <SubjectLibraryCard key={subject.job_id} {...sharedProps} />
               ) : (
-                <SubjectLibraryListItem {...sharedProps} />
+                <SubjectLibraryListItem key={subject.job_id} {...sharedProps} />
               );
             })}
       </div>

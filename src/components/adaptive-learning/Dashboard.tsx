@@ -34,7 +34,7 @@ export default function AdaptiveLearningDashboard({
   const tAdaptive = useTranslations('adaptiveLearning');
   const tDashboard = useTranslations('adaptiveLearning.dashboard');
   const locale = tAdaptive('common.locale_date');
-  const [libraryViewMode, setLibraryViewMode] = useState<'grid' | 'list'>('grid');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   const {
     apiOnline,
@@ -73,8 +73,8 @@ export default function AdaptiveLearningDashboard({
   );
 
   return (
-    <div className={`${inter.className} bg-neutral-50 pb-12 text-[var(--text-primary)]`}>
-      <main className="mx-auto w-full max-w-[92rem] px-4 py-8 sm:px-5 md:px-6 md:py-10 lg:px-8">
+    <div className={`${inter.className} min-h-screen bg-[#faf8ff] text-[#131b2e]`}>
+      <main className="mx-auto w-full max-w-7xl p-8 md:p-12">
         <DashboardHeader
           apiOnline={apiOnline}
           dailyGoalProgress={dailyGoalProgress}
@@ -105,8 +105,8 @@ export default function AdaptiveLearningDashboard({
           onGoUpload={handleGoUpload}
           onOpenSubject={handleOpenSubject}
           onDelete={handleDeleteClick}
-          viewMode={libraryViewMode}
-          onViewModeChange={setLibraryViewMode}
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
           t={tDashboard}
         />
       </main>

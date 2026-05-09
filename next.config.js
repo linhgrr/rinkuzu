@@ -241,7 +241,7 @@ const nextConfig = {
     unoptimized: process.env.NEXT_IMAGE_UNOPTIMIZED === 'true',
   },
   env: {
-    MONGO_URL: process.env.MONGO_URL,
+    MONGODB_URI: process.env.MONGODB_URI,
     NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
     JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN,
   },

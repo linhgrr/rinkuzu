@@ -1,4 +1,5 @@
 import { buildAdaptiveServiceHeaders, resolveAdaptiveApiUrl } from '@/lib/adaptive-learning/config';
+import { fetchApiSuccess } from '@/lib/api/client';
 
 type ExtractQuizResult = {
   questions: any[];
@@ -12,12 +13,8 @@ type ExtractQuizFromS3KeyParams = {
 };
 
 type ExtractApiResponse = {
-  success: boolean;
-  data?: {
-    questions?: any[];
-    s3_key?: string;
-  };
-  error?: string;
+  questions?: any[];
+  s3_key?: string;
 };
 
 /**
@@ -37,21 +34,15 @@ export async function extractQuizFromS3Key(
 
   const apiUrl = resolveAdaptiveApiUrl();
 
-  const response = await fetch(`${apiUrl}/api/quiz/extract`, {
+  const result = await fetchApiSuccess<ExtractApiResponse>(`${apiUrl}/api/quiz/extract`, {
     method: 'POST',
     body: formDataPayload,
     headers: buildAdaptiveServiceHeaders(userId),
     signal: AbortSignal.timeout(timeoutMs),
   });
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`API Error ${response.status}: ${errorText}`);
-  }
-
-  const result = (await response.json()) as ExtractApiResponse;
-  if (!result.success || !Array.isArray(result.data?.questions)) {
-    throw new Error(result.error || 'Failed to extract questions from Python API');
+  if (!Array.isArray(result.data?.questions)) {
+    throw new Error('Failed to extract questions from Python API');
   }
 
   return {

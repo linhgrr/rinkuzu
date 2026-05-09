@@ -21,11 +21,11 @@ const STATUS_TO_STEP: Record<PipelineStatus, number> = {
   chunking: 1,
   extracting: 2,
   embedding: 3,
-  merging: 3,
+  merging: 4,
   ranking: 4,
-  verifying: 4,
+  verifying: 5,
   building_graph: 5,
-  optimizing: 5,
+  optimizing: 6,
   completed: 6,
   failed: -1,
   cancelled: -1,
@@ -50,7 +50,7 @@ const STATUS_LABEL_KEYS: Record<PipelineStatus, string> = {
 
 type TranslateFn = (key: string, values?: Record<string, any>) => string;
 
-type ProcessingStats = {
+export type ProcessingStats = {
   concepts_extracted: number;
   concepts_after_merge: number;
   relations_verified: number;
@@ -58,6 +58,8 @@ type ProcessingStats = {
 
 const BASE_POLL_DELAY_MS = 2_000;
 const MAX_POLL_DELAY_MS = 10_000;
+const POLL_JITTER_RATIO = 0.15;
+const CREATE_SESSION_MAX_RETRIES = 5;
 const TOAST_THROTTLE_WINDOW_MS = 4_000;
 
 export type ProcessingStep = {
@@ -65,7 +67,7 @@ export type ProcessingStep = {
   label: string;
 };
 
-type ProcessingErrorState = {
+export type ProcessingErrorState = {
   message: string;
   retryable: boolean;
   code: string | null;
@@ -89,10 +91,11 @@ export const useProcessingState = (t: TranslateFn) => {
   const [showGraphPanel, setShowGraphPanel] = useState(false);
 
   const pollingRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const navigationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pollInFlightRef = useRef(false);
   const creatingSessionRef = useRef(false);
-  const retryDelayRef = useRef(BASE_POLL_DELAY_MS);
+  const pollRetryDelayRef = useRef(BASE_POLL_DELAY_MS);
+  const createSessionRetryCountRef = useRef(0);
   const pollJobRef = useRef<(jobId: string) => void>(() => {});
   const lastToastRef = useRef<{ message: string; at: number } | null>(null);
 
@@ -100,9 +103,10 @@ export const useProcessingState = (t: TranslateFn) => {
     () => [
       { id: 1, label: t('processing.steps.readingPdf') },
       { id: 2, label: t('processing.steps.extractingConcepts') },
-      { id: 3, label: t('processing.steps.buildingGraph') },
-      { id: 4, label: t('processing.steps.generatingPath') },
-      { id: 5, label: t('processing.steps.preparingExercise') },
+      { id: 3, label: t('processing.steps.computingEmbeddings') },
+      { id: 4, label: t('processing.steps.mergingAndRanking') },
+      { id: 5, label: t('processing.steps.verifyingAndBuildingGraph') },
+      { id: 6, label: t('processing.steps.finalizingSession') },
     ],
     [t],
   );
@@ -237,30 +241,49 @@ export const useProcessingState = (t: TranslateFn) => {
     [t],
   );
 
-  const clearPolling = useCallback(() => {
+  const clearPollingTimer = useCallback(() => {
     if (pollingRef.current) {
       clearTimeout(pollingRef.current);
       pollingRef.current = null;
     }
+  }, []);
 
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-      timeoutRef.current = null;
+  const clearNavigationTimeout = useCallback(() => {
+    if (navigationTimeoutRef.current) {
+      clearTimeout(navigationTimeoutRef.current);
+      navigationTimeoutRef.current = null;
     }
+  }, []);
 
+  const clearPolling = useCallback(() => {
+    clearPollingTimer();
+    clearNavigationTimeout();
     pollInFlightRef.current = false;
-    retryDelayRef.current = BASE_POLL_DELAY_MS;
+    pollRetryDelayRef.current = BASE_POLL_DELAY_MS;
+    createSessionRetryCountRef.current = 0;
+  }, [clearNavigationTimeout, clearPollingTimer]);
+
+  const getBackoffDelay = useCallback(
+    (attempt: number) =>
+      Math.min(BASE_POLL_DELAY_MS * 2 ** Math.max(0, attempt - 1), MAX_POLL_DELAY_MS),
+    [],
+  );
+
+  const getJitteredDelay = useCallback((delayMs: number) => {
+    const jitter = 1 + (Math.random() * 2 - 1) * POLL_JITTER_RATIO;
+    return Math.max(500, Math.round(delayMs * jitter));
   }, []);
 
-  const scheduleNextPoll = useCallback((jobId: string, delayMs = BASE_POLL_DELAY_MS) => {
-    if (pollingRef.current) {
-      clearTimeout(pollingRef.current);
-    }
+  const scheduleNextPoll = useCallback(
+    (jobId: string, delayMs = BASE_POLL_DELAY_MS) => {
+      clearPollingTimer();
 
-    pollingRef.current = setTimeout(() => {
-      pollJobRef.current(jobId);
-    }, delayMs);
-  }, []);
+      pollingRef.current = setTimeout(() => {
+        pollJobRef.current(jobId);
+      }, getJitteredDelay(delayMs));
+    },
+    [clearPollingTimer, getJitteredDelay],
+  );
 
   const pushThrottledToast = useCallback((message: string) => {
     const now = Date.now();
@@ -289,7 +312,7 @@ export const useProcessingState = (t: TranslateFn) => {
 
       clearPolling();
       const sessionId = localStorage.getItem('al_session_id');
-      timeoutRef.current = setTimeout(() => {
+      navigationTimeoutRef.current = setTimeout(() => {
         if (sessionId) {
           router.push(ADAPTIVE_ROUTES.subject(sessionId));
           return;
@@ -320,11 +343,36 @@ export const useProcessingState = (t: TranslateFn) => {
     });
   }, []);
 
+  const updatePipelineNotice = useCallback(
+    (job: PipelineJobStatus) => {
+      const batchCount = job.batch_count ?? 0;
+      const failedBatchCount = job.failed_batch_count ?? 0;
+      const partialSuccess = Boolean(job.partial_success);
+
+      if (partialSuccess && failedBatchCount > 0) {
+        setNotice(
+          t('processing.notices.partialSuccess', {
+            failed: failedBatchCount,
+            total: Math.max(batchCount, failedBatchCount),
+          }),
+        );
+        return;
+      }
+
+      if (job.is_delayed) {
+        setNotice(t('processing.notices.processingTakingLonger'));
+        return;
+      }
+
+      setNotice(null);
+    },
+    [t],
+  );
+
   const handleCompletedJob = useCallback(
     async (jobId: string) => {
       creatingSessionRef.current = true;
       setCreatingSession(true);
-      setNotice(null);
 
       try {
         const session = await createSessionFromPipeline(jobId, 50);
@@ -333,7 +381,7 @@ export const useProcessingState = (t: TranslateFn) => {
         saveSessionJobMapping(session.session_id, jobId);
         localStorage.removeItem('al_pipeline_job_id');
         toast.success(t('processing.status.completed'));
-        timeoutRef.current = setTimeout(() => {
+        navigationTimeoutRef.current = setTimeout(() => {
           router.push(ADAPTIVE_ROUTES.subject(session.session_id));
         }, 800);
         return 'created';
@@ -342,17 +390,25 @@ export const useProcessingState = (t: TranslateFn) => {
         creatingSessionRef.current = false;
 
         if (isRetryableAdaptiveError(err)) {
-          clearPolling();
           const retryMessage = getRetryNotice(err, 'createSession');
+          const nextAttempt = createSessionRetryCountRef.current + 1;
+          createSessionRetryCountRef.current = nextAttempt;
           setNotice(retryMessage);
           pushThrottledToast(retryMessage);
-          setError({
-            message: t('processing.errors.sessionSetupUnconfirmed'),
-            retryable: true,
-            code: isAdaptiveApiError(err) ? err.code : 'session_setup_unconfirmed',
-            action: 'dashboard',
-          });
-          return 'deferred';
+
+          if (nextAttempt >= CREATE_SESSION_MAX_RETRIES) {
+            clearPolling();
+            setError({
+              message: t('processing.errors.sessionSetupUnconfirmed'),
+              retryable: true,
+              code: isAdaptiveApiError(err) ? err.code : 'session_setup_unconfirmed',
+              action: 'dashboard',
+            });
+            return 'failed';
+          }
+
+          scheduleNextPoll(jobId, getBackoffDelay(nextAttempt));
+          return 'retrying';
         }
 
         const friendlyError = getFriendlyProcessingError(err);
@@ -365,7 +421,16 @@ export const useProcessingState = (t: TranslateFn) => {
         return 'failed';
       }
     },
-    [clearPolling, getFriendlyProcessingError, getRetryNotice, pushThrottledToast, router, t],
+    [
+      clearPolling,
+      getBackoffDelay,
+      getFriendlyProcessingError,
+      getRetryNotice,
+      pushThrottledToast,
+      router,
+      scheduleNextPoll,
+      t,
+    ],
   );
 
   const pollJob = useCallback(
@@ -376,8 +441,7 @@ export const useProcessingState = (t: TranslateFn) => {
 
       try {
         const job = await getPipelineJobStatus(jobId);
-        retryDelayRef.current = BASE_POLL_DELAY_MS;
-        setNotice(null);
+        pollRetryDelayRef.current = BASE_POLL_DELAY_MS;
         setCurrentStep(STATUS_TO_STEP[job.status] ?? 0);
         setProgress(job.progress * 100);
         setStatusLabel(job.current_step || getStatusLabel(job.status));
@@ -385,10 +449,11 @@ export const useProcessingState = (t: TranslateFn) => {
         if (job.partial_graph) setPartialGraph(job.partial_graph);
 
         updateStats(job);
+        updatePipelineNotice(job);
 
         if (job.status === 'completed' && !creatingSessionRef.current) {
           const outcome = await handleCompletedJob(jobId);
-          if (outcome === 'deferred') return;
+          if (outcome === 'retrying') return;
         } else if (job.status === 'failed' || job.status === 'cancelled') {
           clearPolling();
           setNotice(job.retryable ? t('processing.notices.retryAfterFailure') : null);
@@ -396,13 +461,14 @@ export const useProcessingState = (t: TranslateFn) => {
           setError(terminalError);
           pushThrottledToast(terminalError.message);
         } else {
-          scheduleNextPoll(jobId, BASE_POLL_DELAY_MS);
+          createSessionRetryCountRef.current = 0;
+          scheduleNextPoll(jobId, Math.max(1, job.retry_after_seconds ?? 2) * 1000);
         }
       } catch (err) {
         if (isRetryableAdaptiveError(err)) {
           setNotice(getRetryNotice(err, 'polling'));
-          retryDelayRef.current = Math.min(retryDelayRef.current * 2, MAX_POLL_DELAY_MS);
-          scheduleNextPoll(jobId, retryDelayRef.current);
+          pollRetryDelayRef.current = Math.min(pollRetryDelayRef.current * 2, MAX_POLL_DELAY_MS);
+          scheduleNextPoll(jobId, pollRetryDelayRef.current);
           return;
         }
 
@@ -424,6 +490,7 @@ export const useProcessingState = (t: TranslateFn) => {
       scheduleNextPoll,
       pushThrottledToast,
       t,
+      updatePipelineNotice,
       updateStats,
     ],
   );
@@ -489,7 +556,6 @@ export const useProcessingState = (t: TranslateFn) => {
     error,
     handleErrorAction,
     filename,
-    handleGoBack,
     notice,
     partialGraph,
     progress,

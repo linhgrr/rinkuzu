@@ -41,7 +41,9 @@ export default function AdaptiveLearningProcessing() {
         {!error && <ProcessingTipCard t={t} />}
       </div>
 
-      {!error && showGraphPanel && <ProcessingGraphCard partialGraph={partialGraph} t={t} />}
+      {!error && showGraphPanel && (
+        <ProcessingGraphCard partialGraph={partialGraph ?? null} t={t} />
+      )}
     </div>
   );
 }

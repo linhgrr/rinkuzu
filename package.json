@@ -31,7 +31,9 @@
     "check:node": "node -e \"const major=Number(process.versions.node.split('.')[0]); if (major < 22) { console.error('Node.js >=22 is required. Current: '+process.version); process.exit(1); }\"",
     "check:install": "npm ci --dry-run",
     "typecheck:strict": "tsc --noEmit --pretty false",
-    "check:routes": "node scripts/check-route-param-safety.mjs"
+    "check:routes": "node scripts/check-route-param-safety.mjs",
+    "generate:adaptive-contract": "node scripts/generate-adaptive-contract.mjs",
+    "check:adaptive-contract": "node scripts/check-adaptive-contract.mjs"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx,mjs,cjs}": [
@@ -89,6 +91,7 @@
     "@commitlint/cli": "^20.5.2",
     "@commitlint/config-conventional": "^20.5.0",
     "@playwright/test": "^1.59.1",
+    "@redocly/cli": "^2.30.3",
     "@tailwindcss/forms": "^0.5.11",
     "@tailwindcss/typography": "^0.5.19",
     "@types/bcryptjs": "^2.4.6",
@@ -109,6 +112,7 @@
     "knip": "^6.7.0",
     "lint-staged": "^16.4.0",
     "next-pwa": "^5.6.0",
+    "openapi-typescript": "^7.13.0",
     "postcss": "^8.5.13",
     "prettier": "^3.8.3",
     "tailwindcss": "^3.4.19",

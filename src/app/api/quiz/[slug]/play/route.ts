@@ -1,8 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
 import { AsyncRouteParams } from '@/types/next-route';
+import { apiOk, apiErr } from '@/lib/api/response';
 
 const quizService = serviceFactory.getQuizService();
 
@@ -17,18 +18,16 @@ export async function GET(request: NextRequest, { params }: AsyncRouteParams<{ s
     const result = await quizService.getQuizForPlay(slug, userRole, userId);
 
     if (!result.success) {
-      return NextResponse.json(
-        { success: false, error: result.error },
-        { status: result.statusCode || 500 },
+      return apiErr(
+        'service_error',
+        String(result.error ?? 'Request failed'),
+        result.statusCode || 500,
       );
     }
 
-    return NextResponse.json({
-      success: true,
-      data: result.data,
-    });
+    return apiOk(result.data);
   } catch (error: any) {
     console.error('Get quiz for play error:', error);
-    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
+    return apiErr('internal_error', 'Internal server error', 500);
   }
 }

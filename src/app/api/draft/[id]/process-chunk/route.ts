@@ -7,15 +7,19 @@ import DraftQuiz from '@/models/DraftQuiz';
 import { extractQuizFromS3Key } from '@/lib/quiz/extractApi';
 import { randomUUID } from 'crypto';
 import { AsyncRouteParams } from '@/types/next-route';
-import { buildLlmRateLimitResponse, checkLlmRateLimit } from '@/lib/llm/rate-limit';
+import { buildLlmRateLimitResponse, checkLlmRateLimit, isAdminRole } from '@/lib/llm/rate-limit';
+import { buildStandardErrorBody } from '@/lib/api/error';
 
 export async function POST(request: NextRequest, { params }: AsyncRouteParams<{ id: string }>) {
   try {
     const { id } = await params;
     const session = await getServerSession(authOptions);
     const userId = (session?.user as any)?.id;
+    const userRole = (session?.user as any)?.role;
     if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json(buildStandardErrorBody('unauthorized', 'Unauthorized'), {
+        status: 401,
+      });
     }
 
     let chunkIndex: number;
@@ -23,16 +27,24 @@ export async function POST(request: NextRequest, { params }: AsyncRouteParams<{ 
       const body = await request.json();
       chunkIndex = body.chunkIndex;
     } catch (_parseError) {
-      return NextResponse.json({ error: 'Invalid or empty request body' }, { status: 400 });
+      return NextResponse.json(
+        buildStandardErrorBody('invalid_request_body', 'Invalid or empty request body'),
+        { status: 400 },
+      );
     }
 
     if (typeof chunkIndex !== 'number' || chunkIndex < 0) {
-      return NextResponse.json({ error: 'Valid chunkIndex is required' }, { status: 400 });
+      return NextResponse.json(
+        buildStandardErrorBody('invalid_chunk_index', 'Valid chunkIndex is required'),
+        { status: 400 },
+      );
     }
 
-    const rateLimit = await checkLlmRateLimit(userId, 'quiz_extract');
-    if (!rateLimit.allowed) {
-      return buildLlmRateLimitResponse(rateLimit);
+    if (!isAdminRole(userRole)) {
+      const rateLimit = await checkLlmRateLimit(userId, 'quiz_extract');
+      if (!rateLimit.allowed) {
+        return buildLlmRateLimitResponse(rateLimit);
+      }
     }
 
     const LOCK_TIMEOUT_MS = 600000; // 10 minutes - extraction may take multiple minutes
@@ -80,7 +92,9 @@ export async function POST(request: NextRequest, { params }: AsyncRouteParams<{ 
       });
 
       if (!draft) {
-        return NextResponse.json({ error: 'Draft not found' }, { status: 404 });
+        return NextResponse.json(buildStandardErrorBody('draft_not_found', 'Draft not found'), {
+          status: 404,
+        });
       }
 
       const chunk = draft.chunks.chunkDetails.find((c: any) => c.index === chunkIndex);
@@ -100,11 +114,11 @@ export async function POST(request: NextRequest, { params }: AsyncRouteParams<{ 
 
       // Another request is processing it
       return NextResponse.json(
-        {
-          success: false,
-          error: 'Chunk is being processed by another request',
-          retryAfter: 5000,
-        },
+        buildStandardErrorBody(
+          'chunk_processing_conflict',
+          'Chunk is being processed by another request',
+          { retryAfter: 5000 },
+        ),
         { status: 409 },
       );
     }
@@ -114,17 +128,23 @@ export async function POST(request: NextRequest, { params }: AsyncRouteParams<{ 
 
     // 2. Initial check - is the client already gone?
     if (request.signal.aborted) {
-      return NextResponse.json({ error: 'Request aborted' }, { status: 499 });
+      return NextResponse.json(buildStandardErrorBody('request_aborted', 'Request aborted'), {
+        status: 499,
+      });
     }
 
     if (!draft.pdfData.pdfKey) {
-      return NextResponse.json({ error: 'PDF not available' }, { status: 400 });
+      return NextResponse.json(buildStandardErrorBody('pdf_not_available', 'PDF not available'), {
+        status: 400,
+      });
     }
 
     const chunkDetail = draft.chunks.chunkDetails.find((c: any) => c.index === chunkIndex);
 
     if (!chunkDetail) {
-      return NextResponse.json({ error: 'Chunk not found' }, { status: 404 });
+      return NextResponse.json(buildStandardErrorBody('chunk_not_found', 'Chunk not found'), {
+        status: 404,
+      });
     }
 
     try {
@@ -244,7 +264,11 @@ export async function POST(request: NextRequest, { params }: AsyncRouteParams<{ 
 
       return NextResponse.json({
         success: false,
-        error: extractError.message,
+        error: {
+          code: 'chunk_processing_failed',
+          message: 'Chunk processing failed',
+          detail: extractError.message,
+        },
         progress: {
           processed: draft.chunks.processed,
           total: draft.chunks.total,
@@ -254,7 +278,10 @@ export async function POST(request: NextRequest, { params }: AsyncRouteParams<{ 
     }
   } catch (error) {
     console.error('Process chunk error:', error);
-    return NextResponse.json({ error: 'Failed to process chunk' }, { status: 500 });
+    return NextResponse.json(
+      buildStandardErrorBody('process_chunk_failed', 'Failed to process chunk'),
+      { status: 500 },
+    );
   }
 }
 

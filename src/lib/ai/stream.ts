@@ -18,6 +18,10 @@ export async function parseJsonResponse<T>(response: Response): Promise<T> {
 }
 
 export function extractOpenAIDeltaContent(payload: any): string {
+  if (payload?.type === 'response.output_text.delta' && typeof payload.delta === 'string') {
+    return payload.delta;
+  }
+
   const deltaContent = payload?.choices?.[0]?.delta?.content;
 
   if (typeof deltaContent === 'string') {
@@ -65,6 +69,14 @@ function splitSseEvents(buffer: string): { events: string[]; remaining: string }
 }
 
 function isTerminalOpenAIEvent(payload: any): boolean {
+  if (
+    payload?.type === 'response.completed' ||
+    payload?.type === 'response.failed' ||
+    payload?.type === 'error'
+  ) {
+    return true;
+  }
+
   if (payload?.done === true) {
     return true;
   }
@@ -98,6 +110,20 @@ function parseSseEvent(event: string): {
     parsed = JSON.parse(data);
   } catch {
     throw createStreamError('Streaming response contained invalid SSE payload');
+  }
+
+  if (parsed?.type === 'error') {
+    throw createStreamError(
+      typeof parsed.message === 'string' ? parsed.message : 'Streaming request failed',
+    );
+  }
+
+  if (parsed?.type === 'response.failed') {
+    throw createStreamError(
+      parsed?.response?.error?.message ||
+        parsed?.response?.incomplete_details?.reason ||
+        'Streaming request failed',
+    );
   }
 
   if (parsed?.error) {

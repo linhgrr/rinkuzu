@@ -19,12 +19,21 @@ export interface QuizAskAiResponseData {
   explanation: string;
   structured: unknown | null;
   timestamp: string;
-  turnCount: number;
+  turn_count: number;
+}
+
+interface QuizAskAiErrorDetail {
+  code?: string;
+  message?: string;
+  detail?: string;
+  meta?: unknown;
 }
 
 interface QuizAskAiEnvelope {
   success: boolean;
-  error?: string;
+  error?: string | QuizAskAiErrorDetail;
+  detail?: string;
+  message?: string;
   data?: QuizAskAiResponseData;
 }
 
@@ -42,6 +51,32 @@ async function requestQuizAI(payload: QuizAskAiRequest, signal?: AbortSignal): P
   });
 }
 
+function extractQuizAiErrorMessage(body: QuizAskAiEnvelope, status: number): string {
+  if (typeof body.error === 'string' && body.error.trim()) {
+    return body.error.trim();
+  }
+
+  if (body.error && typeof body.error === 'object') {
+    const detail = typeof body.error.detail === 'string' ? body.error.detail.trim() : '';
+    const message = typeof body.error.message === 'string' ? body.error.message.trim() : '';
+    const code = typeof body.error.code === 'string' ? body.error.code.trim() : '';
+
+    if (detail) return detail;
+    if (message) return message;
+    if (code) return code;
+  }
+
+  if (typeof body.detail === 'string' && body.detail.trim()) {
+    return body.detail.trim();
+  }
+
+  if (typeof body.message === 'string' && body.message.trim()) {
+    return body.message.trim();
+  }
+
+  return `HTTP error ${status}`;
+}
+
 export async function askQuizAI(
   payload: QuizAskAiRequest,
   signal?: AbortSignal,
@@ -50,7 +85,7 @@ export async function askQuizAI(
   const body = await parseJsonResponse<QuizAskAiEnvelope>(response);
 
   if (!response.ok || !body.success || !body.data) {
-    throw createStreamError(body.error || `HTTP error ${response.status}`, response.status);
+    throw createStreamError(extractQuizAiErrorMessage(body, response.status), response.status);
   }
 
   return body.data;
@@ -63,7 +98,7 @@ export async function streamQuizAI(
   const response = await requestQuizAI({ ...payload, stream: true }, options.signal);
   return consumeOpenAISseResponse<QuizAskAiEnvelope>(response, {
     onContent: options.onContent,
-    extractErrorMessage: (body, status) => body.error || `HTTP error ${status}`,
+    extractErrorMessage: extractQuizAiErrorMessage,
     extractFallbackContent: (body) => (body.success && body.data ? body.data.explanation : null),
   });
 }

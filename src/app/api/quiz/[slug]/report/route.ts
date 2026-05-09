@@ -1,8 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
 import { AsyncRouteParams } from '@/types/next-route';
+import { apiOk, apiErr } from '@/lib/api/response';
 
 export async function POST(request: NextRequest, { params }: AsyncRouteParams<{ slug: string }>) {
   try {
@@ -10,24 +11,21 @@ export async function POST(request: NextRequest, { params }: AsyncRouteParams<{ 
     const session = await getServerSession(authOptions);
 
     if (!session?.user) {
-      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+      return apiErr('unauthorized', 'Authentication required', 401);
     }
     const userEmail = session.user.email;
     if (!userEmail) {
-      return NextResponse.json({ error: 'User email is required' }, { status: 400 });
+      return apiErr('email_required', 'User email is required', 400);
     }
 
     const { content } = await request.json();
 
     if (!content || content.trim().length === 0) {
-      return NextResponse.json({ error: 'Report content is required' }, { status: 400 });
+      return apiErr('invalid_request', 'Report content is required', 400);
     }
 
     if (content.length > 2000) {
-      return NextResponse.json(
-        { error: 'Report content too long (max 2000 characters)' },
-        { status: 400 },
-      );
+      return apiErr('invalid_request', 'Report content too long (max 2000 characters)', 400);
     }
 
     const quizService = serviceFactory.getQuizService();
@@ -40,15 +38,16 @@ export async function POST(request: NextRequest, { params }: AsyncRouteParams<{ 
     );
 
     if (!result.success) {
-      return NextResponse.json({ error: result.error }, { status: result.statusCode || 400 });
+      return apiErr(
+        'service_error',
+        String(result.error ?? 'Request failed'),
+        result.statusCode || 400,
+      );
     }
 
-    return NextResponse.json({
-      message: 'Report submitted successfully',
-      reportId: result.data,
-    });
+    return apiOk({ message: 'Report submitted successfully', reportId: result.data });
   } catch (error) {
     console.error('Error submitting report:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return apiErr('internal_error', 'Internal server error', 500);
   }
 }

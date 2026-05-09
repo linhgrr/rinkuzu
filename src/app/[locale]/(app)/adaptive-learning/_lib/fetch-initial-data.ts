@@ -13,12 +13,17 @@ type AdaptiveDashboardPayload = {
   sessionHistory: SessionHistoryItem[];
 };
 
+type AdaptiveStandardResponse<T> = {
+  success: true;
+  data: T;
+};
+
 const fetchAdaptiveJson = async <T>(
   baseUrl: string,
   path: string,
   headers: Record<string, string>,
   timeoutMs: number,
-) => {
+): Promise<T | null> => {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
@@ -31,7 +36,22 @@ const fetchAdaptiveJson = async <T>(
 
     if (!response.ok) return null;
 
-    return response.json() as Promise<T>;
+    const payload = (await response.json().catch(() => null)) as
+      | AdaptiveStandardResponse<T>
+      | T
+      | null;
+
+    if (
+      payload &&
+      typeof payload === 'object' &&
+      'success' in payload &&
+      payload.success === true &&
+      'data' in payload
+    ) {
+      return payload.data;
+    }
+
+    return payload as T | null;
   } finally {
     clearTimeout(timeout);
   }

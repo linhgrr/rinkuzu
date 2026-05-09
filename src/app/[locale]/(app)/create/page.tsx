@@ -13,6 +13,7 @@ import QuizMetaForm from '@/features/quiz/components/QuizMetaForm';
 import PDFViewer from '@/features/quiz/components/PDFViewer';
 import { useDraftStore } from '@/store/useDraftStore';
 import { toast } from 'sonner';
+import { extractApiErrorMessage } from '@/lib/api/error';
 import {
   HiOutlineArrowRight,
   HiOutlineCheckCircle,
@@ -233,7 +234,7 @@ export default function CreateQuizPage() {
 
     const payload = await response.json();
     if (!response.ok || !payload?.success || !payload?.data?.uploadUrl || !payload?.data?.s3Key) {
-      throw new Error(payload?.error || 'Failed to create upload URL');
+      throw new Error(extractApiErrorMessage(payload, 'Failed to create upload URL'));
     }
 
     const putResponse = await fetch(payload.data.uploadUrl, {

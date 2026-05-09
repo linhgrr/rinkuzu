@@ -9,8 +9,12 @@ import {
   HiOutlineExclamationCircle,
   HiOutlineSparkles,
 } from '@/components/icons';
-import type { PipelineJobStatus } from '@/features/adaptive-learning/types';
-import type { ProcessingStep } from '@/features/adaptive-learning/hooks/use-processing-state';
+import type { PipelinePartialGraph } from '@/features/adaptive-learning/types';
+import type {
+  ProcessingErrorState,
+  ProcessingStats,
+  ProcessingStep,
+} from '@/features/adaptive-learning/hooks/use-processing-state';
 
 const ProcessingGraphPanel = dynamic(() => import('./ProcessingGraphPanel'), {
   loading: () => (
@@ -25,21 +29,10 @@ const ProcessingGraphPanel = dynamic(() => import('./ProcessingGraphPanel'), {
 
 type TranslateFn = (key: string, values?: Record<string, any>) => string;
 
-type ProcessingStats = {
-  concepts_extracted: number;
-  concepts_after_merge: number;
-  relations_verified: number;
-};
-
 type ProcessingStatusCardProps = {
   creatingSession: boolean;
   currentStep: number;
-  error: {
-    message: string;
-    retryable: boolean;
-    code: string | null;
-    action: 'upload' | 'dashboard';
-  } | null;
+  error: ProcessingErrorState | null;
   filename: string;
   handleErrorAction: () => void;
   notice: string | null;
@@ -213,7 +206,7 @@ export const ProcessingGraphCard = ({
   partialGraph,
   t,
 }: {
-  partialGraph: PipelineJobStatus['partial_graph'];
+  partialGraph: PipelinePartialGraph | null;
   t: TranslateFn;
 }) => (
   <div className="relative hidden h-[600px] w-full overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-sm lg:flex lg:w-[55%]">

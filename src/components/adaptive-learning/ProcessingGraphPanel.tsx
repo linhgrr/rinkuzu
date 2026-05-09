@@ -18,7 +18,7 @@ import {
 } from '@xyflow/react';
 
 import dagre from 'dagre';
-import type { PipelineJobStatus } from '@/features/adaptive-learning/types';
+import type { PipelinePartialGraph } from '@/features/adaptive-learning/types';
 
 interface ConceptNodeData extends Record<string, unknown> {
   label: string;
@@ -72,7 +72,7 @@ const getLayoutedElements = (nodes: Node<ConceptNodeData>[], edges: Edge[], dire
   return { nodes, edges };
 };
 
-function PartialGraphFlow({ partialGraph }: { partialGraph?: PipelineJobStatus['partial_graph'] }) {
+function PartialGraphFlow({ partialGraph }: { partialGraph?: PipelinePartialGraph | null }) {
   const { fitView } = useReactFlow();
   const t = useTranslations('adaptiveLearning');
 
@@ -145,7 +145,7 @@ function PartialGraphFlow({ partialGraph }: { partialGraph?: PipelineJobStatus['
 export default function ProcessingGraphPanel({
   partialGraph,
 }: {
-  partialGraph?: PipelineJobStatus['partial_graph'];
+  partialGraph?: PipelinePartialGraph | null;
 }) {
   return (
     <ReactFlowProvider>

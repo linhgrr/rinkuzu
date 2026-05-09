@@ -19,6 +19,8 @@ import {
 } from '@/features/adaptive-learning/lib/api-client';
 import { ADAPTIVE_ROUTES } from '@/features/adaptive-learning/lib/routes';
 
+const DEFAULT_PIPELINE_PAGE_BATCH_SIZE = 10;
+
 export default function AdaptiveLearningUpload() {
   const router = useRouter();
   const t = useTranslations('adaptiveLearning');
@@ -90,7 +92,7 @@ export default function AdaptiveLearningUpload() {
           return;
         }
         setUploadProgress(30);
-        const result = await uploadPdf(file, subjectName.trim());
+        const result = await uploadPdf(file, subjectName.trim(), DEFAULT_PIPELINE_PAGE_BATCH_SIZE);
         setUploadProgress(100);
         localStorage.setItem('al_pipeline_job_id', result.job_id);
         localStorage.setItem('al_pipeline_filename', file.name);

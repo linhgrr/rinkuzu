@@ -111,9 +111,6 @@ export const ExerciseTheoryView = ({
 }: TheoryViewProps) => (
   <div className="mx-auto flex min-h-[80vh] max-w-4xl flex-col">
     <div className="mb-8 md:mb-10 text-center px-4">
-      <div className="mx-auto mb-5 md:mb-6 flex h-14 w-14 md:h-16 md:w-16 items-center justify-center rounded-xl bg-neutral-50 border border-neutral-200 text-neutral-900 shadow-sm">
-        <HiBookOpen className="h-6 w-6 md:h-8 md:w-8" />
-      </div>
       <h1 className="mb-2 text-xl font-semibold tracking-tight text-neutral-900 md:text-3xl">
         {t('exercise.theory.reviewKnowledge')}
       </h1>

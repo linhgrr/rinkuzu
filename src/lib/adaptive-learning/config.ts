@@ -1,6 +1,8 @@
 const DEFAULT_ADAPTIVE_API_URL = 'http://localhost:8000';
 const DEFAULT_ADAPTIVE_PROXY_TIMEOUT_MS = 60_000;
 
+export type AdaptiveUserRole = 'admin' | 'user';
+
 export function resolveAdaptiveApiUrl(): string {
   return process.env['NEXT_PUBLIC_API_URL'] || DEFAULT_ADAPTIVE_API_URL;
 }
@@ -13,10 +15,14 @@ export function resolveAdaptiveProxyTimeoutMs(
   return raw;
 }
 
-export function buildAdaptiveServiceHeaders(userId: string): Record<string, string> {
+export function buildAdaptiveServiceHeaders(
+  userId: string,
+  userRole?: AdaptiveUserRole | null,
+): Record<string, string> {
   const serviceToken = process.env['INTERNAL_SERVICE_TOKEN'];
   return {
     'x-user-id': userId,
+    ...(userRole ? { 'x-user-role': userRole } : {}),
     ...(serviceToken ? { 'x-service-token': serviceToken } : {}),
   };
 }

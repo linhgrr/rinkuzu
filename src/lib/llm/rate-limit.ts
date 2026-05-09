@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongoose';
 import { ServiceFactory } from '@/lib/serviceFactory';
 import LlmUsage from '@/models/LlmUsage';
+import type { AdaptiveUserRole } from '@/lib/adaptive-learning/config';
 
 export type LlmRateLimitAction =
   | 'quiz_ask_ai'
@@ -35,6 +36,10 @@ export type LlmRateLimitResult = {
   day: WindowResult;
   retryAfterSeconds?: number;
 };
+
+export function isAdminRole(role: unknown): role is AdaptiveUserRole {
+  return role === 'admin';
+}
 
 const DEFAULT_LIMITS: RateLimitConfig = {
   quiz_ask_ai: {
@@ -104,7 +109,7 @@ async function incrementWindow(
   const usage = (await LlmUsage.findOneAndUpdate(
     { userId, action, window, windowStart: start },
     {
-      $setOnInsert: { userId, action, tier, window, windowStart: start, expireAt },
+      $setOnInsert: { userId, action, window, windowStart: start },
       $set: { tier, expireAt },
       $inc: { count: 1 },
     },

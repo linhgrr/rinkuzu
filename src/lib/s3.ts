@@ -6,19 +6,35 @@ import {
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
+const DEFAULT_OBJECT_STORAGE_ENDPOINT_EXTERNAL =
+  'https://objectstorageapi.ap-southeast-1.clawcloudrun.com';
+
+function normalizeExternalEndpoint(endpoint: string | undefined): string {
+  const raw = (endpoint || DEFAULT_OBJECT_STORAGE_ENDPOINT_EXTERNAL).trim().replace(/\/+$/, '');
+  if (raw.includes('://')) return raw;
+  return `https://${raw}`;
+}
+
+const OBJECT_STORAGE_PUBLIC_BASE_URL = normalizeExternalEndpoint(
+  process.env['OBJECT_STORAGE_ENDPOINT_EXTERNAL'],
+);
+const OBJECT_STORAGE_REGION = process.env['OBJECT_STORAGE_REGION'] || 'ap-southeast-1';
+const OBJECT_STORAGE_ADDRESSING_STYLE = (
+  process.env['OBJECT_STORAGE_ADDRESSING_STYLE'] || 'path'
+).toLowerCase();
+
 // S3-compatible storage configuration
 const s3Client = new S3Client({
-  endpoint:
-    process.env['S3_ENDPOINT'] || 'https://objectstorageapi.ap-southeast-1.clawcloudrun.com',
-  region: 'ap-southeast-1',
+  endpoint: OBJECT_STORAGE_PUBLIC_BASE_URL,
+  region: OBJECT_STORAGE_REGION,
   credentials: {
-    accessKeyId: process.env['S3_ACCESS_KEY'] || '',
-    secretAccessKey: process.env['S3_SECRET_KEY'] || '',
+    accessKeyId: process.env['OBJECT_STORAGE_ACCESS_KEY'] || '',
+    secretAccessKey: process.env['OBJECT_STORAGE_SECRET_KEY'] || '',
   },
-  forcePathStyle: true, // Required for path-style addressing
+  forcePathStyle: OBJECT_STORAGE_ADDRESSING_STYLE === 'path',
 });
 
-const BUCKET_NAME = process.env['S3_BUCKET_NAME'] || 'rinkuzu-pdfs';
+const BUCKET_NAME = process.env['OBJECT_STORAGE_BUCKET'] || 'rinkuzu-pdfs';
 
 /**
  * Upload a PDF file to S3
@@ -43,9 +59,7 @@ export async function uploadPDF(
   await s3Client.send(command);
 
   // Return the public URL
-  const endpoint =
-    process.env['S3_ENDPOINT'] || 'https://objectstorageapi.ap-southeast-1.clawcloudrun.com';
-  return `${endpoint}/${BUCKET_NAME}/${key}`;
+  return `${OBJECT_STORAGE_PUBLIC_BASE_URL}/${BUCKET_NAME}/${key}`;
 }
 
 /**
@@ -128,4 +142,4 @@ export function generatePDFKey(userId: string, originalFilename: string): string
   return `pdfs/${userId}/${timestamp}-${sanitizedFilename}`;
 }
 
-export { s3Client, BUCKET_NAME };
+export { s3Client, BUCKET_NAME, OBJECT_STORAGE_PUBLIC_BASE_URL };

@@ -12,7 +12,7 @@ export default async function LoginPage({ params }: { params: Promise<{ locale: 
   return (
     <div className="min-h-screen relative overflow-hidden">
       {/* Background Elements */}
-      <div className="absolute inset-0 bg-neutral-50" />
+      <div className="absolute inset-0 bg-slate-50" />
 
       <div className="relative flex flex-col justify-center py-8 sm:py-12 px-4 sm:px-6 lg:px-8 min-h-screen pt-16 sm:pt-20">
         {/* Header */}
@@ -33,21 +33,21 @@ export default async function LoginPage({ params }: { params: Promise<{ locale: 
           </div>
 
           <div className="mt-6 sm:mt-8 text-center animate-fadeInUp">
-            <h1 className="text-2xl sm:text-4xl font-bold text-neutral-900 mb-2 sm:mb-3">
+            <h1 className="text-2xl sm:text-4xl font-bold text-gray-900 mb-2 sm:mb-3">
               {t('welcomeBack')}
             </h1>
-            <p className="text-base sm:text-lg text-neutral-600">{t('signInContinue')}</p>
+            <p className="text-base sm:text-lg text-gray-600">{t('signInContinue')}</p>
           </div>
         </div>
 
         {/* Login Form */}
         <div className="sm:mx-auto sm:w-full sm:max-w-md">
           <Card
-            className="border-0 shadow-lg shadow-neutral-100/50 bg-white animate-fadeInUp"
+            className="border-0 shadow-lg shadow-gray-100/50 bg-white animate-fadeInUp"
             style={{ animationDelay: '200ms' }}
           >
             <CardHeader className="text-center pb-4">
-              <CardTitle size="lg" className="text-neutral-900">
+              <CardTitle size="lg" className="text-gray-900">
                 {t('signIn')}
               </CardTitle>
               <CardDescription className="text-base">{t('enterCredentials')}</CardDescription>
@@ -58,8 +58,8 @@ export default async function LoginPage({ params }: { params: Promise<{ locale: 
 
           {/* Additional Info */}
           <div className="mt-8 text-center animate-fadeInUp" style={{ animationDelay: '400ms' }}>
-            <p className="text-sm text-neutral-500">{t('secureLogin')}</p>
-            <div className="flex items-center justify-center mt-4 space-x-4 text-xs text-neutral-400">
+            <p className="text-sm text-gray-500">{t('secureLogin')}</p>
+            <div className="flex items-center justify-center mt-4 space-x-4 text-xs text-gray-400">
               <div className="flex items-center">
                 <HiOutlineShieldCheck className="w-4 h-4 mr-1" />
                 {t('sslEncrypted')}

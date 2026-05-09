@@ -1,10 +1,20 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   darkMode: ['class', '[data-theme="dark"]'],
-  content: ['./src/**/*.{js,ts,jsx,tsx,mdx}'],
+  content: {
+    relative: true,
+    files: [
+      './**/*.{js,ts,jsx,tsx,mdx}',
+      '!./node_modules/**/*',
+      '!./.next/**/*',
+      '!./coverage/**/*',
+      '!./dist/**/*',
+    ],
+  },
   theme: {
     extend: {
       colors: {
+        // Orange scale — action, energy, conversion
         orange: {
           50: '#fff7ed',
           100: '#ffedd5',
@@ -17,18 +27,22 @@ module.exports = {
           800: '#9f4200',
           900: '#7c3200',
         },
+
+        // Green scale — trust, success, learning progress
         green: {
           50: '#ecfdf5',
           100: '#d1fae5',
           200: '#a7f3d0',
           300: '#6ee7b7',
           400: '#34d399',
-          500: '#009d8c',
-          600: '#00897a',
-          700: '#007568',
-          800: '#005f55',
-          900: '#004940',
+          500: '#22a06b',
+          600: '#1a7f55',
+          700: '#166a47',
+          800: '#115437',
+          900: '#0b3d29',
         },
+
+        // Neutral scale — calm SaaS foundation
         neutral: {
           0: '#ffffff',
           50: '#fafaf8',
@@ -42,18 +56,31 @@ module.exports = {
           800: '#2b2b27',
           900: '#181815',
         },
-        brand: {
-          primary: '#009d8c',
-          'primary-hover': '#00897a',
-          'primary-active': '#007568',
-          action: '#ff7a1a',
-          'action-hover': '#e86500',
-          'action-active': '#c65300',
-          trust: '#009d8c',
-          'trust-hover': '#00897a',
-          'trust-active': '#007568',
+
+        // Supporting accents
+        blue: {
+          500: '#3b82f6',
         },
-        // Mapping semantic colors for easier usage
+        purple: {
+          500: '#8b5cf6',
+        },
+        red: {
+          500: '#e5484d',
+        },
+        yellow: {
+          500: '#f5b700',
+        },
+        brand: {
+          primary: 'var(--brand-primary)',
+          'primary-hover': 'var(--brand-primary-hover)',
+          'primary-active': 'var(--brand-primary-active)',
+          action: 'var(--brand-action)',
+          'action-hover': 'var(--brand-action-hover)',
+          'action-active': 'var(--brand-action-active)',
+          trust: 'var(--brand-trust)',
+          'trust-hover': 'var(--brand-trust-hover)',
+          'trust-active': 'var(--brand-trust-active)',
+        },
         primary: 'var(--brand-primary)',
         secondary: 'var(--text-secondary)',
         muted: 'var(--text-muted)',
@@ -92,12 +119,14 @@ module.exports = {
         full: '9999px',
       },
       boxShadow: {
-        xs: '0 1px 2px rgba(24,24,21,0.04)',
-        sm: '0 4px 12px rgba(24,24,21,0.06)',
-        md: '0 10px 30px rgba(24,24,21,0.08)',
-        lg: '0 24px 60px rgba(24,24,21,0.12)',
-        orange: '0 18px 40px rgba(255,122,26,0.24)',
-        green: '0 18px 40px rgba(0,157,140,0.22)',
+        xs: '0 1px 2px rgba(24, 24, 21, 0.04)',
+        sm: '0 4px 12px rgba(24, 24, 21, 0.06)',
+        md: '0 10px 30px rgba(24, 24, 21, 0.08)',
+        lg: '0 24px 60px rgba(24, 24, 21, 0.12)',
+        orange: '0 18px 40px rgba(255, 122, 26, 0.24)',
+        green: '0 18px 40px rgba(34, 160, 107, 0.22)',
+        'orange-glow': '0 18px 40px rgba(255, 122, 26, 0.24)',
+        'green-glow': '0 18px 40px rgba(34, 160, 107, 0.22)',
       },
       fontFamily: {
         sans: [
@@ -106,10 +135,76 @@ module.exports = {
           'system-ui',
           '-apple-system',
           'BlinkMacSystemFont',
-          '"Segoe UI"',
+          'Segoe UI',
           'sans-serif',
         ],
-        mono: ['"JetBrains Mono"', '"SFMono-Regular"', 'Consolas', 'monospace'],
+        mono: ['JetBrains Mono', 'SFMono-Regular', 'Consolas', 'monospace'],
+      },
+      fontSize: {
+        '2xs': ['0.625rem', { lineHeight: '1rem' }],
+        xs: ['0.75rem', { lineHeight: '1rem', letterSpacing: '-0.01em' }],
+        sm: ['0.875rem', { lineHeight: '1.25rem', letterSpacing: '-0.01em' }],
+        base: ['1rem', { lineHeight: '1.5rem', letterSpacing: '-0.01em' }],
+        lg: ['1.125rem', { lineHeight: '1.75rem', letterSpacing: '-0.01em' }],
+        xl: ['1.25rem', { lineHeight: '1.75rem', letterSpacing: '-0.02em' }],
+        '2xl': ['1.5rem', { lineHeight: '2rem', letterSpacing: '-0.02em' }],
+        '3xl': ['1.875rem', { lineHeight: '2.25rem', letterSpacing: '-0.02em' }],
+        '4xl': ['2.25rem', { lineHeight: '2.5rem', letterSpacing: '-0.02em' }],
+        '5xl': ['3rem', { lineHeight: '1.1', letterSpacing: '-0.02em' }],
+        '6xl': ['3.75rem', { lineHeight: '1.1', letterSpacing: '-0.02em' }],
+      },
+      spacing: {
+        1: '4px',
+        2: '8px',
+        3: '12px',
+        4: '16px',
+        5: '20px',
+        6: '24px',
+        8: '32px',
+        10: '40px',
+        12: '48px',
+        16: '64px',
+        20: '80px',
+        24: '96px',
+        32: '128px',
+      },
+      animation: {
+        'fade-in': 'fadeIn 0.3s cubic-bezier(0.25, 0.1, 0.25, 1)',
+        'fade-in-up': 'fadeInUp 0.4s cubic-bezier(0.25, 0.1, 0.25, 1)',
+        'scale-in': 'scaleIn 0.3s cubic-bezier(0.25, 0.1, 0.25, 1)',
+        'slide-in': 'slideIn 0.3s cubic-bezier(0.25, 0.1, 0.25, 1)',
+        'scroll-left': 'scrollLeft 30s linear infinite',
+        'skeleton-shimmer': 'skeletonShimmer 1.4s ease-in-out infinite',
+      },
+      keyframes: {
+        fadeIn: {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
+        fadeInUp: {
+          '0%': { opacity: '0', transform: 'translateY(16px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        scaleIn: {
+          '0%': { opacity: '0', transform: 'scale(0.95)' },
+          '100%': { opacity: '1', transform: 'scale(1)' },
+        },
+        slideIn: {
+          '0%': { opacity: '0', transform: 'translateY(-8px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        scrollLeft: {
+          from: { transform: 'translateX(0)' },
+          to: { transform: 'translateX(-50%)' },
+        },
+        skeletonShimmer: {
+          '0%': { backgroundPosition: '100% 0' },
+          '100%': { backgroundPosition: '-100% 0' },
+        },
+      },
+      transitionTimingFunction: {
+        smooth: 'cubic-bezier(0.25, 0.1, 0.25, 1)',
+        bounce: 'cubic-bezier(0.34, 1.56, 0.64, 1)',
       },
     },
   },

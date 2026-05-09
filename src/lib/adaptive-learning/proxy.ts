@@ -98,18 +98,20 @@ export async function proxyAdaptiveRequest(
   try {
     const session = await getServerSession(authOptions);
     const userId = (session?.user as any)?.id;
+    const userRole = (session?.user as any)?.role;
     if (!userId) {
       return NextResponse.json({ detail: 'Unauthorized' }, { status: 401 });
     }
 
     const targetUrl = buildTargetUrl(req, targetPath);
 
-    const headers: Record<string, string> = buildAdaptiveServiceHeaders(userId);
+    const headers: Record<string, string> = buildAdaptiveServiceHeaders(userId, userRole);
 
     const method = options?.method || req.method;
 
     const llmAction = classifyAdaptiveLlmAction(targetPath, method);
-    const llmRateLimit = llmAction ? await checkLlmRateLimit(userId, llmAction) : null;
+    const llmRateLimit =
+      llmAction && userRole !== 'admin' ? await checkLlmRateLimit(userId, llmAction) : null;
     if (llmRateLimit && !llmRateLimit.allowed) {
       return buildLlmRateLimitResponse(llmRateLimit);
     }

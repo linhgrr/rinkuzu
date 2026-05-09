@@ -10,7 +10,7 @@ Tech stack (hard constraints)
 ────────────────────────────────────────────────
 Framework: **Next.js 14** (App Router, server actions) – runs perfectly on Vercel  
 Language: TypeScript (ES2022)  
-Database: MongoDB Atlas (env var MONGO_URL) via **Mongoose**  
+Database: MongoDB Atlas (env var MONGODB_URI) via **Mongoose**  
 Auth: **next-auth** (Credentials provider) + JWT; roles: "admin" | "user"  
 State (client): Zustand  
 Styling: TailwindCSS  
@@ -159,7 +159,7 @@ Deployment on Vercel
 ────────────────────────────────────────────────
 
 1. Push repo to GitHub.
-2. In Vercel dashboard → “Import Project” → set **Environment Variables** (`MONGO_URL`, `GEMINI_KEYS`, etc.).
+2. In Vercel dashboard → “Import Project” → set **Environment Variables** (`MONGODB_URI`, `GEMINI_KEYS`, etc.).
 3. Vercel auto-build: `pnpm install` → `pnpm build` (Next.js).
 4. Done; API routes become serverless functions.
 

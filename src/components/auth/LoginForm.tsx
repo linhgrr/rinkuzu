@@ -151,20 +151,25 @@ export function LoginForm({ locale }: LoginFormProps) {
         </div>
 
         <div className="pt-2">
-          <Button type="submit" loading={loading} size="lg" className="w-full">
+          <Button
+            type="submit"
+            loading={loading}
+            size="lg"
+            className="w-full bg-teal-600 text-white hover:bg-teal-700 shadow-sm border-0"
+          >
             {loading ? t('signingIn') : t('signInButton')}
           </Button>
         </div>
       </form>
 
       {/* Sign Up Link */}
-      <div className="mt-8 pt-6 border-t border-neutral-200">
+      <div className="mt-8 pt-6 border-t border-gray-100">
         <div className="text-center">
-          <p className="text-sm text-neutral-500">
+          <p className="text-sm text-gray-600">
             {t('dontHaveAccount')}{' '}
             <Link
               href="/register"
-              className="font-semibold text-brand-action hover:text-brand-action-hover transition-colors"
+              className="font-semibold text-teal-600 hover:text-teal-700 transition-colors"
             >
               {t('createAccount')}
             </Link>

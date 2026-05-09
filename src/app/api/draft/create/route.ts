@@ -4,7 +4,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import connectDB from '@/lib/mongoose';
 import DraftQuiz from '@/models/DraftQuiz';
-import { deletePDF } from '@/lib/s3';
+import { deletePDF, OBJECT_STORAGE_PUBLIC_BASE_URL } from '@/lib/s3';
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 const EXPIRY_HOURS = 48;
@@ -48,10 +48,8 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Invalid s3Key for current user' }, { status: 403 });
       }
 
-      const endpoint =
-        process.env['S3_ENDPOINT'] || 'https://objectstorageapi.ap-southeast-1.clawcloudrun.com';
-      const bucket = process.env['S3_BUCKET_NAME'] || 'rinkuzu-pdfs';
-      pdfUrl = `${endpoint}/${bucket}/${pdfKey}`;
+      const bucket = process.env['OBJECT_STORAGE_BUCKET'] || 'rinkuzu-pdfs';
+      pdfUrl = `${OBJECT_STORAGE_PUBLIC_BASE_URL}/${bucket}/${pdfKey}`;
 
       const parsedFileSize = Number(rawFileSize);
       fileSize = Number.isFinite(parsedFileSize) && parsedFileSize > 0 ? parsedFileSize : 0;

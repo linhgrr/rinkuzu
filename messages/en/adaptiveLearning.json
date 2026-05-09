@@ -275,7 +275,11 @@
       "extractingConcepts": "Extracting key concepts",
       "buildingGraph": "Building Knowledge Graph",
       "generatingPath": "Generating learning path",
-      "preparingExercise": "Preparing first exercise"
+      "preparingExercise": "Preparing first exercise",
+      "computingEmbeddings": "Computing embeddings",
+      "mergingAndRanking": "Merging concepts and ranking prerequisites",
+      "verifyingAndBuildingGraph": "Verifying relations and building the graph",
+      "finalizingSession": "Finalizing learning session data"
     },
     "status": {
       "starting": "Starting...",
@@ -297,9 +301,11 @@
     "notices": {
       "connectionInterrupted": "The connection was interrupted, but your material may still be processing. We’re retrying automatically...",
       "backendSlowRetrying": "The learning service is taking longer than expected. We’re checking again automatically...",
+      "processingTakingLonger": "This document is taking longer than usual to process. You can keep this page open while we continue checking automatically...",
       "retryingCreateSession": "Your learning path is ready. We’re reconnecting to finish creating your session...",
       "sessionSetupUnconfirmed": "Your material finished processing, but we could not confirm session setup. Please open the subject again from the dashboard.",
-      "retryAfterFailure": "You can safely return and try this upload again."
+      "retryAfterFailure": "You can safely return and try this upload again.",
+      "partialSuccess": "Processed with warnings: {failed} of {total} PDF batches failed, so a few concepts may be missing."
     },
     "errors": {
       "generic": "Something went wrong while checking processing status. Please try again.",

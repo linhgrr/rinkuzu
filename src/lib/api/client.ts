@@ -50,11 +50,14 @@ export async function fetchApiSuccess<
   }
 
   if (!response.ok || payload?.success !== true) {
+    const errorObj = payload?.error;
+    const errorMessage =
+      typeof errorObj === 'object' && errorObj !== null
+        ? errorObj.message || errorObj.detail || rawText
+        : errorObj || payload?.detail || rawText;
+
     throw new ApiResponseError(
-      payload?.error ||
-        payload?.detail ||
-        rawText ||
-        `Request failed with status ${response.status}`,
+      errorMessage || `Request failed with status ${response.status}`,
       response.status,
       payload ?? rawText,
     );

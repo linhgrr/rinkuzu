@@ -138,3 +138,4 @@ temp/
 # package-lock.json  # if using npm
 # yarn.lock          # if using yarn
 # pnpm-lock.yaml     # if using pnpm 
+.gitnexus

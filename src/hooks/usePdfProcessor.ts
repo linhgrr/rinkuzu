@@ -3,6 +3,7 @@ import { useCallback, useRef, useEffect } from 'react';
 import { useDraftStore } from '@/store/useDraftStore';
 import { toast } from 'sonner';
 import { mapWithConcurrency } from '@/lib/asyncPool';
+import { extractApiErrorMessage } from '@/lib/api/error';
 
 interface ChunkInfo {
   index: number;
@@ -29,7 +30,7 @@ async function fetchWithRetry(
 
       // If conflict (another request processing), wait and retry
       if (response.status === 409) {
-        const data = await response.json();
+        const data = await response.json().catch(() => null);
         const retryAfter = data.retryAfter || INITIAL_RETRY_DELAY * Math.pow(2, attempt);
         await new Promise((r) => setTimeout(r, retryAfter));
         continue;
@@ -89,8 +90,8 @@ export function usePdfProcessor() {
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to process chunk');
+        const errorPayload = await response.json().catch(() => null);
+        throw new Error(extractApiErrorMessage(errorPayload, 'Failed to process chunk'));
       }
 
       const result = await response.json();

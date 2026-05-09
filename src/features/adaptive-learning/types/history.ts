@@ -1,18 +1,8 @@
-export interface SubjectProgressItem {
-  job_id: string;
-  filename: string;
-  subject_id: string;
-  status: string;
-  total_correct: number;
-  total_answered: number;
-  accuracy: number;
-  avg_mastery: number;
-  step: number;
-  max_steps: number;
-  updated_at: number;
-  created_at: number;
-  last_session_id?: string | null;
-}
+import type { components } from '@/generated/adaptive-api';
+
+type ApiSchemas = components['schemas'];
+
+export type SubjectProgressItem = ApiSchemas['SubjectProgressSummaryResponse'];
 
 export interface ExerciseHistoryFull {
   exercise_id: string;
@@ -37,25 +27,12 @@ export interface ExerciseHistoryFull {
   timestamp: number;
 }
 
-export interface SubjectHistoryDetail {
-  job_id: string;
-  filename: string;
-  subject_id: string;
-  status: string;
-  total_correct: number;
-  total_answered: number;
-  accuracy: number;
-  avg_mastery: number;
-  step: number;
-  max_steps: number;
-  concept_names: Record<string, string>;
-  concept_mastery: number[];
-  bloom_mastery: number[][];
+export type SubjectHistoryDetail = Omit<
+  ApiSchemas['SubjectHistoryDetailResponse'],
+  'exercise_history'
+> & {
   exercise_history: ExerciseHistoryFull[];
-  created_at: number;
-  updated_at: number;
-  last_session_id?: string | null;
-}
+};
 
 export type SessionHistoryItem = SubjectProgressItem;
 export type SessionHistoryDetail = SubjectHistoryDetail;

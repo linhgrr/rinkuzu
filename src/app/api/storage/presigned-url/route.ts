@@ -4,6 +4,7 @@ import { PutObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { authOptions } from '@/lib/auth';
 import { s3Client, BUCKET_NAME } from '@/lib/s3';
+import { buildStandardErrorBody } from '@/lib/api/error';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,7 +23,9 @@ export async function POST(request: NextRequest) {
     const userId = (session?.user as any)?.id;
 
     if (!userId) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json(buildStandardErrorBody('unauthorized', 'Unauthorized'), {
+        status: 401,
+      });
     }
 
     const body = await request.json();
@@ -32,19 +35,22 @@ export async function POST(request: NextRequest) {
     const purpose = String(body?.purpose || '').trim() as UploadPurpose;
 
     if (!fileName) {
-      return NextResponse.json({ success: false, error: 'fileName is required' }, { status: 400 });
+      return NextResponse.json(
+        buildStandardErrorBody('invalid_file_name', 'fileName is required'),
+        { status: 400 },
+      );
     }
 
     if (contentType !== 'application/pdf') {
       return NextResponse.json(
-        { success: false, error: 'Only PDF files are supported' },
+        buildStandardErrorBody('invalid_content_type', 'Only PDF files are supported'),
         { status: 400 },
       );
     }
 
     if (!Number.isFinite(fileSize) || fileSize <= 0 || fileSize > MAX_FILE_SIZE) {
       return NextResponse.json(
-        { success: false, error: 'Invalid file size (max 50MB)' },
+        buildStandardErrorBody('invalid_file_size', 'Invalid file size (max 50MB)'),
         { status: 400 },
       );
     }
@@ -56,7 +62,7 @@ export async function POST(request: NextRequest) {
       prefix = 'uploads/adaptive_pipeline';
     } else {
       return NextResponse.json(
-        { success: false, error: 'Invalid purpose specified' },
+        buildStandardErrorBody('invalid_upload_purpose', 'Invalid purpose specified'),
         { status: 400 },
       );
     }
@@ -83,7 +89,7 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error('Failed to create presigned upload URL:', error);
     return NextResponse.json(
-      { success: false, error: error?.message || 'Internal server error' },
+      buildStandardErrorBody('presigned_url_failed', error?.message || 'Internal server error'),
       { status: 500 },
     );
   }

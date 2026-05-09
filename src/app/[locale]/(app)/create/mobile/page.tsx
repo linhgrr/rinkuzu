@@ -16,6 +16,7 @@ import { toast } from 'sonner';
 import { CategorySelector } from '@/features/categories/components/CategorySelector';
 import { Input, Textarea } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
+import { extractApiErrorMessage } from '@/lib/api/error';
 
 export default function MobileCreatePage() {
   const t = useTranslations('create');
@@ -274,7 +275,7 @@ async function uploadPdfViaPresignedUrl(file: File): Promise<{ s3Key: string }> 
 
   const payload = await response.json();
   if (!response.ok || !payload?.success || !payload?.data?.uploadUrl || !payload?.data?.s3Key) {
-    throw new Error(payload?.error || 'Failed to create upload URL');
+    throw new Error(extractApiErrorMessage(payload, 'Failed to create upload URL'));
   }
 
   const putResponse = await fetch(payload.data.uploadUrl, {

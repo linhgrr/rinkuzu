@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import connectDB from '@/lib/mongoose';
 import User from '@/models/User';
-import { s3Client, BUCKET_NAME } from '@/lib/s3';
+import { s3Client, BUCKET_NAME, OBJECT_STORAGE_PUBLIC_BASE_URL } from '@/lib/s3';
 import { PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
@@ -96,9 +96,7 @@ export async function PUT(request: NextRequest) {
       }),
     );
 
-    const endpoint =
-      process.env['S3_ENDPOINT'] || 'https://objectstorageapi.ap-southeast-1.clawcloudrun.com';
-    const avatarUrl = `${endpoint}/${BUCKET_NAME}/${key}`;
+    const avatarUrl = `${OBJECT_STORAGE_PUBLIC_BASE_URL}/${BUCKET_NAME}/${key}`;
 
     await User.updateOne({ email: session.user.email }, { avatar: avatarUrl });
 

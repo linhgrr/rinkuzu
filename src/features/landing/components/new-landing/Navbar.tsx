@@ -70,6 +70,7 @@ const Navbar = ({ isAuthenticated = false }: { isAuthenticated?: boolean }) => {
               priority
               sizes="120px"
               className="h-[32px] w-auto object-contain"
+              style={{ width: 'auto' }}
             />
           </Link>
           <div className="flex items-center gap-[30px]">
@@ -115,6 +116,7 @@ const Navbar = ({ isAuthenticated = false }: { isAuthenticated?: boolean }) => {
             priority
             sizes="100px"
             className="h-[28px] w-auto object-contain"
+            style={{ width: 'auto' }}
           />
         </Link>
         <div className="flex items-center gap-3">

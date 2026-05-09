@@ -16,6 +16,7 @@ export function NavLogo() {
           height={44}
           sizes="165px"
           className="h-11 w-auto object-contain"
+          style={{ width: 'auto' }}
         />
       </div>
     </Link>

@@ -1,3 +1,7 @@
+import type { components } from '@/generated/adaptive-api';
+
+type ApiSchemas = components['schemas'];
+
 export type BloomLevel = 'Remember' | 'Understand' | 'Apply' | 'Analyze' | 'Evaluate' | 'Create';
 
 export const BLOOM_LABELS: BloomLevel[] = [
@@ -20,108 +24,55 @@ export interface Course {
   currentTopic: string;
 }
 
-export interface NextConcept {
-  concept_name: string;
-  concept_idx: number;
-  bloom_level: number;
+export type NextConcept = Omit<ApiSchemas['NextConceptResponse'], 'bloom_label'> & {
   bloom_label: BloomLevel;
-  step: number;
-  max_steps: number;
-}
+};
 
-export interface TheoryData {
-  content: string;
-  examples: string[];
-}
+export type TheoryData = ApiSchemas['TheoryResponse'];
 
-export type ExerciseType =
-  | 'mcq'
-  | 'true_false'
-  | 'fill_blank'
-  | 'multi_correct'
-  | 'ordering'
-  | 'matching'
-  | 'short_answer';
+export type ExerciseType = ApiSchemas['ExerciseType'];
 
 export interface MatchingPair {
   left: string;
   right: string;
 }
 
-export interface RecommendationPrerequisite {
-  name: string;
-  mastery: number;
-}
+export type RecommendationPrerequisite = ApiSchemas['RecommendationPrerequisite'];
 
-export interface RecommendationReason {
-  concept_name: string;
-  bloom_level: number;
+export type RecommendationReason = Omit<ApiSchemas['RecommendationReason'], 'bloom_label'> & {
   bloom_label: BloomLevel;
   satisfied_prereqs: RecommendationPrerequisite[];
-  current_mastery: number;
-  next_milestone: number;
-}
+};
 
-export interface SubmitAnswerPayload {
-  choice?: string;
-  choices?: string[];
-  boolean?: boolean;
-  blanks?: string[];
-  ordering?: string[];
-  matching?: Record<string, string>;
-  text?: string;
-}
+export type SubmitAnswerPayload = ApiSchemas['SubmitAnswerPayload'];
 
-export interface Exercise {
+export type Exercise = Omit<
+  ApiSchemas['ExerciseResponse'],
+  'bloom_label' | 'options' | 'items' | 'pairs' | 'right_items' | 'theory' | 'recommendation_reason'
+> & {
   id: string;
-  exercise_id: string;
-  concept_name: string;
-  concept_idx: number;
-  bloom_level: number;
   bloom_label: BloomLevel;
-  exercise_type: ExerciseType;
-  question: string;
-  sentence?: string | null;
   options: Record<string, string>;
-  statement?: string | null;
-  hint?: string | null;
   items: string[];
   pairs: MatchingPair[];
   right_items: string[];
   rubric?: string[];
   correct_answer?: string | string[] | boolean | Record<string, string> | null;
-  step: number;
-  max_steps: number;
-  theory?: {
-    content: string;
-    examples: string[];
-  };
+  theory?: TheoryData;
   recommendation_reason?: RecommendationReason | null;
-}
+};
 
-export interface SubmitResult {
-  is_correct: boolean;
-  correct_option: string;
-  explanation: string;
-  concept_name: string;
-  bloom_level: number;
-  mastery_after: number;
-  avg_mastery: number;
-  step: number;
-  session_completed: boolean;
+export type SubmitResult = Omit<ApiSchemas['SubmitAnswerResponse'], 'stats'> & {
   stats: {
     total_correct: number;
     total_answered: number;
     accuracy: number;
   };
-}
+};
 
-export interface Session {
-  session_id: string;
-  n_concepts: number;
+export type Session = Omit<ApiSchemas['SessionCreateResponse'], 'concepts'> & {
   concepts: ConceptInfo[];
-  status: string;
-}
+};
 
 export interface ConceptInfo {
   id: string;
@@ -136,20 +87,9 @@ export interface ExerciseHistoryItem {
   is_correct: boolean | null;
 }
 
-export interface SessionStatus {
-  session_id: string;
-  status: string;
-  step: number;
-  max_steps: number;
-  concepts_visited: number;
-  total_concepts: number;
-  avg_mastery: number;
-  coverage: number;
-  total_correct: number;
-  total_answered: number;
-  accuracy: number;
+export type SessionStatus = Omit<ApiSchemas['SessionStatusResponse'], 'exercises'> & {
   exercises: ExerciseHistoryItem[];
-}
+};
 
 export interface DailyStats {
   exercisesCompleted: number;

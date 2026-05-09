@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 const { loadEnvConfig } = require('@next/env');
 
 loadEnvConfig(process.cwd());
-const mongoUrl = process.env.MONGO_URL || process.env.MONGODB_URI;
+const mongoUrl = process.env.MONGODB_URI;
 
 const subscriptionSchema = new mongoose.Schema(
   {
@@ -33,7 +33,7 @@ const User = mongoose.models.User || mongoose.model('User', userSchema);
 
 async function checkExpiredSubscriptions() {
   if (!mongoUrl) {
-    throw new Error('MONGO_URL or MONGODB_URI is required');
+    throw new Error('MONGODB_URI is required');
   }
 
   await mongoose.connect(mongoUrl, { bufferCommands: false });

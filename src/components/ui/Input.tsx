@@ -3,7 +3,6 @@ import { HiOutlineExclamationCircle } from '@/components/icons';
 import { cn } from '@/lib/utils';
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
-  variant?: 'default' | 'glass' | 'outlined' | 'filled'; // Keeping for compatibility but standardizing visuals
   inputSize?: 'sm' | 'md' | 'lg';
   error?: string;
   label?: string;
@@ -13,17 +12,7 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
   (
-    {
-      className,
-      variant: _variant = 'default',
-      inputSize = 'md',
-      error,
-      label,
-      icon,
-      iconPosition = 'left',
-      id,
-      ...props
-    },
+    { className, inputSize = 'md', error, label, icon, iconPosition = 'left', id, ...props },
     ref,
   ) => {
     const inputId = id || label?.toLowerCase().replace(/\s+/g, '-');
@@ -92,11 +81,10 @@ Input.displayName = 'Input';
 const Textarea = React.forwardRef<
   HTMLTextAreaElement,
   React.TextareaHTMLAttributes<HTMLTextAreaElement> & {
-    variant?: 'default' | 'glass' | 'outlined' | 'filled';
     error?: string;
     label?: string;
   }
->(({ className, variant: _variant = 'default', error, label, id, ...props }, ref) => {
+>(({ className, error, label, id, ...props }, ref) => {
   const textareaId = id || label?.toLowerCase().replace(/\s+/g, '-');
 
   return (

@@ -128,7 +128,6 @@ export function LoginForm({ locale }: LoginFormProps) {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder={t('enterEmail')}
-            variant="default"
             icon={<HiOutlineMail className="w-5 h-5" />}
           />
 
@@ -145,7 +144,6 @@ export function LoginForm({ locale }: LoginFormProps) {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder={t('enterPassword')}
-            variant="default"
             icon={<HiOutlineLockClosed className="w-5 h-5" />}
           />
         </div>

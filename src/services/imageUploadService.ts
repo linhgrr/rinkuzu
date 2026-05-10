@@ -111,11 +111,3 @@ export const uploadImageToImgBB = async (
     throw new Error(`Failed to upload image to ImgBB: ${message}`);
   }
 };
-
-// For backward compatibility
-const imageUploadService = {
-  uploadImage: uploadImageToImgBB,
-  uploadImageToImgBB,
-};
-
-export default imageUploadService;

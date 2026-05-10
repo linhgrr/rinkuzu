@@ -92,7 +92,14 @@ describe('CategoryService', () => {
       });
       quizRepository.findAll.mockResolvedValue({
         quizzes: [{ _id: 'quiz-1', title: 'Algebra' }],
-        pagination: { page: 1, limit: 12, total: 1, totalPages: 1 },
+        pagination: {
+          currentPage: 1,
+          totalPages: 1,
+          totalItems: 1,
+          itemsPerPage: 12,
+          hasNextPage: false,
+          hasPrevPage: false,
+        },
       });
 
       const result = await service.getCategoryBySlug('math');
@@ -155,7 +162,14 @@ describe('CategoryService', () => {
       });
       quizRepository.findAll.mockResolvedValue({
         quizzes: [],
-        pagination: { page: 1, limit: 12, total: 0, totalPages: 0 },
+        pagination: {
+          currentPage: 1,
+          totalPages: 0,
+          totalItems: 0,
+          itemsPerPage: 12,
+          hasNextPage: false,
+          hasPrevPage: false,
+        },
       });
 
       await service.getCategoryBySlug('math', 1, 12, 'algebra');

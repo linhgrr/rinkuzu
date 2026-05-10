@@ -1,5 +1,6 @@
 import connectDB from '@/lib/mongoose';
 import Attempt from '@/models/Attempt';
+import { buildPaginationMeta } from '@/repositories/pagination';
 import { IAttempt, IAttemptRepository } from '@/interfaces/repositories/IAttemptRepository';
 
 export class AttemptRepository implements IAttemptRepository {
@@ -49,18 +50,9 @@ export class AttemptRepository implements IAttemptRepository {
 
     const totalItems = await Attempt.countDocuments({ user: userId });
 
-    const totalPages = Math.ceil(totalItems / limit);
-
     return {
       attempts,
-      pagination: {
-        currentPage: page,
-        totalPages,
-        totalItems,
-        itemsPerPage: limit,
-        hasNextPage: page < totalPages,
-        hasPrevPage: page > 1,
-      },
+      pagination: buildPaginationMeta(page, limit, totalItems),
     };
   }
 

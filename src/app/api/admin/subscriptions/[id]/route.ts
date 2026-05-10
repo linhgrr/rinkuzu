@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { createSubscriptionService } from '@/lib/subscriptionFactory';
 import { AsyncRouteParams } from '@/types/next-route';
+import { apiErr } from '@/lib/api/response';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,7 +12,7 @@ export async function GET(request: NextRequest, { params }: AsyncRouteParams<{ i
     const { id } = await params;
     const session = await getServerSession(authOptions);
     if (!session?.user || (session.user as any).role !== 'admin') {
-      return NextResponse.json({ success: false, error: 'Admin access required' }, { status: 403 });
+      return apiErr('forbidden', 'Admin access required', 403);
     }
 
     const subscriptionService = createSubscriptionService();
@@ -21,16 +22,13 @@ export async function GET(request: NextRequest, { params }: AsyncRouteParams<{ i
     const subscription = allSubscriptions.find((sub: any) => sub._id.toString() === id);
 
     if (!subscription) {
-      return NextResponse.json(
-        { success: false, error: 'Subscription not found' },
-        { status: 404 },
-      );
+      return apiErr('not_found', 'Subscription not found', 404);
     }
 
     return NextResponse.json({ success: true, data: subscription });
   } catch (error: any) {
     console.error('Admin subscription detail error:', error);
-    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
+    return apiErr('internal_error', 'Internal server error', 500);
   }
 }
 
@@ -39,19 +37,19 @@ export async function PATCH(request: NextRequest, { params }: AsyncRouteParams<{
     const { id } = await params;
     const session = await getServerSession(authOptions);
     if (!session?.user || (session.user as any).role !== 'admin') {
-      return NextResponse.json({ success: false, error: 'Admin access required' }, { status: 403 });
+      return apiErr('forbidden', 'Admin access required', 403);
     }
 
     const body = await request.json();
     const subscriptionService = createSubscriptionService();
     const result = await subscriptionService.updateSubscriptionById(id, body);
     if (!result.success) {
-      return NextResponse.json({ success: false, error: result.error }, { status: 400 });
+      return apiErr('service_error', result.error ?? 'Request failed', 400);
     }
     return NextResponse.json({ success: true, data: result.data });
   } catch (error: any) {
     console.error('Admin subscription update error:', error);
-    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
+    return apiErr('internal_error', 'Internal server error', 500);
   }
 }
 

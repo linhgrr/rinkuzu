@@ -1,6 +1,7 @@
 import connectDB from '@/lib/mongoose';
 import Quiz from '@/models/Quiz';
 import { IQuiz, IQuizRepository } from '@/interfaces/repositories/IQuizRepository';
+import { buildPaginationMeta } from '@/repositories/pagination';
 import { Types } from 'mongoose';
 
 export class QuizRepository implements IQuizRepository {
@@ -58,12 +59,7 @@ export class QuizRepository implements IQuizRepository {
     } = {},
   ): Promise<{
     quizzes: IQuiz[];
-    pagination: {
-      page: number;
-      limit: number;
-      total: number;
-      totalPages: number;
-    };
+    pagination: import('@/types').PaginationMeta;
   }> {
     await connectDB();
 
@@ -154,12 +150,7 @@ export class QuizRepository implements IQuizRepository {
 
       return {
         quizzes,
-        pagination: {
-          page,
-          limit,
-          total,
-          totalPages: Math.ceil(total / limit),
-        },
+        pagination: buildPaginationMeta(page, limit, total),
       };
     }
 
@@ -179,12 +170,7 @@ export class QuizRepository implements IQuizRepository {
 
     return {
       quizzes,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-      },
+      pagination: buildPaginationMeta(page, limit, total),
     };
   }
 
@@ -207,12 +193,7 @@ export class QuizRepository implements IQuizRepository {
     } = {},
   ): Promise<{
     quizzes: IQuiz[];
-    pagination: {
-      page: number;
-      limit: number;
-      total: number;
-      totalPages: number;
-    };
+    pagination: import('@/types').PaginationMeta;
   }> {
     await connectDB();
 
@@ -237,12 +218,7 @@ export class QuizRepository implements IQuizRepository {
 
     return {
       quizzes,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-      },
+      pagination: buildPaginationMeta(page, limit, total),
     };
   }
 

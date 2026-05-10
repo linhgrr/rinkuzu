@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getUserProgressStats } from '@/lib/dashboard';
+import { apiErr } from '@/lib/api/response';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,7 +11,7 @@ export async function GET() {
     const session = await getServerSession(authOptions);
 
     if (!session || !session.user) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+      return apiErr('unauthorized', 'Unauthorized', 401);
     }
 
     const userId = (session.user as any).id;
@@ -19,6 +20,6 @@ export async function GET() {
     return NextResponse.json(stats);
   } catch (error) {
     console.error('Error fetching progress stats:', error);
-    return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
+    return apiErr('internal_error', 'Internal Server Error', 500);
   }
 }

@@ -1,9 +1,4 @@
-interface ServiceResult<T> {
-  success: boolean;
-  data?: T;
-  error?: string;
-  statusCode?: number;
-}
+import { ServiceResult } from '@/interfaces/services/types';
 
 export interface SearchParams {
   search?: string;

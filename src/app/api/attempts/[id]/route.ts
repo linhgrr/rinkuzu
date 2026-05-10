@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
 import { AsyncRouteParams } from '@/types/next-route';
+import { apiErr } from '@/lib/api/response';
 
 export async function GET(request: NextRequest, { params }: AsyncRouteParams<{ id: string }>) {
   try {
@@ -13,10 +14,7 @@ export async function GET(request: NextRequest, { params }: AsyncRouteParams<{ i
 
     // Check if user is authenticated or has userEmail
     if (!session?.user?.email && !userEmail) {
-      return NextResponse.json(
-        { success: false, error: 'Authentication required or userEmail parameter' },
-        { status: 401 },
-      );
+      return apiErr('unauthorized', 'Authentication required or userEmail parameter', 401);
     }
 
     const userService = serviceFactory.getUserService();
@@ -24,18 +22,12 @@ export async function GET(request: NextRequest, { params }: AsyncRouteParams<{ i
     // Use session email if available, otherwise use userEmail from params
     const email = session?.user?.email ?? userEmail;
     if (!email) {
-      return NextResponse.json(
-        { success: false, error: 'Authentication required or userEmail parameter' },
-        { status: 401 },
-      );
+      return apiErr('unauthorized', 'Authentication required or userEmail parameter', 401);
     }
     const result = await userService.getAttemptDetails(id, email);
 
     if (!result.success) {
-      return NextResponse.json(
-        { success: false, error: result.error },
-        { status: result.statusCode || 400 },
-      );
+      return apiErr('service_error', result.error ?? 'Request failed', result.statusCode || 400);
     }
 
     return NextResponse.json({
@@ -44,6 +36,6 @@ export async function GET(request: NextRequest, { params }: AsyncRouteParams<{ i
     });
   } catch (error: unknown) {
     console.error('Get attempt details error:', error);
-    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
+    return apiErr('internal_error', 'Internal server error', 500);
   }
 }

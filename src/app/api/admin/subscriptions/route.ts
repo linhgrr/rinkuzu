@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { createSubscriptionService } from '@/lib/subscriptionFactory';
+import { buildPaginationMeta } from '@/repositories/pagination';
+import { apiErr } from '@/lib/api/response';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,7 +11,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user || (session.user as any).role !== 'admin') {
-      return NextResponse.json({ success: false, error: 'Admin access required' }, { status: 403 });
+      return apiErr('forbidden', 'Admin access required', 403);
     }
 
     const { searchParams } = new URL(request.url);
@@ -49,16 +51,11 @@ export async function GET(request: NextRequest) {
       success: true,
       data: {
         subscriptions: paginatedResults,
-        pagination: {
-          total,
-          page,
-          limit,
-          totalPages: Math.ceil(total / limit) || 1,
-        },
+        pagination: buildPaginationMeta(page, limit, total),
       },
     });
   } catch (error: any) {
     console.error('Admin subscriptions list error:', error);
-    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
+    return apiErr('internal_error', 'Internal server error', 500);
   }
 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
+import { apiErr } from '@/lib/api/response';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,7 +11,7 @@ export async function GET(request: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user || (session.user as any)?.role !== 'admin') {
-      return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
+      return apiErr('forbidden', 'Admin access required', 403);
     }
 
     const { searchParams } = new URL(request.url);
@@ -24,7 +25,7 @@ export async function GET(request: NextRequest) {
     const result = await adminService.getReports(searchParamsObj);
 
     if (!result.success) {
-      return NextResponse.json({ error: result.error }, { status: result.statusCode || 500 });
+      return apiErr('service_error', result.error ?? 'Request failed', result.statusCode || 500);
     }
 
     return NextResponse.json({
@@ -33,6 +34,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error fetching reports:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return apiErr('internal_error', 'Internal server error', 500);
   }
 }

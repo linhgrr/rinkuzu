@@ -1,5 +1,7 @@
 import { IQuiz } from '@/interfaces/repositories/IQuizRepository';
 import type { IQuestion } from '@/models/Quiz';
+import { PaginationMeta } from '@/types';
+import { ServiceResult } from '@/interfaces/services/types';
 
 export interface CreateQuizRequest {
   title: string;
@@ -23,22 +25,10 @@ export interface QuizListOptions {
   compact?: boolean;
 }
 
-interface ServiceResult<T> {
-  success: boolean;
-  data?: T;
-  error?: string;
-  statusCode?: number;
-}
-
 export interface IQuizService {
   getQuizzes(options: QuizListOptions): Promise<{
     quizzes: IQuiz[];
-    pagination: {
-      page: number;
-      limit: number;
-      total: number;
-      totalPages: number;
-    };
+    pagination: PaginationMeta;
   }>;
 
   createQuiz(userId: string, quizData: CreateQuizRequest): Promise<IQuiz>;

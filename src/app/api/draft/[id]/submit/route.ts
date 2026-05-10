@@ -7,6 +7,7 @@ import DraftQuiz from '@/models/DraftQuiz';
 import Quiz from '@/models/Quiz';
 import { deletePDF } from '@/lib/s3';
 import { AsyncRouteParams } from '@/types/next-route';
+import { apiErr } from '@/lib/api/response';
 
 // Simple slug generator (inline to avoid import issues)
 function generateSlug(title: string): string {
@@ -95,14 +96,14 @@ export async function POST(request: NextRequest, { params }: AsyncRouteParams<{ 
     const session = await getServerSession(authOptions);
     const userId = (session?.user as { id?: string } | undefined)?.id;
     if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErr('unauthorized', 'Unauthorized', 401);
     }
 
     const body = await request.json();
     const { title, categoryId, description, questions: editedQuestions } = body;
 
     if (!categoryId) {
-      return NextResponse.json({ error: 'Category is required' }, { status: 400 });
+      return apiErr('validation_error', 'Category is required', 400);
     }
 
     await connectDB();
@@ -113,7 +114,7 @@ export async function POST(request: NextRequest, { params }: AsyncRouteParams<{ 
     });
 
     if (!draft) {
-      return NextResponse.json({ error: 'Draft not found' }, { status: 404 });
+      return apiErr('not_found', 'Draft not found', 404);
     }
 
     // Allow submit if completed OR if has questions (partial completion)
@@ -125,7 +126,12 @@ export async function POST(request: NextRequest, { params }: AsyncRouteParams<{ 
     if (!validation.isValid) {
       return NextResponse.json(
         {
-          error: 'Validation failed',
+          success: false,
+          error: {
+            code: 'validation_error',
+            message: 'Request failed',
+            detail: 'Validation failed',
+          },
           details: validation.errors,
         },
         { status: 400 },
@@ -180,6 +186,6 @@ export async function POST(request: NextRequest, { params }: AsyncRouteParams<{ 
     });
   } catch (error) {
     console.error('Submit draft error:', error);
-    return NextResponse.json({ error: 'Failed to submit draft' }, { status: 500 });
+    return apiErr('internal_error', 'Failed to submit draft', 500);
   }
 }

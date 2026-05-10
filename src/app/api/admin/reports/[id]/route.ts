@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
 import { AsyncRouteParams } from '@/types/next-route';
+import { apiErr } from '@/lib/api/response';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,20 +13,20 @@ export async function PATCH(request: NextRequest, { params }: AsyncRouteParams<{
     const session = await getServerSession(authOptions);
 
     if (!session?.user || (session.user as any)?.role !== 'admin') {
-      return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
+      return apiErr('forbidden', 'Admin access required', 403);
     }
 
     const { status } = await request.json();
 
     if (!['pending', 'resolved', 'dismissed'].includes(status)) {
-      return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
+      return apiErr('validation_error', 'Invalid status', 400);
     }
 
     const adminService = serviceFactory.getAdminService();
     const result = await adminService.updateReportStatus(id, status);
 
     if (!result.success) {
-      return NextResponse.json({ error: result.error }, { status: result.statusCode || 500 });
+      return apiErr('service_error', result.error ?? 'Request failed', result.statusCode || 500);
     }
 
     return NextResponse.json({
@@ -34,7 +35,7 @@ export async function PATCH(request: NextRequest, { params }: AsyncRouteParams<{
     });
   } catch (error) {
     console.error('Error updating report:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return apiErr('internal_error', 'Internal server error', 500);
   }
 }
 
@@ -44,14 +45,14 @@ export async function DELETE(request: NextRequest, { params }: AsyncRouteParams<
     const session = await getServerSession(authOptions);
 
     if (!session?.user || (session.user as any)?.role !== 'admin') {
-      return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
+      return apiErr('forbidden', 'Admin access required', 403);
     }
 
     const adminService = serviceFactory.getAdminService();
     const result = await adminService.deleteReport(id);
 
     if (!result.success) {
-      return NextResponse.json({ error: result.error }, { status: result.statusCode || 500 });
+      return apiErr('service_error', result.error ?? 'Request failed', result.statusCode || 500);
     }
 
     return NextResponse.json({
@@ -60,6 +61,6 @@ export async function DELETE(request: NextRequest, { params }: AsyncRouteParams<
     });
   } catch (error) {
     console.error('Error deleting report:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return apiErr('internal_error', 'Internal server error', 500);
   }
 }

@@ -1,5 +1,6 @@
 import connectDB from '@/lib/mongoose';
 import Subscription, { ISubscription } from '@/models/Subscription';
+import { buildPaginationMeta } from '@/repositories/pagination';
 import { ISubscriptionRepository } from '@/interfaces/repositories/ISubscriptionRepository';
 import mongoose from 'mongoose';
 
@@ -86,8 +87,7 @@ export class SubscriptionRepository implements ISubscriptionRepository {
     limit: number,
   ): Promise<{
     subscriptions: ISubscription[];
-    total: number;
-    totalPages: number;
+    pagination: import('@/types').PaginationMeta;
   }> {
     await connectDB();
 
@@ -99,12 +99,9 @@ export class SubscriptionRepository implements ISubscriptionRepository {
       .populate('user', 'email role')
       .lean()) as unknown as ISubscription[];
 
-    const totalPages = Math.ceil(total / limit) || 1;
-
     return {
       subscriptions,
-      total,
-      totalPages,
+      pagination: buildPaginationMeta(page, limit, total),
     };
   }
 }

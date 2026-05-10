@@ -17,6 +17,7 @@ import { CategorySelector } from '@/features/categories/components/CategorySelec
 import { Input, Textarea } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { getPdfPageCount, uploadPdfViaPresignedUrl } from '@/lib/pdf';
+import { extractApiErrorMessage } from '@/lib/api/error';
 
 export default function MobileCreatePage() {
   const t = useTranslations('create');
@@ -74,7 +75,7 @@ export default function MobileCreatePage() {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || 'Failed to create draft');
+        throw new Error(extractApiErrorMessage(error, 'Failed to create draft'));
       }
 
       const { draftId, chunks, totalPages, expiresAt } = await response.json();

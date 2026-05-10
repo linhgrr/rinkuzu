@@ -1,5 +1,6 @@
 import connectDB from '@/lib/mongoose';
 import Report from '@/models/Report';
+import { buildPaginationMeta } from '@/repositories/pagination';
 import { IReport, IReportRepository } from '@/interfaces/repositories/IReportRepository';
 
 export class ReportRepository implements IReportRepository {
@@ -49,18 +50,10 @@ export class ReportRepository implements IReportRepository {
       .lean()) as unknown as IReport[];
 
     const totalItems = await Report.countDocuments(query);
-    const totalPages = Math.ceil(totalItems / limit);
 
     return {
       reports,
-      pagination: {
-        currentPage: page,
-        totalPages,
-        totalItems,
-        itemsPerPage: limit,
-        hasNextPage: page < totalPages,
-        hasPrevPage: page > 1,
-      },
+      pagination: buildPaginationMeta(page, limit, totalItems),
     };
   }
 

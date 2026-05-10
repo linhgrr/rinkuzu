@@ -5,6 +5,7 @@ import Category from '@/models/Category';
 import Quiz from '@/models/Quiz';
 import { authOptions } from '@/lib/auth';
 import { AsyncRouteParams } from '@/types/next-route';
+import { apiErr } from '@/lib/api/response';
 
 // GET /api/admin/categories/[id] - Get single category
 export async function GET(request: NextRequest, { params }: AsyncRouteParams<{ id: string }>) {
@@ -12,7 +13,7 @@ export async function GET(request: NextRequest, { params }: AsyncRouteParams<{ i
     const { id } = await params;
     const session = await getServerSession(authOptions);
     if (!session?.user || (session.user as any).role !== 'admin') {
-      return NextResponse.json({ success: false, error: 'Admin access required' }, { status: 403 });
+      return apiErr('forbidden', 'Admin access required', 403);
     }
 
     await connectDB();
@@ -20,7 +21,7 @@ export async function GET(request: NextRequest, { params }: AsyncRouteParams<{ i
     const category = await Category.findById(id).populate('createdBy', 'email');
 
     if (!category) {
-      return NextResponse.json({ success: false, error: 'Category not found' }, { status: 404 });
+      return apiErr('not_found', 'Category not found', 404);
     }
 
     return NextResponse.json({
@@ -29,7 +30,7 @@ export async function GET(request: NextRequest, { params }: AsyncRouteParams<{ i
     });
   } catch (error: any) {
     console.error('Get category error:', error);
-    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
+    return apiErr('internal_error', 'Internal server error', 500);
   }
 }
 
@@ -39,17 +40,14 @@ export async function PUT(request: NextRequest, { params }: AsyncRouteParams<{ i
     const { id } = await params;
     const session = await getServerSession(authOptions);
     if (!session?.user || (session.user as any).role !== 'admin') {
-      return NextResponse.json({ success: false, error: 'Admin access required' }, { status: 403 });
+      return apiErr('forbidden', 'Admin access required', 403);
     }
 
     const body = await request.json();
     const { name, description, color, isActive } = body;
 
     if (!name?.trim()) {
-      return NextResponse.json(
-        { success: false, error: 'Category name is required' },
-        { status: 400 },
-      );
+      return apiErr('validation_error', 'Category name is required', 400);
     }
 
     await connectDB();
@@ -57,7 +55,7 @@ export async function PUT(request: NextRequest, { params }: AsyncRouteParams<{ i
     const category = await Category.findById(id);
 
     if (!category) {
-      return NextResponse.json({ success: false, error: 'Category not found' }, { status: 404 });
+      return apiErr('not_found', 'Category not found', 404);
     }
 
     // Check if name already exists (excluding current category)
@@ -67,10 +65,7 @@ export async function PUT(request: NextRequest, { params }: AsyncRouteParams<{ i
     });
 
     if (existingCategory) {
-      return NextResponse.json(
-        { success: false, error: 'Category with this name already exists' },
-        { status: 400 },
-      );
+      return apiErr('validation_error', 'Category with this name already exists', 400);
     }
 
     category.name = name.trim();
@@ -87,7 +82,7 @@ export async function PUT(request: NextRequest, { params }: AsyncRouteParams<{ i
     });
   } catch (error: any) {
     console.error('Update category error:', error);
-    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
+    return apiErr('internal_error', 'Internal server error', 500);
   }
 }
 
@@ -97,7 +92,7 @@ export async function DELETE(request: NextRequest, { params }: AsyncRouteParams<
     const { id } = await params;
     const session = await getServerSession(authOptions);
     if (!session?.user || (session.user as any).role !== 'admin') {
-      return NextResponse.json({ success: false, error: 'Admin access required' }, { status: 403 });
+      return apiErr('forbidden', 'Admin access required', 403);
     }
 
     await connectDB();
@@ -105,19 +100,17 @@ export async function DELETE(request: NextRequest, { params }: AsyncRouteParams<
     const category = await Category.findById(id);
 
     if (!category) {
-      return NextResponse.json({ success: false, error: 'Category not found' }, { status: 404 });
+      return apiErr('not_found', 'Category not found', 404);
     }
 
     // Check if category is being used by any quizzes
     const quizCount = await Quiz.countDocuments({ category: id });
 
     if (quizCount > 0) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: `Cannot delete category. It is being used by ${quizCount} quiz${quizCount > 1 ? 'es' : ''}`,
-        },
-        { status: 400 },
+      return apiErr(
+        'validation_error',
+        `Cannot delete category. It is being used by ${quizCount} quiz${quizCount > 1 ? 'es' : ''}`,
+        400,
       );
     }
 
@@ -129,6 +122,6 @@ export async function DELETE(request: NextRequest, { params }: AsyncRouteParams<
     });
   } catch (error: any) {
     console.error('Delete category error:', error);
-    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
+    return apiErr('internal_error', 'Internal server error', 500);
   }
 }

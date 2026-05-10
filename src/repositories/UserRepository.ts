@@ -1,6 +1,7 @@
 import connectDB from '@/lib/mongoose';
 import User from '@/models/User';
 import { IUser } from '@/types/index';
+import { buildPaginationMeta } from '@/repositories/pagination';
 import { IUserRepository } from '@/interfaces/repositories/IUserRepository';
 
 export class UserRepository implements IUserRepository {
@@ -72,18 +73,10 @@ export class UserRepository implements IUserRepository {
       .lean()) as unknown as IUser[];
 
     const totalItems = await User.countDocuments(query);
-    const totalPages = Math.ceil(totalItems / limit);
 
     return {
       users,
-      pagination: {
-        currentPage: page,
-        totalPages,
-        totalItems,
-        itemsPerPage: limit,
-        hasNextPage: page < totalPages,
-        hasPrevPage: page > 1,
-      },
+      pagination: buildPaginationMeta(page, limit, totalItems),
     };
   }
 

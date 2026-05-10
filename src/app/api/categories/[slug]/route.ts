@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { serviceFactory } from '@/lib/serviceFactory';
 import { AsyncRouteParams } from '@/types/next-route';
+import { apiErr } from '@/lib/api/response';
 
 // GET /api/categories/[slug] - Get category by slug with quizzes
 export async function GET(request: NextRequest, { params }: AsyncRouteParams<{ slug: string }>) {
   try {
     const { slug } = await params;
     if (!slug) {
-      return NextResponse.json({ success: false, error: 'Slug is required' }, { status: 400 });
+      return apiErr('validation_error', 'Slug is required', 400);
     }
 
     // Get query parameters
@@ -21,10 +22,7 @@ export async function GET(request: NextRequest, { params }: AsyncRouteParams<{ s
     const result = await categoryService.getCategoryBySlug(slug, page, limit, search);
 
     if (!result.success) {
-      return NextResponse.json(
-        { success: false, error: result.error },
-        { status: result.statusCode || 400 },
-      );
+      return apiErr('service_error', result.error ?? 'Request failed', result.statusCode || 400);
     }
 
     return NextResponse.json({
@@ -33,6 +31,6 @@ export async function GET(request: NextRequest, { params }: AsyncRouteParams<{ s
     });
   } catch (error: any) {
     console.error('Get category by slug error:', error);
-    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
+    return apiErr('internal_error', 'Internal server error', 500);
   }
 }

@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
 import { AsyncRouteParams } from '@/types/next-route';
+import { apiErr } from '@/lib/api/response';
 
 // GET /api/quizzes/[id] - Get specific quiz
 export async function GET(request: NextRequest, { params }: AsyncRouteParams<{ id: string }>) {
@@ -10,14 +11,11 @@ export async function GET(request: NextRequest, { params }: AsyncRouteParams<{ i
     const { id } = await params;
     const session = await getServerSession(authOptions);
     if (!session?.user) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+      return apiErr('unauthorized', 'Unauthorized', 401);
     }
     const userEmail = session.user.email;
     if (!userEmail) {
-      return NextResponse.json(
-        { success: false, error: 'User email is required' },
-        { status: 400 },
-      );
+      return apiErr('validation_error', 'User email is required', 400);
     }
 
     const quizService = serviceFactory.getQuizService();
@@ -25,10 +23,7 @@ export async function GET(request: NextRequest, { params }: AsyncRouteParams<{ i
     const result = await quizService.getQuizById(id, userEmail, (session.user as any).role);
 
     if (!result.success) {
-      return NextResponse.json(
-        { success: false, error: result.error },
-        { status: result.statusCode || 400 },
-      );
+      return apiErr('service_error', result.error ?? 'Request failed', result.statusCode || 400);
     }
 
     const data = result.data;
@@ -59,7 +54,7 @@ export async function GET(request: NextRequest, { params }: AsyncRouteParams<{ i
     });
   } catch (error: any) {
     console.error('Get quiz error:', error);
-    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
+    return apiErr('internal_error', 'Internal server error', 500);
   }
 }
 
@@ -69,14 +64,11 @@ export async function PUT(request: NextRequest, { params }: AsyncRouteParams<{ i
     const { id } = await params;
     const session = await getServerSession(authOptions);
     if (!session?.user) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+      return apiErr('unauthorized', 'Unauthorized', 401);
     }
     const userEmail = session.user.email;
     if (!userEmail) {
-      return NextResponse.json(
-        { success: false, error: 'User email is required' },
-        { status: 400 },
-      );
+      return apiErr('validation_error', 'User email is required', 400);
     }
 
     const quizData = await request.json();
@@ -90,10 +82,7 @@ export async function PUT(request: NextRequest, { params }: AsyncRouteParams<{ i
     );
 
     if (!result.success) {
-      return NextResponse.json(
-        { success: false, error: result.error },
-        { status: result.statusCode || 400 },
-      );
+      return apiErr('service_error', result.error ?? 'Request failed', result.statusCode || 400);
     }
 
     return NextResponse.json({
@@ -102,7 +91,7 @@ export async function PUT(request: NextRequest, { params }: AsyncRouteParams<{ i
     });
   } catch (error: any) {
     console.error('Update quiz error:', error);
-    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
+    return apiErr('internal_error', 'Internal server error', 500);
   }
 }
 
@@ -112,14 +101,11 @@ export async function DELETE(request: NextRequest, { params }: AsyncRouteParams<
     const { id } = await params;
     const session = await getServerSession(authOptions);
     if (!session?.user) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+      return apiErr('unauthorized', 'Unauthorized', 401);
     }
     const userEmail = session.user.email;
     if (!userEmail) {
-      return NextResponse.json(
-        { success: false, error: 'User email is required' },
-        { status: 400 },
-      );
+      return apiErr('validation_error', 'User email is required', 400);
     }
 
     const quizService = serviceFactory.getQuizService();
@@ -127,10 +113,7 @@ export async function DELETE(request: NextRequest, { params }: AsyncRouteParams<
     const result = await quizService.deleteQuiz(id, userEmail, (session.user as any).role);
 
     if (!result.success) {
-      return NextResponse.json(
-        { success: false, error: result.error },
-        { status: result.statusCode || 400 },
-      );
+      return apiErr('service_error', result.error ?? 'Request failed', result.statusCode || 400);
     }
 
     return NextResponse.json({
@@ -139,6 +122,6 @@ export async function DELETE(request: NextRequest, { params }: AsyncRouteParams<
     });
   } catch (error: any) {
     console.error('Delete quiz error:', error);
-    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
+    return apiErr('internal_error', 'Internal server error', 500);
   }
 }

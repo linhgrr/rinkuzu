@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
+import { apiErr } from '@/lib/api/response';
 
 const quizService = serviceFactory.getQuizService();
 
@@ -41,7 +42,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error: unknown) {
     console.error('Get quizzes error:', error);
-    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
+    return apiErr('internal_error', 'Internal server error', 500);
   }
 }
 
@@ -50,7 +51,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+      return apiErr('unauthorized', 'Unauthorized', 401);
     }
 
     const { title, description, category, questions, isPrivate, pdfUrl } = await request.json();
@@ -82,9 +83,9 @@ export async function POST(request: NextRequest) {
       message.includes('Question') ||
       message.includes('Type must be')
     ) {
-      return NextResponse.json({ success: false, error: message }, { status: 400 });
+      return apiErr('validation_error', message, 400);
     }
 
-    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
+    return apiErr('internal_error', 'Internal server error', 500);
   }
 }

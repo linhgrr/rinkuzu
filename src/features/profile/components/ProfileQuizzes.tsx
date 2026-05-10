@@ -10,7 +10,7 @@ import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { QuizPreviewModal } from '@/features/quiz/components/QuizPreviewModal';
 import Pagination from '@/components/ui/Pagination';
 import { formatDate } from '@/lib/utils';
-import { IQuiz } from '@/types';
+import { IQuiz, PaginationMeta } from '@/types';
 import { fetchApiSuccess } from '@/lib/api/client';
 import {
   HiOutlineClock,
@@ -24,13 +24,6 @@ import {
   HiOutlinePlay,
 } from '@/components/icons';
 
-interface PaginationData {
-  page: number;
-  limit: number;
-  total: number;
-  totalPages: number;
-}
-
 export default function ProfileQuizzes() {
   const t = useTranslations('profile');
   const tCommon = useTranslations('common');
@@ -42,12 +35,15 @@ export default function ProfileQuizzes() {
   const [previewQuiz, setPreviewQuiz] = useState<IQuiz | null>(null);
   const [deletingQuizId, setDeletingQuizId] = useState<string | null>(null);
   const [quizToDelete, setQuizToDelete] = useState<IQuiz | null>(null);
-  const [pagination, setPagination] = useState<PaginationData>({
-    page: 1,
-    limit: 12,
-    total: 0,
+  const [pagination, setPagination] = useState<PaginationMeta>({
+    currentPage: 1,
+    itemsPerPage: 12,
+    totalItems: 0,
     totalPages: 0,
+    hasNextPage: false,
+    hasPrevPage: false,
   });
+  const ITEMS_PER_PAGE = 12;
 
   const fetchMyQuizzes = useCallback(
     async (page: number = 1) => {
@@ -55,7 +51,7 @@ export default function ProfileQuizzes() {
         setLoading(true);
         const params = new URLSearchParams({
           page: page.toString(),
-          limit: pagination.limit.toString(),
+          limit: ITEMS_PER_PAGE.toString(),
           mine: 'true',
         });
 
@@ -63,7 +59,7 @@ export default function ProfileQuizzes() {
           params.append('status', filter);
         }
 
-        const data = await fetchApiSuccess<{ quizzes: IQuiz[]; pagination: PaginationData }>(
+        const data = await fetchApiSuccess<{ quizzes: IQuiz[]; pagination: PaginationMeta }>(
           `/api/quizzes?${params}`,
         );
         setQuizzes(data.data.quizzes);
@@ -75,7 +71,7 @@ export default function ProfileQuizzes() {
         setLoading(false);
       }
     },
-    [filter, pagination.limit],
+    [filter],
   );
 
   useEffect(() => {
@@ -83,7 +79,7 @@ export default function ProfileQuizzes() {
   }, [fetchMyQuizzes]);
 
   const handlePageChange = (newPage: number) => {
-    setPagination((prev) => ({ ...prev, page: newPage }));
+    setPagination((prev) => ({ ...prev, currentPage: newPage }));
     fetchMyQuizzes(newPage);
   };
 
@@ -193,7 +189,7 @@ export default function ProfileQuizzes() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-neutral-900">{pagination.total}</div>
+            <div className="text-2xl font-bold text-neutral-900">{pagination.totalItems}</div>
             <div className="text-xs text-neutral-600">{tCommon('total')}</div>
           </CardContent>
         </Card>
@@ -322,7 +318,7 @@ export default function ProfileQuizzes() {
         {pagination.totalPages > 1 && (
           <div className="mt-8 flex justify-center">
             <Pagination
-              currentPage={pagination.page}
+              currentPage={pagination.currentPage}
               totalPages={pagination.totalPages}
               onPageChange={handlePageChange}
             />

@@ -1,5 +1,6 @@
 import connectDB from '@/lib/mongoose';
 import Bookmark from '@/models/Bookmark';
+import { buildPaginationMeta } from '@/repositories/pagination';
 import { IBookmark, IBookmarkRepository } from '@/interfaces/repositories/IBookmarkRepository';
 
 export class BookmarkRepository implements IBookmarkRepository {
@@ -33,18 +34,10 @@ export class BookmarkRepository implements IBookmarkRepository {
       .lean()) as unknown as IBookmark[];
 
     const totalItems = await Bookmark.countDocuments({ userEmail });
-    const totalPages = Math.ceil(totalItems / limit);
 
     return {
       bookmarks,
-      pagination: {
-        currentPage: page,
-        totalPages,
-        totalItems,
-        itemsPerPage: limit,
-        hasNextPage: page < totalPages,
-        hasPrevPage: page > 1,
-      },
+      pagination: buildPaginationMeta(page, limit, totalItems),
     };
   }
 

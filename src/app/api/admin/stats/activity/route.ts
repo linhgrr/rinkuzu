@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
+import { apiErr } from '@/lib/api/response';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,20 +11,14 @@ export async function GET(_request: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user || (session.user as any).role !== 'admin') {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized - Admin access required' },
-        { status: 401 },
-      );
+      return apiErr('forbidden', 'Unauthorized - Admin access required', 401);
     }
 
     const adminService = serviceFactory.getAdminService();
     const result = await adminService.getActivityStats();
 
     if (!result.success) {
-      return NextResponse.json(
-        { success: false, error: result.error },
-        { status: result.statusCode || 500 },
-      );
+      return apiErr('service_error', result.error ?? 'Request failed', result.statusCode || 500);
     }
 
     return NextResponse.json({
@@ -32,9 +27,6 @@ export async function GET(_request: NextRequest) {
     });
   } catch (error) {
     console.error('Error fetching activity stats:', error);
-    return NextResponse.json(
-      { success: false, error: 'Failed to fetch activity statistics' },
-      { status: 500 },
-    );
+    return apiErr('internal_error', 'Failed to fetch activity statistics', 500);
   }
 }

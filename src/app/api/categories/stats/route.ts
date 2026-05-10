@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { serviceFactory } from '@/lib/serviceFactory';
+import { apiErr } from '@/lib/api/response';
 
 // GET /api/categories/stats - Get category statistics for public display
 export async function GET(_request: NextRequest) {
@@ -9,19 +10,13 @@ export async function GET(_request: NextRequest) {
     const result = await categoryService.getCategoryStats();
 
     if (!result.success) {
-      return NextResponse.json(
-        { success: false, error: result.error },
-        { status: result.statusCode || 400 },
-      );
+      return apiErr('service_error', result.error ?? 'Request failed', result.statusCode || 400);
     }
 
     // Transform the data to match expected format
     const categoriesWithStats = result.data;
     if (!categoriesWithStats) {
-      return NextResponse.json(
-        { success: false, error: 'No category data found' },
-        { status: 404 },
-      );
+      return apiErr('not_found', 'No category data found', 404);
     }
 
     const hotCategories = categoriesWithStats.slice(0, 3);
@@ -36,6 +31,6 @@ export async function GET(_request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Get category stats error:', error);
-    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
+    return apiErr('internal_error', 'Internal server error', 500);
   }
 }

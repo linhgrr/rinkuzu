@@ -3,12 +3,13 @@ import { getServerSession } from 'next-auth';
 import connectDB from '@/lib/mongoose';
 import UserProgress from '@/models/UserProgress';
 import { authOptions } from '@/lib/auth';
+import { apiErr } from '@/lib/api/response';
 
 export async function POST(_req: Request) {
   try {
     const session = await getServerSession(authOptions);
     if (!session || !session.user) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+      return apiErr('unauthorized', 'Unauthorized', 401);
     }
 
     await connectDB();
@@ -16,21 +17,18 @@ export async function POST(_req: Request) {
 
     const userProgress = await UserProgress.findOne({ userId });
     if (!userProgress) {
-      return NextResponse.json({ message: 'User progress not found' }, { status: 404 });
+      return apiErr('not_found', 'User progress not found', 404);
     }
 
     const FREEZE_COST = 500;
     const MAX_FREEZES = 2;
 
     if (userProgress.streakFreezeCount >= MAX_FREEZES) {
-      return NextResponse.json(
-        { message: 'You already have maximum streak freezes' },
-        { status: 400 },
-      );
+      return apiErr('validation_error', 'You already have maximum streak freezes', 400);
     }
 
     if (userProgress.totalXp < FREEZE_COST) {
-      return NextResponse.json({ message: 'Not enough XP' }, { status: 400 });
+      return apiErr('validation_error', 'Not enough XP', 400);
     }
 
     userProgress.totalXp -= FREEZE_COST;
@@ -47,6 +45,6 @@ export async function POST(_req: Request) {
     });
   } catch (error) {
     console.error('Error buying freeze:', error);
-    return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
+    return apiErr('internal_error', 'Internal Server Error', 500);
   }
 }

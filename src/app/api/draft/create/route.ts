@@ -5,6 +5,7 @@ import { authOptions } from '@/lib/auth';
 import connectDB from '@/lib/mongoose';
 import DraftQuiz from '@/models/DraftQuiz';
 import { deletePDF, OBJECT_STORAGE_PUBLIC_BASE_URL } from '@/lib/s3';
+import { apiErr } from '@/lib/api/response';
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 const EXPIRY_HOURS = 48;
@@ -14,7 +15,7 @@ export async function POST(request: NextRequest) {
     const session = await getServerSession(authOptions);
     const userId = (session?.user as { id?: string } | undefined)?.id;
     if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErr('unauthorized', 'Unauthorized', 401);
     }
 
     const body = await request.json();
@@ -30,10 +31,7 @@ export async function POST(request: NextRequest) {
     } = body;
 
     if (!title?.trim() || !fileName || !s3Key) {
-      return NextResponse.json(
-        { error: 'Title, filename, and s3Key are required' },
-        { status: 400 },
-      );
+      return apiErr('validation_error', 'Title, filename, and s3Key are required', 400);
     }
 
     let pdfKey = '';
@@ -45,7 +43,7 @@ export async function POST(request: NextRequest) {
       pdfKey = s3Key.trim().replace(/^\/+/, '');
       const expectedPrefix = `uploads/quiz_extract/${userId}/`;
       if (!pdfKey.startsWith(expectedPrefix)) {
-        return NextResponse.json({ error: 'Invalid s3Key for current user' }, { status: 403 });
+        return apiErr('forbidden', 'Invalid s3Key for current user', 403);
       }
 
       const bucket = process.env['OBJECT_STORAGE_BUCKET'] || 'rinkuzu-pdfs';
@@ -54,7 +52,7 @@ export async function POST(request: NextRequest) {
       const parsedFileSize = Number(rawFileSize);
       fileSize = Number.isFinite(parsedFileSize) && parsedFileSize > 0 ? parsedFileSize : 0;
       if (fileSize <= 0 || fileSize > MAX_FILE_SIZE) {
-        return NextResponse.json({ error: 'Invalid file size (max 50MB)' }, { status: 400 });
+        return apiErr('validation_error', 'Invalid file size (max 50MB)', 400);
       }
 
       const parsedTotalPages = Number(rawTotalPages);
@@ -63,7 +61,7 @@ export async function POST(request: NextRequest) {
           ? Math.floor(parsedTotalPages)
           : 1;
     } else {
-      return NextResponse.json({ error: 'Invalid s3Key' }, { status: 400 });
+      return apiErr('validation_error', 'Invalid s3Key', 400);
     }
 
     const chunkDetails = [
@@ -134,6 +132,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Draft create error:', error);
-    return NextResponse.json({ error: 'Failed to create draft' }, { status: 500 });
+    return apiErr('internal_error', 'Failed to create draft', 500);
   }
 }

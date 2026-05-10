@@ -19,6 +19,7 @@ import {
 import Navigation from '@/components/Navigation';
 import { routePathSegment } from '@/lib/routing/routeParams';
 import { useRequiredRouteParam } from '@/lib/routing/useRequiredRouteParam';
+import { PaginationMeta } from '@/types';
 import {
   HiOutlineSearch,
   HiOutlineExclamationCircle,
@@ -57,13 +58,6 @@ interface Category {
   quizCount: number;
 }
 
-interface PaginationData {
-  page: number;
-  limit: number;
-  total: number;
-  totalPages: number;
-}
-
 export default function CategoryPage() {
   const t = useTranslations('categories');
   const tCommon = useTranslations('common');
@@ -76,11 +70,13 @@ export default function CategoryPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
-  const [pagination, setPagination] = useState<PaginationData>({
-    page: 1,
-    limit: 12,
-    total: 0,
+  const [pagination, setPagination] = useState<PaginationMeta>({
+    currentPage: 1,
     totalPages: 0,
+    totalItems: 0,
+    itemsPerPage: 12,
+    hasNextPage: false,
+    hasPrevPage: false,
   });
 
   const fetchCategoryAndQuizzes = useCallback(
@@ -91,7 +87,7 @@ export default function CategoryPage() {
         // Build query parameters for category API
         const queryParams = new URLSearchParams({
           page: page.toString(),
-          limit: pagination.limit.toString(),
+          limit: pagination.itemsPerPage.toString(),
         });
 
         if (search.trim()) {
@@ -119,7 +115,7 @@ export default function CategoryPage() {
         setLoading(false);
       }
     },
-    [encodedSlug, pagination.limit],
+    [encodedSlug, pagination.itemsPerPage],
   );
 
   useEffect(() => {
@@ -128,12 +124,12 @@ export default function CategoryPage() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    setPagination((prev) => ({ ...prev, page: 1 }));
+    setPagination((prev) => ({ ...prev, currentPage: 1 }));
     fetchCategoryAndQuizzes(1, searchTerm);
   };
 
   const handlePageChange = (newPage: number) => {
-    setPagination((prev) => ({ ...prev, page: newPage }));
+    setPagination((prev) => ({ ...prev, currentPage: newPage }));
     fetchCategoryAndQuizzes(newPage, searchTerm);
   };
 
@@ -277,7 +273,7 @@ export default function CategoryPage() {
         {/* Results Info */}
         <div className="flex items-center justify-between mb-8">
           <p className="text-neutral-600">
-            Showing {quizzes.length} of {pagination.total} quizzes
+            Showing {quizzes.length} of {pagination.totalItems} quizzes
             {searchTerm && (
               <span className="ml-2">
                 matching <strong>&quot;{searchTerm}&quot;</strong>
@@ -296,7 +292,7 @@ export default function CategoryPage() {
               variant="ghost"
               onClick={() => {
                 setSearchTerm('');
-                setPagination((prev) => ({ ...prev, page: 1 }));
+                setPagination((prev) => ({ ...prev, currentPage: 1 }));
                 fetchCategoryAndQuizzes(1, '');
               }}
               className="text-brand-trust hover:text-brand-trust-hover"
@@ -415,8 +411,8 @@ export default function CategoryPage() {
             <div className="flex items-center space-x-2">
               <Button
                 variant="outline"
-                disabled={pagination.page === 1}
-                onClick={() => handlePageChange(pagination.page - 1)}
+                disabled={pagination.currentPage === 1}
+                onClick={() => handlePageChange(pagination.currentPage - 1)}
               >
                 {tCommon('previous')}
               </Button>
@@ -426,7 +422,7 @@ export default function CategoryPage() {
                 return (
                   <Button
                     key={page}
-                    variant={pagination.page === page ? 'gradient' : 'outline'}
+                    variant={pagination.currentPage === page ? 'gradient' : 'outline'}
                     onClick={() => handlePageChange(page)}
                     className="min-w-[40px]"
                   >
@@ -437,8 +433,8 @@ export default function CategoryPage() {
 
               <Button
                 variant="outline"
-                disabled={pagination.page === pagination.totalPages}
-                onClick={() => handlePageChange(pagination.page + 1)}
+                disabled={pagination.currentPage === pagination.totalPages}
+                onClick={() => handlePageChange(pagination.currentPage + 1)}
               >
                 {tCommon('next')}
               </Button>

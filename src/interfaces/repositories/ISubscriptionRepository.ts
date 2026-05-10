@@ -1,4 +1,5 @@
 import { ISubscription } from '@/models/Subscription';
+import { PaginationMeta } from '@/types';
 
 export interface ISubscriptionRepository {
   create(subscriptionData: Partial<ISubscription>): Promise<ISubscription>;
@@ -19,7 +20,6 @@ export interface ISubscriptionRepository {
     limit: number,
   ): Promise<{
     subscriptions: ISubscription[];
-    total: number;
-    totalPages: number;
+    pagination: PaginationMeta;
   }>;
 }

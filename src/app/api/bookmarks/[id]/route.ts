@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
 import { AsyncRouteParams } from '@/types/next-route';
+import { apiErr } from '@/lib/api/response';
 
 const bookmarkService = serviceFactory.getBookmarkService();
 
@@ -12,7 +13,7 @@ export async function DELETE(request: NextRequest, { params }: AsyncRouteParams<
     const { id } = await params;
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+      return apiErr('unauthorized', 'Unauthorized', 401);
     }
 
     await bookmarkService.deleteBookmarkByUser(id, session.user.email);
@@ -25,18 +26,9 @@ export async function DELETE(request: NextRequest, { params }: AsyncRouteParams<
     console.error('Error removing bookmark:', error);
 
     if (error.message === 'Bookmark not found or unauthorized') {
-      return NextResponse.json(
-        {
-          success: false,
-          error: error.message,
-        },
-        { status: 404 },
-      );
+      return apiErr('not_found', error.message, 404);
     }
 
-    return NextResponse.json(
-      { success: false, error: 'Failed to remove bookmark' },
-      { status: 500 },
-    );
+    return apiErr('internal_error', 'Failed to remove bookmark', 500);
   }
 }

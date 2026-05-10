@@ -1,13 +1,7 @@
 import { ICategoryService } from '@/interfaces/services/ICategoryService';
 import { ICategoryRepository } from '@/interfaces/repositories/ICategoryRepository';
 import { IQuizRepository } from '@/interfaces/repositories/IQuizRepository';
-
-interface ServiceResult<T> {
-  success: boolean;
-  data?: T;
-  error?: string;
-  statusCode?: number;
-}
+import { ServiceResult } from '@/interfaces/services/types';
 
 export class CategoryService implements ICategoryService {
   constructor(

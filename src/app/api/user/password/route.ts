@@ -4,32 +4,24 @@ import { authOptions } from '@/lib/auth';
 import connectDB from '@/lib/mongoose';
 import User from '@/models/User';
 import { hashPassword, verifyPassword } from '@/lib/password';
+import { apiErr } from '@/lib/api/response';
 
 export async function PUT(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.email) {
-      return NextResponse.json(
-        { success: false, error: 'Authentication required' },
-        { status: 401 },
-      );
+      return apiErr('unauthorized', 'Authentication required', 401);
     }
 
     const { currentPassword, newPassword } = await request.json();
 
     if (!currentPassword || !newPassword) {
-      return NextResponse.json(
-        { success: false, error: 'Current password and new password are required' },
-        { status: 400 },
-      );
+      return apiErr('validation_error', 'Current password and new password are required', 400);
     }
 
     if (newPassword.length < 6) {
-      return NextResponse.json(
-        { success: false, error: 'New password must be at least 6 characters' },
-        { status: 400 },
-      );
+      return apiErr('validation_error', 'New password must be at least 6 characters', 400);
     }
 
     await connectDB();
@@ -37,22 +29,16 @@ export async function PUT(request: NextRequest) {
     const user = await User.findOne({ email: session.user.email }).select('password isAnonymous');
 
     if (!user) {
-      return NextResponse.json({ success: false, error: 'User not found' }, { status: 404 });
+      return apiErr('not_found', 'User not found', 404);
     }
 
     if (user.isAnonymous || !user.password) {
-      return NextResponse.json(
-        { success: false, error: 'Password change is not available for this account' },
-        { status: 400 },
-      );
+      return apiErr('validation_error', 'Password change is not available for this account', 400);
     }
 
     const isValid = await verifyPassword(currentPassword, user.password);
     if (!isValid) {
-      return NextResponse.json(
-        { success: false, error: 'Current password is incorrect' },
-        { status: 400 },
-      );
+      return apiErr('validation_error', 'Current password is incorrect', 400);
     }
 
     const hashedPassword = await hashPassword(newPassword);
@@ -64,6 +50,6 @@ export async function PUT(request: NextRequest) {
     });
   } catch (error) {
     console.error('Change password error:', error);
-    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
+    return apiErr('internal_error', 'Internal server error', 500);
   }
 }

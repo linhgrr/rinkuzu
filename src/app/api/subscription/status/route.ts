@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { createSubscriptionService } from '@/lib/subscriptionFactory';
+import { apiErr } from '@/lib/api/response';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,7 +10,7 @@ export async function GET(_request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
-      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+      return apiErr('unauthorized', 'Unauthorized', 401);
     }
 
     const subscriptionService = createSubscriptionService();
@@ -32,9 +33,6 @@ export async function GET(_request: NextRequest) {
     );
   } catch (error) {
     console.error('Error fetching subscription status:', error);
-    return NextResponse.json(
-      { success: false, message: 'Failed to fetch subscription status' },
-      { status: 500 },
-    );
+    return apiErr('internal_error', 'Failed to fetch subscription status', 500);
   }
 }

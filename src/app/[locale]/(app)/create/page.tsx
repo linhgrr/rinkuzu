@@ -14,6 +14,7 @@ import PDFViewer from '@/features/quiz/components/PDFViewer';
 import { useDraftStore } from '@/store/useDraftStore';
 import { toast } from 'sonner';
 import { getPdfPageCount, uploadPdfViaPresignedUrl } from '@/lib/pdf';
+import { extractApiErrorMessage } from '@/lib/api/error';
 import {
   HiOutlineArrowRight,
   HiOutlineCheckCircle,
@@ -273,7 +274,7 @@ export default function CreateQuizPage() {
 
       if (!response.ok) {
         const payload = await response.json();
-        throw new Error(payload?.error || 'Failed to create draft');
+        throw new Error(extractApiErrorMessage(payload, 'Failed to create draft'));
       }
 
       const { draftId, chunks, totalPages, expiresAt } = await response.json();

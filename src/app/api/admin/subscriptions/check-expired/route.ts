@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { createSubscriptionService } from '@/lib/subscriptionFactory';
+import { apiErr } from '@/lib/api/response';
 
 export async function POST(request: NextRequest) {
   try {
@@ -11,10 +12,7 @@ export async function POST(request: NextRequest) {
     const hasValidCronToken = Boolean(cronSecret && bearerToken === cronSecret);
 
     if (!hasValidCronToken && (!session?.user || (session.user as any).role !== 'admin')) {
-      return NextResponse.json(
-        { success: false, message: 'Admin access required' },
-        { status: 403 },
-      );
+      return apiErr('forbidden', 'Admin access required', 403);
     }
 
     // Get subscription service
@@ -30,13 +28,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error checking expired subscriptions:', error);
-    return NextResponse.json(
-      {
-        success: false,
-        message: 'Failed to check expired subscriptions',
-        error: error instanceof Error ? error.message : 'Unknown error',
-      },
-      { status: 500 },
-    );
+    return apiErr('internal_error', 'Failed to check expired subscriptions', 500);
   }
 }

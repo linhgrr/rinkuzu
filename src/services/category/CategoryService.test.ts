@@ -185,9 +185,7 @@ describe('CategoryService', () => {
   describe('searchCategories', () => {
     it('searches categories by query', async () => {
       const { service, categoryRepository } = createService();
-      categoryRepository.search.mockResolvedValue([
-        { _id: 'cat-1', name: 'Math' },
-      ]);
+      categoryRepository.search.mockResolvedValue([{ _id: 'cat-1', name: 'Math' }]);
 
       const result = await service.searchCategories('math');
 

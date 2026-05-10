@@ -31,15 +31,15 @@ describe('mapWithConcurrency', () => {
   });
 
   it('throws when concurrency is 0', async () => {
-    await expect(
-      mapWithConcurrency([1], 0, async (n) => n),
-    ).rejects.toThrow('concurrency must be greater than 0');
+    await expect(mapWithConcurrency([1], 0, async (n) => n)).rejects.toThrow(
+      'concurrency must be greater than 0',
+    );
   });
 
   it('throws when concurrency is negative', async () => {
-    await expect(
-      mapWithConcurrency([1], -1, async (n) => n),
-    ).rejects.toThrow('concurrency must be greater than 0');
+    await expect(mapWithConcurrency([1], -1, async (n) => n)).rejects.toThrow(
+      'concurrency must be greater than 0',
+    );
   });
 
   it('works when concurrency exceeds item count', async () => {

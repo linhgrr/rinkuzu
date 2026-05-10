@@ -8,6 +8,7 @@ import { Card, CardContent } from '@/components/ui/Card';
 import { formatDate } from '@/lib/utils';
 import Pagination from '@/components/ui/Pagination';
 import { ROUTES } from '@/shared/constants';
+import { PaginationMeta } from '@/types';
 import { fetchApiSuccess } from '@/lib/api/client';
 import {
   HiOutlineDocumentText,
@@ -31,15 +32,6 @@ interface AttemptHistory {
   };
 }
 
-interface PaginationInfo {
-  currentPage: number;
-  totalPages: number;
-  totalItems: number;
-  itemsPerPage: number;
-  hasNextPage: boolean;
-  hasPrevPage: boolean;
-}
-
 export default function ProfileHistory() {
   const t = useTranslations('profile');
   const tCommon = useTranslations('common');
@@ -47,7 +39,7 @@ export default function ProfileHistory() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [pagination, setPagination] = useState<PaginationInfo | null>(null);
+  const [pagination, setPagination] = useState<PaginationMeta | null>(null);
   const itemsPerPage = 10;
 
   const fetchAttempts = useCallback(async () => {
@@ -58,7 +50,7 @@ export default function ProfileHistory() {
         limit: itemsPerPage.toString(),
       });
 
-      const data = await fetchApiSuccess<AttemptHistory[], { pagination: PaginationInfo }>(
+      const data = await fetchApiSuccess<AttemptHistory[], { pagination: PaginationMeta }>(
         `/api/user/attempts?${params}`,
       );
       setAttempts(data.data);

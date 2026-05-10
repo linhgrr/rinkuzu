@@ -26,8 +26,8 @@ export async function GET(request: NextRequest) {
       page,
       limit,
       isPrivate: isGuest ? false : undefined,
-      userRole: (session?.user as any)?.role,
-      userId: (session?.user as any)?.id,
+      userRole: (session?.user as { role?: string })?.role,
+      userId: (session?.user as { id?: string })?.id,
       onlyMine: !isGuest && mine !== null && mine !== 'false',
       compact,
     });
@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
         pagination: result.pagination,
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Get quizzes error:', error);
     return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
   }
@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
 
     const { title, description, category, questions, isPrivate, pdfUrl } = await request.json();
 
-    const quiz = await quizService.createQuiz((session.user as any).id, {
+    const quiz = await quizService.createQuiz((session.user as { id: string }).id, {
       title,
       description,
       category,
@@ -72,16 +72,17 @@ export async function POST(request: NextRequest) {
       },
       { status: 201 },
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Create quiz error:', error);
+    const message = error instanceof Error ? error.message : '';
 
     if (
-      error.message.includes('Title, category, and questions are required') ||
-      error.message.includes('Invalid or inactive category selected') ||
-      error.message.includes('Question') ||
-      error.message.includes('Type must be')
+      message.includes('Title, category, and questions are required') ||
+      message.includes('Invalid or inactive category selected') ||
+      message.includes('Question') ||
+      message.includes('Type must be')
     ) {
-      return NextResponse.json({ success: false, error: error.message }, { status: 400 });
+      return NextResponse.json({ success: false, error: message }, { status: 400 });
     }
 
     return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });

@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
-export interface IQuestionProgress extends Document {
+interface IQuestionProgress extends Document {
   userId: string;
   lessonId?: string; // Optional: link to specific lesson/quiz source
   questionId: string; // The unique identifier of the question (if available) or hash

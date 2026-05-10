@@ -1,6 +1,6 @@
 import mongoose, { Document, Schema, Types } from 'mongoose';
 
-export interface IDiscussionComment {
+interface IDiscussionComment {
   author: Types.ObjectId;
   authorEmail: string;
   content: string;
@@ -9,7 +9,7 @@ export interface IDiscussionComment {
   isEdited: boolean;
 }
 
-export interface IDiscussion extends Document {
+interface IDiscussion extends Document {
   quiz: Types.ObjectId;
   questionIndex: number; // Index of the question in the quiz
   comments: IDiscussionComment[];

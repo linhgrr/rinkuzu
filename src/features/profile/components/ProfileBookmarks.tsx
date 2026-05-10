@@ -13,6 +13,7 @@ import Image from 'next/image';
 import { StreamingChatModal } from '@/features/quiz/components/chat/StreamingChatModal';
 import { QuestionOptionsPreview } from '@/features/quiz/components/shared/QuestionOptionsPreview';
 import { useStreamingChatSession } from '@/features/quiz/hooks/useStreamingChatSession';
+import { PaginationMeta } from '@/types';
 import { fetchApiSuccess } from '@/lib/api/client';
 
 const chatbotIcon =
@@ -39,15 +40,6 @@ interface Bookmark {
   tags?: string[];
 }
 
-interface PaginationInfo {
-  currentPage: number;
-  totalPages: number;
-  totalItems: number;
-  itemsPerPage: number;
-  hasNextPage: boolean;
-  hasPrevPage: boolean;
-}
-
 export default function ProfileBookmarks() {
   const t = useTranslations('profile');
   const tCommon = useTranslations('common');
@@ -55,7 +47,7 @@ export default function ProfileBookmarks() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [pagination, setPagination] = useState<PaginationInfo | null>(null);
+  const [pagination, setPagination] = useState<PaginationMeta | null>(null);
   const [bookmarkToRemove, setBookmarkToRemove] = useState<Bookmark | null>(null);
   const [removingBookmarkId, setRemovingBookmarkId] = useState<string | null>(null);
   const itemsPerPage = 10;
@@ -85,7 +77,7 @@ export default function ProfileBookmarks() {
         limit: itemsPerPage.toString(),
       });
 
-      const data = await fetchApiSuccess<Bookmark[], { pagination: PaginationInfo }>(
+      const data = await fetchApiSuccess<Bookmark[], { pagination: PaginationMeta }>(
         `/api/bookmarks?${params}`,
       );
       setBookmarks(data.data);

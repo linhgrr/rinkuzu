@@ -137,7 +137,13 @@ export class SubscriptionService implements ISubscriptionService {
         paymentUrl: paymentResponse.data.checkoutUrl,
         qrCode: paymentResponse.data.qrCode,
         amount: plan.price,
-        plan: plan,
+        plan: {
+          id: plan._id.toString(),
+          name: plan.name,
+          price: plan.price,
+          duration: plan.duration,
+          features: plan.features,
+        },
       };
     } catch (error) {
       console.error('Error in createPaymentRequest:', error);

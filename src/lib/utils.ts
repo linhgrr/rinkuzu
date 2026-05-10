@@ -40,7 +40,6 @@ export function calculateScore(
     const userAnswer = userAnswers[i];
 
     if (question.type === 'single') {
-      // Skip unanswered questions (answer === -1)
       if (typeof userAnswer === 'number' && userAnswer !== -1) {
         answered++;
         if (userAnswer === question.correctIndex) {
@@ -48,13 +47,11 @@ export function calculateScore(
         }
       }
     } else if (question.type === 'multiple') {
-      // Skip unanswered questions (empty array)
       if (Array.isArray(userAnswer) && userAnswer.length > 0 && question.correctIndexes) {
         answered++;
         const userSet = new Set(userAnswer.sort());
         const correctSet = new Set(question.correctIndexes.sort());
 
-        // Check if arrays are equal
         if (userSet.size === correctSet.size && [...userSet].every((x) => correctSet.has(x))) {
           correct++;
         }
@@ -62,12 +59,10 @@ export function calculateScore(
     }
   }
 
-  // If no questions were answered, return 0
   if (answered === 0) {
     return 0;
   }
 
-  // Calculate percentage based on answered questions only
   return Math.round((correct / answered) * 100);
 }
 

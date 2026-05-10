@@ -1,8 +1,12 @@
+import type { IQuestion } from '@/models/Quiz';
+
 export interface IAttempt {
   _id?: string;
   user: string;
-  quiz: any;
-  answers: any[];
+  quiz:
+    | string
+    | { _id: string; title?: string; slug?: string; description?: string; questions?: IQuestion[] };
+  answers: (number | number[])[];
   score: number;
   totalQuestions: number;
   takenAt: Date;
@@ -46,11 +50,11 @@ export interface IAttemptRepository {
     limit?: number,
   ): Promise<{ attempts: IAttempt[]; total: number }>;
 
-  findByIdWithQuiz(attemptId: string, userId: string): Promise<any>;
+  findByIdWithQuiz(attemptId: string, userId: string): Promise<IAttempt | null>;
 
   update(id: string, attemptData: Partial<IAttempt>): Promise<IAttempt | null>;
 
   delete(id: string): Promise<boolean>;
 
-  count(filter?: any): Promise<number>;
+  count(filter?: Record<string, unknown>): Promise<number>;
 }

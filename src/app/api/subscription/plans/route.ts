@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
-import { ServiceFactory } from '@/lib/serviceFactory';
+import { createSubscriptionService } from '@/lib/subscriptionFactory';
 
 export async function GET() {
   try {
-    const subscriptionService = ServiceFactory.createSubscriptionService();
+    const subscriptionService = createSubscriptionService();
     const plans = await subscriptionService.getSubscriptionPlans();
 
     // Transform plans to include duration info

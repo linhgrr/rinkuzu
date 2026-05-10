@@ -1,6 +1,6 @@
 import mongoose, { Document, Schema, Types } from 'mongoose';
 
-export interface IAttempt extends Document {
+interface IAttempt extends Document {
   user?: Types.ObjectId | string; // Optional for anonymous attempts, can be ObjectId or email string
   quiz: Types.ObjectId;
   score: number;

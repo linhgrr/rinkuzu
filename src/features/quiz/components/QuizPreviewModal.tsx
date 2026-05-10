@@ -6,7 +6,7 @@ import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { QuestionImage, OptionImage } from '@/components/ui/ImageDisplay';
-import { IQuestion } from '@/types';
+import { IQuestion } from '@/models/Quiz';
 
 interface QuizPreviewModalProps {
   isOpen: boolean;

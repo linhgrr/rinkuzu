@@ -30,5 +30,5 @@ export interface IReportRepository {
 
   delete(id: string): Promise<boolean>;
 
-  count(filter?: any): Promise<number>;
+  count(filter?: Record<string, unknown>): Promise<number>;
 }

@@ -31,10 +31,23 @@ export interface ICategoryRepository {
   }>;
   findActive(): Promise<ICategory[]>;
   search(query: string): Promise<ICategory[]>;
-  getStatsWithQuizCount(): Promise<any[]>;
+  getStatsWithQuizCount(): Promise<
+    Array<{
+      _id: string;
+      name: string;
+      description?: string;
+      color: string;
+      slug?: string;
+      quizCount: number;
+      isActive: boolean;
+      createdBy: string;
+      createdAt: Date;
+      updatedAt: Date;
+    }>
+  >;
   create(categoryData: Partial<ICategory>): Promise<ICategory>;
   update(id: string, categoryData: Partial<ICategory>): Promise<ICategory | null>;
   delete(id: string): Promise<boolean>;
-  count(filter: any): Promise<number>;
+  count(filter?: Record<string, unknown>): Promise<number>;
   findWithQuizCount(): Promise<{ category: ICategory; quizCount: number }[]>;
 }

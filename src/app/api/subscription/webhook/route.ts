@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
-import { ServiceFactory } from '@/lib/serviceFactory';
+import { createSubscriptionService } from '@/lib/subscriptionFactory';
 
 export const dynamic = 'force-dynamic';
 
@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, message: 'Invalid order code' }, { status: 400 });
     }
 
-    const subscriptionService = ServiceFactory.createSubscriptionService();
+    const subscriptionService = createSubscriptionService();
     await subscriptionService.activateVerifiedSubscription(orderCode, {
       orderCode: body.data['orderCode'] as string | number,
       amount: body.data['amount'] as string | number,

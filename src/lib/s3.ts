@@ -23,7 +23,6 @@ const OBJECT_STORAGE_ADDRESSING_STYLE = (
   process.env['OBJECT_STORAGE_ADDRESSING_STYLE'] || 'path'
 ).toLowerCase();
 
-// S3-compatible storage configuration
 const s3Client = new S3Client({
   endpoint: OBJECT_STORAGE_PUBLIC_BASE_URL,
   region: OBJECT_STORAGE_REGION,
@@ -58,7 +57,6 @@ export async function uploadPDF(
 
   await s3Client.send(command);
 
-  // Return the public URL
   return `${OBJECT_STORAGE_PUBLIC_BASE_URL}/${BUCKET_NAME}/${key}`;
 }
 
@@ -94,7 +92,7 @@ export async function getPDFBuffer(key: string): Promise<Buffer> {
 
   // Convert stream to buffer
   const chunks: Uint8Array[] = [];
-  for await (const chunk of response.Body as any) {
+  for await (const chunk of response.Body as AsyncIterable<Uint8Array>) {
     chunks.push(chunk);
   }
   return Buffer.concat(chunks);

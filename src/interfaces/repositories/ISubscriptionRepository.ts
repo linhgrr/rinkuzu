@@ -14,7 +14,7 @@ export interface ISubscriptionRepository {
   deleteById(id: string): Promise<boolean>;
   deleteByOrderId(orderId: string): Promise<boolean>;
   findWithPagination(
-    filter: any,
+    filter: Record<string, unknown>,
     page: number,
     limit: number,
   ): Promise<{

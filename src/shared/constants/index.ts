@@ -7,5 +7,3 @@ export * from './routes';
 // Type exports for better TypeScript support
 export type EmotionType = (typeof import('./ui').EMOTIONS)[number];
 export type CategoryColor = keyof typeof import('./ui').COLORS.CATEGORY;
-export type QuizStatus =
-  (typeof import('./api').QUIZ_STATUS)[keyof typeof import('./api').QUIZ_STATUS];

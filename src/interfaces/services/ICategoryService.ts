@@ -1,7 +1,24 @@
+import { ICategory } from '@/interfaces/repositories/ICategoryRepository';
+
+export interface CategoryWithStats extends ICategory {
+  quizCount: number;
+}
+
+export interface CategoryBySlugResult {
+  category: ICategory;
+  quizzes: unknown[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
 export interface ICategoryService {
   getCategories(): Promise<{
     success: boolean;
-    data?: any[];
+    data?: CategoryWithStats[];
     error?: string;
     statusCode?: number;
   }>;
@@ -13,21 +30,21 @@ export interface ICategoryService {
     search?: string,
   ): Promise<{
     success: boolean;
-    data?: any;
+    data?: CategoryBySlugResult;
     error?: string;
     statusCode?: number;
   }>;
 
   searchCategories(query: string): Promise<{
     success: boolean;
-    data?: any[];
+    data?: ICategory[];
     error?: string;
     statusCode?: number;
   }>;
 
   getCategoryStats(): Promise<{
     success: boolean;
-    data?: any[];
+    data?: CategoryWithStats[];
     error?: string;
     statusCode?: number;
   }>;

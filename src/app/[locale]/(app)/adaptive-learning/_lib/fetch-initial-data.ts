@@ -34,12 +34,33 @@ const fetchAdaptiveJson = async <T>(
       signal: controller.signal,
     });
 
-    if (!response.ok) return null;
+    if (!response.ok) {
+      console.warn(`fetchAdaptiveJson: ${path} returned ${response.status}`);
+      return null;
+    }
 
-    const payload = (await response.json().catch(() => null)) as
-      | AdaptiveStandardResponse<T>
-      | T
-      | null;
+    let rawText: string;
+    try {
+      rawText = await response.text();
+    } catch {
+      console.error(`fetchAdaptiveJson: failed to read body from ${path}`);
+      return null;
+    }
+
+    if (!rawText) {
+      console.warn(`fetchAdaptiveJson: ${path} returned empty body`);
+      return null;
+    }
+
+    let payload: unknown;
+    try {
+      payload = JSON.parse(rawText);
+    } catch {
+      console.error(
+        `fetchAdaptiveJson: failed to parse JSON from ${path}, body starts with: ${rawText.slice(0, 200)}`,
+      );
+      return null;
+    }
 
     if (
       payload &&
@@ -48,7 +69,7 @@ const fetchAdaptiveJson = async <T>(
       payload.success === true &&
       'data' in payload
     ) {
-      return payload.data;
+      return (payload as AdaptiveStandardResponse<T>).data;
     }
 
     return payload as T | null;

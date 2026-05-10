@@ -7,7 +7,7 @@ export enum SubscriptionDurationType {
   LIFETIME = 'PT0S', // Special case for unlimited duration
 }
 
-export interface Duration {
+interface Duration {
   iso8601: string; // ISO 8601 format (P1M, P3M, P1Y, etc.)
   displayName: string; // Human readable (1 Month, 3 Months, etc.)
   months?: number; // For calculation purposes (null for lifetime)
@@ -37,12 +37,12 @@ export const PREDEFINED_DURATIONS: Record<SubscriptionDurationType, Duration> = 
   [SubscriptionDurationType.LIFETIME]: {
     iso8601: 'PT0S',
     displayName: 'Lifetime',
-    months: undefined, // Infinite
+    months: undefined,
   },
 };
 
 // Legacy string mapping for backward compatibility
-export const LEGACY_DURATION_MAP: Record<string, SubscriptionDurationType> = {
+const LEGACY_DURATION_MAP: Record<string, SubscriptionDurationType> = {
   '1 tháng': SubscriptionDurationType.MONTHLY,
   '3 tháng': SubscriptionDurationType.QUARTERLY,
   '6 tháng': SubscriptionDurationType.SEMI_ANNUAL,
@@ -55,7 +55,6 @@ export const LEGACY_DURATION_MAP: Record<string, SubscriptionDurationType> = {
   '12 months': SubscriptionDurationType.ANNUAL,
 };
 
-// Utility class for duration operations
 export class DurationUtils {
   /**
    * Parse ISO 8601 duration string to get months
@@ -63,7 +62,7 @@ export class DurationUtils {
    * @returns number of months or undefined for lifetime
    */
   static parseToMonths(iso8601Duration: string): number | undefined {
-    if (iso8601Duration === 'PT0S') return undefined; // Lifetime
+    if (iso8601Duration === 'PT0S') return undefined;
 
     // Match patterns like P1M, P3M, P1Y, etc.
     const monthMatch = iso8601Duration.match(/P(\d+)M/);
@@ -87,7 +86,7 @@ export class DurationUtils {
    */
   static calculateEndDate(startDate: Date, iso8601Duration: string): Date | undefined {
     const months = this.parseToMonths(iso8601Duration);
-    if (months === undefined) return undefined; // Lifetime
+    if (months === undefined) return undefined;
 
     const endDate = new Date(startDate);
     endDate.setMonth(endDate.getMonth() + months);
@@ -138,8 +137,7 @@ export class DurationUtils {
    */
   static isValidISO8601Duration(duration: string): boolean {
     try {
-      // Basic validation for our supported formats
-      if (duration === 'PT0S') return true; // Lifetime
+      if (duration === 'PT0S') return true;
 
       const monthPattern = /^P\d+M$/;
       const yearPattern = /^P\d+Y$/;
@@ -150,6 +148,3 @@ export class DurationUtils {
     }
   }
 }
-
-// Export types for use in models and services
-export { SubscriptionDurationType as DurationType };

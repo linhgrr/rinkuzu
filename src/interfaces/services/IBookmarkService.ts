@@ -1,4 +1,4 @@
-import { IBookmark } from '@/interfaces/repositories/IBookmarkRepository';
+import { IBookmark, IBookmarkQuestion } from '@/interfaces/repositories/IBookmarkRepository';
 
 export interface CreateBookmarkRequest {
   quiz: {
@@ -6,7 +6,7 @@ export interface CreateBookmarkRequest {
     slug: string;
     title: string;
   };
-  question: any;
+  question: IBookmarkQuestion;
   questionIndex: number;
 }
 

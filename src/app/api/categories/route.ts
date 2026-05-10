@@ -19,7 +19,7 @@ export async function GET(_request: NextRequest) {
       success: true,
       data: result.data,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Get categories error:', error);
     return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
   }

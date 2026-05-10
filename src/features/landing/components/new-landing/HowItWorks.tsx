@@ -1,5 +1,3 @@
-'use client';
-
 import { useTranslations } from 'next-intl';
 import { UserPlus, Upload, Target } from 'lucide-react';
 

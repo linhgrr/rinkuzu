@@ -10,14 +10,19 @@ import { IUserRepository } from '@/interfaces/repositories/IUserRepository';
 import { IAttemptRepository } from '@/interfaces/repositories/IAttemptRepository';
 import { IDiscussionRepository } from '@/interfaces/repositories/IDiscussionRepository';
 import { IReportRepository } from '@/interfaces/repositories/IReportRepository';
-import { generateSlug } from '@/lib/utils';
-import { ServiceFactory } from '@/lib/serviceFactory';
-import QuestionProgress from '@/models/QuestionProgress';
-import UserProgress from '@/models/UserProgress';
-import connectDB from '@/lib/mongoose';
 import { ServiceResult } from '@/interfaces/services/types';
 
+import { QuizCrudService } from './QuizCrudService';
+import { QuizPlayService } from './QuizPlayService';
+import { QuizAdminService } from './QuizAdminService';
+import { QuizDiscussionService } from './QuizDiscussionService';
+
 export class QuizService implements IQuizService {
+  private crudService: QuizCrudService;
+  private playService: QuizPlayService;
+  private adminService: QuizAdminService;
+  private discussionService: QuizDiscussionService;
+
   constructor(
     private quizRepository: IQuizRepository,
     private categoryRepository: ICategoryRepository,
@@ -25,185 +30,27 @@ export class QuizService implements IQuizService {
     private attemptRepository: IAttemptRepository,
     private discussionRepository: IDiscussionRepository,
     private reportRepository: IReportRepository,
-  ) {}
-
-  private getAuthorId(author: IQuiz['author'] | undefined): string | undefined {
-    if (!author) return undefined;
-    if (typeof author === 'string') return author;
-    if (typeof author === 'object' && '_id' in author && author._id) {
-      return author._id.toString();
-    }
-    return undefined;
-  }
-
-  private async checkPrivateQuizAccess(
-    quiz: IQuiz,
-    userId?: string,
-    userRole?: string,
-  ): Promise<ServiceResult<never> | null> {
-    if (!quiz.isPrivate) return null;
-
-    if (!userId) {
-      return {
-        success: false,
-        error: 'Authentication required to access private quiz',
-        statusCode: 401,
-      };
-    }
-
-    const authorId = this.getAuthorId(quiz.author);
-    if (userRole === 'admin' || authorId === userId) return null;
-
-    const subscriptionService = ServiceFactory.createSubscriptionService();
-    const isPremium = await subscriptionService.isUserPremium(userId);
-
-    if (isPremium) return null;
-
-    return {
-      success: false,
-      error: 'Premium subscription required to access private quizzes',
-      statusCode: 403,
-    };
+  ) {
+    this.crudService = new QuizCrudService(quizRepository, categoryRepository, userRepository);
+    this.playService = new QuizPlayService(quizRepository, userRepository, attemptRepository);
+    this.adminService = new QuizAdminService(quizRepository, categoryRepository);
+    this.discussionService = new QuizDiscussionService(
+      quizRepository,
+      userRepository,
+      discussionRepository,
+      reportRepository,
+    );
   }
 
   async getQuizzes(options: QuizListOptions): Promise<{
     quizzes: IQuiz[];
     pagination: PaginationMeta;
   }> {
-    const {
-      status,
-      search,
-      category,
-      page = 1,
-      limit = 10,
-      isPrivate,
-      userRole: _userRole,
-      userId,
-      onlyMine,
-      compact,
-    } = options;
-
-    let filter: any = {};
-
-    if (status) filter.status = status;
-    if (typeof isPrivate === 'boolean') filter.isPrivate = isPrivate;
-
-    // If caller wants only their own quizzes
-    if (onlyMine && userId) {
-      filter.author = userId;
-    }
-
-    // Add category filter
-    if (category && category.trim()) {
-      filter.category = category.trim();
-    }
-
-    // Add search functionality
-    if (search && search.trim()) {
-      const searchRegex = new RegExp(search.trim(), 'i');
-      filter.$and = filter.$and || [];
-      filter.$and.push({
-        $or: [{ title: searchRegex }, { description: searchRegex }],
-      });
-    }
-
-    return await this.quizRepository.findAll(filter, {
-      page,
-      limit,
-      sort: { createdAt: -1 },
-      populate: ['author', 'category'],
-      compact,
-    });
+    return this.adminService.getQuizzes(options);
   }
 
   async createQuiz(userId: string, quizData: CreateQuizRequest): Promise<IQuiz> {
-    const { title, description, category, questions, isPrivate, pdfUrl } = quizData;
-
-    if (!title || !category || !questions || !Array.isArray(questions) || questions.length === 0) {
-      throw new Error('Title, category, and questions are required');
-    }
-
-    // Validate category exists and is active
-    const categoryDoc = await this.categoryRepository.findById(category);
-    if (!categoryDoc || !categoryDoc.isActive) {
-      throw new Error('Invalid or inactive category selected');
-    }
-
-    // Validate questions format
-    for (let i = 0; i < questions.length; i++) {
-      const question = questions[i];
-
-      if (!question.question || typeof question.question !== 'string') {
-        throw new Error(`Question ${i + 1}: Missing or invalid question text`);
-      }
-
-      if (!question.options || !Array.isArray(question.options)) {
-        throw new Error(`Question ${i + 1}: Missing or invalid options array`);
-      }
-
-      if (question.options.length < 2) {
-        throw new Error(`Question ${i + 1}: Need at least 2 options`);
-      }
-
-      // Check each option is a string
-      for (let j = 0; j < question.options.length; j++) {
-        if (typeof question.options[j] !== 'string') {
-          throw new Error(`Question ${i + 1}, Option ${j + 1}: Must be a string`);
-        }
-      }
-
-      // Validate question type and answers
-      const questionType = question.type || 'single';
-      if (!['single', 'multiple'].includes(questionType)) {
-        throw new Error(`Question ${i + 1}: Type must be 'single' or 'multiple'`);
-      }
-
-      if (questionType === 'single') {
-        if (
-          typeof question.correctIndex !== 'number' ||
-          question.correctIndex < 0 ||
-          question.correctIndex >= question.options.length
-        ) {
-          throw new Error(`Question ${i + 1}: Invalid correct answer index`);
-        }
-      } else {
-        if (!Array.isArray(question.correctIndexes) || question.correctIndexes.length === 0) {
-          throw new Error(
-            `Question ${i + 1}: Multiple choice questions need at least one correct answer`,
-          );
-        }
-
-        for (const idx of question.correctIndexes) {
-          if (typeof idx !== 'number' || idx < 0 || idx >= question.options.length) {
-            throw new Error(`Question ${i + 1}: Invalid correct answer index`);
-          }
-        }
-      }
-    }
-
-    // Generate unique slug
-    const baseSlug = generateSlug(title);
-    let slug = baseSlug;
-    let counter = 1;
-
-    while (await this.quizRepository.findBySlug(slug)) {
-      slug = `${baseSlug}-${counter}`;
-      counter++;
-    }
-
-    const quiz = await this.quizRepository.create({
-      title,
-      description,
-      slug,
-      author: userId,
-      category,
-      questions,
-      status: 'pending',
-      isPrivate: !!isPrivate,
-      pdfUrl,
-    });
-
-    return quiz;
+    return this.crudService.createQuiz(userId, quizData);
   }
 
   async getQuizById(
@@ -212,160 +59,15 @@ export class QuizService implements IQuizService {
     userRole?: string,
     userId?: string,
   ): Promise<ServiceResult<any>> {
-    try {
-      const quiz = await this.quizRepository.findById(id);
-
-      if (!quiz || !quiz._id) {
-        return {
-          success: false,
-          error: 'Quiz not found',
-          statusCode: 404,
-        };
-      }
-
-      // Check permissions for private quizzes
-      if (quiz.isPrivate) {
-        if (!userEmail) {
-          return {
-            success: false,
-            error: 'Authentication required to access private quiz',
-            statusCode: 401,
-          };
-        }
-
-        // Admin can access all private quizzes
-        if (userRole === 'admin') {
-          return { success: true, data: quiz };
-        }
-
-        // Author can access their own private quizzes
-        if (this.getAuthorId(quiz.author) === userId) {
-          return { success: true, data: quiz };
-        }
-
-        // Check if user has premium subscription
-        if (userId) {
-          const subscriptionService = ServiceFactory.createSubscriptionService();
-          const isPremium = await subscriptionService.isUserPremium(userId);
-
-          if (!isPremium) {
-            return {
-              success: false,
-              error: 'Premium subscription required to access private quizzes',
-              statusCode: 403,
-            };
-          }
-        } else {
-          return {
-            success: false,
-            error: 'Premium subscription required to access private quizzes',
-            statusCode: 403,
-          };
-        }
-      }
-
-      return { success: true, data: quiz };
-    } catch (error) {
-      console.error('Error in getQuizById:', error);
-      return {
-        success: false,
-        error: 'Internal server error',
-        statusCode: 500,
-      };
-    }
+    return this.crudService.getQuizById(id, userEmail, userRole, userId);
   }
 
   async getQuizBySlug(slug: string): Promise<IQuiz | null> {
-    return await this.quizRepository.findBySlug(slug);
+    return this.crudService.getQuizBySlug(slug);
   }
 
   async getQuizForPlay(slug: string, userRole?: string, userId?: string): Promise<any> {
-    try {
-      const quiz = await this.quizRepository.findBySlug(slug);
-
-      if (!quiz) {
-        return {
-          success: false,
-          error: 'Quiz not found',
-          statusCode: 404,
-        };
-      }
-
-      const authorId = this.getAuthorId(quiz.author);
-      const isAuthor = !!userId && authorId === userId;
-      const canAccessUnpublished = userRole === 'admin' || isAuthor;
-
-      if (quiz.status !== 'published' && !canAccessUnpublished) {
-        return {
-          success: false,
-          error: 'Quiz is not available',
-          statusCode: 404,
-        };
-      }
-
-      // Check permissions for private quizzes
-      if (quiz.isPrivate) {
-        if (!userId) {
-          return {
-            success: false,
-            error: 'Authentication required to access private quiz',
-            statusCode: 401,
-          };
-        }
-
-        // Admin can access all private quizzes
-        if (userRole === 'admin') {
-          return { success: true, data: quiz };
-        }
-
-        // Author can access their own private quizzes
-        if (authorId === userId) {
-          return { success: true, data: quiz };
-        }
-
-        // Check if user has premium subscription
-        const subscriptionService = ServiceFactory.createSubscriptionService();
-        const isPremium = await subscriptionService.isUserPremium(userId);
-
-        if (!isPremium) {
-          return {
-            success: false,
-            error: 'Premium subscription required to access private quizzes',
-            statusCode: 403,
-          };
-        }
-      }
-
-      // Return quiz without correct answers for playing
-      const quizForPlay = {
-        _id: quiz._id,
-        title: quiz.title,
-        description: quiz.description,
-        author: quiz.author,
-        slug: quiz.slug,
-        category: quiz.category,
-        status: quiz.status,
-        isPrivate: quiz.isPrivate,
-        createdAt: quiz.createdAt,
-        updatedAt: quiz.updatedAt,
-        questions: quiz.questions.map((q: any) => ({
-          question: q.question,
-          options: q.options,
-          type: q.type,
-          questionImage: q.questionImage,
-          optionImages: q.optionImages,
-        })),
-      };
-
-      return { success: true, data: quizForPlay };
-    } catch (error) {
-      console.error('Error in getQuizForPlay:', error);
-      return {
-        success: false,
-        error: 'Internal server error',
-        statusCode: 500,
-      };
-    }
+    return this.playService.getQuizForPlay(slug, userRole, userId);
   }
 
   async updateQuiz(
@@ -374,45 +76,7 @@ export class QuizService implements IQuizService {
     userEmail: string,
     userRole?: string,
   ): Promise<ServiceResult<any>> {
-    try {
-      const quiz = await this.quizRepository.findById(id);
-
-      if (!quiz || !quiz._id) {
-        return {
-          success: false,
-          error: 'Quiz not found',
-          statusCode: 404,
-        };
-      }
-
-      // Check permissions
-      const isAdmin = userRole === 'admin';
-      const isAuthor = (quiz.author as any)?._id
-        ? (quiz.author as any)._id.toString() === userEmail
-        : quiz.author === userEmail;
-
-      if (!isAdmin && !isAuthor) {
-        return {
-          success: false,
-          error: 'Access denied',
-          statusCode: 403,
-        };
-      }
-
-      const updatedQuiz = await this.quizRepository.update(id, quizData);
-
-      return {
-        success: true,
-        data: updatedQuiz,
-      };
-    } catch (error) {
-      console.error('Update quiz error:', error);
-      return {
-        success: false,
-        error: 'Failed to update quiz',
-        statusCode: 500,
-      };
-    }
+    return this.crudService.updateQuiz(id, quizData, userEmail, userRole);
   }
 
   async deleteQuiz(
@@ -420,106 +84,23 @@ export class QuizService implements IQuizService {
     userEmail: string,
     userRole?: string,
   ): Promise<ServiceResult<boolean>> {
-    try {
-      const quiz = await this.quizRepository.findById(id);
-
-      if (!quiz || !quiz._id) {
-        return {
-          success: false,
-          error: 'Quiz not found',
-          statusCode: 404,
-        };
-      }
-
-      // Check permissions
-      const isAdmin = userRole === 'admin';
-      const isAuthor = (quiz.author as any)?._id
-        ? (quiz.author as any)._id.toString() === userEmail
-        : quiz.author === userEmail;
-
-      if (!isAdmin && !isAuthor) {
-        return {
-          success: false,
-          error: 'Access denied',
-          statusCode: 403,
-        };
-      }
-
-      const result = await this.quizRepository.delete(id);
-
-      return {
-        success: true,
-        data: result,
-      };
-    } catch (error) {
-      console.error('Delete quiz error:', error);
-      return {
-        success: false,
-        error: 'Failed to delete quiz',
-        statusCode: 500,
-      };
-    }
+    return this.crudService.deleteQuiz(id, userEmail, userRole);
   }
 
   async approveQuiz(id: string): Promise<ServiceResult<any>> {
-    try {
-      const quiz = await this.quizRepository.updateStatus(id, 'published');
-
-      return {
-        success: true,
-        data: quiz,
-      };
-    } catch (error) {
-      console.error('Approve quiz error:', error);
-      return {
-        success: false,
-        error: 'Failed to approve quiz',
-        statusCode: 500,
-      };
-    }
+    return this.adminService.approveQuiz(id);
   }
 
   async rejectQuiz(id: string, reason?: string): Promise<ServiceResult<any>> {
-    try {
-      const quiz = await this.quizRepository.updateStatus(id, 'rejected', reason);
-
-      return {
-        success: true,
-        data: quiz,
-      };
-    } catch (error) {
-      console.error('Reject quiz error:', error);
-      return {
-        success: false,
-        error: 'Failed to reject quiz',
-        statusCode: 500,
-      };
-    }
+    return this.adminService.rejectQuiz(id, reason);
   }
 
   async previewFromPdf(
     title: string,
     description: string,
-    _pdfFiles: File[],
+    pdfFiles: File[],
   ): Promise<ServiceResult<any>> {
-    try {
-      // This would typically process PDF files and extract questions
-      // For now, return a mock preview
-      return {
-        success: true,
-        data: {
-          title,
-          description,
-          questions: [],
-        },
-      };
-    } catch (_error) {
-      return {
-        success: false,
-        error: 'Failed to preview from PDF',
-        statusCode: 500,
-      };
-    }
+    return this.adminService.previewFromPdf(title, description, pdfFiles);
   }
 
   async reportQuiz(
@@ -528,53 +109,7 @@ export class QuizService implements IQuizService {
     reporterEmail: string,
     reporterName: string,
   ): Promise<ServiceResult<string>> {
-    try {
-      const quiz = await this.quizRepository.findBySlug(slug);
-
-      if (!quiz || !quiz._id) {
-        return {
-          success: false,
-          error: 'Quiz not found',
-          statusCode: 404,
-        };
-      }
-
-      if (!content || content.trim().length === 0) {
-        return {
-          success: false,
-          error: 'Report content is required',
-          statusCode: 400,
-        };
-      }
-
-      const report = await this.reportRepository.create({
-        quiz: quiz._id.toString(),
-        reporter: reporterEmail,
-        reason: content.trim(),
-        description: reporterName,
-        status: 'pending',
-      });
-
-      if (!report || !report._id) {
-        return {
-          success: false,
-          error: 'Report not created',
-          statusCode: 500,
-        };
-      }
-
-      return {
-        success: true,
-        data: report._id.toString(),
-      };
-    } catch (error) {
-      console.error('Report quiz error:', error);
-      return {
-        success: false,
-        error: 'Failed to report quiz',
-        statusCode: 500,
-      };
-    }
+    return this.discussionService.reportQuiz(slug, content, reporterEmail, reporterName);
   }
 
   async submitQuizAttempt(
@@ -583,387 +118,11 @@ export class QuizService implements IQuizService {
     session: any,
     userEmail?: string,
   ): Promise<ServiceResult<any>> {
-    try {
-      const quiz = await this.quizRepository.findBySlug(slug);
-
-      if (!quiz || !quiz._id) {
-        return {
-          success: false,
-          error: 'Quiz not found',
-          statusCode: 404,
-        };
-      }
-
-      // Check access permission for unpublished quiz
-      const authorId = this.getAuthorId(quiz.author);
-      const userIdFromSession = session?.user?.id;
-      const userRole = session?.user?.role;
-      const canAccessUnpublished =
-        userRole === 'admin' || (!!userIdFromSession && authorId === userIdFromSession);
-
-      if (quiz.status !== 'published' && !canAccessUnpublished) {
-        return {
-          success: false,
-          error: 'Quiz not found or not published',
-          statusCode: 404,
-        };
-      }
-
-      const privateAccessError = await this.checkPrivateQuizAccess(
-        quiz,
-        userIdFromSession,
-        userRole,
-      );
-      if (privateAccessError) return privateAccessError;
-
-      // Get or create user
-      let userId: string;
-      if (session?.user?.email) {
-        // Logged in user
-        const user = await this.userRepository.findByEmail(session.user.email);
-        if (!user) {
-          return {
-            success: false,
-            error: 'User not found',
-            statusCode: 404,
-          };
-        }
-        userId = user._id.toString();
-      } else if (userEmail) {
-        // Non-logged in user with email - use email as identifier
-        userId = userEmail;
-      } else {
-        return {
-          success: false,
-          error: 'User identification required',
-          statusCode: 400,
-        };
-      }
-
-      // Validate answers format
-      if (!Array.isArray(answers) || answers.length !== quiz.questions.length) {
-        return {
-          success: false,
-          error: 'Invalid answers format',
-          statusCode: 400,
-        };
-      }
-
-      // Format answers according to validation rules
-      const formattedAnswers = answers.map((answer, index) => {
-        const question = quiz.questions[index];
-
-        if (question.type === 'single') {
-          // Single choice: -1 for unanswered, >= 0 for answered
-          return answer === -1 ? -1 : typeof answer === 'number' && answer >= 0 ? answer : -1;
-        } else if (question.type === 'multiple') {
-          // Multiple choice: empty array for unanswered, array of >= 0 for answered
-          if (!Array.isArray(answer) || answer.length === 0) {
-            return [];
-          }
-          return answer.filter((a) => typeof a === 'number' && a >= 0);
-        }
-        return answer;
-      });
-
-      // Calculate score
-      let correctAnswers = 0;
-      const totalQuestions = quiz.questions.length;
-
-      for (let i = 0; i < totalQuestions; i++) {
-        const question = quiz.questions[i];
-        const userAnswer = formattedAnswers[i];
-
-        if (question.type === 'single') {
-          if (userAnswer === question.correctIndex) {
-            correctAnswers++;
-          }
-        } else if (question.type === 'multiple') {
-          const userAnswers = Array.isArray(userAnswer) ? userAnswer.sort() : [];
-          const correctAnswers_q = Array.isArray(question.correctIndexes)
-            ? question.correctIndexes.sort()
-            : [];
-
-          if (JSON.stringify(userAnswers) === JSON.stringify(correctAnswers_q)) {
-            correctAnswers++;
-          }
-        }
-      }
-
-      const score = Math.round((correctAnswers / totalQuestions) * 100);
-
-      // Save attempt
-      const attempt = await this.attemptRepository.create({
-        user: userId,
-        quiz: quiz._id,
-        answers: formattedAnswers,
-        score,
-        totalQuestions,
-        takenAt: new Date(),
-      });
-
-      // === NEW: Update gamification stats ===
-
-      // Only update stats for logged-in users (not anonymous)
-      if (session?.user?.email) {
-        await connectDB();
-
-        // 1. Create QuestionProgress for WRONG answers (add to review queue)
-        const wrongQuestions: Array<{
-          index: number;
-          question: any;
-          userAnswer: any;
-        }> = [];
-
-        for (let i = 0; i < totalQuestions; i++) {
-          const question = quiz.questions[i];
-          const userAnswer = formattedAnswers[i];
-          let isCorrect = false;
-
-          if (question.type === 'single') {
-            isCorrect = userAnswer === question.correctIndex;
-          } else if (question.type === 'multiple') {
-            const userAnswers = Array.isArray(userAnswer) ? userAnswer.sort() : [];
-            const correctAnswers_q = Array.isArray(question.correctIndexes)
-              ? question.correctIndexes.sort()
-              : [];
-            isCorrect = JSON.stringify(userAnswers) === JSON.stringify(correctAnswers_q);
-          }
-
-          if (!isCorrect) {
-            wrongQuestions.push({ index: i, question, userAnswer });
-          }
-        }
-
-        // Create QuestionProgress for each wrong answer
-        for (const wrong of wrongQuestions) {
-          const questionId = wrong.question._id?.toString() || `${slug}-q${wrong.index}`;
-
-          // Check if already exists
-          const existing = await QuestionProgress.findOne({
-            userId,
-            quizSlug: slug,
-            questionId,
-          });
-
-          if (!existing) {
-            // Create new QuestionProgress - due immediately for review
-            await QuestionProgress.create({
-              userId,
-              quizSlug: slug,
-              questionId,
-              questionRef: {
-                text: wrong.question.question || wrong.question.text || '',
-                options: wrong.question.options || [],
-                correctIndexes:
-                  wrong.question.type === 'single'
-                    ? [wrong.question.correctIndex]
-                    : wrong.question.correctIndexes || [],
-              },
-              srsLevel: 0,
-              interval: 0,
-              easeFactor: 2.5,
-              nextReviewDate: new Date(), // Due immediately
-              lastReviewDate: null,
-              correctStreak: 0,
-              totalReviews: 0,
-              totalCorrect: 0,
-              history: [],
-            });
-          }
-        }
-
-        // 2. Update UserProgress
-        let uProgress = await UserProgress.findOne({ userId });
-
-        if (!uProgress) {
-          uProgress = new UserProgress({ userId });
-        }
-
-        // Award XP: 10 XP per correct answer
-        const xpGain = correctAnswers * 10;
-        uProgress.totalXp += xpGain;
-
-        // Increment totalQuizzesTaken
-        uProgress.totalQuizzesTaken += 1;
-
-        // Update streak logic
-        const now = new Date();
-        const lastActive = uProgress.lastActiveDate ? new Date(uProgress.lastActiveDate) : null;
-        const todayStr = now.toISOString().split('T')[0];
-        const lastActiveStr = lastActive ? lastActive.toISOString().split('T')[0] : null;
-
-        if (todayStr !== lastActiveStr) {
-          if (lastActiveStr) {
-            const yesterday = new Date(now);
-            yesterday.setDate(yesterday.getDate() - 1);
-            const yesterdayStr = yesterday.toISOString().split('T')[0];
-
-            if (lastActiveStr === yesterdayStr) {
-              // Continue streak
-              uProgress.currentStreak += 1;
-            } else {
-              // Check for streak freeze
-              const twoDaysAgo = new Date(now);
-              twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
-              const twoDaysAgoStr = twoDaysAgo.toISOString().split('T')[0];
-
-              if (lastActiveStr === twoDaysAgoStr && uProgress.streakFreezeCount > 0) {
-                uProgress.streakFreezeCount -= 1;
-                uProgress.currentStreak += 1;
-              } else {
-                // Reset streak
-                uProgress.currentStreak = 1;
-              }
-            }
-          } else {
-            // First activity ever
-            uProgress.currentStreak = 1;
-          }
-
-          uProgress.lastActiveDate = now;
-
-          if (uProgress.currentStreak > uProgress.longestStreak) {
-            uProgress.longestStreak = uProgress.currentStreak;
-          }
-        }
-
-        // Update weekly activity
-        if (!uProgress.weeklyActivity) {
-          uProgress.weeklyActivity = new Map();
-        }
-
-        const activityKey = todayStr;
-        const currentActivity = uProgress.weeklyActivity.get(activityKey) || {
-          questionsReviewed: 0,
-          xpEarned: 0,
-          correctCount: 0,
-          totalCount: 0,
-        };
-
-        currentActivity.questionsReviewed += totalQuestions;
-        currentActivity.xpEarned += xpGain;
-        currentActivity.correctCount += correctAnswers;
-        currentActivity.totalCount += totalQuestions;
-
-        uProgress.weeklyActivity.set(activityKey, currentActivity);
-
-        // Update 7-day accuracy
-        const last7Days: string[] = [];
-        for (let i = 6; i >= 0; i--) {
-          const d = new Date(now);
-          d.setDate(d.getDate() - i);
-          last7Days.push(d.toISOString().split('T')[0]);
-        }
-
-        let totalCorrectWeek = 0;
-        let totalQuestionsWeek = 0;
-        for (const dayKey of last7Days) {
-          const dayActivity = uProgress.weeklyActivity.get(dayKey);
-          if (dayActivity) {
-            totalCorrectWeek += dayActivity.correctCount || 0;
-            totalQuestionsWeek += dayActivity.totalCount || 0;
-          }
-        }
-
-        uProgress.averageAccuracy =
-          totalQuestionsWeek > 0 ? Math.round((totalCorrectWeek / totalQuestionsWeek) * 100) : 0;
-
-        await uProgress.save();
-      }
-
-      // === END: Update gamification stats ===
-
-      return {
-        success: true,
-        data: {
-          score,
-          correctAnswers,
-          totalQuestions,
-          attemptId: attempt._id,
-        },
-      };
-    } catch (error: any) {
-      console.error('Submit quiz attempt error:', error);
-      return {
-        success: false,
-        error: 'Failed to submit quiz attempt',
-        statusCode: 500,
-      };
-    }
+    return this.playService.submitQuizAttempt(slug, answers, session, userEmail);
   }
 
   async getQuizDiscussions(slug: string, session?: any): Promise<ServiceResult<any[]>> {
-    try {
-      const quiz = await this.quizRepository.findBySlug(slug);
-
-      if (!quiz || !quiz._id) {
-        return {
-          success: false,
-          error: 'Quiz not found',
-          statusCode: 404,
-        };
-      }
-
-      const authorId = this.getAuthorId(quiz.author);
-      const userId = session?.user?.id;
-      const userRole = session?.user?.role;
-      const canAccessUnpublished = userRole === 'admin' || (!!userId && authorId === userId);
-
-      if (quiz.status !== 'published' && !canAccessUnpublished) {
-        return {
-          success: false,
-          error: 'Quiz not found',
-          statusCode: 404,
-        };
-      }
-
-      const privateAccessError = await this.checkPrivateQuizAccess(quiz, userId, userRole);
-      if (privateAccessError) return privateAccessError;
-
-      const existingDiscussions = await this.discussionRepository.findByQuiz(quiz._id.toString());
-      const discussionOwnerId = authorId;
-
-      if (!discussionOwnerId) {
-        return {
-          success: false,
-          error: 'Quiz author not found',
-          statusCode: 500,
-        };
-      }
-
-      // Create discussions for all questions if they don't exist
-      const allDiscussions = [];
-      for (let i = 0; i < quiz.questions.length; i++) {
-        const existingDiscussion = existingDiscussions.find((d) => d.questionIndex === i);
-
-        if (existingDiscussion) {
-          allDiscussions.push(existingDiscussion);
-        } else {
-          // Create empty discussion for this question
-          const newDiscussion = await this.discussionRepository.create({
-            quiz: quiz._id.toString(),
-            user: discussionOwnerId,
-            questionIndex: i,
-            content: `Discussion for question ${i + 1}`,
-            comments: [],
-          });
-          allDiscussions.push(newDiscussion);
-        }
-      }
-
-      return {
-        success: true,
-        data: allDiscussions,
-      };
-    } catch (error) {
-      console.error('Get quiz discussions error:', error);
-      return {
-        success: false,
-        error: 'Failed to fetch discussions',
-        statusCode: 500,
-      };
-    }
+    return this.discussionService.getQuizDiscussions(slug, session);
   }
 
   async addDiscussionComment(
@@ -973,244 +132,20 @@ export class QuizService implements IQuizService {
     userEmail: string,
     session?: any,
   ): Promise<ServiceResult<any>> {
-    try {
-      const quiz = await this.quizRepository.findBySlug(slug);
-
-      if (!quiz || !quiz._id) {
-        return {
-          success: false,
-          error: 'Quiz not found',
-          statusCode: 404,
-        };
-      }
-
-      const authorId = this.getAuthorId(quiz.author);
-      const userId = session?.user?.id;
-      const userRole = session?.user?.role;
-      const canAccessUnpublished = userRole === 'admin' || (!!userId && authorId === userId);
-
-      if (quiz.status !== 'published' && !canAccessUnpublished) {
-        return {
-          success: false,
-          error: 'Quiz not found',
-          statusCode: 404,
-        };
-      }
-
-      const privateAccessError = await this.checkPrivateQuizAccess(quiz, userId, userRole);
-      if (privateAccessError) return privateAccessError;
-
-      if (questionIndex < 0 || questionIndex >= quiz.questions.length) {
-        return {
-          success: false,
-          error: 'Invalid question index',
-          statusCode: 400,
-        };
-      }
-
-      const discussionOwnerId = authorId;
-      if (!discussionOwnerId) {
-        return {
-          success: false,
-          error: 'Quiz author not found',
-          statusCode: 500,
-        };
-      }
-
-      const user = await this.userRepository.findByEmail(userEmail);
-      if (!user) {
-        return {
-          success: false,
-          error: 'User not found',
-          statusCode: 404,
-        };
-      }
-
-      // Find or create discussion for this question
-      let discussions = await this.discussionRepository.findByQuiz(quiz._id.toString());
-      let existingDiscussion = discussions.find((d) => d.questionIndex === questionIndex);
-
-      if (!existingDiscussion) {
-        // Create new discussion for this question
-        existingDiscussion = await this.discussionRepository.create({
-          quiz: quiz._id.toString(),
-          user: discussionOwnerId,
-          questionIndex,
-          content: `Discussion for question ${questionIndex + 1}`,
-          comments: [],
-        });
-      }
-
-      if (!existingDiscussion || !existingDiscussion._id) {
-        return {
-          success: false,
-          error: 'Failed to create or find discussion',
-          statusCode: 500,
-        };
-      }
-
-      // Add comment to existing discussion
-      const commentData = {
-        author: user._id,
-        authorEmail: user.email,
-        content,
-        isEdited: false,
-        createdAt: new Date(),
-      };
-
-      const updatedDiscussion = await this.discussionRepository.update(
-        existingDiscussion._id.toString(),
-        {
-          comments: [...(existingDiscussion.comments || []), commentData],
-        },
-      );
-
-      return {
-        success: true,
-        data: updatedDiscussion,
-      };
-    } catch (error) {
-      console.error('Add discussion comment error:', error);
-      return {
-        success: false,
-        error: 'Failed to add comment',
-        statusCode: 500,
-      };
-    }
+    return this.discussionService.addDiscussionComment(
+      slug,
+      questionIndex,
+      content,
+      userEmail,
+      session,
+    );
   }
 
   async getQuizFlashcards(slug: string, session?: any): Promise<any> {
-    const quiz = await this.quizRepository.findBySlug(slug);
-
-    if (!quiz) {
-      throw new Error('Quiz not found');
-    }
-
-    const isAdmin = session?.user?.role === 'admin';
-    const isAuthor =
-      !!session?.user?.id &&
-      ((quiz.author as any)?._id
-        ? (quiz.author as any)._id.toString() === session.user.id
-        : quiz.author === session.user.id);
-
-    if (quiz.status !== 'published' && !isAdmin && !isAuthor) {
-      throw new Error('Quiz not found or not published');
-    }
-
-    // Check if quiz is private and user has access
-    if (quiz.isPrivate && session?.user) {
-      if (!isAdmin && !isAuthor) {
-        // Check if user has premium subscription
-        const subscriptionService = ServiceFactory.createSubscriptionService();
-        const isPremium = await subscriptionService.isUserPremium((session.user as any).id);
-
-        if (!isPremium) {
-          throw new Error('Premium subscription required to access private quizzes');
-        }
-      }
-    }
-
-    const flashcards = quiz.questions.map((q: any, index: number) => ({
-      id: index,
-      question: q.question,
-      answer:
-        q.type === 'single'
-          ? q.options[q.correctIndex]
-          : q.correctIndexes.map((idx: number) => q.options[idx]).join(', '),
-      type: q.type,
-      questionImage: q.questionImage || null,
-      optionImages: q.optionImages || [],
-    }));
-
-    return {
-      _id: quiz._id,
-      title: quiz.title,
-      description: quiz.description,
-      slug: quiz.slug,
-      flashcards,
-    };
+    return this.playService.getQuizFlashcards(slug, session);
   }
 
   async getQuizForFlashcards(slug: string, session: any): Promise<ServiceResult<any>> {
-    try {
-      const quiz = await this.quizRepository.findBySlug(slug);
-
-      if (!quiz) {
-        return {
-          success: false,
-          error: 'Quiz not found',
-          statusCode: 404,
-        };
-      }
-
-      const isAdmin = session?.user?.role === 'admin';
-      const isAuthor =
-        !!session?.user?.id &&
-        ((quiz.author as any)?._id
-          ? (quiz.author as any)._id.toString() === session.user.id
-          : quiz.author === session.user.id);
-
-      if (quiz.status !== 'published' && !isAdmin && !isAuthor) {
-        return {
-          success: false,
-          error: 'Quiz not found or not published',
-          statusCode: 404,
-        };
-      }
-
-      // Check if quiz is private and user has access
-      if (quiz.isPrivate) {
-        if (!session?.user) {
-          return {
-            success: false,
-            error: 'Access denied. This quiz is private.',
-            statusCode: 403,
-          };
-        }
-
-        if (!isAdmin && !isAuthor) {
-          // Check if user has premium subscription
-          const subscriptionService = ServiceFactory.createSubscriptionService();
-          const isPremium = await subscriptionService.isUserPremium((session.user as any).id);
-
-          if (!isPremium) {
-            return {
-              success: false,
-              error: 'Premium subscription required to access private quizzes',
-              statusCode: 403,
-            };
-          }
-        }
-      }
-
-      // Return quiz with correct answers for flashcards
-      const flashcardQuiz = {
-        _id: quiz._id,
-        title: quiz.title,
-        description: quiz.description,
-        author: quiz.author,
-        slug: quiz.slug,
-        questions: quiz.questions.map((q: any) => ({
-          question: q.question,
-          options: q.options,
-          type: q.type,
-          correctIndex: q.correctIndex,
-          correctIndexes: q.correctIndexes,
-        })),
-        createdAt: quiz.createdAt,
-      };
-
-      return {
-        success: true,
-        data: flashcardQuiz,
-      };
-    } catch (error) {
-      console.error('Get quiz for flashcards error:', error);
-      return {
-        success: false,
-        error: 'Failed to get quiz for flashcards',
-        statusCode: 500,
-      };
-    }
+    return this.playService.getQuizForFlashcards(slug, session);
   }
 }

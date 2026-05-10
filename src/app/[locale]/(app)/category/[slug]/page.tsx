@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
+import useSWR from 'swr';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/Button';
@@ -20,6 +21,7 @@ import Navigation from '@/components/Navigation';
 import { routePathSegment } from '@/lib/routing/routeParams';
 import { useRequiredRouteParam } from '@/lib/routing/useRequiredRouteParam';
 import { PaginationMeta } from '@/types';
+import { swrFetcher } from '@/lib/api/swr-fetcher';
 import {
   HiOutlineSearch,
   HiOutlineExclamationCircle,
@@ -65,72 +67,46 @@ export default function CategoryPage() {
   const tQuiz = useTranslations('quiz');
   const router = useRouter();
   const encodedSlug = routePathSegment(useRequiredRouteParam('slug'));
-  const [category, setCategory] = useState<Category | null>(null);
-  const [quizzes, setQuizzes] = useState<Quiz[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const itemsPerPage = 12;
   const [searchTerm, setSearchTerm] = useState('');
-  const [pagination, setPagination] = useState<PaginationMeta>({
-    currentPage: 1,
-    totalPages: 0,
-    totalItems: 0,
-    itemsPerPage: 12,
-    hasNextPage: false,
-    hasPrevPage: false,
+  const [page, setPage] = useState(1);
+
+  // SWR key — changing page or searchTerm triggers automatic re-fetch
+  const queryParams = new URLSearchParams({
+    page: page.toString(),
+    limit: itemsPerPage.toString(),
   });
+  if (searchTerm.trim()) {
+    queryParams.append('search', searchTerm.trim());
+  }
 
-  const fetchCategoryAndQuizzes = useCallback(
-    async (page: number = 1, search: string = '') => {
-      try {
-        setLoading(true);
-
-        // Build query parameters for category API
-        const queryParams = new URLSearchParams({
-          page: page.toString(),
-          limit: pagination.itemsPerPage.toString(),
-        });
-
-        if (search.trim()) {
-          queryParams.append('search', search.trim());
-        }
-
-        // Get category and quizzes in one API call
-        const response = await fetch(`/api/categories/${encodedSlug}?${queryParams}`);
-        const data = await response.json();
-
-        if (!data.success) {
-          setError(data.error || 'Category not found');
-          return;
-        }
-
-        const { category, quizzes, pagination: paginationData } = data.data;
-        setCategory(category);
-        setQuizzes(quizzes);
-        setPagination(paginationData);
-        setError('');
-      } catch (error) {
-        console.error('Error fetching category data:', error);
-        setError('An error occurred while fetching data');
-      } finally {
-        setLoading(false);
-      }
-    },
-    [encodedSlug, pagination.itemsPerPage],
+  const { data, error, isLoading } = useSWR(
+    `/api/categories/${encodedSlug}?${queryParams}`,
+    swrFetcher<{
+      category: Category;
+      quizzes: Quiz[];
+      pagination: PaginationMeta;
+    }>,
   );
 
-  useEffect(() => {
-    fetchCategoryAndQuizzes();
-  }, [fetchCategoryAndQuizzes]);
+  const category = data?.category ?? null;
+  const quizzes = data?.quizzes ?? [];
+  const pagination = data?.pagination ?? {
+    currentPage: page,
+    totalPages: 0,
+    totalItems: 0,
+    itemsPerPage,
+    hasNextPage: false,
+    hasPrevPage: false,
+  };
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    setPagination((prev) => ({ ...prev, currentPage: 1 }));
-    fetchCategoryAndQuizzes(1, searchTerm);
+    setPage(1);
   };
 
   const handlePageChange = (newPage: number) => {
-    setPagination((prev) => ({ ...prev, currentPage: newPage }));
-    fetchCategoryAndQuizzes(newPage, searchTerm);
+    setPage(newPage);
   };
 
   const formatDate = (dateString: string) => {
@@ -158,7 +134,7 @@ export default function CategoryPage() {
     return colorMap[color?.toLowerCase()] || colorMap['purple'];
   };
 
-  const isInitialLoading = loading && !category && quizzes.length === 0;
+  const isInitialLoading = isLoading && !category && quizzes.length === 0;
 
   if (isInitialLoading) {
     return (
@@ -182,7 +158,7 @@ export default function CategoryPage() {
     );
   }
 
-  if (error) {
+  if (error && !category && quizzes.length === 0) {
     return (
       <div className="min-h-screen">
         <Navigation />
@@ -190,7 +166,7 @@ export default function CategoryPage() {
           <Card variant="bordered" className="p-6 mb-8 border-red-200 bg-red-50">
             <div className="flex items-center text-red-700">
               <HiOutlineExclamationCircle className="w-5 h-5 mr-2" />
-              {error}
+              {error.message || 'An error occurred while fetching data'}
             </div>
           </Card>
         </div>
@@ -259,8 +235,7 @@ export default function CategoryPage() {
                   variant="outline"
                   onClick={() => {
                     setSearchTerm('');
-                    setPagination((prev) => ({ ...prev, page: 1 }));
-                    fetchCategoryAndQuizzes(1, '');
+                    setPage(1);
                   }}
                 >
                   {tCommon('cancel')}
@@ -285,15 +260,14 @@ export default function CategoryPage() {
               </span>
             )}
           </p>
-          {loading && <span className="text-sm text-neutral-500">{tCommon('loading')}...</span>}
+          {isLoading && <span className="text-sm text-neutral-500">{tCommon('loading')}...</span>}
 
           {searchTerm && (
             <Button
               variant="ghost"
               onClick={() => {
                 setSearchTerm('');
-                setPagination((prev) => ({ ...prev, currentPage: 1 }));
-                fetchCategoryAndQuizzes(1, '');
+                setPage(1);
               }}
               className="text-brand-trust hover:text-brand-trust-hover"
             >
@@ -319,8 +293,7 @@ export default function CategoryPage() {
                 variant="gradient"
                 onClick={() => {
                   setSearchTerm('');
-                  setPagination((prev) => ({ ...prev, page: 1 }));
-                  fetchCategoryAndQuizzes(1, '');
+                  setPage(1);
                 }}
                 className="mx-auto"
               >

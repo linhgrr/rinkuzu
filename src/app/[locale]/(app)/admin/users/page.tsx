@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
+import useSWR from 'swr';
 import { Button } from '@/components/ui/Button';
 import {
   Card,
@@ -21,6 +22,7 @@ import { ErrorState } from '@/components/ui/ErrorState';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { AdminPageShell } from '@/components/admin/AdminPageShell';
 import { HiOutlineSearch, HiOutlineCheck } from '@/components/icons';
+import { swrFetcher } from '@/lib/api/swr-fetcher';
 
 interface User {
   _id: string;
@@ -56,19 +58,37 @@ export default function AdminUsersPage() {
   const tCommon = useTranslations('common');
   const { data: session } = useSession();
 
-  const [users, setUsers] = useState<User[]>([]);
-  const [plans, setPlans] = useState<Plan[]>([]);
-  const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
-  const [error, setError] = useState('');
+  const [localError, setLocalError] = useState('');
   const [success, setSuccess] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
-  const [pagination, setPagination] = useState<PaginationData>({
-    page: 1,
-    limit: 10,
-    total: 0,
-    totalPages: 0,
+  const [page, setPage] = useState(1);
+  const limit = 10;
+
+  // SWR hooks
+  const swrParams = new URLSearchParams({
+    page: page.toString(),
+    limit: limit.toString(),
   });
+  if (searchTerm.trim()) {
+    swrParams.append('search', searchTerm.trim());
+  }
+
+  const {
+    data: usersData,
+    error: usersError,
+    isLoading: usersLoading,
+    mutate: mutateUsers,
+  } = useSWR(
+    `/api/admin/users?${swrParams}`,
+    swrFetcher<{ users: User[]; pagination: PaginationData }>,
+  );
+
+  const { data: plansData } = useSWR('/api/admin/plans', swrFetcher<Plan[]>);
+
+  const users = usersData?.users ?? [];
+  const plans = plansData ?? [];
+  const pagination = usersData?.pagination ?? { page, limit, total: 0, totalPages: 0 };
 
   // Modal states
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -79,70 +99,13 @@ export default function AdminUsersPage() {
   const [selectedPlanId, setSelectedPlanId] = useState('');
   const [subscriptionDuration, setSubscriptionDuration] = useState(180); // Default 6 months
 
-  const fetchUsers = useCallback(
-    async (page: number = 1, search: string = '') => {
-      try {
-        setLoading(true);
-        const params = new URLSearchParams({
-          page: page.toString(),
-          limit: pagination.limit.toString(),
-        });
-
-        if (search.trim()) {
-          params.append('search', search.trim());
-        }
-
-        const response = await fetch(`/api/admin/users?${params}`);
-        const data = await response.json();
-
-        if (data.success) {
-          setUsers(data.data.users);
-          setPagination({
-            page: data.data.pagination.currentPage,
-            limit: data.data.pagination.itemsPerPage,
-            total: data.data.pagination.totalItems,
-            totalPages: data.data.pagination.totalPages,
-          });
-          setError('');
-        } else {
-          setError(data.error || 'Failed to fetch users');
-        }
-      } catch (_error) {
-        setError('Failed to fetch users');
-      } finally {
-        setLoading(false);
-      }
-    },
-    [pagination.limit],
-  );
-
-  const fetchPlans = useCallback(async () => {
-    try {
-      const response = await fetch('/api/admin/plans');
-      const data = await response.json();
-
-      if (data.success) {
-        setPlans(data.data);
-      }
-    } catch (error) {
-      console.error('Failed to fetch plans:', error);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchUsers();
-    fetchPlans();
-  }, [fetchUsers, fetchPlans]);
-
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    setPagination((prev) => ({ ...prev, page: 1 }));
-    fetchUsers(1, searchTerm);
+    setPage(1);
   };
 
   const handlePageChange = (newPage: number) => {
-    setPagination((prev) => ({ ...prev, page: newPage }));
-    fetchUsers(newPage, searchTerm);
+    setPage(newPage);
   };
 
   const handleChangeRole = async () => {
@@ -164,17 +127,15 @@ export default function AdminUsersPage() {
       const data = await response.json();
 
       if (data.success) {
-        setUsers(
-          users.map((user) => (user._id === selectedUser._id ? { ...user, role: newRole } : user)),
-        );
+        mutateUsers();
         setSuccess(`User role updated to ${newRole}`);
         setShowRoleModal(false);
         setSelectedUser(null);
       } else {
-        setError(data.error || 'Failed to update user role');
+        setLocalError(data.error || 'Failed to update user role');
       }
     } catch (_error) {
-      setError('Failed to update user role');
+      setLocalError('Failed to update user role');
     } finally {
       setActionLoading(null);
     }
@@ -192,15 +153,15 @@ export default function AdminUsersPage() {
       const data = await response.json();
 
       if (data.success) {
-        setUsers(users.filter((user) => user._id !== selectedUser._id));
+        mutateUsers();
         setSuccess('User deleted successfully');
         setShowDeleteModal(false);
         setSelectedUser(null);
       } else {
-        setError(data.error || 'Failed to delete user');
+        setLocalError(data.error || 'Failed to delete user');
       }
     } catch (_error) {
-      setError('Failed to delete user');
+      setLocalError('Failed to delete user');
     } finally {
       setActionLoading(null);
     }
@@ -226,32 +187,17 @@ export default function AdminUsersPage() {
       const data = await response.json();
 
       if (data.success) {
-        // Update user in the list with new subscription
-        setUsers(
-          users.map((user) =>
-            user._id === selectedUser._id
-              ? {
-                  ...user,
-                  subscription: {
-                    type: selectedPlanId,
-                    startDate: new Date().toISOString(),
-                    endDate: data.data.endDate,
-                    isActive: true,
-                  },
-                }
-              : user,
-          ),
-        );
+        mutateUsers();
         setSuccess(`Subscription added successfully for ${selectedUser.email}`);
         setShowSubscriptionModal(false);
         setSelectedUser(null);
         setSelectedPlanId('');
         setSubscriptionDuration(180);
       } else {
-        setError(data.error || 'Failed to add subscription');
+        setLocalError(data.error || 'Failed to add subscription');
       }
     } catch (_error) {
-      setError('Failed to add subscription');
+      setLocalError('Failed to add subscription');
     } finally {
       setActionLoading(null);
     }
@@ -311,7 +257,7 @@ export default function AdminUsersPage() {
 
   return (
     <AdminPageShell>
-      {loading ? (
+      {usersLoading ? (
         <LoadingState text={tCommon('loading')} />
       ) : (
         <div className="max-w-6xl mx-auto">
@@ -344,7 +290,7 @@ export default function AdminUsersPage() {
                   variant="outline"
                   onClick={() => {
                     setSearchTerm('');
-                    fetchUsers(1, '');
+                    setPage(1);
                   }}
                 >
                   {tCommon('clear')}
@@ -353,7 +299,9 @@ export default function AdminUsersPage() {
             </form>
           </div>
 
-          {error && <ErrorState message={error} className="mb-6" />}
+          {(usersError || localError) && (
+            <ErrorState message={usersError?.message || localError || ''} className="mb-6" />
+          )}
 
           {success && (
             <div className="rounded-md bg-green-50 p-4 mb-6">

@@ -1,4 +1,5 @@
 import 'server-only';
+import { cache } from 'react';
 import { unstable_cache } from 'next/cache';
 import connectDB from '@/lib/mongoose';
 import UserProgress from '@/models/UserProgress';
@@ -310,29 +311,31 @@ const getCachedPublishedDashboardQuizzes = unstable_cache(
   },
 );
 
-export async function getDashboardBootstrapData(
-  userId: string,
-  _userRole?: string,
-): Promise<{
-  stats: DashboardStatsData;
-  quizzes: DashboardQuiz[];
-  yourQuizzes: DashboardQuiz[];
-}> {
-  await connectDB();
+export const getDashboardBootstrapData = cache(
+  async (
+    userId: string,
+    _userRole?: string,
+  ): Promise<{
+    stats: DashboardStatsData;
+    quizzes: DashboardQuiz[];
+    yourQuizzes: DashboardQuiz[];
+  }> => {
+    await connectDB();
 
-  const authorFilter: string | Types.ObjectId = Types.ObjectId.isValid(userId)
-    ? new Types.ObjectId(userId)
-    : userId;
+    const authorFilter: string | Types.ObjectId = Types.ObjectId.isValid(userId)
+      ? new Types.ObjectId(userId)
+      : userId;
 
-  const [stats, quizzes, yourQuizzes] = await Promise.all([
-    getUserProgressStats(userId, { skipConnect: true }),
-    getCachedPublishedDashboardQuizzes(),
-    getDashboardQuizList({ author: authorFilter }, 3),
-  ]);
+    const [stats, quizzes, yourQuizzes] = await Promise.all([
+      getUserProgressStats(userId, { skipConnect: true }),
+      getCachedPublishedDashboardQuizzes(),
+      getDashboardQuizList({ author: authorFilter }, 3),
+    ]);
 
-  return {
-    stats,
-    quizzes,
-    yourQuizzes,
-  };
-}
+    return {
+      stats,
+      quizzes,
+      yourQuizzes,
+    };
+  },
+);

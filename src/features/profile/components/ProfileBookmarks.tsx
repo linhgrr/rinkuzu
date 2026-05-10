@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
+import useSWR from 'swr';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -16,6 +17,7 @@ import { QuestionOptionsPreview } from '@/features/quiz/components/shared/Questi
 import { useStreamingChatSession } from '@/features/quiz/hooks/useStreamingChatSession';
 import { PaginationMeta } from '@/types';
 import { fetchApiSuccess } from '@/lib/api/client';
+import { swrFetcher } from '@/lib/api/swr-fetcher';
 
 const chatbotIcon =
   'https://i.ibb.co/ZRYgc1tN/Gemini-Generated-Image-yjm06yyjm06yyjm0-removebg-preview.png';
@@ -44,14 +46,19 @@ interface Bookmark {
 export default function ProfileBookmarks() {
   const t = useTranslations('profile');
   const tCommon = useTranslations('common');
-  const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [pagination, setPagination] = useState<PaginationMeta | null>(null);
+  const itemsPerPage = 10;
+  const [localError, setLocalError] = useState('');
+
+  const { data, error, isLoading, mutate } = useSWR(
+    `/api/bookmarks?page=${currentPage}&limit=${itemsPerPage}`,
+    swrFetcher<{ bookmarks: Bookmark[]; pagination: PaginationMeta }>,
+  );
+
+  const bookmarks = data?.bookmarks ?? [];
+  const pagination = data?.pagination ?? null;
   const [bookmarkToRemove, setBookmarkToRemove] = useState<Bookmark | null>(null);
   const [removingBookmarkId, setRemovingBookmarkId] = useState<string | null>(null);
-  const itemsPerPage = 10;
 
   // AI Chat states
   const [showAIModal, setShowAIModal] = useState(false);
@@ -70,42 +77,18 @@ export default function ProfileBookmarks() {
     persistenceKey: 'bookmark-chat-histories',
   });
 
-  const fetchBookmarks = useCallback(async () => {
-    try {
-      setLoading(true);
-      const params = new URLSearchParams({
-        page: currentPage.toString(),
-        limit: itemsPerPage.toString(),
-      });
-
-      const data = await fetchApiSuccess<Bookmark[], { pagination: PaginationMeta }>(
-        `/api/bookmarks?${params}`,
-      );
-      setBookmarks(data.data);
-      setPagination(data.pagination);
-      setError('');
-    } catch (error: any) {
-      setError(error.message || 'Failed to load bookmarks');
-    } finally {
-      setLoading(false);
-    }
-  }, [currentPage]);
-
-  useEffect(() => {
-    fetchBookmarks();
-  }, [fetchBookmarks]);
-
   const removeBookmark = async (bookmarkId: string) => {
     setRemovingBookmarkId(bookmarkId);
     try {
       await fetchApiSuccess<null>(`/api/bookmarks/${bookmarkId}`, {
         method: 'DELETE',
       });
-      setBookmarks((prev) => prev.filter((b) => b._id !== bookmarkId));
+      mutate();
       removeHistory(bookmarkId);
       setBookmarkToRemove(null);
-    } catch (error: any) {
-      setError(error.message || 'Failed to remove bookmark');
+      setLocalError('');
+    } catch (err: any) {
+      setLocalError(err.message || 'Failed to remove bookmark');
     } finally {
       setRemovingBookmarkId(null);
     }
@@ -160,7 +143,6 @@ export default function ProfileBookmarks() {
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
-    setError('');
   };
 
   const OptionImage = ({ src, alt }: { src: string; alt: string }) => (
@@ -175,7 +157,9 @@ export default function ProfileBookmarks() {
     />
   );
 
-  if (loading && bookmarks.length === 0) {
+  const displayError = (error?.message ?? localError) || '';
+
+  if (isLoading && bookmarks.length === 0) {
     return (
       <div className="flex justify-center py-12">
         <div className="flex flex-col items-center gap-3">
@@ -190,7 +174,9 @@ export default function ProfileBookmarks() {
     <div className="space-y-6">
       <h2 className="text-2xl font-bold text-neutral-900">{t('bookmarkedQuestions')}</h2>
 
-      {error && <div className="bg-red-50 p-4 rounded text-red-700 text-sm">{error}</div>}
+      {displayError && (
+        <div className="bg-red-50 p-4 rounded text-red-700 text-sm">{displayError}</div>
+      )}
 
       {bookmarks.length === 0 ? (
         <Card>

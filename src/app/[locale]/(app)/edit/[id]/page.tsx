@@ -9,14 +9,11 @@ import { toast } from 'sonner';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
-import { Input, Textarea } from '@/components/ui/Input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
-import QuizMetaForm from '@/features/quiz/components/QuizMetaForm';
 import PDFViewer from '@/features/quiz/components/PDFViewer';
 import { IQuiz } from '@/types';
 import { routePathSegment } from '@/lib/routing/routeParams';
 import { useRequiredRouteParam } from '@/lib/routing/useRequiredRouteParam';
-import { QuestionImageUpload, OptionImageUpload } from '@/components/ui/ImageUpload';
 import Sidebar from '@/components/Sidebar';
 import {
   HiChevronDown,
@@ -25,22 +22,13 @@ import {
   HiOutlineInformationCircle,
   HiOutlineEyeOff,
   HiOutlineDocumentText,
-  HiOutlinePlus,
-  HiOutlineTrash,
   HiOutlineSave,
   HiOutlineClipboardCopy,
-  HiOutlinePencilAlt,
+  HiOutlineTrash,
 } from '@/components/icons';
-
-interface Question {
-  question: string;
-  options: string[];
-  type: 'single' | 'multiple';
-  correctIndex?: number;
-  correctIndexes?: number[];
-  questionImage?: string;
-  optionImages?: (string | undefined)[];
-}
+import { QuestionEditor } from '@/features/quiz/components/editor/QuestionEditor';
+import type { Question } from '@/features/quiz/components/editor/QuestionEditor';
+import { QuizMetaFormEditor } from '@/features/quiz/components/editor/QuizMetaForm';
 
 interface Category {
   _id: string;
@@ -333,7 +321,7 @@ export default function EditQuizPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Navigation - giống như trang chính */}
+      {/* Navigation */}
       <nav className="bg-white/80 backdrop-blur-md border-b border-neutral-100 sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
@@ -475,12 +463,12 @@ export default function EditQuizPage() {
         currentPath={pathname}
       />
 
-      {/* Main Content - with flex layout for PDF viewer */}
+      {/* Main Content */}
       <main
         className={`max-w-none px-4 py-8 transition-[margin] duration-300 sm:px-6 lg:px-8 ${isSidebarOpen ? 'ml-64' : 'ml-16'}`}
       >
         <div className="flex min-h-screen transition-[width] duration-300">
-          {/* Left Side - Form Content (50% when PDF visible, full width when not) */}
+          {/* Left Side - Form Content */}
           <div
             className={`transition-[width,padding] duration-300 ${showPDFViewer && pdfUrl ? 'lg:w-1/2 lg:pr-4' : 'w-full'}`}
           >
@@ -561,244 +549,87 @@ export default function EditQuizPage() {
                 </Card>
               )}
 
-              <Card className="max-w-2xl">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <HiOutlinePencilAlt className="w-5 h-5 text-brand-trust" />
-                    Quiz Information
-                  </CardTitle>
-                  <CardDescription>Update the basic information about your quiz</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <form onSubmit={handleSubmit} className="space-y-6">
-                    {error && (
-                      <div className="rounded-md bg-red-50 p-4">
-                        <div className="text-sm text-red-700">{error}</div>
-                      </div>
-                    )}
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <QuizMetaFormEditor
+                  error={error}
+                  success={success}
+                  title={title}
+                  onTitleChange={setTitle}
+                  description={description}
+                  onDescriptionChange={setDescription}
+                  selectedCategory={selectedCategory}
+                  onCategoryChange={(category) => setSelectedCategory(category as Category | null)}
+                  isPrivate={isPrivate}
+                  onPrivateChange={setIsPrivate}
+                  disabled={!canEdit}
+                  categoryDisabled={!canEdit}
+                  quiz={quiz}
+                />
 
-                    {success && (
-                      <div className="rounded-md bg-green-50 p-4">
-                        <div className="text-sm text-green-700">{success}</div>
-                      </div>
-                    )}
+                <QuestionEditor
+                  questions={editableQuestions}
+                  canEdit={canEdit}
+                  questionToRemove={questionToRemove}
+                  onUpdateField={updateQuestionField}
+                  onUpdateOption={updateOption}
+                  onUpdateQuestionImage={updateQuestionImage}
+                  onRemoveQuestionImage={removeQuestionImage}
+                  onUpdateOptionImage={updateOptionImage}
+                  onRemoveOptionImage={removeOptionImage}
+                  onAddQuestion={addQuestion}
+                  onRemoveQuestion={removeQuestion}
+                  onToggleType={toggleQuestionType}
+                  onSetSingleCorrect={setSingleCorrect}
+                  onToggleMultipleCorrect={toggleMultipleCorrect}
+                  onSetQuestionToRemove={setQuestionToRemove}
+                />
 
-                    <QuizMetaForm
-                      title={title}
-                      onTitleChange={setTitle}
-                      description={description}
-                      onDescriptionChange={setDescription}
-                      selectedCategory={selectedCategory}
-                      onCategoryChange={(category) =>
-                        setSelectedCategory(category as Category | null)
-                      }
-                      labels={{
-                        title: 'Quiz Title',
-                        titlePlaceholder: 'Enter a descriptive title for your quiz',
-                        description: 'Description (Optional)',
-                        descriptionPlaceholder: 'Provide additional context about the quiz',
-                        category: 'Category *',
-                        categoryPlaceholder: 'Search and select a category...',
-                        privateLabel: 'Private Quiz',
-                        privateDescription: '(Only visible to you and admins)',
-                      }}
-                      isPrivate={isPrivate}
-                      onPrivateChange={setIsPrivate}
-                      privateCheckboxId="isPrivate"
-                      disabled={!canEdit}
-                      categoryDisabled={!canEdit}
-                    />
-
-                    {/* Quiz Questions Info */}
-                    <div className="border-t pt-6">
-                      <h3 className="text-lg font-semibold text-neutral-900 mb-4">Quiz Content</h3>
-                      <div className="bg-neutral-50 rounded-lg p-4">
-                        <div className="text-sm text-neutral-600">
-                          <p>
-                            <strong>Questions:</strong> {quiz.questions.length}
-                          </p>
-                          <p>
-                            <strong>Created:</strong>{' '}
-                            {new Date(quiz.createdAt).toLocaleDateString()}
-                          </p>
-                          {quiz.status === 'published' && (
-                            <p>
-                              <strong>Slug:</strong> {quiz.slug}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                      <p className="mt-2 text-xs text-neutral-500">
-                        Note: Questions cannot be edited after creation. Create a new quiz to change
-                        questions.
-                      </p>
-                    </div>
-
-                    {/* Questions Edit */}
+                <div className="flex justify-between">
+                  <div className="flex space-x-4">
+                    <Link href="/pending">
+                      <Button type="button" variant="outline">
+                        Cancel
+                      </Button>
+                    </Link>
                     {canEdit && (
-                      <Card className="mt-8">
-                        <CardHeader>
-                          <div className="flex justify-between items-center">
-                            <div>
-                              <CardTitle className="text-lg flex items-center gap-2">
-                                <HiOutlineDocumentText className="w-5 h-5 text-brand-trust" />
-                                Questions ({editableQuestions.length})
-                              </CardTitle>
-                              <CardDescription>Edit questions below</CardDescription>
-                            </div>
-                            <Button
-                              onClick={addQuestion}
-                              size="sm"
-                              variant="default"
-                              className="flex items-center gap-2"
-                            >
-                              <HiOutlinePlus className="w-4 h-4" />
-                              Add Question
-                            </Button>
-                          </div>
-                        </CardHeader>
-                        <CardContent className="space-y-6">
-                          {editableQuestions.map((q, index) => (
-                            <div key={index} className="border p-4 rounded-lg space-y-4">
-                              <div className="flex justify-between items-start">
-                                <h4 className="font-medium flex items-center gap-2">
-                                  <div className="w-6 h-6 bg-green-100 text-brand-trust rounded-full flex items-center justify-center text-xs">
-                                    {index + 1}
-                                  </div>
-                                  Question {index + 1}
-                                </h4>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => setQuestionToRemove(index)}
-                                  className="text-red-500 hover:text-red-600 hover:bg-red-50 rounded-full px-3"
-                                >
-                                  <HiOutlineTrash className="w-4 h-4 mr-1" />
-                                  Remove
-                                </Button>
-                              </div>
-                              <Textarea
-                                value={q.question}
-                                onChange={(e) =>
-                                  updateQuestionField(index, 'question', e.target.value)
-                                }
-                                className="min-h-[88px]"
-                                rows={2}
-                              />
-                              <QuestionImageUpload
-                                currentImage={q.questionImage}
-                                onImageUploaded={(url) => updateQuestionImage(index, url)}
-                                onImageRemoved={() => removeQuestionImage(index)}
-                              />
-                              <div>
-                                <p className="text-sm font-medium mb-1">Question Type</p>
-                                <div className="flex space-x-4 mt-1">
-                                  <label className="flex items-center">
-                                    <input
-                                      type="radio"
-                                      checked={q.type === 'single'}
-                                      onChange={() => toggleQuestionType(index, 'single')}
-                                    />{' '}
-                                    <span className="ml-2 text-sm">Single</span>
-                                  </label>
-                                  <label className="flex items-center">
-                                    <input
-                                      type="radio"
-                                      checked={q.type === 'multiple'}
-                                      onChange={() => toggleQuestionType(index, 'multiple')}
-                                    />{' '}
-                                    <span className="ml-2 text-sm">Multiple</span>
-                                  </label>
-                                </div>
-                              </div>
-                              <div className="space-y-2">
-                                {q.options.map((opt, optIdx) => (
-                                  <div key={optIdx} className="flex items-center space-x-2">
-                                    {q.type === 'single' ? (
-                                      <input
-                                        type="radio"
-                                        name={`correct-${index}`}
-                                        checked={q.correctIndex === optIdx}
-                                        onChange={() => setSingleCorrect(index, optIdx)}
-                                      />
-                                    ) : (
-                                      <input
-                                        type="checkbox"
-                                        checked={q.correctIndexes?.includes(optIdx)}
-                                        onChange={(e) =>
-                                          toggleMultipleCorrect(index, optIdx, e.target.checked)
-                                        }
-                                      />
-                                    )}
-                                    <Input
-                                      value={opt}
-                                      onChange={(e) => updateOption(index, optIdx, e.target.value)}
-                                      className="flex-1"
-                                    />
-                                    <OptionImageUpload
-                                      currentImage={q.optionImages?.[optIdx]}
-                                      onImageUploaded={(url) =>
-                                        updateOptionImage(index, optIdx, url)
-                                      }
-                                      onImageRemoved={() => removeOptionImage(index, optIdx)}
-                                    />
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          ))}
-                        </CardContent>
-                      </Card>
-                    )}
-
-                    <div className="flex justify-between">
-                      <div className="flex space-x-4">
-                        <Link href="/pending">
-                          <Button type="button" variant="outline">
-                            Cancel
-                          </Button>
-                        </Link>
-                        {canEdit && (
-                          <Button
-                            type="submit"
-                            loading={saving}
-                            disabled={!title.trim()}
-                            className="flex items-center gap-2"
-                          >
-                            {saving ? (
-                              'Saving…'
-                            ) : (
-                              <>
-                                <HiOutlineSave className="w-4 h-4" />
-                                Save Changes
-                              </>
-                            )}
-                          </Button>
+                      <Button
+                        type="submit"
+                        loading={saving}
+                        disabled={!title.trim()}
+                        className="flex items-center gap-2"
+                      >
+                        {saving ? (
+                          'Saving...'
+                        ) : (
+                          <>
+                            <HiOutlineSave className="w-4 h-4" />
+                            Save Changes
+                          </>
                         )}
-                      </div>
+                      </Button>
+                    )}
+                  </div>
 
-                      {canEdit && (isAuthor || isAdmin) && (
-                        <Button
-                          type="button"
-                          variant="destructive"
-                          onClick={confirmDelete}
-                          loading={deleting}
-                          className="flex items-center gap-2"
-                        >
-                          {deleting ? (
-                            'Deleting…'
-                          ) : (
-                            <>
-                              <HiOutlineTrash className="w-4 h-4" />
-                              Delete Quiz
-                            </>
-                          )}
-                        </Button>
+                  {canEdit && (isAuthor || isAdmin) && (
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      onClick={confirmDelete}
+                      loading={deleting}
+                      className="flex items-center gap-2"
+                    >
+                      {deleting ? (
+                        'Deleting...'
+                      ) : (
+                        <>
+                          <HiOutlineTrash className="w-4 h-4" />
+                          Delete Quiz
+                        </>
                       )}
-                    </div>
-                  </form>
-                </CardContent>
-              </Card>
+                    </Button>
+                  )}
+                </div>
+              </form>
 
               {quiz.status === 'published' && (
                 <Card className="mt-6">
@@ -831,7 +662,7 @@ export default function EditQuizPage() {
             </div>
           </div>
 
-          {/* Right Side - PDF Viewer (50% when visible) */}
+          {/* Right Side - PDF Viewer */}
           {showPDFViewer && pdfUrl && (
             <div className="hidden lg:block lg:w-1/2 lg:pl-4">
               <div className="sticky top-24 h-[calc(100vh-6rem)]">
@@ -845,7 +676,7 @@ export default function EditQuizPage() {
                         size="sm"
                         className="text-neutral-500 hover:text-neutral-700"
                       >
-                        ✕
+                        {'✕'}
                       </Button>
                     </div>
                   </CardHeader>
@@ -873,24 +704,6 @@ export default function EditQuizPage() {
           onConfirm={async () => {
             setShowDeleteConfirm(false);
             await handleDelete();
-          }}
-        />
-        <ConfirmModal
-          isOpen={questionToRemove !== null}
-          title="Remove question?"
-          message={
-            questionToRemove !== null
-              ? `Remove question ${questionToRemove + 1}? This change is not saved until you click Save.`
-              : ''
-          }
-          confirmText="Remove"
-          confirmVariant="destructive"
-          onCancel={() => setQuestionToRemove(null)}
-          onConfirm={() => {
-            if (questionToRemove !== null) {
-              removeQuestion(questionToRemove);
-              setQuestionToRemove(null);
-            }
           }}
         />
       </main>

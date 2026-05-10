@@ -48,14 +48,70 @@ describe('utils', () => {
     expect(calculateScore([[0, 1]], [{ type: 'multiple', correctIndexes: [0, 2] }])).toBe(0);
   });
 
+  it('returns 0 when every answered question is wrong', () => {
+    expect(
+      calculateScore(
+        [2, [3, 4]],
+        [
+          { type: 'single', correctIndex: 1 },
+          { type: 'multiple', correctIndexes: [0, 2] },
+        ],
+      ),
+    ).toBe(0);
+  });
+
+  it('ignores unanswered questions (skipped with -1)', () => {
+    expect(
+      calculateScore(
+        [-1, 0, -1, 1],
+        [
+          { type: 'single', correctIndex: 0 },
+          { type: 'single', correctIndex: 0 },
+          { type: 'single', correctIndex: 0 },
+          { type: 'single', correctIndex: 1 },
+        ],
+      ),
+    ).toBe(100); // Only 2 answered, both correct
+  });
+
+  it('handles unsorted multiple-choice selections correctly', () => {
+    expect(
+      calculateScore(
+        [[2, 0]],
+        [{ type: 'multiple', correctIndexes: [0, 2] }],
+      ),
+    ).toBe(100);
+  });
+
+  it('scores partial multiple-choice as wrong', () => {
+    expect(
+      calculateScore(
+        [[0]],
+        [{ type: 'multiple', correctIndexes: [0, 2] }],
+      ),
+    ).toBe(0);
+  });
+
+  it('handles an empty user answers and questions array', () => {
+    expect(
+      calculateScore([], []),
+    ).toBe(0);
+  });
+
   it('validates email format', () => {
     expect(validateEmail('test@example.com')).toBe(true);
     expect(validateEmail('invalid-email')).toBe(false);
+    expect(validateEmail('')).toBe(false);
+    expect(validateEmail('test@')).toBe(false);
+    expect(validateEmail('@test.com')).toBe(false);
+    expect(validateEmail('user+tag@domain.co.uk')).toBe(true);
   });
 
   it('validates minimum password length', () => {
     expect(validatePassword('12345')).toBe(false);
     expect(validatePassword('123456')).toBe(true);
+    expect(validatePassword('')).toBe(false);
+    expect(validatePassword('a'.repeat(100))).toBe(true);
   });
 
   it('merges class names with tailwind precedence', () => {

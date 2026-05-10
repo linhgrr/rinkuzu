@@ -46,7 +46,7 @@ describe('CategoryService', () => {
 
       expect(result.success).toBe(true);
       expect(result.data).toHaveLength(1);
-      expect(result.data![0]).toMatchObject({
+      expect(result.data?.[0]).toMatchObject({
         _id: 'cat-1',
         name: 'Math',
         slug: 'math',
@@ -67,7 +67,7 @@ describe('CategoryService', () => {
 
       const result = await service.getCategories();
 
-      expect(result.data![0].slug).toBe('artificial-intelligence');
+      expect(result.data?.[0]?.slug).toBe('artificial-intelligence');
     });
 
     it('returns error when repository throws', async () => {
@@ -98,8 +98,8 @@ describe('CategoryService', () => {
       const result = await service.getCategoryBySlug('math');
 
       expect(result.success).toBe(true);
-      expect(result.data!.category._id).toBe('cat-1');
-      expect(result.data!.quizzes).toHaveLength(1);
+      expect(result.data?.category._id).toBe('cat-1');
+      expect(result.data?.quizzes).toHaveLength(1);
       expect(quizRepository.findAll).toHaveBeenCalledWith(
         expect.objectContaining({ category: 'cat-1', status: 'published', isPrivate: false }),
         expect.objectContaining({ page: 1, limit: 12 }),

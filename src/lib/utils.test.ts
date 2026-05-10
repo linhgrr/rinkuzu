@@ -75,27 +75,15 @@ describe('utils', () => {
   });
 
   it('handles unsorted multiple-choice selections correctly', () => {
-    expect(
-      calculateScore(
-        [[2, 0]],
-        [{ type: 'multiple', correctIndexes: [0, 2] }],
-      ),
-    ).toBe(100);
+    expect(calculateScore([[2, 0]], [{ type: 'multiple', correctIndexes: [0, 2] }])).toBe(100);
   });
 
   it('scores partial multiple-choice as wrong', () => {
-    expect(
-      calculateScore(
-        [[0]],
-        [{ type: 'multiple', correctIndexes: [0, 2] }],
-      ),
-    ).toBe(0);
+    expect(calculateScore([[0]], [{ type: 'multiple', correctIndexes: [0, 2] }])).toBe(0);
   });
 
   it('handles an empty user answers and questions array', () => {
-    expect(
-      calculateScore([], []),
-    ).toBe(0);
+    expect(calculateScore([], [])).toBe(0);
   });
 
   it('validates email format', () => {

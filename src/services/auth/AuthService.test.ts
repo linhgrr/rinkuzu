@@ -61,9 +61,9 @@ describe('AuthService', () => {
       });
       vi.mocked(verifyPassword).mockResolvedValue(false);
 
-      await expect(
-        service.login({ email: 'user@test.com', password: 'wrong' }),
-      ).rejects.toThrow('Invalid credentials');
+      await expect(service.login({ email: 'user@test.com', password: 'wrong' })).rejects.toThrow(
+        'Invalid credentials',
+      );
     });
 
     it('returns user and token on successful login', async () => {
@@ -82,7 +82,11 @@ describe('AuthService', () => {
         user: { id: 'user-1', email: 'user@test.com', role: 'user' },
         token: 'mock-jwt-token',
       });
-      expect(signToken).toHaveBeenCalledWith({ id: 'user-1', email: 'user@test.com', role: 'user' });
+      expect(signToken).toHaveBeenCalledWith({
+        id: 'user-1',
+        email: 'user@test.com',
+        role: 'user',
+      });
     });
   });
 
@@ -106,9 +110,9 @@ describe('AuthService', () => {
     it('throws on short password', async () => {
       const { service } = createService();
 
-      await expect(
-        service.register({ email: 'a@b.com', password: '12345' }),
-      ).rejects.toThrow('Password must be at least 6 characters');
+      await expect(service.register({ email: 'a@b.com', password: '12345' })).rejects.toThrow(
+        'Password must be at least 6 characters',
+      );
     });
 
     it('throws when email is already taken', async () => {
@@ -150,14 +154,17 @@ describe('AuthService', () => {
       const { service, userRepository } = createService();
       userRepository.findByEmail.mockResolvedValue(null);
       vi.mocked(hashPassword).mockResolvedValue('hashed');
-      userRepository.create.mockResolvedValue({ _id: 'u1', email: 'u@b.com', password: 'hashed', role: 'user' });
+      userRepository.create.mockResolvedValue({
+        _id: 'u1',
+        email: 'u@b.com',
+        password: 'hashed',
+        role: 'user',
+      });
 
       const result = await service.register({ email: 'u@b.com', password: 'pass123' });
 
       expect(result.user.role).toBe('user');
-      expect(userRepository.create).toHaveBeenCalledWith(
-        expect.objectContaining({ role: 'user' }),
-      );
+      expect(userRepository.create).toHaveBeenCalledWith(expect.objectContaining({ role: 'user' }));
     });
   });
 

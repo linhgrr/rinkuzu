@@ -206,10 +206,7 @@ describe('UserService', () => {
 
       expect(result.success).toBe(true);
       // Anonymous: email is used as userId
-      expect(attemptRepository.findByIdWithQuiz).toHaveBeenCalledWith(
-        'attempt-1',
-        'anon@test.com',
-      );
+      expect(attemptRepository.findByIdWithQuiz).toHaveBeenCalledWith('attempt-1', 'anon@test.com');
     });
 
     it('returns 404 when attempt is not found', async () => {

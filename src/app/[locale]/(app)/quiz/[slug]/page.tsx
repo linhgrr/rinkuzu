@@ -521,7 +521,6 @@ export default function QuizPlayerPage() {
                     onChange={(e) => setUserEmail(e.target.value)}
                     placeholder={t('enterEmailAddress')}
                     required
-                    variant="glass"
                     icon={<HiOutlineMail className="w-5 h-5" />}
                   />
                   <p className="mt-2 text-xs text-neutral-500">{t('weWillUseEmail')}</p>

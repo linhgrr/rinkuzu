@@ -80,7 +80,6 @@ export default function QuizMetaForm({
         onChange={(e) => onTitleChange(e.target.value)}
         placeholder={labels.titlePlaceholder}
         maxLength={titleMaxLength}
-        variant="glass"
         disabled={disabled}
         icon={<HiOutlineTag className="w-5 h-5" />}
       />
@@ -93,7 +92,6 @@ export default function QuizMetaForm({
         onChange={(e) => onDescriptionChange(e.target.value)}
         placeholder={labels.descriptionPlaceholder}
         maxLength={descriptionMaxLength}
-        variant="glass"
         disabled={disabled}
       />
 
@@ -107,7 +105,6 @@ export default function QuizMetaForm({
             onChange={(e) => onAiPromptChange(e.target.value)}
             placeholder={labels.promptPlaceholder || ''}
             maxLength={aiPromptMaxLength}
-            variant="glass"
             disabled={disabled}
           />
           {labels.promptHelper && (

@@ -164,7 +164,6 @@ export default function RegisterPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder={t('enterEmail')}
-                    variant="default"
                     icon={<HiOutlineMail className="w-5 h-5" />}
                   />
 
@@ -178,7 +177,6 @@ export default function RegisterPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder={t('enterPassword')}
-                    variant="default"
                     icon={<HiOutlineLockClosed className="w-5 h-5" />}
                   />
 
@@ -192,7 +190,6 @@ export default function RegisterPage() {
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder={t('confirmYourPassword')}
-                    variant="default"
                     icon={<HiCheck className="w-5 h-5" />}
                   />
                 </div>

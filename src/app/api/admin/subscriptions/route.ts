@@ -22,9 +22,7 @@ export const GET = withAdmin(async (request: NextRequest) => {
     // Filter and paginate results based on search params
     let filteredResults = result;
     if (searchParamsObj.status) {
-      const normalizedStatus =
-        searchParamsObj.status === 'active' ? 'completed' : searchParamsObj.status;
-      filteredResults = result.filter((sub: any) => sub.status === normalizedStatus);
+      filteredResults = result.filter((sub: any) => sub.status === searchParamsObj.status);
     }
     if (searchParamsObj.search) {
       const searchLower = searchParamsObj.search.toLowerCase();

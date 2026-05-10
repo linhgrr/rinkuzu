@@ -160,12 +160,11 @@ export class SubscriptionService implements ISubscriptionService {
       const sanitizedUpdate: Partial<any> = {};
 
       if (update['status'] !== undefined) {
-        const normalizedStatus = update['status'] === 'active' ? 'completed' : update['status'];
-        if (!allowedStatuses.includes(normalizedStatus)) {
+        if (!allowedStatuses.includes(update['status'])) {
           return { success: false, error: 'Invalid subscription status' };
         }
-        sanitizedUpdate['status'] = normalizedStatus;
-        sanitizedUpdate['isActive'] = normalizedStatus === 'completed';
+        sanitizedUpdate['status'] = update['status'];
+        sanitizedUpdate['isActive'] = update['status'] === 'completed';
       }
 
       if (update['isActive'] !== undefined) {

@@ -627,10 +627,12 @@ describe('SubscriptionService billing hardening', () => {
       },
     });
 
-    await expect(service.updateSubscriptionById('sub-1', { status: 'active' })).resolves.toEqual({
-      success: true,
-      data: { _id: 'sub-1' },
-    });
+    await expect(service.updateSubscriptionById('sub-1', { status: 'completed' })).resolves.toEqual(
+      {
+        success: true,
+        data: { _id: 'sub-1' },
+      },
+    );
     expect(subscriptionRepository.updateById).toHaveBeenCalledWith('sub-1', {
       status: 'completed',
       isActive: true,

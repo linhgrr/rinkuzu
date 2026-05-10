@@ -26,7 +26,7 @@ interface Subscription {
   user: string;
   type: 'monthly' | 'yearly' | 'lifetime';
   amount: number;
-  status: 'pending' | 'active' | 'cancelled' | 'expired';
+  status: 'pending' | 'completed' | 'cancelled' | 'expired';
   payosOrderId: string;
   payosTransactionId?: string;
   startDate: string;
@@ -170,7 +170,7 @@ export default function AdminSubscriptionsPage() {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'active':
+      case 'completed':
         return <Badge variant="success">{status}</Badge>;
       case 'pending':
         return <Badge variant="warning">{status}</Badge>;
@@ -302,7 +302,7 @@ export default function AdminSubscriptionsPage() {
                 >
                   All Subscriptions
                 </Button>
-                {['pending', 'active', 'cancelled', 'expired'].map((status) => (
+                {['pending', 'completed', 'cancelled', 'expired'].map((status) => (
                   <Button
                     key={status}
                     onClick={() => handleStatusFilter(status)}
@@ -492,7 +492,7 @@ export default function AdminSubscriptionsPage() {
             <div className="border-t pt-4">
               <p className="block text-sm font-medium text-neutral-700 mb-3">Update Status</p>
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-                {['active', 'cancelled', 'expired'].map((status) => (
+                {['completed', 'cancelled', 'expired'].map((status) => (
                   <Button
                     key={status}
                     variant="outline"

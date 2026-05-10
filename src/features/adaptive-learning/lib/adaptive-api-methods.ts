@@ -241,10 +241,10 @@ export async function getPipelineJobHistory(limit = 20): Promise<PipelineJobHist
  * Used by the Dashboard to show the "My Subjects" grid.
  */
 export async function getSubjects(): Promise<PipelineJobHistoryItem[]> {
-  const res = await apiFetch<
-    { subjects: PipelineJobHistoryItem[]; count: number } | PipelineJobHistoryItem[]
-  >('/api/adaptive-learning/subjects', { cacheTtlMs: 10_000 });
-  return Array.isArray(res) ? res : res.subjects;
+  const res = await apiFetch<PipelineJobHistoryItem[]>('/api/adaptive-learning/subjects', {
+    cacheTtlMs: 10_000,
+  });
+  return res;
 }
 
 export async function deleteSubject(

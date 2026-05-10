@@ -10,7 +10,7 @@ export interface IQuestion {
   optionImages?: (string | undefined)[]; // Array of URLs/paths for option images (parallel to options array)
 }
 
-export interface IQuiz extends Document {
+interface IQuiz extends Document {
   title: string;
   description?: string;
   category: Types.ObjectId;

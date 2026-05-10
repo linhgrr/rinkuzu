@@ -12,8 +12,8 @@ export async function GET(request: NextRequest, { params }: AsyncRouteParams<{ s
     const { slug } = await params;
     const session = await getServerSession(authOptions);
 
-    const userRole = (session?.user as any)?.role;
-    const userId = (session?.user as any)?.id;
+    const userRole = (session?.user as { role?: string })?.role;
+    const userId = (session?.user as { id?: string })?.id;
 
     const result = await quizService.getQuizForPlay(slug, userRole, userId);
 
@@ -26,7 +26,7 @@ export async function GET(request: NextRequest, { params }: AsyncRouteParams<{ s
     }
 
     return apiOk(result.data);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Get quiz for play error:', error);
     return apiErr('internal_error', 'Internal server error', 500);
   }

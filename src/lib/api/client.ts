@@ -15,8 +15,14 @@ export type ApiSuccessResponse<T, Extra extends Record<string, unknown> = Record
   data: T;
 } & Extra;
 
-async function parseApiBody(response: Response): Promise<{ payload: any; rawText: string }> {
-  const rawText = await response.text().catch(() => '');
+async function parseApiBody(response: Response): Promise<{ payload: unknown; rawText: string }> {
+  let rawText: string;
+  try {
+    rawText = await response.text();
+  } catch (bodyError) {
+    console.error('parseApiBody: failed to read response body', bodyError);
+    return { payload: null, rawText: '' };
+  }
 
   if (!rawText) {
     return { payload: null, rawText: '' };
@@ -28,6 +34,9 @@ async function parseApiBody(response: Response): Promise<{ payload: any; rawText
       rawText,
     };
   } catch {
+    console.warn(
+      `parseApiBody: response body is not valid JSON, body starts with: ${rawText.slice(0, 200)}`,
+    );
     return {
       payload: null,
       rawText,
@@ -40,28 +49,40 @@ export async function fetchApiSuccess<
   Extra extends Record<string, unknown> = Record<string, never>,
 >(input: RequestInfo | URL, init?: RequestInit): Promise<ApiSuccessResponse<T, Extra>> {
   const response = await fetch(input, init);
-  const { payload, rawText } = await parseApiBody(response);
+  const { payload: rawPayload, rawText } = await parseApiBody(response);
 
-  if (response.ok && (response.status === 204 || payload === null)) {
+  if (response.ok && (response.status === 204 || rawPayload === null)) {
     return {
       success: true,
       data: null as T,
     } as ApiSuccessResponse<T, Extra>;
   }
 
+  // Narrow the parsed JSON payload for property access
+  const payload = rawPayload as {
+    success?: boolean;
+    error?: unknown;
+    detail?: unknown;
+    data?: unknown;
+  } | null;
+
   if (!response.ok || payload?.success !== true) {
     const errorObj = payload?.error;
     const errorMessage =
       typeof errorObj === 'object' && errorObj !== null
-        ? errorObj.message || errorObj.detail || rawText
-        : errorObj || payload?.detail || rawText;
+        ? String(
+            (errorObj as Record<string, unknown>)['message'] ||
+              (errorObj as Record<string, unknown>)['detail'] ||
+              rawText,
+          )
+        : String(errorObj || payload?.detail || rawText);
 
     throw new ApiResponseError(
       errorMessage || `Request failed with status ${response.status}`,
       response.status,
-      payload ?? rawText,
+      rawPayload ?? rawText,
     );
   }
 
-  return payload as ApiSuccessResponse<T, Extra>;
+  return rawPayload as ApiSuccessResponse<T, Extra>;
 }

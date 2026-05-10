@@ -13,7 +13,8 @@ export async function hashPassword(password: string): Promise<string> {
 export async function verifyPassword(password: string, hash: string): Promise<boolean> {
   try {
     return await bcrypt.compare(password, hash);
-  } catch (_error) {
+  } catch (error) {
+    console.error('Password verification error (not a mismatch — unexpected failure):', error);
     return false;
   }
 }

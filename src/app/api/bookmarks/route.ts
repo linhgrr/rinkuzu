@@ -54,14 +54,15 @@ export async function POST(request: NextRequest) {
       success: true,
       data: bookmark,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error creating bookmark:', error);
+    const message = error instanceof Error ? error.message : '';
 
-    if (error.message === 'Question already bookmarked') {
+    if (message === 'Question already bookmarked') {
       return NextResponse.json(
         {
           success: false,
-          error: error.message,
+          error: message,
         },
         { status: 400 },
       );

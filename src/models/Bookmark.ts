@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
-export interface IBookmark extends Document {
+interface IBookmark extends Document {
   userId: string;
   userEmail: string;
   quiz: {

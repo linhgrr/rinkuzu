@@ -64,7 +64,6 @@ export const uploadImageToImgBB = async (
     const formData = new FormData();
     formData.append('key', API_KEY);
 
-    // Handle different input types
     if (imageFile instanceof Buffer) {
       const bytes = Uint8Array.from(imageFile);
       const blob = new Blob([bytes.buffer], { type: 'image/jpeg' });
@@ -78,12 +77,11 @@ export const uploadImageToImgBB = async (
       formData.append('name', imageName);
     }
 
-    // Send POST request
     const response = await axios.post<ImgBBResponse>(API_URL, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
-      timeout: 30000, // 30 second timeout
+      timeout: 30000,
     });
 
     if (!response.data.success) {

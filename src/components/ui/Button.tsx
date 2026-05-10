@@ -22,19 +22,17 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = 'primary', size = 'md', loading, disabled, children, ...props }, ref) => {
-    // Map variants to our design system base classes defined in globals.css
-    // or provide inline tailwind classes for the ones not explicitly defined there.
     const variants: Record<string, string> = {
-      default: 'btn-primary', // maps default to primary orange
+      default: 'btn-primary',
       primary: 'btn-primary',
       secondary: 'btn-secondary',
-      outline: 'btn-secondary', // outline maps to secondary
+      outline: 'btn-secondary',
       ghost: 'btn-ghost',
       success: 'btn-success',
       destructive:
         'border border-transparent bg-red-500 text-white shadow-[var(--shadow-xs)] transition-[background-color,transform,box-shadow] hover:-translate-y-[1px] hover:bg-red-600 hover:shadow-[var(--shadow-sm)] focus-visible:outline focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[rgba(229,72,77,0.22)] active:translate-y-0',
       link: 'h-auto rounded-none bg-transparent p-0 text-neutral-600 underline-offset-4 transition-colors hover:text-brand-trust hover:underline',
-      gradient: 'btn-primary', // gracefully map deprecated variants
+      gradient: 'btn-primary',
       accent: 'btn-primary',
     };
 

@@ -1,7 +1,7 @@
 // /src/models/DraftQuiz.ts
 import mongoose, { Document, Schema, Types } from 'mongoose';
 
-export interface IChunkDetail {
+interface IChunkDetail {
   index: number;
   startPage: number;
   endPage: number;
@@ -11,7 +11,7 @@ export interface IChunkDetail {
   lockedBy?: string; // Unique request ID
 }
 
-export interface IDraftQuestion {
+interface IDraftQuestion {
   question: string;
   options: string[];
   correctIndex?: number;
@@ -20,7 +20,7 @@ export interface IDraftQuestion {
   explanation?: string;
 }
 
-export interface IDraftQuiz extends Document {
+interface IDraftQuiz extends Document {
   userId: Types.ObjectId;
   title: string;
   prompt?: string;

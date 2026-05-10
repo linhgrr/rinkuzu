@@ -32,7 +32,7 @@ export async function POST(request: NextRequest, { params }: AsyncRouteParams<{ 
     }
 
     return apiOk(result.data);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Submit attempt error:', error);
     return apiErr('internal_error', 'Internal server error', 500);
   }

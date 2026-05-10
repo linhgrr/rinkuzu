@@ -7,12 +7,47 @@ interface ServiceResult<T> {
   statusCode?: number;
 }
 
+export interface FormattedAttempt {
+  _id?: string;
+  score: number;
+  takenAt: Date;
+  quiz: {
+    title: string;
+    slug: string;
+    description?: string;
+    totalQuestions: number;
+  };
+}
+
+export interface AttemptDetail {
+  _id?: string;
+  score: number;
+  takenAt: Date;
+  answers: (number | number[])[];
+  quiz: {
+    title: string;
+    slug: string;
+    description?: string;
+    questions: Array<{
+      question: string;
+      options: string[];
+      type: 'single' | 'multiple';
+      correctIndex?: number;
+      correctIndexes?: number[];
+      questionImage?: string;
+      optionImages?: (string | undefined)[];
+      userAnswer: number | number[];
+      isCorrect: boolean;
+    }>;
+  };
+}
+
 export interface IUserService {
   getUserAttempts(
     userEmail: string,
     options?: { page?: number; limit?: number },
   ): Promise<{
-    attempts: any[];
+    attempts: FormattedAttempt[];
     pagination: {
       currentPage: number;
       totalPages: number;
@@ -22,7 +57,7 @@ export interface IUserService {
       hasPrevPage: boolean;
     };
   }>;
-  getAttemptDetails(attemptId: string, userEmail: string): Promise<ServiceResult<any>>;
+  getAttemptDetails(attemptId: string, userEmail: string): Promise<ServiceResult<AttemptDetail>>;
 
   getUserById(id: string): Promise<IUser | null>;
 

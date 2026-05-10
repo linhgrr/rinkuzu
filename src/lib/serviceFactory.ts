@@ -12,9 +12,7 @@ import { AttemptRepository } from '@/repositories/AttemptRepository';
 import { DiscussionRepository } from '@/repositories/DiscussionRepository';
 import { ReportRepository } from '@/repositories/ReportRepository';
 import { BookmarkRepository } from '@/repositories/BookmarkRepository';
-import { SubscriptionRepository } from '@/repositories/SubscriptionRepository';
-import { SubscriptionService } from '@/services/subscription/SubscriptionService';
-import { PayOSService } from '@/services/payment/PayOSService';
+import { createSubscriptionService } from '@/lib/subscriptionFactory';
 
 export class ServiceFactory {
   private static instance: ServiceFactory;
@@ -131,12 +129,8 @@ export class ServiceFactory {
     return this.repositories.report;
   }
 
-  static createSubscriptionService(): SubscriptionService {
-    const subscriptionRepository = new SubscriptionRepository();
-    const userRepository = new UserRepository();
-    const payosService = new PayOSService();
-
-    return new SubscriptionService(subscriptionRepository, userRepository, payosService);
+  static createSubscriptionService(): ReturnType<typeof createSubscriptionService> {
+    return createSubscriptionService();
   }
 }
 

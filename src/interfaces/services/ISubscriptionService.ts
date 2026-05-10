@@ -11,7 +11,7 @@ export interface PaymentRequest {
   paymentUrl: string;
   qrCode?: string;
   amount: number;
-  plan: any;
+  plan: SubscriptionPlan;
 }
 
 export interface SubscriptionActivation {
@@ -24,8 +24,18 @@ export interface SubscriptionActivation {
   };
 }
 
+export interface UserSubscription {
+  type?: string;
+  startDate?: Date;
+  endDate?: Date;
+  isActive?: boolean;
+  payosOrderId?: string;
+  payosTransactionId?: string;
+  status?: string;
+}
+
 export interface ISubscriptionService {
-  getUserSubscription(userId: string): Promise<any>;
+  getUserSubscription(userId: string): Promise<UserSubscription | null>;
   isUserPremium(userId: string): Promise<boolean>;
   createPaymentRequest(userId: string, planId: string): Promise<PaymentRequest>;
   verifyAndActivateSubscription(orderCode: number, userId: string): Promise<SubscriptionActivation>;
@@ -45,6 +55,6 @@ export interface ISubscriptionService {
   checkAndUpdateExpiredSubscriptions(): Promise<number>;
   updateSubscriptionById(
     id: string,
-    update: Partial<any>,
-  ): Promise<{ success: boolean; data?: any; error?: string }>;
+    update: Record<string, unknown>,
+  ): Promise<{ success: boolean; data?: unknown; error?: string }>;
 }

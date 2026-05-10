@@ -1,5 +1,5 @@
-export type RouteParamValue = string | string[] | undefined;
-export type RouteParams = Record<string, RouteParamValue>;
+type RouteParamValue = string | string[] | undefined;
+type RouteParams = Record<string, RouteParamValue>;
 
 export function readRequiredRouteParam(params: RouteParams, key: string): string {
   const rawValue = params[key];

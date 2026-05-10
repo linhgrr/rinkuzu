@@ -1,8 +1,8 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
-export type LlmUsageWindow = 'minute' | 'day';
+type LlmUsageWindow = 'minute' | 'day';
 
-export interface ILlmUsage extends Document {
+interface ILlmUsage extends Document {
   userId: string;
   action: string;
   tier: 'free' | 'premium';

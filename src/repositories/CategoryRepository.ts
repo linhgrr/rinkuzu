@@ -69,7 +69,6 @@ export class CategoryRepository implements ICategoryRepository {
     const limit = options.limit || 10;
     const skip = (page - 1) * limit;
 
-    // Build query
     const query: any = {};
     if (options.search) {
       query.name = { $regex: options.search, $options: 'i' };

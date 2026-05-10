@@ -22,7 +22,7 @@ export async function GET(request: NextRequest, { params }: AsyncRouteParams<{ s
     }
 
     return apiOk(result.data);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Get flashcard quiz error:', error);
     return apiErr('internal_error', 'Internal server error', 500);
   }

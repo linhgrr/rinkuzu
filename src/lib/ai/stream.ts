@@ -13,7 +13,13 @@ export function createStreamError(message: string, status?: number): Error {
 }
 
 export async function parseJsonResponse<T>(response: Response): Promise<T> {
-  const data = await response.json().catch(() => ({}));
+  let data: unknown;
+  try {
+    data = await response.json();
+  } catch {
+    console.warn('parseJsonResponse: response body is not valid JSON');
+    data = {};
+  }
   return data as T;
 }
 

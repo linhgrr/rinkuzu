@@ -9,5 +9,3 @@ export type PipelineJobHistoryItem = ApiSchemas['SubjectHistoryResponse'];
 export type DeleteSubjectResponse = ApiSchemas['DeleteSubjectResponse'];
 export type PipelineStatus = PipelineJobStatus['status'];
 export type PipelinePartialGraph = NonNullable<PipelineJobStatus['partial_graph']>;
-export type PipelinePartialGraphNode = NonNullable<PipelinePartialGraph['nodes']>[number];
-export type PipelinePartialGraphEdge = NonNullable<PipelinePartialGraph['edges']>[number];

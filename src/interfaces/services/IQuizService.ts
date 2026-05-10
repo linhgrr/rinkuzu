@@ -1,10 +1,11 @@
 import { IQuiz } from '@/interfaces/repositories/IQuizRepository';
+import type { IQuestion } from '@/models/Quiz';
 
 export interface CreateQuizRequest {
   title: string;
   description?: string;
   category: string;
-  questions: any[];
+  questions: IQuestion[];
   isPrivate: boolean;
   pdfUrl?: string;
 }
@@ -42,43 +43,61 @@ export interface IQuizService {
 
   createQuiz(userId: string, quizData: CreateQuizRequest): Promise<IQuiz>;
 
-  getQuizById(id: string, userEmail?: string, userRole?: string): Promise<ServiceResult<any>>;
+  getQuizById(
+    id: string,
+    userEmail?: string,
+    userRole?: string,
+    userId?: string,
+  ): Promise<ServiceResult<IQuiz>>;
 
   getQuizBySlug(slug: string): Promise<IQuiz | null>;
 
-  getQuizForPlay(slug: string, userRole?: string, userId?: string): Promise<any>;
+  getQuizForPlay(slug: string, userRole?: string, userId?: string): Promise<ServiceResult<IQuiz>>;
 
   updateQuiz(
     id: string,
-    quizData: any,
+    quizData: Partial<IQuiz>,
     userEmail: string,
     userRole?: string,
-  ): Promise<ServiceResult<any>>;
+  ): Promise<ServiceResult<IQuiz>>;
 
   deleteQuiz(id: string, userEmail: string, userRole?: string): Promise<ServiceResult<boolean>>;
 
-  approveQuiz(id: string): Promise<ServiceResult<any>>;
+  approveQuiz(id: string): Promise<ServiceResult<IQuiz>>;
 
-  rejectQuiz(id: string, reason?: string): Promise<ServiceResult<any>>;
+  rejectQuiz(id: string, reason?: string): Promise<ServiceResult<IQuiz>>;
 
   submitQuizAttempt(
     slug: string,
-    answers: any[],
-    session: any,
+    answers: (number | number[])[],
+    session: Record<string, unknown> | null,
     userEmail?: string,
-  ): Promise<ServiceResult<any>>;
+  ): Promise<
+    ServiceResult<{
+      score: number;
+      correctAnswers: number;
+      totalQuestions: number;
+      attemptId: string;
+    }>
+  >;
 
-  getQuizDiscussions(slug: string, session?: any): Promise<ServiceResult<any[]>>;
+  getQuizDiscussions(
+    slug: string,
+    session?: Record<string, unknown> | null,
+  ): Promise<ServiceResult<any[]>>;
 
   addDiscussionComment(
     slug: string,
     questionIndex: number,
     content: string,
     userEmail: string,
-    session?: any,
+    session?: Record<string, unknown> | null,
   ): Promise<ServiceResult<any>>;
 
-  getQuizForFlashcards(slug: string, session: any): Promise<ServiceResult<any>>;
+  getQuizForFlashcards(
+    slug: string,
+    session: Record<string, unknown> | null,
+  ): Promise<ServiceResult<any>>;
 
   reportQuiz(
     slug: string,
@@ -87,5 +106,9 @@ export interface IQuizService {
     reporterName: string,
   ): Promise<ServiceResult<string>>;
 
-  previewFromPdf(title: string, description: string, pdfFiles: File[]): Promise<ServiceResult<any>>;
+  previewFromPdf(
+    title: string,
+    description: string,
+    pdfFiles: File[],
+  ): Promise<ServiceResult<{ title: string; description: string; questions: IQuestion[] }>>;
 }

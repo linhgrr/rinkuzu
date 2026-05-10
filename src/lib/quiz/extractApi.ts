@@ -1,8 +1,9 @@
 import { buildAdaptiveServiceHeaders, resolveAdaptiveApiUrl } from '@/lib/adaptive-learning/config';
 import { fetchApiSuccess } from '@/lib/api/client';
+import type { IQuestion } from '@/models/Quiz';
 
 type ExtractQuizResult = {
-  questions: any[];
+  questions: IQuestion[];
 };
 
 type ExtractQuizFromS3KeyParams = {
@@ -13,7 +14,7 @@ type ExtractQuizFromS3KeyParams = {
 };
 
 type ExtractApiResponse = {
-  questions?: any[];
+  questions?: IQuestion[];
   s3_key?: string;
 };
 

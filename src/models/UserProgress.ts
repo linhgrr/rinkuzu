@@ -1,13 +1,13 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
-export interface IDailyActivity {
+interface IDailyActivity {
   questionsReviewed: number;
   xpEarned: number;
   correctCount: number;
   totalCount: number;
 }
 
-export interface IUserProgress extends Document {
+interface IUserProgress extends Document {
   userId: string;
 
   // Streaks

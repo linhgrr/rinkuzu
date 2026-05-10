@@ -42,18 +42,27 @@ export class UserService implements IUserService {
       const limit = options?.limit || 10;
       const result = await this.attemptRepository.findByUser(user._id.toString(), { page, limit });
 
-      // Format attempts
-      const formattedAttempts = result.attempts.map((attempt) => ({
-        _id: attempt._id,
-        score: attempt.score,
-        takenAt: attempt.takenAt,
-        quiz: {
-          title: attempt.quiz.title,
-          slug: attempt.quiz.slug,
-          description: attempt.quiz.description,
-          totalQuestions: attempt.quiz.questions.length,
-        },
-      }));
+      // Format attempts - quiz is always populated from findByUser
+      const formattedAttempts = result.attempts.map((attempt) => {
+        const populatedQuiz = attempt.quiz as {
+          _id: string;
+          title?: string;
+          slug?: string;
+          description?: string;
+          questions?: unknown[];
+        };
+        return {
+          _id: attempt._id,
+          score: attempt.score,
+          takenAt: attempt.takenAt,
+          quiz: {
+            title: populatedQuiz.title ?? '',
+            slug: populatedQuiz.slug ?? '',
+            description: populatedQuiz.description ?? '',
+            totalQuestions: populatedQuiz.questions?.length ?? 0,
+          },
+        };
+      });
 
       return {
         attempts: formattedAttempts,
@@ -132,28 +141,33 @@ export class UserService implements IUserService {
         takenAt: attempt.takenAt,
         answers: attempt.answers,
         quiz: {
-          title: attempt.quiz.title,
-          slug: attempt.quiz.slug,
-          description: attempt.quiz.description,
-          questions: attempt.quiz.questions.map((question: any, index: number) => ({
-            question: question.question,
-            options: question.options,
-            type: question.type,
-            correctIndex: question.correctIndex,
-            correctIndexes: question.correctIndexes,
-            questionImage: question.questionImage,
-            optionImages: question.optionImages,
-            userAnswer: attempt.answers[index],
-            isCorrect:
-              question.type === 'single'
-                ? attempt.answers[index] === question.correctIndex
-                : Array.isArray(attempt.answers[index]) && Array.isArray(question.correctIndexes)
-                  ? question.correctIndexes.length === attempt.answers[index].length &&
-                    question.correctIndexes.every((idx: number) =>
-                      attempt.answers[index].includes(idx),
-                    )
-                  : false,
-          })),
+          title: (attempt.quiz as { title?: string }).title ?? '',
+          slug: (attempt.quiz as { slug?: string }).slug ?? '',
+          description: (attempt.quiz as { description?: string }).description ?? '',
+          questions:
+            (attempt.quiz as { questions?: unknown[] }).questions?.map(
+              (question: any, index: number) => ({
+                question: question.question,
+                options: question.options,
+                type: question.type,
+                correctIndex: question.correctIndex,
+                correctIndexes: question.correctIndexes,
+                questionImage: question.questionImage,
+                optionImages: question.optionImages,
+                userAnswer: attempt.answers[index],
+                isCorrect:
+                  question.type === 'single'
+                    ? attempt.answers[index] === question.correctIndex
+                    : Array.isArray(attempt.answers[index]) &&
+                        Array.isArray(question.correctIndexes)
+                      ? question.correctIndexes.length ===
+                          (attempt.answers[index] as number[]).length &&
+                        (question.correctIndexes as number[]).every((idx: number) =>
+                          (attempt.answers[index] as number[]).includes(idx),
+                        )
+                      : false,
+              }),
+            ) ?? [],
         },
       };
 

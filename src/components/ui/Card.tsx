@@ -14,7 +14,7 @@ const Card = React.forwardRef<
     elevated: 'card shadow-[var(--shadow-md)]',
     bordered: 'card border-[var(--border-strong)] shadow-none',
     glass: 'card bg-white/80 backdrop-blur-xl',
-    gradient: 'card', // gracefully map deprecated variants
+    gradient: 'card',
   };
 
   return (
@@ -85,7 +85,6 @@ const CardFooter = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDiv
 );
 CardFooter.displayName = 'CardFooter';
 
-// Badge component matching DESIGN.md
 const Badge = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement> & {
@@ -97,9 +96,9 @@ const Badge = React.forwardRef<
     default: 'badge-gray',
     success: 'badge-success',
     warning: 'badge-warning',
-    danger: 'bg-[rgba(229,72,77,0.1)] text-red-500', // incorrect state
+    danger: 'bg-[rgba(229,72,77,0.1)] text-red-500',
     info: 'badge-info',
-    purple: 'badge-success', // Re-mapped to brand green
+    purple: 'badge-success',
     ai: 'badge-ai',
   };
 

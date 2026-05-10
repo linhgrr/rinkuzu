@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { ServiceFactory } from '@/lib/serviceFactory';
+import { createSubscriptionService } from '@/lib/subscriptionFactory';
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const subscriptionService = ServiceFactory.createSubscriptionService();
+    const subscriptionService = createSubscriptionService();
     const numericOrderCode = typeof orderCode === 'string' ? Number(orderCode) : orderCode;
     if (!Number.isSafeInteger(numericOrderCode) || numericOrderCode <= 0) {
       return NextResponse.json({ success: false, message: 'Invalid order code' }, { status: 400 });

@@ -5,10 +5,12 @@ import connectDB from '@/lib/mongoose';
 import Plan from '@/models/Plan';
 import { DurationUtils } from '@/types/subscription';
 
+type AdminSessionUser = { role: string; id?: string; email?: string };
+
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user || (session.user as any).role !== 'admin') {
+    if (!session?.user || (session.user as AdminSessionUser).role !== 'admin') {
       return NextResponse.json({ success: false, error: 'Admin access required' }, { status: 403 });
     }
 
@@ -17,7 +19,7 @@ export async function GET() {
     const plans = await Plan.find().lean();
 
     return NextResponse.json({ success: true, data: plans });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Admin get plans error:', error);
     return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
   }
@@ -27,7 +29,7 @@ export async function GET() {
 export async function PATCH(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user || (session.user as any).role !== 'admin') {
+    if (!session?.user || (session.user as AdminSessionUser).role !== 'admin') {
       return NextResponse.json({ success: false, error: 'Admin access required' }, { status: 403 });
     }
 
@@ -38,7 +40,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     await connectDB();
-    const update: any = {};
+    const update: Record<string, unknown> = {};
     if (name !== undefined) {
       if (typeof name !== 'string' || name.trim() === '') {
         return NextResponse.json(
@@ -46,7 +48,7 @@ export async function PATCH(request: NextRequest) {
           { status: 400 },
         );
       }
-      update.name = name.trim();
+      update['name'] = name.trim();
     }
     if (price !== undefined) {
       if (typeof price !== 'number' || !Number.isFinite(price) || price <= 0) {
@@ -55,7 +57,7 @@ export async function PATCH(request: NextRequest) {
           { status: 400 },
         );
       }
-      update.price = price;
+      update['price'] = price;
     }
     if (duration !== undefined) {
       if (typeof duration !== 'string' || !DurationUtils.isValidISO8601Duration(duration)) {
@@ -64,7 +66,7 @@ export async function PATCH(request: NextRequest) {
           { status: 400 },
         );
       }
-      update.duration = duration;
+      update['duration'] = duration;
     }
     if (features !== undefined) {
       if (!Array.isArray(features) || features.some((f) => typeof f !== 'string')) {
@@ -73,16 +75,16 @@ export async function PATCH(request: NextRequest) {
           { status: 400 },
         );
       }
-      update.features = features.map((f: string) => f.trim()).filter(Boolean);
+      update['features'] = features.map((f: string) => f.trim()).filter(Boolean);
     }
-    if (isActive !== undefined) update.isActive = isActive;
+    if (isActive !== undefined) update['isActive'] = isActive;
 
     const updated = await Plan.findByIdAndUpdate(id, update, { new: true, upsert: false }).lean();
     if (!updated) {
       return NextResponse.json({ success: false, error: 'Plan not found' }, { status: 404 });
     }
     return NextResponse.json({ success: true, data: updated });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Admin update plan error:', error);
     return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
   }
@@ -92,7 +94,7 @@ export async function PATCH(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user || (session.user as any).role !== 'admin') {
+    if (!session?.user || (session.user as AdminSessionUser).role !== 'admin') {
       return NextResponse.json({ success: false, error: 'Admin access required' }, { status: 403 });
     }
 
@@ -148,7 +150,7 @@ export async function POST(request: NextRequest) {
     const savedPlan = await newPlan.save();
 
     return NextResponse.json({ success: true, data: savedPlan });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Admin create plan error:', error);
     return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
   }
@@ -158,7 +160,7 @@ export async function POST(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user || (session.user as any).role !== 'admin') {
+    if (!session?.user || (session.user as AdminSessionUser).role !== 'admin') {
       return NextResponse.json({ success: false, error: 'Admin access required' }, { status: 403 });
     }
 
@@ -177,7 +179,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     return NextResponse.json({ success: true, message: 'Plan deleted successfully' });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Admin delete plan error:', error);
     return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
   }

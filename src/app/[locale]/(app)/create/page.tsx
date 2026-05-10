@@ -13,7 +13,7 @@ import QuizMetaForm from '@/features/quiz/components/QuizMetaForm';
 import PDFViewer from '@/features/quiz/components/PDFViewer';
 import { useDraftStore } from '@/store/useDraftStore';
 import { toast } from 'sonner';
-import { extractApiErrorMessage } from '@/lib/api/error';
+import { getPdfPageCount, uploadPdfViaPresignedUrl } from '@/lib/pdf';
 import {
   HiOutlineArrowRight,
   HiOutlineCheckCircle,
@@ -218,36 +218,6 @@ export default function CreateQuizPage() {
 
   const removeFile = (index: number) => {
     setPdfFiles((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  const uploadPdfViaPresignedUrl = async (file: File): Promise<{ s3Key: string }> => {
-    const response = await fetch('/api/storage/presigned-url', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        fileName: file.name,
-        contentType: file.type || 'application/pdf',
-        fileSize: file.size,
-        purpose: 'quiz',
-      }),
-    });
-
-    const payload = await response.json();
-    if (!response.ok || !payload?.success || !payload?.data?.uploadUrl || !payload?.data?.s3Key) {
-      throw new Error(extractApiErrorMessage(payload, 'Failed to create upload URL'));
-    }
-
-    const putResponse = await fetch(payload.data.uploadUrl, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/pdf' },
-      body: file,
-    });
-
-    if (!putResponse.ok) {
-      throw new Error(`Storage upload failed with status ${putResponse.status}`);
-    }
-
-    return { s3Key: payload.data.s3Key as string };
   };
 
   const handleBackgroundExtract = async (e: React.FormEvent) => {
@@ -652,15 +622,4 @@ async function mergePdfFiles(files: File[]): Promise<Blob> {
 
   const mergedPdfBytes = await mergedPdf.save();
   return new Blob([mergedPdfBytes as any], { type: 'application/pdf' });
-}
-
-async function getPdfPageCount(file: File): Promise<number> {
-  try {
-    const { PDFDocument } = await import('pdf-lib');
-    const arrayBuffer = await file.arrayBuffer();
-    const pdf = await PDFDocument.load(arrayBuffer);
-    return pdf.getPageCount();
-  } catch {
-    return 1;
-  }
 }

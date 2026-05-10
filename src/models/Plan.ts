@@ -1,7 +1,7 @@
 import mongoose, { type HydratedDocument, type Model, Schema } from 'mongoose';
 import { DurationUtils } from '@/types/subscription';
 
-export interface IPlan {
+interface IPlan {
   _id: string;
   name: string;
   price: number;
@@ -46,7 +46,6 @@ const PlanSchema = new Schema<IPlan>(
             if (DurationUtils.isValidISO8601Duration(value)) {
               return true;
             }
-            // Check if it's a legacy format that can be converted
             DurationUtils.fromLegacyDuration(value);
             return true;
           } catch {
@@ -71,15 +70,12 @@ const PlanSchema = new Schema<IPlan>(
   },
 );
 
-// Virtual for duration info
 PlanSchema.virtual('durationInfo').get(function (this: PlanDocument) {
   try {
-    // If already ISO 8601, use directly
     if (DurationUtils.isValidISO8601Duration(this.duration)) {
       return DurationUtils.getDurationInfo(this.duration);
     }
 
-    // Convert legacy format
     const iso8601 = DurationUtils.fromLegacyDuration(this.duration);
     return DurationUtils.getDurationInfo(iso8601);
   } catch {
@@ -91,13 +87,11 @@ PlanSchema.virtual('durationInfo').get(function (this: PlanDocument) {
   }
 });
 
-// Virtual for checking if lifetime
 PlanSchema.virtual('isLifetime').get(function (this: PlanDocument) {
   const info = this.durationInfo;
   return info.months === undefined;
 });
 
-// Pre-save middleware to migrate legacy durations
 PlanSchema.pre('save', function (this: PlanDocument) {
   if (!DurationUtils.isValidISO8601Duration(this.duration)) {
     try {

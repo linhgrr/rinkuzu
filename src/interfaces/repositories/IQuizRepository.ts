@@ -1,4 +1,5 @@
-import { IUserPreview } from '@/types/index';
+import type { IUserPreview } from '@/types/index';
+import type { IQuestion } from '@/models/Quiz';
 
 export interface IQuiz {
   _id?: string;
@@ -7,7 +8,7 @@ export interface IQuiz {
   slug: string;
   author: string | IUserPreview;
   category: string;
-  questions: any[];
+  questions: IQuestion[];
   status: 'pending' | 'published' | 'rejected';
   isPrivate: boolean;
   pdfUrl?: string;
@@ -31,11 +32,11 @@ export interface IQuizRepository {
   delete(id: string): Promise<boolean>;
 
   findAll(
-    filter?: any,
+    filter?: Record<string, unknown>,
     options?: {
       page?: number;
       limit?: number;
-      sort?: any;
+      sort?: Record<string, unknown>;
       populate?: string[];
       compact?: boolean;
     },
@@ -68,7 +69,7 @@ export interface IQuizRepository {
     };
   }>;
 
-  count(filter?: any): Promise<number>;
+  count(filter?: Record<string, unknown>): Promise<number>;
 
   countByStatus(): Promise<{ _id: string; count: number }[]>;
 

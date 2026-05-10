@@ -22,19 +22,20 @@ export async function POST(request: NextRequest) {
       },
       { status: 201 },
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Registration error:', error);
+    const message = error instanceof Error ? error.message : 'Unknown error';
 
     if (
-      error.message === 'Email and password are required' ||
-      error.message === 'Invalid email format' ||
-      error.message === 'Password must be at least 6 characters'
+      message === 'Email and password are required' ||
+      message === 'Invalid email format' ||
+      message === 'Password must be at least 6 characters'
     ) {
-      return NextResponse.json({ success: false, error: error.message }, { status: 400 });
+      return NextResponse.json({ success: false, error: message }, { status: 400 });
     }
 
-    if (error.message === 'User with this email already exists') {
-      return NextResponse.json({ success: false, error: error.message }, { status: 409 });
+    if (message === 'User with this email already exists') {
+      return NextResponse.json({ success: false, error: message }, { status: 409 });
     }
 
     return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });

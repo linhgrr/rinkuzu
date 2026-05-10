@@ -1,6 +1,7 @@
 import connectDB from '@/lib/mongoose';
 import Category from '@/models/Category';
 import { buildPaginationMeta } from '@/repositories/pagination';
+import { BaseRepository } from '@/repositories/base';
 import { ICategory, ICategoryRepository } from '@/interfaces/repositories/ICategoryRepository';
 
 function normalizeSlug(value: string): string {
@@ -10,10 +11,9 @@ function normalizeSlug(value: string): string {
     .replace(/[^a-z0-9-]/g, '');
 }
 
-export class CategoryRepository implements ICategoryRepository {
-  async findById(id: string): Promise<ICategory | null> {
-    await connectDB();
-    return (await Category.findById(id).lean()) as unknown as ICategory | null;
+export class CategoryRepository extends BaseRepository<ICategory> implements ICategoryRepository {
+  constructor() {
+    super(Category);
   }
 
   async findBySlug(slug: string): Promise<ICategory | null> {
@@ -107,30 +107,6 @@ export class CategoryRepository implements ICategoryRepository {
     })
       .sort({ name: 1 })
       .lean()) as unknown as ICategory[];
-  }
-
-  async create(categoryData: Partial<ICategory>): Promise<ICategory> {
-    await connectDB();
-    const category = new Category(categoryData);
-    return (await category.save()) as unknown as ICategory;
-  }
-
-  async update(id: string, categoryData: Partial<ICategory>): Promise<ICategory | null> {
-    await connectDB();
-    return (await Category.findByIdAndUpdate(id, categoryData, {
-      new: true,
-    }).lean()) as unknown as ICategory | null;
-  }
-
-  async delete(id: string): Promise<boolean> {
-    await connectDB();
-    const result = await Category.findByIdAndDelete(id);
-    return !!result;
-  }
-
-  async count(filter: any = {}): Promise<number> {
-    await connectDB();
-    return await Category.countDocuments(filter);
   }
 
   async findWithQuizCount(): Promise<{ category: ICategory; quizCount: number }[]> {

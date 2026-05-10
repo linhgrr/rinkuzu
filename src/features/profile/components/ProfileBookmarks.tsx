@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import Pagination from '@/components/ui/Pagination';
 import { ROUTES } from '@/shared/constants';
@@ -194,14 +195,16 @@ export default function ProfileBookmarks() {
       {bookmarks.length === 0 ? (
         <Card>
           <CardContent className="text-center py-12">
-            <div className="flex justify-center mb-4">
-              <HiOutlineTag className="text-neutral-400 w-12 h-12" />
-            </div>
-            <h3 className="text-lg font-medium text-neutral-900 mb-2">{t('noBookmarks')}</h3>
-            <p className="text-neutral-600 mb-6">{t('exploreQuizzes')}</p>
-            <Link href={ROUTES.DASHBOARD}>
-              <Button>{tCommon('browseQuizzes')}</Button>
-            </Link>
+            <EmptyState
+              icon={<HiOutlineTag className="w-12 h-12 text-neutral-400" />}
+              title={t('noBookmarks')}
+              description={t('exploreQuizzes')}
+              action={
+                <Link href={ROUTES.DASHBOARD}>
+                  <Button>{tCommon('browseQuizzes')}</Button>
+                </Link>
+              }
+            />
           </CardContent>
         </Card>
       ) : (

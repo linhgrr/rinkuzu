@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { QuizPreviewModal } from '@/features/quiz/components/QuizPreviewModal';
 import Pagination from '@/components/ui/Pagination';
@@ -230,14 +231,16 @@ export default function ProfileQuizzes() {
         {quizzes.length === 0 ? (
           <Card>
             <CardContent className="text-center py-12">
-              <div className="flex justify-center mb-4">
-                <HiOutlineDocumentText className="w-12 h-12 text-neutral-400" />
-              </div>
-              <h3 className="text-lg font-semibold text-neutral-900 mb-2">{t('noQuizzes')}</h3>
-              <p className="text-neutral-600 mb-6">{t('createFirst')}</p>
-              <Link href="/create">
-                <Button>{t('createFirst')}</Button>
-              </Link>
+              <EmptyState
+                icon={<HiOutlineDocumentText className="w-12 h-12 text-neutral-400" />}
+                title={t('noQuizzes')}
+                description={t('createFirst')}
+                action={
+                  <Link href="/create">
+                    <Button>{t('createFirst')}</Button>
+                  </Link>
+                }
+              />
             </CardContent>
           </Card>
         ) : (

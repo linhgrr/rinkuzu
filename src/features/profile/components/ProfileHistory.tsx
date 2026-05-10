@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { formatDate } from '@/lib/utils';
 import Pagination from '@/components/ui/Pagination';
 import { ROUTES } from '@/shared/constants';
@@ -111,14 +112,16 @@ export default function ProfileHistory() {
       {attempts.length === 0 ? (
         <Card>
           <CardContent className="text-center py-12">
-            <div className="flex justify-center mb-4">
-              <HiOutlineDocumentText className="w-16 h-16 text-neutral-300" />
-            </div>
-            <h3 className="text-xl font-semibold text-neutral-900 mb-2">{t('noHistory')}</h3>
-            <p className="text-neutral-600 mb-6">{t('exploreQuizzes')}</p>
-            <Link href={ROUTES.DASHBOARD}>
-              <Button>{tCommon('browseQuizzes')}</Button>
-            </Link>
+            <EmptyState
+              icon={<HiOutlineDocumentText className="w-16 h-16 text-neutral-300" />}
+              title={t('noHistory')}
+              description={t('exploreQuizzes')}
+              action={
+                <Link href={ROUTES.DASHBOARD}>
+                  <Button>{tCommon('browseQuizzes')}</Button>
+                </Link>
+              }
+            />
           </CardContent>
         </Card>
       ) : (

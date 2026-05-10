@@ -1,4 +1,4 @@
-import { QuizService } from '@/services/quiz/QuizService';
+import type { QuizService } from '@/services/quiz/QuizService';
 import { UserService } from '@/services/user/UserService';
 import { AuthService } from '@/services/auth/AuthService';
 import { BookmarkService } from '@/services/bookmark/BookmarkService';
@@ -12,7 +12,9 @@ import { AttemptRepository } from '@/repositories/AttemptRepository';
 import { DiscussionRepository } from '@/repositories/DiscussionRepository';
 import { ReportRepository } from '@/repositories/ReportRepository';
 import { BookmarkRepository } from '@/repositories/BookmarkRepository';
-import { createSubscriptionService } from '@/lib/subscriptionFactory';
+import { SubscriptionRepository } from '@/repositories/SubscriptionRepository';
+import { SubscriptionService } from '@/services/subscription/SubscriptionService';
+import { PayOSService } from '@/services/payment/PayOSService';
 
 export class ServiceFactory {
   private static instance: ServiceFactory;
@@ -56,7 +58,12 @@ export class ServiceFactory {
 
   getQuizService(): QuizService {
     if (!this.services.quiz) {
-      this.services.quiz = new QuizService(
+      // Dynamic import to avoid circular dependency (QuizService imports ServiceFactory)
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const { QuizService: QuizServiceImpl } = require('@/services/quiz/QuizService') as {
+        QuizService: new (...args: any[]) => QuizService;
+      };
+      this.services.quiz = new QuizServiceImpl(
         this.repositories.quiz,
         this.repositories.category,
         this.repositories.user,
@@ -129,8 +136,12 @@ export class ServiceFactory {
     return this.repositories.report;
   }
 
-  static createSubscriptionService(): ReturnType<typeof createSubscriptionService> {
-    return createSubscriptionService();
+  static createSubscriptionService(): SubscriptionService {
+    const subscriptionRepository = new SubscriptionRepository();
+    const userRepository = new UserRepository();
+    const payosService = new PayOSService();
+
+    return new SubscriptionService(subscriptionRepository, userRepository, payosService);
   }
 }
 

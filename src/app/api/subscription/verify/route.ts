@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { createSubscriptionService } from '@/lib/subscriptionFactory';
+import { ServiceFactory } from '@/lib/serviceFactory';
 import { apiErr } from '@/lib/api/response';
 
 export async function POST(request: NextRequest) {
@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
       return apiErr('validation_error', 'Order code is required', 400);
     }
 
-    const subscriptionService = createSubscriptionService();
+    const subscriptionService = ServiceFactory.createSubscriptionService();
     const numericOrderCode = typeof orderCode === 'string' ? Number(orderCode) : orderCode;
     if (!Number.isSafeInteger(numericOrderCode) || numericOrderCode <= 0) {
       return apiErr('validation_error', 'Invalid order code', 400);

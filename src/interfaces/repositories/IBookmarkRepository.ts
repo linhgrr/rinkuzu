@@ -54,5 +54,5 @@ export interface IBookmarkRepository {
 
   deleteByIdAndUser(id: string, userEmail: string): Promise<boolean>;
 
-  count(userEmail: string): Promise<number>;
+  count(filter?: Record<string, unknown>): Promise<number>;
 }

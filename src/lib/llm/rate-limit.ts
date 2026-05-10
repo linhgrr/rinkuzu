@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongoose';
-import { createSubscriptionService } from '@/lib/subscriptionFactory';
+import { ServiceFactory } from '@/lib/serviceFactory';
 import LlmUsage from '@/models/LlmUsage';
 import type { AdaptiveUserRole } from '@/lib/adaptive-learning/config';
 
@@ -153,7 +153,7 @@ export async function checkLlmRateLimit(
 ): Promise<LlmRateLimitResult> {
   await connectDB();
 
-  const subscriptionService = createSubscriptionService();
+  const subscriptionService = ServiceFactory.createSubscriptionService();
   const tier: Tier = (await subscriptionService.isUserPremium(userId)) ? 'premium' : 'free';
 
   const [minute, day] = await Promise.all([

@@ -1,10 +1,15 @@
 import connectDB from '@/lib/mongoose';
 import Report from '@/models/Report';
 import { buildPaginationMeta } from '@/repositories/pagination';
+import { BaseRepository } from '@/repositories/base';
 import { IReport, IReportRepository } from '@/interfaces/repositories/IReportRepository';
 
-export class ReportRepository implements IReportRepository {
-  async findById(id: string): Promise<IReport | null> {
+export class ReportRepository extends BaseRepository<IReport> implements IReportRepository {
+  constructor() {
+    super(Report);
+  }
+
+  override async findById(id: string): Promise<IReport | null> {
     await connectDB();
     return (await Report.findById(id)
       .populate('quiz', 'title slug')
@@ -57,28 +62,11 @@ export class ReportRepository implements IReportRepository {
     };
   }
 
-  async create(reportData: Partial<IReport>): Promise<IReport> {
-    await connectDB();
-    const report = new Report(reportData);
-    return (await report.save()) as unknown as IReport;
-  }
-
-  async update(id: string, reportData: Partial<IReport>): Promise<IReport | null> {
+  override async update(id: string, reportData: Partial<IReport>): Promise<IReport | null> {
     await connectDB();
     return (await Report.findByIdAndUpdate(id, reportData, { new: true })
       .populate('quiz', 'title slug')
       .populate('reporter', 'email')
       .lean()) as unknown as IReport | null;
-  }
-
-  async delete(id: string): Promise<boolean> {
-    await connectDB();
-    const result = await Report.findByIdAndDelete(id);
-    return !!result;
-  }
-
-  async count(filter: any = {}): Promise<number> {
-    await connectDB();
-    return await Report.countDocuments(filter);
   }
 }

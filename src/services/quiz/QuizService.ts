@@ -11,7 +11,7 @@ import { IAttemptRepository } from '@/interfaces/repositories/IAttemptRepository
 import { IDiscussionRepository } from '@/interfaces/repositories/IDiscussionRepository';
 import { IReportRepository } from '@/interfaces/repositories/IReportRepository';
 import { generateSlug } from '@/lib/utils';
-import { createSubscriptionService } from '@/lib/subscriptionFactory';
+import { ServiceFactory } from '@/lib/serviceFactory';
 import QuestionProgress from '@/models/QuestionProgress';
 import UserProgress from '@/models/UserProgress';
 import connectDB from '@/lib/mongoose';
@@ -54,7 +54,7 @@ export class QuizService implements IQuizService {
     const authorId = this.getAuthorId(quiz.author);
     if (userRole === 'admin' || authorId === userId) return null;
 
-    const subscriptionService = createSubscriptionService();
+    const subscriptionService = ServiceFactory.createSubscriptionService();
     const isPremium = await subscriptionService.isUserPremium(userId);
 
     if (isPremium) return null;
@@ -245,7 +245,7 @@ export class QuizService implements IQuizService {
 
         // Check if user has premium subscription
         if (userId) {
-          const subscriptionService = createSubscriptionService();
+          const subscriptionService = ServiceFactory.createSubscriptionService();
           const isPremium = await subscriptionService.isUserPremium(userId);
 
           if (!isPremium) {
@@ -324,7 +324,7 @@ export class QuizService implements IQuizService {
         }
 
         // Check if user has premium subscription
-        const subscriptionService = createSubscriptionService();
+        const subscriptionService = ServiceFactory.createSubscriptionService();
         const isPremium = await subscriptionService.isUserPremium(userId);
 
         if (!isPremium) {
@@ -1101,7 +1101,7 @@ export class QuizService implements IQuizService {
     if (quiz.isPrivate && session?.user) {
       if (!isAdmin && !isAuthor) {
         // Check if user has premium subscription
-        const subscriptionService = createSubscriptionService();
+        const subscriptionService = ServiceFactory.createSubscriptionService();
         const isPremium = await subscriptionService.isUserPremium((session.user as any).id);
 
         if (!isPremium) {
@@ -1170,7 +1170,7 @@ export class QuizService implements IQuizService {
 
         if (!isAdmin && !isAuthor) {
           // Check if user has premium subscription
-          const subscriptionService = createSubscriptionService();
+          const subscriptionService = ServiceFactory.createSubscriptionService();
           const isPremium = await subscriptionService.isUserPremium((session.user as any).id);
 
           if (!isPremium) {

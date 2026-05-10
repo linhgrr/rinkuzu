@@ -1,17 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { withAdmin } from '@/lib/api/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
 import { apiErr } from '@/lib/api/response';
 
 // GET /api/admin/categories - Get all categories (for admin)
-export async function GET(request: NextRequest) {
+export const GET = withAdmin(async (request: NextRequest) => {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user || (session.user as any).role !== 'admin') {
-      return apiErr('forbidden', 'Admin access required', 403);
-    }
-
     const { searchParams } = new URL(request.url);
     const searchOptions = {
       search: searchParams.get('search'),
@@ -34,20 +28,15 @@ export async function GET(request: NextRequest) {
     console.error('Get categories error:', error);
     return apiErr('internal_error', 'Internal server error', 500);
   }
-}
+});
 
 // POST /api/admin/categories - Create new category
-export async function POST(request: NextRequest) {
+export const POST = withAdmin(async (request: NextRequest, context) => {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user || (session.user as any).role !== 'admin') {
-      return apiErr('forbidden', 'Admin access required', 403);
-    }
-
     const body = await request.json();
     const adminService = serviceFactory.getAdminService();
 
-    const result = await adminService.createCategory(body, (session.user as any).id);
+    const result = await adminService.createCategory(body, context.userId);
 
     if (!result.success) {
       return apiErr('service_error', result.error ?? 'Request failed', result.statusCode || 400);
@@ -61,4 +50,4 @@ export async function POST(request: NextRequest) {
     console.error('Create category error:', error);
     return apiErr('internal_error', 'Internal server error', 500);
   }
-}
+});

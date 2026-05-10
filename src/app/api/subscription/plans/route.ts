@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
-import { createSubscriptionService } from '@/lib/subscriptionFactory';
+import { ServiceFactory } from '@/lib/serviceFactory';
 import { apiErr } from '@/lib/api/response';
 
 export async function GET() {
   try {
-    const subscriptionService = createSubscriptionService();
+    const subscriptionService = ServiceFactory.createSubscriptionService();
     const plans = await subscriptionService.getSubscriptionPlans();
 
     // Transform plans to include duration info

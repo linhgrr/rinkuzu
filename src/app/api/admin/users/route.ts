@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { withAdmin } from '@/lib/api/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
 import connectDB from '@/lib/mongoose';
 import User from '@/models/User';
@@ -11,12 +10,8 @@ const userService = serviceFactory.getUserService();
 const adminService = serviceFactory.getAdminService();
 
 // GET /api/admin/users - List users with filtering
-export async function GET(request: NextRequest) {
+export const GET = withAdmin(async (request: NextRequest) => {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user || (session.user as any).role !== 'admin') {
-      return apiErr('forbidden', 'Admin access required', 403);
-    }
     const url = new URL(request.url);
     const page = parseInt(url.searchParams.get('page') || '1');
     const limit = parseInt(url.searchParams.get('limit') || '10');
@@ -36,16 +31,12 @@ export async function GET(request: NextRequest) {
     console.error('Get users error:', error);
     return apiErr('internal_error', 'Internal server error', 500);
   }
-}
+});
 
 // PUT /api/admin/users - Update user role
-export async function PUT(request: NextRequest) {
+export const PUT = withAdmin(async (request: NextRequest, context) => {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user || (session.user as any).role !== 'admin') {
-      return apiErr('forbidden', 'Admin access required', 403);
-    }
-    const adminEmail = session.user.email;
+    const adminEmail = context.email;
     if (!adminEmail) {
       return apiErr('validation_error', 'Admin email is required', 400);
     }
@@ -70,16 +61,12 @@ export async function PUT(request: NextRequest) {
     console.error('Update user role error:', error);
     return apiErr('internal_error', 'Internal server error', 500);
   }
-}
+});
 
 // DELETE /api/admin/users - Delete user
-export async function DELETE(request: NextRequest) {
+export const DELETE = withAdmin(async (request: NextRequest, context) => {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user || (session.user as any).role !== 'admin') {
-      return apiErr('forbidden', 'Admin access required', 403);
-    }
-    const adminEmail = session.user.email;
+    const adminEmail = context.email;
     if (!adminEmail) {
       return apiErr('validation_error', 'Admin email is required', 400);
     }
@@ -105,16 +92,11 @@ export async function DELETE(request: NextRequest) {
     console.error('Delete user error:', error);
     return apiErr('internal_error', 'Internal server error', 500);
   }
-}
+});
 
 // POST /api/admin/users - Add subscription to user
-export async function POST(request: NextRequest) {
+export const POST = withAdmin(async (request: NextRequest) => {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user || (session.user as any).role !== 'admin') {
-      return apiErr('forbidden', 'Admin access required', 403);
-    }
-
     const { userId, planId, duration } = await request.json();
 
     if (!userId || !planId) {
@@ -193,4 +175,4 @@ export async function POST(request: NextRequest) {
     console.error('Add subscription error:', error);
     return apiErr('internal_error', 'Internal server error', 500);
   }
-}
+});

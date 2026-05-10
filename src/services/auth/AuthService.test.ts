@@ -15,7 +15,15 @@ vi.mock('@/lib/jwt', () => ({
 function createService(overrides: Record<string, any> = {}) {
   const userRepository = {
     findByEmail: vi.fn(),
+    findById: vi.fn(),
     create: vi.fn(),
+    update: vi.fn(),
+    delete: vi.fn(),
+    findAll: vi.fn(),
+    count: vi.fn(),
+    countByRole: vi.fn(),
+    findExpiredSubscriptionUsers: vi.fn(),
+    updateById: vi.fn(),
     ...overrides,
   };
 

@@ -175,9 +175,9 @@ describe('UserService', () => {
       const result = await service.getAttemptDetails('attempt-1', 'user@test.com');
 
       expect(result.success).toBe(true);
-      expect(result.data!.quiz.questions).toHaveLength(2);
-      expect(result.data!.quiz.questions[0].isCorrect).toBe(true);
-      expect(result.data!.quiz.questions[1].isCorrect).toBe(true);
+      expect(result.data?.quiz.questions).toHaveLength(2);
+      expect(result.data?.quiz.questions[0]?.isCorrect).toBe(true);
+      expect(result.data?.quiz.questions[1]?.isCorrect).toBe(true);
     });
 
     it('handles anonymous users (no user record)', async () => {

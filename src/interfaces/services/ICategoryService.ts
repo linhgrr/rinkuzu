@@ -1,4 +1,5 @@
 import { ICategory } from '@/interfaces/repositories/ICategoryRepository';
+import type { PaginationMeta } from '@/types';
 
 export interface CategoryWithStats extends ICategory {
   quizCount: number;
@@ -7,12 +8,7 @@ export interface CategoryWithStats extends ICategory {
 export interface CategoryBySlugResult {
   category: ICategory;
   quizzes: unknown[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-  };
+  pagination: PaginationMeta;
 }
 
 export interface ICategoryService {

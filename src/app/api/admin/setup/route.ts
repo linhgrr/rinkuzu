@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
+import { apiErr } from '@/lib/api/response';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,17 +12,14 @@ export async function POST(_request: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user || (session.user as any)?.role !== 'admin') {
-      return NextResponse.json({ success: false, error: 'Admin access required' }, { status: 403 });
+      return apiErr('forbidden', 'Admin access required', 403);
     }
 
     const adminService = serviceFactory.getAdminService();
     const result = await adminService.initializeSystem();
 
     if (!result.success) {
-      return NextResponse.json(
-        { success: false, error: result.error },
-        { status: result.statusCode || 500 },
-      );
+      return apiErr('service_error', result.error ?? 'Request failed', result.statusCode || 500);
     }
 
     return NextResponse.json({
@@ -30,10 +28,7 @@ export async function POST(_request: NextRequest) {
     });
   } catch (error) {
     console.error('Admin setup error:', error);
-    return NextResponse.json(
-      { success: false, error: 'Failed to initialize system' },
-      { status: 500 },
-    );
+    return apiErr('internal_error', 'Failed to initialize system', 500);
   }
 }
 
@@ -52,9 +47,6 @@ export async function GET() {
     });
   } catch (error: any) {
     console.error('Admin setup check error:', error);
-    return NextResponse.json(
-      { success: false, error: 'Failed to check admin setup status' },
-      { status: 500 },
-    );
+    return apiErr('internal_error', 'Failed to check admin setup status', 500);
   }
 }

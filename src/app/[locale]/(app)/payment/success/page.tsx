@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { extractApiErrorMessage } from '@/lib/api/error';
 
 function PaymentSuccessContent() {
   const t = useTranslations('subscription');
@@ -38,7 +39,7 @@ function PaymentSuccessContent() {
           setMessage(t('paymentSuccessMessage'));
         } else {
           setStatus('error');
-          setMessage(data.message || t('errorTitle'));
+          setMessage(extractApiErrorMessage(data, t('errorTitle')));
         }
       } catch (error) {
         console.error('Error verifying payment:', error);

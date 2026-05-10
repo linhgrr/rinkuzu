@@ -4,25 +4,26 @@ import { authOptions } from '@/lib/auth';
 import { createSubscriptionService } from '@/lib/subscriptionFactory';
 import connectDB from '@/lib/mongoose';
 import Plan from '@/models/Plan';
+import { apiErr } from '@/lib/api/response';
 
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
-      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+      return apiErr('unauthorized', 'Unauthorized', 401);
     }
 
     const { planId } = await request.json();
 
     if (!planId) {
-      return NextResponse.json({ success: false, message: 'Plan ID is required' }, { status: 400 });
+      return apiErr('validation_error', 'Plan ID is required', 400);
     }
 
     // Verify plan exists in database
     await connectDB();
     const plan = await Plan.findById(planId);
     if (!plan || !plan.isActive) {
-      return NextResponse.json({ success: false, message: 'Invalid plan ID' }, { status: 400 });
+      return apiErr('validation_error', 'Invalid plan ID', 400);
     }
 
     const subscriptionService = createSubscriptionService();
@@ -34,9 +35,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, data: paymentData });
   } catch (error: any) {
     console.error('Error creating payment request:', error);
-    return NextResponse.json(
-      { success: false, message: error.message || 'Failed to create payment request' },
-      { status: 500 },
-    );
+    return apiErr('internal_error', error.message || 'Failed to create payment request', 500);
   }
 }

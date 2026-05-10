@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
+import { apiErr } from '@/lib/api/response';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,10 +11,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
-      return NextResponse.json(
-        { success: false, error: 'Authentication required' },
-        { status: 401 },
-      );
+      return apiErr('unauthorized', 'Authentication required', 401);
     }
 
     const { searchParams } = new URL(request.url);
@@ -24,10 +22,7 @@ export async function GET(request: NextRequest) {
     const result = await categoryService.searchCategories(search);
 
     if (!result.success) {
-      return NextResponse.json(
-        { success: false, error: result.error },
-        { status: result.statusCode || 400 },
-      );
+      return apiErr('service_error', result.error ?? 'Request failed', result.statusCode || 400);
     }
 
     return NextResponse.json({
@@ -36,6 +31,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Search categories error:', error);
-    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
+    return apiErr('internal_error', 'Internal server error', 500);
   }
 }

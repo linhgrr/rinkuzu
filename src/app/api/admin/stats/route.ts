@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
+import { apiErr } from '@/lib/api/response';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,10 +11,7 @@ export async function GET(_request: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user || (session.user as any).role !== 'admin') {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized - Admin access required' },
-        { status: 401 },
-      );
+      return apiErr('forbidden', 'Unauthorized - Admin access required', 401);
     }
 
     const adminService = serviceFactory.getAdminService();
@@ -32,13 +30,7 @@ export async function GET(_request: NextRequest) {
       !categoryResult.success ||
       !creatorResult.success
     ) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Failed to fetch statistics',
-        },
-        { status: 500 },
-      );
+      return apiErr('service_error', 'Failed to fetch statistics', 500);
     }
 
     // Combine all stats data
@@ -59,9 +51,6 @@ export async function GET(_request: NextRequest) {
     });
   } catch (error) {
     console.error('Error fetching admin stats:', error);
-    return NextResponse.json(
-      { success: false, error: 'Failed to fetch statistics' },
-      { status: 500 },
-    );
+    return apiErr('internal_error', 'Failed to fetch statistics', 500);
   }
 }

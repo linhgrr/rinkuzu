@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import connectDB from '@/lib/mongoose';
 import User from '@/models/User';
+import { apiErr } from '@/lib/api/response';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,10 +12,7 @@ export async function GET() {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.email) {
-      return NextResponse.json(
-        { success: false, error: 'Authentication required' },
-        { status: 401 },
-      );
+      return apiErr('unauthorized', 'Authentication required', 401);
     }
 
     await connectDB();
@@ -23,7 +21,7 @@ export async function GET() {
     );
 
     if (!user) {
-      return NextResponse.json({ success: false, error: 'User not found' }, { status: 404 });
+      return apiErr('not_found', 'User not found', 404);
     }
 
     return NextResponse.json({
@@ -40,7 +38,7 @@ export async function GET() {
     });
   } catch (error) {
     console.error('Get profile error:', error);
-    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
+    return apiErr('internal_error', 'Internal server error', 500);
   }
 }
 
@@ -49,26 +47,17 @@ export async function PUT(request: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.email) {
-      return NextResponse.json(
-        { success: false, error: 'Authentication required' },
-        { status: 401 },
-      );
+      return apiErr('unauthorized', 'Authentication required', 401);
     }
 
     const { displayName, bio } = await request.json();
 
     if (displayName !== undefined && displayName.length > 50) {
-      return NextResponse.json(
-        { success: false, error: 'Display name must be at most 50 characters' },
-        { status: 400 },
-      );
+      return apiErr('validation_error', 'Display name must be at most 50 characters', 400);
     }
 
     if (bio !== undefined && bio.length > 160) {
-      return NextResponse.json(
-        { success: false, error: 'Bio must be at most 160 characters' },
-        { status: 400 },
-      );
+      return apiErr('validation_error', 'Bio must be at most 160 characters', 400);
     }
 
     await connectDB();
@@ -83,7 +72,7 @@ export async function PUT(request: NextRequest) {
     });
 
     if (!user) {
-      return NextResponse.json({ success: false, error: 'User not found' }, { status: 404 });
+      return apiErr('not_found', 'User not found', 404);
     }
 
     return NextResponse.json({
@@ -99,6 +88,6 @@ export async function PUT(request: NextRequest) {
     });
   } catch (error) {
     console.error('Update profile error:', error);
-    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
+    return apiErr('internal_error', 'Internal server error', 500);
   }
 }

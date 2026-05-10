@@ -1,5 +1,6 @@
 import connectDB from '@/lib/mongoose';
 import Category from '@/models/Category';
+import { buildPaginationMeta } from '@/repositories/pagination';
 import { ICategory, ICategoryRepository } from '@/interfaces/repositories/ICategoryRepository';
 
 function normalizeSlug(value: string): string {
@@ -84,18 +85,10 @@ export class CategoryRepository implements ICategoryRepository {
       .lean()) as unknown as ICategory[];
 
     const totalItems = await Category.countDocuments(query);
-    const totalPages = Math.ceil(totalItems / limit);
 
     return {
       categories,
-      pagination: {
-        currentPage: page,
-        totalPages,
-        totalItems,
-        itemsPerPage: limit,
-        hasNextPage: page < totalPages,
-        hasPrevPage: page > 1,
-      },
+      pagination: buildPaginationMeta(page, limit, totalItems),
     };
   }
 

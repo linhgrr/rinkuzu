@@ -1,4 +1,4 @@
-import type { IUserPreview } from '@/types/index';
+import type { IUserPreview, PaginationMeta } from '@/types/index';
 import type { IQuestion } from '@/models/Quiz';
 
 export interface IQuiz {
@@ -42,12 +42,7 @@ export interface IQuizRepository {
     },
   ): Promise<{
     quizzes: IQuiz[];
-    pagination: {
-      page: number;
-      limit: number;
-      total: number;
-      totalPages: number;
-    };
+    pagination: PaginationMeta;
   }>;
 
   findForPlay(slug: string): Promise<IQuiz | null>;
@@ -61,12 +56,7 @@ export interface IQuizRepository {
     },
   ): Promise<{
     quizzes: IQuiz[];
-    pagination: {
-      page: number;
-      limit: number;
-      total: number;
-      totalPages: number;
-    };
+    pagination: PaginationMeta;
   }>;
 
   count(filter?: Record<string, unknown>): Promise<number>;

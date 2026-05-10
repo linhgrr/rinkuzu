@@ -5,20 +5,21 @@ import QuestionProgress from '@/models/QuestionProgress';
 import UserProgress from '@/models/UserProgress';
 import { authOptions } from '@/lib/auth';
 import { calculateNextReview, SRSRating } from '@/services/srs.service';
+import { apiErr } from '@/lib/api/response';
 
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
 
     if (!session || !session.user) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+      return apiErr('unauthorized', 'Unauthorized', 401);
     }
 
     const body = await req.json();
     const { questionId, quizSlug, rating, questionRef } = body;
 
     if (!questionId || !quizSlug || !rating) {
-      return NextResponse.json({ message: 'Missing required fields' }, { status: 400 });
+      return apiErr('validation_error', 'Missing required fields', 400);
     }
 
     await connectDB();
@@ -218,6 +219,6 @@ export async function POST(req: Request) {
     });
   } catch (error) {
     console.error('Error submitting review:', error);
-    return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
+    return apiErr('internal_error', 'Internal Server Error', 500);
   }
 }

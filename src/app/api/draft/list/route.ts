@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import connectDB from '@/lib/mongoose';
 import DraftQuiz from '@/models/DraftQuiz';
+import { apiErr } from '@/lib/api/response';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,7 +13,7 @@ export async function GET(_request: NextRequest) {
     const session = await getServerSession(authOptions);
     const userId = (session?.user as { id?: string } | undefined)?.id;
     if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErr('unauthorized', 'Unauthorized', 401);
     }
 
     await connectDB();
@@ -41,6 +42,6 @@ export async function GET(_request: NextRequest) {
     });
   } catch (error) {
     console.error('List drafts error:', error);
-    return NextResponse.json({ error: 'Failed to list drafts' }, { status: 500 });
+    return apiErr('internal_error', 'Failed to list drafts', 500);
   }
 }

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createSubscriptionService } from '@/lib/subscriptionFactory';
+import { apiErr } from '@/lib/api/response';
 
 export async function GET() {
   try {
@@ -25,10 +26,7 @@ export async function GET() {
     });
   } catch (error) {
     console.error('Error fetching subscription plans:', error);
-    return NextResponse.json(
-      { success: false, message: 'Failed to fetch subscription plans' },
-      { status: 500 },
-    );
+    return apiErr('internal_error', 'Failed to fetch subscription plans', 500);
   }
 }
 

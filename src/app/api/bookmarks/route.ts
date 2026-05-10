@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
+import { apiErr } from '@/lib/api/response';
 
 const bookmarkService = serviceFactory.getBookmarkService();
 
@@ -10,7 +11,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+      return apiErr('unauthorized', 'Unauthorized', 401);
     }
 
     const url = new URL(request.url);
@@ -26,10 +27,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error fetching bookmarks:', error);
-    return NextResponse.json(
-      { success: false, error: 'Failed to fetch bookmarks' },
-      { status: 500 },
-    );
+    return apiErr('internal_error', 'Failed to fetch bookmarks', 500);
   }
 }
 
@@ -38,7 +36,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+      return apiErr('unauthorized', 'Unauthorized', 401);
     }
 
     const body = await request.json();
@@ -59,18 +57,9 @@ export async function POST(request: NextRequest) {
     const message = error instanceof Error ? error.message : '';
 
     if (message === 'Question already bookmarked') {
-      return NextResponse.json(
-        {
-          success: false,
-          error: message,
-        },
-        { status: 400 },
-      );
+      return apiErr('validation_error', message, 400);
     }
 
-    return NextResponse.json(
-      { success: false, error: 'Failed to create bookmark' },
-      { status: 500 },
-    );
+    return apiErr('internal_error', 'Failed to create bookmark', 500);
   }
 }

@@ -63,6 +63,7 @@ export async function fetchApiSuccess<
     success?: boolean;
     error?: unknown;
     detail?: unknown;
+    message?: unknown;
     data?: unknown;
   } | null;
 
@@ -71,11 +72,11 @@ export async function fetchApiSuccess<
     const errorMessage =
       typeof errorObj === 'object' && errorObj !== null
         ? String(
-            (errorObj as Record<string, unknown>)['message'] ||
-              (errorObj as Record<string, unknown>)['detail'] ||
+            (errorObj as Record<string, unknown>)['detail'] ||
+              (errorObj as Record<string, unknown>)['message'] ||
               rawText,
           )
-        : String(errorObj || payload?.detail || rawText);
+        : String(errorObj ?? payload?.detail ?? payload?.message ?? rawText);
 
     throw new ApiResponseError(
       errorMessage || `Request failed with status ${response.status}`,

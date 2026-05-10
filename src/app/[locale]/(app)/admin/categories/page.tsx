@@ -12,6 +12,7 @@ import { LoadingState } from '@/components/ui/LoadingState';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { AdminPageShell } from '@/components/admin/AdminPageShell';
+import { PaginationMeta } from '@/types';
 import { HiOutlinePlus, HiOutlinePencil, HiOutlineTrash } from '@/components/icons';
 
 interface Category {
@@ -27,13 +28,6 @@ interface Category {
   updatedAt: string;
 }
 
-interface PaginationData {
-  page: number;
-  limit: number;
-  total: number;
-  totalPages: number;
-}
-
 export default function AdminCategoriesPage() {
   const t = useTranslations('admin');
   const tCommon = useTranslations('common');
@@ -41,11 +35,14 @@ export default function AdminCategoriesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
-  const [pagination, setPagination] = useState<PaginationData>({
-    page: 1,
-    limit: 20,
-    total: 0,
+  const ITEMS_PER_PAGE = 20;
+  const [pagination, setPagination] = useState<PaginationMeta>({
+    currentPage: 1,
     totalPages: 0,
+    totalItems: 0,
+    itemsPerPage: ITEMS_PER_PAGE,
+    hasNextPage: false,
+    hasPrevPage: false,
   });
 
   // Modal states
@@ -64,37 +61,34 @@ export default function AdminCategoriesPage() {
     isActive: true,
   });
 
-  const fetchCategories = useCallback(
-    async (page: number = 1, search: string = '') => {
-      try {
-        setLoading(true);
-        const params = new URLSearchParams({
-          page: page.toString(),
-          limit: pagination.limit.toString(),
-        });
+  const fetchCategories = useCallback(async (page: number = 1, search: string = '') => {
+    try {
+      setLoading(true);
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: ITEMS_PER_PAGE.toString(),
+      });
 
-        if (search.trim()) {
-          params.append('search', search.trim());
-        }
-
-        const response = await fetch(`/api/admin/categories?${params}`);
-        const data = await response.json();
-
-        if (data.success) {
-          setCategories(data.data.categories);
-          setPagination(data.data.pagination);
-          setError('');
-        } else {
-          setError(data.error || 'Failed to fetch categories');
-        }
-      } catch (_error) {
-        setError('An error occurred while fetching categories');
-      } finally {
-        setLoading(false);
+      if (search.trim()) {
+        params.append('search', search.trim());
       }
-    },
-    [pagination.limit],
-  );
+
+      const response = await fetch(`/api/admin/categories?${params}`);
+      const data = await response.json();
+
+      if (data.success) {
+        setCategories(data.data.categories);
+        setPagination(data.data.pagination);
+        setError('');
+      } else {
+        setError(data.error || 'Failed to fetch categories');
+      }
+    } catch (_error) {
+      setError('An error occurred while fetching categories');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     fetchCategories();
@@ -102,12 +96,12 @@ export default function AdminCategoriesPage() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    setPagination((prev) => ({ ...prev, page: 1 }));
+    setPagination((prev) => ({ ...prev, currentPage: 1 }));
     fetchCategories(1, searchTerm);
   };
 
   const handlePageChange = (newPage: number) => {
-    setPagination((prev) => ({ ...prev, page: newPage }));
+    setPagination((prev) => ({ ...prev, currentPage: newPage }));
     fetchCategories(newPage, searchTerm);
   };
 
@@ -170,7 +164,7 @@ export default function AdminCategoriesPage() {
       const data = await response.json();
 
       if (data.success) {
-        fetchCategories(pagination.page, searchTerm);
+        fetchCategories(pagination.currentPage, searchTerm);
         closeModals();
         setError('');
       } else {
@@ -193,7 +187,7 @@ export default function AdminCategoriesPage() {
       const data = await response.json();
 
       if (data.success) {
-        fetchCategories(pagination.page, searchTerm);
+        fetchCategories(pagination.currentPage, searchTerm);
         setError('');
       } else {
         setError(data.error || 'Failed to delete category');
@@ -380,16 +374,16 @@ export default function AdminCategoriesPage() {
           <div className="flex items-center justify-between border-t border-neutral-200 bg-white px-4 py-3 sm:px-6 rounded-lg">
             <div className="flex flex-1 justify-between sm:hidden">
               <Button
-                onClick={() => handlePageChange(pagination.page - 1)}
-                disabled={pagination.page <= 1}
+                onClick={() => handlePageChange(pagination.currentPage - 1)}
+                disabled={pagination.currentPage <= 1}
                 variant="outline"
                 className="min-h-[40px] px-4"
               >
                 {tCommon('previous')}
               </Button>
               <Button
-                onClick={() => handlePageChange(pagination.page + 1)}
-                disabled={pagination.page >= pagination.totalPages}
+                onClick={() => handlePageChange(pagination.currentPage + 1)}
+                disabled={pagination.currentPage >= pagination.totalPages}
                 variant="outline"
                 className="min-h-[40px] px-4"
               >
@@ -400,9 +394,12 @@ export default function AdminCategoriesPage() {
               <div>
                 <p className="text-sm text-neutral-700">
                   {tCommon('showingResults', {
-                    from: (pagination.page - 1) * pagination.limit + 1,
-                    to: Math.min(pagination.page * pagination.limit, pagination.total),
-                    total: pagination.total,
+                    from: (pagination.currentPage - 1) * pagination.itemsPerPage + 1,
+                    to: Math.min(
+                      pagination.currentPage * pagination.itemsPerPage,
+                      pagination.totalItems,
+                    ),
+                    total: pagination.totalItems,
                   })}
                 </p>
               </div>
@@ -412,8 +409,8 @@ export default function AdminCategoriesPage() {
                   aria-label="Pagination"
                 >
                   <Button
-                    onClick={() => handlePageChange(pagination.page - 1)}
-                    disabled={pagination.page <= 1}
+                    onClick={() => handlePageChange(pagination.currentPage - 1)}
+                    disabled={pagination.currentPage <= 1}
                     variant="outline"
                     size="sm"
                     className="min-h-[36px] rounded-r-none px-3"
@@ -425,19 +422,19 @@ export default function AdminCategoriesPage() {
                     let pageNum;
                     if (pagination.totalPages <= 5) {
                       pageNum = i + 1;
-                    } else if (pagination.page <= 3) {
+                    } else if (pagination.currentPage <= 3) {
                       pageNum = i + 1;
-                    } else if (pagination.page >= pagination.totalPages - 2) {
+                    } else if (pagination.currentPage >= pagination.totalPages - 2) {
                       pageNum = pagination.totalPages - 4 + i;
                     } else {
-                      pageNum = pagination.page - 2 + i;
+                      pageNum = pagination.currentPage - 2 + i;
                     }
 
                     return (
                       <Button
                         key={pageNum}
                         onClick={() => handlePageChange(pageNum)}
-                        variant={pagination.page === pageNum ? 'default' : 'outline'}
+                        variant={pagination.currentPage === pageNum ? 'default' : 'outline'}
                         size="sm"
                         className="min-h-[36px] rounded-none px-3"
                       >
@@ -447,8 +444,8 @@ export default function AdminCategoriesPage() {
                   })}
 
                   <Button
-                    onClick={() => handlePageChange(pagination.page + 1)}
-                    disabled={pagination.page >= pagination.totalPages}
+                    onClick={() => handlePageChange(pagination.currentPage + 1)}
+                    disabled={pagination.currentPage >= pagination.totalPages}
                     variant="outline"
                     size="sm"
                     className="min-h-[36px] rounded-l-none px-3"

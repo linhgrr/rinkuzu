@@ -6,6 +6,7 @@ import connectDB from '@/lib/mongoose';
 import DraftQuiz from '@/models/DraftQuiz';
 import { deletePDF } from '@/lib/s3';
 import { AsyncRouteParams } from '@/types/next-route';
+import { apiErr } from '@/lib/api/response';
 
 export async function GET(request: NextRequest, { params }: AsyncRouteParams<{ id: string }>) {
   try {
@@ -13,7 +14,7 @@ export async function GET(request: NextRequest, { params }: AsyncRouteParams<{ i
     const session = await getServerSession(authOptions);
     const userId = (session?.user as { id?: string } | undefined)?.id;
     if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErr('unauthorized', 'Unauthorized', 401);
     }
 
     await connectDB();
@@ -24,7 +25,7 @@ export async function GET(request: NextRequest, { params }: AsyncRouteParams<{ i
     }).lean()) as any;
 
     if (!draft) {
-      return NextResponse.json({ error: 'Draft not found' }, { status: 404 });
+      return apiErr('not_found', 'Draft not found', 404);
     }
 
     // Refresh signed URL if PDF exists
@@ -40,7 +41,7 @@ export async function GET(request: NextRequest, { params }: AsyncRouteParams<{ i
     return NextResponse.json({ draft });
   } catch (error) {
     console.error('Get draft error:', error);
-    return NextResponse.json({ error: 'Failed to get draft' }, { status: 500 });
+    return apiErr('internal_error', 'Failed to get draft', 500);
   }
 }
 
@@ -50,7 +51,7 @@ export async function DELETE(request: NextRequest, { params }: AsyncRouteParams<
     const session = await getServerSession(authOptions);
     const userId = (session?.user as { id?: string } | undefined)?.id;
     if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErr('unauthorized', 'Unauthorized', 401);
     }
 
     await connectDB();
@@ -62,7 +63,7 @@ export async function DELETE(request: NextRequest, { params }: AsyncRouteParams<
     });
 
     if (!draft) {
-      return NextResponse.json({ error: 'Draft not found' }, { status: 404 });
+      return apiErr('not_found', 'Draft not found', 404);
     }
 
     // Delete from MongoDB
@@ -82,6 +83,6 @@ export async function DELETE(request: NextRequest, { params }: AsyncRouteParams<
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Delete draft error:', error);
-    return NextResponse.json({ error: 'Failed to delete draft' }, { status: 500 });
+    return apiErr('internal_error', 'Failed to delete draft', 500);
   }
 }

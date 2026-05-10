@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { HiOutlineCheck, HiOutlineShieldCheck } from '@/components/icons';
+import { extractApiErrorMessage } from '@/lib/api/error';
 
 interface SubscriptionPlan {
   id: string;
@@ -98,7 +99,7 @@ export default function SubscriptionPage() {
         // Redirect to PayOS payment page
         window.location.href = data.data.paymentUrl;
       } else {
-        toast.error(data.message || 'Failed to create payment request');
+        toast.error(extractApiErrorMessage(data, 'Failed to create payment request'));
       }
     } catch (error) {
       console.error('Error creating payment:', error);

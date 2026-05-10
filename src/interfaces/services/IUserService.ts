@@ -1,11 +1,5 @@
+import { ServiceResult } from '@/interfaces/services/types';
 import { IUser } from '@/types/index';
-
-interface ServiceResult<T> {
-  success: boolean;
-  data?: T;
-  error?: string;
-  statusCode?: number;
-}
 
 export interface FormattedAttempt {
   _id?: string;

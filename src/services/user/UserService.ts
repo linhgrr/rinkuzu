@@ -2,13 +2,7 @@ import { IUserService } from '@/interfaces/services/IUserService';
 import { IUserRepository } from '@/interfaces/repositories/IUserRepository';
 import { IAttemptRepository } from '@/interfaces/repositories/IAttemptRepository';
 import { IUser } from '@/types/index';
-
-interface ServiceResult<T> {
-  success: boolean;
-  data?: T;
-  error?: string;
-  statusCode?: number;
-}
+import { ServiceResult } from '@/interfaces/services/types';
 
 export class UserService implements IUserService {
   constructor(

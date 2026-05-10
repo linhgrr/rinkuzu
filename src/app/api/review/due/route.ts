@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import connectDB from '@/lib/mongoose';
 import QuestionProgress from '@/models/QuestionProgress';
 import { authOptions } from '@/lib/auth';
+import { apiErr } from '@/lib/api/response';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,7 +12,7 @@ export async function GET() {
     const session = await getServerSession(authOptions);
 
     if (!session || !session.user) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+      return apiErr('unauthorized', 'Unauthorized', 401);
     }
 
     await connectDB();
@@ -34,6 +35,6 @@ export async function GET() {
     });
   } catch (error) {
     console.error('Error fetching due reviews:', error);
-    return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
+    return apiErr('internal_error', 'Internal Server Error', 500);
   }
 }

@@ -4,13 +4,7 @@ import { IUserRepository } from '@/interfaces/repositories/IUserRepository';
 import { IReportRepository } from '@/interfaces/repositories/IReportRepository';
 import { IQuizRepository } from '@/interfaces/repositories/IQuizRepository';
 import { IAttemptRepository } from '@/interfaces/repositories/IAttemptRepository';
-
-interface ServiceResult<T> {
-  success: boolean;
-  data?: T;
-  error?: string;
-  statusCode?: number;
-}
+import { ServiceResult } from '@/interfaces/services/types';
 
 export class AdminService implements IAdminService {
   constructor(
@@ -24,35 +18,18 @@ export class AdminService implements IAdminService {
   async getCategories(searchParams: any): Promise<ServiceResult<any>> {
     try {
       const { search, page = 1, limit = 20 } = searchParams;
-      const _skip = (page - 1) * limit;
 
-      let filter: any = {};
-      if (search) {
-        filter.$or = [
-          { name: { $regex: search, $options: 'i' } },
-          { description: { $regex: search, $options: 'i' } },
-        ];
-      }
-
-      const categories = await this.categoryRepository.findAll({
+      const result = await this.categoryRepository.findAll({
         page,
         limit,
         search,
-        isActive: filter.isActive,
       });
-
-      const total = await this.categoryRepository.count({ isActive: filter.isActive });
 
       return {
         success: true,
         data: {
-          categories: categories.categories,
-          pagination: {
-            page,
-            limit,
-            total,
-            totalPages: Math.ceil(total / limit),
-          },
+          categories: result.categories,
+          pagination: result.pagination,
         },
       };
     } catch (error) {

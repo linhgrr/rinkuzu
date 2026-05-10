@@ -3,6 +3,7 @@ import {
   CreateQuizRequest,
   QuizListOptions,
 } from '@/interfaces/services/IQuizService';
+import { PaginationMeta } from '@/types';
 import { IQuizRepository, IQuiz } from '@/interfaces/repositories/IQuizRepository';
 import { ICategoryRepository } from '@/interfaces/repositories/ICategoryRepository';
 import { IUserRepository } from '@/interfaces/repositories/IUserRepository';
@@ -14,13 +15,7 @@ import { createSubscriptionService } from '@/lib/subscriptionFactory';
 import QuestionProgress from '@/models/QuestionProgress';
 import UserProgress from '@/models/UserProgress';
 import connectDB from '@/lib/mongoose';
-
-interface ServiceResult<T> {
-  success: boolean;
-  data?: T;
-  error?: string;
-  statusCode?: number;
-}
+import { ServiceResult } from '@/interfaces/services/types';
 
 export class QuizService implements IQuizService {
   constructor(
@@ -73,12 +68,7 @@ export class QuizService implements IQuizService {
 
   async getQuizzes(options: QuizListOptions): Promise<{
     quizzes: IQuiz[];
-    pagination: {
-      page: number;
-      limit: number;
-      total: number;
-      totalPages: number;
-    };
+    pagination: PaginationMeta;
   }> {
     const {
       status,

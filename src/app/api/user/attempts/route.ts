@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
+import { apiErr } from '@/lib/api/response';
 
 const userService = serviceFactory.getUserService();
 
@@ -12,10 +13,7 @@ export async function GET(request: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.email) {
-      return NextResponse.json(
-        { success: false, error: 'Authentication required' },
-        { status: 401 },
-      );
+      return apiErr('unauthorized', 'Authentication required', 401);
     }
 
     // Get pagination parameters from URL
@@ -35,9 +33,9 @@ export async function GET(request: NextRequest) {
     const message = error instanceof Error ? error.message : '';
 
     if (message === 'User not found') {
-      return NextResponse.json({ success: false, error: message }, { status: 404 });
+      return apiErr('not_found', message, 404);
     }
 
-    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
+    return apiErr('internal_error', 'Internal server error', 500);
   }
 }

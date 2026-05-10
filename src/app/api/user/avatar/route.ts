@@ -5,6 +5,7 @@ import connectDB from '@/lib/mongoose';
 import User from '@/models/User';
 import { s3Client, BUCKET_NAME, OBJECT_STORAGE_PUBLIC_BASE_URL } from '@/lib/s3';
 import { PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import { apiErr } from '@/lib/api/response';
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
@@ -36,38 +37,29 @@ export async function PUT(request: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.email) {
-      return NextResponse.json(
-        { success: false, error: 'Authentication required' },
-        { status: 401 },
-      );
+      return apiErr('unauthorized', 'Authentication required', 401);
     }
 
     const formData = await request.formData();
     const file = formData.get('avatar') as File | null;
 
     if (!file) {
-      return NextResponse.json({ success: false, error: 'No file provided' }, { status: 400 });
+      return apiErr('validation_error', 'No file provided', 400);
     }
 
     if (!ALLOWED_TYPES.includes(file.type)) {
-      return NextResponse.json(
-        { success: false, error: 'Only JPG, PNG, and WebP images are allowed' },
-        { status: 400 },
-      );
+      return apiErr('validation_error', 'Only JPG, PNG, and WebP images are allowed', 400);
     }
 
     if (file.size > MAX_FILE_SIZE) {
-      return NextResponse.json(
-        { success: false, error: 'File size must be less than 2MB' },
-        { status: 400 },
-      );
+      return apiErr('validation_error', 'File size must be less than 2MB', 400);
     }
 
     await connectDB();
 
     const user = await User.findOne({ email: session.user.email }).select('_id avatar');
     if (!user) {
-      return NextResponse.json({ success: false, error: 'User not found' }, { status: 404 });
+      return apiErr('not_found', 'User not found', 404);
     }
 
     // Delete old avatar if exists
@@ -106,7 +98,7 @@ export async function PUT(request: NextRequest) {
     });
   } catch (error) {
     console.error('Upload avatar error:', error);
-    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
+    return apiErr('internal_error', 'Internal server error', 500);
   }
 }
 
@@ -115,17 +107,14 @@ export async function DELETE() {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.email) {
-      return NextResponse.json(
-        { success: false, error: 'Authentication required' },
-        { status: 401 },
-      );
+      return apiErr('unauthorized', 'Authentication required', 401);
     }
 
     await connectDB();
 
     const user = await User.findOne({ email: session.user.email }).select('avatar');
     if (!user) {
-      return NextResponse.json({ success: false, error: 'User not found' }, { status: 404 });
+      return apiErr('not_found', 'User not found', 404);
     }
 
     if (user.avatar) {
@@ -146,6 +135,6 @@ export async function DELETE() {
     });
   } catch (error) {
     console.error('Delete avatar error:', error);
-    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
+    return apiErr('internal_error', 'Internal server error', 500);
   }
 }

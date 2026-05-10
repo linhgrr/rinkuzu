@@ -2,10 +2,15 @@ import connectDB from '@/lib/mongoose';
 import Quiz from '@/models/Quiz';
 import { IQuiz, IQuizRepository } from '@/interfaces/repositories/IQuizRepository';
 import { buildPaginationMeta } from '@/repositories/pagination';
+import { BaseRepository } from '@/repositories/base';
 import { Types } from 'mongoose';
 
-export class QuizRepository implements IQuizRepository {
-  async findById(id: string): Promise<IQuiz | null> {
+export class QuizRepository extends BaseRepository<IQuiz> implements IQuizRepository {
+  constructor() {
+    super(Quiz);
+  }
+
+  override async findById(id: string): Promise<IQuiz | null> {
     await connectDB();
     return (await Quiz.findById(id)
       .populate('author', 'email name displayName avatar')
@@ -28,24 +33,12 @@ export class QuizRepository implements IQuizRepository {
       .lean()) as unknown as IQuiz | null;
   }
 
-  async create(quizData: Partial<IQuiz>): Promise<IQuiz> {
-    await connectDB();
-    const quiz = new Quiz(quizData);
-    return (await quiz.save()) as unknown as IQuiz;
-  }
-
-  async update(id: string, quizData: Partial<IQuiz>): Promise<IQuiz | null> {
+  override async update(id: string, quizData: Partial<IQuiz>): Promise<IQuiz | null> {
     await connectDB();
     return (await Quiz.findByIdAndUpdate(id, quizData, { new: true })
       .populate('author', 'email name displayName avatar')
       .populate('category', 'name color')
       .lean()) as unknown as IQuiz | null;
-  }
-
-  async delete(id: string): Promise<boolean> {
-    await connectDB();
-    const result = await Quiz.findByIdAndDelete(id);
-    return !!result;
   }
 
   async findAll(
@@ -220,11 +213,6 @@ export class QuizRepository implements IQuizRepository {
       quizzes,
       pagination: buildPaginationMeta(page, limit, total),
     };
-  }
-
-  async count(filter: any = {}): Promise<number> {
-    await connectDB();
-    return await Quiz.countDocuments(filter);
   }
 
   async countByStatus(): Promise<{ _id: string; count: number }[]> {

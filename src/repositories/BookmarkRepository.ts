@@ -1,9 +1,14 @@
 import connectDB from '@/lib/mongoose';
 import Bookmark from '@/models/Bookmark';
 import { buildPaginationMeta } from '@/repositories/pagination';
+import { BaseRepository } from '@/repositories/base';
 import { IBookmark, IBookmarkRepository } from '@/interfaces/repositories/IBookmarkRepository';
 
-export class BookmarkRepository implements IBookmarkRepository {
+export class BookmarkRepository extends BaseRepository<IBookmark> implements IBookmarkRepository {
+  constructor() {
+    super(Bookmark);
+  }
+
   async findByUserEmail(
     userEmail: string,
     options?: {
@@ -54,16 +59,8 @@ export class BookmarkRepository implements IBookmarkRepository {
     }).lean()) as unknown as IBookmark | null;
   }
 
-  async create(bookmarkData: Partial<IBookmark>): Promise<IBookmark> {
-    await connectDB();
-    const bookmark = new Bookmark(bookmarkData);
-    return (await bookmark.save()) as unknown as IBookmark;
-  }
-
   async deleteById(id: string): Promise<boolean> {
-    await connectDB();
-    const result = await Bookmark.findByIdAndDelete(id);
-    return !!result;
+    return this.delete(id);
   }
 
   async deleteByIdAndUser(id: string, userEmail: string): Promise<boolean> {
@@ -73,10 +70,5 @@ export class BookmarkRepository implements IBookmarkRepository {
       userEmail,
     });
     return !!result;
-  }
-
-  async count(userEmail: string): Promise<number> {
-    await connectDB();
-    return await Bookmark.countDocuments({ userEmail });
   }
 }

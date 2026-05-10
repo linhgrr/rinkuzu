@@ -1,19 +1,16 @@
 import connectDB from '@/lib/mongoose';
 import Subscription, { ISubscription } from '@/models/Subscription';
 import { buildPaginationMeta } from '@/repositories/pagination';
+import { BaseRepository } from '@/repositories/base';
 import { ISubscriptionRepository } from '@/interfaces/repositories/ISubscriptionRepository';
 import mongoose from 'mongoose';
 
-export class SubscriptionRepository implements ISubscriptionRepository {
-  async create(subscriptionData: Partial<ISubscription>): Promise<ISubscription> {
-    await connectDB();
-    const subscription = new Subscription(subscriptionData);
-    return await subscription.save();
-  }
-
-  async findById(id: string): Promise<ISubscription | null> {
-    await connectDB();
-    return (await Subscription.findById(id).lean()) as unknown as ISubscription | null;
+export class SubscriptionRepository
+  extends BaseRepository<ISubscription>
+  implements ISubscriptionRepository
+{
+  constructor() {
+    super(Subscription);
   }
 
   async findByOrderId(orderId: string): Promise<ISubscription | null> {

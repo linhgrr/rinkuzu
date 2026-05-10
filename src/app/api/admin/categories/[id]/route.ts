@@ -1,20 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
+import { withAdmin } from '@/lib/api/auth';
 import connectDB from '@/lib/mongoose';
 import Category from '@/models/Category';
 import Quiz from '@/models/Quiz';
-import { authOptions } from '@/lib/auth';
-import { AsyncRouteParams } from '@/types/next-route';
 import { apiErr } from '@/lib/api/response';
 
 // GET /api/admin/categories/[id] - Get single category
-export async function GET(request: NextRequest, { params }: AsyncRouteParams<{ id: string }>) {
+export const GET = withAdmin(async (_request: NextRequest, context) => {
   try {
-    const { id } = await params;
-    const session = await getServerSession(authOptions);
-    if (!session?.user || (session.user as any).role !== 'admin') {
-      return apiErr('forbidden', 'Admin access required', 403);
-    }
+    const { id } = await context.params;
 
     await connectDB();
 
@@ -32,17 +26,12 @@ export async function GET(request: NextRequest, { params }: AsyncRouteParams<{ i
     console.error('Get category error:', error);
     return apiErr('internal_error', 'Internal server error', 500);
   }
-}
+});
 
 // PUT /api/admin/categories/[id] - Update category
-export async function PUT(request: NextRequest, { params }: AsyncRouteParams<{ id: string }>) {
+export const PUT = withAdmin(async (request: NextRequest, context) => {
   try {
-    const { id } = await params;
-    const session = await getServerSession(authOptions);
-    if (!session?.user || (session.user as any).role !== 'admin') {
-      return apiErr('forbidden', 'Admin access required', 403);
-    }
-
+    const { id } = await context.params;
     const body = await request.json();
     const { name, description, color, isActive } = body;
 
@@ -84,16 +73,12 @@ export async function PUT(request: NextRequest, { params }: AsyncRouteParams<{ i
     console.error('Update category error:', error);
     return apiErr('internal_error', 'Internal server error', 500);
   }
-}
+});
 
 // DELETE /api/admin/categories/[id] - Delete category
-export async function DELETE(request: NextRequest, { params }: AsyncRouteParams<{ id: string }>) {
+export const DELETE = withAdmin(async (_request: NextRequest, context) => {
   try {
-    const { id } = await params;
-    const session = await getServerSession(authOptions);
-    if (!session?.user || (session.user as any).role !== 'admin') {
-      return apiErr('forbidden', 'Admin access required', 403);
-    }
+    const { id } = await context.params;
 
     await connectDB();
 
@@ -124,4 +109,4 @@ export async function DELETE(request: NextRequest, { params }: AsyncRouteParams<
     console.error('Delete category error:', error);
     return apiErr('internal_error', 'Internal server error', 500);
   }
-}
+});

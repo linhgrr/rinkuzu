@@ -1,10 +1,15 @@
 import connectDB from '@/lib/mongoose';
 import Attempt from '@/models/Attempt';
 import { buildPaginationMeta } from '@/repositories/pagination';
+import { BaseRepository } from '@/repositories/base';
 import { IAttempt, IAttemptRepository } from '@/interfaces/repositories/IAttemptRepository';
 
-export class AttemptRepository implements IAttemptRepository {
-  async findById(id: string): Promise<IAttempt | null> {
+export class AttemptRepository extends BaseRepository<IAttempt> implements IAttemptRepository {
+  constructor() {
+    super(Attempt);
+  }
+
+  override async findById(id: string): Promise<IAttempt | null> {
     await connectDB();
     const attempt = await Attempt.findById(id)
       .populate({
@@ -82,13 +87,6 @@ export class AttemptRepository implements IAttemptRepository {
     return { attempts, total };
   }
 
-  async create(attemptData: Partial<IAttempt>): Promise<IAttempt> {
-    await connectDB();
-    const attempt = new Attempt(attemptData);
-    const saved = await attempt.save();
-    return saved.toObject();
-  }
-
   async countByUser(userId: string): Promise<number> {
     await connectDB();
     return await Attempt.countDocuments({ user: userId });
@@ -119,22 +117,5 @@ export class AttemptRepository implements IAttemptRepository {
         select: 'title slug description questions',
       })
       .lean();
-  }
-
-  async update(id: string, attemptData: Partial<IAttempt>): Promise<IAttempt | null> {
-    await connectDB();
-    const updated = await Attempt.findByIdAndUpdate(id, attemptData, { new: true }).lean();
-    return updated as unknown as IAttempt | null;
-  }
-
-  async delete(id: string): Promise<boolean> {
-    await connectDB();
-    const result = await Attempt.findByIdAndDelete(id);
-    return !!result;
-  }
-
-  async count(filter: any = {}): Promise<number> {
-    await connectDB();
-    return await Attempt.countDocuments(filter);
   }
 }

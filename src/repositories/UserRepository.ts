@@ -2,36 +2,17 @@ import connectDB from '@/lib/mongoose';
 import User from '@/models/User';
 import { IUser } from '@/types/index';
 import { buildPaginationMeta } from '@/repositories/pagination';
+import { BaseRepository } from '@/repositories/base';
 import { IUserRepository } from '@/interfaces/repositories/IUserRepository';
 
-export class UserRepository implements IUserRepository {
+export class UserRepository extends BaseRepository<IUser> implements IUserRepository {
+  constructor() {
+    super(User);
+  }
+
   async findByEmail(email: string): Promise<IUser | null> {
     await connectDB();
     return (await User.findOne({ email }).lean()) as unknown as IUser | null;
-  }
-
-  async findById(id: string): Promise<IUser | null> {
-    await connectDB();
-    return (await User.findById(id).lean()) as unknown as IUser | null;
-  }
-
-  async create(userData: Partial<IUser>): Promise<IUser> {
-    await connectDB();
-    const user = new User(userData);
-    return (await user.save()) as unknown as IUser;
-  }
-
-  async update(id: string, userData: Partial<IUser>): Promise<IUser | null> {
-    await connectDB();
-    return (await User.findByIdAndUpdate(id, userData, {
-      new: true,
-    }).lean()) as unknown as IUser | null;
-  }
-
-  async delete(id: string): Promise<boolean> {
-    await connectDB();
-    const result = await User.findByIdAndDelete(id);
-    return !!result;
   }
 
   async findAll(options?: {
@@ -78,11 +59,6 @@ export class UserRepository implements IUserRepository {
       users,
       pagination: buildPaginationMeta(page, limit, totalItems),
     };
-  }
-
-  async count(filter: any = {}): Promise<number> {
-    await connectDB();
-    return await User.countDocuments(filter);
   }
 
   async countByRole(): Promise<{ _id: string; count: number }[]> {

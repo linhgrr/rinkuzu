@@ -1,19 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { createSubscriptionService } from '@/lib/subscriptionFactory';
+import { withAdmin } from '@/lib/api/auth';
+import { ServiceFactory } from '@/lib/serviceFactory';
 import { buildPaginationMeta } from '@/repositories/pagination';
 import { apiErr } from '@/lib/api/response';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(request: NextRequest) {
+export const GET = withAdmin(async (request: NextRequest) => {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user || (session.user as any).role !== 'admin') {
-      return apiErr('forbidden', 'Admin access required', 403);
-    }
-
     const { searchParams } = new URL(request.url);
     const searchParamsObj = {
       page: searchParams.get('page'),
@@ -22,7 +16,7 @@ export async function GET(request: NextRequest) {
       search: searchParams.get('search'),
     };
 
-    const subscriptionService = createSubscriptionService();
+    const subscriptionService = ServiceFactory.createSubscriptionService();
     const result = await subscriptionService.getSubscriptionHistory('');
 
     // Filter and paginate results based on search params
@@ -58,4 +52,4 @@ export async function GET(request: NextRequest) {
     console.error('Admin subscriptions list error:', error);
     return apiErr('internal_error', 'Internal server error', 500);
   }
-}
+});

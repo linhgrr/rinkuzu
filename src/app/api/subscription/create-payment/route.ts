@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { createSubscriptionService } from '@/lib/subscriptionFactory';
+import { ServiceFactory } from '@/lib/serviceFactory';
 import connectDB from '@/lib/mongoose';
 import Plan from '@/models/Plan';
 import { apiErr } from '@/lib/api/response';
@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
       return apiErr('validation_error', 'Invalid plan ID', 400);
     }
 
-    const subscriptionService = createSubscriptionService();
+    const subscriptionService = ServiceFactory.createSubscriptionService();
     const paymentData = await subscriptionService.createPaymentRequest(
       (session.user as any).id,
       planId,

@@ -1,20 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { withAdmin } from '@/lib/api/auth';
 import connectDB from '@/lib/mongoose';
 import Plan from '@/models/Plan';
 import { DurationUtils } from '@/types/subscription';
 import { apiErr } from '@/lib/api/response';
 
-type AdminSessionUser = { role: string; id?: string; email?: string };
-
-export async function GET() {
+export const GET = withAdmin(async () => {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user || (session.user as AdminSessionUser).role !== 'admin') {
-      return apiErr('forbidden', 'Admin access required', 403);
-    }
-
     await connectDB();
 
     const plans = await Plan.find().lean();
@@ -24,16 +16,11 @@ export async function GET() {
     console.error('Admin get plans error:', error);
     return apiErr('internal_error', 'Internal server error', 500);
   }
-}
+});
 
 // PATCH to update a plan { id, ...fields }
-export async function PATCH(request: NextRequest) {
+export const PATCH = withAdmin(async (request: NextRequest) => {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user || (session.user as AdminSessionUser).role !== 'admin') {
-      return apiErr('forbidden', 'Admin access required', 403);
-    }
-
     const body = await request.json();
     const { id, name, price, duration, features, isActive } = body;
     if (!id) {
@@ -77,16 +64,11 @@ export async function PATCH(request: NextRequest) {
     console.error('Admin update plan error:', error);
     return apiErr('internal_error', 'Internal server error', 500);
   }
-}
+});
 
 // POST to create a new plan
-export async function POST(request: NextRequest) {
+export const POST = withAdmin(async (request: NextRequest) => {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user || (session.user as AdminSessionUser).role !== 'admin') {
-      return apiErr('forbidden', 'Admin access required', 403);
-    }
-
     const body = await request.json();
     const { name, price, duration, features = [], isActive = true } = body;
 
@@ -132,16 +114,11 @@ export async function POST(request: NextRequest) {
     console.error('Admin create plan error:', error);
     return apiErr('internal_error', 'Internal server error', 500);
   }
-}
+});
 
 // DELETE to remove a plan
-export async function DELETE(request: NextRequest) {
+export const DELETE = withAdmin(async (request: NextRequest) => {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user || (session.user as AdminSessionUser).role !== 'admin') {
-      return apiErr('forbidden', 'Admin access required', 403);
-    }
-
     const body = await request.json();
     const { id } = body;
 
@@ -161,4 +138,4 @@ export async function DELETE(request: NextRequest) {
     console.error('Admin delete plan error:', error);
     return apiErr('internal_error', 'Internal server error', 500);
   }
-}
+});

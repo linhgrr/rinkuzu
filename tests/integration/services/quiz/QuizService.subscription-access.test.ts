@@ -1,10 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { QuizService } from '@/services/quiz/QuizService';
-import { createSubscriptionService } from '@/lib/subscriptionFactory';
+import { ServiceFactory } from '@/lib/serviceFactory';
 
-vi.mock('@/lib/subscriptionFactory', () => ({
-  createSubscriptionService: vi.fn(),
+vi.mock('@/lib/serviceFactory', () => ({
+  ServiceFactory: {
+    createSubscriptionService: vi.fn(),
+  },
 }));
 
 function createQuizService(quiz: any) {
@@ -60,7 +62,7 @@ describe('QuizService subscription access gates', () => {
   });
 
   it('blocks discussion reads for non-premium users on private quizzes', async () => {
-    vi.mocked(createSubscriptionService).mockReturnValue({
+    vi.mocked(ServiceFactory.createSubscriptionService).mockReturnValue({
       isUserPremium: vi.fn().mockResolvedValue(false),
     } as any);
     const { service, discussionRepository } = createQuizService(privateQuiz);
@@ -76,7 +78,7 @@ describe('QuizService subscription access gates', () => {
   });
 
   it('allows discussion reads for premium users on private quizzes', async () => {
-    vi.mocked(createSubscriptionService).mockReturnValue({
+    vi.mocked(ServiceFactory.createSubscriptionService).mockReturnValue({
       isUserPremium: vi.fn().mockResolvedValue(true),
     } as any);
     const { service, discussionRepository } = createQuizService(privateQuiz);

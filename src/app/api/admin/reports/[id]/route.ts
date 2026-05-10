@@ -1,21 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { withAdmin } from '@/lib/api/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
-import { AsyncRouteParams } from '@/types/next-route';
 import { apiErr } from '@/lib/api/response';
 
 export const dynamic = 'force-dynamic';
 
-export async function PATCH(request: NextRequest, { params }: AsyncRouteParams<{ id: string }>) {
+export const PATCH = withAdmin(async (request: NextRequest, context) => {
   try {
-    const { id } = await params;
-    const session = await getServerSession(authOptions);
-
-    if (!session?.user || (session.user as any)?.role !== 'admin') {
-      return apiErr('forbidden', 'Admin access required', 403);
-    }
-
+    const { id } = await context.params;
     const { status } = await request.json();
 
     if (!['pending', 'resolved', 'dismissed'].includes(status)) {
@@ -37,16 +29,11 @@ export async function PATCH(request: NextRequest, { params }: AsyncRouteParams<{
     console.error('Error updating report:', error);
     return apiErr('internal_error', 'Internal server error', 500);
   }
-}
+});
 
-export async function DELETE(request: NextRequest, { params }: AsyncRouteParams<{ id: string }>) {
+export const DELETE = withAdmin(async (request: NextRequest, context) => {
   try {
-    const { id } = await params;
-    const session = await getServerSession(authOptions);
-
-    if (!session?.user || (session.user as any)?.role !== 'admin') {
-      return apiErr('forbidden', 'Admin access required', 403);
-    }
+    const { id } = await context.params;
 
     const adminService = serviceFactory.getAdminService();
     const result = await adminService.deleteReport(id);
@@ -63,4 +50,4 @@ export async function DELETE(request: NextRequest, { params }: AsyncRouteParams<
     console.error('Error deleting report:', error);
     return apiErr('internal_error', 'Internal server error', 500);
   }
-}
+});

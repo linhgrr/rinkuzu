@@ -1,19 +1,19 @@
 'use client';
 
-import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { ConfirmModal } from '@/components/ui/ConfirmModal';
-import { StreamingChatModal } from '@/features/quiz/components/chat/StreamingChatModal';
-import { QuestionOptionsPreview } from '@/features/quiz/components/shared/QuestionOptionsPreview';
 import { useStreamingChatSession } from '@/features/quiz/hooks/useStreamingChatSession';
 import { fetchApiSuccess } from '@/lib/api/client';
 import { routePathSegment } from '@/lib/routing/routeParams';
 import { useRequiredRouteParam } from '@/lib/routing/useRequiredRouteParam';
+import { ResultStats } from '@/features/quiz/components/result/ResultStats';
+import { QuestionReviewList } from '@/features/quiz/components/result/QuestionReviewList';
+import { BookmarkPanel } from '@/features/quiz/components/result/BookmarkPanel';
+import { AIExplainPanel } from '@/features/quiz/components/result/AIExplainPanel';
 
 interface QuizResult {
   _id: string;
@@ -380,17 +380,6 @@ export default function QuizResultPage() {
     );
   }
 
-  const OptionImage = ({ src, alt }: { src: string; alt: string }) => (
-    <Image
-      src={src}
-      alt={alt}
-      width={320}
-      height={200}
-      className="max-w-full h-auto rounded border"
-      style={{ maxHeight: '200px' }}
-    />
-  );
-
   return (
     <div className="min-h-screen bg-neutral-50">
       {/* Header */}
@@ -414,334 +403,43 @@ export default function QuizResultPage() {
       </div>
 
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Score Card */}
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle className="text-center">{tProfile('avgScore')}</CardTitle>
-          </CardHeader>
-          <CardContent className="text-center">
-            <div className="space-y-4">
-              <div className={`text-6xl font-bold ${getScoreColor(result.score)}`}>
-                {result.score}%
-              </div>
+        <ResultStats
+          score={result.score}
+          correctCount={correctCount}
+          incorrectCount={incorrectCount}
+          unansweredCount={unansweredCount}
+          totalQuestions={totalQuestions}
+          chatHistories={chatHistories}
+          getChatStats={getChatStats}
+          getScoreColor={getScoreColor}
+          getScoreMessage={getScoreMessage}
+          t={t}
+          tProfile={tProfile}
+        />
 
-              <div className="text-xl text-neutral-700">{getScoreMessage(result.score)}</div>
+        <BookmarkPanel
+          bookmarkMessage={bookmarkMessage}
+          bookmarkMessageTone={bookmarkMessageTone}
+          onDismissMessage={() => setBookmarkMessage('')}
+          bookmarkToRemove={bookmarkToRemove}
+          bookmarkLoading={bookmarkLoading}
+          onCancelRemove={() => setBookmarkToRemove(null)}
+          onConfirmRemove={() => bookmarkToRemove !== null && removeBookmark(bookmarkToRemove)}
+          t={t}
+        />
 
-              <div className="grid grid-cols-2 gap-4 sm:flex sm:justify-center sm:space-x-8 text-sm text-neutral-600">
-                <div className="text-center">
-                  <div className="font-semibold text-lg text-neutral-900">{correctCount}</div>
-                  <div>{tProfile('correct')}</div>
-                </div>
-                <div className="text-center">
-                  <div className="font-semibold text-lg text-neutral-900">{incorrectCount}</div>
-                  <div>{t('incorrect')}</div>
-                </div>
-                <div className="text-center">
-                  <div className="font-semibold text-lg text-neutral-900">{unansweredCount}</div>
-                  <div>{t('unanswered')}</div>
-                </div>
-                <div className="text-center">
-                  <div className="font-semibold text-lg text-neutral-900">{totalQuestions}</div>
-                  <div>{t('total', { ns: 'common' })}</div>
-                </div>
-              </div>
-
-              {/* Score visualization */}
-              <div className="w-full bg-neutral-200 rounded-full h-4 mt-6">
-                <div
-                  className={`h-4 rounded-full transition-all duration-1000 ${
-                    result.score >= 80
-                      ? 'bg-green-500'
-                      : result.score >= 60
-                        ? 'bg-yellow-500'
-                        : 'bg-red-500'
-                  }`}
-                  style={{ width: `${result.score}%` }}
-                ></div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Performance Breakdown */}
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle>{t('performanceSummary')}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-              <div className="text-center p-4 bg-green-50 rounded-lg">
-                <div className="text-2xl font-bold text-green-600">{correctCount}</div>
-                <div className="text-sm text-green-700">{tProfile('correct')}</div>
-              </div>
-              <div className="text-center p-4 bg-red-50 rounded-lg">
-                <div className="text-2xl font-bold text-red-600">{incorrectCount}</div>
-                <div className="text-sm text-red-700">{t('incorrect')}</div>
-              </div>
-              <div className="text-center p-4 bg-neutral-50 rounded-lg">
-                <div className="text-2xl font-bold text-neutral-600">{unansweredCount}</div>
-                <div className="text-sm text-neutral-700">{t('unanswered')}</div>
-              </div>
-              <div className="text-center p-4 bg-green-50 rounded-lg">
-                <div className="text-2xl font-bold text-brand-trust">{result.score}%</div>
-                <div className="text-sm text-brand-trust">{tProfile('avgScore')}</div>
-              </div>
-            </div>
-
-            {/* Chat Statistics */}
-            {Object.keys(chatHistories).length > 0 &&
-              (() => {
-                const { totalTurns, questionsWithChat } = getChatStats();
-                return totalTurns > 0 ? (
-                  <div className="border-t pt-4">
-                    <h4 className="text-sm font-medium text-neutral-700 mb-3">
-                      {tProfile('chatWithRinChan')} Statistics
-                    </h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="text-center p-3 bg-green-50 rounded-lg">
-                        <div className="text-xl font-bold text-brand-trust">{totalTurns}</div>
-                        <div className="text-sm text-green-700">Total Chat Turns</div>
-                      </div>
-                      <div className="text-center p-3 bg-green-50 rounded-lg">
-                        <div className="text-xl font-bold text-brand-trust">
-                          {questionsWithChat}
-                        </div>
-                        <div className="text-sm text-green-700">Questions Discussed</div>
-                      </div>
-                    </div>
-                  </div>
-                ) : null;
-              })()}
-          </CardContent>
-        </Card>
-
-        {/* Bookmark Message */}
-        {bookmarkMessage && (
-          <div
-            className={`mb-4 p-4 rounded-lg border ${
-              bookmarkMessageTone === 'success'
-                ? 'bg-green-50 border-green-200 text-green-800'
-                : bookmarkMessageTone === 'warning'
-                  ? 'bg-yellow-50 border-yellow-200 text-yellow-800'
-                  : 'bg-red-50 border-red-200 text-red-800'
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <span className="font-medium">{bookmarkMessage}</span>
-              <button
-                onClick={() => setBookmarkMessage('')}
-                className="text-neutral-500 hover:text-neutral-700"
-              >
-                ✕
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Detailed Results */}
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle>{tProfile('details')}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-6">
-              {result.quiz.questions.map((questionResult, index) => {
-                // Calculate if answered based on user answer
-                const isAnswered =
-                  questionResult.type === 'single'
-                    ? questionResult.userAnswer !== -1
-                    : Array.isArray(questionResult.userAnswer) &&
-                      questionResult.userAnswer.length > 0;
-
-                return (
-                  <div
-                    key={index}
-                    className={`border rounded-lg p-4 ${
-                      questionResult.isCorrect
-                        ? 'border-green-200 bg-green-50'
-                        : isAnswered
-                          ? 'border-red-200 bg-red-50'
-                          : 'border-neutral-200 bg-neutral-50'
-                    }`}
-                  >
-                    <div className="mb-3">
-                      <div className="mb-5 flex space-x-2">
-                        <Button
-                          variant="outline"
-                          onClick={() => toggleBookmark(index, questionResult)}
-                          disabled={bookmarkLoading.has(index)}
-                          className={`${
-                            bookmarkedQuestions.has(index)
-                              ? 'text-yellow-600 border-yellow-200 bg-yellow-50 hover:bg-yellow-100'
-                              : 'text-neutral-600 border-neutral-200 hover:bg-neutral-50'
-                          }`}
-                          title={
-                            bookmarkedQuestions.has(index)
-                              ? 'Remove bookmark'
-                              : 'Bookmark this question'
-                          }
-                        >
-                          {bookmarkLoading.has(index) ? (
-                            <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                          ) : bookmarkedQuestions.has(index) ? (
-                            t('bookmarked')
-                          ) : (
-                            t('bookmark')
-                          )}
-                        </Button>
-                        <Button
-                          variant="outline"
-                          onClick={() => openAIModal(questionResult, index)}
-                          className="text-brand-trust border-green-200 hover:bg-green-50 hover:border-green-300"
-                        >
-                          {t('askRinChan')}
-                          {getHistory(index).length > 0 && (
-                            <span className="ml-1 px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs">
-                              {Math.floor(getHistory(index).length / 2)}
-                            </span>
-                          )}
-                        </Button>
-                      </div>
-
-                      <div className="flex items-start justify-between mb-2">
-                        <h3 className="font-semibold text-neutral-900 flex-1">
-                          {index + 1}. {questionResult.question}
-                        </h3>
-                        <div className="flex items-center space-x-2">
-                          <span
-                            className={`px-2 py-1 rounded text-xs font-medium ${
-                              questionResult.type === 'single'
-                                ? 'bg-green-100 text-green-700'
-                                : 'bg-green-100 text-green-800'
-                            }`}
-                          >
-                            {questionResult.type === 'single'
-                              ? tProfile('singleChoice')
-                              : tProfile('multipleChoice')}
-                          </span>
-                          <span
-                            className={`px-2 py-1 rounded text-xs font-medium ${
-                              questionResult.isCorrect
-                                ? 'bg-green-100 text-green-800'
-                                : isAnswered
-                                  ? 'bg-red-100 text-red-800'
-                                  : 'bg-neutral-100 text-neutral-600'
-                            }`}
-                          >
-                            {questionResult.isCorrect
-                              ? `✓ ${tProfile('correct')}`
-                              : isAnswered
-                                ? '✗ Incorrect'
-                                : `— ${t('notAnswered')}`}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {questionResult.questionImage && (
-                      <div className="mb-4">
-                        <OptionImage src={questionResult.questionImage} alt="Question image" />
-                      </div>
-                    )}
-
-                    <div className="space-y-2">
-                      <div className="text-sm">
-                        <span className="font-medium text-neutral-700">{t('yourAnswer')}: </span>
-                        <span
-                          className={
-                            questionResult.isCorrect
-                              ? 'text-green-600'
-                              : isAnswered
-                                ? 'text-red-600'
-                                : 'text-neutral-500'
-                          }
-                        >
-                          {formatAnswer(
-                            questionResult.userAnswer,
-                            questionResult.options,
-                            questionResult.type,
-                            isAnswered,
-                          )}
-                        </span>
-                      </div>
-
-                      {!questionResult.isCorrect && (
-                        <div className="text-sm">
-                          <span className="font-medium text-neutral-700">
-                            {tProfile('correct')}:{' '}
-                          </span>
-                          <span className="text-green-600">
-                            {formatCorrectAnswer(questionResult)}
-                          </span>
-                        </div>
-                      )}
-
-                      <div className="mt-3">
-                        <p className="text-sm text-neutral-600 font-medium mb-2">
-                          {t('allOptions')}:
-                        </p>
-                        <div className="grid grid-cols-1 gap-1">
-                          {questionResult.options.map((option, optIdx) => {
-                            let isUserAnswer = false;
-
-                            // Only check for user answer if question was answered
-                            if (isAnswered) {
-                              isUserAnswer =
-                                questionResult.type === 'single'
-                                  ? questionResult.userAnswer === optIdx
-                                  : (questionResult.userAnswer as number[]).includes(optIdx);
-                            }
-
-                            const isCorrectAnswer =
-                              questionResult.type === 'single'
-                                ? questionResult.correctIndex === optIdx
-                                : questionResult.correctIndexes?.includes(optIdx);
-
-                            const optionText = String.fromCharCode(65 + optIdx) + '. ' + option;
-
-                            return (
-                              <div
-                                key={optIdx}
-                                className={`text-sm p-2 rounded border ${
-                                  isCorrectAnswer
-                                    ? 'bg-green-100 border-green-300 text-green-800'
-                                    : isUserAnswer
-                                      ? 'bg-red-100 border-red-300 text-red-800'
-                                      : 'bg-neutral-50 border-neutral-200 text-neutral-700'
-                                }`}
-                              >
-                                <div className="flex-1">
-                                  <span className="text-neutral-900">{optionText}</span>
-
-                                  {(() => {
-                                    const optionImage = questionResult.optionImages?.[optIdx];
-                                    return optionImage ? (
-                                      <div className="mt-2">
-                                        <OptionImage
-                                          src={optionImage}
-                                          alt={`Option ${String.fromCharCode(65 + optIdx)} image`}
-                                        />
-                                      </div>
-                                    ) : null;
-                                  })()}
-                                </div>
-
-                                {isCorrectAnswer && <span className="ml-2 text-green-600">✓</span>}
-                                {isUserAnswer && !isCorrectAnswer && isAnswered && (
-                                  <span className="ml-2 text-red-600">✗</span>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
+        <QuestionReviewList
+          questions={result.quiz.questions}
+          bookmarkedQuestions={bookmarkedQuestions}
+          bookmarkLoading={bookmarkLoading}
+          onToggleBookmark={toggleBookmark}
+          onOpenAI={openAIModal}
+          getHistory={getHistory}
+          formatAnswer={formatAnswer}
+          formatCorrectAnswer={formatCorrectAnswer}
+          t={t}
+          tProfile={tProfile}
+        />
 
         {/* Action Buttons */}
         <div className="flex justify-center space-x-4">
@@ -754,49 +452,39 @@ export default function QuizResultPage() {
         </div>
       </main>
 
-      {showAIModal && (
-        <StreamingChatModal
-          isOpen={showAIModal}
-          onClose={closeAIModal}
-          title={tProfile('chatWithRinChan')}
-          questionContent={
-            <QuestionOptionsPreview
-              questionText={aiQuestionData?.question}
-              options={aiQuestionData?.options || []}
-              questionImage={aiQuestionData?.questionImage}
-              optionImages={aiQuestionData?.optionImages}
-            />
-          }
-          messages={getHistory(currentQuestionIndex)}
-          userLabel={tProfile('you')}
-          assistantLabel={tProfile('rinChan')}
-          userQuestion={userQuestion}
-          onUserQuestionChange={setUserQuestion}
-          onKeyDown={handleKeyPress}
-          onSend={askAI}
-          sendDisabled={loadingAI || !userQuestion.trim()}
-          sendLabel={t('askRinChan')}
-          loadingLabel={tProfile('thinking')}
-          loadingAI={loadingAI}
-          aiError={aiError}
-          inputPlaceholder={t('questionPlaceholder')}
-          inputMode="textarea"
-          inputHintLeft={t('leaveEmptyGeneral')}
-          inputHintRight={`Press Ctrl+Enter ${t('send', { ns: 'common' })}`}
-          clearLabel={t('clear', { ns: 'common' })}
-          onClearHistory={() => clearChatHistory(currentQuestionIndex)}
-          showTimestamps
-        />
-      )}
-
-      <ConfirmModal
-        isOpen={bookmarkToRemove !== null}
-        title={t('removeBookmarkTitle')}
-        message={t('removeBookmarkConfirm')}
-        confirmText={t('removeBookmark')}
-        onCancel={() => setBookmarkToRemove(null)}
-        onConfirm={() => bookmarkToRemove !== null && removeBookmark(bookmarkToRemove)}
-        isLoading={bookmarkToRemove !== null && bookmarkLoading.has(bookmarkToRemove)}
+      <AIExplainPanel
+        isOpen={showAIModal}
+        onClose={closeAIModal}
+        questionContent={
+          aiQuestionData
+            ? {
+                questionText: aiQuestionData.question,
+                options: aiQuestionData.options || [],
+                questionImage: aiQuestionData.questionImage,
+                optionImages: aiQuestionData.optionImages,
+              }
+            : null
+        }
+        messages={getHistory(currentQuestionIndex)}
+        userLabel={tProfile('you')}
+        assistantLabel={tProfile('rinChan')}
+        userQuestion={userQuestion}
+        onUserQuestionChange={setUserQuestion}
+        onKeyDown={handleKeyPress}
+        onSend={askAI}
+        sendDisabled={loadingAI || !userQuestion.trim()}
+        sendLabel={t('askRinChan')}
+        loadingLabel={tProfile('thinking')}
+        loadingAI={loadingAI}
+        aiError={aiError}
+        inputPlaceholder={t('questionPlaceholder')}
+        inputMode="textarea"
+        inputHintLeft={t('leaveEmptyGeneral')}
+        inputHintRight={`Press Ctrl+Enter ${t('send', { ns: 'common' })}`}
+        clearLabel={t('clear', { ns: 'common' })}
+        onClearHistory={() => clearChatHistory(currentQuestionIndex)}
+        showTimestamps
+        title={tProfile('chatWithRinChan')}
       />
     </div>
   );

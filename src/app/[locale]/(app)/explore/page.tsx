@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
+import useSWR from 'swr';
 import Navigation from '@/components/Navigation';
 import Sidebar from '@/components/Sidebar';
 import { Button } from '@/components/ui/Button';
@@ -20,6 +21,7 @@ import {
 import Pagination from '@/components/ui/Pagination';
 import CategorySearch from '@/features/categories/components/CategorySearch';
 import { formatDisplayDate } from '@/shared/utils/constants';
+import { swrFetcher } from '@/lib/api/swr-fetcher';
 import {
   HiOutlineSearch,
   HiOutlineQuestionMarkCircle,
@@ -141,17 +143,12 @@ function ExploreContent() {
   const searchParams = useSearchParams();
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [quizzes, setQuizzes] = useState<Quiz[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [pagination, setPagination] = useState<PaginationData>({
-    page: parseInt(searchParams.get('page') || '1', 10),
-    limit: 12,
-    total: 0,
-    totalPages: 0,
-  });
+  const [page, setPage] = useState(parseInt(searchParams.get('page') || '1', 10));
+  const limit = 12;
 
   // Filters - initialize from URL
   const [search, setSearch] = useState(searchParams.get('q') || '');
+  const [committedSearch, setCommittedSearch] = useState(searchParams.get('q') || '');
   const [categoryId, setCategoryId] = useState<string | null>(searchParams.get('category') || null);
 
   // Sync state to URL
@@ -168,55 +165,39 @@ function ExploreContent() {
     [router],
   );
 
-  const fetchQuizzes = useCallback(
-    async (page: number) => {
-      setLoading(true);
-      try {
-        const params = new URLSearchParams({
-          page: page.toString(),
-          limit: pagination.limit.toString(),
-          status: 'published',
-          compact: 'true',
-        });
+  // SWR fetch — key changes trigger automatic re-fetch
+  const swrParams = new URLSearchParams({
+    page: page.toString(),
+    limit: limit.toString(),
+    status: 'published',
+    compact: 'true',
+  });
+  if (committedSearch) swrParams.append('search', committedSearch);
+  if (categoryId) swrParams.append('category', categoryId);
 
-        if (search) params.append('search', search);
-        if (categoryId) params.append('category', categoryId);
-
-        const res = await fetch(`/api/quizzes?${params}`);
-        const data = await res.json();
-
-        if (data.success) {
-          setQuizzes(data.data.quizzes);
-          setPagination(data.data.pagination);
-        }
-      } catch (error) {
-        console.error('Failed to fetch quizzes', error);
-      } finally {
-        setLoading(false);
-      }
-    },
-    [pagination.limit, search, categoryId],
+  const { data, isLoading } = useSWR(
+    `/api/quizzes?${swrParams}`,
+    swrFetcher<{ quizzes: Quiz[]; pagination: PaginationData }>,
   );
 
-  useEffect(() => {
-    fetchQuizzes(1);
-  }, [categoryId, fetchQuizzes]);
+  const quizzes = data?.quizzes ?? [];
+  const pagination = data?.pagination ?? { page, limit, total: 0, totalPages: 0 };
 
-  // Debounce search
+  // Debounce search — update committedSearch after 500ms, resetting page to 1
   useEffect(() => {
     const timer = setTimeout(() => {
-      fetchQuizzes(1);
+      setCommittedSearch(search);
+      setPage(1);
     }, 500);
     return () => clearTimeout(timer);
-  }, [search, fetchQuizzes]);
+  }, [search]);
 
   const handlePageChange = useCallback(
     (newPage: number) => {
-      setPagination((prev) => ({ ...prev, page: newPage }));
-      fetchQuizzes(newPage);
+      setPage(newPage);
       updateURL(search, categoryId, newPage);
     },
-    [fetchQuizzes, search, categoryId, updateURL],
+    [search, categoryId, updateURL],
   );
 
   const handleSidebarToggle = useCallback(() => {
@@ -234,18 +215,22 @@ function ExploreContent() {
 
   const handleClearFilters = useCallback(() => {
     setSearch('');
+    setCommittedSearch('');
     setCategoryId(null);
+    setPage(1);
     updateURL('', null, 1);
   }, [updateURL]);
 
   const handleClearCategory = useCallback(() => {
     setCategoryId(null);
-    updateURL(search, null, pagination.page);
-  }, [search, pagination.page, updateURL]);
+    setPage(1);
+    updateURL(search, null, page);
+  }, [search, page, updateURL]);
 
   const handleCategoryChange = useCallback(
     (newCategoryId: string | null) => {
       setCategoryId(newCategoryId);
+      setPage(1);
       updateURL(search, newCategoryId, 1);
     },
     [search, updateURL],
@@ -307,7 +292,7 @@ function ExploreContent() {
           </div>
 
           {/* Quiz Grid */}
-          {loading ? (
+          {isLoading ? (
             <LoadingSkeleton />
           ) : quizzes.length === 0 ? (
             <EmptyState onClear={handleClearFilters} />

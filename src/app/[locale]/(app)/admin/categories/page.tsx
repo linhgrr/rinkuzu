@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import { useTranslations } from 'next-intl';
+import useSWR from 'swr';
 import { Button } from '@/components/ui/Button';
 import { Input, Textarea } from '@/components/ui/Input';
 import { Card, CardContent } from '@/components/ui/Card';
@@ -14,6 +15,7 @@ import { ErrorState } from '@/components/ui/ErrorState';
 import { AdminPageShell } from '@/components/admin/AdminPageShell';
 import { PaginationMeta } from '@/types';
 import { HiOutlinePlus, HiOutlinePencil, HiOutlineTrash } from '@/components/icons';
+import { swrFetcher } from '@/lib/api/swr-fetcher';
 
 interface Category {
   _id: string;
@@ -31,19 +33,33 @@ interface Category {
 export default function AdminCategoriesPage() {
   const t = useTranslations('admin');
   const tCommon = useTranslations('common');
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [page, setPage] = useState(1);
+  const [localError, setLocalError] = useState('');
   const ITEMS_PER_PAGE = 20;
-  const [pagination, setPagination] = useState<PaginationMeta>({
-    currentPage: 1,
+
+  const queryParams = new URLSearchParams({
+    page: page.toString(),
+    limit: ITEMS_PER_PAGE.toString(),
+  });
+  if (searchTerm.trim()) {
+    queryParams.append('search', searchTerm.trim());
+  }
+
+  const { data, error, isLoading, mutate } = useSWR(
+    `/api/admin/categories?${queryParams}`,
+    swrFetcher<{ categories: Category[]; pagination: PaginationMeta }>,
+  );
+
+  const categories = data?.categories ?? [];
+  const pagination = data?.pagination ?? {
+    currentPage: page,
     totalPages: 0,
     totalItems: 0,
     itemsPerPage: ITEMS_PER_PAGE,
     hasNextPage: false,
     hasPrevPage: false,
-  });
+  };
 
   // Modal states
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -61,48 +77,13 @@ export default function AdminCategoriesPage() {
     isActive: true,
   });
 
-  const fetchCategories = useCallback(async (page: number = 1, search: string = '') => {
-    try {
-      setLoading(true);
-      const params = new URLSearchParams({
-        page: page.toString(),
-        limit: ITEMS_PER_PAGE.toString(),
-      });
-
-      if (search.trim()) {
-        params.append('search', search.trim());
-      }
-
-      const response = await fetch(`/api/admin/categories?${params}`);
-      const data = await response.json();
-
-      if (data.success) {
-        setCategories(data.data.categories);
-        setPagination(data.data.pagination);
-        setError('');
-      } else {
-        setError(data.error || 'Failed to fetch categories');
-      }
-    } catch (_error) {
-      setError('An error occurred while fetching categories');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchCategories();
-  }, [fetchCategories]);
-
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    setPagination((prev) => ({ ...prev, currentPage: 1 }));
-    fetchCategories(1, searchTerm);
+    setPage(1);
   };
 
   const handlePageChange = (newPage: number) => {
-    setPagination((prev) => ({ ...prev, currentPage: newPage }));
-    fetchCategories(newPage, searchTerm);
+    setPage(newPage);
   };
 
   const resetForm = () => {
@@ -141,7 +122,7 @@ export default function AdminCategoriesPage() {
     e.preventDefault();
 
     if (!formData.name.trim()) {
-      setError('Category name is required');
+      setLocalError('Category name is required');
       return;
     }
 
@@ -164,14 +145,14 @@ export default function AdminCategoriesPage() {
       const data = await response.json();
 
       if (data.success) {
-        fetchCategories(pagination.currentPage, searchTerm);
+        mutate();
         closeModals();
-        setError('');
+        setLocalError('');
       } else {
-        setError(data.error || 'Failed to save category');
+        setLocalError(data.error || 'Failed to save category');
       }
     } catch (_error) {
-      setError('An error occurred while saving category');
+      setLocalError('An error occurred while saving category');
     } finally {
       setSubmitting(false);
     }
@@ -187,13 +168,13 @@ export default function AdminCategoriesPage() {
       const data = await response.json();
 
       if (data.success) {
-        fetchCategories(pagination.currentPage, searchTerm);
-        setError('');
+        mutate();
+        setLocalError('');
       } else {
-        setError(data.error || 'Failed to delete category');
+        setLocalError(data.error || 'Failed to delete category');
       }
     } catch (_error) {
-      setError('An error occurred while deleting category');
+      setLocalError('An error occurred while deleting category');
     } finally {
       setDeleting(false);
     }
@@ -239,8 +220,8 @@ export default function AdminCategoriesPage() {
                 className="w-full"
               />
             </div>
-            <Button type="submit" disabled={loading}>
-              {loading ? t('searching') : t('search')}
+            <Button type="submit" disabled={isLoading}>
+              {isLoading ? t('searching') : t('search')}
             </Button>
             {searchTerm && (
               <Button
@@ -248,8 +229,7 @@ export default function AdminCategoriesPage() {
                 variant="outline"
                 onClick={() => {
                   setSearchTerm('');
-                  setPagination((prev) => ({ ...prev, page: 1 }));
-                  fetchCategories(1, '');
+                  setPage(1);
                 }}
               >
                 {tCommon('clear')}
@@ -259,13 +239,15 @@ export default function AdminCategoriesPage() {
         </div>
 
         {/* Error */}
-        {error && <ErrorState message={error} className="mb-6" />}
+        {(error || localError) && (
+          <ErrorState message={error?.message || localError || ''} className="mb-6" />
+        )}
 
         {/* Loading */}
-        {loading && <LoadingState text={t('loadingStatistics')} />}
+        {isLoading && <LoadingState text={t('loadingStatistics')} />}
 
         {/* Categories Table */}
-        {!loading && categories.length > 0 && (
+        {!isLoading && categories.length > 0 && (
           <Card className="mb-8">
             <CardContent className="p-0">
               <div className="overflow-x-auto">
@@ -355,7 +337,7 @@ export default function AdminCategoriesPage() {
         )}
 
         {/* No Results */}
-        {!loading && categories.length === 0 && (
+        {!isLoading && categories.length === 0 && (
           <EmptyState
             title={t('noCategoriesFound')}
             description={searchTerm ? t('tryAdjustingSearch') : t('getStartedCategory')}
@@ -370,7 +352,7 @@ export default function AdminCategoriesPage() {
         )}
 
         {/* Pagination */}
-        {!loading && pagination.totalPages > 1 && (
+        {!isLoading && pagination.totalPages > 1 && (
           <div className="flex items-center justify-between border-t border-neutral-200 bg-white px-4 py-3 sm:px-6 rounded-lg">
             <div className="flex flex-1 justify-between sm:hidden">
               <Button

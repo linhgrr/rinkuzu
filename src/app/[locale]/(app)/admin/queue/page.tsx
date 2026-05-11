@@ -19,6 +19,7 @@ import { Modal } from '@/components/ui/Modal';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { QuizPreviewModal } from '@/features/quiz/components/QuizPreviewModal';
 import Pagination from '@/components/ui/Pagination';
+import { fetchApiData } from '@/lib/api/client';
 import { formatDate } from '@/lib/utils';
 import { IQuiz } from '@/types';
 import {
@@ -84,18 +85,14 @@ export default function AdminQueuePage() {
           params.append('status', 'pending');
         }
 
-        const response = await fetch(`/api/quizzes?${params}`);
-        const data = await response.json();
-
-        if (data.success) {
-          setQuizzes(data.data.quizzes);
-          setPagination(data.data.pagination);
-          setError('');
-        } else {
-          setError(data.error || 'Failed to fetch quizzes');
-        }
-      } catch (_error) {
-        setError('Failed to fetch quizzes');
+        const data = await fetchApiData<{ quizzes: IQuiz[]; pagination: PaginationData }>(
+          `/api/quizzes?${params}`,
+        );
+        setQuizzes(data.quizzes);
+        setPagination(data.pagination);
+        setError('');
+      } catch (error) {
+        setError(error instanceof Error ? error.message : 'Failed to fetch quizzes');
       } finally {
         setLoading(false);
       }
@@ -115,23 +112,16 @@ export default function AdminQueuePage() {
   const approveQuiz = async (quizId: string) => {
     setActionLoading(quizId);
     try {
-      const response = await fetch(`/api/quizzes/${quizId}/approve`, {
+      await fetchApiData(`/api/quizzes/${quizId}/approve`, {
         method: 'POST',
       });
-
-      const data = await response.json();
-
-      if (data.success) {
-        setQuizzes(
-          quizzes.map((quiz) =>
-            quiz._id === quizId ? { ...quiz, status: 'published' as any } : quiz,
-          ),
-        );
-      } else {
-        setError(data.error || 'Failed to approve quiz');
-      }
-    } catch (_error) {
-      setError('Failed to approve quiz');
+      setQuizzes(
+        quizzes.map((quiz) =>
+          quiz._id === quizId ? { ...quiz, status: 'published' as any } : quiz,
+        ),
+      );
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Failed to approve quiz');
     } finally {
       setActionLoading(null);
     }
@@ -142,7 +132,7 @@ export default function AdminQueuePage() {
 
     setActionLoading(selectedQuiz._id);
     try {
-      const response = await fetch(`/api/quizzes/${selectedQuiz._id}/reject`, {
+      await fetchApiData(`/api/quizzes/${selectedQuiz._id}/reject`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -151,23 +141,16 @@ export default function AdminQueuePage() {
           reason: rejectReason.trim(),
         }),
       });
-
-      const data = await response.json();
-
-      if (data.success) {
-        setQuizzes(
-          quizzes.map((quiz) =>
-            quiz._id === selectedQuiz._id ? { ...quiz, status: 'rejected' as any } : quiz,
-          ),
-        );
-        setShowRejectModal(false);
-        setSelectedQuiz(null);
-        setRejectReason('');
-      } else {
-        setError(data.error || 'Failed to reject quiz');
-      }
-    } catch (_error) {
-      setError('Failed to reject quiz');
+      setQuizzes(
+        quizzes.map((quiz) =>
+          quiz._id === selectedQuiz._id ? { ...quiz, status: 'rejected' as any } : quiz,
+        ),
+      );
+      setShowRejectModal(false);
+      setSelectedQuiz(null);
+      setRejectReason('');
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Failed to reject quiz');
     } finally {
       setActionLoading(null);
     }
@@ -196,21 +179,16 @@ export default function AdminQueuePage() {
     try {
       setDeletingQuizId(quizId);
 
-      const response = await fetch(`/api/quizzes/${quizId}`, {
+      await fetchApiData<null>(`/api/quizzes/${quizId}`, {
         method: 'DELETE',
       });
-
-      const data = await response.json();
-
-      if (data.success) {
-        // Remove quiz from local state
-        setQuizzes((prev) => prev.filter((q) => q._id !== quizId));
-        setError('');
-      } else {
-        setError(data.error || 'Failed to delete quiz');
-      }
-    } catch (_error) {
-      setError('An error occurred while deleting the quiz');
+      // Remove quiz from local state
+      setQuizzes((prev) => prev.filter((q) => q._id !== quizId));
+      setError('');
+    } catch (error) {
+      setError(
+        error instanceof Error ? error.message : 'An error occurred while deleting the quiz',
+      );
     } finally {
       setDeletingQuizId(null);
       closeDeleteConfirm();

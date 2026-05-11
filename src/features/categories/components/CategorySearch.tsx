@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/Input';
 import { CategoryOptionItem } from '@/features/categories/components/CategoryOptionItem';
 import { useCategorySearch } from '@/features/categories/hooks/useCategorySearch';
 import { useDropdownOutside } from '@/components/ui/hooks/use-dropdown-outside';
+import { fetchApiData } from '@/lib/api/client';
 
 interface Category {
   _id: string;
@@ -66,12 +67,8 @@ export function CategorySearch({
   const fetchCategories = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/categories/stats');
-      const data = await response.json();
-
-      if (data.success) {
-        setCategories(data.data.allCategories);
-      }
+      const data = await fetchApiData<{ allCategories: Category[] }>('/api/categories/stats');
+      setCategories(data.allCategories);
     } catch (error) {
       console.error('Failed to fetch categories:', error);
     } finally {

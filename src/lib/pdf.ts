@@ -1,4 +1,4 @@
-import { extractApiErrorMessage } from '@/lib/api/error';
+import { fetchApiData } from '@/lib/api/client';
 
 /**
  * PDF utility functions shared across create pages.
@@ -21,23 +21,21 @@ export async function getPdfPageCount(file: File): Promise<number> {
  * Returns the S3 key for the uploaded file.
  */
 export async function uploadPdfViaPresignedUrl(file: File): Promise<{ s3Key: string }> {
-  const response = await fetch('/api/storage/presigned-url', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      fileName: file.name,
-      contentType: file.type || 'application/pdf',
-      fileSize: file.size,
-      purpose: 'quiz',
-    }),
-  });
+  const { uploadUrl, s3Key } = await fetchApiData<{ uploadUrl: string; s3Key: string }>(
+    '/api/storage/presigned-url',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        fileName: file.name,
+        contentType: file.type || 'application/pdf',
+        fileSize: file.size,
+        purpose: 'quiz',
+      }),
+    },
+  );
 
-  const payload = await response.json();
-  if (!response.ok || !payload?.success || !payload?.data?.uploadUrl || !payload?.data?.s3Key) {
-    throw new Error(extractApiErrorMessage(payload, 'Failed to create upload URL'));
-  }
-
-  const putResponse = await fetch(payload.data.uploadUrl, {
+  const putResponse = await fetch(uploadUrl, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/pdf',
@@ -49,5 +47,5 @@ export async function uploadPdfViaPresignedUrl(file: File): Promise<{ s3Key: str
     throw new Error(`Storage upload failed with status ${putResponse.status}`);
   }
 
-  return { s3Key: payload.data.s3Key as string };
+  return { s3Key };
 }

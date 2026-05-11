@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import {
   HiOutlineSearch,
@@ -30,43 +30,10 @@ interface SidebarProps {
   currentPath?: string;
 }
 
-interface Category {
-  _id: string;
-  name: string;
-  description: string;
-  color: string;
-  quizCount: number;
-}
-
 export default function Sidebar({ isOpen, onToggle, currentPath }: SidebarProps) {
   const { data: session } = useSession();
   const t = useTranslations('nav');
   const [adminMenuOpen, setAdminMenuOpen] = useState(true);
-  const [_categoryMenuOpen, _setCategoryMenuOpen] = useState(true);
-  const [_categories, setCategories] = useState<Category[]>([]);
-
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const response = await fetch('/api/categories/stats');
-        const data = await response.json();
-
-        if (data.success) {
-          setCategories(data.data.allCategories.slice(0, 6)); // Show top 6 categories
-        }
-      } catch (error) {
-        console.error('Failed to fetch categories:', error);
-      }
-    };
-
-    if (session) {
-      fetchCategories();
-    }
-  }, [session]);
-
-  const _getCategorySlug = (categoryName: string) => {
-    return categoryName.toLowerCase().replace(/\s+/g, '-');
-  };
 
   if (!session) return null;
 

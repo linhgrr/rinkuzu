@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint . --max-warnings 0",
+    "lint": "npm run check:internal-api-fetch && eslint . --max-warnings 0",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
@@ -32,6 +32,7 @@
     "check:install": "npm ci --dry-run",
     "typecheck:strict": "tsc --noEmit --pretty false",
     "check:routes": "node scripts/check-route-param-safety.mjs",
+    "check:internal-api-fetch": "node scripts/check-internal-api-fetch.mjs",
     "generate:adaptive-contract": "node scripts/generate-adaptive-contract.mjs",
     "check:adaptive-contract": "node scripts/check-adaptive-contract.mjs"
   },

@@ -10,7 +10,7 @@ import { formatDate } from '@/lib/utils';
 import Pagination from '@/components/ui/Pagination';
 import { ROUTES } from '@/shared/constants';
 import { PaginationMeta } from '@/types';
-import { fetchApiSuccess } from '@/lib/api/client';
+import { fetchApiData } from '@/lib/api/client';
 import {
   HiOutlineDocumentText,
   HiOutlineClock,
@@ -51,10 +51,10 @@ export default function ProfileHistory() {
         limit: itemsPerPage.toString(),
       });
 
-      const data = await fetchApiSuccess<AttemptHistory[], { pagination: PaginationMeta }>(
+      const data = await fetchApiData<{ attempts: AttemptHistory[]; pagination: PaginationMeta }>(
         `/api/user/attempts?${params}`,
       );
-      setAttempts(data.data);
+      setAttempts(data.attempts);
       setPagination(data.pagination);
       setError('');
     } catch (error: any) {

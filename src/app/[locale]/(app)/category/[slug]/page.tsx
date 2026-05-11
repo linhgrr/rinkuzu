@@ -21,7 +21,7 @@ import Navigation from '@/components/Navigation';
 import { routePathSegment } from '@/lib/routing/routeParams';
 import { useRequiredRouteParam } from '@/lib/routing/useRequiredRouteParam';
 import { PaginationMeta } from '@/types';
-import { swrFetcher } from '@/lib/api/swr-fetcher';
+import { fetchApiData } from '@/lib/api/client';
 import {
   HiOutlineSearch,
   HiOutlineExclamationCircle,
@@ -82,7 +82,7 @@ export default function CategoryPage() {
 
   const { data, error, isLoading } = useSWR(
     `/api/categories/${encodedSlug}?${queryParams}`,
-    swrFetcher<{
+    fetchApiData<{
       category: Category;
       quizzes: Quiz[];
       pagination: PaginationMeta;

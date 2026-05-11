@@ -3,6 +3,7 @@ import { Input } from '@/components/ui/Input';
 import { CategoryOptionItem } from '@/features/categories/components/CategoryOptionItem';
 import { useDropdownOutside } from '@/components/ui/hooks/use-dropdown-outside';
 import { useCategorySearch } from '@/features/categories/hooks/useCategorySearch';
+import { fetchApiData } from '@/lib/api/client';
 
 interface Category {
   _id: string;
@@ -54,16 +55,10 @@ export function CategorySelector({
 
     setLoading(true);
     try {
-      const response = await fetch(
+      const data = await fetchApiData<Category[]>(
         `/api/categories/search?q=${encodeURIComponent(query)}&limit=10`,
       );
-      const data = await response.json();
-
-      if (data.success) {
-        setCategories(data.data);
-      } else {
-        setCategories([]);
-      }
+      setCategories(data);
     } catch (error) {
       console.error('Search categories error:', error);
       setCategories([]);

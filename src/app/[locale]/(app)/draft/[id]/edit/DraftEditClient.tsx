@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useDraftStore } from '@/store/useDraftStore';
+import { fetchApiData } from '@/lib/api/client';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
 import { Textarea } from '@/components/ui/Input';
@@ -140,7 +141,11 @@ export default function DraftEditClient({ initialDraft, initialCategory, locale 
     setIsSubmitting(true);
 
     try {
-      const response = await fetch(`/api/draft/${initialDraft._id}/submit`, {
+      const data = await fetchApiData<{
+        quizId: string;
+        slug: string;
+        warnings: string[];
+      }>(`/api/draft/${initialDraft._id}/submit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -153,18 +158,11 @@ export default function DraftEditClient({ initialDraft, initialCategory, locale 
         }),
       });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to submit');
-      }
-
-      const { slug } = await response.json();
-
       // Remove from store
       removeDraft(initialDraft._id);
 
       toast.success('Quiz đã được gửi để duyệt!');
-      router.push(`/${locale}/quiz/${slug}`);
+      router.push(`/${locale}/quiz/${data.slug}`);
     } catch (error: any) {
       toast.error('Lỗi', { description: error.message });
     } finally {

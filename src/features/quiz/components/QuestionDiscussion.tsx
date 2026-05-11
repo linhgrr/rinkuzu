@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
 import { Textarea } from '@/components/ui/Input';
 import { UserProfileLink } from '@/components/user/UserProfileLink';
+import { fetchApiData } from '@/lib/api/client';
 
 interface Comment {
   _id: string;
@@ -62,19 +63,11 @@ export function QuestionDiscussion({
     const fetchComments = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`/api/quiz/${quizSlug}/discussions`);
-        const data = await response.json();
-
-        if (data.success) {
-          const questionDiscussion = data.data.find(
-            (d: Discussion) => d.questionIndex === questionIndex,
-          );
-          setComments(questionDiscussion?.comments || []);
-        } else {
-          setError(data.error || t('failedToLoad'));
-        }
-      } catch (_error) {
-        setError(t('failedToLoad'));
+        const discussions = await fetchApiData<Discussion[]>(`/api/quiz/${quizSlug}/discussions`);
+        const questionDiscussion = discussions.find((d) => d.questionIndex === questionIndex);
+        setComments(questionDiscussion?.comments || []);
+      } catch (error) {
+        setError(error instanceof Error ? error.message : t('failedToLoad'));
       } finally {
         setLoading(false);
       }
@@ -100,7 +93,7 @@ export function QuestionDiscussion({
       setSubmitting(true);
       setError('');
 
-      const response = await fetch(`/api/quiz/${quizSlug}/discussions`, {
+      const discussion = await fetchApiData<Discussion>(`/api/quiz/${quizSlug}/discussions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -110,17 +103,10 @@ export function QuestionDiscussion({
           content: newComment.trim(),
         }),
       });
-
-      const data = await response.json();
-
-      if (data.success) {
-        setComments(data.data.comments);
-        setNewComment('');
-      } else {
-        setError(data.error || t('failedToPost'));
-      }
-    } catch (_error) {
-      setError(t('failedToPost'));
+      setComments(discussion.comments);
+      setNewComment('');
+    } catch (error) {
+      setError(error instanceof Error ? error.message : t('failedToPost'));
     } finally {
       setSubmitting(false);
     }

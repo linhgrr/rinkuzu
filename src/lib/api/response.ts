@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { buildStandardErrorBody } from './error';
 
-export function apiOk<T>(data: T, status = 200): NextResponse {
-  return NextResponse.json({ success: true as const, data }, { status });
+export function apiOk<T>(data: T, status = 200, extras?: Record<string, unknown>): NextResponse {
+  return NextResponse.json({ success: true as const, data, ...extras }, { status });
 }
 
 export function apiErr(

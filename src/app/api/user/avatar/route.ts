@@ -5,7 +5,7 @@ import connectDB from '@/lib/mongoose';
 import User from '@/models/User';
 import { s3Client, BUCKET_NAME, OBJECT_STORAGE_PUBLIC_BASE_URL } from '@/lib/s3';
 import { PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
-import { apiErr } from '@/lib/api/response';
+import { apiErr, apiOk } from '@/lib/api/response';
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
@@ -129,10 +129,7 @@ export async function DELETE() {
       await User.updateOne({ email: session.user.email }, { $unset: { avatar: 1 } });
     }
 
-    return NextResponse.json({
-      success: true,
-      message: 'Avatar removed',
-    });
+    return apiOk(null, 200, { message: 'Avatar removed' });
   } catch (error) {
     console.error('Delete avatar error:', error);
     return apiErr('internal_error', 'Internal server error', 500);

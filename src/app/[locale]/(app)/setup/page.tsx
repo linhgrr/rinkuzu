@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
+import { fetchApiData } from '@/lib/api/client';
 
 export default function SetupPage() {
   const router = useRouter();
@@ -16,6 +17,7 @@ export default function SetupPage() {
     adminExists: boolean;
     setupAllowed: boolean;
     userCount: number;
+    message?: string;
   } | null>(null);
 
   useEffect(() => {
@@ -24,16 +26,15 @@ export default function SetupPage() {
 
   const checkSetupStatus = async () => {
     try {
-      const response = await fetch('/api/admin/setup');
-      const data = await response.json();
-
-      if (data.success) {
-        setSetupStatus(data.data);
-      } else {
-        setError('Failed to check setup status');
-      }
-    } catch (_error) {
-      setError('Failed to check setup status');
+      const data = await fetchApiData<{
+        adminExists: boolean;
+        setupAllowed: boolean;
+        userCount: number;
+        message: string;
+      }>('/api/admin/setup');
+      setSetupStatus(data);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Failed to check setup status');
     } finally {
       setLoading(false);
     }
@@ -45,22 +46,15 @@ export default function SetupPage() {
     setSuccess('');
 
     try {
-      const response = await fetch('/api/admin/setup', {
+      const data = await fetchApiData<{ message: string }>('/api/admin/setup', {
         method: 'POST',
       });
-
-      const data = await response.json();
-
-      if (data.success) {
-        setSuccess(data.message);
-        setTimeout(() => {
-          router.push('/login');
-        }, 3000);
-      } else {
-        setError(data.error || 'Failed to create admin account');
-      }
-    } catch (_error) {
-      setError('Failed to create admin account');
+      setSuccess(data.message);
+      setTimeout(() => {
+        router.push('/login');
+      }, 3000);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Failed to create admin account');
     } finally {
       setCreating(false);
     }

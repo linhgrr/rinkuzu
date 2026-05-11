@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { extractApiErrorMessage } from '@/lib/api/error';
+import { fetchApiData } from '@/lib/api/client';
 
 function PaymentSuccessContent() {
   const t = useTranslations('subscription');
@@ -24,27 +24,19 @@ function PaymentSuccessContent() {
 
     const verifyPayment = async (orderCode: string) => {
       try {
-        const response = await fetch('/api/subscription/verify', {
+        await fetchApiData('/api/subscription/verify', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({ orderCode }),
         });
-
-        const data = await response.json();
-
-        if (data.success) {
-          setStatus('success');
-          setMessage(t('paymentSuccessMessage'));
-        } else {
-          setStatus('error');
-          setMessage(extractApiErrorMessage(data, t('errorTitle')));
-        }
+        setStatus('success');
+        setMessage(t('paymentSuccessMessage'));
       } catch (error) {
         console.error('Error verifying payment:', error);
         setStatus('error');
-        setMessage(t('errorTitle'));
+        setMessage(error instanceof Error ? error.message : t('errorTitle'));
       }
     };
 

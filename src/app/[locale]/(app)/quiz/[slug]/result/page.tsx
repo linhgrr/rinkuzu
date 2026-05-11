@@ -7,9 +7,10 @@ import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { useStreamingChatSession } from '@/features/quiz/hooks/useStreamingChatSession';
-import { fetchApiSuccess } from '@/lib/api/client';
+import { fetchApiData } from '@/lib/api/client';
 import { routePathSegment } from '@/lib/routing/routeParams';
 import { useRequiredRouteParam } from '@/lib/routing/useRequiredRouteParam';
+import { PaginationMeta } from '@/types';
 import { ResultStats } from '@/features/quiz/components/result/ResultStats';
 import { QuestionReviewList } from '@/features/quiz/components/result/QuestionReviewList';
 import { BookmarkPanel } from '@/features/quiz/components/result/BookmarkPanel';
@@ -88,10 +89,13 @@ export default function QuizResultPage() {
   // Check which questions are already bookmarked
   const checkBookmarkedQuestions = async (resultData: QuizResult) => {
     try {
-      const data = await fetchApiSuccess<BookmarkSummary[]>('/api/bookmarks');
+      const data = await fetchApiData<{
+        bookmarks: BookmarkSummary[];
+        pagination: PaginationMeta;
+      }>('/api/bookmarks');
       const bookmarkedSet = new Set<number>();
       const bookmarkIds: Record<number, string> = {};
-      data.data.forEach((bookmark) => {
+      data.bookmarks.forEach((bookmark) => {
         if (bookmark.quiz.slug === resultData.quiz.slug) {
           bookmarkedSet.add(bookmark.questionIndex);
           bookmarkIds[bookmark.questionIndex] = bookmark._id;
@@ -113,9 +117,9 @@ export default function QuizResultPage() {
       }
 
       try {
-        const data = await fetchApiSuccess<QuizResult>(`/api/attempts/${attemptId}`);
-        setResult(data.data);
-        await checkBookmarkedQuestions(data.data);
+        const data = await fetchApiData<QuizResult>(`/api/attempts/${attemptId}`);
+        setResult(data);
+        await checkBookmarkedQuestions(data);
       } catch (err: any) {
         setError(err.message || 'Failed to load results');
       } finally {
@@ -229,7 +233,7 @@ export default function QuizResultPage() {
     setBookmarkLoading((prev) => new Set(prev).add(questionIndex));
 
     try {
-      await fetchApiSuccess<null>(`/api/bookmarks/${bookmarkId}`, { method: 'DELETE' });
+      await fetchApiData<null>(`/api/bookmarks/${bookmarkId}`, { method: 'DELETE' });
       setBookmarkedQuestions((prev) => {
         const next = new Set(prev);
         next.delete(questionIndex);
@@ -286,7 +290,7 @@ export default function QuizResultPage() {
         questionIndex: questionIndex,
       };
 
-      const created = await fetchApiSuccess<BookmarkSummary>('/api/bookmarks', {
+      const created = await fetchApiData<BookmarkSummary>('/api/bookmarks', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -294,8 +298,8 @@ export default function QuizResultPage() {
         body: JSON.stringify(bookmarkData),
       });
       setBookmarkedQuestions((prev) => new Set(prev).add(questionIndex));
-      if (created.data?._id) {
-        setBookmarkIdsByQuestion((prev) => ({ ...prev, [questionIndex]: created.data._id }));
+      if (created._id) {
+        setBookmarkIdsByQuestion((prev) => ({ ...prev, [questionIndex]: created._id }));
       }
       setBookmarkMessageTone('success');
       setBookmarkMessage('Question bookmarked successfully!');

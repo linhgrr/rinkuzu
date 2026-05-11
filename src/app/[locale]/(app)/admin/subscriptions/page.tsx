@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
+import { fetchApiData } from '@/lib/api/client';
 import { Button } from '@/components/ui/Button';
 import {
   Card,
@@ -84,26 +85,27 @@ export default function AdminSubscriptionsPage() {
           params.append('status', status);
         }
 
-        const response = await fetch(`/api/admin/subscriptions?${params}`, {
+        const data = await fetchApiData<{
+          subscriptions: Subscription[];
+          pagination: {
+            currentPage: number;
+            itemsPerPage: number;
+            totalItems: number;
+            totalPages: number;
+          };
+        }>(`/api/admin/subscriptions?${params}`, {
           cache: 'no-store', // hoặc 'reload'
         });
-
-        const data = await response.json();
-
-        if (data.success) {
-          setSubscriptions(data.data.subscriptions);
-          setPagination({
-            page: data.data.pagination.currentPage,
-            limit: data.data.pagination.itemsPerPage,
-            total: data.data.pagination.totalItems,
-            totalPages: data.data.pagination.totalPages,
-          });
-          setError('');
-        } else {
-          setError(data.error || 'Failed to fetch subscriptions');
-        }
-      } catch (_error) {
-        setError('Failed to fetch subscriptions');
+        setSubscriptions(data.subscriptions);
+        setPagination({
+          page: data.pagination.currentPage,
+          limit: data.pagination.itemsPerPage,
+          total: data.pagination.totalItems,
+          totalPages: data.pagination.totalPages,
+        });
+        setError('');
+      } catch (error) {
+        setError(error instanceof Error ? error.message : 'Failed to fetch subscriptions');
       } finally {
         setLoading(false);
       }
@@ -135,29 +137,22 @@ export default function AdminSubscriptionsPage() {
   const handleUpdateStatus = async (subscriptionId: string, newStatus: string) => {
     setActionLoading(subscriptionId);
     try {
-      const response = await fetch(`/api/admin/subscriptions/${subscriptionId}`, {
+      await fetchApiData(`/api/admin/subscriptions/${subscriptionId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ status: newStatus }),
       });
-
-      const data = await response.json();
-
-      if (data.success) {
-        setSubscriptions(
-          subscriptions.map((sub) =>
-            sub._id === subscriptionId ? { ...sub, status: newStatus as any } : sub,
-          ),
-        );
-        setSuccess(`Subscription status updated to ${newStatus}`);
-        setShowDetailModal(false);
-      } else {
-        setError(data.error || 'Failed to update subscription');
-      }
-    } catch (_error) {
-      setError('Failed to update subscription');
+      setSubscriptions(
+        subscriptions.map((sub) =>
+          sub._id === subscriptionId ? { ...sub, status: newStatus as any } : sub,
+        ),
+      );
+      setSuccess(`Subscription status updated to ${newStatus}`);
+      setShowDetailModal(false);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Failed to update subscription');
     } finally {
       setActionLoading(null);
     }

@@ -44,7 +44,11 @@ async function parseApiBody(response: Response): Promise<{ payload: unknown; raw
   }
 }
 
-export async function fetchApiSuccess<
+/**
+ * Low-level API client for callers that need the full success envelope.
+ * Use this when a route returns top-level metadata like `message`.
+ */
+export async function fetchApiResponse<
   T,
   Extra extends Record<string, unknown> = Record<string, never>,
 >(input: RequestInfo | URL, init?: RequestInit): Promise<ApiSuccessResponse<T, Extra>> {
@@ -86,4 +90,13 @@ export async function fetchApiSuccess<
   }
 
   return rawPayload as ApiSuccessResponse<T, Extra>;
+}
+
+/**
+ * Default client helper for UI reads and SWR usage.
+ * Returns only the payload stored under `data`.
+ */
+export async function fetchApiData<T>(input: RequestInfo | URL, init?: RequestInit): Promise<T> {
+  const result = await fetchApiResponse<T>(input, init);
+  return result.data;
 }

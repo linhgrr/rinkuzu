@@ -7,6 +7,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { fetchApiData } from '@/lib/api/client';
 import {
   Card,
   CardContent,
@@ -47,20 +48,15 @@ export default function CategoriesPage() {
   const fetchCategories = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/categories');
-      const data = await response.json();
-
-      if (!data.success) {
-        setError(data.error || 'Failed to fetch categories');
-        return;
-      }
-
-      setCategories(data.data);
-      setFilteredCategories(data.data);
+      const data = await fetchApiData<Category[]>('/api/categories');
+      setCategories(data);
+      setFilteredCategories(data);
       setError('');
     } catch (error) {
       console.error('Error fetching categories:', error);
-      setError('An error occurred while fetching categories');
+      setError(
+        error instanceof Error ? error.message : 'An error occurred while fetching categories',
+      );
     } finally {
       setLoading(false);
     }

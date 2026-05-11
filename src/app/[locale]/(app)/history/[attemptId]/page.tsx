@@ -18,6 +18,7 @@ import {
   HiOutlineX,
   HiOutlineXCircle,
 } from '@/components/icons';
+import { fetchApiData } from '@/lib/api/client';
 import { cn } from '@/lib/utils';
 import { routePathSegment } from '@/lib/routing/routeParams';
 import { useRequiredRouteParam } from '@/lib/routing/useRequiredRouteParam';
@@ -64,16 +65,10 @@ export default function AttemptDetailPage() {
     setLoading(true);
     setError('');
     try {
-      const response = await fetch(`/api/attempts/${encodedAttemptId}`);
-      const data = await response.json();
-
-      if (data.success) {
-        setAttempt(data.data);
-      } else {
-        setError(data.error || t('loadError'));
-      }
-    } catch (_error) {
-      setError(t('loadError'));
+      const data = await fetchApiData<AttemptDetail>(`/api/attempts/${encodedAttemptId}`);
+      setAttempt(data);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : t('loadError'));
     } finally {
       setLoading(false);
     }

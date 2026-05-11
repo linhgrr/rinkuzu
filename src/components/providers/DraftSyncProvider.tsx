@@ -5,6 +5,7 @@ import { useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { useDraftStore } from '@/store/useDraftStore';
 import { usePdfProcessor } from '@/hooks/usePdfProcessor';
+import { fetchApiData } from '@/lib/api/client';
 
 const SYNC_INTERVAL = 30000; // 30 seconds
 
@@ -27,11 +28,10 @@ export function DraftSyncProvider({ children }: { children: React.ReactNode }) {
 
       // Fetch server state and sync
       try {
-        const response = await fetch('/api/draft/list');
-        if (response.ok) {
-          const { drafts } = await response.json();
-          syncWithServer(drafts);
-        }
+        const data = await fetchApiData<{
+          drafts: Array<{ _id: string; status: string; expiresAt: string }>;
+        }>('/api/draft/list');
+        syncWithServer(data.drafts);
       } catch (error) {
         console.error('Failed to sync drafts:', error);
       }

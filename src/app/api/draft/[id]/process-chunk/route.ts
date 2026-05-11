@@ -9,6 +9,7 @@ import { randomUUID } from 'crypto';
 import { AsyncRouteParams } from '@/types/next-route';
 import { buildLlmRateLimitResponse, checkLlmRateLimit, isAdminRole } from '@/lib/llm/rate-limit';
 import { buildStandardErrorBody } from '@/lib/api/error';
+import { apiOk } from '@/lib/api/response';
 
 export async function POST(request: NextRequest, { params }: AsyncRouteParams<{ id: string }>) {
   try {
@@ -100,16 +101,18 @@ export async function POST(request: NextRequest, { params }: AsyncRouteParams<{ 
       const chunk = draft.chunks.chunkDetails.find((c: any) => c.index === chunkIndex);
 
       if (chunk?.status === 'done') {
-        return NextResponse.json({
-          success: true,
-          message: 'Chunk already processed',
-          questions: [],
-          progress: {
-            processed: draft.chunks.processed,
-            total: draft.chunks.total,
-            isComplete: draft.chunks.processed >= draft.chunks.total,
+        return apiOk(
+          {
+            questions: [],
+            progress: {
+              processed: draft.chunks.processed,
+              total: draft.chunks.total,
+              isComplete: draft.chunks.processed >= draft.chunks.total,
+            },
           },
-        });
+          200,
+          { message: 'Chunk already processed' },
+        );
       }
 
       // Another request is processing it
@@ -237,8 +240,7 @@ export async function POST(request: NextRequest, { params }: AsyncRouteParams<{ 
         );
       }
 
-      return NextResponse.json({
-        success: true,
+      return apiOk({
         questions: newQuestions,
         progress: {
           processed: doneCount,

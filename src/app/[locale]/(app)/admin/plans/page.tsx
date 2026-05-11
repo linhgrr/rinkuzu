@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
+import { fetchApiData } from '@/lib/api/client';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
@@ -77,17 +78,11 @@ export default function AdminPlansPage() {
   const fetchPlans = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/admin/plans');
-      const data = await response.json();
-
-      if (data.success) {
-        setPlans(data.data);
-        setError('');
-      } else {
-        setError(data.error || 'Failed to fetch plans');
-      }
-    } catch (_error) {
-      setError('Failed to fetch plans');
+      const data = await fetchApiData<Plan[]>('/api/admin/plans');
+      setPlans(data);
+      setError('');
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Failed to fetch plans');
     } finally {
       setLoading(false);
     }
@@ -115,7 +110,7 @@ export default function AdminPlansPage() {
 
   const handleSaveEdit = async (planId: string) => {
     try {
-      const response = await fetch(`/api/admin/plans`, {
+      await fetchApiData(`/api/admin/plans`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -125,20 +120,13 @@ export default function AdminPlansPage() {
           ...editForm,
         }),
       });
-
-      const data = await response.json();
-
-      if (data.success) {
-        setPlans(plans.map((plan) => (plan._id === planId ? { ...plan, ...editForm } : plan)));
-        setSuccess('Plan updated successfully');
-        setEditingPlan(null);
-        setEditForm({});
-        setTimeout(() => setSuccess(''), 3000);
-      } else {
-        setError(data.error || 'Failed to update plan');
-      }
-    } catch (_error) {
-      setError('Failed to update plan');
+      setPlans(plans.map((plan) => (plan._id === planId ? { ...plan, ...editForm } : plan)));
+      setSuccess('Plan updated successfully');
+      setEditingPlan(null);
+      setEditForm({});
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Failed to update plan');
     }
   };
 
@@ -150,7 +138,7 @@ export default function AdminPlansPage() {
 
     try {
       setCreateLoading(true);
-      const response = await fetch('/api/admin/plans', {
+      await fetchApiData('/api/admin/plans', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -163,26 +151,19 @@ export default function AdminPlansPage() {
           isActive: createForm.isActive,
         }),
       });
-
-      const data = await response.json();
-
-      if (data.success) {
-        setSuccess('Plan created successfully');
-        setShowCreateForm(false);
-        setCreateForm({
-          name: '',
-          price: '',
-          duration: SubscriptionDurationType.MONTHLY,
-          features: [''],
-          isActive: true,
-        });
-        fetchPlans(); // Refresh plans list
-        setTimeout(() => setSuccess(''), 3000);
-      } else {
-        setError(data.error || 'Failed to create plan');
-      }
-    } catch (_error) {
-      setError('Failed to create plan');
+      setSuccess('Plan created successfully');
+      setShowCreateForm(false);
+      setCreateForm({
+        name: '',
+        price: '',
+        duration: SubscriptionDurationType.MONTHLY,
+        features: [''],
+        isActive: true,
+      });
+      fetchPlans(); // Refresh plans list
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Failed to create plan');
     } finally {
       setCreateLoading(false);
     }
@@ -191,25 +172,18 @@ export default function AdminPlansPage() {
   const deletePlan = async (planId: string, _planName: string) => {
     try {
       setDeleting(true);
-      const response = await fetch('/api/admin/plans', {
+      await fetchApiData('/api/admin/plans', {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ id: planId }),
       });
-
-      const data = await response.json();
-
-      if (data.success) {
-        setPlans(plans.filter((plan) => plan._id !== planId));
-        setSuccess('Plan deleted successfully');
-        setTimeout(() => setSuccess(''), 3000);
-      } else {
-        setError(data.error || 'Failed to delete plan');
-      }
-    } catch (_error) {
-      setError('Failed to delete plan');
+      setPlans(plans.filter((plan) => plan._id !== planId));
+      setSuccess('Plan deleted successfully');
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Failed to delete plan');
     } finally {
       setDeleting(false);
     }

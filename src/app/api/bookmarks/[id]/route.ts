@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
 import { AsyncRouteParams } from '@/types/next-route';
-import { apiErr } from '@/lib/api/response';
+import { apiErr, apiOk } from '@/lib/api/response';
 
 const bookmarkService = serviceFactory.getBookmarkService();
 
@@ -18,10 +18,7 @@ export async function DELETE(request: NextRequest, { params }: AsyncRouteParams<
 
     await bookmarkService.deleteBookmarkByUser(id, session.user.email);
 
-    return NextResponse.json({
-      success: true,
-      message: 'Bookmark removed',
-    });
+    return apiOk(null, 200, { message: 'Bookmark removed' });
   } catch (error: any) {
     console.error('Error removing bookmark:', error);
 

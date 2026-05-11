@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useState } from 'react';
-import { fetchApiSuccess } from '@/lib/api/client';
+import { fetchApiData } from '@/lib/api/client';
 
 type QuizAnswer = number | number[];
 
@@ -43,7 +43,7 @@ export function useQuizSubmission<TQuiz>({
         userEmail: sessionEmail || userEmail.trim(),
       };
 
-      const data = await fetchApiSuccess<{ attemptId: string; score: number }>(
+      const data = await fetchApiData<{ attemptId: string; score: number }>(
         `/api/quiz/${slug}/attempt`,
         {
           method: 'POST',
@@ -52,7 +52,7 @@ export function useQuizSubmission<TQuiz>({
         },
       );
 
-      onSubmitSuccess(data.data.attemptId, data.data.score);
+      onSubmitSuccess(data.attemptId, data.score);
     },
     [mapAnswersToOriginalOrder, onSubmitSuccess, quiz, sessionEmail, slug, userEmail],
   );

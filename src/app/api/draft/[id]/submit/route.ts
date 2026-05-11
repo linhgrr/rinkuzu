@@ -7,7 +7,7 @@ import DraftQuiz from '@/models/DraftQuiz';
 import Quiz from '@/models/Quiz';
 import { deletePDF } from '@/lib/s3';
 import { AsyncRouteParams } from '@/types/next-route';
-import { apiErr } from '@/lib/api/response';
+import { apiErr, apiOk } from '@/lib/api/response';
 
 // Simple slug generator (inline to avoid import issues)
 function generateSlug(title: string): string {
@@ -178,8 +178,7 @@ export async function POST(request: NextRequest, { params }: AsyncRouteParams<{ 
       }
     }
 
-    return NextResponse.json({
-      success: true,
+    return apiOk({
       quizId: quiz._id.toString(),
       slug: quiz.slug,
       warnings: validation.warnings,

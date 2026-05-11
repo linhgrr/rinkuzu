@@ -21,7 +21,7 @@ import {
 import Pagination from '@/components/ui/Pagination';
 import CategorySearch from '@/features/categories/components/CategorySearch';
 import { formatDisplayDate } from '@/shared/utils/constants';
-import { swrFetcher } from '@/lib/api/swr-fetcher';
+import { fetchApiData } from '@/lib/api/client';
 import {
   HiOutlineSearch,
   HiOutlineQuestionMarkCircle,
@@ -177,7 +177,7 @@ function ExploreContent() {
 
   const { data, isLoading } = useSWR(
     `/api/quizzes?${swrParams}`,
-    swrFetcher<{ quizzes: Quiz[]; pagination: PaginationData }>,
+    fetchApiData<{ quizzes: Quiz[]; pagination: PaginationData }>,
   );
 
   const quizzes = data?.quizzes ?? [];

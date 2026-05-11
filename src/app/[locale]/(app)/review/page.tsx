@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { ROUTES } from '@/shared/constants';
 import ReviewCard from '@/components/ReviewCard';
 import { Card } from '@/components/ui/Card';
+import { fetchApiData } from '@/lib/api/client';
 import {
   HiOutlineEmojiHappy,
   HiOutlineCheckCircle,
@@ -39,11 +40,8 @@ export default function ReviewPage() {
   const fetchDueReviews = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/review/due');
-      const data = await res.json();
-      if (data.data) {
-        setQuestions(data.data);
-      }
+      const data = await fetchApiData<{ questions: Question[]; count: number }>('/api/review/due');
+      setQuestions(data.questions);
     } catch (error) {
       console.error('Failed to fetch reviews', error);
     } finally {
@@ -59,7 +57,10 @@ export default function ReviewPage() {
     const currentQ = questions[currentIndex];
 
     try {
-      const res = await fetch('/api/review/submit', {
+      const data = await fetchApiData<{
+        questionProgress: unknown;
+        userProgress?: { xpGained?: number };
+      }>('/api/review/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -70,10 +71,8 @@ export default function ReviewPage() {
         }),
       });
 
-      const data = await res.json();
-
       setStats((prev) => ({
-        xpGained: prev.xpGained + (data.data?.userProgress?.xpGained || 0),
+        xpGained: prev.xpGained + (data.userProgress?.xpGained || 0),
         reviewedCount: prev.reviewedCount + 1,
       }));
 

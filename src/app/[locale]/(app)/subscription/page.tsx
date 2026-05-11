@@ -3,12 +3,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
+import { fetchApiData } from '@/lib/api/client';
 import Navigation from '@/components/Navigation';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { HiOutlineCheck, HiOutlineShieldCheck } from '@/components/icons';
-import { extractApiErrorMessage } from '@/lib/api/error';
 
 interface SubscriptionPlan {
   id: string;
@@ -41,11 +41,11 @@ export default function SubscriptionPage() {
 
   const fetchPlans = useCallback(async () => {
     try {
-      const response = await fetch('/api/subscription/plans');
-      const data = await response.json();
-      if (data.success) {
-        setPlans(data.plans);
-      }
+      const data = await fetchApiData<{
+        plans: SubscriptionPlan[];
+        meta: { durationFormat: string; supportedDurations: string[] };
+      }>('/api/subscription/plans');
+      setPlans(data.plans);
     } catch (error) {
       console.error('Error fetching plans:', error);
     }
@@ -53,11 +53,8 @@ export default function SubscriptionPage() {
 
   const fetchSubscriptionStatus = useCallback(async () => {
     try {
-      const response = await fetch('/api/subscription/status');
-      const data = await response.json();
-      if (data.success) {
-        setSubscriptionStatus(data.data);
-      }
+      const data = await fetchApiData<SubscriptionStatus>('/api/subscription/status');
+      setSubscriptionStatus(data);
     } catch (error) {
       console.error('Error fetching subscription status:', error);
     }
@@ -86,24 +83,17 @@ export default function SubscriptionPage() {
 
     setPaymentLoading(true);
     try {
-      const response = await fetch('/api/subscription/create-payment', {
+      const data = await fetchApiData<{ paymentUrl: string }>('/api/subscription/create-payment', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ planId: selectedPlan.id }),
       });
-
-      const data = await response.json();
-      if (data.success) {
-        // Redirect to PayOS payment page
-        window.location.href = data.data.paymentUrl;
-      } else {
-        toast.error(extractApiErrorMessage(data, 'Failed to create payment request'));
-      }
+      window.location.href = data.paymentUrl;
     } catch (error) {
       console.error('Error creating payment:', error);
-      toast.error('Failed to create payment request');
+      toast.error(error instanceof Error ? error.message : 'Failed to create payment request');
     } finally {
       setPaymentLoading(false);
       setShowPaymentModal(false);

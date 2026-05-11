@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { fetchApiData } from '@/lib/api/client';
 
 const MIN_IMAGE_COUNT = 4;
 const MAX_IMAGE_COUNT = 24;
@@ -12,18 +13,14 @@ export const useRandomLibraryImages = (count: number) => {
 
     const loadImages = async () => {
       try {
-        const response = await fetch(
+        const { images } = await fetchApiData<{ images: string[] }>(
           `/api/adaptive-learning/library-images?limit=${requestedCount}`,
-          {
-            cache: 'no-store',
-          },
+          { cache: 'no-store' },
         );
 
-        if (!response.ok) return;
-
-        const payload = (await response.json()) as { images?: string[] };
-        if (!cancelled && Array.isArray(payload.images))
-          setImageUrls(payload.images.filter((url) => typeof url === 'string' && url.length > 0));
+        if (!cancelled && Array.isArray(images)) {
+          setImageUrls(images.filter((url) => typeof url === 'string' && url.length > 0));
+        }
       } catch (error) {
         console.error('Failed to load random library images', error);
       }

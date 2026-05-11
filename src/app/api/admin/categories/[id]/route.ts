@@ -3,7 +3,7 @@ import { withAdmin } from '@/lib/api/auth';
 import connectDB from '@/lib/mongoose';
 import Category from '@/models/Category';
 import Quiz from '@/models/Quiz';
-import { apiErr } from '@/lib/api/response';
+import { apiErr, apiOk } from '@/lib/api/response';
 
 // GET /api/admin/categories/[id] - Get single category
 export const GET = withAdmin(async (_request: NextRequest, context) => {
@@ -101,10 +101,7 @@ export const DELETE = withAdmin(async (_request: NextRequest, context) => {
 
     await Category.findByIdAndDelete(id);
 
-    return NextResponse.json({
-      success: true,
-      message: 'Category deleted successfully',
-    });
+    return apiOk(null, 200, { message: 'Category deleted successfully' });
   } catch (error: any) {
     console.error('Delete category error:', error);
     return apiErr('internal_error', 'Internal server error', 500);

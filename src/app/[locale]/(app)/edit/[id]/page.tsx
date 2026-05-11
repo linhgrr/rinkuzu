@@ -7,6 +7,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import Link from 'next/link';
+import { fetchApiData } from '@/lib/api/client';
 import { Button } from '@/components/ui/Button';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -65,22 +66,16 @@ export default function EditQuizPage() {
 
   const fetchQuiz = useCallback(async () => {
     try {
-      const response = await fetch(`/api/quizzes/${encodedQuizId}`);
-      const data = await response.json();
-
-      if (data.success) {
-        setQuiz(data.data);
-        setTitle(data.data.title);
-        setDescription(data.data.description || '');
-        setSelectedCategory(data.data.category as Category);
-        setEditableQuestions(data.data.questions as Question[]);
-        setIsPrivate(data.data.isPrivate || false);
-        setPdfUrl(data.data.pdfUrl || null);
-      } else {
-        setError(data.error || 'Quiz not found');
-      }
-    } catch (_error) {
-      setError('Failed to load quiz');
+      const data = await fetchApiData<IQuiz>(`/api/quizzes/${encodedQuizId}`);
+      setQuiz(data);
+      setTitle(data.title);
+      setDescription(data.description || '');
+      setSelectedCategory(data.category as Category);
+      setEditableQuestions(data.questions as Question[]);
+      setIsPrivate(data.isPrivate || false);
+      setPdfUrl((data as IQuiz & { pdfUrl?: string }).pdfUrl || null);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Failed to load quiz');
     } finally {
       setLoading(false);
     }
@@ -201,7 +196,7 @@ export default function EditQuizPage() {
           : { ...base, correctIndexes: q.correctIndexes || [] };
       });
 
-      const response = await fetch(`/api/quizzes/${encodedQuizId}`, {
+      const data = await fetchApiData<IQuiz>(`/api/quizzes/${encodedQuizId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -214,20 +209,15 @@ export default function EditQuizPage() {
           isPrivate: isPrivate,
         }),
       });
-
-      const data = await response.json();
-
-      if (data.success) {
-        setSuccess('Quiz updated successfully!');
-        setQuiz(data.data);
-        setTimeout(() => {
-          router.push('/pending');
-        }, 2000);
-      } else {
-        setError(data.error || 'Failed to update quiz');
-      }
-    } catch (_error) {
-      setError('An error occurred while updating the quiz');
+      setSuccess('Quiz updated successfully!');
+      setQuiz(data);
+      setTimeout(() => {
+        router.push('/pending');
+      }, 2000);
+    } catch (error) {
+      setError(
+        error instanceof Error ? error.message : 'An error occurred while updating the quiz',
+      );
     } finally {
       setSaving(false);
     }
@@ -238,19 +228,14 @@ export default function EditQuizPage() {
     setError('');
 
     try {
-      const response = await fetch(`/api/quizzes/${encodedQuizId}`, {
+      await fetchApiData<null>(`/api/quizzes/${encodedQuizId}`, {
         method: 'DELETE',
       });
-
-      const data = await response.json();
-
-      if (data.success) {
-        router.push('/pending');
-      } else {
-        setError(data.error || 'Failed to delete quiz');
-      }
-    } catch (_error) {
-      setError('An error occurred while deleting the quiz');
+      router.push('/pending');
+    } catch (error) {
+      setError(
+        error instanceof Error ? error.message : 'An error occurred while deleting the quiz',
+      );
     } finally {
       setDeleting(false);
     }

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import Image from 'next/image';
+import { fetchApiResponse } from '@/lib/api/client';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -48,7 +49,10 @@ export default function RegisterPage() {
     }
 
     try {
-      const response = await fetch('/api/auth/register', {
+      const data = await fetchApiResponse<
+        { id: string; email: string; role: string },
+        { message?: string }
+      >('/api/auth/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -58,19 +62,12 @@ export default function RegisterPage() {
           password,
         }),
       });
-
-      const data = await response.json();
-
-      if (data.success) {
-        setSuccess(t('accountCreatedSuccess'));
-        setTimeout(() => {
-          router.push('/login');
-        }, 2000);
-      } else {
-        setError(data.error || t('registrationFailed'));
-      }
-    } catch {
-      setError(`${t('registrationError')}. ${t('checkConnectionAndRetry')}`);
+      setSuccess(data.message || t('accountCreatedSuccess'));
+      setTimeout(() => {
+        router.push('/login');
+      }, 2000);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : t('registrationFailed'));
     } finally {
       setLoading(false);
     }

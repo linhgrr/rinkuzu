@@ -1,12 +1,12 @@
 // /src/app/api/draft/[id]/route.ts
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import connectDB from '@/lib/mongoose';
 import DraftQuiz from '@/models/DraftQuiz';
 import { deletePDF } from '@/lib/s3';
 import { AsyncRouteParams } from '@/types/next-route';
-import { apiErr } from '@/lib/api/response';
+import { apiErr, apiOk } from '@/lib/api/response';
 
 export async function GET(request: NextRequest, { params }: AsyncRouteParams<{ id: string }>) {
   try {
@@ -38,7 +38,7 @@ export async function GET(request: NextRequest, { params }: AsyncRouteParams<{ i
       }
     }
 
-    return NextResponse.json({ draft });
+    return apiOk({ draft });
   } catch (error) {
     console.error('Get draft error:', error);
     return apiErr('internal_error', 'Failed to get draft', 500);
@@ -80,7 +80,7 @@ export async function DELETE(request: NextRequest, { params }: AsyncRouteParams<
       }
     }
 
-    return NextResponse.json({ success: true });
+    return apiOk(null);
   } catch (error) {
     console.error('Delete draft error:', error);
     return apiErr('internal_error', 'Failed to delete draft', 500);

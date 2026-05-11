@@ -11,6 +11,7 @@ import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { Input, Textarea } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
 import { Separator } from '@/components/ui/Separator';
+import { fetchApiData } from '@/lib/api/client';
 import {
   HiOutlineUser,
   HiOutlineLockClosed,
@@ -65,15 +66,12 @@ export default function ProfileSettings() {
 
   const fetchProfile = useCallback(async () => {
     try {
-      const res = await fetch('/api/user/profile');
-      const data = await res.json();
-      if (data.success) {
-        setProfile(data.data);
-        setDisplayName(data.data.displayName || '');
-        setBio(data.data.bio || '');
-      }
-    } catch {
-      toast.error(t('errorLoadingProfile'));
+      const data = await fetchApiData<ProfileData>('/api/user/profile');
+      setProfile(data);
+      setDisplayName(data.displayName || '');
+      setBio(data.bio || '');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : t('errorLoadingProfile'));
     } finally {
       setLoading(false);
     }
@@ -86,20 +84,15 @@ export default function ProfileSettings() {
   const handleSaveProfile = async () => {
     setSavingProfile(true);
     try {
-      const res = await fetch('/api/user/profile', {
+      const data = await fetchApiData<ProfileData>('/api/user/profile', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ displayName, bio }),
       });
-      const data = await res.json();
-      if (data.success) {
-        setProfile((prev) => (prev ? { ...prev, ...data.data } : prev));
-        toast.success(t('profileUpdated'));
-      } else {
-        toast.error(data.error || t('errorUpdatingProfile'));
-      }
-    } catch {
-      toast.error(t('errorUpdatingProfile'));
+      setProfile((prev) => (prev ? { ...prev, ...data } : prev));
+      toast.success(t('profileUpdated'));
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : t('errorUpdatingProfile'));
     } finally {
       setSavingProfile(false);
     }
@@ -117,22 +110,17 @@ export default function ProfileSettings() {
 
     setSavingPassword(true);
     try {
-      const res = await fetch('/api/user/password', {
+      await fetchApiData<null>('/api/user/password', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ currentPassword, newPassword }),
       });
-      const data = await res.json();
-      if (data.success) {
-        toast.success(t('passwordChanged'));
-        setCurrentPassword('');
-        setNewPassword('');
-        setConfirmPassword('');
-      } else {
-        toast.error(data.error || t('errorChangingPassword'));
-      }
-    } catch {
-      toast.error(t('errorChangingPassword'));
+      toast.success(t('passwordChanged'));
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : t('errorChangingPassword'));
     } finally {
       setSavingPassword(false);
     }
@@ -155,16 +143,14 @@ export default function ProfileSettings() {
     try {
       const formData = new FormData();
       formData.append('avatar', file);
-      const res = await fetch('/api/user/avatar', { method: 'PUT', body: formData });
-      const data = await res.json();
-      if (data.success) {
-        setProfile((prev) => (prev ? { ...prev, avatar: data.data.avatar } : prev));
-        toast.success(t('avatarUpdated'));
-      } else {
-        toast.error(data.error || t('errorUploadingAvatar'));
-      }
-    } catch {
-      toast.error(t('errorUploadingAvatar'));
+      const data = await fetchApiData<{ avatar: string }>('/api/user/avatar', {
+        method: 'PUT',
+        body: formData,
+      });
+      setProfile((prev) => (prev ? { ...prev, avatar: data.avatar } : prev));
+      toast.success(t('avatarUpdated'));
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : t('errorUploadingAvatar'));
     } finally {
       setUploadingAvatar(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -174,17 +160,12 @@ export default function ProfileSettings() {
   const handleRemoveAvatar = async () => {
     setUploadingAvatar(true);
     try {
-      const res = await fetch('/api/user/avatar', { method: 'DELETE' });
-      const data = await res.json();
-      if (data.success) {
-        setProfile((prev) => (prev ? { ...prev, avatar: '' } : prev));
-        setShowRemoveAvatarConfirm(false);
-        toast.success(t('avatarRemoved'));
-      } else {
-        toast.error(data.error || t('errorRemovingAvatar'));
-      }
-    } catch {
-      toast.error(t('errorRemovingAvatar'));
+      await fetchApiData<null>('/api/user/avatar', { method: 'DELETE' });
+      setProfile((prev) => (prev ? { ...prev, avatar: '' } : prev));
+      setShowRemoveAvatarConfirm(false);
+      toast.success(t('avatarRemoved'));
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : t('errorRemovingAvatar'));
     } finally {
       setUploadingAvatar(false);
     }

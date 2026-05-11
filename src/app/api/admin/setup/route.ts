@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
-import { apiErr } from '@/lib/api/response';
+import { apiErr, apiOk } from '@/lib/api/response';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,10 +22,7 @@ export async function POST(_request: NextRequest) {
       return apiErr('service_error', result.error ?? 'Request failed', result.statusCode || 500);
     }
 
-    return NextResponse.json({
-      success: true,
-      data: result.data,
-    });
+    return apiOk(result.data);
   } catch (error) {
     console.error('Admin setup error:', error);
     return apiErr('internal_error', 'Failed to initialize system', 500);
@@ -37,13 +34,15 @@ export async function GET() {
   try {
     const adminService = serviceFactory.getAdminService();
     const result = await adminService.getStats();
+    if (!result.success || !result.data) {
+      return apiErr('service_error', result.error ?? 'Request failed', result.statusCode || 500);
+    }
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        setupComplete: result.success,
-        message: 'Setup status checked',
-      },
+    return apiOk({
+      adminExists: result.data.totalAdmins > 0,
+      setupAllowed: result.data.totalAdmins === 0,
+      userCount: result.data.totalUsers,
+      message: 'Setup status checked',
     });
   } catch (error: any) {
     console.error('Admin setup check error:', error);

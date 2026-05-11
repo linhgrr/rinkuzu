@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import connectDB from '@/lib/mongoose';
 import User from '@/models/User';
 import { hashPassword, verifyPassword } from '@/lib/password';
-import { apiErr } from '@/lib/api/response';
+import { apiErr, apiOk } from '@/lib/api/response';
 
 export async function PUT(request: NextRequest) {
   try {
@@ -44,10 +44,7 @@ export async function PUT(request: NextRequest) {
     const hashedPassword = await hashPassword(newPassword);
     await User.updateOne({ email: session.user.email }, { password: hashedPassword });
 
-    return NextResponse.json({
-      success: true,
-      message: 'Password updated successfully',
-    });
+    return apiOk(null, 200, { message: 'Password updated successfully' });
   } catch (error) {
     console.error('Change password error:', error);
     return apiErr('internal_error', 'Internal server error', 500);

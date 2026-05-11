@@ -13,8 +13,8 @@ import QuizMetaForm from '@/features/quiz/components/QuizMetaForm';
 import PDFViewer from '@/features/quiz/components/PDFViewer';
 import { useDraftStore } from '@/store/useDraftStore';
 import { toast } from 'sonner';
+import { fetchApiData } from '@/lib/api/client';
 import { getPdfPageCount, uploadPdfViaPresignedUrl } from '@/lib/pdf';
-import { extractApiErrorMessage } from '@/lib/api/error';
 import {
   HiOutlineArrowRight,
   HiOutlineCheckCircle,
@@ -256,7 +256,12 @@ export default function CreateQuizPage() {
       const detectedTotalPages = await getPdfPageCount(uploadFile);
       const { s3Key } = await uploadPdfViaPresignedUrl(uploadFile);
 
-      const response = await fetch('/api/draft/create', {
+      const data = await fetchApiData<{
+        draftId: string;
+        chunks: { total: number };
+        totalPages: number;
+        expiresAt: string;
+      }>('/api/draft/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -272,27 +277,20 @@ export default function CreateQuizPage() {
         }),
       });
 
-      if (!response.ok) {
-        const payload = await response.json();
-        throw new Error(extractApiErrorMessage(payload, 'Failed to create draft'));
-      }
-
-      const { draftId, chunks, totalPages, expiresAt } = await response.json();
-
       addDraft({
-        id: draftId,
+        id: data.draftId,
         title: title.trim(),
         status: 'processing',
-        chunksTotal: chunks.total,
+        chunksTotal: data.chunks.total,
         chunksProcessed: 0,
         chunksError: 0,
         questionsCount: 0,
         createdAt: new Date().toISOString(),
-        expiresAt,
+        expiresAt: data.expiresAt,
       });
 
       toast.success(t('processingStarted'), {
-        description: t('pagesChunks', { pages: totalPages, chunks: chunks.total }),
+        description: t('pagesChunks', { pages: data.totalPages, chunks: data.chunks.total }),
       });
 
       router.push('/');

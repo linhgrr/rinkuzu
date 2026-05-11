@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Flashcard } from '@/features/quiz/components/Flashcard';
 import { PremiumRequiredModal } from '@/features/quiz/components/PremiumRequiredModal';
+import { fetchApiData } from '@/lib/api/client';
 import { routePathSegment } from '@/lib/routing/routeParams';
 import { useRequiredRouteParam } from '@/lib/routing/useRequiredRouteParam';
 
@@ -57,21 +58,16 @@ export default function FlashcardPage() {
   useEffect(() => {
     const fetchQuiz = async () => {
       try {
-        const response = await fetch(`/api/quiz/${encodedSlug}/flashcards`);
-        const data = await response.json();
-
-        if (data.success) {
-          setQuiz(data.data);
-          setCurrentQuestions(data.data.questions);
+        const data = await fetchApiData<Quiz>(`/api/quiz/${encodedSlug}/flashcards`);
+        setQuiz(data);
+        setCurrentQuestions(data.questions);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Failed to load quiz';
+        if (message === 'Premium subscription required to access private quizzes') {
+          setShowPremiumModal(true);
         } else {
-          if (data.error === 'Premium subscription required to access private quizzes') {
-            setShowPremiumModal(true);
-          } else {
-            setError(data.error || 'Failed to load quiz');
-          }
+          setError(message);
         }
-      } catch (_error) {
-        setError('Failed to load quiz');
       } finally {
         setLoading(false);
       }
@@ -105,7 +101,7 @@ export default function FlashcardPage() {
 
     // Submit SRS Review in background
     try {
-      await fetch('/api/review/submit', {
+      await fetchApiData('/api/review/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

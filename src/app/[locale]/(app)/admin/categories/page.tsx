@@ -15,7 +15,7 @@ import { ErrorState } from '@/components/ui/ErrorState';
 import { AdminPageShell } from '@/components/admin/AdminPageShell';
 import { PaginationMeta } from '@/types';
 import { HiOutlinePlus, HiOutlinePencil, HiOutlineTrash } from '@/components/icons';
-import { swrFetcher } from '@/lib/api/swr-fetcher';
+import { fetchApiData } from '@/lib/api/client';
 
 interface Category {
   _id: string;
@@ -48,7 +48,7 @@ export default function AdminCategoriesPage() {
 
   const { data, error, isLoading, mutate } = useSWR(
     `/api/admin/categories?${queryParams}`,
-    swrFetcher<{ categories: Category[]; pagination: PaginationMeta }>,
+    fetchApiData<{ categories: Category[]; pagination: PaginationMeta }>,
   );
 
   const categories = data?.categories ?? [];
@@ -134,25 +134,20 @@ export default function AdminCategoriesPage() {
 
       const method = editingCategory ? 'PUT' : 'POST';
 
-      const response = await fetch(url, {
+      await fetchApiData(url, {
         method,
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(formData),
       });
-
-      const data = await response.json();
-
-      if (data.success) {
-        mutate();
-        closeModals();
-        setLocalError('');
-      } else {
-        setLocalError(data.error || 'Failed to save category');
-      }
-    } catch (_error) {
-      setLocalError('An error occurred while saving category');
+      mutate();
+      closeModals();
+      setLocalError('');
+    } catch (error) {
+      setLocalError(
+        error instanceof Error ? error.message : 'An error occurred while saving category',
+      );
     } finally {
       setSubmitting(false);
     }
@@ -161,20 +156,15 @@ export default function AdminCategoriesPage() {
   const deleteCategory = async (category: Category) => {
     try {
       setDeleting(true);
-      const response = await fetch(`/api/admin/categories/${category._id}`, {
+      await fetchApiData(`/api/admin/categories/${category._id}`, {
         method: 'DELETE',
       });
-
-      const data = await response.json();
-
-      if (data.success) {
-        mutate();
-        setLocalError('');
-      } else {
-        setLocalError(data.error || 'Failed to delete category');
-      }
-    } catch (_error) {
-      setLocalError('An error occurred while deleting category');
+      mutate();
+      setLocalError('');
+    } catch (error) {
+      setLocalError(
+        error instanceof Error ? error.message : 'An error occurred while deleting category',
+      );
     } finally {
       setDeleting(false);
     }

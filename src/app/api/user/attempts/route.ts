@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
-import { apiErr } from '@/lib/api/response';
+import { apiErr, apiOk } from '@/lib/api/response';
 
 const userService = serviceFactory.getUserService();
 
@@ -23,9 +23,8 @@ export async function GET(request: NextRequest) {
 
     const result = await userService.getUserAttempts(session.user.email, { page, limit });
 
-    return NextResponse.json({
-      success: true,
-      data: result.attempts,
+    return apiOk({
+      attempts: result.attempts,
       pagination: result.pagination,
     });
   } catch (error: unknown) {

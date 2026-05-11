@@ -22,7 +22,7 @@ import { ErrorState } from '@/components/ui/ErrorState';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { AdminPageShell } from '@/components/admin/AdminPageShell';
 import { HiOutlineSearch, HiOutlineCheck } from '@/components/icons';
-import { swrFetcher } from '@/lib/api/swr-fetcher';
+import { fetchApiData } from '@/lib/api/client';
 
 interface User {
   _id: string;
@@ -81,10 +81,10 @@ export default function AdminUsersPage() {
     mutate: mutateUsers,
   } = useSWR(
     `/api/admin/users?${swrParams}`,
-    swrFetcher<{ users: User[]; pagination: PaginationData }>,
+    fetchApiData<{ users: User[]; pagination: PaginationData }>,
   );
 
-  const { data: plansData } = useSWR('/api/admin/plans', swrFetcher<Plan[]>);
+  const { data: plansData } = useSWR('/api/admin/plans', fetchApiData<Plan[]>);
 
   const users = usersData?.users ?? [];
   const plans = plansData ?? [];
@@ -113,7 +113,7 @@ export default function AdminUsersPage() {
 
     setActionLoading(selectedUser._id);
     try {
-      const response = await fetch('/api/admin/users', {
+      await fetchApiData('/api/admin/users', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -123,19 +123,12 @@ export default function AdminUsersPage() {
           role: newRole,
         }),
       });
-
-      const data = await response.json();
-
-      if (data.success) {
-        mutateUsers();
-        setSuccess(`User role updated to ${newRole}`);
-        setShowRoleModal(false);
-        setSelectedUser(null);
-      } else {
-        setLocalError(data.error || 'Failed to update user role');
-      }
-    } catch (_error) {
-      setLocalError('Failed to update user role');
+      mutateUsers();
+      setSuccess(`User role updated to ${newRole}`);
+      setShowRoleModal(false);
+      setSelectedUser(null);
+    } catch (error) {
+      setLocalError(error instanceof Error ? error.message : 'Failed to update user role');
     } finally {
       setActionLoading(null);
     }
@@ -146,22 +139,15 @@ export default function AdminUsersPage() {
 
     setActionLoading(selectedUser._id);
     try {
-      const response = await fetch(`/api/admin/users?userId=${selectedUser._id}`, {
+      await fetchApiData(`/api/admin/users?userId=${selectedUser._id}`, {
         method: 'DELETE',
       });
-
-      const data = await response.json();
-
-      if (data.success) {
-        mutateUsers();
-        setSuccess('User deleted successfully');
-        setShowDeleteModal(false);
-        setSelectedUser(null);
-      } else {
-        setLocalError(data.error || 'Failed to delete user');
-      }
-    } catch (_error) {
-      setLocalError('Failed to delete user');
+      mutateUsers();
+      setSuccess('User deleted successfully');
+      setShowDeleteModal(false);
+      setSelectedUser(null);
+    } catch (error) {
+      setLocalError(error instanceof Error ? error.message : 'Failed to delete user');
     } finally {
       setActionLoading(null);
     }
@@ -172,7 +158,7 @@ export default function AdminUsersPage() {
 
     setActionLoading(selectedUser._id);
     try {
-      const response = await fetch('/api/admin/users', {
+      await fetchApiData('/api/admin/users', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -183,21 +169,14 @@ export default function AdminUsersPage() {
           duration: subscriptionDuration,
         }),
       });
-
-      const data = await response.json();
-
-      if (data.success) {
-        mutateUsers();
-        setSuccess(`Subscription added successfully for ${selectedUser.email}`);
-        setShowSubscriptionModal(false);
-        setSelectedUser(null);
-        setSelectedPlanId('');
-        setSubscriptionDuration(180);
-      } else {
-        setLocalError(data.error || 'Failed to add subscription');
-      }
-    } catch (_error) {
-      setLocalError('Failed to add subscription');
+      mutateUsers();
+      setSuccess(`Subscription added successfully for ${selectedUser.email}`);
+      setShowSubscriptionModal(false);
+      setSelectedUser(null);
+      setSelectedPlanId('');
+      setSubscriptionDuration(180);
+    } catch (error) {
+      setLocalError(error instanceof Error ? error.message : 'Failed to add subscription');
     } finally {
       setActionLoading(null);
     }

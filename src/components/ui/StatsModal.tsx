@@ -6,6 +6,7 @@ import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { UserProfileLink } from '@/components/user/UserProfileLink';
+import { fetchApiData } from '@/lib/api/client';
 import Pagination from './Pagination';
 
 interface StatsModalProps {
@@ -24,6 +25,14 @@ interface PaginationData {
   totalPages: number;
   hasNext: boolean;
   hasPrev: boolean;
+}
+
+interface StatsModalPayload {
+  pagination: PaginationData;
+  categories?: any[];
+  creators?: any[];
+  activities?: any[];
+  data?: any[];
 }
 
 export default function StatsModal({
@@ -65,35 +74,29 @@ export default function StatsModal({
           sortOrder,
         });
 
-        const response = await fetch(
+        const result = await fetchApiData<StatsModalPayload>(
           `${apiEndpoint}${apiEndpoint.includes('?') ? '&' : '?'}${params}`,
         );
-        const result = await response.json();
+        const dataKey =
+          type === 'categories'
+            ? 'categories'
+            : type === 'creators'
+              ? 'creators'
+              : type === 'activity'
+                ? 'activities'
+                : 'data';
+        const newData = result[dataKey] || result.activities || [];
 
-        if (result.success) {
-          const dataKey =
-            type === 'categories'
-              ? 'categories'
-              : type === 'creators'
-                ? 'creators'
-                : type === 'activity'
-                  ? 'activities'
-                  : 'data';
-          const newData = result.data[dataKey] || result.data.activities || [];
-
-          if (resetData || page === 1) {
-            setData(newData);
-          } else {
-            setData((prev) => [...prev, ...newData]);
-          }
-
-          setPagination(result.data.pagination);
-          setError('');
+        if (resetData || page === 1) {
+          setData(newData);
         } else {
-          setError(result.error || 'Failed to fetch data');
+          setData((prev) => [...prev, ...newData]);
         }
-      } catch (_error) {
-        setError('Failed to fetch data');
+
+        setPagination(result.pagination);
+        setError('');
+      } catch (error) {
+        setError(error instanceof Error ? error.message : 'Failed to fetch data');
       } finally {
         setLoading(false);
       }

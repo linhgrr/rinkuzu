@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
 import { AsyncRouteParams } from '@/types/next-route';
-import { apiErr } from '@/lib/api/response';
+import { apiErr, apiOk } from '@/lib/api/response';
 
 // GET /api/quizzes/[id] - Get specific quiz
 export async function GET(request: NextRequest, { params }: AsyncRouteParams<{ id: string }>) {
@@ -116,10 +116,7 @@ export async function DELETE(request: NextRequest, { params }: AsyncRouteParams<
       return apiErr('service_error', result.error ?? 'Request failed', result.statusCode || 400);
     }
 
-    return NextResponse.json({
-      success: true,
-      message: 'Quiz deleted successfully',
-    });
+    return apiOk(null, 200, { message: 'Quiz deleted successfully' });
   } catch (error: any) {
     console.error('Delete quiz error:', error);
     return apiErr('internal_error', 'Internal server error', 500);

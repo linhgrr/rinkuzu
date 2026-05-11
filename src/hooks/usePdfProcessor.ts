@@ -3,6 +3,7 @@ import { useCallback, useRef, useEffect } from 'react';
 import { useDraftStore } from '@/store/useDraftStore';
 import { toast } from 'sonner';
 import { mapWithConcurrency } from '@/lib/asyncPool';
+import { fetchApiData } from '@/lib/api/client';
 import { extractApiErrorMessage } from '@/lib/api/error';
 
 interface ChunkInfo {
@@ -95,11 +96,12 @@ export function usePdfProcessor() {
       }
 
       const result = await response.json();
+      const payload = result.data ?? {};
       return {
         success: result.success !== false,
-        questions: result.questions || [],
-        isComplete: result.progress?.isComplete || false,
-        totalQuestions: result.progress?.totalQuestions || 0,
+        questions: payload.questions || [],
+        isComplete: payload.progress?.isComplete || false,
+        totalQuestions: payload.progress?.totalQuestions || 0,
       };
     },
     [],
@@ -206,10 +208,7 @@ export function usePdfProcessor() {
   const resumeProcessing = useCallback(
     async (draftId: string) => {
       try {
-        const response = await fetch(`/api/draft/${draftId}`);
-        if (!response.ok) throw new Error('Failed to fetch draft');
-
-        const { draft } = await response.json();
+        const { draft } = await fetchApiData<{ draft: any }>(`/api/draft/${draftId}`);
 
         if (draft.status === 'completed') {
           return; // Already done

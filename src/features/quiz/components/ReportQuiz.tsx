@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Textarea } from '@/components/ui/Input';
+import { fetchApiData } from '@/lib/api/client';
 
 interface ReportQuizProps {
   quizSlug: string;
@@ -30,28 +31,22 @@ export default function ReportQuiz({ quizSlug, quizTitle }: ReportQuizProps) {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch(`/api/quiz/${quizSlug}/report`, {
+      await fetchApiData<{ message: string; reportId: string }>(`/api/quiz/${quizSlug}/report`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ content: content.trim() }),
       });
-
-      if (response.ok) {
-        setIsSubmitted(true);
-        setContent('');
-        setTimeout(() => {
-          setIsOpen(false);
-          setIsSubmitted(false);
-        }, 2000);
-      } else {
-        const error = await response.json();
-        toast.error(error.error || t('failedToSubmit'));
-      }
+      setIsSubmitted(true);
+      setContent('');
+      setTimeout(() => {
+        setIsOpen(false);
+        setIsSubmitted(false);
+      }, 2000);
     } catch (error) {
       console.error('Error submitting report:', error);
-      toast.error(t('failedToSubmit'));
+      toast.error(error instanceof Error ? error.message : t('failedToSubmit'));
     } finally {
       setIsSubmitting(false);
     }

@@ -4,7 +4,7 @@ import { serviceFactory } from '@/lib/serviceFactory';
 import connectDB from '@/lib/mongoose';
 import User from '@/models/User';
 import Plan from '@/models/Plan';
-import { apiErr } from '@/lib/api/response';
+import { apiErr, apiOk } from '@/lib/api/response';
 
 const userService = serviceFactory.getUserService();
 const adminService = serviceFactory.getAdminService();
@@ -84,10 +84,7 @@ export const DELETE = withAdmin(async (request: NextRequest, context) => {
       return apiErr('service_error', result.error ?? 'Request failed', result.statusCode || 400);
     }
 
-    return NextResponse.json({
-      success: true,
-      message: 'User deleted successfully',
-    });
+    return apiOk(null, 200, { message: 'User deleted successfully' });
   } catch (error: any) {
     console.error('Delete user error:', error);
     return apiErr('internal_error', 'Internal server error', 500);

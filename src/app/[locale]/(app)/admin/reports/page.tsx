@@ -13,6 +13,7 @@ import { Textarea } from '@/components/ui/Input';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { AdminPageShell } from '@/components/admin/AdminPageShell';
+import { fetchApiData } from '@/lib/api/client';
 import {
   HiOutlineEye,
   HiOutlinePencil,
@@ -44,12 +45,8 @@ export default function AdminReportsPage() {
         params.append('status', statusFilter);
       }
 
-      const response = await fetch(`/api/admin/reports?${params}`);
-      const data = await response.json();
-
-      if (data.success) {
-        setReports(data.data);
-      }
+      const data = await fetchApiData<IReport[]>(`/api/admin/reports?${params}`);
+      setReports(data);
     } catch (error) {
       console.error('Error fetching reports:', error);
     } finally {
@@ -78,7 +75,7 @@ export default function AdminReportsPage() {
 
     setUpdating(true);
     try {
-      const response = await fetch(`/api/admin/reports/${selectedReport._id}`, {
+      await fetchApiData(`/api/admin/reports/${selectedReport._id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -88,17 +85,11 @@ export default function AdminReportsPage() {
           adminNotes: adminNotes.trim(),
         }),
       });
-
-      if (response.ok) {
-        fetchReports();
-        closeReportModal();
-      } else {
-        const error = await response.json();
-        toast.error(error.error || 'Failed to update report');
-      }
+      fetchReports();
+      closeReportModal();
     } catch (error) {
       console.error('Error updating report:', error);
-      toast.error('Failed to update report');
+      toast.error(error instanceof Error ? error.message : 'Failed to update report');
     } finally {
       setUpdating(false);
     }
@@ -107,22 +98,16 @@ export default function AdminReportsPage() {
   const deleteReport = async (reportId: string) => {
     try {
       setDeleting(true);
-      const response = await fetch(`/api/admin/reports/${reportId}`, {
+      await fetchApiData<null>(`/api/admin/reports/${reportId}`, {
         method: 'DELETE',
       });
-
-      if (response.ok) {
-        fetchReports();
-        if (selectedReport?._id === reportId) {
-          closeReportModal();
-        }
-      } else {
-        const error = await response.json();
-        toast.error(error.error || 'Failed to delete report');
+      fetchReports();
+      if (selectedReport?._id === reportId) {
+        closeReportModal();
       }
     } catch (error) {
       console.error('Error deleting report:', error);
-      toast.error('Failed to delete report');
+      toast.error(error instanceof Error ? error.message : 'Failed to delete report');
     } finally {
       setDeleting(false);
     }

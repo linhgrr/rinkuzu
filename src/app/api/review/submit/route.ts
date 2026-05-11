@@ -1,11 +1,10 @@
-import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import connectDB from '@/lib/mongoose';
 import QuestionProgress from '@/models/QuestionProgress';
 import UserProgress from '@/models/UserProgress';
 import { authOptions } from '@/lib/auth';
 import { calculateNextReview, SRSRating } from '@/services/srs.service';
-import { apiErr } from '@/lib/api/response';
+import { apiErr, apiOk } from '@/lib/api/response';
 
 export async function POST(req: Request) {
   try {
@@ -205,9 +204,8 @@ export async function POST(req: Request) {
 
     await uProgress.save();
 
-    return NextResponse.json({
-      message: 'Review submitted',
-      data: {
+    return apiOk(
+      {
         questionProgress: qProgress,
         userProgress: {
           xp: uProgress.totalXp,
@@ -216,7 +214,9 @@ export async function POST(req: Request) {
           streakFreezeUsed: (req as any).streakFreezeUsed || false,
         },
       },
-    });
+      200,
+      { message: 'Review submitted' },
+    );
   } catch (error) {
     console.error('Error submitting review:', error);
     return apiErr('internal_error', 'Internal Server Error', 500);

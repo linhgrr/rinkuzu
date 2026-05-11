@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
+import { fetchApiData } from '@/lib/api/client';
 import { Button } from '@/components/ui/Button';
 import {
   Card,
@@ -100,17 +101,11 @@ export default function AdminStatsPage() {
   const fetchStats = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/admin/stats');
-      const data = await response.json();
-
-      if (data.success) {
-        setStats(data.data);
-        setError('');
-      } else {
-        setError(data.error || 'Failed to fetch statistics');
-      }
-    } catch (_error) {
-      setError('Failed to fetch statistics');
+      const data = await fetchApiData<AdminStats>('/api/admin/stats');
+      setStats(data);
+      setError('');
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Failed to fetch statistics');
     } finally {
       setLoading(false);
     }

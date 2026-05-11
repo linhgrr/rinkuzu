@@ -1,7 +1,7 @@
 import crypto from 'crypto';
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { ServiceFactory } from '@/lib/serviceFactory';
-import { apiErr } from '@/lib/api/response';
+import { apiErr, apiOk } from '@/lib/api/response';
 
 export const dynamic = 'force-dynamic';
 
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (body.success !== true || body.code !== '00') {
-      return NextResponse.json({ success: true, message: 'Webhook ignored' });
+      return apiOk(null, 200, { message: 'Webhook ignored' });
     }
 
     const orderCode = Number(body.data['orderCode']);
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
       code: body.data['code'] as string | undefined,
     });
 
-    return NextResponse.json({ success: true });
+    return apiOk(null);
   } catch (error) {
     console.error('PayOS webhook error:', error);
     return apiErr('internal_error', 'Webhook processing failed', 500);

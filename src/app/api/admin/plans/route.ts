@@ -3,7 +3,7 @@ import { withAdmin } from '@/lib/api/auth';
 import connectDB from '@/lib/mongoose';
 import Plan from '@/models/Plan';
 import { DurationUtils } from '@/types/subscription';
-import { apiErr } from '@/lib/api/response';
+import { apiErr, apiOk } from '@/lib/api/response';
 
 export const GET = withAdmin(async () => {
   try {
@@ -133,7 +133,7 @@ export const DELETE = withAdmin(async (request: NextRequest) => {
       return apiErr('not_found', 'Plan not found', 404);
     }
 
-    return NextResponse.json({ success: true, message: 'Plan deleted successfully' });
+    return apiOk(null, 200, { message: 'Plan deleted successfully' });
   } catch (error: unknown) {
     console.error('Admin delete plan error:', error);
     return apiErr('internal_error', 'Internal server error', 500);

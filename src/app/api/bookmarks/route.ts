@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
-import { apiErr } from '@/lib/api/response';
+import { apiErr, apiOk } from '@/lib/api/response';
 
 const bookmarkService = serviceFactory.getBookmarkService();
 
@@ -20,9 +20,8 @@ export async function GET(request: NextRequest) {
 
     const result = await bookmarkService.getBookmarksByUser(session.user.email, { page, limit });
 
-    return NextResponse.json({
-      success: true,
-      data: result.bookmarks,
+    return apiOk({
+      bookmarks: result.bookmarks,
       pagination: result.pagination,
     });
   } catch (error) {
@@ -48,10 +47,7 @@ export async function POST(request: NextRequest) {
       questionIndex,
     });
 
-    return NextResponse.json({
-      success: true,
-      data: bookmark,
-    });
+    return apiOk(bookmark);
   } catch (error: unknown) {
     console.error('Error creating bookmark:', error);
     const message = error instanceof Error ? error.message : '';

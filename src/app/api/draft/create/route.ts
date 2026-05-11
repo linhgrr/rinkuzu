@@ -1,11 +1,11 @@
 // /src/app/api/draft/create/route.ts
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import connectDB from '@/lib/mongoose';
 import DraftQuiz from '@/models/DraftQuiz';
 import { deletePDF, OBJECT_STORAGE_PUBLIC_BASE_URL } from '@/lib/s3';
-import { apiErr } from '@/lib/api/response';
+import { apiErr, apiOk } from '@/lib/api/response';
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 const EXPIRY_HOURS = 48;
@@ -115,21 +115,24 @@ export async function POST(request: NextRequest) {
       throw dbError;
     }
 
-    return NextResponse.json({
-      draftId: draft._id.toString(),
-      title: draft.title,
-      chunks: {
-        total: chunkDetails.length,
-        chunkDetails: chunkDetails.map((c) => ({
-          index: c.index,
-          startPage: c.startPage,
-          endPage: c.endPage,
-          status: c.status,
-        })),
+    return apiOk(
+      {
+        draftId: draft._id.toString(),
+        title: draft.title,
+        chunks: {
+          total: chunkDetails.length,
+          chunkDetails: chunkDetails.map((c) => ({
+            index: c.index,
+            startPage: c.startPage,
+            endPage: c.endPage,
+            status: c.status,
+          })),
+        },
+        totalPages,
+        expiresAt: draft.expiresAt,
       },
-      totalPages,
-      expiresAt: draft.expiresAt,
-    });
+      201,
+    );
   } catch (error) {
     console.error('Draft create error:', error);
     return apiErr('internal_error', 'Failed to create draft', 500);

@@ -1,6 +1,5 @@
-import { NextResponse } from 'next/server';
 import { ServiceFactory } from '@/lib/serviceFactory';
-import { apiErr } from '@/lib/api/response';
+import { apiErr, apiOk } from '@/lib/api/response';
 
 export async function GET() {
   try {
@@ -16,8 +15,7 @@ export async function GET() {
       calculatedMonths: parseDurationToMonths(plan.duration),
     }));
 
-    return NextResponse.json({
-      success: true,
+    return apiOk({
       plans: transformedPlans,
       meta: {
         durationFormat: 'ISO8601',

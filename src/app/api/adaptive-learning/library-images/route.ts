@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { apiErr, apiOk } from '@/lib/api/response';
 
 export const dynamic = 'force-dynamic';
 
@@ -65,15 +65,19 @@ export async function GET(req: Request) {
     });
 
     if (!response.ok) {
-      return NextResponse.json({ images: [] }, { status: response.status });
+      return apiErr(
+        'library_images_unavailable',
+        'Failed to fetch library images from upstream service',
+        response.status,
+      );
     }
 
     const payload = await response.json();
     const images = normalizePayload(payload);
 
-    return NextResponse.json({ images });
+    return apiOk({ images });
   } catch (error) {
     console.error('Failed to fetch random library images:', error);
-    return NextResponse.json({ images: [] }, { status: 500 });
+    return apiErr('library_images_unavailable', 'Failed to fetch random library images', 500);
   }
 }

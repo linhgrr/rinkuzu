@@ -16,8 +16,7 @@ import { StreamingChatModal } from '@/features/quiz/components/chat/StreamingCha
 import { QuestionOptionsPreview } from '@/features/quiz/components/shared/QuestionOptionsPreview';
 import { useStreamingChatSession } from '@/features/quiz/hooks/useStreamingChatSession';
 import { PaginationMeta } from '@/types';
-import { fetchApiSuccess } from '@/lib/api/client';
-import { swrFetcher } from '@/lib/api/swr-fetcher';
+import { fetchApiData } from '@/lib/api/client';
 
 const chatbotIcon =
   'https://i.ibb.co/ZRYgc1tN/Gemini-Generated-Image-yjm06yyjm06yyjm0-removebg-preview.png';
@@ -52,7 +51,7 @@ export default function ProfileBookmarks() {
 
   const { data, error, isLoading, mutate } = useSWR(
     `/api/bookmarks?page=${currentPage}&limit=${itemsPerPage}`,
-    swrFetcher<{ bookmarks: Bookmark[]; pagination: PaginationMeta }>,
+    fetchApiData<{ bookmarks: Bookmark[]; pagination: PaginationMeta }>,
   );
 
   const bookmarks = data?.bookmarks ?? [];
@@ -80,7 +79,7 @@ export default function ProfileBookmarks() {
   const removeBookmark = async (bookmarkId: string) => {
     setRemovingBookmarkId(bookmarkId);
     try {
-      await fetchApiSuccess<null>(`/api/bookmarks/${bookmarkId}`, {
+      await fetchApiData<null>(`/api/bookmarks/${bookmarkId}`, {
         method: 'DELETE',
       });
       mutate();

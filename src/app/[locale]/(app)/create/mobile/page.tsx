@@ -16,8 +16,8 @@ import { toast } from 'sonner';
 import { CategorySelector } from '@/features/categories/components/CategorySelector';
 import { Input, Textarea } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
+import { fetchApiData } from '@/lib/api/client';
 import { getPdfPageCount, uploadPdfViaPresignedUrl } from '@/lib/pdf';
-import { extractApiErrorMessage } from '@/lib/api/error';
 
 export default function MobileCreatePage() {
   const t = useTranslations('create');
@@ -58,7 +58,12 @@ export default function MobileCreatePage() {
       const detectedTotalPages = await getPdfPageCount(file);
 
       // Create draft via API
-      const response = await fetch('/api/draft/create', {
+      const data = await fetchApiData<{
+        draftId: string;
+        chunks: { total: number };
+        totalPages: number;
+        expiresAt: string;
+      }>('/api/draft/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -73,28 +78,21 @@ export default function MobileCreatePage() {
         }),
       });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(extractApiErrorMessage(error, 'Failed to create draft'));
-      }
-
-      const { draftId, chunks, totalPages, expiresAt } = await response.json();
-
       // Add to store
       addDraft({
-        id: draftId,
+        id: data.draftId,
         title: title.trim(),
         status: 'processing',
-        chunksTotal: chunks.total,
+        chunksTotal: data.chunks.total,
         chunksProcessed: 0,
         chunksError: 0,
         questionsCount: 0,
         createdAt: new Date().toISOString(),
-        expiresAt: expiresAt,
+        expiresAt: data.expiresAt,
       });
 
       toast.success(t('processingStarted'), {
-        description: t('pagesChunks', { pages: totalPages, chunks: chunks.total }),
+        description: t('pagesChunks', { pages: data.totalPages, chunks: data.chunks.total }),
       });
 
       // Navigate away first, then DraftSyncProvider will resume processing

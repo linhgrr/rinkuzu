@@ -1,9 +1,8 @@
-import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import connectDB from '@/lib/mongoose';
 import QuestionProgress from '@/models/QuestionProgress';
 import { authOptions } from '@/lib/auth';
-import { apiErr } from '@/lib/api/response';
+import { apiErr, apiOk } from '@/lib/api/response';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,8 +28,8 @@ export async function GET() {
       .sort({ nextReviewDate: 1 }) // Most overdue first
       .limit(50);
 
-    return NextResponse.json({
-      data: dueQuestions,
+    return apiOk({
+      questions: dueQuestions,
       count: dueQuestions.length,
     });
   } catch (error) {

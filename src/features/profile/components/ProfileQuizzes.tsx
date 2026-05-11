@@ -12,7 +12,7 @@ import { QuizPreviewModal } from '@/features/quiz/components/QuizPreviewModal';
 import Pagination from '@/components/ui/Pagination';
 import { formatDate } from '@/lib/utils';
 import { IQuiz, PaginationMeta } from '@/types';
-import { fetchApiSuccess } from '@/lib/api/client';
+import { fetchApiData, fetchApiResponse } from '@/lib/api/client';
 import {
   HiOutlineClock,
   HiOutlineCheckCircle,
@@ -60,11 +60,11 @@ export default function ProfileQuizzes() {
           params.append('status', filter);
         }
 
-        const data = await fetchApiSuccess<{ quizzes: IQuiz[]; pagination: PaginationMeta }>(
+        const data = await fetchApiData<{ quizzes: IQuiz[]; pagination: PaginationMeta }>(
           `/api/quizzes?${params}`,
         );
-        setQuizzes(data.data.quizzes);
-        setPagination(data.data.pagination);
+        setQuizzes(data.quizzes);
+        setPagination(data.pagination);
         setError('');
       } catch (error: any) {
         setError(error.message || 'Failed to fetch quizzes');
@@ -136,7 +136,7 @@ export default function ProfileQuizzes() {
     try {
       setDeletingQuizId(quizId);
 
-      const data = await fetchApiSuccess<null, { message?: string }>(`/api/quizzes/${quizId}`, {
+      const data = await fetchApiResponse<null, { message?: string }>(`/api/quizzes/${quizId}`, {
         method: 'DELETE',
       });
       setQuizzes((prev) => prev.filter((q) => q._id !== quizId));

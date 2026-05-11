@@ -25,7 +25,7 @@ import { useQuizAIExplain } from '@/features/quiz/hooks/useQuizAIExplain';
 import { useQuizSubmission } from '@/features/quiz/hooks/useQuizSubmission';
 import { useQuizViewport } from '@/features/quiz/hooks/useQuizViewport';
 import { IQuiz } from '@/types';
-import { fetchApiSuccess } from '@/lib/api/client';
+import { fetchApiData } from '@/lib/api/client';
 import { routePathSegment } from '@/lib/routing/routeParams';
 import { useRequiredRouteParam } from '@/lib/routing/useRequiredRouteParam';
 import { QuizPageSchema } from '@/components/seo/QuizPageSchema';
@@ -272,8 +272,8 @@ export default function QuizPlayerPage() {
 
   const fetchQuiz = useCallback(async () => {
     try {
-      const data = await fetchApiSuccess<IQuiz>(`/api/quiz/${encodedSlug}/play`);
-      const { quiz: nextQuiz, initialAnswers } = createQuizPlayerData(data.data, debugLog);
+      const data = await fetchApiData<IQuiz>(`/api/quiz/${encodedSlug}/play`);
+      const { quiz: nextQuiz, initialAnswers } = createQuizPlayerData(data, debugLog);
       setQuiz(nextQuiz);
       setUserAnswers(initialAnswers);
     } catch (error: any) {

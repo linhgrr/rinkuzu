@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
+import { fetchApiData } from '@/lib/api/client';
 import {
   HiOutlineDocumentText,
   HiOutlineCheckCircle,
@@ -43,7 +44,7 @@ export function FloatingDraftProgress() {
 
     // Notify server to delete the draft
     try {
-      await fetch(`/api/draft/${id}`, { method: 'DELETE' });
+      await fetchApiData<null>(`/api/draft/${id}`, { method: 'DELETE' });
     } catch (error) {
       console.error('Failed to delete draft on server:', error);
     }

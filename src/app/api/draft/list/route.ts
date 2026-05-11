@@ -1,10 +1,10 @@
 // /src/app/api/draft/list/route.ts
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import connectDB from '@/lib/mongoose';
 import DraftQuiz from '@/models/DraftQuiz';
-import { apiErr } from '@/lib/api/response';
+import { apiErr, apiOk } from '@/lib/api/response';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,7 +26,7 @@ export async function GET(_request: NextRequest) {
       .sort({ createdAt: -1 })
       .limit(20);
 
-    return NextResponse.json({
+    return apiOk({
       drafts: drafts.map((d) => ({
         _id: d._id.toString(),
         title: d.title,

@@ -20,6 +20,13 @@ import { fetchApiData } from '@/lib/api/client';
 import { extractUnknownErrorMessage } from '@/lib/api/error';
 import { getPdfPageCount, uploadPdfViaPresignedUrl } from '@/lib/pdf';
 
+type CategoryLike = {
+  _id: string;
+  name: string;
+  description?: string;
+  color?: string;
+};
+
 export default function MobileCreatePage() {
   const t = useTranslations('create');
   const tCommon = useTranslations('common');
@@ -29,7 +36,7 @@ export default function MobileCreatePage() {
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<any>(null);
+  const [selectedCategory, setSelectedCategory] = useState<CategoryLike | null>(null);
   const [aiPrompt, setAiPrompt] = useState('');
   const [isUploading, setIsUploading] = useState(false);
 

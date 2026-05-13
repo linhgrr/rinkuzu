@@ -13,7 +13,7 @@ import type {
   SubmitResult,
 } from '@/features/adaptive-learning/types';
 
-type TranslateFn = (key: string, values?: Record<string, any>) => string;
+type TranslateFn = (key: string, values?: Record<string, string | number | Date>) => string;
 
 function deriveOutcomeFromHistory(
   detail: SessionHistoryDetail,

@@ -48,7 +48,7 @@ const STATUS_LABEL_KEYS: Record<PipelineStatus, string> = {
   cancelled: 'failed',
 };
 
-type TranslateFn = (key: string, values?: Record<string, any>) => string;
+type TranslateFn = (key: string, values?: Record<string, string | number | Date>) => string;
 
 export type ProcessingStats = {
   concepts_extracted: number;

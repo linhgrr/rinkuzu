@@ -22,7 +22,7 @@ type RouterLike = {
   prefetch: (href: string) => void;
 };
 
-type TranslateFn = (key: string, values?: Record<string, any>) => string;
+type TranslateFn = (key: string, values?: Record<string, string | number | Date>) => string;
 
 type UseAdaptiveExerciseSessionParams = {
   sessionId: string;

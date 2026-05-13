@@ -134,7 +134,7 @@ export default function AdminSubscriptionsPage() {
     fetchSubscriptions(1, searchTerm, status);
   };
 
-  const handleUpdateStatus = async (subscriptionId: string, newStatus: string) => {
+  const handleUpdateStatus = async (subscriptionId: string, newStatus: Subscription['status']) => {
     setActionLoading(subscriptionId);
     try {
       await fetchApiData(`/api/admin/subscriptions/${subscriptionId}`, {
@@ -146,7 +146,7 @@ export default function AdminSubscriptionsPage() {
       });
       setSubscriptions(
         subscriptions.map((sub) =>
-          sub._id === subscriptionId ? { ...sub, status: newStatus as any } : sub,
+          sub._id === subscriptionId ? { ...sub, status: newStatus } : sub,
         ),
       );
       setSuccess(`Subscription status updated to ${newStatus}`);
@@ -487,7 +487,7 @@ export default function AdminSubscriptionsPage() {
             <div className="border-t pt-4">
               <p className="block text-sm font-medium text-neutral-700 mb-3">Update Status</p>
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-                {['completed', 'cancelled', 'expired'].map((status) => (
+                {(['completed', 'cancelled', 'expired'] as const).map((status) => (
                   <Button
                     key={status}
                     variant="outline"

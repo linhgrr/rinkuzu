@@ -54,7 +54,7 @@ export async function GET(): Promise<Response> {
     for (const quiz of quizResult.quizzes || []) {
       if (!quiz?.slug) continue;
       const path = `/quiz/${quiz.slug}`;
-      const quizDate = new Date((quiz as any).updatedAt || (quiz as any).createdAt || Date.now());
+      const quizDate = new Date(quiz.updatedAt || quiz.createdAt || Date.now());
       for (const locale of [...locales]) {
         pushEntry(toEntry(locale, path, quizDate));
       }

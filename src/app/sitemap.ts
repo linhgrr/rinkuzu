@@ -62,7 +62,7 @@ export default async function sitemap(): Promise<SitemapEntry[]> {
     for (const quiz of quizResult.quizzes || []) {
       if (!quiz?.slug) continue;
       const path = `/quiz/${quiz.slug}`;
-      const quizUpdatedAt = (quiz as any).updatedAt || (quiz as any).createdAt;
+      const quizUpdatedAt = quiz.updatedAt || quiz.createdAt;
 
       for (const { locale } of localeVariants(path)) {
         pushEntry(toEntry(locale, path, new Date(quizUpdatedAt || Date.now())));

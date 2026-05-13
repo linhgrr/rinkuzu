@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { ServiceFactory } from '@/lib/serviceFactory';
 import { apiErr } from '@/lib/api/response';
+import { extractUnknownErrorMessage } from '@/lib/api/error';
 
 export async function POST(request: NextRequest) {
   try {
@@ -25,12 +26,16 @@ export async function POST(request: NextRequest) {
 
     const result = await subscriptionService.verifyAndActivateSubscription(
       numericOrderCode,
-      (session.user as any).id,
+      session.user.id,
     );
 
     return NextResponse.json({ success: true, data: result });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error verifying payment:', error);
-    return apiErr('internal_error', error.message || 'Failed to verify payment', 500);
+    return apiErr(
+      'internal_error',
+      extractUnknownErrorMessage(error, 'Failed to verify payment'),
+      500,
+    );
   }
 }

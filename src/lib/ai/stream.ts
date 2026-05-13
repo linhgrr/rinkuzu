@@ -2,6 +2,40 @@ export interface StreamTextOptions {
   onContent?: (chunk: string, fullContent: string) => void;
 }
 
+interface OpenAITextDeltaPart {
+  type?: string;
+  text?: string;
+}
+
+type OpenAIDeltaContent = string | Array<string | OpenAITextDeltaPart>;
+
+interface OpenAIChoice {
+  delta?: {
+    content?: OpenAIDeltaContent;
+  };
+  finish_reason?: unknown;
+}
+
+interface OpenAIResponseFailure {
+  error?: {
+    message?: string;
+  };
+  incomplete_details?: {
+    reason?: string;
+  };
+}
+
+interface OpenAISsePayload {
+  type?: string;
+  delta?: string;
+  choices?: OpenAIChoice[];
+  content?: string;
+  done?: boolean;
+  error?: unknown;
+  message?: string;
+  response?: OpenAIResponseFailure;
+}
+
 export function createStreamError(message: string, status?: number): Error {
   const error = new Error(message);
 
@@ -23,7 +57,7 @@ export async function parseJsonResponse<T>(response: Response): Promise<T> {
   return data as T;
 }
 
-export function extractOpenAIDeltaContent(payload: any): string {
+export function extractOpenAIDeltaContent(payload: OpenAISsePayload | null | undefined): string {
   if (payload?.type === 'response.output_text.delta' && typeof payload.delta === 'string') {
     return payload.delta;
   }
@@ -74,7 +108,7 @@ function splitSseEvents(buffer: string): { events: string[]; remaining: string }
   };
 }
 
-function isTerminalOpenAIEvent(payload: any): boolean {
+function isTerminalOpenAIEvent(payload: OpenAISsePayload | null | undefined): boolean {
   if (
     payload?.type === 'response.completed' ||
     payload?.type === 'response.failed' ||
@@ -110,10 +144,10 @@ function parseSseEvent(event: string): {
     return { chunk: '', isTerminal: true };
   }
 
-  let parsed: any;
+  let parsed: OpenAISsePayload;
 
   try {
-    parsed = JSON.parse(data);
+    parsed = JSON.parse(data) as OpenAISsePayload;
   } catch {
     throw createStreamError('Streaming response contained invalid SSE payload');
   }

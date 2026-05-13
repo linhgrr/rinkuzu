@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
 import { AsyncRouteParams } from '@/types/next-route';
 import { apiErr, apiOk } from '@/lib/api/response';
+import type { IQuiz } from '@/interfaces/repositories/IQuizRepository';
 
 // GET /api/quizzes/[id] - Get specific quiz
 export async function GET(request: NextRequest, { params }: AsyncRouteParams<{ id: string }>) {
@@ -20,19 +21,19 @@ export async function GET(request: NextRequest, { params }: AsyncRouteParams<{ i
 
     const quizService = serviceFactory.getQuizService();
 
-    const result = await quizService.getQuizById(id, userEmail, (session.user as any).role);
+    const result = await quizService.getQuizById(id, userEmail, session.user.role);
 
     if (!result.success) {
       return apiErr('service_error', result.error ?? 'Request failed', result.statusCode || 400);
     }
 
-    const data = result.data;
+    const data: IQuiz | undefined = result.data;
 
     // Refresh signed URL if PDF exists
-    if (data && (data as any).pdfUrl) {
+    if (data?.pdfUrl) {
       try {
         const { getSignedPDFUrl, BUCKET_NAME } = await import('@/lib/s3');
-        const pdfUrl = (data as any).pdfUrl;
+        const pdfUrl = data.pdfUrl;
         const marker = `${BUCKET_NAME}/`;
 
         if (pdfUrl.includes(marker)) {
@@ -40,7 +41,7 @@ export async function GET(request: NextRequest, { params }: AsyncRouteParams<{ i
           if (key) {
             // Use a temporary variable to avoid mutating potentially frozen state if necessary,
             // but here we are constructing the response
-            (data as any).pdfUrl = await getSignedPDFUrl(key);
+            data.pdfUrl = await getSignedPDFUrl(key);
           }
         }
       } catch (error) {
@@ -52,7 +53,7 @@ export async function GET(request: NextRequest, { params }: AsyncRouteParams<{ i
       success: true,
       data: data,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Get quiz error:', error);
     return apiErr('internal_error', 'Internal server error', 500);
   }
@@ -74,12 +75,7 @@ export async function PUT(request: NextRequest, { params }: AsyncRouteParams<{ i
     const quizData = await request.json();
     const quizService = serviceFactory.getQuizService();
 
-    const result = await quizService.updateQuiz(
-      id,
-      quizData,
-      userEmail,
-      (session.user as any).role,
-    );
+    const result = await quizService.updateQuiz(id, quizData, userEmail, session.user.role);
 
     if (!result.success) {
       return apiErr('service_error', result.error ?? 'Request failed', result.statusCode || 400);
@@ -89,7 +85,7 @@ export async function PUT(request: NextRequest, { params }: AsyncRouteParams<{ i
       success: true,
       data: result.data,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Update quiz error:', error);
     return apiErr('internal_error', 'Internal server error', 500);
   }
@@ -110,14 +106,14 @@ export async function DELETE(request: NextRequest, { params }: AsyncRouteParams<
 
     const quizService = serviceFactory.getQuizService();
 
-    const result = await quizService.deleteQuiz(id, userEmail, (session.user as any).role);
+    const result = await quizService.deleteQuiz(id, userEmail, session.user.role);
 
     if (!result.success) {
       return apiErr('service_error', result.error ?? 'Request failed', result.statusCode || 400);
     }
 
     return apiOk(null, 200, { message: 'Quiz deleted successfully' });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Delete quiz error:', error);
     return apiErr('internal_error', 'Internal server error', 500);
   }

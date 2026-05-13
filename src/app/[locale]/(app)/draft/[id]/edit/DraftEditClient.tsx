@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useDraftStore } from '@/store/useDraftStore';
 import { fetchApiData } from '@/lib/api/client';
+import { extractUnknownErrorMessage } from '@/lib/api/error';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
 import { Textarea } from '@/components/ui/Input';
@@ -163,8 +164,8 @@ export default function DraftEditClient({ initialDraft, initialCategory, locale 
 
       toast.success('Quiz đã được gửi để duyệt!');
       router.push(`/${locale}/quiz/${data.slug}`);
-    } catch (error: any) {
-      toast.error('Lỗi', { description: error.message });
+    } catch (error: unknown) {
+      toast.error('Lỗi', { description: extractUnknownErrorMessage(error, 'Không thể gửi quiz') });
     } finally {
       setIsSubmitting(false);
     }

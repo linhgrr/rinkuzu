@@ -4,7 +4,7 @@ import { useDraftStore } from '@/store/useDraftStore';
 import { toast } from 'sonner';
 import { mapWithConcurrency } from '@/lib/asyncPool';
 import { fetchApiData } from '@/lib/api/client';
-import { extractApiErrorMessage } from '@/lib/api/error';
+import { extractApiErrorMessage, extractUnknownErrorMessage } from '@/lib/api/error';
 
 interface ChunkInfo {
   index: number;
@@ -38,11 +38,14 @@ async function fetchWithRetry(
       }
 
       return response;
-    } catch (error: any) {
-      lastError = error;
+    } catch (error: unknown) {
+      lastError =
+        error instanceof Error
+          ? error
+          : new Error(extractUnknownErrorMessage(error, 'Network request failed'));
 
       // Don't retry on abort
-      if (error.name === 'AbortError') {
+      if (error instanceof Error && error.name === 'AbortError') {
         throw error;
       }
 
@@ -162,18 +165,20 @@ export function usePdfProcessor() {
                 return;
               }
             }
-          } catch (chunkError: any) {
-            if (chunkError.name === 'AbortError') {
+          } catch (chunkError: unknown) {
+            if (chunkError instanceof Error && chunkError.name === 'AbortError') {
               return;
             }
-
             totalErrors++;
             console.error(`Chunk ${chunk.index} failed:`, chunkError);
 
             // Stop if too many failures overall
             if (totalErrors >= MAX_ERRORS_BEFORE_ABORT) {
               hasAbortedForErrors = true;
-              setDraftError(draftId, `Quá nhiều lỗi khi xử lý chunk: ${chunkError.message}`);
+              setDraftError(
+                draftId,
+                `Quá nhiều lỗi khi xử lý chunk: ${extractUnknownErrorMessage(chunkError, 'Unknown chunk error')}`,
+              );
               toast.error(`Lỗi xử lý "${title}"`, {
                 description: 'Vui lòng thử lại sau',
               });
@@ -181,11 +186,12 @@ export function usePdfProcessor() {
             }
           }
         });
-      } catch (error: any) {
-        if (error.name !== 'AbortError') {
-          setDraftError(draftId, error.message);
+      } catch (error: unknown) {
+        if (!(error instanceof Error && error.name === 'AbortError')) {
+          const message = extractUnknownErrorMessage(error, 'Failed to process PDF draft');
+          setDraftError(draftId, message);
           toast.error(`Lỗi xử lý "${title}"`, {
-            description: error.message,
+            description: message,
           });
         }
       } finally {

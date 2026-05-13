@@ -29,7 +29,7 @@ export async function GET(_request: NextRequest) {
         totalCategories: categoriesWithStats.length,
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Get category stats error:', error);
     return apiErr('internal_error', 'Internal server error', 500);
   }

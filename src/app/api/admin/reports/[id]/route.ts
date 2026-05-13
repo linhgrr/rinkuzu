@@ -7,7 +7,11 @@ export const dynamic = 'force-dynamic';
 
 export const PATCH = withAdmin(async (request: NextRequest, context) => {
   try {
-    const { id } = await context.params;
+    const rawId = context.params['id'];
+    const id = Array.isArray(rawId) ? rawId[0] : rawId;
+    if (!id) {
+      return apiErr('validation_error', 'Report id is required', 400);
+    }
     const { status } = await request.json();
 
     if (!['pending', 'resolved', 'dismissed'].includes(status)) {
@@ -25,7 +29,7 @@ export const PATCH = withAdmin(async (request: NextRequest, context) => {
       success: true,
       data: result.data,
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error updating report:', error);
     return apiErr('internal_error', 'Internal server error', 500);
   }
@@ -33,7 +37,11 @@ export const PATCH = withAdmin(async (request: NextRequest, context) => {
 
 export const DELETE = withAdmin(async (request: NextRequest, context) => {
   try {
-    const { id } = await context.params;
+    const rawId = context.params['id'];
+    const id = Array.isArray(rawId) ? rawId[0] : rawId;
+    if (!id) {
+      return apiErr('validation_error', 'Report id is required', 400);
+    }
 
     const adminService = serviceFactory.getAdminService();
     const result = await adminService.deleteReport(id);
@@ -43,7 +51,7 @@ export const DELETE = withAdmin(async (request: NextRequest, context) => {
     }
 
     return apiOk(null, 200, { message: 'Report deleted successfully' });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error deleting report:', error);
     return apiErr('internal_error', 'Internal server error', 500);
   }

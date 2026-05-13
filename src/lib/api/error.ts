@@ -44,6 +44,17 @@ export function extractApiErrorMessage(
   return fallback;
 }
 
+export function extractUnknownErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof Error) {
+    const message = error.message.trim();
+    if (message) {
+      return message;
+    }
+  }
+
+  return fallback;
+}
+
 export function buildStandardErrorBody(
   code: string,
   detail: string,

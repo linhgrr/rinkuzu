@@ -3,6 +3,7 @@ import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { uploadImageToImgBB } from '@/services/imageUploadService';
+import { extractUnknownErrorMessage } from '@/lib/api/error';
 import { Button } from '@/components/ui/Button';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 
@@ -48,9 +49,11 @@ export function ImageUpload({
       try {
         const result = await uploadImageToImgBB(file, file.name);
         onImageUploaded(result.displayUrl);
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('Failed to upload image:', error);
-        toast.error(`${t('failedToUpload')}: ${error.message}`);
+        toast.error(
+          `${t('failedToUpload')}: ${extractUnknownErrorMessage(error, 'Unknown upload error')}`,
+        );
       } finally {
         setIsUploading(false);
       }

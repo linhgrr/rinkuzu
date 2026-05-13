@@ -17,6 +17,7 @@ import { CategorySelector } from '@/features/categories/components/CategorySelec
 import { Input, Textarea } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { fetchApiData } from '@/lib/api/client';
+import { extractUnknownErrorMessage } from '@/lib/api/error';
 import { getPdfPageCount, uploadPdfViaPresignedUrl } from '@/lib/pdf';
 
 export default function MobileCreatePage() {
@@ -98,8 +99,10 @@ export default function MobileCreatePage() {
       // Navigate away first, then DraftSyncProvider will resume processing
       // This prevents the abort that happens when this component unmounts
       router.push('/dashboard');
-    } catch (error: any) {
-      toast.error(tCommon('error'), { description: error.message });
+    } catch (error: unknown) {
+      toast.error(tCommon('error'), {
+        description: extractUnknownErrorMessage(error, t('failedToStartProcessing')),
+      });
     } finally {
       setIsUploading(false);
     }

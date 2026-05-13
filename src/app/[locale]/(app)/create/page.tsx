@@ -14,6 +14,7 @@ import PDFViewer from '@/features/quiz/components/PDFViewer';
 import { useDraftStore } from '@/store/useDraftStore';
 import { toast } from 'sonner';
 import { fetchApiData } from '@/lib/api/client';
+import { extractUnknownErrorMessage } from '@/lib/api/error';
 import { getPdfPageCount, uploadPdfViaPresignedUrl } from '@/lib/pdf';
 import {
   HiOutlineArrowRight,
@@ -294,9 +295,9 @@ export default function CreateQuizPage() {
       });
 
       router.push('/');
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error starting background processing:', err);
-      setError(err?.message || t('failedToStartProcessing'));
+      setError(extractUnknownErrorMessage(err, t('failedToStartProcessing')));
     } finally {
       setExtracting(false);
     }

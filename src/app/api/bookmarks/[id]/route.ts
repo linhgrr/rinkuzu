@@ -19,10 +19,10 @@ export async function DELETE(request: NextRequest, { params }: AsyncRouteParams<
     await bookmarkService.deleteBookmarkByUser(id, session.user.email);
 
     return apiOk(null, 200, { message: 'Bookmark removed' });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error removing bookmark:', error);
 
-    if (error.message === 'Bookmark not found or unauthorized') {
+    if (error instanceof Error && error.message === 'Bookmark not found or unauthorized') {
       return apiErr('not_found', error.message, 404);
     }
 

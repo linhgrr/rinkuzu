@@ -4,7 +4,7 @@ import { PutObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { authOptions } from '@/lib/auth';
 import { s3Client, BUCKET_NAME } from '@/lib/s3';
-import { buildStandardErrorBody } from '@/lib/api/error';
+import { buildStandardErrorBody, extractUnknownErrorMessage } from '@/lib/api/error';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,7 +20,7 @@ function sanitizeFileName(name: string): string {
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    const userId = (session?.user as any)?.id;
+    const userId = session?.user?.id;
 
     if (!userId) {
       return NextResponse.json(buildStandardErrorBody('unauthorized', 'Unauthorized'), {
@@ -86,10 +86,13 @@ export async function POST(request: NextRequest) {
         expiresIn: URL_EXPIRES_IN_SECONDS,
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to create presigned upload URL:', error);
     return NextResponse.json(
-      buildStandardErrorBody('presigned_url_failed', error?.message || 'Internal server error'),
+      buildStandardErrorBody(
+        'presigned_url_failed',
+        extractUnknownErrorMessage(error, 'Internal server error'),
+      ),
       { status: 500 },
     );
   }

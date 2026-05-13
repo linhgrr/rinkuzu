@@ -8,7 +8,11 @@ import { apiErr, apiOk } from '@/lib/api/response';
 // GET /api/admin/categories/[id] - Get single category
 export const GET = withAdmin(async (_request: NextRequest, context) => {
   try {
-    const { id } = await context.params;
+    const rawId = context.params['id'];
+    const id = Array.isArray(rawId) ? rawId[0] : rawId;
+    if (!id) {
+      return apiErr('validation_error', 'Category id is required', 400);
+    }
 
     await connectDB();
 
@@ -22,7 +26,7 @@ export const GET = withAdmin(async (_request: NextRequest, context) => {
       success: true,
       data: category,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Get category error:', error);
     return apiErr('internal_error', 'Internal server error', 500);
   }
@@ -31,7 +35,11 @@ export const GET = withAdmin(async (_request: NextRequest, context) => {
 // PUT /api/admin/categories/[id] - Update category
 export const PUT = withAdmin(async (request: NextRequest, context) => {
   try {
-    const { id } = await context.params;
+    const rawId = context.params['id'];
+    const id = Array.isArray(rawId) ? rawId[0] : rawId;
+    if (!id) {
+      return apiErr('validation_error', 'Category id is required', 400);
+    }
     const body = await request.json();
     const { name, description, color, isActive } = body;
 
@@ -69,7 +77,7 @@ export const PUT = withAdmin(async (request: NextRequest, context) => {
       success: true,
       data: category,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Update category error:', error);
     return apiErr('internal_error', 'Internal server error', 500);
   }
@@ -78,7 +86,11 @@ export const PUT = withAdmin(async (request: NextRequest, context) => {
 // DELETE /api/admin/categories/[id] - Delete category
 export const DELETE = withAdmin(async (_request: NextRequest, context) => {
   try {
-    const { id } = await context.params;
+    const rawId = context.params['id'];
+    const id = Array.isArray(rawId) ? rawId[0] : rawId;
+    if (!id) {
+      return apiErr('validation_error', 'Category id is required', 400);
+    }
 
     await connectDB();
 
@@ -102,7 +114,7 @@ export const DELETE = withAdmin(async (_request: NextRequest, context) => {
     await Category.findByIdAndDelete(id);
 
     return apiOk(null, 200, { message: 'Category deleted successfully' });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Delete category error:', error);
     return apiErr('internal_error', 'Internal server error', 500);
   }

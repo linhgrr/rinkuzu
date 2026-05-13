@@ -8,6 +8,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { useStreamingChatSession } from '@/features/quiz/hooks/useStreamingChatSession';
 import { fetchApiData } from '@/lib/api/client';
+import { extractUnknownErrorMessage } from '@/lib/api/error';
 import { routePathSegment } from '@/lib/routing/routeParams';
 import { useRequiredRouteParam } from '@/lib/routing/useRequiredRouteParam';
 import { PaginationMeta } from '@/types';
@@ -120,8 +121,8 @@ export default function QuizResultPage() {
         const data = await fetchApiData<QuizResult>(`/api/attempts/${attemptId}`);
         setResult(data);
         await checkBookmarkedQuestions(data);
-      } catch (err: any) {
-        setError(err.message || 'Failed to load results');
+      } catch (err: unknown) {
+        setError(extractUnknownErrorMessage(err, 'Failed to load results'));
       } finally {
         setLoading(false);
       }
@@ -247,10 +248,10 @@ export default function QuizResultPage() {
       setBookmarkToRemove(null);
       setBookmarkMessageTone('success');
       setBookmarkMessage('Bookmark removed');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error removing bookmark:', error);
       setBookmarkMessageTone('error');
-      setBookmarkMessage(error.message || 'Network error, please try again');
+      setBookmarkMessage(extractUnknownErrorMessage(error, 'Network error, please try again'));
     } finally {
       setBookmarkLoading((prev) => {
         const newSet = new Set(prev);
@@ -303,15 +304,16 @@ export default function QuizResultPage() {
       }
       setBookmarkMessageTone('success');
       setBookmarkMessage('Question bookmarked successfully!');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error toggling bookmark:', error);
+      const message = extractUnknownErrorMessage(error, 'Network error, please try again');
 
-      if (error.message === 'Question already bookmarked') {
+      if (message === 'Question already bookmarked') {
         setBookmarkMessageTone('warning');
         setBookmarkMessage('This question is already bookmarked');
       } else {
         setBookmarkMessageTone('error');
-        setBookmarkMessage('Network error, please try again');
+        setBookmarkMessage(message);
       }
 
       setTimeout(() => setBookmarkMessage(''), 3000);

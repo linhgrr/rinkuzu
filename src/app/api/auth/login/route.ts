@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { serviceFactory } from '@/lib/serviceFactory';
+import { extractUnknownErrorMessage } from '@/lib/api/error';
 
 const authService = serviceFactory.getAuthService();
 
@@ -16,15 +17,16 @@ export async function POST(request: NextRequest) {
       },
       { status: 200 },
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Login error:', error);
+    const message = extractUnknownErrorMessage(error, 'Internal server error');
 
-    if (error.message === 'Email and password are required') {
-      return NextResponse.json({ success: false, error: error.message }, { status: 400 });
+    if (message === 'Email and password are required') {
+      return NextResponse.json({ success: false, error: message }, { status: 400 });
     }
 
-    if (error.message === 'Invalid credentials') {
-      return NextResponse.json({ success: false, error: error.message }, { status: 401 });
+    if (message === 'Invalid credentials') {
+      return NextResponse.json({ success: false, error: message }, { status: 401 });
     }
 
     return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });

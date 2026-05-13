@@ -1,4 +1,5 @@
 import { getServerSession } from 'next-auth';
+import type { Session } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { NextRequest } from 'next/server';
 import { apiErr } from './response';
@@ -7,15 +8,18 @@ type WithAuthOptions = {
   role?: string;
 };
 
-type AuthContext = {
+type RouteParams = Record<string, string | string[]>;
+
+type AuthContext<TParams extends RouteParams = RouteParams> = {
   userId: string;
   email: string;
-  session: any;
+  session: Session;
+  params: TParams;
 };
 
-type RouteHandler<T = any> = (
-  request: T,
-  context: AuthContext & { params?: any },
+type RouteHandler<TParams extends RouteParams = RouteParams> = (
+  request: NextRequest,
+  context: AuthContext<TParams>,
 ) => Promise<Response>;
 
 /**
@@ -23,15 +27,21 @@ type RouteHandler<T = any> = (
  * Returns 401 if not authenticated, 403 if wrong role.
  * Provides userId, email, and session to the handler.
  */
-export function withAuth(handler: RouteHandler<NextRequest>, options?: WithAuthOptions) {
-  return async (request: NextRequest, routeContext?: { params?: any }) => {
+export function withAuth<TParams extends RouteParams = RouteParams>(
+  handler: RouteHandler<TParams>,
+  options?: WithAuthOptions,
+) {
+  return async (
+    request: NextRequest,
+    routeContext: { params: Promise<TParams> },
+  ): Promise<Response> => {
     const session = await getServerSession(authOptions);
 
     if (!session?.user) {
       return apiErr('unauthorized', 'Unauthorized', 401);
     }
 
-    const userId = (session.user as any)?.id;
+    const userId = session.user?.id;
     const email = session.user?.email;
 
     if (!userId && !email) {
@@ -39,18 +49,20 @@ export function withAuth(handler: RouteHandler<NextRequest>, options?: WithAuthO
     }
 
     if (options?.role) {
-      const userRole = (session.user as any)?.role;
+      const userRole = session.user?.role;
       if (userRole !== options.role) {
         const roleLabel = options.role === 'admin' ? 'Admin' : options.role;
         return apiErr('forbidden', `${roleLabel} access required`, 403);
       }
     }
 
+    const params = await routeContext.params;
+
     return handler(request, {
-      userId,
+      userId: userId || '',
       email: email || '',
       session,
-      params: routeContext?.params,
+      params,
     });
   };
 }
@@ -58,6 +70,8 @@ export function withAuth(handler: RouteHandler<NextRequest>, options?: WithAuthO
 /**
  * Convenience wrapper for admin-only routes.
  */
-export function withAdmin(handler: RouteHandler<NextRequest>) {
+export function withAdmin<TParams extends RouteParams = RouteParams>(
+  handler: RouteHandler<TParams>,
+) {
   return withAuth(handler, { role: 'admin' });
 }

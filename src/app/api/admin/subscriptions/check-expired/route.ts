@@ -23,8 +23,8 @@ export async function POST(request: NextRequest) {
       return doCheckExpired();
     }
 
-    return adminHandler(request);
-  } catch (error) {
+    return adminHandler(request, { params: Promise.resolve({}) });
+  } catch (error: unknown) {
     console.error('Error checking expired subscriptions:', error);
     return apiErr('internal_error', 'Failed to check expired subscriptions', 500);
   }

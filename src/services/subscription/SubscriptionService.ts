@@ -1,5 +1,6 @@
 import connectDB from '@/lib/mongoose';
 import Plan from '@/models/Plan';
+import type { ISubscription } from '@/models/Subscription';
 import {
   ISubscriptionService,
   SubscriptionPlan,
@@ -91,7 +92,7 @@ export class SubscriptionService implements ISubscriptionService {
     return this.activationService.activateVerifiedSubscription(orderCode, paymentData);
   }
 
-  async getSubscriptionHistory(userId: string) {
+  async getSubscriptionHistory(userId: string): Promise<ISubscription[]> {
     return await this.subscriptionRepository.findByUser(userId);
   }
 

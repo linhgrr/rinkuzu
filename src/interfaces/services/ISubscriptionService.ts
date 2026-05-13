@@ -1,3 +1,5 @@
+import type { ISubscription } from '@/models/Subscription';
+
 export interface SubscriptionPlan {
   id: string;
   name: string;
@@ -49,7 +51,7 @@ export interface ISubscriptionService {
       code?: string;
     },
   ): Promise<SubscriptionActivation>;
-  getSubscriptionHistory(userId: string): Promise<any[]>;
+  getSubscriptionHistory(userId: string): Promise<ISubscription[]>;
   cancelSubscription(userId: string): Promise<{ success: boolean }>;
   getSubscriptionPlans(): Promise<SubscriptionPlan[]>;
   checkAndUpdateExpiredSubscriptions(): Promise<number>;

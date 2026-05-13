@@ -3,6 +3,7 @@ import { withAdmin } from '@/lib/api/auth';
 import { ServiceFactory } from '@/lib/serviceFactory';
 import { buildPaginationMeta } from '@/repositories/pagination';
 import { apiErr } from '@/lib/api/response';
+import type { ISubscription } from '@/models/Subscription';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,14 +21,14 @@ export const GET = withAdmin(async (request: NextRequest) => {
     const result = await subscriptionService.getSubscriptionHistory('');
 
     // Filter and paginate results based on search params
-    let filteredResults = result;
+    let filteredResults: ISubscription[] = result;
     if (searchParamsObj.status) {
-      filteredResults = result.filter((sub: any) => sub.status === searchParamsObj.status);
+      filteredResults = result.filter((sub) => sub.status === searchParamsObj.status);
     }
     if (searchParamsObj.search) {
       const searchLower = searchParamsObj.search.toLowerCase();
       filteredResults = filteredResults.filter(
-        (sub: any) =>
+        (sub) =>
           sub.userEmail?.toLowerCase().includes(searchLower) ||
           sub.payosOrderId?.toLowerCase().includes(searchLower),
       );
@@ -46,7 +47,7 @@ export const GET = withAdmin(async (request: NextRequest) => {
         pagination: buildPaginationMeta(page, limit, total),
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Admin subscriptions list error:', error);
     return apiErr('internal_error', 'Internal server error', 500);
   }

@@ -7,20 +7,24 @@ export const dynamic = 'force-dynamic';
 
 export const GET = withAdmin(async (_request: NextRequest, context) => {
   try {
-    const { id } = await context.params;
+    const rawId = context.params['id'];
+    const id = Array.isArray(rawId) ? rawId[0] : rawId;
+    if (!id) {
+      return apiErr('validation_error', 'Subscription id is required', 400);
+    }
 
     const subscriptionService = ServiceFactory.createSubscriptionService();
 
     // Get all subscription history and find the specific one
     const allSubscriptions = await subscriptionService.getSubscriptionHistory('');
-    const subscription = allSubscriptions.find((sub: any) => sub._id.toString() === id);
+    const subscription = allSubscriptions.find((sub) => sub.id === id);
 
     if (!subscription) {
       return apiErr('not_found', 'Subscription not found', 404);
     }
 
     return NextResponse.json({ success: true, data: subscription });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Admin subscription detail error:', error);
     return apiErr('internal_error', 'Internal server error', 500);
   }
@@ -28,7 +32,11 @@ export const GET = withAdmin(async (_request: NextRequest, context) => {
 
 export const PATCH = withAdmin(async (request: NextRequest, context) => {
   try {
-    const { id } = await context.params;
+    const rawId = context.params['id'];
+    const id = Array.isArray(rawId) ? rawId[0] : rawId;
+    if (!id) {
+      return apiErr('validation_error', 'Subscription id is required', 400);
+    }
 
     const body = await request.json();
     const subscriptionService = ServiceFactory.createSubscriptionService();
@@ -37,7 +45,7 @@ export const PATCH = withAdmin(async (request: NextRequest, context) => {
       return apiErr('service_error', result.error ?? 'Request failed', 400);
     }
     return NextResponse.json({ success: true, data: result.data });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Admin subscription update error:', error);
     return apiErr('internal_error', 'Internal server error', 500);
   }

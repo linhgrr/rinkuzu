@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { streamQuizAI } from '@/lib/quiz/ask-ai';
+import { extractUnknownErrorMessage } from '@/lib/api/error';
 
 export interface ChatMessage {
   role: 'user' | 'assistant';
@@ -174,7 +175,7 @@ export function useStreamingChatSession(options: UseStreamingChatSessionOptions 
 
       setUserQuestion('');
       return true;
-    } catch (error: any) {
+    } catch (error: unknown) {
       setChatHistories((prev) => {
         const history = [...(prev[key] || [])];
         const lastMessage = history[history.length - 1];
@@ -184,7 +185,7 @@ export function useStreamingChatSession(options: UseStreamingChatSessionOptions 
         return { ...prev, [key]: history };
       });
       setAIError(
-        error.message ||
+        extractUnknownErrorMessage(error, '') ||
           requestErrorMessage ||
           'Failed to connect to AI service. Please try again.',
       );

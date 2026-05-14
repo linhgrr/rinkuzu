@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import {
@@ -21,19 +21,69 @@ import type {
 
 type SubjectTab = 'graph' | 'mastery' | 'history';
 
+interface SubjectDetailsState {
+  status: SessionStatus | null;
+  loading: boolean;
+  filename: string;
+  activeTab: SubjectTab;
+  jobId: string | null;
+  historyDetail: SubjectHistoryDetail | null;
+  historyLoading: boolean;
+  didPrefetchStartLearning: boolean;
+  startingSession: boolean;
+  sessionNotice: string | null;
+}
+
+type SubjectDetailsAction =
+  | { type: 'patch'; value: Partial<SubjectDetailsState> }
+  | { type: 'setActiveTab'; value: SubjectTab };
+
+function createInitialState(t: TranslateFn): SubjectDetailsState {
+  return {
+    status: null,
+    loading: true,
+    filename: t('defaultLearningPath'),
+    activeTab: 'graph',
+    jobId: null,
+    historyDetail: null,
+    historyLoading: false,
+    didPrefetchStartLearning: false,
+    startingSession: false,
+    sessionNotice: null,
+  };
+}
+
+function subjectDetailsReducer(
+  state: SubjectDetailsState,
+  action: SubjectDetailsAction,
+): SubjectDetailsState {
+  switch (action.type) {
+    case 'patch':
+      return { ...state, ...action.value };
+    case 'setActiveTab':
+      return { ...state, activeTab: action.value };
+    default:
+      return state;
+  }
+}
+
 export const useSubjectDetailsState = (sessionId: string, t: TranslateFn) => {
   const router = useRouter();
-  const [status, setStatus] = useState<SessionStatus | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [filename, setFilename] = useState(t('defaultLearningPath'));
-  const [activeTab, setActiveTab] = useState<SubjectTab>('graph');
-  const [jobId, setJobId] = useState<string | null>(null);
-  const [historyDetail, setHistoryDetail] = useState<SubjectHistoryDetail | null>(null);
-  const [historyLoading, setHistoryLoading] = useState(false);
-  const [didPrefetchStartLearning, setDidPrefetchStartLearning] = useState(false);
-  const [startingSession, setStartingSession] = useState(false);
-  const [sessionNotice, setSessionNotice] = useState<string | null>(null);
+  const [state, dispatch] = useReducer(subjectDetailsReducer, t, createInitialState);
   const historyDetailPromiseRef = useRef<Promise<SubjectHistoryDetail> | null>(null);
+
+  const {
+    status,
+    loading,
+    filename,
+    activeTab,
+    jobId,
+    historyDetail,
+    historyLoading,
+    didPrefetchStartLearning,
+    startingSession,
+    sessionNotice,
+  } = state;
 
   useEffect(() => {
     let mounted = true;
@@ -42,16 +92,23 @@ export const useSubjectDetailsState = (sessionId: string, t: TranslateFn) => {
       const storedFilename = localStorage.getItem('al_pipeline_filename');
       const storedSubjectName = localStorage.getItem('al_pipeline_subject_name');
       const mappedJobId = getJobIdForSession(sessionId);
-      if (mounted) setFilename(storedSubjectName || storedFilename || t('defaultLearningPath'));
-      if (mounted) setJobId(mappedJobId);
+      const nextState: Partial<SubjectDetailsState> = {
+        filename: storedSubjectName || storedFilename || t('defaultLearningPath'),
+        jobId: mappedJobId,
+        loading: false,
+      };
 
       try {
         const sessionStatus = await getSessionStatus(sessionId);
-        if (mounted) setStatus(sessionStatus);
+        nextState.status = sessionStatus;
       } catch (error) {
-        if (mounted && isSessionNotFoundError(error)) setActiveTab('history');
-      } finally {
-        if (mounted) setLoading(false);
+        if (isSessionNotFoundError(error)) {
+          nextState.activeTab = 'history';
+        }
+      }
+
+      if (mounted) {
+        dispatch({ type: 'patch', value: nextState });
       }
     };
 
@@ -90,7 +147,9 @@ export const useSubjectDetailsState = (sessionId: string, t: TranslateFn) => {
     const hydrateHistory = () => {
       void fetchHistoryDetail()
         .then((detail) => {
-          if (mounted && detail) setHistoryDetail(detail);
+          if (mounted && detail) {
+            dispatch({ type: 'patch', value: { historyDetail: detail } });
+          }
         })
         .catch(() => {
           // Ignore warm-up failures; explicit tab loading handles retry UX.
@@ -116,17 +175,25 @@ export const useSubjectDetailsState = (sessionId: string, t: TranslateFn) => {
     if (activeTab !== 'history' || historyDetail || !jobId) return;
 
     let mounted = true;
-    setHistoryLoading(true);
-    void fetchHistoryDetail()
-      .then((detail) => {
-        if (mounted && detail) setHistoryDetail(detail);
-      })
-      .catch(() => {
+    dispatch({ type: 'patch', value: { historyLoading: true } });
+    void (async () => {
+      const nextState: Partial<SubjectDetailsState> = {
+        historyLoading: false,
+      };
+
+      try {
+        const detail = await fetchHistoryDetail();
+        if (detail) {
+          nextState.historyDetail = detail;
+        }
+      } catch {
         // Ignore if not persisted yet.
-      })
-      .finally(() => {
-        if (mounted) setHistoryLoading(false);
-      });
+      }
+
+      if (mounted) {
+        dispatch({ type: 'patch', value: nextState });
+      }
+    })();
 
     return () => {
       mounted = false;
@@ -147,14 +214,14 @@ export const useSubjectDetailsState = (sessionId: string, t: TranslateFn) => {
   }, [router]);
 
   const handleStartLearning = useCallback(() => {
-    setSessionNotice(null);
+    dispatch({ type: 'patch', value: { sessionNotice: null } });
 
     if (status || !jobId) {
       router.push(ADAPTIVE_ROUTES.exercise(sessionId));
       return;
     }
 
-    setStartingSession(true);
+    dispatch({ type: 'patch', value: { startingSession: true } });
     void createSessionFromPipeline(jobId, 50)
       .then((session) => {
         localStorage.setItem('al_session_id', session.session_id);
@@ -165,18 +232,18 @@ export const useSubjectDetailsState = (sessionId: string, t: TranslateFn) => {
       .catch((error) => {
         console.error(`Error creating session from subject details: ${(error as Error).message}`);
         const feedback = getSessionStartFeedback(t, 'subjectDetails', error);
-        setSessionNotice(feedback.message);
+        dispatch({ type: 'patch', value: { sessionNotice: feedback.message } });
         toast.error(feedback.message);
       })
       .finally(() => {
-        setStartingSession(false);
+        dispatch({ type: 'patch', value: { startingSession: false } });
       });
   }, [jobId, router, sessionId, status, t]);
 
   const handlePrefetchStartLearning = useCallback(() => {
     if (didPrefetchStartLearning) return;
 
-    setDidPrefetchStartLearning(true);
+    dispatch({ type: 'patch', value: { didPrefetchStartLearning: true } });
     void prefetchStartLearningData(sessionId);
   }, [didPrefetchStartLearning, sessionId]);
 
@@ -190,7 +257,7 @@ export const useSubjectDetailsState = (sessionId: string, t: TranslateFn) => {
     historyLoading,
     loading,
     sessionNotice,
-    setActiveTab,
+    setActiveTab: (tab: SubjectTab) => dispatch({ type: 'setActiveTab', value: tab }),
     startingSession,
     status,
     summary,

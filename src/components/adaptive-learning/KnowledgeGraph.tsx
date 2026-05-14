@@ -77,7 +77,7 @@ const ConceptNode = memo(function ConceptNode({ data }: NodeProps<Node<ConceptNo
         </div>
 
         <div className="flex items-center gap-1.5">
-          <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: color, opacity }} />
+          <div className="size-1.5 rounded-full" style={{ backgroundColor: color, opacity }} />
           <span
             className={`text-[10px] font-mono ${data.status === 'mastered' || data.status === 'in_progress' ? 'text-white/80' : 'text-neutral-500'}`}
           >

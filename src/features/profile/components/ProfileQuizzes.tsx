@@ -100,13 +100,13 @@ export default function ProfileQuizzes() {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'pending':
-        return <HiOutlineClock className="w-5 h-5 text-yellow-500" />;
+        return <HiOutlineClock className="size-5 text-yellow-500" />;
       case 'published':
-        return <HiOutlineCheckCircle className="w-5 h-5 text-green-500" />;
+        return <HiOutlineCheckCircle className="size-5 text-green-500" />;
       case 'rejected':
-        return <HiOutlineXCircle className="w-5 h-5 text-red-500" />;
+        return <HiOutlineXCircle className="size-5 text-red-500" />;
       default:
-        return <HiOutlineDocumentText className="w-5 h-5 text-neutral-500" />;
+        return <HiOutlineDocumentText className="size-5 text-neutral-500" />;
     }
   };
 
@@ -154,7 +154,7 @@ export default function ProfileQuizzes() {
     return (
       <div className="flex justify-center py-12">
         <div className="flex flex-col items-center gap-3">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
+          <div className="size-8 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
           <div className="text-sm text-neutral-500">{tCommon('loading')}</div>
         </div>
       </div>
@@ -164,9 +164,9 @@ export default function ProfileQuizzes() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h2 className="text-2xl font-bold text-neutral-900">{t('myQuizzes')}</h2>
+        <h2 className="text-2xl font-semibold text-neutral-900">{t('myQuizzes')}</h2>
 
-        <div className="flex items-center space-x-4 w-full sm:w-auto">
+        <div className="flex items-center gap-x-4 w-full sm:w-auto">
           <select
             value={filter}
             onChange={(e) => {
@@ -232,7 +232,7 @@ export default function ProfileQuizzes() {
           <Card>
             <CardContent className="text-center py-12">
               <EmptyState
-                icon={<HiOutlineDocumentText className="w-12 h-12 text-neutral-400" />}
+                icon={<HiOutlineDocumentText className="size-12 text-neutral-400" />}
                 title={t('noQuizzes')}
                 description={t('createFirst')}
                 action={
@@ -249,12 +249,12 @@ export default function ProfileQuizzes() {
               <CardHeader className="p-4 sm:p-6">
                 <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center space-x-2 flex-wrap gap-y-2">
+                    <div className="flex items-center gap-x-2 flex-wrap gap-y-2">
                       <CardTitle className="text-lg truncate">{quiz.title}</CardTitle>
                       <span className="text-xl shrink-0">{getStatusIcon(quiz.status)}</span>
                       {quiz.isPrivate && (
                         <span className="flex items-center text-xs bg-neutral-100 text-neutral-600 px-2 py-0.5 rounded-full shrink-0">
-                          <HiOutlineLockClosed className="w-3 h-3 mr-1" /> {t('private')}
+                          <HiOutlineLockClosed className="size-3 mr-1" /> {t('private')}
                         </span>
                       )}
                       <span
@@ -266,7 +266,7 @@ export default function ProfileQuizzes() {
                     <CardDescription className="mt-1 text-sm line-clamp-2">
                       {quiz.description || t('noDescription')}
                     </CardDescription>
-                    <div className="mt-2 flex items-center space-x-2 text-xs text-neutral-500 flex-wrap">
+                    <div className="mt-2 flex items-center gap-x-2 text-xs text-neutral-500 flex-wrap">
                       <span>{quiz.questions.length} Qs</span>
                       <span>•</span>
                       <span style={{ color: (quiz.category as any)?.color }}>
@@ -284,7 +284,7 @@ export default function ProfileQuizzes() {
                         variant="outline"
                         className="text-brand-action hover:text-brand-action-hover border-orange-200 hover:border-orange-300"
                       >
-                        <HiOutlinePlay className="w-4 h-4" />
+                        <HiOutlinePlay className="size-4" />
                       </Button>
                     </Link>
 
@@ -294,12 +294,12 @@ export default function ProfileQuizzes() {
                       onClick={() => openPreviewModal(quiz)}
                       className="hidden sm:inline-flex"
                     >
-                      <HiOutlineEye className="w-4 h-4" />
+                      <HiOutlineEye className="size-4" />
                     </Button>
 
                     <Link href={`/edit/${quiz._id}`}>
                       <Button size="sm" variant="outline">
-                        <HiOutlinePencil className="w-4 h-4" />
+                        <HiOutlinePencil className="size-4" />
                       </Button>
                     </Link>
 
@@ -309,7 +309,7 @@ export default function ProfileQuizzes() {
                       onClick={() => openDeleteConfirm(quiz)}
                       className="text-red-600 hover:text-red-700 border-red-200 hover:border-red-300"
                     >
-                      <HiOutlineTrash className="w-4 h-4" />
+                      <HiOutlineTrash className="size-4" />
                     </Button>
                   </div>
                 </div>

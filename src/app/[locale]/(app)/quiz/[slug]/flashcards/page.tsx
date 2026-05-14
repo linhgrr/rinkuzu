@@ -177,7 +177,7 @@ export default function FlashcardPage() {
     return (
       <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="h-12 w-12 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust mx-auto" />
+          <div className="size-12 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust mx-auto" />
           <p className="mt-4 text-neutral-600">{t('loadingQuiz')}</p>
         </div>
       </div>
@@ -245,7 +245,7 @@ export default function FlashcardPage() {
                   </div>
                 </Link>
               </div>
-              <div className="flex items-center space-x-4">
+              <div className="flex items-center gap-x-4">
                 <Link href={`/quiz/${quiz.slug}`}>
                   <Button variant="outline">{t('takeQuiz')}</Button>
                 </Link>
@@ -259,7 +259,7 @@ export default function FlashcardPage() {
 
         <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-neutral-900 mb-2">{t('flashcards')}</h1>
+            <h1 className="text-3xl font-semibold text-neutral-900 mb-2">{t('flashcards')}</h1>
             <p className="text-neutral-600">{quiz.title}</p>
           </div>
 
@@ -388,7 +388,7 @@ export default function FlashcardPage() {
                 </div>
               </Link>
             </div>
-            <div className="flex items-center space-x-2 sm:space-x-4">
+            <div className="flex items-center gap-x-2 sm:gap-x-4">
               <Link href={`/quiz/${quiz.slug}`}>
                 <Button variant="outline" size="sm">
                   {t('takeQuiz')}

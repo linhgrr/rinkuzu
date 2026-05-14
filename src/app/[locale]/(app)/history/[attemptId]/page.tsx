@@ -152,7 +152,7 @@ export default function AttemptDetailPage() {
                   <span>/</span>
                   <span className="text-neutral-900">{t('title')}</span>
                 </nav>
-                <h1 className="text-balance text-2xl font-bold tracking-[-0.03em] text-neutral-950 sm:text-3xl">
+                <h1 className="text-balance text-2xl font-semibold tracking-[-0.03em] text-neutral-950 sm:text-3xl">
                   {t('title')}
                 </h1>
                 {attempt && (
@@ -162,19 +162,19 @@ export default function AttemptDetailPage() {
                     </h2>
                     <div className="grid gap-2 text-sm text-neutral-600 sm:grid-cols-3">
                       <span className="inline-flex min-w-0 items-center gap-1.5 rounded-2xl bg-green-50 px-3 py-2 text-green-800">
-                        <HiOutlineChartBar className="h-4 w-4 shrink-0" />
+                        <HiOutlineChartBar className="size-4 shrink-0" />
                         <span className="truncate">
                           {t('score')}: {attempt.score}%
                         </span>
                       </span>
                       <span className="inline-flex min-w-0 items-center gap-1.5 rounded-2xl bg-blue-50 px-3 py-2 text-blue-800">
-                        <HiOutlineDocumentText className="h-4 w-4 shrink-0" />
+                        <HiOutlineDocumentText className="size-4 shrink-0" />
                         <span className="truncate">
                           {attempt.quiz.questions.length} {t('questions')}
                         </span>
                       </span>
                       <span className="inline-flex min-w-0 items-center gap-1.5 rounded-2xl bg-neutral-100 px-3 py-2 text-neutral-700">
-                        <HiOutlineClock className="h-4 w-4 shrink-0" />
+                        <HiOutlineClock className="size-4 shrink-0" />
                         <span className="truncate">{formatDate(attempt.takenAt)}</span>
                       </span>
                     </div>
@@ -186,7 +186,7 @@ export default function AttemptDetailPage() {
                 <Link href={historyLink} className="min-w-0">
                   <Button variant="outline" className="w-full justify-center px-3 sm:w-auto">
                     <span className="inline-flex items-center gap-2">
-                      <HiOutlineArrowLeft className="h-4 w-4" />
+                      <HiOutlineArrowLeft className="size-4" />
                       {tCommon('back')}
                     </span>
                   </Button>
@@ -195,7 +195,7 @@ export default function AttemptDetailPage() {
                   <Link href={`/quiz/${attempt.quiz.slug}`} className="min-w-0">
                     <Button className="w-full justify-center px-3 sm:w-auto">
                       <span className="inline-flex items-center gap-2">
-                        <HiOutlineRefresh className="h-4 w-4" />
+                        <HiOutlineRefresh className="size-4" />
                         {t('retryQuiz')}
                       </span>
                     </Button>
@@ -215,7 +215,7 @@ export default function AttemptDetailPage() {
             <Card>
               <CardContent className="px-5 py-12 text-center">
                 <div className="mb-4 flex justify-center text-red-600">
-                  <HiOutlineXCircle className="h-8 w-8" />
+                  <HiOutlineXCircle className="size-8" />
                 </div>
                 <h3 className="mb-2 text-lg font-semibold text-neutral-900">{tCommon('error')}</h3>
                 <p className="mb-4 break-words text-neutral-600">{error}</p>
@@ -286,12 +286,12 @@ export default function AttemptDetailPage() {
                         >
                           {question.isCorrect ? (
                             <span className="inline-flex items-center gap-1.5">
-                              <HiOutlineCheck className="h-4 w-4" />
+                              <HiOutlineCheck className="size-4" />
                               {t('correct')}
                             </span>
                           ) : (
                             <span className="inline-flex items-center gap-1.5">
-                              <HiOutlineX className="h-4 w-4" />
+                              <HiOutlineX className="size-4" />
                               {t('incorrect')}
                             </span>
                           )}
@@ -382,19 +382,19 @@ export default function AttemptDetailPage() {
                                   <div className="flex flex-wrap gap-2 sm:ml-4 sm:justify-end">
                                     {isCorrectChoice && (
                                       <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2.5 py-1 text-xs font-semibold text-green-800">
-                                        <HiOutlineCheck className="h-3 w-3" />
+                                        <HiOutlineCheck className="size-3" />
                                         {t('correctAnswer')}
                                       </span>
                                     )}
                                     {isUserChoice && !isCorrectChoice && (
                                       <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2.5 py-1 text-xs font-semibold text-red-800">
-                                        <HiOutlineX className="h-3 w-3" />
+                                        <HiOutlineX className="size-3" />
                                         {t('youChose')}
                                       </span>
                                     )}
                                     {isUserChoice && isCorrectChoice && (
                                       <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2.5 py-1 text-xs font-semibold text-green-800">
-                                        <HiOutlineCheck className="h-3 w-3" />
+                                        <HiOutlineCheck className="size-3" />
                                         {t('youChoseCorrectly')}
                                       </span>
                                     )}
@@ -424,7 +424,7 @@ export default function AttemptDetailPage() {
                 <Link href={historyLink}>
                   <Button variant="outline" size="lg" className="w-full justify-center sm:w-auto">
                     <span className="inline-flex items-center gap-2">
-                      <HiOutlineArrowLeft className="h-4 w-4" />
+                      <HiOutlineArrowLeft className="size-4" />
                       {t('backToHistory')}
                     </span>
                   </Button>
@@ -432,7 +432,7 @@ export default function AttemptDetailPage() {
                 <Link href={`/quiz/${attempt.quiz.slug}`}>
                   <Button size="lg" className="w-full justify-center sm:w-auto">
                     <span className="inline-flex items-center gap-2">
-                      <HiOutlineRefresh className="h-4 w-4" />
+                      <HiOutlineRefresh className="size-4" />
                       {t('retryQuiz')}
                     </span>
                   </Button>

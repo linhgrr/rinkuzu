@@ -66,7 +66,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
 
         {error && (
           <p className="mt-1.5 text-sm text-red-500 flex items-center">
-            <HiOutlineExclamationCircle className="w-4 h-4 mr-1 flex-shrink-0" />
+            <HiOutlineExclamationCircle className="size-4 mr-1 flex-shrink-0" />
             {error}
           </p>
         )}
@@ -112,7 +112,7 @@ const Textarea = React.forwardRef<
 
       {error && (
         <p className="mt-1.5 text-sm text-red-500 flex items-center">
-          <HiOutlineExclamationCircle className="w-4 h-4 mr-1 flex-shrink-0" />
+          <HiOutlineExclamationCircle className="size-4 mr-1 flex-shrink-0" />
           {error}
         </p>
       )}

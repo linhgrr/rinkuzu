@@ -57,8 +57,8 @@ export const ProcessingStatusCard = ({
   <div className="relative overflow-hidden rounded-xl border border-neutral-200 bg-white p-8 shadow-sm md:p-10">
     <div className="text-center">
       {error && (
-        <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-lg border border-red-100 bg-red-50 text-red-500">
-          <HiOutlineExclamationCircle className="h-8 w-8" />
+        <div className="mx-auto mb-6 flex size-16 items-center justify-center rounded-lg border border-red-100 bg-red-50 text-red-500">
+          <HiOutlineExclamationCircle className="size-8" />
         </div>
       )}
 
@@ -128,9 +128,9 @@ export const ProcessingStatusCard = ({
                         : 'border border-neutral-200 bg-neutral-50'
                   }`}
                 >
-                  {isCompleted ? <HiCheck className="h-3 w-3" /> : null}
+                  {isCompleted ? <HiCheck className="size-3" /> : null}
                   {isActive ? (
-                    <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-brand-action" />
+                    <div className="size-1.5 animate-pulse rounded-full bg-brand-action" />
                   ) : null}
                 </div>
                 <span
@@ -179,7 +179,7 @@ export const ProcessingStatusCard = ({
             onClick={handleErrorAction}
             className="h-auto rounded-md border-neutral-200 px-6 py-2.5 text-sm font-medium transition-colors hover:bg-neutral-50"
           >
-            <HiOutlineArrowLeft className="mr-2 h-4 w-4" />
+            <HiOutlineArrowLeft className="mr-2 size-4" />
             {error.action === 'dashboard'
               ? t('processing.goToDashboard')
               : t('processing.tryAgain')}
@@ -192,7 +192,7 @@ export const ProcessingStatusCard = ({
 
 export const ProcessingTipCard = ({ t }: { t: TranslateFn }) => (
   <div className="mx-auto mt-6 flex w-full items-start gap-2 rounded-xl border border-neutral-200 bg-white p-4 text-xs text-neutral-600 shadow-sm">
-    <HiOutlineSparkles className="h-4 w-4 flex-shrink-0 text-neutral-400" />
+    <HiOutlineSparkles className="size-4 flex-shrink-0 text-neutral-400" />
     <p>
       <strong className="text-neutral-900">{t('processing.didYouKnow')}</strong>{' '}
       {t('processing.didYouKnowDescription')}

@@ -271,9 +271,7 @@ export function MobileQuizPlayer({
                           }
                         `}
                     >
-                      {isOptionSelected(optIdx) && (
-                        <HiOutlineCheck className="w-4 h-4 text-white" />
-                      )}
+                      {isOptionSelected(optIdx) && <HiOutlineCheck className="size-4 text-white" />}
                     </div>
                     <span className="flex-1 text-sm text-neutral-800">{option}</span>
                   </div>
@@ -317,7 +315,7 @@ export function MobileQuizPlayer({
           {isSubmitting ? (
             <>
               <svg
-                className="h-5 w-5 animate-spin"
+                className="size-5 animate-spin"
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"

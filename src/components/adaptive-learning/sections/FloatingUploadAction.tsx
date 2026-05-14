@@ -18,7 +18,7 @@ export const FloatingUploadAction = ({ onClick, t }: FloatingUploadActionProps) 
     title={t('newLesson')}
   >
     <div className="flex items-center gap-2">
-      <HiOutlineCloudUpload className="h-8 w-8" />
+      <HiOutlineCloudUpload className="size-8" />
       <span className="hidden whitespace-nowrap font-bold md:group-hover:block">
         {t('newLesson')}
       </span>

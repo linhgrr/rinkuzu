@@ -161,7 +161,7 @@ export default function AdminStatsPage() {
             <div className="p-8">
               <div className="flex items-center justify-center min-h-[400px]">
                 <div className="text-center">
-                  <div className="h-12 w-12 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust mx-auto" />
+                  <div className="size-12 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust mx-auto" />
                   <p className="mt-4 text-neutral-600">{t('loadingStatistics')}</p>
                 </div>
               </div>
@@ -189,7 +189,7 @@ export default function AdminStatsPage() {
         >
           <div className="p-8">
             <div className="mb-8">
-              <h1 className="text-3xl font-bold text-neutral-900">{t('statistics')}</h1>
+              <h1 className="text-3xl font-semibold text-neutral-900">{t('statistics')}</h1>
               <p className="text-neutral-600 mt-2">{t('systemStatistics')}</p>
             </div>
 
@@ -384,12 +384,12 @@ export default function AdminStatsPage() {
                             key={category.name}
                             className="flex items-center justify-between p-3 bg-neutral-50 rounded-lg"
                           >
-                            <div className="flex items-center space-x-3">
+                            <div className="flex items-center gap-x-3">
                               <span className="text-sm font-medium text-neutral-500">
                                 #{index + 1}
                               </span>
                               <div
-                                className="w-4 h-4 rounded-full"
+                                className="size-4 rounded-full"
                                 style={{ backgroundColor: category.color }}
                               />
                               <span className="font-medium">{category.name}</span>
@@ -430,7 +430,7 @@ export default function AdminStatsPage() {
                             key={creator.email}
                             className="flex items-center justify-between p-3 bg-neutral-50 rounded-lg"
                           >
-                            <div className="flex items-center space-x-3">
+                            <div className="flex items-center gap-x-3">
                               <span className="text-sm font-medium text-neutral-500">
                                 #{index + 1}
                               </span>
@@ -493,7 +493,7 @@ export default function AdminStatsPage() {
                           {stats.recentActivity.quizzes.slice(0, 5).map((quiz, index) => (
                             <div key={index} className="text-sm p-2 bg-green-50 rounded">
                               <div className="font-medium truncate">{quiz.title}</div>
-                              <div className="flex items-center space-x-2 text-xs">
+                              <div className="flex items-center gap-x-2 text-xs">
                                 {getStatusBadge(quiz.status)}
                                 <span className="text-neutral-500">
                                   {formatDate(quiz.createdAt)}
@@ -550,9 +550,9 @@ export default function AdminStatsPage() {
                           {stats.categoryStats.slice(0, 10).map((category, _index) => (
                             <tr key={category.name} className="border-b hover:bg-neutral-50">
                               <td className="py-3 px-4">
-                                <div className="flex items-center space-x-3">
+                                <div className="flex items-center gap-x-3">
                                   <div
-                                    className="w-3 h-3 rounded-full"
+                                    className="size-3 rounded-full"
                                     style={{ backgroundColor: category.color }}
                                   />
                                   <span className="font-medium">{category.name}</span>

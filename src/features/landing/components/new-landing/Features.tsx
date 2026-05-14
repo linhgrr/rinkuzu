@@ -8,16 +8,16 @@ export function Features() {
     <section className="bg-[#0d0d0d] py-24">
       <div className="max-w-7xl mx-auto px-6">
         <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-5xl font-bold text-white mb-4">{t('title')}</h2>
+          <h2 className="text-3xl md:text-5xl font-semibold text-white mb-4">{t('title')}</h2>
           <p className="text-white/60 text-lg max-w-2xl mx-auto">{t('subtitle')}</p>
         </div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
           {/* Feature 1 */}
           <div className="bg-white/5 border border-white/10 rounded-2xl p-6 hover:bg-white/10 transition-colors">
-            <div className="w-12 h-12 rounded-xl bg-green-500/10 flex items-center justify-center mb-4">
+            <div className="size-12 rounded-xl bg-green-500/10 flex items-center justify-center mb-4">
               <svg
-                className="w-6 h-6 text-green-400"
+                className="size-6 text-green-400"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -38,9 +38,9 @@ export function Features() {
 
           {/* Feature 2 */}
           <div className="bg-white/5 border border-white/10 rounded-2xl p-6 hover:bg-white/10 transition-colors">
-            <div className="w-12 h-12 rounded-xl bg-green-500/10 flex items-center justify-center mb-4">
+            <div className="size-12 rounded-xl bg-green-500/10 flex items-center justify-center mb-4">
               <svg
-                className="w-6 h-6 text-brand-trust"
+                className="size-6 text-brand-trust"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -60,9 +60,9 @@ export function Features() {
 
           {/* Feature 3 */}
           <div className="bg-white/5 border border-white/10 rounded-2xl p-6 hover:bg-white/10 transition-colors">
-            <div className="w-12 h-12 rounded-xl bg-orange-500/10 flex items-center justify-center mb-4">
+            <div className="size-12 rounded-xl bg-orange-500/10 flex items-center justify-center mb-4">
               <svg
-                className="w-6 h-6 text-orange-400"
+                className="size-6 text-orange-400"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -83,9 +83,9 @@ export function Features() {
 
           {/* Feature 4 */}
           <div className="bg-white/5 border border-white/10 rounded-2xl p-6 hover:bg-white/10 transition-colors">
-            <div className="w-12 h-12 rounded-xl bg-green-500/10 flex items-center justify-center mb-4">
+            <div className="size-12 rounded-xl bg-green-500/10 flex items-center justify-center mb-4">
               <svg
-                className="w-6 h-6 text-green-400"
+                className="size-6 text-green-400"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"

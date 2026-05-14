@@ -111,7 +111,7 @@ export default async function PublicUserProfilePage({
             <CardContent className="flex flex-col items-center gap-4 p-8 text-center">
               <UserAvatar user={profileUser} size={112} />
               <div className="space-y-2">
-                <h1 className="text-2xl font-bold text-neutral-900">{displayName}</h1>
+                <h1 className="text-2xl font-semibold text-neutral-900">{displayName}</h1>
                 <p className="text-sm text-neutral-500">{t('publicProfile')}</p>
               </div>
               <div className="grid w-full gap-3 rounded-2xl bg-neutral-100 p-4 text-left text-sm text-neutral-600">

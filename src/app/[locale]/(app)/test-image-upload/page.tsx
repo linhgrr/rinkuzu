@@ -68,7 +68,7 @@ export default function TestImageUploadPage() {
     <div className="min-h-screen bg-neutral-50 py-8">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-neutral-900">Image Upload Test & Debug</h1>
+          <h1 className="text-3xl font-semibold text-neutral-900">Image Upload Test & Debug</h1>
           <p className="text-neutral-600 mt-2">
             Test drag & drop, click to upload, and paste (Ctrl+V) functionality with real-time
             logging

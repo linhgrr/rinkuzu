@@ -122,9 +122,9 @@ export default function Sidebar({ isOpen, onToggle, currentPath }: SidebarProps)
             aria-label={isOpen ? t('collapseSidebar') : t('expandSidebar')}
           >
             {isOpen ? (
-              <HiChevronDoubleLeft className="w-5 h-5" />
+              <HiChevronDoubleLeft className="size-5" />
             ) : (
-              <HiChevronDoubleRight className="w-5 h-5" />
+              <HiChevronDoubleRight className="size-5" />
             )}
           </Button>
         </div>
@@ -176,8 +176,8 @@ export default function Sidebar({ isOpen, onToggle, currentPath }: SidebarProps)
                 </div>
               ) : (
                 <div className="mb-2 flex justify-center">
-                  <div className="w-8 h-8 bg-neutral-100 rounded-lg flex items-center justify-center">
-                    <HiOutlineCog className="w-4 h-4 text-neutral-600" />
+                  <div className="size-8 bg-neutral-100 rounded-lg flex items-center justify-center">
+                    <HiOutlineCog className="size-4 text-neutral-600" />
                   </div>
                 </div>
               )}

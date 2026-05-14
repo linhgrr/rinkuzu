@@ -79,7 +79,7 @@ const Pricing2 = ({
     <section className="py-32">
       <div className="container px-4">
         <div className="mx-auto flex max-w-5xl flex-col items-center gap-6 text-center">
-          <h2 className="text-pretty text-4xl font-bold lg:text-6xl">{heading}</h2>
+          <h2 className="text-pretty text-4xl font-semibold lg:text-6xl">{heading}</h2>
           <p className="text-muted-foreground lg:text-xl">{description}</p>
           <div className="flex items-center gap-3 text-lg">
             Monthly

@@ -387,7 +387,7 @@ export default function QuizPlayerPage() {
         <div className="flex items-center justify-center min-h-[70vh]">
           <div className="text-center">
             <div className="inline-flex items-center justify-center p-4 bg-gradient-to-br from-green-500/10 to-brand-trust/10 rounded-2xl mb-6">
-              <div className="h-8 w-8 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
+              <div className="size-8 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
             </div>
             <h2 className="text-xl font-semibold text-neutral-900 mb-2">{t('loadingQuiz')}</h2>
             <p className="text-neutral-600">{t('preparingQuiz')}</p>
@@ -408,7 +408,7 @@ export default function QuizPlayerPage() {
           >
             <CardHeader className="text-center">
               <div className="inline-flex items-center justify-center p-3 bg-red-100 rounded-2xl mb-4 mx-auto w-fit">
-                <HiOutlineExclamationCircle className="w-6 h-6 text-red-600" />
+                <HiOutlineExclamationCircle className="size-6 text-red-600" />
               </div>
               <CardTitle className="text-red-600 text-xl">{t('quizNotFound')}</CardTitle>
             </CardHeader>
@@ -416,7 +416,7 @@ export default function QuizPlayerPage() {
               <p className="text-neutral-600 mb-6">{error}</p>
               <Link href="/">
                 <Button variant="gradient" className="w-full">
-                  <HiOutlineArrowLeft className="w-4 h-4 mr-2" />
+                  <HiOutlineArrowLeft className="size-4 mr-2" />
                   {t('returnHome')}
                 </Button>
               </Link>
@@ -439,7 +439,7 @@ export default function QuizPlayerPage() {
           >
             <CardHeader className="text-center">
               <div className="inline-flex items-center justify-center p-3 bg-gradient-to-br from-green-500/10 to-brand-trust/10 rounded-2xl mb-4 mx-auto w-fit">
-                <HiOutlineDocumentText className="w-6 h-6 text-brand-trust" />
+                <HiOutlineDocumentText className="size-6 text-brand-trust" />
               </div>
               <CardTitle className="text-2xl text-neutral-900 mb-2">{t('quizAccess')}</CardTitle>
               <p className="text-neutral-600">{t('loadingQuizInfo')}</p>
@@ -468,7 +468,7 @@ export default function QuizPlayerPage() {
           >
             <CardHeader className="text-center">
               <div className="inline-flex items-center justify-center p-3 bg-gradient-to-br from-green-500/10 to-brand-trust/10 rounded-2xl mb-4 mx-auto w-fit">
-                <HiOutlineDocumentText className="w-6 h-6 text-brand-trust" />
+                <HiOutlineDocumentText className="size-6 text-brand-trust" />
               </div>
               <CardTitle className="text-2xl text-neutral-900 mb-2">{quiz.title}</CardTitle>
               {quiz.description && <p className="text-neutral-600">{quiz.description}</p>}
@@ -476,7 +476,7 @@ export default function QuizPlayerPage() {
             <CardContent>
               <div className="space-y-6">
                 {/* Quiz Info */}
-                <div className="flex justify-center space-x-8 py-4 bg-neutral-50/50 rounded-xl">
+                <div className="flex justify-center gap-x-8 py-4 bg-neutral-50/50 rounded-xl">
                   <div className="text-center">
                     <Badge variant="purple" className="mb-1">
                       {quiz.questions.length} {t('questions')}
@@ -492,7 +492,7 @@ export default function QuizPlayerPage() {
                 {error && (
                   <Card variant="bordered" className="border-red-200 bg-red-50 p-4">
                     <div className="flex items-center text-red-700">
-                      <HiOutlineExclamationCircle className="w-5 h-5 mr-2 flex-shrink-0" />
+                      <HiOutlineExclamationCircle className="size-5 mr-2 flex-shrink-0" />
                       <span className="text-sm font-medium">{error}</span>
                     </div>
                   </Card>
@@ -501,7 +501,7 @@ export default function QuizPlayerPage() {
                 {/* Login Suggestion */}
                 <Card variant="bordered" className="border-green-200 bg-green-50 p-4">
                   <div className="text-center text-brand-trust">
-                    <HiOutlineLightBulb className="w-6 h-6 mx-auto mb-2 text-brand-trust" />
+                    <HiOutlineLightBulb className="size-6 mx-auto mb-2 text-brand-trust" />
                     <p className="text-sm font-medium">
                       <Link href="/login" className="underline hover:text-green-700">
                         {t('login')}
@@ -521,7 +521,7 @@ export default function QuizPlayerPage() {
                     onChange={(e) => setUserEmail(e.target.value)}
                     placeholder={t('enterEmailAddress')}
                     required
-                    icon={<HiOutlineMail className="w-5 h-5" />}
+                    icon={<HiOutlineMail className="size-5" />}
                   />
                   <p className="mt-2 text-xs text-neutral-500">{t('weWillUseEmail')}</p>
                 </div>
@@ -529,20 +529,20 @@ export default function QuizPlayerPage() {
                 {/* Action Buttons */}
                 <div className="space-y-3">
                   <Button onClick={startQuiz} variant="gradient" size="lg" className="w-full">
-                    <HiOutlineLightningBolt className="w-5 h-5 mr-2" />
+                    <HiOutlineLightningBolt className="size-5 mr-2" />
                     {t('startQuiz')}
                   </Button>
 
                   <div className="grid grid-cols-2 gap-3">
                     <Link href="/">
                       <Button variant="outline" className="w-full">
-                        <HiOutlineArrowLeft className="w-4 h-4 mr-2" />
+                        <HiOutlineArrowLeft className="size-4 mr-2" />
                         {t('backHome')}
                       </Button>
                     </Link>
                     <Link href={`/quiz/${encodedSlug}/flashcards`}>
                       <Button variant="accent" className="w-full">
-                        <HiOutlineRefresh className="w-4 h-4 mr-2" />
+                        <HiOutlineRefresh className="size-4 mr-2" />
                         {t('flashcards')}
                       </Button>
                     </Link>

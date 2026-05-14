@@ -154,7 +154,7 @@ export default function AdaptiveLearningUpload() {
           onClick={() => router.back()}
           className="text-neutral-500 hover:text-neutral-900 -ml-4 mb-6 font-medium bg-transparent"
         >
-          <HiOutlineArrowLeft className="w-5 h-5 mr-2" /> {t('uploadPage.back')}
+          <HiOutlineArrowLeft className="size-5 mr-2" /> {t('uploadPage.back')}
         </Button>
         <h1 className="text-3xl md:text-4xl font-medium tracking-tight text-neutral-900 mb-3">
           {t('uploadPage.startLearning')}
@@ -172,7 +172,7 @@ export default function AdaptiveLearningUpload() {
 
       <div className="max-w-3xl mx-auto space-y-10">
         <div className="space-y-5">
-          <div className="flex flex-col space-y-3">
+          <div className="flex flex-col gap-y-3">
             <label htmlFor="subjectName" className="font-semibold text-neutral-900 text-base">
               {t('uploadPage.subjectName')} <span className="text-red-500">*</span>
             </label>
@@ -208,7 +208,7 @@ export default function AdaptiveLearningUpload() {
                         : 'bg-white text-brand-action border-orange-200 group-hover:text-brand-action-hover'
                     }`}
                   >
-                    <HiOutlineCloudUpload className="h-8 w-8" />
+                    <HiOutlineCloudUpload className="size-8" />
                   </div>
                   <h3 className="text-xl font-medium tracking-tight text-neutral-900 mb-2">
                     {isDragActive ? t('dropPdfHere') : t('dragDropPdf')}
@@ -226,8 +226,8 @@ export default function AdaptiveLearningUpload() {
                 </>
               ) : (
                 <div className="w-full max-w-sm">
-                  <div className="w-16 h-16 mx-auto rounded-md bg-neutral-100 border border-neutral-200 text-neutral-900 flex items-center justify-center mb-6 animate-pulse">
-                    <HiOutlineDocumentText className="w-8 h-8" />
+                  <div className="size-16 mx-auto rounded-md bg-neutral-100 border border-neutral-200 text-neutral-900 flex items-center justify-center mb-6 animate-pulse">
+                    <HiOutlineDocumentText className="size-8" />
                   </div>
                   <h3 className="text-lg font-medium tracking-tight text-neutral-900 mb-3">
                     {t('uploadPage.uploading')}

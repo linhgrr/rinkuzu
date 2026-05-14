@@ -14,7 +14,7 @@ export function HowItWorks() {
     <section className="bg-black py-24">
       <div className="max-w-7xl mx-auto px-6">
         <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-5xl font-bold text-white mb-4">{t('title')}</h2>
+          <h2 className="text-3xl md:text-5xl font-semibold text-white mb-4">{t('title')}</h2>
         </div>
 
         <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
@@ -25,8 +25,8 @@ export function HowItWorks() {
                 key={step.key}
                 className="text-center rounded-2xl border border-white/10 bg-white/5 p-8"
               >
-                <div className="w-16 h-16 rounded-full bg-green-500/10 border border-brand-trust/20 flex items-center justify-center mx-auto mb-6">
-                  <Icon className="w-7 h-7 text-green-400" aria-hidden="true" />
+                <div className="size-16 rounded-full bg-green-500/10 border border-brand-trust/20 flex items-center justify-center mx-auto mb-6">
+                  <Icon className="size-7 text-green-400" aria-hidden="true" />
                 </div>
                 <h3 className="text-white font-semibold text-xl mb-3">{t(`${step.key}.title`)}</h3>
                 <p className="text-white/60 text-sm leading-relaxed">

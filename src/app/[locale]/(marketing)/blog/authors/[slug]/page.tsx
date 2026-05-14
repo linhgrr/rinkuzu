@@ -121,7 +121,7 @@ export default async function AuthorPage({ params }: Props) {
                 <p className="text-xs font-semibold uppercase tracking-wider text-brand-trust mb-2">
                   {author.role}
                 </p>
-                <h1 className="text-3xl md:text-4xl font-bold text-[var(--text-primary)] mb-3 leading-tight">
+                <h1 className="text-3xl md:text-4xl font-semibold text-[var(--text-primary)] mb-3 leading-tight">
                   {author.name}
                 </h1>
                 <p className="text-[var(--text-muted)] leading-relaxed text-base md:text-lg">
@@ -150,7 +150,7 @@ export default async function AuthorPage({ params }: Props) {
         {/* Articles by this author */}
         <section className="py-16 md:py-24">
           <div className="max-w-3xl mx-auto px-6">
-            <h2 className="text-xl font-bold text-[var(--text-primary)] mb-8">
+            <h2 className="text-xl font-semibold text-[var(--text-primary)] mb-8">
               Articles by {author.name}
             </h2>
             <div className="space-y-6">

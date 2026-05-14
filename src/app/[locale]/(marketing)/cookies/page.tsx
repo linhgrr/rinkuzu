@@ -20,7 +20,7 @@ export default async function CookiesPage({ params }: Props) {
 
   return (
     <section className="max-w-4xl mx-auto space-y-4">
-      <h1 className="text-3xl font-bold text-neutral-900">Cookie Policy</h1>
+      <h1 className="text-3xl font-semibold text-neutral-900">Cookie Policy</h1>
       <p className="text-neutral-600">
         We use cookies to maintain sessions, analyze performance, and improve learning experience.
       </p>

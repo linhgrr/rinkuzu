@@ -74,7 +74,7 @@ export default function ConceptDetailPanel({ concept, onClose }: ConceptDetailPa
       >
         <div className="sticky top-0 z-10 flex items-start justify-between rounded-t-xl border-b border-neutral-100 bg-white px-6 py-4">
           <div>
-            <h2 className="text-xl font-bold text-neutral-900">{concept.name}</h2>
+            <h2 className="text-xl font-semibold text-neutral-900">{concept.name}</h2>
             <div className="mt-1 flex items-center gap-2">
               <span
                 className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${status.className}`}
@@ -97,14 +97,14 @@ export default function ConceptDetailPanel({ concept, onClose }: ConceptDetailPa
             onClick={onClose}
             className="rounded-lg p-1 hover:bg-neutral-100"
           >
-            <HiOutlineX className="h-5 w-5 text-neutral-400" />
+            <HiOutlineX className="size-5 text-neutral-400" />
           </Button>
         </div>
 
         <div className="space-y-6 px-6 py-5">
           {concept.definition ? (
             <div>
-              <h3 className="mb-2 text-sm font-bold uppercase tracking-wider text-neutral-500">
+              <h3 className="mb-2 text-sm font-semibold uppercase tracking-wider text-neutral-500">
                 {t('conceptDetail.definition')}
               </h3>
               <p className="text-sm leading-relaxed text-neutral-700">{concept.definition}</p>
@@ -112,7 +112,7 @@ export default function ConceptDetailPanel({ concept, onClose }: ConceptDetailPa
           ) : null}
 
           <div>
-            <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-neutral-500">
+            <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-neutral-500">
               {t('conceptDetail.overallMastery')}
             </h3>
             <div className="flex items-center gap-3">
@@ -129,7 +129,7 @@ export default function ConceptDetailPanel({ concept, onClose }: ConceptDetailPa
           </div>
 
           <div>
-            <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-neutral-500">
+            <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-neutral-500">
               {t('conceptDetail.bloomBreakdown')}
             </h3>
             <div className="space-y-2">
@@ -154,7 +154,7 @@ export default function ConceptDetailPanel({ concept, onClose }: ConceptDetailPa
 
           {concept.prerequisites.length > 0 ? (
             <div>
-              <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-neutral-500">
+              <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-neutral-500">
                 {t('conceptDetail.prerequisites', { count: concept.prerequisites.length })}
               </h3>
               <div className="space-y-2">
@@ -165,9 +165,9 @@ export default function ConceptDetailPanel({ concept, onClose }: ConceptDetailPa
                   >
                     <div className="flex items-center gap-2">
                       {prereq.mastery >= 0.75 ? (
-                        <HiCheck className="h-4 w-4 text-green-500" />
+                        <HiCheck className="size-4 text-green-500" />
                       ) : (
-                        <div className="h-4 w-4 rounded-full border-2 border-neutral-300" />
+                        <div className="size-4 rounded-full border-2 border-neutral-300" />
                       )}
                       <span className="text-sm text-neutral-700">{prereq.name}</span>
                     </div>
@@ -184,7 +184,7 @@ export default function ConceptDetailPanel({ concept, onClose }: ConceptDetailPa
 
           {concept.dependents.length > 0 ? (
             <div>
-              <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-neutral-500">
+              <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-neutral-500">
                 {t('conceptDetail.unlocks', { count: concept.dependents.length })}
               </h3>
               <div className="flex flex-wrap gap-2">

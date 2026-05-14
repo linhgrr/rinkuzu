@@ -43,7 +43,7 @@ export default function BlogLayout({ children }: { children: React.ReactNode }) 
             <span>/</span>
             <span className="text-[var(--text-primary)] font-medium">Blog</span>
           </nav>
-          <h1 className="text-3xl md:text-4xl font-bold text-[var(--text-primary)] mb-4">
+          <h1 className="text-3xl md:text-4xl font-semibold text-[var(--text-primary)] mb-4">
             RinKuzu Blog
           </h1>
           <p className="text-[var(--text-muted)] max-w-xl">
@@ -70,7 +70,7 @@ export default function BlogLayout({ children }: { children: React.ReactNode }) 
                     </span>
                     <span className="text-xs text-[var(--text-muted)]">{post.date}</span>
                   </div>
-                  <h2 className="text-xl font-bold text-[var(--text-primary)] mb-2 group-hover:text-brand-trust transition-colors leading-snug">
+                  <h2 className="text-xl font-semibold text-[var(--text-primary)] mb-2 group-hover:text-brand-trust transition-colors leading-snug">
                     {post.title}
                   </h2>
                   <p className="text-[var(--text-muted)] text-sm leading-relaxed line-clamp-2">

@@ -190,11 +190,11 @@ export default function AdminCategoriesPage() {
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-neutral-900">{t('categories')}</h1>
+            <h1 className="text-3xl font-semibold text-neutral-900">{t('categories')}</h1>
             <p className="mt-2 text-neutral-600">{t('manageQuizCategories')}</p>
           </div>
           <Button onClick={openCreateModal}>
-            <HiOutlinePlus className="w-4 h-4 mr-2" /> {t('addCategory')}
+            <HiOutlinePlus className="size-4 mr-2" /> {t('addCategory')}
           </Button>
         </div>
 
@@ -267,7 +267,7 @@ export default function AdminCategoriesPage() {
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
                             <div
-                              className="w-4 h-4 rounded-full mr-3"
+                              className="size-4 rounded-full mr-3"
                               style={{ backgroundColor: category.color }}
                             ></div>
                             <div>
@@ -306,7 +306,7 @@ export default function AdminCategoriesPage() {
                             onClick={() => openEditModal(category)}
                             className="min-h-[36px] px-3"
                           >
-                            <HiOutlinePencil className="w-4 h-4" />
+                            <HiOutlinePencil className="size-4" />
                           </Button>
                           <Button
                             size="sm"
@@ -314,7 +314,7 @@ export default function AdminCategoriesPage() {
                             onClick={() => setCategoryToDelete(category)}
                             className="min-h-[36px] px-3 text-red-600 hover:text-red-700"
                           >
-                            <HiOutlineTrash className="w-4 h-4" />
+                            <HiOutlineTrash className="size-4" />
                           </Button>
                         </td>
                       </tr>
@@ -334,7 +334,7 @@ export default function AdminCategoriesPage() {
             action={
               !searchTerm ? (
                 <Button onClick={openCreateModal}>
-                  <HiOutlinePlus className="w-4 h-4 mr-2" /> {t('addCategory')}
+                  <HiOutlinePlus className="size-4 mr-2" /> {t('addCategory')}
                 </Button>
               ) : undefined
             }
@@ -475,7 +475,7 @@ export default function AdminCategoriesPage() {
               <label htmlFor="color" className="block text-sm font-medium text-neutral-700 mb-1">
                 {t('color')}
               </label>
-              <div className="flex items-center space-x-3">
+              <div className="flex items-center gap-x-3">
                 <input
                   id="color"
                   type="color"
@@ -499,7 +499,7 @@ export default function AdminCategoriesPage() {
                 type="checkbox"
                 checked={formData.isActive}
                 onChange={(e) => setFormData((prev) => ({ ...prev, isActive: e.target.checked }))}
-                className="h-4 w-4 text-brand-trust focus:ring-brand-trust border-neutral-300 rounded"
+                className="size-4 text-brand-trust focus:ring-brand-trust border-neutral-300 rounded"
               />
               <label htmlFor="isActive" className="ml-2 block text-sm text-neutral-900">
                 {t('activeStatus')}

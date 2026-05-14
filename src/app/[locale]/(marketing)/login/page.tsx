@@ -33,7 +33,7 @@ export default async function LoginPage({ params }: { params: Promise<{ locale: 
           </div>
 
           <div className="mt-6 sm:mt-8 text-center animate-fadeInUp">
-            <h1 className="text-2xl sm:text-4xl font-bold text-gray-900 mb-2 sm:mb-3">
+            <h1 className="text-2xl sm:text-4xl font-semibold text-gray-900 mb-2 sm:mb-3">
               {t('welcomeBack')}
             </h1>
             <p className="text-base sm:text-lg text-gray-600">{t('signInContinue')}</p>
@@ -59,13 +59,13 @@ export default async function LoginPage({ params }: { params: Promise<{ locale: 
           {/* Additional Info */}
           <div className="mt-8 text-center animate-fadeInUp" style={{ animationDelay: '400ms' }}>
             <p className="text-sm text-gray-500">{t('secureLogin')}</p>
-            <div className="flex items-center justify-center mt-4 space-x-4 text-xs text-gray-400">
+            <div className="flex items-center justify-center mt-4 gap-x-4 text-xs text-gray-400">
               <div className="flex items-center">
-                <HiOutlineShieldCheck className="w-4 h-4 mr-1" />
+                <HiOutlineShieldCheck className="size-4 mr-1" />
                 {t('sslEncrypted')}
               </div>
               <div className="flex items-center">
-                <HiOutlineLockClosed className="w-4 h-4 mr-1" />
+                <HiOutlineLockClosed className="size-4 mr-1" />
                 {t('privacyProtected')}
               </div>
             </div>

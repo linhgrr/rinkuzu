@@ -81,7 +81,7 @@ export default function QuizMetaForm({
         placeholder={labels.titlePlaceholder}
         maxLength={titleMaxLength}
         disabled={disabled}
-        icon={<HiOutlineTag className="w-5 h-5" />}
+        icon={<HiOutlineTag className="size-5" />}
       />
 
       <Textarea
@@ -128,7 +128,7 @@ export default function QuizMetaForm({
 
       {showPrivate && (
         <div className="bg-gradient-to-r from-green-50 to-green-50/50 p-4 rounded-xl border border-green-100">
-          <label htmlFor={privateCheckboxId} className="flex items-start space-x-3 cursor-pointer">
+          <label htmlFor={privateCheckboxId} className="flex items-start gap-x-3 cursor-pointer">
             <div className="flex items-center h-5">
               <input
                 type="checkbox"
@@ -136,12 +136,12 @@ export default function QuizMetaForm({
                 checked={isPrivate}
                 onChange={(e) => onPrivateChange(e.target.checked)}
                 disabled={disabled}
-                className="w-4 h-4 text-brand-trust bg-white border-neutral-300 rounded focus:ring-brand-trust focus:ring-2"
+                className="size-4 text-brand-trust bg-white border-neutral-300 rounded focus:ring-brand-trust focus:ring-2"
               />
             </div>
             <div className="flex-1">
               <span className="text-sm font-semibold text-neutral-900 flex items-center">
-                <HiOutlineLockClosed className="w-4 h-4 mr-1 text-brand-trust" />
+                <HiOutlineLockClosed className="size-4 mr-1 text-brand-trust" />
                 {labels.privateLabel}
               </span>
               {labels.privateDescription && (

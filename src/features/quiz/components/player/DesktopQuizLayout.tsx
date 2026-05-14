@@ -110,13 +110,13 @@ export function DesktopQuizLayout({
       <div className="border-b border-neutral-200/50 bg-white/80 sticky top-0 z-40 backdrop-blur-sm">
         <div className="mx-auto max-w-4xl px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center gap-x-4">
               <Button
                 variant="outline"
                 onClick={openExitModal}
                 className="border-red-200 text-red-600 hover:border-red-300 hover:bg-red-50"
               >
-                <HiOutlineArrowLeft className="mr-2 h-4 w-4" />
+                <HiOutlineArrowLeft className="mr-2 size-4" />
                 {t('exitQuiz')}
               </Button>
               <div>
@@ -124,19 +124,19 @@ export function DesktopQuizLayout({
                 <p className="text-sm">
                   {sessionEmail ? (
                     <Badge variant="success" className="text-xs">
-                      <HiOutlineUser className="mr-1 h-3 w-3" />
+                      <HiOutlineUser className="mr-1 size-3" />
                       {sessionEmail}
                     </Badge>
                   ) : (
                     <Badge variant="default" className="text-xs">
-                      <HiOutlineMail className="mr-1 h-3 w-3" />
+                      <HiOutlineMail className="mr-1 size-3" />
                       {userEmail}
                     </Badge>
                   )}
                 </p>
               </div>
             </div>
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center gap-x-4">
               <ReportQuiz quizSlug={slug} quizTitle={quizTitle} />
               <div className="text-right">
                 <div className="text-sm font-semibold text-neutral-700">
@@ -180,7 +180,7 @@ export function DesktopQuizLayout({
                       <MarkdownRenderer content={currentQuestion.question} />
                     </div>
                   </div>
-                  <div className="ml-4 flex items-center space-x-2">
+                  <div className="ml-4 flex items-center gap-x-2">
                     <Button
                       variant="outline"
                       onClick={openAIModal}
@@ -241,10 +241,10 @@ export function DesktopQuizLayout({
                         >
                           {isSelected &&
                             (currentQuestion.type === 'single' ? (
-                              <div className="h-2 w-2 rounded-full bg-white" />
+                              <div className="size-2 rounded-full bg-white" />
                             ) : (
                               <svg
-                                className="h-3 w-3 text-white"
+                                className="size-3 text-white"
                                 fill="currentColor"
                                 viewBox="0 0 20 20"
                               >
@@ -346,17 +346,17 @@ export function DesktopQuizLayout({
                     );
                   })}
                 </div>
-                <div className="mt-4 flex items-center space-x-6 text-xs">
+                <div className="mt-4 flex items-center gap-x-6 text-xs">
                   <div className="flex items-center">
-                    <div className="mr-2 h-3 w-3 rounded bg-brand-trust" />
+                    <div className="mr-2 size-3 rounded bg-brand-trust" />
                     <span>{t('current')}</span>
                   </div>
                   <div className="flex items-center">
-                    <div className="mr-2 h-3 w-3 rounded border border-green-300 bg-green-100" />
+                    <div className="mr-2 size-3 rounded border border-green-300 bg-green-100" />
                     <span>{t('answered')}</span>
                   </div>
                   <div className="flex items-center">
-                    <div className="mr-2 h-3 w-3 rounded border border-neutral-300 bg-neutral-100" />
+                    <div className="mr-2 size-3 rounded border border-neutral-300 bg-neutral-100" />
                     <span>{t('notAnswered')}</span>
                   </div>
                 </div>
@@ -397,7 +397,7 @@ export function DesktopQuizLayout({
             <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-3">
               <div className="flex items-start">
                 <svg
-                  className="mr-2 mt-0.5 h-5 w-5 flex-shrink-0 text-yellow-600"
+                  className="mr-2 mt-0.5 size-5 flex-shrink-0 text-yellow-600"
                   fill="currentColor"
                   viewBox="0 0 20 20"
                 >
@@ -439,7 +439,7 @@ export function DesktopQuizLayout({
               </div>
               <div className="mt-2 space-y-1">
                 {currentQuestion.options.map((option, index) => (
-                  <div key={index} className="flex items-start space-x-2 text-xs text-neutral-600">
+                  <div key={index} className="flex items-start gap-x-2 text-xs text-neutral-600">
                     <span className="mt-0.5">{String.fromCharCode(65 + index)}.</span>
                     <div className="flex-1 [&_p]:m-0 [&_p]:text-xs [&_p]:text-neutral-600">
                       <MarkdownRenderer content={option} />

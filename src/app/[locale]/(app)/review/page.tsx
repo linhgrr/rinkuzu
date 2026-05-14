@@ -90,7 +90,7 @@ export default function ReviewPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-neutral-50">
         <div className="animate-pulse flex flex-col items-center">
-          <div className="w-12 h-12 bg-neutral-200 rounded-xl mb-4"></div>
+          <div className="size-12 bg-neutral-200 rounded-xl mb-4"></div>
           <div className="h-4 bg-neutral-200 w-32 rounded"></div>
         </div>
       </div>
@@ -103,10 +103,10 @@ export default function ReviewPage() {
         <Navigation />
         <div className="max-w-2xl mx-auto px-4 py-12">
           <Card className="p-8 text-center animate-fadeInUp">
-            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <div className="size-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
               <HiOutlineEmojiHappy className="text-4xl text-green-600" />
             </div>
-            <h1 className="text-2xl md:text-3xl font-bold text-[var(--text-primary)] mb-4">
+            <h1 className="text-2xl md:text-3xl font-semibold text-[var(--text-primary)] mb-4">
               {t('allDone')}
             </h1>
             <p className="text-lg md:text-xl text-[var(--text-muted)] mb-8">
@@ -119,7 +119,7 @@ export default function ReviewPage() {
                 size="lg"
                 className="w-full sm:w-auto flex items-center justify-center gap-2"
               >
-                <HiOutlineHome className="w-5 h-5" /> {t('backToDashboard')}
+                <HiOutlineHome className="size-5" /> {t('backToDashboard')}
               </Button>
               <Button
                 onClick={() => window.location.reload()}
@@ -127,7 +127,7 @@ export default function ReviewPage() {
                 size="lg"
                 className="w-full sm:w-auto flex items-center justify-center gap-2"
               >
-                <HiOutlineRefresh className="w-5 h-5" /> {t('reviewMore')}
+                <HiOutlineRefresh className="size-5" /> {t('reviewMore')}
               </Button>
             </div>
           </Card>
@@ -142,8 +142,8 @@ export default function ReviewPage() {
         <Navigation />
         <div className="max-w-2xl mx-auto px-4 py-12 text-center">
           <Card className="p-12">
-            <div className="w-16 h-16 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-4">
-              <HiOutlineCheckCircle className="w-8 h-8 text-brand-trust" />
+            <div className="size-16 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-4">
+              <HiOutlineCheckCircle className="size-8 text-brand-trust" />
             </div>
             <h2 className="text-2xl font-semibold mb-2">{t('noCards')}</h2>
             <p className="text-[var(--text-muted)] mb-6">{t('comeBack')}</p>

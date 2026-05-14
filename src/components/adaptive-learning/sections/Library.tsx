@@ -43,10 +43,10 @@ type SubjectLibraryCardProps = {
 
 const UploadCard = ({ onGoUpload, t }: { onGoUpload: () => void; t: TranslateFn }) => (
   <div className="group flex min-h-[21rem] flex-col items-center justify-center rounded-2xl border-2 border-dashed border-neutral-300 p-8 text-center transition-colors duration-300 hover:border-brand-trust/50 hover:bg-brand-trust/5">
-    <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-green-500/10 transition-transform duration-300 group-hover:scale-110">
-      <HiOutlineCloudUpload className="h-10 w-10 text-brand-action" />
+    <div className="mb-6 flex size-20 items-center justify-center rounded-full bg-green-500/10 transition-transform duration-300 group-hover:scale-110">
+      <HiOutlineCloudUpload className="size-10 text-brand-action" />
     </div>
-    <h3 className="mb-2 text-xl font-bold text-neutral-900">{t('uploadNewPdf')}</h3>
+    <h3 className="mb-2 text-xl font-semibold text-neutral-900">{t('uploadNewPdf')}</h3>
     <p className="mb-6 text-sm text-neutral-600">{t('uploadDragDropHint')}</p>
     <Button
       onClick={onGoUpload}
@@ -69,7 +69,7 @@ const SubjectLibraryListItem = memo(function SubjectLibraryListItem({
   return (
     <div className="flex flex-col gap-4 rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-5">
       <div className="flex min-w-0 items-start gap-4">
-        <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-neutral-100">
+        <div className="flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-neutral-100">
           {imageUrl ? (
             // The image source is discovered at runtime from an external API.
             // Keep a plain img here until the remote host set is stabilized in next.config.
@@ -81,11 +81,14 @@ const SubjectLibraryListItem = memo(function SubjectLibraryListItem({
               loading="lazy"
             />
           ) : (
-            <HiOutlineBookOpen className="h-8 w-8 text-neutral-300" />
+            <HiOutlineBookOpen className="size-8 text-neutral-300" />
           )}
         </div>
         <div className="min-w-0">
-          <h3 className="truncate text-lg font-bold text-neutral-900" title={subject.displayTitle}>
+          <h3
+            className="truncate text-lg font-semibold text-neutral-900"
+            title={subject.displayTitle}
+          >
             {subject.displayTitle}
           </h3>
           <p className="mt-1 text-xs font-medium uppercase tracking-tight text-neutral-600">
@@ -111,7 +114,7 @@ const SubjectLibraryListItem = memo(function SubjectLibraryListItem({
           aria-label={t('deleteMaterial')}
           title={t('deleteMaterial')}
         >
-          <HiOutlineTrash className="h-4 w-4" />
+          <HiOutlineTrash className="size-4" />
         </Button>
         <Button
           onClick={() => onOpenSubject(subject.job_id)}
@@ -145,14 +148,14 @@ export const LibrarySection = ({
     <section className="mb-16">
       <div className="mb-8 flex items-end justify-between gap-4">
         <div>
-          <h2 className={`text-3xl font-bold tracking-tight text-neutral-900`}>
+          <h2 className={`text-3xl font-semibold tracking-tight text-neutral-900`}>
             {t('knowledgeLibrary')}
           </h2>
           <p className="text-base text-neutral-600">{t('knowledgeLibrarySubtitle')}</p>
         </div>
         <div className="flex items-center gap-2">
           <div className="relative">
-            <HiOutlineSearch className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-500" />
+            <HiOutlineSearch className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-neutral-500" />
             <Input
               type="text"
               placeholder={t('searchPlaceholder')}
@@ -175,7 +178,7 @@ export const LibrarySection = ({
             aria-pressed={viewMode === 'grid'}
             onClick={() => onViewModeChange('grid')}
           >
-            <HiOutlineViewGrid className="h-5 w-5" />
+            <HiOutlineViewGrid className="size-5" />
           </Button>
           <Button
             type="button"
@@ -190,7 +193,7 @@ export const LibrarySection = ({
             aria-pressed={viewMode === 'list'}
             onClick={() => onViewModeChange('list')}
           >
-            <HiOutlineViewList className="h-5 w-5" />
+            <HiOutlineViewList className="size-5" />
           </Button>
         </div>
       </div>

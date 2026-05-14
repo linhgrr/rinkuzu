@@ -304,14 +304,14 @@ export function Flashcard({
             >
               <CardContent className="flex flex-col h-full py-10 px-14 justify-between">
                 <div className="flex-1 flex flex-col justify-center">
-                  <h3 className="text-2xl font-bold text-neutral-900 mb-8 text-center leading-relaxed break-words">
+                  <h3 className="text-2xl font-semibold text-neutral-900 mb-8 text-center leading-relaxed break-words">
                     {question}
                   </h3>
                   <div className="space-y-4">
                     {options.map((option, index) => (
                       <div
                         key={index}
-                        className="flex items-center space-x-3 p-4 bg-neutral-50 rounded-lg border border-neutral-200 text-lg break-words"
+                        className="flex items-center gap-x-3 p-4 bg-neutral-50 rounded-lg border border-neutral-200 text-lg break-words"
                       >
                         <span className="text-lg font-medium text-neutral-600 w-6">
                           {String.fromCharCode(65 + index)}.

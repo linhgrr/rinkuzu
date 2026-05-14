@@ -73,7 +73,7 @@ export function GuestLanding({ quizzes, isAuthenticated = false }: GuestLandingP
                     <div className="flex items-center text-brand-trust font-semibold text-sm">
                       {t('start_quiz')}
                       <svg
-                        className="ml-1 w-4 h-4 transition-transform group-hover:translate-x-1"
+                        className="ml-1 size-4 transition-transform group-hover:translate-x-1"
                         fill="none"
                         viewBox="0 0 24 24"
                         stroke="currentColor"

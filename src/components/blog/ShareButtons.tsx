@@ -16,19 +16,19 @@ export const ShareButtons = ({ url, title }: ShareButtonsProps) => {
   const shareLinks = [
     {
       name: 'Twitter',
-      icon: <Twitter className="h-4 w-4" />,
+      icon: <Twitter className="size-4" />,
       href: `https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(title)}`,
       color: 'hover:bg-[#1DA1F2] hover:text-white',
     },
     {
       name: 'LinkedIn',
-      icon: <Linkedin className="h-4 w-4" />,
+      icon: <Linkedin className="size-4" />,
       href: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`,
       color: 'hover:bg-[#0077b5] hover:text-white',
     },
     {
       name: 'Facebook',
-      icon: <Facebook className="h-4 w-4" />,
+      icon: <Facebook className="size-4" />,
       href: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`,
       color: 'hover:bg-[#4267B2] hover:text-white',
     },
@@ -64,11 +64,11 @@ export const ShareButtons = ({ url, title }: ShareButtonsProps) => {
         <Button
           variant="outline"
           size="icon"
-          className="h-9 w-9 rounded-full hover:bg-neutral-100 transition-colors duration-200 border-neutral-200"
+          className="size-9 rounded-full hover:bg-neutral-100 transition-colors duration-200 border-neutral-200"
           onClick={copyToClipboard}
           title="Copy link"
         >
-          {copied ? <Check className="h-4 w-4 text-green-500" /> : <LinkIcon className="h-4 w-4" />}
+          {copied ? <Check className="size-4 text-green-500" /> : <LinkIcon className="size-4" />}
         </Button>
       </div>
     </div>

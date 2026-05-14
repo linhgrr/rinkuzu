@@ -226,7 +226,7 @@ export default function AdminSubscriptionsPage() {
         {loading ? (
           <div className="flex justify-center py-12">
             <div className="flex flex-col items-center gap-3">
-              <div className="h-12 w-12 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
+              <div className="size-12 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
               <div className="text-sm text-neutral-500">{tCommon('loading')}</div>
             </div>
           </div>
@@ -234,7 +234,7 @@ export default function AdminSubscriptionsPage() {
           <div className="max-w-6xl mx-auto">
             <div className="flex justify-between items-center mb-8">
               <div>
-                <h1 className="text-3xl font-bold text-neutral-900">{t('subscriptions')}</h1>
+                <h1 className="text-3xl font-semibold text-neutral-900">{t('subscriptions')}</h1>
                 <p className="mt-2 text-neutral-600">
                   Manage user subscriptions and payment statuses
                 </p>
@@ -266,7 +266,7 @@ export default function AdminSubscriptionsPage() {
                   />
                 </div>
                 <Button type="submit" variant="gradient">
-                  <HiOutlineSearch className="w-4 h-4 mr-2" />
+                  <HiOutlineSearch className="size-4 mr-2" />
                   {tCommon('search')}
                 </Button>
                 {(searchTerm || statusFilter) && (
@@ -327,7 +327,7 @@ export default function AdminSubscriptionsPage() {
                 {loading ? (
                   <div className="flex justify-center py-8">
                     <div className="flex flex-col items-center gap-3">
-                      <div className="h-12 w-12 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
+                      <div className="size-12 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
                       <div className="text-sm text-neutral-500">{t('loadingStatistics')}</div>
                     </div>
                   </div>
@@ -388,7 +388,7 @@ export default function AdminSubscriptionsPage() {
                                 onClick={() => openDetailModal(subscription)}
                                 className="min-h-[40px] px-3 text-brand-trust hover:text-brand-trust"
                               >
-                                <HiOutlineEye className="w-4 h-4 mr-1" /> View Details
+                                <HiOutlineEye className="size-4 mr-1" /> View Details
                               </Button>
                             </td>
                           </tr>

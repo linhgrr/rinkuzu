@@ -91,7 +91,7 @@ export async function DashboardPageShell({
   const levelProgress = Math.max(0, Math.min(100, stats?.levelProgress || 0));
   const renderSectionHeader = (title: string, href: string) => (
     <div className="mb-6 flex items-center justify-between">
-      <h2 className="text-2xl font-bold text-[var(--text-primary)]">{title}</h2>
+      <h2 className="text-2xl font-semibold text-[var(--text-primary)]">{title}</h2>
       <Link
         href={href}
         className="text-sm font-medium text-brand-trust transition-colors hover:text-brand-trust-hover hover:underline"
@@ -141,7 +141,7 @@ export async function DashboardPageShell({
           <div className="space-y-8 lg:col-span-8">
             <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
               <div>
-                <h1 className="text-4xl font-bold tracking-tight text-[var(--text-primary)]">
+                <h1 className="text-4xl font-semibold tracking-tight text-[var(--text-primary)]">
                   {tDashboard('welcome', { name: userName })}
                 </h1>
                 <p className="mt-1 text-lg text-[var(--text-muted)]">
@@ -161,7 +161,7 @@ export async function DashboardPageShell({
 
               <div className="relative z-10 flex flex-col items-center justify-between gap-8 md:flex-row md:gap-12">
                 <div className="max-w-2xl flex-1">
-                  <h2 className="mb-4 text-4xl font-bold leading-tight tracking-tight text-neutral-900 md:text-5xl lg:text-6xl">
+                  <h2 className="mb-4 text-4xl font-semibold leading-tight tracking-tight text-neutral-900 md:text-5xl lg:text-6xl">
                     {tDashboard('masterAnySubject')}
                     <br />
                     <TextShimmer className="font-semibold" duration={8}>
@@ -179,7 +179,7 @@ export async function DashboardPageShell({
                       className="flex h-12 w-full items-center justify-center gap-2 whitespace-nowrap rounded-full border border-brand-action bg-brand-action px-8 text-base font-bold text-white shadow-lg transition-[background-color,box-shadow] duration-300 hover:bg-brand-action-hover hover:shadow-orange sm:w-auto"
                     >
                       <span>{tDashboard('startLearning')}</span>
-                      <HiOutlineArrowRight className="h-5 w-5" />
+                      <HiOutlineArrowRight className="size-5" />
                     </Link>
                     <Link
                       href="/review"
@@ -202,10 +202,10 @@ export async function DashboardPageShell({
                   href={ROUTES.CREATE_QUIZ}
                   className="group flex min-h-[160px] flex-col items-center justify-center rounded-2xl border-2 border-dashed border-green-200 bg-neutral-50/50 p-6 text-center transition-colors duration-300 hover:border-brand-trust hover:bg-green-50/50"
                 >
-                  <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-neutral-200 bg-white text-neutral-900 shadow-sm transition-transform group-hover:scale-105">
-                    <HiOutlinePlus className="h-7 w-7" />
+                  <div className="mb-4 flex size-14 items-center justify-center rounded-2xl border border-neutral-200 bg-white text-neutral-900 shadow-sm transition-transform group-hover:scale-105">
+                    <HiOutlinePlus className="size-7" />
                   </div>
-                  <h3 className="font-bold text-neutral-900 group-hover:text-black">
+                  <h3 className="font-semibold text-neutral-900 group-hover:text-black">
                     {tDashboard('createNewQuiz')}
                   </h3>
                   <p className="mt-1 text-xs font-medium uppercase tracking-tight text-neutral-500">
@@ -234,17 +234,17 @@ export async function DashboardPageShell({
                     <div className="mb-2 inline-flex rounded bg-green-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-brand-trust-hover">
                       {tDashboard('explore')}
                     </div>
-                    <h3 className="mb-1 text-lg font-bold tracking-tight">
+                    <h3 className="mb-1 text-lg font-semibold tracking-tight">
                       {tDashboard('exploreCommunity')}
                     </h3>
                     <p className="mb-4 text-xs font-medium text-neutral-500">
                       {tDashboard('discoverQuizzes')}
                     </p>
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full border border-green-100 bg-green-50 shadow-sm transition-[background-color,transform] duration-300 group-hover:translate-x-1 group-hover:bg-green-500">
-                      <HiOutlineArrowRight className="h-5 w-5 text-brand-trust transition-colors group-hover:text-white" />
+                    <div className="flex size-10 items-center justify-center rounded-full border border-green-100 bg-green-50 shadow-sm transition-[background-color,transform] duration-300 group-hover:translate-x-1 group-hover:bg-green-500">
+                      <HiOutlineArrowRight className="size-5 text-brand-trust transition-colors group-hover:text-white" />
                     </div>
                   </div>
-                  <div className="absolute -bottom-10 -right-10 h-32 w-32 rounded-full bg-green-50/50 blur-2xl transition-colors duration-300 group-hover:bg-green-100/50" />
+                  <div className="absolute -bottom-10 -right-10 size-32 rounded-full bg-green-50/50 blur-2xl transition-colors duration-300 group-hover:bg-green-100/50" />
                 </Link>
               </div>
             </section>
@@ -257,10 +257,10 @@ export async function DashboardPageShell({
                   href={ROUTES.CREATE_QUIZ}
                   className="group flex min-h-[160px] flex-col items-center justify-center rounded-2xl border-2 border-dashed border-green-200 bg-neutral-50/50 p-6 text-center transition-colors duration-300 hover:border-brand-trust hover:bg-green-50/50"
                 >
-                  <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-neutral-200 bg-white text-neutral-900 shadow-sm transition-transform group-hover:scale-105">
-                    <HiOutlinePlus className="h-7 w-7" />
+                  <div className="mb-4 flex size-14 items-center justify-center rounded-2xl border border-neutral-200 bg-white text-neutral-900 shadow-sm transition-transform group-hover:scale-105">
+                    <HiOutlinePlus className="size-7" />
                   </div>
-                  <h3 className="font-bold text-neutral-900 group-hover:text-black">
+                  <h3 className="font-semibold text-neutral-900 group-hover:text-black">
                     {tDashboard('createNewQuiz')}
                   </h3>
                   <p className="mt-1 text-xs font-medium uppercase tracking-tight text-neutral-500">
@@ -287,8 +287,8 @@ export async function DashboardPageShell({
           <div className="sticky top-24 h-fit space-y-6 self-start lg:col-span-4">
             <Card className="overflow-hidden rounded-2xl border border-neutral-200 bg-white p-0 shadow-sm">
               <div className="border-b border-neutral-100 p-6">
-                <h3 className="flex items-center gap-2 text-lg font-bold text-neutral-900">
-                  <HiOutlineChartBar className="h-5 w-5 text-green-500" />
+                <h3 className="flex items-center gap-2 text-lg font-semibold text-neutral-900">
+                  <HiOutlineChartBar className="size-5 text-green-500" />
                   {tDashboard('yourProgression')}
                 </h3>
               </div>
@@ -361,7 +361,7 @@ export async function DashboardPageShell({
                           title={`${cell.questions} questions`}
                         >
                           {cell.questions > 0 && !cell.isToday ? (
-                            <HiOutlineCheckCircle className="h-4 w-4 text-white" />
+                            <HiOutlineCheckCircle className="size-4 text-white" />
                           ) : null}
                         </div>
                       </div>
@@ -372,20 +372,20 @@ export async function DashboardPageShell({
 
               <div className="flex items-center justify-between bg-neutral-900 p-4">
                 <div className="flex items-center gap-2">
-                  <HiOutlineStar className="h-4 w-4 text-orange-400" />
+                  <HiOutlineStar className="size-4 text-orange-400" />
                   <span className="text-xs font-bold text-white">
                     {tDashboard('nextRewardStreak', { day: nextStreakMilestone })}
                   </span>
                 </div>
-                <HiOutlineChevronRight className="h-4 w-4 text-neutral-500" />
+                <HiOutlineChevronRight className="size-4 text-neutral-500" />
               </div>
             </Card>
 
             <Card className="rounded-2xl border border-neutral-200 bg-white p-6">
               <div className="flex items-start gap-3">
-                <HiOutlineLightBulb className="mt-0.5 h-5 w-5 shrink-0 text-orange-500" />
+                <HiOutlineLightBulb className="mt-0.5 size-5 shrink-0 text-orange-500" />
                 <div>
-                  <h4 className="mb-1 text-sm font-bold text-neutral-900">
+                  <h4 className="mb-1 text-sm font-semibold text-neutral-900">
                     {tDashboard('onboardingTipTitle')}
                   </h4>
                   <p className="text-xs leading-relaxed text-neutral-500">

@@ -51,7 +51,7 @@ export function QuizPreviewModal({ isOpen, onClose, title, questions }: QuizPrev
     <Modal isOpen={isOpen} onClose={onClose} size="large">
       <div className="p-6">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-neutral-900">{t('title')}</h2>
+          <h2 className="text-2xl font-semibold text-neutral-900">{t('title')}</h2>
           <Button variant="ghost" onClick={onClose}>
             ✕
           </Button>
@@ -66,7 +66,7 @@ export function QuizPreviewModal({ isOpen, onClose, title, questions }: QuizPrev
 
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
+            <CardTitle className="flex items-center gap-x-2">
               <span>{currentQuestion.question}</span>
               {currentQuestion.type === 'single' ? (
                 <span className="inline-flex items-center px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs">
@@ -108,7 +108,7 @@ export function QuizPreviewModal({ isOpen, onClose, title, questions }: QuizPrev
                         : 'border-neutral-200 bg-neutral-50'
                     }`}
                   >
-                    <div className="flex items-center space-x-3">
+                    <div className="flex items-center gap-x-3">
                       <div
                         className={`w-4 h-4 rounded ${
                           currentQuestion.type === 'single' ? 'rounded-full' : 'rounded'
@@ -118,10 +118,10 @@ export function QuizPreviewModal({ isOpen, onClose, title, questions }: QuizPrev
                       >
                         {isCorrect &&
                           (currentQuestion.type === 'single' ? (
-                            <div className="w-2 h-2 rounded-full bg-white"></div>
+                            <div className="size-2 rounded-full bg-white"></div>
                           ) : (
                             <svg
-                              className="w-3 h-3 text-white"
+                              className="size-3 text-white"
                               fill="currentColor"
                               viewBox="0 0 20 20"
                             >

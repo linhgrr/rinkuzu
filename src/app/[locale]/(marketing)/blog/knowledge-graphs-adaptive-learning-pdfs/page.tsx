@@ -288,7 +288,7 @@ export default async function BlogPost({ params }: Props) {
             </span>
             <span className="text-xs text-[var(--text-muted)]">March 20, 2026 · 10 min read</span>
           </div>
-          <h1 className="text-3xl md:text-5xl font-bold text-[var(--text-primary)] leading-tight mb-6">
+          <h1 className="text-3xl md:text-5xl font-semibold text-[var(--text-primary)] leading-tight mb-6">
             {postTitle}
           </h1>
           <p className="text-xl text-[var(--text-muted)] leading-relaxed font-medium">
@@ -296,7 +296,7 @@ export default async function BlogPost({ params }: Props) {
             scientifically-grounded adaptive learning path for any PDF document.
           </p>
           <div className="flex items-center gap-3 mt-8 pt-6 border-t border-neutral-100">
-            <div className="w-11 h-11 rounded-full bg-[var(--text-primary)] flex items-center justify-center text-white font-bold text-sm ring-4 ring-white shadow-sm">
+            <div className="size-11 rounded-full bg-[var(--text-primary)] flex items-center justify-center text-white font-bold text-sm ring-4 ring-white shadow-sm">
               RK
             </div>
             <div>
@@ -336,10 +336,10 @@ export default async function BlogPost({ params }: Props) {
 
           {/* CTA */}
           <div className="mt-16 bg-gradient-to-br from-[var(--text-primary)] to-[#2d2d2f] rounded-[2rem] p-10 text-white relative overflow-hidden shadow-xl">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-green-500/10 rounded-full blur-3xl -mr-32 -mt-32"></div>
-            <div className="absolute bottom-0 left-0 w-64 h-64 bg-green-500/10 rounded-full blur-3xl -ml-32 -mb-32"></div>
+            <div className="absolute top-0 right-0 size-64 bg-green-500/10 rounded-full blur-3xl -mr-32 -mt-32"></div>
+            <div className="absolute bottom-0 left-0 size-64 bg-green-500/10 rounded-full blur-3xl -ml-32 -mb-32"></div>
             <div className="relative z-10 text-center max-w-xl mx-auto">
-              <h3 className="text-2xl md:text-3xl font-bold mb-4">
+              <h3 className="text-2xl md:text-3xl font-semibold mb-4">
                 See Knowledge Graphs in Action
               </h3>
               <p className="text-neutral-300 text-lg mb-8">

@@ -163,7 +163,7 @@ export default function ProfileBookmarks() {
     return (
       <div className="flex justify-center py-12">
         <div className="flex flex-col items-center gap-3">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
+          <div className="size-8 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
           <div className="text-sm text-neutral-500">{tCommon('loadingBookmarks')}</div>
         </div>
       </div>
@@ -172,7 +172,7 @@ export default function ProfileBookmarks() {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-neutral-900">{t('bookmarkedQuestions')}</h2>
+      <h2 className="text-2xl font-semibold text-neutral-900">{t('bookmarkedQuestions')}</h2>
 
       {displayError && (
         <div className="bg-red-50 p-4 rounded text-red-700 text-sm">{displayError}</div>
@@ -182,7 +182,7 @@ export default function ProfileBookmarks() {
         <Card>
           <CardContent className="text-center py-12">
             <EmptyState
-              icon={<HiOutlineTag className="w-12 h-12 text-neutral-400" />}
+              icon={<HiOutlineTag className="size-12 text-neutral-400" />}
               title={t('noBookmarks')}
               description={t('exploreQuizzes')}
               action={
@@ -201,7 +201,7 @@ export default function ProfileBookmarks() {
                 <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
                   <div className="flex-1 min-w-0">
                     <CardTitle className="text-lg">{bookmark.question.text}</CardTitle>
-                    <div className="flex items-center space-x-2 mt-2 flex-wrap gap-y-1">
+                    <div className="flex items-center gap-x-2 mt-2 flex-wrap gap-y-1">
                       <div className="text-sm text-neutral-600">
                         <Link
                           href={`/quiz/${bookmark.quiz.slug}`}
@@ -238,7 +238,7 @@ export default function ProfileBookmarks() {
                         alt="AI chatbot"
                         width={16}
                         height={16}
-                        className="w-4 h-4"
+                        className="size-4"
                       />{' '}
                       {t('askAI')}{' '}
                       {getHistory(bookmark._id).length > 0 &&
@@ -250,7 +250,7 @@ export default function ProfileBookmarks() {
                       onClick={() => setBookmarkToRemove(bookmark)}
                       className="text-red-600 border-red-200 hover:bg-red-50 flex items-center gap-1.5"
                     >
-                      <HiOutlineTrash className="w-4 h-4" /> {tCommon('remove')}
+                      <HiOutlineTrash className="size-4" /> {tCommon('remove')}
                     </Button>
                   </div>
                 </div>

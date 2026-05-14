@@ -48,7 +48,7 @@ export const HeroSection = ({
             size="lg"
             className="rounded-full bg-brand-action px-10 text-white shadow-lg shadow-[var(--shadow-orange-glow)] hover:bg-brand-action-hover"
           >
-            <HiOutlineCloudUpload className="h-5 w-5" />
+            <HiOutlineCloudUpload className="size-5" />
             {t('uploadDocument')}
           </Button>
         </div>
@@ -62,7 +62,7 @@ export const HeroSection = ({
             priority={false}
           />
         </div>
-        <div className="absolute -bottom-12 -right-12 h-80 w-80 rounded-full bg-green-500/10 blur-3xl" />
+        <div className="absolute -bottom-12 -right-12 size-80 rounded-full bg-green-500/10 blur-3xl" />
       </section>
     );
   }
@@ -108,7 +108,7 @@ export const HeroSection = ({
               size="lg"
               className="rounded-full bg-brand-action px-10 text-white shadow-lg shadow-[var(--shadow-orange-glow)] hover:bg-brand-action-hover"
             >
-              <HiOutlinePlay className="h-5 w-5" />
+              <HiOutlinePlay className="size-5" />
               {isOpening ? t('creatingSession') : t('continueLearning')}
             </Button>
           </div>
@@ -124,7 +124,7 @@ export const HeroSection = ({
           priority
         />
       </div>
-      <div className="absolute -bottom-12 -right-12 h-80 w-80 rounded-full bg-green-500/10 blur-3xl transition-colors duration-700" />
+      <div className="absolute -bottom-12 -right-12 size-80 rounded-full bg-green-500/10 blur-3xl transition-colors duration-700" />
     </section>
   );
 };

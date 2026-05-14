@@ -36,7 +36,7 @@ export function Footer() {
 
           {/* Links */}
           <div>
-            <h4 className="mb-4 text-sm font-bold uppercase tracking-[0.12em] text-[#F3F4EF]">
+            <h4 className="mb-4 text-sm font-semibold uppercase tracking-[0.12em] text-[#F3F4EF]">
               {t('links.title')}
             </h4>
             <ul className="space-y-3.5">
@@ -61,7 +61,7 @@ export function Footer() {
 
           {/* Legal */}
           <div>
-            <h4 className="mb-4 text-sm font-bold uppercase tracking-[0.12em] text-[#F3F4EF]">
+            <h4 className="mb-4 text-sm font-semibold uppercase tracking-[0.12em] text-[#F3F4EF]">
               {t('legal.title')}
             </h4>
             <ul className="space-y-3.5">
@@ -85,7 +85,7 @@ export function Footer() {
 
           {/* Newsletter */}
           <div className="space-y-6">
-            <h4 className="text-sm font-bold uppercase tracking-[0.12em] text-[#F3F4EF]">
+            <h4 className="text-sm font-semibold uppercase tracking-[0.12em] text-[#F3F4EF]">
               {t('newsletter.title')}
             </h4>
             <p className="text-sm leading-6 text-[#BFC0B7]">{t('newsletter.description')}</p>

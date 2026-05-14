@@ -150,7 +150,7 @@ function MatchingInteraction({
               style={sharedCardStyle}
               className="flex items-center gap-3 rounded-xl border border-neutral-200 bg-white p-3 shadow-sm"
             >
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-neutral-50 text-xs font-bold text-neutral-500">
+              <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-neutral-50 text-xs font-bold text-neutral-500">
                 {index + 1}
               </div>
               <div className="flex-1 text-sm text-neutral-700">
@@ -181,11 +181,11 @@ function MatchingInteraction({
                 style={sharedCardStyle}
                 className="group flex cursor-grab items-center gap-3 rounded-xl border border-neutral-200 bg-white p-3 shadow-sm transition-colors hover:border-brand-trust/50 active:cursor-grabbing"
               >
-                <HiOutlineDotsVertical className="h-4 w-4 shrink-0 text-neutral-300" />
+                <HiOutlineDotsVertical className="size-4 shrink-0 text-neutral-300" />
                 <div className="flex-1 text-right text-sm text-neutral-700">
                   <DynamicMarkdownRenderer content={entry.value} />
                 </div>
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-neutral-50 text-xs font-bold text-neutral-500">
+                <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-neutral-50 text-xs font-bold text-neutral-500">
                   {String.fromCharCode(65 + index)}
                 </div>
               </Reorder.Item>
@@ -279,7 +279,7 @@ export function ExerciseInteraction({
               className="flex w-full items-center justify-between rounded-none px-4 py-3 text-left text-sm font-medium text-amber-900 hover:bg-amber-100/80"
             >
               <span className="flex items-center gap-2">
-                <HiOutlineLightBulb className="h-4 w-4 shrink-0" />
+                <HiOutlineLightBulb className="size-4 shrink-0" />
                 <span>
                   {isHintOpen
                     ? t('exercise.interactions.hideHint')
@@ -287,9 +287,9 @@ export function ExerciseInteraction({
                 </span>
               </span>
               {isHintOpen ? (
-                <HiChevronUp className="h-4 w-4 shrink-0" />
+                <HiChevronUp className="size-4 shrink-0" />
               ) : (
-                <HiChevronDown className="h-4 w-4 shrink-0" />
+                <HiChevronDown className="size-4 shrink-0" />
               )}
             </Button>
             <div
@@ -355,7 +355,7 @@ export function ExerciseInteraction({
               transition={REORDER_TRANSITION}
               className="group relative flex items-center gap-3 rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md cursor-grab active:cursor-grabbing"
             >
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-neutral-50 font-medium text-neutral-500 group-hover:bg-green-50 group-hover:text-brand-trust">
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-neutral-50 font-medium text-neutral-500 group-hover:bg-green-50 group-hover:text-brand-trust">
                 {index + 1}
               </div>
               <div className="flex-1 text-neutral-700">
@@ -366,7 +366,7 @@ export function ExerciseInteraction({
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8 text-neutral-400 hover:text-brand-trust"
+                    className="size-8 text-neutral-400 hover:text-brand-trust"
                     disabled={index === 0}
                     onClick={(e) => {
                       e.stopPropagation();
@@ -374,12 +374,12 @@ export function ExerciseInteraction({
                     }}
                     aria-label={t('exercise.interactions.moveUp')}
                   >
-                    <HiChevronUp className="h-4 w-4" />
+                    <HiChevronUp className="size-4" />
                   </Button>
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8 text-neutral-400 hover:text-brand-trust"
+                    className="size-8 text-neutral-400 hover:text-brand-trust"
                     disabled={index === ordering.length - 1}
                     onClick={(e) => {
                       e.stopPropagation();
@@ -387,11 +387,11 @@ export function ExerciseInteraction({
                     }}
                     aria-label={t('exercise.interactions.moveDown')}
                   >
-                    <HiChevronDown className="h-4 w-4" />
+                    <HiChevronDown className="size-4" />
                   </Button>
                 </div>
                 <div className="cursor-grab p-1 text-neutral-300 group-hover:text-neutral-400">
-                  <HiOutlineDotsVertical className="h-5 w-5" />
+                  <HiOutlineDotsVertical className="size-5" />
                 </div>
               </div>
             </Reorder.Item>

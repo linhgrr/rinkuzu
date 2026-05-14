@@ -165,7 +165,7 @@ export default function CategoryPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-8">
           <Card variant="bordered" className="p-6 mb-8 border-red-200 bg-red-50">
             <div className="flex items-center text-red-700">
-              <HiOutlineExclamationCircle className="w-5 h-5 mr-2" />
+              <HiOutlineExclamationCircle className="size-5 mr-2" />
               {error.message || 'An error occurred while fetching data'}
             </div>
           </Card>
@@ -180,7 +180,7 @@ export default function CategoryPage() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-8">
         {/* Breadcrumb */}
-        <nav className="flex items-center space-x-2 text-sm text-neutral-500 mb-6">
+        <nav className="flex items-center gap-x-2 text-sm text-neutral-500 mb-6">
           <Link href="/" className="hover:text-neutral-700">
             {tNav('home')}
           </Link>
@@ -195,15 +195,15 @@ export default function CategoryPage() {
         {/* Category Header */}
         {category && (
           <div className="mb-8">
-            <div className="flex items-center space-x-4 mb-4">
+            <div className="flex items-center gap-x-4 mb-4">
               <div
-                className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-xl"
+                className="size-12 rounded-full flex items-center justify-center text-white font-bold text-xl"
                 style={{ backgroundColor: category.color }}
               >
                 {category.name.charAt(0)}
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-neutral-900">{category.name}</h1>
+                <h1 className="text-3xl font-semibold text-neutral-900">{category.name}</h1>
                 <p className="text-neutral-600 mt-1">
                   {category.description} • {t('quizCount', { count: category.quizCount })}
                 </p>
@@ -222,7 +222,7 @@ export default function CategoryPage() {
                   placeholder={`${tCommon('search')} ${category?.name} quizzes...`}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  icon={<HiOutlineSearch className="w-5 h-5" />}
+                  icon={<HiOutlineSearch className="size-5" />}
                   className="w-full"
                 />
               </div>
@@ -279,8 +279,8 @@ export default function CategoryPage() {
         {/* Quizzes Grid */}
         {quizzes.length === 0 ? (
           <Card variant="glass" className="p-12 text-center">
-            <div className="w-20 h-20 bg-gradient-to-br from-neutral-100 to-neutral-200 rounded-full flex items-center justify-center mx-auto mb-6">
-              <HiOutlineInbox className="w-8 h-8 text-neutral-400" />
+            <div className="size-20 bg-gradient-to-br from-neutral-100 to-neutral-200 rounded-full flex items-center justify-center mx-auto mb-6">
+              <HiOutlineInbox className="size-8 text-neutral-400" />
             </div>
             <h3 className="text-xl font-semibold text-neutral-900 mb-3">No quizzes found</h3>
             <p className="text-neutral-600 mb-6">
@@ -356,7 +356,7 @@ export default function CategoryPage() {
                         router.push(`/quiz/${quiz.slug}`);
                       }}
                     >
-                      <HiOutlineLightningBolt className="w-4 h-4 mr-1" />
+                      <HiOutlineLightningBolt className="size-4 mr-1" />
                       {tQuiz('takeQuiz')}
                     </Button>
                     <Button
@@ -368,7 +368,7 @@ export default function CategoryPage() {
                       }}
                       className="flex-1"
                     >
-                      <HiOutlineRefresh className="w-4 h-4 mr-1" />
+                      <HiOutlineRefresh className="size-4 mr-1" />
                       {tQuiz('flashcards')}
                     </Button>
                   </div>
@@ -381,7 +381,7 @@ export default function CategoryPage() {
         {/* Pagination */}
         {pagination.totalPages > 1 && (
           <div className="flex justify-center mt-12">
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center gap-x-2">
               <Button
                 variant="outline"
                 disabled={pagination.currentPage === 1}

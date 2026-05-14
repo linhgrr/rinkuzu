@@ -38,7 +38,7 @@ export function FAQ() {
     <section className="bg-[#0d0d0d] py-24">
       <div className="max-w-3xl mx-auto px-6">
         <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">{t('title')}</h2>
+          <h2 className="text-3xl md:text-4xl font-semibold text-white mb-4">{t('title')}</h2>
         </div>
 
         <div className="space-y-3">
@@ -63,9 +63,9 @@ export function FAQ() {
                 </span>
                 <span className="text-green-400 shrink-0">
                   {openId === faq.id ? (
-                    <HiOutlineMinus className="w-5 h-5" aria-hidden="true" />
+                    <HiOutlineMinus className="size-5" aria-hidden="true" />
                   ) : (
-                    <HiOutlinePlus className="w-5 h-5" aria-hidden="true" />
+                    <HiOutlinePlus className="size-5" aria-hidden="true" />
                   )}
                 </span>
               </Button>

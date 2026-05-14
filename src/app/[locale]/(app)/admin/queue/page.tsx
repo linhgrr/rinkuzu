@@ -229,7 +229,7 @@ export default function AdminQueuePage() {
         {loading ? (
           <div className="flex justify-center py-12">
             <div className="flex flex-col items-center gap-3">
-              <div className="h-12 w-12 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
+              <div className="size-12 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
               <div className="text-sm text-neutral-500">{tCommon('loading')}</div>
             </div>
           </div>
@@ -237,11 +237,11 @@ export default function AdminQueuePage() {
           <div className="max-w-6xl mx-auto">
             <div className="flex justify-between items-center mb-8">
               <div>
-                <h1 className="text-3xl font-bold text-neutral-900">{t('adminQueue')}</h1>
+                <h1 className="text-3xl font-semibold text-neutral-900">{t('adminQueue')}</h1>
                 <p className="mt-2 text-neutral-600">{t('reviewManageQuizzes')}</p>
               </div>
 
-              <div className="flex items-center space-x-4">
+              <div className="flex items-center gap-x-4">
                 <select
                   value={filter}
                   onChange={(e) => {
@@ -337,11 +337,11 @@ export default function AdminQueuePage() {
                     <CardHeader>
                       <div className="flex justify-between items-start">
                         <div className="flex-1">
-                          <div className="flex items-center space-x-3">
+                          <div className="flex items-center gap-x-3">
                             <CardTitle className="text-xl">{quiz.title}</CardTitle>
                             {quiz.isPrivate && (
                               <span className="inline-flex min-h-[28px] items-center rounded-full bg-neutral-100 px-3 text-[13px] font-medium text-neutral-600">
-                                <HiOutlineLockClosed className="w-3 h-3 mr-1" />{' '}
+                                <HiOutlineLockClosed className="size-3 mr-1" />{' '}
                                 {tProfile('private')}
                               </span>
                             )}
@@ -349,7 +349,7 @@ export default function AdminQueuePage() {
                           <CardDescription className="mt-2">
                             {quiz.description || tProfile('noDescription')}
                           </CardDescription>
-                          <div className="mt-3 flex items-center space-x-4 text-sm text-neutral-600">
+                          <div className="mt-3 flex items-center gap-x-4 text-sm text-neutral-600">
                             <div className="flex min-w-0 items-center gap-2">
                               <span className="shrink-0">{t('by')}</span>
                               <UserProfileLink
@@ -384,14 +384,14 @@ export default function AdminQueuePage() {
                     </CardHeader>
                     <CardContent>
                       <div className="flex items-center justify-between">
-                        <div className="flex space-x-4">
+                        <div className="flex gap-x-4">
                           <Button
                             size="sm"
                             variant="outline"
                             onClick={() => openPreviewModal(quiz)}
                             className="min-h-[36px] px-3"
                           >
-                            <HiOutlineEye className="w-4 h-4 mr-1" /> {t('previewWithAnswers')}
+                            <HiOutlineEye className="size-4 mr-1" /> {t('previewWithAnswers')}
                           </Button>
                           <Link
                             href={`/quiz/${quiz.slug}`}
@@ -405,12 +405,12 @@ export default function AdminQueuePage() {
                               variant="outline"
                               className="min-h-[36px] px-3 text-brand-trust hover:text-brand-trust border-green-300 hover:border-green-400"
                             >
-                              <HiOutlinePencil className="w-4 h-4 mr-1" /> {t('editQuiz')}
+                              <HiOutlinePencil className="size-4 mr-1" /> {t('editQuiz')}
                             </Button>
                           </Link>
                         </div>
 
-                        <div className="flex space-x-3">
+                        <div className="flex gap-x-3">
                           {quiz.status === 'pending' && (
                             <>
                               <Button
@@ -441,12 +441,12 @@ export default function AdminQueuePage() {
                           >
                             {deletingQuizId === quiz._id ? (
                               <>
-                                <div className="animate-spin rounded-full h-4 w-4 border-2 border-red-600 border-t-transparent mr-2"></div>
+                                <div className="animate-spin rounded-full size-4 border-2 border-red-600 border-t-transparent mr-2"></div>
                                 {t('deleting')}
                               </>
                             ) : (
                               <>
-                                <HiOutlineTrash className="w-4 h-4 mr-1" /> {t('delete')}
+                                <HiOutlineTrash className="size-4 mr-1" /> {t('delete')}
                               </>
                             )}
                           </Button>
@@ -499,7 +499,7 @@ export default function AdminQueuePage() {
             />
           </div>
 
-          <div className="flex justify-end space-x-3">
+          <div className="flex justify-end gap-x-3">
             <Button
               variant="outline"
               onClick={() => {

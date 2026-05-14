@@ -24,9 +24,9 @@ function PaymentCancelContent() {
     <div className="min-h-screen bg-neutral-50 flex items-center justify-center py-8">
       <div className="max-w-md mx-auto px-4">
         <Card className="p-8 text-center">
-          <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <div className="size-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <svg
-              className="w-8 h-8 text-yellow-600"
+              className="size-8 text-yellow-600"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -39,7 +39,9 @@ function PaymentCancelContent() {
               />
             </svg>
           </div>
-          <h1 className="text-2xl font-bold text-neutral-900 mb-4">{t('paymentCancelledTitle')}</h1>
+          <h1 className="text-2xl font-semibold text-neutral-900 mb-4">
+            {t('paymentCancelledTitle')}
+          </h1>
           <p className="text-neutral-600 mb-6">
             {t('paymentCancelledMessage')}
             {orderCode && (
@@ -67,7 +69,7 @@ function PaymentCancelLoading() {
   return (
     <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
       <div className="text-center">
-        <div className="h-12 w-12 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust mx-auto" />
+        <div className="size-12 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust mx-auto" />
         <p className="mt-4 text-neutral-600">{t('loading')}</p>
       </div>
     </div>

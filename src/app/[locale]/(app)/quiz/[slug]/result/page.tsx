@@ -359,7 +359,7 @@ export default function QuizResultPage() {
     return (
       <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="h-12 w-12 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust mx-auto" />
+          <div className="size-12 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust mx-auto" />
           <p className="mt-4 text-neutral-600">{t('loadingQuiz')}...</p>
         </div>
       </div>
@@ -392,7 +392,7 @@ export default function QuizResultPage() {
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="text-center">
-            <h1 className="text-2xl font-bold text-neutral-900">{t('quizComplete')}</h1>
+            <h1 className="text-2xl font-semibold text-neutral-900">{t('quizComplete')}</h1>
             <p className="mt-2 text-neutral-600">{result.quiz.title}</p>
             <p className="text-sm text-neutral-500">
               {t('completedOn')}{' '}
@@ -448,7 +448,7 @@ export default function QuizResultPage() {
         />
 
         {/* Action Buttons */}
-        <div className="flex justify-center space-x-4">
+        <div className="flex justify-center gap-x-4">
           <Link href={`/quiz/${encodedSlug}`}>
             <Button variant="outline">{tProfile('redo')}</Button>
           </Link>

@@ -45,7 +45,10 @@ export function QuestionOptionsPreview({
 
       <div className={optionsClassName}>
         {options.map((option, index) => (
-          <div key={index} className={optionItemClassName}>
+          <div
+            key={`${String.fromCharCode(65 + index)}-${option}-${optionImages?.[index] ?? 'no-image'}`}
+            className={optionItemClassName}
+          >
             {String.fromCharCode(65 + index)}. {option}
             {showOptionImages && optionImages?.[index] && (
               <div className="mt-2">

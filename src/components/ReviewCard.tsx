@@ -16,6 +16,14 @@ interface ReviewCardProps {
 import { HiCheck } from '@/components/icons';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 
+const CARD_FLIP_CONTAINER_STYLE = { perspective: '1000px' } as const;
+const CARD_FLIP_STYLE = { transformStyle: 'preserve-3d' } as const;
+const CARD_FACE_STYLE = { backfaceVisibility: 'hidden' } as const;
+const CARD_BACK_FACE_STYLE = {
+  ...CARD_FACE_STYLE,
+  transform: 'rotateY(180deg)',
+} as const;
+
 export default function ReviewCard({ question, onResult }: ReviewCardProps) {
   const t = useTranslations('review');
   const [isFlipped, setIsFlipped] = useState(false);
@@ -32,18 +40,21 @@ export default function ReviewCard({ question, onResult }: ReviewCardProps) {
   });
 
   return (
-    <div className="relative w-full max-w-2xl perspective-1000">
+    <div className="relative w-full max-w-2xl" style={CARD_FLIP_CONTAINER_STYLE}>
       <div
-        className={`relative w-full transition-all duration-500 transform-style-3d ${
-          isFlipped ? 'rotate-y-180' : ''
-        }`}
-        style={{ minHeight: 'min(400px, 70vh)' }}
+        className="relative w-full transition-all duration-500"
+        style={{
+          ...CARD_FLIP_STYLE,
+          minHeight: 'min(400px, 70vh)',
+          transform: isFlipped ? 'rotateY(180deg)' : undefined,
+        }}
       >
         {/* Front Face */}
         {!isFlipped && (
           <Card
-            className="absolute inset-0 w-full h-full backface-hidden flex flex-col items-center justify-center p-6 md:p-8 cursor-pointer hover:shadow-lg transition-shadow"
+            className="absolute inset-0 flex h-full w-full cursor-pointer flex-col items-center justify-center p-6 transition-shadow hover:shadow-lg md:p-8"
             onClick={() => setIsFlipped(true)}
+            style={CARD_FACE_STYLE}
           >
             <div className="text-center">
               <span className="inline-block px-3 py-1 bg-green-100 text-brand-trust-hover rounded-full text-xs font-semibold mb-4">
@@ -61,7 +72,10 @@ export default function ReviewCard({ question, onResult }: ReviewCardProps) {
 
         {/* Back Face (Answer) */}
         {isFlipped && (
-          <Card className="absolute inset-0 w-full h-full backface-hidden rotate-y-180 flex flex-col p-4 md:p-8">
+          <Card
+            className="absolute inset-0 flex h-full w-full flex-col p-4 md:p-8"
+            style={CARD_BACK_FACE_STYLE}
+          >
             <div className="flex-1 overflow-y-auto">
               {/* Question Text Repeated Small */}
               <p className="text-xs md:text-sm text-[var(--text-muted)] mb-4 md:mb-6 pb-3 md:pb-4 border-b">
@@ -72,9 +86,10 @@ export default function ReviewCard({ question, onResult }: ReviewCardProps) {
               <div className="space-y-2 md:space-y-3">
                 {question.options.map((opt, idx) => {
                   const isCorrect = question.correctIndexes.includes(idx);
+                  const optionLabel = String.fromCharCode(65 + idx);
                   return (
                     <div
-                      key={idx}
+                      key={`${optionLabel}-${opt}`}
                       className={`p-3 md:p-4 rounded-xl border ${
                         isCorrect
                           ? 'bg-green-50 border-green-200 text-green-800'
@@ -83,14 +98,14 @@ export default function ReviewCard({ question, onResult }: ReviewCardProps) {
                     >
                       <div className="flex items-start">
                         <div
-                          className={`w-5 h-5 mt-0.5 rounded-full border flex items-center justify-center mr-3 flex-shrink-0 ${
+                          className={`mt-0.5 mr-3 flex size-5 flex-shrink-0 items-center justify-center rounded-full border ${
                             isCorrect
                               ? 'bg-green-500 border-green-500 text-white'
                               : 'border-neutral-300'
                           }`}
                         >
                           {isCorrect && (
-                            <HiCheck className="w-3 h-3" strokeWidth={3} aria-hidden="true" />
+                            <HiCheck className="size-3" strokeWidth={3} aria-hidden="true" />
                           )}
                         </div>
                         <span className={`text-sm md:text-base ${isCorrect ? 'font-medium' : ''}`}>
@@ -110,7 +125,7 @@ export default function ReviewCard({ question, onResult }: ReviewCardProps) {
                 onClick={() => onResult('fail')}
                 aria-label="Rate as Again - Press 1"
               >
-                <div className="w-10 h-10 md:w-11 md:h-11 rounded-full bg-red-100 text-red-600 flex items-center justify-center mb-1 md:mb-2 group-hover:scale-110 transition-transform">
+                <div className="mb-1 flex size-10 items-center justify-center rounded-full bg-red-100 text-red-600 transition-transform group-hover:scale-110 md:mb-2 md:size-11">
                   <span className="font-bold text-sm md:text-base">1</span>
                 </div>
                 <span className="text-[10px] md:text-xs font-medium text-red-600">
@@ -123,7 +138,7 @@ export default function ReviewCard({ question, onResult }: ReviewCardProps) {
                 onClick={() => onResult('hard')}
                 aria-label="Rate as Hard - Press 2"
               >
-                <div className="w-10 h-10 md:w-11 md:h-11 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center mb-1 md:mb-2 group-hover:scale-110 transition-transform">
+                <div className="mb-1 flex size-10 items-center justify-center rounded-full bg-orange-100 text-orange-600 transition-transform group-hover:scale-110 md:mb-2 md:size-11">
                   <span className="font-bold text-sm md:text-base">2</span>
                 </div>
                 <span className="text-[10px] md:text-xs font-medium text-orange-600">
@@ -136,7 +151,7 @@ export default function ReviewCard({ question, onResult }: ReviewCardProps) {
                 onClick={() => onResult('good')}
                 aria-label="Rate as Good - Press 3"
               >
-                <div className="w-10 h-10 md:w-11 md:h-11 rounded-full bg-green-100 text-green-600 flex items-center justify-center mb-1 md:mb-2 group-hover:scale-110 transition-transform">
+                <div className="mb-1 flex size-10 items-center justify-center rounded-full bg-green-100 text-green-600 transition-transform group-hover:scale-110 md:mb-2 md:size-11">
                   <span className="font-bold text-sm md:text-base">3</span>
                 </div>
                 <span className="text-[10px] md:text-xs font-medium text-green-600">
@@ -149,7 +164,7 @@ export default function ReviewCard({ question, onResult }: ReviewCardProps) {
                 onClick={() => onResult('easy')}
                 aria-label="Rate as Easy - Press 4"
               >
-                <div className="w-10 h-10 md:w-11 md:h-11 rounded-full bg-green-100 text-green-600 flex items-center justify-center mb-1 md:mb-2 group-hover:scale-110 transition-transform">
+                <div className="mb-1 flex size-10 items-center justify-center rounded-full bg-green-100 text-green-600 transition-transform group-hover:scale-110 md:mb-2 md:size-11">
                   <span className="font-bold text-sm md:text-base">4</span>
                 </div>
                 <span className="text-[10px] md:text-xs font-medium text-green-600">
@@ -159,21 +174,6 @@ export default function ReviewCard({ question, onResult }: ReviewCardProps) {
             </div>
           </Card>
         )}
-
-        <style jsx global>{`
-          .perspective-1000 {
-            perspective: 1000px;
-          }
-          .transform-style-3d {
-            transform-style: preserve-3d;
-          }
-          .backface-hidden {
-            backface-visibility: hidden;
-          }
-          .rotate-y-180 {
-            transform: rotateY(180deg);
-          }
-        `}</style>
       </div>
     </div>
   );

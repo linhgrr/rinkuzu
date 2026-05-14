@@ -18,10 +18,42 @@ export function ImageDisplay({
   maxHeight = 300,
   fallback,
 }: ImageDisplayProps) {
-  const [imageError, setImageError] = useState(false);
+  if (!src) {
+    return fallback ? <>{fallback}</> : null;
+  }
+
+  return (
+    <ImageDisplayContent
+      key={src}
+      src={src}
+      alt={alt}
+      className={className}
+      maxWidth={maxWidth}
+      maxHeight={maxHeight}
+      fallback={fallback}
+    />
+  );
+}
+
+interface ImageDisplayContentProps extends Required<Pick<ImageDisplayProps, 'src' | 'alt'>> {
+  className: string;
+  maxWidth: number;
+  maxHeight: number;
+  fallback?: React.ReactNode;
+}
+
+function ImageDisplayContent({
+  src,
+  alt,
+  className,
+  maxWidth,
+  maxHeight,
+  fallback,
+}: ImageDisplayContentProps) {
+  const [hasError, setHasError] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  if (!src || imageError) {
+  if (hasError) {
     return fallback ? <>{fallback}</> : null;
   }
 
@@ -32,7 +64,7 @@ export function ImageDisplay({
           className="absolute inset-0 flex items-center justify-center bg-neutral-100 rounded-lg"
           style={{ width: maxWidth, height: maxHeight }}
         >
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
+          <div className="size-8 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
         </div>
       )}
       <Image
@@ -48,7 +80,7 @@ export function ImageDisplay({
         }}
         onLoad={() => setIsLoading(false)}
         onError={() => {
-          setImageError(true);
+          setHasError(true);
           setIsLoading(false);
         }}
         unoptimized // For external URLs

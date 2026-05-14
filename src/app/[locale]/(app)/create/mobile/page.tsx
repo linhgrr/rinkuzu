@@ -30,7 +30,7 @@ type CategoryLike = {
 export default function MobileCreatePage() {
   const t = useTranslations('create');
   const tCommon = useTranslations('common');
-  const router = useRouter();
+  const { push } = useRouter();
   const { addDraft } = useDraftStore();
 
   const [file, setFile] = useState<File | null>(null);
@@ -105,7 +105,7 @@ export default function MobileCreatePage() {
 
       // Navigate away first, then DraftSyncProvider will resume processing
       // This prevents the abort that happens when this component unmounts
-      router.push('/dashboard');
+      push('/dashboard');
     } catch (error: unknown) {
       toast.error(tCommon('error'), {
         description: extractUnknownErrorMessage(error, t('failedToStartProcessing')),
@@ -119,7 +119,7 @@ export default function MobileCreatePage() {
     <div className="min-h-screen bg-neutral-50 px-4 py-6 pb-24">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-neutral-900">{t('createQuiz')}</h1>
+        <h1 className="text-2xl font-semibold text-neutral-900">{t('createQuiz')}</h1>
         <p className="text-neutral-500 mt-1">{t('uploadDescription')}</p>
       </div>
 
@@ -139,7 +139,7 @@ export default function MobileCreatePage() {
 
         {file ? (
           <div className="text-center">
-            <HiOutlineDocumentText className="w-14 h-14 text-green-500 mx-auto" />
+            <HiOutlineDocumentText className="mx-auto size-14 text-green-500" />
             <p className="mt-3 font-medium text-neutral-900">{file.name}</p>
             <p className="text-sm text-neutral-500">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
             <Button
@@ -154,13 +154,13 @@ export default function MobileCreatePage() {
               }}
               className="mt-3 px-3 text-sm text-red-500 hover:text-red-600"
             >
-              <HiOutlineX className="w-4 h-4" />
+              <HiOutlineX className="size-4" />
               {t('remove')}
             </Button>
           </div>
         ) : (
           <div className="text-center">
-            <HiOutlineUpload className="w-14 h-14 text-neutral-400 mx-auto" />
+            <HiOutlineUpload className="mx-auto size-14 text-neutral-400" />
             <p className="mt-3 font-medium text-neutral-700">
               {isDragActive ? t('dropPDFHere') : t('clickToUpload')}
             </p>
@@ -246,13 +246,13 @@ export default function MobileCreatePage() {
         >
           {isUploading ? (
             <>
-              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              <div className="size-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
               {t('creatingDraft')}
             </>
           ) : (
             <>
               {t('createQuiz')}
-              <HiOutlineArrowRight className="w-5 h-5" />
+              <HiOutlineArrowRight className="size-5" />
             </>
           )}
         </Button>
@@ -260,7 +260,7 @@ export default function MobileCreatePage() {
 
       {/* Desktop Hint */}
       <div className="mt-8 p-4 rounded-xl bg-neutral-100 flex items-start gap-3">
-        <HiOutlineDesktopComputer className="w-6 h-6 text-neutral-500 flex-shrink-0 mt-0.5" />
+        <HiOutlineDesktopComputer className="mt-0.5 size-6 flex-shrink-0 text-neutral-500" />
         <div>
           <p className="text-sm font-medium text-neutral-700">{t('editTitleDescription')}</p>
           <p className="text-sm text-neutral-500 mt-0.5">{t('reviewQuestions')}</p>

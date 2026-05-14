@@ -21,23 +21,29 @@ const REORDER_EXIT = { opacity: 0, y: -10 };
 const REORDER_DRAG = { scale: 1.02, boxShadow: 'var(--shadow-md)', zIndex: 50 };
 const REORDER_TRANSITION = { type: 'spring' as const, stiffness: 500, damping: 30, mass: 1 };
 
-const OptionCard = memo(function OptionCard({
-  active,
-  ariaPressed,
-  badge,
-  onClick,
-  value,
-}: {
+type OptionCardSelectionValue = boolean | string;
+
+type OptionCardProps<T extends OptionCardSelectionValue> = {
   active: boolean;
   ariaPressed?: boolean;
   badge: string;
-  onClick: () => void;
+  onSelect: (value: T) => void;
+  selectionValue: T;
   value: string;
-}) {
+};
+
+const OptionCard = memo(function OptionCard<T extends OptionCardSelectionValue>({
+  active,
+  ariaPressed,
+  badge,
+  onSelect,
+  selectionValue,
+  value,
+}: OptionCardProps<T>) {
   return (
     <button
       type="button"
-      onClick={onClick}
+      onClick={() => onSelect(selectionValue)}
       aria-pressed={ariaPressed}
       className={`group relative flex w-full cursor-pointer items-start gap-4 rounded-lg border p-4 text-left transition-[border-color,background-color,transform,box-shadow] duration-200 sm:p-5 ${
         active
@@ -62,7 +68,7 @@ const OptionCard = memo(function OptionCard({
       </span>
     </button>
   );
-});
+}) as <T extends OptionCardSelectionValue>(props: OptionCardProps<T>) => React.JSX.Element;
 
 type MatchingInteractionProps = {
   leftItems: string[];
@@ -247,7 +253,8 @@ export function ExerciseInteraction({
             active={answerDraft.boolean === item.bool}
             ariaPressed={answerDraft.boolean === item.bool}
             badge={item.label}
-            onClick={() => onSetBooleanAnswer(item.bool)}
+            onSelect={onSetBooleanAnswer}
+            selectionValue={item.bool}
             value={item.value}
           />
         ))}
@@ -321,7 +328,8 @@ export function ExerciseInteraction({
               active={selectedChoices.has(key)}
               ariaPressed={selectedChoices.has(key)}
               badge={key}
-              onClick={() => onToggleChoice(key)}
+              onSelect={onToggleChoice}
+              selectionValue={key}
               value={value}
             />
           ))}
@@ -355,7 +363,7 @@ export function ExerciseInteraction({
               transition={REORDER_TRANSITION}
               className="group relative flex items-center gap-3 rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md cursor-grab active:cursor-grabbing"
             >
-              <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-neutral-50 font-medium text-neutral-500 group-hover:bg-green-50 group-hover:text-brand-trust">
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-neutral-50 font-medium text-green-700 group-hover:bg-green-50 group-hover:text-brand-trust">
                 {index + 1}
               </div>
               <div className="flex-1 text-neutral-700">
@@ -446,7 +454,8 @@ export function ExerciseInteraction({
           active={answerDraft.choice === key}
           ariaPressed={answerDraft.choice === key}
           badge={String.fromCharCode(65 + idx)}
-          onClick={() => onSelectChoice(key)}
+          onSelect={onSelectChoice}
+          selectionValue={key}
           value={value}
         />
       ))}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useEffect, useReducer } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import Navigation from '@/components/Navigation';
@@ -28,33 +28,82 @@ interface Question {
   srsLevel: number;
 }
 
+type ReviewPhase = 'loading' | 'ready' | 'completed';
+
+interface ReviewState {
+  questions: Question[];
+  currentIndex: number;
+  phase: ReviewPhase;
+  stats: {
+    xpGained: number;
+    reviewedCount: number;
+  };
+}
+
+type ReviewAction =
+  | { type: 'setPhase'; value: ReviewPhase }
+  | { type: 'loadQuestions'; questions: Question[] }
+  | { type: 'recordReview'; xpGained: number; hasNext: boolean };
+
+const initialState: ReviewState = {
+  questions: [],
+  currentIndex: 0,
+  phase: 'loading',
+  stats: { xpGained: 0, reviewedCount: 0 },
+};
+
+function reviewReducer(state: ReviewState, action: ReviewAction): ReviewState {
+  switch (action.type) {
+    case 'setPhase':
+      return { ...state, phase: action.value };
+    case 'loadQuestions':
+      return {
+        ...state,
+        questions: action.questions,
+        currentIndex: 0,
+        phase: 'ready',
+      };
+    case 'recordReview':
+      return {
+        ...state,
+        currentIndex: action.hasNext ? state.currentIndex + 1 : state.currentIndex,
+        phase: action.hasNext ? state.phase : 'completed',
+        stats: {
+          xpGained: state.stats.xpGained + action.xpGained,
+          reviewedCount: state.stats.reviewedCount + 1,
+        },
+      };
+    default:
+      return state;
+  }
+}
+
 export default function ReviewPage() {
   const t = useTranslations('review');
   const { push } = useRouter();
-  const [questions, setQuestions] = useState<Question[]>([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [completed, setCompleted] = useState(false);
-  const [stats, setStats] = useState({ xpGained: 0, reviewedCount: 0 });
-
-  const fetchDueReviews = useCallback(async () => {
-    try {
-      setLoading(true);
-      const data = await fetchApiData<{ questions: Question[]; count: number }>('/api/review/due');
-      setQuestions(data.questions);
-    } catch (error) {
-      console.error('Failed to fetch reviews', error);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const [state, dispatch] = useReducer(reviewReducer, initialState);
+  const { questions, currentIndex, phase, stats } = state;
 
   useEffect(() => {
-    fetchDueReviews();
-  }, [fetchDueReviews]);
+    const fetchDueReviews = async () => {
+      dispatch({ type: 'setPhase', value: 'loading' });
+
+      try {
+        const data = await fetchApiData<{ questions: Question[]; count: number }>(
+          '/api/review/due',
+        );
+        dispatch({ type: 'loadQuestions', questions: data.questions });
+      } catch (error) {
+        console.error('Failed to fetch reviews', error);
+        dispatch({ type: 'loadQuestions', questions: [] });
+      }
+    };
+
+    void fetchDueReviews();
+  }, []);
 
   const handleReviewSubmit = async (rating: 'fail' | 'hard' | 'good' | 'easy') => {
-    const currentQ = questions[currentIndex];
+    const currentQuestion = questions[currentIndex];
 
     try {
       const data = await fetchApiData<{
@@ -64,29 +113,23 @@ export default function ReviewPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          questionId: currentQ.questionId,
-          quizSlug: currentQ.quizSlug,
+          questionId: currentQuestion.questionId,
+          quizSlug: currentQuestion.quizSlug,
           rating,
-          questionRef: currentQ.questionRef,
+          questionRef: currentQuestion.questionRef,
         }),
       });
-
-      setStats((prev) => ({
-        xpGained: prev.xpGained + (data.userProgress?.xpGained || 0),
-        reviewedCount: prev.reviewedCount + 1,
-      }));
-
-      if (currentIndex < questions.length - 1) {
-        setCurrentIndex((prev) => prev + 1);
-      } else {
-        setCompleted(true);
-      }
+      dispatch({
+        type: 'recordReview',
+        xpGained: data.userProgress?.xpGained || 0,
+        hasNext: currentIndex < questions.length - 1,
+      });
     } catch (error) {
       console.error('Error submitting review', error);
     }
   };
 
-  if (loading) {
+  if (phase === 'loading') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-neutral-50">
         <div className="animate-pulse flex flex-col items-center">
@@ -97,7 +140,7 @@ export default function ReviewPage() {
     );
   }
 
-  if (completed) {
+  if (phase === 'completed') {
     return (
       <div className="min-h-screen bg-neutral-50">
         <Navigation />

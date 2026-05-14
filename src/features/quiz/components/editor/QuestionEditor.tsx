@@ -61,7 +61,7 @@ export function QuestionEditor({
           <div className="flex justify-between items-center">
             <div>
               <CardTitle className="text-lg flex items-center gap-2">
-                <HiOutlineDocumentText className="w-5 h-5 text-brand-trust" />
+                <HiOutlineDocumentText className="size-5 text-brand-trust" />
                 Questions ({questions.length})
               </CardTitle>
               <CardDescription>Edit questions below</CardDescription>
@@ -72,17 +72,17 @@ export function QuestionEditor({
               variant="default"
               className="flex items-center gap-2"
             >
-              <HiOutlinePlus className="w-4 h-4" />
+              <HiOutlinePlus className="size-4" />
               Add Question
             </Button>
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
           {questions.map((q, index) => (
-            <div key={index} className="border p-4 rounded-lg space-y-4">
+            <div key={`${index + 1}-${q.question}`} className="border p-4 rounded-lg space-y-4">
               <div className="flex justify-between items-start">
                 <h4 className="font-medium flex items-center gap-2">
-                  <div className="w-6 h-6 bg-green-100 text-brand-trust rounded-full flex items-center justify-center text-xs">
+                  <div className="flex size-6 items-center justify-center rounded-full bg-green-100 text-xs text-brand-trust">
                     {index + 1}
                   </div>
                   Question {index + 1}
@@ -93,7 +93,7 @@ export function QuestionEditor({
                   onClick={() => onSetQuestionToRemove(index)}
                   className="text-red-500 hover:text-red-600 hover:bg-red-50 rounded-full px-3"
                 >
-                  <HiOutlineTrash className="w-4 h-4 mr-1" />
+                  <HiOutlineTrash className="mr-1 size-4" />
                   Remove
                 </Button>
               </div>
@@ -113,7 +113,7 @@ export function QuestionEditor({
               />
               <div>
                 <p className="text-sm font-medium mb-1">Question Type</p>
-                <div className="flex space-x-4 mt-1">
+                <div className="mt-1 flex gap-x-4">
                   <label className="flex items-center">
                     <input
                       type="radio"
@@ -134,7 +134,10 @@ export function QuestionEditor({
               </div>
               <div className="space-y-2">
                 {q.options.map((opt, optIdx) => (
-                  <div key={optIdx} className="flex items-center space-x-2">
+                  <div
+                    key={`${String.fromCharCode(65 + optIdx)}-${opt}`}
+                    className="flex items-center gap-x-2"
+                  >
                     {q.type === 'single' ? (
                       <input
                         type="radio"

@@ -76,7 +76,7 @@ export function QuestionReviewList({
 
             return (
               <div
-                key={index}
+                key={`${index + 1}-${questionResult.question}`}
                 className={`border rounded-lg p-4 ${
                   questionResult.isCorrect
                     ? 'border-green-200 bg-green-50'
@@ -86,7 +86,7 @@ export function QuestionReviewList({
                 }`}
               >
                 <div className="mb-3">
-                  <div className="mb-5 flex space-x-2">
+                  <div className="mb-5 flex gap-x-2">
                     <Button
                       variant="outline"
                       onClick={() => onToggleBookmark(index, questionResult)}
@@ -103,7 +103,7 @@ export function QuestionReviewList({
                       }
                     >
                       {bookmarkLoading.has(index) ? (
-                        <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                        <span className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
                       ) : bookmarkedQuestions.has(index) ? (
                         t('bookmarked')
                       ) : (
@@ -128,7 +128,7 @@ export function QuestionReviewList({
                     <h3 className="font-semibold text-neutral-900 flex-1">
                       {index + 1}. {questionResult.question}
                     </h3>
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center gap-x-2">
                       <span
                         className={`px-2 py-1 rounded text-xs font-medium ${
                           questionResult.type === 'single'

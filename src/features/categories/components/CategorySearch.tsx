@@ -37,7 +37,7 @@ export function CategorySearch({
 
   const searchRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const router = useRouter();
+  const { push } = useRouter();
   const { query, setQuery, debouncedQuery, reset } = useCategorySearch();
 
   // Fetch all categories khi component mount
@@ -107,13 +107,13 @@ export function CategorySearch({
         onCategorySelect(category._id);
       } else {
         const slug = category.name.toLowerCase().replace(/\s+/g, '-');
-        router.push(`/category/${slug}`);
+        push(`/category/${slug}`);
       }
     } else {
       if (showInHomepage && onCategorySelect) {
         onCategorySelect(null);
       } else {
-        router.push('/');
+        push('/');
       }
     }
     setIsOpen(false);

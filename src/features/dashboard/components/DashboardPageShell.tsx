@@ -157,7 +157,7 @@ export async function DashboardPageShell({
             </div>
 
             <section className="group relative overflow-hidden rounded-[2rem] border border-neutral-200 bg-white p-8 shadow-sm transition-shadow duration-500 hover:shadow-md md:p-12">
-              <div className="pointer-events-none absolute right-0 top-0 -mr-40 -mt-40 h-[40rem] w-[40rem] rounded-full bg-green-50/50 blur-3xl transition-colors duration-500 group-hover:bg-green-100/50" />
+              <div className="pointer-events-none absolute right-0 top-0 -mr-40 -mt-40 size-[40rem] rounded-full bg-green-50/50 blur-3xl transition-colors duration-500 group-hover:bg-green-100/50" />
 
               <div className="relative z-10 flex flex-col items-center justify-between gap-8 md:flex-row md:gap-12">
                 <div className="max-w-2xl flex-1">

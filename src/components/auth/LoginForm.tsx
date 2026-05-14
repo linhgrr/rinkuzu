@@ -21,12 +21,12 @@ export function LoginForm({ locale }: LoginFormProps) {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const router = useRouter();
-  const searchParams = useSearchParams();
+  const { prefetch, refresh, replace } = useRouter();
+  const { get } = useSearchParams();
 
   const callbackUrl = useMemo(() => {
     const fallback = locale === defaultLocale ? '/dashboard' : `/${locale}/dashboard`;
-    const raw = searchParams.get('callbackUrl');
+    const raw = get('callbackUrl');
 
     if (!raw || !raw.startsWith('/') || raw.startsWith('//')) {
       return fallback;
@@ -50,11 +50,11 @@ export function LoginForm({ locale }: LoginFormProps) {
     ]);
 
     return blockedCallbacks.has(normalizedPath) ? fallback : raw;
-  }, [locale, searchParams]);
+  }, [get, locale]);
 
   useEffect(() => {
-    router.prefetch(callbackUrl);
-  }, [callbackUrl, router]);
+    prefetch(callbackUrl);
+  }, [callbackUrl, prefetch]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,8 +81,8 @@ export function LoginForm({ locale }: LoginFormProps) {
         setError(t('invalidEmailPassword'));
       } else if (result?.ok) {
         shouldResetLoading = false;
-        router.replace(callbackUrl);
-        router.refresh();
+        replace(callbackUrl);
+        refresh();
         return;
       } else {
         setError(t('loginFailed'));

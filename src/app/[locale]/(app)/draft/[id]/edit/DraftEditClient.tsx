@@ -66,7 +66,7 @@ interface Props {
 export default function DraftEditClient({ initialDraft, initialCategory, locale }: Props) {
   const t = useTranslations('create');
   const _tCommon = useTranslations('common');
-  const router = useRouter();
+  const { push } = useRouter();
   const { removeDraft } = useDraftStore();
 
   const [questions, setQuestions] = useState<DraftQuestion[]>(initialDraft.questions || []);
@@ -163,7 +163,7 @@ export default function DraftEditClient({ initialDraft, initialCategory, locale 
       removeDraft(initialDraft._id);
 
       toast.success('Quiz đã được gửi để duyệt!');
-      router.push(`/${locale}/quiz/${data.slug}`);
+      push(`/${locale}/quiz/${data.slug}`);
     } catch (error: unknown) {
       toast.error('Lỗi', { description: extractUnknownErrorMessage(error, 'Không thể gửi quiz') });
     } finally {
@@ -285,7 +285,7 @@ export default function DraftEditClient({ initialDraft, initialCategory, locale 
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => router.push(`/${locale}`)}
+                  onClick={() => push(`/${locale}`)}
                   className="flex items-center gap-2 px-6 py-3 text-neutral-700 hover:bg-neutral-50"
                 >
                   <HiOutlineX className="size-4" />

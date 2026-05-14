@@ -175,7 +175,7 @@ export default function ProfileSettings() {
     return (
       <div className="flex justify-center py-12">
         <div className="flex flex-col items-center gap-3">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
+          <div className="size-8 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
           <div className="text-sm text-neutral-500">{tCommon('loading')}</div>
         </div>
       </div>
@@ -194,7 +194,7 @@ export default function ProfileSettings() {
       <Card className="overflow-hidden">
         <div className="px-6 py-5 border-b border-neutral-100">
           <div className="flex items-center gap-2">
-            <HiOutlineUser className="w-5 h-5 text-brand-trust" />
+            <HiOutlineUser className="size-5 text-brand-trust" />
             <h2 className="text-lg font-semibold text-neutral-900">{t('personalInfo')}</h2>
           </div>
         </div>
@@ -208,11 +208,11 @@ export default function ProfileSettings() {
                   alt="Avatar"
                   width={80}
                   height={80}
-                  className="w-20 h-20 rounded-full object-cover border-2 border-neutral-200"
+                  className="size-20 rounded-full object-cover border-2 border-neutral-200"
                   unoptimized
                 />
               ) : (
-                <div className="w-20 h-20 rounded-full bg-brand-trust flex items-center justify-center text-white text-2xl font-semibold border-2 border-neutral-200">
+                <div className="size-20 rounded-full bg-brand-trust flex items-center justify-center text-white text-2xl font-semibold border-2 border-neutral-200">
                   {initials}
                 </div>
               )}
@@ -222,7 +222,7 @@ export default function ProfileSettings() {
                 disabled={uploadingAvatar}
                 className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
               >
-                <HiOutlinePhotograph className="w-6 h-6 text-white" />
+                <HiOutlinePhotograph className="size-6 text-white" />
               </button>
               <input
                 ref={fileInputRef}
@@ -240,7 +240,7 @@ export default function ProfileSettings() {
                 onClick={() => fileInputRef.current?.click()}
                 disabled={uploadingAvatar}
               >
-                <HiOutlinePhotograph className="w-4 h-4 mr-1.5" />
+                <HiOutlinePhotograph className="size-4 mr-1.5" />
                 {uploadingAvatar ? t('uploading') : t('changeAvatar')}
               </Button>
               {profile.avatar && (
@@ -252,7 +252,7 @@ export default function ProfileSettings() {
                   disabled={uploadingAvatar}
                   className="text-red-500 hover:text-red-600 hover:bg-red-50"
                 >
-                  <HiOutlineTrash className="w-4 h-4 mr-1.5" />
+                  <HiOutlineTrash className="size-4 mr-1.5" />
                   {t('removeAvatar')}
                 </Button>
               )}
@@ -297,7 +297,7 @@ export default function ProfileSettings() {
               {t('joinDate')}
             </label>
             <div className="flex items-center gap-2 text-sm text-neutral-600">
-              <HiOutlineCalendar className="w-4 h-4 text-neutral-400" />
+              <HiOutlineCalendar className="size-4 text-neutral-400" />
               {new Date(profile.createdAt).toLocaleDateString()}
             </div>
           </div>
@@ -314,7 +314,7 @@ export default function ProfileSettings() {
       <Card className="overflow-hidden">
         <div className="px-6 py-5 border-b border-neutral-100">
           <div className="flex items-center gap-2">
-            <HiOutlineLockClosed className="w-5 h-5 text-brand-trust" />
+            <HiOutlineLockClosed className="size-5 text-brand-trust" />
             <h2 className="text-lg font-semibold text-neutral-900">{t('changePassword')}</h2>
           </div>
         </div>
@@ -348,9 +348,9 @@ export default function ProfileSettings() {
             className="text-xs text-neutral-500 hover:text-neutral-700 -mt-2 flex items-center gap-1"
           >
             {showNewPassword ? (
-              <HiOutlineEyeOff className="w-3.5 h-3.5" />
+              <HiOutlineEyeOff className="size-3.5" />
             ) : (
-              <HiOutlineEye className="w-3.5 h-3.5" />
+              <HiOutlineEye className="size-3.5" />
             )}
             {showNewPassword ? t('hidePassword') : t('showPassword')}
           </button>
@@ -386,7 +386,7 @@ export default function ProfileSettings() {
       <Card className="overflow-hidden">
         <div className="px-6 py-5 border-b border-neutral-100">
           <div className="flex items-center gap-2">
-            <HiOutlineShieldCheck className="w-5 h-5 text-brand-trust" />
+            <HiOutlineShieldCheck className="size-5 text-brand-trust" />
             <h2 className="text-lg font-semibold text-neutral-900">{t('accountSection')}</h2>
           </div>
         </div>
@@ -394,7 +394,7 @@ export default function ProfileSettings() {
           {/* Subscription */}
           <div className="flex items-center justify-between p-4 bg-neutral-50 rounded-xl">
             <div className="flex items-center gap-3">
-              <HiOutlineSparkles className="w-5 h-5 text-yellow-500" />
+              <HiOutlineSparkles className="size-5 text-yellow-500" />
               <div>
                 <p className="text-sm font-medium text-neutral-900">{t('subscription')}</p>
                 <p className="text-xs text-neutral-500">

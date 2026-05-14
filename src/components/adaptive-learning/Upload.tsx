@@ -22,7 +22,7 @@ import { ADAPTIVE_ROUTES } from '@/features/adaptive-learning/lib/routes';
 const DEFAULT_PIPELINE_PAGE_BATCH_SIZE = 10;
 
 export default function AdaptiveLearningUpload() {
-  const router = useRouter();
+  const { back, push } = useRouter();
   const t = useTranslations('adaptiveLearning');
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -99,7 +99,7 @@ export default function AdaptiveLearningUpload() {
         localStorage.setItem('al_pipeline_subject_name', subjectName.trim());
         toast.success(t('processing.status.queuedForProcessing'));
         setTimeout(() => {
-          router.push(ADAPTIVE_ROUTES.processing);
+          push(ADAPTIVE_ROUTES.processing);
         }, 500);
       } catch (err) {
         const message = getFriendlyUploadError(err);
@@ -109,7 +109,7 @@ export default function AdaptiveLearningUpload() {
         setUploadProgress(0);
       }
     },
-    [getFriendlyUploadError, router, subjectName, t],
+    [getFriendlyUploadError, push, subjectName, t],
   );
 
   const onDrop = useCallback(
@@ -151,7 +151,7 @@ export default function AdaptiveLearningUpload() {
       <div className="mb-12 md:pl-4">
         <Button
           variant="ghost"
-          onClick={() => router.back()}
+          onClick={() => back()}
           className="text-neutral-500 hover:text-neutral-900 -ml-4 mb-6 font-medium bg-transparent"
         >
           <HiOutlineArrowLeft className="size-5 mr-2" /> {t('uploadPage.back')}

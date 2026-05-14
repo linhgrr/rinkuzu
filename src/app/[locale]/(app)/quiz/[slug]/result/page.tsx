@@ -53,8 +53,8 @@ type BookmarkMessageTone = 'success' | 'warning' | 'error';
 export default function QuizResultPage() {
   const t = useTranslations('quiz');
   const tProfile = useTranslations('profile');
-  const searchParams = useSearchParams();
-  const attemptId = searchParams.get('attemptId');
+  const { get } = useSearchParams();
+  const attemptId = get('attemptId');
   const encodedSlug = routePathSegment(useRequiredRouteParam('slug'));
 
   const [result, setResult] = useState<QuizResult | null>(null);

@@ -63,11 +63,11 @@ const UserMenu = memo(function UserMenu({
             alt=""
             width={28}
             height={28}
-            className="w-7 h-7 rounded-full object-cover"
+            className="size-7 rounded-full object-cover"
             unoptimized
           />
         ) : (
-          <div className="w-7 h-7 bg-brand-trust rounded-full flex items-center justify-center text-white text-sm font-medium">
+          <div className="size-7 bg-brand-trust rounded-full flex items-center justify-center text-white text-sm font-medium">
             {((session.user as any)?.displayName || session.user?.email || 'U')
               .charAt(0)
               .toUpperCase()}
@@ -94,11 +94,11 @@ const UserMenu = memo(function UserMenu({
                     alt=""
                     width={44}
                     height={44}
-                    className="w-11 h-11 rounded-full object-cover"
+                    className="size-11 rounded-full object-cover"
                     unoptimized
                   />
                 ) : (
-                  <div className="w-11 h-11 bg-brand-trust rounded-full flex items-center justify-center text-white font-semibold text-lg">
+                  <div className="size-11 bg-brand-trust rounded-full flex items-center justify-center text-white font-semibold text-lg">
                     {((session.user as any)?.displayName || session.user?.email || 'U')
                       .charAt(0)
                       .toUpperCase()}
@@ -120,7 +120,7 @@ const UserMenu = memo(function UserMenu({
                 className="flex items-center gap-3 px-5 py-2.5 text-sm text-neutral-900 hover:bg-neutral-50 transition-colors cursor-pointer"
                 onClick={onClose}
               >
-                <HiOutlineDocumentText className="w-5 h-5 text-neutral-500" />
+                <HiOutlineDocumentText className="size-5 text-neutral-500" />
                 {t('myQuizzes')}
               </Link>
 
@@ -129,7 +129,7 @@ const UserMenu = memo(function UserMenu({
                 className="flex items-center gap-3 px-5 py-2.5 text-sm text-neutral-900 hover:bg-neutral-50 transition-colors cursor-pointer"
                 onClick={onClose}
               >
-                <HiOutlineClock className="w-5 h-5 text-neutral-500" />
+                <HiOutlineClock className="size-5 text-neutral-500" />
                 {t('history')}
               </Link>
 
@@ -138,7 +138,7 @@ const UserMenu = memo(function UserMenu({
                 className="flex items-center gap-3 px-5 py-2.5 text-sm text-neutral-900 hover:bg-neutral-50 transition-colors cursor-pointer"
                 onClick={onClose}
               >
-                <HiOutlineBookmark className="w-5 h-5 text-neutral-500" />
+                <HiOutlineBookmark className="size-5 text-neutral-500" />
                 {t('bookmarks')}
               </Link>
 
@@ -147,7 +147,7 @@ const UserMenu = memo(function UserMenu({
                 className="flex items-center gap-3 px-5 py-2.5 text-sm text-neutral-900 hover:bg-neutral-50 transition-colors cursor-pointer"
                 onClick={onClose}
               >
-                <HiOutlineSparkles className="w-5 h-5 text-neutral-500" />
+                <HiOutlineSparkles className="size-5 text-neutral-500" />
                 {t('premium')}
               </Link>
 
@@ -158,7 +158,7 @@ const UserMenu = memo(function UserMenu({
                 className="flex items-center gap-3 px-5 py-2.5 text-sm text-neutral-900 hover:bg-neutral-50 transition-colors cursor-pointer"
                 onClick={onClose}
               >
-                <HiOutlineCog className="w-5 h-5 text-neutral-500" />
+                <HiOutlineCog className="size-5 text-neutral-500" />
                 {t('settings')}
               </Link>
 
@@ -170,7 +170,7 @@ const UserMenu = memo(function UserMenu({
                     className="flex items-center gap-3 px-5 py-2.5 text-sm text-brand-trust hover:bg-green-50 transition-colors cursor-pointer"
                     onClick={onClose}
                   >
-                    <HiOutlineDocumentText className="w-5 h-5" />
+                    <HiOutlineDocumentText className="size-5" />
                     {t('reviewQueue')}
                   </Link>
                   <Link
@@ -178,7 +178,7 @@ const UserMenu = memo(function UserMenu({
                     className="flex items-center gap-3 px-5 py-2.5 text-sm text-brand-trust hover:bg-green-50 transition-colors cursor-pointer"
                     onClick={onClose}
                   >
-                    <HiOutlineUsers className="w-5 h-5" />
+                    <HiOutlineUsers className="size-5" />
                     {t('users')}
                   </Link>
                   <Link
@@ -186,7 +186,7 @@ const UserMenu = memo(function UserMenu({
                     className="flex items-center gap-3 px-5 py-2.5 text-sm text-brand-trust hover:bg-green-50 transition-colors cursor-pointer"
                     onClick={onClose}
                   >
-                    <HiOutlineTag className="w-5 h-5" />
+                    <HiOutlineTag className="size-5" />
                     {t('categories')}
                   </Link>
                 </>
@@ -201,7 +201,7 @@ const UserMenu = memo(function UserMenu({
                 onClick={handleSignOut}
                 className="h-10 w-full justify-start rounded-xl px-4 text-sm text-red-500 hover:bg-red-50"
               >
-                <HiOutlineLogout className="w-5 h-5" />
+                <HiOutlineLogout className="size-5" />
                 {t('signOut')}
               </Button>
             </div>
@@ -254,7 +254,7 @@ const MobileMenu = memo(function MobileMenu({
           <>
             {/* User Info */}
             <div className="flex items-center gap-3 px-3 py-3 mb-3 bg-neutral-50 rounded-2xl">
-              <div className="w-10 h-10 bg-brand-trust rounded-full flex items-center justify-center text-white font-medium">
+              <div className="size-10 bg-brand-trust rounded-full flex items-center justify-center text-white font-medium">
                 {((session.user as any)?.displayName || session.user?.email || 'U')
                   .charAt(0)
                   .toUpperCase()}
@@ -477,7 +477,7 @@ export default function NavigationClient({
               <div className="flex items-center gap-2" aria-hidden="true">
                 <div className="h-8 w-24 rounded-full skeleton-shimmer" />
                 <div className="h-8 w-20 rounded-full skeleton-shimmer" />
-                <div className="h-8 w-8 rounded-full skeleton-shimmer" />
+                <div className="size-8 rounded-full skeleton-shimmer" />
               </div>
             ) : session ? (
               <>
@@ -517,9 +517,9 @@ export default function NavigationClient({
               aria-label={isMenuOpen ? 'Close menu' : 'Open menu'}
             >
               {isMenuOpen ? (
-                <HiOutlineX className="w-5 h-5 text-neutral-900" />
+                <HiOutlineX className="size-5 text-neutral-900" />
               ) : (
-                <HiOutlineMenu className="w-5 h-5 text-neutral-900" />
+                <HiOutlineMenu className="size-5 text-neutral-900" />
               )}
             </Button>
           </div>

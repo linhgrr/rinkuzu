@@ -227,7 +227,7 @@ const debugLog = (...args: unknown[]) => {
 export default function QuizPlayerPage() {
   const t = useTranslations('quiz');
   const { data: session } = useSession();
-  const router = useRouter();
+  const { push } = useRouter();
   const slug = useRequiredRouteParam('slug');
   const encodedSlug = routePathSegment(slug);
   const [quiz, setQuiz] = useState<QuizPlayerQuiz | null>(null);
@@ -358,7 +358,7 @@ export default function QuizPlayerPage() {
     userEmail,
     sessionEmail: session?.user?.email || undefined,
     onSubmitSuccess: (attemptId, score) => {
-      router.push(`/quiz/${encodedSlug}/result?attemptId=${attemptId}&score=${score}`);
+      push(`/quiz/${encodedSlug}/result?attemptId=${attemptId}&score=${score}`);
     },
     onSubmitStart: () => setError(''),
     onSubmitError: (message) => setError(message),
@@ -377,7 +377,7 @@ export default function QuizPlayerPage() {
   };
 
   const exitQuiz = () => {
-    router.push('/');
+    push('/');
   };
 
   if (loading) {
@@ -591,7 +591,7 @@ export default function QuizPlayerPage() {
         <MobileQuizLayout
           quiz={quiz}
           onComplete={handleQuizComplete}
-          onExit={() => router.push('/')}
+          onExit={() => push('/')}
           submitting={submitting}
           error={error}
         />

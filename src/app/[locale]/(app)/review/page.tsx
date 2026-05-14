@@ -30,7 +30,7 @@ interface Question {
 
 export default function ReviewPage() {
   const t = useTranslations('review');
-  const router = useRouter();
+  const { push } = useRouter();
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -114,7 +114,7 @@ export default function ReviewPage() {
             </p>
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
               <Button
-                onClick={() => router.push(ROUTES.DASHBOARD)}
+                onClick={() => push(ROUTES.DASHBOARD)}
                 variant="default"
                 size="lg"
                 className="w-full sm:w-auto flex items-center justify-center gap-2"
@@ -147,7 +147,7 @@ export default function ReviewPage() {
             </div>
             <h2 className="text-2xl font-semibold mb-2">{t('noCards')}</h2>
             <p className="text-[var(--text-muted)] mb-6">{t('comeBack')}</p>
-            <Button onClick={() => router.push(ROUTES.DASHBOARD)}>{t('backToDashboard')}</Button>
+            <Button onClick={() => push(ROUTES.DASHBOARD)}>{t('backToDashboard')}</Button>
           </Card>
         </div>
       </div>

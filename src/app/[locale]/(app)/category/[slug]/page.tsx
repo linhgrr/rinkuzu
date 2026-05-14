@@ -65,7 +65,7 @@ export default function CategoryPage() {
   const tCommon = useTranslations('common');
   const tNav = useTranslations('nav');
   const tQuiz = useTranslations('quiz');
-  const router = useRouter();
+  const { push } = useRouter();
   const encodedSlug = routePathSegment(useRequiredRouteParam('slug'));
   const itemsPerPage = 12;
   const [searchTerm, setSearchTerm] = useState('');
@@ -353,7 +353,7 @@ export default function CategoryPage() {
                       className="flex-1"
                       onClick={(e) => {
                         e.stopPropagation();
-                        router.push(`/quiz/${quiz.slug}`);
+                        push(`/quiz/${quiz.slug}`);
                       }}
                     >
                       <HiOutlineLightningBolt className="size-4 mr-1" />
@@ -364,7 +364,7 @@ export default function CategoryPage() {
                       size="sm"
                       onClick={(e) => {
                         e.stopPropagation();
-                        router.push(`/quiz/${quiz.slug}/flashcards`);
+                        push(`/quiz/${quiz.slug}/flashcards`);
                       }}
                       className="flex-1"
                     >

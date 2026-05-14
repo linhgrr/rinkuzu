@@ -141,7 +141,7 @@ function DesktopQuizHeader({
             </Button>
             <div>
               <h1 className="text-lg font-semibold text-neutral-900">{quizTitle}</h1>
-              <p className="text-sm">
+              <div className="text-sm">
                 {sessionEmail ? (
                   <Badge variant="success" className="text-xs">
                     <HiOutlineUser className="mr-1 size-3" />
@@ -153,7 +153,7 @@ function DesktopQuizHeader({
                     {userEmail}
                   </Badge>
                 )}
-              </p>
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-x-4">
@@ -371,7 +371,7 @@ function DesktopQuestionOverview({
 
             return (
               <button
-                key={question.question}
+                key={`${index}-${question.question}`}
                 onClick={() => onJumpToQuestion(index)}
                 className={`size-8 rounded text-xs font-medium transition-colors ${
                   index === currentQuestionIndex

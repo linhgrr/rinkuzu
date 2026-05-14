@@ -21,6 +21,7 @@ import type {
   NextConcept,
   SubmitAnswerPayload,
   TheoryData,
+  TranslationValues,
 } from '@/features/adaptive-learning/types';
 
 const ExerciseInteraction = dynamic(
@@ -35,8 +36,13 @@ const ExerciseInteraction = dynamic(
   },
 );
 
-type TranslateFn = ((key: string, values?: Record<string, any>) => string) & {
-  rich: (key: string, values: Record<string, any>) => React.ReactNode;
+type RichTranslationValues = Record<
+  string,
+  string | number | Date | React.ReactNode | ((chunks: React.ReactNode) => React.ReactNode)
+>;
+
+type TranslateFn = ((key: string, values?: TranslationValues) => string) & {
+  rich: (key: string, values: RichTranslationValues) => React.ReactNode;
 };
 
 type LoadingStateProps = {

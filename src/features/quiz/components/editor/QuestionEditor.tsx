@@ -21,7 +21,7 @@ interface QuestionEditorProps {
   questions: Question[];
   canEdit: boolean;
   questionToRemove: number | null;
-  onUpdateField: (index: number, field: keyof Question, value: any) => void;
+  onUpdateField: (index: number, field: keyof Question, value: Question[keyof Question]) => void;
   onUpdateOption: (qIdx: number, optIdx: number, value: string) => void;
   onUpdateQuestionImage: (qIdx: number, url: string) => void;
   onRemoveQuestionImage: (qIdx: number) => void;

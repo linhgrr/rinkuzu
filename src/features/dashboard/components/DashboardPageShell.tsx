@@ -1,3 +1,4 @@
+import type { ComponentProps } from 'react';
 import { getTranslations } from 'next-intl/server';
 import Navigation from '@/components/Navigation';
 import { Link } from '@/i18n/navigation';
@@ -63,7 +64,7 @@ interface DashboardQuiz {
 interface DashboardPageShellProps {
   locale: string;
   userEmail: string;
-  session: any;
+  session: ComponentProps<typeof Navigation>['initialSession'];
   stats: DashboardStats;
   quizzes: DashboardQuiz[];
   yourQuizzes: DashboardQuiz[];

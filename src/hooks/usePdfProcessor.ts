@@ -23,9 +23,11 @@ async function fetchWithRetry(
   options: RequestInit,
   retries: number = MAX_RETRIES,
 ): Promise<Response> {
-  let lastError: Error | null = null;
+  const attemptFetch = async (attempt: number, lastError: Error | null): Promise<Response> => {
+    if (attempt >= retries) {
+      throw lastError || new Error('All retries failed');
+    }
 
-  for (let attempt = 0; attempt < retries; attempt++) {
     try {
       const response = await fetch(url, options);
 
@@ -34,12 +36,12 @@ async function fetchWithRetry(
         const data = await response.json().catch(() => null);
         const retryAfter = data.retryAfter || INITIAL_RETRY_DELAY * Math.pow(2, attempt);
         await new Promise((r) => setTimeout(r, retryAfter));
-        continue;
+        return attemptFetch(attempt + 1, lastError);
       }
 
       return response;
     } catch (error: unknown) {
-      lastError =
+      const nextError =
         error instanceof Error
           ? error
           : new Error(extractUnknownErrorMessage(error, 'Network request failed'));
@@ -52,10 +54,13 @@ async function fetchWithRetry(
       // Exponential backoff
       const delay = INITIAL_RETRY_DELAY * Math.pow(2, attempt);
       await new Promise((r) => setTimeout(r, delay));
+      return attemptFetch(attempt + 1, nextError);
     }
-  }
 
-  throw lastError || new Error('All retries failed');
+    throw lastError || new Error('All retries failed');
+  };
+
+  return attemptFetch(0, null);
 }
 
 export function usePdfProcessor() {

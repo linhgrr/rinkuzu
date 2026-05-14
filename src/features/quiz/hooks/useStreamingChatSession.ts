@@ -30,31 +30,50 @@ interface UseStreamingChatSessionOptions {
   persistenceKey?: string;
 }
 
+interface ChatSessionState {
+  chatHistories: ChatHistories;
+  userQuestion: string;
+  loadingAI: boolean;
+  aiError: string;
+}
+
 export function useStreamingChatSession(options: UseStreamingChatSessionOptions = {}) {
   const { persistenceKey } = options;
-  const [chatHistories, setChatHistories] = useState<ChatHistories>({});
-  const [userQuestion, setUserQuestion] = useState('');
-  const [loadingAI, setLoadingAI] = useState(false);
-  const [aiError, setAIError] = useState('');
+  const [state, setState] = useState<ChatSessionState>({
+    chatHistories: {},
+    userQuestion: '',
+    loadingAI: false,
+    aiError: '',
+  });
 
   useEffect(() => {
     if (!persistenceKey || typeof window === 'undefined') {
       return;
     }
 
+    let chatHistories: ChatHistories = {};
     const savedChats = localStorage.getItem(persistenceKey);
-    if (!savedChats) {
-      setChatHistories({});
-      return;
+
+    if (savedChats) {
+      try {
+        chatHistories = JSON.parse(savedChats);
+      } catch (error) {
+        console.error('Failed to load chat histories:', error);
+      }
     }
 
-    try {
-      setChatHistories(JSON.parse(savedChats));
-    } catch (error) {
-      console.error('Failed to load chat histories:', error);
-      setChatHistories({});
-    }
+    setState((prev) => ({ ...prev, chatHistories }));
   }, [persistenceKey]);
+
+  const { aiError, chatHistories, loadingAI, userQuestion } = state;
+
+  const setUserQuestion = (value: string) => {
+    setState((prev) => ({ ...prev, userQuestion: value }));
+  };
+
+  const setAIError = (value: string) => {
+    setState((prev) => ({ ...prev, aiError: value }));
+  };
 
   useEffect(() => {
     if (!persistenceKey || typeof window === 'undefined') {
@@ -70,28 +89,34 @@ export function useStreamingChatSession(options: UseStreamingChatSessionOptions 
 
   const ensureHistory = (historyKey: string | number) => {
     const key = String(historyKey);
-    setChatHistories((prev) => {
-      if (prev[key]) {
+    setState((prev) => {
+      if (prev.chatHistories[key]) {
         return prev;
       }
-      return { ...prev, [key]: [] };
+      return {
+        ...prev,
+        chatHistories: { ...prev.chatHistories, [key]: [] },
+      };
     });
   };
 
   const clearHistory = (historyKey: string | number) => {
     const key = String(historyKey);
-    setChatHistories((prev) => ({ ...prev, [key]: [] }));
+    setState((prev) => ({
+      ...prev,
+      chatHistories: { ...prev.chatHistories, [key]: [] },
+    }));
   };
 
   const removeHistory = (historyKey: string | number) => {
     const key = String(historyKey);
-    setChatHistories((prev) => {
-      if (!prev[key]) {
+    setState((prev) => {
+      if (!prev.chatHistories[key]) {
         return prev;
       }
-      const next = { ...prev };
+      const next = { ...prev.chatHistories };
       delete next[key];
-      return next;
+      return { ...prev, chatHistories: next };
     });
   };
 
@@ -114,8 +139,7 @@ export function useStreamingChatSession(options: UseStreamingChatSessionOptions 
       return false;
     }
 
-    setLoadingAI(true);
-    setAIError('');
+    setState((prev) => ({ ...prev, loadingAI: true, aiError: '' }));
 
     const userMessage: ChatMessage = {
       role: 'user',
@@ -131,9 +155,12 @@ export function useStreamingChatSession(options: UseStreamingChatSessionOptions 
       timestamp: new Date().toISOString(),
     };
 
-    setChatHistories((prev) => ({
+    setState((prev) => ({
       ...prev,
-      [key]: [...(prev[key] || []), userMessage, assistantPlaceholder],
+      chatHistories: {
+        ...prev.chatHistories,
+        [key]: [...(prev.chatHistories[key] || []), userMessage, assistantPlaceholder],
+      },
     }));
 
     try {
@@ -148,50 +175,57 @@ export function useStreamingChatSession(options: UseStreamingChatSessionOptions 
         },
         {
           onContent: (_, fullContent) => {
-            setChatHistories((prev) => {
-              const history = [...(prev[key] || [])];
+            setState((prev) => {
+              const history = [...(prev.chatHistories[key] || [])];
               for (let i = history.length - 1; i >= 0; i -= 1) {
                 if (history[i]?.role === 'assistant') {
                   history[i] = { ...history[i], content: fullContent };
                   break;
                 }
               }
-              return { ...prev, [key]: history };
+              return {
+                ...prev,
+                chatHistories: { ...prev.chatHistories, [key]: history },
+              };
             });
           },
         },
       );
 
-      setChatHistories((prev) => {
-        const history = [...(prev[key] || [])];
+      setState((prev) => {
+        const history = [...(prev.chatHistories[key] || [])];
         for (let i = history.length - 1; i >= 0; i -= 1) {
           if (history[i]?.role === 'assistant') {
             history[i] = { ...history[i], content: explanation };
             break;
           }
         }
-        return { ...prev, [key]: history };
+        return {
+          ...prev,
+          chatHistories: { ...prev.chatHistories, [key]: history },
+          userQuestion: '',
+        };
       });
-
-      setUserQuestion('');
       return true;
     } catch (error: unknown) {
-      setChatHistories((prev) => {
-        const history = [...(prev[key] || [])];
+      setState((prev) => {
+        const history = [...(prev.chatHistories[key] || [])];
         const lastMessage = history[history.length - 1];
         if (lastMessage?.role === 'assistant' && !lastMessage.content.trim()) {
           history.pop();
         }
-        return { ...prev, [key]: history };
+        return {
+          ...prev,
+          aiError:
+            extractUnknownErrorMessage(error, '') ||
+            requestErrorMessage ||
+            'Failed to connect to AI service. Please try again.',
+          chatHistories: { ...prev.chatHistories, [key]: history },
+        };
       });
-      setAIError(
-        extractUnknownErrorMessage(error, '') ||
-          requestErrorMessage ||
-          'Failed to connect to AI service. Please try again.',
-      );
       return false;
     } finally {
-      setLoadingAI(false);
+      setState((prev) => ({ ...prev, loadingAI: false }));
     }
   };
 

@@ -241,9 +241,8 @@ export const useAdaptiveDashboard = ({
       dispatch({ type: 'patch', value: { error: null } });
 
       if (didHydrateFromServer) {
-        const healthPromise = checkApiHealth().catch(() => false);
         if (!isActive) return;
-        const healthResult = await healthPromise;
+        const healthResult = await checkApiHealth().catch(() => false);
         if (isActive) {
           dispatch({ type: 'hydrate', value: { apiOnline: healthResult } });
         }
@@ -251,32 +250,33 @@ export const useAdaptiveDashboard = ({
       }
 
       dispatch({ type: 'patch', value: { loading: true } });
-      if (!isActive) return;
-      const [healthResult, subjectsResult, historyResult] = await Promise.allSettled([
+      const hydrationPromise = Promise.allSettled([
         checkApiHealth(),
         getSubjects(),
         getSubjectProgressHistory(5),
       ]);
       if (!isActive) return;
+      const [healthResult, subjectsResult, historyResult] = await hydrationPromise;
+      if (isActive) {
+        const nextState: Partial<AdaptiveDashboardState> = {
+          loading: false,
+          apiOnline: healthResult.status === 'fulfilled' ? healthResult.value : false,
+        };
+        if (subjectsResult.status === 'fulfilled') {
+          nextState.subjects = subjectsResult.value;
+        } else {
+          console.error('Failed to hydrate subjects', subjectsResult.reason);
+          nextState.error = t('connectionLimited');
+        }
 
-      const nextState: Partial<AdaptiveDashboardState> = {
-        loading: false,
-        apiOnline: healthResult.status === 'fulfilled' ? healthResult.value : false,
-      };
-      if (subjectsResult.status === 'fulfilled') {
-        nextState.subjects = subjectsResult.value;
-      } else {
-        console.error('Failed to hydrate subjects', subjectsResult.reason);
-        nextState.error = t('connectionLimited');
+        if (historyResult.status === 'fulfilled') {
+          nextState.sessionHistory = historyResult.value;
+        } else {
+          console.error('Failed to hydrate session history', historyResult.reason);
+        }
+
+        dispatch({ type: 'hydrate', value: nextState });
       }
-
-      if (historyResult.status === 'fulfilled') {
-        nextState.sessionHistory = historyResult.value;
-      } else {
-        console.error('Failed to hydrate session history', historyResult.reason);
-      }
-
-      dispatch({ type: 'hydrate', value: nextState });
     };
 
     void hydrateDashboard();

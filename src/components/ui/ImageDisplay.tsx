@@ -50,16 +50,15 @@ function ImageDisplayContent({
   maxHeight,
   fallback,
 }: ImageDisplayContentProps) {
-  const [hasError, setHasError] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
 
-  if (hasError) {
+  if (status === 'error') {
     return fallback ? <>{fallback}</> : null;
   }
 
   return (
     <div className={`relative inline-block ${className}`}>
-      {isLoading && (
+      {status === 'loading' && (
         <div
           className="absolute inset-0 flex items-center justify-center bg-neutral-100 rounded-lg"
           style={{ width: maxWidth, height: maxHeight }}
@@ -72,17 +71,14 @@ function ImageDisplayContent({
         alt={alt}
         width={maxWidth}
         height={maxHeight}
-        className={`rounded-lg shadow-sm border border-neutral-200 ${isLoading ? 'opacity-0' : 'opacity-100'} transition-opacity duration-200`}
+        className={`rounded-lg shadow-sm border border-neutral-200 ${status === 'loading' ? 'opacity-0' : 'opacity-100'} transition-opacity duration-200`}
         style={{
           maxWidth: '100%',
           height: 'auto',
           objectFit: 'contain',
         }}
-        onLoad={() => setIsLoading(false)}
-        onError={() => {
-          setHasError(true);
-          setIsLoading(false);
-        }}
+        onLoad={() => setStatus('ready')}
+        onError={() => setStatus('error')}
         unoptimized // For external URLs
       />
     </div>

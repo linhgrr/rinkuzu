@@ -220,11 +220,11 @@ export async function consumeOpenAISseResponse<TBody>(
   let sawTerminalEvent = false;
 
   try {
-    while (true) {
+    const consumeReader = async (): Promise<void> => {
       const { done, value } = await reader.read();
 
       if (done) {
-        break;
+        return;
       }
 
       buffer += decoder.decode(value, { stream: true });
@@ -248,7 +248,11 @@ export async function consumeOpenAISseResponse<TBody>(
           sawTerminalEvent = true;
         }
       }
-    }
+
+      await consumeReader();
+    };
+
+    await consumeReader();
 
     buffer += decoder.decode();
 

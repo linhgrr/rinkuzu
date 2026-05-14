@@ -81,13 +81,13 @@ export const useProcessingState = (t: TranslateFn) => {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(0);
   const [progress, setProgress] = useState(0);
-  const [statusLabel, setStatusLabel] = useState('');
+  const [statusLabel, setStatusLabel] = useState(() => t('processing.status.starting'));
   const [error, setError] = useState<ProcessingErrorState | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [stats, setStats] = useState<ProcessingStats | null>(null);
   const [partialGraph, setPartialGraph] = useState<PipelineJobStatus['partial_graph']>(null);
   const [creatingSession, setCreatingSession] = useState(false);
-  const [filename, setFilename] = useState('');
+  const filename = useMemo(() => getStoredFilename(t('processing.defaultFilename')), [t]);
   const [showGraphPanel, setShowGraphPanel] = useState(false);
 
   const pollingRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -500,11 +500,6 @@ export const useProcessingState = (t: TranslateFn) => {
       void pollJob(jobId);
     };
   }, [pollJob]);
-
-  useEffect(() => {
-    setStatusLabel(t('processing.status.starting'));
-    setFilename(getStoredFilename(t('processing.defaultFilename')));
-  }, [t]);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia('(min-width: 1024px)');

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useReducer } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
@@ -12,12 +12,41 @@ import {
 import { saveSessionJobMapping } from '../lib/session-storage';
 import type { SessionHistoryItem } from '@/features/adaptive-learning/types';
 
+interface SessionHistoryState {
+  sessions: SessionHistoryItem[];
+  loading: boolean;
+  error: string | null;
+}
+
+type SessionHistoryAction =
+  | { type: 'hydrateStart' }
+  | { type: 'hydrateSuccess'; sessions: SessionHistoryItem[] }
+  | { type: 'hydrateError'; error: string };
+
+function sessionHistoryReducer(
+  state: SessionHistoryState,
+  action: SessionHistoryAction,
+): SessionHistoryState {
+  switch (action.type) {
+    case 'hydrateStart':
+      return { ...state, loading: true, error: null };
+    case 'hydrateSuccess':
+      return { ...state, sessions: action.sessions, loading: false };
+    case 'hydrateError':
+      return { ...state, error: action.error, loading: false };
+    default:
+      return state;
+  }
+}
+
 export const useSessionHistoryState = () => {
   const router = useRouter();
   const t = useTranslations('adaptiveLearning');
-  const [sessions, setSessions] = useState<SessionHistoryItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [state, dispatch] = useReducer(sessionHistoryReducer, {
+    sessions: [],
+    loading: true,
+    error: null,
+  });
 
   const mapApiErrorToMessage = useCallback(
     (err: unknown) => {
@@ -36,20 +65,20 @@ export const useSessionHistoryState = () => {
 
   useEffect(() => {
     let mounted = true;
+    dispatch({ type: 'hydrateStart' });
 
     getSubjectProgressHistory(30)
       .then((data) => {
-        if (mounted) setSessions(data);
+        if (mounted) {
+          dispatch({ type: 'hydrateSuccess', sessions: data });
+        }
       })
       .catch((err) => {
         if (mounted) {
           const message = mapApiErrorToMessage(err);
-          setError(message);
+          dispatch({ type: 'hydrateError', error: message });
           toast.error(message);
         }
-      })
-      .finally(() => {
-        if (mounted) setLoading(false);
       });
 
     return () => {
@@ -67,12 +96,14 @@ export const useSessionHistoryState = () => {
         router.push(`/adaptive-learning/subject/${session.session_id}`);
       } catch (err) {
         const message = mapApiErrorToMessage(err);
-        setError(message);
+        dispatch({ type: 'hydrateError', error: message });
         toast.error(message);
       }
     },
     [mapApiErrorToMessage, router, t],
   );
+
+  const { error, loading, sessions } = state;
 
   return {
     error,

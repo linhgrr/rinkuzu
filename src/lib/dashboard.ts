@@ -209,14 +209,10 @@ export async function getUserProgressStats(
   const now = new Date();
   const projection =
     'currentStreak longestStreak streakFreezeCount totalXp weeklyActivity totalQuestionsLearned totalReviewSessions averageAccuracy';
-
-  const [uProgress, dueCount] = await Promise.all([
-    UserProgress.findOne({ userId }).select(projection).lean<UserProgressStatsDoc>().exec(),
-    QuestionProgress.countDocuments({
-      userId,
-      nextReviewDate: { $lte: now },
-    }),
-  ]);
+  const uProgress = await UserProgress.findOne({ userId })
+    .select(projection)
+    .lean<UserProgressStatsDoc>()
+    .exec();
 
   if (!uProgress) {
     return {
@@ -227,13 +223,18 @@ export async function getUserProgressStats(
       level: calculateLevel(0),
       xpToNextLevel: xpForNextLevel(0),
       levelProgress: levelProgress(0),
-      dueCount,
+      dueCount: 0,
       weeklyActivity: {},
       totalQuestionsLearned: 0,
       totalReviewSessions: 0,
       averageAccuracy: 0,
     };
   }
+
+  const dueCount = await QuestionProgress.countDocuments({
+    userId,
+    nextReviewDate: { $lte: now },
+  });
 
   const totalXp = uProgress.totalXp ?? 0;
   const level = calculateLevel(totalXp);

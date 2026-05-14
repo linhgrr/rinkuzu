@@ -138,12 +138,18 @@ export class SubscriptionPaymentService {
   }
 
   private async generateUniqueOrderCode(): Promise<number> {
-    for (let attempt = 0; attempt < 5; attempt++) {
+    const findAvailableOrderCode = async (attempt: number): Promise<number> => {
+      if (attempt >= 5) {
+        throw new Error('Failed to generate unique payment order code');
+      }
+
       const orderCode = Date.now() * 1000 + crypto.randomInt(0, 1000);
       const existing = await this.subscriptionRepository.findByOrderId(orderCode.toString());
       if (!existing) return orderCode;
-    }
 
-    throw new Error('Failed to generate unique payment order code');
+      return findAvailableOrderCode(attempt + 1);
+    };
+
+    return findAvailableOrderCode(0);
   }
 }

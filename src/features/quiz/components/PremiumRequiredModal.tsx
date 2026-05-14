@@ -11,18 +11,18 @@ interface PremiumRequiredModalProps {
 }
 
 export function PremiumRequiredModal({ isOpen, onClose }: PremiumRequiredModalProps) {
-  const router = useRouter();
+  const { push } = useRouter();
   const t = useTranslations('premium');
   const tCommon = useTranslations('common');
 
   const handleUpgrade = () => {
     onClose();
-    router.push('/subscription');
+    push('/subscription');
   };
 
   const handleGoHome = () => {
     onClose();
-    router.push('/');
+    push('/');
   };
 
   return (

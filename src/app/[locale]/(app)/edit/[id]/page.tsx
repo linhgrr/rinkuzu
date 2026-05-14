@@ -42,7 +42,7 @@ export default function EditQuizPage() {
   const _t = useTranslations('quiz');
   const _tCommon = useTranslations('common');
   const { data: session } = useSession();
-  const router = useRouter();
+  const { push } = useRouter();
   const pathname = usePathname();
   const encodedQuizId = routePathSegment(useRequiredRouteParam('id'));
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -212,7 +212,7 @@ export default function EditQuizPage() {
       setSuccess('Quiz updated successfully!');
       setQuiz(data);
       setTimeout(() => {
-        router.push('/pending');
+        push('/pending');
       }, 2000);
     } catch (error) {
       setError(
@@ -231,7 +231,7 @@ export default function EditQuizPage() {
       await fetchApiData<null>(`/api/quizzes/${encodedQuizId}`, {
         method: 'DELETE',
       });
-      router.push('/pending');
+      push('/pending');
     } catch (error) {
       setError(
         error instanceof Error ? error.message : 'An error occurred while deleting the quiz',
@@ -249,7 +249,7 @@ export default function EditQuizPage() {
     return (
       <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="h-12 w-12 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust mx-auto" />
+          <div className="size-12 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust mx-auto" />
           <p className="mt-4 text-neutral-600">Loading quiz...</p>
         </div>
       </div>
@@ -344,13 +344,13 @@ export default function EditQuizPage() {
                       onClick={() => setIsMenuOpen(!isMenuOpen)}
                       className="h-auto gap-2 px-0 text-neutral-600 hover:text-neutral-900"
                     >
-                      <div className="w-8 h-8 bg-gradient-to-br from-brand-trust to-green-600 rounded-full flex items-center justify-center">
+                      <div className="size-8 bg-gradient-to-br from-brand-trust to-green-600 rounded-full flex items-center justify-center">
                         <span className="text-white text-sm font-medium">
                           {session.user?.email?.charAt(0).toUpperCase()}
                         </span>
                       </div>
                       <HiChevronDown
-                        className={`w-4 h-4 transition-transform ${isMenuOpen ? 'rotate-180' : ''}`}
+                        className={`size-4 transition-transform ${isMenuOpen ? 'rotate-180' : ''}`}
                       />
                     </Button>
 
@@ -393,7 +393,7 @@ export default function EditQuizPage() {
                 size="icon"
                 className="text-neutral-600 hover:text-neutral-900"
               >
-                <HiOutlineMenu className="w-6 h-6" />
+                <HiOutlineMenu className="size-6" />
               </Button>
             </div>
           </div>
@@ -472,11 +472,11 @@ export default function EditQuizPage() {
                   >
                     {showPDFViewer ? (
                       <>
-                        <HiOutlineEyeOff className="w-4 h-4" /> Hide PDF
+                        <HiOutlineEyeOff className="size-4" /> Hide PDF
                       </>
                     ) : (
                       <>
-                        <HiOutlineDocumentText className="w-4 h-4" /> Show PDF
+                        <HiOutlineDocumentText className="size-4" /> Show PDF
                       </>
                     )}
                   </Button>
@@ -520,7 +520,7 @@ export default function EditQuizPage() {
                   <CardContent className="p-6">
                     <div className="flex items-start space-x-3">
                       <div className="text-brand-trust">
-                        <HiOutlineInformationCircle className="w-6 h-6" />
+                        <HiOutlineInformationCircle className="size-6" />
                       </div>
                       <div>
                         <h3 className="text-lg font-semibold text-neutral-900">Read Only</h3>
@@ -587,7 +587,7 @@ export default function EditQuizPage() {
                           'Saving...'
                         ) : (
                           <>
-                            <HiOutlineSave className="w-4 h-4" />
+                            <HiOutlineSave className="size-4" />
                             Save Changes
                           </>
                         )}
@@ -607,7 +607,7 @@ export default function EditQuizPage() {
                         'Deleting...'
                       ) : (
                         <>
-                          <HiOutlineTrash className="w-4 h-4" />
+                          <HiOutlineTrash className="size-4" />
                           Delete Quiz
                         </>
                       )}

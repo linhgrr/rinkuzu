@@ -28,7 +28,7 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const router = useRouter();
+  const { push } = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,7 +64,7 @@ export default function RegisterPage() {
       });
       setSuccess(data.message || t('accountCreatedSuccess'));
       setTimeout(() => {
-        router.push('/login');
+        push('/login');
       }, 2000);
     } catch (error) {
       setError(error instanceof Error ? error.message : t('registrationFailed'));

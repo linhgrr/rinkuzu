@@ -139,17 +139,17 @@ const EmptyState = memo(function EmptyState({ onClear }: { onClear: () => void }
 function ExploreContent() {
   const t = useTranslations('explore');
   const { data: session } = useSession();
-  const router = useRouter();
-  const searchParams = useSearchParams();
+  const { replace } = useRouter();
+  const { get } = useSearchParams();
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [page, setPage] = useState(parseInt(searchParams.get('page') || '1', 10));
+  const [page, setPage] = useState(parseInt(get('page') || '1', 10));
   const limit = 12;
 
   // Filters - initialize from URL
-  const [search, setSearch] = useState(searchParams.get('q') || '');
-  const [committedSearch, setCommittedSearch] = useState(searchParams.get('q') || '');
-  const [categoryId, setCategoryId] = useState<string | null>(searchParams.get('category') || null);
+  const [search, setSearch] = useState(get('q') || '');
+  const [committedSearch, setCommittedSearch] = useState(get('q') || '');
+  const [categoryId, setCategoryId] = useState<string | null>(get('category') || null);
 
   // Sync state to URL
   const updateURL = useCallback(
@@ -160,9 +160,9 @@ function ExploreContent() {
       if (newPage > 1) params.set('page', newPage.toString());
 
       const queryString = params.toString();
-      router.replace(queryString ? `?${queryString}` : '/explore', { scroll: false });
+      replace(queryString ? `?${queryString}` : '/explore', { scroll: false });
     },
-    [router],
+    [replace],
   );
 
   // SWR fetch — key changes trigger automatic re-fetch

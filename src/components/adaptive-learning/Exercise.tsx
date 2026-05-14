@@ -36,7 +36,7 @@ const BLOOM_TRANSLATION_KEYS: Record<BloomLevel, string> = {
 };
 
 export default function AdaptiveLearningExercise({ sessionId }: ExerciseProps) {
-  const router = useRouter();
+  const { prefetch, push, replace } = useRouter();
   const t = useTranslations('adaptiveLearning');
 
   const {
@@ -63,7 +63,7 @@ export default function AdaptiveLearningExercise({ sessionId }: ExerciseProps) {
     handleSubmit,
   } = useAdaptiveExerciseSession({
     sessionId,
-    router,
+    router: { prefetch, push, replace },
     t,
   });
 
@@ -121,7 +121,7 @@ export default function AdaptiveLearningExercise({ sessionId }: ExerciseProps) {
     return (
       <ExerciseErrorState
         message={error || t('exercise.noExerciseAvailable')}
-        onBack={() => router.push(ADAPTIVE_ROUTES.dashboard)}
+        onBack={() => push(ADAPTIVE_ROUTES.dashboard)}
         onRetry={() => void loadData()}
         t={t as any}
       />
@@ -151,7 +151,7 @@ export default function AdaptiveLearningExercise({ sessionId }: ExerciseProps) {
       progressPercent={progressPercent}
       bloomColor={bloomColor}
       localizedBloomLabel={localizedBloomLabel}
-      onQuit={() => router.push(ADAPTIVE_ROUTES.dashboard)}
+      onQuit={() => push(ADAPTIVE_ROUTES.dashboard)}
       onSelectChoice={selectChoice}
       onToggleChoice={toggleChoice}
       onSetBooleanAnswer={setBooleanAnswer}

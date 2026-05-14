@@ -63,7 +63,7 @@ const HeroSection = ({ isAuthenticated = false }: { isAuthenticated?: boolean })
                 border: '1px solid rgba(255,255,255,0.2)',
               }}
             >
-              <span className="w-[4px] h-[4px] rounded-full bg-white" />
+              <span className="size-[4px] rounded-full bg-white" />
               <span className="text-white/60">{t('poweredBy')}</span>
               <span className="text-white">{t('geminiAi')}</span>
             </div>

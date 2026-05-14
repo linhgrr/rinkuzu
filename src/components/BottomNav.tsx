@@ -62,7 +62,7 @@ export default function BottomNav() {
                 key={`bottom-nav-skeleton-${index}`}
                 className="min-w-[56px] min-h-[48px] px-3 py-1 flex flex-col items-center justify-center gap-1"
               >
-                <div className="w-6 h-6 rounded-full skeleton-shimmer" />
+                <div className="size-6 rounded-full skeleton-shimmer" />
                 <div className="w-8 h-2 rounded skeleton-shimmer" />
               </div>
             ))}
@@ -81,9 +81,9 @@ export default function BottomNav() {
       labelKey: 'home',
       icon: (isActive: boolean) =>
         isActive ? (
-          <HiHome className="w-6 h-6 text-brand-trust" />
+          <HiHome className="size-6 text-brand-trust" />
         ) : (
-          <HiOutlineHome className="w-6 h-6 text-neutral-500" />
+          <HiOutlineHome className="size-6 text-neutral-500" />
         ),
     },
     {
@@ -91,9 +91,9 @@ export default function BottomNav() {
       labelKey: 'history',
       icon: (isActive: boolean) =>
         isActive ? (
-          <HiInbox className="w-6 h-6 text-brand-trust" />
+          <HiInbox className="size-6 text-brand-trust" />
         ) : (
-          <HiOutlineInbox className="w-6 h-6 text-neutral-500" />
+          <HiOutlineInbox className="size-6 text-neutral-500" />
         ),
     },
     {
@@ -105,9 +105,9 @@ export default function BottomNav() {
           aria-label="Create new quiz"
         >
           {isActive ? (
-            <HiPlus className="w-6 h-6 text-white" aria-hidden="true" />
+            <HiPlus className="size-6 text-white" aria-hidden="true" />
           ) : (
-            <HiOutlinePlus className="w-6 h-6 text-white" aria-hidden="true" />
+            <HiOutlinePlus className="size-6 text-white" aria-hidden="true" />
           )}
         </div>
       ),
@@ -117,9 +117,9 @@ export default function BottomNav() {
       labelKey: 'explore',
       icon: (isActive: boolean) =>
         isActive ? (
-          <HiSearch className="w-6 h-6 text-brand-trust" />
+          <HiSearch className="size-6 text-brand-trust" />
         ) : (
-          <HiOutlineSearch className="w-6 h-6 text-neutral-500" />
+          <HiOutlineSearch className="size-6 text-neutral-500" />
         ),
     },
     {

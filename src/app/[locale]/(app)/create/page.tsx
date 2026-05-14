@@ -179,7 +179,7 @@ function PDFViewerComponent({ files, onClose }: { files: File[]; onClose: () => 
 export default function CreateQuizPage() {
   const t = useTranslations('create');
   const tCommon = useTranslations('common');
-  const router = useRouter();
+  const { push, replace } = useRouter();
   const { addDraft } = useDraftStore();
 
   const [title, setTitle] = useState('');
@@ -196,9 +196,9 @@ export default function CreateQuizPage() {
 
   useEffect(() => {
     if (typeof window !== 'undefined' && window.innerWidth < 768) {
-      router.replace('/create/mobile');
+      replace('/create/mobile');
     }
-  }, [router]);
+  }, [replace]);
 
   const onDrop = (acceptedFiles: File[]) => {
     if (!acceptedFiles.length) return;
@@ -294,7 +294,7 @@ export default function CreateQuizPage() {
         description: t('pagesChunks', { pages: data.totalPages, chunks: data.chunks.total }),
       });
 
-      router.push('/');
+      push('/');
     } catch (err: unknown) {
       console.error('Error starting background processing:', err);
       setError(extractUnknownErrorMessage(err, t('failedToStartProcessing')));

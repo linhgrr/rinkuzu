@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
@@ -14,6 +15,7 @@ import {
 } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import connectDB from '@/lib/mongoose';
+import { buildLocalizedMetadata } from '@/lib/seo';
 import Quiz from '@/models/Quiz';
 import User from '@/models/User';
 import { ROUTES } from '@/shared/constants';
@@ -71,6 +73,20 @@ function getCategoryBadgeVariant(color: string) {
   return map[color?.toLowerCase()] || 'default';
 }
 
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string; userId: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  return buildLocalizedMetadata({
+    locale,
+    path: '/users',
+    title: 'Public Profile | RinKuzu',
+    description: 'Explore public RinKuzu user profiles and published quizzes.',
+  });
+}
+
 export default async function PublicUserProfilePage({
   params,
 }: {
@@ -103,6 +119,7 @@ export default async function PublicUserProfilePage({
     notFound();
   }
 
+  const localeKey = locale === 'vi' ? 'vi' : 'en';
   const profileUser = user as unknown as UserIdentity & { bio?: string; createdAt?: Date | string };
   const displayName = getUserDisplayName(profileUser);
   const publicQuizRecords = rawQuizzes as unknown as PublicQuizRecord[];
@@ -123,7 +140,6 @@ export default async function PublicUserProfilePage({
       : null,
   }));
 
-  const localeKey = locale === 'vi' ? 'vi' : 'en';
   const joinDate = publicProfileLongDateFormatters[localeKey].format(
     new Date(profileUser.createdAt || new Date()),
   );

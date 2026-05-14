@@ -1,46 +1,77 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useReducer } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { fetchApiData } from '@/lib/api/client';
 
+type PaymentStatus = 'loading' | 'success' | 'error';
+
+type PaymentViewState = {
+  status: PaymentStatus;
+  message: string;
+};
+
+type PaymentViewAction = {
+  type: 'setView';
+  value: PaymentViewState;
+};
+
+const initialViewState: PaymentViewState = {
+  status: 'loading',
+  message: '',
+};
+
+function paymentViewReducer(_state: PaymentViewState, action: PaymentViewAction): PaymentViewState {
+  switch (action.type) {
+    case 'setView':
+      return action.value;
+    default:
+      return _state;
+  }
+}
+
 function PaymentSuccessContent() {
   const t = useTranslations('subscription');
   const { get } = useSearchParams();
   const { push } = useRouter();
-  const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
-  const [message, setMessage] = useState('');
+  const [viewState, dispatch] = useReducer(paymentViewReducer, initialViewState);
 
   useEffect(() => {
     const orderCode = get('orderCode');
     if (!orderCode) {
-      setStatus('error');
-      setMessage(t('errorTitle'));
+      dispatch({ type: 'setView', value: { status: 'error', message: t('errorTitle') } });
       return;
     }
 
-    const verifyPayment = async (orderCode: string) => {
+    const verifyPayment = async (nextOrderCode: string) => {
       try {
         await fetchApiData('/api/subscription/verify', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ orderCode }),
+          body: JSON.stringify({ orderCode: nextOrderCode }),
         });
-        setStatus('success');
-        setMessage(t('paymentSuccessMessage'));
+        dispatch({
+          type: 'setView',
+          value: { status: 'success', message: t('paymentSuccessMessage') },
+        });
       } catch (error) {
         console.error('Error verifying payment:', error);
-        setStatus('error');
-        setMessage(error instanceof Error ? error.message : t('errorTitle'));
+        dispatch({
+          type: 'setView',
+          value: {
+            status: 'error',
+            message: error instanceof Error ? error.message : t('errorTitle'),
+          },
+        });
       }
     };
 
-    verifyPayment(orderCode);
+    void verifyPayment(orderCode);
   }, [get, t]);
 
   const handleGoHome = () => {
@@ -51,7 +82,7 @@ function PaymentSuccessContent() {
     push('/subscription');
   };
 
-  if (status === 'loading') {
+  if (viewState.status === 'loading') {
     return (
       <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
         <div className="text-center">
@@ -66,7 +97,7 @@ function PaymentSuccessContent() {
     <div className="min-h-screen bg-neutral-50 flex items-center justify-center py-8">
       <div className="max-w-md mx-auto px-4">
         <Card className="p-8 text-center">
-          {status === 'success' ? (
+          {viewState.status === 'success' ? (
             <>
               <div className="size-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <svg
@@ -86,7 +117,7 @@ function PaymentSuccessContent() {
               <h1 className="text-2xl font-semibold text-neutral-900 mb-4">
                 {t('paymentSuccessTitle')}
               </h1>
-              <p className="text-neutral-600 mb-6">{message}</p>
+              <p className="text-neutral-600 mb-6">{viewState.message}</p>
               <div className="space-y-3">
                 <Button onClick={handleGoHome} className="w-full">
                   {t('backToHome')}
@@ -114,7 +145,7 @@ function PaymentSuccessContent() {
                 </svg>
               </div>
               <h1 className="text-2xl font-semibold text-neutral-900 mb-4">{t('errorTitle')}</h1>
-              <p className="text-neutral-600 mb-6">{message}</p>
+              <p className="text-neutral-600 mb-6">{viewState.message}</p>
               <div className="space-y-3">
                 <Button onClick={handleGoHome} className="w-full">
                   {t('backToHome')}

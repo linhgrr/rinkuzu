@@ -22,7 +22,15 @@ type ResultEmptyStateProps = {
   t: TranslateFn;
 };
 
-function renderResultCorrectAnswer(exercise: Exercise, result: SubmitResult, t: TranslateFn) {
+function ResultCorrectAnswer({
+  exercise,
+  result,
+  t,
+}: {
+  exercise: Exercise;
+  result: SubmitResult;
+  t: TranslateFn;
+}) {
   if (exercise.exercise_type === 'matching') {
     return (
       <div className="grid grid-cols-1 gap-2">
@@ -181,7 +189,7 @@ export const ResultContent = ({
                     {t('result.correctAnswerLabel')}
                   </span>
                   <div className="text-sm font-medium text-neutral-900">
-                    {renderResultCorrectAnswer(exercise, result, t)}
+                    <ResultCorrectAnswer exercise={exercise} result={result} t={t} />
                   </div>
                 </div>
               </div>

@@ -175,10 +175,10 @@ export default function DraftEditClient({ initialDraft, initialCategory, locale 
   if (isMobile) {
     return (
       <div className="min-h-screen bg-neutral-50 px-4 py-6 flex flex-col items-center justify-center text-center">
-        <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mb-5">
-          <HiOutlineDesktopComputer className="w-10 h-10 text-brand-trust" />
+        <div className="size-20 bg-green-100 rounded-full flex items-center justify-center mb-5">
+          <HiOutlineDesktopComputer className="size-10 text-brand-trust" />
         </div>
-        <h1 className="text-xl font-bold text-neutral-900 mb-2">Mở trên máy tính</h1>
+        <h1 className="text-xl font-semibold text-neutral-900 mb-2">Mở trên máy tính</h1>
         <p className="text-neutral-500 mb-6 max-w-xs">
           Để chỉnh sửa chi tiết câu hỏi, vui lòng sử dụng máy tính.
         </p>
@@ -187,7 +187,7 @@ export default function DraftEditClient({ initialDraft, initialCategory, locale 
           className="px-6 py-3 rounded-full bg-green-500 text-white font-medium
                      hover:bg-brand-trust transition-colors inline-flex items-center gap-2"
         >
-          <HiOutlineArrowLeft className="w-5 h-5" />
+          <HiOutlineArrowLeft className="size-5" />
           Về trang chủ
         </Link>
       </div>
@@ -208,12 +208,12 @@ export default function DraftEditClient({ initialDraft, initialCategory, locale 
                 href={`/${locale}`}
                 className="inline-flex items-center gap-1 text-sm text-neutral-500 hover:text-neutral-700 mb-4"
               >
-                <HiOutlineArrowLeft className="w-4 h-4" />
+                <HiOutlineArrowLeft className="size-4" />
                 Quay lại
               </Link>
-              <h1 className="text-2xl font-bold text-neutral-900">Chỉnh sửa Quiz</h1>
+              <h1 className="text-2xl font-semibold text-neutral-900">Chỉnh sửa Quiz</h1>
               <p className="text-neutral-500 mt-1 flex items-center gap-2">
-                <HiOutlineQuestionMarkCircle className="w-4 h-4" />
+                <HiOutlineQuestionMarkCircle className="size-4" />
                 {questions.length} câu hỏi được trích xuất
               </p>
             </div>
@@ -244,7 +244,7 @@ export default function DraftEditClient({ initialDraft, initialCategory, locale 
             {/* Questions */}
             <div className="bg-white rounded-2xl shadow-sm border border-neutral-100 p-6 mb-6">
               <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                <HiOutlineCollection className="w-5 h-5 text-brand-trust" />
+                <HiOutlineCollection className="size-5 text-brand-trust" />
                 Câu hỏi ({questions.length})
               </h2>
 
@@ -272,11 +272,11 @@ export default function DraftEditClient({ initialDraft, initialCategory, locale 
                 >
                   {showPDFViewer ? (
                     <>
-                      <HiOutlineEyeOff className="w-4 h-4" /> Ẩn PDF
+                      <HiOutlineEyeOff className="size-4" /> Ẩn PDF
                     </>
                   ) : (
                     <>
-                      <HiOutlineDocumentText className="w-4 h-4" /> Xem PDF
+                      <HiOutlineDocumentText className="size-4" /> Xem PDF
                     </>
                   )}
                 </Button>
@@ -288,7 +288,7 @@ export default function DraftEditClient({ initialDraft, initialCategory, locale 
                   onClick={() => router.push(`/${locale}`)}
                   className="flex items-center gap-2 px-6 py-3 text-neutral-700 hover:bg-neutral-50"
                 >
-                  <HiOutlineX className="w-4 h-4" />
+                  <HiOutlineX className="size-4" />
                   Hủy
                 </Button>
                 <Button
@@ -298,9 +298,9 @@ export default function DraftEditClient({ initialDraft, initialCategory, locale 
                   className="flex items-center gap-2 px-6 py-3"
                 >
                   {isSubmitting ? (
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <div className="size-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                   ) : (
-                    <HiOutlineCloudUpload className="w-5 h-5" />
+                    <HiOutlineCloudUpload className="size-5" />
                   )}
                   {isSubmitting ? 'Đang gửi…' : 'Gửi để duyệt'}
                 </Button>
@@ -350,7 +350,7 @@ function QuestionEditor({
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="flex-1">
           <span className="text-xs font-medium text-neutral-500 uppercase flex items-center gap-1.5">
-            <div className="w-5 h-5 bg-green-100 text-brand-trust rounded-full flex items-center justify-center text-[10px]">
+            <div className="size-5 bg-green-100 text-brand-trust rounded-full flex items-center justify-center text-[10px]">
               {index + 1}
             </div>
             Câu {index + 1} • {question.type === 'single' ? 'Một đáp án' : 'Nhiều đáp án'}
@@ -371,7 +371,7 @@ function QuestionEditor({
                 onClick={handleSave}
                 className="text-green-600 hover:bg-green-50"
               >
-                <HiOutlineCheck className="w-5 h-5" />
+                <HiOutlineCheck className="size-5" />
               </Button>
               <Button
                 type="button"
@@ -380,7 +380,7 @@ function QuestionEditor({
                 onClick={() => setIsEditing(false)}
                 className="text-neutral-400 hover:bg-neutral-100"
               >
-                <HiOutlineX className="w-5 h-5" />
+                <HiOutlineX className="size-5" />
               </Button>
             </div>
           ) : (
@@ -397,7 +397,7 @@ function QuestionEditor({
               onClick={() => setIsEditing(true)}
               className="text-neutral-400 hover:bg-green-50 hover:text-brand-trust"
             >
-              <HiOutlinePencil className="w-4 h-4" />
+              <HiOutlinePencil className="size-4" />
             </Button>
             <Button
               type="button"
@@ -406,7 +406,7 @@ function QuestionEditor({
               onClick={onDelete}
               className="text-neutral-400 hover:bg-red-50 hover:text-red-500"
             >
-              <HiOutlineTrash className="w-4 h-4" />
+              <HiOutlineTrash className="size-4" />
             </Button>
           </div>
         )}

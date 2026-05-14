@@ -23,7 +23,7 @@ export default async function TermsPage({ params }: Props) {
   return (
     <section className="max-w-4xl mx-auto space-y-10 py-16 px-6">
       <div>
-        <h1 className="text-3xl font-bold text-neutral-900 mb-2">Terms of Service</h1>
+        <h1 className="text-3xl font-semibold text-neutral-900 mb-2">Terms of Service</h1>
         <p className="text-sm text-neutral-500">Last updated: March 27, 2026</p>
       </div>
 

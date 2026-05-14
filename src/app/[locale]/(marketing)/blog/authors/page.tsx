@@ -46,7 +46,7 @@ export default async function AuthorsPage({ params }: Props) {
             <span>/</span>
             <span className="text-[var(--text-primary)]">Authors</span>
           </nav>
-          <h1 className="text-3xl md:text-5xl font-bold text-[var(--text-primary)] leading-tight mb-4">
+          <h1 className="text-3xl md:text-5xl font-semibold text-[var(--text-primary)] leading-tight mb-4">
             Authors
           </h1>
           <p className="text-lg text-[var(--text-muted)] leading-relaxed">
@@ -77,7 +77,7 @@ export default async function AuthorsPage({ params }: Props) {
                   <p className="text-xs font-semibold uppercase tracking-wider text-brand-trust mb-1">
                     {author.role}
                   </p>
-                  <h2 className="text-lg font-bold text-[var(--text-primary)] mb-2 group-hover:text-brand-trust transition-colors">
+                  <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-2 group-hover:text-brand-trust transition-colors">
                     {author.name}
                   </h2>
                   <p className="text-sm text-[var(--text-muted)] leading-relaxed">

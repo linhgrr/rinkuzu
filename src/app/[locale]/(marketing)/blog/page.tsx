@@ -61,7 +61,7 @@ export default async function BlogIndexPage({ params }: Props) {
             <span>/</span>
             <span className="text-[var(--text-primary)] font-medium">Blog</span>
           </nav>
-          <h1 className="text-3xl md:text-5xl font-bold text-[var(--text-primary)] leading-tight mb-4">
+          <h1 className="text-3xl md:text-5xl font-semibold text-[var(--text-primary)] leading-tight mb-4">
             RinKuzu Blog
           </h1>
           <p className="text-lg text-[var(--text-muted)] leading-relaxed max-w-2xl">
@@ -100,7 +100,7 @@ export default async function BlogIndexPage({ params }: Props) {
                   {post.date} · {post.readTime}
                 </span>
               </div>
-              <h2 className="text-xl md:text-2xl font-bold text-[var(--text-primary)] mb-3 group-hover:text-brand-trust transition-colors leading-snug">
+              <h2 className="text-xl md:text-2xl font-semibold text-[var(--text-primary)] mb-3 group-hover:text-brand-trust transition-colors leading-snug">
                 {post.title}
               </h2>
               <p className="text-[var(--text-muted)] leading-relaxed line-clamp-3 mb-4">

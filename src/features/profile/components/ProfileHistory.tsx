@@ -77,11 +77,11 @@ export default function ProfileHistory() {
 
   const getPerformanceBadge = (score: number) => {
     if (score >= 90)
-      return { text: t('excellent'), icon: <HiOutlineAcademicCap className="w-4 h-4" /> };
-    if (score >= 80) return { text: t('great'), icon: <HiOutlineStar className="w-4 h-4" /> };
-    if (score >= 70) return { text: t('good'), icon: <HiOutlineThumbUp className="w-4 h-4" /> };
-    if (score >= 60) return { text: t('pass'), icon: <HiOutlineEmojiHappy className="w-4 h-4" /> };
-    return { text: t('needsWork'), icon: <HiOutlineEmojiSad className="w-4 h-4" /> };
+      return { text: t('excellent'), icon: <HiOutlineAcademicCap className="size-4" /> };
+    if (score >= 80) return { text: t('great'), icon: <HiOutlineStar className="size-4" /> };
+    if (score >= 70) return { text: t('good'), icon: <HiOutlineThumbUp className="size-4" /> };
+    if (score >= 60) return { text: t('pass'), icon: <HiOutlineEmojiHappy className="size-4" /> };
+    return { text: t('needsWork'), icon: <HiOutlineEmojiSad className="size-4" /> };
   };
 
   const handlePageChange = (page: number) => {
@@ -93,7 +93,7 @@ export default function ProfileHistory() {
     return (
       <div className="flex justify-center py-12">
         <div className="flex flex-col items-center gap-3">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
+          <div className="size-8 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
           <div className="text-sm text-neutral-500">{tCommon('loadingHistory')}</div>
         </div>
       </div>
@@ -102,7 +102,7 @@ export default function ProfileHistory() {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-neutral-900">{t('quizHistory')}</h2>
+      <h2 className="text-2xl font-semibold text-neutral-900">{t('quizHistory')}</h2>
 
       {error && (
         <div className="rounded-md bg-red-50 p-4">
@@ -114,7 +114,7 @@ export default function ProfileHistory() {
         <Card>
           <CardContent className="text-center py-12">
             <EmptyState
-              icon={<HiOutlineDocumentText className="w-16 h-16 text-neutral-300" />}
+              icon={<HiOutlineDocumentText className="size-16 text-neutral-300" />}
               title={t('noHistory')}
               description={t('exploreQuizzes')}
               action={
@@ -160,7 +160,7 @@ export default function ProfileHistory() {
                   <CardContent className="p-4 sm:p-6">
                     <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
                       <div className="flex-1">
-                        <div className="flex items-center space-x-2 flex-wrap gap-y-1 mb-1">
+                        <div className="flex items-center gap-x-2 flex-wrap gap-y-1 mb-1">
                           <h3 className="text-lg font-semibold text-neutral-900 truncate max-w-[200px] sm:max-w-md">
                             {attempt.quiz.title}
                           </h3>
@@ -171,13 +171,13 @@ export default function ProfileHistory() {
                           </span>
                         </div>
 
-                        <div className="flex items-center space-x-4 text-xs text-neutral-500 mt-2">
+                        <div className="flex items-center gap-x-4 text-xs text-neutral-500 mt-2">
                           <span className="flex items-center gap-1">
-                            <HiOutlineDocumentText className="w-3 h-3" />{' '}
+                            <HiOutlineDocumentText className="size-3" />{' '}
                             {tCommon('questionsCount', { count: attempt.quiz.totalQuestions })}
                           </span>
                           <span className="flex items-center gap-1">
-                            <HiOutlineClock className="w-3 h-3" />{' '}
+                            <HiOutlineClock className="size-3" />{' '}
                             {formatDate(new Date(attempt.takenAt))}
                           </span>
                         </div>

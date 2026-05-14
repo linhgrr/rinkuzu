@@ -146,7 +146,7 @@ export function CategorySelector({
         {/* Loading indicator */}
         {loading && (
           <div className="absolute right-12 top-1/2 transform -translate-y-1/2">
-            <div className="h-4 w-4 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
+            <div className="size-4 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
           </div>
         )}
 
@@ -159,7 +159,7 @@ export function CategorySelector({
             aria-label="Clear selection"
           >
             <svg
-              className="w-4 h-4"
+              className="size-4"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -178,8 +178,8 @@ export function CategorySelector({
 
       {/* Selected category indicator */}
       {value && (
-        <div className="mt-2 flex items-center space-x-2 text-sm text-green-600">
-          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: value.color }}></div>
+        <div className="mt-2 flex items-center gap-x-2 text-sm text-green-600">
+          <div className="size-3 rounded-full" style={{ backgroundColor: value.color }}></div>
           <span>Selected: {value.name}</span>
           {value.description && <span className="text-neutral-500">- {value.description}</span>}
         </div>

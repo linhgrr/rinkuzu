@@ -150,11 +150,11 @@ export default function StatsModal({
       key={category._id || index}
       className="flex items-center justify-between p-4 bg-neutral-50 rounded-lg hover:bg-neutral-100 transition-colors"
     >
-      <div className="flex items-center space-x-4">
+      <div className="flex items-center gap-x-4">
         <span className="text-sm font-medium text-neutral-500">
           #{index + 1 + (pagination.page - 1) * pagination.limit}
         </span>
-        <div className="w-4 h-4 rounded-full" style={{ backgroundColor: category.color }} />
+        <div className="size-4 rounded-full" style={{ backgroundColor: category.color }} />
         <div>
           <h4 className="font-medium text-neutral-900">{category.name}</h4>
           <p className="text-sm text-neutral-600">{category.description}</p>
@@ -184,16 +184,16 @@ export default function StatsModal({
       key={creator._id || index}
       className="flex items-center justify-between p-4 bg-neutral-50 rounded-lg hover:bg-neutral-100 transition-colors"
     >
-      <div className="flex items-center space-x-4">
+      <div className="flex items-center gap-x-4">
         <span className="text-sm font-medium text-neutral-500">
           #{index + 1 + (pagination.page - 1) * pagination.limit}
         </span>
-        <div className="w-8 h-8 bg-gradient-to-br from-green-400 to-brand-trust rounded-full flex items-center justify-center">
+        <div className="size-8 bg-gradient-to-br from-green-400 to-brand-trust rounded-full flex items-center justify-center">
           <span className="text-white text-sm font-medium">{creator.email[0].toUpperCase()}</span>
         </div>
         <div>
           <h4 className="font-medium text-neutral-900">{creator.email}</h4>
-          <div className="flex items-center space-x-2 text-xs text-neutral-500">
+          <div className="flex items-center gap-x-2 text-xs text-neutral-500">
             <span>
               {t('joined')}: {formatDate(creator.joinedAt)}
             </span>
@@ -228,7 +228,7 @@ export default function StatsModal({
     return (
       <div
         key={index}
-        className="flex items-center space-x-4 p-4 bg-neutral-50 rounded-lg hover:bg-neutral-100 transition-colors"
+        className="flex items-center gap-x-4 p-4 bg-neutral-50 rounded-lg hover:bg-neutral-100 transition-colors"
       >
         <div
           className={`w-10 h-10 rounded-full flex items-center justify-center ${
@@ -240,7 +240,7 @@ export default function StatsModal({
           }`}
         >
           {activityType === 'user' && (
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -250,7 +250,7 @@ export default function StatsModal({
             </svg>
           )}
           {activityType === 'quiz' && (
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -260,7 +260,7 @@ export default function StatsModal({
             </svg>
           )}
           {activityType === 'attempt' && (
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -349,7 +349,7 @@ export default function StatsModal({
     if (loading && data.length === 0) {
       return (
         <div className="flex items-center justify-center py-12">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
+          <div className="size-8 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
         </div>
       );
     }
@@ -414,7 +414,7 @@ export default function StatsModal({
     <Modal isOpen={isOpen} onClose={onClose} size="wide">
       <div className="p-6">
         <div className="mb-6">
-          <h2 className="text-2xl font-bold text-neutral-900 mb-2">{title}</h2>
+          <h2 className="text-2xl font-semibold text-neutral-900 mb-2">{title}</h2>
           <p className="text-neutral-600">
             {t('showing', { count: data.length, total: pagination.total })}
           </p>
@@ -422,7 +422,7 @@ export default function StatsModal({
 
         {/* Search and Filters */}
         <div className="mb-6 space-y-4">
-          <form onSubmit={handleSearch} className="flex space-x-4">
+          <form onSubmit={handleSearch} className="flex gap-x-4">
             <div className="flex-1">
               <Input
                 type="text"
@@ -438,9 +438,9 @@ export default function StatsModal({
 
           {/* Sort Options */}
           {getSortOptions().length > 0 && (
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center gap-x-4">
               <span className="text-sm text-neutral-600">{t('sortBy')}</span>
-              <div className="flex space-x-2">
+              <div className="flex gap-x-2">
                 {getSortOptions().map((option) => (
                   <button
                     key={option.value}
@@ -471,7 +471,7 @@ export default function StatsModal({
         {loading && data.length > 0 && (
           <div className="text-center py-4">
             <div className="inline-flex items-center text-sm text-neutral-600">
-              <div className="h-4 w-4 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust mr-2" />
+              <div className="size-4 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust mr-2" />
               {t('loadingMore')}
             </div>
           </div>
@@ -479,7 +479,7 @@ export default function StatsModal({
 
         {/* Pagination */}
         <div className="mt-6 flex justify-between items-center">
-          <div className="flex space-x-2">
+          <div className="flex gap-x-2">
             {type === 'activity' && pagination.hasNext && (
               <Button onClick={handleLoadMore} variant="outline" disabled={loading} size="sm">
                 {t('loadMore')}

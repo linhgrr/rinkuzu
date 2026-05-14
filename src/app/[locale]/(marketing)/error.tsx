@@ -15,9 +15,9 @@ export default function MarketingError({
 
   return (
     <div className="flex min-h-[60vh] flex-col items-center justify-center bg-black px-4 text-center">
-      <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-red-900/30">
+      <div className="mb-4 flex size-16 items-center justify-center rounded-2xl bg-red-900/30">
         <svg
-          className="h-8 w-8 text-red-400"
+          className="size-8 text-red-400"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"

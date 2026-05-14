@@ -96,7 +96,7 @@ export default function RegisterPage() {
           </div>
 
           <div className="mt-8 text-center animate-fadeInUp">
-            <h1 className="text-4xl font-bold text-gray-900 mb-3">{t('joinRinKuzu')}</h1>
+            <h1 className="text-4xl font-semibold text-gray-900 mb-3">{t('joinRinKuzu')}</h1>
             <p className="text-lg text-gray-600">{t('createAccountMessage')}</p>
           </div>
         </div>
@@ -125,7 +125,7 @@ export default function RegisterPage() {
                   >
                     <div className="flex items-center text-red-700">
                       <HiOutlineExclamationCircle
-                        className="w-5 h-5 mr-2 flex-shrink-0"
+                        className="size-5 mr-2 flex-shrink-0"
                         aria-hidden="true"
                       />
                       <span className="text-sm font-medium">{error}</span>
@@ -142,7 +142,7 @@ export default function RegisterPage() {
                   >
                     <div className="flex items-center text-emerald-700">
                       <HiOutlineCheckCircle
-                        className="w-5 h-5 mr-2 flex-shrink-0"
+                        className="size-5 mr-2 flex-shrink-0"
                         aria-hidden="true"
                       />
                       <span className="text-sm font-medium">{success}</span>
@@ -161,7 +161,7 @@ export default function RegisterPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder={t('enterEmail')}
-                    icon={<HiOutlineMail className="w-5 h-5" />}
+                    icon={<HiOutlineMail className="size-5" />}
                   />
 
                   <Input
@@ -174,7 +174,7 @@ export default function RegisterPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder={t('enterPassword')}
-                    icon={<HiOutlineLockClosed className="w-5 h-5" />}
+                    icon={<HiOutlineLockClosed className="size-5" />}
                   />
 
                   <Input
@@ -187,7 +187,7 @@ export default function RegisterPage() {
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder={t('confirmYourPassword')}
-                    icon={<HiCheck className="w-5 h-5" />}
+                    icon={<HiCheck className="size-5" />}
                   />
                 </div>
 
@@ -198,11 +198,11 @@ export default function RegisterPage() {
                   </h4>
                   <ul className="text-xs text-blue-800 space-y-1">
                     <li className="flex items-center">
-                      <HiCheck className="w-3 h-3 mr-2 text-blue-600" strokeWidth={3} />
+                      <HiCheck className="size-3 mr-2 text-blue-600" strokeWidth={3} />
                       {t('passwordMinLength')}
                     </li>
                     <li className="flex items-center">
-                      <HiCheck className="w-3 h-3 mr-2 text-blue-600" strokeWidth={3} />
+                      <HiCheck className="size-3 mr-2 text-blue-600" strokeWidth={3} />
                       {t('passwordUnique')}
                     </li>
                   </ul>
@@ -240,17 +240,17 @@ export default function RegisterPage() {
           {/* Additional Info */}
           <div className="mt-8 text-center animate-fadeInUp" style={{ animationDelay: '400ms' }}>
             <p className="text-sm text-gray-500">{t('agreeTerms')}</p>
-            <div className="flex items-center justify-center mt-4 space-x-6 text-xs text-gray-400">
+            <div className="flex items-center justify-center mt-4 gap-x-6 text-xs text-gray-400">
               <div className="flex items-center">
-                <HiOutlineShieldCheck className="w-4 h-4 mr-1" />
+                <HiOutlineShieldCheck className="size-4 mr-1" />
                 {t('secureRegistration')}
               </div>
               <div className="flex items-center">
-                <HiOutlineInbox className="w-4 h-4 mr-1" />
+                <HiOutlineInbox className="size-4 mr-1" />
                 {t('noSpamPolicy')}
               </div>
               <div className="flex items-center">
-                <HiOutlineHeart className="w-4 h-4 mr-1" />
+                <HiOutlineHeart className="size-4 mr-1" />
                 {t('freePlan')}
               </div>
             </div>

@@ -72,11 +72,11 @@ export function Modal({
           {/* Close button */}
           <button
             onClick={onClose}
-            className="absolute right-3 top-3 flex h-11 w-11 items-center justify-center rounded-full text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-trust"
+            className="absolute right-3 top-3 flex size-11 items-center justify-center rounded-full text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-trust"
             aria-label={tCommon('close')}
           >
             <svg
-              className="h-5 w-5"
+              className="size-5"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"

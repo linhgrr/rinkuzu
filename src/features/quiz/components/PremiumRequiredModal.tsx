@@ -29,9 +29,9 @@ export function PremiumRequiredModal({ isOpen, onClose }: PremiumRequiredModalPr
     <Modal isOpen={isOpen} onClose={onClose} title={t('required')}>
       <div className="p-6">
         <div className="text-center mb-6">
-          <div className="w-16 h-16 bg-gradient-to-br from-green-100 to-green-50 rounded-full flex items-center justify-center mx-auto mb-4">
+          <div className="size-16 bg-gradient-to-br from-green-100 to-green-50 rounded-full flex items-center justify-center mx-auto mb-4">
             <svg
-              className="w-8 h-8 text-brand-trust"
+              className="size-8 text-brand-trust"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -54,7 +54,7 @@ export function PremiumRequiredModal({ isOpen, onClose }: PremiumRequiredModalPr
           <h4 className="font-medium text-neutral-900 mb-2">{t('benefits')}</h4>
           <ul className="space-y-2 text-sm text-neutral-700">
             <li className="flex items-center">
-              <svg className="w-4 h-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <svg className="size-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
                 <path
                   fillRule="evenodd"
                   d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
@@ -64,7 +64,7 @@ export function PremiumRequiredModal({ isOpen, onClose }: PremiumRequiredModalPr
               {t('benefitPrivateQuizzes')}
             </li>
             <li className="flex items-center">
-              <svg className="w-4 h-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <svg className="size-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
                 <path
                   fillRule="evenodd"
                   d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
@@ -74,7 +74,7 @@ export function PremiumRequiredModal({ isOpen, onClose }: PremiumRequiredModalPr
               {t('benefitUnlimitedAttempts')}
             </li>
             <li className="flex items-center">
-              <svg className="w-4 h-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <svg className="size-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
                 <path
                   fillRule="evenodd"
                   d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
@@ -84,7 +84,7 @@ export function PremiumRequiredModal({ isOpen, onClose }: PremiumRequiredModalPr
               {t('benefitDetailedStats')}
             </li>
             <li className="flex items-center">
-              <svg className="w-4 h-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <svg className="size-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
                 <path
                   fillRule="evenodd"
                   d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
@@ -96,7 +96,7 @@ export function PremiumRequiredModal({ isOpen, onClose }: PremiumRequiredModalPr
           </ul>
         </div>
 
-        <div className="flex flex-col space-y-3">
+        <div className="flex flex-col gap-y-3">
           <Button onClick={handleUpgrade} className="w-full">
             {t('upgradeToPremium')}
           </Button>

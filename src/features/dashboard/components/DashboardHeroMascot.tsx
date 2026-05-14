@@ -48,7 +48,7 @@ export function DashboardHeroMascot() {
   }, []);
 
   return (
-    <div className="relative z-10 hidden h-72 w-72 shrink-0 items-center justify-center lg:flex">
+    <div className="relative z-10 hidden size-72 shrink-0 items-center justify-center lg:flex">
       <div className="absolute inset-0 rounded-full bg-green-50/50 blur-3xl" />
       <div className="relative z-20 h-full w-full">
         {shouldLoadMascot ? <DashboardMascot3D /> : <MascotPlaceholder />}

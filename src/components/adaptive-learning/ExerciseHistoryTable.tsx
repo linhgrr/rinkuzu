@@ -107,7 +107,7 @@ function renderCorrectAnswer(
             key={`${item}-${idx}`}
             className="flex items-center gap-2 rounded-lg border border-green-100 bg-white p-2 text-xs"
           >
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-green-100 font-mono text-[10px] font-bold text-green-700">
+            <span className="flex size-5 items-center justify-center rounded-full bg-green-100 font-mono text-[10px] font-bold text-green-700">
               {idx + 1}
             </span>
             <div className="min-w-0 text-neutral-700">
@@ -208,7 +208,7 @@ function renderSelectedOptions(
               <div
                 className={`mt-0.5 flex shrink-0 items-center gap-1.5 rounded px-2 py-0.5 text-xs font-bold ${badgeTone}`}
               >
-                <HiCheck className="h-3.5 w-3.5" />
+                <HiCheck className="size-3.5" />
                 {t('history.table.correctBadge')}
               </div>
             ) : null}
@@ -216,7 +216,7 @@ function renderSelectedOptions(
               <div
                 className={`mt-0.5 flex shrink-0 items-center gap-1.5 rounded px-2 py-0.5 text-xs font-bold ${badgeTone}`}
               >
-                <HiOutlineX className="h-3.5 w-3.5" />
+                <HiOutlineX className="size-3.5" />
                 {t('history.table.yourAnswerBadge')}
               </div>
             ) : null}
@@ -297,12 +297,12 @@ export function ExerciseHistoryTable({ exercises }: ExerciseHistoryTableProps) {
                   {exercise.is_correct == null ? (
                     <span className="font-medium text-neutral-300">—</span>
                   ) : exercise.is_correct ? (
-                    <span className="inline-flex h-6 w-6 items-center justify-center rounded border border-neutral-200 bg-white text-neutral-900">
-                      <HiCheck className="h-4 w-4" />
+                    <span className="inline-flex size-6 items-center justify-center rounded border border-neutral-200 bg-white text-neutral-900">
+                      <HiCheck className="size-4" />
                     </span>
                   ) : (
-                    <span className="inline-flex h-6 w-6 items-center justify-center rounded border border-neutral-200 bg-neutral-50 text-neutral-400">
-                      <HiOutlineX className="h-4 w-4" />
+                    <span className="inline-flex size-6 items-center justify-center rounded border border-neutral-200 bg-neutral-50 text-neutral-400">
+                      <HiOutlineX className="size-4" />
                     </span>
                   )}
                 </td>
@@ -316,7 +316,7 @@ export function ExerciseHistoryTable({ exercises }: ExerciseHistoryTableProps) {
                     title={t('history.table.viewDetails')}
                     aria-label={t('history.table.viewDetails')}
                   >
-                    <HiOutlineEye className="h-5 w-5" />
+                    <HiOutlineEye className="size-5" />
                   </button>
                 </td>
               </tr>

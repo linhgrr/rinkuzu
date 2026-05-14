@@ -16,8 +16,8 @@ export const DailyProgressCard = ({ dailyGoalProgress, t }: DailyProgressCardPro
       </h2>
       <div className="space-y-8">
         <div className="flex items-center gap-5">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#8ff2df] to-[#57d9c9] shadow-[0_10px_20px_rgba(44,192,170,0.25)]">
-            <HiOutlineLightningBolt className="h-6 w-6 text-white" />
+          <div className="flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#8ff2df] to-[#57d9c9] shadow-[0_10px_20px_rgba(44,192,170,0.25)]">
+            <HiOutlineLightningBolt className="size-6 text-white" />
           </div>
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-neutral-600">
@@ -27,8 +27,8 @@ export const DailyProgressCard = ({ dailyGoalProgress, t }: DailyProgressCardPro
           </div>
         </div>
         <div className="flex items-center gap-5">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#ffcf77] to-[#f6a636] shadow-[0_10px_20px_rgba(246,166,54,0.24)]">
-            <HiOutlineBookOpen className="h-6 w-6 text-white" />
+          <div className="flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#ffcf77] to-[#f6a636] shadow-[0_10px_20px_rgba(246,166,54,0.24)]">
+            <HiOutlineBookOpen className="size-6 text-white" />
           </div>
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-neutral-600">

@@ -134,7 +134,7 @@ export const ExerciseTheoryView = ({
       <Card className="overflow-hidden rounded-xl border-neutral-200 shadow-sm bg-white p-5 sm:p-8 md:p-10 relative">
         {loadingTheory ? (
           <div className="flex flex-col items-center justify-center py-12 px-4 text-center min-h-[300px]">
-            <HiLightBulb className="h-8 w-8 text-neutral-400 mb-4 animate-pulse" />
+            <HiLightBulb className="size-8 text-neutral-400 mb-4 animate-pulse" />
             <TextShimmer className="text-lg font-medium text-neutral-400" duration={1.5}>
               {t('exercise.theory.generatingExplanationFor', { concept: concept.concept_name })}
             </TextShimmer>
@@ -143,7 +143,7 @@ export const ExerciseTheoryView = ({
           <>
             <div className="mb-8">
               <h3 className="mb-4 flex items-center gap-2 text-lg md:text-xl font-medium text-neutral-900 border-b border-neutral-100 pb-4">
-                <HiBookOpen className="h-5 w-5 text-neutral-900" />{' '}
+                <HiBookOpen className="size-5 text-neutral-900" />{' '}
                 {t('exercise.theory.basicTheory')}
               </h3>
               <div className="text-base md:text-lg leading-relaxed text-neutral-700">
@@ -154,7 +154,7 @@ export const ExerciseTheoryView = ({
             {theory.examples && theory.examples.length > 0 && (
               <div>
                 <h3 className="mb-5 md:mb-6 flex items-center gap-2 text-base md:text-lg font-medium text-neutral-900">
-                  <HiLightBulb className="h-5 w-5 text-neutral-900" />{' '}
+                  <HiLightBulb className="size-5 text-neutral-900" />{' '}
                   {t('exercise.theory.illustration')}
                 </h3>
                 <div className="grid gap-4 md:grid-cols-2">
@@ -194,7 +194,7 @@ export const ExerciseTheoryView = ({
           className="h-12 min-h-[48px] w-full rounded-full bg-brand-action px-8 text-sm font-medium text-white shadow-md transition-[background-color,transform] active:scale-[0.98] hover:bg-brand-action-hover disabled:bg-neutral-200 disabled:text-neutral-400 md:h-11 md:min-w-[200px] md:w-auto md:text-base"
         >
           {loadingExercise ? t('exercise.loadingTitle') : t('exercise.theory.startExercise')}
-          {!loadingExercise && <HiArrowRight className="ml-2 h-4 w-4" />}
+          {!loadingExercise && <HiArrowRight className="ml-2 size-4" />}
         </Button>
       </div>
     </div>
@@ -252,7 +252,7 @@ function ExerciseRationale({ exercise, localizedBloomLabel, t }: ExerciseRationa
       >
         <div className="pr-4">
           <div className="mb-1 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-trust">
-            <HiLightBulb className="h-4 w-4 shrink-0" />
+            <HiLightBulb className="size-4 shrink-0" />
             <span>{t('exercise.rationale.badge')}</span>
           </div>
           <p className="text-sm font-medium leading-6 text-neutral-900">
@@ -263,9 +263,9 @@ function ExerciseRationale({ exercise, localizedBloomLabel, t }: ExerciseRationa
           </p>
         </div>
         {isOpen ? (
-          <HiChevronUp className="mt-1 h-4 w-4 shrink-0 text-neutral-500" />
+          <HiChevronUp className="mt-1 size-4 shrink-0 text-neutral-500" />
         ) : (
-          <HiChevronDown className="mt-1 h-4 w-4 shrink-0 text-neutral-500" />
+          <HiChevronDown className="mt-1 size-4 shrink-0 text-neutral-500" />
         )}
       </Button>
 
@@ -339,7 +339,7 @@ export const ExerciseQuestionView = ({
           onClick={onQuit}
           className="font-medium text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100 rounded-md px-4 min-h-[44px] border border-transparent hover:border-neutral-200"
         >
-          <HiOutlineX className="mr-2 h-4 w-4" />
+          <HiOutlineX className="mr-2 size-4" />
           {t('quit')}
         </Button>
         <div className="h-6 w-px bg-neutral-200" />
@@ -373,7 +373,7 @@ export const ExerciseQuestionView = ({
             <div
               className={`flex items-center gap-2 rounded-md ${bloomColor} px-3 py-1.5 box-border shadow-sm`}
             >
-              <div className="h-2 w-2 rounded-full bg-white/90" />
+              <div className="size-2 rounded-full bg-white/90" />
               <span className="text-xs font-bold uppercase tracking-wider">
                 {t('exercise.bloomBadge', {
                   level: concept.bloom_level,
@@ -438,7 +438,7 @@ export const ExerciseQuestionView = ({
         <div className="relative overflow-hidden rounded-xl bg-neutral-50 border border-neutral-200 p-5 sm:p-6 text-neutral-900 shadow-sm">
           <div className="relative z-10">
             <h3 className="mb-3 text-base font-semibold tracking-tight flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-brand-trust animate-pulse" />
+              <span className="size-2 rounded-full bg-brand-trust animate-pulse" />
               {t('focusModeTitle')}
             </h3>
             <p className="mb-6 text-sm text-neutral-600 leading-relaxed">
@@ -453,7 +453,7 @@ export const ExerciseQuestionView = ({
               disabled={!canSubmit || submitting}
             >
               {submitting ? t('exercise.checking') : t('checkAnswer')}
-              {!submitting ? <HiArrowRight className="ml-2 h-4 w-4" /> : null}
+              {!submitting ? <HiArrowRight className="ml-2 size-4" /> : null}
             </Button>
           </div>
         </div>

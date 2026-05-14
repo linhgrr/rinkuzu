@@ -42,13 +42,13 @@ export const SubjectLibraryCard = memo(function SubjectLibraryCard({
               loading="lazy"
             />
           ) : (
-            <HiOutlineBookOpen className="h-12 w-12 text-neutral-300" />
+            <HiOutlineBookOpen className="size-12 text-neutral-300" />
           )}
         </div>
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <h3
-              className="truncate text-lg font-bold text-neutral-900"
+              className="truncate text-lg font-semibold text-neutral-900"
               title={subject.displayTitle}
             >
               {subject.displayTitle}
@@ -67,7 +67,7 @@ export const SubjectLibraryCard = memo(function SubjectLibraryCard({
             aria-label={t('deleteMaterial')}
             title={t('deleteMaterial')}
           >
-            <HiOutlineTrash className="h-4 w-4" />
+            <HiOutlineTrash className="size-4" />
           </Button>
         </div>
       </div>

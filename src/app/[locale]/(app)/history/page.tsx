@@ -44,7 +44,7 @@ function HistoryFallback() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-neutral-50">
       <div className="text-center animate-pulse">
-        <div className="w-12 h-12 bg-neutral-200 rounded-xl mx-auto mb-4" />
+        <div className="size-12 bg-neutral-200 rounded-xl mx-auto mb-4" />
         <p className="text-[var(--text-muted)]">{tCommon('loading')}</p>
       </div>
     </div>

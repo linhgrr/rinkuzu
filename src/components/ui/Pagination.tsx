@@ -49,19 +49,19 @@ export function Pagination({
         onClick={() => onPageChange(currentPage - 1)}
         className="h-10 min-h-[40px] px-4 py-2 rounded-full text-sm font-medium"
       >
-        <HiChevronLeft className="w-4 h-4 mr-1 text-neutral-500" />
+        <HiChevronLeft className="size-4 mr-1 text-neutral-500" />
         Previous
       </Button>
 
       {showPageNumbers && (
-        <div className="flex items-center space-x-1.5 mx-2">
+        <div className="flex items-center gap-x-1.5 mx-2">
           {/* First page if not visible */}
           {visiblePages[0] > 1 && (
             <>
               <Button
                 variant="outline"
                 onClick={() => onPageChange(1)}
-                className="h-10 w-10 min-w-[40px] min-h-[40px] p-0 rounded-full text-sm font-medium flex items-center justify-center transition-colors"
+                className="size-10 min-w-[40px] min-h-[40px] p-0 rounded-full text-sm font-medium flex items-center justify-center transition-colors"
               >
                 1
               </Button>
@@ -94,7 +94,7 @@ export function Pagination({
               <Button
                 variant="outline"
                 onClick={() => onPageChange(totalPages)}
-                className="h-10 w-10 min-w-[40px] min-h-[40px] p-0 rounded-full text-sm font-medium flex items-center justify-center transition-colors"
+                className="size-10 min-w-[40px] min-h-[40px] p-0 rounded-full text-sm font-medium flex items-center justify-center transition-colors"
               >
                 {totalPages}
               </Button>
@@ -111,7 +111,7 @@ export function Pagination({
         className="h-10 min-h-[40px] px-4 py-2 rounded-full text-sm font-medium"
       >
         Next
-        <HiChevronRight className="w-4 h-4 ml-1 text-neutral-500" />
+        <HiChevronRight className="size-4 ml-1 text-neutral-500" />
       </Button>
     </div>
   );

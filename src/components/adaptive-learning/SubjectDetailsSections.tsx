@@ -70,7 +70,7 @@ export const SubjectDetailsBackButton = ({
       onClick={onClick}
       className="-ml-4 mb-4 min-h-[44px] gap-2 px-4 font-medium text-neutral-500 hover:bg-neutral-50 hover:text-neutral-900"
     >
-      <HiOutlineArrowLeft className="h-5 w-5" />
+      <HiOutlineArrowLeft className="size-5" />
       {t('subjectDetails.backToDashboard')}
     </Button>
   </div>
@@ -122,14 +122,14 @@ export const SubjectDetailsHero = ({
         >
           {startingSession ? (
             <>
-              <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+              <div className="size-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
               {t('dashboard.creatingSession')}
             </>
           ) : (
             <>
-              <HiOutlineLightningBolt className="h-4 w-4" />
+              <HiOutlineLightningBolt className="size-4" />
               {t('subjectDetails.startLearning')}
-              <HiArrowRight className="h-4 w-4" />
+              <HiArrowRight className="size-4" />
             </>
           )}
         </Button>
@@ -192,7 +192,7 @@ const SubjectStatCard = ({
 }) => (
   <div className="rounded-xl border border-neutral-100 bg-neutral-50 px-5 py-4">
     <div className="mb-1 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-neutral-500">
-      <Icon className="h-3.5 w-3.5" />
+      <Icon className="size-3.5" />
       {label}
     </div>
     <div className="text-2xl font-mono text-neutral-900">{value}</div>
@@ -239,7 +239,7 @@ export const SubjectDetailsTabs = ({
                 : 'text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900'
             }`}
           >
-            <Icon className="h-4 w-4" aria-hidden="true" />
+            <Icon className="size-4" aria-hidden="true" />
             {t(labelKey)}
           </button>
         ))}
@@ -279,7 +279,7 @@ export const SubjectDetailsTabContent = ({
         <ExerciseHistoryTable exercises={historyDetail.exercise_history} />
       ) : (
         <div className="rounded-xl border border-neutral-200 bg-white py-12 text-center shadow-sm">
-          <HiOutlineClipboardList className="mx-auto mb-3 h-10 w-10 text-neutral-300" />
+          <HiOutlineClipboardList className="mx-auto mb-3 size-10 text-neutral-300" />
           <p className="text-sm text-neutral-500">{t('history.noMongoDBData')}</p>
           <p className="mt-1 text-xs text-neutral-400">{t('history.sessionSaveHint')}</p>
         </div>

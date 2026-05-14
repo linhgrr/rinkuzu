@@ -119,7 +119,7 @@ export default function SubscriptionPage() {
     return (
       <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="h-12 w-12 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust mx-auto" />
+          <div className="size-12 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust mx-auto" />
           <p className="mt-4 text-neutral-600">{t('loading')}</p>
         </div>
       </div>
@@ -180,7 +180,7 @@ export default function SubscriptionPage() {
                 )}
 
                 <div className="text-center mb-4 md:mb-6">
-                  <h3 className="text-xl md:text-2xl font-bold text-neutral-900 mb-2">
+                  <h3 className="text-xl md:text-2xl font-semibold text-neutral-900 mb-2">
                     {plan.name}
                   </h3>
                   <div className="text-2xl md:text-4xl font-bold text-brand-trust mb-2">
@@ -194,7 +194,7 @@ export default function SubscriptionPage() {
                 <ul className="space-y-2 md:space-y-3 mb-6 md:mb-8">
                   {plan.features.map((feature, index) => (
                     <li key={index} className="flex items-start">
-                      <HiOutlineCheck className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
+                      <HiOutlineCheck className="size-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
                       <span className="text-neutral-700">{feature}</span>
                     </li>
                   ))}

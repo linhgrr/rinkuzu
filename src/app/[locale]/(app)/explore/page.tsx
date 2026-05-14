@@ -92,11 +92,11 @@ const QuizCard = memo(function QuizCard({ quiz, href }: QuizCardProps) {
         <CardContent className="mt-auto pt-0">
           <div className="mt-2 flex items-center justify-between border-t pt-4 text-sm text-neutral-500">
             <span className="flex items-center gap-1">
-              <HiOutlineQuestionMarkCircle className="h-4 w-4" /> {questionCount}{' '}
+              <HiOutlineQuestionMarkCircle className="size-4" /> {questionCount}{' '}
               {tQuiz('questions')}
             </span>
             <span className="flex items-center gap-1 font-medium text-brand-trust group-hover:underline">
-              {tQuiz('takeQuiz')} <HiOutlineArrowRight className="h-4 w-4" />
+              {tQuiz('takeQuiz')} <HiOutlineArrowRight className="size-4" />
             </span>
           </div>
         </CardContent>
@@ -126,7 +126,7 @@ const EmptyState = memo(function EmptyState({ onClear }: { onClear: () => void }
 
   return (
     <div className="text-center py-20">
-      <HiOutlineSearch className="w-16 h-16 text-neutral-300 mx-auto mb-4" />
+      <HiOutlineSearch className="size-16 text-neutral-300 mx-auto mb-4" />
       <h3 className="text-xl font-semibold text-neutral-900">{t('noQuizzes')}</h3>
       <p className="text-neutral-500 mt-2">{t('tryAdjusting')}</p>
       <Button variant="ghost" className="mt-4" onClick={onClear}>
@@ -326,7 +326,7 @@ function ExploreFallback() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-neutral-50">
       <div className="text-center animate-pulse">
-        <div className="w-12 h-12 bg-neutral-200 rounded-xl mx-auto mb-4" />
+        <div className="size-12 bg-neutral-200 rounded-xl mx-auto mb-4" />
         <p className="text-[var(--text-muted)]">{t('loading')}</p>
       </div>
     </div>

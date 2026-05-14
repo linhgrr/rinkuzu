@@ -50,7 +50,7 @@ export function QuizMetaFormEditor({
     <Card className="max-w-2xl">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <HiOutlinePencilAlt className="w-5 h-5 text-brand-trust" />
+          <HiOutlinePencilAlt className="size-5 text-brand-trust" />
           Quiz Information
         </CardTitle>
         <CardDescription>Update the basic information about your quiz</CardDescription>

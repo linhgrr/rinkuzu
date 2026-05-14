@@ -85,8 +85,8 @@ const SessionRow = memo(function SessionRow({ item, onOpen }: SessionRowProps) {
             </span>
           </div>
         </div>
-        <div className="hidden h-8 w-8 items-center justify-center text-neutral-400 transition-colors group-hover:text-neutral-900 sm:flex">
-          <HiArrowRight className="h-4 w-4" />
+        <div className="hidden size-8 items-center justify-center text-neutral-400 transition-colors group-hover:text-neutral-900 sm:flex">
+          <HiArrowRight className="size-4" />
         </div>
       </div>
     </button>
@@ -108,7 +108,7 @@ export const SessionHistoryErrorState = ({ message }: { message: string }) => (
 
 export const SessionHistoryEmptyState = ({ hint, message }: { hint: string; message: string }) => (
   <div className="flex flex-col items-center gap-2 py-12 text-center text-neutral-400">
-    <HiOutlineAcademicCap className="h-10 w-10 opacity-40" />
+    <HiOutlineAcademicCap className="size-10 opacity-40" />
     <p className="text-sm">{message}</p>
     <p className="text-xs text-neutral-300">{hint}</p>
   </div>

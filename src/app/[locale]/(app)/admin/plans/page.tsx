@@ -278,7 +278,7 @@ export default function AdminPlansPage() {
         {loading ? (
           <div className="flex justify-center py-12">
             <div className="flex flex-col items-center gap-3">
-              <div className="h-12 w-12 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
+              <div className="size-12 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
               <div className="text-sm text-neutral-500">{tCommon('loading')}</div>
             </div>
           </div>
@@ -286,7 +286,7 @@ export default function AdminPlansPage() {
           <div className="max-w-6xl mx-auto">
             <div className="flex justify-between items-center mb-8">
               <div>
-                <h1 className="text-3xl font-bold text-neutral-900">{t('plans')}</h1>
+                <h1 className="text-3xl font-semibold text-neutral-900">{t('plans')}</h1>
                 <p className="mt-2 text-neutral-600">Manage subscription plans and pricing</p>
               </div>
               <Button
@@ -295,7 +295,7 @@ export default function AdminPlansPage() {
                 className="flex min-h-[44px] items-center gap-2 rounded-full px-5 shadow-md"
                 title="Create New Plan"
               >
-                <HiOutlinePlus className="w-5 h-5" />
+                <HiOutlinePlus className="size-5" />
                 Add Plan
               </Button>
             </div>
@@ -401,7 +401,7 @@ export default function AdminPlansPage() {
                   <div>
                     <p className="block text-sm font-medium text-neutral-700 mb-2">Features</p>
                     {createForm.features.map((feature, index) => (
-                      <div key={index} className="flex items-center space-x-2 mb-2">
+                      <div key={index} className="flex items-center gap-x-2 mb-2">
                         <Input
                           type="text"
                           value={feature}
@@ -418,7 +418,7 @@ export default function AdminPlansPage() {
                           title="Remove this feature"
                         >
                           <span className="sr-only">Remove this feature</span>
-                          <HiOutlineX className="w-4 h-4" />
+                          <HiOutlineX className="size-4" />
                         </Button>
                       </div>
                     ))}
@@ -429,10 +429,10 @@ export default function AdminPlansPage() {
                       size="sm"
                       className="mt-2 min-h-[36px] px-3"
                     >
-                      <HiOutlinePlus className="w-4 h-4 mr-1" /> Add Feature
+                      <HiOutlinePlus className="size-4 mr-1" /> Add Feature
                     </Button>
                   </div>
-                  <div className="flex justify-end space-x-2 pt-4">
+                  <div className="flex justify-end gap-x-2 pt-4">
                     <Button
                       type="button"
                       onClick={() => setShowCreateForm(false)}
@@ -471,7 +471,7 @@ export default function AdminPlansPage() {
             {loading ? (
               <div className="flex justify-center py-12">
                 <div className="flex flex-col items-center gap-3">
-                  <div className="h-12 w-12 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
+                  <div className="size-12 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
                   <div className="text-sm text-neutral-500">{t('loadingStatistics')}</div>
                 </div>
               </div>
@@ -499,7 +499,7 @@ export default function AdminPlansPage() {
                             {getDurationDisplay(plan.duration)}
                           </CardDescription>
                         </div>
-                        <div className="flex items-center space-x-2">
+                        <div className="flex items-center gap-x-2">
                           <span
                             className={`inline-flex min-h-[28px] items-center rounded-full px-3 text-[13px] font-medium ${
                               plan.isActive
@@ -546,7 +546,7 @@ export default function AdminPlansPage() {
                         {editingPlan === plan._id ? (
                           <div className="space-y-2">
                             {(editForm.features || []).map((feature, index) => (
-                              <div key={index} className="flex items-center space-x-2">
+                              <div key={index} className="flex items-center gap-x-2">
                                 <Input
                                   value={feature}
                                   onChange={(e) => handleFeatureChange(index, e.target.value)}
@@ -581,7 +581,7 @@ export default function AdminPlansPage() {
                                 key={index}
                                 className="flex items-center text-sm text-neutral-600"
                               >
-                                <HiOutlineCheck className="w-4 h-4 mr-2 text-green-500" />
+                                <HiOutlineCheck className="size-4 mr-2 text-green-500" />
                                 {feature}
                               </li>
                             ))}
@@ -599,7 +599,7 @@ export default function AdminPlansPage() {
                               onChange={(e) =>
                                 setEditForm({ ...editForm, isActive: e.target.checked })
                               }
-                              className="mr-2 h-4 w-4 rounded border-neutral-300 text-brand-trust focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+                              className="mr-2 size-4 rounded border-neutral-300 text-brand-trust focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
                             />
                             <span className="text-sm text-neutral-700">Active</span>
                           </label>
@@ -607,7 +607,7 @@ export default function AdminPlansPage() {
                       )}
 
                       {/* Action Buttons */}
-                      <div className="mt-6 flex space-x-2">
+                      <div className="mt-6 flex gap-x-2">
                         {editingPlan === plan._id ? (
                           <>
                             <Button

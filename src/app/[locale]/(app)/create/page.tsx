@@ -94,7 +94,7 @@ function PDFViewerComponent({ files, onClose }: { files: File[]; onClose: () => 
     return (
       <div className="w-full h-full flex items-center justify-center bg-neutral-50">
         <div className="text-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust mx-auto mb-2" />
+          <div className="size-8 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust mx-auto mb-2" />
           <p className="text-sm text-neutral-600">
             {files.length > 1 ? t('mergingPDFs', { count: files.length }) : t('loadingPDF')}
           </p>
@@ -108,7 +108,7 @@ function PDFViewerComponent({ files, onClose }: { files: File[]; onClose: () => 
     return (
       <div className="w-full h-full flex items-center justify-center bg-neutral-50">
         <div className="text-center text-red-600 max-w-sm">
-          <HiOutlineExclamationCircle className="w-8 h-8 mx-auto mb-2" />
+          <HiOutlineExclamationCircle className="size-8 mx-auto mb-2" />
           <p className="text-sm font-medium mb-1">{t('pdfLoadingError')}</p>
           <p className="text-xs">{error}</p>
         </div>
@@ -120,7 +120,7 @@ function PDFViewerComponent({ files, onClose }: { files: File[]; onClose: () => 
     return (
       <div className="w-full h-full flex items-center justify-center bg-neutral-50">
         <div className="text-center text-neutral-500">
-          <HiOutlineDocumentText className="w-8 h-8 mx-auto mb-2" />
+          <HiOutlineDocumentText className="size-8 mx-auto mb-2" />
           <p className="text-sm">{t('noPDFLoaded')}</p>
         </div>
       </div>
@@ -131,13 +131,13 @@ function PDFViewerComponent({ files, onClose }: { files: File[]; onClose: () => 
     <div className="w-full h-full flex flex-col">
       <div className="flex-shrink-0 p-3 bg-gradient-to-r from-green-50 to-teal-50 border-b border-green-200">
         <div className="flex items-center justify-between text-sm">
-          <div className="flex items-center space-x-2">
-            <HiOutlineDocumentText className="w-4 h-4 text-brand-trust" />
+          <div className="flex items-center gap-x-2">
+            <HiOutlineDocumentText className="size-4 text-brand-trust" />
             <span className="text-neutral-700 font-medium">
               {totalPages} {t('pages')}
             </span>
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center gap-x-2">
             <Button
               type="button"
               variant="outline"
@@ -320,7 +320,7 @@ export default function CreateQuizPage() {
                 aria-live="polite"
               >
                 <div className="flex items-center text-red-700">
-                  <HiOutlineExclamationCircle className="w-5 h-5 mr-2 flex-shrink-0" />
+                  <HiOutlineExclamationCircle className="size-5 mr-2 flex-shrink-0" />
                   <span className="text-sm font-medium">{error}</span>
                 </div>
               </Card>
@@ -334,7 +334,7 @@ export default function CreateQuizPage() {
                 aria-live="polite"
               >
                 <div className="flex items-center text-green-700">
-                  <HiOutlineCheckCircle className="w-5 h-5 mr-2 flex-shrink-0" />
+                  <HiOutlineCheckCircle className="size-5 mr-2 flex-shrink-0" />
                   <span className="text-sm font-medium">{success}</span>
                 </div>
               </Card>
@@ -405,8 +405,8 @@ export default function CreateQuizPage() {
                         </div>
                         <div className="text-center">
                           {extracting ? (
-                            <div className="flex items-center justify-center space-x-2">
-                              <div className="h-5 w-5 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
+                            <div className="flex items-center justify-center gap-x-2">
+                              <div className="size-5 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
                               <p className="text-sm font-semibold text-brand-trust">
                                 {t('processingFiles')}
                               </p>
@@ -446,7 +446,7 @@ export default function CreateQuizPage() {
                             onClick={() => setShowRemoveAllConfirm(true)}
                             className="px-3 text-red-600 hover:bg-red-50 hover:text-red-700"
                           >
-                            <HiOutlineTrash className="w-4 h-4 mr-1" />
+                            <HiOutlineTrash className="size-4 mr-1" />
                             {tCommon('removeAll')}
                           </Button>
                         </div>
@@ -459,9 +459,9 @@ export default function CreateQuizPage() {
                               className="p-4 hover:shadow-md transition-shadow"
                             >
                               <div className="flex items-center justify-between">
-                                <div className="flex items-center space-x-3 min-w-0 flex-1">
+                                <div className="flex items-center gap-x-3 min-w-0 flex-1">
                                   <div className="p-2 bg-red-100 rounded-xl flex-shrink-0">
-                                    <HiOutlineDocumentText className="h-6 w-6 text-red-600" />
+                                    <HiOutlineDocumentText className="size-6 text-red-600" />
                                   </div>
                                   <div className="min-w-0 flex-1">
                                     <p
@@ -482,7 +482,7 @@ export default function CreateQuizPage() {
                                   onClick={() => removeFile(index)}
                                   className="px-3 text-red-600 hover:bg-red-50 hover:text-red-700"
                                 >
-                                  <HiOutlineX className="w-4 h-4" />
+                                  <HiOutlineX className="size-4" />
                                 </Button>
                               </div>
                             </Card>
@@ -506,9 +506,9 @@ export default function CreateQuizPage() {
                           className="min-h-[40px] border-green-200 px-4 text-brand-trust hover:bg-green-50"
                         >
                           {showPDFViewer ? (
-                            <HiOutlineEyeOff className="w-4 h-4 mr-2" />
+                            <HiOutlineEyeOff className="size-4 mr-2" />
                           ) : (
-                            <HiOutlineEye className="w-4 h-4 mr-2" />
+                            <HiOutlineEye className="size-4 mr-2" />
                           )}
                           {showPDFViewer ? t('hidePDFPreview') : t('showPDFPreview')}
                         </Button>
@@ -518,7 +518,7 @@ export default function CreateQuizPage() {
                     <div className="flex flex-col sm:flex-row justify-between items-center gap-3">
                       <Link href="/">
                         <Button type="button" variant="outline" className="w-full sm:w-auto">
-                          <HiOutlineX className="w-4 h-4 mr-2" />
+                          <HiOutlineX className="size-4 mr-2" />
                           {tCommon('cancel')}
                         </Button>
                       </Link>
@@ -533,12 +533,12 @@ export default function CreateQuizPage() {
                       >
                         {extracting ? (
                           <>
-                            <HiOutlineRefresh className="w-4 h-4 mr-2 animate-spin" />
+                            <HiOutlineRefresh className="size-4 mr-2 animate-spin" />
                             {t('creatingDraft')}
                           </>
                         ) : (
                           <>
-                            <HiOutlineArrowRight className="w-4 h-4 mr-2" />
+                            <HiOutlineArrowRight className="size-4 mr-2" />
                             {t('createQuizBackground')}
                           </>
                         )}
@@ -559,7 +559,7 @@ export default function CreateQuizPage() {
                       <div className="flex-1 flex items-center justify-center">
                         <div className="text-center text-neutral-500">
                           <svg
-                            className="w-16 h-16 mx-auto mb-4 text-neutral-300"
+                            className="size-16 mx-auto mb-4 text-neutral-300"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"

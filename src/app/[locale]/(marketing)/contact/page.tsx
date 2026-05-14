@@ -25,7 +25,7 @@ export default async function ContactPage({ params }: Props) {
       {/* Hero */}
       <div className="bg-[var(--bg-section)] border-b border-neutral-100 py-20 md:py-28">
         <div className="max-w-2xl mx-auto px-6 text-center">
-          <h1 className="text-3xl md:text-5xl font-bold text-[var(--text-primary)] mb-4">
+          <h1 className="text-3xl md:text-5xl font-semibold text-[var(--text-primary)] mb-4">
             Get in Touch
           </h1>
           <p className="text-lg text-[var(--text-muted)] leading-relaxed">
@@ -40,7 +40,7 @@ export default async function ContactPage({ params }: Props) {
           {/* Contact Methods */}
           <div className="space-y-8">
             <div className="flex gap-4">
-              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-green-50 flex items-center justify-center">
+              <div className="flex-shrink-0 size-10 rounded-full bg-green-50 flex items-center justify-center">
                 <span className="text-brand-trust text-xs font-bold">MAIL</span>
               </div>
               <div>
@@ -58,7 +58,7 @@ export default async function ContactPage({ params }: Props) {
             </div>
 
             <div className="flex gap-4">
-              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-green-50 flex items-center justify-center">
+              <div className="flex-shrink-0 size-10 rounded-full bg-green-50 flex items-center justify-center">
                 <span className="text-brand-trust text-xs font-bold">AI</span>
               </div>
               <div>
@@ -76,7 +76,7 @@ export default async function ContactPage({ params }: Props) {
             </div>
 
             <div className="flex gap-4">
-              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-green-50 flex items-center justify-center">
+              <div className="flex-shrink-0 size-10 rounded-full bg-green-50 flex items-center justify-center">
                 <span className="text-brand-trust text-xs font-bold">EDU</span>
               </div>
               <div>
@@ -97,7 +97,7 @@ export default async function ContactPage({ params }: Props) {
             </div>
 
             <div className="flex gap-4">
-              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-green-50 flex items-center justify-center">
+              <div className="flex-shrink-0 size-10 rounded-full bg-green-50 flex items-center justify-center">
                 <span className="text-brand-trust text-xs font-bold">HQ</span>
               </div>
               <div>
@@ -117,7 +117,7 @@ export default async function ContactPage({ params }: Props) {
             </div>
 
             <div className="flex gap-4">
-              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-green-50 flex items-center justify-center">
+              <div className="flex-shrink-0 size-10 rounded-full bg-green-50 flex items-center justify-center">
                 <span className="text-brand-trust text-xs font-bold">BUG</span>
               </div>
               <div>

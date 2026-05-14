@@ -35,7 +35,7 @@ export default function AdaptiveLearningGuest({ locale, t }: AdaptiveLearningGue
       <JsonLd id="adaptive-software-schema" data={softwareSchema} />
 
       <header className="space-y-4">
-        <h1 className="text-3xl font-bold tracking-tight text-neutral-900 md:text-4xl">
+        <h1 className="text-3xl font-semibold tracking-tight text-neutral-900 md:text-4xl">
           {t('guest.heroTitle')}
         </h1>
         <p className="text-lg text-neutral-600">{t('dashboardDescription')}</p>

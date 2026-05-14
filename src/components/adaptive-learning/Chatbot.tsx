@@ -34,15 +34,15 @@ function ThinkingPlaceholder({ label }: { label: string }) {
       <span className="animate-pulse font-medium">{label}</span>
       <div className="flex gap-1">
         <span
-          className="h-1.5 w-1.5 rounded-full bg-neutral-400 animate-bounce"
+          className="size-1.5 rounded-full bg-neutral-400 animate-bounce"
           style={{ animationDelay: '0ms' }}
         />
         <span
-          className="h-1.5 w-1.5 rounded-full bg-neutral-400 animate-bounce"
+          className="size-1.5 rounded-full bg-neutral-400 animate-bounce"
           style={{ animationDelay: '150ms' }}
         />
         <span
-          className="h-1.5 w-1.5 rounded-full bg-neutral-400 animate-bounce"
+          className="size-1.5 rounded-full bg-neutral-400 animate-bounce"
           style={{ animationDelay: '300ms' }}
         />
       </div>
@@ -174,7 +174,7 @@ export default function AdaptiveLearningChatbot({
             alt={t('chatbot.iconAlt')}
             width={20}
             height={20}
-            className="w-5 h-5"
+            className="size-5"
           />
           <span className="font-semibold">{t('chatbot.title')}</span>
         </div>
@@ -186,7 +186,7 @@ export default function AdaptiveLearningChatbot({
           onClick={onClose}
           className="text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600"
         >
-          <HiOutlineX className="w-6 h-6" />
+          <HiOutlineX className="size-6" />
         </Button>
       </div>
 
@@ -244,7 +244,7 @@ export default function AdaptiveLearningChatbot({
             aria-label={t('chatbot.send') || 'Send message'}
             className="absolute right-2 top-1/2 min-h-[40px] min-w-[40px] -translate-y-1/2 rounded bg-neutral-900 p-0 text-white hover:bg-black"
           >
-            <HiArrowUp className="w-4 h-4" />
+            <HiArrowUp className="size-4" />
           </Button>
         </div>
       </div>

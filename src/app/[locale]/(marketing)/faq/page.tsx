@@ -83,7 +83,7 @@ export default async function FAQPage({ params }: Props) {
       {/* Hero */}
       <section className="bg-[var(--bg-section)] py-20 text-center">
         <div className="max-w-2xl mx-auto px-6">
-          <h1 className="text-4xl md:text-5xl font-bold text-[var(--text-primary)] mb-4">
+          <h1 className="text-4xl md:text-5xl font-semibold text-[var(--text-primary)] mb-4">
             {isVi ? 'Câu hỏi thường gặp' : 'Frequently Asked Questions'}
           </h1>
           <p className="text-[var(--text-muted)] text-lg">
@@ -121,7 +121,7 @@ export default async function FAQPage({ params }: Props) {
         {/* Category sections with anchor IDs */}
         {faqCategories.map((cat) => (
           <div key={cat.id} id={cat.id} className="mb-16">
-            <h2 className="text-xl font-bold text-[var(--text-primary)] mb-6 pb-3 border-b border-neutral-100">
+            <h2 className="text-xl font-semibold text-[var(--text-primary)] mb-6 pb-3 border-b border-neutral-100">
               {cat.label}
             </h2>
             <div className="space-y-4">

@@ -34,7 +34,7 @@ function renderResultCorrectAnswer(exercise: Exercise, result: SubmitResult, t: 
             <div className="min-w-0 flex-1 text-xs text-neutral-600">
               <DynamicMarkdownRenderer content={normalizeMathContent(pair.left)} />
             </div>
-            <HiArrowRight className="h-3 w-3 text-green-400" />
+            <HiArrowRight className="size-3 text-green-400" />
             <div className="min-w-0 flex-1 text-right text-xs font-semibold text-green-700">
               <DynamicMarkdownRenderer content={normalizeMathContent(pair.right)} />
             </div>
@@ -52,7 +52,7 @@ function renderResultCorrectAnswer(exercise: Exercise, result: SubmitResult, t: 
             key={idx}
             className="flex items-center gap-2 rounded-lg border border-green-100 bg-white p-2 text-xs"
           >
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-green-100 font-mono text-[10px] font-bold text-green-700">
+            <span className="flex size-5 items-center justify-center rounded-full bg-green-100 font-mono text-[10px] font-bold text-green-700">
               {idx + 1}
             </span>
             <div className="min-w-0 font-medium text-neutral-700">
@@ -145,7 +145,7 @@ export const ResultContent = ({
             : 'border border-neutral-200 bg-neutral-100 text-neutral-600'
         }`}
       >
-        {isCorrect ? <HiCheck className="h-6 w-6" /> : <HiOutlineX className="h-6 w-6" />}
+        {isCorrect ? <HiCheck className="size-6" /> : <HiOutlineX className="size-6" />}
       </div>
       <div>
         <h1 className="text-xl font-semibold tracking-tight text-neutral-900">
@@ -173,8 +173,8 @@ export const ResultContent = ({
 
             <div className="space-y-4">
               <div className="flex items-start gap-4 rounded-xl border border-green-100 bg-green-50/50 p-5 shadow-sm">
-                <div className="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-green-500 text-white">
-                  <HiCheck className="h-4 w-4" />
+                <div className="mt-1 flex size-6 shrink-0 items-center justify-center rounded-full bg-green-500 text-white">
+                  <HiCheck className="size-4" />
                 </div>
                 <div className="flex-1">
                   <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-green-600">
@@ -192,7 +192,7 @@ export const ResultContent = ({
                 className="flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-neutral-200 bg-white text-sm font-medium text-neutral-900 transition-colors hover:bg-neutral-50 hover:shadow-sm"
                 onClick={onOpenChat}
               >
-                <span className="relative flex h-7 w-7 items-center justify-center rounded-full border border-neutral-200 bg-neutral-100">
+                <span className="relative flex size-7 items-center justify-center rounded-full border border-neutral-200 bg-neutral-100">
                   <Image
                     src="/images/chatbot_icon.png"
                     alt={t('chatbot.iconAlt')}
@@ -242,7 +242,7 @@ export const ResultContent = ({
             className="h-12 flex-1 rounded-xl border border-neutral-200 font-semibold text-neutral-600 transition-colors hover:bg-neutral-50 hover:text-neutral-900"
             onClick={onGoDashboard}
           >
-            <HiOutlineHome className="mr-2 h-5 w-5" />
+            <HiOutlineHome className="mr-2 size-5" />
             {t('result.dashboard')}
           </Button>
           <Button
@@ -250,14 +250,14 @@ export const ResultContent = ({
             onClick={onHandleNext}
           >
             {result.session_completed ? t('result.sessionCompleteCta') : t('result.nextExercise')}
-            <HiArrowRight className="ml-2 h-5 w-5" />
+            <HiArrowRight className="ml-2 size-5" />
           </Button>
         </div>
       </div>
 
       <div className="space-y-6">
         <div className="rounded-xl border border-neutral-200 bg-white p-6 shadow-sm">
-          <h4 className="mb-4 text-[10px] font-bold uppercase tracking-widest text-neutral-500">
+          <h4 className="mb-4 text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
             {t('result.sessionStats')}
           </h4>
           <div className="space-y-4">
@@ -290,7 +290,7 @@ export const ResultContent = ({
           <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-6 text-center text-neutral-900 shadow-sm">
             <div className="mb-3 flex justify-center">
               <div className="rounded-full border border-neutral-300 bg-neutral-200 p-2 text-neutral-900">
-                <HiCheck className="h-5 w-5" />
+                <HiCheck className="size-5" />
               </div>
             </div>
             <h3 className="mb-1 text-base font-medium">{t('result.sessionCompleteTitle')}</h3>

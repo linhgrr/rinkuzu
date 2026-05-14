@@ -146,9 +146,9 @@ export function QuestionDiscussion({
           variant="ghost"
           className="h-auto w-full justify-between rounded-xl px-2 py-2 text-left"
         >
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center gap-x-2">
             <svg
-              className="w-4 h-4 text-neutral-600"
+              className="size-4 text-neutral-600"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -168,7 +168,7 @@ export function QuestionDiscussion({
             )}
           </div>
           <svg
-            className="w-4 h-4 text-neutral-400 transition-transform"
+            className="size-4 text-neutral-400 transition-transform"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -223,12 +223,12 @@ export function QuestionDiscussion({
       <div className="flex-1 overflow-y-auto p-3 space-y-3">
         {loading ? (
           <div className="flex items-center justify-center py-8">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
+            <div className="size-6 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
           </div>
         ) : comments.length === 0 ? (
           <div className="text-center py-6 text-neutral-500">
             <svg
-              className="w-8 h-8 mx-auto mb-2 text-neutral-300"
+              className="size-8 mx-auto mb-2 text-neutral-300"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -249,7 +249,7 @@ export function QuestionDiscussion({
               key={comment._id}
               className="bg-neutral-50 rounded-lg p-3 border border-neutral-100"
             >
-              <div className="flex items-start space-x-2 mb-2">
+              <div className="flex items-start gap-x-2 mb-2">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
                     <UserProfileLink

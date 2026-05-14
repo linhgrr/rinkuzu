@@ -94,7 +94,7 @@ export default async function PricingPage({ params }: Props) {
       {/* Hero */}
       <section className="bg-[var(--bg-section)] py-20 text-center">
         <div className="max-w-2xl mx-auto px-6">
-          <h1 className="text-4xl md:text-5xl font-bold text-[var(--text-primary)] mb-4">
+          <h1 className="text-4xl md:text-5xl font-semibold text-[var(--text-primary)] mb-4">
             Simple, Transparent Pricing
           </h1>
           <p className="text-[var(--text-muted)] text-lg">
@@ -154,7 +154,7 @@ export default async function PricingPage({ params }: Props) {
       {/* Pricing FAQ */}
       <section className="py-20 bg-[var(--bg-section)]">
         <div className="max-w-2xl mx-auto px-6">
-          <h2 className="text-3xl font-bold text-[var(--text-primary)] mb-10 text-center">
+          <h2 className="text-3xl font-semibold text-[var(--text-primary)] mb-10 text-center">
             Pricing Questions
           </h2>
           <div className="space-y-6">

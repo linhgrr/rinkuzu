@@ -242,7 +242,7 @@ export default function AdminUsersPage() {
         <div className="max-w-6xl mx-auto">
           <div className="flex justify-between items-center mb-8">
             <div>
-              <h1 className="text-3xl font-bold text-neutral-900">{t('userManagement')}</h1>
+              <h1 className="text-3xl font-semibold text-neutral-900">{t('userManagement')}</h1>
               <p className="mt-2 text-neutral-600">{t('manageUserAccounts')}</p>
             </div>
           </div>
@@ -260,7 +260,7 @@ export default function AdminUsersPage() {
                 />
               </div>
               <Button type="submit" variant="gradient">
-                <HiOutlineSearch className="w-4 h-4 mr-2" />
+                <HiOutlineSearch className="size-4 mr-2" />
                 {t('search')}
               </Button>
               {searchTerm && (
@@ -375,7 +375,7 @@ export default function AdminUsersPage() {
                           )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center space-x-2">
+                          <div className="flex items-center gap-x-2">
                             {getSubscriptionBadge(
                               user.subscription,
                               getSubscriptionText(user.subscription),
@@ -391,7 +391,7 @@ export default function AdminUsersPage() {
                           {new Date(user.createdAt).toLocaleDateString()}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <div className="flex justify-end space-x-2">
+                          <div className="flex justify-end gap-x-2">
                             {user.email !== session?.user?.email && (
                               <>
                                 <Button
@@ -536,7 +536,7 @@ export default function AdminUsersPage() {
                   </div>
                   {selectedPlanId === plan._id && (
                     <div className="text-brand-trust">
-                      <HiOutlineCheck className="w-5 h-5" />
+                      <HiOutlineCheck className="size-5" />
                     </div>
                   )}
                 </div>

@@ -23,9 +23,9 @@ export function CategoryOptionItem({
         selected ? 'bg-neutral-100 text-brand-trust' : 'hover:bg-neutral-50 text-neutral-700'
       }`}
     >
-      <div className="flex items-center space-x-3">
+      <div className="flex items-center gap-x-3">
         {color ? (
-          <div className="h-3 w-3 flex-shrink-0 rounded-full" style={{ backgroundColor: color }} />
+          <div className="size-3 flex-shrink-0 rounded-full" style={{ backgroundColor: color }} />
         ) : null}
         <div className="min-w-0 flex-1">
           <div className="truncate text-sm font-medium">{title}</div>

@@ -109,7 +109,7 @@ export function LoginForm({ locale }: LoginFormProps) {
           >
             <div className="flex items-center text-red-700">
               <HiOutlineExclamationCircle
-                className="w-5 h-5 mr-2 flex-shrink-0"
+                className="size-5 mr-2 flex-shrink-0"
                 aria-hidden="true"
               />
               <span className="text-sm font-medium">{error}</span>
@@ -128,7 +128,7 @@ export function LoginForm({ locale }: LoginFormProps) {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder={t('enterEmail')}
-            icon={<HiOutlineMail className="w-5 h-5" />}
+            icon={<HiOutlineMail className="size-5" />}
           />
 
           <Input
@@ -144,7 +144,7 @@ export function LoginForm({ locale }: LoginFormProps) {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder={t('enterPassword')}
-            icon={<HiOutlineLockClosed className="w-5 h-5" />}
+            icon={<HiOutlineLockClosed className="size-5" />}
           />
         </div>
 

@@ -50,16 +50,16 @@ export const DashboardHeader = ({
     </div>
     <div className="flex flex-wrap items-center gap-4">
       <div className="flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-4 py-2.5 shadow-sm">
-        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-[#f8c56a] to-[#f39a2f] shadow-md">
-          <HiOutlineLightningBolt className="h-3.5 w-3.5 text-white" aria-hidden="true" />
+        <span className="flex size-6 items-center justify-center rounded-full bg-gradient-to-br from-[#f8c56a] to-[#f39a2f] shadow-md">
+          <HiOutlineLightningBolt className="size-3.5 text-white" aria-hidden="true" />
         </span>
         <span className="text-sm font-bold text-neutral-900">
           {t('dayStreak', { count: streakDays })}
         </span>
       </div>
       <div className="flex min-w-[9.5rem] items-center gap-3 rounded-full border border-neutral-300/60 bg-white px-4 py-2.5 shadow-sm">
-        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-[#45d2be] to-[#1cb0a2] shadow-md">
-          <HiOutlineClock className="h-3.5 w-3.5 text-white" aria-hidden="true" />
+        <span className="flex size-6 items-center justify-center rounded-full bg-gradient-to-br from-[#45d2be] to-[#1cb0a2] shadow-md">
+          <HiOutlineClock className="size-3.5 text-white" aria-hidden="true" />
         </span>
         <div className="min-w-0">
           <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-neutral-600">

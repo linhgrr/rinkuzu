@@ -86,7 +86,7 @@ export default async function AboutPage({ params }: Props) {
           <p className="text-sm font-semibold tracking-widest uppercase text-brand-trust mb-4">
             Our Story
           </p>
-          <h1 className="text-4xl md:text-6xl font-bold text-[var(--text-primary)] mb-6 leading-tight">
+          <h1 className="text-4xl md:text-6xl font-semibold text-[var(--text-primary)] mb-6 leading-tight">
             Learning Should Adapt to You,
             <br />
             Not the Other Way Around
@@ -106,7 +106,7 @@ export default async function AboutPage({ params }: Props) {
             <p className="text-sm font-semibold tracking-widest uppercase text-brand-trust mb-3">
               Our Mission
             </p>
-            <h2 className="text-3xl md:text-4xl font-bold text-[var(--text-primary)] mb-6 leading-tight">
+            <h2 className="text-3xl md:text-4xl font-semibold text-[var(--text-primary)] mb-6 leading-tight">
               Turning Static PDFs Into Dynamic Learning Journeys
             </h2>
             <p className="text-[var(--text-muted)] leading-relaxed mb-4">
@@ -151,7 +151,7 @@ export default async function AboutPage({ params }: Props) {
             <p className="text-sm font-semibold tracking-widest uppercase text-brand-trust mb-3">
               What We Stand For
             </p>
-            <h2 className="text-3xl md:text-4xl font-bold text-[var(--text-primary)]">
+            <h2 className="text-3xl md:text-4xl font-semibold text-[var(--text-primary)]">
               Our Core Principles
             </h2>
           </div>
@@ -162,7 +162,7 @@ export default async function AboutPage({ params }: Props) {
                 className="rounded-3xl bg-white border border-neutral-200 p-8 shadow-sm hover:shadow-md transition-shadow"
               >
                 <div className="text-3xl mb-4">{v.icon}</div>
-                <h3 className="text-xl font-bold text-[var(--text-primary)] mb-3">{v.title}</h3>
+                <h3 className="text-xl font-semibold text-[var(--text-primary)] mb-3">{v.title}</h3>
                 <p className="text-[var(--text-muted)] leading-relaxed">{v.body}</p>
               </div>
             ))}
@@ -203,12 +203,12 @@ export default async function AboutPage({ params }: Props) {
             <p className="text-sm font-semibold tracking-widest uppercase text-brand-trust mb-3">
               Built on Research
             </p>
-            <h2 className="text-3xl md:text-4xl font-bold text-[var(--text-primary)] mb-6 leading-tight">
+            <h2 className="text-3xl md:text-4xl font-semibold text-[var(--text-primary)] mb-6 leading-tight">
               Grounded in Learning Science
             </h2>
             <div className="space-y-5">
               <div>
-                <h3 className="font-bold text-[var(--text-primary)] mb-1">
+                <h3 className="font-semibold text-[var(--text-primary)] mb-1">
                   Bayesian Knowledge Tracing (BKT)
                 </h3>
                 <p className="text-[var(--text-muted)] text-sm leading-relaxed">
@@ -218,7 +218,7 @@ export default async function AboutPage({ params }: Props) {
                 </p>
               </div>
               <div>
-                <h3 className="font-bold text-[var(--text-primary)] mb-1">
+                <h3 className="font-semibold text-[var(--text-primary)] mb-1">
                   Bloom&apos;s Taxonomy (1956)
                 </h3>
                 <p className="text-[var(--text-muted)] text-sm leading-relaxed">
@@ -228,7 +228,7 @@ export default async function AboutPage({ params }: Props) {
                 </p>
               </div>
               <div>
-                <h3 className="font-bold text-[var(--text-primary)] mb-1">Knowledge Graphs</h3>
+                <h3 className="font-semibold text-[var(--text-primary)] mb-1">Knowledge Graphs</h3>
                 <p className="text-[var(--text-muted)] text-sm leading-relaxed">
                   By modeling concepts as nodes and prerequisite relationships as edges, RinKuzu can
                   recommend what to study next with full awareness of what knowledge must come
@@ -243,7 +243,7 @@ export default async function AboutPage({ params }: Props) {
       {/* CTA */}
       <section className="py-16 md:py-20 bg-[var(--bg-section)]">
         <div className="max-w-2xl mx-auto px-6 text-center space-y-6">
-          <h2 className="text-3xl md:text-4xl font-bold text-[var(--text-primary)]">
+          <h2 className="text-3xl md:text-4xl font-semibold text-[var(--text-primary)]">
             Ready to Start Learning?
           </h2>
           <p className="text-[var(--text-muted)] text-lg">

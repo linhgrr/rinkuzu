@@ -153,7 +153,7 @@ export default function AdminReportsPage() {
         ) : (
           <>
             <div className="mb-8">
-              <h1 className="text-3xl font-bold text-neutral-900">{t('quizReports')}</h1>
+              <h1 className="text-3xl font-semibold text-neutral-900">{t('quizReports')}</h1>
               <p className="mt-2 text-neutral-600">
                 Manage and review user reports about quiz content
               </p>
@@ -241,12 +241,12 @@ export default function AdminReportsPage() {
                             onClick={() => openReportModal(report)}
                             className="min-h-[36px] px-3"
                           >
-                            <HiOutlineEye className="w-4 h-4 mr-1" /> Review
+                            <HiOutlineEye className="size-4 mr-1" /> Review
                           </Button>
 
                           <Link href={`/edit/${report.quizId}`}>
                             <Button variant="accent" className="min-h-[36px] w-full px-3">
-                              <HiOutlinePencil className="w-4 h-4 mr-1" /> Edit Quiz
+                              <HiOutlinePencil className="size-4 mr-1" /> Edit Quiz
                             </Button>
                           </Link>
 
@@ -255,7 +255,7 @@ export default function AdminReportsPage() {
                             onClick={() => setReportToDelete(report)}
                             className="min-h-[36px] border-red-200 px-3 text-red-600 hover:bg-red-50"
                           >
-                            <HiOutlineTrash className="w-4 h-4 mr-1" /> Delete
+                            <HiOutlineTrash className="size-4 mr-1" /> Delete
                           </Button>
                         </div>
                       </div>
@@ -333,7 +333,7 @@ export default function AdminReportsPage() {
                   'Updating…'
                 ) : (
                   <>
-                    <HiOutlineCheck className="w-4 h-4 mr-1" /> Mark Resolved
+                    <HiOutlineCheck className="size-4 mr-1" /> Mark Resolved
                   </>
                 )}
               </Button>
@@ -348,7 +348,7 @@ export default function AdminReportsPage() {
                   'Updating…'
                 ) : (
                   <>
-                    <HiOutlineX className="w-4 h-4 mr-1" /> Dismiss
+                    <HiOutlineX className="size-4 mr-1" /> Dismiss
                   </>
                 )}
               </Button>

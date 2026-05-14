@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useEffect, useReducer, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -23,17 +23,76 @@ interface CategorySearchProps {
   showInHomepage?: boolean;
 }
 
+interface CategorySearchState {
+  isOpen: boolean;
+  categories: Category[];
+  loading: boolean;
+  selectedIndex: number;
+  recentCategories: Category[];
+}
+
+type CategorySearchAction =
+  | { type: 'open' }
+  | { type: 'close' }
+  | { type: 'loading:start' }
+  | { type: 'loading:finish'; categories?: Category[] }
+  | { type: 'setRecentCategories'; recentCategories: Category[] }
+  | { type: 'saveRecentCategory'; category: Category }
+  | { type: 'setSelectedIndex'; selectedIndex: number }
+  | { type: 'resetSelectedIndex' };
+
+const RECENT_CATEGORIES_STORAGE_KEY = 'recentCategories:v1';
+
+const initialState: CategorySearchState = {
+  isOpen: false,
+  categories: [],
+  loading: false,
+  selectedIndex: -1,
+  recentCategories: [],
+};
+
+function categorySearchReducer(
+  state: CategorySearchState,
+  action: CategorySearchAction,
+): CategorySearchState {
+  switch (action.type) {
+    case 'open':
+      return { ...state, isOpen: true };
+    case 'close':
+      return { ...state, isOpen: false, selectedIndex: -1 };
+    case 'loading:start':
+      return { ...state, loading: true };
+    case 'loading:finish':
+      return {
+        ...state,
+        loading: false,
+        categories: action.categories ?? state.categories,
+      };
+    case 'setRecentCategories':
+      return { ...state, recentCategories: action.recentCategories };
+    case 'saveRecentCategory':
+      return {
+        ...state,
+        recentCategories: [
+          ...state.recentCategories.filter((category) => category._id !== action.category._id),
+          action.category,
+        ].slice(0, 5),
+      };
+    case 'setSelectedIndex':
+      return { ...state, selectedIndex: action.selectedIndex };
+    case 'resetSelectedIndex':
+      return { ...state, selectedIndex: -1 };
+    default:
+      return state;
+  }
+}
+
 function CategorySearch({
   isCollapsed = false,
   onCategorySelect,
   showInHomepage = false,
 }: CategorySearchProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [filteredCategories, setFilteredCategories] = useState<Category[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [selectedIndex, setSelectedIndex] = useState(-1);
-  const [recentCategories, setRecentCategories] = useState<Category[]>([]);
+  const [state, dispatch] = useReducer(categorySearchReducer, initialState);
 
   const searchRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -46,41 +105,26 @@ function CategorySearch({
     loadRecentCategories();
   }, []);
 
-  // Filter categories khi search term thay đổi
   useEffect(() => {
-    if (debouncedQuery.trim()) {
-      const filtered = categories.filter(
-        (category) =>
-          category.name.toLowerCase().includes(debouncedQuery.toLowerCase()) ||
-          category.description.toLowerCase().includes(debouncedQuery.toLowerCase()),
-      );
-      setFilteredCategories(filtered);
-    } else {
-      // Hiển thị recent categories nếu không có search term
-      setFilteredCategories(
-        recentCategories.length > 0 ? recentCategories.slice(0, 5) : categories.slice(0, 8),
-      );
-    }
-    setSelectedIndex(-1);
-  }, [debouncedQuery, categories, recentCategories]);
+    dispatch({ type: 'resetSelectedIndex' });
+  }, [debouncedQuery, state.categories, state.recentCategories]);
 
   const fetchCategories = async () => {
     try {
-      setLoading(true);
+      dispatch({ type: 'loading:start' });
       const data = await fetchApiData<{ allCategories: Category[] }>('/api/categories/stats');
-      setCategories(data.allCategories);
+      dispatch({ type: 'loading:finish', categories: data.allCategories });
     } catch (error) {
       console.error('Failed to fetch categories:', error);
-    } finally {
-      setLoading(false);
+      dispatch({ type: 'loading:finish' });
     }
   };
 
   const loadRecentCategories = () => {
     try {
-      const recent = localStorage.getItem('recentCategories');
+      const recent = localStorage.getItem(RECENT_CATEGORIES_STORAGE_KEY);
       if (recent) {
-        setRecentCategories(JSON.parse(recent));
+        dispatch({ type: 'setRecentCategories', recentCategories: JSON.parse(recent) });
       }
     } catch (error) {
       console.error('Failed to load recent categories:', error);
@@ -89,16 +133,26 @@ function CategorySearch({
 
   const saveRecentCategory = (category: Category) => {
     try {
-      const recent = [...recentCategories.filter((c) => c._id !== category._id), category].slice(
-        0,
-        5,
-      );
-      setRecentCategories(recent);
-      localStorage.setItem('recentCategories', JSON.stringify(recent));
+      const nextRecentCategories = [
+        ...state.recentCategories.filter((recentCategory) => recentCategory._id !== category._id),
+        category,
+      ].slice(0, 5);
+      dispatch({ type: 'saveRecentCategory', category });
+      localStorage.setItem(RECENT_CATEGORIES_STORAGE_KEY, JSON.stringify(nextRecentCategories));
     } catch (error) {
       console.error('Failed to save recent category:', error);
     }
   };
+
+  const filteredCategories = debouncedQuery.trim()
+    ? state.categories.filter(
+        (category) =>
+          category.name.toLowerCase().includes(debouncedQuery.toLowerCase()) ||
+          category.description.toLowerCase().includes(debouncedQuery.toLowerCase()),
+      )
+    : state.recentCategories.length > 0
+      ? state.recentCategories.slice(0, 5)
+      : state.categories.slice(0, 8);
 
   const handleCategorySelect = (category: Category | null) => {
     if (category) {
@@ -116,39 +170,47 @@ function CategorySearch({
         push('/');
       }
     }
-    setIsOpen(false);
+    dispatch({ type: 'close' });
     reset();
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (!isOpen) return;
+    if (!state.isOpen) return;
 
     switch (e.key) {
       case 'ArrowDown':
         e.preventDefault();
-        setSelectedIndex((prev) => (prev < filteredCategories.length - 1 ? prev + 1 : prev));
+        dispatch({
+          type: 'setSelectedIndex',
+          selectedIndex:
+            state.selectedIndex < filteredCategories.length - 1
+              ? state.selectedIndex + 1
+              : state.selectedIndex,
+        });
         break;
       case 'ArrowUp':
         e.preventDefault();
-        setSelectedIndex((prev) => (prev > -1 ? prev - 1 : -1));
+        dispatch({
+          type: 'setSelectedIndex',
+          selectedIndex: state.selectedIndex > -1 ? state.selectedIndex - 1 : -1,
+        });
         break;
       case 'Enter':
         e.preventDefault();
-        if (selectedIndex >= 0 && filteredCategories[selectedIndex]) {
-          handleCategorySelect(filteredCategories[selectedIndex]);
-        } else if (selectedIndex === -1) {
+        if (state.selectedIndex >= 0 && filteredCategories[state.selectedIndex]) {
+          handleCategorySelect(filteredCategories[state.selectedIndex]);
+        } else if (state.selectedIndex === -1) {
           handleCategorySelect(null); // All categories
         }
         break;
       case 'Escape':
-        setIsOpen(false);
+        dispatch({ type: 'close' });
         reset();
-        setSelectedIndex(-1);
         break;
     }
   };
 
-  useDropdownOutside(dropdownRef, isOpen, () => setIsOpen(false));
+  useDropdownOutside(dropdownRef, state.isOpen, () => dispatch({ type: 'close' }));
 
   if (isCollapsed) {
     return (
@@ -156,7 +218,7 @@ function CategorySearch({
         type="button"
         variant="ghost"
         size="icon"
-        onClick={() => setIsOpen(true)}
+        onClick={() => dispatch({ type: 'open' })}
         className="w-full text-neutral-600 hover:bg-neutral-100"
         title="Search Categories"
       >
@@ -182,7 +244,7 @@ function CategorySearch({
           placeholder="Search categories..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          onFocus={() => setIsOpen(true)}
+          onFocus={() => dispatch({ type: 'open' })}
           onKeyDown={handleKeyDown}
           className="pl-9 pr-4 text-sm"
         />
@@ -202,9 +264,9 @@ function CategorySearch({
       </div>
 
       {/* Dropdown */}
-      {isOpen && (
+      {state.isOpen && (
         <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-neutral-200 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
-          {loading ? (
+          {state.loading ? (
             <div className="p-4 text-center">
               <div className="size-6 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust mx-auto" />
               <p className="mt-2 text-sm text-neutral-500">Loading categories…</p>
@@ -216,7 +278,7 @@ function CategorySearch({
                 type="button"
                 onClick={() => handleCategorySelect(null)}
                 className={`w-full border-b border-neutral-100 px-4 py-3 text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-inset focus-visible:outline-[var(--focus-ring)] ${
-                  selectedIndex === -1
+                  state.selectedIndex === -1
                     ? 'bg-neutral-100 text-brand-trust'
                     : 'text-neutral-700 hover:bg-neutral-50'
                 }`}
@@ -245,7 +307,7 @@ function CategorySearch({
               </button>
 
               {/* Recent Categories Section */}
-              {!query && recentCategories.length > 0 && (
+              {!query && state.recentCategories.length > 0 && (
                 <div className="px-4 py-2 bg-neutral-50 border-b border-neutral-100">
                   <p className="text-xs font-medium text-neutral-600 uppercase tracking-wide">
                     Recent
@@ -261,7 +323,7 @@ function CategorySearch({
                     title={category.name}
                     subtitle={`${category.quizCount} quiz${category.quizCount !== 1 ? 'zes' : ''}${category.description ? ` • ${category.description}` : ''}`}
                     color={category.color}
-                    selected={selectedIndex === index}
+                    selected={state.selectedIndex === index}
                     onClick={() => handleCategorySelect(category)}
                   />
                 ))

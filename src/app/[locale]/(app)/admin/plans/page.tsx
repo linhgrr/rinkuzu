@@ -68,6 +68,7 @@ export default function AdminPlansPage() {
     isCreate: boolean;
   } | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [hasMounted, setHasMounted] = useState(false);
 
   // New plan creation state
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -96,6 +97,10 @@ export default function AdminPlansPage() {
   useEffect(() => {
     fetchPlans();
   }, [fetchPlans]);
+
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
 
   const handleEdit = (plan: Plan) => {
     setEditingPlan(plan._id);
@@ -206,39 +211,45 @@ export default function AdminPlansPage() {
 
   const handleFeatureChange = (index: number, value: string, isCreate = false) => {
     if (isCreate) {
-      const newFeatures = [...createForm.features];
-      newFeatures[index] = value;
-      setCreateForm({ ...createForm, features: newFeatures });
+      setCreateForm((prev) => {
+        const newFeatures = [...prev.features];
+        newFeatures[index] = value;
+        return { ...prev, features: newFeatures };
+      });
     } else {
-      const newFeatures = [...(editForm.features || [])];
-      newFeatures[index] = value;
-      setEditForm({ ...editForm, features: newFeatures });
+      setEditForm((prev) => {
+        const newFeatures = [...(prev.features || [])];
+        newFeatures[index] = value;
+        return { ...prev, features: newFeatures };
+      });
     }
   };
 
   const addFeature = (isCreate = false) => {
     if (isCreate) {
-      setCreateForm({
-        ...createForm,
-        features: [...createForm.features, ''],
-      });
+      setCreateForm((prev) => ({
+        ...prev,
+        features: [...prev.features, ''],
+      }));
     } else {
-      setEditForm({
-        ...editForm,
-        features: [...(editForm.features || []), ''],
-      });
+      setEditForm((prev) => ({
+        ...prev,
+        features: [...(prev.features || []), ''],
+      }));
     }
   };
 
   const removeFeature = (index: number, isCreate = false) => {
     if (isCreate) {
-      const newFeatures = [...createForm.features];
-      newFeatures.splice(index, 1);
-      setCreateForm({ ...createForm, features: newFeatures });
+      setCreateForm((prev) => ({
+        ...prev,
+        features: prev.features.filter((_, featureIndex) => featureIndex !== index),
+      }));
     } else {
-      const newFeatures = [...(editForm.features || [])];
-      newFeatures.splice(index, 1);
-      setEditForm({ ...editForm, features: newFeatures });
+      setEditForm((prev) => ({
+        ...prev,
+        features: (prev.features || []).filter((_, featureIndex) => featureIndex !== index),
+      }));
     }
   };
 
@@ -310,12 +321,7 @@ export default function AdminPlansPage() {
               description="Add a new subscription plan with ISO 8601 duration format"
               size="medium"
             >
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  handleCreatePlan();
-                }}
-              >
+              <div>
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
@@ -329,7 +335,9 @@ export default function AdminPlansPage() {
                         id="create-plan-name"
                         type="text"
                         value={createForm.name}
-                        onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
+                        onChange={(e) =>
+                          setCreateForm((prev) => ({ ...prev, name: e.target.value }))
+                        }
                         placeholder="e.g., Premium Monthly"
                         className="w-full"
                       />
@@ -346,10 +354,10 @@ export default function AdminPlansPage() {
                         type="number"
                         value={createForm.price}
                         onChange={(e) =>
-                          setCreateForm({
-                            ...createForm,
+                          setCreateForm((prev) => ({
+                            ...prev,
                             price: e.target.value === '' ? '' : Number(e.target.value),
-                          })
+                          }))
                         }
                         placeholder="99000"
                         min="0"
@@ -368,7 +376,9 @@ export default function AdminPlansPage() {
                       <select
                         id="create-plan-duration"
                         value={createForm.duration}
-                        onChange={(e) => setCreateForm({ ...createForm, duration: e.target.value })}
+                        onChange={(e) =>
+                          setCreateForm((prev) => ({ ...prev, duration: e.target.value }))
+                        }
                         className="w-full p-2 border border-neutral-300 rounded-md focus:ring-2 focus:ring-brand-trust focus:border-green-500"
                         title="Select plan duration"
                       >
@@ -390,7 +400,10 @@ export default function AdminPlansPage() {
                         id="create-plan-status"
                         value={createForm.isActive.toString()}
                         onChange={(e) =>
-                          setCreateForm({ ...createForm, isActive: e.target.value === 'true' })
+                          setCreateForm((prev) => ({
+                            ...prev,
+                            isActive: e.target.value === 'true',
+                          }))
                         }
                         className="w-full p-2 border border-neutral-300 rounded-md focus:ring-2 focus:ring-brand-trust focus:border-green-500"
                         title="Select plan status"
@@ -444,7 +457,8 @@ export default function AdminPlansPage() {
                       Cancel
                     </Button>
                     <Button
-                      type="submit"
+                      type="button"
+                      onClick={handleCreatePlan}
                       disabled={createLoading}
                       className="min-h-[40px] bg-brand-trust px-4 text-white hover:bg-brand-trust-hover"
                     >
@@ -452,7 +466,7 @@ export default function AdminPlansPage() {
                     </Button>
                   </div>
                 </div>
-              </form>
+              </div>
             </Modal>
 
             {/* End Create Plan Modal */}
@@ -483,181 +497,198 @@ export default function AdminPlansPage() {
               </div>
             ) : (
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {plans.map((plan) => (
-                  <Card key={plan._id} className="relative">
-                    <CardHeader>
-                      <div className="flex justify-between items-start">
-                        <div>
+                {plans.map((plan) => {
+                  const createdAtLabel = hasMounted
+                    ? new Date(plan.createdAt).toLocaleDateString()
+                    : '';
+                  const updatedAtLabel = hasMounted
+                    ? new Date(plan.updatedAt).toLocaleDateString()
+                    : '';
+
+                  return (
+                    <Card key={plan._id} className="relative">
+                      <CardHeader>
+                        <div className="flex justify-between items-start">
+                          <div>
+                            {editingPlan === plan._id ? (
+                              <Input
+                                value={editForm.name || ''}
+                                onChange={(e) =>
+                                  setEditForm((prev) => ({ ...prev, name: e.target.value }))
+                                }
+                                className="text-xl font-bold"
+                              />
+                            ) : (
+                              <CardTitle className="text-xl">{plan.name}</CardTitle>
+                            )}
+                            <CardDescription className="mt-2">
+                              {getDurationDisplay(plan.duration)}
+                            </CardDescription>
+                          </div>
+                          <div className="flex items-center gap-x-2">
+                            <span
+                              className={`inline-flex min-h-[28px] items-center rounded-full px-3 text-[13px] font-medium ${
+                                plan.isActive
+                                  ? 'bg-green-100 text-green-800'
+                                  : 'bg-neutral-100 text-neutral-800'
+                              }`}
+                            >
+                              {plan.isActive ? 'Active' : 'Inactive'}
+                            </span>
+                          </div>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        {/* Price */}
+                        <div className="mb-6">
                           {editingPlan === plan._id ? (
-                            <Input
-                              value={editForm.name || ''}
-                              onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                              className="text-xl font-bold"
-                            />
-                          ) : (
-                            <CardTitle className="text-xl">{plan.name}</CardTitle>
-                          )}
-                          <CardDescription className="mt-2">
-                            {getDurationDisplay(plan.duration)}
-                          </CardDescription>
-                        </div>
-                        <div className="flex items-center gap-x-2">
-                          <span
-                            className={`inline-flex min-h-[28px] items-center rounded-full px-3 text-[13px] font-medium ${
-                              plan.isActive
-                                ? 'bg-green-100 text-green-800'
-                                : 'bg-neutral-100 text-neutral-800'
-                            }`}
-                          >
-                            {plan.isActive ? 'Active' : 'Inactive'}
-                          </span>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      {/* Price */}
-                      <div className="mb-6">
-                        {editingPlan === plan._id ? (
-                          <div className="space-y-2">
-                            <label
-                              htmlFor={`edit-plan-price-${plan._id}`}
-                              className="block text-sm font-medium text-neutral-700"
-                            >
-                              Price (VND)
-                            </label>
-                            <Input
-                              id={`edit-plan-price-${plan._id}`}
-                              type="number"
-                              value={editForm.price || 0}
-                              onChange={(e) =>
-                                setEditForm({ ...editForm, price: parseInt(e.target.value) })
-                              }
-                              className="text-2xl font-bold"
-                            />
-                          </div>
-                        ) : (
-                          <div className="text-3xl font-bold text-neutral-900">
-                            {formatCurrency(plan.price)}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Features */}
-                      <div className="space-y-3">
-                        <h4 className="font-medium text-neutral-900">Features:</h4>
-                        {editingPlan === plan._id ? (
-                          <div className="space-y-2">
-                            {(editForm.features || []).map((feature, index) => (
-                              <div key={index} className="flex items-center gap-x-2">
-                                <Input
-                                  value={feature}
-                                  onChange={(e) => handleFeatureChange(index, e.target.value)}
-                                  placeholder="Feature description"
-                                  className="flex-1"
-                                />
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => setFeatureToRemove({ index, isCreate: false })}
-                                  className="min-h-[36px] px-3 text-red-600 hover:text-red-700"
-                                >
-                                  Remove
-                                </Button>
-                              </div>
-                            ))}
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={() => addFeature(false)}
-                              className="min-h-[36px] w-full px-3"
-                            >
-                              Add Feature
-                            </Button>
-                          </div>
-                        ) : (
-                          <ul className="space-y-2">
-                            {plan.features.map((feature) => (
-                              <li
-                                key={feature}
-                                className="flex items-center text-sm text-neutral-600"
+                            <div className="space-y-2">
+                              <label
+                                htmlFor={`edit-plan-price-${plan._id}`}
+                                className="block text-sm font-medium text-neutral-700"
                               >
-                                <HiOutlineCheck className="size-4 mr-2 text-green-500" />
-                                {feature}
-                              </li>
-                            ))}
-                          </ul>
-                        )}
-                      </div>
-
-                      {/* Status Toggle */}
-                      {editingPlan === plan._id && (
-                        <div className="mt-4">
-                          <label className="flex items-center">
-                            <input
-                              type="checkbox"
-                              checked={editForm.isActive || false}
-                              onChange={(e) =>
-                                setEditForm({ ...editForm, isActive: e.target.checked })
-                              }
-                              className="mr-2 size-4 rounded border-neutral-300 text-brand-trust focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
-                            />
-                            <span className="text-sm text-neutral-700">Active</span>
-                          </label>
+                                Price (VND)
+                              </label>
+                              <Input
+                                id={`edit-plan-price-${plan._id}`}
+                                type="number"
+                                value={editForm.price || 0}
+                                onChange={(e) =>
+                                  setEditForm((prev) => ({
+                                    ...prev,
+                                    price: parseInt(e.target.value),
+                                  }))
+                                }
+                                className="text-2xl font-bold"
+                              />
+                            </div>
+                          ) : (
+                            <div className="text-3xl font-bold text-neutral-900">
+                              {formatCurrency(plan.price)}
+                            </div>
+                          )}
                         </div>
-                      )}
 
-                      {/* Action Buttons */}
-                      <div className="mt-6 flex gap-x-2">
-                        {editingPlan === plan._id ? (
-                          <>
+                        {/* Features */}
+                        <div className="space-y-3">
+                          <h4 className="font-medium text-neutral-900">Features:</h4>
+                          {editingPlan === plan._id ? (
+                            <div className="space-y-2">
+                              {(editForm.features || []).map((feature, index) => (
+                                <div key={index} className="flex items-center gap-x-2">
+                                  <Input
+                                    value={feature}
+                                    onChange={(e) => handleFeatureChange(index, e.target.value)}
+                                    placeholder="Feature description"
+                                    className="flex-1"
+                                  />
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setFeatureToRemove({ index, isCreate: false })}
+                                    className="min-h-[36px] px-3 text-red-600 hover:text-red-700"
+                                  >
+                                    Remove
+                                  </Button>
+                                </div>
+                              ))}
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => addFeature(false)}
+                                className="min-h-[36px] w-full px-3"
+                              >
+                                Add Feature
+                              </Button>
+                            </div>
+                          ) : (
+                            <ul className="space-y-2">
+                              {plan.features.map((feature) => (
+                                <li
+                                  key={feature}
+                                  className="flex items-center text-sm text-neutral-600"
+                                >
+                                  <HiOutlineCheck className="size-4 mr-2 text-green-500" />
+                                  {feature}
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </div>
+
+                        {/* Status Toggle */}
+                        {editingPlan === plan._id && (
+                          <div className="mt-4">
+                            <label className="flex items-center">
+                              <input
+                                type="checkbox"
+                                checked={editForm.isActive || false}
+                                onChange={(e) =>
+                                  setEditForm((prev) => ({
+                                    ...prev,
+                                    isActive: e.target.checked,
+                                  }))
+                                }
+                                className="mr-2 size-4 rounded border-neutral-300 text-brand-trust focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+                              />
+                              <span className="text-sm text-neutral-700">Active</span>
+                            </label>
+                          </div>
+                        )}
+
+                        {/* Action Buttons */}
+                        <div className="mt-6 flex gap-x-2">
+                          {editingPlan === plan._id ? (
+                            <>
+                              <Button
+                                onClick={() => handleSaveEdit(plan._id)}
+                                className="min-h-[40px] flex-1 px-4"
+                                variant="gradient"
+                              >
+                                Save Changes
+                              </Button>
+                              <Button
+                                onClick={handleCancelEdit}
+                                variant="outline"
+                                className="min-h-[40px] flex-1 px-4"
+                              >
+                                Cancel
+                              </Button>
+                            </>
+                          ) : (
                             <Button
-                              onClick={() => handleSaveEdit(plan._id)}
-                              className="min-h-[40px] flex-1 px-4"
-                              variant="gradient"
-                            >
-                              Save Changes
-                            </Button>
-                            <Button
-                              onClick={handleCancelEdit}
+                              onClick={() => handleEdit(plan)}
                               variant="outline"
-                              className="min-h-[40px] flex-1 px-4"
+                              className="min-h-[40px] w-full px-4"
                             >
-                              Cancel
+                              Edit Plan
                             </Button>
-                          </>
-                        ) : (
-                          <Button
-                            onClick={() => handleEdit(plan)}
-                            variant="outline"
-                            className="min-h-[40px] w-full px-4"
-                          >
-                            Edit Plan
-                          </Button>
-                        )}
-                      </div>
+                          )}
+                        </div>
 
-                      {/* Plan Info */}
-                      <div className="mt-4 pt-4 border-t border-neutral-100">
-                        <div className="text-xs text-neutral-500 space-y-1">
-                          <div>
-                            {t('created')}:{' '}
-                            <time dateTime={plan.createdAt} suppressHydrationWarning>
-                              {new Date(plan.createdAt).toLocaleDateString()}
-                            </time>
-                          </div>
-                          <div>
-                            {t('updated')}:{' '}
-                            <time dateTime={plan.updatedAt} suppressHydrationWarning>
-                              {new Date(plan.updatedAt).toLocaleDateString()}
-                            </time>
+                        {/* Plan Info */}
+                        <div className="mt-4 pt-4 border-t border-neutral-100">
+                          <div className="text-xs text-neutral-500 space-y-1">
+                            <div>
+                              {t('created')}:{' '}
+                              <time dateTime={plan.createdAt} suppressHydrationWarning>
+                                {createdAtLabel}
+                              </time>
+                            </div>
+                            <div>
+                              {t('updated')}:{' '}
+                              <time dateTime={plan.updatedAt} suppressHydrationWarning>
+                                {updatedAtLabel}
+                              </time>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
             )}
           </div>

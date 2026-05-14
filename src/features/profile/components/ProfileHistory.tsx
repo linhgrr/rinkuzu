@@ -155,6 +155,7 @@ export default function ProfileHistory() {
           <div className="space-y-4">
             {attempts.map((attempt) => {
               const badge = getPerformanceBadge(attempt.score);
+              const takenAtLabel = formatDate(new Date(attempt.takenAt));
               return (
                 <Card key={attempt._id} className="hover:shadow-md transition-shadow">
                   <CardContent className="p-4 sm:p-6">
@@ -179,7 +180,7 @@ export default function ProfileHistory() {
                           <span className="flex items-center gap-1">
                             <HiOutlineClock className="size-3" />{' '}
                             <time dateTime={attempt.takenAt} suppressHydrationWarning>
-                              {formatDate(new Date(attempt.takenAt))}
+                              {takenAtLabel}
                             </time>
                           </span>
                         </div>

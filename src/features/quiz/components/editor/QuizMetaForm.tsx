@@ -46,6 +46,10 @@ export function QuizMetaFormEditor({
   categoryDisabled,
   quiz,
 }: QuizMetaFormEditorProps) {
+  const createdAt = quiz ? new Date(quiz.createdAt) : null;
+  const createdAtIso = createdAt?.toISOString() || '';
+  const createdAtLabel = createdAt?.toLocaleDateString() || '';
+
   return (
     <Card className="max-w-2xl">
       <CardHeader>
@@ -103,8 +107,8 @@ export function QuizMetaFormEditor({
                 </p>
                 <p>
                   <strong>Created:</strong>{' '}
-                  <time dateTime={new Date(quiz.createdAt).toISOString()} suppressHydrationWarning>
-                    {new Date(quiz.createdAt).toLocaleDateString()}
+                  <time dateTime={createdAtIso} suppressHydrationWarning>
+                    {createdAtLabel}
                   </time>
                 </p>
                 {quiz.status === 'published' && (

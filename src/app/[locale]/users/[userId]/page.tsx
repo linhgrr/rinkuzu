@@ -112,6 +112,8 @@ export default async function PublicUserProfilePage({
     description: quiz.description || '',
     slug: quiz.slug,
     createdAt: quiz.createdAt,
+    createdAtIso: new Date(quiz.createdAt).toISOString(),
+    createdAtLabel: publicProfileShortDateFormatters[localeKey].format(new Date(quiz.createdAt)),
     questionCount: Array.isArray(quiz.questions) ? quiz.questions.length : 0,
     category: quiz.category
       ? {
@@ -215,13 +217,8 @@ export default async function PublicUserProfilePage({
                           <span>
                             {quiz.questionCount} {tQuiz('questions')}
                           </span>
-                          <time
-                            dateTime={new Date(quiz.createdAt).toISOString()}
-                            suppressHydrationWarning
-                          >
-                            {publicProfileShortDateFormatters[localeKey].format(
-                              new Date(quiz.createdAt),
-                            )}
+                          <time dateTime={quiz.createdAtIso} suppressHydrationWarning>
+                            {quiz.createdAtLabel}
                           </time>
                         </div>
                         <Link href={ROUTES.QUIZ.VIEW(quiz.slug)} className="block">

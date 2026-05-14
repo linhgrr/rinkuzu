@@ -358,79 +358,83 @@ export default function AdminUsersPage() {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-neutral-200">
-                    {users.map((user) => (
-                      <tr key={user._id} className="hover:bg-neutral-50">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-neutral-900">
-                            {user.email}
-                            {user.email === session?.user?.email && (
-                              <span className="ml-2 inline-flex min-h-[28px] items-center rounded-full bg-neutral-100 px-3 text-[13px] font-medium text-neutral-600">
-                                {t('you')}
-                              </span>
+                    {users.map((user) => {
+                      const createdAtLabel = new Date(user.createdAt).toLocaleDateString();
+
+                      return (
+                        <tr key={user._id} className="hover:bg-neutral-50">
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm font-medium text-neutral-900">
+                              {user.email}
+                              {user.email === session?.user?.email && (
+                                <span className="ml-2 inline-flex min-h-[28px] items-center rounded-full bg-neutral-100 px-3 text-[13px] font-medium text-neutral-600">
+                                  {t('you')}
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            {getRoleBadge(
+                              user.role,
+                              user.role === 'admin' ? t('administrator') : t('user'),
                             )}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          {getRoleBadge(
-                            user.role,
-                            user.role === 'admin' ? t('administrator') : t('user'),
-                          )}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center gap-x-2">
-                            {getSubscriptionBadge(
-                              user.subscription,
-                              getSubscriptionText(user.subscription),
-                            )}
-                            {user.subscription?.startDate && (
-                              <span className="text-sm text-neutral-500">
-                                {formatDate(user.subscription.startDate)}
-                              </span>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-500">
-                          <time dateTime={user.createdAt} suppressHydrationWarning>
-                            {new Date(user.createdAt).toLocaleDateString()}
-                          </time>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <div className="flex justify-end gap-x-2">
-                            {user.email !== session?.user?.email && (
-                              <>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => openSubscriptionModal(user)}
-                                  disabled={actionLoading === user._id}
-                                  className="min-h-[40px] px-3 text-green-600 border-green-300 hover:bg-green-50"
-                                >
-                                  {t('addSubscription')}
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => openRoleModal(user)}
-                                  disabled={actionLoading === user._id}
-                                  className="min-h-[40px] px-3"
-                                >
-                                  {user.role === 'admin' ? t('makeUser') : t('makeAdmin')}
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => openDeleteModal(user)}
-                                  disabled={actionLoading === user._id}
-                                  className="min-h-[40px] px-3 text-red-600 border-red-300 hover:bg-red-50"
-                                >
-                                  {t('delete')}
-                                </Button>
-                              </>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center gap-x-2">
+                              {getSubscriptionBadge(
+                                user.subscription,
+                                getSubscriptionText(user.subscription),
+                              )}
+                              {user.subscription?.startDate && (
+                                <span className="text-sm text-neutral-500">
+                                  {formatDate(user.subscription.startDate)}
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-500">
+                            <time dateTime={user.createdAt} suppressHydrationWarning>
+                              {createdAtLabel}
+                            </time>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <div className="flex justify-end gap-x-2">
+                              {user.email !== session?.user?.email && (
+                                <>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => openSubscriptionModal(user)}
+                                    disabled={actionLoading === user._id}
+                                    className="min-h-[40px] px-3 text-green-600 border-green-300 hover:bg-green-50"
+                                  >
+                                    {t('addSubscription')}
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => openRoleModal(user)}
+                                    disabled={actionLoading === user._id}
+                                    className="min-h-[40px] px-3"
+                                  >
+                                    {user.role === 'admin' ? t('makeUser') : t('makeAdmin')}
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => openDeleteModal(user)}
+                                    disabled={actionLoading === user._id}
+                                    className="min-h-[40px] px-3 text-red-600 border-red-300 hover:bg-red-50"
+                                  >
+                                    {t('delete')}
+                                  </Button>
+                                </>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
 

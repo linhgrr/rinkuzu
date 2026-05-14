@@ -12,10 +12,18 @@ import {
   getExercisePromptSections,
 } from '@/features/adaptive-learning/lib/exercise-prompt';
 import { BLOOM_LABELS } from '@/features/adaptive-learning/types';
-import type { ExerciseHistoryFull } from '@/features/adaptive-learning/types';
+import type { BloomLevel, ExerciseHistoryFull } from '@/features/adaptive-learning/types';
 import { formatSessionHistoryDate } from '@/features/adaptive-learning/lib/session-history-utils';
 
 const PAGE_SIZE = 10;
+const BLOOM_TRANSLATION_KEYS: Record<BloomLevel, `bloom.${Lowercase<BloomLevel>}`> = {
+  Remember: 'bloom.remember',
+  Understand: 'bloom.understand',
+  Apply: 'bloom.apply',
+  Analyze: 'bloom.analyze',
+  Evaluate: 'bloom.evaluate',
+  Create: 'bloom.create',
+};
 
 interface ExerciseHistoryTableProps {
   exercises: ExerciseHistoryFull[];
@@ -229,7 +237,7 @@ export function ExerciseHistoryTable({ exercises }: ExerciseHistoryTableProps) {
     (level: number) => {
       const bloomLabel =
         BLOOM_LABELS[Math.max(0, Math.min(BLOOM_LABELS.length - 1, level - 1))] || 'Remember';
-      return t(`bloom.${bloomLabel.toLowerCase()}` as any);
+      return t(BLOOM_TRANSLATION_KEYS[bloomLabel]);
     },
     [t],
   );

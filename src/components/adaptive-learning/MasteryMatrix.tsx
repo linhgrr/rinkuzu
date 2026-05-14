@@ -84,11 +84,15 @@ export default function MasteryMatrix({ sessionId, filterActiveOnly = false }: M
 
   const activeConceptIds = useMemo(() => {
     if (!filterActiveOnly || !graphData) return null;
-    return new Set(
-      graphData.nodes
-        .filter((node) => node.status === 'in_progress' || node.status === 'available')
-        .map((node) => node.id),
-    );
+
+    const ids = new Set<string>();
+    for (const node of graphData.nodes) {
+      if (node.status === 'in_progress' || node.status === 'available') {
+        ids.add(node.id);
+      }
+    }
+
+    return ids;
   }, [filterActiveOnly, graphData]);
 
   const localizedBloomLabels = useMemo(() => {
@@ -142,7 +146,7 @@ export default function MasteryMatrix({ sessionId, filterActiveOnly = false }: M
   if (!data || data.matrix.length === 0 || displayMatrix.length === 0) {
     return (
       <div className="flex h-[200px] w-full flex-col items-center justify-center gap-3 rounded-md border border-neutral-200 bg-neutral-50">
-        <HiOutlineAcademicCap className="h-10 w-10 text-neutral-300" />
+        <HiOutlineAcademicCap className="size-10 text-neutral-300" />
         <p className="text-sm text-neutral-500">{t('masteryMatrix.noData')}</p>
         <p className="text-xs text-neutral-400">{t('masteryMatrix.noDataHint')}</p>
       </div>
@@ -193,8 +197,8 @@ export default function MasteryMatrix({ sessionId, filterActiveOnly = false }: M
                 const localizedLabel = localizedBloomLabels[index] || label;
                 return (
                   <th
-                    key={`${label}-${index}`}
-                    className="w-20 px-2 py-3 text-center text-[11px] font-bold uppercase tracking-widest text-[var(--text-muted)]"
+                    key={label}
+                    className="w-20 p-3 text-center text-[11px] font-bold uppercase tracking-widest text-[var(--text-muted)]"
                   >
                     <div
                       className={`mx-auto mb-1.5 h-2 w-2 rounded-full ${BLOOM_COLORS[index] || 'bg-neutral-400'}`}
@@ -203,7 +207,7 @@ export default function MasteryMatrix({ sessionId, filterActiveOnly = false }: M
                   </th>
                 );
               })}
-              <th className="w-20 px-3 py-3 text-center text-[11px] font-bold uppercase tracking-widest text-[var(--text-muted)]">
+              <th className="w-20 p-3 text-center text-[11px] font-bold uppercase tracking-widest text-[var(--text-muted)]">
                 {t('masteryMatrix.avg')}
               </th>
             </tr>
@@ -225,7 +229,7 @@ export default function MasteryMatrix({ sessionId, filterActiveOnly = false }: M
                     const localizedLabel =
                       localizedBloomLabels[colIndex] || data.bloom_labels[colIndex] || '';
                     return (
-                      <td key={`${row.concept_id}-${colIndex}`} className="px-1 py-1 text-center">
+                      <td key={`${row.concept_id}-${localizedLabel}`} className="p-1 text-center">
                         <div
                           className={`mx-auto flex h-8 w-14 items-center justify-center rounded-md text-xs font-mono font-medium transition-colors ${getMasteryColor(value)} ${getMasteryTextColor(value)}`}
                           title={`${row.concept_name} - ${localizedLabel}: ${Math.round(value * 100)}%`}

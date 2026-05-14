@@ -51,7 +51,14 @@ export const PATCH = withAdmin(async (request: NextRequest) => {
       if (!Array.isArray(features) || features.some((f) => typeof f !== 'string')) {
         return apiErr('validation_error', 'Invalid plan features', 400);
       }
-      update['features'] = features.map((f: string) => f.trim()).filter(Boolean);
+      const normalizedFeatures: string[] = [];
+      for (const feature of features as string[]) {
+        const trimmedFeature = feature.trim();
+        if (trimmedFeature) {
+          normalizedFeatures.push(trimmedFeature);
+        }
+      }
+      update['features'] = normalizedFeatures;
     }
     if (isActive !== undefined) update['isActive'] = isActive;
 
@@ -103,7 +110,13 @@ export const POST = withAdmin(async (request: NextRequest) => {
       name: name.trim(),
       price: Number(price),
       duration,
-      features: features.filter((f: string) => f.trim() !== ''), // Remove empty features
+      features: (features as string[]).reduce<string[]>((accumulator, feature) => {
+        const trimmedFeature = feature.trim();
+        if (trimmedFeature) {
+          accumulator.push(trimmedFeature);
+        }
+        return accumulator;
+      }, []),
       isActive,
     });
 

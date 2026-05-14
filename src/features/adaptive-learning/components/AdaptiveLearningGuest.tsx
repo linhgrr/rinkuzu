@@ -1,9 +1,8 @@
 import Link from 'next/link';
 import { defaultLocale } from '@/i18n/config';
 import { JsonLd } from '@/components/seo/JsonLd';
+import type { TranslateFn } from '@/features/adaptive-learning/types';
 import { buildFaqSchema, buildSoftwareApplicationSchema } from '@/lib/structured-data';
-
-type TranslateFn = (key: string, values?: Record<string, any>) => string;
 
 type AdaptiveLearningGuestProps = {
   locale: string;

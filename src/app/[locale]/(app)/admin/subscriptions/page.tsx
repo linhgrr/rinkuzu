@@ -1,30 +1,40 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { useSession } from 'next-auth/react';
-import { usePathname } from 'next/navigation';
+import { useCallback, useEffect, useReducer } from 'react';
 import { useTranslations } from 'next-intl';
 import { fetchApiData } from '@/lib/api/client';
+import { AdminPageShell } from '@/components/admin/AdminPageShell';
 import { Button } from '@/components/ui/Button';
 import {
+  Badge,
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-  Badge,
 } from '@/components/ui/Card';
-import { Modal } from '@/components/ui/Modal';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { ErrorState } from '@/components/ui/ErrorState';
 import { Input } from '@/components/ui/Input';
+import { LoadingState } from '@/components/ui/LoadingState';
+import { Modal } from '@/components/ui/Modal';
 import Pagination from '@/components/ui/Pagination';
-import Sidebar from '@/components/Sidebar';
-import { HiOutlineSearch, HiOutlineEye } from '@/components/icons';
-import Navigation from '@/components/Navigation';
+import { HiOutlineEye, HiOutlineSearch } from '@/components/icons';
 
 const vndCurrencyFormatter = new Intl.NumberFormat('vi-VN', {
   style: 'currency',
   currency: 'VND',
 });
+
+const dateTimeFormatter = new Intl.DateTimeFormat('en-US', {
+  year: 'numeric',
+  month: 'short',
+  day: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+});
+
+const STATUS_OPTIONS = ['pending', 'completed', 'cancelled', 'expired'] as const;
 
 interface Subscription {
   _id: string;
@@ -48,46 +58,414 @@ interface PaginationData {
   totalPages: number;
 }
 
+interface AdminSubscriptionsState {
+  status: 'loading' | 'ready';
+  subscriptions: Subscription[];
+  actionLoading: string | null;
+  error: string;
+  success: string;
+  searchTerm: string;
+  statusFilter: '' | Subscription['status'];
+  pagination: PaginationData;
+  selectedSubscription: Subscription | null;
+}
+
+type AdminSubscriptionsAction =
+  | { type: 'patch'; value: Partial<AdminSubscriptionsState> }
+  | {
+      type: 'loadSuccess';
+      value: {
+        subscriptions: Subscription[];
+        pagination: PaginationData;
+      };
+    }
+  | { type: 'updateStatus'; subscriptionId: string; status: Subscription['status'] };
+
+const initialPagination: PaginationData = {
+  page: 1,
+  limit: 10,
+  total: 0,
+  totalPages: 0,
+};
+
+const initialState: AdminSubscriptionsState = {
+  status: 'loading',
+  subscriptions: [],
+  actionLoading: null,
+  error: '',
+  success: '',
+  searchTerm: '',
+  statusFilter: '',
+  pagination: initialPagination,
+  selectedSubscription: null,
+};
+
+function adminSubscriptionsReducer(
+  state: AdminSubscriptionsState,
+  action: AdminSubscriptionsAction,
+): AdminSubscriptionsState {
+  switch (action.type) {
+    case 'patch':
+      return { ...state, ...action.value };
+    case 'loadSuccess':
+      return {
+        ...state,
+        status: 'ready',
+        subscriptions: action.value.subscriptions,
+        pagination: action.value.pagination,
+        error: '',
+      };
+    case 'updateStatus': {
+      const subscriptions = state.subscriptions.map((subscription) =>
+        subscription._id === action.subscriptionId
+          ? { ...subscription, status: action.status }
+          : subscription,
+      );
+      const selectedSubscription =
+        state.selectedSubscription?._id === action.subscriptionId
+          ? { ...state.selectedSubscription, status: action.status }
+          : state.selectedSubscription;
+
+      return {
+        ...state,
+        subscriptions,
+        selectedSubscription,
+      };
+    }
+    default:
+      return state;
+  }
+}
+
+function formatDate(dateString: string) {
+  return dateTimeFormatter.format(new Date(dateString));
+}
+
+function formatCurrency(amount: number) {
+  return vndCurrencyFormatter.format(amount);
+}
+
+function getStatusBadge(status: Subscription['status']) {
+  switch (status) {
+    case 'completed':
+      return <Badge variant="success">{status}</Badge>;
+    case 'pending':
+      return <Badge variant="warning">{status}</Badge>;
+    case 'cancelled':
+      return <Badge variant="danger">{status}</Badge>;
+    case 'expired':
+      return <Badge variant="default">{status}</Badge>;
+    default:
+      return <Badge variant="default">{status}</Badge>;
+  }
+}
+
+function getTypeBadge(type: Subscription['type']) {
+  switch (type) {
+    case 'lifetime':
+    case 'yearly':
+      return <Badge variant="success">{type}</Badge>;
+    case 'monthly':
+      return <Badge variant="info">{type}</Badge>;
+    default:
+      return <Badge variant="default">{type}</Badge>;
+  }
+}
+
+function SubscriptionsHeader({ title, description }: { title: string; description: string }) {
+  return (
+    <div className="mb-8">
+      <h1 className="text-3xl font-semibold text-neutral-900">{title}</h1>
+      <p className="mt-2 text-neutral-600">{description}</p>
+    </div>
+  );
+}
+
+function SubscriptionSearchBar({
+  searchTerm,
+  statusFilter,
+  searchLabel,
+  clearLabel,
+  onSearchTermChange,
+  onSubmit,
+  onClear,
+}: {
+  searchTerm: string;
+  statusFilter: string;
+  searchLabel: string;
+  clearLabel: string;
+  onSearchTermChange: (value: string) => void;
+  onSubmit: (event: React.FormEvent) => void;
+  onClear: () => void;
+}) {
+  return (
+    <form onSubmit={onSubmit} className="mb-4 flex gap-4">
+      <div className="max-w-md flex-1">
+        <Input
+          type="text"
+          placeholder="Search by user email..."
+          value={searchTerm}
+          onChange={(event) => onSearchTermChange(event.target.value)}
+          className="w-full"
+        />
+      </div>
+      <Button type="submit" variant="gradient">
+        <HiOutlineSearch className="mr-2 size-4" />
+        {searchLabel}
+      </Button>
+      {searchTerm || statusFilter ? (
+        <Button type="button" variant="outline" onClick={onClear}>
+          {clearLabel}
+        </Button>
+      ) : null}
+    </form>
+  );
+}
+
+function SubscriptionStatusFilters({
+  currentFilter,
+  onChange,
+}: {
+  currentFilter: '' | Subscription['status'];
+  onChange: (value: '' | Subscription['status']) => void;
+}) {
+  return (
+    <div className="mb-6 flex flex-wrap gap-2">
+      <Button
+        onClick={() => onChange('')}
+        variant="ghost"
+        className={`min-h-[40px] rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+          !currentFilter
+            ? 'border border-green-200 bg-green-100 text-brand-trust'
+            : 'text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700'
+        }`}
+      >
+        All Subscriptions
+      </Button>
+      {STATUS_OPTIONS.map((status) => (
+        <Button
+          key={status}
+          onClick={() => onChange(status)}
+          variant="ghost"
+          className={`min-h-[40px] rounded-lg px-4 py-2 text-sm font-medium capitalize transition-colors ${
+            currentFilter === status
+              ? 'border border-green-200 bg-green-100 text-brand-trust'
+              : 'text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700'
+          }`}
+        >
+          {status}
+        </Button>
+      ))}
+    </div>
+  );
+}
+
+function SubscriptionsTable({
+  subscriptions,
+  pagination,
+  noResultsLabel,
+  loadingLabel,
+  onViewDetails,
+}: {
+  subscriptions: Subscription[];
+  pagination: PaginationData;
+  noResultsLabel: string;
+  loadingLabel: string;
+  onViewDetails: (subscription: Subscription) => void;
+}) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Subscriptions</CardTitle>
+        <CardDescription>
+          {pagination.total > 0
+            ? `Showing ${(pagination.page - 1) * pagination.limit + 1} to ${Math.min(
+                pagination.page * pagination.limit,
+                pagination.total,
+              )} of ${pagination.total} subscriptions`
+            : 'No subscriptions found'}
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {subscriptions.length === 0 ? (
+          <EmptyState
+            title={noResultsLabel}
+            description="Try adjusting the current search or status filter."
+          />
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-neutral-50 text-xs uppercase text-neutral-700">
+                <tr>
+                  <th scope="col" className="px-6 py-3">
+                    User
+                  </th>
+                  <th scope="col" className="px-6 py-3">
+                    Type
+                  </th>
+                  <th scope="col" className="px-6 py-3">
+                    Amount
+                  </th>
+                  <th scope="col" className="px-6 py-3">
+                    Status
+                  </th>
+                  <th scope="col" className="px-6 py-3">
+                    Start Date
+                  </th>
+                  <th scope="col" className="px-6 py-3">
+                    End Date
+                  </th>
+                  <th scope="col" className="px-6 py-3">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {subscriptions.map((subscription) => (
+                  <tr key={subscription._id} className="border-b bg-white hover:bg-neutral-50">
+                    <td className="px-6 py-4 font-medium text-neutral-900">
+                      {subscription.userEmail}
+                    </td>
+                    <td className="px-6 py-4">{getTypeBadge(subscription.type)}</td>
+                    <td className="px-6 py-4">{formatCurrency(subscription.amount)}</td>
+                    <td className="px-6 py-4">{getStatusBadge(subscription.status)}</td>
+                    <td className="px-6 py-4 text-neutral-500">
+                      {formatDate(subscription.startDate)}
+                    </td>
+                    <td className="px-6 py-4 text-neutral-500">
+                      {subscription.endDate ? formatDate(subscription.endDate) : 'N/A'}
+                    </td>
+                    <td className="px-6 py-4">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => onViewDetails(subscription)}
+                        className="min-h-[40px] px-3 text-brand-trust hover:text-brand-trust"
+                      >
+                        <HiOutlineEye className="mr-1 size-4" /> View Details
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        {subscriptions.length === 0 ? null : (
+          <p className="mt-4 text-sm text-neutral-500">{loadingLabel}</p>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function SubscriptionDetailModal({
+  subscription,
+  actionLoadingId,
+  onClose,
+  onUpdateStatus,
+}: {
+  subscription: Subscription | null;
+  actionLoadingId: string | null;
+  onClose: () => void;
+  onUpdateStatus: (subscriptionId: string, status: Subscription['status']) => void;
+}) {
+  return (
+    <Modal isOpen={!!subscription} onClose={onClose} title="Subscription Details">
+      {subscription ? (
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <SubscriptionDetailField label="User Email" value={subscription.userEmail} />
+            <SubscriptionDetailField
+              label="Subscription Type"
+              value={getTypeBadge(subscription.type)}
+            />
+            <SubscriptionDetailField label="Amount" value={formatCurrency(subscription.amount)} />
+            <SubscriptionDetailField label="Status" value={getStatusBadge(subscription.status)} />
+            <SubscriptionDetailField
+              label="PayOS Order ID"
+              value={<span className="font-mono text-sm">{subscription.payosOrderId}</span>}
+            />
+            <SubscriptionDetailField
+              label="PayOS Transaction ID"
+              value={
+                <span className="font-mono text-sm">
+                  {subscription.payosTransactionId || 'N/A'}
+                </span>
+              }
+            />
+            <SubscriptionDetailField
+              label="Start Date"
+              value={formatDate(subscription.startDate)}
+            />
+            <SubscriptionDetailField
+              label="End Date"
+              value={subscription.endDate ? formatDate(subscription.endDate) : 'Lifetime'}
+            />
+            <SubscriptionDetailField
+              label="Created At"
+              value={formatDate(subscription.createdAt)}
+            />
+            <SubscriptionDetailField
+              label="Updated At"
+              value={formatDate(subscription.updatedAt)}
+            />
+          </div>
+
+          <div className="border-t pt-4">
+            <p className="mb-3 block text-sm font-medium text-neutral-700">Update Status</p>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+              {(['completed', 'cancelled', 'expired'] as const).map((status) => (
+                <Button
+                  key={status}
+                  variant="outline"
+                  size="sm"
+                  disabled={subscription.status === status || actionLoadingId === subscription._id}
+                  onClick={() => onUpdateStatus(subscription._id, status)}
+                  className={`min-h-[40px] w-full justify-center px-3 text-sm font-medium capitalize ${
+                    subscription.status === status ? 'cursor-not-allowed opacity-50' : ''
+                  }`}
+                >
+                  {actionLoadingId === subscription._id ? 'Updating…' : `Mark as ${status}`}
+                </Button>
+              ))}
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </Modal>
+  );
+}
+
+function SubscriptionDetailField({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div>
+      <p className="mb-1 block text-sm font-medium text-neutral-700">{label}</p>
+      <div className="text-sm text-neutral-900">{value}</div>
+    </div>
+  );
+}
+
 export default function AdminSubscriptionsPage() {
   const t = useTranslations('admin');
   const tCommon = useTranslations('common');
-  const { data: _session } = useSession();
-  const pathname = usePathname();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [state, dispatch] = useReducer(adminSubscriptionsReducer, initialState);
 
-  const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [actionLoading, setActionLoading] = useState<string | null>(null);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
-  const [pagination, setPagination] = useState<PaginationData>({
-    page: 1,
-    limit: 10,
-    total: 0,
-    totalPages: 0,
-  });
-
-  // Modal states
-  const [showDetailModal, setShowDetailModal] = useState(false);
-  const [selectedSubscription, setSelectedSubscription] = useState<Subscription | null>(null);
-
-  const fetchSubscriptions = useCallback(
-    async (page: number = 1, search: string = '', status: string = '') => {
+  const loadSubscriptions = useCallback(
+    async (page: number, searchTerm: string, statusFilter: '' | Subscription['status']) => {
+      dispatch({ type: 'patch', value: { status: 'loading', success: '' } });
       try {
-        setLoading(true);
         const params = new URLSearchParams({
           page: page.toString(),
-          limit: pagination.limit.toString(),
+          limit: state.pagination.limit.toString(),
         });
 
-        if (search.trim()) {
-          params.append('search', search.trim());
+        if (searchTerm.trim()) {
+          params.append('search', searchTerm.trim());
         }
 
-        if (status) {
-          params.append('status', status);
+        if (statusFilter) {
+          params.append('status', statusFilter);
         }
 
         const data = await fetchApiData<{
@@ -99,418 +477,183 @@ export default function AdminSubscriptionsPage() {
             totalPages: number;
           };
         }>(`/api/admin/subscriptions?${params}`, {
-          cache: 'no-store', // hoặc 'reload'
+          cache: 'no-store',
         });
-        setSubscriptions(data.subscriptions);
-        setPagination({
-          page: data.pagination.currentPage,
-          limit: data.pagination.itemsPerPage,
-          total: data.pagination.totalItems,
-          totalPages: data.pagination.totalPages,
+
+        dispatch({
+          type: 'loadSuccess',
+          value: {
+            subscriptions: data.subscriptions,
+            pagination: {
+              page: data.pagination.currentPage,
+              limit: data.pagination.itemsPerPage,
+              total: data.pagination.totalItems,
+              totalPages: data.pagination.totalPages,
+            },
+          },
         });
-        setError('');
       } catch (error) {
-        setError(error instanceof Error ? error.message : 'Failed to fetch subscriptions');
-      } finally {
-        setLoading(false);
+        dispatch({
+          type: 'patch',
+          value: {
+            status: 'ready',
+            error: error instanceof Error ? error.message : 'Failed to fetch subscriptions',
+          },
+        });
       }
     },
-    [pagination.limit],
+    [state.pagination.limit],
   );
 
   useEffect(() => {
-    fetchSubscriptions();
-  }, [fetchSubscriptions]);
+    void loadSubscriptions(state.pagination.page, state.searchTerm, state.statusFilter);
+  }, [loadSubscriptions, state.pagination.page, state.searchTerm, state.statusFilter]);
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    setPagination((prev) => ({ ...prev, page: 1 }));
-    fetchSubscriptions(1, searchTerm, statusFilter);
+  const setSearchTerm = (searchTerm: string) => {
+    dispatch({
+      type: 'patch',
+      value: {
+        searchTerm,
+        pagination: { ...state.pagination, page: 1 },
+      },
+    });
   };
 
-  const handlePageChange = (newPage: number) => {
-    setPagination((prev) => ({ ...prev, page: newPage }));
-    fetchSubscriptions(newPage, searchTerm, statusFilter);
+  const setStatusFilter = (statusFilter: '' | Subscription['status']) => {
+    dispatch({
+      type: 'patch',
+      value: {
+        statusFilter,
+        pagination: { ...state.pagination, page: 1 },
+      },
+    });
   };
 
-  const handleStatusFilter = (status: string) => {
-    setStatusFilter(status);
-    setPagination((prev) => ({ ...prev, page: 1 }));
-    fetchSubscriptions(1, searchTerm, status);
+  const handleSearch = (event: React.FormEvent) => {
+    event.preventDefault();
+    dispatch({
+      type: 'patch',
+      value: {
+        pagination: { ...state.pagination, page: 1 },
+        success: '',
+      },
+    });
   };
 
-  const handleUpdateStatus = async (subscriptionId: string, newStatus: Subscription['status']) => {
-    setActionLoading(subscriptionId);
+  const handlePageChange = (page: number) => {
+    dispatch({
+      type: 'patch',
+      value: {
+        pagination: { ...state.pagination, page },
+        success: '',
+      },
+    });
+  };
+
+  const handleClearFilters = () => {
+    dispatch({
+      type: 'patch',
+      value: {
+        searchTerm: '',
+        statusFilter: '',
+        success: '',
+        pagination: { ...state.pagination, page: 1 },
+      },
+    });
+  };
+
+  const handleUpdateStatus = async (subscriptionId: string, status: Subscription['status']) => {
+    dispatch({ type: 'patch', value: { actionLoading: subscriptionId } });
     try {
       await fetchApiData(`/api/admin/subscriptions/${subscriptionId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ status: newStatus }),
+        body: JSON.stringify({ status }),
       });
-      setSubscriptions(
-        subscriptions.map((sub) =>
-          sub._id === subscriptionId ? { ...sub, status: newStatus } : sub,
-        ),
-      );
-      setSuccess(`Subscription status updated to ${newStatus}`);
-      setShowDetailModal(false);
+      dispatch({ type: 'updateStatus', subscriptionId, status });
+      dispatch({
+        type: 'patch',
+        value: {
+          success: `Subscription status updated to ${status}`,
+          selectedSubscription: null,
+        },
+      });
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'Failed to update subscription');
+      dispatch({
+        type: 'patch',
+        value: {
+          error: error instanceof Error ? error.message : 'Failed to update subscription',
+        },
+      });
     } finally {
-      setActionLoading(null);
+      dispatch({ type: 'patch', value: { actionLoading: null } });
     }
-  };
-
-  const openDetailModal = (subscription: Subscription) => {
-    setSelectedSubscription(subscription);
-    setShowDetailModal(true);
-  };
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return <Badge variant="success">{status}</Badge>;
-      case 'pending':
-        return <Badge variant="warning">{status}</Badge>;
-      case 'cancelled':
-        return <Badge variant="danger">{status}</Badge>;
-      case 'expired':
-        return <Badge variant="default">{status}</Badge>;
-      default:
-        return <Badge variant="default">{status}</Badge>;
-    }
-  };
-
-  const getTypeBadge = (type: string) => {
-    switch (type) {
-      case 'lifetime':
-        return <Badge variant="success">{type}</Badge>;
-      case 'yearly':
-        return <Badge variant="success">{type}</Badge>;
-      case 'monthly':
-        return <Badge variant="info">{type}</Badge>;
-      default:
-        return <Badge variant="default">{type}</Badge>;
-    }
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
-
-  const formatCurrency = (amount: number) => {
-    return vndCurrencyFormatter.format(amount);
   };
 
   return (
-    <div className="min-h-screen bg-white">
-      <Navigation />
+    <AdminPageShell>
+      <div className="mx-auto max-w-6xl">
+        <SubscriptionsHeader
+          title={t('subscriptions')}
+          description="Manage user subscriptions and payment statuses"
+        />
 
-      {/* Sidebar */}
-      <Sidebar
-        isOpen={isSidebarOpen}
-        onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
-        currentPath={pathname}
-      />
+        <SubscriptionSearchBar
+          searchTerm={state.searchTerm}
+          statusFilter={state.statusFilter}
+          searchLabel={tCommon('search')}
+          clearLabel={tCommon('clear')}
+          onSearchTermChange={setSearchTerm}
+          onSubmit={handleSearch}
+          onClear={handleClearFilters}
+        />
 
-      {/* Main Content */}
-      <main
-        className={`py-8 transition-[margin] duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-16'} max-w-none px-4 sm:px-6 lg:px-8`}
-      >
-        {loading ? (
-          <div className="flex justify-center py-12">
-            <div className="flex flex-col items-center gap-3">
-              <div className="size-12 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
-              <div className="text-sm text-neutral-500">{tCommon('loading')}</div>
-            </div>
+        <SubscriptionStatusFilters currentFilter={state.statusFilter} onChange={setStatusFilter} />
+
+        {state.error ? <ErrorState message={state.error} className="mb-6" /> : null}
+        {state.success ? (
+          <div className="mb-6 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-green-700">
+            {state.success}
           </div>
+        ) : null}
+
+        {state.status === 'loading' ? (
+          <LoadingState text={tCommon('loading')} />
         ) : (
-          <div className="max-w-6xl mx-auto">
-            <div className="flex justify-between items-center mb-8">
-              <div>
-                <h1 className="text-3xl font-semibold text-neutral-900">{t('subscriptions')}</h1>
-                <p className="mt-2 text-neutral-600">
-                  Manage user subscriptions and payment statuses
-                </p>
-              </div>
-            </div>
+          <>
+            <SubscriptionsTable
+              subscriptions={state.subscriptions}
+              pagination={state.pagination}
+              noResultsLabel={t('noUsersFound')}
+              loadingLabel={t('loadingStatistics')}
+              onViewDetails={(subscription) =>
+                dispatch({ type: 'patch', value: { selectedSubscription: subscription } })
+              }
+            />
 
-            {error && (
-              <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-                {error}
-              </div>
-            )}
-
-            {success && (
-              <div className="mb-6 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg">
-                {success}
-              </div>
-            )}
-
-            {/* Search and Filters */}
-            <div className="mb-6 space-y-4">
-              <form onSubmit={handleSearch} className="flex gap-4">
-                <div className="flex-1 max-w-md">
-                  <Input
-                    type="text"
-                    placeholder="Search by user email..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full"
-                  />
-                </div>
-                <Button type="submit" variant="gradient">
-                  <HiOutlineSearch className="size-4 mr-2" />
-                  {tCommon('search')}
-                </Button>
-                {(searchTerm || statusFilter) && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      setSearchTerm('');
-                      setStatusFilter('');
-                      fetchSubscriptions(1, '', '');
-                    }}
-                  >
-                    {tCommon('clear')}
-                  </Button>
-                )}
-              </form>
-
-              {/* Status Filter Tabs */}
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  onClick={() => handleStatusFilter('')}
-                  variant="ghost"
-                  className={`min-h-[40px] rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-                    !statusFilter
-                      ? 'bg-green-100 text-brand-trust border border-green-200'
-                      : 'text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100'
-                  }`}
-                >
-                  All Subscriptions
-                </Button>
-                {['pending', 'completed', 'cancelled', 'expired'].map((status) => (
-                  <Button
-                    key={status}
-                    onClick={() => handleStatusFilter(status)}
-                    variant="ghost"
-                    className={`min-h-[40px] rounded-lg px-4 py-2 text-sm font-medium capitalize transition-colors ${
-                      statusFilter === status
-                        ? 'bg-green-100 text-brand-trust border border-green-200'
-                        : 'text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100'
-                    }`}
-                  >
-                    {status}
-                  </Button>
-                ))}
-              </div>
-            </div>
-
-            {/* Subscriptions Table */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Subscriptions</CardTitle>
-                <CardDescription>
-                  {pagination.total > 0 &&
-                    `Showing ${(pagination.page - 1) * pagination.limit + 1} to ${Math.min(pagination.page * pagination.limit, pagination.total)} of ${pagination.total} subscriptions`}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {loading ? (
-                  <div className="flex justify-center py-8">
-                    <div className="flex flex-col items-center gap-3">
-                      <div className="size-12 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
-                      <div className="text-sm text-neutral-500">{t('loadingStatistics')}</div>
-                    </div>
-                  </div>
-                ) : subscriptions.length === 0 ? (
-                  <div className="text-center py-8">
-                    <div className="text-neutral-500">{t('noUsersFound')}</div>
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm text-left">
-                      <thead className="text-xs text-neutral-700 uppercase bg-neutral-50">
-                        <tr>
-                          <th scope="col" className="px-6 py-3">
-                            User
-                          </th>
-                          <th scope="col" className="px-6 py-3">
-                            Type
-                          </th>
-                          <th scope="col" className="px-6 py-3">
-                            Amount
-                          </th>
-                          <th scope="col" className="px-6 py-3">
-                            Status
-                          </th>
-                          <th scope="col" className="px-6 py-3">
-                            Start Date
-                          </th>
-                          <th scope="col" className="px-6 py-3">
-                            End Date
-                          </th>
-                          <th scope="col" className="px-6 py-3">
-                            Actions
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {subscriptions.map((subscription) => (
-                          <tr
-                            key={subscription._id}
-                            className="bg-white border-b hover:bg-neutral-50"
-                          >
-                            <td className="px-6 py-4 font-medium text-neutral-900">
-                              {subscription.userEmail}
-                            </td>
-                            <td className="px-6 py-4">{getTypeBadge(subscription.type)}</td>
-                            <td className="px-6 py-4">{formatCurrency(subscription.amount)}</td>
-                            <td className="px-6 py-4">{getStatusBadge(subscription.status)}</td>
-                            <td className="px-6 py-4 text-neutral-500">
-                              {formatDate(subscription.startDate)}
-                            </td>
-                            <td className="px-6 py-4 text-neutral-500">
-                              {subscription.endDate ? formatDate(subscription.endDate) : 'N/A'}
-                            </td>
-                            <td className="px-6 py-4">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => openDetailModal(subscription)}
-                                className="min-h-[40px] px-3 text-brand-trust hover:text-brand-trust"
-                              >
-                                <HiOutlineEye className="size-4 mr-1" /> View Details
-                              </Button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Pagination */}
-            {pagination.totalPages > 1 && (
+            {state.pagination.totalPages > 1 ? (
               <div className="mt-6">
                 <Pagination
-                  currentPage={pagination.page}
-                  totalPages={pagination.totalPages}
+                  currentPage={state.pagination.page}
+                  totalPages={state.pagination.totalPages}
                   onPageChange={handlePageChange}
                 />
               </div>
-            )}
-          </div>
+            ) : null}
+          </>
         )}
-      </main>
 
-      {/* Subscription Detail Modal */}
-      {showDetailModal && selectedSubscription && (
-        <Modal
-          isOpen={showDetailModal}
-          onClose={() => setShowDetailModal(false)}
-          title="Subscription Details"
-        >
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="block text-sm font-medium text-neutral-700 mb-1">User Email</p>
-                <p className="text-sm text-neutral-900">{selectedSubscription.userEmail}</p>
-              </div>
-              <div>
-                <p className="block text-sm font-medium text-neutral-700 mb-1">Subscription Type</p>
-                {getTypeBadge(selectedSubscription.type)}
-              </div>
-              <div>
-                <p className="block text-sm font-medium text-neutral-700 mb-1">Amount</p>
-                <p className="text-sm text-neutral-900">
-                  {formatCurrency(selectedSubscription.amount)}
-                </p>
-              </div>
-              <div>
-                <p className="block text-sm font-medium text-neutral-700 mb-1">Status</p>
-                {getStatusBadge(selectedSubscription.status)}
-              </div>
-              <div>
-                <p className="block text-sm font-medium text-neutral-700 mb-1">PayOS Order ID</p>
-                <p className="text-sm text-neutral-900 font-mono">
-                  {selectedSubscription.payosOrderId}
-                </p>
-              </div>
-              <div>
-                <p className="block text-sm font-medium text-neutral-700 mb-1">
-                  PayOS Transaction ID
-                </p>
-                <p className="text-sm text-neutral-900 font-mono">
-                  {selectedSubscription.payosTransactionId || 'N/A'}
-                </p>
-              </div>
-              <div>
-                <p className="block text-sm font-medium text-neutral-700 mb-1">Start Date</p>
-                <p className="text-sm text-neutral-900">
-                  {formatDate(selectedSubscription.startDate)}
-                </p>
-              </div>
-              <div>
-                <p className="block text-sm font-medium text-neutral-700 mb-1">End Date</p>
-                <p className="text-sm text-neutral-900">
-                  {selectedSubscription.endDate
-                    ? formatDate(selectedSubscription.endDate)
-                    : 'Lifetime'}
-                </p>
-              </div>
-              <div>
-                <p className="block text-sm font-medium text-neutral-700 mb-1">Created At</p>
-                <p className="text-sm text-neutral-900">
-                  {formatDate(selectedSubscription.createdAt)}
-                </p>
-              </div>
-              <div>
-                <p className="block text-sm font-medium text-neutral-700 mb-1">Updated At</p>
-                <p className="text-sm text-neutral-900">
-                  {formatDate(selectedSubscription.updatedAt)}
-                </p>
-              </div>
-            </div>
-
-            {/* Status Update Actions */}
-            <div className="border-t pt-4">
-              <p className="block text-sm font-medium text-neutral-700 mb-3">Update Status</p>
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-                {(['completed', 'cancelled', 'expired'] as const).map((status) => (
-                  <Button
-                    key={status}
-                    variant="outline"
-                    size="sm"
-                    disabled={
-                      selectedSubscription.status === status ||
-                      actionLoading === selectedSubscription._id
-                    }
-                    onClick={() => handleUpdateStatus(selectedSubscription._id, status)}
-                    className={`min-h-[40px] w-full justify-center px-3 text-sm font-medium capitalize ${
-                      selectedSubscription.status === status ? 'opacity-50 cursor-not-allowed' : ''
-                    }`}
-                  >
-                    {actionLoading === selectedSubscription._id ? 'Updating…' : `Mark as ${status}`}
-                  </Button>
-                ))}
-              </div>
-            </div>
-          </div>
-        </Modal>
-      )}
-    </div>
+        <SubscriptionDetailModal
+          subscription={state.selectedSubscription}
+          actionLoadingId={state.actionLoading}
+          onClose={() => dispatch({ type: 'patch', value: { selectedSubscription: null } })}
+          onUpdateStatus={(subscriptionId, status) =>
+            void handleUpdateStatus(subscriptionId, status)
+          }
+        />
+      </div>
+    </AdminPageShell>
   );
 }

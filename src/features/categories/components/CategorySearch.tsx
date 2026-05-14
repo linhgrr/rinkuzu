@@ -23,7 +23,7 @@ interface CategorySearchProps {
   showInHomepage?: boolean;
 }
 
-export function CategorySearch({
+function CategorySearch({
   isCollapsed = false,
   onCategorySelect,
   showInHomepage = false,

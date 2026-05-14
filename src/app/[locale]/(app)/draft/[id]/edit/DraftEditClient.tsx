@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useReducer, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
+import useSWR from 'swr';
 import { useDraftStore } from '@/store/useDraftStore';
 import { fetchApiData } from '@/lib/api/client';
 import { extractUnknownErrorMessage } from '@/lib/api/error';
@@ -63,78 +64,103 @@ interface Props {
   locale: string;
 }
 
+interface DraftEditorState {
+  questions: DraftQuestion[];
+  title: string;
+  description: string;
+  isPrivate: boolean;
+  selectedCategory: Category | null;
+  showPDFViewer: boolean;
+}
+
+type DraftEditorAction =
+  | { type: 'setTitle'; value: string }
+  | { type: 'setDescription'; value: string }
+  | { type: 'setIsPrivate'; value: boolean }
+  | { type: 'setSelectedCategory'; value: Category | null }
+  | { type: 'setShowPDFViewer'; value: boolean }
+  | { type: 'updateQuestion'; index: number; updates: Partial<DraftQuestion> }
+  | { type: 'deleteQuestion'; index: number };
+
+function draftEditorReducer(state: DraftEditorState, action: DraftEditorAction): DraftEditorState {
+  switch (action.type) {
+    case 'setTitle':
+      return { ...state, title: action.value };
+    case 'setDescription':
+      return { ...state, description: action.value };
+    case 'setIsPrivate':
+      return { ...state, isPrivate: action.value };
+    case 'setSelectedCategory':
+      return { ...state, selectedCategory: action.value };
+    case 'setShowPDFViewer':
+      return { ...state, showPDFViewer: action.value };
+    case 'updateQuestion':
+      return {
+        ...state,
+        questions: state.questions.map((question, index) =>
+          index === action.index ? { ...question, ...action.updates } : question,
+        ),
+      };
+    case 'deleteQuestion':
+      return {
+        ...state,
+        questions: state.questions.filter((_, index) => index !== action.index),
+      };
+    default:
+      return state;
+  }
+}
+
 export default function DraftEditClient({ initialDraft, initialCategory, locale }: Props) {
   const t = useTranslations('create');
   const _tCommon = useTranslations('common');
   const { push } = useRouter();
   const { removeDraft } = useDraftStore();
-
-  const [questions, setQuestions] = useState<DraftQuestion[]>(initialDraft.questions || []);
-  const [title, setTitle] = useState(initialDraft.title || '');
-  const [description, setDescription] = useState('');
-  const [isPrivate, setIsPrivate] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<Category | null>(initialCategory);
-
+  const [state, dispatch] = useReducer(draftEditorReducer, {
+    questions: initialDraft.questions || [],
+    title: initialDraft.title || '',
+    description: '',
+    isPrivate: false,
+    selectedCategory: initialCategory,
+    showPDFViewer: true,
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
+  const pdfUrl = initialDraft.pdfData?.pdfUrl || null;
+  const { data: pdfDataUrl } = useSWR(
+    pdfUrl ? ['draft-edit-pdf', pdfUrl] : null,
+    async ([, url]: [string, string]) => {
+      const res = await fetch(url);
+      const blob = await res.blob();
+      return URL.createObjectURL(blob);
+    },
+    {
+      revalidateOnFocus: false,
+    },
+  );
 
-  // PDF viewer state
-  const [pdfUrl, _setPdfUrl] = useState<string | null>(initialDraft.pdfData?.pdfUrl || null);
-  const [showPDFViewer, setShowPDFViewer] = useState(true);
-  const [pdfDataUrl, setPdfDataUrl] = useState<string | null>(null);
-
-  // Load PDF Data from URL
   useEffect(() => {
-    let objectUrl: string | null = null;
-    const loadPdfData = async () => {
-      if (!pdfUrl) {
-        setPdfDataUrl(null);
-        return;
-      }
-
-      try {
-        const res = await fetch(pdfUrl);
-        const blob = await res.blob();
-        objectUrl = URL.createObjectURL(blob);
-        setPdfDataUrl(objectUrl);
-      } catch (err) {
-        console.error('Error loading PDF data:', err);
-        setPdfDataUrl(null);
-      }
-    };
-
-    loadPdfData();
-
     return () => {
-      if (objectUrl) {
-        URL.revokeObjectURL(objectUrl);
+      if (pdfDataUrl) {
+        URL.revokeObjectURL(pdfDataUrl);
       }
     };
-  }, [pdfUrl]);
-
-  // Mobile detection
-  useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 768);
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
+  }, [pdfDataUrl]);
 
   const handleQuestionEdit = (index: number, updates: Partial<DraftQuestion>) => {
-    setQuestions((prev) => prev.map((q, i) => (i === index ? { ...q, ...updates } : q)));
+    dispatch({ type: 'updateQuestion', index, updates });
   };
 
   const handleDeleteQuestion = (index: number) => {
-    setQuestions((prev) => prev.filter((_, i) => i !== index));
+    dispatch({ type: 'deleteQuestion', index });
   };
 
   const handleSubmit = async () => {
-    if (!selectedCategory) {
+    if (!state.selectedCategory) {
       toast.error('Vui lòng chọn danh mục');
       return;
     }
 
-    if (questions.length === 0) {
+    if (state.questions.length === 0) {
       toast.error('Cần ít nhất 1 câu hỏi');
       return;
     }
@@ -150,12 +176,12 @@ export default function DraftEditClient({ initialDraft, initialCategory, locale 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          title,
-          categoryId: selectedCategory._id,
-          description,
-          questions,
+          title: state.title,
+          categoryId: state.selectedCategory._id,
+          description: state.description,
+          questions: state.questions,
           pdfUrl,
-          isPrivate,
+          isPrivate: state.isPrivate,
         }),
       });
 
@@ -171,35 +197,31 @@ export default function DraftEditClient({ initialDraft, initialCategory, locale 
     }
   };
 
-  // Mobile redirect message
-  if (isMobile) {
-    return (
-      <div className="min-h-screen bg-neutral-50 px-4 py-6 flex flex-col items-center justify-center text-center">
-        <div className="size-20 bg-green-100 rounded-full flex items-center justify-center mb-5">
-          <HiOutlineDesktopComputer className="size-10 text-brand-trust" />
-        </div>
-        <h1 className="text-xl font-semibold text-neutral-900 mb-2">Mở trên máy tính</h1>
-        <p className="text-neutral-500 mb-6 max-w-xs">
-          Để chỉnh sửa chi tiết câu hỏi, vui lòng sử dụng máy tính.
-        </p>
-        <Link
-          href={`/${locale}`}
-          className="px-6 py-3 rounded-full bg-green-500 text-white font-medium
-                     hover:bg-brand-trust transition-colors inline-flex items-center gap-2"
-        >
-          <HiOutlineArrowLeft className="size-5" />
-          Về trang chủ
-        </Link>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-neutral-50">
-      <div className="flex">
+      <div className="flex min-h-screen items-center justify-center px-4 py-6 text-center md:hidden">
+        <div>
+          <div className="mb-5 flex size-20 items-center justify-center rounded-full bg-green-100 mx-auto">
+            <HiOutlineDesktopComputer className="size-10 text-brand-trust" />
+          </div>
+          <h1 className="mb-2 text-xl font-semibold text-neutral-900">Mở trên máy tính</h1>
+          <p className="mx-auto mb-6 max-w-xs text-neutral-500">
+            Để chỉnh sửa chi tiết câu hỏi, vui lòng sử dụng máy tính.
+          </p>
+          <Link
+            href={`/${locale}`}
+            className="inline-flex items-center gap-2 rounded-full bg-green-500 px-6 py-3 font-medium text-white transition-colors hover:bg-brand-trust"
+          >
+            <HiOutlineArrowLeft className="size-5" />
+            Về trang chủ
+          </Link>
+        </div>
+      </div>
+
+      <div className="hidden md:flex">
         {/* Left Side - Form Content */}
         <div
-          className={`transition-[width] duration-300 ${showPDFViewer && pdfUrl ? 'w-1/2' : 'w-full'}`}
+          className={`transition-[width] duration-300 ${state.showPDFViewer && pdfUrl ? 'w-1/2' : 'w-full'}`}
         >
           <div className="max-w-4xl mx-auto px-6 py-8">
             {/* Header */}
@@ -214,18 +236,18 @@ export default function DraftEditClient({ initialDraft, initialCategory, locale 
               <h1 className="text-2xl font-semibold text-neutral-900">Chỉnh sửa Quiz</h1>
               <p className="text-neutral-500 mt-1 flex items-center gap-2">
                 <HiOutlineQuestionMarkCircle className="size-4" />
-                {questions.length} câu hỏi được trích xuất
+                {state.questions.length} câu hỏi được trích xuất
               </p>
             </div>
 
             {/* Basic Info using shared generic QuizMetaForm */}
             <QuizMetaForm
-              title={title}
-              onTitleChange={setTitle}
-              description={description}
-              onDescriptionChange={setDescription}
-              selectedCategory={selectedCategory}
-              onCategoryChange={setSelectedCategory}
+              title={state.title}
+              onTitleChange={(value) => dispatch({ type: 'setTitle', value })}
+              description={state.description}
+              onDescriptionChange={(value) => dispatch({ type: 'setDescription', value })}
+              selectedCategory={state.selectedCategory}
+              onCategoryChange={(value) => dispatch({ type: 'setSelectedCategory', value })}
               labels={{
                 title: t('quizTitle'),
                 titlePlaceholder: t('enterTitle'),
@@ -236,8 +258,8 @@ export default function DraftEditClient({ initialDraft, initialCategory, locale 
                 privateLabel: t('privateQuiz'),
                 privateDescription: t('privateQuizDescription'),
               }}
-              isPrivate={isPrivate}
-              onPrivateChange={setIsPrivate}
+              isPrivate={state.isPrivate}
+              onPrivateChange={(value) => dispatch({ type: 'setIsPrivate', value })}
               disabled={isSubmitting}
             />
 
@@ -245,13 +267,13 @@ export default function DraftEditClient({ initialDraft, initialCategory, locale 
             <div className="bg-white rounded-2xl shadow-sm border border-neutral-100 p-6 mb-6">
               <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
                 <HiOutlineCollection className="size-5 text-brand-trust" />
-                Câu hỏi ({questions.length})
+                Câu hỏi ({state.questions.length})
               </h2>
 
               <div className="space-y-4">
-                {questions.map((q, index) => (
+                {state.questions.map((q, index) => (
                   <QuestionEditor
-                    key={q.question}
+                    key={`${q.question}-${q.options.join('|')}`}
                     index={index}
                     question={q}
                     onEdit={(updates) => handleQuestionEdit(index, updates)}
@@ -266,11 +288,13 @@ export default function DraftEditClient({ initialDraft, initialCategory, locale 
               {/* PDF Viewer Toggle */}
               {pdfUrl && (
                 <Button
-                  onClick={() => setShowPDFViewer(!showPDFViewer)}
+                  onClick={() =>
+                    dispatch({ type: 'setShowPDFViewer', value: !state.showPDFViewer })
+                  }
                   variant="outline"
                   className="flex items-center gap-2 text-brand-trust border-green-200 hover:bg-green-50"
                 >
-                  {showPDFViewer ? (
+                  {state.showPDFViewer ? (
                     <>
                       <HiOutlineEyeOff className="size-4" /> Ẩn PDF
                     </>
@@ -294,7 +318,7 @@ export default function DraftEditClient({ initialDraft, initialCategory, locale 
                 <Button
                   type="button"
                   onClick={handleSubmit}
-                  disabled={isSubmitting || !selectedCategory || questions.length === 0}
+                  disabled={isSubmitting || !state.selectedCategory || state.questions.length === 0}
                   className="flex items-center gap-2 px-6 py-3"
                 >
                   {isSubmitting ? (
@@ -310,12 +334,12 @@ export default function DraftEditClient({ initialDraft, initialCategory, locale 
         </div>
 
         {/* Right Side - PDF Viewer */}
-        {showPDFViewer && pdfUrl && (
+        {state.showPDFViewer && pdfUrl && (
           <div className="w-1/2 h-screen sticky top-0 p-4 bg-white border-l border-neutral-200">
             <PDFViewer
-              pdfDataUrl={pdfDataUrl}
+              pdfDataUrl={pdfDataUrl || null}
               pdfUrl={pdfUrl}
-              onClose={() => setShowPDFViewer(false)}
+              onClose={() => dispatch({ type: 'setShowPDFViewer', value: false })}
               showHeader={false}
             />
           </div>
@@ -338,7 +362,12 @@ function QuestionEditor({
   onDelete: () => void;
 }) {
   const [isEditing, setIsEditing] = useState(false);
-  const [editedQuestion, setEditedQuestion] = useState(question.question);
+  const [editedQuestion, setEditedQuestion] = useState('');
+
+  const handleStartEdit = () => {
+    setEditedQuestion(question.question);
+    setIsEditing(true);
+  };
 
   const handleSave = () => {
     onEdit({ question: editedQuestion });
@@ -394,8 +423,8 @@ function QuestionEditor({
               type="button"
               variant="ghost"
               size="icon"
-              onClick={() => setIsEditing(true)}
-              className="text-neutral-400 hover:bg-green-50 hover:text-brand-trust"
+              onClick={handleStartEdit}
+              className="text-brand-trust/70 hover:bg-green-50 hover:text-brand-trust"
             >
               <HiOutlinePencil className="size-4" />
             </Button>
@@ -404,7 +433,7 @@ function QuestionEditor({
               variant="ghost"
               size="icon"
               onClick={onDelete}
-              className="text-neutral-400 hover:bg-red-50 hover:text-red-500"
+              className="text-red-500/80 hover:bg-red-50 hover:text-red-600"
             >
               <HiOutlineTrash className="size-4" />
             </Button>

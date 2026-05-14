@@ -199,7 +199,7 @@ export function QuizPreviewModal({ isOpen, onClose, title, questions }: QuizPrev
           <div className="grid grid-cols-10 gap-2">
             {questions.map((question, index) => (
               <button
-                key={question.question}
+                key={`${index}-${question.question}`}
                 onClick={() => setCurrentQuestionIndex(index)}
                 className={`w-8 h-8 rounded text-xs font-medium transition-colors ${
                   index === currentQuestionIndex

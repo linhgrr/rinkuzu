@@ -576,9 +576,9 @@ export default function AdminPlansPage() {
                           </div>
                         ) : (
                           <ul className="space-y-2">
-                            {plan.features.map((feature, index) => (
+                            {plan.features.map((feature) => (
                               <li
-                                key={index}
+                                key={feature}
                                 className="flex items-center text-sm text-neutral-600"
                               >
                                 <HiOutlineCheck className="size-4 mr-2 text-green-500" />

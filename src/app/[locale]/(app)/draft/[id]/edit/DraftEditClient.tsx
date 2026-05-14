@@ -251,7 +251,7 @@ export default function DraftEditClient({ initialDraft, initialCategory, locale 
               <div className="space-y-4">
                 {questions.map((q, index) => (
                   <QuestionEditor
-                    key={index}
+                    key={q.question}
                     index={index}
                     question={q}
                     onEdit={(updates) => handleQuestionEdit(index, updates)}

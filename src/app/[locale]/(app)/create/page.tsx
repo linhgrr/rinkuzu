@@ -454,7 +454,7 @@ export default function CreateQuizPage() {
                         <div className="space-y-3 max-h-60 overflow-y-auto">
                           {pdfFiles.map((file, index) => (
                             <Card
-                              key={`${file.name}-${index}`}
+                              key={`${file.name}-${file.size}-${file.lastModified}`}
                               variant="bordered"
                               className="p-4 hover:shadow-md transition-shadow"
                             >

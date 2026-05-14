@@ -1,4 +1,4 @@
-export interface StreamTextOptions {
+interface StreamTextOptions {
   onContent?: (chunk: string, fullContent: string) => void;
 }
 
@@ -36,7 +36,7 @@ interface OpenAISsePayload {
   response?: OpenAIResponseFailure;
 }
 
-export function createStreamError(message: string, status?: number): Error {
+function createStreamError(message: string, status?: number): Error {
   const error = new Error(message);
 
   if (typeof status === 'number') {
@@ -46,7 +46,7 @@ export function createStreamError(message: string, status?: number): Error {
   return error;
 }
 
-export async function parseJsonResponse<T>(response: Response): Promise<T> {
+async function parseJsonResponse<T>(response: Response): Promise<T> {
   let data: unknown;
   try {
     data = await response.json();
@@ -57,7 +57,7 @@ export async function parseJsonResponse<T>(response: Response): Promise<T> {
   return data as T;
 }
 
-export function extractOpenAIDeltaContent(payload: OpenAISsePayload | null | undefined): string {
+function extractOpenAIDeltaContent(payload: OpenAISsePayload | null | undefined): string {
   if (payload?.type === 'response.output_text.delta' && typeof payload.delta === 'string') {
     return payload.delta;
   }

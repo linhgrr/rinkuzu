@@ -310,7 +310,7 @@ export function Flashcard({
                   <div className="space-y-4">
                     {options.map((option, index) => (
                       <div
-                        key={index}
+                        key={option}
                         className="flex items-center gap-x-3 p-4 bg-neutral-50 rounded-lg border border-neutral-200 text-lg break-words"
                       >
                         <span className="text-lg font-medium text-neutral-600 w-6">
@@ -355,7 +355,7 @@ export function Flashcard({
                           : correctIndexes && correctIndexes.includes(index);
                       return (
                         <div
-                          key={index}
+                          key={option}
                           className={`flex items-center space-x-3 p-3 rounded-lg border text-base break-words ${
                             isCorrect
                               ? 'bg-green-50 border-green-200'

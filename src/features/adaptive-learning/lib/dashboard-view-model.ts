@@ -1,6 +1,6 @@
 import type { PipelineJobHistoryItem, TranslateFn } from '@/features/adaptive-learning/types';
 
-export type DashboardSubjectMetrics = {
+type DashboardSubjectMetrics = {
   masteredConcepts: number;
   allConcepts: number;
   progressPercent: number;

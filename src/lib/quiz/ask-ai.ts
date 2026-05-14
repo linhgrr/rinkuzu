@@ -1,6 +1,6 @@
 import { consumeOpenAISseResponse } from '@/lib/ai/stream';
 
-export interface QuizAiChatMessage {
+interface QuizAiChatMessage {
   role: 'user' | 'assistant';
   content: string;
 }
@@ -15,7 +15,7 @@ export interface QuizAskAiRequest {
   stream?: boolean;
 }
 
-export interface QuizAskAiResponseData {
+interface QuizAskAiResponseData {
   explanation: string;
   structured: unknown | null;
   timestamp: string;

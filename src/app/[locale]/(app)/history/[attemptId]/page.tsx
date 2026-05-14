@@ -265,7 +265,7 @@ export default function AttemptDetailPage() {
               <div className="space-y-4 sm:space-y-6">
                 {attempt.quiz.questions.map((question, index) => (
                   <Card
-                    key={`${attempt._id}-${index}`}
+                    key={question.question}
                     className={cn(
                       'overflow-hidden border-l-4',
                       question.isCorrect ? 'border-l-green-500' : 'border-l-red-500',

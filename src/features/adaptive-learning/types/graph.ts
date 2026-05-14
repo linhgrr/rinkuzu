@@ -7,7 +7,7 @@ export type KnowledgeNode = Omit<ApiSchemas['KnowledgeNodeResponse'], 'status'> 
   status: ConceptStatus;
 };
 
-export type KnowledgeEdge = ApiSchemas['KnowledgeEdgeResponse'];
+type KnowledgeEdge = ApiSchemas['KnowledgeEdgeResponse'];
 
 export type KnowledgeGraphData = {
   nodes: KnowledgeNode[];
@@ -17,8 +17,6 @@ export type KnowledgeGraphData = {
 export type MasteryRow = ApiSchemas['MasteryRow'];
 
 export type MasteryMatrixData = ApiSchemas['MasteryMatrixResponse'];
-
-export type ConceptPrereq = ApiSchemas['ConceptPrereq'];
 
 export type ConceptDetail = Omit<ApiSchemas['ConceptDetailResponse'], 'status'> & {
   status: ConceptStatus;

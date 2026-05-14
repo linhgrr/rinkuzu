@@ -1,7 +1,7 @@
 import { ServiceResult } from '@/interfaces/services/types';
 import { IUser } from '@/types/index';
 
-export interface FormattedAttempt {
+interface FormattedAttempt {
   _id?: string;
   score: number;
   takenAt: Date;
@@ -13,7 +13,7 @@ export interface FormattedAttempt {
   };
 }
 
-export interface AttemptDetail {
+interface AttemptDetail {
   _id?: string;
   score: number;
   takenAt: Date;

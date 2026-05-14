@@ -16,23 +16,3 @@ export function signToken(payload: JWTPayload): string {
 
   return jwt.sign(payload, JWT_SECRET, signOptions);
 }
-
-export function verifyToken(token: string): JWTPayload | null {
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET) as JWTPayload;
-    return decoded;
-  } catch (error) {
-    console.error('JWT verification error:', error);
-    return null;
-  }
-}
-
-export function decodeToken(token: string): JWTPayload | null {
-  try {
-    const decoded = jwt.decode(token) as JWTPayload;
-    return decoded;
-  } catch (error) {
-    console.error('JWT decode error:', error);
-    return null;
-  }
-}

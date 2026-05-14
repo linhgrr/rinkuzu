@@ -11,11 +11,11 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { Separator } from '@/components/ui/Separator';
 import { Switch } from '@/components/ui/Switch';
 
-export interface PricingFeature {
+interface PricingFeature {
   text: string;
 }
 
-export interface PricingPlan {
+interface PricingPlan {
   id: string;
   name: string;
   description: string;
@@ -28,7 +28,7 @@ export interface PricingPlan {
   };
 }
 
-export interface Pricing2Props {
+interface Pricing2Props {
   heading?: string;
   description?: string;
   plans?: PricingPlan[];

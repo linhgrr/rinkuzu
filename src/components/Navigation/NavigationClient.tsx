@@ -253,7 +253,7 @@ const MobileMenu = memo(function MobileMenu({
         {session ? (
           <>
             {/* User Info */}
-            <div className="flex items-center gap-3 px-3 py-3 mb-3 bg-neutral-50 rounded-2xl">
+            <div className="mb-3 flex items-center gap-3 rounded-2xl bg-neutral-50 p-3">
               <div className="size-10 bg-brand-trust rounded-full flex items-center justify-center text-white font-medium">
                 {((session.user as any)?.displayName || session.user?.email || 'U')
                   .charAt(0)
@@ -409,7 +409,7 @@ export default function NavigationClient({
     };
 
     if (transparent) {
-      window.addEventListener('scroll', handleScroll);
+      window.addEventListener('scroll', handleScroll, { passive: true });
       handleScroll(); // Initial check
       return () => window.removeEventListener('scroll', handleScroll);
     }

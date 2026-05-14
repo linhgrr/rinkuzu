@@ -17,6 +17,8 @@ import {
   HiOutlineChevronUp,
 } from '@/components/icons';
 
+type DraftTranslationValues = Record<string, string | number | Date>;
+
 export function FloatingDraftProgress() {
   const { getActiveDrafts, getProcessingCount, getCompletedCount, removeDraft, hasActiveDrafts } =
     useDraftStore();
@@ -142,7 +144,7 @@ export function FloatingDraftProgress() {
 
 function getTimeRemaining(
   expiresAt: string,
-  t: (key: string, params?: Record<string, any>) => string,
+  t: (key: string, params?: DraftTranslationValues) => string,
 ): string {
   const now = new Date();
   const expiry = new Date(expiresAt);
@@ -174,7 +176,7 @@ function DraftItem({
   draft: DraftProgress;
   onRemove: () => void;
   onCancel: () => void;
-  t: (key: string, params?: Record<string, any>) => string;
+  t: (key: string, params?: DraftTranslationValues) => string;
 }) {
   const progress = draft.chunksTotal > 0 ? (draft.chunksProcessed / draft.chunksTotal) * 100 : 0;
 
@@ -217,11 +219,11 @@ function DraftItem({
                   {(draft.chunksError || 0) > 0 && (
                     <span className="text-red-500">
                       {' '}
-                      • {t('errors', { count: draft.chunksError })}
+                      • {t('errors', { count: draft.chunksError ?? 0 })}
                     </span>
                   )}
                   {' • '}
-                  {t('questionsGenerated', { count: draft.questionsCount })}
+                  {t('questionsGenerated', { count: draft.questionsCount ?? 0 })}
                 </p>
                 <button
                   onClick={onCancel}

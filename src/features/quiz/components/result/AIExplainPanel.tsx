@@ -2,6 +2,7 @@
 
 import { StreamingChatModal } from '@/features/quiz/components/chat/StreamingChatModal';
 import { QuestionOptionsPreview } from '@/features/quiz/components/shared/QuestionOptionsPreview';
+import type { ChatMessage } from '@/features/quiz/hooks/useStreamingChatSession';
 
 interface AIExplainPanelProps {
   isOpen: boolean;
@@ -12,7 +13,7 @@ interface AIExplainPanelProps {
     questionImage?: string;
     optionImages?: (string | undefined)[];
   } | null;
-  messages: any[];
+  messages: ChatMessage[];
   userLabel: string;
   assistantLabel: string;
   userQuestion: string;

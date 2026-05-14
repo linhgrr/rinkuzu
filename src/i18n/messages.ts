@@ -29,12 +29,22 @@ export async function getLocaleMessages(
   namespaces?: readonly string[],
 ): Promise<LocaleMessages> {
   const localeDirectory = getLocaleDirectory(locale);
-  const resolvedNamespaces = namespaces?.length
-    ? [...new Set(namespaces)]
-    : (await readdir(localeDirectory))
-        .filter((entry) => entry.endsWith('.json'))
-        .map((entry) => entry.replace(/\.json$/u, ''))
-        .sort();
+  let resolvedNamespaces: string[];
+
+  if (namespaces?.length) {
+    resolvedNamespaces = [...new Set(namespaces)];
+  } else {
+    const entries = await readdir(localeDirectory);
+    resolvedNamespaces = [];
+
+    for (const entry of entries) {
+      if (entry.endsWith('.json')) {
+        resolvedNamespaces.push(entry.replace(/\.json$/u, ''));
+      }
+    }
+
+    resolvedNamespaces.sort();
+  }
 
   const entries = await Promise.all(
     resolvedNamespaces.map(async (namespace) => {

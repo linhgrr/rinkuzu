@@ -24,7 +24,7 @@ export function GuestLanding({ quizzes, isAuthenticated = false }: GuestLandingP
 
   return (
     <div
-      className="min-h-screen bg-black"
+      className="min-h-screen bg-[#07121a]"
       style={
         {
           '--hero-heading-gradient':
@@ -93,7 +93,7 @@ export function GuestLanding({ quizzes, isAuthenticated = false }: GuestLandingP
           </div>
         </section>
         <FaqSection />
-        <section className="bg-black py-24 md:py-32">
+        <section className="bg-[#07121a] py-24 md:py-32">
           <div className="max-w-4xl mx-auto px-6 text-center">
             <h2 className="text-3xl md:text-5xl font-semibold tracking-tight text-white mb-8">
               {t('ready_to_start')}

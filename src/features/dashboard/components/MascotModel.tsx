@@ -10,6 +10,7 @@ const MODEL_URL = '/models/base_basic_pbr.glb';
 export default function MascotModel() {
   const { scene } = useGLTF(MODEL_URL);
   const groupRef = useRef<THREE.Group>(null);
+  const sceneWrapperRef = useRef<THREE.Group>(null);
   const target = useRef({ x: 0, y: 0 });
 
   useEffect(() => {
@@ -20,6 +21,19 @@ export default function MascotModel() {
     window.addEventListener('mousemove', handleMouseMove);
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
+
+  useEffect(() => {
+    const sceneWrapper = sceneWrapperRef.current;
+    if (!sceneWrapper) return;
+
+    sceneWrapper.add(scene);
+    sceneWrapper.position.set(0, -1.2, 0);
+    sceneWrapper.scale.setScalar(1.5);
+
+    return () => {
+      sceneWrapper.remove(scene);
+    };
+  }, [scene]);
 
   useFrame(() => {
     const group = groupRef.current;
@@ -33,7 +47,7 @@ export default function MascotModel() {
   return (
     <Float speed={2} rotationIntensity={0.5} floatIntensity={1}>
       <group ref={groupRef}>
-        <primitive object={scene} scale={1.5} position={[0, -1.2, 0]} />
+        <group ref={sceneWrapperRef} />
       </group>
     </Float>
   );

@@ -4,9 +4,7 @@ import { memo } from 'react';
 import { Button } from '@/components/ui/Button';
 import { HiOutlineBookOpen, HiOutlineTrash } from '@/components/icons';
 import type { DashboardSubject } from '@/features/adaptive-learning/lib/dashboard-view-model';
-import type { PipelineJobHistoryItem } from '@/features/adaptive-learning/types';
-
-type TranslateFn = (key: string, values?: Record<string, any>) => string;
+import type { PipelineJobHistoryItem, TranslateFn } from '@/features/adaptive-learning/types';
 
 type SubjectLibraryCardProps = {
   subject: DashboardSubject;

@@ -13,10 +13,8 @@ import {
 } from '@/components/icons';
 import { useRandomLibraryImages } from '@/features/adaptive-learning/hooks/use-random-library-images';
 import type { DashboardSubject } from '@/features/adaptive-learning/lib/dashboard-view-model';
-import type { PipelineJobHistoryItem } from '@/features/adaptive-learning/types';
+import type { PipelineJobHistoryItem, TranslateFn } from '@/features/adaptive-learning/types';
 import { SubjectLibraryCard } from './SubjectLibraryCard';
-
-type TranslateFn = (key: string, values?: Record<string, any>) => string;
 
 type LibraryProps = {
   subjects: DashboardSubject[];

@@ -4,8 +4,7 @@ import Image from 'next/image';
 import { Button } from '@/components/ui/Button';
 import { HiOutlineCloudUpload, HiOutlinePlay } from '@/components/icons';
 import type { DashboardSubject } from '@/features/adaptive-learning/lib/dashboard-view-model';
-
-type TranslateFn = (key: string, values?: Record<string, any>) => string;
+import type { TranslateFn } from '@/features/adaptive-learning/types';
 
 type HeroProps = {
   subject: DashboardSubject | null;

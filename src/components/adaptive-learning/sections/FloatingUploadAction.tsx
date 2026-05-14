@@ -2,8 +2,7 @@
 
 import { Button } from '@/components/ui/Button';
 import { HiOutlineCloudUpload } from '@/components/icons';
-
-type TranslateFn = (key: string, values?: Record<string, any>) => string;
+import type { TranslateFn } from '@/features/adaptive-learning/types';
 
 type FloatingUploadActionProps = {
   onClick: () => void;

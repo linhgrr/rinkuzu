@@ -2,8 +2,7 @@
 
 import { SparklesText } from '@/components/ui/sparkles-text';
 import { HiOutlineLightningBolt, HiOutlineClock } from '@/components/icons';
-
-type TranslateFn = (key: string, values?: Record<string, any>) => string;
+import type { TranslateFn } from '@/features/adaptive-learning/types';
 
 type DashboardHeaderProps = {
   apiOnline: boolean | null;

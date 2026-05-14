@@ -1,4 +1,4 @@
-import { useCallback, useDeferredValue, useEffect, useMemo, useState } from 'react';
+import { useCallback, useDeferredValue, useEffect, useMemo, useReducer, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import {
@@ -31,13 +31,13 @@ const getDayStart = (value: number): number => {
 const calculateLearningStreak = (sessions: SessionHistoryItem[]): number => {
   if (sessions.length === 0) return 0;
 
-  const dayStarts = Array.from(
-    new Set(
-      sessions
-        .filter((session) => session.total_answered > 0)
-        .map((session) => getDayStart(toTimestampMs(session.updated_at || session.created_at))),
-    ),
-  ).sort((a, b) => b - a);
+  const uniqueDayStarts = new Set<number>();
+  for (const session of sessions) {
+    if (session.total_answered > 0) {
+      uniqueDayStarts.add(getDayStart(toTimestampMs(session.updated_at || session.created_at)));
+    }
+  }
+  const dayStarts = Array.from(uniqueDayStarts).sort((a, b) => b - a);
 
   if (dayStarts.length === 0) return 0;
 
@@ -79,6 +79,31 @@ type UseAdaptiveDashboardParams = {
   tAdaptive: TranslateFn;
 };
 
+type AdaptiveDashboardState = {
+  subjects: PipelineJobHistoryItem[];
+  loading: boolean;
+  error: string | null;
+  apiOnline: boolean | null;
+  sessionHistory: SessionHistoryItem[];
+};
+
+type AdaptiveDashboardAction =
+  | { type: 'patch'; value: Partial<AdaptiveDashboardState> }
+  | { type: 'hydrate'; value: Partial<AdaptiveDashboardState> };
+
+const adaptiveDashboardReducer = (
+  state: AdaptiveDashboardState,
+  action: AdaptiveDashboardAction,
+): AdaptiveDashboardState => {
+  switch (action.type) {
+    case 'patch':
+    case 'hydrate':
+      return { ...state, ...action.value };
+    default:
+      return state;
+  }
+};
+
 export const useAdaptiveDashboard = ({
   initialSubjects,
   initialSessionHistory,
@@ -88,21 +113,23 @@ export const useAdaptiveDashboard = ({
 }: UseAdaptiveDashboardParams) => {
   const router = useRouter();
 
-  const [subjects, setSubjects] = useState<PipelineJobHistoryItem[]>(initialSubjects);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [apiOnline, setApiOnline] = useState<boolean | null>(true);
+  const [dashboardState, dispatch] = useReducer(adaptiveDashboardReducer, {
+    subjects: initialSubjects,
+    loading: false,
+    error: null,
+    apiOnline: true,
+    sessionHistory: initialSessionHistory,
+  });
   const [loadingJobId, setLoadingJobId] = useState<string | null>(null);
   const [deletingJobId, setDeletingJobId] = useState<string | null>(null);
   const [itemToDelete, setItemToDelete] = useState<PipelineJobHistoryItem | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [sessionHistory, setSessionHistory] = useState<SessionHistoryItem[]>(initialSessionHistory);
   const deferredSearchQuery = useDeferredValue(searchQuery);
 
   const refreshSubjects = useCallback(async () => {
     try {
       const data = await getSubjects();
-      setSubjects(data);
+      dispatch({ type: 'patch', value: { subjects: data } });
     } catch (e) {
       console.error('Failed to refresh subjects', e);
     }
@@ -160,29 +187,35 @@ export const useAdaptiveDashboard = ({
   }, [deletingJobId]);
 
   const normalizedSubjects = useMemo(() => {
-    return subjects.map((job) => {
+    return dashboardState.subjects.map((job) => {
       const displayName = job.filename?.replace(/\.[^.]+$/, '') || job.subject_id || job.job_id;
       return {
         job,
         normalizedDisplayName: displayName.toLowerCase(),
       };
     });
-  }, [subjects]);
+  }, [dashboardState.subjects]);
 
   const filteredSubjects = useMemo(() => {
     const normalizedQuery = deferredSearchQuery.trim().toLowerCase();
     if (!normalizedQuery) return normalizedSubjects.map(({ job }) => job);
 
-    return normalizedSubjects
-      .filter(({ normalizedDisplayName }) => normalizedDisplayName.includes(normalizedQuery))
-      .map(({ job }) => job);
+    return normalizedSubjects.reduce<PipelineJobHistoryItem[]>((matches, subject) => {
+      if (subject.normalizedDisplayName.includes(normalizedQuery)) {
+        matches.push(subject.job);
+      }
+      return matches;
+    }, []);
   }, [deferredSearchQuery, normalizedSubjects]);
 
-  const streakDays = useMemo(() => calculateLearningStreak(sessionHistory), [sessionHistory]);
+  const streakDays = useMemo(
+    () => calculateLearningStreak(dashboardState.sessionHistory),
+    [dashboardState.sessionHistory],
+  );
 
   const dailyGoalProgress = useMemo(() => {
     const todayStart = getDayStart(Date.now());
-    const current = sessionHistory.filter((session) => {
+    const current = dashboardState.sessionHistory.filter((session) => {
       if (session.total_answered <= 0) return false;
       const dayStart = getDayStart(toTimestampMs(session.updated_at || session.created_at));
       return dayStart === todayStart;
@@ -193,9 +226,9 @@ export const useAdaptiveDashboard = ({
       total: DAILY_GOAL_TARGET,
       percent: Math.min(100, Math.round((current / DAILY_GOAL_TARGET) * 100)),
     };
-  }, [sessionHistory]);
+  }, [dashboardState.sessionHistory]);
 
-  const upNextSubject = subjects.length > 0 ? subjects[0] : null;
+  const upNextSubject = dashboardState.subjects.length > 0 ? dashboardState.subjects[0] : null;
 
   useEffect(() => {
     router.prefetch(ADAPTIVE_ROUTES.upload);
@@ -204,47 +237,46 @@ export const useAdaptiveDashboard = ({
   useEffect(() => {
     let isActive = true;
 
-    const applyHealthResult = (healthResult: PromiseSettledResult<boolean>) => {
-      if (healthResult.status === 'fulfilled') setApiOnline(healthResult.value);
-      else setApiOnline(false);
-    };
-
     const hydrateDashboard = async () => {
-      setError(null);
+      dispatch({ type: 'patch', value: { error: null } });
 
       if (didHydrateFromServer) {
-        // Server already provided initial data — only check API health.
-        const healthResult = await checkApiHealth().catch(() => false);
-        if (isActive) setApiOnline(healthResult);
+        const healthPromise = checkApiHealth().catch(() => false);
+        if (!isActive) return;
+        const healthResult = await healthPromise;
+        if (isActive) {
+          dispatch({ type: 'hydrate', value: { apiOnline: healthResult } });
+        }
         return;
       }
 
-      setLoading(true);
-
+      dispatch({ type: 'patch', value: { loading: true } });
+      if (!isActive) return;
       const [healthResult, subjectsResult, historyResult] = await Promise.allSettled([
         checkApiHealth(),
         getSubjects(),
         getSubjectProgressHistory(5),
       ]);
-
       if (!isActive) return;
 
-      applyHealthResult(healthResult);
-
+      const nextState: Partial<AdaptiveDashboardState> = {
+        loading: false,
+        apiOnline: healthResult.status === 'fulfilled' ? healthResult.value : false,
+      };
       if (subjectsResult.status === 'fulfilled') {
-        setSubjects(subjectsResult.value);
+        nextState.subjects = subjectsResult.value;
       } else {
         console.error('Failed to hydrate subjects', subjectsResult.reason);
-        setError(t('connectionLimited'));
+        nextState.error = t('connectionLimited');
       }
 
       if (historyResult.status === 'fulfilled') {
-        setSessionHistory(historyResult.value);
+        nextState.sessionHistory = historyResult.value;
       } else {
         console.error('Failed to hydrate session history', historyResult.reason);
       }
 
-      setLoading(false);
+      dispatch({ type: 'hydrate', value: nextState });
     };
 
     void hydrateDashboard();
@@ -255,10 +287,10 @@ export const useAdaptiveDashboard = ({
   }, [didHydrateFromServer, t]);
 
   return {
-    apiOnline,
+    apiOnline: dashboardState.apiOnline,
     dailyGoalProgress,
     deletingJobId,
-    error,
+    error: dashboardState.error,
     filteredSubjects,
     handleCancelDelete,
     handleConfirmDelete,
@@ -266,10 +298,10 @@ export const useAdaptiveDashboard = ({
     handleGoUpload,
     handleOpenSubject,
     itemToDelete,
-    loading,
+    loading: dashboardState.loading,
     loadingJobId,
     searchQuery,
-    sessionHistory,
+    sessionHistory: dashboardState.sessionHistory,
     setSearchQuery,
     streakDays,
     upNextSubject,

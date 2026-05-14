@@ -1,12 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { Suspense, useEffect, useMemo, useReducer } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { useStreamingChatSession } from '@/features/quiz/hooks/useStreamingChatSession';
+import {
+  useStreamingChatSession,
+  type ChatMessage,
+} from '@/features/quiz/hooks/useStreamingChatSession';
 import { fetchApiData } from '@/lib/api/client';
 import { extractUnknownErrorMessage } from '@/lib/api/error';
 import { routePathSegment } from '@/lib/routing/routeParams';
@@ -17,6 +20,18 @@ import { QuestionReviewList } from '@/features/quiz/components/result/QuestionRe
 import { BookmarkPanel } from '@/features/quiz/components/result/BookmarkPanel';
 import { AIExplainPanel } from '@/features/quiz/components/result/AIExplainPanel';
 
+interface QuizResultQuestion {
+  question: string;
+  options: string[];
+  type: 'single' | 'multiple';
+  correctIndex?: number;
+  correctIndexes?: number[];
+  questionImage?: string;
+  optionImages?: (string | undefined)[];
+  userAnswer: number | number[];
+  isCorrect: boolean;
+}
+
 interface QuizResult {
   _id: string;
   score: number;
@@ -26,17 +41,7 @@ interface QuizResult {
     title: string;
     slug: string;
     description: string;
-    questions: {
-      question: string;
-      options: string[];
-      type: 'single' | 'multiple';
-      correctIndex?: number;
-      correctIndexes?: number[];
-      questionImage?: string;
-      optionImages?: (string | undefined)[];
-      userAnswer: number | number[];
-      isCorrect: boolean;
-    }[];
+    questions: QuizResultQuestion[];
   };
 }
 
@@ -48,347 +53,352 @@ interface BookmarkSummary {
   questionIndex: number;
 }
 
+interface BookmarkLookup {
+  bookmarkedQuestions: Set<number>;
+  bookmarkIdsByQuestion: Record<number, string>;
+}
+
+interface AIQuestionData {
+  question: string;
+  options: string[];
+  questionImage?: string;
+  optionImages?: (string | undefined)[];
+}
+
 type BookmarkMessageTone = 'success' | 'warning' | 'error';
+type ResultPageStatus = 'loading' | 'ready' | 'error';
 
-export default function QuizResultPage() {
-  const t = useTranslations('quiz');
-  const tProfile = useTranslations('profile');
-  const { get } = useSearchParams();
-  const attemptId = get('attemptId');
-  const encodedSlug = routePathSegment(useRequiredRouteParam('slug'));
+interface QuizResultPageState {
+  status: ResultPageStatus;
+  result: QuizResult | null;
+  error: string | null;
+  showAIModal: boolean;
+  aiQuestionData: AIQuestionData | null;
+  currentQuestionIndex: number;
+  bookmarkedQuestions: Set<number>;
+  bookmarkIdsByQuestion: Record<number, string>;
+  bookmarkLoading: Set<number>;
+  bookmarkMessage: string;
+  bookmarkMessageTone: BookmarkMessageTone;
+  bookmarkToRemove: number | null;
+}
 
-  const [result, setResult] = useState<QuizResult | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [showAIModal, setShowAIModal] = useState(false);
-  const [aiQuestionData, setAIQuestionData] = useState<any>(null);
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState<number>(-1);
-  const {
-    chatHistories,
-    userQuestion,
-    setUserQuestion,
-    loadingAI,
-    aiError,
-    setAIError,
-    ensureHistory,
-    clearHistory,
-    getHistory,
-    sendMessage,
-    totalTurns,
-  } = useStreamingChatSession({
-    persistenceKey: attemptId ? `chat-histories-${attemptId}` : undefined,
+type QuizResultPageAction =
+  | { type: 'loadSuccess'; result: QuizResult; bookmarks: BookmarkLookup }
+  | { type: 'loadError'; error: string }
+  | { type: 'openAIModal'; questionData: AIQuestionData; questionIndex: number }
+  | { type: 'closeAIModal' }
+  | { type: 'setBookmarkLoading'; questionIndex: number; loading: boolean }
+  | { type: 'addBookmark'; questionIndex: number; bookmarkId?: string }
+  | { type: 'removeBookmarkSuccess'; questionIndex: number }
+  | { type: 'setBookmarkMessage'; message: string; tone: BookmarkMessageTone }
+  | { type: 'clearBookmarkMessage' }
+  | { type: 'setBookmarkToRemove'; questionIndex: number | null };
+
+const initialQuizResultPageState: QuizResultPageState = {
+  status: 'loading',
+  result: null,
+  error: null,
+  showAIModal: false,
+  aiQuestionData: null,
+  currentQuestionIndex: -1,
+  bookmarkedQuestions: new Set<number>(),
+  bookmarkIdsByQuestion: {},
+  bookmarkLoading: new Set<number>(),
+  bookmarkMessage: '',
+  bookmarkMessageTone: 'success',
+  bookmarkToRemove: null,
+};
+
+function quizResultPageReducer(
+  state: QuizResultPageState,
+  action: QuizResultPageAction,
+): QuizResultPageState {
+  switch (action.type) {
+    case 'loadSuccess':
+      return {
+        ...state,
+        status: 'ready',
+        result: action.result,
+        error: null,
+        bookmarkedQuestions: action.bookmarks.bookmarkedQuestions,
+        bookmarkIdsByQuestion: action.bookmarks.bookmarkIdsByQuestion,
+      };
+    case 'loadError':
+      return {
+        ...state,
+        status: 'error',
+        error: action.error,
+      };
+    case 'openAIModal':
+      return {
+        ...state,
+        showAIModal: true,
+        aiQuestionData: action.questionData,
+        currentQuestionIndex: action.questionIndex,
+      };
+    case 'closeAIModal':
+      return {
+        ...state,
+        showAIModal: false,
+        aiQuestionData: null,
+        currentQuestionIndex: -1,
+      };
+    case 'setBookmarkLoading': {
+      const nextLoading = new Set(state.bookmarkLoading);
+
+      if (action.loading) {
+        nextLoading.add(action.questionIndex);
+      } else {
+        nextLoading.delete(action.questionIndex);
+      }
+
+      return {
+        ...state,
+        bookmarkLoading: nextLoading,
+      };
+    }
+    case 'addBookmark': {
+      const nextBookmarked = new Set(state.bookmarkedQuestions);
+      nextBookmarked.add(action.questionIndex);
+
+      return {
+        ...state,
+        bookmarkedQuestions: nextBookmarked,
+        bookmarkIdsByQuestion: action.bookmarkId
+          ? { ...state.bookmarkIdsByQuestion, [action.questionIndex]: action.bookmarkId }
+          : state.bookmarkIdsByQuestion,
+      };
+    }
+    case 'removeBookmarkSuccess': {
+      const nextBookmarked = new Set(state.bookmarkedQuestions);
+      nextBookmarked.delete(action.questionIndex);
+      const nextBookmarkIds = { ...state.bookmarkIdsByQuestion };
+      delete nextBookmarkIds[action.questionIndex];
+
+      return {
+        ...state,
+        bookmarkedQuestions: nextBookmarked,
+        bookmarkIdsByQuestion: nextBookmarkIds,
+        bookmarkToRemove: null,
+      };
+    }
+    case 'setBookmarkMessage':
+      return {
+        ...state,
+        bookmarkMessage: action.message,
+        bookmarkMessageTone: action.tone,
+      };
+    case 'clearBookmarkMessage':
+      return {
+        ...state,
+        bookmarkMessage: '',
+      };
+    case 'setBookmarkToRemove':
+      return {
+        ...state,
+        bookmarkToRemove: action.questionIndex,
+      };
+    default:
+      return state;
+  }
+}
+
+function formatAnswerValue(
+  answer: number | number[],
+  options: string[],
+  type: 'single' | 'multiple',
+  notAnsweredLabel: string,
+  isAnswered = true,
+) {
+  if (!isAnswered) {
+    return notAnsweredLabel;
+  }
+
+  if (type === 'single') {
+    return options[answer as number];
+  }
+
+  return (answer as number[]).map((index) => options[index]).join(', ');
+}
+
+function formatCorrectAnswerValue(question: QuizResultQuestion) {
+  if (question.type === 'single') {
+    return typeof question.correctIndex === 'number'
+      ? question.options[question.correctIndex] || ''
+      : '';
+  }
+
+  return (question.correctIndexes || []).map((index) => question.options[index]).join(', ');
+}
+
+async function fetchBookmarkLookup(resultData: QuizResult): Promise<BookmarkLookup> {
+  const data = await fetchApiData<{
+    bookmarks: BookmarkSummary[];
+    pagination: PaginationMeta;
+  }>('/api/bookmarks');
+
+  const bookmarkedQuestions = new Set<number>();
+  const bookmarkIdsByQuestion: Record<number, string> = {};
+
+  data.bookmarks.forEach((bookmark) => {
+    if (bookmark.quiz.slug === resultData.quiz.slug) {
+      bookmarkedQuestions.add(bookmark.questionIndex);
+      bookmarkIdsByQuestion[bookmark.questionIndex] = bookmark._id;
+    }
   });
 
-  // Bookmark states
-  const [bookmarkedQuestions, setBookmarkedQuestions] = useState<Set<number>>(new Set());
-  const [bookmarkIdsByQuestion, setBookmarkIdsByQuestion] = useState<Record<number, string>>({});
-  const [bookmarkLoading, setBookmarkLoading] = useState<Set<number>>(new Set());
-  const [bookmarkMessage, setBookmarkMessage] = useState<string>('');
-  const [bookmarkMessageTone, setBookmarkMessageTone] = useState<BookmarkMessageTone>('success');
-  const [bookmarkToRemove, setBookmarkToRemove] = useState<number | null>(null);
-
-  // Check which questions are already bookmarked
-  const checkBookmarkedQuestions = async (resultData: QuizResult) => {
-    try {
-      const data = await fetchApiData<{
-        bookmarks: BookmarkSummary[];
-        pagination: PaginationMeta;
-      }>('/api/bookmarks');
-      const bookmarkedSet = new Set<number>();
-      const bookmarkIds: Record<number, string> = {};
-      data.bookmarks.forEach((bookmark) => {
-        if (bookmark.quiz.slug === resultData.quiz.slug) {
-          bookmarkedSet.add(bookmark.questionIndex);
-          bookmarkIds[bookmark.questionIndex] = bookmark._id;
-        }
-      });
-      setBookmarkedQuestions(bookmarkedSet);
-      setBookmarkIdsByQuestion(bookmarkIds);
-    } catch (error) {
-      console.error('Failed to check bookmarked questions:', error);
-    }
+  return {
+    bookmarkedQuestions,
+    bookmarkIdsByQuestion,
   };
+}
 
-  useEffect(() => {
-    const fetchResults = async () => {
-      if (!attemptId) {
-        setError('No attempt ID provided');
-        setLoading(false);
-        return;
-      }
+function QuizResultLoadingState({ message }: { message: string }) {
+  return (
+    <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
+      <div className="text-center">
+        <div className="size-12 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust mx-auto" />
+        <p className="mt-4 text-neutral-600">{message}</p>
+      </div>
+    </div>
+  );
+}
 
-      try {
-        const data = await fetchApiData<QuizResult>(`/api/attempts/${attemptId}`);
-        setResult(data);
-        await checkBookmarkedQuestions(data);
-      } catch (err: unknown) {
-        setError(extractUnknownErrorMessage(err, 'Failed to load results'));
-      } finally {
-        setLoading(false);
-      }
-    };
+function QuizResultErrorState({
+  actionLabel,
+  error,
+  title,
+}: {
+  actionLabel: string;
+  error: string | null;
+  title: string;
+}) {
+  return (
+    <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
+      <Card className="max-w-md">
+        <CardHeader>
+          <CardTitle className="text-center text-red-600">{title}</CardTitle>
+        </CardHeader>
+        <CardContent className="text-center">
+          <p className="text-neutral-600 mb-4">{error}</p>
+          <Link href="/">
+            <Button>{actionLabel}</Button>
+          </Link>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
 
-    fetchResults();
-  }, [attemptId]);
+function QuizResultActions({
+  backHomeLabel,
+  encodedSlug,
+  redoLabel,
+}: {
+  backHomeLabel: string;
+  encodedSlug: string;
+  redoLabel: string;
+}) {
+  return (
+    <div className="flex justify-center gap-x-4">
+      <Link href={`/quiz/${encodedSlug}`}>
+        <Button variant="outline">{redoLabel}</Button>
+      </Link>
+      <Link href="/">
+        <Button>{backHomeLabel}</Button>
+      </Link>
+    </div>
+  );
+}
 
-  const getScoreColor = (score: number) => {
-    if (score >= 80) return 'text-green-600';
-    if (score >= 60) return 'text-yellow-600';
-    return 'text-red-600';
-  };
-
-  const getScoreMessage = (score: number) => {
-    if (score >= 90) return tProfile('excellent');
-    if (score >= 80) return tProfile('great');
-    if (score >= 70) return tProfile('good');
-    if (score >= 60) return tProfile('pass');
-    return tProfile('needsWork');
-  };
-
-  const formatAnswer = (
+interface QuizResultReadyStateProps {
+  aiError: string;
+  aiQuestionData: AIQuestionData | null;
+  askAI: () => void;
+  backHomeLabel: string;
+  bookmarkedQuestions: Set<number>;
+  bookmarkLoading: Set<number>;
+  bookmarkMessage: string;
+  bookmarkMessageTone: BookmarkMessageTone;
+  bookmarkToRemove: number | null;
+  chatHistories: Record<string, ChatMessage[]>;
+  chatStats: { totalTurns: number; questionsWithChat: number };
+  clearChatHistory: (questionIndex: number) => void;
+  closeAIModal: () => void;
+  currentQuestionIndex: number;
+  encodedSlug: string;
+  formatAnswer: (
     answer: number | number[],
     options: string[],
     type: 'single' | 'multiple',
-    isAnswered: boolean = true,
-  ) => {
-    if (!isAnswered) {
-      return t('notAnswered');
-    }
-
-    if (type === 'single') {
-      return options[answer as number];
-    } else {
-      const indices = answer as number[];
-      return indices.map((idx) => options[idx]).join(', ');
-    }
+    isAnswered?: boolean,
+  ) => string;
+  formatCorrectAnswer: (question: QuizResultQuestion) => string;
+  getHistory: (historyKey: string | number) => ChatMessage[];
+  loadingAI: boolean;
+  onCancelRemove: () => void;
+  onConfirmRemove: () => void;
+  onDismissBookmarkMessage: () => void;
+  onKeyDown: (event: React.KeyboardEvent) => void;
+  onOpenAI: (questionData: AIQuestionData, questionIndex: number) => void;
+  onToggleBookmark: (questionIndex: number, questionData: QuizResultQuestion) => void;
+  onUserQuestionChange: (value: string) => void;
+  result: QuizResult;
+  scoreColor: (score: number) => string;
+  scoreMessage: (score: number) => string;
+  showAIModal: boolean;
+  stats: {
+    correctCount: number;
+    incorrectCount: number;
+    unansweredCount: number;
+    totalQuestions: number;
   };
+  t: (key: string, values?: Record<string, string | number | Date>) => string;
+  tProfile: (key: string) => string;
+  userLabel: string;
+  userQuestion: string;
+}
 
-  const formatCorrectAnswer = (question: QuizResult['quiz']['questions'][0]) => {
-    if (question.type === 'single') {
-      return typeof question.correctIndex === 'number'
-        ? question.options[question.correctIndex] || ''
-        : '';
-    }
-
-    return (question.correctIndexes || []).map((idx) => question.options[idx]).join(', ');
-  };
-
-  const openAIModal = (qData: any, questionIndex: number) => {
-    setAIQuestionData(qData);
-    setCurrentQuestionIndex(questionIndex);
-    setUserQuestion('');
-    setAIError('');
-    setShowAIModal(true);
-
-    // Initialize chat history for this question if it doesn't exist
-    ensureHistory(questionIndex);
-  };
-
-  const closeAIModal = () => {
-    setShowAIModal(false);
-    setCurrentQuestionIndex(-1);
-    setUserQuestion('');
-    setAIError('');
-  };
-
-  const askAI = async () => {
-    if (!aiQuestionData || currentQuestionIndex === -1) return;
-    await sendMessage({
-      historyKey: currentQuestionIndex,
-      payload: {
-        question: aiQuestionData.question,
-        options: aiQuestionData.options,
-        questionImage: aiQuestionData.questionImage,
-        optionImages: aiQuestionData.optionImages,
-      },
-      emptyQuestionErrorMessage: 'Please enter a question to ask Rin-chan!',
-      requestErrorMessage: 'Failed to connect to AI service. Please try again.',
-    });
-  };
-
-  // Handle keyboard shortcuts
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-      e.preventDefault();
-      if (!loadingAI && userQuestion.trim()) {
-        askAI();
-      }
-    }
-  };
-
-  const clearChatHistory = (questionIndex: number) => {
-    clearHistory(questionIndex);
-  };
-
-  // Bookmark functions
-  const removeBookmark = async (questionIndex: number) => {
-    if (!result) return;
-    const bookmarkId = bookmarkIdsByQuestion[questionIndex];
-    if (!bookmarkId) {
-      setBookmarkMessageTone('error');
-      setBookmarkMessage('Bookmark not found, please refresh and try again');
-      setTimeout(() => setBookmarkMessage(''), 3000);
-      return;
-    }
-
-    setBookmarkLoading((prev) => new Set(prev).add(questionIndex));
-
-    try {
-      await fetchApiData<null>(`/api/bookmarks/${bookmarkId}`, { method: 'DELETE' });
-      setBookmarkedQuestions((prev) => {
-        const next = new Set(prev);
-        next.delete(questionIndex);
-        return next;
-      });
-      setBookmarkIdsByQuestion((prev) => {
-        const next = { ...prev };
-        delete next[questionIndex];
-        return next;
-      });
-      setBookmarkToRemove(null);
-      setBookmarkMessageTone('success');
-      setBookmarkMessage('Bookmark removed');
-    } catch (error: unknown) {
-      console.error('Error removing bookmark:', error);
-      setBookmarkMessageTone('error');
-      setBookmarkMessage(extractUnknownErrorMessage(error, 'Network error, please try again'));
-    } finally {
-      setBookmarkLoading((prev) => {
-        const newSet = new Set(prev);
-        newSet.delete(questionIndex);
-        return newSet;
-      });
-      setTimeout(() => setBookmarkMessage(''), 3000);
-    }
-  };
-
-  const toggleBookmark = async (questionIndex: number, questionData: any) => {
-    if (!result) return;
-
-    if (bookmarkedQuestions.has(questionIndex)) {
-      setBookmarkToRemove(questionIndex);
-      return;
-    }
-
-    setBookmarkLoading((prev) => new Set(prev).add(questionIndex));
-
-    try {
-      const bookmarkData = {
-        quiz: {
-          title: result.quiz.title,
-          slug: result.quiz.slug,
-          description: result.quiz.description,
-        },
-        question: {
-          text: questionData.question,
-          options: questionData.options,
-          type: questionData.type,
-          correctIndex: questionData.correctIndex,
-          correctIndexes: questionData.correctIndexes,
-          questionImage: questionData.questionImage,
-          optionImages: questionData.optionImages,
-        },
-        questionIndex: questionIndex,
-      };
-
-      const created = await fetchApiData<BookmarkSummary>('/api/bookmarks', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(bookmarkData),
-      });
-      setBookmarkedQuestions((prev) => new Set(prev).add(questionIndex));
-      if (created._id) {
-        setBookmarkIdsByQuestion((prev) => ({ ...prev, [questionIndex]: created._id }));
-      }
-      setBookmarkMessageTone('success');
-      setBookmarkMessage('Question bookmarked successfully!');
-    } catch (error: unknown) {
-      console.error('Error toggling bookmark:', error);
-      const message = extractUnknownErrorMessage(error, 'Network error, please try again');
-
-      if (message === 'Question already bookmarked') {
-        setBookmarkMessageTone('warning');
-        setBookmarkMessage('This question is already bookmarked');
-      } else {
-        setBookmarkMessageTone('error');
-        setBookmarkMessage(message);
-      }
-
-      setTimeout(() => setBookmarkMessage(''), 3000);
-    } finally {
-      setBookmarkLoading((prev) => {
-        const newSet = new Set(prev);
-        newSet.delete(questionIndex);
-        return newSet;
-      });
-    }
-  };
-
-  // Get chat statistics
-  const getChatStats = () => {
-    const questionsWithChat = Object.keys(chatHistories).filter(
-      (key) => getHistory(key).length > 0,
-    ).length;
-
-    return { totalTurns, questionsWithChat };
-  };
-
-  // Calculate statistics
-  const correctCount = result?.quiz.questions.filter((q) => q.isCorrect).length || 0;
-  const incorrectCount =
-    result?.quiz.questions.filter((q) => {
-      const isAnswered =
-        q.type === 'single'
-          ? q.userAnswer !== -1
-          : Array.isArray(q.userAnswer) && q.userAnswer.length > 0;
-      return !q.isCorrect && isAnswered;
-    }).length || 0;
-  const unansweredCount =
-    result?.quiz.questions.filter((q) => {
-      const isAnswered =
-        q.type === 'single'
-          ? q.userAnswer !== -1
-          : Array.isArray(q.userAnswer) && q.userAnswer.length > 0;
-      return !isAnswered;
-    }).length || 0;
-  const totalQuestions = result?.quiz.questions.length || 0;
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="size-12 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust mx-auto" />
-          <p className="mt-4 text-neutral-600">{t('loadingQuiz')}...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error || !result) {
-    return (
-      <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
-        <Card className="max-w-md">
-          <CardHeader>
-            <CardTitle className="text-center text-red-600">
-              {t('error', { ns: 'common' })}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="text-center">
-            <p className="text-neutral-600 mb-4">{error}</p>
-            <Link href="/">
-              <Button>{t('backHome')}</Button>
-            </Link>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
+function QuizResultReadyState({
+  aiError,
+  aiQuestionData,
+  askAI,
+  backHomeLabel,
+  bookmarkedQuestions,
+  bookmarkLoading,
+  bookmarkMessage,
+  bookmarkMessageTone,
+  bookmarkToRemove,
+  chatHistories,
+  chatStats,
+  clearChatHistory,
+  closeAIModal,
+  currentQuestionIndex,
+  encodedSlug,
+  formatAnswer,
+  formatCorrectAnswer,
+  getHistory,
+  loadingAI,
+  onCancelRemove,
+  onConfirmRemove,
+  onDismissBookmarkMessage,
+  onKeyDown,
+  onOpenAI,
+  onToggleBookmark,
+  onUserQuestionChange,
+  result,
+  scoreColor,
+  scoreMessage,
+  showAIModal,
+  stats,
+  t,
+  tProfile,
+  userLabel,
+  userQuestion,
+}: QuizResultReadyStateProps) {
   return (
     <div className="min-h-screen bg-neutral-50">
-      {/* Header */}
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="text-center">
@@ -411,14 +421,14 @@ export default function QuizResultPage() {
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <ResultStats
           score={result.score}
-          correctCount={correctCount}
-          incorrectCount={incorrectCount}
-          unansweredCount={unansweredCount}
-          totalQuestions={totalQuestions}
+          correctCount={stats.correctCount}
+          incorrectCount={stats.incorrectCount}
+          unansweredCount={stats.unansweredCount}
+          totalQuestions={stats.totalQuestions}
           chatHistories={chatHistories}
-          getChatStats={getChatStats}
-          getScoreColor={getScoreColor}
-          getScoreMessage={getScoreMessage}
+          getChatStats={() => chatStats}
+          getScoreColor={scoreColor}
+          getScoreMessage={scoreMessage}
           t={t}
           tProfile={tProfile}
         />
@@ -426,11 +436,11 @@ export default function QuizResultPage() {
         <BookmarkPanel
           bookmarkMessage={bookmarkMessage}
           bookmarkMessageTone={bookmarkMessageTone}
-          onDismissMessage={() => setBookmarkMessage('')}
+          onDismissMessage={onDismissBookmarkMessage}
           bookmarkToRemove={bookmarkToRemove}
           bookmarkLoading={bookmarkLoading}
-          onCancelRemove={() => setBookmarkToRemove(null)}
-          onConfirmRemove={() => bookmarkToRemove !== null && removeBookmark(bookmarkToRemove)}
+          onCancelRemove={onCancelRemove}
+          onConfirmRemove={onConfirmRemove}
           t={t}
         />
 
@@ -438,8 +448,8 @@ export default function QuizResultPage() {
           questions={result.quiz.questions}
           bookmarkedQuestions={bookmarkedQuestions}
           bookmarkLoading={bookmarkLoading}
-          onToggleBookmark={toggleBookmark}
-          onOpenAI={openAIModal}
+          onToggleBookmark={onToggleBookmark}
+          onOpenAI={onOpenAI}
           getHistory={getHistory}
           formatAnswer={formatAnswer}
           formatCorrectAnswer={formatCorrectAnswer}
@@ -447,15 +457,11 @@ export default function QuizResultPage() {
           tProfile={tProfile}
         />
 
-        {/* Action Buttons */}
-        <div className="flex justify-center gap-x-4">
-          <Link href={`/quiz/${encodedSlug}`}>
-            <Button variant="outline">{tProfile('redo')}</Button>
-          </Link>
-          <Link href="/">
-            <Button>{t('backHome')}</Button>
-          </Link>
-        </div>
+        <QuizResultActions
+          backHomeLabel={backHomeLabel}
+          encodedSlug={encodedSlug}
+          redoLabel={tProfile('redo')}
+        />
       </main>
 
       <AIExplainPanel
@@ -472,11 +478,11 @@ export default function QuizResultPage() {
             : null
         }
         messages={getHistory(currentQuestionIndex)}
-        userLabel={tProfile('you')}
+        userLabel={userLabel}
         assistantLabel={tProfile('rinChan')}
         userQuestion={userQuestion}
-        onUserQuestionChange={setUserQuestion}
-        onKeyDown={handleKeyPress}
+        onUserQuestionChange={onUserQuestionChange}
+        onKeyDown={onKeyDown}
         onSend={askAI}
         sendDisabled={loadingAI || !userQuestion.trim()}
         sendLabel={t('askRinChan')}
@@ -493,5 +499,315 @@ export default function QuizResultPage() {
         title={tProfile('chatWithRinChan')}
       />
     </div>
+  );
+}
+
+function QuizResultPageClient() {
+  const t = useTranslations('quiz');
+  const tProfile = useTranslations('profile');
+  const { get } = useSearchParams();
+  const attemptId = get('attemptId');
+  const encodedSlug = routePathSegment(useRequiredRouteParam('slug'));
+  const [state, dispatch] = useReducer(quizResultPageReducer, initialQuizResultPageState);
+  const {
+    chatHistories,
+    userQuestion,
+    setUserQuestion,
+    loadingAI,
+    aiError,
+    setAIError,
+    ensureHistory,
+    clearHistory,
+    getHistory,
+    sendMessage,
+    totalTurns,
+  } = useStreamingChatSession({
+    persistenceKey: attemptId ? `chat-histories-${attemptId}` : undefined,
+  });
+
+  useEffect(() => {
+    let isActive = true;
+
+    const loadResults = async () => {
+      if (!attemptId) {
+        dispatch({ type: 'loadError', error: 'No attempt ID provided' });
+        return;
+      }
+
+      try {
+        const resultData = await fetchApiData<QuizResult>(`/api/attempts/${attemptId}`);
+        const bookmarks = await fetchBookmarkLookup(resultData);
+
+        if (isActive) {
+          dispatch({ type: 'loadSuccess', result: resultData, bookmarks });
+        }
+      } catch (error: unknown) {
+        if (isActive) {
+          dispatch({
+            type: 'loadError',
+            error: extractUnknownErrorMessage(error, 'Failed to load results'),
+          });
+        }
+      }
+    };
+
+    void loadResults();
+
+    return () => {
+      isActive = false;
+    };
+  }, [attemptId]);
+
+  const showBookmarkMessage = (tone: BookmarkMessageTone, message: string) => {
+    dispatch({ type: 'setBookmarkMessage', message, tone });
+    window.setTimeout(() => {
+      dispatch({ type: 'clearBookmarkMessage' });
+    }, 3000);
+  };
+
+  const openAIModal = (questionData: AIQuestionData, questionIndex: number) => {
+    setUserQuestion('');
+    setAIError('');
+    ensureHistory(questionIndex);
+    dispatch({ type: 'openAIModal', questionData, questionIndex });
+  };
+
+  const closeAIModal = () => {
+    setUserQuestion('');
+    setAIError('');
+    dispatch({ type: 'closeAIModal' });
+  };
+
+  const askAI = async () => {
+    if (!state.aiQuestionData || state.currentQuestionIndex === -1) {
+      return;
+    }
+
+    await sendMessage({
+      historyKey: state.currentQuestionIndex,
+      payload: {
+        question: state.aiQuestionData.question,
+        options: state.aiQuestionData.options,
+        questionImage: state.aiQuestionData.questionImage,
+        optionImages: state.aiQuestionData.optionImages,
+      },
+      emptyQuestionErrorMessage: 'Please enter a question to ask Rin-chan!',
+      requestErrorMessage: 'Failed to connect to AI service. Please try again.',
+    });
+  };
+
+  const handleKeyPress = (event: React.KeyboardEvent) => {
+    if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
+      event.preventDefault();
+
+      if (!loadingAI && userQuestion.trim()) {
+        void askAI();
+      }
+    }
+  };
+
+  const clearChatHistory = (questionIndex: number) => {
+    clearHistory(questionIndex);
+  };
+
+  const removeBookmark = async (questionIndex: number) => {
+    const bookmarkId = state.bookmarkIdsByQuestion[questionIndex];
+
+    if (!bookmarkId) {
+      showBookmarkMessage('error', 'Bookmark not found, please refresh and try again');
+      return;
+    }
+
+    dispatch({ type: 'setBookmarkLoading', questionIndex, loading: true });
+
+    try {
+      await fetchApiData<null>(`/api/bookmarks/${bookmarkId}`, { method: 'DELETE' });
+      dispatch({ type: 'removeBookmarkSuccess', questionIndex });
+      showBookmarkMessage('success', 'Bookmark removed');
+    } catch (error: unknown) {
+      console.error('Error removing bookmark:', error);
+      showBookmarkMessage(
+        'error',
+        extractUnknownErrorMessage(error, 'Network error, please try again'),
+      );
+    } finally {
+      dispatch({ type: 'setBookmarkLoading', questionIndex, loading: false });
+    }
+  };
+
+  const toggleBookmark = async (questionIndex: number, questionData: QuizResultQuestion) => {
+    if (!state.result) {
+      return;
+    }
+
+    if (state.bookmarkedQuestions.has(questionIndex)) {
+      dispatch({ type: 'setBookmarkToRemove', questionIndex });
+      return;
+    }
+
+    dispatch({ type: 'setBookmarkLoading', questionIndex, loading: true });
+
+    try {
+      const created = await fetchApiData<BookmarkSummary>('/api/bookmarks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          quiz: {
+            title: state.result.quiz.title,
+            slug: state.result.quiz.slug,
+            description: state.result.quiz.description,
+          },
+          question: {
+            text: questionData.question,
+            options: questionData.options,
+            type: questionData.type,
+            correctIndex: questionData.correctIndex,
+            correctIndexes: questionData.correctIndexes,
+            questionImage: questionData.questionImage,
+            optionImages: questionData.optionImages,
+          },
+          questionIndex,
+        }),
+      });
+
+      dispatch({ type: 'addBookmark', questionIndex, bookmarkId: created._id });
+      showBookmarkMessage('success', 'Question bookmarked successfully!');
+    } catch (error: unknown) {
+      console.error('Error toggling bookmark:', error);
+      const message = extractUnknownErrorMessage(error, 'Network error, please try again');
+
+      if (message === 'Question already bookmarked') {
+        showBookmarkMessage('warning', 'This question is already bookmarked');
+      } else {
+        showBookmarkMessage('error', message);
+      }
+    } finally {
+      dispatch({ type: 'setBookmarkLoading', questionIndex, loading: false });
+    }
+  };
+
+  const result = state.result;
+  const stats = useMemo(() => {
+    if (!result) {
+      return {
+        correctCount: 0,
+        incorrectCount: 0,
+        unansweredCount: 0,
+        totalQuestions: 0,
+      };
+    }
+
+    const correctCount = result.quiz.questions.filter((question) => question.isCorrect).length;
+    const incorrectCount = result.quiz.questions.filter((question) => {
+      const isAnswered =
+        question.type === 'single'
+          ? question.userAnswer !== -1
+          : Array.isArray(question.userAnswer) && question.userAnswer.length > 0;
+
+      return !question.isCorrect && isAnswered;
+    }).length;
+    const unansweredCount = result.quiz.questions.filter((question) => {
+      const isAnswered =
+        question.type === 'single'
+          ? question.userAnswer !== -1
+          : Array.isArray(question.userAnswer) && question.userAnswer.length > 0;
+
+      return !isAnswered;
+    }).length;
+
+    return {
+      correctCount,
+      incorrectCount,
+      unansweredCount,
+      totalQuestions: result.quiz.questions.length,
+    };
+  }, [result]);
+  const chatStats = useMemo(() => {
+    const questionsWithChat = Object.keys(chatHistories).filter(
+      (key) => getHistory(key).length > 0,
+    ).length;
+
+    return {
+      totalTurns,
+      questionsWithChat,
+    };
+  }, [chatHistories, getHistory, totalTurns]);
+
+  if (state.status === 'loading') {
+    return <QuizResultLoadingState message={`${t('loadingQuiz')}...`} />;
+  }
+
+  if (state.error || !result) {
+    return (
+      <QuizResultErrorState
+        actionLabel={t('backHome')}
+        error={state.error}
+        title={t('error', { ns: 'common' })}
+      />
+    );
+  }
+
+  return (
+    <QuizResultReadyState
+      aiError={aiError}
+      aiQuestionData={state.aiQuestionData}
+      askAI={() => {
+        void askAI();
+      }}
+      backHomeLabel={t('backHome')}
+      bookmarkedQuestions={state.bookmarkedQuestions}
+      bookmarkLoading={state.bookmarkLoading}
+      bookmarkMessage={state.bookmarkMessage}
+      bookmarkMessageTone={state.bookmarkMessageTone}
+      bookmarkToRemove={state.bookmarkToRemove}
+      chatHistories={chatHistories}
+      chatStats={chatStats}
+      clearChatHistory={clearChatHistory}
+      closeAIModal={closeAIModal}
+      currentQuestionIndex={state.currentQuestionIndex}
+      encodedSlug={encodedSlug}
+      formatAnswer={(answer, options, type, isAnswered) =>
+        formatAnswerValue(answer, options, type, t('notAnswered'), isAnswered)
+      }
+      formatCorrectAnswer={formatCorrectAnswerValue}
+      getHistory={getHistory}
+      loadingAI={loadingAI}
+      onCancelRemove={() => dispatch({ type: 'setBookmarkToRemove', questionIndex: null })}
+      onConfirmRemove={() =>
+        state.bookmarkToRemove !== null && void removeBookmark(state.bookmarkToRemove)
+      }
+      onDismissBookmarkMessage={() => dispatch({ type: 'clearBookmarkMessage' })}
+      onKeyDown={handleKeyPress}
+      onOpenAI={openAIModal}
+      onToggleBookmark={toggleBookmark}
+      onUserQuestionChange={setUserQuestion}
+      result={result}
+      scoreColor={(score) => {
+        if (score >= 80) return 'text-green-600';
+        if (score >= 60) return 'text-yellow-600';
+        return 'text-red-600';
+      }}
+      scoreMessage={(score) => {
+        if (score >= 90) return tProfile('excellent');
+        if (score >= 80) return tProfile('great');
+        if (score >= 70) return tProfile('good');
+        if (score >= 60) return tProfile('pass');
+        return tProfile('needsWork');
+      }}
+      showAIModal={state.showAIModal}
+      stats={stats}
+      t={t}
+      tProfile={tProfile}
+      userLabel={tProfile('you')}
+      userQuestion={userQuestion}
+    />
+  );
+}
+
+export default function QuizResultPage() {
+  return (
+    <Suspense fallback={<QuizResultLoadingState message="Loading results..." />}>
+      <QuizResultPageClient />
+    </Suspense>
   );
 }

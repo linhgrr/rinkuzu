@@ -23,6 +23,240 @@ interface MobileQuizPlayerProps {
   submissionError?: string;
 }
 
+function MobileQuizHeader({
+  answers,
+  currentIndex,
+  goNext,
+  goPrev,
+  isFirst,
+  isLast,
+  isSubmitting,
+  questions,
+  t,
+}: {
+  answers: Record<string, number | number[]>;
+  currentIndex: number;
+  goNext: () => void;
+  goPrev: () => void;
+  isFirst: boolean;
+  isLast: boolean;
+  isSubmitting: boolean;
+  questions: Question[];
+  t: (key: string) => string;
+}) {
+  return (
+    <div className="flex-shrink-0 border-b border-neutral-100 bg-white px-4 py-3 safe-area-top">
+      <div className="flex items-center justify-between">
+        <button
+          onClick={goPrev}
+          disabled={isFirst || isSubmitting}
+          className="rounded-full p-2 -ml-2 transition-colors active:bg-neutral-100"
+          aria-label="Previous question"
+        >
+          <HiOutlineChevronLeft
+            className={`size-6 ${isFirst ? 'text-neutral-300' : 'text-neutral-600'}`}
+            aria-hidden="true"
+          />
+        </button>
+
+        <div className="text-center">
+          <span className="text-sm font-semibold text-neutral-900">
+            {t('question')} {currentIndex + 1} / {questions.length}
+          </span>
+          <div className="mx-auto mt-2 flex max-w-[200px] flex-wrap justify-center gap-1">
+            {questions.map((question, index) => (
+              <div
+                key={question._id}
+                className={`size-2 rounded-full transition-colors ${
+                  index === currentIndex
+                    ? 'bg-brand-action'
+                    : answers[question._id] !== undefined
+                      ? 'bg-brand-trust'
+                      : 'bg-neutral-200'
+                }`}
+              />
+            ))}
+          </div>
+        </div>
+
+        <button
+          onClick={goNext}
+          disabled={isLast || isSubmitting}
+          className="rounded-full p-2 -mr-2 transition-colors active:bg-neutral-100"
+          aria-label="Next question"
+        >
+          <HiOutlineChevronRight
+            className={`size-6 ${isLast ? 'text-neutral-300' : 'text-neutral-600'}`}
+            aria-hidden="true"
+          />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function MobileQuestionCard({
+  currentIndex,
+  currentQuestion,
+  handleOptionSelect,
+  handleTouchEnd,
+  handleTouchMove,
+  handleTouchStart,
+  isOptionSelected,
+  isSubmitting,
+  t,
+}: {
+  currentIndex: number;
+  currentQuestion: Question;
+  handleOptionSelect: (optionIndex: number) => void;
+  handleTouchEnd: () => void;
+  handleTouchMove: (event: TouchEvent<HTMLDivElement>) => void;
+  handleTouchStart: (event: TouchEvent<HTMLDivElement>) => void;
+  isOptionSelected: (optionIndex: number) => boolean;
+  isSubmitting: boolean;
+  t: (key: string) => string;
+}) {
+  return (
+    <div className="flex-1 overflow-hidden p-4">
+      <div
+        className="h-full touch-pan-y"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
+        <div
+          key={currentQuestion._id}
+          className="flex h-full flex-col overflow-hidden rounded-2xl border border-neutral-100 bg-white p-5 shadow-sm"
+        >
+          {currentQuestion.questionImage && (
+            <div className="mb-4 flex-shrink-0 overflow-hidden rounded-xl bg-neutral-100">
+              <Image
+                src={currentQuestion.questionImage}
+                alt={`Image for question ${currentIndex + 1}`}
+                width={400}
+                height={144}
+                className="h-auto max-h-36 w-full object-contain"
+              />
+            </div>
+          )}
+
+          <div className="mb-4 flex-shrink-0">
+            <span className="mb-2 inline-block rounded-full bg-neutral-100 px-2.5 py-1 text-xs font-medium text-neutral-600">
+              {currentQuestion.type === 'single'
+                ? t('singleChoiceHelper')
+                : t('multipleChoiceHelper')}
+            </span>
+            <p className="text-base font-medium leading-relaxed text-neutral-900">
+              {currentQuestion.question}
+            </p>
+          </div>
+
+          <div className="flex-1 space-y-2.5 overflow-y-auto pb-2">
+            {currentQuestion.options.map((option, optionIndex) => (
+              <button
+                key={optionIndex}
+                onClick={() => handleOptionSelect(optionIndex)}
+                disabled={isSubmitting}
+                className={`w-full rounded-xl border-2 p-4 text-left transition-all duration-150 disabled:pointer-events-none disabled:opacity-70 ${
+                  isOptionSelected(optionIndex)
+                    ? 'border-brand-action bg-orange-50'
+                    : 'border-neutral-100 bg-neutral-50 active:border-neutral-200 active:bg-neutral-100'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`flex size-6 flex-shrink-0 items-center justify-center rounded-full border-2 transition-all duration-150 ${
+                      isOptionSelected(optionIndex)
+                        ? 'border-brand-action bg-brand-action'
+                        : 'border-neutral-300 bg-white'
+                    }`}
+                  >
+                    {isOptionSelected(optionIndex) && (
+                      <HiOutlineCheck className="size-4 text-white" />
+                    )}
+                  </div>
+                  <span className="flex-1 text-sm text-neutral-800">{option}</span>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MobileQuizFooter({
+  answeredCount,
+  handleComplete,
+  isSubmitting,
+  questionsLength,
+  submissionError,
+  t,
+}: {
+  answeredCount: number;
+  handleComplete: () => void;
+  isSubmitting: boolean;
+  questionsLength: number;
+  submissionError?: string;
+  t: (key: string) => string;
+}) {
+  return (
+    <div className="flex-shrink-0 border-t border-neutral-100 bg-white p-4 safe-area-bottom">
+      <p className="mb-3 text-center text-xs text-neutral-400">
+        ← {t('previous')} / {t('next')} →
+      </p>
+
+      {submissionError && (
+        <div className="mb-3 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-medium leading-5 text-red-700">
+          {submissionError}
+        </div>
+      )}
+
+      <button
+        onClick={handleComplete}
+        disabled={isSubmitting}
+        className={`w-full rounded-full py-4 font-semibold flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-80 disabled:active:scale-100 ${
+          answeredCount === questionsLength
+            ? 'bg-brand-trust text-white active:bg-brand-trust-hover'
+            : isSubmitting
+              ? 'bg-brand-trust text-white'
+              : 'bg-neutral-100 text-neutral-600 active:bg-neutral-200'
+        }`}
+      >
+        {isSubmitting ? (
+          <>
+            <svg
+              className="size-5 animate-spin"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              />
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              />
+            </svg>
+            {t('submitting')}
+          </>
+        ) : (
+          `${t('complete')} (${answeredCount}/${questionsLength} ${t('answered')})`
+        )}
+      </button>
+    </div>
+  );
+}
+
 export function MobileQuizPlayer({
   questions,
   onComplete,
@@ -155,193 +389,38 @@ export function MobileQuizPlayer({
 
   return (
     <div className="fixed inset-0 bg-neutral-50 flex flex-col z-50" aria-busy={isSubmitting}>
-      {/* Header */}
-      <div className="flex-shrink-0 px-4 py-3 bg-white border-b border-neutral-100 safe-area-top">
-        <div className="flex items-center justify-between">
-          <button
-            onClick={goPrev}
-            disabled={isFirst || isSubmitting}
-            className="p-2 -ml-2 rounded-full active:bg-neutral-100 transition-colors"
-            aria-label="Previous question"
-          >
-            <HiOutlineChevronLeft
-              className={`w-6 h-6 ${isFirst ? 'text-neutral-300' : 'text-neutral-600'}`}
-              aria-hidden="true"
-            />
-          </button>
+      <MobileQuizHeader
+        answers={answers}
+        currentIndex={currentIndex}
+        goNext={goNext}
+        goPrev={goPrev}
+        isFirst={isFirst}
+        isLast={isLast}
+        isSubmitting={isSubmitting}
+        questions={questions}
+        t={t}
+      />
 
-          <div className="text-center">
-            <span className="text-sm font-semibold text-neutral-900">
-              {t('question')} {currentIndex + 1} / {questions.length}
-            </span>
-            {/* Progress dots */}
-            <div className="flex gap-1 justify-center mt-2 max-w-[200px] mx-auto flex-wrap">
-              {questions.map((q, i) => (
-                <div
-                  key={q._id}
-                  className={`w-2 h-2 rounded-full transition-colors ${
-                    i === currentIndex
-                      ? 'bg-brand-action'
-                      : answers[q._id] !== undefined
-                        ? 'bg-brand-trust'
-                        : 'bg-neutral-200'
-                  }`}
-                />
-              ))}
-            </div>
-          </div>
+      <MobileQuestionCard
+        currentIndex={currentIndex}
+        currentQuestion={currentQuestion}
+        handleOptionSelect={handleOptionSelect}
+        handleTouchEnd={handleTouchEnd}
+        handleTouchMove={handleTouchMove}
+        handleTouchStart={handleTouchStart}
+        isOptionSelected={isOptionSelected}
+        isSubmitting={isSubmitting}
+        t={t}
+      />
 
-          <button
-            onClick={goNext}
-            disabled={isLast || isSubmitting}
-            className="p-2 -mr-2 rounded-full active:bg-neutral-100 transition-colors"
-            aria-label="Next question"
-          >
-            <HiOutlineChevronRight
-              className={`w-6 h-6 ${isLast ? 'text-neutral-300' : 'text-neutral-600'}`}
-              aria-hidden="true"
-            />
-          </button>
-        </div>
-      </div>
-
-      {/* Question Card - Swipeable */}
-      <div className="flex-1 overflow-hidden px-4 py-4">
-        <div
-          className="h-full touch-pan-y"
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
-        >
-          <div
-            key={currentQuestion._id}
-            className="h-full bg-white rounded-2xl shadow-sm border border-neutral-100 p-5 flex flex-col overflow-hidden"
-          >
-            {/* Question Image */}
-            {currentQuestion.questionImage && (
-              <div className="mb-4 rounded-xl overflow-hidden bg-neutral-100 flex-shrink-0">
-                <Image
-                  src={currentQuestion.questionImage}
-                  alt={`Image for question ${currentIndex + 1}`}
-                  width={400}
-                  height={144}
-                  className="w-full h-auto max-h-36 object-contain"
-                />
-              </div>
-            )}
-
-            {/* Question Text */}
-            <div className="mb-4 flex-shrink-0">
-              <span className="inline-block px-2.5 py-1 text-xs font-medium rounded-full bg-neutral-100 text-neutral-600 mb-2">
-                {currentQuestion.type === 'single'
-                  ? t('singleChoiceHelper')
-                  : t('multipleChoiceHelper')}
-              </span>
-              <p className="text-base font-medium text-neutral-900 leading-relaxed">
-                {currentQuestion.question}
-              </p>
-            </div>
-
-            {/* Options */}
-            <div className="flex-1 space-y-2.5 overflow-y-auto pb-2">
-              {currentQuestion.options.map((option, optIdx) => (
-                <button
-                  key={optIdx}
-                  onClick={() => handleOptionSelect(optIdx)}
-                  disabled={isSubmitting}
-                  className={`
-                      w-full p-4 rounded-xl border-2 text-left transition-all duration-150
-                      disabled:pointer-events-none disabled:opacity-70
-                      ${
-                        isOptionSelected(optIdx)
-                          ? 'border-brand-action bg-orange-50'
-                          : 'border-neutral-100 bg-neutral-50 active:border-neutral-200 active:bg-neutral-100'
-                      }
-                    `}
-                >
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`
-                          w-6 h-6 rounded-full border-2 flex items-center justify-center
-                          flex-shrink-0 transition-all duration-150
-                          ${
-                            isOptionSelected(optIdx)
-                              ? 'border-brand-action bg-brand-action'
-                              : 'border-neutral-300 bg-white'
-                          }
-                        `}
-                    >
-                      {isOptionSelected(optIdx) && <HiOutlineCheck className="size-4 text-white" />}
-                    </div>
-                    <span className="flex-1 text-sm text-neutral-800">{option}</span>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Footer */}
-      <div className="flex-shrink-0 px-4 py-4 bg-white border-t border-neutral-100 safe-area-bottom">
-        {/* Swipe hint */}
-        <p className="text-center text-xs text-neutral-400 mb-3">
-          ← {t('previous')} / {t('next')} →
-        </p>
-
-        {submissionError && (
-          <div className="mb-3 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-medium leading-5 text-red-700">
-            {submissionError}
-          </div>
-        )}
-
-        {/* Complete button */}
-        <button
-          onClick={handleComplete}
-          disabled={isSubmitting}
-          className={`
-            w-full py-4 rounded-full font-semibold flex items-center justify-center gap-2
-            transition-all duration-200 active:scale-[0.98]
-            disabled:cursor-not-allowed disabled:opacity-80 disabled:active:scale-100
-            ${
-              answeredCount === questions.length
-                ? 'bg-brand-trust text-white active:bg-brand-trust-hover'
-                : isSubmitting
-                  ? 'bg-brand-trust text-white'
-                  : 'bg-neutral-100 text-neutral-600 active:bg-neutral-200'
-            }
-          `}
-        >
-          {isSubmitting ? (
-            <>
-              <svg
-                className="size-5 animate-spin"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                aria-hidden="true"
-              >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                />
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                />
-              </svg>
-              {t('submitting')}
-            </>
-          ) : (
-            `${t('complete')} (${answeredCount}/${questions.length} ${t('answered')})`
-          )}
-        </button>
-      </div>
+      <MobileQuizFooter
+        answeredCount={answeredCount}
+        handleComplete={handleComplete}
+        isSubmitting={isSubmitting}
+        questionsLength={questions.length}
+        submissionError={submissionError}
+        t={t}
+      />
 
       <ConfirmModal
         isOpen={showSubmitConfirm}

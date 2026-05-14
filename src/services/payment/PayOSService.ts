@@ -46,20 +46,23 @@ export class PayOSService implements IPayOSService {
     return this.generateSignature(rawSignature);
   }
 
-  private redactRequestBody(body?: any): any {
+  private redactRequestBody(
+    body?: PayOSPaymentRequest | Record<string, unknown> | null,
+  ): Record<string, unknown> | undefined {
     if (!body) return undefined;
+    const record = body as Record<string, unknown>;
     return {
-      ...body,
-      signature: body.signature ? '***' : undefined,
-      buyerEmail: body.buyerEmail ? '***' : undefined,
-      buyerName: body.buyerName ? '***' : undefined,
+      ...record,
+      signature: record['signature'] ? '***' : undefined,
+      buyerEmail: record['buyerEmail'] ? '***' : undefined,
+      buyerName: record['buyerName'] ? '***' : undefined,
     };
   }
 
   private async makeRequest<T>(
     endpoint: string,
     method: 'GET' | 'POST' = 'POST',
-    body?: any,
+    body?: PayOSPaymentRequest | Record<string, unknown> | null,
   ): Promise<T> {
     this.ensureConfigured();
     const url = `${this.baseUrl}${endpoint}`;

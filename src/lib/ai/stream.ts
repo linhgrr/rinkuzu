@@ -129,10 +129,13 @@ function parseSseEvent(event: string): {
   chunk: string;
   isTerminal: boolean;
 } {
-  const dataLines = event
-    .split(/\r?\n/)
-    .filter((line) => line.startsWith('data:'))
-    .map((line) => line.slice(5).trim());
+  const dataLines: string[] = [];
+
+  for (const line of event.split(/\r?\n/)) {
+    if (line.startsWith('data:')) {
+      dataLines.push(line.slice(5).trim());
+    }
+  }
 
   if (dataLines.length === 0) {
     return { chunk: '', isTerminal: false };

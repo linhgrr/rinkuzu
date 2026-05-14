@@ -1,6 +1,6 @@
 'use client';
 
-import { ReactNode, useEffect, useRef } from 'react';
+import { ReactNode, useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { DynamicMarkdownRenderer as MarkdownRenderer } from '@/components/ui/DynamicMarkdownRenderer';
@@ -30,6 +30,20 @@ interface StreamingChatModalProps {
   clearLabel?: string;
   onClearHistory?: () => void;
   showTimestamps?: boolean;
+}
+
+function ChatTimestamp({ timestamp }: { timestamp: string }) {
+  const [label, setLabel] = useState('');
+
+  useEffect(() => {
+    setLabel(new Date(timestamp).toLocaleTimeString());
+  }, [timestamp]);
+
+  return (
+    <time className="text-xs text-neutral-500" dateTime={timestamp} suppressHydrationWarning>
+      {label || '\u00A0'}
+    </time>
+  );
 }
 
 export function StreamingChatModal({
@@ -91,30 +105,20 @@ export function StreamingChatModal({
 
           <div className="space-y-3">
             {messages.map((message) => {
-              const timestampLabel = new Date(message.timestamp).toLocaleTimeString();
-
               return (
                 <div
                   key={`${message.role}-${message.timestamp}-${message.content.slice(0, 24)}`}
                   className={`p-3 rounded-lg ${
                     message.role === 'user'
-                      ? 'bg-orange-50 border-l-4 border-orange-300'
-                      : 'bg-green-50 border-l-4 border-green-400'
+                      ? 'border border-orange-200 bg-orange-50'
+                      : 'border border-green-200 bg-green-50'
                   }`}
                 >
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-sm font-medium text-neutral-700">
                       {message.role === 'user' ? userLabel : assistantLabel}
                     </span>
-                    {showTimestamps && (
-                      <time
-                        className="text-xs text-neutral-500"
-                        dateTime={message.timestamp}
-                        suppressHydrationWarning
-                      >
-                        {timestampLabel}
-                      </time>
-                    )}
+                    {showTimestamps ? <ChatTimestamp timestamp={message.timestamp} /> : null}
                   </div>
                   <div className="text-sm text-neutral-800">
                     {message.role === 'assistant' ? (
@@ -128,7 +132,7 @@ export function StreamingChatModal({
             })}
 
             {loadingAI && (
-              <div className="p-3 rounded-lg bg-green-50 border-l-4 border-green-400">
+              <div className="rounded-lg border border-green-200 bg-green-50 p-3">
                 <div className="text-sm text-neutral-700">{loadingLabel}...</div>
               </div>
             )}

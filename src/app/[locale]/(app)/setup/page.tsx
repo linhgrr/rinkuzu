@@ -1,66 +1,106 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useReducer } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { fetchApiData } from '@/lib/api/client';
 
+interface SetupStatus {
+  adminExists: boolean;
+  setupAllowed: boolean;
+  userCount: number;
+  message?: string;
+}
+
+interface SetupState {
+  status: 'loading' | 'ready';
+  creating: boolean;
+  error: string;
+  success: string;
+  setupStatus: SetupStatus | null;
+}
+
+type SetupAction =
+  | { type: 'patch'; value: Partial<SetupState> }
+  | { type: 'loadSuccess'; value: SetupStatus }
+  | { type: 'loadError'; value: string };
+
+const initialState: SetupState = {
+  status: 'loading',
+  creating: false,
+  error: '',
+  success: '',
+  setupStatus: null,
+};
+
+function setupReducer(state: SetupState, action: SetupAction): SetupState {
+  switch (action.type) {
+    case 'patch':
+      return { ...state, ...action.value };
+    case 'loadSuccess':
+      return {
+        ...state,
+        status: 'ready',
+        setupStatus: action.value,
+        error: '',
+      };
+    case 'loadError':
+      return {
+        ...state,
+        status: 'ready',
+        error: action.value,
+      };
+    default:
+      return state;
+  }
+}
+
 export default function SetupPage() {
   const { push } = useRouter();
-  const [loading, setLoading] = useState(true);
-  const [creating, setCreating] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  const [setupStatus, setSetupStatus] = useState<{
-    adminExists: boolean;
-    setupAllowed: boolean;
-    userCount: number;
-    message?: string;
-  } | null>(null);
+  const [state, dispatch] = useReducer(setupReducer, initialState);
 
   useEffect(() => {
-    checkSetupStatus();
+    const checkSetupStatus = async () => {
+      try {
+        const data = await fetchApiData<SetupStatus>('/api/admin/setup');
+        dispatch({ type: 'loadSuccess', value: data });
+      } catch (error) {
+        dispatch({
+          type: 'loadError',
+          value: error instanceof Error ? error.message : 'Failed to check setup status',
+        });
+      }
+    };
+
+    void checkSetupStatus();
   }, []);
 
-  const checkSetupStatus = async () => {
-    try {
-      const data = await fetchApiData<{
-        adminExists: boolean;
-        setupAllowed: boolean;
-        userCount: number;
-        message: string;
-      }>('/api/admin/setup');
-      setSetupStatus(data);
-    } catch (error) {
-      setError(error instanceof Error ? error.message : 'Failed to check setup status');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const createAdminAccount = async () => {
-    setCreating(true);
-    setError('');
-    setSuccess('');
+    dispatch({ type: 'patch', value: { creating: true, error: '', success: '' } });
 
     try {
       const data = await fetchApiData<{ message: string }>('/api/admin/setup', {
         method: 'POST',
       });
-      setSuccess(data.message);
+      dispatch({ type: 'patch', value: { success: data.message } });
       setTimeout(() => {
         push('/login');
       }, 3000);
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'Failed to create admin account');
+      dispatch({
+        type: 'patch',
+        value: {
+          error: error instanceof Error ? error.message : 'Failed to create admin account',
+        },
+      });
     } finally {
-      setCreating(false);
+      dispatch({ type: 'patch', value: { creating: false } });
     }
   };
 
-  if (loading) {
+  if (state.status === 'loading') {
     return (
       <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
         <div className="text-center">
@@ -82,29 +122,29 @@ export default function SetupPage() {
         <Card>
           <CardHeader>
             <CardTitle className="text-center">
-              {setupStatus?.adminExists ? 'Setup Complete' : 'Admin Setup Required'}
+              {state.setupStatus?.adminExists ? 'Setup Complete' : 'Admin Setup Required'}
             </CardTitle>
             <CardDescription className="text-center">
-              {setupStatus?.adminExists
+              {state.setupStatus?.adminExists
                 ? 'Admin account already exists'
                 : 'Create the first admin account to get started'}
             </CardDescription>
           </CardHeader>
 
           <CardContent>
-            {error && (
+            {state.error && (
               <div className="mb-4 rounded-md bg-red-50 p-4">
-                <div className="text-sm text-red-700">{error}</div>
+                <div className="text-sm text-red-700">{state.error}</div>
               </div>
             )}
 
-            {success && (
+            {state.success && (
               <div className="mb-4 rounded-md bg-green-50 p-4">
-                <div className="text-sm text-green-700">{success}</div>
+                <div className="text-sm text-green-700">{state.success}</div>
               </div>
             )}
 
-            {setupStatus?.adminExists ? (
+            {state.setupStatus?.adminExists ? (
               <div className="space-y-4">
                 <div className="text-center py-8">
                   <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-full bg-green-100 text-sm font-bold text-green-700">
@@ -129,7 +169,7 @@ export default function SetupPage() {
                   </Link>
                 </div>
               </div>
-            ) : setupStatus?.setupAllowed ? (
+            ) : state.setupStatus?.setupAllowed ? (
               <div className="space-y-6">
                 <div className="bg-green-50 rounded-lg p-4">
                   <h3 className="text-lg font-semibold text-green-800 mb-2">
@@ -153,14 +193,14 @@ export default function SetupPage() {
                     <strong>System Status:</strong>
                   </p>
                   <ul className="mt-2 space-y-1">
-                    <li>• Admin exists: {setupStatus.adminExists ? 'Yes' : 'No'}</li>
-                    <li>• Total users: {setupStatus.userCount}</li>
-                    <li>• Setup allowed: {setupStatus.setupAllowed ? 'Yes' : 'No'}</li>
+                    <li>• Admin exists: {state.setupStatus.adminExists ? 'Yes' : 'No'}</li>
+                    <li>• Total users: {state.setupStatus.userCount}</li>
+                    <li>• Setup allowed: {state.setupStatus.setupAllowed ? 'Yes' : 'No'}</li>
                   </ul>
                 </div>
 
-                <Button onClick={createAdminAccount} loading={creating} className="w-full">
-                  {creating ? 'Creating Admin Account…' : 'Create Admin Account'}
+                <Button onClick={createAdminAccount} loading={state.creating} className="w-full">
+                  {state.creating ? 'Creating Admin Account…' : 'Create Admin Account'}
                 </Button>
 
                 <div className="text-center">
@@ -186,8 +226,8 @@ export default function SetupPage() {
                     <strong>Current Status:</strong>
                   </p>
                   <ul className="mt-2 space-y-1">
-                    <li>• Admin exists: {setupStatus?.adminExists ? 'Yes' : 'No'}</li>
-                    <li>• Total users: {setupStatus?.userCount}</li>
+                    <li>• Admin exists: {state.setupStatus?.adminExists ? 'Yes' : 'No'}</li>
+                    <li>• Total users: {state.setupStatus?.userCount}</li>
                   </ul>
                 </div>
 

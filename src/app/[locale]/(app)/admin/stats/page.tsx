@@ -1,21 +1,20 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { useSession } from 'next-auth/react';
+import { useEffect, useReducer } from 'react';
 import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { fetchApiData } from '@/lib/api/client';
+import Navigation from '@/components/Navigation';
+import Sidebar from '@/components/Sidebar';
 import { Button } from '@/components/ui/Button';
 import {
+  Badge,
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-  Badge,
 } from '@/components/ui/Card';
-import Navigation from '@/components/Navigation';
-import Sidebar from '@/components/Sidebar';
 import StatsModal from '@/components/ui/StatsModal';
 
 interface AdminStats {
@@ -82,542 +81,700 @@ interface AdminStats {
   };
 }
 
-export default function AdminStatsPage() {
-  const t = useTranslations('admin');
-  const _tCommon = useTranslations('common');
-  const { data: _session } = useSession();
-  const pathname = usePathname();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+type TranslateFn = (key: string, values?: Record<string, string | number | Date>) => string;
+type StatsModalType = 'categories' | 'creators' | 'activity' | null;
 
-  const [stats, setStats] = useState<AdminStats | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+interface AdminStatsState {
+  isSidebarOpen: boolean;
+  stats: AdminStats | null;
+  loading: boolean;
+  error: string;
+  activeModal: StatsModalType;
+}
 
-  // Modal states
-  const [showCategoriesModal, setShowCategoriesModal] = useState(false);
-  const [showCreatorsModal, setShowCreatorsModal] = useState(false);
-  const [showActivityModal, setShowActivityModal] = useState(false);
+type AdminStatsAction =
+  | { type: 'toggleSidebar' }
+  | { type: 'startFetch' }
+  | { type: 'fetchSuccess'; stats: AdminStats }
+  | { type: 'fetchError'; message: string }
+  | { type: 'openModal'; modal: Exclude<StatsModalType, null> }
+  | { type: 'closeModal' };
 
-  const fetchStats = useCallback(async () => {
-    try {
-      setLoading(true);
-      const data = await fetchApiData<AdminStats>('/api/admin/stats');
-      setStats(data);
-      setError('');
-    } catch (error) {
-      setError(error instanceof Error ? error.message : 'Failed to fetch statistics');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+const initialState: AdminStatsState = {
+  isSidebarOpen: true,
+  stats: null,
+  loading: true,
+  error: '',
+  activeModal: null,
+};
 
-  useEffect(() => {
-    fetchStats();
-  }, [fetchStats]);
+function adminStatsReducer(state: AdminStatsState, action: AdminStatsAction): AdminStatsState {
+  switch (action.type) {
+    case 'toggleSidebar':
+      return { ...state, isSidebarOpen: !state.isSidebarOpen };
+    case 'startFetch':
+      return { ...state, loading: true, error: '' };
+    case 'fetchSuccess':
+      return { ...state, stats: action.stats, loading: false, error: '' };
+    case 'fetchError':
+      return { ...state, loading: false, error: action.message };
+    case 'openModal':
+      return { ...state, activeModal: action.modal };
+    case 'closeModal':
+      return { ...state, activeModal: null };
+    default:
+      return state;
+  }
+}
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('vi-VN', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
+function formatDate(dateString: string) {
+  return new Date(dateString).toLocaleDateString('vi-VN', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
 
-  const _formatMonth = (year: number, month: number) => {
-    return new Date(year, month - 1).toLocaleDateString('vi-VN', {
-      month: 'long',
-      year: 'numeric',
-    });
-  };
+function getStatusBadge(status: string) {
+  switch (status) {
+    case 'published':
+      return <Badge variant="success">{status}</Badge>;
+    case 'pending':
+      return <Badge variant="warning">{status}</Badge>;
+    case 'rejected':
+      return <Badge variant="danger">{status}</Badge>;
+    default:
+      return <Badge variant="default">{status}</Badge>;
+  }
+}
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'published':
-        return <Badge variant="success">{status}</Badge>;
-      case 'pending':
-        return <Badge variant="warning">{status}</Badge>;
-      case 'rejected':
-        return <Badge variant="danger">{status}</Badge>;
-      default:
-        return <Badge variant="default">{status}</Badge>;
-    }
-  };
+function AdminStatsLayout({
+  children,
+  currentPath,
+  isSidebarOpen,
+  onToggleSidebar,
+}: {
+  children: React.ReactNode;
+  currentPath: string;
+  isSidebarOpen: boolean;
+  onToggleSidebar: () => void;
+}) {
+  return (
+    <div className="min-h-screen bg-white">
+      <Navigation />
+      <div className="flex">
+        <Sidebar isOpen={isSidebarOpen} onToggle={onToggleSidebar} currentPath={currentPath} />
+        <main
+          className={`flex-1 transition-[margin] duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-16'}`}
+        >
+          <div className="p-8">{children}</div>
+        </main>
+      </div>
+    </div>
+  );
+}
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-white">
-        <Navigation />
-        <div className="flex">
-          <Sidebar
-            isOpen={isSidebarOpen}
-            onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
-            currentPath={pathname}
-          />
-          <main
-            className={`flex-1 transition-[margin] duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-16'}`}
-          >
-            <div className="p-8">
-              <div className="flex items-center justify-center min-h-[400px]">
-                <div className="text-center">
-                  <div className="size-12 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust mx-auto" />
-                  <p className="mt-4 text-neutral-600">{t('loadingStatistics')}</p>
-                </div>
-              </div>
-            </div>
-          </main>
+function AdminStatsLoadingState({
+  currentPath,
+  isSidebarOpen,
+  onToggleSidebar,
+  t,
+}: {
+  currentPath: string;
+  isSidebarOpen: boolean;
+  onToggleSidebar: () => void;
+  t: TranslateFn;
+}) {
+  return (
+    <AdminStatsLayout
+      currentPath={currentPath}
+      isSidebarOpen={isSidebarOpen}
+      onToggleSidebar={onToggleSidebar}
+    >
+      <div className="flex min-h-[400px] items-center justify-center">
+        <div className="text-center">
+          <div className="mx-auto size-12 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
+          <p className="mt-4 text-neutral-600">{t('loadingStatistics')}</p>
         </div>
       </div>
+    </AdminStatsLayout>
+  );
+}
+
+function AdminStatsHeader({ t }: { t: TranslateFn }) {
+  return (
+    <div className="mb-8">
+      <h1 className="text-3xl font-semibold text-neutral-900">{t('statistics')}</h1>
+      <p className="mt-2 text-neutral-600">{t('systemStatistics')}</p>
+    </div>
+  );
+}
+
+function AdminStatsErrorBanner({ error }: { error: string }) {
+  if (!error) {
+    return null;
+  }
+
+  return (
+    <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+      {error}
+    </div>
+  );
+}
+
+function OverviewCards({ stats, t }: { stats: AdminStats; t: TranslateFn }) {
+  return (
+    <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium text-neutral-600">
+            {t('totalUsersCount')}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold text-brand-trust">{stats.overview.totalUsers}</div>
+          <p className="text-xs text-neutral-500">
+            {t('newThisMonth', { count: stats.timeBasedStats.thisMonth.newUsers })}
+          </p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium text-neutral-600">
+            {t('totalQuizzes')}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold text-green-600">{stats.overview.totalQuizzes}</div>
+          <p className="text-xs text-neutral-500">
+            {t('publishedCount', { count: stats.overview.publishedQuizzes })}
+          </p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium text-neutral-600">
+            {t('attemptsCount')}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold text-brand-action">{stats.overview.totalAttempts}</div>
+          <p className="text-xs text-neutral-500">
+            {t('attempts', { count: stats.timeBasedStats.thisMonth.attempts })}
+          </p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium text-neutral-600">
+            {t('averageScore')}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold text-brand-trust">
+            {Math.round(stats.scoreStats.averageScore)}%
+          </div>
+          <p className="text-xs text-neutral-500">
+            {t('highestScore', { score: stats.scoreStats.highestScore })}
+          </p>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function TimePeriodCard({
+  title,
+  users,
+  quizzes,
+  attempts,
+  titleClassName,
+  itemClassName,
+  t,
+}: {
+  title: string;
+  users: number;
+  quizzes: number;
+  attempts: number;
+  titleClassName: string;
+  itemClassName: string;
+  t: TranslateFn;
+}) {
+  return (
+    <div className="rounded-lg bg-green-50 p-4 text-center">
+      <h3 className={`mb-2 font-medium ${titleClassName}`}>{title}</h3>
+      <div className="space-y-1">
+        <p className={`text-sm ${itemClassName}`}>{t('newUsers', { count: users })}</p>
+        <p className={`text-sm ${itemClassName}`}>{t('newQuizzes', { count: quizzes })}</p>
+        <p className={`text-sm ${itemClassName}`}>{t('attempts', { count: attempts })}</p>
+      </div>
+    </div>
+  );
+}
+
+function TimeBasedStatsCard({ stats, t }: { stats: AdminStats; t: TranslateFn }) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{t('activityOverTime')}</CardTitle>
+        <CardDescription>{t('systemActivityStats')}</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+          <TimePeriodCard
+            title={t('today')}
+            users={stats.timeBasedStats.today.newUsers}
+            quizzes={stats.timeBasedStats.today.newQuizzes}
+            attempts={stats.timeBasedStats.today.attempts}
+            titleClassName="text-green-800"
+            itemClassName="text-brand-trust"
+            t={t}
+          />
+          <TimePeriodCard
+            title={t('thisWeek')}
+            users={stats.timeBasedStats.thisWeek.newUsers}
+            quizzes={stats.timeBasedStats.thisWeek.newQuizzes}
+            attempts={stats.timeBasedStats.thisWeek.attempts}
+            titleClassName="text-green-900"
+            itemClassName="text-green-700"
+            t={t}
+          />
+          <TimePeriodCard
+            title={t('thisMonth')}
+            users={stats.timeBasedStats.thisMonth.newUsers}
+            quizzes={stats.timeBasedStats.thisMonth.newQuizzes}
+            attempts={stats.timeBasedStats.thisMonth.attempts}
+            titleClassName="text-brand-trust"
+            itemClassName="text-green-700"
+            t={t}
+          />
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function QuizStatusCard({ stats, t }: { stats: AdminStats; t: TranslateFn }) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{t('quizStatus')}</CardTitle>
+        <CardDescription>{t('quizStatusOverview')}</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+          <div className="rounded-lg bg-neutral-50 p-4 text-center">
+            <div className="text-2xl font-bold text-neutral-900">{stats.overview.totalQuizzes}</div>
+            <p className="text-sm text-neutral-600">{t('totalCount')}</p>
+          </div>
+          <div className="rounded-lg bg-green-50 p-4 text-center">
+            <div className="text-2xl font-bold text-green-600">
+              {stats.overview.publishedQuizzes}
+            </div>
+            <p className="text-sm text-green-600">{t('publishedStatus')}</p>
+          </div>
+          <div className="rounded-lg bg-yellow-50 p-4 text-center">
+            <div className="text-2xl font-bold text-yellow-600">
+              {stats.overview.pendingQuizzes}
+            </div>
+            <p className="text-sm text-yellow-600">{t('pendingStatus')}</p>
+          </div>
+          <div className="rounded-lg bg-red-50 p-4 text-center">
+            <div className="text-2xl font-bold text-red-600">{stats.overview.rejectedQuizzes}</div>
+            <p className="text-sm text-red-600">{t('rejectedStatus')}</p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function RankingListCard({
+  title,
+  description,
+  buttonLabel,
+  onViewAll,
+  children,
+}: {
+  title: string;
+  description: string;
+  buttonLabel: string;
+  onViewAll: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div>
+          <CardTitle>{title}</CardTitle>
+          <CardDescription>{description}</CardDescription>
+        </div>
+        <Button variant="outline" size="sm" onClick={onViewAll} className="min-h-[36px] px-3">
+          {buttonLabel}
+        </Button>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-3">{children}</div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function TopCategoriesSection({
+  stats,
+  t,
+  onOpenModal,
+}: {
+  stats: AdminStats;
+  t: TranslateFn;
+  onOpenModal: () => void;
+}) {
+  return (
+    <RankingListCard
+      title={t('topCategories')}
+      description={t('mostQuizzes')}
+      buttonLabel={t('viewAll')}
+      onViewAll={onOpenModal}
+    >
+      {stats.topCategories.slice(0, 5).map((category, index) => (
+        <div
+          key={category.name}
+          className="flex items-center justify-between rounded-lg bg-neutral-50 p-3"
+        >
+          <div className="flex items-center gap-x-3">
+            <span className="text-sm font-medium text-neutral-500">#{index + 1}</span>
+            <div className="size-4 rounded-full" style={{ backgroundColor: category.color }} />
+            <span className="font-medium">{category.name}</span>
+          </div>
+          <div className="text-right text-sm">
+            <div className="font-medium">
+              {category.quizCount} {t('quiz')}
+            </div>
+            <div className="text-neutral-500">
+              {category.totalQuestions} {t('questions')}
+            </div>
+          </div>
+        </div>
+      ))}
+    </RankingListCard>
+  );
+}
+
+function TopCreatorsSection({
+  stats,
+  t,
+  onOpenModal,
+}: {
+  stats: AdminStats;
+  t: TranslateFn;
+  onOpenModal: () => void;
+}) {
+  return (
+    <RankingListCard
+      title={t('topCreators')}
+      description={t('mostQuizzesCreated')}
+      buttonLabel={t('viewAll')}
+      onViewAll={onOpenModal}
+    >
+      {stats.topCreators.slice(0, 5).map((creator, index) => (
+        <div
+          key={creator.email}
+          className="flex items-center justify-between rounded-lg bg-neutral-50 p-3"
+        >
+          <div className="flex items-center gap-x-3">
+            <span className="text-sm font-medium text-neutral-500">#{index + 1}</span>
+            <span className="font-medium">{creator.email}</span>
+          </div>
+          <div className="text-right text-sm">
+            <div className="font-medium">
+              {creator.quizCount} {t('quiz')}
+            </div>
+            <div className="text-neutral-500">
+              {creator.totalQuestions} {t('questions')}
+            </div>
+          </div>
+        </div>
+      ))}
+    </RankingListCard>
+  );
+}
+
+function ActivityColumn({
+  title,
+  titleClassName,
+  children,
+}: {
+  title: string;
+  titleClassName: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <h4 className={`mb-3 font-medium ${titleClassName}`}>{title}</h4>
+      <div className="space-y-2">{children}</div>
+    </div>
+  );
+}
+
+function RecentActivityCard({
+  stats,
+  t,
+  onOpenModal,
+}: {
+  stats: AdminStats;
+  t: TranslateFn;
+  onOpenModal: () => void;
+}) {
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div>
+          <CardTitle>{t('recentActivity')}</CardTitle>
+          <CardDescription>{t('last30Days')}</CardDescription>
+        </div>
+        <Button variant="outline" size="sm" onClick={onOpenModal} className="min-h-[36px] px-3">
+          {t('viewAll')}
+        </Button>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+          <ActivityColumn title={t('newUsers', { count: '' })} titleClassName="text-brand-trust">
+            {stats.recentActivity.users.slice(0, 5).map((user) => (
+              <div key={user.email} className="rounded bg-green-50 p-2 text-sm">
+                <div className="font-medium">{user.email}</div>
+                <div className="text-neutral-500">{formatDate(user.createdAt)}</div>
+              </div>
+            ))}
+          </ActivityColumn>
+
+          <ActivityColumn title={t('newQuizzes', { count: '' })} titleClassName="text-green-600">
+            {stats.recentActivity.quizzes.slice(0, 5).map((quiz) => (
+              <div key={quiz.title} className="rounded bg-green-50 p-2 text-sm">
+                <div className="truncate font-medium">{quiz.title}</div>
+                <div className="flex items-center gap-x-2 text-xs">
+                  {getStatusBadge(quiz.status)}
+                  <span className="text-neutral-500">{formatDate(quiz.createdAt)}</span>
+                </div>
+              </div>
+            ))}
+          </ActivityColumn>
+
+          <ActivityColumn title={t('recentAttempts')} titleClassName="text-brand-trust">
+            {stats.recentActivity.attempts.slice(0, 5).map((attempt) => (
+              <div
+                key={`${attempt.user?.email || 'anonymous'}-${attempt.quiz.title}-${attempt.takenAt}`}
+                className="rounded bg-green-50 p-2 text-sm"
+              >
+                <div className="truncate font-medium">{attempt.quiz.title}</div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-neutral-500">{attempt.user?.email || t('anonymous')}</span>
+                  <span className="font-medium">{attempt.score}%</span>
+                </div>
+                <div className="text-xs text-neutral-500">{formatDate(attempt.takenAt)}</div>
+              </div>
+            ))}
+          </ActivityColumn>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function CategoryStatisticsCard({ stats, t }: { stats: AdminStats; t: TranslateFn }) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{t('categoryStatistics')}</CardTitle>
+        <CardDescription>{t('detailsByCategory')}</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b">
+                <th className="px-4 py-3 text-left">{t('category')}</th>
+                <th className="px-4 py-3 text-center">{t('totalQuizzesCol')}</th>
+                <th className="px-4 py-3 text-center">{t('publishedCol')}</th>
+                <th className="px-4 py-3 text-center">{t('pendingCol')}</th>
+                <th className="px-4 py-3 text-center">{t('statusCol')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {stats.categoryStats.slice(0, 10).map((category) => (
+                <tr key={category.name} className="border-b hover:bg-neutral-50">
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-x-3">
+                      <div
+                        className="size-3 rounded-full"
+                        style={{ backgroundColor: category.color }}
+                      />
+                      <span className="font-medium">{category.name}</span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-center font-medium">{category.totalQuizzes}</td>
+                  <td className="px-4 py-3 text-center text-green-600">
+                    {category.publishedQuizzes}
+                  </td>
+                  <td className="px-4 py-3 text-center text-yellow-600">
+                    {category.pendingQuizzes}
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    <span
+                      className={`inline-flex min-h-[28px] items-center rounded-full px-3 text-[13px] font-medium ${
+                        category.isActive
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-red-100 text-red-800'
+                      }`}
+                    >
+                      {category.isActive ? t('active') : t('inactiveStatus')}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function AdminStatsContent({
+  stats,
+  error,
+  t,
+  onOpenCategories,
+  onOpenCreators,
+  onOpenActivity,
+}: {
+  stats: AdminStats;
+  error: string;
+  t: TranslateFn;
+  onOpenCategories: () => void;
+  onOpenCreators: () => void;
+  onOpenActivity: () => void;
+}) {
+  return (
+    <>
+      <AdminStatsHeader t={t} />
+      <AdminStatsErrorBanner error={error} />
+      <div className="space-y-8">
+        <OverviewCards stats={stats} t={t} />
+        <TimeBasedStatsCard stats={stats} t={t} />
+        <QuizStatusCard stats={stats} t={t} />
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <TopCategoriesSection stats={stats} t={t} onOpenModal={onOpenCategories} />
+          <TopCreatorsSection stats={stats} t={t} onOpenModal={onOpenCreators} />
+        </div>
+        <RecentActivityCard stats={stats} t={t} onOpenModal={onOpenActivity} />
+        <CategoryStatisticsCard stats={stats} t={t} />
+      </div>
+    </>
+  );
+}
+
+function AdminStatsModals({
+  activeModal,
+  onClose,
+  t,
+}: {
+  activeModal: StatsModalType;
+  onClose: () => void;
+  t: TranslateFn;
+}) {
+  return (
+    <>
+      <StatsModal
+        isOpen={activeModal === 'categories'}
+        onClose={onClose}
+        title={t('allCategories')}
+        type="categories"
+        apiEndpoint="/api/admin/stats/categories"
+      />
+      <StatsModal
+        isOpen={activeModal === 'creators'}
+        onClose={onClose}
+        title={t('allCreators')}
+        type="creators"
+        apiEndpoint="/api/admin/stats/creators"
+      />
+      <StatsModal
+        isOpen={activeModal === 'activity'}
+        onClose={onClose}
+        title={t('allRecentActivity')}
+        type="activity"
+        apiEndpoint="/api/admin/stats/activity?type=mixed"
+      />
+    </>
+  );
+}
+
+export default function AdminStatsPage() {
+  const t = useTranslations('admin');
+  const pathname = usePathname();
+  const [state, dispatch] = useReducer(adminStatsReducer, initialState);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      dispatch({ type: 'startFetch' });
+
+      try {
+        const data = await fetchApiData<AdminStats>('/api/admin/stats');
+        dispatch({ type: 'fetchSuccess', stats: data });
+      } catch (error) {
+        dispatch({
+          type: 'fetchError',
+          message: error instanceof Error ? error.message : 'Failed to fetch statistics',
+        });
+      }
+    };
+
+    void fetchStats();
+  }, []);
+
+  if (state.loading) {
+    return (
+      <AdminStatsLoadingState
+        currentPath={pathname}
+        isSidebarOpen={state.isSidebarOpen}
+        onToggleSidebar={() => dispatch({ type: 'toggleSidebar' })}
+        t={t}
+      />
     );
   }
 
   return (
-    <div className="min-h-screen bg-white">
-      <Navigation />
-
-      <div className="flex">
-        <Sidebar
-          isOpen={isSidebarOpen}
-          onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
-          currentPath={pathname}
+    <AdminStatsLayout
+      currentPath={pathname}
+      isSidebarOpen={state.isSidebarOpen}
+      onToggleSidebar={() => dispatch({ type: 'toggleSidebar' })}
+    >
+      {state.stats ? (
+        <AdminStatsContent
+          stats={state.stats}
+          error={state.error}
+          t={t}
+          onOpenCategories={() => dispatch({ type: 'openModal', modal: 'categories' })}
+          onOpenCreators={() => dispatch({ type: 'openModal', modal: 'creators' })}
+          onOpenActivity={() => dispatch({ type: 'openModal', modal: 'activity' })}
         />
+      ) : (
+        <>
+          <AdminStatsHeader t={t} />
+          <AdminStatsErrorBanner error={state.error} />
+        </>
+      )}
 
-        {/* Main Content */}
-        <main
-          className={`flex-1 transition-[margin] duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-16'}`}
-        >
-          <div className="p-8">
-            <div className="mb-8">
-              <h1 className="text-3xl font-semibold text-neutral-900">{t('statistics')}</h1>
-              <p className="text-neutral-600 mt-2">{t('systemStatistics')}</p>
-            </div>
-
-            {error && (
-              <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-400 text-red-700">
-                {error}
-              </div>
-            )}
-
-            {stats && (
-              <div className="space-y-8">
-                {/* Overview Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                  <Card>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm font-medium text-neutral-600">
-                        {t('totalUsersCount')}
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold text-brand-trust">
-                        {stats?.overview?.totalUsers || 0}
-                      </div>
-                      <p className="text-xs text-neutral-500">
-                        {t('newThisMonth', {
-                          count: stats?.timeBasedStats?.thisMonth?.newUsers || 0,
-                        })}
-                      </p>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm font-medium text-neutral-600">
-                        {t('totalQuizzes')}
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold text-green-600">
-                        {stats?.overview?.totalQuizzes || 0}
-                      </div>
-                      <p className="text-xs text-neutral-500">
-                        {t('publishedCount', { count: stats?.overview?.publishedQuizzes || 0 })}
-                      </p>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm font-medium text-neutral-600">
-                        {t('attemptsCount')}
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold text-brand-action">
-                        {stats?.overview?.totalAttempts || 0}
-                      </div>
-                      <p className="text-xs text-neutral-500">
-                        {t('attempts', { count: stats?.timeBasedStats?.thisMonth?.attempts || 0 })}
-                      </p>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm font-medium text-neutral-600">
-                        {t('averageScore')}
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold text-brand-trust">
-                        {Math.round(stats.scoreStats.averageScore)}%
-                      </div>
-                      <p className="text-xs text-neutral-500">
-                        {t('highestScore', { score: stats.scoreStats.highestScore })}
-                      </p>
-                    </CardContent>
-                  </Card>
-                </div>
-
-                {/* Time-based Statistics */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>{t('activityOverTime')}</CardTitle>
-                    <CardDescription>{t('systemActivityStats')}</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                      <div className="text-center p-4 bg-green-50 rounded-lg">
-                        <h3 className="font-medium text-green-800 mb-2">{t('today')}</h3>
-                        <div className="space-y-1">
-                          <p className="text-sm text-brand-trust">
-                            {t('newUsers', { count: stats.timeBasedStats.today.newUsers })}
-                          </p>
-                          <p className="text-sm text-brand-trust">
-                            {t('newQuizzes', { count: stats.timeBasedStats.today.newQuizzes })}
-                          </p>
-                          <p className="text-sm text-brand-trust">
-                            {t('attempts', { count: stats.timeBasedStats.today.attempts })}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="text-center p-4 bg-green-50 rounded-lg">
-                        <h3 className="font-medium text-green-900 mb-2">{t('thisWeek')}</h3>
-                        <div className="space-y-1">
-                          <p className="text-sm text-green-700">
-                            {t('newUsers', { count: stats.timeBasedStats.thisWeek.newUsers })}
-                          </p>
-                          <p className="text-sm text-green-700">
-                            {t('newQuizzes', { count: stats.timeBasedStats.thisWeek.newQuizzes })}
-                          </p>
-                          <p className="text-sm text-green-700">
-                            {t('attempts', { count: stats.timeBasedStats.thisWeek.attempts })}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="text-center p-4 bg-green-50 rounded-lg">
-                        <h3 className="font-medium text-brand-trust mb-2">{t('thisMonth')}</h3>
-                        <div className="space-y-1">
-                          <p className="text-sm text-green-700">
-                            {t('newUsers', { count: stats.timeBasedStats.thisMonth.newUsers })}
-                          </p>
-                          <p className="text-sm text-green-700">
-                            {t('newQuizzes', { count: stats.timeBasedStats.thisMonth.newQuizzes })}
-                          </p>
-                          <p className="text-sm text-green-700">
-                            {t('attempts', { count: stats.timeBasedStats.thisMonth.attempts })}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Quiz Status Overview */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>{t('quizStatus')}</CardTitle>
-                    <CardDescription>{t('quizStatusOverview')}</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                      <div className="text-center p-4 bg-neutral-50 rounded-lg">
-                        <div className="text-2xl font-bold text-neutral-900">
-                          {stats.overview.totalQuizzes}
-                        </div>
-                        <p className="text-sm text-neutral-600">{t('totalCount')}</p>
-                      </div>
-                      <div className="text-center p-4 bg-green-50 rounded-lg">
-                        <div className="text-2xl font-bold text-green-600">
-                          {stats.overview.publishedQuizzes}
-                        </div>
-                        <p className="text-sm text-green-600">{t('publishedStatus')}</p>
-                      </div>
-                      <div className="text-center p-4 bg-yellow-50 rounded-lg">
-                        <div className="text-2xl font-bold text-yellow-600">
-                          {stats.overview.pendingQuizzes}
-                        </div>
-                        <p className="text-sm text-yellow-600">{t('pendingStatus')}</p>
-                      </div>
-                      <div className="text-center p-4 bg-red-50 rounded-lg">
-                        <div className="text-2xl font-bold text-red-600">
-                          {stats.overview.rejectedQuizzes}
-                        </div>
-                        <p className="text-sm text-red-600">{t('rejectedStatus')}</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Top Categories and Creators */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <Card>
-                    <CardHeader className="flex flex-row items-center justify-between">
-                      <div>
-                        <CardTitle>{t('topCategories')}</CardTitle>
-                        <CardDescription>{t('mostQuizzes')}</CardDescription>
-                      </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setShowCategoriesModal(true)}
-                        className="min-h-[36px] px-3"
-                      >
-                        {t('viewAll')}
-                      </Button>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-3">
-                        {stats.topCategories.slice(0, 5).map((category, index) => (
-                          <div
-                            key={category.name}
-                            className="flex items-center justify-between p-3 bg-neutral-50 rounded-lg"
-                          >
-                            <div className="flex items-center gap-x-3">
-                              <span className="text-sm font-medium text-neutral-500">
-                                #{index + 1}
-                              </span>
-                              <div
-                                className="size-4 rounded-full"
-                                style={{ backgroundColor: category.color }}
-                              />
-                              <span className="font-medium">{category.name}</span>
-                            </div>
-                            <div className="text-right text-sm">
-                              <div className="font-medium">
-                                {category.quizCount} {t('quiz')}
-                              </div>
-                              <div className="text-neutral-500">
-                                {category.totalQuestions} {t('questions')}
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader className="flex flex-row items-center justify-between">
-                      <div>
-                        <CardTitle>{t('topCreators')}</CardTitle>
-                        <CardDescription>{t('mostQuizzesCreated')}</CardDescription>
-                      </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setShowCreatorsModal(true)}
-                        className="min-h-[36px] px-3"
-                      >
-                        {t('viewAll')}
-                      </Button>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-3">
-                        {stats.topCreators.slice(0, 5).map((creator, index) => (
-                          <div
-                            key={creator.email}
-                            className="flex items-center justify-between p-3 bg-neutral-50 rounded-lg"
-                          >
-                            <div className="flex items-center gap-x-3">
-                              <span className="text-sm font-medium text-neutral-500">
-                                #{index + 1}
-                              </span>
-                              <span className="font-medium">{creator.email}</span>
-                            </div>
-                            <div className="text-right text-sm">
-                              <div className="font-medium">
-                                {creator.quizCount} {t('quiz')}
-                              </div>
-                              <div className="text-neutral-500">
-                                {creator.totalQuestions} {t('questions')}
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-
-                {/* Recent Activity */}
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between">
-                    <div>
-                      <CardTitle>{t('recentActivity')}</CardTitle>
-                      <CardDescription>{t('last30Days')}</CardDescription>
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setShowActivityModal(true)}
-                      className="min-h-[36px] px-3"
-                    >
-                      {t('viewAll')}
-                    </Button>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                      {/* Recent Users */}
-                      <div>
-                        <h4 className="font-medium mb-3 text-brand-trust">
-                          {t('newUsers', { count: '' })}
-                        </h4>
-                        <div className="space-y-2">
-                          {stats.recentActivity.users.slice(0, 5).map((user) => (
-                            <div key={user.email} className="text-sm p-2 bg-green-50 rounded">
-                              <div className="font-medium">{user.email}</div>
-                              <div className="text-neutral-500">{formatDate(user.createdAt)}</div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Recent Quizzes */}
-                      <div>
-                        <h4 className="font-medium mb-3 text-green-600">
-                          {t('newQuizzes', { count: '' })}
-                        </h4>
-                        <div className="space-y-2">
-                          {stats.recentActivity.quizzes.slice(0, 5).map((quiz) => (
-                            <div key={quiz.title} className="text-sm p-2 bg-green-50 rounded">
-                              <div className="font-medium truncate">{quiz.title}</div>
-                              <div className="flex items-center gap-x-2 text-xs">
-                                {getStatusBadge(quiz.status)}
-                                <span className="text-neutral-500">
-                                  {formatDate(quiz.createdAt)}
-                                </span>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Recent Attempts */}
-                      <div>
-                        <h4 className="font-medium mb-3 text-brand-trust">{t('recentAttempts')}</h4>
-                        <div className="space-y-2">
-                          {stats.recentActivity.attempts.slice(0, 5).map((attempt) => (
-                            <div
-                              key={`${attempt.user?.email || 'anonymous'}-${attempt.quiz.title}-${attempt.takenAt}`}
-                              className="text-sm p-2 bg-green-50 rounded"
-                            >
-                              <div className="font-medium truncate">{attempt.quiz.title}</div>
-                              <div className="flex items-center justify-between text-xs">
-                                <span className="text-neutral-500">
-                                  {attempt.user?.email || t('anonymous')}
-                                </span>
-                                <span className="font-medium">{attempt.score}%</span>
-                              </div>
-                              <div className="text-neutral-500 text-xs">
-                                {formatDate(attempt.takenAt)}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Category Statistics */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>{t('categoryStatistics')}</CardTitle>
-                    <CardDescription>{t('detailsByCategory')}</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-sm">
-                        <thead>
-                          <tr className="border-b">
-                            <th className="text-left py-3 px-4">{t('category')}</th>
-                            <th className="text-center py-3 px-4">{t('totalQuizzesCol')}</th>
-                            <th className="text-center py-3 px-4">{t('publishedCol')}</th>
-                            <th className="text-center py-3 px-4">{t('pendingCol')}</th>
-                            <th className="text-center py-3 px-4">{t('statusCol')}</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {stats.categoryStats.slice(0, 10).map((category, _index) => (
-                            <tr key={category.name} className="border-b hover:bg-neutral-50">
-                              <td className="py-3 px-4">
-                                <div className="flex items-center gap-x-3">
-                                  <div
-                                    className="size-3 rounded-full"
-                                    style={{ backgroundColor: category.color }}
-                                  />
-                                  <span className="font-medium">{category.name}</span>
-                                </div>
-                              </td>
-                              <td className="text-center py-3 px-4 font-medium">
-                                {category.totalQuizzes}
-                              </td>
-                              <td className="text-center py-3 px-4 text-green-600">
-                                {category.publishedQuizzes}
-                              </td>
-                              <td className="text-center py-3 px-4 text-yellow-600">
-                                {category.pendingQuizzes}
-                              </td>
-                              <td className="text-center py-3 px-4">
-                                <span
-                                  className={`inline-flex min-h-[28px] items-center rounded-full px-3 text-[13px] font-medium ${
-                                    category.isActive
-                                      ? 'bg-green-100 text-green-800'
-                                      : 'bg-red-100 text-red-800'
-                                  }`}
-                                >
-                                  {category.isActive ? t('active') : t('inactiveStatus')}
-                                </span>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            )}
-
-            {/* Modals */}
-            <StatsModal
-              isOpen={showCategoriesModal}
-              onClose={() => setShowCategoriesModal(false)}
-              title={t('allCategories')}
-              type="categories"
-              apiEndpoint="/api/admin/stats/categories"
-            />
-
-            <StatsModal
-              isOpen={showCreatorsModal}
-              onClose={() => setShowCreatorsModal(false)}
-              title={t('allCreators')}
-              type="creators"
-              apiEndpoint="/api/admin/stats/creators"
-            />
-
-            <StatsModal
-              isOpen={showActivityModal}
-              onClose={() => setShowActivityModal(false)}
-              title={t('allRecentActivity')}
-              type="activity"
-              apiEndpoint="/api/admin/stats/activity?type=mixed"
-            />
-          </div>
-        </main>
-      </div>
-    </div>
+      <AdminStatsModals
+        activeModal={state.activeModal}
+        onClose={() => dispatch({ type: 'closeModal' })}
+        t={t}
+      />
+    </AdminStatsLayout>
   );
 }

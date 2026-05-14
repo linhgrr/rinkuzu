@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useEffect, useMemo, useReducer } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -95,7 +95,8 @@ function createQuizPlayerData(rawQuiz: IQuiz, log: (...args: unknown[]) => void)
     log('Option index map (new -> original):', optionIndexMap);
     log(
       'Was actually shuffled:',
-      !question.options.every((option, index) => option === shuffledOptions[index]),
+      question.options.length === shuffledOptions.length &&
+        !question.options.every((option, index) => option === shuffledOptions[index]),
     );
 
     return {
@@ -224,19 +225,324 @@ const debugLog = (...args: unknown[]) => {
   }
 };
 
+type QuizPlayerStatus = 'loading' | 'ready' | 'error';
+
+interface QuizPlayerState {
+  quiz: QuizPlayerQuiz | null;
+  status: QuizPlayerStatus;
+  error: string;
+  userEmail: string;
+  showEmailInput: boolean;
+  currentQuestionIndex: number;
+  userAnswers: QuizAnswer[];
+  showExitModal: boolean;
+  isDiscussionCollapsed: boolean;
+  showMobileDiscussion: boolean;
+  showPremiumModal: boolean;
+}
+
+type QuizPlayerAction =
+  | { type: 'patch'; value: Partial<QuizPlayerState> }
+  | { type: 'setSessionEmail'; email: string }
+  | { type: 'loadQuizSuccess'; quiz: QuizPlayerQuiz; userAnswers: QuizAnswer[] }
+  | { type: 'loadQuizError'; error: string }
+  | { type: 'requirePremium' }
+  | { type: 'selectAnswer'; answerIndex: number }
+  | { type: 'goToNextQuestion' }
+  | { type: 'goToPreviousQuestion' }
+  | { type: 'setCurrentQuestionIndex'; value: number };
+
+const initialQuizPlayerState: QuizPlayerState = {
+  quiz: null,
+  status: 'loading',
+  error: '',
+  userEmail: '',
+  showEmailInput: true,
+  currentQuestionIndex: 0,
+  userAnswers: [],
+  showExitModal: false,
+  isDiscussionCollapsed: true,
+  showMobileDiscussion: false,
+  showPremiumModal: false,
+};
+
+function quizPlayerReducer(state: QuizPlayerState, action: QuizPlayerAction): QuizPlayerState {
+  switch (action.type) {
+    case 'patch':
+      return { ...state, ...action.value };
+    case 'setSessionEmail':
+      return {
+        ...state,
+        userEmail: action.email,
+        showEmailInput: false,
+      };
+    case 'loadQuizSuccess':
+      return {
+        ...state,
+        quiz: action.quiz,
+        userAnswers: action.userAnswers,
+        status: 'ready',
+        error: '',
+        showPremiumModal: false,
+      };
+    case 'loadQuizError':
+      return {
+        ...state,
+        status: 'error',
+        error: action.error,
+        showPremiumModal: false,
+      };
+    case 'requirePremium':
+      return {
+        ...state,
+        status: 'error',
+        error: '',
+        showPremiumModal: true,
+      };
+    case 'selectAnswer': {
+      if (!state.quiz) {
+        return state;
+      }
+
+      const question = state.quiz.questions[state.currentQuestionIndex];
+      const nextAnswers = [...state.userAnswers];
+
+      if (question.type === 'single') {
+        nextAnswers[state.currentQuestionIndex] = action.answerIndex;
+      } else {
+        let currentAnswers = nextAnswers[state.currentQuestionIndex];
+
+        if (!Array.isArray(currentAnswers)) {
+          currentAnswers = [];
+        }
+
+        nextAnswers[state.currentQuestionIndex] = currentAnswers.includes(action.answerIndex)
+          ? currentAnswers.filter((answer) => answer !== action.answerIndex)
+          : [...currentAnswers, action.answerIndex].sort();
+      }
+
+      return {
+        ...state,
+        userAnswers: nextAnswers,
+      };
+    }
+    case 'goToNextQuestion':
+      if (!state.quiz || state.currentQuestionIndex >= state.quiz.questions.length - 1) {
+        return state;
+      }
+
+      return {
+        ...state,
+        currentQuestionIndex: state.currentQuestionIndex + 1,
+      };
+    case 'goToPreviousQuestion':
+      if (state.currentQuestionIndex <= 0) {
+        return state;
+      }
+
+      return {
+        ...state,
+        currentQuestionIndex: state.currentQuestionIndex - 1,
+      };
+    case 'setCurrentQuestionIndex':
+      return {
+        ...state,
+        currentQuestionIndex: action.value,
+      };
+    default:
+      return state;
+  }
+}
+
+function QuizLoadingState({ t }: { t: (key: string) => string }) {
+  return (
+    <div className="min-h-screen">
+      <Navigation />
+      <div className="flex items-center justify-center min-h-[70vh]">
+        <div className="text-center">
+          <div className="inline-flex items-center justify-center p-4 bg-gradient-to-br from-green-500/10 to-brand-trust/10 rounded-2xl mb-6">
+            <div className="size-8 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
+          </div>
+          <h2 className="text-xl font-semibold text-neutral-900 mb-2">{t('loadingQuiz')}</h2>
+          <p className="text-neutral-600">{t('preparingQuiz')}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function QuizErrorState({ error, t }: { error: string; t: (key: string) => string }) {
+  return (
+    <div className="min-h-screen">
+      <Navigation />
+      <div className="flex items-center justify-center min-h-[70vh] px-4">
+        <Card
+          variant="glass"
+          className="max-w-md w-full backdrop-blur-xl border-white/30 shadow-xl"
+        >
+          <CardHeader className="text-center">
+            <div className="inline-flex items-center justify-center p-3 bg-red-100 rounded-2xl mb-4 mx-auto w-fit">
+              <HiOutlineExclamationCircle className="size-6 text-red-600" />
+            </div>
+            <CardTitle className="text-red-600 text-xl">{t('quizNotFound')}</CardTitle>
+          </CardHeader>
+          <CardContent className="text-center">
+            <p className="text-neutral-600 mb-6">{error}</p>
+            <Link href="/">
+              <Button variant="gradient" className="w-full">
+                <HiOutlineArrowLeft className="size-4 mr-2" />
+                {t('returnHome')}
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+function QuizPremiumState({ onClose, t }: { onClose: () => void; t: (key: string) => string }) {
+  return (
+    <div className="min-h-screen">
+      <Navigation />
+      <div className="flex items-center justify-center min-h-[70vh] px-4">
+        <Card
+          variant="glass"
+          className="max-w-md w-full backdrop-blur-xl border-white/30 shadow-xl"
+        >
+          <CardHeader className="text-center">
+            <div className="inline-flex items-center justify-center p-3 bg-gradient-to-br from-green-500/10 to-brand-trust/10 rounded-2xl mb-4 mx-auto w-fit">
+              <HiOutlineDocumentText className="size-6 text-brand-trust" />
+            </div>
+            <CardTitle className="text-2xl text-neutral-900 mb-2">{t('quizAccess')}</CardTitle>
+            <p className="text-neutral-600">{t('loadingQuizInfo')}</p>
+          </CardHeader>
+        </Card>
+      </div>
+
+      <PremiumRequiredModal isOpen onClose={onClose} />
+    </div>
+  );
+}
+
+function QuizEmailGate({
+  encodedSlug,
+  error,
+  onStartQuiz,
+  onUserEmailChange,
+  quiz,
+  t,
+  userEmail,
+}: {
+  encodedSlug: string;
+  error: string;
+  onStartQuiz: () => void;
+  onUserEmailChange: (value: string) => void;
+  quiz: QuizPlayerQuiz;
+  t: (key: string) => string;
+  userEmail: string;
+}) {
+  return (
+    <div className="min-h-screen">
+      <Navigation />
+      <div className="flex items-center justify-center min-h-[80vh] px-4">
+        <Card
+          variant="glass"
+          className="max-w-lg w-full backdrop-blur-xl border-white/30 shadow-xl animate-fadeInUp"
+        >
+          <CardHeader className="text-center">
+            <div className="inline-flex items-center justify-center p-3 bg-gradient-to-br from-green-500/10 to-brand-trust/10 rounded-2xl mb-4 mx-auto w-fit">
+              <HiOutlineDocumentText className="size-6 text-brand-trust" />
+            </div>
+            <CardTitle className="text-2xl text-neutral-900 mb-2">{quiz.title}</CardTitle>
+            {quiz.description && <p className="text-neutral-600">{quiz.description}</p>}
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-6">
+              <div className="flex justify-center gap-x-8 py-4 bg-neutral-50/50 rounded-xl">
+                <div className="text-center">
+                  <Badge variant="purple" className="mb-1">
+                    {quiz.questions.length} {t('questions')}
+                  </Badge>
+                </div>
+                <div className="text-center">
+                  <Badge variant="info" className="mb-1">
+                    {t('noTimeLimit')}
+                  </Badge>
+                </div>
+              </div>
+
+              {error && (
+                <Card variant="bordered" className="border-red-200 bg-red-50 p-4">
+                  <div className="flex items-center text-red-700">
+                    <HiOutlineExclamationCircle className="size-5 mr-2 flex-shrink-0" />
+                    <span className="text-sm font-medium">{error}</span>
+                  </div>
+                </Card>
+              )}
+
+              <Card variant="bordered" className="border-green-200 bg-green-50 p-4">
+                <div className="text-center text-brand-trust">
+                  <HiOutlineLightBulb className="size-6 mx-auto mb-2 text-brand-trust" />
+                  <p className="text-sm font-medium">
+                    <Link href="/login" className="underline hover:text-green-700">
+                      {t('login')}
+                    </Link>{' '}
+                    {t('loginToTrack')}
+                  </p>
+                </div>
+              </Card>
+
+              <div>
+                <Input
+                  label={t('yourEmail')}
+                  id="email"
+                  type="email"
+                  value={userEmail}
+                  onChange={(event) => onUserEmailChange(event.target.value)}
+                  placeholder={t('enterEmailAddress')}
+                  required
+                  icon={<HiOutlineMail className="size-5" />}
+                />
+                <p className="mt-2 text-xs text-neutral-500">{t('weWillUseEmail')}</p>
+              </div>
+
+              <div className="space-y-3">
+                <Button onClick={onStartQuiz} variant="gradient" size="lg" className="w-full">
+                  <HiOutlineLightningBolt className="size-5 mr-2" />
+                  {t('startQuiz')}
+                </Button>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <Link href="/">
+                    <Button variant="outline" className="w-full">
+                      <HiOutlineArrowLeft className="size-4 mr-2" />
+                      {t('backHome')}
+                    </Button>
+                  </Link>
+                  <Link href={`/quiz/${encodedSlug}/flashcards`}>
+                    <Button variant="accent" className="w-full">
+                      <HiOutlineRefresh className="size-4 mr-2" />
+                      {t('flashcards')}
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
 export default function QuizPlayerPage() {
   const t = useTranslations('quiz');
   const { data: session } = useSession();
   const { push } = useRouter();
   const slug = useRequiredRouteParam('slug');
   const encodedSlug = routePathSegment(slug);
-  const [quiz, setQuiz] = useState<QuizPlayerQuiz | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [userEmail, setUserEmail] = useState('');
-  const [showEmailInput, setShowEmailInput] = useState(true);
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [userAnswers, setUserAnswers] = useState<QuizAnswer[]>([]);
+  const [state, dispatch] = useReducer(quizPlayerReducer, initialQuizPlayerState);
 
   const { isMobile } = useQuizViewport();
 
@@ -251,97 +557,68 @@ export default function QuizPlayerPage() {
     openAIModal,
     closeAIModal,
   } = useQuizAIExplain();
+  const sessionEmail = session?.user?.email || undefined;
 
-  // Exit quiz states
-  const [showExitModal, setShowExitModal] = useState(false);
-
-  // Discussion states
-  const [isDiscussionCollapsed, setIsDiscussionCollapsed] = useState(true);
-  const [showMobileDiscussion, setShowMobileDiscussion] = useState(false);
-
-  // Premium required modal
-  const [showPremiumModal, setShowPremiumModal] = useState(false);
-
-  // If user is logged in, skip email input
   useEffect(() => {
     if (session?.user?.email) {
-      setUserEmail(session.user.email);
-      setShowEmailInput(false);
+      dispatch({ type: 'setSessionEmail', email: session.user.email });
     }
   }, [session]);
 
-  const fetchQuiz = useCallback(async () => {
-    try {
-      const data = await fetchApiData<IQuiz>(`/api/quiz/${encodedSlug}/play`);
-      const { quiz: nextQuiz, initialAnswers } = createQuizPlayerData(data, debugLog);
-      setQuiz(nextQuiz);
-      setUserAnswers(initialAnswers);
-    } catch (error: any) {
-      if (error.message === 'Premium subscription required to access private quizzes') {
-        setShowPremiumModal(true);
-      } else {
-        setError(error.message || 'Quiz not found');
+  useEffect(() => {
+    let isActive = true;
+
+    const loadQuiz = async () => {
+      try {
+        const data = await fetchApiData<IQuiz>(`/api/quiz/${encodedSlug}/play`);
+        const { quiz: nextQuiz, initialAnswers } = createQuizPlayerData(data, debugLog);
+
+        if (isActive) {
+          dispatch({ type: 'loadQuizSuccess', quiz: nextQuiz, userAnswers: initialAnswers });
+        }
+      } catch (error: any) {
+        if (!isActive) {
+          return;
+        }
+
+        if (error.message === 'Premium subscription required to access private quizzes') {
+          dispatch({ type: 'requirePremium' });
+        } else {
+          dispatch({ type: 'loadQuizError', error: error.message || 'Quiz not found' });
+        }
       }
-    } finally {
-      setLoading(false);
-    }
+    };
+
+    void loadQuiz();
+
+    return () => {
+      isActive = false;
+    };
   }, [encodedSlug]);
 
-  useEffect(() => {
-    fetchQuiz();
-  }, [fetchQuiz]);
-
   const startQuiz = () => {
-    if (!session?.user?.email && !userEmail.trim()) {
-      setError('Please enter your email to start the quiz');
+    if (!sessionEmail && !state.userEmail.trim()) {
+      dispatch({ type: 'patch', value: { error: 'Please enter your email to start the quiz' } });
       return;
     }
-    setShowEmailInput(false);
-    setError('');
+
+    dispatch({ type: 'patch', value: { showEmailInput: false, error: '' } });
   };
 
-  const selectAnswer = (answerIndex: number) => {
-    if (!quiz) return;
-
-    const currentQuestion = quiz.questions[currentQuestionIndex];
-    const newAnswers = [...userAnswers];
-
-    if (currentQuestion.type === 'single') {
-      // Single choice: replace answer
-      newAnswers[currentQuestionIndex] = answerIndex;
-    } else {
-      // Multiple choice: toggle answer in array
-      let currentAnswers = newAnswers[currentQuestionIndex];
-
-      // Ensure currentAnswers is an array for multiple choice
-      if (!Array.isArray(currentAnswers)) {
-        currentAnswers = [];
-      }
-
-      const answerExists = currentAnswers.includes(answerIndex);
-
-      if (answerExists) {
-        // Remove answer
-        newAnswers[currentQuestionIndex] = currentAnswers.filter((a) => a !== answerIndex);
-      } else {
-        // Add answer
-        newAnswers[currentQuestionIndex] = [...currentAnswers, answerIndex].sort();
-      }
-    }
-    setUserAnswers(newAnswers);
-  };
-
-  const nextQuestion = () => {
-    if (quiz && currentQuestionIndex < quiz.questions.length - 1) {
-      setCurrentQuestionIndex(currentQuestionIndex + 1);
-    }
-  };
-
-  const previousQuestion = () => {
-    if (currentQuestionIndex > 0) {
-      setCurrentQuestionIndex(currentQuestionIndex - 1);
-    }
-  };
+  const quiz = state.quiz;
+  const currentQuestion = quiz?.questions[state.currentQuestionIndex] || null;
+  const answeredQuestions = useMemo(
+    () =>
+      quiz
+        ? state.userAnswers.filter((answer, index) =>
+            isQuestionAnswered(quiz.questions[index], answer),
+          ).length
+        : 0,
+    [quiz, state.userAnswers],
+  );
+  const progress = quiz
+    ? Math.round(((state.currentQuestionIndex + 1) / quiz.questions.length) * 100)
+    : 0;
 
   const {
     submitting,
@@ -354,212 +631,58 @@ export default function QuizPlayerPage() {
   } = useQuizSubmission<QuizPlayerQuiz>({
     slug,
     quiz,
-    userAnswers,
-    userEmail,
-    sessionEmail: session?.user?.email || undefined,
+    userAnswers: state.userAnswers,
+    userEmail: state.userEmail,
+    sessionEmail,
     onSubmitSuccess: (attemptId, score) => {
       push(`/quiz/${encodedSlug}/result?attemptId=${attemptId}&score=${score}`);
     },
-    onSubmitStart: () => setError(''),
-    onSubmitError: (message) => setError(message),
+    onSubmitStart: () => dispatch({ type: 'patch', value: { error: '' } }),
+    onSubmitError: (message) => dispatch({ type: 'patch', value: { error: message } }),
     mapAnswersToOriginalOrder: (currentQuiz, answersToSubmit) =>
       mapAnswersToOriginalOrder(currentQuiz, answersToSubmit, debugLog),
     isQuestionAnswered,
   });
 
-  // Exit quiz functions
-  const openExitModal = () => {
-    setShowExitModal(true);
-  };
-
-  const closeExitModal = () => {
-    setShowExitModal(false);
-  };
-
   const exitQuiz = () => {
     push('/');
   };
 
-  if (loading) {
+  if (state.status === 'loading') {
+    return <QuizLoadingState t={t} />;
+  }
+
+  if (state.showPremiumModal) {
     return (
-      <div className="min-h-screen">
-        <Navigation />
-        <div className="flex items-center justify-center min-h-[70vh]">
-          <div className="text-center">
-            <div className="inline-flex items-center justify-center p-4 bg-gradient-to-br from-green-500/10 to-brand-trust/10 rounded-2xl mb-6">
-              <div className="size-8 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
-            </div>
-            <h2 className="text-xl font-semibold text-neutral-900 mb-2">{t('loadingQuiz')}</h2>
-            <p className="text-neutral-600">{t('preparingQuiz')}</p>
-          </div>
-        </div>
-      </div>
+      <QuizPremiumState
+        onClose={() => dispatch({ type: 'patch', value: { showPremiumModal: false } })}
+        t={t}
+      />
     );
   }
 
-  if (error && !quiz && !showPremiumModal) {
+  if (state.error && !quiz) {
+    return <QuizErrorState error={state.error} t={t} />;
+  }
+
+  if (state.showEmailInput && !sessionEmail && quiz) {
     return (
-      <div className="min-h-screen">
-        <Navigation />
-        <div className="flex items-center justify-center min-h-[70vh] px-4">
-          <Card
-            variant="glass"
-            className="max-w-md w-full backdrop-blur-xl border-white/30 shadow-xl"
-          >
-            <CardHeader className="text-center">
-              <div className="inline-flex items-center justify-center p-3 bg-red-100 rounded-2xl mb-4 mx-auto w-fit">
-                <HiOutlineExclamationCircle className="size-6 text-red-600" />
-              </div>
-              <CardTitle className="text-red-600 text-xl">{t('quizNotFound')}</CardTitle>
-            </CardHeader>
-            <CardContent className="text-center">
-              <p className="text-neutral-600 mb-6">{error}</p>
-              <Link href="/">
-                <Button variant="gradient" className="w-full">
-                  <HiOutlineArrowLeft className="size-4 mr-2" />
-                  {t('returnHome')}
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+      <QuizEmailGate
+        encodedSlug={encodedSlug}
+        error={state.error}
+        onStartQuiz={startQuiz}
+        onUserEmailChange={(value) => dispatch({ type: 'patch', value: { userEmail: value } })}
+        quiz={quiz}
+        t={t}
+        userEmail={state.userEmail}
+      />
     );
   }
 
-  // Show basic layout with premium modal when premium is required
-  if (showPremiumModal) {
-    return (
-      <div className="min-h-screen">
-        <Navigation />
-        <div className="flex items-center justify-center min-h-[70vh] px-4">
-          <Card
-            variant="glass"
-            className="max-w-md w-full backdrop-blur-xl border-white/30 shadow-xl"
-          >
-            <CardHeader className="text-center">
-              <div className="inline-flex items-center justify-center p-3 bg-gradient-to-br from-green-500/10 to-brand-trust/10 rounded-2xl mb-4 mx-auto w-fit">
-                <HiOutlineDocumentText className="size-6 text-brand-trust" />
-              </div>
-              <CardTitle className="text-2xl text-neutral-900 mb-2">{t('quizAccess')}</CardTitle>
-              <p className="text-neutral-600">{t('loadingQuizInfo')}</p>
-            </CardHeader>
-          </Card>
-        </div>
-
-        {/* Premium Required Modal */}
-        <PremiumRequiredModal
-          isOpen={showPremiumModal}
-          onClose={() => setShowPremiumModal(false)}
-        />
-      </div>
-    );
+  if (!quiz || !currentQuestion) {
+    return null;
   }
 
-  // Email input screen (only for non-logged in users)
-  if (showEmailInput && !session?.user?.email && quiz) {
-    return (
-      <div className="min-h-screen">
-        <Navigation />
-        <div className="flex items-center justify-center min-h-[80vh] px-4">
-          <Card
-            variant="glass"
-            className="max-w-lg w-full backdrop-blur-xl border-white/30 shadow-xl animate-fadeInUp"
-          >
-            <CardHeader className="text-center">
-              <div className="inline-flex items-center justify-center p-3 bg-gradient-to-br from-green-500/10 to-brand-trust/10 rounded-2xl mb-4 mx-auto w-fit">
-                <HiOutlineDocumentText className="size-6 text-brand-trust" />
-              </div>
-              <CardTitle className="text-2xl text-neutral-900 mb-2">{quiz.title}</CardTitle>
-              {quiz.description && <p className="text-neutral-600">{quiz.description}</p>}
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-6">
-                {/* Quiz Info */}
-                <div className="flex justify-center gap-x-8 py-4 bg-neutral-50/50 rounded-xl">
-                  <div className="text-center">
-                    <Badge variant="purple" className="mb-1">
-                      {quiz.questions.length} {t('questions')}
-                    </Badge>
-                  </div>
-                  <div className="text-center">
-                    <Badge variant="info" className="mb-1">
-                      {t('noTimeLimit')}
-                    </Badge>
-                  </div>
-                </div>
-
-                {error && (
-                  <Card variant="bordered" className="border-red-200 bg-red-50 p-4">
-                    <div className="flex items-center text-red-700">
-                      <HiOutlineExclamationCircle className="size-5 mr-2 flex-shrink-0" />
-                      <span className="text-sm font-medium">{error}</span>
-                    </div>
-                  </Card>
-                )}
-
-                {/* Login Suggestion */}
-                <Card variant="bordered" className="border-green-200 bg-green-50 p-4">
-                  <div className="text-center text-brand-trust">
-                    <HiOutlineLightBulb className="size-6 mx-auto mb-2 text-brand-trust" />
-                    <p className="text-sm font-medium">
-                      <Link href="/login" className="underline hover:text-green-700">
-                        {t('login')}
-                      </Link>{' '}
-                      {t('loginToTrack')}
-                    </p>
-                  </div>
-                </Card>
-
-                {/* Email Input */}
-                <div>
-                  <Input
-                    label={t('yourEmail')}
-                    id="email"
-                    type="email"
-                    value={userEmail}
-                    onChange={(e) => setUserEmail(e.target.value)}
-                    placeholder={t('enterEmailAddress')}
-                    required
-                    icon={<HiOutlineMail className="size-5" />}
-                  />
-                  <p className="mt-2 text-xs text-neutral-500">{t('weWillUseEmail')}</p>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="space-y-3">
-                  <Button onClick={startQuiz} variant="gradient" size="lg" className="w-full">
-                    <HiOutlineLightningBolt className="size-5 mr-2" />
-                    {t('startQuiz')}
-                  </Button>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <Link href="/">
-                      <Button variant="outline" className="w-full">
-                        <HiOutlineArrowLeft className="size-4 mr-2" />
-                        {t('backHome')}
-                      </Button>
-                    </Link>
-                    <Link href={`/quiz/${encodedSlug}/flashcards`}>
-                      <Button variant="accent" className="w-full">
-                        <HiOutlineRefresh className="size-4 mr-2" />
-                        {t('flashcards')}
-                      </Button>
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    );
-  }
-
-  // Quiz interface
-  if (!quiz) return null;
-
-  // Extract author name safely (can be string or IUser object)
   const authorName =
     typeof quiz.author === 'string'
       ? quiz.author
@@ -567,16 +690,8 @@ export default function QuizPlayerPage() {
   const categoryName =
     typeof quiz.category === 'string' ? quiz.category : (quiz.category as any)?.name || undefined;
 
-  const currentQuestion = quiz.questions[currentQuestionIndex];
-  const progress = Math.round(((currentQuestionIndex + 1) / quiz.questions.length) * 100);
-  const answeredQuestions = userAnswers.filter((answer, index) => {
-    const question = quiz.questions[index];
-    return isQuestionAnswered(question, answer);
-  }).length;
-
   return (
     <>
-      {/* Quiz schema for SEO — SoftwareApplication + Course */}
       <QuizPageSchema
         quizSlug={slug}
         quizTitle={quiz.title}
@@ -586,14 +701,13 @@ export default function QuizPlayerPage() {
         questionCount={quiz.questions.length}
       />
 
-      {/* Mobile Quiz Layout */}
-      {isMobile && !showEmailInput && (
+      {isMobile && !state.showEmailInput && (
         <MobileQuizLayout
           quiz={quiz}
           onComplete={handleQuizComplete}
           onExit={() => push('/')}
           submitting={submitting}
-          error={error}
+          error={state.error}
         />
       )}
 
@@ -602,27 +716,33 @@ export default function QuizPlayerPage() {
           slug={slug}
           quizTitle={quiz.title}
           questions={quiz.questions}
-          sessionEmail={session?.user?.email}
-          userEmail={userEmail}
-          currentQuestionIndex={currentQuestionIndex}
-          setCurrentQuestionIndex={setCurrentQuestionIndex}
+          sessionEmail={sessionEmail}
+          userEmail={state.userEmail}
+          currentQuestionIndex={state.currentQuestionIndex}
+          setCurrentQuestionIndex={(index) =>
+            dispatch({ type: 'setCurrentQuestionIndex', value: index })
+          }
           answeredQuestions={answeredQuestions}
           progress={progress}
           currentQuestion={currentQuestion}
-          userAnswers={userAnswers}
-          isDiscussionCollapsed={isDiscussionCollapsed}
-          setIsDiscussionCollapsed={setIsDiscussionCollapsed}
+          userAnswers={state.userAnswers}
+          isDiscussionCollapsed={state.isDiscussionCollapsed}
+          setIsDiscussionCollapsed={(collapsed) =>
+            dispatch({ type: 'patch', value: { isDiscussionCollapsed: collapsed } })
+          }
           openAIModal={openAIModal}
-          showMobileDiscussion={showMobileDiscussion}
-          setShowMobileDiscussion={setShowMobileDiscussion}
-          showExitModal={showExitModal}
-          openExitModal={openExitModal}
-          closeExitModal={closeExitModal}
+          showMobileDiscussion={state.showMobileDiscussion}
+          setShowMobileDiscussion={(show) =>
+            dispatch({ type: 'patch', value: { showMobileDiscussion: show } })
+          }
+          showExitModal={state.showExitModal}
+          openExitModal={() => dispatch({ type: 'patch', value: { showExitModal: true } })}
+          closeExitModal={() => dispatch({ type: 'patch', value: { showExitModal: false } })}
           exitQuiz={exitQuiz}
-          error={error}
-          selectAnswer={selectAnswer}
-          previousQuestion={previousQuestion}
-          nextQuestion={nextQuestion}
+          error={state.error}
+          selectAnswer={(answerIndex) => dispatch({ type: 'selectAnswer', answerIndex })}
+          previousQuestion={() => dispatch({ type: 'goToPreviousQuestion' })}
+          nextQuestion={() => dispatch({ type: 'goToNextQuestion' })}
           submitQuiz={submitQuiz}
           submitting={submitting}
           showAIModal={showAIModal}

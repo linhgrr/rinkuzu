@@ -7,11 +7,23 @@ type Props = {
 };
 
 function humanizeSlug(slug: string): string {
-  return slug
-    .split('-')
-    .filter(Boolean)
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
+  let result = '';
+  let nextUpper = true;
+
+  for (const char of slug) {
+    if (char === '-') {
+      if (result) {
+        result += ' ';
+      }
+      nextUpper = true;
+      continue;
+    }
+
+    result += nextUpper ? char.toUpperCase() : char;
+    nextUpper = false;
+  }
+
+  return result.trim();
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {

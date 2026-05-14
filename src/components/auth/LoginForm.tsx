@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -15,7 +15,7 @@ interface LoginFormProps {
   locale: string;
 }
 
-export function LoginForm({ locale }: LoginFormProps) {
+function LoginFormContent({ locale }: LoginFormProps) {
   const t = useTranslations('auth');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -161,9 +161,9 @@ export function LoginForm({ locale }: LoginFormProps) {
       </form>
 
       {/* Sign Up Link */}
-      <div className="mt-8 pt-6 border-t border-gray-100">
+      <div className="mt-8 border-t border-neutral-200/70 pt-6">
         <div className="text-center">
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-neutral-600">
             {t('dontHaveAccount')}{' '}
             <Link
               href="/register"
@@ -175,5 +175,25 @@ export function LoginForm({ locale }: LoginFormProps) {
         </div>
       </div>
     </CardContent>
+  );
+}
+
+function LoginFormFallback() {
+  return (
+    <CardContent className="pt-0">
+      <div className="space-y-4 py-6" aria-hidden="true">
+        <div className="h-12 rounded-xl bg-neutral-100" />
+        <div className="h-12 rounded-xl bg-neutral-100" />
+        <div className="h-12 rounded-xl bg-neutral-100" />
+      </div>
+    </CardContent>
+  );
+}
+
+export function LoginForm({ locale }: LoginFormProps) {
+  return (
+    <Suspense fallback={<LoginFormFallback />}>
+      <LoginFormContent locale={locale} />
+    </Suspense>
   );
 }

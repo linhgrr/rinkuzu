@@ -190,7 +190,7 @@ export default async function PublicUserProfilePage({
                           <span>
                             {quiz.questionCount} {tQuiz('questions')}
                           </span>
-                          <span>
+                          <span suppressHydrationWarning>
                             {new Intl.DateTimeFormat(locale === 'vi' ? 'vi-VN' : 'en-US', {
                               year: 'numeric',
                               month: 'short',

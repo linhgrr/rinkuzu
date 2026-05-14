@@ -273,7 +273,7 @@ export default function ProfileQuizzes() {
                         {(quiz.category as any)?.name || t('noCategory')}
                       </span>
                       <span>•</span>
-                      <span>{formatDate(new Date(quiz.createdAt))}</span>
+                      <span suppressHydrationWarning>{formatDate(new Date(quiz.createdAt))}</span>
                     </div>
                   </div>
 

@@ -296,7 +296,10 @@ export default function ProfileSettings() {
             <label className="mb-1 block text-[12px] font-semibold text-neutral-700">
               {t('joinDate')}
             </label>
-            <div className="flex items-center gap-2 text-sm text-neutral-600">
+            <div
+              className="flex items-center gap-2 text-sm text-neutral-600"
+              suppressHydrationWarning
+            >
               <HiOutlineCalendar className="size-4 text-neutral-400" />
               {new Date(profile.createdAt).toLocaleDateString()}
             </div>
@@ -423,7 +426,7 @@ export default function ProfileSettings() {
             </div>
             <div className="flex items-center justify-between text-sm">
               <span className="text-neutral-500">{t('joinDate')}</span>
-              <span className="font-medium text-neutral-900">
+              <span className="font-medium text-neutral-900" suppressHydrationWarning>
                 {new Date(profile.createdAt).toLocaleDateString()}
               </span>
             </div>

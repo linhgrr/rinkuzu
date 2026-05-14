@@ -374,7 +374,7 @@ export default function AdminQueuePage() {
                               {quiz.questions.length} {t('questions')}
                             </span>
                             <span>•</span>
-                            <span>
+                            <span suppressHydrationWarning>
                               {t('createdDate')} {formatDate(new Date(quiz.createdAt))}
                             </span>
                           </div>

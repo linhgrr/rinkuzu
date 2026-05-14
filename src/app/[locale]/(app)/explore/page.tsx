@@ -106,10 +106,12 @@ const QuizCard = memo(function QuizCard({ quiz, href }: QuizCardProps) {
 });
 
 const LoadingSkeleton = memo(function LoadingSkeleton() {
+  const skeletonKeys = ['quiz-1', 'quiz-2', 'quiz-3', 'quiz-4', 'quiz-5', 'quiz-6'];
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {[1, 2, 3, 4, 5, 6].map((i) => (
-        <Card key={i} className="animate-pulse">
+      {skeletonKeys.map((skeletonKey) => (
+        <Card key={skeletonKey} className="animate-pulse">
           <div className="h-48 bg-neutral-200 rounded-t-xl"></div>
           <CardContent className="p-4 space-y-3">
             <div className="h-6 bg-neutral-200 rounded w-3/4"></div>

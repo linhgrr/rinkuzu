@@ -49,7 +49,7 @@ function renderResultCorrectAnswer(exercise: Exercise, result: SubmitResult, t: 
       <div className="flex flex-wrap gap-2">
         {exercise.correct_answer.map((item, idx) => (
           <div
-            key={idx}
+            key={item}
             className="flex items-center gap-2 rounded-lg border border-green-100 bg-white p-2 text-xs"
           >
             <span className="flex size-5 items-center justify-center rounded-full bg-green-100 font-mono text-[10px] font-bold text-green-700">

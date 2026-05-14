@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { useSession } from 'next-auth/react';
+import { useCallback, useEffect, useReducer } from 'react';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import Link from 'next/link';
@@ -23,244 +22,405 @@ import {
 } from '@/components/icons';
 import { IReport } from '@/models/Report';
 
-export default function AdminReportsPage() {
-  const t = useTranslations('admin');
-  const tCommon = useTranslations('common');
-  const { data: _session } = useSession();
-  const [reports, setReports] = useState<IReport[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [selectedReport, setSelectedReport] = useState<IReport | null>(null);
-  const [showModal, setShowModal] = useState(false);
-  const [adminNotes, setAdminNotes] = useState('');
-  const [updating, setUpdating] = useState(false);
-  const [reportToDelete, setReportToDelete] = useState<IReport | null>(null);
-  const [deleting, setDeleting] = useState(false);
+type ReportFilter = 'all' | 'pending' | 'resolved' | 'dismissed';
 
-  const fetchReports = useCallback(async () => {
+interface AdminReportsState {
+  status: 'loading' | 'ready';
+  reports: IReport[];
+  statusFilter: ReportFilter;
+  selectedReport: IReport | null;
+  adminNotes: string;
+  updating: boolean;
+  reportToDelete: IReport | null;
+  deleting: boolean;
+}
+
+type AdminReportsAction =
+  | { type: 'patch'; value: Partial<AdminReportsState> }
+  | { type: 'loadSuccess'; value: IReport[] };
+
+const REPORT_FILTERS: ReportFilter[] = ['all', 'pending', 'resolved', 'dismissed'];
+
+const initialState: AdminReportsState = {
+  status: 'loading',
+  reports: [],
+  statusFilter: 'all',
+  selectedReport: null,
+  adminNotes: '',
+  updating: false,
+  reportToDelete: null,
+  deleting: false,
+};
+
+function adminReportsReducer(
+  state: AdminReportsState,
+  action: AdminReportsAction,
+): AdminReportsState {
+  switch (action.type) {
+    case 'patch':
+      return { ...state, ...action.value };
+    case 'loadSuccess':
+      return { ...state, status: 'ready', reports: action.value };
+    default:
+      return state;
+  }
+}
+
+function formatReportDate(date: Date | string) {
+  return new Date(date).toLocaleDateString('vi-VN', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+function getStatusBadge(status: string) {
+  switch (status) {
+    case 'pending':
+      return <Badge variant="warning">{status}</Badge>;
+    case 'resolved':
+      return <Badge variant="success">{status}</Badge>;
+    case 'dismissed':
+      return <Badge variant="default">{status}</Badge>;
+    default:
+      return <Badge variant="success">{status}</Badge>;
+  }
+}
+
+function ReportsHeader() {
+  return (
+    <div className="mb-8">
+      <h1 className="text-3xl font-semibold text-neutral-900">Quiz Reports</h1>
+      <p className="mt-2 text-neutral-600">Manage and review user reports about quiz content</p>
+    </div>
+  );
+}
+
+function ReportFilterBar({
+  statusFilter,
+  onChange,
+}: {
+  statusFilter: ReportFilter;
+  onChange: (status: ReportFilter) => void;
+}) {
+  return (
+    <div className="mb-6 flex flex-wrap gap-2">
+      {REPORT_FILTERS.map((status) => (
+        <Button
+          key={status}
+          variant={statusFilter === status ? 'gradient' : 'outline'}
+          onClick={() => onChange(status)}
+          className="min-h-[40px] px-4 capitalize"
+        >
+          {status === 'all' ? 'All Reports' : status}
+        </Button>
+      ))}
+    </div>
+  );
+}
+
+function ReportCardItem({
+  report,
+  onReview,
+  onDelete,
+}: {
+  report: IReport;
+  onReview: (report: IReport) => void;
+  onDelete: (report: IReport) => void;
+}) {
+  return (
+    <Card className="transition-shadow hover:shadow-md">
+      <div className="p-6">
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            <div className="mb-2 flex items-center gap-3">
+              <h3 className="text-lg font-semibold text-neutral-900">{report.quizTitle}</h3>
+              {getStatusBadge(report.status)}
+            </div>
+
+            <div className="mb-3 text-sm text-neutral-600">
+              <div className="mb-1 flex items-center gap-4">
+                <span>
+                  <strong>Reporter:</strong> {report.reporterName} ({report.reporterEmail})
+                </span>
+                <span>
+                  <strong>Date:</strong> {formatReportDate(report.createdAt)}
+                </span>
+              </div>
+            </div>
+
+            <div className="mb-4 rounded-lg bg-neutral-50 p-3">
+              <p className="whitespace-pre-wrap text-sm text-neutral-700">{report.content}</p>
+            </div>
+
+            {report.adminNotes ? (
+              <div className="mb-4 rounded-lg border border-green-200 bg-green-50 p-3">
+                <p className="mb-1 text-sm font-medium text-green-800">Admin Notes:</p>
+                <p className="whitespace-pre-wrap text-sm text-green-700">{report.adminNotes}</p>
+              </div>
+            ) : null}
+
+            {report.resolvedAt && report.resolvedBy ? (
+              <div className="text-xs text-neutral-500">
+                Resolved by {report.resolvedBy} on {formatReportDate(report.resolvedAt)}
+              </div>
+            ) : null}
+          </div>
+
+          <div className="ml-4 flex flex-col gap-2">
+            <Button
+              variant="gradient"
+              onClick={() => onReview(report)}
+              className="min-h-[36px] px-3"
+            >
+              <HiOutlineEye className="mr-1 size-4" /> Review
+            </Button>
+
+            <Link href={`/edit/${report.quizId}`}>
+              <Button variant="accent" className="min-h-[36px] w-full px-3">
+                <HiOutlinePencil className="mr-1 size-4" /> Edit Quiz
+              </Button>
+            </Link>
+
+            <Button
+              variant="outline"
+              onClick={() => onDelete(report)}
+              className="min-h-[36px] border-red-200 px-3 text-red-600 hover:bg-red-50"
+            >
+              <HiOutlineTrash className="mr-1 size-4" /> Delete
+            </Button>
+          </div>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+function ReportReviewModal({
+  report,
+  adminNotes,
+  updating,
+  onClose,
+  onAdminNotesChange,
+  onResolve,
+  onDismiss,
+}: {
+  report: IReport | null;
+  adminNotes: string;
+  updating: boolean;
+  onClose: () => void;
+  onAdminNotesChange: (value: string) => void;
+  onResolve: () => void;
+  onDismiss: () => void;
+}) {
+  return (
+    <Modal isOpen={!!report} onClose={onClose} title="Review Report">
+      {report ? (
+        <div>
+          <div className="mb-6">
+            <h3 className="mb-2 text-lg font-semibold">{report.quizTitle}</h3>
+            <div className="mb-3 text-sm text-neutral-600">
+              <div>
+                <strong>Reporter:</strong> {report.reporterName} ({report.reporterEmail})
+              </div>
+              <div>
+                <strong>Date:</strong> {formatReportDate(report.createdAt)}
+              </div>
+              <div>
+                <strong>Status:</strong> {getStatusBadge(report.status)}
+              </div>
+            </div>
+
+            <div className="mb-4 rounded-lg bg-neutral-50 p-3">
+              <p className="mb-1 text-sm font-medium text-neutral-700">Report Content:</p>
+              <p className="whitespace-pre-wrap text-sm text-neutral-600">{report.content}</p>
+            </div>
+          </div>
+
+          <div className="mb-6">
+            <label htmlFor="adminNotes" className="mb-2 block text-sm font-medium text-neutral-700">
+              Admin Notes (Optional)
+            </label>
+            <Textarea
+              id="adminNotes"
+              value={adminNotes}
+              onChange={(event) => onAdminNotesChange(event.target.value)}
+              className="resize-none"
+              rows={4}
+              maxLength={1000}
+              placeholder="Add internal notes about this report..."
+            />
+            <div className="mt-1 text-xs text-neutral-500">{adminNotes.length}/1000</div>
+          </div>
+
+          <div className="flex gap-3">
+            <Button variant="outline" onClick={onClose} className="min-h-[40px] flex-1 px-4">
+              Cancel
+            </Button>
+
+            <Button
+              variant="gradient"
+              onClick={onResolve}
+              disabled={updating}
+              className="min-h-[40px] flex-1 bg-green-600 px-4 hover:bg-green-700"
+            >
+              {updating ? (
+                'Updating…'
+              ) : (
+                <>
+                  <HiOutlineCheck className="mr-1 size-4" /> Mark Resolved
+                </>
+              )}
+            </Button>
+
+            <Button
+              variant="outline"
+              onClick={onDismiss}
+              disabled={updating}
+              className="min-h-[40px] flex-1 px-4"
+            >
+              {updating ? (
+                'Updating…'
+              ) : (
+                <>
+                  <HiOutlineX className="mr-1 size-4" /> Dismiss
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
+      ) : null}
+    </Modal>
+  );
+}
+
+export default function AdminReportsPage() {
+  const tCommon = useTranslations('common');
+  const [state, dispatch] = useReducer(adminReportsReducer, initialState);
+
+  const loadReports = useCallback(async (statusFilter: ReportFilter) => {
     try {
-      setLoading(true);
       const params = new URLSearchParams();
       if (statusFilter !== 'all') {
         params.append('status', statusFilter);
       }
 
       const data = await fetchApiData<IReport[]>(`/api/admin/reports?${params}`);
-      setReports(data);
+      dispatch({ type: 'loadSuccess', value: data });
     } catch (error) {
       console.error('Error fetching reports:', error);
-    } finally {
-      setLoading(false);
+      dispatch({ type: 'patch', value: { status: 'ready' } });
     }
-  }, [statusFilter]);
+  }, []);
 
   useEffect(() => {
-    fetchReports();
-  }, [fetchReports]);
+    dispatch({ type: 'patch', value: { status: 'loading' } });
+    void loadReports(state.statusFilter);
+  }, [loadReports, state.statusFilter]);
 
   const openReportModal = (report: IReport) => {
-    setSelectedReport(report);
-    setAdminNotes(report.adminNotes || '');
-    setShowModal(true);
+    dispatch({
+      type: 'patch',
+      value: {
+        selectedReport: report,
+        adminNotes: report.adminNotes || '',
+      },
+    });
   };
 
   const closeReportModal = () => {
-    setSelectedReport(null);
-    setAdminNotes('');
-    setShowModal(false);
+    dispatch({ type: 'patch', value: { selectedReport: null, adminNotes: '' } });
   };
 
   const updateReportStatus = async (status: string) => {
-    if (!selectedReport) return;
+    if (!state.selectedReport) return;
 
-    setUpdating(true);
+    dispatch({ type: 'patch', value: { updating: true } });
     try {
-      await fetchApiData(`/api/admin/reports/${selectedReport._id}`, {
+      await fetchApiData(`/api/admin/reports/${state.selectedReport._id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           status,
-          adminNotes: adminNotes.trim(),
+          adminNotes: state.adminNotes.trim(),
         }),
       });
-      fetchReports();
+      await loadReports(state.statusFilter);
       closeReportModal();
     } catch (error) {
       console.error('Error updating report:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to update report');
     } finally {
-      setUpdating(false);
+      dispatch({ type: 'patch', value: { updating: false } });
     }
   };
 
   const deleteReport = async (reportId: string) => {
     try {
-      setDeleting(true);
+      dispatch({ type: 'patch', value: { deleting: true } });
       await fetchApiData<null>(`/api/admin/reports/${reportId}`, {
         method: 'DELETE',
       });
-      fetchReports();
-      if (selectedReport?._id === reportId) {
+      await loadReports(state.statusFilter);
+      if (state.selectedReport?._id === reportId) {
         closeReportModal();
       }
     } catch (error) {
       console.error('Error deleting report:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to delete report');
     } finally {
-      setDeleting(false);
+      dispatch({ type: 'patch', value: { deleting: false } });
     }
   };
 
   const confirmDeleteReport = async () => {
-    if (!reportToDelete?._id) return;
-    await deleteReport(reportToDelete._id);
-    if (selectedReport?._id === reportToDelete._id) {
+    if (!state.reportToDelete?._id) return;
+    await deleteReport(state.reportToDelete._id);
+    if (state.selectedReport?._id === state.reportToDelete._id) {
       closeReportModal();
     }
-    setReportToDelete(null);
-  };
-
-  const formatDate = (date: Date) => {
-    return new Date(date).toLocaleDateString('vi-VN', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'pending':
-        return <Badge variant="warning">{status}</Badge>;
-      case 'resolved':
-        return <Badge variant="success">{status}</Badge>;
-      case 'dismissed':
-        return <Badge variant="default">{status}</Badge>;
-      default:
-        return <Badge variant="success">{status}</Badge>;
-    }
+    dispatch({ type: 'patch', value: { reportToDelete: null } });
   };
 
   return (
     <AdminPageShell contentClassName="bg-neutral-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {loading ? (
+        {state.status === 'loading' ? (
           <LoadingState text={tCommon('loading')} />
         ) : (
           <>
-            <div className="mb-8">
-              <h1 className="text-3xl font-semibold text-neutral-900">{t('quizReports')}</h1>
-              <p className="mt-2 text-neutral-600">
-                Manage and review user reports about quiz content
-              </p>
-            </div>
+            <ReportsHeader />
+            <ReportFilterBar
+              statusFilter={state.statusFilter}
+              onChange={(status) => dispatch({ type: 'patch', value: { statusFilter: status } })}
+            />
 
-            {/* Filters */}
-            <div className="mb-6 flex flex-wrap gap-2">
-              {['all', 'pending', 'resolved', 'dismissed'].map((status) => (
-                <Button
-                  key={status}
-                  variant={statusFilter === status ? 'gradient' : 'outline'}
-                  onClick={() => setStatusFilter(status)}
-                  className="min-h-[40px] px-4 capitalize"
-                >
-                  {status === 'all' ? 'All Reports' : status}
-                </Button>
-              ))}
-            </div>
-
-            {/* Reports List */}
             <div className="space-y-4">
-              {reports.length === 0 ? (
+              {state.reports.length === 0 ? (
                 <Card className="p-12">
                   <EmptyState
                     title="No Reports Found"
                     description={
-                      statusFilter === 'all'
+                      state.statusFilter === 'all'
                         ? 'No reports have been submitted yet.'
-                        : `No ${statusFilter} reports found.`
+                        : `No ${state.statusFilter} reports found.`
                     }
                   />
                 </Card>
               ) : (
-                reports.map((report) => (
-                  <Card key={report._id} className="hover:shadow-md transition-shadow">
-                    <div className="p-6">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
-                            <h3 className="text-lg font-semibold text-neutral-900">
-                              {report.quizTitle}
-                            </h3>
-                            {getStatusBadge(report.status)}
-                          </div>
-
-                          <div className="text-sm text-neutral-600 mb-3">
-                            <div className="flex items-center gap-4 mb-1">
-                              <span>
-                                <strong>Reporter:</strong> {report.reporterName} (
-                                {report.reporterEmail})
-                              </span>
-                              <span>
-                                <strong>Date:</strong> {formatDate(report.createdAt)}
-                              </span>
-                            </div>
-                          </div>
-
-                          <div className="bg-neutral-50 rounded-lg p-3 mb-4">
-                            <p className="text-sm text-neutral-700 whitespace-pre-wrap">
-                              {report.content}
-                            </p>
-                          </div>
-
-                          {report.adminNotes && (
-                            <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
-                              <p className="text-sm font-medium text-green-800 mb-1">
-                                Admin Notes:
-                              </p>
-                              <p className="text-sm text-green-700 whitespace-pre-wrap">
-                                {report.adminNotes}
-                              </p>
-                            </div>
-                          )}
-
-                          {report.resolvedAt && report.resolvedBy && (
-                            <div className="text-xs text-neutral-500">
-                              Resolved by {report.resolvedBy} on {formatDate(report.resolvedAt)}
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="flex flex-col gap-2 ml-4">
-                          <Button
-                            variant="gradient"
-                            onClick={() => openReportModal(report)}
-                            className="min-h-[36px] px-3"
-                          >
-                            <HiOutlineEye className="size-4 mr-1" /> Review
-                          </Button>
-
-                          <Link href={`/edit/${report.quizId}`}>
-                            <Button variant="accent" className="min-h-[36px] w-full px-3">
-                              <HiOutlinePencil className="size-4 mr-1" /> Edit Quiz
-                            </Button>
-                          </Link>
-
-                          <Button
-                            variant="outline"
-                            onClick={() => setReportToDelete(report)}
-                            className="min-h-[36px] border-red-200 px-3 text-red-600 hover:bg-red-50"
-                          >
-                            <HiOutlineTrash className="size-4 mr-1" /> Delete
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  </Card>
+                state.reports.map((report) => (
+                  <ReportCardItem
+                    key={report._id}
+                    report={report}
+                    onReview={openReportModal}
+                    onDelete={(value) =>
+                      dispatch({ type: 'patch', value: { reportToDelete: value } })
+                    }
+                  />
                 ))
               )}
             </div>
@@ -268,103 +428,24 @@ export default function AdminReportsPage() {
         )}
       </div>
 
-      {/* Report Review Modal */}
-      <Modal isOpen={showModal} onClose={closeReportModal} title="Review Report">
-        {selectedReport && (
-          <div>
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold mb-2">{selectedReport.quizTitle}</h3>
-              <div className="text-sm text-neutral-600 mb-3">
-                <div>
-                  <strong>Reporter:</strong> {selectedReport.reporterName} (
-                  {selectedReport.reporterEmail})
-                </div>
-                <div>
-                  <strong>Date:</strong> {formatDate(selectedReport.createdAt)}
-                </div>
-                <div>
-                  <strong>Status:</strong> {getStatusBadge(selectedReport.status)}
-                </div>
-              </div>
-
-              <div className="bg-neutral-50 rounded-lg p-3 mb-4">
-                <p className="text-sm font-medium text-neutral-700 mb-1">Report Content:</p>
-                <p className="text-sm text-neutral-600 whitespace-pre-wrap">
-                  {selectedReport.content}
-                </p>
-              </div>
-            </div>
-
-            <div className="mb-6">
-              <label
-                htmlFor="adminNotes"
-                className="block text-sm font-medium text-neutral-700 mb-2"
-              >
-                Admin Notes (Optional)
-              </label>
-              <Textarea
-                id="adminNotes"
-                value={adminNotes}
-                onChange={(e) => setAdminNotes(e.target.value)}
-                className="resize-none"
-                rows={4}
-                maxLength={1000}
-                placeholder="Add internal notes about this report..."
-              />
-              <div className="text-xs text-neutral-500 mt-1">{adminNotes.length}/1000</div>
-            </div>
-
-            <div className="flex gap-3">
-              <Button
-                variant="outline"
-                onClick={closeReportModal}
-                className="min-h-[40px] flex-1 px-4"
-              >
-                Cancel
-              </Button>
-
-              <Button
-                variant="gradient"
-                onClick={() => updateReportStatus('resolved')}
-                disabled={updating}
-                className="min-h-[40px] flex-1 bg-green-600 px-4 hover:bg-green-700"
-              >
-                {updating ? (
-                  'Updating…'
-                ) : (
-                  <>
-                    <HiOutlineCheck className="size-4 mr-1" /> Mark Resolved
-                  </>
-                )}
-              </Button>
-
-              <Button
-                variant="outline"
-                onClick={() => updateReportStatus('dismissed')}
-                disabled={updating}
-                className="min-h-[40px] flex-1 px-4"
-              >
-                {updating ? (
-                  'Updating…'
-                ) : (
-                  <>
-                    <HiOutlineX className="size-4 mr-1" /> Dismiss
-                  </>
-                )}
-              </Button>
-            </div>
-          </div>
-        )}
-      </Modal>
+      <ReportReviewModal
+        report={state.selectedReport}
+        adminNotes={state.adminNotes}
+        updating={state.updating}
+        onClose={closeReportModal}
+        onAdminNotesChange={(value) => dispatch({ type: 'patch', value: { adminNotes: value } })}
+        onResolve={() => void updateReportStatus('resolved')}
+        onDismiss={() => void updateReportStatus('dismissed')}
+      />
 
       <ConfirmModal
-        isOpen={!!reportToDelete}
+        isOpen={!!state.reportToDelete}
         title="Delete report?"
         message="Are you sure you want to delete this report? This action cannot be undone."
         confirmText="Delete"
         confirmVariant="destructive"
-        isLoading={deleting}
-        onCancel={() => setReportToDelete(null)}
+        isLoading={state.deleting}
+        onCancel={() => dispatch({ type: 'patch', value: { reportToDelete: null } })}
         onConfirm={confirmDeleteReport}
       />
     </AdminPageShell>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useReducer } from 'react';
 import { useSession } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
@@ -41,6 +41,64 @@ interface QuestionDiscussionProps {
   isMobile?: boolean;
 }
 
+interface QuestionDiscussionState {
+  comments: Comment[];
+  newComment: string;
+  loading: boolean;
+  submitting: boolean;
+  error: string;
+}
+
+type QuestionDiscussionAction =
+  | { type: 'fetch:start' }
+  | { type: 'fetch:success'; comments: Comment[] }
+  | { type: 'fetch:error'; error: string }
+  | { type: 'comment:setDraft'; value: string }
+  | { type: 'submit:start' }
+  | { type: 'submit:success'; comments: Comment[] }
+  | { type: 'submit:error'; error: string }
+  | { type: 'error:set'; error: string };
+
+const initialState: QuestionDiscussionState = {
+  comments: [],
+  newComment: '',
+  loading: true,
+  submitting: false,
+  error: '',
+};
+
+function questionDiscussionReducer(
+  state: QuestionDiscussionState,
+  action: QuestionDiscussionAction,
+): QuestionDiscussionState {
+  switch (action.type) {
+    case 'fetch:start':
+      return { ...state, loading: true, error: '' };
+    case 'fetch:success':
+      return { ...state, comments: action.comments, loading: false, error: '' };
+    case 'fetch:error':
+      return { ...state, loading: false, error: action.error };
+    case 'comment:setDraft':
+      return { ...state, newComment: action.value };
+    case 'submit:start':
+      return { ...state, submitting: true, error: '' };
+    case 'submit:success':
+      return {
+        ...state,
+        comments: action.comments,
+        newComment: '',
+        submitting: false,
+        error: '',
+      };
+    case 'submit:error':
+      return { ...state, submitting: false, error: action.error };
+    case 'error:set':
+      return { ...state, error: action.error };
+    default:
+      return state;
+  }
+}
+
 export function QuestionDiscussion({
   quizSlug,
   questionIndex,
@@ -50,48 +108,61 @@ export function QuestionDiscussion({
 }: QuestionDiscussionProps) {
   const { data: session } = useSession();
   const t = useTranslations('discussion');
-  const _tCommon = useTranslations('common');
-  const [comments, setComments] = useState<Comment[]>([]);
-  const [newComment, setNewComment] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState('');
+  const [state, dispatch] = useReducer(questionDiscussionReducer, initialState);
 
   useEffect(() => {
     if (isCollapsed) return;
 
+    let isActive = true;
+
     const fetchComments = async () => {
       try {
-        setLoading(true);
+        dispatch({ type: 'fetch:start' });
         const discussions = await fetchApiData<Discussion[]>(`/api/quiz/${quizSlug}/discussions`);
         const questionDiscussion = discussions.find((d) => d.questionIndex === questionIndex);
-        setComments(questionDiscussion?.comments || []);
-      } catch (error) {
-        setError(error instanceof Error ? error.message : t('failedToLoad'));
-      } finally {
-        setLoading(false);
+
+        if (!isActive) {
+          return;
+        }
+
+        dispatch({
+          type: 'fetch:success',
+          comments: questionDiscussion?.comments || [],
+        });
+      } catch (error: unknown) {
+        if (!isActive) {
+          return;
+        }
+
+        dispatch({
+          type: 'fetch:error',
+          error: error instanceof Error ? error.message : t('failedToLoad'),
+        });
       }
     };
 
     void fetchComments();
+
+    return () => {
+      isActive = false;
+    };
   }, [quizSlug, questionIndex, isCollapsed, t]);
 
   const handleSubmitComment = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!session?.user?.email) {
-      setError(t('pleaseLoginToPost'));
+      dispatch({ type: 'error:set', error: t('pleaseLoginToPost') });
       return;
     }
 
-    if (!newComment.trim()) {
-      setError(t('pleaseEnterComment'));
+    if (!state.newComment.trim()) {
+      dispatch({ type: 'error:set', error: t('pleaseEnterComment') });
       return;
     }
 
     try {
-      setSubmitting(true);
-      setError('');
+      dispatch({ type: 'submit:start' });
 
       const discussion = await fetchApiData<Discussion>(`/api/quiz/${quizSlug}/discussions`, {
         method: 'POST',
@@ -100,15 +171,15 @@ export function QuestionDiscussion({
         },
         body: JSON.stringify({
           questionIndex,
-          content: newComment.trim(),
+          content: state.newComment.trim(),
         }),
       });
-      setComments(discussion.comments);
-      setNewComment('');
-    } catch (error) {
-      setError(error instanceof Error ? error.message : t('failedToPost'));
-    } finally {
-      setSubmitting(false);
+      dispatch({ type: 'submit:success', comments: discussion.comments });
+    } catch (error: unknown) {
+      dispatch({
+        type: 'submit:error',
+        error: error instanceof Error ? error.message : t('failedToPost'),
+      });
     }
   };
 
@@ -123,7 +194,7 @@ export function QuestionDiscussion({
     });
   };
 
-  const commentCount = comments.length;
+  const commentCount = state.comments.length;
 
   // Don't show anything when collapsed - button is now in the quiz page header
   if (isCollapsed && !isMobile) {
@@ -144,7 +215,7 @@ export function QuestionDiscussion({
           type="button"
           onClick={onToggleCollapse}
           variant="ghost"
-          className="h-auto w-full justify-between rounded-xl px-2 py-2 text-left"
+          className="h-auto w-full justify-between rounded-xl p-2 text-left"
         >
           <div className="flex items-center gap-x-2">
             <svg
@@ -188,21 +259,21 @@ export function QuestionDiscussion({
         {session?.user?.email ? (
           <form onSubmit={handleSubmitComment} className="space-y-2">
             <Textarea
-              value={newComment}
-              onChange={(e) => setNewComment(e.target.value)}
+              value={state.newComment}
+              onChange={(e) => dispatch({ type: 'comment:setDraft', value: e.target.value })}
               placeholder={t('sharePlaceholder')}
               className="min-h-[80px] resize-none text-sm"
               rows={2}
               maxLength={2000}
             />
-            {error && <p className="text-xs text-red-600">{error}</p>}
+            {state.error && <p className="text-xs text-red-600">{state.error}</p>}
             <div className="flex items-center justify-between">
-              <span className="text-xs text-neutral-400">{newComment.length}/2000</span>
+              <span className="text-xs text-neutral-400">{state.newComment.length}/2000</span>
               <Button
                 type="submit"
                 size="sm"
-                loading={submitting}
-                disabled={!newComment.trim()}
+                loading={state.submitting}
+                disabled={!state.newComment.trim()}
                 className="px-3"
               >
                 {t('post')}
@@ -221,11 +292,11 @@ export function QuestionDiscussion({
 
       {/* Comments List */}
       <div className="flex-1 overflow-y-auto p-3 space-y-3">
-        {loading ? (
+        {state.loading ? (
           <div className="flex items-center justify-center py-8">
             <div className="size-6 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
           </div>
-        ) : comments.length === 0 ? (
+        ) : state.comments.length === 0 ? (
           <div className="text-center py-6 text-neutral-500">
             <svg
               className="size-8 mx-auto mb-2 text-neutral-300"
@@ -244,7 +315,7 @@ export function QuestionDiscussion({
             <p className="text-xs mt-1 text-neutral-400">{t('beFirstToDiscuss')}</p>
           </div>
         ) : (
-          comments.map((comment) => (
+          state.comments.map((comment) => (
             <div
               key={comment._id}
               className="bg-neutral-50 rounded-lg p-3 border border-neutral-100"

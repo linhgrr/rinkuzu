@@ -43,6 +43,18 @@ interface Bookmark {
   tags?: string[];
 }
 
+const BookmarkOptionImage = ({ src, alt }: { src: string; alt: string }) => (
+  <Image
+    src={src}
+    alt={alt}
+    width={480}
+    height={200}
+    unoptimized
+    className="max-w-full h-auto rounded border"
+    style={{ maxHeight: '200px' }}
+  />
+);
+
 export default function ProfileBookmarks() {
   const t = useTranslations('profile');
   const tCommon = useTranslations('common');
@@ -145,18 +157,6 @@ export default function ProfileBookmarks() {
     setCurrentPage(page);
   };
 
-  const OptionImage = ({ src, alt }: { src: string; alt: string }) => (
-    <Image
-      src={src}
-      alt={alt}
-      width={480}
-      height={200}
-      unoptimized
-      className="max-w-full h-auto rounded border"
-      style={{ maxHeight: '200px' }}
-    />
-  );
-
   const displayError = (error?.message ?? localError) || '';
 
   if (isLoading && bookmarks.length === 0) {
@@ -256,7 +256,7 @@ export default function ProfileBookmarks() {
                 </div>
                 {bookmark.question.questionImage && (
                   <div className="mt-4">
-                    <OptionImage src={bookmark.question.questionImage} alt="Question" />
+                    <BookmarkOptionImage src={bookmark.question.questionImage} alt="Question" />
                   </div>
                 )}
               </CardHeader>

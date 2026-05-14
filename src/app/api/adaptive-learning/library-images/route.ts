@@ -33,17 +33,26 @@ const extractImageUrl = (item: unknown): string | null => {
   return null;
 };
 
+const collectImageUrls = (items: unknown[]): string[] => {
+  const urls: string[] = [];
+  for (const item of items) {
+    const url = extractImageUrl(item);
+    if (url) {
+      urls.push(url);
+    }
+  }
+  return urls;
+};
+
 const normalizePayload = (payload: unknown): string[] => {
-  if (Array.isArray(payload))
-    return payload.map(extractImageUrl).filter((value): value is string => !!value);
+  if (Array.isArray(payload)) return collectImageUrls(payload);
 
   if (!payload || typeof payload !== 'object') return [];
 
   const record = payload as Record<string, unknown>;
   const candidateArrays = [record['items'], record['images'], record['data']];
   for (const candidate of candidateArrays) {
-    if (Array.isArray(candidate))
-      return candidate.map(extractImageUrl).filter((value): value is string => !!value);
+    if (Array.isArray(candidate)) return collectImageUrls(candidate);
   }
 
   const singleUrl = extractImageUrl(record);
@@ -54,12 +63,9 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const limit = toPositiveInt(searchParams.get('limit'), DEFAULT_LIMIT);
+    const targetUrl = `${RANDOM_IMAGES_ENDPOINT}?rating=safe&limit=${limit}`;
 
-    const targetUrl = new URL(RANDOM_IMAGES_ENDPOINT);
-    targetUrl.searchParams.set('rating', 'safe');
-    targetUrl.searchParams.set('limit', String(limit));
-
-    const response = await fetch(targetUrl.toString(), {
+    const response = await fetch(targetUrl, {
       headers: { accept: 'application/json' },
       cache: 'no-store',
     });

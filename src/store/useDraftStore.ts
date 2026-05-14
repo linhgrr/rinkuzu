@@ -15,6 +15,9 @@ export interface DraftProgress {
   expiresAt?: string;
 }
 
+const isDraftStatus = (value: string): value is DraftProgress['status'] =>
+  value === 'uploading' || value === 'processing' || value === 'completed' || value === 'error';
+
 interface DraftStore {
   activeDrafts: Record<string, DraftProgress>;
 
@@ -125,10 +128,10 @@ export const useDraftStore = create<DraftStore>()(
 
           // Update status from server for existing drafts
           serverDrafts.forEach((sd) => {
-            if (activeDrafts[sd._id]) {
+            if (activeDrafts[sd._id] && isDraftStatus(sd.status)) {
               activeDrafts[sd._id] = {
                 ...activeDrafts[sd._id],
-                status: sd.status as any,
+                status: sd.status,
                 expiresAt: sd.expiresAt,
               };
             }

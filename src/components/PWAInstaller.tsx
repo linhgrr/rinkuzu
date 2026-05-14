@@ -12,6 +12,10 @@ interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
 }
 
+type IOSNavigator = Navigator & {
+  standalone?: boolean;
+};
+
 export default function PWAInstaller() {
   const t = useTranslations('pwa');
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
@@ -22,7 +26,7 @@ export default function PWAInstaller() {
   useEffect(() => {
     // Check if app is already installed
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
-    const isInWebAppiOS = (window.navigator as any).standalone === true;
+    const isInWebAppiOS = (window.navigator as IOSNavigator).standalone === true;
     const isAppInstalled = isStandalone || isInWebAppiOS;
 
     if (!isAppInstalled) {

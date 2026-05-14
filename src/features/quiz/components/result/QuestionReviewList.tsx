@@ -3,6 +3,9 @@
 import Image from 'next/image';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import type { ChatMessage } from '@/features/quiz/hooks/useStreamingChatSession';
+
+type TranslateParams = Record<string, string | number | Date>;
 
 interface QuestionData {
   question: string;
@@ -22,7 +25,7 @@ interface QuestionReviewListProps {
   bookmarkLoading: Set<number>;
   onToggleBookmark: (questionIndex: number, questionData: QuestionData) => void;
   onOpenAI: (questionData: QuestionData, questionIndex: number) => void;
-  getHistory: (key: string | number) => any[];
+  getHistory: (key: string | number) => ChatMessage[];
   formatAnswer: (
     answer: number | number[],
     options: string[],
@@ -30,7 +33,7 @@ interface QuestionReviewListProps {
     isAnswered?: boolean,
   ) => string;
   formatCorrectAnswer: (question: QuestionData) => string;
-  t: (key: string, values?: Record<string, any>) => string;
+  t: (key: string, values?: TranslateParams) => string;
   tProfile: (key: string) => string;
 }
 

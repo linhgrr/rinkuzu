@@ -1,6 +1,9 @@
 'use client';
 
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
+import type { ChatMessage } from '@/features/quiz/hooks/useStreamingChatSession';
+
+type TranslateParams = Record<string, string | number | Date>;
 
 interface ChatStats {
   totalTurns: number;
@@ -13,11 +16,11 @@ interface ResultStatsProps {
   incorrectCount: number;
   unansweredCount: number;
   totalQuestions: number;
-  chatHistories: Record<string, any[]>;
+  chatHistories: Record<string, ChatMessage[]>;
   getChatStats: () => ChatStats;
   getScoreColor: (score: number) => string;
   getScoreMessage: (score: number) => string;
-  t: (key: string, values?: Record<string, any>) => string;
+  t: (key: string, values?: TranslateParams) => string;
   tProfile: (key: string) => string;
 }
 

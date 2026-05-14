@@ -221,9 +221,13 @@ export default function ProfileBookmarks() {
                           ? t('singleChoice')
                           : t('multipleChoice')}
                       </span>
-                      <span className="text-xs text-neutral-500" suppressHydrationWarning>
+                      <time
+                        className="text-xs text-neutral-500"
+                        dateTime={bookmark.createdAt}
+                        suppressHydrationWarning
+                      >
                         {new Date(bookmark.createdAt).toLocaleDateString()}
-                      </span>
+                      </time>
                     </div>
                   </div>
                   <div className="flex gap-2 w-full sm:w-auto">

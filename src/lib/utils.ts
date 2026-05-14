@@ -1,6 +1,8 @@
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
+const dateTimeFormatterCache = new Map<string, Intl.DateTimeFormat>();
+
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
@@ -19,13 +21,21 @@ export function generateSlug(title: string): string {
 }
 
 export function formatDate(date: Date, locale?: string): string {
-  return new Intl.DateTimeFormat(locale, {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(date);
+  const formatterKey = locale || 'default';
+  let formatter = dateTimeFormatterCache.get(formatterKey);
+
+  if (!formatter) {
+    formatter = new Intl.DateTimeFormat(locale, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+    dateTimeFormatterCache.set(formatterKey, formatter);
+  }
+
+  return formatter.format(date);
 }
 
 export function calculateScore(

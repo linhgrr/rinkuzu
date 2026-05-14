@@ -263,7 +263,7 @@ export default async function TermsPage({ params }: Props) {
             8. Disclaimer of Warranties
           </h2>
           <div className="bg-amber-50 border border-amber-100 rounded-lg p-4 space-y-2">
-            <p className="font-semibold text-amber-900">IMPORTANT — PLEASE READ CAREFULLY</p>
+            <p className="font-semibold text-amber-900">IMPORTANT: PLEASE READ CAREFULLY</p>
             <p className="text-sm text-amber-800">
               RinKuzu is provided &ldquo;AS IS&rdquo; and &ldquo;AS AVAILABLE&rdquo; without
               warranties of any kind, express or implied, including but not limited to implied
@@ -339,8 +339,8 @@ export default async function TermsPage({ params }: Props) {
           <p>
             RinKuzu is a learning tool designed to support your education. You are responsible for
             complying with the academic integrity policies of your school, university, or
-            institution. Using RinKuzu to cheat on exams, assignments, or assessments — including
-            generating answers that you submit as your own work without proper attribution — may
+            institution. Using RinKuzu to cheat on exams, assignments, or assessments, including
+            generating answers that you submit as your own work without proper attribution, may
             violate academic integrity policies and could result in disciplinary action by your
             institution. RinKuzu is not responsible for how you use the Platform in relation to
             academic requirements at your institution.

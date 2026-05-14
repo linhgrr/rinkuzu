@@ -104,9 +104,13 @@ export function StreamingChatModal({
                     {message.role === 'user' ? userLabel : assistantLabel}
                   </span>
                   {showTimestamps && (
-                    <span className="text-xs text-neutral-500" suppressHydrationWarning>
+                    <time
+                      className="text-xs text-neutral-500"
+                      dateTime={message.timestamp}
+                      suppressHydrationWarning
+                    >
                       {new Date(message.timestamp).toLocaleTimeString()}
-                    </span>
+                    </time>
                   )}
                 </div>
                 <div className="text-sm text-neutral-800">

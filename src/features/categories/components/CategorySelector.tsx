@@ -200,7 +200,7 @@ export function CategorySelector({
 
           {!loading && categories.length === 0 && !query && (
             <div className="px-4 py-3 text-sm text-neutral-500 text-center">
-              Start typing to search categories...
+              Start typing to search categories…
             </div>
           )}
 

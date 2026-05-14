@@ -374,8 +374,14 @@ export default function AdminQueuePage() {
                               {quiz.questions.length} {t('questions')}
                             </span>
                             <span>•</span>
-                            <span suppressHydrationWarning>
-                              {t('createdDate')} {formatDate(new Date(quiz.createdAt))}
+                            <span>
+                              {t('createdDate')}{' '}
+                              <time
+                                dateTime={new Date(quiz.createdAt).toISOString()}
+                                suppressHydrationWarning
+                              >
+                                {formatDate(new Date(quiz.createdAt))}
+                              </time>
                             </span>
                           </div>
                         </div>

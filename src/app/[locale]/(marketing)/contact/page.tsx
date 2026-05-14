@@ -84,7 +84,7 @@ export default async function ContactPage({ params }: Props) {
                   Educator & Institutional Pricing
                 </h2>
                 <p className="text-sm text-[var(--text-muted)] mb-2">
-                  Universities, schools, and corporate training programs — contact us for custom
+                  Universities, schools, and corporate training programs, contact us for custom
                   pricing and pilot programs.
                 </p>
                 <a
@@ -177,7 +177,7 @@ export default async function ContactPage({ params }: Props) {
                   className="group flex items-center justify-between rounded-xl border border-neutral-200 p-3 transition-colors hover:border-green-200 hover:bg-green-50/30"
                 >
                   <span className="text-sm font-medium text-[var(--text-primary)]">
-                    FAQ — Frequently Asked Questions
+                    FAQ: Frequently Asked Questions
                   </span>
                   <span className="text-neutral-400 group-hover:text-brand-trust transition-colors">
                     →
@@ -188,7 +188,7 @@ export default async function ContactPage({ params }: Props) {
                   className="group flex items-center justify-between rounded-xl border border-neutral-200 p-3 transition-colors hover:border-green-200 hover:bg-green-50/30"
                 >
                   <span className="text-sm font-medium text-[var(--text-primary)]">
-                    About RinKuzu — Our Story & Research
+                    About RinKuzu: Our Story & Research
                   </span>
                   <span className="text-neutral-400 group-hover:text-brand-trust transition-colors">
                     →
@@ -199,7 +199,7 @@ export default async function ContactPage({ params }: Props) {
                   className="group flex items-center justify-between rounded-xl border border-neutral-200 p-3 transition-colors hover:border-green-200 hover:bg-green-50/30"
                 >
                   <span className="text-sm font-medium text-[var(--text-primary)]">
-                    Pricing — Free vs. Premium
+                    Pricing: Free vs. Premium
                   </span>
                   <span className="text-neutral-400 group-hover:text-brand-trust transition-colors">
                     →
@@ -212,7 +212,7 @@ export default async function ContactPage({ params }: Props) {
             <div className="bg-gradient-to-br from-[var(--text-primary)] to-[#2d2d2f] rounded-2xl p-6 text-white">
               <h2 className="font-semibold mb-2">Join 50,000+ learners on RinKuzu</h2>
               <p className="text-sm text-neutral-400 mb-4 leading-relaxed">
-                Upload your first PDF and experience AI-powered adaptive learning — free, no credit
+                Upload your first PDF and experience AI-powered adaptive learning, free, no credit
                 card required.
               </p>
               <Link

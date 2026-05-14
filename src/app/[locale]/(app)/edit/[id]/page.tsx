@@ -250,7 +250,7 @@ export default function EditQuizPage() {
       <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
         <div className="text-center">
           <div className="size-12 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust mx-auto" />
-          <p className="mt-4 text-neutral-600">Loading quiz...</p>
+          <p className="mt-4 text-neutral-600">Loading quiz…</p>
         </div>
       </div>
     );

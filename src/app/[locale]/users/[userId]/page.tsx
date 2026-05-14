@@ -18,6 +18,32 @@ import Quiz from '@/models/Quiz';
 import User from '@/models/User';
 import { ROUTES } from '@/shared/constants';
 
+const publicProfileLongDateFormatters = {
+  en: new Intl.DateTimeFormat('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  }),
+  vi: new Intl.DateTimeFormat('vi-VN', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  }),
+};
+
+const publicProfileShortDateFormatters = {
+  en: new Intl.DateTimeFormat('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  }),
+  vi: new Intl.DateTimeFormat('vi-VN', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  }),
+};
+
 export const dynamic = 'force-dynamic';
 
 interface PublicQuizRecord {
@@ -95,11 +121,10 @@ export default async function PublicUserProfilePage({
       : null,
   }));
 
-  const joinDate = new Intl.DateTimeFormat(locale === 'vi' ? 'vi-VN' : 'en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  }).format(new Date(profileUser.createdAt || new Date()));
+  const localeKey = locale === 'vi' ? 'vi' : 'en';
+  const joinDate = publicProfileLongDateFormatters[localeKey].format(
+    new Date(profileUser.createdAt || new Date()),
+  );
 
   return (
     <div className="min-h-screen bg-neutral-50">
@@ -190,13 +215,14 @@ export default async function PublicUserProfilePage({
                           <span>
                             {quiz.questionCount} {tQuiz('questions')}
                           </span>
-                          <span suppressHydrationWarning>
-                            {new Intl.DateTimeFormat(locale === 'vi' ? 'vi-VN' : 'en-US', {
-                              year: 'numeric',
-                              month: 'short',
-                              day: 'numeric',
-                            }).format(new Date(quiz.createdAt))}
-                          </span>
+                          <time
+                            dateTime={new Date(quiz.createdAt).toISOString()}
+                            suppressHydrationWarning
+                          >
+                            {publicProfileShortDateFormatters[localeKey].format(
+                              new Date(quiz.createdAt),
+                            )}
+                          </time>
                         </div>
                         <Link href={ROUTES.QUIZ.VIEW(quiz.slug)} className="block">
                           <Button className="w-full" variant="gradient">

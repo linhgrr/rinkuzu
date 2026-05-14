@@ -1,13 +1,13 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 
-const Card = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement> & {
-    variant?: 'default' | 'interactive' | 'elevated' | 'bordered' | 'glass' | 'gradient';
-    hover?: boolean;
-  }
->(({ className, variant = 'default', hover = false, ...props }, ref) => {
+type CardProps = React.HTMLAttributes<HTMLDivElement> & {
+  variant?: 'default' | 'interactive' | 'elevated' | 'bordered' | 'glass' | 'gradient';
+  hover?: boolean;
+  ref?: React.Ref<HTMLDivElement>;
+};
+
+function Card({ className, variant = 'default', hover = false, ref, ...props }: CardProps) {
   const variants = {
     default: 'card',
     interactive: 'feature-card card-interactive',
@@ -30,22 +30,26 @@ const Card = React.forwardRef<
       {...props}
     />
   );
-});
+}
 Card.displayName = 'Card';
 
-const CardHeader = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
-  ({ className, ...props }, ref) => (
+type CardHeaderProps = React.HTMLAttributes<HTMLDivElement> & {
+  ref?: React.Ref<HTMLDivElement>;
+};
+
+function CardHeader({ className, ref, ...props }: CardHeaderProps) {
+  return (
     <div ref={ref} className={cn('flex flex-col gap-1.5 px-6 pt-6 pb-0', className)} {...props} />
-  ),
-);
+  );
+}
 CardHeader.displayName = 'CardHeader';
 
-const CardTitle = React.forwardRef<
-  HTMLParagraphElement,
-  React.HTMLAttributes<HTMLHeadingElement> & {
-    size?: 'sm' | 'md' | 'lg' | 'xl';
-  }
->(({ className, size = 'md', ...props }, ref) => {
+type CardTitleProps = React.HTMLAttributes<HTMLHeadingElement> & {
+  size?: 'sm' | 'md' | 'lg' | 'xl';
+  ref?: React.Ref<HTMLHeadingElement>;
+};
+
+function CardTitle({ className, size = 'md', ref, ...props }: CardTitleProps) {
   const sizes = {
     sm: 'text-[16px] font-semibold tracking-[-0.015em]',
     md: 'text-[18px] font-semibold tracking-[-0.015em]',
@@ -60,38 +64,56 @@ const CardTitle = React.forwardRef<
       {children}
     </h3>
   );
-});
+}
 CardTitle.displayName = 'CardTitle';
 
-const CardDescription = React.forwardRef<
-  HTMLParagraphElement,
-  React.HTMLAttributes<HTMLParagraphElement>
->(({ className, ...props }, ref) => (
-  <p ref={ref} className={cn('text-[14px] text-neutral-500 leading-[1.5]', className)} {...props} />
-));
+type CardDescriptionProps = React.HTMLAttributes<HTMLParagraphElement> & {
+  ref?: React.Ref<HTMLParagraphElement>;
+};
+
+function CardDescription({ className, ref, ...props }: CardDescriptionProps) {
+  return (
+    <p
+      ref={ref}
+      className={cn('text-[14px] text-neutral-500 leading-[1.5]', className)}
+      {...props}
+    />
+  );
+}
 CardDescription.displayName = 'CardDescription';
 
-const CardContent = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
-  ({ className, ...props }, ref) => (
-    <div ref={ref} className={cn('p-6 pt-4', className)} {...props} />
-  ),
-);
+type CardContentProps = React.HTMLAttributes<HTMLDivElement> & {
+  ref?: React.Ref<HTMLDivElement>;
+};
+
+function CardContent({ className, ref, ...props }: CardContentProps) {
+  return <div ref={ref} className={cn('p-6 pt-4', className)} {...props} />;
+}
 CardContent.displayName = 'CardContent';
 
-const CardFooter = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
-  ({ className, ...props }, ref) => (
-    <div ref={ref} className={cn('flex items-center p-6 pt-0', className)} {...props} />
-  ),
-);
+type CardFooterProps = React.HTMLAttributes<HTMLDivElement> & {
+  ref?: React.Ref<HTMLDivElement>;
+};
+
+function CardFooter({ className, ref, ...props }: CardFooterProps) {
+  return <div ref={ref} className={cn('flex items-center p-6 pt-0', className)} {...props} />;
+}
 CardFooter.displayName = 'CardFooter';
 
-const Badge = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement> & {
-    variant?: 'default' | 'success' | 'warning' | 'danger' | 'info' | 'purple' | 'ai';
-    size?: 'sm' | 'md' | 'lg';
-  }
->(({ className, variant = 'default', size = 'sm', children, ...props }, ref) => {
+type BadgeProps = React.HTMLAttributes<HTMLDivElement> & {
+  variant?: 'default' | 'success' | 'warning' | 'danger' | 'info' | 'purple' | 'ai';
+  size?: 'sm' | 'md' | 'lg';
+  ref?: React.Ref<HTMLDivElement>;
+};
+
+function Badge({
+  className,
+  variant = 'default',
+  size = 'sm',
+  children,
+  ref,
+  ...props
+}: BadgeProps) {
   const variants = {
     default: 'badge-gray',
     success: 'badge-success',
@@ -113,7 +135,7 @@ const Badge = React.forwardRef<
       {children}
     </div>
   );
-});
+}
 Badge.displayName = 'Badge';
 
 export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent, Badge };

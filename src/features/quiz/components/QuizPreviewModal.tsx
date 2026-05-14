@@ -28,13 +28,13 @@ export function QuizPreviewModal({ isOpen, onClose, title, questions }: QuizPrev
 
   const nextQuestion = () => {
     if (currentQuestionIndex < questions.length - 1) {
-      setCurrentQuestionIndex(currentQuestionIndex + 1);
+      setCurrentQuestionIndex((index) => index + 1);
     }
   };
 
   const previousQuestion = () => {
     if (currentQuestionIndex > 0) {
-      setCurrentQuestionIndex(currentQuestionIndex - 1);
+      setCurrentQuestionIndex((index) => index - 1);
     }
   };
 

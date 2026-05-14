@@ -52,25 +52,28 @@ export class QuizDiscussionService {
         };
       }
 
-      // Create discussions for all questions if they don't exist
-      const allDiscussions = [];
-      for (let i = 0; i < quiz.questions.length; i++) {
-        const existingDiscussion = existingDiscussions.find((d) => d.questionIndex === i);
+      const quizId = quiz._id.toString();
 
-        if (existingDiscussion) {
-          allDiscussions.push(existingDiscussion);
-        } else {
-          // Create empty discussion for this question
-          const newDiscussion = await this.discussionRepository.create({
-            quiz: quiz._id.toString(),
+      // Create discussions for all questions if they don't exist
+      const existingDiscussionByIndex = new Map(
+        existingDiscussions.map((discussion) => [discussion.questionIndex, discussion]),
+      );
+      const allDiscussions = await Promise.all(
+        quiz.questions.map((_, index) => {
+          const existingDiscussion = existingDiscussionByIndex.get(index);
+          if (existingDiscussion) {
+            return existingDiscussion;
+          }
+
+          return this.discussionRepository.create({
+            quiz: quizId,
             user: discussionOwnerId,
-            questionIndex: i,
-            content: `Discussion for question ${i + 1}`,
+            questionIndex: index,
+            content: `Discussion for question ${index + 1}`,
             comments: [],
           });
-          allDiscussions.push(newDiscussion);
-        }
-      }
+        }),
+      );
 
       return {
         success: true,

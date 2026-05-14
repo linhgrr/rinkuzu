@@ -11,6 +11,7 @@ import Pagination from '@/components/ui/Pagination';
 import { ROUTES } from '@/shared/constants';
 import { PaginationMeta } from '@/types';
 import { fetchApiData } from '@/lib/api/client';
+import { extractUnknownErrorMessage } from '@/lib/api/error';
 import {
   HiOutlineDocumentText,
   HiOutlineClock,
@@ -57,8 +58,8 @@ export default function ProfileHistory() {
       setAttempts(data.attempts);
       setPagination(data.pagination);
       setError('');
-    } catch (error: any) {
-      setError(error.message || 'Failed to load quiz history');
+    } catch (error: unknown) {
+      setError(extractUnknownErrorMessage(error, 'Failed to load quiz history'));
     } finally {
       setLoading(false);
     }

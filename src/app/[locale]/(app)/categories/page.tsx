@@ -38,7 +38,7 @@ export default function CategoriesPage() {
   const t = useTranslations('categories');
   const tCommon = useTranslations('common');
   const tNav = useTranslations('nav');
-  const router = useRouter();
+  const { push } = useRouter();
   const [categories, setCategories] = useState<Category[]>([]);
   const [filteredCategories, setFilteredCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -125,7 +125,7 @@ export default function CategoriesPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-8">
           <Card variant="bordered" className="p-6 mb-8 border-red-200 bg-red-50">
             <div className="flex items-center text-red-700">
-              <HiOutlineExclamationCircle className="w-5 h-5 mr-2" />
+              <HiOutlineExclamationCircle className="mr-2 size-5" />
               {error}
             </div>
           </Card>
@@ -140,7 +140,7 @@ export default function CategoriesPage() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 md:pt-20 pb-8">
         {/* Breadcrumb */}
-        <nav className="flex items-center space-x-2 text-sm text-neutral-500 mb-4 md:mb-6">
+        <nav className="mb-4 flex items-center gap-x-2 text-sm text-neutral-500 md:mb-6">
           <Link href={ROUTES.DASHBOARD} className="hover:text-neutral-700">
             {tNav('home')}
           </Link>
@@ -158,7 +158,7 @@ export default function CategoriesPage() {
                   placeholder={tCommon('search')}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  icon={<HiOutlineSearch className="w-5 h-5" />}
+                  icon={<HiOutlineSearch className="size-5" />}
                   className="w-full"
                 />
               </div>
@@ -190,8 +190,8 @@ export default function CategoriesPage() {
         {/* Categories Grid */}
         {filteredCategories.length === 0 ? (
           <Card variant="glass" className="p-12 text-center">
-            <div className="w-20 h-20 bg-gradient-to-br from-neutral-100 to-neutral-200 rounded-full flex items-center justify-center mx-auto mb-6">
-              <HiOutlineInbox className="w-8 h-8 text-neutral-400" />
+            <div className="mx-auto mb-6 flex size-20 items-center justify-center rounded-full bg-gradient-to-br from-neutral-100 to-neutral-200">
+              <HiOutlineInbox className="size-8 text-neutral-400" />
             </div>
             <h3 className="text-xl font-semibold text-neutral-900 mb-3">{t('title')}</h3>
             <p className="text-neutral-600 mb-6">
@@ -244,10 +244,10 @@ export default function CategoriesPage() {
                       size="sm"
                       onClick={(e) => {
                         e.stopPropagation();
-                        router.push(`/category/${category.slug}`);
+                        push(`/category/${category.slug}`);
                       }}
                     >
-                      <HiOutlineArrowRight className="w-4 h-4 mr-1" />
+                      <HiOutlineArrowRight className="mr-1 size-4" />
                       {tCommon('browseQuizzes')}
                     </Button>
                   </div>

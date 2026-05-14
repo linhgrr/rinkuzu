@@ -1,7 +1,7 @@
 'use client';
 
-import { CSSProperties, ReactElement, useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
+import { CSSProperties, ReactElement, useEffect, useMemo, useState } from 'react';
+import { LazyMotion, domAnimation, m } from 'framer-motion';
 
 import { cn } from '@/lib/utils';
 
@@ -60,6 +60,61 @@ interface SparklesTextProps {
   };
 }
 
+type SparkleColors = NonNullable<SparklesTextProps['colors']>;
+
+const SPARKLE_PATH =
+  'M9.83.84c.23-.63 1.12-.63 1.35 0l.68 1.88c.54 1.47.53 3.67 1.64 4.78 1.11 1.11 3.31 1.1 4.78 1.64l1.88.69c.63.23.63 1.12 0 1.35l-1.88.68c-1.47.54-3.67.53-4.78 1.64-1.11 1.11-1.1 3.31-1.64 4.78l-.68 1.88c-.23.63-1.12.63-1.35 0l-.68-1.88c-.54-1.47-.53-3.67-1.64-4.78-1.11-1.11-3.31-1.1-4.78-1.64l-1.88-.68c-.63-.23-.63-1.12 0-1.35l1.88-.69c1.47-.54 3.67-.53 4.78-1.64 1.11-1.11 1.1-3.31 1.64-4.78z';
+
+function createSparkle(colors: SparkleColors): Sparkle {
+  const starX = `${Math.random() * 100}%`;
+  const starY = `${Math.random() * 100}%`;
+  const color = Math.random() > 0.5 ? colors.first : colors.second;
+  const delay = Math.random() * 2;
+  const scale = Math.random() * 1 + 0.3;
+  const lifespan = Math.random() * 10 + 5;
+  const id = `${starX}-${starY}-${Date.now()}`;
+
+  return { id, x: starX, y: starY, color, delay, scale, lifespan };
+}
+
+function createSparkles(count: number, colors: SparkleColors) {
+  return Array.from({ length: count }, () => createSparkle(colors));
+}
+
+function SparklesLayer({
+  sparkleColors,
+  sparklesCount,
+}: {
+  sparkleColors: SparkleColors;
+  sparklesCount: number;
+}) {
+  const [sparkles, setSparkles] = useState<Sparkle[]>(() =>
+    createSparkles(sparklesCount, sparkleColors),
+  );
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setSparkles((currentSparkles) =>
+        currentSparkles.map((sparkle) =>
+          sparkle.lifespan <= 0
+            ? createSparkle(sparkleColors)
+            : { ...sparkle, lifespan: sparkle.lifespan - 0.1 },
+        ),
+      );
+    }, 100);
+
+    return () => clearInterval(interval);
+  }, [sparkleColors]);
+
+  return (
+    <>
+      {sparkles.map((sparkle) => (
+        <Sparkle key={sparkle.id} {...sparkle} />
+      ))}
+    </>
+  );
+}
+
 const SparklesText: React.FC<SparklesTextProps> = ({
   text,
   colors = { first: '#9E7AFF', second: '#FE8BBB' },
@@ -67,42 +122,11 @@ const SparklesText: React.FC<SparklesTextProps> = ({
   sparklesCount = 10,
   ...props
 }) => {
-  const [sparkles, setSparkles] = useState<Sparkle[]>([]);
-
-  useEffect(() => {
-    const generateStar = (): Sparkle => {
-      const starX = `${Math.random() * 100}%`;
-      const starY = `${Math.random() * 100}%`;
-      const color = Math.random() > 0.5 ? colors.first : colors.second;
-      const delay = Math.random() * 2;
-      const scale = Math.random() * 1 + 0.3;
-      const lifespan = Math.random() * 10 + 5;
-      const id = `${starX}-${starY}-${Date.now()}`;
-      return { id, x: starX, y: starY, color, delay, scale, lifespan };
-    };
-
-    const initializeStars = () => {
-      const newSparkles = Array.from({ length: sparklesCount }, generateStar);
-      setSparkles(newSparkles);
-    };
-
-    const updateStars = () => {
-      setSparkles((currentSparkles) =>
-        currentSparkles.map((star) => {
-          if (star.lifespan <= 0) {
-            return generateStar();
-          } else {
-            return { ...star, lifespan: star.lifespan - 0.1 };
-          }
-        }),
-      );
-    };
-
-    initializeStars();
-    const interval = setInterval(updateStars, 100);
-
-    return () => clearInterval(interval);
-  }, [colors.first, colors.second, sparklesCount]);
+  const sparkleColors = useMemo(
+    () => ({ first: colors.first, second: colors.second }),
+    [colors.first, colors.second],
+  );
+  const sparkleKey = `${sparkleColors.first}-${sparkleColors.second}-${sparklesCount}`;
 
   return (
     <div
@@ -116,9 +140,13 @@ const SparklesText: React.FC<SparklesTextProps> = ({
       }
     >
       <span className="relative inline-block">
-        {sparkles.map((sparkle) => (
-          <Sparkle key={sparkle.id} {...sparkle} />
-        ))}
+        <LazyMotion features={domAnimation}>
+          <SparklesLayer
+            key={sparkleKey}
+            sparkleColors={sparkleColors}
+            sparklesCount={sparklesCount}
+          />
+        </LazyMotion>
         <strong>{text}</strong>
       </span>
     </div>
@@ -127,7 +155,7 @@ const SparklesText: React.FC<SparklesTextProps> = ({
 
 const Sparkle: React.FC<Sparkle> = ({ id, x, y, color, delay, scale }) => {
   return (
-    <motion.svg
+    <m.svg
       key={id}
       className="pointer-events-none absolute z-20"
       initial={{ opacity: 0, left: x, top: y }}
@@ -141,11 +169,8 @@ const Sparkle: React.FC<Sparkle> = ({ id, x, y, color, delay, scale }) => {
       height="21"
       viewBox="0 0 21 21"
     >
-      <path
-        d="M9.82531 0.843845C10.0553 0.215178 10.9446 0.215178 11.1746 0.843845L11.8618 2.72026C12.4006 4.19229 12.3916 6.39157 13.5 7.5C14.6084 8.60843 16.8077 8.59935 18.2797 9.13822L20.1561 9.82534C20.7858 10.0553 20.7858 10.9447 20.1561 11.1747L18.2797 11.8618C16.8077 12.4007 14.6084 12.3916 13.5 13.5C12.3916 14.6084 12.4006 16.8077 11.8618 18.2798L11.1746 20.1562C10.9446 20.7858 10.0553 20.7858 9.82531 20.1562L9.13819 18.2798C8.59932 16.8077 8.60843 14.6084 7.5 13.5C6.39157 12.3916 4.19225 12.4007 2.72023 11.8618L0.843814 11.1747C0.215148 10.9447 0.215148 10.0553 0.843814 9.82534L2.72023 9.13822C4.19225 8.59935 6.39157 8.60843 7.5 7.5C8.60843 6.39157 8.59932 4.19229 9.13819 2.72026L9.82531 0.843845Z"
-        fill={color}
-      />
-    </motion.svg>
+      <path d={SPARKLE_PATH} fill={color} />
+    </m.svg>
   );
 };
 

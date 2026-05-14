@@ -1,7 +1,7 @@
 // /src/components/FloatingDraftProgress.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 import { useDraftStore, DraftProgress } from '@/store/useDraftStore';
 import { usePdfProcessor } from '@/hooks/usePdfProcessor';
 import Link from 'next/link';
@@ -19,23 +19,27 @@ import {
 
 type DraftTranslationValues = Record<string, string | number | Date>;
 
+function subscribeToClientMount() {
+  return () => {};
+}
+
 export function FloatingDraftProgress() {
   const { getActiveDrafts, getProcessingCount, getCompletedCount, removeDraft, hasActiveDrafts } =
     useDraftStore();
   const { stopProcessing } = usePdfProcessor();
   const t = useTranslations('draft');
   const [isExpanded, setIsExpanded] = useState(false);
-  const [mounted, setMounted] = useState(false);
   const [draftToCancel, setDraftToCancel] = useState<DraftProgress | null>(null);
   const [draftToRemove, setDraftToRemove] = useState<DraftProgress | null>(null);
+  const mounted = useSyncExternalStore(
+    subscribeToClientMount,
+    () => true,
+    () => false,
+  );
 
   const drafts = getActiveDrafts();
   const processingCount = getProcessingCount();
   const completedCount = getCompletedCount();
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   if (!mounted || !hasActiveDrafts()) {
     return null;
@@ -68,7 +72,7 @@ export function FloatingDraftProgress() {
               onClick={() => setIsExpanded(false)}
               className="p-1 text-neutral-400 hover:text-neutral-600 transition-colors"
             >
-              <HiOutlineX className="w-4 h-4" />
+              <HiOutlineX className="size-4" />
             </button>
           </div>
 
@@ -95,11 +99,11 @@ export function FloatingDraftProgress() {
       >
         {processingCount > 0 ? (
           <div className="relative">
-            <HiOutlineDocumentText className="w-5 h-5 text-brand-action" />
-            <span className="absolute -top-1 -right-1 w-2 h-2 bg-brand-action rounded-full animate-pulse" />
+            <HiOutlineDocumentText className="size-5 text-brand-action" />
+            <span className="absolute -top-1 -right-1 size-2 rounded-full bg-brand-action animate-pulse" />
           </div>
         ) : (
-          <HiOutlineCheckCircle className="w-5 h-5 text-green-500" />
+          <HiOutlineCheckCircle className="size-5 text-green-500" />
         )}
 
         <span className="text-sm font-medium text-neutral-700">
@@ -109,7 +113,7 @@ export function FloatingDraftProgress() {
         </span>
 
         <HiOutlineChevronUp
-          className={`w-4 h-4 text-neutral-400 transition-transform duration-200 ${
+          className={`size-4 text-neutral-400 transition-transform duration-200 ${
             isExpanded ? '' : 'rotate-180'
           }`}
         />
@@ -239,13 +243,13 @@ function DraftItem({
               className="mt-1.5 inline-flex items-center gap-1.5 text-xs
                          text-brand-trust hover:text-brand-trust-hover font-medium"
             >
-              <HiOutlineCheckCircle className="w-3.5 h-3.5" />
+              <HiOutlineCheckCircle className="size-3.5" />
               {t('clickToEdit', { count: draft.questionsCount })}
             </Link>
           ) : draft.status === 'error' ? (
             <div className="mt-1.5">
               <span className="text-xs text-red-500 flex items-center gap-1">
-                <HiOutlineExclamationCircle className="w-3.5 h-3.5" />
+                <HiOutlineExclamationCircle className="size-3.5" />
                 {draft.error || t('processingError')}
               </span>
             </div>
@@ -257,7 +261,7 @@ function DraftItem({
             onClick={onRemove}
             className="p-1.5 text-neutral-400 hover:text-neutral-600 transition-colors"
           >
-            <HiOutlineX className="w-4 h-4" />
+            <HiOutlineX className="size-4" />
           </button>
         )}
       </div>

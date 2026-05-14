@@ -29,9 +29,9 @@ export function ImageUpload({
   const t = useTranslations('upload');
   const [isUploading, setIsUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
-  const [isHovered, setIsHovered] = useState(false);
   const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const isHoveredRef = useRef(false);
 
   const handleImageUpload = useCallback(
     async (file: File) => {
@@ -113,12 +113,18 @@ export function ImageUpload({
     [handleImageUpload],
   );
 
+  const handleImageUploadRef = useRef(handleImageUpload);
+
+  useEffect(() => {
+    handleImageUploadRef.current = handleImageUpload;
+  }, [handleImageUpload]);
+
   // Global paste handler for hover-based pasting
   useEffect(() => {
-    const onWindowPaste = (e: ClipboardEvent) => {
-      if (!isHovered) return;
+    const onWindowPaste = (event: ClipboardEvent) => {
+      if (!isHoveredRef.current) return;
 
-      const items = e.clipboardData?.items;
+      const items = event.clipboardData?.items;
       if (!items) return;
 
       for (let i = 0; i < items.length; i++) {
@@ -126,8 +132,8 @@ export function ImageUpload({
         if (item.type.startsWith('image/')) {
           const file = item.getAsFile();
           if (file) {
-            handleImageUpload(file);
-            e.preventDefault();
+            void handleImageUploadRef.current(file);
+            event.preventDefault();
             break;
           }
         }
@@ -139,17 +145,17 @@ export function ImageUpload({
     return () => {
       window.removeEventListener('paste', onWindowPaste);
     };
-  }, [isHovered, handleImageUpload]);
+  }, []);
 
   const handleMouseEnter = () => {
-    setIsHovered(true);
+    isHoveredRef.current = true;
   };
 
   const handleMouseLeave = () => {
-    setIsHovered(false);
+    isHoveredRef.current = false;
   };
 
-  const handleClick = useCallback(() => {
+  const triggerFilePicker = useCallback(() => {
     fileInputRef.current?.click();
   }, []);
 
@@ -180,7 +186,7 @@ export function ImageUpload({
               onClick={() => setShowRemoveConfirm(true)}
               variant="ghost"
               size="icon"
-              className="h-9 w-9 bg-red-600 text-white hover:bg-red-700"
+              className="size-9 bg-red-600 text-white hover:bg-red-700"
               aria-label={t('removeImage')}
             >
               <span aria-hidden="true">✕</span>
@@ -214,7 +220,7 @@ export function ImageUpload({
 
       <button
         type="button"
-        onClick={handleClick}
+        onClick={triggerFilePicker}
         onDrop={handleDrop}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
@@ -234,14 +240,14 @@ export function ImageUpload({
         style={{ minHeight: '120px' }}
       >
         {isUploading ? (
-          <div className="flex flex-col items-center justify-center space-y-2">
-            <div className="h-8 w-8 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
+          <div className="flex flex-col items-center justify-center gap-y-2">
+            <div className="size-8 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
             <span className="text-sm text-neutral-600">{t('uploadingImage')}</span>
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center space-y-2">
+          <div className="flex flex-col items-center justify-center gap-y-2">
             <svg
-              className="w-12 h-12 text-neutral-400"
+              className="size-12 text-neutral-400"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 48 48"

@@ -153,8 +153,8 @@ export function LevelBadge({ level, className = '', width = 120, height = 120 }:
         />
 
         {/* Wreath Leaves */}
-        {leaves.map((leaf, i) => (
-          <g key={i}>
+        {leaves.map((leaf) => (
+          <g key={`${leaf.x}-${leaf.y}-${leaf.rot1}-${leaf.rot2}`}>
             <use
               href="#badgeLeafTemplate"
               x="0"

@@ -93,7 +93,7 @@ export class SubscriptionService implements ISubscriptionService {
   }
 
   async getSubscriptionHistory(userId: string): Promise<ISubscription[]> {
-    return await this.subscriptionRepository.findByUser(userId);
+    return this.subscriptionRepository.findByUser(userId);
   }
 
   async cancelSubscription(userId: string): Promise<{ success: boolean }> {
@@ -104,28 +104,34 @@ export class SubscriptionService implements ISubscriptionService {
     const expiredSubscriptions = await this.subscriptionRepository.findExpiredSubscriptions();
     const updatedUserIds = new Set<string>();
 
-    for (const subscription of expiredSubscriptions) {
-      // Update subscription to inactive
-      await this.subscriptionRepository.updateById((subscription as any)._id.toString(), {
-        isActive: false,
-        status: 'expired',
-      });
+    const expiredSubscriptionUserIds = await Promise.all(
+      expiredSubscriptions.map(async (subscription) => {
+        const userId = subscription.user.toString();
 
-      // Update user subscription to inactive
-      await this.userRepository.updateById(subscription.user.toString(), {
-        'subscription.isActive': false,
-      });
-      updatedUserIds.add(subscription.user.toString());
-    }
+        await Promise.all([
+          this.subscriptionRepository.updateById((subscription as any)._id.toString(), {
+            isActive: false,
+            status: 'expired',
+          }),
+          this.userRepository.updateById(userId, {
+            'subscription.isActive': false,
+          }),
+        ]);
+
+        return userId;
+      }),
+    );
+    expiredSubscriptionUserIds.forEach((userId) => updatedUserIds.add(userId));
 
     const expiredUsers = await this.userRepository.findExpiredSubscriptionUsers();
-    for (const user of expiredUsers) {
-      await this.markUserSubscriptionExpired(
-        (user as any)._id.toString(),
-        (user as any).subscription,
-      );
-      updatedUserIds.add((user as any)._id.toString());
-    }
+    const expiredUserIds = await Promise.all(
+      expiredUsers.map(async (user) => {
+        const userId = (user as any)._id.toString();
+        await this.markUserSubscriptionExpired(userId, (user as any).subscription);
+        return userId;
+      }),
+    );
+    expiredUserIds.forEach((userId) => updatedUserIds.add(userId));
 
     return updatedUserIds.size;
   }
@@ -219,5 +225,3 @@ export class SubscriptionService implements ISubscriptionService {
     }
   }
 }
-
-export default SubscriptionService;

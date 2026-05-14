@@ -15,7 +15,11 @@ import {
   HiOutlineLightningBolt,
   HiOutlineTrendingUp,
 } from '@/components/icons';
-import type { SessionHistoryDetail, SessionStatus } from '@/features/adaptive-learning/types';
+import type {
+  SessionHistoryDetail,
+  SessionStatus,
+  TranslateFn,
+} from '@/features/adaptive-learning/types';
 
 function SectionSkeleton() {
   return (
@@ -52,7 +56,6 @@ const TAB_CONFIG = [
 ] as const;
 
 type SubjectTab = (typeof TAB_CONFIG)[number]['key'];
-type TranslateFn = (key: string, values?: Record<string, any>) => string;
 
 export const SubjectDetailsBackButton = ({
   onClick,

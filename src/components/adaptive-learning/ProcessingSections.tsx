@@ -9,7 +9,7 @@ import {
   HiOutlineExclamationCircle,
   HiOutlineSparkles,
 } from '@/components/icons';
-import type { PipelinePartialGraph } from '@/features/adaptive-learning/types';
+import type { PipelinePartialGraph, TranslateFn } from '@/features/adaptive-learning/types';
 import type {
   ProcessingErrorState,
   ProcessingStats,
@@ -26,8 +26,6 @@ const ProcessingGraphPanel = dynamic(() => import('./ProcessingGraphPanel'), {
   ),
   ssr: false,
 });
-
-type TranslateFn = (key: string, values?: Record<string, any>) => string;
 
 type ProcessingStatusCardProps = {
   creatingSession: boolean;

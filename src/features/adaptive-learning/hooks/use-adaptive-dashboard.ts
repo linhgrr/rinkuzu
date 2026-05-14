@@ -14,12 +14,11 @@ import { getSessionStartFeedback } from '../lib/session-start-feedback';
 import type {
   PipelineJobHistoryItem,
   SessionHistoryItem,
+  TranslateFn,
 } from '@/features/adaptive-learning/types';
 
 const DAILY_GOAL_TARGET = 3;
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
-
-type TranslateFn = (key: string, values?: Record<string, any>) => string;
 
 const toTimestampMs = (value: number): number => (value < 1_000_000_000_000 ? value * 1000 : value);
 

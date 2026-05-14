@@ -1,8 +1,7 @@
 'use client';
 
+import type { TranslateFn } from '@/features/adaptive-learning/types';
 import { AdaptiveApiError } from '@/features/adaptive-learning/lib/api-client';
-
-type TranslateFn = (key: string, values?: Record<string, any>) => string;
 
 export function getSessionStartFeedback(
   t: TranslateFn,

@@ -1,6 +1,4 @@
-import type { PipelineJobHistoryItem } from '@/features/adaptive-learning/types';
-
-type TranslateFn = (key: string, values?: Record<string, any>) => string;
+import type { PipelineJobHistoryItem, TranslateFn } from '@/features/adaptive-learning/types';
 
 export type DashboardSubjectMetrics = {
   masteredConcepts: number;

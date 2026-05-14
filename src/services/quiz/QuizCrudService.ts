@@ -7,6 +7,8 @@ import { generateSlug } from '@/lib/utils';
 import { ServiceFactory } from '@/lib/serviceFactory';
 import { getAuthorId } from './quiz-helpers';
 
+const VALID_QUESTION_TYPES = new Set(['single', 'multiple']);
+
 export class QuizCrudService {
   constructor(
     private quizRepository: IQuizRepository,
@@ -39,12 +41,14 @@ export class QuizCrudService {
         throw new Error(`Question ${i + 1}: Missing or invalid options array`);
       }
 
-      if (question.options.length < 2) {
+      const optionCount = question.options.length;
+
+      if (optionCount < 2) {
         throw new Error(`Question ${i + 1}: Need at least 2 options`);
       }
 
       // Check each option is a string
-      for (let j = 0; j < question.options.length; j++) {
+      for (let j = 0; j < optionCount; j++) {
         if (typeof question.options[j] !== 'string') {
           throw new Error(`Question ${i + 1}, Option ${j + 1}: Must be a string`);
         }
@@ -52,7 +56,7 @@ export class QuizCrudService {
 
       // Validate question type and answers
       const questionType = question.type || 'single';
-      if (!['single', 'multiple'].includes(questionType)) {
+      if (!VALID_QUESTION_TYPES.has(questionType)) {
         throw new Error(`Question ${i + 1}: Type must be 'single' or 'multiple'`);
       }
 
@@ -60,7 +64,7 @@ export class QuizCrudService {
         if (
           typeof question.correctIndex !== 'number' ||
           question.correctIndex < 0 ||
-          question.correctIndex >= question.options.length
+          question.correctIndex >= optionCount
         ) {
           throw new Error(`Question ${i + 1}: Invalid correct answer index`);
         }
@@ -71,10 +75,18 @@ export class QuizCrudService {
           );
         }
 
+        const validCorrectIndexes = new Set<number>();
+
         for (const idx of question.correctIndexes) {
-          if (typeof idx !== 'number' || idx < 0 || idx >= question.options.length) {
+          if (typeof idx !== 'number' || idx < 0 || idx >= optionCount) {
             throw new Error(`Question ${i + 1}: Invalid correct answer index`);
           }
+
+          validCorrectIndexes.add(idx);
+        }
+
+        if (validCorrectIndexes.size !== question.correctIndexes.length) {
+          throw new Error(`Question ${i + 1}: Duplicate correct answer indexes are not allowed`);
         }
       }
     }

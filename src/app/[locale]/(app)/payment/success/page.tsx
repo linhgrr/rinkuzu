@@ -3,19 +3,19 @@
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
 import { fetchApiData } from '@/lib/api/client';
 
 function PaymentSuccessContent() {
   const t = useTranslations('subscription');
-  const searchParams = useSearchParams();
-  const router = useRouter();
+  const { get } = useSearchParams();
+  const { push } = useRouter();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [message, setMessage] = useState('');
 
   useEffect(() => {
-    const orderCode = searchParams.get('orderCode');
+    const orderCode = get('orderCode');
     if (!orderCode) {
       setStatus('error');
       setMessage(t('errorTitle'));
@@ -41,14 +41,14 @@ function PaymentSuccessContent() {
     };
 
     verifyPayment(orderCode);
-  }, [searchParams, t]);
+  }, [get, t]);
 
   const handleGoHome = () => {
-    router.push('/');
+    push('/');
   };
 
   const handleGoToSubscription = () => {
-    router.push('/subscription');
+    push('/subscription');
   };
 
   if (status === 'loading') {

@@ -9,7 +9,6 @@ export {
 } from './adaptive-api-error';
 
 export {
-  createSession,
   getNextConcept,
   getTheory,
   getExercise,
@@ -22,12 +21,10 @@ export {
   uploadPdf,
   getPipelineJobStatus,
   createSessionFromPipeline,
-  checkPipelineAvailable,
   getSubjectProgressHistory,
   getSubjectHistoryDetail,
   getSubjectHistoryDetailFresh,
   prefetchStartLearningData,
-  getPipelineJobHistory,
   getSubjects,
   deleteSubject,
 } from './adaptive-api-methods';

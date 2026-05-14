@@ -4,6 +4,9 @@ type ApiSchemas = components['schemas'];
 
 export type BloomLevel = 'Remember' | 'Understand' | 'Apply' | 'Analyze' | 'Evaluate' | 'Create';
 
+export type TranslationValues = Record<string, string | number | Date>;
+export type TranslateFn = (key: string, values?: TranslationValues) => string;
+
 export const BLOOM_LABELS: BloomLevel[] = [
   'Remember',
   'Understand',

@@ -1,8 +1,7 @@
 'use client';
 
 import { HiOutlineLightningBolt, HiOutlineBookOpen } from '@/components/icons';
-
-type TranslateFn = (key: string, values?: Record<string, any>) => string;
+import type { TranslateFn } from '@/features/adaptive-learning/types';
 
 type DailyProgressCardProps = {
   dailyGoalProgress: { current: number; total: number; percent: number };

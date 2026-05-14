@@ -54,21 +54,6 @@ export function getJobIdForSession(sessionId: string): string | null {
   return map[sessionId]?.jobId || null;
 }
 
-export function replaceSessionJobMapping(oldSessionId: string, newSessionId: string): void {
-  const map = readSessionJobMap();
-  const source = map[oldSessionId];
-  if (!source) {
-    return;
-  }
-
-  map[newSessionId] = {
-    ...source,
-    updatedAt: Date.now(),
-  };
-  delete map[oldSessionId];
-  writeSessionJobMap(map);
-}
-
 export function saveSessionExerciseOutcome(
   sessionId: string,
   payload: { result: SubmitResult; exercise: Exercise },

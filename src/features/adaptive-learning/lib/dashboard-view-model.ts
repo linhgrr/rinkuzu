@@ -27,7 +27,7 @@ const clampPercent = (value: number): number => {
   return Math.max(0, Math.min(100, Math.round(value)));
 };
 
-export const getSubjectMetrics = (job: PipelineJobHistoryItem): DashboardSubjectMetrics => {
+const getSubjectMetrics = (job: PipelineJobHistoryItem): DashboardSubjectMetrics => {
   const masteredConcepts = Math.max(0, job.mastered_concept ?? 0);
   const allConcepts = Math.max(0, job.all_concept ?? job.concepts_after_merge ?? 0);
 

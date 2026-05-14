@@ -12,7 +12,4 @@
  * - For individual parts: import { NavLogo, NavLinks } from '@/components/Navigation'
  */
 
-export { NavLogo } from './NavLogo';
-export { NavLinks } from './NavLinks';
-export { GuestLinks } from './GuestLinks';
 export { default } from './NavigationClient';

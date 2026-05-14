@@ -17,7 +17,7 @@ interface ImageUploadProps {
   className?: string;
 }
 
-export function ImageUpload({
+function ImageUpload({
   currentImage,
   onImageUploaded,
   onImageRemoved,

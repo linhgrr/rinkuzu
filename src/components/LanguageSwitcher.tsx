@@ -10,7 +10,7 @@ interface LanguageSwitcherProps {
   variant?: 'dropdown' | 'inline';
 }
 
-export const LanguageSwitcher = memo(function LanguageSwitcher({
+const LanguageSwitcher = memo(function LanguageSwitcher({
   className = '',
   variant = 'dropdown',
 }: LanguageSwitcherProps) {

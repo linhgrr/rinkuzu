@@ -16,16 +16,16 @@ export const siteUrl = new URL(
   ),
 );
 
-export function normalizeSeoPath(path: string): string {
+function normalizeSeoPath(path: string): string {
   if (!path || path.trim() === '') return '/';
   return path.startsWith('/') ? path : `/${path}`;
 }
 
-export function localePrefix(locale: string): string {
+function localePrefix(locale: string): string {
   return locale === defaultLocale ? '' : `/${locale}`;
 }
 
-export function localizedPath(locale: string, path: string): string {
+function localizedPath(locale: string, path: string): string {
   const safePath = normalizeSeoPath(path);
   return `${localePrefix(locale)}${safePath === '/' ? '' : safePath}` || '/';
 }

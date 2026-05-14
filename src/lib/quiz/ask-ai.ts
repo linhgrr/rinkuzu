@@ -1,4 +1,4 @@
-import { consumeOpenAISseResponse, createStreamError, parseJsonResponse } from '@/lib/ai/stream';
+import { consumeOpenAISseResponse } from '@/lib/ai/stream';
 
 export interface QuizAiChatMessage {
   role: 'user' | 'assistant';
@@ -75,20 +75,6 @@ function extractQuizAiErrorMessage(body: QuizAskAiEnvelope, status: number): str
   }
 
   return `HTTP error ${status}`;
-}
-
-export async function askQuizAI(
-  payload: QuizAskAiRequest,
-  signal?: AbortSignal,
-): Promise<QuizAskAiResponseData> {
-  const response = await requestQuizAI(payload, signal);
-  const body = await parseJsonResponse<QuizAskAiEnvelope>(response);
-
-  if (!response.ok || !body.success || !body.data) {
-    throw createStreamError(extractQuizAiErrorMessage(body, response.status), response.status);
-  }
-
-  return body.data;
 }
 
 export async function streamQuizAI(

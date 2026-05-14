@@ -23,7 +23,7 @@ export function getUserDisplayName(user: UserIdentity): string {
   return 'User';
 }
 
-export function getUserInitial(user: UserIdentity): string {
+function getUserInitial(user: UserIdentity): string {
   return getUserDisplayName(user).charAt(0).toUpperCase();
 }
 

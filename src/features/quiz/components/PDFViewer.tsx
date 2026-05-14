@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 
 interface PDFViewerProps {
@@ -16,8 +16,6 @@ export default function PDFViewer({
   pdfUrl,
   showHeader = true,
 }: PDFViewerProps) {
-  const [isLoading, setIsLoading] = useState(true);
-
   // Prefer inline source if provided, otherwise fallback to original URL.
   const displayUrl = useMemo(() => {
     const source = pdfDataUrl || pdfUrl || null;
@@ -26,10 +24,6 @@ export default function PDFViewer({
       ? source
       : `${source}#toolbar=1&navpanes=1&scrollbar=1&view=FitH&zoom=page-width`;
   }, [pdfDataUrl, pdfUrl]);
-
-  useEffect(() => {
-    setIsLoading(true);
-  }, [displayUrl]);
 
   return (
     <div className="h-full flex flex-col">
@@ -53,20 +47,7 @@ export default function PDFViewer({
       )}
       <div className="flex-1 border border-neutral-200 rounded overflow-hidden bg-neutral-100 flex items-center justify-center relative min-h-[400px]">
         {displayUrl ? (
-          <>
-            {isLoading && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-neutral-400 bg-neutral-100 z-10">
-                <div className="animate-spin rounded-full size-8 border-b-2 border-current"></div>
-                <span>Loading PDF…</span>
-              </div>
-            )}
-            <iframe
-              src={displayUrl}
-              className="w-full h-full border-0"
-              title="PDF Viewer"
-              onLoad={() => setIsLoading(false)}
-            />
-          </>
+          <PDFViewerFrame key={displayUrl} displayUrl={displayUrl} />
         ) : (
           <div className="flex flex-col items-center gap-2 text-neutral-400">
             <div className="animate-spin rounded-full size-8 border-b-2 border-current"></div>
@@ -75,5 +56,26 @@ export default function PDFViewer({
         )}
       </div>
     </div>
+  );
+}
+
+function PDFViewerFrame({ displayUrl }: { displayUrl: string }) {
+  const [isLoading, setIsLoading] = useState(true);
+
+  return (
+    <>
+      {isLoading ? (
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-neutral-100 text-neutral-400">
+          <div className="size-8 animate-spin rounded-full border-b-2 border-current" />
+          <span>Loading PDF…</span>
+        </div>
+      ) : null}
+      <iframe
+        src={displayUrl}
+        className="h-full w-full border-0"
+        title="PDF Viewer"
+        onLoad={() => setIsLoading(false)}
+      />
+    </>
   );
 }

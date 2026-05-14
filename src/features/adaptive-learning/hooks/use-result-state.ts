@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useReducer } from 'react';
 import { useRouter } from 'next/navigation';
 import { getSubjectHistoryDetailFresh } from '@/features/adaptive-learning/lib/api-client';
 import { ADAPTIVE_ROUTES } from '@/features/adaptive-learning/lib/routes';
@@ -14,6 +14,36 @@ import type {
 } from '@/features/adaptive-learning/types';
 
 type TranslateFn = (key: string, values?: Record<string, string | number | Date>) => string;
+
+interface ResultState {
+  result: SubmitResult | null;
+  exercise: Exercise | null;
+  isChatOpen: boolean;
+  hydrating: boolean;
+}
+
+type ResultStateAction =
+  | { type: 'hydrateStart' }
+  | { type: 'hydrateComplete'; result: SubmitResult | null; exercise: Exercise | null }
+  | { type: 'setChatOpen'; value: boolean };
+
+function resultStateReducer(state: ResultState, action: ResultStateAction): ResultState {
+  switch (action.type) {
+    case 'hydrateStart':
+      return { ...state, hydrating: true };
+    case 'hydrateComplete':
+      return {
+        ...state,
+        result: action.result,
+        exercise: action.exercise,
+        hydrating: false,
+      };
+    case 'setChatOpen':
+      return { ...state, isChatOpen: action.value };
+    default:
+      return state;
+  }
+}
 
 function deriveOutcomeFromHistory(
   detail: SessionHistoryDetail,
@@ -71,10 +101,12 @@ function deriveOutcomeFromHistory(
 
 export const useResultState = (sessionId: string, t: TranslateFn) => {
   const router = useRouter();
-  const [result, setResult] = useState<SubmitResult | null>(null);
-  const [exercise, setExercise] = useState<Exercise | null>(null);
-  const [isChatOpen, setIsChatOpen] = useState(false);
-  const [hydrating, setHydrating] = useState(true);
+  const [state, dispatch] = useReducer(resultStateReducer, {
+    result: null,
+    exercise: null,
+    isChatOpen: false,
+    hydrating: true,
+  });
 
   useEffect(() => {
     router.prefetch(ADAPTIVE_ROUTES.dashboard);
@@ -85,34 +117,34 @@ export const useResultState = (sessionId: string, t: TranslateFn) => {
     let cancelled = false;
 
     const hydrate = async () => {
-      setHydrating(true);
+      dispatch({ type: 'hydrateStart' });
+
+      let nextResult: SubmitResult | null = null;
+      let nextExercise: Exercise | null = null;
 
       try {
         const storedOutcome = getSessionExerciseOutcome(sessionId);
         if (storedOutcome) {
-          if (!cancelled) {
-            setResult(storedOutcome.result);
-            setExercise(storedOutcome.exercise);
+          nextResult = storedOutcome.result;
+          nextExercise = storedOutcome.exercise;
+        } else {
+          const jobId = getJobIdForSession(sessionId);
+          if (jobId) {
+            const detail = await getSubjectHistoryDetailFresh(jobId);
+            if (cancelled) return;
+
+            const derivedOutcome = deriveOutcomeFromHistory(detail);
+            nextResult = derivedOutcome?.result ?? null;
+            nextExercise = derivedOutcome?.exercise ?? null;
           }
-          return;
         }
-
-        const jobId = getJobIdForSession(sessionId);
-        if (!jobId) return;
-
-        const detail = await getSubjectHistoryDetailFresh(jobId);
-        if (cancelled) return;
-
-        const derivedOutcome = deriveOutcomeFromHistory(detail);
-        setResult(derivedOutcome?.result ?? null);
-        setExercise(derivedOutcome?.exercise ?? null);
       } catch {
-        if (!cancelled) {
-          setResult(null);
-          setExercise(null);
-        }
-      } finally {
-        if (!cancelled) setHydrating(false);
+        nextResult = null;
+        nextExercise = null;
+      }
+
+      if (!cancelled) {
+        dispatch({ type: 'hydrateComplete', result: nextResult, exercise: nextExercise });
       }
     };
 
@@ -123,6 +155,7 @@ export const useResultState = (sessionId: string, t: TranslateFn) => {
     };
   }, [sessionId]);
 
+  const { exercise, hydrating, isChatOpen, result } = state;
   const isCorrect = result?.is_correct ?? false;
 
   const masteryPercent = useMemo(() => Math.round((result?.mastery_after ?? 0) * 100), [result]);
@@ -162,11 +195,11 @@ export const useResultState = (sessionId: string, t: TranslateFn) => {
   }, [result, router, sessionId]);
 
   const openChat = useCallback(() => {
-    setIsChatOpen(true);
+    dispatch({ type: 'setChatOpen', value: true });
   }, []);
 
   const closeChat = useCallback(() => {
-    setIsChatOpen(false);
+    dispatch({ type: 'setChatOpen', value: false });
   }, []);
 
   return {

@@ -259,17 +259,21 @@ export class QuizPlayService {
         }
 
         // Create QuestionProgress for each wrong answer
-        for (const wrong of wrongQuestions) {
-          const questionId = wrong.question._id?.toString() || `${slug}-q${wrong.index}`;
+        await Promise.all(
+          wrongQuestions.map(async (wrong) => {
+            const questionId = wrong.question._id?.toString() || `${slug}-q${wrong.index}`;
 
-          // Check if already exists
-          const existing = await QuestionProgress.findOne({
-            userId,
-            quizSlug: slug,
-            questionId,
-          });
+            // Check if already exists
+            const existing = await QuestionProgress.findOne({
+              userId,
+              quizSlug: slug,
+              questionId,
+            });
 
-          if (!existing) {
+            if (existing) {
+              return;
+            }
+
             // Create new QuestionProgress - due immediately for review
             await QuestionProgress.create({
               userId,
@@ -293,8 +297,8 @@ export class QuizPlayService {
               totalCorrect: 0,
               history: [],
             });
-          }
-        }
+          }),
+        );
 
         // 2. Update UserProgress
         let uProgress = await UserProgress.findOne({ userId });

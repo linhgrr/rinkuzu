@@ -39,31 +39,35 @@ async function checkExpiredSubscriptions() {
   await mongoose.connect(mongoUrl, { bufferCommands: false });
 
   const now = new Date();
-  const expiredSubscriptions = await Subscription.find({
-    isActive: true,
-    endDate: { $exists: true, $lte: now },
-    status: 'completed',
-  }).select('_id user');
+  const [expiredSubscriptions, usersOnlyResult] = await Promise.all([
+    Subscription.find({
+      isActive: true,
+      endDate: { $exists: true, $lte: now },
+      status: 'completed',
+    }).select('_id user'),
+    User.updateMany(
+      {
+        'subscription.isActive': true,
+        'subscription.endDate': { $exists: true, $lte: now },
+      },
+      {
+        'subscription.isActive': false,
+      },
+    ),
+  ]);
 
-  for (const subscription of expiredSubscriptions) {
-    await Subscription.findByIdAndUpdate(subscription._id, {
-      isActive: false,
-      status: 'expired',
-    });
-
-    await User.findByIdAndUpdate(subscription.user, {
-      'subscription.isActive': false,
-    });
-  }
-
-  const usersOnlyResult = await User.updateMany(
-    {
-      'subscription.isActive': true,
-      'subscription.endDate': { $exists: true, $lte: now },
-    },
-    {
-      'subscription.isActive': false,
-    },
+  await Promise.all(
+    expiredSubscriptions.map(async (subscription) => {
+      await Promise.all([
+        Subscription.findByIdAndUpdate(subscription._id, {
+          isActive: false,
+          status: 'expired',
+        }),
+        User.findByIdAndUpdate(subscription.user, {
+          'subscription.isActive': false,
+        }),
+      ]);
+    }),
   );
 
   return expiredSubscriptions.length + usersOnlyResult.modifiedCount;

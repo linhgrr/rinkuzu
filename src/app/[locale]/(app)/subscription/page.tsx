@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useEffect, useReducer } from 'react';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
 import { fetchApiData } from '@/lib/api/client';
@@ -35,73 +35,104 @@ interface SubscriptionStatus {
   isPremium: boolean;
 }
 
+interface SubscriptionPageState {
+  status: 'loading' | 'ready';
+  plans: SubscriptionPlan[];
+  subscriptionStatus: SubscriptionStatus | null;
+  selectedPlan: SubscriptionPlan | null;
+  paymentLoading: boolean;
+}
+
+type SubscriptionPageAction =
+  | { type: 'patch'; value: Partial<SubscriptionPageState> }
+  | {
+      type: 'loadSuccess';
+      value: {
+        plans: SubscriptionPlan[];
+        subscriptionStatus: SubscriptionStatus;
+      };
+    };
+
+const initialState: SubscriptionPageState = {
+  status: 'loading',
+  plans: [],
+  subscriptionStatus: null,
+  selectedPlan: null,
+  paymentLoading: false,
+};
+
+function subscriptionPageReducer(
+  state: SubscriptionPageState,
+  action: SubscriptionPageAction,
+): SubscriptionPageState {
+  switch (action.type) {
+    case 'patch':
+      return { ...state, ...action.value };
+    case 'loadSuccess':
+      return {
+        ...state,
+        status: 'ready',
+        plans: action.value.plans,
+        subscriptionStatus: action.value.subscriptionStatus,
+      };
+    default:
+      return state;
+  }
+}
+
 export default function SubscriptionPage() {
   const t = useTranslations('subscription');
-  const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
-  const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatus | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [paymentLoading, setPaymentLoading] = useState(false);
-
-  const fetchPlans = useCallback(async () => {
-    try {
-      const data = await fetchApiData<{
-        plans: SubscriptionPlan[];
-        meta: { durationFormat: string; supportedDurations: string[] };
-      }>('/api/subscription/plans');
-      setPlans(data.plans);
-    } catch (error) {
-      console.error('Error fetching plans:', error);
-    }
-  }, []);
-
-  const fetchSubscriptionStatus = useCallback(async () => {
-    try {
-      const data = await fetchApiData<SubscriptionStatus>('/api/subscription/status');
-      setSubscriptionStatus(data);
-    } catch (error) {
-      console.error('Error fetching subscription status:', error);
-    }
-  }, []);
+  const [state, dispatch] = useReducer(subscriptionPageReducer, initialState);
 
   useEffect(() => {
     const loadInitialData = async () => {
-      setLoading(true);
       try {
-        await Promise.all([fetchPlans(), fetchSubscriptionStatus()]);
-      } finally {
-        setLoading(false);
+        const [plansData, subscriptionStatus] = await Promise.all([
+          fetchApiData<{
+            plans: SubscriptionPlan[];
+            meta: { durationFormat: string; supportedDurations: string[] };
+          }>('/api/subscription/plans'),
+          fetchApiData<SubscriptionStatus>('/api/subscription/status'),
+        ]);
+
+        dispatch({
+          type: 'loadSuccess',
+          value: {
+            plans: plansData.plans,
+            subscriptionStatus,
+          },
+        });
+      } catch (error) {
+        console.error('Error loading subscription data:', error);
+        dispatch({ type: 'patch', value: { status: 'ready' } });
       }
     };
 
-    loadInitialData();
-  }, [fetchPlans, fetchSubscriptionStatus]);
+    void loadInitialData();
+  }, []);
 
   const handlePurchase = async (plan: SubscriptionPlan) => {
-    setSelectedPlan(plan);
-    setShowPaymentModal(true);
+    dispatch({ type: 'patch', value: { selectedPlan: plan } });
   };
 
   const confirmPurchase = async () => {
-    if (!selectedPlan) return;
+    if (!state.selectedPlan) return;
 
-    setPaymentLoading(true);
+    dispatch({ type: 'patch', value: { paymentLoading: true } });
     try {
       const data = await fetchApiData<{ paymentUrl: string }>('/api/subscription/create-payment', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ planId: selectedPlan.id }),
+        body: JSON.stringify({ planId: state.selectedPlan.id }),
       });
       window.location.href = data.paymentUrl;
     } catch (error) {
       console.error('Error creating payment:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to create payment request');
     } finally {
-      setPaymentLoading(false);
-      setShowPaymentModal(false);
+      dispatch({ type: 'patch', value: { paymentLoading: false, selectedPlan: null } });
     }
   };
 
@@ -114,10 +145,10 @@ export default function SubscriptionPage() {
     return new Date(dateString).toLocaleDateString('vi-VN');
   };
 
-  const currentSubscription = subscriptionStatus?.subscription;
-  const hasActivePremium = Boolean(subscriptionStatus?.isPremium);
+  const currentSubscription = state.subscriptionStatus?.subscription;
+  const hasActivePremium = Boolean(state.subscriptionStatus?.isPremium);
 
-  if (loading) {
+  if (state.status === 'loading') {
     return (
       <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
         <div className="text-center">
@@ -171,7 +202,7 @@ export default function SubscriptionPage() {
 
           {/* Subscription Plans */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
-            {plans.map((plan, index) => (
+            {state.plans.map((plan, index) => (
               <Card key={plan.id} className="p-4 md:p-6 relative">
                 {index === 1 && (
                   <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
@@ -204,30 +235,31 @@ export default function SubscriptionPage() {
 
                 <Button
                   onClick={() => handlePurchase(plan)}
-                  disabled={subscriptionStatus?.isPremium}
+                  disabled={state.subscriptionStatus?.isPremium}
                   className="w-full"
                   variant={index === 1 ? 'default' : 'outline'}
                 >
-                  {subscriptionStatus?.isPremium ? t('premiumPlan') : t('subscribe')}
+                  {state.subscriptionStatus?.isPremium ? t('premiumPlan') : t('subscribe')}
                 </Button>
               </Card>
             ))}
           </div>
 
           <ConfirmModal
-            isOpen={showPaymentModal}
+            isOpen={!!state.selectedPlan}
             title={t('subscribe')}
             message={
               <div className="space-y-4">
                 <p className="text-neutral-700">
-                  {selectedPlan?.name} - {selectedPlan ? formatPrice(selectedPlan.price) : ''}
+                  {state.selectedPlan?.name} -{' '}
+                  {state.selectedPlan ? formatPrice(state.selectedPlan.price) : ''}
                 </p>
               </div>
             }
             confirmText={t('subscribe')}
             cancelText={t('cancel')}
-            isLoading={paymentLoading}
-            onCancel={() => setShowPaymentModal(false)}
+            isLoading={state.paymentLoading}
+            onCancel={() => dispatch({ type: 'patch', value: { selectedPlan: null } })}
             onConfirm={confirmPurchase}
           />
         </div>

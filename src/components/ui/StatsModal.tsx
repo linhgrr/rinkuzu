@@ -222,12 +222,17 @@ export default function StatsModal({
     </div>
   );
 
-  const renderActivityItem = (activity: any, index: number) => {
+  const renderActivityItem = (activity: any) => {
     const { type: activityType, data: activityData, date } = activity;
+    const activityKey =
+      activityData.email ||
+      activityData.title ||
+      activityData.quiz?.title ||
+      `${activityType}-${date}`;
 
     return (
       <div
-        key={index}
+        key={activityKey}
         className="flex items-center gap-x-4 p-4 bg-neutral-50 rounded-lg hover:bg-neutral-100 transition-colors"
       >
         <div
@@ -382,7 +387,7 @@ export default function StatsModal({
             case 'creators':
               return renderCreatorItem(item, index);
             case 'activity':
-              return renderActivityItem(item, index);
+              return renderActivityItem(item);
             default:
               return null;
           }

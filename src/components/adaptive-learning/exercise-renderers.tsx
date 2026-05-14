@@ -160,7 +160,7 @@ export const ExerciseTheoryView = ({
                 <div className="grid gap-4 md:grid-cols-2">
                   {theory.examples.map((ex: string, idx: number) => (
                     <div
-                      key={idx}
+                      key={ex}
                       className="rounded-xl bg-neutral-50 border border-neutral-200 p-5 md:p-6 transition-colors hover:border-neutral-300 shadow-sm"
                     >
                       <div className="mb-2.5 text-[11px] font-bold text-neutral-500 uppercase tracking-widest flex items-center gap-1.5 before:content-[''] before:w-1.5 before:h-1.5 before:rounded-full before:bg-brand-trust">

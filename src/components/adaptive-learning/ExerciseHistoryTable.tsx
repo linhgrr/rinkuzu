@@ -104,7 +104,7 @@ function renderCorrectAnswer(
       <div className="flex flex-wrap gap-2">
         {exercise.correct_answer.map((item, idx) => (
           <div
-            key={`${item}-${idx}`}
+            key={item}
             className="flex items-center gap-2 rounded-lg border border-green-100 bg-white p-2 text-xs"
           >
             <span className="flex size-5 items-center justify-center rounded-full bg-green-100 font-mono text-[10px] font-bold text-green-700">
@@ -416,7 +416,7 @@ export function ExerciseHistoryTable({ exercises }: ExerciseHistoryTableProps) {
                 <div className="rounded-lg border border-amber-200 bg-amber-50/70 p-4 text-sm text-amber-950 shadow-sm">
                   <ul className="space-y-2">
                     {selectedExercise.rubric.map((criterion, index) => (
-                      <li key={`${criterion}-${index}`} className="flex gap-2">
+                      <li key={criterion} className="flex gap-2">
                         <span className="font-mono text-xs text-amber-700">{index + 1}.</span>
                         <span className="flex-1">
                           <DynamicMarkdownRenderer content={criterion} />

@@ -90,9 +90,9 @@ export function StreamingChatModal({
           </div>
 
           <div className="space-y-3">
-            {messages.map((message, idx) => (
+            {messages.map((message) => (
               <div
-                key={idx}
+                key={`${message.role}-${message.timestamp}-${message.content.slice(0, 24)}`}
                 className={`p-3 rounded-lg ${
                   message.role === 'user'
                     ? 'bg-orange-50 border-l-4 border-orange-300'

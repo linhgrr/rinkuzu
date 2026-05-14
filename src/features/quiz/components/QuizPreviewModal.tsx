@@ -101,7 +101,7 @@ export function QuizPreviewModal({ isOpen, onClose, title, questions }: QuizPrev
 
                 return (
                   <div
-                    key={index}
+                    key={option}
                     className={`p-3 rounded-lg border-2 ${
                       isCorrect
                         ? 'border-green-500 bg-green-50'
@@ -197,9 +197,9 @@ export function QuizPreviewModal({ isOpen, onClose, title, questions }: QuizPrev
         <div className="border-t pt-4">
           <h4 className="text-sm font-medium text-neutral-900 mb-3">{t('questionOverview')}</h4>
           <div className="grid grid-cols-10 gap-2">
-            {questions.map((_, index) => (
+            {questions.map((question, index) => (
               <button
-                key={index}
+                key={question.question}
                 onClick={() => setCurrentQuestionIndex(index)}
                 className={`w-8 h-8 rounded text-xs font-medium transition-colors ${
                   index === currentQuestionIndex

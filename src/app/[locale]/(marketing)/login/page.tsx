@@ -1,53 +1,59 @@
 import Link from 'next/link';
 import Image from 'next/image';
+import type { Metadata } from 'next';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { HiOutlineLockClosed, HiOutlineShieldCheck } from '@/components/icons';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { getTranslations } from 'next-intl/server';
+
+export const metadata: Metadata = {
+  title: 'Sign In | RinKuzu',
+  description: 'Sign in to RinKuzu to continue managing and taking quizzes.',
+};
 
 export default async function LoginPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: 'auth' });
 
   return (
-    <div className="min-h-screen relative overflow-hidden">
+    <div className="relative min-h-screen overflow-hidden">
       {/* Background Elements */}
-      <div className="absolute inset-0 bg-slate-50" />
+      <div className="absolute inset-0 bg-neutral-50" />
 
-      <div className="relative flex flex-col justify-center py-8 sm:py-12 px-4 sm:px-6 lg:px-8 min-h-screen pt-16 sm:pt-20">
+      <div className="relative flex min-h-screen flex-col justify-center px-4 pt-16 py-8 sm:px-6 sm:pt-20 sm:py-12 lg:px-8">
         {/* Header */}
-        <div className="sm:mx-auto sm:w-full sm:max-w-md mb-6 sm:mb-8">
+        <div className="mb-6 sm:mx-auto sm:w-full sm:max-w-md sm:mb-8">
           <div className="text-center">
-            <Link href="/" prefetch={false} className="inline-flex items-center group">
-              <div className="h-16 sm:h-20 flex items-center justify-center transition-transform group-hover:scale-105">
+            <Link href="/" prefetch={false} className="group inline-flex items-center">
+              <div className="flex h-16 items-center justify-center transition-transform group-hover:scale-105 sm:h-20">
                 <Image
                   src="/images/auth_logo.png"
                   alt="RinKuzu Logo"
                   width={80}
                   height={80}
-                  className="h-16 sm:h-20 w-auto object-contain"
+                  className="h-16 w-auto object-contain sm:h-20"
                   unoptimized
                 />
               </div>
             </Link>
           </div>
 
-          <div className="mt-6 sm:mt-8 text-center animate-fadeInUp">
-            <h1 className="text-2xl sm:text-4xl font-semibold text-gray-900 mb-2 sm:mb-3">
+          <div className="mt-6 text-center animate-fadeInUp sm:mt-8">
+            <h1 className="mb-2 text-2xl font-semibold text-neutral-900 sm:mb-3 sm:text-4xl">
               {t('welcomeBack')}
             </h1>
-            <p className="text-base sm:text-lg text-gray-600">{t('signInContinue')}</p>
+            <p className="text-base text-neutral-600 sm:text-lg">{t('signInContinue')}</p>
           </div>
         </div>
 
         {/* Login Form */}
         <div className="sm:mx-auto sm:w-full sm:max-w-md">
           <Card
-            className="border-0 shadow-lg shadow-gray-100/50 bg-white animate-fadeInUp"
+            className="animate-fadeInUp border-0 bg-white shadow-lg shadow-neutral-200/60"
             style={{ animationDelay: '200ms' }}
           >
-            <CardHeader className="text-center pb-4">
-              <CardTitle size="lg" className="text-gray-900">
+            <CardHeader className="pb-4 text-center">
+              <CardTitle size="lg" className="text-neutral-900">
                 {t('signIn')}
               </CardTitle>
               <CardDescription className="text-base">{t('enterCredentials')}</CardDescription>
@@ -58,14 +64,14 @@ export default async function LoginPage({ params }: { params: Promise<{ locale: 
 
           {/* Additional Info */}
           <div className="mt-8 text-center animate-fadeInUp" style={{ animationDelay: '400ms' }}>
-            <p className="text-sm text-gray-500">{t('secureLogin')}</p>
-            <div className="flex items-center justify-center mt-4 gap-x-4 text-xs text-gray-400">
+            <p className="text-sm text-neutral-500">{t('secureLogin')}</p>
+            <div className="mt-4 flex items-center justify-center gap-x-4 text-xs text-neutral-400">
               <div className="flex items-center">
-                <HiOutlineShieldCheck className="size-4 mr-1" />
+                <HiOutlineShieldCheck className="mr-1 size-4" />
                 {t('sslEncrypted')}
               </div>
               <div className="flex items-center">
-                <HiOutlineLockClosed className="size-4 mr-1" />
+                <HiOutlineLockClosed className="mr-1 size-4" />
                 {t('privacyProtected')}
               </div>
             </div>

@@ -195,91 +195,97 @@ export default function ProfileBookmarks() {
         </Card>
       ) : (
         <div className="space-y-6">
-          {bookmarks.map((bookmark) => (
-            <Card key={bookmark._id} className="hover:shadow-md transition-shadow">
-              <CardHeader className="p-4 sm:p-6">
-                <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
-                  <div className="flex-1 min-w-0">
-                    <CardTitle className="text-lg">{bookmark.question.text}</CardTitle>
-                    <div className="flex items-center gap-x-2 mt-2 flex-wrap gap-y-1">
-                      <div className="text-sm text-neutral-600">
-                        <Link
-                          href={`/quiz/${bookmark.quiz.slug}`}
-                          className="text-brand-action hover:underline"
+          {bookmarks.map((bookmark) => {
+            const createdAtLabel = new Date(bookmark.createdAt).toLocaleDateString();
+
+            return (
+              <Card key={bookmark._id} className="hover:shadow-md transition-shadow">
+                <CardHeader className="p-4 sm:p-6">
+                  <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
+                    <div className="flex-1 min-w-0">
+                      <CardTitle className="text-lg">{bookmark.question.text}</CardTitle>
+                      <div className="flex items-center gap-x-2 mt-2 flex-wrap gap-y-1">
+                        <div className="text-sm text-neutral-600">
+                          <Link
+                            href={`/quiz/${bookmark.quiz.slug}`}
+                            className="text-brand-action hover:underline"
+                          >
+                            {bookmark.quiz.title}
+                          </Link>
+                        </div>
+                        <span
+                          className={`px-2 py-0.5 rounded text-xs font-medium ${
+                            bookmark.question.type === 'single'
+                              ? 'bg-orange-100 text-orange-800'
+                              : 'bg-green-100 text-green-800'
+                          }`}
                         >
-                          {bookmark.quiz.title}
-                        </Link>
+                          {bookmark.question.type === 'single'
+                            ? t('singleChoice')
+                            : t('multipleChoice')}
+                        </span>
+                        <time
+                          className="text-xs text-neutral-500"
+                          dateTime={bookmark.createdAt}
+                          suppressHydrationWarning
+                        >
+                          {createdAtLabel}
+                        </time>
                       </div>
-                      <span
-                        className={`px-2 py-0.5 rounded text-xs font-medium ${
-                          bookmark.question.type === 'single'
-                            ? 'bg-orange-100 text-orange-800'
-                            : 'bg-green-100 text-green-800'
-                        }`}
+                    </div>
+                    <div className="flex gap-2 w-full sm:w-auto">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => openAIModal(bookmark)}
+                        className="flex items-center gap-1.5"
                       >
-                        {bookmark.question.type === 'single'
-                          ? t('singleChoice')
-                          : t('multipleChoice')}
-                      </span>
-                      <time
-                        className="text-xs text-neutral-500"
-                        dateTime={bookmark.createdAt}
-                        suppressHydrationWarning
+                        <Image
+                          src={chatbotIcon}
+                          alt="AI chatbot"
+                          width={16}
+                          height={16}
+                          className="size-4"
+                        />{' '}
+                        {t('askAI')}{' '}
+                        {getHistory(bookmark._id).length > 0 &&
+                          `(${Math.floor(getHistory(bookmark._id).length / 2)})`}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setBookmarkToRemove(bookmark)}
+                        className="text-red-600 border-red-200 hover:bg-red-50 flex items-center gap-1.5"
                       >
-                        {new Date(bookmark.createdAt).toLocaleDateString()}
-                      </time>
+                        <HiOutlineTrash className="size-4" /> {tCommon('remove')}
+                      </Button>
                     </div>
                   </div>
-                  <div className="flex gap-2 w-full sm:w-auto">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => openAIModal(bookmark)}
-                      className="flex items-center gap-1.5"
-                    >
-                      <Image
-                        src={chatbotIcon}
-                        alt="AI chatbot"
-                        width={16}
-                        height={16}
-                        className="size-4"
-                      />{' '}
-                      {t('askAI')}{' '}
-                      {getHistory(bookmark._id).length > 0 &&
-                        `(${Math.floor(getHistory(bookmark._id).length / 2)})`}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setBookmarkToRemove(bookmark)}
-                      className="text-red-600 border-red-200 hover:bg-red-50 flex items-center gap-1.5"
-                    >
-                      <HiOutlineTrash className="size-4" /> {tCommon('remove')}
-                    </Button>
+                  {bookmark.question.questionImage && (
+                    <div className="mt-4">
+                      <BookmarkOptionImage src={bookmark.question.questionImage} alt="Question" />
+                    </div>
+                  )}
+                </CardHeader>
+                <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
+                  <div className="space-y-3">
+                    <div className="text-sm">
+                      <span className="font-medium text-neutral-700">{t('correct')}: </span>
+                      <span className="text-green-600">
+                        {formatCorrectAnswer(bookmark.question)}
+                      </span>
+                    </div>
+                    <QuestionOptionsPreview
+                      options={bookmark.question.options}
+                      className="mt-2 text-sm text-neutral-600"
+                      optionsClassName="grid grid-cols-1 gap-1"
+                      optionItemClassName="opacity-75"
+                    />
                   </div>
-                </div>
-                {bookmark.question.questionImage && (
-                  <div className="mt-4">
-                    <BookmarkOptionImage src={bookmark.question.questionImage} alt="Question" />
-                  </div>
-                )}
-              </CardHeader>
-              <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
-                <div className="space-y-3">
-                  <div className="text-sm">
-                    <span className="font-medium text-neutral-700">{t('correct')}: </span>
-                    <span className="text-green-600">{formatCorrectAnswer(bookmark.question)}</span>
-                  </div>
-                  <QuestionOptionsPreview
-                    options={bookmark.question.options}
-                    className="mt-2 text-sm text-neutral-600"
-                    optionsClassName="grid grid-cols-1 gap-1"
-                    optionItemClassName="opacity-75"
-                  />
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            );
+          })}
 
           {pagination && pagination.totalPages > 1 && (
             <div className="flex justify-center">

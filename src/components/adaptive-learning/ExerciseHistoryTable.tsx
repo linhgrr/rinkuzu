@@ -29,7 +29,7 @@ interface ExerciseHistoryTableProps {
   exercises: ExerciseHistoryFull[];
 }
 
-function renderExercisePrompt(exercise: ExerciseHistoryFull) {
+function ExercisePromptView({ exercise }: { exercise: ExerciseHistoryFull }) {
   const promptSections = getExercisePromptSections(exercise);
   return (
     <div className="space-y-3">
@@ -45,10 +45,13 @@ function renderExercisePrompt(exercise: ExerciseHistoryFull) {
   );
 }
 
-function renderAnswerText(
-  value: string | null | undefined,
-  t: ReturnType<typeof useTranslations<'adaptiveLearning'>>,
-) {
+function AnswerTextView({
+  value,
+  t,
+}: {
+  value: string | null | undefined;
+  t: ReturnType<typeof useTranslations<'adaptiveLearning'>>;
+}) {
   const normalizedValue = value?.trim();
   if (!normalizedValue) {
     return <span>{t('history.table.noAnswer')}</span>;
@@ -67,17 +70,20 @@ function renderAnswerText(
 
 function getSelectedChoiceKeys(userAnswer: string | null | undefined) {
   return new Set(
-    (userAnswer || '')
-      .split(',')
-      .map((choice) => choice.trim().toUpperCase())
-      .filter(Boolean),
+    (userAnswer || '').split(',').flatMap((choice) => {
+      const normalizedChoice = choice.trim().toUpperCase();
+      return normalizedChoice ? [normalizedChoice] : [];
+    }),
   );
 }
 
-function renderCorrectAnswer(
-  exercise: ExerciseHistoryFull,
-  t: ReturnType<typeof useTranslations<'adaptiveLearning'>>,
-) {
+function CorrectAnswerView({
+  exercise,
+  t,
+}: {
+  exercise: ExerciseHistoryFull;
+  t: ReturnType<typeof useTranslations<'adaptiveLearning'>>;
+}) {
   if (exercise.exercise_type === 'matching' && exercise.pairs?.length) {
     return (
       <div className="space-y-2">
@@ -140,10 +146,13 @@ function renderCorrectAnswer(
   return <DynamicMarkdownRenderer content={exercise.correct_option} />;
 }
 
-function renderSelectedChoicesSummary(
-  exercise: ExerciseHistoryFull,
-  t: ReturnType<typeof useTranslations<'adaptiveLearning'>>,
-) {
+function SelectedChoicesSummary({
+  exercise,
+  t,
+}: {
+  exercise: ExerciseHistoryFull;
+  t: ReturnType<typeof useTranslations<'adaptiveLearning'>>;
+}) {
   const selectedChoices = Array.from(getSelectedChoiceKeys(exercise.user_answer));
 
   if (!selectedChoices.length) {
@@ -168,10 +177,13 @@ function renderSelectedChoicesSummary(
   );
 }
 
-function renderSelectedOptions(
-  exercise: ExerciseHistoryFull,
-  t: ReturnType<typeof useTranslations<'adaptiveLearning'>>,
-) {
+function SelectedOptionsList({
+  exercise,
+  t,
+}: {
+  exercise: ExerciseHistoryFull;
+  t: ReturnType<typeof useTranslations<'adaptiveLearning'>>;
+}) {
   const selectedChoices = getSelectedChoiceKeys(exercise.user_answer);
 
   return (
@@ -365,7 +377,7 @@ export function ExerciseHistoryTable({ exercises }: ExerciseHistoryTableProps) {
                 {t('history.table.question')}
               </h4>
               <div className="rounded-lg border border-neutral-200 bg-white p-4 text-sm text-neutral-800 shadow-sm">
-                {renderExercisePrompt(selectedExercise)}
+                <ExercisePromptView exercise={selectedExercise} />
               </div>
             </div>
 
@@ -374,19 +386,19 @@ export function ExerciseHistoryTable({ exercises }: ExerciseHistoryTableProps) {
                 <h4 className="mb-3 text-sm font-semibold text-neutral-900">
                   {t('history.table.options')}
                 </h4>
-                {renderSelectedOptions(selectedExercise, t)}
+                <SelectedOptionsList exercise={selectedExercise} t={t} />
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="rounded-lg border border-neutral-200 bg-white p-4 text-sm text-neutral-800 shadow-sm">
                     <div className="mb-1 text-xs font-bold uppercase tracking-wide text-neutral-500">
                       {t('history.table.yourAnswerCard')}
                     </div>
-                    {renderSelectedChoicesSummary(selectedExercise, t)}
+                    <SelectedChoicesSummary exercise={selectedExercise} t={t} />
                   </div>
                   <div className="rounded-lg border border-green-200 bg-green-50/50 p-4 text-sm text-green-900 shadow-sm">
                     <div className="mb-1 text-xs font-bold uppercase tracking-wide text-green-700">
                       {t('history.table.correctAnswerCard')}
                     </div>
-                    {renderCorrectAnswer(selectedExercise, t)}
+                    <CorrectAnswerView exercise={selectedExercise} t={t} />
                   </div>
                 </div>
               </div>
@@ -396,13 +408,15 @@ export function ExerciseHistoryTable({ exercises }: ExerciseHistoryTableProps) {
                   <div className="mb-1 text-xs font-bold uppercase tracking-wide text-neutral-500">
                     {t('history.table.yourAnswerCard')}
                   </div>
-                  <div>{renderAnswerText(selectedExercise.user_answer, t)}</div>
+                  <div>
+                    <AnswerTextView value={selectedExercise.user_answer} t={t} />
+                  </div>
                 </div>
                 <div className="rounded-lg border border-green-200 bg-green-50/50 p-4 text-sm text-green-900 shadow-sm">
                   <div className="mb-1 text-xs font-bold uppercase tracking-wide text-green-700">
                     {t('history.table.correctAnswerCard')}
                   </div>
-                  {renderCorrectAnswer(selectedExercise, t)}
+                  <CorrectAnswerView exercise={selectedExercise} t={t} />
                 </div>
               </div>
             )}

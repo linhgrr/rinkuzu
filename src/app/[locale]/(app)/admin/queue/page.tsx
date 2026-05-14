@@ -332,135 +332,138 @@ export default function AdminQueuePage() {
                   </CardContent>
                 </Card>
               ) : (
-                quizzes.map((quiz) => (
-                  <Card key={quiz._id}>
-                    <CardHeader>
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-x-3">
-                            <CardTitle className="text-xl">{quiz.title}</CardTitle>
-                            {quiz.isPrivate && (
-                              <span className="inline-flex min-h-[28px] items-center rounded-full bg-neutral-100 px-3 text-[13px] font-medium text-neutral-600">
-                                <HiOutlineLockClosed className="size-3 mr-1" />{' '}
-                                {tProfile('private')}
-                              </span>
-                            )}
-                          </div>
-                          <CardDescription className="mt-2">
-                            {quiz.description || tProfile('noDescription')}
-                          </CardDescription>
-                          <div className="mt-3 flex items-center gap-x-4 text-sm text-neutral-600">
-                            <div className="flex min-w-0 items-center gap-2">
-                              <span className="shrink-0">{t('by')}</span>
-                              <UserProfileLink
-                                user={quiz.author as any}
-                                avatarSize={24}
-                                className="max-w-[220px] text-sm text-neutral-600"
-                                nameClassName="text-sm"
-                              />
+                quizzes.map((quiz) => {
+                  const createdAt = new Date(quiz.createdAt);
+                  const createdAtIso = createdAt.toISOString();
+                  const createdAtLabel = formatDate(createdAt);
+
+                  return (
+                    <Card key={quiz._id}>
+                      <CardHeader>
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-x-3">
+                              <CardTitle className="text-xl">{quiz.title}</CardTitle>
+                              {quiz.isPrivate && (
+                                <span className="inline-flex min-h-[28px] items-center rounded-full bg-neutral-100 px-3 text-[13px] font-medium text-neutral-600">
+                                  <HiOutlineLockClosed className="size-3 mr-1" />{' '}
+                                  {tProfile('private')}
+                                </span>
+                              )}
                             </div>
-                            <span>•</span>
-                            <span
-                              className="inline-flex min-h-[28px] items-center rounded-full px-3 text-[13px] font-medium"
-                              style={{
-                                backgroundColor: (quiz.category as any)?.color + '20',
-                                color: (quiz.category as any)?.color,
-                              }}
-                            >
-                              {(quiz.category as any)?.name || tProfile('noCategory')}
-                            </span>
-                            <span>•</span>
-                            <span>
-                              {quiz.questions.length} {t('questions')}
-                            </span>
-                            <span>•</span>
-                            <span>
-                              {t('createdDate')}{' '}
-                              <time
-                                dateTime={new Date(quiz.createdAt).toISOString()}
-                                suppressHydrationWarning
+                            <CardDescription className="mt-2">
+                              {quiz.description || tProfile('noDescription')}
+                            </CardDescription>
+                            <div className="mt-3 flex items-center gap-x-4 text-sm text-neutral-600">
+                              <div className="flex min-w-0 items-center gap-2">
+                                <span className="shrink-0">{t('by')}</span>
+                                <UserProfileLink
+                                  user={quiz.author as any}
+                                  avatarSize={24}
+                                  className="max-w-[220px] text-sm text-neutral-600"
+                                  nameClassName="text-sm"
+                                />
+                              </div>
+                              <span>•</span>
+                              <span
+                                className="inline-flex min-h-[28px] items-center rounded-full px-3 text-[13px] font-medium"
+                                style={{
+                                  backgroundColor: (quiz.category as any)?.color + '20',
+                                  color: (quiz.category as any)?.color,
+                                }}
                               >
-                                {formatDate(new Date(quiz.createdAt))}
-                              </time>
-                            </span>
+                                {(quiz.category as any)?.name || tProfile('noCategory')}
+                              </span>
+                              <span>•</span>
+                              <span>
+                                {quiz.questions.length} {t('questions')}
+                              </span>
+                              <span>•</span>
+                              <span>
+                                {t('createdDate')}{' '}
+                                <time dateTime={createdAtIso} suppressHydrationWarning>
+                                  {createdAtLabel}
+                                </time>
+                              </span>
+                            </div>
                           </div>
+                          {getStatusBadge(quiz.status)}
                         </div>
-                        {getStatusBadge(quiz.status)}
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex items-center justify-between">
-                        <div className="flex gap-x-4">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => openPreviewModal(quiz)}
-                            className="min-h-[36px] px-3"
-                          >
-                            <HiOutlineEye className="size-4 mr-1" /> {t('previewWithAnswers')}
-                          </Button>
-                          <Link
-                            href={`/quiz/${quiz.slug}`}
-                            className="text-brand-trust hover:text-green-700 text-sm font-medium inline-flex items-center"
-                          >
-                            {t('testQuiz')}
-                          </Link>
-                          <Link href={`/edit/${quiz._id}`}>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex items-center justify-between">
+                          <div className="flex gap-x-4">
                             <Button
                               size="sm"
                               variant="outline"
-                              className="min-h-[36px] px-3 text-brand-trust hover:text-brand-trust border-green-300 hover:border-green-400"
+                              onClick={() => openPreviewModal(quiz)}
+                              className="min-h-[36px] px-3"
                             >
-                              <HiOutlinePencil className="size-4 mr-1" /> {t('editQuiz')}
+                              <HiOutlineEye className="size-4 mr-1" /> {t('previewWithAnswers')}
                             </Button>
-                          </Link>
-                        </div>
+                            <Link
+                              href={`/quiz/${quiz.slug}`}
+                              className="text-brand-trust hover:text-green-700 text-sm font-medium inline-flex items-center"
+                            >
+                              {t('testQuiz')}
+                            </Link>
+                            <Link href={`/edit/${quiz._id}`}>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="min-h-[36px] px-3 text-brand-trust hover:text-brand-trust border-green-300 hover:border-green-400"
+                              >
+                                <HiOutlinePencil className="size-4 mr-1" /> {t('editQuiz')}
+                              </Button>
+                            </Link>
+                          </div>
 
-                        <div className="flex gap-x-3">
-                          {quiz.status === 'pending' && (
-                            <>
-                              <Button
-                                size="sm"
-                                variant="destructive"
-                                onClick={() => openRejectModal(quiz)}
-                                disabled={actionLoading === quiz._id}
-                                className="min-h-[36px] px-3"
-                              >
-                                {t('reject')}
-                              </Button>
-                              <Button
-                                size="sm"
-                                onClick={() => approveQuiz(quiz._id)}
-                                loading={actionLoading === quiz._id}
-                                className="min-h-[36px] bg-green-600 px-3 hover:bg-green-700"
-                              >
-                                {t('approve')}
-                              </Button>
-                            </>
-                          )}
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => openDeleteConfirm(quiz)}
-                            className="min-h-[36px] px-3 text-red-600 hover:text-red-700 border-red-300 hover:border-red-400"
-                            disabled={deletingQuizId === quiz._id}
-                          >
-                            {deletingQuizId === quiz._id ? (
+                          <div className="flex gap-x-3">
+                            {quiz.status === 'pending' && (
                               <>
-                                <div className="animate-spin rounded-full size-4 border-2 border-red-600 border-t-transparent mr-2"></div>
-                                {t('deleting')}
-                              </>
-                            ) : (
-                              <>
-                                <HiOutlineTrash className="size-4 mr-1" /> {t('delete')}
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  onClick={() => openRejectModal(quiz)}
+                                  disabled={actionLoading === quiz._id}
+                                  className="min-h-[36px] px-3"
+                                >
+                                  {t('reject')}
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  onClick={() => approveQuiz(quiz._id)}
+                                  loading={actionLoading === quiz._id}
+                                  className="min-h-[36px] bg-green-600 px-3 hover:bg-green-700"
+                                >
+                                  {t('approve')}
+                                </Button>
                               </>
                             )}
-                          </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => openDeleteConfirm(quiz)}
+                              className="min-h-[36px] px-3 text-red-600 hover:text-red-700 border-red-300 hover:border-red-400"
+                              disabled={deletingQuizId === quiz._id}
+                            >
+                              {deletingQuizId === quiz._id ? (
+                                <>
+                                  <div className="animate-spin rounded-full size-4 border-2 border-red-600 border-t-transparent mr-2"></div>
+                                  {t('deleting')}
+                                </>
+                              ) : (
+                                <>
+                                  <HiOutlineTrash className="size-4 mr-1" /> {t('delete')}
+                                </>
+                              )}
+                            </Button>
+                          </div>
                         </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))
+                      </CardContent>
+                    </Card>
+                  );
+                })
               )}
 
               {/* Pagination */}

@@ -125,8 +125,8 @@ export default function EditQuizPage() {
   };
 
   const addQuestion = () => {
-    setEditableQuestions([
-      ...editableQuestions,
+    setEditableQuestions((prev) => [
+      ...prev,
       {
         question: '',
         options: ['', '', '', ''],
@@ -326,7 +326,7 @@ export default function EditQuizPage() {
             </div>
 
             {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center space-x-8">
+            <div className="hidden items-center gap-x-8 md:flex">
               {session ? (
                 <>
                   <Link
@@ -369,7 +369,7 @@ export default function EditQuizPage() {
                   </div>
                 </>
               ) : (
-                <div className="flex items-center space-x-4">
+                <div className="flex items-center gap-x-4">
                   <Link href="/login">
                     <Button variant="ghost" className="text-neutral-600 hover:text-neutral-900">
                       Sign In
@@ -460,7 +460,7 @@ export default function EditQuizPage() {
             <div className="max-w-4xl mx-auto">
               <div className="mb-8 flex items-center justify-between">
                 <div>
-                  <h1 className="text-3xl font-bold text-neutral-900">Edit Quiz</h1>
+                  <h1 className="text-3xl font-semibold text-neutral-900">Edit Quiz</h1>
                   <p className="mt-2 text-neutral-600">Make changes to your quiz information</p>
                 </div>
                 {/* PDF Viewer Toggle Button */}
@@ -518,7 +518,7 @@ export default function EditQuizPage() {
               {!canEdit && (
                 <Card className="mb-6">
                   <CardContent className="p-6">
-                    <div className="flex items-start space-x-3">
+                    <div className="flex items-start gap-x-3">
                       <div className="text-brand-trust">
                         <HiOutlineInformationCircle className="size-6" />
                       </div>
@@ -570,7 +570,7 @@ export default function EditQuizPage() {
                 />
 
                 <div className="flex justify-between">
-                  <div className="flex space-x-4">
+                  <div className="flex gap-x-4">
                     <Link href="/pending">
                       <Button type="button" variant="outline">
                         Cancel
@@ -623,7 +623,7 @@ export default function EditQuizPage() {
                     <CardDescription>Share this link with your students</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="flex items-center space-x-4">
+                    <div className="flex items-center gap-x-4">
                       <code className="flex-1 bg-neutral-100 px-3 py-2 rounded text-sm">
                         {`${typeof window !== 'undefined' ? window.location.origin : ''}/quiz/${quiz.slug}`}
                       </code>
@@ -637,7 +637,7 @@ export default function EditQuizPage() {
                           toast.success('Quiz link copied to clipboard!');
                         }}
                       >
-                        <HiOutlineClipboardCopy className="w-4 h-4" />
+                        <HiOutlineClipboardCopy className="size-4" />
                         Copy
                       </Button>
                     </div>

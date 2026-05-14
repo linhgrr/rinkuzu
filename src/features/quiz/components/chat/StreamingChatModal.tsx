@@ -90,38 +90,42 @@ export function StreamingChatModal({
           </div>
 
           <div className="space-y-3">
-            {messages.map((message) => (
-              <div
-                key={`${message.role}-${message.timestamp}-${message.content.slice(0, 24)}`}
-                className={`p-3 rounded-lg ${
-                  message.role === 'user'
-                    ? 'bg-orange-50 border-l-4 border-orange-300'
-                    : 'bg-green-50 border-l-4 border-green-400'
-                }`}
-              >
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-sm font-medium text-neutral-700">
-                    {message.role === 'user' ? userLabel : assistantLabel}
-                  </span>
-                  {showTimestamps && (
-                    <time
-                      className="text-xs text-neutral-500"
-                      dateTime={message.timestamp}
-                      suppressHydrationWarning
-                    >
-                      {new Date(message.timestamp).toLocaleTimeString()}
-                    </time>
-                  )}
+            {messages.map((message) => {
+              const timestampLabel = new Date(message.timestamp).toLocaleTimeString();
+
+              return (
+                <div
+                  key={`${message.role}-${message.timestamp}-${message.content.slice(0, 24)}`}
+                  className={`p-3 rounded-lg ${
+                    message.role === 'user'
+                      ? 'bg-orange-50 border-l-4 border-orange-300'
+                      : 'bg-green-50 border-l-4 border-green-400'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-sm font-medium text-neutral-700">
+                      {message.role === 'user' ? userLabel : assistantLabel}
+                    </span>
+                    {showTimestamps && (
+                      <time
+                        className="text-xs text-neutral-500"
+                        dateTime={message.timestamp}
+                        suppressHydrationWarning
+                      >
+                        {timestampLabel}
+                      </time>
+                    )}
+                  </div>
+                  <div className="text-sm text-neutral-800">
+                    {message.role === 'assistant' ? (
+                      <MarkdownRenderer content={message.content} />
+                    ) : (
+                      <p>{message.content}</p>
+                    )}
+                  </div>
                 </div>
-                <div className="text-sm text-neutral-800">
-                  {message.role === 'assistant' ? (
-                    <MarkdownRenderer content={message.content} />
-                  ) : (
-                    <p>{message.content}</p>
-                  )}
-                </div>
-              </div>
-            ))}
+              );
+            })}
 
             {loadingAI && (
               <div className="p-3 rounded-lg bg-green-50 border-l-4 border-green-400">

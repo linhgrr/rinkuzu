@@ -244,83 +244,86 @@ export default function ProfileQuizzes() {
             </CardContent>
           </Card>
         ) : (
-          quizzes.map((quiz) => (
-            <Card key={quiz._id}>
-              <CardHeader className="p-4 sm:p-6">
-                <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-x-2 flex-wrap gap-y-2">
-                      <CardTitle className="text-lg truncate">{quiz.title}</CardTitle>
-                      <span className="text-xl shrink-0">{getStatusIcon(quiz.status)}</span>
-                      {quiz.isPrivate && (
-                        <span className="flex items-center text-xs bg-neutral-100 text-neutral-600 px-2 py-0.5 rounded-full shrink-0">
-                          <HiOutlineLockClosed className="size-3 mr-1" /> {t('private')}
-                        </span>
-                      )}
-                      <span
-                        className={`px-2 py-0.5 rounded-full text-xs font-medium shrink-0 ${getStatusColor(quiz.status)}`}
-                      >
-                        {quiz.status.charAt(0).toUpperCase() + quiz.status.slice(1)}
-                      </span>
-                    </div>
-                    <CardDescription className="mt-1 text-sm line-clamp-2">
-                      {quiz.description || t('noDescription')}
-                    </CardDescription>
-                    <div className="mt-2 flex items-center gap-x-2 text-xs text-neutral-500 flex-wrap">
-                      <span>{quiz.questions.length} Qs</span>
-                      <span>•</span>
-                      <span style={{ color: (quiz.category as any)?.color }}>
-                        {(quiz.category as any)?.name || t('noCategory')}
-                      </span>
-                      <span>•</span>
-                      <time
-                        dateTime={new Date(quiz.createdAt).toISOString()}
-                        suppressHydrationWarning
-                      >
-                        {formatDate(new Date(quiz.createdAt))}
-                      </time>
-                    </div>
-                  </div>
+          quizzes.map((quiz) => {
+            const createdAt = new Date(quiz.createdAt);
+            const createdAtIso = createdAt.toISOString();
+            const createdAtLabel = formatDate(createdAt);
 
-                  <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-                    <Link href={`/quiz/${quiz.slug}`}>
+            return (
+              <Card key={quiz._id}>
+                <CardHeader className="p-4 sm:p-6">
+                  <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-x-2 flex-wrap gap-y-2">
+                        <CardTitle className="text-lg truncate">{quiz.title}</CardTitle>
+                        <span className="text-xl shrink-0">{getStatusIcon(quiz.status)}</span>
+                        {quiz.isPrivate && (
+                          <span className="flex items-center text-xs bg-neutral-100 text-neutral-600 px-2 py-0.5 rounded-full shrink-0">
+                            <HiOutlineLockClosed className="size-3 mr-1" /> {t('private')}
+                          </span>
+                        )}
+                        <span
+                          className={`px-2 py-0.5 rounded-full text-xs font-medium shrink-0 ${getStatusColor(quiz.status)}`}
+                        >
+                          {quiz.status.charAt(0).toUpperCase() + quiz.status.slice(1)}
+                        </span>
+                      </div>
+                      <CardDescription className="mt-1 text-sm line-clamp-2">
+                        {quiz.description || t('noDescription')}
+                      </CardDescription>
+                      <div className="mt-2 flex items-center gap-x-2 text-xs text-neutral-500 flex-wrap">
+                        <span>{quiz.questions.length} Qs</span>
+                        <span>•</span>
+                        <span style={{ color: (quiz.category as any)?.color }}>
+                          {(quiz.category as any)?.name || t('noCategory')}
+                        </span>
+                        <span>•</span>
+                        <time dateTime={createdAtIso} suppressHydrationWarning>
+                          {createdAtLabel}
+                        </time>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                      <Link href={`/quiz/${quiz.slug}`}>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-brand-action hover:text-brand-action-hover border-orange-200 hover:border-orange-300"
+                        >
+                          <HiOutlinePlay className="size-4" />
+                        </Button>
+                      </Link>
+
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => openPreviewModal(quiz)}
+                        className="hidden sm:inline-flex"
+                      >
+                        <HiOutlineEye className="size-4" />
+                      </Button>
+
+                      <Link href={`/edit/${quiz._id}`}>
+                        <Button size="sm" variant="outline">
+                          <HiOutlinePencil className="size-4" />
+                        </Button>
+                      </Link>
+
                       <Button
                         size="sm"
                         variant="outline"
-                        className="text-brand-action hover:text-brand-action-hover border-orange-200 hover:border-orange-300"
+                        onClick={() => openDeleteConfirm(quiz)}
+                        className="text-red-600 hover:text-red-700 border-red-200 hover:border-red-300"
                       >
-                        <HiOutlinePlay className="size-4" />
+                        <HiOutlineTrash className="size-4" />
                       </Button>
-                    </Link>
-
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => openPreviewModal(quiz)}
-                      className="hidden sm:inline-flex"
-                    >
-                      <HiOutlineEye className="size-4" />
-                    </Button>
-
-                    <Link href={`/edit/${quiz._id}`}>
-                      <Button size="sm" variant="outline">
-                        <HiOutlinePencil className="size-4" />
-                      </Button>
-                    </Link>
-
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => openDeleteConfirm(quiz)}
-                      className="text-red-600 hover:text-red-700 border-red-200 hover:border-red-300"
-                    >
-                      <HiOutlineTrash className="size-4" />
-                    </Button>
+                    </div>
                   </div>
-                </div>
-              </CardHeader>
-            </Card>
-          ))
+                </CardHeader>
+              </Card>
+            );
+          })
         )}
 
         {pagination.totalPages > 1 && (

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useEffect, useReducer } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
@@ -34,50 +34,65 @@ interface Category {
   slug: string;
 }
 
+interface CategoriesPageState {
+  status: 'loading' | 'ready';
+  categories: Category[];
+  error: string;
+  searchTerm: string;
+}
+
+type CategoriesPageAction =
+  | { type: 'patch'; value: Partial<CategoriesPageState> }
+  | { type: 'loadSuccess'; value: Category[] }
+  | { type: 'loadError'; value: string };
+
+const initialState: CategoriesPageState = {
+  status: 'loading',
+  categories: [],
+  error: '',
+  searchTerm: '',
+};
+
+function categoriesPageReducer(
+  state: CategoriesPageState,
+  action: CategoriesPageAction,
+): CategoriesPageState {
+  switch (action.type) {
+    case 'patch':
+      return { ...state, ...action.value };
+    case 'loadSuccess':
+      return { ...state, status: 'ready', categories: action.value, error: '' };
+    case 'loadError':
+      return { ...state, status: 'ready', error: action.value };
+    default:
+      return state;
+  }
+}
+
 export default function CategoriesPage() {
   const t = useTranslations('categories');
   const tCommon = useTranslations('common');
   const tNav = useTranslations('nav');
   const { push } = useRouter();
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [filteredCategories, setFilteredCategories] = useState<Category[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
+  const [state, dispatch] = useReducer(categoriesPageReducer, initialState);
 
-  const fetchCategories = useCallback(async () => {
-    try {
-      setLoading(true);
-      const data = await fetchApiData<Category[]>('/api/categories');
-      setCategories(data);
-      setFilteredCategories(data);
-      setError('');
-    } catch (error) {
-      console.error('Error fetching categories:', error);
-      setError(
-        error instanceof Error ? error.message : 'An error occurred while fetching categories',
-      );
-    } finally {
-      setLoading(false);
-    }
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const data = await fetchApiData<Category[]>('/api/categories');
+        dispatch({ type: 'loadSuccess', value: data });
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+        dispatch({
+          type: 'loadError',
+          value:
+            error instanceof Error ? error.message : 'An error occurred while fetching categories',
+        });
+      }
+    };
+
+    void fetchCategories();
   }, []);
-
-  useEffect(() => {
-    fetchCategories();
-  }, [fetchCategories]);
-
-  useEffect(() => {
-    if (searchTerm.trim()) {
-      const filtered = categories.filter(
-        (category) =>
-          category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          category.description.toLowerCase().includes(searchTerm.toLowerCase()),
-      );
-      setFilteredCategories(filtered);
-    } else {
-      setFilteredCategories(categories);
-    }
-  }, [searchTerm, categories]);
 
   const getCategoryColor = (color: string) => {
     const colorMap: { [key: string]: string } = {
@@ -96,7 +111,16 @@ export default function CategoriesPage() {
     return colorMap[color?.toLowerCase()] || colorMap['green'];
   };
 
-  if (loading) {
+  const normalizedSearch = state.searchTerm.trim().toLowerCase();
+  const filteredCategories = normalizedSearch
+    ? state.categories.filter(
+        (category) =>
+          category.name.toLowerCase().includes(normalizedSearch) ||
+          category.description.toLowerCase().includes(normalizedSearch),
+      )
+    : state.categories;
+
+  if (state.status === 'loading') {
     return (
       <div className="min-h-screen">
         <Navigation />
@@ -118,7 +142,7 @@ export default function CategoriesPage() {
     );
   }
 
-  if (error) {
+  if (state.error) {
     return (
       <div className="min-h-screen">
         <Navigation />
@@ -126,7 +150,7 @@ export default function CategoriesPage() {
           <Card variant="bordered" className="p-6 mb-8 border-red-200 bg-red-50">
             <div className="flex items-center text-red-700">
               <HiOutlineExclamationCircle className="mr-2 size-5" />
-              {error}
+              {state.error}
             </div>
           </Card>
         </div>
@@ -156,16 +180,18 @@ export default function CategoriesPage() {
                 <Input
                   type="text"
                   placeholder={tCommon('search')}
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  value={state.searchTerm}
+                  onChange={(e) =>
+                    dispatch({ type: 'patch', value: { searchTerm: e.target.value } })
+                  }
                   icon={<HiOutlineSearch className="size-5" />}
                   className="w-full"
                 />
               </div>
-              {searchTerm && (
+              {state.searchTerm && (
                 <Button
                   variant="ghost"
-                  onClick={() => setSearchTerm('')}
+                  onClick={() => dispatch({ type: 'patch', value: { searchTerm: '' } })}
                   className="text-brand-trust hover:text-brand-trust-hover w-full sm:w-auto"
                 >
                   {tCommon('cancel')}
@@ -178,10 +204,10 @@ export default function CategoriesPage() {
         {/* Results Info */}
         <div className="flex items-center justify-between mb-6 md:mb-8">
           <p className="text-sm md:text-base text-neutral-600">
-            Showing {filteredCategories.length} of {categories.length} categories
-            {searchTerm && (
+            Showing {filteredCategories.length} of {state.categories.length} categories
+            {state.searchTerm && (
               <span className="ml-2">
-                matching &quot;<strong>{searchTerm}</strong>&quot;
+                matching &quot;<strong>{state.searchTerm}</strong>&quot;
               </span>
             )}
           </p>
@@ -195,12 +221,16 @@ export default function CategoriesPage() {
             </div>
             <h3 className="text-xl font-semibold text-neutral-900 mb-3">{t('title')}</h3>
             <p className="text-neutral-600 mb-6">
-              {searchTerm
+              {state.searchTerm
                 ? 'Try adjusting your search criteria or browse all categories.'
                 : 'No categories available yet.'}
             </p>
-            {searchTerm && (
-              <Button variant="primary" onClick={() => setSearchTerm('')} className="mx-auto">
+            {state.searchTerm && (
+              <Button
+                variant="primary"
+                onClick={() => dispatch({ type: 'patch', value: { searchTerm: '' } })}
+                className="mx-auto"
+              >
                 View All {t('title')}
               </Button>
             )}

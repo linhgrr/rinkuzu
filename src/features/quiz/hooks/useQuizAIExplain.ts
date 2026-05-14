@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { extractUnknownErrorMessage } from '@/lib/api/error';
 import { streamQuizAI } from '@/lib/quiz/ask-ai';
 
 interface ExplainableQuestion {
@@ -39,8 +40,8 @@ export function useQuizAIExplain() {
       );
 
       setAIExplanation(explanation);
-    } catch (error: any) {
-      setAIError(error.message || 'Failed to connect to AI service');
+    } catch (error: unknown) {
+      setAIError(extractUnknownErrorMessage(error, 'Failed to connect to AI service'));
     } finally {
       setLoadingAI(false);
     }

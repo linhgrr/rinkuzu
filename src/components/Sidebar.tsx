@@ -36,6 +36,7 @@ export default function Sidebar({ isOpen, onToggle, currentPath }: SidebarProps)
   const [adminMenuOpen, setAdminMenuOpen] = useState(true);
 
   if (!session) return null;
+  const userRole = (session.user as { role?: string } | undefined)?.role;
 
   const menuItems = [
     {
@@ -156,7 +157,7 @@ export default function Sidebar({ isOpen, onToggle, currentPath }: SidebarProps)
           })}
 
           {/* Admin menu section */}
-          {(session.user as any)?.role === 'admin' && (
+          {userRole === 'admin' && (
             <div className="pt-4 border-t border-neutral-200">
               {/* Admin section header */}
               {isOpen ? (

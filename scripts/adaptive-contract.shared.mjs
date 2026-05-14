@@ -7,9 +7,9 @@ import { fileURLToPath } from 'node:url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-export const FRONTEND_ROOT = resolve(__dirname, '..');
-export const REPO_ROOT = resolve(FRONTEND_ROOT, '..');
-export const BACKEND_ROOT = resolve(REPO_ROOT, 'rinkuzu-ai-api');
+const FRONTEND_ROOT = resolve(__dirname, '..');
+const REPO_ROOT = resolve(FRONTEND_ROOT, '..');
+const BACKEND_ROOT = resolve(REPO_ROOT, 'rinkuzu-ai-api');
 export const GENERATED_TYPES_PATH = resolve(FRONTEND_ROOT, 'src/generated/adaptive-api.d.ts');
 
 const BIN_EXT = process.platform === 'win32' ? '.cmd' : '';
@@ -40,7 +40,7 @@ function canRun(command) {
   return result.status === 0;
 }
 
-export function resolveBackendPython() {
+function resolveBackendPython() {
   const candidates = [
     process.env.ADAPTIVE_BACKEND_PYTHON,
     resolve(BACKEND_ROOT, '.venv/bin/python'),

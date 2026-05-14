@@ -192,8 +192,8 @@ export default function SubscriptionPage() {
                 </div>
 
                 <ul className="space-y-2 md:space-y-3 mb-6 md:mb-8">
-                  {plan.features.map((feature, index) => (
-                    <li key={index} className="flex items-start">
+                  {plan.features.map((feature) => (
+                    <li key={feature} className="flex items-start">
                       <HiOutlineCheck className="size-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
                       <span className="text-neutral-700">{feature}</span>
                     </li>

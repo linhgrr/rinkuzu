@@ -106,7 +106,7 @@ export default function TestImageUploadPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 {['Option A', 'Option B', 'Option C', 'Option D'].map((option, index) => (
-                  <div key={index} className="border border-neutral-200 rounded-lg p-4">
+                  <div key={option} className="border border-neutral-200 rounded-lg p-4">
                     <h4 className="font-medium text-neutral-900 mb-3">{option}</h4>
                     <OptionImageUpload
                       currentImage={optionImages[index]}
@@ -182,8 +182,8 @@ export default function TestImageUploadPage() {
                     {logs.length === 0 ? (
                       <div className="text-neutral-500 italic">No activity yet...</div>
                     ) : (
-                      logs.map((log, index) => (
-                        <div key={index} className="mb-1 text-neutral-700">
+                      logs.map((log) => (
+                        <div key={log} className="mb-1 text-neutral-700">
                           {log}
                         </div>
                       ))

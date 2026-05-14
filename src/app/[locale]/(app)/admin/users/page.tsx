@@ -569,8 +569,8 @@ export default function AdminUsersPage() {
                   <ul className="list-disc list-inside ml-2">
                     {plans
                       .find((p) => p._id === selectedPlanId)
-                      ?.features.map((feature, index) => (
-                        <li key={index}>{feature}</li>
+                      ?.features.map((feature) => (
+                        <li key={feature}>{feature}</li>
                       ))}
                   </ul>
                 </div>

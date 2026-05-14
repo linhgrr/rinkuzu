@@ -475,8 +475,8 @@ export default function AdminStatsPage() {
                           {t('newUsers', { count: '' })}
                         </h4>
                         <div className="space-y-2">
-                          {stats.recentActivity.users.slice(0, 5).map((user, index) => (
-                            <div key={index} className="text-sm p-2 bg-green-50 rounded">
+                          {stats.recentActivity.users.slice(0, 5).map((user) => (
+                            <div key={user.email} className="text-sm p-2 bg-green-50 rounded">
                               <div className="font-medium">{user.email}</div>
                               <div className="text-neutral-500">{formatDate(user.createdAt)}</div>
                             </div>
@@ -490,8 +490,8 @@ export default function AdminStatsPage() {
                           {t('newQuizzes', { count: '' })}
                         </h4>
                         <div className="space-y-2">
-                          {stats.recentActivity.quizzes.slice(0, 5).map((quiz, index) => (
-                            <div key={index} className="text-sm p-2 bg-green-50 rounded">
+                          {stats.recentActivity.quizzes.slice(0, 5).map((quiz) => (
+                            <div key={quiz.title} className="text-sm p-2 bg-green-50 rounded">
                               <div className="font-medium truncate">{quiz.title}</div>
                               <div className="flex items-center gap-x-2 text-xs">
                                 {getStatusBadge(quiz.status)}
@@ -508,8 +508,11 @@ export default function AdminStatsPage() {
                       <div>
                         <h4 className="font-medium mb-3 text-brand-trust">{t('recentAttempts')}</h4>
                         <div className="space-y-2">
-                          {stats.recentActivity.attempts.slice(0, 5).map((attempt, index) => (
-                            <div key={index} className="text-sm p-2 bg-green-50 rounded">
+                          {stats.recentActivity.attempts.slice(0, 5).map((attempt) => (
+                            <div
+                              key={`${attempt.user?.email || 'anonymous'}-${attempt.quiz.title}-${attempt.takenAt}`}
+                              className="text-sm p-2 bg-green-50 rounded"
+                            >
                               <div className="font-medium truncate">{attempt.quiz.title}</div>
                               <div className="flex items-center justify-between text-xs">
                                 <span className="text-neutral-500">

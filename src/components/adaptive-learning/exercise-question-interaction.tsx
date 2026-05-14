@@ -145,7 +145,7 @@ function MatchingInteraction({
         <div className="space-y-3">
           {leftItems.map((item, index) => (
             <div
-              key={`left-${index}-${item}`}
+              key={`left-${item}`}
               data-matching-card="true"
               style={sharedCardStyle}
               className="flex items-center gap-3 rounded-xl border border-neutral-200 bg-white p-3 shadow-sm"

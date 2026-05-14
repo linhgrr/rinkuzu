@@ -219,7 +219,7 @@ export function DesktopQuizLayout({
 
                     return (
                       <label
-                        key={index}
+                        key={option}
                         className={`flex cursor-pointer items-center rounded-lg border-2 p-4 transition-colors ${
                           isSelected
                             ? 'border-green-500 bg-green-50'
@@ -331,7 +331,7 @@ export function DesktopQuizLayout({
 
                     return (
                       <button
-                        key={index}
+                        key={question.question}
                         onClick={() => setCurrentQuestionIndex(index)}
                         className={`h-8 w-8 rounded text-xs font-medium transition-colors ${
                           index === currentQuestionIndex
@@ -439,7 +439,7 @@ export function DesktopQuizLayout({
               </div>
               <div className="mt-2 space-y-1">
                 {currentQuestion.options.map((option, index) => (
-                  <div key={index} className="flex items-start gap-x-2 text-xs text-neutral-600">
+                  <div key={option} className="flex items-start gap-x-2 text-xs text-neutral-600">
                     <span className="mt-0.5">{String.fromCharCode(65 + index)}.</span>
                     <div className="flex-1 [&_p]:m-0 [&_p]:text-xs [&_p]:text-neutral-600">
                       <MarkdownRenderer content={option} />

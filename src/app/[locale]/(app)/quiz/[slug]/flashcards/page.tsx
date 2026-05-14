@@ -295,10 +295,13 @@ export default function FlashcardPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  {progress.unknown.map((questionIndex, index) => {
+                  {progress.unknown.map((questionIndex) => {
                     const question = quiz.questions[questionIndex];
                     return (
-                      <div key={index} className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                      <div
+                        key={questionIndex}
+                        className="p-3 bg-red-50 border border-red-200 rounded-lg"
+                      >
                         <div className="font-medium text-neutral-900">
                           {t('question')} {questionIndex + 1}
                         </div>

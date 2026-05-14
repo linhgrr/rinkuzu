@@ -1,6 +1,6 @@
 import { ServiceResult } from '@/interfaces/services/types';
 
-export interface SearchParams {
+interface SearchParams {
   search?: string;
   page?: number;
   limit?: number;

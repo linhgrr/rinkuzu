@@ -1,11 +1,7 @@
 'use client';
 
 import useSWR from 'swr';
-import {
-  getKnowledgeGraph,
-  getMasteryMatrix,
-  getConceptDetail,
-} from '@/features/adaptive-learning/lib/api-client';
+import { getKnowledgeGraph, getMasteryMatrix } from '@/features/adaptive-learning/lib/api-client';
 
 export function useKnowledgeGraph(sessionId: string | undefined) {
   return useSWR(
@@ -30,22 +26,6 @@ export function useMasteryMatrix(sessionId: string | undefined) {
     },
     {
       revalidateOnFocus: false,
-    },
-  );
-}
-
-export function useConceptDetail(sessionId: string | undefined, conceptId: string | undefined) {
-  return useSWR(
-    sessionId && conceptId
-      ? `/api/adaptive-learning/session/${sessionId}/concept/${conceptId}`
-      : null,
-    () => {
-      if (!sessionId || !conceptId) throw new Error('sessionId and conceptId are required');
-      return getConceptDetail(sessionId, conceptId);
-    },
-    {
-      revalidateOnFocus: false,
-      dedupingInterval: 300000, // cache for 5 minutes
     },
   );
 }

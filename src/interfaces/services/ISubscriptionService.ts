@@ -26,7 +26,7 @@ export interface SubscriptionActivation {
   };
 }
 
-export interface UserSubscription {
+interface UserSubscription {
   type?: string;
   startDate?: Date;
   endDate?: Date;

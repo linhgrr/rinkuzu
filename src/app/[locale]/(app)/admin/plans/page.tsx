@@ -96,7 +96,13 @@ function createEditFormState(plan: DisplayPlan): PlanFormState {
 }
 
 function serializeFeatureFields(features: FeatureField[]) {
-  return features.map((feature) => feature.value).filter((feature) => feature.trim() !== '');
+  return features.reduce<string[]>((values, feature) => {
+    const normalizedValue = feature.value.trim();
+    if (normalizedValue) {
+      values.push(normalizedValue);
+    }
+    return values;
+  }, []);
 }
 
 function formatPlanDate(value: string) {

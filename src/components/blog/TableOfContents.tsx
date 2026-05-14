@@ -45,22 +45,21 @@ export const TableOfContents = ({ headings }: TableOfContentsProps) => {
       <ul className="space-y-3">
         {headings.map((item) => (
           <li key={item.id}>
-            <a
-              href={`#${item.id}`}
+            <button
+              type="button"
               className={`block text-sm transition-all duration-200 border-l-2 pl-4 py-1 ${
                 activeId === item.id
                   ? 'border-brand-trust text-brand-trust font-medium translate-x-1'
                   : 'border-transparent text-neutral-500 hover:text-neutral-900 hover:border-neutral-200'
               }`}
-              onClick={(e) => {
-                e.preventDefault();
+              onClick={() => {
                 document.getElementById(item.id)?.scrollIntoView({
                   behavior: 'smooth',
                 });
               }}
             >
               {item.text}
-            </a>
+            </button>
           </li>
         ))}
       </ul>

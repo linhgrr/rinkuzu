@@ -1,7 +1,7 @@
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import PayOSService from '@/services/payment/PayOSService';
 import { apiErr, apiOk } from '@/lib/api/response';
+import { PayOSService } from '@/services/payment/PayOSService';
 
 export const dynamic = 'force-dynamic';
 

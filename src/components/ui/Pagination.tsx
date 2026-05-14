@@ -12,7 +12,7 @@ interface PaginationProps {
   className?: string;
 }
 
-export function Pagination({
+function Pagination({
   currentPage,
   totalPages,
   onPageChange,

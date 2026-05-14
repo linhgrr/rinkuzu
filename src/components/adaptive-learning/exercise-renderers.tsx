@@ -273,7 +273,7 @@ function ExerciseRationale({ exercise, localizedBloomLabel, t }: ExerciseRationa
         className={`grid transition-[grid-template-rows] duration-200 ease-out ${isOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}
       >
         <div className="overflow-hidden">
-          <div className="border-t border-brand-trust/15 px-4 py-4">
+          <div className="border-t border-brand-trust/15 p-4">
             <p className="text-sm leading-6 text-neutral-700">
               {rationale.satisfied_prereqs.length > 0
                 ? t('exercise.rationale.withPrereqs', {

@@ -81,7 +81,7 @@ export function MarkdownRenderer({ content, className }: MarkdownRendererProps) 
             </pre>
           ),
           blockquote: ({ children }) => (
-            <blockquote className="border-l-4 border-green-200 pl-4 py-2 bg-green-50 mb-3 rounded-r">
+            <blockquote className="mb-3 rounded-lg border border-green-200 bg-green-50 px-4 py-3">
               {children}
             </blockquote>
           ),

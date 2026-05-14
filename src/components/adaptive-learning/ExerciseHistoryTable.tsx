@@ -5,7 +5,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
 import { DynamicMarkdownRenderer } from '@/components/ui/DynamicMarkdownRenderer';
 import { Modal } from '@/components/ui/Modal';
-import { Pagination } from '@/components/ui/Pagination';
+import Pagination from '@/components/ui/Pagination';
 import { HiCheck, HiOutlineEye, HiOutlineX } from '@/components/icons';
 import {
   buildExercisePromptText,

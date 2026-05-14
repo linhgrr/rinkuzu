@@ -7,9 +7,12 @@ import { apiOk, apiErr } from '@/lib/api/response';
 
 export async function POST(request: NextRequest, { params }: AsyncRouteParams<{ slug: string }>) {
   try {
-    const { slug } = await params;
-    const session = await getServerSession(authOptions);
-    const { answers, userEmail } = await request.json();
+    const [{ slug }, session, payload] = await Promise.all([
+      params,
+      getServerSession(authOptions),
+      request.json(),
+    ]);
+    const { answers, userEmail } = payload as { answers?: unknown; userEmail?: string };
 
     if (!answers || !Array.isArray(answers)) {
       return apiErr('invalid_request', 'Answers array is required', 400);

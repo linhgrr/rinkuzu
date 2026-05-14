@@ -11,7 +11,7 @@ export function HowItWorks() {
   ];
 
   return (
-    <section className="bg-black py-24">
+    <section className="bg-[#07121a] py-24">
       <div className="max-w-7xl mx-auto px-6">
         <div className="text-center mb-16">
           <h2 className="text-3xl md:text-5xl font-semibold text-white mb-4">{t('title')}</h2>

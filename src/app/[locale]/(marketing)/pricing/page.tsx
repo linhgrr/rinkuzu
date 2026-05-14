@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { buildLocalizedMetadata, siteUrl } from '@/lib/seo';
 import { Pricing2 } from '@/components/blocks/pricing2';
 import { buildFaqSchema } from '@/lib/structured-data';
@@ -177,12 +178,12 @@ export default async function PricingPage({ params }: Props) {
           <p className="text-neutral-600">
             Start with the free plan, no credit card required. Upgrade anytime.
           </p>
-          <a
+          <Link
             href="/register"
             className="inline-block bg-brand-action text-white font-semibold px-8 py-3 rounded-full hover:bg-brand-action-hover transition-colors shadow-sm"
           >
             Get Started Free
-          </a>
+          </Link>
         </div>
       </section>
     </main>

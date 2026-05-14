@@ -394,7 +394,7 @@ export default function QuizResultPage() {
           <div className="text-center">
             <h1 className="text-2xl font-semibold text-neutral-900">{t('quizComplete')}</h1>
             <p className="mt-2 text-neutral-600">{result.quiz.title}</p>
-            <p className="text-sm text-neutral-500">
+            <p className="text-sm text-neutral-500" suppressHydrationWarning>
               {t('completedOn')}{' '}
               {new Date(result.takenAt).toLocaleDateString('vi-VN', {
                 year: 'numeric',

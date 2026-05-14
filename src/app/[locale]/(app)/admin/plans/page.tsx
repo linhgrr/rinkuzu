@@ -639,10 +639,10 @@ export default function AdminPlansPage() {
                       {/* Plan Info */}
                       <div className="mt-4 pt-4 border-t border-neutral-100">
                         <div className="text-xs text-neutral-500 space-y-1">
-                          <div>
+                          <div suppressHydrationWarning>
                             {t('created')}: {new Date(plan.createdAt).toLocaleDateString()}
                           </div>
-                          <div>
+                          <div suppressHydrationWarning>
                             {t('updated')}: {new Date(plan.updatedAt).toLocaleDateString()}
                           </div>
                         </div>

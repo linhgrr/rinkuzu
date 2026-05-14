@@ -387,7 +387,10 @@ export default function AdminUsersPage() {
                             )}
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-500">
+                        <td
+                          className="px-6 py-4 whitespace-nowrap text-sm text-neutral-500"
+                          suppressHydrationWarning
+                        >
                           {new Date(user.createdAt).toLocaleDateString()}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">

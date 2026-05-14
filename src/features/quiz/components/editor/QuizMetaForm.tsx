@@ -101,7 +101,7 @@ export function QuizMetaFormEditor({
                 <p>
                   <strong>Questions:</strong> {quiz.questions.length}
                 </p>
-                <p>
+                <p suppressHydrationWarning>
                   <strong>Created:</strong> {new Date(quiz.createdAt).toLocaleDateString()}
                 </p>
                 {quiz.status === 'published' && (

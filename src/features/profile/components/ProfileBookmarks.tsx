@@ -221,7 +221,7 @@ export default function ProfileBookmarks() {
                           ? t('singleChoice')
                           : t('multipleChoice')}
                       </span>
-                      <span className="text-xs text-neutral-500">
+                      <span className="text-xs text-neutral-500" suppressHydrationWarning>
                         {new Date(bookmark.createdAt).toLocaleDateString()}
                       </span>
                     </div>

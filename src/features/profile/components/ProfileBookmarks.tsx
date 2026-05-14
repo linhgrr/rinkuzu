@@ -17,6 +17,7 @@ import { QuestionOptionsPreview } from '@/features/quiz/components/shared/Questi
 import { useStreamingChatSession } from '@/features/quiz/hooks/useStreamingChatSession';
 import { PaginationMeta } from '@/types';
 import { fetchApiData } from '@/lib/api/client';
+import { extractUnknownErrorMessage } from '@/lib/api/error';
 
 const chatbotIcon =
   'https://i.ibb.co/ZRYgc1tN/Gemini-Generated-Image-yjm06yyjm06yyjm0-removebg-preview.png';
@@ -86,8 +87,8 @@ export default function ProfileBookmarks() {
       removeHistory(bookmarkId);
       setBookmarkToRemove(null);
       setLocalError('');
-    } catch (err: any) {
-      setLocalError(err.message || 'Failed to remove bookmark');
+    } catch (error: unknown) {
+      setLocalError(extractUnknownErrorMessage(error, 'Failed to remove bookmark'));
     } finally {
       setRemovingBookmarkId(null);
     }

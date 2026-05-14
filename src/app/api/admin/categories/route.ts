@@ -24,7 +24,7 @@ export const GET = withAdmin(async (request: NextRequest) => {
       success: true,
       data: result.data,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Get categories error:', error);
     return apiErr('internal_error', 'Internal server error', 500);
   }
@@ -46,7 +46,7 @@ export const POST = withAdmin(async (request: NextRequest, context) => {
       success: true,
       data: result.data,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Create category error:', error);
     return apiErr('internal_error', 'Internal server error', 500);
   }

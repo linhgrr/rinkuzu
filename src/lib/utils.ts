@@ -2,6 +2,18 @@ import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
 const dateTimeFormatterCache = new Map<string, Intl.DateTimeFormat>();
+const sharedDateTimeFormatOptions: Intl.DateTimeFormatOptions = {
+  year: 'numeric',
+  month: 'short',
+  day: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+};
+const prebuiltDateTimeFormatters = {
+  default: new Intl.DateTimeFormat(undefined, sharedDateTimeFormatOptions),
+  en: new Intl.DateTimeFormat('en', sharedDateTimeFormatOptions),
+  vi: new Intl.DateTimeFormat('vi', sharedDateTimeFormatOptions),
+} as const;
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -21,17 +33,15 @@ export function generateSlug(title: string): string {
 }
 
 export function formatDate(date: Date, locale?: string): string {
-  const formatterKey = locale || 'default';
+  const formatterKey = locale?.startsWith('vi')
+    ? 'vi'
+    : locale?.startsWith('en')
+      ? 'en'
+      : 'default';
   let formatter = dateTimeFormatterCache.get(formatterKey);
 
   if (!formatter) {
-    formatter = new Intl.DateTimeFormat(locale, {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+    formatter = prebuiltDateTimeFormatters[formatterKey];
     dateTimeFormatterCache.set(formatterKey, formatter);
   }
 

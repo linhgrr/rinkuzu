@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useReducer } from 'react';
 import { useTranslations } from 'next-intl';
 
 interface BeforeInstallPromptEvent extends Event {
@@ -16,23 +16,49 @@ type IOSNavigator = Navigator & {
   standalone?: boolean;
 };
 
+type PwaInstallerState = {
+  deferredPrompt: BeforeInstallPromptEvent | null;
+  isInstallable: boolean;
+  isOffline: boolean;
+  showInstallBanner: boolean;
+};
+
+type PwaInstallerAction = {
+  type: 'patch';
+  value: Partial<PwaInstallerState>;
+};
+
+const initialState: PwaInstallerState = {
+  deferredPrompt: null,
+  isInstallable: false,
+  isOffline: false,
+  showInstallBanner: false,
+};
+
+function pwaInstallerReducer(
+  state: PwaInstallerState,
+  action: PwaInstallerAction,
+): PwaInstallerState {
+  switch (action.type) {
+    case 'patch':
+      return { ...state, ...action.value };
+    default:
+      return state;
+  }
+}
+
 export default function PWAInstaller() {
   const t = useTranslations('pwa');
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
-  const [isInstallable, setIsInstallable] = useState(false);
-  const [isOffline, setIsOffline] = useState(false);
-  const [showInstallBanner, setShowInstallBanner] = useState(false);
+  const [state, dispatch] = useReducer(pwaInstallerReducer, initialState);
 
   useEffect(() => {
-    // Check if app is already installed
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
     const isInWebAppiOS = (window.navigator as IOSNavigator).standalone === true;
     const isAppInstalled = isStandalone || isInWebAppiOS;
 
     if (!isAppInstalled) {
-      // Show install banner after 30 seconds if not installed
       const timer = setTimeout(() => {
-        setShowInstallBanner(true);
+        dispatch({ type: 'patch', value: { showInstallBanner: true } });
       }, 30000);
 
       return () => clearTimeout(timer);
@@ -42,28 +68,36 @@ export default function PWAInstaller() {
   }, []);
 
   useEffect(() => {
-    const handleBeforeInstallPrompt = (e: Event) => {
-      e.preventDefault();
-      setDeferredPrompt(e as BeforeInstallPromptEvent);
-      setIsInstallable(true);
+    const handleBeforeInstallPrompt = (event: Event) => {
+      event.preventDefault();
+      dispatch({
+        type: 'patch',
+        value: {
+          deferredPrompt: event as BeforeInstallPromptEvent,
+          isInstallable: true,
+        },
+      });
     };
 
     const handleAppInstalled = () => {
-      setDeferredPrompt(null);
-      setIsInstallable(false);
-      setShowInstallBanner(false);
+      dispatch({
+        type: 'patch',
+        value: {
+          deferredPrompt: null,
+          isInstallable: false,
+          showInstallBanner: false,
+        },
+      });
     };
 
-    const handleOnline = () => setIsOffline(false);
-    const handleOffline = () => setIsOffline(true);
+    const handleOnline = () => dispatch({ type: 'patch', value: { isOffline: false } });
+    const handleOffline = () => dispatch({ type: 'patch', value: { isOffline: true } });
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     window.addEventListener('appinstalled', handleAppInstalled);
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
-
-    // Initial offline status
-    setIsOffline(!navigator.onLine);
+    dispatch({ type: 'patch', value: { isOffline: !navigator.onLine } });
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
@@ -74,44 +108,46 @@ export default function PWAInstaller() {
   }, []);
 
   const handleInstallClick = async () => {
-    if (!deferredPrompt) return;
+    if (!state.deferredPrompt) return;
 
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
+    state.deferredPrompt.prompt();
+    const { outcome } = await state.deferredPrompt.userChoice;
 
     if (outcome === 'accepted') {
-      setDeferredPrompt(null);
-      setIsInstallable(false);
-      setShowInstallBanner(false);
+      dispatch({
+        type: 'patch',
+        value: {
+          deferredPrompt: null,
+          isInstallable: false,
+          showInstallBanner: false,
+        },
+      });
     }
   };
 
   const dismissInstallBanner = () => {
-    setShowInstallBanner(false);
-    // Don't show again for 7 days
+    dispatch({ type: 'patch', value: { showInstallBanner: false } });
     localStorage.setItem('dismissedInstallBanner', Date.now().toString());
   };
 
   const shouldShowBanner = () => {
     const dismissed = localStorage.getItem('dismissedInstallBanner');
-    if (!dismissed) return showInstallBanner;
+    if (!dismissed) return state.showInstallBanner;
 
-    const dismissedTime = parseInt(dismissed);
+    const dismissedTime = Number.parseInt(dismissed, 10);
     const oneWeek = 7 * 24 * 60 * 60 * 1000;
-    return showInstallBanner && Date.now() - dismissedTime > oneWeek;
+    return state.showInstallBanner && Date.now() - dismissedTime > oneWeek;
   };
 
   return (
     <>
-      {/* Offline Indicator */}
-      {isOffline && (
+      {state.isOffline ? (
         <div className="fixed top-0 left-0 right-0 bg-red-500 text-white text-center py-2 z-50">
           <span className="text-sm">{t('offline')}</span>
         </div>
-      )}
+      ) : null}
 
-      {/* Install Banner */}
-      {isInstallable && shouldShowBanner() && (
+      {state.isInstallable && shouldShowBanner() ? (
         <div className="fixed bottom-4 left-4 right-4 bg-gradient-to-r from-brand-trust to-brand-action text-white rounded-lg p-4 shadow-lg z-50 md:left-auto md:right-4 md:max-w-sm">
           <div className="flex items-center justify-between">
             <div className="flex-1">
@@ -120,7 +156,7 @@ export default function PWAInstaller() {
             </div>
             <div className="flex gap-2 ml-4">
               <button
-                onClick={handleInstallClick}
+                onClick={() => void handleInstallClick()}
                 className="bg-white text-brand-trust px-3 py-1 rounded text-sm font-medium hover:bg-neutral-100 transition-colors"
               >
                 {t('install')}
@@ -135,12 +171,11 @@ export default function PWAInstaller() {
             </div>
           </div>
         </div>
-      )}
+      ) : null}
 
-      {/* Install Button in Navigation (if needed) */}
-      {isInstallable && (
+      {state.isInstallable ? (
         <button
-          onClick={handleInstallClick}
+          onClick={() => void handleInstallClick()}
           className="hidden md:inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-neutral-700 hover:text-neutral-900 transition-colors"
           title={t('installApp')}
         >
@@ -154,7 +189,7 @@ export default function PWAInstaller() {
           </svg>
           {t('installApp')}
         </button>
-      )}
+      ) : null}
     </>
   );
 }

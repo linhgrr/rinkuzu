@@ -93,7 +93,7 @@ export default async function AboutPage({ params }: Props) {
           </h1>
           <p className="text-lg text-[var(--text-muted)] leading-relaxed max-w-2xl mx-auto">
             RinKuzu was built by educators and engineers who believe that great learning tools
-            should meet students where they are — using AI to understand each learner&apos;s
+            should meet students where they are, using AI to understand each learner&apos;s
             knowledge state and craft a personalized path forward.
           </p>
         </div>
@@ -110,7 +110,7 @@ export default async function AboutPage({ params }: Props) {
               Turning Static PDFs Into Dynamic Learning Journeys
             </h2>
             <p className="text-[var(--text-muted)] leading-relaxed mb-4">
-              Most students have a folder of lecture notes, textbooks, and handouts — all the
+              Most students have a folder of lecture notes, textbooks, and handouts, all the
               material they need to master a subject, but no structured way to practice it
               effectively.
             </p>
@@ -122,7 +122,7 @@ export default async function AboutPage({ params }: Props) {
             </p>
             <p className="text-[var(--text-muted)] leading-relaxed">
               The result is a learning experience that adapts to your pace, your strengths, and your
-              gaps — turning any document into a personalized curriculum.
+              gaps, turning any document into a personalized curriculum.
             </p>
           </div>
           {/* Visual */}
@@ -212,7 +212,7 @@ export default async function AboutPage({ params }: Props) {
                   Bayesian Knowledge Tracing (BKT)
                 </h3>
                 <p className="text-[var(--text-muted)] text-sm leading-relaxed">
-                  RinKuzu models the probability you&apos;ve mastered each concept using BKT — the
+                  RinKuzu models the probability you&apos;ve mastered each concept using BKT, the
                   same framework used in intelligent tutoring systems. Every practice response
                   updates your mastery estimate in real time.
                 </p>
@@ -223,7 +223,7 @@ export default async function AboutPage({ params }: Props) {
                 </h3>
                 <p className="text-[var(--text-muted)] text-sm leading-relaxed">
                   Our question generation targets all six cognitive levels. This ensures learners
-                  develop both foundational recall and higher-order thinking — the combination that
+                  develop both foundational recall and higher-order thinking, the combination that
                   leads to lasting retention.
                 </p>
               </div>

@@ -24,6 +24,11 @@ import { AdminPageShell } from '@/components/admin/AdminPageShell';
 import { HiOutlineSearch, HiOutlineCheck } from '@/components/icons';
 import { fetchApiData } from '@/lib/api/client';
 
+const vndCurrencyFormatter = new Intl.NumberFormat('vi-VN', {
+  style: 'currency',
+  currency: 'VND',
+});
+
 interface User {
   _id: string;
   email: string;
@@ -228,10 +233,7 @@ export default function AdminUsersPage() {
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND',
-    }).format(amount);
+    return vndCurrencyFormatter.format(amount);
   };
 
   return (
@@ -387,11 +389,10 @@ export default function AdminUsersPage() {
                             )}
                           </div>
                         </td>
-                        <td
-                          className="px-6 py-4 whitespace-nowrap text-sm text-neutral-500"
-                          suppressHydrationWarning
-                        >
-                          {new Date(user.createdAt).toLocaleDateString()}
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-500">
+                          <time dateTime={user.createdAt} suppressHydrationWarning>
+                            {new Date(user.createdAt).toLocaleDateString()}
+                          </time>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                           <div className="flex justify-end gap-x-2">

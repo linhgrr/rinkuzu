@@ -21,6 +21,11 @@ import Sidebar from '@/components/Sidebar';
 import { HiOutlineSearch, HiOutlineEye } from '@/components/icons';
 import Navigation from '@/components/Navigation';
 
+const vndCurrencyFormatter = new Intl.NumberFormat('vi-VN', {
+  style: 'currency',
+  currency: 'VND',
+});
+
 interface Subscription {
   _id: string;
   userEmail: string;
@@ -202,10 +207,7 @@ export default function AdminSubscriptionsPage() {
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND',
-    }).format(amount);
+    return vndCurrencyFormatter.format(amount);
   };
 
   return (

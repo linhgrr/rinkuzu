@@ -180,7 +180,7 @@ export default function TestImageUploadPage() {
                   <h4 className="font-medium text-neutral-900 mb-2">Activity Logs:</h4>
                   <div className="h-64 overflow-y-auto bg-neutral-50 rounded p-2 text-xs font-mono">
                     {logs.length === 0 ? (
-                      <div className="text-neutral-500 italic">No activity yet...</div>
+                      <div className="italic text-neutral-500">No activity yet…</div>
                     ) : (
                       logs.map((log) => (
                         <div key={log} className="mb-1 text-neutral-700">

@@ -57,7 +57,7 @@ export default function PDFViewer({
             {isLoading && (
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-neutral-400 bg-neutral-100 z-10">
                 <div className="animate-spin rounded-full size-8 border-b-2 border-current"></div>
-                <span>Loading PDF...</span>
+                <span>Loading PDF…</span>
               </div>
             )}
             <iframe
@@ -70,7 +70,7 @@ export default function PDFViewer({
         ) : (
           <div className="flex flex-col items-center gap-2 text-neutral-400">
             <div className="animate-spin rounded-full size-8 border-b-2 border-current"></div>
-            <span>Loading PDF...</span>
+            <span>Loading PDF…</span>
           </div>
         )}
       </div>

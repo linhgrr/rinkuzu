@@ -238,7 +238,7 @@ export default async function BlogPost({ params }: Props) {
             {postTitle}
           </h1>
           <p className="text-xl text-[var(--text-muted)] leading-relaxed font-medium">
-            Discover how RinKuzu&apos;s ALSS system — SAINT-Bloom, Dueling DQN, and Gemini —
+            Discover how RinKuzu&apos;s ALSS system, SAINT-Bloom, Dueling DQN, and Gemini,
             transforms any PDF lecture into a personalized adaptive quiz journey.
           </p>
           <div className="flex items-center gap-3 mt-8 pt-6 border-t border-neutral-100">

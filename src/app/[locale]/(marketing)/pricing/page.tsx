@@ -175,7 +175,7 @@ export default async function PricingPage({ params }: Props) {
             Not sure which plan is right for you?
           </h2>
           <p className="text-neutral-600">
-            Start with the free plan — no credit card required. Upgrade anytime.
+            Start with the free plan, no credit card required. Upgrade anytime.
           </p>
           <a
             href="/register"

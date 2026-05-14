@@ -10,6 +10,11 @@ import { Button } from '@/components/ui/Button';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { HiOutlineCheck, HiOutlineShieldCheck } from '@/components/icons';
 
+const vndCurrencyFormatter = new Intl.NumberFormat('vi-VN', {
+  style: 'currency',
+  currency: 'VND',
+});
+
 interface SubscriptionPlan {
   id: string;
   name: string;
@@ -101,10 +106,7 @@ export default function SubscriptionPage() {
   };
 
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND',
-    }).format(price);
+    return vndCurrencyFormatter.format(price);
   };
 
   const formatDate = (dateString?: string) => {

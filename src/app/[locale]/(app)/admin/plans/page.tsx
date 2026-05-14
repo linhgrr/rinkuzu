@@ -19,6 +19,11 @@ import { Modal } from '@/components/ui/Modal';
 import { HiOutlinePlus, HiOutlineCheck, HiOutlineX } from '@/components/icons';
 import Navigation from '@/components/Navigation';
 
+const vndCurrencyFormatter = new Intl.NumberFormat('vi-VN', {
+  style: 'currency',
+  currency: 'VND',
+});
+
 interface Plan {
   _id: string;
   name: string;
@@ -238,10 +243,7 @@ export default function AdminPlansPage() {
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND',
-    }).format(amount);
+    return vndCurrencyFormatter.format(amount);
   };
 
   const getDurationDisplay = (duration: string) => {
@@ -639,11 +641,17 @@ export default function AdminPlansPage() {
                       {/* Plan Info */}
                       <div className="mt-4 pt-4 border-t border-neutral-100">
                         <div className="text-xs text-neutral-500 space-y-1">
-                          <div suppressHydrationWarning>
-                            {t('created')}: {new Date(plan.createdAt).toLocaleDateString()}
+                          <div>
+                            {t('created')}:{' '}
+                            <time dateTime={plan.createdAt} suppressHydrationWarning>
+                              {new Date(plan.createdAt).toLocaleDateString()}
+                            </time>
                           </div>
-                          <div suppressHydrationWarning>
-                            {t('updated')}: {new Date(plan.updatedAt).toLocaleDateString()}
+                          <div>
+                            {t('updated')}:{' '}
+                            <time dateTime={plan.updatedAt} suppressHydrationWarning>
+                              {new Date(plan.updatedAt).toLocaleDateString()}
+                            </time>
                           </div>
                         </div>
                       </div>

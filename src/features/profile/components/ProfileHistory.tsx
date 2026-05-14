@@ -176,9 +176,11 @@ export default function ProfileHistory() {
                             <HiOutlineDocumentText className="size-3" />{' '}
                             {tCommon('questionsCount', { count: attempt.quiz.totalQuestions })}
                           </span>
-                          <span className="flex items-center gap-1" suppressHydrationWarning>
+                          <span className="flex items-center gap-1">
                             <HiOutlineClock className="size-3" />{' '}
-                            {formatDate(new Date(attempt.takenAt))}
+                            <time dateTime={attempt.takenAt} suppressHydrationWarning>
+                              {formatDate(new Date(attempt.takenAt))}
+                            </time>
                           </span>
                         </div>
                       </div>

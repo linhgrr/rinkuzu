@@ -343,7 +343,7 @@ export default async function BlogPost({ params }: Props) {
                 See Knowledge Graphs in Action
               </h3>
               <p className="text-neutral-300 text-lg mb-8">
-                Upload a PDF and watch RinKuzu build a knowledge graph and adaptive quiz — free, in
+                Upload a PDF and watch RinKuzu build a knowledge graph and adaptive quiz, free, in
                 under a minute.
               </p>
               <Link

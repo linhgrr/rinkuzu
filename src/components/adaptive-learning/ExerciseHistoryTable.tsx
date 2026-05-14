@@ -295,7 +295,7 @@ export function ExerciseHistoryTable({ exercises }: ExerciseHistoryTableProps) {
                 </td>
                 <td className="flex justify-center px-5 py-3">
                   {exercise.is_correct == null ? (
-                    <span className="font-medium text-neutral-300">—</span>
+                    <span className="font-medium text-neutral-300">N/A</span>
                   ) : exercise.is_correct ? (
                     <span className="inline-flex size-6 items-center justify-center rounded border border-neutral-200 bg-white text-neutral-900">
                       <HiCheck className="size-4" />

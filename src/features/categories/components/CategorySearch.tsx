@@ -207,7 +207,7 @@ function CategorySearch({
           {loading ? (
             <div className="p-4 text-center">
               <div className="size-6 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust mx-auto" />
-              <p className="text-sm text-neutral-500 mt-2">Loading categories...</p>
+              <p className="mt-2 text-sm text-neutral-500">Loading categories…</p>
             </div>
           ) : (
             <>

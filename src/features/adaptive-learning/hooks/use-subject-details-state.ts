@@ -13,9 +13,11 @@ import {
 import { ADAPTIVE_ROUTES } from '@/features/adaptive-learning/lib/routes';
 import { getJobIdForSession, saveSessionJobMapping } from '../lib/session-storage';
 import { getSessionStartFeedback } from '../lib/session-start-feedback';
-import type { SessionStatus, SubjectHistoryDetail } from '@/features/adaptive-learning/types';
-
-type TranslateFn = (key: string, values?: Record<string, any>) => string;
+import type {
+  SessionStatus,
+  SubjectHistoryDetail,
+  TranslateFn,
+} from '@/features/adaptive-learning/types';
 
 type SubjectTab = 'graph' | 'mastery' | 'history';
 

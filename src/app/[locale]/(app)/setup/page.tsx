@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { fetchApiData } from '@/lib/api/client';
 
 export default function SetupPage() {
-  const router = useRouter();
+  const { push } = useRouter();
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState('');
@@ -51,7 +51,7 @@ export default function SetupPage() {
       });
       setSuccess(data.message);
       setTimeout(() => {
-        router.push('/login');
+        push('/login');
       }, 3000);
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Failed to create admin account');
@@ -64,8 +64,8 @@ export default function SetupPage() {
     return (
       <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="h-12 w-12 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust mx-auto" />
-          <p className="mt-4 text-neutral-600">Checking setup status...</p>
+          <div className="mx-auto size-12 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
+          <p className="mt-4 text-neutral-600">Checking setup status…</p>
         </div>
       </div>
     );
@@ -75,7 +75,7 @@ export default function SetupPage() {
     <div className="min-h-screen bg-neutral-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-neutral-900">RinKuzu Setup</h1>
+          <h1 className="text-3xl font-semibold text-neutral-900">RinKuzu Setup</h1>
           <p className="mt-2 text-neutral-600">Initial application setup</p>
         </div>
 
@@ -107,7 +107,7 @@ export default function SetupPage() {
             {setupStatus?.adminExists ? (
               <div className="space-y-4">
                 <div className="text-center py-8">
-                  <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-100 text-sm font-bold text-green-700">
+                  <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-full bg-green-100 text-sm font-bold text-green-700">
                     OK
                   </div>
                   <h3 className="text-lg font-semibold text-neutral-900 mb-2">
@@ -118,7 +118,7 @@ export default function SetupPage() {
                   </p>
                 </div>
 
-                <div className="flex space-x-4">
+                <div className="flex gap-x-4">
                   <Link href="/login" className="flex-1">
                     <Button className="w-full">Go to Login</Button>
                   </Link>
@@ -172,7 +172,7 @@ export default function SetupPage() {
             ) : (
               <div className="space-y-4">
                 <div className="text-center py-8">
-                  <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-neutral-100 text-sm font-bold text-neutral-700">
+                  <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-full bg-neutral-100 text-sm font-bold text-neutral-700">
                     LOCK
                   </div>
                   <h3 className="text-lg font-semibold text-neutral-900 mb-2">Setup Not Allowed</h3>
@@ -191,7 +191,7 @@ export default function SetupPage() {
                   </ul>
                 </div>
 
-                <div className="flex space-x-4">
+                <div className="flex gap-x-4">
                   <Link href="/login" className="flex-1">
                     <Button className="w-full">Login</Button>
                   </Link>

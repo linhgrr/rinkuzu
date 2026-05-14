@@ -34,15 +34,15 @@ function ThinkingPlaceholder({ label }: { label: string }) {
       <span className="animate-pulse font-medium">{label}</span>
       <div className="flex gap-1">
         <span
-          className="size-1.5 rounded-full bg-neutral-400 animate-bounce"
+          className="size-1.5 rounded-full bg-neutral-400 animate-pulse"
           style={{ animationDelay: '0ms' }}
         />
         <span
-          className="size-1.5 rounded-full bg-neutral-400 animate-bounce"
+          className="size-1.5 rounded-full bg-neutral-400 animate-pulse"
           style={{ animationDelay: '150ms' }}
         />
         <span
-          className="size-1.5 rounded-full bg-neutral-400 animate-bounce"
+          className="size-1.5 rounded-full bg-neutral-400 animate-pulse"
           style={{ animationDelay: '300ms' }}
         />
       </div>
@@ -71,15 +71,16 @@ export default function AdaptiveLearningChatbot({
   const scrollRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  useEffect(() => {
-    setMessages([initialMessage]);
-  }, [initialMessage]);
+  const visibleMessages = useMemo(
+    () => (messages.length > 0 ? messages : [initialMessage]),
+    [initialMessage, messages],
+  );
 
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages, isOpen]);
+  }, [visibleMessages, isOpen]);
 
   useEffect(
     () => () => {
@@ -202,7 +203,7 @@ export default function AdaptiveLearningChatbot({
             <strong>{t('chatbot.context')}:</strong> {context}
           </div>
         )}
-        {messages.map((msg) => (
+        {visibleMessages.map((msg) => (
           <div
             key={msg.id}
             className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
@@ -242,7 +243,7 @@ export default function AdaptiveLearningChatbot({
             onClick={handleSend}
             disabled={!input.trim() || isTyping}
             aria-label={t('chatbot.send') || 'Send message'}
-            className="absolute right-2 top-1/2 min-h-[40px] min-w-[40px] -translate-y-1/2 rounded bg-neutral-900 p-0 text-white hover:bg-black"
+            className="absolute right-2 top-1/2 min-h-[40px] min-w-[40px] -translate-y-1/2 rounded bg-neutral-900 p-0 text-white hover:bg-neutral-800"
           >
             <HiArrowUp className="size-4" />
           </Button>

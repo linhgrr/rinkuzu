@@ -726,44 +726,49 @@ export default function QuizPlayerPage() {
           progress={progress}
           currentQuestion={currentQuestion}
           userAnswers={state.userAnswers}
-          isDiscussionCollapsed={state.isDiscussionCollapsed}
-          setIsDiscussionCollapsed={(collapsed) =>
-            dispatch({ type: 'patch', value: { isDiscussionCollapsed: collapsed } })
-          }
-          openAIModal={openAIModal}
-          showMobileDiscussion={state.showMobileDiscussion}
-          setShowMobileDiscussion={(show) =>
-            dispatch({ type: 'patch', value: { showMobileDiscussion: show } })
-          }
-          showExitModal={state.showExitModal}
-          openExitModal={() => dispatch({ type: 'patch', value: { showExitModal: true } })}
-          closeExitModal={() => dispatch({ type: 'patch', value: { showExitModal: false } })}
-          exitQuiz={exitQuiz}
+          discussion={{
+            collapsed: state.isDiscussionCollapsed,
+            setCollapsed: (collapsed) =>
+              dispatch({ type: 'patch', value: { isDiscussionCollapsed: collapsed } }),
+            mobileOpen: state.showMobileDiscussion,
+            setMobileOpen: (show) =>
+              dispatch({ type: 'patch', value: { showMobileDiscussion: show } }),
+          }}
+          exit={{
+            isOpen: state.showExitModal,
+            open: () => dispatch({ type: 'patch', value: { showExitModal: true } }),
+            close: () => dispatch({ type: 'patch', value: { showExitModal: false } }),
+            confirmExit: exitQuiz,
+          }}
           error={state.error}
           selectAnswer={(answerIndex) => dispatch({ type: 'selectAnswer', answerIndex })}
           previousQuestion={() => dispatch({ type: 'goToPreviousQuestion' })}
           nextQuestion={() => dispatch({ type: 'goToNextQuestion' })}
           submitQuiz={submitQuiz}
           submitting={submitting}
-          showAIModal={showAIModal}
-          closeAIModal={closeAIModal}
-          userQuestion={userQuestion}
-          setUserQuestion={setUserQuestion}
-          askAI={() =>
-            askAI({
-              question: currentQuestion.question,
-              options: currentQuestion.options,
-              questionImage: currentQuestion.questionImage,
-              optionImages: currentQuestion.optionImages,
-            })
-          }
-          loadingAI={loadingAI}
-          aiError={aiError}
-          aiExplanation={aiExplanation}
-          showSubmitConfirm={showSubmitConfirm}
-          setShowSubmitConfirm={setShowSubmitConfirm}
-          unansweredCount={unansweredCount}
-          completeSubmit={completeSubmit}
+          ai={{
+            isOpen: showAIModal,
+            open: openAIModal,
+            close: closeAIModal,
+            userQuestion,
+            setUserQuestion,
+            ask: () =>
+              askAI({
+                question: currentQuestion.question,
+                options: currentQuestion.options,
+                questionImage: currentQuestion.questionImage,
+                optionImages: currentQuestion.optionImages,
+              }),
+            loading: loadingAI,
+            error: aiError,
+            explanation: aiExplanation,
+          }}
+          submit={{
+            confirmOpen: showSubmitConfirm,
+            setConfirmOpen: setShowSubmitConfirm,
+            unansweredCount,
+            complete: completeSubmit,
+          }}
           t={t}
         />
       )}

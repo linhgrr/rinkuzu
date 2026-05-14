@@ -1,5 +1,4 @@
 import {
-  Session,
   Exercise,
   SubmitAnswerPayload,
   SubmitResult,
@@ -30,13 +29,6 @@ import {
   DEFAULT_PIPELINE_PAGE_BATCH_SIZE,
 } from './adaptive-api-fetch';
 import { AdaptiveApiError } from './adaptive-api-error';
-
-export async function createSession(maxSteps: number = 9999): Promise<Session> {
-  return apiFetch<Session>('/api/adaptive-learning/session/start', {
-    method: 'POST',
-    body: JSON.stringify({ max_steps: maxSteps, use_default_data: true }),
-  });
-}
 
 export async function getNextConcept(sessionId: string): Promise<NextConcept> {
   return apiFetch<NextConcept>(`/api/adaptive-learning/session/${sessionId}/next-concept`, {
@@ -191,15 +183,6 @@ export async function createSessionFromPipeline(
   );
 }
 
-export async function checkPipelineAvailable(): Promise<boolean> {
-  try {
-    const res = await apiFetch<{ available: boolean }>('/api/adaptive-learning/pipeline/status');
-    return res.available;
-  } catch {
-    return false;
-  }
-}
-
 // --- MongoDB History API ---
 
 export async function getSubjectProgressHistory(limit = 50): Promise<SubjectProgressItem[]> {
@@ -226,14 +209,6 @@ export async function getSubjectHistoryDetailFresh(jobId: string): Promise<Subje
 
 export async function prefetchStartLearningData(sessionId: string): Promise<void> {
   await Promise.allSettled([getSessionStatus(sessionId)]);
-}
-
-export async function getPipelineJobHistory(limit = 20): Promise<PipelineJobHistoryItem[]> {
-  const res = await apiFetch<{ jobs: PipelineJobHistoryItem[]; count: number }>(
-    `/api/adaptive-learning/history/pipeline-jobs?limit=${limit}`,
-    { cacheTtlMs: 10_000 },
-  );
-  return res.jobs;
 }
 
 /**

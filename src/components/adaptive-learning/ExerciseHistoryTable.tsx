@@ -81,9 +81,9 @@ function renderCorrectAnswer(
   if (exercise.exercise_type === 'matching' && exercise.pairs?.length) {
     return (
       <div className="space-y-2">
-        {exercise.pairs.map((pair, idx) => (
+        {exercise.pairs.map((pair) => (
           <div
-            key={`${pair.left}-${idx}`}
+            key={`${pair.left}-${pair.right}`}
             className="flex items-center justify-between rounded-lg border border-green-100 bg-white p-2"
           >
             <div className="min-w-0 flex-1 text-xs text-neutral-600">

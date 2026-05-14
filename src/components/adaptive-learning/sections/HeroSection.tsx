@@ -36,7 +36,7 @@ export const HeroSection = ({
             <span className="mb-4 inline-block rounded-full bg-brand-trust/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.2em] text-brand-trust">
               {t('activeJourney')}
             </span>
-            <h1 className="text-4xl font-extrabold leading-tight text-neutral-900 md:text-5xl">
+            <h1 className="text-4xl font-semibold leading-tight text-neutral-900 md:text-5xl">
               {t('uploadMaterialTitle')}
             </h1>
             <p className="mt-3 max-w-xl text-lg font-medium text-neutral-600">
@@ -76,7 +76,7 @@ export const HeroSection = ({
           <span className="mb-4 inline-block rounded-full bg-brand-trust/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.2em] text-brand-trust">
             {t('activeJourney')}
           </span>
-          <h1 className="text-4xl font-extrabold leading-tight text-neutral-900 md:text-5xl">
+          <h1 className="text-4xl font-semibold leading-tight text-neutral-900 md:text-5xl">
             {subject.displayTitle}
           </h1>
           <p className="mt-3 max-w-xl text-lg font-medium text-neutral-600">

@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { memo } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -71,14 +72,13 @@ const SubjectLibraryListItem = memo(function SubjectLibraryListItem({
       <div className="flex min-w-0 items-start gap-4">
         <div className="flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-neutral-100">
           {imageUrl ? (
-            // The image source is discovered at runtime from an external API.
-            // Keep a plain img here until the remote host set is stabilized in next.config.
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <Image
               src={imageUrl}
               alt={subject.displayTitle}
+              width={80}
+              height={80}
               className="h-full w-full object-cover opacity-75"
-              loading="lazy"
+              sizes="80px"
             />
           ) : (
             <HiOutlineBookOpen className="size-8 text-neutral-300" />
@@ -110,7 +110,7 @@ const SubjectLibraryListItem = memo(function SubjectLibraryListItem({
           size="icon"
           onClick={() => onDelete(subject)}
           disabled={loading || deleting}
-          className="text-neutral-500 hover:bg-red-50 hover:text-red-500"
+          className="text-red-700 hover:bg-red-50 hover:text-red-800"
           aria-label={t('deleteMaterial')}
           title={t('deleteMaterial')}
         >

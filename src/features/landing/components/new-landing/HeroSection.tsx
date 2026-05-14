@@ -26,7 +26,7 @@ const HeroSection = ({ isAuthenticated = false }: { isAuthenticated?: boolean })
   }, []);
 
   return (
-    <section className="relative min-h-screen w-full overflow-hidden bg-black font-sans">
+    <section className="relative min-h-screen w-full overflow-hidden bg-[#07121a] font-sans">
       {/* Background video */}
       {shouldLoadVideo ? (
         <video
@@ -46,7 +46,7 @@ const HeroSection = ({ isAuthenticated = false }: { isAuthenticated?: boolean })
       )}
 
       {/* Dark overlay */}
-      <div className="absolute inset-0 bg-black/50" />
+      <div className="absolute inset-0 bg-[#07121a]/50" />
 
       {/* Content */}
       <div className="relative z-10 flex flex-col min-h-screen">
@@ -69,15 +69,7 @@ const HeroSection = ({ isAuthenticated = false }: { isAuthenticated?: boolean })
             </div>
 
             {/* Heading */}
-            <h1
-              className="max-w-[700px] text-center text-[36px] md:text-[56px] font-medium leading-[1.28]"
-              style={{
-                background: 'linear-gradient(144.5deg, #ffffff 28%, rgba(0,0,0,0) 115%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text',
-              }}
-            >
+            <h1 className="max-w-[700px] text-center text-[36px] font-medium leading-[1.28] text-white md:text-[56px]">
               {t('headline')}
             </h1>
 

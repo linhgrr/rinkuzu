@@ -11,7 +11,7 @@ type DailyProgressCardProps = {
 export const DailyProgressCard = ({ dailyGoalProgress, t }: DailyProgressCardProps) => (
   <section className="flex h-full flex-col justify-between rounded-2xl border border-neutral-200 bg-white p-8 shadow-sm lg:col-span-4">
     <div>
-      <h2 className="mb-8 text-2xl font-extrabold tracking-tight text-neutral-900">
+      <h2 className="mb-8 text-2xl font-semibold tracking-tight text-neutral-900">
         {t('dailyProgressTitle')}
       </h2>
       <div className="space-y-8">

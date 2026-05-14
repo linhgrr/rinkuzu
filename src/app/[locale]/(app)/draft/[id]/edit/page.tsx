@@ -54,8 +54,7 @@ type DraftQuizLean = {
 };
 
 export default async function DraftEditPage({ params }: Props) {
-  const { id, locale } = await params;
-  const session = await getServerSession(authOptions);
+  const [{ id, locale }, session] = await Promise.all([params, getServerSession(authOptions)]);
   const userId = (session?.user as { id?: string } | undefined)?.id;
   if (!userId) {
     redirect(`/${locale}/login`);

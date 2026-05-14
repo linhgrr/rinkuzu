@@ -27,8 +27,7 @@ export async function generateMetadata({
 }
 
 export default async function HomePage({ params }: { params: Promise<{ locale: string }> }) {
-  const { locale } = await params;
-  const session = await getServerSession(authOptions);
+  const [{ locale }, session] = await Promise.all([params, getServerSession(authOptions)]);
 
   if (session?.user) {
     const dashboardPath = locale === defaultLocale ? '/dashboard' : `/${locale}/dashboard`;

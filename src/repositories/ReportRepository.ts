@@ -41,7 +41,7 @@ export class ReportRepository extends BaseRepository<IReport> implements IReport
     const skip = (page - 1) * limit;
 
     // Build query
-    const query: any = {};
+    const query: { status?: string } = {};
     if (options.status) {
       query.status = options.status;
     }

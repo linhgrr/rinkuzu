@@ -106,9 +106,9 @@ export class AttemptRepository extends BaseRepository<IAttempt> implements IAtte
       .lean()) as unknown as IAttempt[];
   }
 
-  async findByIdWithQuiz(attemptId: string, userId: string): Promise<any> {
+  async findByIdWithQuiz(attemptId: string, userId: string): Promise<IAttempt | null> {
     await connectDB();
-    return await Attempt.findOne({
+    return (await Attempt.findOne({
       _id: attemptId,
       user: userId,
     })
@@ -116,6 +116,6 @@ export class AttemptRepository extends BaseRepository<IAttempt> implements IAtte
         path: 'quiz',
         select: 'title slug description questions',
       })
-      .lean();
+      .lean()) as unknown as IAttempt | null;
   }
 }

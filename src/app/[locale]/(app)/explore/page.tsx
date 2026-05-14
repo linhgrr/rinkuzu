@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useState, useEffect, useCallback, memo } from 'react';
+import { Suspense, useReducer, useEffect, useCallback, memo } from 'react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -49,6 +49,41 @@ interface PaginationData {
   limit: number;
   total: number;
   totalPages: number;
+}
+
+interface ExploreState {
+  isSidebarOpen: boolean;
+  page: number;
+  search: string;
+  committedSearch: string;
+  categoryId: string | null;
+}
+
+type ExploreAction =
+  | { type: 'sidebar:toggle' }
+  | { type: 'page:set'; page: number }
+  | { type: 'search:set'; search: string }
+  | { type: 'search:commit' }
+  | { type: 'filters:clear' }
+  | { type: 'category:set'; categoryId: string | null };
+
+function exploreReducer(state: ExploreState, action: ExploreAction): ExploreState {
+  switch (action.type) {
+    case 'sidebar:toggle':
+      return { ...state, isSidebarOpen: !state.isSidebarOpen };
+    case 'page:set':
+      return { ...state, page: action.page };
+    case 'search:set':
+      return { ...state, search: action.search };
+    case 'search:commit':
+      return { ...state, committedSearch: state.search, page: 1 };
+    case 'filters:clear':
+      return { ...state, search: '', committedSearch: '', categoryId: null, page: 1 };
+    case 'category:set':
+      return { ...state, categoryId: action.categoryId, page: 1 };
+    default:
+      return state;
+  }
 }
 
 const CategoryBadgeVariant = (color: string) => {
@@ -143,15 +178,15 @@ function ExploreContent() {
   const { data: session } = useSession();
   const { replace } = useRouter();
   const { get } = useSearchParams();
-
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [page, setPage] = useState(parseInt(get('page') || '1', 10));
+  const initialSearch = get('q') || '';
+  const [state, dispatch] = useReducer(exploreReducer, {
+    isSidebarOpen: true,
+    page: parseInt(get('page') || '1', 10),
+    search: initialSearch,
+    committedSearch: initialSearch,
+    categoryId: get('category') || null,
+  });
   const limit = 12;
-
-  // Filters - initialize from URL
-  const [search, setSearch] = useState(get('q') || '');
-  const [committedSearch, setCommittedSearch] = useState(get('q') || '');
-  const [categoryId, setCategoryId] = useState<string | null>(get('category') || null);
 
   // Sync state to URL
   const updateURL = useCallback(
@@ -169,13 +204,13 @@ function ExploreContent() {
 
   // SWR fetch — key changes trigger automatic re-fetch
   const swrParams = new URLSearchParams({
-    page: page.toString(),
+    page: state.page.toString(),
     limit: limit.toString(),
     status: 'published',
     compact: 'true',
   });
-  if (committedSearch) swrParams.append('search', committedSearch);
-  if (categoryId) swrParams.append('category', categoryId);
+  if (state.committedSearch) swrParams.append('search', state.committedSearch);
+  if (state.categoryId) swrParams.append('category', state.categoryId);
 
   const { data, isLoading } = useSWR(
     `/api/quizzes?${swrParams}`,
@@ -183,59 +218,53 @@ function ExploreContent() {
   );
 
   const quizzes = data?.quizzes ?? [];
-  const pagination = data?.pagination ?? { page, limit, total: 0, totalPages: 0 };
+  const pagination = data?.pagination ?? { page: state.page, limit, total: 0, totalPages: 0 };
 
   // Debounce search — update committedSearch after 500ms, resetting page to 1
   useEffect(() => {
     const timer = setTimeout(() => {
-      setCommittedSearch(search);
-      setPage(1);
+      dispatch({ type: 'search:commit' });
     }, 500);
     return () => clearTimeout(timer);
-  }, [search]);
+  }, [state.search]);
 
   const handlePageChange = useCallback(
     (newPage: number) => {
-      setPage(newPage);
-      updateURL(search, categoryId, newPage);
+      dispatch({ type: 'page:set', page: newPage });
+      updateURL(state.search, state.categoryId, newPage);
     },
-    [search, categoryId, updateURL],
+    [state.search, state.categoryId, updateURL],
   );
 
   const handleSidebarToggle = useCallback(() => {
-    setIsSidebarOpen((prev) => !prev);
+    dispatch({ type: 'sidebar:toggle' });
   }, []);
 
   const handleSearchChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const newSearch = e.target.value;
-      setSearch(newSearch);
-      updateURL(newSearch, categoryId, 1);
+      dispatch({ type: 'search:set', search: newSearch });
+      updateURL(newSearch, state.categoryId, 1);
     },
-    [categoryId, updateURL],
+    [state.categoryId, updateURL],
   );
 
   const handleClearFilters = useCallback(() => {
-    setSearch('');
-    setCommittedSearch('');
-    setCategoryId(null);
-    setPage(1);
+    dispatch({ type: 'filters:clear' });
     updateURL('', null, 1);
   }, [updateURL]);
 
   const handleClearCategory = useCallback(() => {
-    setCategoryId(null);
-    setPage(1);
-    updateURL(search, null, page);
-  }, [search, page, updateURL]);
+    dispatch({ type: 'category:set', categoryId: null });
+    updateURL(state.search, null, 1);
+  }, [state.search, updateURL]);
 
   const handleCategoryChange = useCallback(
     (newCategoryId: string | null) => {
-      setCategoryId(newCategoryId);
-      setPage(1);
-      updateURL(search, newCategoryId, 1);
+      dispatch({ type: 'category:set', categoryId: newCategoryId });
+      updateURL(state.search, newCategoryId, 1);
     },
-    [search, updateURL],
+    [state.search, updateURL],
   );
 
   return (
@@ -245,13 +274,17 @@ function ExploreContent() {
       {/* Sidebar - hidden on mobile */}
       {session && (
         <div className="hidden md:block">
-          <Sidebar isOpen={isSidebarOpen} onToggle={handleSidebarToggle} currentPath="/explore" />
+          <Sidebar
+            isOpen={state.isSidebarOpen}
+            onToggle={handleSidebarToggle}
+            currentPath="/explore"
+          />
         </div>
       )}
 
       <main
         className={`py-6 md:py-8 px-4 sm:px-6 lg:px-8 transition-all duration-300 ${
-          session && isSidebarOpen ? 'md:ml-64' : session ? 'md:ml-16' : 'max-w-6xl mx-auto'
+          session && state.isSidebarOpen ? 'md:ml-64' : session ? 'md:ml-16' : 'max-w-6xl mx-auto'
         }`}
       >
         <div className={session ? 'max-w-6xl mx-auto' : ''}>
@@ -265,7 +298,7 @@ function ExploreContent() {
                     name="search"
                     autoComplete="off"
                     placeholder={t('searchPlaceholder')}
-                    value={search}
+                    value={state.search}
                     onChange={handleSearchChange}
                     aria-label={t('searchPlaceholder')}
                   />
@@ -276,7 +309,7 @@ function ExploreContent() {
               </div>
             </div>
 
-            {categoryId && (
+            {state.categoryId && (
               <div className="flex items-center gap-2">
                 <Button
                   type="button"

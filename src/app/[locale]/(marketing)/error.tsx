@@ -14,7 +14,7 @@ export default function MarketingError({
   }, [error]);
 
   return (
-    <div className="flex min-h-[60vh] flex-col items-center justify-center bg-black px-4 text-center">
+    <div className="flex min-h-[60vh] flex-col items-center justify-center bg-neutral-950 px-4 text-center">
       <div className="mb-4 flex size-16 items-center justify-center rounded-2xl bg-red-900/30">
         <svg
           className="size-8 text-red-400"
@@ -38,7 +38,7 @@ export default function MarketingError({
       <button
         type="button"
         onClick={reset}
-        className="rounded-full bg-white px-6 py-2.5 text-sm font-semibold text-black transition-colors hover:bg-neutral-200"
+        className="rounded-full bg-white px-6 py-2.5 text-sm font-semibold text-neutral-950 transition-colors hover:bg-neutral-200"
       >
         Try again
       </button>

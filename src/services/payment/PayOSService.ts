@@ -193,5 +193,3 @@ export class PayOSService implements IPayOSService {
     }
   }
 }
-
-export default PayOSService;

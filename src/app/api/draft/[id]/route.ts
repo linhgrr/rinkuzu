@@ -8,6 +8,49 @@ import { deletePDF } from '@/lib/s3';
 import { AsyncRouteParams } from '@/types/next-route';
 import { apiErr, apiOk } from '@/lib/api/response';
 
+type DraftQuestion = {
+  question: string;
+  options: string[];
+  correctIndex?: number;
+  correctIndexes?: number[];
+  type: 'single' | 'multiple';
+  explanation?: string;
+};
+
+type DraftQuizLean = {
+  _id: string;
+  userId: string;
+  title: string;
+  prompt?: string;
+  categoryId?: string;
+  pdfData: {
+    fileName: string;
+    fileSize: number;
+    totalPages: number;
+    pdfKey: string;
+    pdfUrl?: string;
+  };
+  chunks: {
+    total: number;
+    processed: number;
+    current: number;
+    chunkDetails: Array<{
+      index: number;
+      startPage: number;
+      endPage: number;
+      status: 'pending' | 'processing' | 'done' | 'error';
+      error?: string;
+      lockedAt?: Date;
+      lockedBy?: string;
+    }>;
+  };
+  questions: DraftQuestion[];
+  status: 'uploading' | 'processing' | 'completed' | 'error' | 'expired';
+  createdAt: Date;
+  updatedAt: Date;
+  expiresAt: Date;
+};
+
 export async function GET(request: NextRequest, { params }: AsyncRouteParams<{ id: string }>) {
   try {
     const { id } = await params;
@@ -22,7 +65,7 @@ export async function GET(request: NextRequest, { params }: AsyncRouteParams<{ i
     const draft = (await DraftQuiz.findOne({
       _id: id,
       userId,
-    }).lean()) as any;
+    }).lean()) as DraftQuizLean | null;
 
     if (!draft) {
       return apiErr('not_found', 'Draft not found', 404);

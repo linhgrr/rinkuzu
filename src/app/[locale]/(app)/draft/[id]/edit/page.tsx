@@ -10,6 +10,48 @@ import { getSignedPDFUrl } from '@/lib/s3';
 import { AsyncRouteParams } from '@/types/next-route';
 
 type Props = AsyncRouteParams<{ id: string; locale: string }>;
+type DraftQuestion = {
+  question: string;
+  options: string[];
+  correctIndex?: number;
+  correctIndexes?: number[];
+  type: 'single' | 'multiple';
+  explanation?: string;
+};
+
+type DraftQuizLean = {
+  _id: string;
+  userId: string;
+  title: string;
+  prompt?: string;
+  categoryId?: string;
+  pdfData: {
+    fileName: string;
+    fileSize: number;
+    totalPages: number;
+    pdfKey: string;
+    pdfUrl?: string;
+  };
+  chunks: {
+    total: number;
+    processed: number;
+    current: number;
+    chunkDetails: Array<{
+      index: number;
+      startPage: number;
+      endPage: number;
+      status: 'pending' | 'processing' | 'done' | 'error';
+      error?: string;
+      lockedAt?: Date;
+      lockedBy?: string;
+    }>;
+  };
+  questions: DraftQuestion[];
+  status: 'uploading' | 'processing' | 'completed' | 'error' | 'expired';
+  createdAt: Date;
+  updatedAt: Date;
+  expiresAt: Date;
+};
 
 export default async function DraftEditPage({ params }: Props) {
   const { id, locale } = await params;
@@ -24,7 +66,7 @@ export default async function DraftEditPage({ params }: Props) {
   const draft = (await DraftQuiz.findOne({
     _id: id,
     userId,
-  }).lean()) as any;
+  }).lean()) as DraftQuizLean | null;
 
   if (!draft) {
     notFound();

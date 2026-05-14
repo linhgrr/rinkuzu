@@ -134,7 +134,7 @@ export default function ConceptDetailPanel({ concept, onClose }: ConceptDetailPa
             </h3>
             <div className="space-y-2">
               {concept.bloom_mastery.map((value, index) => (
-                <div key={index} className="flex items-center gap-3">
+                <div key={BLOOM_KEYS[index]} className="flex items-center gap-3">
                   <span className="w-20 truncate text-xs font-medium text-neutral-600">
                     {t(`bloom.${BLOOM_KEYS[index]}`)}
                   </span>

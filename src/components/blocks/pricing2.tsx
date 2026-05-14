@@ -123,8 +123,8 @@ const Pricing2 = ({
                       <p className="mb-3 font-semibold text-green-700">Everything in Free, and:</p>
                     )}
                     <ul className="space-y-4">
-                      {plan.features.map((feature, index) => (
-                        <li key={index} className="flex items-center gap-2">
+                      {plan.features.map((feature) => (
+                        <li key={`${plan.id}-${feature.text}`} className="flex items-center gap-2">
                           <CircleCheck className="size-4 text-green-500 flex-shrink-0" />
                           <span>{feature.text}</span>
                         </li>

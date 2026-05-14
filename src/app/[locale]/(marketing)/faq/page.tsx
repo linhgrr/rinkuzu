@@ -98,8 +98,8 @@ export default async function FAQPage({ params }: Props) {
       <section className="max-w-4xl mx-auto px-6 py-16">
         {/* Intro paragraph */}
         <div className="prose prose-slate max-w-none mb-16 text-[var(--text-muted)] leading-relaxed">
-          {[faqIntro, faqSupportLine].map((para, i) => (
-            <p key={i} className="mb-4 text-base md:text-lg">
+          {[faqIntro, faqSupportLine].map((para) => (
+            <p key={para} className="mb-4 text-base md:text-lg">
               {para}
             </p>
           ))}

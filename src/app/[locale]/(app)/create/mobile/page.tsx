@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useCallback, useReducer } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -27,24 +27,57 @@ type CategoryLike = {
   color?: string;
 };
 
+type MobileCreateState = {
+  file: File | null;
+  title: string;
+  description: string;
+  selectedCategory: CategoryLike | null;
+  aiPrompt: string;
+  isUploading: boolean;
+};
+
+type MobileCreateAction =
+  | { type: 'patch'; value: Partial<MobileCreateState> }
+  | { type: 'setFile'; value: File | null };
+
+const initialState: MobileCreateState = {
+  file: null,
+  title: '',
+  description: '',
+  selectedCategory: null,
+  aiPrompt: '',
+  isUploading: false,
+};
+
+function mobileCreateReducer(
+  state: MobileCreateState,
+  action: MobileCreateAction,
+): MobileCreateState {
+  switch (action.type) {
+    case 'patch':
+      return { ...state, ...action.value };
+    case 'setFile':
+      return {
+        ...state,
+        file: action.value,
+        title: action.value ? action.value.name.replace(/\.pdf$/i, '') : '',
+        aiPrompt: action.value ? state.aiPrompt : '',
+      };
+    default:
+      return state;
+  }
+}
+
 export default function MobileCreatePage() {
   const t = useTranslations('create');
   const tCommon = useTranslations('common');
   const { push } = useRouter();
   const { addDraft } = useDraftStore();
-
-  const [file, setFile] = useState<File | null>(null);
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<CategoryLike | null>(null);
-  const [aiPrompt, setAiPrompt] = useState('');
-  const [isUploading, setIsUploading] = useState(false);
+  const [state, dispatch] = useReducer(mobileCreateReducer, initialState);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles[0]) {
-      const f = acceptedFiles[0];
-      setFile(f);
-      setTitle(f.name.replace(/\.pdf$/i, ''));
+      dispatch({ type: 'setFile', value: acceptedFiles[0] });
     }
   }, []);
 
@@ -53,17 +86,17 @@ export default function MobileCreatePage() {
     accept: { 'application/pdf': ['.pdf'] },
     maxFiles: 1,
     maxSize: 50 * 1024 * 1024,
-    disabled: isUploading,
+    disabled: state.isUploading,
   });
 
   const handleSubmit = async () => {
-    if (!file || !title.trim()) return;
+    if (!state.file || !state.title.trim()) return;
 
-    setIsUploading(true);
+    dispatch({ type: 'patch', value: { isUploading: true } });
 
     try {
-      const { s3Key } = await uploadPdfViaPresignedUrl(file);
-      const detectedTotalPages = await getPdfPageCount(file);
+      const { s3Key } = await uploadPdfViaPresignedUrl(state.file);
+      const detectedTotalPages = await getPdfPageCount(state.file);
 
       // Create draft via API
       const data = await fetchApiData<{
@@ -75,21 +108,21 @@ export default function MobileCreatePage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          title: title.trim(),
-          description: description.trim() || undefined,
-          category: selectedCategory?._id,
+          title: state.title.trim(),
+          description: state.description.trim() || undefined,
+          category: state.selectedCategory?._id,
           s3Key,
-          fileName: file.name,
-          fileSize: file.size,
+          fileName: state.file.name,
+          fileSize: state.file.size,
           totalPages: detectedTotalPages,
-          prompt: aiPrompt.trim() || undefined,
+          prompt: state.aiPrompt.trim() || undefined,
         }),
       });
 
       // Add to store
       addDraft({
         id: data.draftId,
-        title: title.trim(),
+        title: state.title.trim(),
         status: 'processing',
         chunksTotal: data.chunks.total,
         chunksProcessed: 0,
@@ -111,7 +144,7 @@ export default function MobileCreatePage() {
         description: extractUnknownErrorMessage(error, t('failedToStartProcessing')),
       });
     } finally {
-      setIsUploading(false);
+      dispatch({ type: 'patch', value: { isUploading: false } });
     }
   };
 
@@ -129,28 +162,37 @@ export default function MobileCreatePage() {
         className={`
           relative rounded-2xl border-2 border-dashed p-8
           flex flex-col items-center justify-center
-          min-h-[200px] cursor-pointer transition-[background-color,border-color] duration-200
-          ${isDragActive ? 'border-green-500 bg-green-50' : 'border-neutral-200 bg-white'}
-          ${file ? 'border-green-500 bg-green-50' : ''}
-          ${isUploading ? 'opacity-50 pointer-events-none' : ''}
-        `}
+            min-h-[200px] cursor-pointer transition-[background-color,border-color] duration-200
+            ${isDragActive ? 'border-green-500 bg-green-50' : 'border-neutral-200 bg-white'}
+            ${state.file ? 'border-green-500 bg-green-50' : ''}
+            ${state.isUploading ? 'opacity-50 pointer-events-none' : ''}
+          `}
       >
         <input {...getInputProps()} />
 
-        {file ? (
+        {state.file ? (
           <div className="text-center">
             <HiOutlineDocumentText className="mx-auto size-14 text-green-500" />
-            <p className="mt-3 font-medium text-neutral-900">{file.name}</p>
-            <p className="text-sm text-neutral-500">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+            <p className="mt-3 font-medium text-neutral-900">{state.file.name}</p>
+            <p className="text-sm text-neutral-500">
+              {(state.file.size / 1024 / 1024).toFixed(2)} MB
+            </p>
             <Button
               type="button"
               variant="ghost"
               size="sm"
               onClick={(e) => {
                 e.stopPropagation();
-                setFile(null);
-                setTitle('');
-                setAiPrompt('');
+                dispatch({
+                  type: 'patch',
+                  value: {
+                    file: null,
+                    title: '',
+                    description: '',
+                    selectedCategory: null,
+                    aiPrompt: '',
+                  },
+                });
               }}
               className="mt-3 px-3 text-sm text-red-500 hover:text-red-600"
             >
@@ -170,81 +212,83 @@ export default function MobileCreatePage() {
       </div>
 
       {/* Title Input */}
-      {file && (
+      {state.file && (
         <div className="mt-5">
           <label className="block text-sm font-medium text-neutral-700 mb-2">
             {t('quizTitle')}
           </label>
           <Input
             type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            value={state.title}
+            onChange={(e) => dispatch({ type: 'patch', value: { title: e.target.value } })}
             placeholder={t('enterTitle')}
             className="h-[52px] rounded-xl px-4"
-            disabled={isUploading}
+            disabled={state.isUploading}
           />
         </div>
       )}
 
       {/* Description Input */}
-      {file && (
+      {state.file && (
         <div className="mt-5">
           <label className="block text-sm font-medium text-neutral-700 mb-2">
             {t('descriptionOptional')}
           </label>
           <Textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
+            value={state.description}
+            onChange={(e) => dispatch({ type: 'patch', value: { description: e.target.value } })}
             placeholder={t('provideContext')}
             rows={3}
             className="rounded-xl px-4 py-3"
-            disabled={isUploading}
+            disabled={state.isUploading}
           />
         </div>
       )}
 
       {/* Category Selector */}
-      {file && (
+      {state.file && (
         <div className="mt-5">
           <label className="block text-sm font-medium text-neutral-700 mb-2">{t('category')}</label>
           <CategorySelector
-            value={selectedCategory}
-            onChange={setSelectedCategory}
+            value={state.selectedCategory}
+            onChange={(selectedCategory) =>
+              dispatch({ type: 'patch', value: { selectedCategory } })
+            }
             placeholder={t('searchSelectCategory')}
             required
-            disabled={isUploading}
+            disabled={state.isUploading}
           />
         </div>
       )}
 
       {/* AI Prompt Input */}
-      {file && (
+      {state.file && (
         <div className="mt-5">
           <label className="block text-sm font-medium text-neutral-700 mb-2">
             {t('aiPromptLabel')}
           </label>
           <Textarea
-            value={aiPrompt}
-            onChange={(e) => setAiPrompt(e.target.value)}
+            value={state.aiPrompt}
+            onChange={(e) => dispatch({ type: 'patch', value: { aiPrompt: e.target.value } })}
             placeholder={t('aiPromptPlaceholder')}
             rows={3}
             className="rounded-xl px-4 py-3"
-            disabled={isUploading}
+            disabled={state.isUploading}
           />
           <p className="text-xs text-neutral-500 mt-2">{t('aiPromptHelper')}</p>
         </div>
       )}
 
       {/* Submit Button */}
-      {file && title.trim() && selectedCategory && (
+      {state.file && state.title.trim() && state.selectedCategory && (
         <Button
           type="button"
           onClick={handleSubmit}
-          disabled={isUploading}
+          disabled={state.isUploading}
           size="lg"
           className="mt-6 w-full rounded-full bg-green-500 hover:bg-brand-trust"
         >
-          {isUploading ? (
+          {state.isUploading ? (
             <>
               <div className="size-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
               {t('creatingDraft')}

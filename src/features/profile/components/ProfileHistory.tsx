@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useEffect, useReducer, useState } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
@@ -34,40 +34,119 @@ interface AttemptHistory {
   };
 }
 
+interface ProfileHistoryState {
+  attempts: AttemptHistory[];
+  loading: boolean;
+  error: string;
+  currentPage: number;
+  pagination: PaginationMeta | null;
+}
+
+type ProfileHistoryAction =
+  | { type: 'fetch:start' }
+  | {
+      type: 'fetch:success';
+      attempts: AttemptHistory[];
+      pagination: PaginationMeta;
+    }
+  | { type: 'fetch:error'; error: string }
+  | { type: 'page:set'; page: number };
+
+const ITEMS_PER_PAGE = 10;
+
+const initialState: ProfileHistoryState = {
+  attempts: [],
+  loading: true,
+  error: '',
+  currentPage: 1,
+  pagination: null,
+};
+
+function profileHistoryReducer(
+  state: ProfileHistoryState,
+  action: ProfileHistoryAction,
+): ProfileHistoryState {
+  switch (action.type) {
+    case 'fetch:start':
+      return { ...state, loading: true };
+    case 'fetch:success':
+      return {
+        ...state,
+        attempts: action.attempts,
+        pagination: action.pagination,
+        loading: false,
+        error: '',
+      };
+    case 'fetch:error':
+      return { ...state, loading: false, error: action.error };
+    case 'page:set':
+      return { ...state, currentPage: action.page, error: '' };
+    default:
+      return state;
+  }
+}
+
+function AttemptTakenAt({ iso }: { iso: string }) {
+  const [label, setLabel] = useState('');
+
+  useEffect(() => {
+    setLabel(formatDate(new Date(iso)));
+  }, [iso]);
+
+  return (
+    <time dateTime={iso} suppressHydrationWarning>
+      {label}
+    </time>
+  );
+}
+
 export default function ProfileHistory() {
   const t = useTranslations('profile');
   const tCommon = useTranslations('common');
-  const [attempts, setAttempts] = useState<AttemptHistory[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pagination, setPagination] = useState<PaginationMeta | null>(null);
-  const itemsPerPage = 10;
-
-  const fetchAttempts = useCallback(async () => {
-    try {
-      setLoading(true);
-      const params = new URLSearchParams({
-        page: currentPage.toString(),
-        limit: itemsPerPage.toString(),
-      });
-
-      const data = await fetchApiData<{ attempts: AttemptHistory[]; pagination: PaginationMeta }>(
-        `/api/user/attempts?${params}`,
-      );
-      setAttempts(data.attempts);
-      setPagination(data.pagination);
-      setError('');
-    } catch (error: unknown) {
-      setError(extractUnknownErrorMessage(error, 'Failed to load quiz history'));
-    } finally {
-      setLoading(false);
-    }
-  }, [currentPage]);
+  const [state, dispatch] = useReducer(profileHistoryReducer, initialState);
 
   useEffect(() => {
+    let isActive = true;
+
+    const fetchAttempts = async () => {
+      try {
+        dispatch({ type: 'fetch:start' });
+        const params = new URLSearchParams({
+          page: state.currentPage.toString(),
+          limit: ITEMS_PER_PAGE.toString(),
+        });
+
+        const data = await fetchApiData<{ attempts: AttemptHistory[]; pagination: PaginationMeta }>(
+          `/api/user/attempts?${params}`,
+        );
+
+        if (!isActive) {
+          return;
+        }
+
+        dispatch({
+          type: 'fetch:success',
+          attempts: data.attempts,
+          pagination: data.pagination,
+        });
+      } catch (error: unknown) {
+        if (!isActive) {
+          return;
+        }
+
+        dispatch({
+          type: 'fetch:error',
+          error: extractUnknownErrorMessage(error, 'Failed to load quiz history'),
+        });
+      }
+    };
+
     fetchAttempts();
-  }, [fetchAttempts]);
+
+    return () => {
+      isActive = false;
+    };
+  }, [state.currentPage]);
 
   const getScoreColor = (score: number) => {
     if (score >= 80) return 'text-green-600 bg-green-50';
@@ -85,11 +164,10 @@ export default function ProfileHistory() {
   };
 
   const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-    setError('');
+    dispatch({ type: 'page:set', page });
   };
 
-  if (loading && attempts.length === 0) {
+  if (state.loading && state.attempts.length === 0) {
     return (
       <div className="flex justify-center py-12">
         <div className="flex flex-col items-center gap-3">
@@ -104,13 +182,13 @@ export default function ProfileHistory() {
     <div className="space-y-6">
       <h2 className="text-2xl font-semibold text-neutral-900">{t('quizHistory')}</h2>
 
-      {error && (
+      {state.error && (
         <div className="rounded-md bg-red-50 p-4">
-          <div className="text-sm text-red-700">{error}</div>
+          <div className="text-sm text-red-700">{state.error}</div>
         </div>
       )}
 
-      {attempts.length === 0 ? (
+      {state.attempts.length === 0 ? (
         <Card>
           <CardContent className="text-center py-12">
             <EmptyState
@@ -132,7 +210,7 @@ export default function ProfileHistory() {
             <Card>
               <CardContent className="text-center py-4">
                 <div className="text-xl font-bold text-brand-trust">
-                  {pagination?.totalItems || attempts.length}
+                  {state.pagination?.totalItems || state.attempts.length}
                 </div>
                 <div className="text-xs text-neutral-600">{t('totalAttempts')}</div>
               </CardContent>
@@ -140,8 +218,11 @@ export default function ProfileHistory() {
             <Card>
               <CardContent className="text-center py-4">
                 <div className="text-xl font-bold text-green-600">
-                  {attempts.length > 0
-                    ? Math.round(attempts.reduce((sum, a) => sum + a.score, 0) / attempts.length)
+                  {state.attempts.length > 0
+                    ? Math.round(
+                        state.attempts.reduce((sum, attempt) => sum + attempt.score, 0) /
+                          state.attempts.length,
+                      )
                     : 0}
                   %
                 </div>
@@ -153,9 +234,8 @@ export default function ProfileHistory() {
 
           {/* Attempts List */}
           <div className="space-y-4">
-            {attempts.map((attempt) => {
+            {state.attempts.map((attempt) => {
               const badge = getPerformanceBadge(attempt.score);
-              const takenAtLabel = formatDate(new Date(attempt.takenAt));
               return (
                 <Card key={attempt._id} className="hover:shadow-md transition-shadow">
                   <CardContent className="p-4 sm:p-6">
@@ -179,9 +259,7 @@ export default function ProfileHistory() {
                           </span>
                           <span className="flex items-center gap-1">
                             <HiOutlineClock className="size-3" />{' '}
-                            <time dateTime={attempt.takenAt} suppressHydrationWarning>
-                              {takenAtLabel}
-                            </time>
+                            <AttemptTakenAt iso={attempt.takenAt} />
                           </span>
                         </div>
                       </div>
@@ -220,11 +298,11 @@ export default function ProfileHistory() {
           </div>
 
           {/* Pagination */}
-          {pagination && pagination.totalPages > 1 && (
+          {state.pagination && state.pagination.totalPages > 1 && (
             <div className="mt-8 flex justify-center">
               <Pagination
-                currentPage={pagination.currentPage}
-                totalPages={pagination.totalPages}
+                currentPage={state.pagination.currentPage}
+                totalPages={state.pagination.totalPages}
                 onPageChange={handlePageChange}
               />
             </div>

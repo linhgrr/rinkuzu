@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
     if (
       message === 'Email and password are required' ||
       message === 'Invalid email format' ||
-      message === 'Password must be at least 6 characters'
+      message === 'Password must be between 8 and 72 characters'
     ) {
       return NextResponse.json({ success: false, error: message }, { status: 400 });
     }

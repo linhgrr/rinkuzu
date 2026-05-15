@@ -32,6 +32,7 @@ export default async function LoginPage({ params }: { params: Promise<{ locale: 
                   width={80}
                   height={80}
                   className="h-16 w-auto object-contain sm:h-20"
+                  style={{ width: 'auto' }}
                   unoptimized
                 />
               </div>

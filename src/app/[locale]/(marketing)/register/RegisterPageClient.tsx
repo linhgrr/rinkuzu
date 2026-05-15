@@ -78,7 +78,7 @@ export function RegisterPageClient() {
       return;
     }
 
-    if (state.password.length < 6) {
+    if (state.password.length < 8) {
       dispatch({ type: 'setError', value: t('passwordMinLengthError') });
       dispatch({ type: 'setLoading', value: false });
       return;
@@ -127,6 +127,7 @@ export function RegisterPageClient() {
                   width={80}
                   height={80}
                   className="h-16 w-auto object-contain sm:h-20"
+                  style={{ width: 'auto' }}
                 />
               </div>
             </Link>

@@ -3,9 +3,9 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import connectDB from '@/lib/mongoose';
 import User from '@/models/User';
-import { uploadImageToImgBB } from '@/services/imageUploadService';
 import { apiErr, apiOk } from '@/lib/api/response';
 
+const IMGBB_API_URL = 'https://api.imgbb.com/1/upload';
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
@@ -39,13 +39,35 @@ export async function PUT(request: NextRequest) {
       return apiErr('not_found', 'User not found', 404);
     }
 
-    const result = await uploadImageToImgBB(file, `avatar-${String(user._id)}`);
+    const apiKey = process.env['IMGBB_API_KEY'];
+    if (!apiKey) {
+      return apiErr('configuration_error', 'Image upload not configured', 500);
+    }
 
-    await User.updateOne({ email: session.user.email }, { avatar: result.displayUrl });
+    const upstream = new FormData();
+    upstream.append('key', apiKey);
+    upstream.append('image', file, `avatar-${String(user._id)}`);
+
+    const imgbbRes = await fetch(IMGBB_API_URL, {
+      method: 'POST',
+      body: upstream,
+      signal: AbortSignal.timeout(30_000),
+    });
+    const imgbbJson = (await imgbbRes.json()) as {
+      success: boolean;
+      data?: { display_url: string };
+    };
+
+    if (!imgbbRes.ok || !imgbbJson.success || !imgbbJson.data) {
+      return apiErr('upload_failed', 'Image upload failed', 502);
+    }
+
+    const avatarUrl = imgbbJson.data.display_url;
+    await User.updateOne({ email: session.user.email }, { avatar: avatarUrl });
 
     return NextResponse.json({
       success: true,
-      data: { avatar: result.displayUrl },
+      data: { avatar: avatarUrl },
     });
   } catch (error) {
     console.error('Upload avatar error:', error);

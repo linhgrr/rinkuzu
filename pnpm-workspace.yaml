@@ -1,7 +1,7 @@
-nodeVersion: 22.13.0
+nodeVersion: 22.22.0
 engineStrict: true
 pmOnFail: error
-strictPeerDependencies: true
+strictPeerDependencies: false
 verifyDepsBeforeRun: error
 allowBuilds:
   '@parcel/watcher': true
@@ -10,3 +10,7 @@ allowBuilds:
   sharp: true
   unrs-resolver: true
   core-js: false
+  argon2: true
+  esbuild: true
+  puppeteer: true
+  vue-demi: true

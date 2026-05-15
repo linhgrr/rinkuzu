@@ -1,79 +1,80 @@
 ---
 name: ui
-description: 'Skill for the Ui area of rinkuzu. 30 symbols across 13 files.'
+description: 'Skill for the Ui area of rinkuzu. 41 symbols across 15 files.'
 ---
 
 # Ui
 
-30 symbols | 13 files | Cohesion: 94%
+41 symbols | 15 files | Cohesion: 89%
 
 ## When to Use
 
 - Working with code in `src/`
-- Understanding how cn, UserProfileLink, getUserDisplayName work
+- Understanding how cn, TextShimmer, Modal work
 - Modifying ui-related functionality
 
 ## Key Files
 
-| File                                               | Symbols                                                                              |
-| -------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| `src/components/ui/StatsModal.tsx`                 | StatsModal, handleSortChange, formatDate, renderCategoryItem, renderCreatorItem (+3) |
-| `src/components/ui/sparkles-text.tsx`              | SparklesText, initializeStars, generateStar, updateStars                             |
-| `src/components/user/UserAvatar.tsx`               | getUserDisplayName, getUserInitial, UserAvatar                                       |
-| `src/components/ui/MarkdownRenderer.tsx`           | normalizeLatexEscapes, MarkdownRenderer                                              |
-| `src/app/[locale]/users/[userId]/page.tsx`         | getCategoryBadgeVariant, PublicUserProfilePage                                       |
-| `src/features/dashboard/components/LevelBadge.tsx` | LevelBadge, random                                                                   |
-| `src/app/[locale]/(app)/quiz/[slug]/page.tsx`      | shuffleArray, createQuizPlayerData                                                   |
-| `src/components/ui/Pagination.tsx`                 | Pagination, getVisiblePages                                                          |
-| `src/lib/utils.ts`                                 | cn                                                                                   |
-| `src/components/user/UserProfileLink.tsx`          | UserProfileLink                                                                      |
+| File                                               | Symbols                                                                         |
+| -------------------------------------------------- | ------------------------------------------------------------------------------- |
+| `src/components/ui/StatsModal.tsx`                 | getDataKey, StatsModalBody, handleSearch, handlePageChange, handleLoadMore (+7) |
+| `src/components/ui/Card.tsx`                       | Card, CardHeader, CardTitle, CardDescription, CardContent (+2)                  |
+| `src/components/ui/sparkles-text.tsx`              | SparklesText, createSparkle, createSparkles, SparklesLayer                      |
+| `src/app/[locale]/(app)/quiz/[slug]/page.tsx`      | shuffleArray, createQuizPlayerData, loadQuiz                                    |
+| `src/components/ui/MarkdownRenderer.tsx`           | normalizeLatexEscapes, MarkdownRenderer                                         |
+| `src/components/ui/Input.tsx`                      | Input, Textarea                                                                 |
+| `src/features/dashboard/components/LevelBadge.tsx` | LevelBadge, random                                                              |
+| `src/components/ui/Pagination.tsx`                 | Pagination, getVisiblePages                                                     |
+| `src/lib/utils.ts`                                 | cn                                                                              |
+| `src/components/ui/text-shimmer.tsx`               | TextShimmer                                                                     |
 
 ## Entry Points
 
 Start here when exploring this area:
 
-- **`cn`** (Function) — `src/lib/utils.ts:3`
-- **`UserProfileLink`** (Function) — `src/components/user/UserProfileLink.tsx:12`
-- **`getUserDisplayName`** (Function) — `src/components/user/UserAvatar.tsx:11`
-- **`getUserInitial`** (Function) — `src/components/user/UserAvatar.tsx:25`
-- **`UserAvatar`** (Function) — `src/components/user/UserAvatar.tsx:35`
+- **`cn`** (Function) — `src/lib/utils.ts:17`
+- **`TextShimmer`** (Function) — `src/components/ui/text-shimmer.tsx:8`
+- **`Modal`** (Function) — `src/components/ui/Modal.tsx:17`
+- **`MarkdownRenderer`** (Function) — `src/components/ui/MarkdownRenderer.tsx:34`
+- **`LevelBadge`** (Function) — `src/features/dashboard/components/LevelBadge.tsx:7`
 
 ## Key Symbols
 
 | Symbol                  | Type     | File                                               | Line |
 | ----------------------- | -------- | -------------------------------------------------- | ---- |
-| `cn`                    | Function | `src/lib/utils.ts`                                 | 3    |
-| `UserProfileLink`       | Function | `src/components/user/UserProfileLink.tsx`          | 12   |
-| `getUserDisplayName`    | Function | `src/components/user/UserAvatar.tsx`               | 11   |
-| `getUserInitial`        | Function | `src/components/user/UserAvatar.tsx`               | 25   |
-| `UserAvatar`            | Function | `src/components/user/UserAvatar.tsx`               | 35   |
+| `cn`                    | Function | `src/lib/utils.ts`                                 | 17   |
 | `TextShimmer`           | Function | `src/components/ui/text-shimmer.tsx`               | 8    |
 | `Modal`                 | Function | `src/components/ui/Modal.tsx`                      | 17   |
 | `MarkdownRenderer`      | Function | `src/components/ui/MarkdownRenderer.tsx`           | 34   |
-| `PublicUserProfilePage` | Function | `src/app/[locale]/users/[userId]/page.tsx`         | 47   |
-| `StatsModal`            | Function | `src/components/ui/StatsModal.tsx`                 | 28   |
-| `handleSortChange`      | Function | `src/components/ui/StatsModal.tsx`                 | 125  |
-| `formatDate`            | Function | `src/components/ui/StatsModal.tsx`                 | 134  |
-| `renderCategoryItem`    | Function | `src/components/ui/StatsModal.tsx`                 | 144  |
-| `renderCreatorItem`     | Function | `src/components/ui/StatsModal.tsx`                 | 178  |
-| `renderActivityItem`    | Function | `src/components/ui/StatsModal.tsx`                 | 221  |
-| `renderContent`         | Function | `src/components/ui/StatsModal.tsx`                 | 344  |
-| `getSortOptions`        | Function | `src/components/ui/StatsModal.tsx`                 | 390  |
-| `getRandomEmotion`      | Function | `src/shared/utils/constants.ts`                    | 13   |
 | `LevelBadge`            | Function | `src/features/dashboard/components/LevelBadge.tsx` | 7    |
 | `random`                | Function | `src/features/dashboard/components/LevelBadge.tsx` | 12   |
+| `loadQuiz`              | Function | `src/app/[locale]/(app)/quiz/[slug]/page.tsx`      | 570  |
+| `loadData`              | Function | `src/components/ui/StatsModal.tsx`                 | 649  |
+| `handleSortChange`      | Function | `src/components/ui/StatsModal.tsx`                 | 685  |
+| `StatsModal`            | Function | `src/components/ui/StatsModal.tsx`                 | 636  |
+| `SparklesText`          | Function | `src/components/ui/sparkles-text.tsx`              | 117  |
+| `Switch`                | Function | `src/components/ui/Switch.tsx`                     | 9    |
+| `Separator`             | Function | `src/components/ui/Separator.tsx`                  | 9    |
+| `normalizeLatexEscapes` | Function | `src/components/ui/MarkdownRenderer.tsx`           | 25   |
+| `Input`                 | Function | `src/components/ui/Input.tsx`                      | 13   |
+| `Textarea`              | Function | `src/components/ui/Input.tsx`                      | 89   |
+| `Card`                  | Function | `src/components/ui/Card.tsx`                       | 9    |
+| `CardHeader`            | Function | `src/components/ui/Card.tsx`                       | 39   |
+| `CardTitle`             | Function | `src/components/ui/Card.tsx`                       | 51   |
+| `CardDescription`       | Function | `src/components/ui/Card.tsx`                       | 73   |
 
 ## Execution Flows
 
-| Flow                      | Type            | Steps |
-| ------------------------- | --------------- | ----- |
-| `StatsModal → FormatDate` | intra_community | 4     |
+| Flow                    | Type            | Steps |
+| ----------------------- | --------------- | ----- |
+| `HandleSubmit → Random` | cross_community | 6     |
+| `PlanCard → Random`     | cross_community | 4     |
 
 ## Connected Areas
 
-| Area         | Connections |
-| ------------ | ----------- |
-| Repositories | 1 calls     |
+| Area       | Connections |
+| ---------- | ----------- |
+| Categories | 2 calls     |
 
 ## How to Explore
 

@@ -1,6 +1,14 @@
+import 'server-only';
 import jwt, { SignOptions } from 'jsonwebtoken';
 
-const JWT_SECRET = process.env['JWT_SECRET'] || 'your-secret-key-change-in-production';
+function requireJwtSecret(): string {
+  const jwtSecret = process.env['JWT_SECRET'];
+  if (!jwtSecret) {
+    throw new Error('JWT_SECRET required');
+  }
+  return jwtSecret;
+}
+const JWT_SECRET = requireJwtSecret();
 const JWT_EXPIRES_IN_SECONDS = 7 * 24 * 60 * 60; // 7 days in seconds
 
 export interface JWTPayload {

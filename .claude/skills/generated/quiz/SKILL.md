@@ -1,93 +1,98 @@
 ---
 name: quiz
-description: 'Skill for the Quiz area of rinkuzu. 29 symbols across 14 files.'
+description: 'Skill for the Quiz area of rinkuzu. 109 symbols across 51 files.'
 ---
 
 # Quiz
 
-29 symbols | 14 files | Cohesion: 79%
+109 symbols | 51 files | Cohesion: 74%
 
 ## When to Use
 
 - Working with code in `src/`
-- Understanding how PUT, DELETE, POST work
+- Understanding how deletePDF, hashPassword, apiOk work
 - Modifying quiz-related functionality
 
 ## Key Files
 
-| File                                                                      | Symbols                                                              |
-| ------------------------------------------------------------------------- | -------------------------------------------------------------------- |
-| `src/services/quiz/QuizService.ts`                                        | QuizService, getQuizBySlug, updateQuiz, deleteQuiz, approveQuiz (+9) |
-| `src/app/api/quizzes/[id]/route.ts`                                       | PUT, DELETE                                                          |
-| `src/app/api/quiz/[slug]/discussions/route.ts`                            | GET, POST                                                            |
-| `src/lib/serviceFactory.ts`                                               | getQuizService                                                       |
-| `src/interfaces/services/IQuizService.ts`                                 | IQuizService                                                         |
-| `tests/integration/services/quiz/QuizService.subscription-access.test.ts` | createQuizService                                                    |
-| `src/app/api/quizzes/[id]/reject/route.ts`                                | POST                                                                 |
-| `src/app/api/quizzes/[id]/approve/route.ts`                               | POST                                                                 |
-| `src/app/api/quiz/[slug]/report/route.ts`                                 | POST                                                                 |
-| `src/app/[locale]/(app)/quiz/[slug]/layout.tsx`                           | generateMetadata                                                     |
+| File                                                    | Symbols                                                                                     |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `src/services/quiz/QuizService.ts`                      | updateQuiz, deleteQuiz, approveQuiz, rejectQuiz, reportQuiz (+11)                           |
+| `src/services/quiz/QuizPlayService.ts`                  | getQuizForFlashcards, getQuizForPlay, getQuizFlashcards, submitQuizAttempt, QuizPlayService |
+| `src/services/quiz/QuizCrudService.ts`                  | updateQuiz, deleteQuiz, getQuizById, QuizCrudService, createQuiz                            |
+| `src/app/api/adaptive-learning/library-images/route.ts` | toPositiveInt, extractImageUrl, collectImageUrls, normalizePayload, GET                     |
+| `src/services/quiz/QuizDiscussionService.ts`            | reportQuiz, getQuizDiscussions, addDiscussionComment, QuizDiscussionService                 |
+| `src/services/quiz/QuizAdminService.ts`                 | approveQuiz, rejectQuiz, QuizAdminService, previewFromPdf                                   |
+| `src/app/api/user/avatar/route.ts`                      | getExtension, extractS3Key, PUT, DELETE                                                     |
+| `src/services/subscription/SubscriptionService.ts`      | SubscriptionService, getUserSubscription, isUserPremium, isExpired                          |
+| `src/services/bookmark/BookmarkService.ts`              | getBookmarksByUser, createBookmark, deleteBookmarkByUser                                    |
+| `src/app/api/subscription/webhook/route.ts`             | buildPayOSSignaturePayload, isValidSignature, POST                                          |
 
 ## Entry Points
 
 Start here when exploring this area:
 
-- **`PUT`** (Function) — `src/app/api/quizzes/[id]/route.ts:66`
-- **`DELETE`** (Function) — `src/app/api/quizzes/[id]/route.ts:109`
-- **`POST`** (Function) — `src/app/api/quizzes/[id]/reject/route.ts:6`
-- **`POST`** (Function) — `src/app/api/quizzes/[id]/approve/route.ts:6`
-- **`POST`** (Function) — `src/app/api/quiz/[slug]/report/route.ts:6`
+- **`deletePDF`** (Function) — `src/lib/s3.ts:59`
+- **`hashPassword`** (Function) — `src/lib/password.ts:3`
+- **`apiOk`** (Function) — `src/lib/api/response.ts:3`
+- **`apiErr`** (Function) — `src/lib/api/response.ts:7`
+- **`withAdmin`** (Function) — `src/lib/api/auth.ts:72`
 
 ## Key Symbols
 
-| Symbol             | Type      | File                                            | Line |
-| ------------------ | --------- | ----------------------------------------------- | ---- |
-| `QuizService`      | Class     | `src/services/quiz/QuizService.ts`              | 24   |
-| `PUT`              | Function  | `src/app/api/quizzes/[id]/route.ts`             | 66   |
-| `DELETE`           | Function  | `src/app/api/quizzes/[id]/route.ts`             | 109  |
-| `POST`             | Function  | `src/app/api/quizzes/[id]/reject/route.ts`      | 6    |
-| `POST`             | Function  | `src/app/api/quizzes/[id]/approve/route.ts`     | 6    |
-| `POST`             | Function  | `src/app/api/quiz/[slug]/report/route.ts`       | 6    |
-| `generateMetadata` | Function  | `src/app/[locale]/(app)/quiz/[slug]/layout.tsx` | 9    |
-| `GET`              | Function  | `src/app/api/quiz/[slug]/play/route.ts`         | 8    |
-| `GET`              | Function  | `src/app/api/quiz/[slug]/discussions/route.ts`  | 7    |
-| `POST`             | Function  | `src/app/api/quiz/[slug]/discussions/route.ts`  | 36   |
-| `POST`             | Function  | `src/app/api/quiz/[slug]/attempt/route.ts`      | 6    |
-| `generateSlug`     | Function  | `src/lib/utils.ts`                              | 7    |
-| `POST`             | Function  | `src/app/api/quizzes/route.ts`                  | 48   |
-| `IQuizService`     | Interface | `src/interfaces/services/IQuizService.ts`       | 31   |
-| `getQuizService`   | Method    | `src/lib/serviceFactory.ts`                     | 58   |
-| `getQuizBySlug`    | Method    | `src/services/quiz/QuizService.ts`              | 287  |
-| `updateQuiz`       | Method    | `src/services/quiz/QuizService.ts`              | 380  |
-| `deleteQuiz`       | Method    | `src/services/quiz/QuizService.ts`              | 427  |
-| `approveQuiz`      | Method    | `src/services/quiz/QuizService.ts`              | 473  |
-| `rejectQuiz`       | Method    | `src/services/quiz/QuizService.ts`              | 491  |
+| Symbol                  | Type     | File                                               | Line |
+| ----------------------- | -------- | -------------------------------------------------- | ---- |
+| `SubscriptionService`   | Class    | `src/services/subscription/SubscriptionService.ts` | 16   |
+| `PayOSService`          | Class    | `src/services/payment/PayOSService.ts`             | 8    |
+| `QuizPlayService`       | Class    | `src/services/quiz/QuizPlayService.ts`             | 10   |
+| `QuizDiscussionService` | Class    | `src/services/quiz/QuizDiscussionService.ts`       | 7    |
+| `QuizCrudService`       | Class    | `src/services/quiz/QuizCrudService.ts`             | 11   |
+| `QuizAdminService`      | Class    | `src/services/quiz/QuizAdminService.ts`            | 6    |
+| `QuizService`           | Class    | `src/services/quiz/QuizService.ts`                 | 19   |
+| `deletePDF`             | Function | `src/lib/s3.ts`                                    | 59   |
+| `hashPassword`          | Function | `src/lib/password.ts`                              | 3    |
+| `apiOk`                 | Function | `src/lib/api/response.ts`                          | 3    |
+| `apiErr`                | Function | `src/lib/api/response.ts`                          | 7    |
+| `withAdmin`             | Function | `src/lib/api/auth.ts`                              | 72   |
+| `GET`                   | Function | `src/app/api/bookmarks/route.ts`                   | 9    |
+| `POST`                  | Function | `src/app/api/bookmarks/route.ts`                   | 33   |
+| `PUT`                   | Function | `src/app/api/user/password/route.ts`               | 8    |
+| `PUT`                   | Function | `src/app/api/user/avatar/route.ts`                 | 34   |
+| `DELETE`                | Function | `src/app/api/user/avatar/route.ts`                 | 149  |
+| `GET`                   | Function | `src/app/api/user/attempts/route.ts`               | 10   |
+| `POST`                  | Function | `src/app/api/subscription/webhook/route.ts`        | 26   |
+| `POST`                  | Function | `src/app/api/review/submit/route.ts`               | 8    |
 
 ## Execution Flows
 
-| Flow                                  | Type            | Steps |
-| ------------------------------------- | --------------- | ----- |
-| `GET → IsExpired`                     | cross_community | 6     |
-| `GET → MarkUserSubscriptionExpired`   | cross_community | 6     |
-| `POST → IsExpired`                    | cross_community | 6     |
-| `POST → MarkUserSubscriptionExpired`  | cross_community | 6     |
-| `POST → IsExpired`                    | cross_community | 6     |
-| `POST → MarkUserSubscriptionExpired`  | cross_community | 6     |
-| `GenerateMetadata → NormalizeSeoPath` | cross_community | 6     |
-| `GenerateMetadata → LocalePrefix`     | cross_community | 6     |
-| `GET → SubscriptionRepository`        | cross_community | 5     |
-| `GET → UserRepository`                | cross_community | 5     |
+| Flow                                 | Type            | Steps |
+| ------------------------------------ | --------------- | ----- |
+| `GET → IsExpired`                    | cross_community | 7     |
+| `GET → MarkUserSubscriptionExpired`  | cross_community | 7     |
+| `POST → IsExpired`                   | cross_community | 7     |
+| `POST → MarkUserSubscriptionExpired` | cross_community | 7     |
+| `POST → IsExpired`                   | cross_community | 7     |
+| `POST → MarkUserSubscriptionExpired` | cross_community | 7     |
+| `GET → IsExpired`                    | intra_community | 6     |
+| `GET → MarkUserSubscriptionExpired`  | cross_community | 6     |
+| `GET → IsExpired`                    | cross_community | 6     |
+| `GET → MarkUserSubscriptionExpired`  | cross_community | 6     |
 
 ## Connected Areas
 
-| Area         | Connections |
-| ------------ | ----------- |
-| Subscription | 4 calls     |
-| Repositories | 1 calls     |
-| [slug]       | 1 calls     |
+| Area          | Connections |
+| ------------- | ----------- |
+| Repositories  | 13 calls    |
+| Components    | 3 calls     |
+| Subscription  | 2 calls     |
+| Hooks         | 2 calls     |
+| Admin         | 2 calls     |
+| Ai            | 1 calls     |
+| Process-chunk | 1 calls     |
+| Auth          | 1 calls     |
 
 ## How to Explore
 
-1. `gitnexus_context({name: "PUT"})` — see callers and callees
+1. `gitnexus_context({name: "deletePDF"})` — see callers and callees
 2. `gitnexus_query({query: "quiz"})` — find related execution flows
 3. Read key files listed above for implementation details

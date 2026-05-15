@@ -89,7 +89,10 @@ export class PayOSService implements IPayOSService {
         body: this.redactRequestBody(body),
       });
 
-      const response = await fetch(url, options);
+      const response = await fetch(url, {
+        // EXTERNAL: PayOS
+        ...options,
+      });
       const responseText = await response.text();
 
       console.warn('PayOS API Response:', {

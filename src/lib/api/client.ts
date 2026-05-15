@@ -1,4 +1,4 @@
-class ApiResponseError extends Error {
+export class ApiResponseError extends Error {
   status: number;
   payload: unknown;
 

@@ -1,0 +1,70 @@
+{
+  "source": {
+    "claudePerfPath": "../CLAUDE_PERF.md",
+    "claudePerfPresent": true
+  },
+  "budgets": {
+    "performanceScoreMin": 0.8,
+    "lcpMsMax": 2500,
+    "interactiveMsMax": 3500,
+    "clsMax": 0.1
+  },
+  "sizeLimit": {
+    "status": "ok",
+    "entries": [
+      {
+        "name": ".next/static/**/*.js",
+        "sizeBytes": 4550113,
+        "limitBytes": 358400,
+        "ok": false
+      },
+      {
+        "name": ".next/static/css/**/*.css",
+        "sizeBytes": 165901,
+        "limitBytes": 51200,
+        "ok": false
+      }
+    ]
+  },
+  "lighthouse": {
+    "status": "ok",
+    "url": "http://127.0.0.1:3000/en",
+    "performanceScore": 0.75,
+    "lcpMs": 3109.99085,
+    "interactiveMs": 7933.49085,
+    "cls": 0
+  },
+  "violations": [
+    {
+      "type": "size-limit",
+      "name": ".next/static/**/*.js",
+      "sizeBytes": 4550113,
+      "limitBytes": 358400
+    },
+    {
+      "type": "size-limit",
+      "name": ".next/static/css/**/*.css",
+      "sizeBytes": 165901,
+      "limitBytes": 51200
+    },
+    {
+      "type": "lighthouse",
+      "metric": "performanceScore",
+      "actual": 0.75,
+      "limit": 0.8
+    },
+    {
+      "type": "lighthouse",
+      "metric": "largest-contentful-paint",
+      "actual": 3109.99085,
+      "limit": 2500
+    },
+    {
+      "type": "lighthouse",
+      "metric": "interactive",
+      "actual": 7933.49085,
+      "limit": 3500
+    }
+  ],
+  "ok": false
+}

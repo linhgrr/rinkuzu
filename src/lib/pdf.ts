@@ -36,6 +36,7 @@ export async function uploadPdfViaPresignedUrl(file: File): Promise<{ s3Key: str
   );
 
   const putResponse = await fetch(uploadUrl, {
+    // EXTERNAL: S3 presigned PUT
     method: 'PUT',
     headers: {
       'Content-Type': 'application/pdf',

@@ -674,6 +674,8 @@ function QuizResultReadyState({
   userLabel,
   userQuestion,
 }: QuizResultReadyStateProps) {
+  const tCommon = useTranslations('common');
+
   return (
     <div className="min-h-screen bg-neutral-50">
       <div className="bg-white shadow-sm border-b">
@@ -769,8 +771,8 @@ function QuizResultReadyState({
         inputPlaceholder={t('questionPlaceholder')}
         inputMode="textarea"
         inputHintLeft={t('leaveEmptyGeneral')}
-        inputHintRight={`Press Ctrl+Enter ${t('send', { ns: 'common' })}`}
-        clearLabel={t('clear', { ns: 'common' })}
+        inputHintRight={`Press Ctrl+Enter ${tCommon('send')}`}
+        clearLabel={tCommon('clear')}
         onClearHistory={() => clearChatHistory(currentQuestionIndex)}
         showTimestamps
         title={tProfile('chatWithRinChan')}
@@ -782,8 +784,8 @@ function QuizResultReadyState({
 function QuizResultPageClient() {
   const t = useTranslations('quiz');
   const tProfile = useTranslations('profile');
-  const { get } = useSearchParams();
-  const attemptId = get('attemptId');
+  const searchParams = useSearchParams();
+  const attemptId = searchParams.get('attemptId');
   const encodedSlug = routePathSegment(useRequiredRouteParam('slug'));
   const { state, dispatch, stats, toggleBookmark, removeBookmark } =
     useQuizResultPageData(attemptId);

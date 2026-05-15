@@ -6,9 +6,9 @@ import {
 } from '@/interfaces/services/IAuthService';
 import { IUserRepository } from '@/interfaces/repositories/IUserRepository';
 import { IUser } from '@/types/index';
-import { validateEmail, validatePassword } from '@/lib/utils';
 import { hashPassword, verifyPassword } from '@/lib/password';
 import { signToken } from '@/lib/jwt';
+import { emailSchema, passwordSchema } from '@/lib/validation';
 
 export class AuthService implements IAuthService {
   constructor(private userRepository: IUserRepository) {}
@@ -57,12 +57,12 @@ export class AuthService implements IAuthService {
       throw new Error('Email and password are required');
     }
 
-    if (!validateEmail(email)) {
+    if (!emailSchema.safeParse(email).success) {
       throw new Error('Invalid email format');
     }
 
-    if (!validatePassword(password)) {
-      throw new Error('Password must be at least 6 characters');
+    if (!passwordSchema.safeParse(password).success) {
+      throw new Error('Password must be between 8 and 72 characters');
     }
 
     // Check if user already exists

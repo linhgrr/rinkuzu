@@ -8,9 +8,9 @@ import { Button } from '@/components/ui/Button';
 
 function PaymentCancelContent() {
   const t = useTranslations('subscription');
-  const { get } = useSearchParams();
+  const searchParams = useSearchParams();
   const { push } = useRouter();
-  const orderCode = get('orderCode');
+  const orderCode = searchParams.get('orderCode');
 
   const handleGoHome = () => {
     push('/');

@@ -1,3 +1,4 @@
+import 'server-only';
 import * as bcrypt from 'bcryptjs';
 
 // Password hashing functions (SERVER-SIDE ONLY)

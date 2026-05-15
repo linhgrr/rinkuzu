@@ -1,7 +1,8 @@
+import mongoose from 'mongoose';
 import { NextResponse } from 'next/server';
+import { RateLimiterMongo } from 'rate-limiter-flexible';
 import connectDB from '@/lib/mongoose';
 import { ServiceFactory } from '@/lib/serviceFactory';
-import LlmUsage from '@/models/LlmUsage';
 import type { AdaptiveUserRole } from '@/lib/adaptive-learning/config';
 
 export type LlmRateLimitAction =
@@ -37,6 +38,12 @@ export type LlmRateLimitResult = {
   retryAfterSeconds?: number;
 };
 
+type RateLimiterResult = {
+  consumedPoints: number;
+  remainingPoints: number;
+  msBeforeNext: number;
+};
+
 export function isAdminRole(role: unknown): role is AdaptiveUserRole {
   return role === 'admin';
 }
@@ -64,6 +71,9 @@ const DEFAULT_LIMITS: RateLimitConfig = {
   },
 };
 
+const LIMITER_COLLECTION = 'llm_rate_limits';
+const limiterCache = new Map<string, RateLimiterMongo>();
+
 function readLimitEnv(action: LlmRateLimitAction, tier: Tier, window: 'minute' | 'day') {
   const key = `LLM_RATE_${action}_${tier}_${window}`.toUpperCase();
   const raw = Number(process.env[key]);
@@ -74,27 +84,62 @@ function getLimit(action: LlmRateLimitAction, tier: Tier, window: 'minute' | 'da
   return readLimitEnv(action, tier, window) ?? DEFAULT_LIMITS[action][tier][window];
 }
 
-function getWindowDates(window: 'minute' | 'day', now = new Date()) {
-  const start = new Date(now);
-  if (window === 'minute') {
-    start.setSeconds(0, 0);
-    return {
-      start,
-      resetAt: new Date(start.getTime() + 60_000),
-      expireAt: new Date(start.getTime() + 2 * 60_000),
-    };
+function retryAfterSeconds(resetAt: Date) {
+  return Math.max(1, Math.ceil((resetAt.getTime() - Date.now()) / 1000));
+}
+
+function getWindowDurationSeconds(window: 'minute' | 'day') {
+  return window === 'minute' ? 60 : 24 * 60 * 60;
+}
+
+function isRateLimiterResult(value: unknown): value is RateLimiterResult {
+  if (typeof value !== 'object' || value === null) {
+    return false;
   }
 
-  start.setHours(0, 0, 0, 0);
+  const candidate = value as Partial<RateLimiterResult>;
+  return (
+    typeof candidate.consumedPoints === 'number' &&
+    typeof candidate.remainingPoints === 'number' &&
+    typeof candidate.msBeforeNext === 'number'
+  );
+}
+
+function toWindowResult(
+  window: 'minute' | 'day',
+  limit: number,
+  result: RateLimiterResult,
+): WindowResult {
   return {
-    start,
-    resetAt: new Date(start.getTime() + 24 * 60 * 60_000),
-    expireAt: new Date(start.getTime() + 3 * 24 * 60 * 60_000),
+    window,
+    limit,
+    count: result.consumedPoints,
+    remaining: Math.max(0, result.remainingPoints),
+    resetAt: new Date(Date.now() + Math.max(0, result.msBeforeNext)),
   };
 }
 
-function retryAfterSeconds(resetAt: Date) {
-  return Math.max(1, Math.ceil((resetAt.getTime() - Date.now()) / 1000));
+function getMongoLimiter(action: LlmRateLimitAction, tier: Tier, window: 'minute' | 'day') {
+  const cacheKey = `${action}:${tier}:${window}`;
+  const cached = limiterCache.get(cacheKey);
+  if (cached) {
+    return cached;
+  }
+
+  const db = mongoose.connection.db;
+  if (!db) {
+    throw new Error('MongoDB connection is not initialized');
+  }
+
+  const limiter = new RateLimiterMongo({
+    storeClient: db,
+    tableName: LIMITER_COLLECTION,
+    keyPrefix: `llm:${cacheKey}`,
+    points: getLimit(action, tier, window),
+    duration: getWindowDurationSeconds(window),
+  });
+  limiterCache.set(cacheKey, limiter);
+  return limiter;
 }
 
 async function incrementWindow(
@@ -104,26 +149,17 @@ async function incrementWindow(
   window: 'minute' | 'day',
 ): Promise<WindowResult> {
   const limit = getLimit(action, tier, window);
-  const { start, resetAt, expireAt } = getWindowDates(window);
+  const limiter = getMongoLimiter(action, tier, window);
 
-  const usage = (await LlmUsage.findOneAndUpdate(
-    { userId, action, window, windowStart: start },
-    {
-      $setOnInsert: { userId, action, window, windowStart: start },
-      $set: { tier, expireAt },
-      $inc: { count: 1 },
-    },
-    { upsert: true, new: true, lean: true },
-  )) as { count?: number } | null;
-
-  const count = Number(usage?.count || 0);
-  return {
-    window,
-    limit,
-    count,
-    remaining: Math.max(0, limit - count),
-    resetAt,
-  };
+  try {
+    const result = await limiter.consume(userId);
+    return toWindowResult(window, limit, result);
+  } catch (error) {
+    if (isRateLimiterResult(error)) {
+      return toWindowResult(window, limit, error);
+    }
+    throw error;
+  }
 }
 
 export function classifyAdaptiveLlmAction(

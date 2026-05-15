@@ -54,29 +54,6 @@ function isHtmlResponse(contentType: string | null): boolean {
   return (contentType || '').toLowerCase().includes('text/html');
 }
 
-function mergeAbortSignals(signals: Array<AbortSignal | null | undefined>): AbortSignal {
-  const activeSignals = signals.filter((signal): signal is AbortSignal => Boolean(signal));
-  const controller = new AbortController();
-
-  const abort = () => {
-    if (!controller.signal.aborted) {
-      controller.abort();
-    }
-  };
-
-  for (const signal of activeSignals) {
-    if (signal.aborted) {
-      abort();
-      break;
-    }
-
-    const handleAbort = () => abort();
-    signal.addEventListener('abort', handleAbort, { once: true });
-  }
-
-  return controller.signal;
-}
-
 function copyUpstreamResponseHeaders(response: Response): Headers {
   const responseHeaders = new Headers();
 
@@ -128,7 +105,7 @@ export async function proxyAdaptiveRequest(
         ? options.timeoutMs
         : resolveAdaptiveProxyTimeoutMs();
     const timeout = setTimeout(() => controller.abort(), timeoutMs);
-    const upstreamAbort = mergeAbortSignals([controller.signal, req.signal]);
+    const upstreamAbort = AbortSignal.any([controller.signal, req.signal]);
     const body = options?.body ?? (shouldAttachBody(method) ? await req.text() : undefined);
 
     const response = await (async () => {
@@ -142,6 +119,7 @@ export async function proxyAdaptiveRequest(
           cacheOptions.tags.length > 0;
 
         return await fetch(targetUrl.toString(), {
+          // PROXY: backend AI API
           method,
           headers,
           body,

@@ -1,10 +1,10 @@
 // /src/hooks/usePdfProcessor.ts
-import { useCallback, useRef, useEffect } from 'react';
-import { useDraftStore } from '@/store/useDraftStore';
+import { useCallback, useEffect, useRef } from 'react';
+import pLimit from 'p-limit';
 import { toast } from 'sonner';
-import { mapWithConcurrency } from '@/lib/asyncPool';
-import { fetchApiData } from '@/lib/api/client';
-import { extractApiErrorMessage, extractUnknownErrorMessage } from '@/lib/api/error';
+import { ApiResponseError, fetchApiData, fetchApiResponse } from '@/lib/api/client';
+import { extractUnknownErrorMessage } from '@/lib/api/error';
+import { useDraftStore } from '@/store/useDraftStore';
 
 interface ChunkInfo {
   index: number;
@@ -22,42 +22,63 @@ async function fetchWithRetry(
   url: string,
   options: RequestInit,
   retries: number = MAX_RETRIES,
-): Promise<Response> {
-  const attemptFetch = async (attempt: number, lastError: Error | null): Promise<Response> => {
+): Promise<{
+  questions: any[];
+  progress?: {
+    isComplete?: boolean;
+    totalQuestions?: number;
+  };
+}> {
+  const attemptFetch = async (
+    attempt: number,
+    lastError: Error | null,
+  ): Promise<{
+    questions: any[];
+    progress?: {
+      isComplete?: boolean;
+      totalQuestions?: number;
+    };
+  }> => {
     if (attempt >= retries) {
       throw lastError || new Error('All retries failed');
     }
 
     try {
-      const response = await fetch(url, options);
-
-      // If conflict (another request processing), wait and retry
-      if (response.status === 409) {
-        const data = await response.json().catch(() => null);
-        const retryAfter = data.retryAfter || INITIAL_RETRY_DELAY * Math.pow(2, attempt);
-        await new Promise((r) => setTimeout(r, retryAfter));
+      const response = await fetchApiResponse<{
+        questions: any[];
+        progress?: {
+          isComplete?: boolean;
+          totalQuestions?: number;
+        };
+      }>(url, options);
+      return response.data;
+    } catch (error: unknown) {
+      if (error instanceof ApiResponseError && error.status === 409) {
+        const payload =
+          error.payload && typeof error.payload === 'object'
+            ? (error.payload as { retryAfter?: unknown })
+            : null;
+        const retryAfter =
+          typeof payload?.retryAfter === 'number'
+            ? payload.retryAfter
+            : INITIAL_RETRY_DELAY * Math.pow(2, attempt);
+        await new Promise((resolve) => setTimeout(resolve, retryAfter));
         return attemptFetch(attempt + 1, lastError);
       }
 
-      return response;
-    } catch (error: unknown) {
       const nextError =
         error instanceof Error
           ? error
           : new Error(extractUnknownErrorMessage(error, 'Network request failed'));
 
-      // Don't retry on abort
       if (error instanceof Error && error.name === 'AbortError') {
         throw error;
       }
 
-      // Exponential backoff
       const delay = INITIAL_RETRY_DELAY * Math.pow(2, attempt);
-      await new Promise((r) => setTimeout(r, delay));
+      await new Promise((resolve) => setTimeout(resolve, delay));
       return attemptFetch(attempt + 1, nextError);
     }
-
-    throw lastError || new Error('All retries failed');
   };
 
   return attemptFetch(0, null);
@@ -68,13 +89,11 @@ export function usePdfProcessor() {
   const processingRef = useRef<Record<string, boolean>>({});
   const abortControllersRef = useRef<Record<string, AbortController>>({});
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       Object.values(abortControllersRef.current).forEach((controller) => {
         controller.abort();
       });
-      // Clear refs completely
       processingRef.current = {};
       abortControllersRef.current = {};
     };
@@ -91,22 +110,14 @@ export function usePdfProcessor() {
       isComplete: boolean;
       totalQuestions: number;
     }> => {
-      const response = await fetchWithRetry(`/api/draft/${draftId}/process-chunk`, {
+      const payload = await fetchWithRetry(`/api/draft/${draftId}/process-chunk`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ chunkIndex }),
         signal,
       });
-
-      if (!response.ok) {
-        const errorPayload = await response.json().catch(() => null);
-        throw new Error(extractApiErrorMessage(errorPayload, 'Failed to process chunk'));
-      }
-
-      const result = await response.json();
-      const payload = result.data ?? {};
       return {
-        success: result.success !== false,
+        success: true,
         questions: payload.questions || [],
         isComplete: payload.progress?.isComplete || false,
         totalQuestions: payload.progress?.totalQuestions || 0,
@@ -126,71 +137,79 @@ export function usePdfProcessor() {
       const abortController = new AbortController();
       abortControllersRef.current[draftId] = abortController;
 
-      // Also retry 'processing' chunks (might be stale locks)
       const pendingChunks = chunks
-        .filter((c) => c.status === 'pending' || c.status === 'error' || c.status === 'processing')
-        .sort((a, b) => a.index - b.index);
+        .filter(
+          (chunk) =>
+            chunk.status === 'pending' || chunk.status === 'error' || chunk.status === 'processing',
+        )
+        .sort((left, right) => left.index - right.index);
 
-      let processedCount = chunks.filter((c) => c.status === 'done').length;
+      let processedCount = chunks.filter((chunk) => chunk.status === 'done').length;
       let totalQuestions = 0;
       let totalErrors = 0;
       let hasCompleted = false;
       let hasAbortedForErrors = false;
+      const limit = pLimit(MAX_CONCURRENT_CHUNKS);
 
       try {
-        await mapWithConcurrency(pendingChunks, MAX_CONCURRENT_CHUNKS, async (chunk) => {
-          if (abortController.signal.aborted || hasCompleted || hasAbortedForErrors) {
-            return;
-          }
-
-          try {
-            const result = await processChunk(draftId, chunk.index, abortController.signal);
-
-            if (result.success) {
-              processedCount++;
-              totalQuestions = result.totalQuestions;
-
-              updateDraftProgress(draftId, {
-                chunksProcessed: processedCount,
-                questionsCount: totalQuestions,
-                status: 'processing',
-              });
-
-              if (result.isComplete) {
-                hasCompleted = true;
-                completeDraft(draftId, totalQuestions);
-                toast.success(`"${title}" đã sẵn sàng!`, {
-                  description: `${totalQuestions} câu hỏi được trích xuất`,
-                  action: {
-                    label: 'Xem',
-                    onClick: () => (window.location.href = `/draft/${draftId}/edit`),
-                  },
-                });
-                abortController.abort();
+        await Promise.all(
+          pendingChunks.map((chunk) =>
+            limit(async () => {
+              if (abortController.signal.aborted || hasCompleted || hasAbortedForErrors) {
                 return;
               }
-            }
-          } catch (chunkError: unknown) {
-            if (chunkError instanceof Error && chunkError.name === 'AbortError') {
-              return;
-            }
-            totalErrors++;
-            console.error(`Chunk ${chunk.index} failed:`, chunkError);
 
-            // Stop if too many failures overall
-            if (totalErrors >= MAX_ERRORS_BEFORE_ABORT) {
-              hasAbortedForErrors = true;
-              setDraftError(
-                draftId,
-                `Quá nhiều lỗi khi xử lý chunk: ${extractUnknownErrorMessage(chunkError, 'Unknown chunk error')}`,
-              );
-              toast.error(`Lỗi xử lý "${title}"`, {
-                description: 'Vui lòng thử lại sau',
-              });
-              abortController.abort();
-            }
-          }
-        });
+              try {
+                const result = await processChunk(draftId, chunk.index, abortController.signal);
+
+                if (!result.success) {
+                  return;
+                }
+
+                processedCount++;
+                totalQuestions = result.totalQuestions;
+
+                updateDraftProgress(draftId, {
+                  chunksProcessed: processedCount,
+                  questionsCount: totalQuestions,
+                  status: 'processing',
+                });
+
+                if (result.isComplete) {
+                  hasCompleted = true;
+                  completeDraft(draftId, totalQuestions);
+                  toast.success(`"${title}" đã sẵn sàng!`, {
+                    description: `${totalQuestions} câu hỏi được trích xuất`,
+                    action: {
+                      label: 'Xem',
+                      onClick: () => (window.location.href = `/draft/${draftId}/edit`),
+                    },
+                  });
+                  abortController.abort();
+                }
+              } catch (chunkError: unknown) {
+                if (chunkError instanceof Error && chunkError.name === 'AbortError') {
+                  return;
+                }
+
+                totalErrors++;
+                console.error(`Chunk ${chunk.index} failed:`, chunkError);
+
+                if (totalErrors >= MAX_ERRORS_BEFORE_ABORT) {
+                  hasAbortedForErrors = true;
+                  setDraftError(
+                    draftId,
+                    `Quá nhiều lỗi khi xử lý chunk: ${extractUnknownErrorMessage(chunkError, 'Unknown chunk error')}`,
+                  );
+                  toast.error(`Lỗi xử lý "${title}"`, {
+                    description: 'Vui lòng thử lại sau',
+                  });
+                  abortController.abort();
+                }
+              }
+            }),
+          ),
+        );
       } catch (error: unknown) {
         if (!(error instanceof Error && error.name === 'AbortError')) {
           const message = extractUnknownErrorMessage(error, 'Failed to process PDF draft');
@@ -204,7 +223,7 @@ export function usePdfProcessor() {
         delete abortControllersRef.current[draftId];
       }
     },
-    [processChunk, updateDraftProgress, completeDraft, setDraftError],
+    [completeDraft, processChunk, setDraftError, updateDraftProgress],
   );
 
   const stopProcessing = useCallback((draftId: string) => {
@@ -222,7 +241,7 @@ export function usePdfProcessor() {
         const { draft } = await fetchApiData<{ draft: any }>(`/api/draft/${draftId}`);
 
         if (draft.status === 'completed') {
-          return; // Already done
+          return;
         }
 
         await startProcessing(draftId, draft.chunks.chunkDetails, draft.title);

@@ -3,13 +3,10 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   calculateScore,
   cn,
-  fileToBuffer,
   formatDate,
   generateSlug,
   getErrorMessage,
   truncateText,
-  validateEmail,
-  validatePassword,
 } from './utils';
 
 describe('utils', () => {
@@ -86,22 +83,6 @@ describe('utils', () => {
     expect(calculateScore([], [])).toBe(0);
   });
 
-  it('validates email format', () => {
-    expect(validateEmail('test@example.com')).toBe(true);
-    expect(validateEmail('invalid-email')).toBe(false);
-    expect(validateEmail('')).toBe(false);
-    expect(validateEmail('test@')).toBe(false);
-    expect(validateEmail('@test.com')).toBe(false);
-    expect(validateEmail('user+tag@domain.co.uk')).toBe(true);
-  });
-
-  it('validates minimum password length', () => {
-    expect(validatePassword('12345')).toBe(false);
-    expect(validatePassword('123456')).toBe(true);
-    expect(validatePassword('')).toBe(false);
-    expect(validatePassword('a'.repeat(100))).toBe(true);
-  });
-
   it('merges class names with tailwind precedence', () => {
     expect(cn('px-2 py-1', 'px-4')).toBe('py-1 px-4');
   });
@@ -121,59 +102,5 @@ describe('utils', () => {
   it('normalizes unknown errors', () => {
     expect(getErrorMessage(new Error('boom'))).toBe('boom');
     expect(getErrorMessage('boom')).toBe('An unknown error occurred');
-  });
-
-  it('converts file content to buffer', async () => {
-    class SuccessFileReader {
-      public result: ArrayBuffer | null = new Uint8Array([65, 66]).buffer;
-      public error: Error | null = null;
-      public onload: (() => void) | null = null;
-      public onerror: (() => void) | null = null;
-
-      readAsArrayBuffer(_file: File) {
-        this.onload?.();
-      }
-    }
-
-    vi.stubGlobal('FileReader', SuccessFileReader);
-
-    const buffer = await fileToBuffer({} as File);
-    expect(buffer.toString('utf8')).toBe('AB');
-  });
-
-  it('rejects when file reader returns non-arraybuffer result', async () => {
-    class InvalidResultFileReader {
-      public result: string | null = 'not-buffer';
-      public error: Error | null = null;
-      public onload: (() => void) | null = null;
-      public onerror: (() => void) | null = null;
-
-      readAsArrayBuffer(_file: File) {
-        this.onload?.();
-      }
-    }
-
-    vi.stubGlobal('FileReader', InvalidResultFileReader);
-
-    await expect(fileToBuffer({} as File)).rejects.toThrow('Failed to read file as buffer');
-  });
-
-  it('rejects with file reader error', async () => {
-    const fileReadError = new Error('read failed');
-
-    class ErrorFileReader {
-      public result: ArrayBuffer | null = null;
-      public error: Error | null = fileReadError;
-      public onload: (() => void) | null = null;
-      public onerror: (() => void) | null = null;
-
-      readAsArrayBuffer(_file: File) {
-        this.onerror?.();
-      }
-    }
-
-    vi.stubGlobal('FileReader', ErrorFileReader);
-
-    await expect(fileToBuffer({} as File)).rejects.toThrow('read failed');
   });
 });

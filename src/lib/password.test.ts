@@ -14,6 +14,8 @@ vi.mock('bcryptjs', () => ({
   },
 }));
 
+vi.mock('server-only', () => ({}));
+
 import { hashPassword, verifyPassword } from './password';
 
 describe('password', () => {

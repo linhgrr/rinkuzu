@@ -1,0 +1,12 @@
+nodeVersion: 22.13.0
+engineStrict: true
+pmOnFail: error
+strictPeerDependencies: true
+verifyDepsBeforeRun: error
+allowBuilds:
+  '@parcel/watcher': true
+  '@swc/core': true
+  protobufjs: true
+  sharp: true
+  unrs-resolver: true
+  core-js: false

@@ -129,6 +129,7 @@ export default function DraftEditClient({ initialDraft, initialCategory, locale 
   const { data: pdfDataUrl } = useSWR(
     pdfUrl ? ['draft-edit-pdf', pdfUrl] : null,
     async ([, url]: [string, string]) => {
+      // EXTERNAL: object storage PDF fetch
       const res = await fetch(url);
       const blob = await res.blob();
       return URL.createObjectURL(blob);

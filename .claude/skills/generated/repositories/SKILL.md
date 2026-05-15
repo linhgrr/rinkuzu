@@ -1,91 +1,91 @@
 ---
 name: repositories
-description: 'Skill for the Repositories area of rinkuzu. 112 symbols across 31 files.'
+description: 'Skill for the Repositories area of rinkuzu. 80 symbols across 25 files.'
 ---
 
 # Repositories
 
-112 symbols | 31 files | Cohesion: 100%
+80 symbols | 25 files | Cohesion: 80%
 
 ## When to Use
 
 - Working with code in `src/`
-- Understanding how deletePDF, POST, GET work
+- Understanding how getSignedPDFUrl, GET, PUT work
 - Modifying repositories-related functionality
 
 ## Key Files
 
-| File                                         | Symbols                                                                        |
-| -------------------------------------------- | ------------------------------------------------------------------------------ |
-| `src/repositories/QuizRepository.ts`         | findById, findBySlug, findBySlugAndStatus, create, update (+10)                |
-| `src/repositories/CategoryRepository.ts`     | normalizeSlug, findById, findBySlug, findAll, findActive (+8)                  |
-| `src/repositories/AttemptRepository.ts`      | findById, findByUser, findByUserId, create, countByUser (+7)                   |
-| `src/repositories/UserRepository.ts`         | findByEmail, findById, create, update, delete (+6)                             |
-| `src/repositories/SubscriptionRepository.ts` | create, findById, findByOrderId, findByUser, findExpiredSubscriptions (+5)     |
-| `src/repositories/ReportRepository.ts`       | findById, findAll, create, update, delete (+2)                                 |
-| `src/repositories/DiscussionRepository.ts`   | findById, findByQuiz, create, update, delete (+2)                              |
-| `src/repositories/BookmarkRepository.ts`     | findByUserEmail, findByUserAndQuiz, create, deleteById, deleteByIdAndUser (+2) |
-| `src/app/api/draft/[id]/submit/route.ts`     | generateSlug, validateQuestions, POST                                          |
-| `src/app/api/admin/categories/[id]/route.ts` | GET, PUT, DELETE                                                               |
+| File                                         | Symbols                                                                                 |
+| -------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `src/repositories/QuizRepository.ts`         | findById, findBySlug, findBySlugAndStatus, update, findForPlay (+7)                     |
+| `src/repositories/SubscriptionRepository.ts` | findByOrderId, findByUser, findExpiredSubscriptions, updateById, updateByOrderId (+4)   |
+| `src/repositories/CategoryRepository.ts`     | normalizeSlug, findBySlug, findActive, search, findWithQuizCount (+3)                   |
+| `src/repositories/AttemptRepository.ts`      | findById, findByUserId, countByUser, countByQuiz, findRecentActivity (+3)               |
+| `src/repositories/base.ts`                   | findById, create, update, delete, count (+1)                                            |
+| `src/repositories/UserRepository.ts`         | findByEmail, countByRole, findExpiredSubscriptionUsers, updateById, UserRepository (+1) |
+| `src/repositories/DiscussionRepository.ts`   | findById, findByQuiz, create, update, DiscussionRepository                              |
+| `src/repositories/BookmarkRepository.ts`     | findByUserAndQuiz, deleteById, deleteByIdAndUser, BookmarkRepository, findByUserEmail   |
+| `src/repositories/ReportRepository.ts`       | findById, update, ReportRepository, findAll                                             |
+| `src/app/api/user/profile/route.ts`          | GET, PUT                                                                                |
 
 ## Entry Points
 
 Start here when exploring this area:
 
-- **`deletePDF`** (Function) — `src/lib/s3.ts:121`
-- **`POST`** (Function) — `src/app/api/subscription/create-payment/route.ts:7`
-- **`GET`** (Function) — `src/app/api/user/profile/route.ts:8`
-- **`PUT`** (Function) — `src/app/api/user/profile/route.ts:46`
-- **`POST`** (Function) — `src/app/api/shop/buy-freeze/route.ts:6`
+- **`getSignedPDFUrl`** (Function) — `src/lib/s3.ts:44`
+- **`GET`** (Function) — `src/app/api/user/profile/route.ts:9`
+- **`PUT`** (Function) — `src/app/api/user/profile/route.ts:44`
+- **`POST`** (Function) — `src/app/api/shop/buy-freeze/route.ts:7`
+- **`GET`** (Function) — `src/app/api/draft/[id]/route.ts:53`
 
 ## Key Symbols
 
-| Symbol                 | Type     | File                                               | Line |
-| ---------------------- | -------- | -------------------------------------------------- | ---- |
-| `UserRepository`       | Class    | `src/repositories/UserRepository.ts`               | 5    |
-| `ReportRepository`     | Class    | `src/repositories/ReportRepository.ts`             | 4    |
-| `QuizRepository`       | Class    | `src/repositories/QuizRepository.ts`               | 5    |
-| `DiscussionRepository` | Class    | `src/repositories/DiscussionRepository.ts`         | 7    |
-| `CategoryRepository`   | Class    | `src/repositories/CategoryRepository.ts`           | 11   |
-| `BookmarkRepository`   | Class    | `src/repositories/BookmarkRepository.ts`           | 4    |
-| `AttemptRepository`    | Class    | `src/repositories/AttemptRepository.ts`            | 4    |
-| `deletePDF`            | Function | `src/lib/s3.ts`                                    | 121  |
-| `POST`                 | Function | `src/app/api/subscription/create-payment/route.ts` | 7    |
-| `GET`                  | Function | `src/app/api/user/profile/route.ts`                | 8    |
-| `PUT`                  | Function | `src/app/api/user/profile/route.ts`                | 46   |
-| `POST`                 | Function | `src/app/api/shop/buy-freeze/route.ts`             | 6    |
-| `POST`                 | Function | `src/app/api/review/submit/route.ts`               | 8    |
-| `GET`                  | Function | `src/app/api/review/due/route.ts`                  | 8    |
-| `GET`                  | Function | `src/app/api/draft/list/route.ts`                  | 9    |
-| `POST`                 | Function | `src/app/api/draft/create/route.ts`                | 11   |
-| `DELETE`               | Function | `src/app/api/draft/[id]/route.ts`                  | 46   |
-| `POST`                 | Function | `src/app/api/admin/users/route.ts`                 | 124  |
-| `GET`                  | Function | `src/app/api/admin/plans/route.ts`                 | 7    |
-| `DELETE`               | Function | `src/app/api/admin/plans/route.ts`                 | 157  |
+| Symbol                    | Type      | File                                                     | Line |
+| ------------------------- | --------- | -------------------------------------------------------- | ---- |
+| `BaseRepository`          | Class     | `src/repositories/base.ts`                               | 3    |
+| `UserRepository`          | Class     | `src/repositories/UserRepository.ts`                     | 7    |
+| `SubscriptionRepository`  | Class     | `src/repositories/SubscriptionRepository.ts`             | 7    |
+| `ReportRepository`        | Class     | `src/repositories/ReportRepository.ts`                   | 6    |
+| `QuizRepository`          | Class     | `src/repositories/QuizRepository.ts`                     | 7    |
+| `DiscussionRepository`    | Class     | `src/repositories/DiscussionRepository.ts`               | 8    |
+| `CategoryRepository`      | Class     | `src/repositories/CategoryRepository.ts`                 | 13   |
+| `BookmarkRepository`      | Class     | `src/repositories/BookmarkRepository.ts`                 | 6    |
+| `AttemptRepository`       | Class     | `src/repositories/AttemptRepository.ts`                  | 6    |
+| `getSignedPDFUrl`         | Function  | `src/lib/s3.ts`                                          | 44   |
+| `GET`                     | Function  | `src/app/api/user/profile/route.ts`                      | 9    |
+| `PUT`                     | Function  | `src/app/api/user/profile/route.ts`                      | 44   |
+| `POST`                    | Function  | `src/app/api/shop/buy-freeze/route.ts`                   | 7    |
+| `GET`                     | Function  | `src/app/api/draft/[id]/route.ts`                        | 53   |
+| `DraftEditPage`           | Function  | `src/app/[locale]/(app)/draft/[id]/edit/page.tsx`        | 55   |
+| `buildPaginationMeta`     | Function  | `src/repositories/pagination.ts`                         | 5    |
+| `IUserRepository`         | Interface | `src/interfaces/repositories/IUserRepository.ts`         | 2    |
+| `ISubscriptionRepository` | Interface | `src/interfaces/repositories/ISubscriptionRepository.ts` | 3    |
+| `IReportRepository`       | Interface | `src/interfaces/repositories/IReportRepository.ts`       | 11   |
+| `IQuizRepository`         | Interface | `src/interfaces/repositories/IQuizRepository.ts`         | 20   |
 
 ## Execution Flows
 
-| Flow                                 | Type            | Steps |
-| ------------------------------------ | --------------- | ----- |
-| `POST → IsExpired`                   | cross_community | 5     |
-| `POST → MarkUserSubscriptionExpired` | cross_community | 5     |
-| `GET → UserRepository`               | cross_community | 5     |
-| `POST → UserRepository`              | cross_community | 5     |
-| `POST → UserRepository`              | cross_community | 5     |
-| `POST → UserRepository`              | cross_community | 5     |
-| `POST → UserRepository`              | cross_community | 5     |
-| `GET → UserRepository`               | cross_community | 5     |
-| `GET → UserRepository`               | cross_community | 5     |
-| `GET → UserRepository`               | cross_community | 5     |
+| Flow                            | Type            | Steps |
+| ------------------------------- | --------------- | ----- |
+| `GET → SubscriptionRepository`  | cross_community | 6     |
+| `GET → UserRepository`          | cross_community | 6     |
+| `POST → SubscriptionRepository` | cross_community | 6     |
+| `POST → UserRepository`         | cross_community | 6     |
+| `POST → SubscriptionRepository` | cross_community | 6     |
+| `POST → UserRepository`         | cross_community | 6     |
+| `GET → SubscriptionRepository`  | cross_community | 5     |
+| `GET → UserRepository`          | cross_community | 5     |
+| `GET → SubscriptionRepository`  | cross_community | 5     |
+| `GET → UserRepository`          | cross_community | 5     |
 
 ## Connected Areas
 
-| Area         | Connections |
-| ------------ | ----------- |
-| Subscription | 2 calls     |
+| Area | Connections |
+| ---- | ----------- |
+| Quiz | 5 calls     |
 
 ## How to Explore
 
-1. `gitnexus_context({name: "deletePDF"})` — see callers and callees
+1. `gitnexus_context({name: "getSignedPDFUrl"})` — see callers and callees
 2. `gitnexus_query({query: "repositories"})` — find related execution flows
 3. Read key files listed above for implementation details

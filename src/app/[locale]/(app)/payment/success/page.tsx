@@ -35,12 +35,12 @@ function paymentViewReducer(_state: PaymentViewState, action: PaymentViewAction)
 
 function PaymentSuccessContent() {
   const t = useTranslations('subscription');
-  const { get } = useSearchParams();
+  const searchParams = useSearchParams();
   const { push } = useRouter();
   const [viewState, dispatch] = useReducer(paymentViewReducer, initialViewState);
 
   useEffect(() => {
-    const orderCode = get('orderCode');
+    const orderCode = searchParams.get('orderCode');
     if (!orderCode) {
       dispatch({ type: 'setView', value: { status: 'error', message: t('errorTitle') } });
       return;
@@ -72,7 +72,7 @@ function PaymentSuccessContent() {
     };
 
     void verifyPayment(orderCode);
-  }, [get, t]);
+  }, [searchParams, t]);
 
   const handleGoHome = () => {
     push('/');

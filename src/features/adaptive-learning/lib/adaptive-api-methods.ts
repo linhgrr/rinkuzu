@@ -90,8 +90,8 @@ export async function getConceptDetail(
 
 export async function checkApiHealth(): Promise<boolean> {
   try {
-    const res = await fetch('/api/adaptive-learning/health', { cache: 'no-store' });
-    return res.ok;
+    await apiFetch('/api/adaptive-learning/health', { cache: 'no-store' });
+    return true;
   } catch {
     return false;
   }

@@ -127,7 +127,7 @@ jobs:
         uses: millionco/react-doctor@main
         with:
           directory: .
-          diff: main
+          diff: master
           github-token: ${{ secrets.GITHUB_TOKEN }}
           node-version: '22'
 

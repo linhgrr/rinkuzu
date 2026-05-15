@@ -11,6 +11,10 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+  pull-requests: write
+
 jobs:
   quality:
     runs-on: ubuntu-latest
@@ -96,3 +100,74 @@ jobs:
         run: npm run test:e2e
         env:
           PLAYWRIGHT_BASE_URL: http://127.0.0.1:3000
+
+  react-doctor:
+    needs: quality
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+
+      - name: Pin npm version
+        run: npm i -g npm@10.9.8
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: React Doctor
+        id: react-doctor
+        uses: millionco/react-doctor@main
+        with:
+          directory: .
+          diff: main
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          node-version: '22'
+
+      - name: Require perfect React Doctor score
+        run: |
+          echo "React Doctor score: ${{ steps.react-doctor.outputs.score }}"
+          test "${{ steps.react-doctor.outputs.score }}" = "100"
+
+  perf-advisory:
+    needs: quality
+    continue-on-error: true
+    runs-on: ubuntu-latest
+    services:
+      mongodb:
+        image: mongo:7
+        ports:
+          - 27017:27017
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+
+      - name: Pin npm version
+        run: npm i -g npm@10.9.8
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Perf advisory
+        run: npm run perf:fe
+
+      - name: Upload perf artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: perf-fe
+          path: perf/fe-*.json
+          if-no-files-found: warn

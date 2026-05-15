@@ -1,0 +1,14 @@
+[
+  {
+    "name": ".next/static/**/*.js",
+    "sizeBytes": 4550113,
+    "limitBytes": 358400,
+    "ok": false
+  },
+  {
+    "name": ".next/static/css/**/*.css",
+    "sizeBytes": 165901,
+    "limitBytes": 51200,
+    "ok": false
+  }
+]

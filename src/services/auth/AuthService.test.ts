@@ -118,8 +118,8 @@ describe('AuthService', () => {
     it('throws on short password', async () => {
       const { service } = createService();
 
-      await expect(service.register({ email: 'a@b.com', password: '12345' })).rejects.toThrow(
-        'Password must be at least 6 characters',
+      await expect(service.register({ email: 'a@b.com', password: '1234567' })).rejects.toThrow(
+        'Password must be between 8 and 72 characters',
       );
     });
 
@@ -128,7 +128,7 @@ describe('AuthService', () => {
       userRepository.findByEmail.mockResolvedValue({ _id: 'existing' });
 
       await expect(
-        service.register({ email: 'taken@test.com', password: 'pass123' }),
+        service.register({ email: 'taken@test.com', password: 'pass1234' }),
       ).rejects.toThrow('User with this email already exists');
     });
 
@@ -169,7 +169,7 @@ describe('AuthService', () => {
         role: 'user',
       });
 
-      const result = await service.register({ email: 'u@b.com', password: 'pass123' });
+      const result = await service.register({ email: 'u@b.com', password: 'pass1234' });
 
       expect(result.user.role).toBe('user');
       expect(userRepository.create).toHaveBeenCalledWith(expect.objectContaining({ role: 'user' }));

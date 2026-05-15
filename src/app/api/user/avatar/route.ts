@@ -3,34 +3,11 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import connectDB from '@/lib/mongoose';
 import User from '@/models/User';
-import { s3Client, BUCKET_NAME, OBJECT_STORAGE_PUBLIC_BASE_URL } from '@/lib/s3';
-import { PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import { uploadImageToImgBB } from '@/services/imageUploadService';
 import { apiErr, apiOk } from '@/lib/api/response';
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
-
-function getExtension(contentType: string): string {
-  const map: Record<string, string> = {
-    'image/jpeg': 'jpg',
-    'image/png': 'png',
-    'image/webp': 'webp',
-  };
-  return map[contentType] || 'jpg';
-}
-
-function extractS3Key(avatarUrl: string): string | null {
-  if (!avatarUrl) return null;
-  const bucketPrefix = `/${BUCKET_NAME}/`;
-  const idx = avatarUrl.indexOf(bucketPrefix);
-  if (idx !== -1) {
-    return avatarUrl.substring(idx + bucketPrefix.length);
-  }
-  if (avatarUrl.startsWith('avatars/')) {
-    return avatarUrl;
-  }
-  return null;
-}
 
 export async function PUT(request: NextRequest) {
   try {
@@ -57,44 +34,18 @@ export async function PUT(request: NextRequest) {
 
     await connectDB();
 
-    const user = await User.findOne({ email: session.user.email }).select('_id avatar');
+    const user = await User.findOne({ email: session.user.email }).select('_id');
     if (!user) {
       return apiErr('not_found', 'User not found', 404);
     }
 
-    // Delete old avatar if exists
-    if (user.avatar) {
-      const oldKey = extractS3Key(user.avatar);
-      if (oldKey) {
-        try {
-          await s3Client.send(new DeleteObjectCommand({ Bucket: BUCKET_NAME, Key: oldKey }));
-        } catch {
-          // Ignore delete errors for old avatar
-        }
-      }
-    }
+    const result = await uploadImageToImgBB(file, `avatar-${String(user._id)}`);
 
-    const ext = getExtension(file.type);
-    const key = `avatars/${user._id}/${Date.now()}.${ext}`;
-    const buffer = Buffer.from(await file.arrayBuffer());
-
-    await s3Client.send(
-      new PutObjectCommand({
-        Bucket: BUCKET_NAME,
-        Key: key,
-        Body: buffer,
-        ContentType: file.type,
-        ContentDisposition: 'inline',
-      }),
-    );
-
-    const avatarUrl = `${OBJECT_STORAGE_PUBLIC_BASE_URL}/${BUCKET_NAME}/${key}`;
-
-    await User.updateOne({ email: session.user.email }, { avatar: avatarUrl });
+    await User.updateOne({ email: session.user.email }, { avatar: result.displayUrl });
 
     return NextResponse.json({
       success: true,
-      data: { avatar: avatarUrl },
+      data: { avatar: result.displayUrl },
     });
   } catch (error) {
     console.error('Upload avatar error:', error);
@@ -118,14 +69,6 @@ export async function DELETE() {
     }
 
     if (user.avatar) {
-      const key = extractS3Key(user.avatar);
-      if (key) {
-        try {
-          await s3Client.send(new DeleteObjectCommand({ Bucket: BUCKET_NAME, Key: key }));
-        } catch {
-          // Ignore delete errors
-        }
-      }
       await User.updateOne({ email: session.user.email }, { $unset: { avatar: 1 } });
     }
 

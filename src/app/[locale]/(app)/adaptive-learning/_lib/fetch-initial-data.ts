@@ -2,6 +2,7 @@ import type {
   PipelineJobHistoryItem,
   SessionHistoryItem,
 } from '@/features/adaptive-learning/types';
+import { fetchApiData } from '@/lib/api/client';
 import {
   buildAdaptiveServiceHeaders,
   resolveAdaptiveApiUrl,
@@ -11,11 +12,6 @@ import {
 type AdaptiveDashboardPayload = {
   subjects: PipelineJobHistoryItem[];
   sessionHistory: SessionHistoryItem[];
-};
-
-type AdaptiveStandardResponse<T> = {
-  success: true;
-  data: T;
 };
 
 const fetchAdaptiveJson = async <T>(
@@ -28,51 +24,19 @@ const fetchAdaptiveJson = async <T>(
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
-    const response = await fetch(`${baseUrl}${path}`, {
-      headers,
-      cache: 'no-store',
-      signal: controller.signal,
-    });
-
-    if (!response.ok) {
-      console.warn(`fetchAdaptiveJson: ${path} returned ${response.status}`);
-      return null;
-    }
-
-    let rawText: string;
     try {
-      rawText = await response.text();
-    } catch {
-      console.error(`fetchAdaptiveJson: failed to read body from ${path}`);
-      return null;
-    }
-
-    if (!rawText) {
-      console.warn(`fetchAdaptiveJson: ${path} returned empty body`);
-      return null;
-    }
-
-    let payload: unknown;
-    try {
-      payload = JSON.parse(rawText);
-    } catch {
-      console.error(
-        `fetchAdaptiveJson: failed to parse JSON from ${path}, body starts with: ${rawText.slice(0, 200)}`,
+      return await fetchApiData<T>(`${baseUrl}${path}`, {
+        headers,
+        cache: 'no-store',
+        signal: controller.signal,
+      });
+    } catch (error) {
+      console.warn(
+        `fetchAdaptiveJson: failed to load ${path}`,
+        error instanceof Error ? error.message : error,
       );
       return null;
     }
-
-    if (
-      payload &&
-      typeof payload === 'object' &&
-      'success' in payload &&
-      payload.success === true &&
-      'data' in payload
-    ) {
-      return (payload as AdaptiveStandardResponse<T>).data;
-    }
-
-    return payload as T | null;
   } finally {
     clearTimeout(timeout);
   }

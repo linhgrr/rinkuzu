@@ -1,5 +1,3 @@
-import axios from 'axios';
-
 const API_URL = 'https://api.imgbb.com/1/upload';
 const API_KEY = '***REMOVED***';
 
@@ -77,18 +75,19 @@ export const uploadImageToImgBB = async (
       formData.append('name', imageName);
     }
 
-    const response = await axios.post<ImgBBResponse>(API_URL, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-      timeout: 30000,
+    const response = await fetch(API_URL, {
+      // EXTERNAL: ImgBB multipart upload
+      method: 'POST',
+      body: formData,
+      signal: AbortSignal.timeout(30_000),
     });
+    const responseData = (await response.json()) as ImgBBResponse;
 
-    if (!response.data.success) {
-      throw new Error(`ImgBB upload failed: ${JSON.stringify(response.data)}`);
+    if (!response.ok || !responseData.success) {
+      throw new Error(`ImgBB upload failed: ${JSON.stringify(responseData)}`);
     }
 
-    const d = response.data.data as ImgBBResponse['data'];
+    const d = responseData.data as ImgBBResponse['data'];
     const result: UploadResult = {
       url: d.url ?? d.display_url,
       displayUrl: d.display_url ?? d.url,
@@ -105,9 +104,8 @@ export const uploadImageToImgBB = async (
     return result;
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Unknown upload error';
-    const responseData = axios.isAxiosError(error) ? error.response?.data : undefined;
 
-    console.error('ImgBB upload failed:', responseData || message);
+    console.error('ImgBB upload failed:', message);
     throw new Error(`Failed to upload image to ImgBB: ${message}`);
   }
 };

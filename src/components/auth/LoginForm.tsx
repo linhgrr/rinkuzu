@@ -22,11 +22,11 @@ function LoginFormContent({ locale }: LoginFormProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const { prefetch, refresh, replace } = useRouter();
-  const { get } = useSearchParams();
+  const searchParams = useSearchParams();
 
   const callbackUrl = useMemo(() => {
     const fallback = locale === defaultLocale ? '/dashboard' : `/${locale}/dashboard`;
-    const raw = get('callbackUrl');
+    const raw = searchParams.get('callbackUrl');
 
     if (!raw || !raw.startsWith('/') || raw.startsWith('//')) {
       return fallback;
@@ -50,7 +50,7 @@ function LoginFormContent({ locale }: LoginFormProps) {
     ]);
 
     return blockedCallbacks.has(normalizedPath) ? fallback : raw;
-  }, [get, locale]);
+  }, [searchParams, locale]);
 
   useEffect(() => {
     prefetch(callbackUrl);

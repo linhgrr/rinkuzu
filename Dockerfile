@@ -1,5 +1,5 @@
 FROM node:20-alpine AS deps
-RUN apk add --no-cache libc6-compat
+RUN apk add --no-cache libc6-compat python3 make g++
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --ignore-scripts
@@ -11,6 +11,8 @@ COPY . .
 
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NEXT_IMAGE_UNOPTIMIZED=true
+
+RUN npm rebuild argon2 --build-from-source
 
 RUN npm run build
 

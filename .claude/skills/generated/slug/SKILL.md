@@ -1,11 +1,11 @@
 ---
 name: slug
-description: 'Skill for the [slug] area of rinkuzu. 31 symbols across 25 files.'
+description: 'Skill for the [slug] area of rinkuzu. 35 symbols across 29 files.'
 ---
 
 # [slug]
 
-31 symbols | 25 files | Cohesion: 88%
+35 symbols | 29 files | Cohesion: 96%
 
 ## When to Use
 
@@ -17,16 +17,16 @@ description: 'Skill for the [slug] area of rinkuzu. 31 symbols across 25 files.'
 
 | File                                                        | Symbols                                                      |
 | ----------------------------------------------------------- | ------------------------------------------------------------ |
-| `src/app/[locale]/(app)/category/[slug]/page.tsx`           | CategoryPage, handlePageChange, formatDate, getCategoryColor |
+| `src/app/[locale]/(app)/category/[slug]/page.tsx`           | formatDate, getCategoryColor, CategoryQuizCard, clearFilters |
 | `src/app/[locale]/(marketing)/blog/authors/[slug]/page.tsx` | generateMetadata, buildPersonSchema, AuthorPage              |
 | `src/app/[locale]/(app)/category/[slug]/layout.tsx`         | humanizeSlug, generateMetadata                               |
 | `src/lib/seo.ts`                                            | buildLocalizedMetadata                                       |
+| `src/services/quiz/QuizService.ts`                          | getQuizBySlug                                                |
+| `src/services/quiz/QuizCrudService.ts`                      | getQuizBySlug                                                |
 | `src/app/[locale]/(marketing)/page.tsx`                     | generateMetadata                                             |
 | `src/app/[locale]/(marketing)/terms/page.tsx`               | generateMetadata                                             |
 | `src/app/[locale]/(marketing)/privacy/page.tsx`             | generateMetadata                                             |
 | `src/app/[locale]/(marketing)/pricing/page.tsx`             | generateMetadata                                             |
-| `src/app/[locale]/(marketing)/faq/page.tsx`                 | generateMetadata                                             |
-| `src/app/[locale]/(marketing)/cookies/page.tsx`             | generateMetadata                                             |
 
 ## Entry Points
 
@@ -34,9 +34,9 @@ Start here when exploring this area:
 
 - **`buildLocalizedMetadata`** (Function) — `src/lib/seo.ts:55`
 - **`generateMetadata`** (Function) — `src/app/[locale]/(marketing)/page.tsx:8`
-- **`generateMetadata`** (Function) — `src/app/[locale]/(marketing)/terms/page.tsx:8`
-- **`generateMetadata`** (Function) — `src/app/[locale]/(marketing)/privacy/page.tsx:7`
-- **`generateMetadata`** (Function) — `src/app/[locale]/(marketing)/pricing/page.tsx:10`
+- **`generateMetadata`** (Function) — `src/app/[locale]/(marketing)/terms/page.tsx:393`
+- **`generateMetadata`** (Function) — `src/app/[locale]/(marketing)/privacy/page.tsx:141`
+- **`generateMetadata`** (Function) — `src/app/[locale]/(marketing)/pricing/page.tsx:11`
 
 ## Key Symbols
 
@@ -44,9 +44,9 @@ Start here when exploring this area:
 | ------------------------ | -------- | ------------------------------------------------------------------------------------ | ---- |
 | `buildLocalizedMetadata` | Function | `src/lib/seo.ts`                                                                     | 55   |
 | `generateMetadata`       | Function | `src/app/[locale]/(marketing)/page.tsx`                                              | 8    |
-| `generateMetadata`       | Function | `src/app/[locale]/(marketing)/terms/page.tsx`                                        | 8    |
-| `generateMetadata`       | Function | `src/app/[locale]/(marketing)/privacy/page.tsx`                                      | 7    |
-| `generateMetadata`       | Function | `src/app/[locale]/(marketing)/pricing/page.tsx`                                      | 10   |
+| `generateMetadata`       | Function | `src/app/[locale]/(marketing)/terms/page.tsx`                                        | 393  |
+| `generateMetadata`       | Function | `src/app/[locale]/(marketing)/privacy/page.tsx`                                      | 141  |
+| `generateMetadata`       | Function | `src/app/[locale]/(marketing)/pricing/page.tsx`                                      | 11   |
 | `generateMetadata`       | Function | `src/app/[locale]/(marketing)/faq/page.tsx`                                          | 11   |
 | `generateMetadata`       | Function | `src/app/[locale]/(marketing)/cookies/page.tsx`                                      | 7    |
 | `generateMetadata`       | Function | `src/app/[locale]/(marketing)/contact/page.tsx`                                      | 8    |
@@ -58,10 +58,10 @@ Start here when exploring this area:
 | `generateMetadata`       | Function | `src/app/[locale]/(marketing)/blog/knowledge-graphs-adaptive-learning-pdfs/page.tsx` | 13   |
 | `generateMetadata`       | Function | `src/app/[locale]/(marketing)/blog/authors/page.tsx`                                 | 7    |
 | `generateMetadata`       | Function | `src/app/[locale]/(marketing)/blog/ai-powered-quiz-generation-guide/page.tsx`        | 13   |
-| `generateMetadata`       | Function | `src/app/[locale]/(app)/category/[slug]/layout.tsx`                                  | 16   |
+| `generateMetadata`       | Function | `src/app/[locale]/(app)/users/[userId]/page.tsx`                                     | 75   |
+| `generateMetadata`       | Function | `src/app/[locale]/(app)/quiz/[slug]/layout.tsx`                                      | 9    |
+| `generateMetadata`       | Function | `src/app/[locale]/(app)/category/[slug]/layout.tsx`                                  | 28   |
 | `generateMetadata`       | Function | `src/app/[locale]/(app)/adaptive-learning/upload/page.tsx`                           | 6    |
-| `generateMetadata`       | Function | `src/app/[locale]/(app)/adaptive-learning/processing/page.tsx`                       | 6    |
-| `generateMetadata`       | Function | `src/app/[locale]/(marketing)/blog/authors/[slug]/page.tsx`                          | 40   |
 
 ## Execution Flows
 
@@ -80,10 +80,10 @@ Start here when exploring this area:
 
 ## Connected Areas
 
-| Area       | Connections |
-| ---------- | ----------- |
-| App        | 2 calls     |
-| Flashcards | 1 calls     |
+| Area | Connections |
+| ---- | ----------- |
+| App  | 2 calls     |
+| Quiz | 1 calls     |
 
 ## How to Explore
 

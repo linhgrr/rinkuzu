@@ -66,6 +66,7 @@ export async function GET(req: Request) {
     const targetUrl = `${RANDOM_IMAGES_ENDPOINT}?rating=safe&limit=${limit}`;
 
     const response = await fetch(targetUrl, {
+      // EXTERNAL: image proxy
       headers: { accept: 'application/json' },
       cache: 'no-store',
     });

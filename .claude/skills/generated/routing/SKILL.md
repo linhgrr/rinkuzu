@@ -48,9 +48,9 @@ Start here when exploring this area:
 | `NavigationClient`           | Function | `src/components/Navigation/NavigationClient.tsx` | 388  |
 | `handleScroll`               | Function | `src/components/Navigation/NavigationClient.tsx` | 406  |
 | `middleware`                 | Function | `src/proxy.ts`                                   | 37   |
-| `normalizePath`              | Function | `src/lib/routing/pathname.ts`                    | 24   |
 | `getLocaleFromPath`          | Function | `src/lib/routing/pathname.ts`                    | 44   |
 | `localizePath`               | Function | `src/proxy.ts`                                   | 30   |
+| `normalizePath`              | Function | `src/lib/routing/pathname.ts`                    | 24   |
 
 ## Execution Flows
 

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { useHotkeys } from 'react-hotkeys-hook';
 import { Card } from './ui/Card';
 
 interface ReviewCardProps {
@@ -14,7 +15,6 @@ interface ReviewCardProps {
 }
 
 import { HiCheck } from '@/components/icons';
-import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 
 const CARD_FLIP_CONTAINER_STYLE = { perspective: '1000px' } as const;
 const CARD_FLIP_STYLE = { transformStyle: 'preserve-3d' } as const;
@@ -28,16 +28,30 @@ export default function ReviewCard({ question, onResult }: ReviewCardProps) {
   const t = useTranslations('review');
   const [isFlipped, setIsFlipped] = useState(false);
 
-  useKeyboardShortcuts({
-    ' ': (e) => {
+  useHotkeys(
+    'space',
+    (e) => {
       e.preventDefault();
       setIsFlipped((prev) => !prev);
     },
-    '1': () => isFlipped && onResult('fail'),
-    '2': () => isFlipped && onResult('hard'),
-    '3': () => isFlipped && onResult('good'),
-    '4': () => isFlipped && onResult('easy'),
-  });
+    { enableOnFormTags: false, preventDefault: true },
+  );
+  useHotkeys('1', () => isFlipped && onResult('fail'), { enableOnFormTags: false }, [
+    isFlipped,
+    onResult,
+  ]);
+  useHotkeys('2', () => isFlipped && onResult('hard'), { enableOnFormTags: false }, [
+    isFlipped,
+    onResult,
+  ]);
+  useHotkeys('3', () => isFlipped && onResult('good'), { enableOnFormTags: false }, [
+    isFlipped,
+    onResult,
+  ]);
+  useHotkeys('4', () => isFlipped && onResult('easy'), { enableOnFormTags: false }, [
+    isFlipped,
+    onResult,
+  ]);
 
   return (
     <div className="relative w-full max-w-2xl" style={CARD_FLIP_CONTAINER_STYLE}>

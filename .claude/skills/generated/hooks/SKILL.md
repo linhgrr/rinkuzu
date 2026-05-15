@@ -1,98 +1,98 @@
 ---
 name: hooks
-description: 'Skill for the Hooks area of rinkuzu. 57 symbols across 20 files.'
+description: 'Skill for the Hooks area of rinkuzu. 77 symbols across 30 files.'
 ---
 
 # Hooks
 
-57 symbols | 20 files | Cohesion: 67%
+77 symbols | 30 files | Cohesion: 75%
 
 ## When to Use
 
 - Working with code in `src/`
-- Understanding how useQuizViewport, checkMobile, useQuizSubmission work
+- Understanding how saveSessionJobMapping, getSessionStartFeedback, createSessionFromPipeline work
 - Modifying hooks-related functionality
 
 ## Key Files
 
-| File                                                                    | Symbols                                                                                       |
-| ----------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| `src/features/adaptive-learning/lib/api-client.ts`                      | getNextConcept, getTheory, getExercise, submitAnswer, checkApiHealth (+14)                    |
-| `src/features/adaptive-learning/hooks/use-adaptive-dashboard.ts`        | applyHealthResult, hydrateDashboard, toTimestampMs, getDayStart, calculateLearningStreak (+2) |
-| `src/app/[locale]/(app)/quiz/[slug]/page.tsx`                           | isQuestionAnswered, mapAnswersToOriginalOrder, QuizPlayerPage                                 |
-| `src/features/adaptive-learning/hooks/use-adaptive-exercise-session.ts` | resolveExerciseFeedback, useAdaptiveExerciseSession, isLatestActiveRequest                    |
-| `src/features/adaptive-learning/hooks/use-processing-state.ts`          | getStoredFilename, useProcessingState, applyMatch                                             |
-| `src/features/adaptive-learning/hooks/use-result-state.ts`              | deriveOutcomeFromHistory, useResultState, hydrate                                             |
-| `src/features/quiz/hooks/useQuizViewport.ts`                            | useQuizViewport, checkMobile                                                                  |
-| `src/features/adaptive-learning/lib/session-storage.ts`                 | saveSessionJobMapping, getJobIdForSession                                                     |
-| `src/features/adaptive-learning/hooks/use-subject-details-state.ts`     | useSubjectDetailsState, bootstrap                                                             |
-| `src/hooks/useAdaptiveLearning.ts`                                      | useKnowledgeGraph, useConceptDetail                                                           |
+| File                                                                    | Symbols                                                                                                          |
+| ----------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `src/features/adaptive-learning/lib/adaptive-api-methods.ts`            | createSessionFromPipeline, getSubjectProgressHistory, getSubjectHistoryDetail, getSubjects, getNextConcept (+10) |
+| `src/features/adaptive-learning/hooks/use-adaptive-dashboard.ts`        | toTimestampMs, getDayStart, calculateLearningStreak, clearSelectedPipelineJob, useAdaptiveDashboard (+1)         |
+| `src/features/adaptive-learning/lib/adaptive-api-fetch.ts`              | readCachedResponse, writeCachedResponse, invalidateCacheByPrefixes, apiFetch                                     |
+| `src/features/adaptive-learning/lib/session-storage.ts`                 | writeSessionJobMap, saveSessionJobMapping, getJobIdForSession                                                    |
+| `src/features/adaptive-learning/hooks/use-adaptive-exercise-session.ts` | resolveExerciseFeedback, useAdaptiveExerciseSession, isLatestActiveRequest                                       |
+| `src/hooks/usePdfProcessor.ts`                                          | fetchWithRetry, attemptFetch, usePdfProcessor                                                                    |
+| `src/components/providers/DraftSyncProvider.tsx`                        | DraftSyncProvider, initSync, checkAndResume                                                                      |
+| `src/features/quiz/hooks/useStreamingChatSession.ts`                    | setUserQuestion, setAIError, ensureHistory                                                                       |
+| `src/app/[locale]/(app)/quiz/[slug]/page.tsx`                           | isQuestionAnswered, mapAnswersToOriginalOrder, QuizPlayerPage                                                    |
+| `src/features/adaptive-learning/hooks/use-result-state.ts`              | deriveOutcomeFromHistory, useResultState, hydrate                                                                |
 
 ## Entry Points
 
 Start here when exploring this area:
 
-- **`useQuizViewport`** (Function) — `src/features/quiz/hooks/useQuizViewport.ts:6`
-- **`checkMobile`** (Function) — `src/features/quiz/hooks/useQuizViewport.ts:10`
-- **`useQuizSubmission`** (Function) — `src/features/quiz/hooks/useQuizSubmission.ts:20`
-- **`useQuizAIExplain`** (Function) — `src/features/quiz/hooks/useQuizAIExplain.ts:12`
-- **`QuizPlayerPage`** (Function) — `src/app/[locale]/(app)/quiz/[slug]/page.tsx:226`
+- **`saveSessionJobMapping`** (Function) — `src/features/adaptive-learning/lib/session-storage.ts:36`
+- **`getSessionStartFeedback`** (Function) — `src/features/adaptive-learning/lib/session-start-feedback.ts:5`
+- **`createSessionFromPipeline`** (Function) — `src/features/adaptive-learning/lib/adaptive-api-methods.ts:175`
+- **`getSubjectProgressHistory`** (Function) — `src/features/adaptive-learning/lib/adaptive-api-methods.ts:187`
+- **`getSubjectHistoryDetail`** (Function) — `src/features/adaptive-learning/lib/adaptive-api-methods.ts:195`
 
 ## Key Symbols
 
 | Symbol                       | Type     | File                                                                    | Line |
 | ---------------------------- | -------- | ----------------------------------------------------------------------- | ---- |
-| `useQuizViewport`            | Function | `src/features/quiz/hooks/useQuizViewport.ts`                            | 6    |
-| `checkMobile`                | Function | `src/features/quiz/hooks/useQuizViewport.ts`                            | 10   |
-| `useQuizSubmission`          | Function | `src/features/quiz/hooks/useQuizSubmission.ts`                          | 20   |
-| `useQuizAIExplain`           | Function | `src/features/quiz/hooks/useQuizAIExplain.ts`                           | 12   |
-| `QuizPlayerPage`             | Function | `src/app/[locale]/(app)/quiz/[slug]/page.tsx`                           | 226  |
-| `getNextConcept`             | Function | `src/features/adaptive-learning/lib/api-client.ts`                      | 319  |
-| `getTheory`                  | Function | `src/features/adaptive-learning/lib/api-client.ts`                      | 325  |
-| `getExercise`                | Function | `src/features/adaptive-learning/lib/api-client.ts`                      | 331  |
-| `submitAnswer`               | Function | `src/features/adaptive-learning/lib/api-client.ts`                      | 337  |
+| `saveSessionJobMapping`      | Function | `src/features/adaptive-learning/lib/session-storage.ts`                 | 36   |
+| `getSessionStartFeedback`    | Function | `src/features/adaptive-learning/lib/session-start-feedback.ts`          | 5    |
+| `createSessionFromPipeline`  | Function | `src/features/adaptive-learning/lib/adaptive-api-methods.ts`            | 175  |
+| `getSubjectProgressHistory`  | Function | `src/features/adaptive-learning/lib/adaptive-api-methods.ts`            | 187  |
+| `getSubjectHistoryDetail`    | Function | `src/features/adaptive-learning/lib/adaptive-api-methods.ts`            | 195  |
+| `getSubjects`                | Function | `src/features/adaptive-learning/lib/adaptive-api-methods.ts`            | 217  |
+| `useSubjectDetailsState`     | Function | `src/features/adaptive-learning/hooks/use-subject-details-state.ts`     | 69   |
+| `useSessionHistoryState`     | Function | `src/features/adaptive-learning/hooks/use-session-history-state.ts`     | 41   |
+| `useAdaptiveDashboard`       | Function | `src/features/adaptive-learning/hooks/use-adaptive-dashboard.ts`        | 106  |
+| `hydrateDashboard`           | Function | `src/features/adaptive-learning/hooks/use-adaptive-dashboard.ts`        | 239  |
+| `getNextConcept`             | Function | `src/features/adaptive-learning/lib/adaptive-api-methods.ts`            | 32   |
+| `getTheory`                  | Function | `src/features/adaptive-learning/lib/adaptive-api-methods.ts`            | 38   |
+| `getExercise`                | Function | `src/features/adaptive-learning/lib/adaptive-api-methods.ts`            | 44   |
+| `submitAnswer`               | Function | `src/features/adaptive-learning/lib/adaptive-api-methods.ts`            | 50   |
+| `deleteSubject`              | Function | `src/features/adaptive-learning/lib/adaptive-api-methods.ts`            | 224  |
 | `useAdaptiveExerciseSession` | Function | `src/features/adaptive-learning/hooks/use-adaptive-exercise-session.ts` | 55   |
 | `isLatestActiveRequest`      | Function | `src/features/adaptive-learning/hooks/use-adaptive-exercise-session.ts` | 97   |
-| `AdaptiveLearningUpload`     | Function | `src/components/adaptive-learning/Upload.tsx`                           | 21   |
-| `checkApiHealth`             | Function | `src/features/adaptive-learning/lib/api-client.ts`                      | 377  |
-| `getSubjectProgressHistory`  | Function | `src/features/adaptive-learning/lib/api-client.ts`                      | 475  |
-| `getSubjects`                | Function | `src/features/adaptive-learning/lib/api-client.ts`                      | 513  |
-| `applyHealthResult`          | Function | `src/features/adaptive-learning/hooks/use-adaptive-dashboard.ts`        | 207  |
-| `hydrateDashboard`           | Function | `src/features/adaptive-learning/hooks/use-adaptive-dashboard.ts`        | 212  |
-| `saveSessionJobMapping`      | Function | `src/features/adaptive-learning/lib/session-storage.ts`                 | 36   |
-| `getSessionStartFeedback`    | Function | `src/features/adaptive-learning/lib/session-start-feedback.ts`          | 6    |
-| `createSessionFromPipeline`  | Function | `src/features/adaptive-learning/lib/api-client.ts`                      | 454  |
+| `mapWithConcurrency`         | Function | `src/lib/asyncPool.ts`                                                  | 4    |
+| `runWorker`                  | Function | `src/lib/asyncPool.ts`                                                  | 16   |
+| `usePdfProcessor`            | Function | `src/hooks/usePdfProcessor.ts`                                          | 65   |
 
 ## Execution Flows
 
-| Flow                                      | Type            | Steps |
-| ----------------------------------------- | --------------- | ----- |
-| `KnowledgeGraph → Abort`                  | cross_community | 6     |
-| `KnowledgeGraph → IsAbortLikeError`       | cross_community | 6     |
-| `UseAdaptiveDashboard → Abort`            | cross_community | 5     |
-| `UseAdaptiveDashboard → IsAbortLikeError` | cross_community | 5     |
-| `UseAdaptiveDashboard → AdaptiveApiError` | cross_community | 5     |
-| `UseAdaptiveDashboard → ReadErrorDetail`  | cross_community | 5     |
-| `UseProcessingState → Abort`              | cross_community | 5     |
-| `UseProcessingState → IsAbortLikeError`   | cross_community | 5     |
-| `UseProcessingState → AdaptiveApiError`   | cross_community | 5     |
-| `UseProcessingState → ReadErrorDetail`    | cross_community | 5     |
+| Flow                                    | Type            | Steps |
+| --------------------------------------- | --------------- | ----- |
+| `UseProcessingState → IsAbortLikeError` | cross_community | 7     |
+| `UseProcessingState → AdaptiveApiError` | cross_community | 7     |
+| `MasteryMatrix → Abort`                 | cross_community | 7     |
+| `MasteryMatrix → ParseJsonText`         | cross_community | 7     |
+| `MasteryMatrix → LooksLikeHtmlPayload`  | cross_community | 7     |
+| `MasteryMatrix → AdaptiveApiError`      | cross_community | 7     |
+| `UseResultState → IsAbortLikeError`     | cross_community | 7     |
+| `UseAdaptiveDashboard → Abort`          | cross_community | 6     |
+| `UseAdaptiveDashboard → ParseJsonText`  | cross_community | 6     |
+| `UseProcessingState → Abort`            | cross_community | 6     |
 
 ## Connected Areas
 
 | Area              | Connections |
 | ----------------- | ----------- |
-| Cluster_110       | 13 calls    |
-| Cluster_102       | 3 calls     |
-| Result            | 2 calls     |
-| Cluster_108       | 2 calls     |
-| Cluster_101       | 2 calls     |
+| Adaptive-learning | 5 calls     |
+| Categories        | 4 calls     |
+| Cluster_132       | 4 calls     |
+| Components        | 2 calls     |
 | Ui                | 2 calls     |
-| Adaptive-learning | 1 calls     |
-| Flashcards        | 1 calls     |
+| Result            | 2 calls     |
+| User              | 1 calls     |
+| Quiz              | 1 calls     |
 
 ## How to Explore
 
-1. `gitnexus_context({name: "useQuizViewport"})` — see callers and callees
+1. `gitnexus_context({name: "saveSessionJobMapping"})` — see callers and callees
 2. `gitnexus_query({query: "hooks"})` — find related execution flows
 3. Read key files listed above for implementation details

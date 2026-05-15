@@ -1,76 +1,89 @@
 ---
 name: result
-description: 'Skill for the Result area of rinkuzu. 16 symbols across 3 files.'
+description: 'Skill for the Result area of rinkuzu. 18 symbols across 7 files.'
 ---
 
 # Result
 
-16 symbols | 3 files | Cohesion: 63%
+18 symbols | 7 files | Cohesion: 78%
 
 ## When to Use
 
 - Working with code in `src/`
-- Understanding how clearHistory, getHistory, QuizResultPage work
+- Understanding how useRequiredRouteParam, readRequiredRouteParam, routePathSegment work
 - Modifying result-related functionality
 
 ## Key Files
 
-| File                                                 | Symbols                                                                                |
-| ---------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| `src/app/[locale]/(app)/quiz/[slug]/result/page.tsx` | QuizResultPage, getScoreColor, getScoreMessage, formatAnswer, formatCorrectAnswer (+6) |
-| `src/lib/api/client.ts`                              | ApiResponseError, parseApiBody, fetchApiSuccess                                        |
-| `src/features/quiz/hooks/useStreamingChatSession.ts` | clearHistory, getHistory                                                               |
+| File                                                     | Symbols                                                                                                            |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `src/app/[locale]/(app)/quiz/[slug]/result/page.tsx`     | formatAnswerValue, isQuestionAnswered, buildQuizResultStats, getQuizResultScoreMessage, useQuizResultPageData (+1) |
+| `src/app/[locale]/(app)/history/[attemptId]/page.tsx`    | formatAttemptDate, AttemptDetailPage, fetchAttemptDetail                                                           |
+| `src/app/[locale]/(app)/edit/[id]/page.tsx`              | EditQuizPage, fetchQuiz, handleDelete                                                                              |
+| `src/lib/routing/routeParams.ts`                         | readRequiredRouteParam, routePathSegment                                                                           |
+| `src/app/[locale]/(app)/quiz/[slug]/flashcards/page.tsx` | FlashcardPage, loadQuiz                                                                                            |
+| `src/lib/routing/useRequiredRouteParam.ts`               | useRequiredRouteParam                                                                                              |
+| `src/app/[locale]/(app)/category/[slug]/page.tsx`        | CategoryPage                                                                                                       |
 
 ## Entry Points
 
 Start here when exploring this area:
 
-- **`clearHistory`** (Function) — `src/features/quiz/hooks/useStreamingChatSession.ts:79`
-- **`getHistory`** (Function) — `src/features/quiz/hooks/useStreamingChatSession.ts:96`
-- **`QuizResultPage`** (Function) — `src/app/[locale]/(app)/quiz/[slug]/result/page.tsx:50`
-- **`getScoreColor`** (Function) — `src/app/[locale]/(app)/quiz/[slug]/result/page.tsx:128`
-- **`getScoreMessage`** (Function) — `src/app/[locale]/(app)/quiz/[slug]/result/page.tsx:134`
+- **`useRequiredRouteParam`** (Function) — `src/lib/routing/useRequiredRouteParam.ts:5`
+- **`readRequiredRouteParam`** (Function) — `src/lib/routing/routeParams.ts:3`
+- **`routePathSegment`** (Function) — `src/lib/routing/routeParams.ts:14`
+- **`AttemptDetailPage`** (Function) — `src/app/[locale]/(app)/history/[attemptId]/page.tsx:357`
+- **`fetchAttemptDetail`** (Function) — `src/app/[locale]/(app)/history/[attemptId]/page.tsx:371`
 
 ## Key Symbols
 
-| Symbol                     | Type     | File                                                 | Line |
-| -------------------------- | -------- | ---------------------------------------------------- | ---- |
-| `ApiResponseError`         | Class    | `src/lib/api/client.ts`                              | 0    |
-| `clearHistory`             | Function | `src/features/quiz/hooks/useStreamingChatSession.ts` | 79   |
-| `getHistory`               | Function | `src/features/quiz/hooks/useStreamingChatSession.ts` | 96   |
-| `QuizResultPage`           | Function | `src/app/[locale]/(app)/quiz/[slug]/result/page.tsx` | 50   |
-| `getScoreColor`            | Function | `src/app/[locale]/(app)/quiz/[slug]/result/page.tsx` | 128  |
-| `getScoreMessage`          | Function | `src/app/[locale]/(app)/quiz/[slug]/result/page.tsx` | 134  |
-| `formatAnswer`             | Function | `src/app/[locale]/(app)/quiz/[slug]/result/page.tsx` | 142  |
-| `formatCorrectAnswer`      | Function | `src/app/[locale]/(app)/quiz/[slug]/result/page.tsx` | 160  |
-| `clearChatHistory`         | Function | `src/app/[locale]/(app)/quiz/[slug]/result/page.tsx` | 213  |
-| `getChatStats`             | Function | `src/app/[locale]/(app)/quiz/[slug]/result/page.tsx` | 323  |
-| `parseApiBody`             | Function | `src/lib/api/client.ts`                              | 17   |
-| `fetchApiSuccess`          | Function | `src/lib/api/client.ts`                              | 37   |
-| `checkBookmarkedQuestions` | Function | `src/app/[locale]/(app)/quiz/[slug]/result/page.tsx` | 88   |
-| `fetchResults`             | Function | `src/app/[locale]/(app)/quiz/[slug]/result/page.tsx` | 107  |
-| `removeBookmark`           | Function | `src/app/[locale]/(app)/quiz/[slug]/result/page.tsx` | 218  |
-| `toggleBookmark`           | Function | `src/app/[locale]/(app)/quiz/[slug]/result/page.tsx` | 259  |
+| Symbol                      | Type     | File                                                     | Line |
+| --------------------------- | -------- | -------------------------------------------------------- | ---- |
+| `useRequiredRouteParam`     | Function | `src/lib/routing/useRequiredRouteParam.ts`               | 5    |
+| `readRequiredRouteParam`    | Function | `src/lib/routing/routeParams.ts`                         | 3    |
+| `routePathSegment`          | Function | `src/lib/routing/routeParams.ts`                         | 14   |
+| `AttemptDetailPage`         | Function | `src/app/[locale]/(app)/history/[attemptId]/page.tsx`    | 357  |
+| `fetchAttemptDetail`        | Function | `src/app/[locale]/(app)/history/[attemptId]/page.tsx`    | 371  |
+| `EditQuizPage`              | Function | `src/app/[locale]/(app)/edit/[id]/page.tsx`              | 603  |
+| `fetchQuiz`                 | Function | `src/app/[locale]/(app)/edit/[id]/page.tsx`              | 611  |
+| `handleDelete`              | Function | `src/app/[locale]/(app)/edit/[id]/page.tsx`              | 697  |
+| `CategoryPage`              | Function | `src/app/[locale]/(app)/category/[slug]/page.tsx`        | 441  |
+| `FlashcardPage`             | Function | `src/app/[locale]/(app)/quiz/[slug]/flashcards/page.tsx` | 423  |
+| `loadQuiz`                  | Function | `src/app/[locale]/(app)/quiz/[slug]/flashcards/page.tsx` | 432  |
+| `formatAttemptDate`         | Function | `src/app/[locale]/(app)/history/[attemptId]/page.tsx`    | 84   |
+| `formatAnswerValue`         | Function | `src/app/[locale]/(app)/quiz/[slug]/result/page.tsx`     | 206  |
+| `isQuestionAnswered`        | Function | `src/app/[locale]/(app)/quiz/[slug]/result/page.tsx`     | 374  |
+| `buildQuizResultStats`      | Function | `src/app/[locale]/(app)/quiz/[slug]/result/page.tsx`     | 380  |
+| `getQuizResultScoreMessage` | Function | `src/app/[locale]/(app)/quiz/[slug]/result/page.tsx`     | 412  |
+| `useQuizResultPageData`     | Function | `src/app/[locale]/(app)/quiz/[slug]/result/page.tsx`     | 420  |
+| `QuizResultPageClient`      | Function | `src/app/[locale]/(app)/quiz/[slug]/result/page.tsx`     | 781  |
 
 ## Execution Flows
 
-| Flow                                | Type            | Steps |
-| ----------------------------------- | --------------- | ----- |
-| `QuizResultPage → ParseApiBody`     | cross_community | 5     |
-| `QuizResultPage → ApiResponseError` | cross_community | 5     |
-| `HandleKeyPress → GetHistory`       | cross_community | 4     |
-| `HandleKeyPress → GetHistory`       | cross_community | 4     |
+| Flow                                                | Type            | Steps |
+| --------------------------------------------------- | --------------- | ----- |
+| `QuizResultPageClient → ParseApiBody`               | cross_community | 7     |
+| `QuizResultPageClient → ApiResponseError`           | cross_community | 7     |
+| `EditQuizPage → ParseApiBody`                       | cross_community | 5     |
+| `EditQuizPage → ApiResponseError`                   | cross_community | 5     |
+| `AttemptDetailPage → ParseApiBody`                  | cross_community | 5     |
+| `AttemptDetailPage → ApiResponseError`              | cross_community | 5     |
+| `FlashcardPage → ParseApiBody`                      | cross_community | 5     |
+| `FlashcardPage → ApiResponseError`                  | cross_community | 5     |
+| `QuizResultPageClient → ExtractUnknownErrorMessage` | cross_community | 4     |
+| `QuizResultPageClient → IsQuestionAnswered`         | intra_community | 4     |
 
 ## Connected Areas
 
 | Area       | Connections |
 | ---------- | ----------- |
-| Components | 2 calls     |
-| [slug]     | 1 calls     |
-| Flashcards | 1 calls     |
+| Categories | 5 calls     |
+| Components | 3 calls     |
+| Ui         | 1 calls     |
+| Quiz       | 1 calls     |
 
 ## How to Explore
 
-1. `gitnexus_context({name: "clearHistory"})` — see callers and callees
+1. `gitnexus_context({name: "useRequiredRouteParam"})` — see callers and callees
 2. `gitnexus_query({query: "result"})` — find related execution flows
 3. Read key files listed above for implementation details

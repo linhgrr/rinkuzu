@@ -13,21 +13,12 @@ interface UploadResult {
 }
 
 export const uploadImageToImgBB = async (
-  imageFile: File | Buffer | Blob,
+  imageFile: File | Blob,
   imageName: string = '',
 ): Promise<UploadResult> => {
   const formData = new FormData();
-
-  if (imageFile instanceof Buffer) {
-    const blob = new Blob([imageFile], { type: 'image/jpeg' });
-    formData.append('image', blob, imageName || 'image.jpg');
-  } else {
-    formData.append('image', imageFile as Blob, imageName || 'image.jpg');
-  }
-
-  if (imageName) {
-    formData.append('name', imageName);
-  }
+  formData.append('image', imageFile, imageName || 'image.jpg');
+  if (imageName) formData.append('name', imageName);
 
   const response = await fetch(UPLOAD_PROXY_URL, {
     method: 'POST',

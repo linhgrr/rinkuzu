@@ -19,7 +19,7 @@ export const uploadImageToImgBB = async (
   const formData = new FormData();
 
   if (imageFile instanceof Buffer) {
-    const blob = new Blob([imageFile.buffer], { type: 'image/jpeg' });
+    const blob = new Blob([imageFile], { type: 'image/jpeg' });
     formData.append('image', blob, imageName || 'image.jpg');
   } else {
     formData.append('image', imageFile as Blob, imageName || 'image.jpg');

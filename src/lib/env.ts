@@ -78,7 +78,7 @@ const productionRefinements = baseSchema.superRefine((data, ctx) => {
   }
 });
 
-export type Env = z.infer<typeof baseSchema>;
+type Env = z.infer<typeof baseSchema>;
 
 let cached: Env | null = null;
 
@@ -100,7 +100,3 @@ function loadEnv(): Env {
 }
 
 export const env = loadEnv();
-
-export function getEnv(): Env {
-  return loadEnv();
-}

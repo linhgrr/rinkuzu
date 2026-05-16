@@ -2,7 +2,7 @@ import mongoose, { Document, Schema } from 'mongoose';
 
 import { PASSWORD_MIN_LENGTH } from '@/lib/validation/auth';
 
-export interface IUser extends Document {
+interface IUser extends Document {
   email: string;
   password?: string;
   name?: string;

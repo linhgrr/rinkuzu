@@ -4,10 +4,6 @@ export const PASSWORD_MIN_LENGTH = 8;
 export const PASSWORD_MAX_LENGTH = 72;
 export const EMAIL_MAX_LENGTH = 254;
 
-export function isValidEmail(value: string): boolean {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
-}
-
 export type PasswordStrength = 0 | 1 | 2 | 3 | 4;
 
 export function scorePassword(password: string): PasswordStrength {
@@ -32,7 +28,7 @@ export const passwordSchema = z
   .min(PASSWORD_MIN_LENGTH, `Password must be at least ${PASSWORD_MIN_LENGTH} characters`)
   .max(PASSWORD_MAX_LENGTH, `Password must be at most ${PASSWORD_MAX_LENGTH} characters`);
 
-export const displayNameSchema = z
+const displayNameSchema = z
   .string()
   .trim()
   .min(1, 'Display name is required')
@@ -78,9 +74,6 @@ export const changePasswordSchema = z
 
 export type LoginInput = z.infer<typeof loginSchema>;
 export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
-export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
-export type VerifyEmailInput = z.infer<typeof verifyEmailSchema>;
-export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
 
 export function flattenZodError(err: z.ZodError): {
   detail: string;

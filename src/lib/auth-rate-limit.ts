@@ -6,7 +6,7 @@ import { RateLimiterMongo } from 'rate-limiter-flexible';
 import connectDB from '@/lib/mongoose';
 import { apiErr } from '@/lib/api/response';
 
-export type AuthRateLimitAction =
+type AuthRateLimitAction =
   | 'register_ip'
   | 'forgot_password_email'
   | 'resend_verification_email'
@@ -63,7 +63,7 @@ function getLimiter(action: AuthRateLimitAction): RateLimiterMongo {
   return limiter;
 }
 
-export type AuthRateLimitResult =
+type AuthRateLimitResult =
   | { allowed: true; remaining: number; resetSeconds: number; limit: number }
   | { allowed: false; retryAfterSeconds: number; limit: number };
 
@@ -98,9 +98,4 @@ export function rateLimitResponse(result: Extract<AuthRateLimitResult, { allowed
   return apiErr('rate_limit_exceeded', 'Too many requests. Try again later.', 429, {
     meta: { retryAfterSeconds: result.retryAfterSeconds, limit: result.limit },
   });
-}
-
-// Test seam — reset cached limiters between cases.
-export function __resetAuthRateLimiters(): void {
-  limiterCache.clear();
 }

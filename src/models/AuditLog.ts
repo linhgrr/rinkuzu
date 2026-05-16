@@ -14,7 +14,7 @@ export type AuditEvent =
   | 'account_locked'
   | 'account_unlocked';
 
-export interface IAuditLog extends Document {
+interface IAuditLog extends Document {
   userId?: Types.ObjectId | null;
   email?: string | null;
   event: AuditEvent;

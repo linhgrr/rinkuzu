@@ -21,7 +21,8 @@ const DEFAULT_RESEND_COOLDOWN = 60;
 function CheckEmailContent() {
   const t = useTranslations('auth');
   const searchParams = useSearchParams();
-  const initialEmail = (searchParams.get('email') || '').trim().toLowerCase();
+  const get = searchParams.get.bind(searchParams);
+  const initialEmail = (get('email') || '').trim().toLowerCase();
 
   const [serverError, setServerError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);

@@ -1,7 +1,7 @@
 import 'server-only';
 import { createHash, randomBytes, timingSafeEqual } from 'crypto';
 
-export type TokenPair = {
+type TokenPair = {
   raw: string;
   hash: string;
 };

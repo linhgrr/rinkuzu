@@ -5,7 +5,7 @@ import { ServiceFactory } from '@/lib/serviceFactory';
 import type { AdaptiveUserRole } from '@/lib/adaptive-learning/config';
 import { apiErr } from '@/lib/api/response';
 
-export type LlmRateLimitAction =
+type LlmRateLimitAction =
   | 'quiz_ask_ai'
   | 'quiz_extract'
   | 'adaptive_pipeline'
@@ -29,7 +29,7 @@ type WindowResult = {
   count: number;
 };
 
-export type LlmRateLimitResult = {
+type LlmRateLimitResult = {
   allowed: boolean;
   tier: Tier;
   action: LlmRateLimitAction;

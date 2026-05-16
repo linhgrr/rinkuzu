@@ -2,7 +2,7 @@ import { consumeOpenAISseResponse } from '@/lib/ai/stream';
 import type { ApiSuccessResponse } from '@/lib/api/client';
 import { extractApiErrorMessage, type ApiErrorPayload } from '@/lib/api/error';
 
-export interface AdaptiveTutorChatRequest {
+interface AdaptiveTutorChatRequest {
   userQuestion: string;
 }
 

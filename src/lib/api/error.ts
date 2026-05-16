@@ -10,7 +10,7 @@ export type ApiErrorPayload = {
   error?: unknown;
 };
 
-export type StandardErrorBody = {
+type StandardErrorBody = {
   success: false;
   error: {
     code: string;

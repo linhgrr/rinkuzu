@@ -7,7 +7,7 @@ import { PasswordChanged } from './templates/PasswordChanged';
 import { ResetPassword } from './templates/ResetPassword';
 import { VerifyEmail } from './templates/VerifyEmail';
 
-export type MailMessage = {
+type MailMessage = {
   to: string;
   subject: string;
   html: string;

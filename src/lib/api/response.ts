@@ -3,7 +3,7 @@ import { buildStandardErrorBody } from './error';
 import type { ServiceResult } from '@/interfaces/services/types';
 import { getApiErrorCodeFromStatus, getDefaultApiErrorMessage } from './error-codes';
 
-export function errorCodeFromStatus(status: number): string {
+function errorCodeFromStatus(status: number): string {
   return getApiErrorCodeFromStatus(status);
 }
 
@@ -38,11 +38,7 @@ export function apiErr(
   return NextResponse.json(buildStandardErrorBody({ code, message, detail, meta }), { status });
 }
 
-export function apiStatusErr(
-  detail: string,
-  status = 400,
-  meta?: Record<string, unknown>,
-): NextResponse {
+function apiStatusErr(detail: string, status = 400, meta?: Record<string, unknown>): NextResponse {
   return apiErr(errorCodeFromStatus(status), detail, status, meta);
 }
 

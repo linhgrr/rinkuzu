@@ -201,7 +201,7 @@ export const ExerciseTheoryView = ({
   </div>
 );
 
-export type ExerciseQuestionViewProps = {
+type ExerciseQuestionViewProps = {
   concept: NextConcept;
   exercise: Exercise | null;
   loadingExercise: boolean;

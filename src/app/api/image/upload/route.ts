@@ -41,6 +41,7 @@ export async function POST(request: NextRequest) {
   const response = await fetch(IMGBB_API_URL, {
     method: 'POST',
     body: upstream,
+    cache: 'no-store',
     signal: AbortSignal.timeout(30_000),
   });
 

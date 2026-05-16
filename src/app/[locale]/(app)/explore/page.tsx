@@ -178,13 +178,14 @@ function ExploreContent() {
   const { data: session } = useSession();
   const { replace } = useRouter();
   const searchParams = useSearchParams();
-  const initialSearch = searchParams.get('q') || '';
+  const get = searchParams.get.bind(searchParams);
+  const initialSearch = get('q') || '';
   const [state, dispatch] = useReducer(exploreReducer, {
     isSidebarOpen: true,
-    page: parseInt(searchParams.get('page') || '1', 10),
+    page: parseInt(get('page') || '1', 10),
     search: initialSearch,
     committedSearch: initialSearch,
-    categoryId: searchParams.get('category') || null,
+    categoryId: get('category') || null,
   });
   const limit = 12;
 

@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Separator } from '@/components/ui/Separator';
 import { Switch } from '@/components/ui/Switch';
+import { openInNewTabSafely } from '@/lib/security/trusted-navigation';
 
 interface PricingFeature {
   text: string;
@@ -140,9 +141,9 @@ const Pricing2 = ({
                           plan.button.url.startsWith('http') ||
                           plan.button.url.startsWith('mailto')
                         ) {
-                          window.open(plan.button.url, '_blank');
+                          openInNewTabSafely(plan.button.url);
                         } else {
-                          window.location.href = plan.button.url;
+                          window.location.assign(plan.button.url);
                         }
                       }}
                     >

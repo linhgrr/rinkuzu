@@ -165,7 +165,7 @@ describe('SubscriptionService billing hardening', () => {
         createPayment: vi.fn().mockResolvedValue({
           code: '00',
           data: {
-            checkoutUrl: 'https://pay.example/checkout',
+            checkoutUrl: 'https://pay.payos.vn/web/checkout',
             qrCode: 'qr-code',
           },
         }),
@@ -174,7 +174,7 @@ describe('SubscriptionService billing hardening', () => {
 
     const result = await service.createPaymentRequest('user-1', 'premium');
 
-    expect(result.paymentUrl).toBe('https://pay.example/checkout');
+    expect(result.paymentUrl).toBe('https://pay.payos.vn/web/checkout');
     expect(result.qrCode).toBe('qr-code');
     expect(subscriptionRepository.create).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -194,8 +194,45 @@ describe('SubscriptionService billing hardening', () => {
       'User',
     );
     expect(subscriptionRepository.updateByOrderId).toHaveBeenCalledWith(expect.any(String), {
-      payosPaymentUrl: 'https://pay.example/checkout',
+      payosPaymentUrl: 'https://pay.payos.vn/web/checkout',
     });
+  });
+
+  it('rejects untrusted PayOS checkout URLs and cleans up pending subscriptions', async () => {
+    vi.mocked(Plan.findById).mockResolvedValue({
+      _id: 'premium',
+      name: 'Premium',
+      price: 99000,
+      duration: 'P1M',
+      features: [],
+      isActive: true,
+    } as any);
+
+    const { service, subscriptionRepository } = createService({
+      userRepository: {
+        findById: vi.fn().mockResolvedValue({
+          email: 'user@example.com',
+          name: 'User',
+          subscription: { isActive: false },
+        }),
+      },
+      subscriptionRepository: {
+        findByOrderId: vi.fn().mockResolvedValue(null),
+      },
+      payosService: {
+        createPayment: vi.fn().mockResolvedValue({
+          code: '00',
+          data: {
+            checkoutUrl: 'https://evil.example/checkout',
+          },
+        }),
+      },
+    });
+
+    await expect(service.createPaymentRequest('user-1', 'premium')).rejects.toThrow(
+      'Received an invalid payment redirect URL',
+    );
+    expect(subscriptionRepository.deleteByOrderId).toHaveBeenCalledWith(expect.any(String));
   });
 
   it('detects free, inactive, active, and lifetime premium states', async () => {

@@ -4,6 +4,7 @@ import { useEffect, useReducer } from 'react';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
 import { fetchApiData } from '@/lib/api/client';
+import { assertTrustedPayosCheckoutUrl } from '@/lib/security/trusted-navigation';
 import Navigation from '@/components/Navigation';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -127,7 +128,7 @@ export default function SubscriptionPage() {
         },
         body: JSON.stringify({ planId: state.selectedPlan.id }),
       });
-      window.location.href = data.paymentUrl;
+      window.location.assign(assertTrustedPayosCheckoutUrl(data.paymentUrl));
     } catch (error) {
       console.error('Error creating payment:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to create payment request');

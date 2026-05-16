@@ -5,6 +5,7 @@ import { PaymentRequest } from '@/interfaces/services/ISubscriptionService';
 import { IPayOSService } from '@/interfaces/services/IPayOSService';
 import { ISubscriptionRepository } from '@/interfaces/repositories/ISubscriptionRepository';
 import { IUserRepository } from '@/interfaces/repositories/IUserRepository';
+import { assertTrustedPayosCheckoutUrl } from '@/lib/security/trusted-navigation';
 
 export class SubscriptionPaymentService {
   constructor(
@@ -62,8 +63,6 @@ export class SubscriptionPaymentService {
         description: payosDescription,
         returnUrl,
         cancelUrl,
-        buyerEmail: user.email,
-        buyerName: (user as any).name,
       });
 
       const paymentResponse = await this.payosService.createPayment(
@@ -76,26 +75,33 @@ export class SubscriptionPaymentService {
         (user as any).name,
       );
 
-      console.warn('PayOS payment response:', paymentResponse);
-
       if (paymentResponse.code !== '00') {
-        console.error('PayOS payment error:', paymentResponse);
+        console.error('PayOS payment error:', {
+          orderCode,
+          code: paymentResponse.code,
+          description: paymentResponse.desc,
+        });
         throw new Error(paymentResponse.desc || 'Failed to create payment request');
       }
 
       if (!paymentResponse.data?.checkoutUrl) {
-        console.error('PayOS response missing payment URL:', paymentResponse);
+        console.error('PayOS response missing payment URL:', {
+          orderCode,
+          code: paymentResponse.code,
+        });
         throw new Error('Payment URL not received from PayOS');
       }
 
+      const checkoutUrl = assertTrustedPayosCheckoutUrl(paymentResponse.data.checkoutUrl);
+
       // Update subscription with payment URL
       await this.subscriptionRepository.updateByOrderId(orderCode.toString(), {
-        payosPaymentUrl: paymentResponse.data.checkoutUrl,
+        payosPaymentUrl: checkoutUrl,
       });
 
       return {
         orderCode,
-        paymentUrl: paymentResponse.data.checkoutUrl,
+        paymentUrl: checkoutUrl,
         qrCode: paymentResponse.data.qrCode,
         amount: plan.price,
         plan: {

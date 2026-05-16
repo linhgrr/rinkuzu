@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/Button';
+import { openInNewTabSafely } from '@/lib/security/trusted-navigation';
 
 interface PDFViewerProps {
   pdfDataUrl: string | null; // Data/object URL for inline display
@@ -32,7 +33,7 @@ export default function PDFViewer({
           <h3 className="font-semibold text-neutral-900">PDF Reference</h3>
           <div className="flex gap-2">
             <Button
-              onClick={() => pdfUrl && window.open(pdfUrl, '_blank')}
+              onClick={() => pdfUrl && openInNewTabSafely(pdfUrl)}
               size="sm"
               variant="outline"
               disabled={!pdfUrl}

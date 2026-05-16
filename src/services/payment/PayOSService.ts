@@ -85,7 +85,6 @@ export class PayOSService implements IPayOSService {
       console.warn('PayOS API Request:', {
         url,
         method,
-        headers: { 'x-client-id': this.clientId, 'x-api-key': '***' },
         body: this.redactRequestBody(body),
       });
 
@@ -104,12 +103,20 @@ export class PayOSService implements IPayOSService {
       try {
         data = JSON.parse(responseText);
       } catch (_parseError) {
-        console.error('Failed to parse PayOS response:', responseText);
-        throw new Error(`Invalid response from PayOS API: ${responseText}`);
+        console.error('Failed to parse PayOS response body', {
+          endpoint,
+          status: response.status,
+        });
+        throw new Error('Invalid response from PayOS API');
       }
 
       if (!response.ok) {
-        console.error('PayOS API error:', data);
+        console.error('PayOS API error:', {
+          endpoint,
+          status: response.status,
+          code: typeof data?.code === 'string' ? data.code : undefined,
+          message: typeof data?.message === 'string' ? data.message : response.statusText,
+        });
         throw new Error(`PayOS API error: ${data.message || response.statusText}`);
       }
 
@@ -186,9 +193,7 @@ export class PayOSService implements IPayOSService {
       // Try to make a simple request to test the connection
       const testData = { test: 'connection' };
       const dataStr = JSON.stringify(testData);
-      const signature = this.generateSignature(dataStr);
-
-      console.warn('Test signature generated:', signature);
+      this.generateSignature(dataStr);
       return true;
     } catch (error) {
       console.error('PayOS connection test failed:', error);

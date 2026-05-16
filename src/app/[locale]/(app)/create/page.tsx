@@ -17,6 +17,7 @@ import { toast } from 'sonner';
 import { fetchApiData } from '@/lib/api/client';
 import { extractUnknownErrorMessage } from '@/lib/api/error';
 import { getPdfPageCount, uploadPdfViaPresignedUrl } from '@/lib/pdf';
+import { openInNewTabSafely } from '@/lib/security/trusted-navigation';
 import {
   HiOutlineArrowRight,
   HiOutlineDocumentText,
@@ -247,7 +248,7 @@ function PDFViewerComponent({ files, onClose }: { files: File[]; onClose: () => 
               variant="outline"
               onClick={() => {
                 if (typeof window !== 'undefined') {
-                  window.open(data.pdfUrl, '_blank');
+                  openInNewTabSafely(data.pdfUrl);
                 }
               }}
               size="sm"

@@ -46,7 +46,6 @@ export {
   HiOutlineExternalLink,
   HiOutlineEye,
   HiOutlineEyeOff,
-  HiOutlineHeart,
   HiOutlineHome,
   HiOutlineInbox,
   HiOutlineInformationCircle,

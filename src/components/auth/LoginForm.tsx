@@ -40,6 +40,7 @@ function LoginFormContent({ locale, googleEnabled }: LoginFormProps) {
   const retryRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const { prefetch, refresh, replace } = useRouter();
   const searchParams = useSearchParams();
+  const get = searchParams.get.bind(searchParams);
 
   const form = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
@@ -54,7 +55,7 @@ function LoginFormContent({ locale, googleEnabled }: LoginFormProps) {
 
   const callbackUrl = useMemo(() => {
     const fallback = locale === defaultLocale ? '/dashboard' : `/${locale}/dashboard`;
-    const raw = searchParams.get('callbackUrl');
+    const raw = get('callbackUrl');
 
     if (!raw || !raw.startsWith('/') || raw.startsWith('//')) {
       return fallback;
@@ -78,7 +79,7 @@ function LoginFormContent({ locale, googleEnabled }: LoginFormProps) {
     ]);
 
     return blockedCallbacks.has(normalizedPath) ? fallback : raw;
-  }, [searchParams, locale]);
+  }, [get, locale]);
 
   useEffect(() => {
     prefetch(callbackUrl);
@@ -254,7 +255,7 @@ function LoginFormContent({ locale, googleEnabled }: LoginFormProps) {
                 onClick={() => setShowPassword((v) => !v)}
                 aria-pressed={showPassword}
                 aria-label={showPassword ? t('hidePassword') : t('showPassword')}
-                className="absolute inset-y-0 right-3 my-auto flex h-9 w-9 items-center justify-center rounded-md text-neutral-400 transition-colors hover:text-neutral-600"
+                className="absolute inset-y-0 right-3 my-auto flex size-9 items-center justify-center rounded-md text-neutral-400 transition-colors hover:text-neutral-600"
                 tabIndex={-1}
               >
                 {showPassword ? (

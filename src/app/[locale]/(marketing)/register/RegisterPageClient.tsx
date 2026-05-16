@@ -45,6 +45,97 @@ const formSchema = z
 
 type FormValues = z.infer<typeof formSchema>;
 
+type PasswordCriterion = {
+  id: string;
+  label: string;
+  met: boolean;
+};
+
+function RegisterSuccessState({
+  title,
+  message,
+  backToLoginLabel,
+}: {
+  title: string;
+  message: string;
+  backToLoginLabel: string;
+}) {
+  return (
+    <div className="relative min-h-screen overflow-hidden">
+      <div className="absolute inset-0 bg-neutral-50" />
+      <div className="relative mx-auto flex min-h-screen max-w-md flex-col items-center justify-center px-4 py-12">
+        <Card className="w-full border-0 bg-white p-8 text-center shadow-lg shadow-neutral-200/60">
+          <HiOutlineCheckCircle className="mx-auto size-12 text-emerald-500" aria-hidden="true" />
+          <h1 className="mt-4 text-2xl font-semibold text-neutral-900">{title}</h1>
+          <p className="mt-2 text-neutral-600">{message}</p>
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
+            <Link
+              href="/login"
+              className="inline-flex items-center justify-center rounded-xl bg-teal-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-teal-700"
+            >
+              {backToLoginLabel}
+            </Link>
+          </div>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+function PasswordCriteriaCard({
+  title,
+  criteria,
+}: {
+  title: string;
+  criteria: PasswordCriterion[];
+}) {
+  return (
+    <div id="password-criteria" className="rounded-xl border border-blue-100 bg-blue-50/50 p-4">
+      <h4 className="mb-2 text-sm font-semibold text-blue-900">{title}</h4>
+      <ul className="space-y-1 text-xs text-blue-800">
+        {criteria.map((criterion) => (
+          <li
+            key={criterion.id}
+            className={`flex items-center transition-colors ${
+              criterion.met ? 'text-emerald-700' : 'text-blue-800'
+            }`}
+          >
+            <HiCheck
+              className={`mr-2 size-3 ${criterion.met ? 'text-emerald-600' : 'text-blue-400'}`}
+              strokeWidth={3}
+            />
+            {criterion.label}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function RegisterFormFooter({
+  questionLabel,
+  actionLabel,
+}: {
+  questionLabel: string;
+  actionLabel: string;
+}) {
+  return (
+    <div className="mt-8 border-t border-neutral-100 pt-6">
+      <div className="text-center">
+        <p className="text-sm text-neutral-600">
+          {questionLabel}{' '}
+          <Link
+            href="/login"
+            className="font-semibold text-teal-600 transition-colors hover:text-teal-700"
+          >
+            {actionLabel}
+          </Link>
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export function RegisterPageClient({ googleEnabled = false }: RegisterPageClientProps = {}) {
   const t = useTranslations('auth');
   const [showPassword, setShowPassword] = useState(false);
@@ -70,7 +161,7 @@ export function RegisterPageClient({ googleEnabled = false }: RegisterPageClient
     { id: 'min', label: t('passwordMinLength'), met: password.length >= 8 },
     { id: 'mix', label: t('passwordMixHint'), met: passwordStrength >= 3 },
     { id: 'unique', label: t('passwordUnique'), met: passwordStrength >= 2 },
-  ];
+  ] satisfies PasswordCriterion[];
 
   const onSubmit = handleSubmit(async (values) => {
     setServerError(null);
@@ -91,24 +182,11 @@ export function RegisterPageClient({ googleEnabled = false }: RegisterPageClient
 
   if (serverSuccess) {
     return (
-      <div className="relative min-h-screen overflow-hidden">
-        <div className="absolute inset-0 bg-neutral-50" />
-        <div className="relative mx-auto flex min-h-screen max-w-md flex-col items-center justify-center px-4 py-12">
-          <Card className="w-full border-0 bg-white p-8 text-center shadow-lg shadow-neutral-200/60">
-            <HiOutlineCheckCircle className="mx-auto size-12 text-emerald-500" aria-hidden="true" />
-            <h1 className="mt-4 text-2xl font-semibold text-neutral-900">{t('checkEmailTitle')}</h1>
-            <p className="mt-2 text-neutral-600">{serverSuccess}</p>
-            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
-              <Link
-                href="/login"
-                className="inline-flex items-center justify-center rounded-xl bg-teal-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-teal-700"
-              >
-                {t('backToLogin')}
-              </Link>
-            </div>
-          </Card>
-        </div>
-      </div>
+      <RegisterSuccessState
+        title={t('checkEmailTitle')}
+        message={serverSuccess}
+        backToLoginLabel={t('backToLogin')}
+      />
     );
   }
 
@@ -286,30 +364,10 @@ export function RegisterPageClient({ googleEnabled = false }: RegisterPageClient
                   </div>
                 </fieldset>
 
-                <div
-                  id="password-criteria"
-                  className="rounded-xl border border-blue-100 bg-blue-50/50 p-4"
-                >
-                  <h4 className="mb-2 text-sm font-semibold text-blue-900">
-                    {t('passwordRequirements')}
-                  </h4>
-                  <ul className="space-y-1 text-xs text-blue-800">
-                    {passwordCriteria.map((c) => (
-                      <li
-                        key={c.id}
-                        className={`flex items-center transition-colors ${
-                          c.met ? 'text-emerald-700' : 'text-blue-800'
-                        }`}
-                      >
-                        <HiCheck
-                          className={`mr-2 size-3 ${c.met ? 'text-emerald-600' : 'text-blue-400'}`}
-                          strokeWidth={3}
-                        />
-                        {c.label}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+                <PasswordCriteriaCard
+                  title={t('passwordRequirements')}
+                  criteria={passwordCriteria}
+                />
 
                 <label className="flex items-start gap-2 text-sm text-neutral-700">
                   <input
@@ -356,19 +414,10 @@ export function RegisterPageClient({ googleEnabled = false }: RegisterPageClient
                 </div>
               </form>
 
-              <div className="mt-8 border-t border-neutral-100 pt-6">
-                <div className="text-center">
-                  <p className="text-sm text-neutral-600">
-                    {t('alreadyHaveAccount')}{' '}
-                    <Link
-                      href="/login"
-                      className="font-semibold text-teal-600 transition-colors hover:text-teal-700"
-                    >
-                      {t('signIn')}
-                    </Link>
-                  </p>
-                </div>
-              </div>
+              <RegisterFormFooter
+                questionLabel={t('alreadyHaveAccount')}
+                actionLabel={t('signIn')}
+              />
             </CardContent>
           </Card>
         </div>

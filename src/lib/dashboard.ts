@@ -30,7 +30,7 @@ type DashboardQuiz = {
   } | null;
 };
 
-export interface DashboardStatsData {
+interface DashboardStatsData {
   streak: number;
   longestStreak: number;
   streakFreezeCount: number;

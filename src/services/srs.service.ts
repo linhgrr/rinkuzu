@@ -1,6 +1,6 @@
 export type SRSRating = 'fail' | 'hard' | 'good' | 'easy';
 
-export interface SRSResult {
+interface SRSResult {
   interval: number; // Days until next review
   easeFactor: number; // New ease factor
   nextReviewDate: Date;

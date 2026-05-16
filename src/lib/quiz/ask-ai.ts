@@ -7,7 +7,7 @@ interface QuizAiChatMessage {
   content: string;
 }
 
-export interface QuizAskAiRequest {
+interface QuizAskAiRequest {
   question: string;
   options: string[];
   userQuestion?: string;

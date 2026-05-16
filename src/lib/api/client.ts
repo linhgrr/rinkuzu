@@ -119,7 +119,6 @@ export async function fetchApiResponse<
   Meta extends Record<string, unknown> = Record<string, unknown>,
 >(input: RequestInfo | URL, init?: RequestInit): Promise<ApiSuccessResponse<T, Meta>> {
   const response = await fetch(input, init);
-  const { payload: rawPayload, rawText } = await parseApiBody(response);
 
   if (response.status === 204) {
     return {
@@ -127,6 +126,8 @@ export async function fetchApiResponse<
       data: null as T,
     } as ApiSuccessResponse<T, Meta>;
   }
+
+  const { payload: rawPayload, rawText } = await parseApiBody(response);
 
   if (response.ok && isStandardSuccessEnvelope<T>(rawPayload)) {
     return rawPayload as ApiSuccessResponse<T, Meta>;

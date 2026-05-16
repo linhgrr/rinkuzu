@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useRef, useState } from 'react';
+import { Suspense, useEffect, useReducer, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
@@ -16,12 +16,43 @@ import { fetchApiResponse } from '@/lib/api/client';
 
 type Status = 'pending' | 'verifying' | 'success' | 'error';
 
+type ViewState = {
+  status: Status;
+  message: string | null;
+};
+
+type ViewAction =
+  | { type: 'missing-token'; message: string }
+  | { type: 'verifying' }
+  | { type: 'success'; message: string }
+  | { type: 'error'; message: string };
+
+const INITIAL_VIEW_STATE: ViewState = {
+  status: 'pending',
+  message: null,
+};
+
+function viewStateReducer(_state: ViewState, action: ViewAction): ViewState {
+  switch (action.type) {
+    case 'missing-token':
+      return { status: 'error', message: action.message };
+    case 'verifying':
+      return { status: 'verifying', message: null };
+    case 'success':
+      return { status: 'success', message: action.message };
+    case 'error':
+      return { status: 'error', message: action.message };
+    default:
+      return _state;
+  }
+}
+
 function VerifyEmailContent() {
   const t = useTranslations('auth');
   const searchParams = useSearchParams();
-  const token = searchParams.get('token') ?? '';
-  const [status, setStatus] = useState<Status>('pending');
-  const [message, setMessage] = useState<string | null>(null);
+  const get = searchParams.get.bind(searchParams);
+  const token = get('token') ?? '';
+  const [viewState, dispatch] = useReducer(viewStateReducer, INITIAL_VIEW_STATE);
   const calledRef = useRef(false);
 
   useEffect(() => {
@@ -29,24 +60,27 @@ function VerifyEmailContent() {
     calledRef.current = true;
 
     if (!token) {
-      setStatus('error');
-      setMessage(t('verifyEmailFailed'));
+      dispatch({ type: 'missing-token', message: t('verifyEmailFailed') });
       return;
     }
 
-    setStatus('verifying');
+    dispatch({ type: 'verifying' });
     fetchApiResponse<unknown, { message?: string }>('/api/auth/verify-email', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ token }),
     })
       .then((response) => {
-        setStatus('success');
-        setMessage(response.meta?.message ?? t('verifyEmailSuccess'));
+        dispatch({
+          type: 'success',
+          message: response.meta?.message ?? t('verifyEmailSuccess'),
+        });
       })
       .catch((error: unknown) => {
-        setStatus('error');
-        setMessage(error instanceof Error ? error.message : t('verifyEmailFailed'));
+        dispatch({
+          type: 'error',
+          message: error instanceof Error ? error.message : t('verifyEmailFailed'),
+        });
       });
   }, [token, t]);
 
@@ -79,9 +113,9 @@ function VerifyEmailContent() {
                 {t('verifyEmailTitle')}
               </CardTitle>
               <CardDescription className="text-base">
-                {status === 'verifying'
+                {viewState.status === 'verifying'
                   ? t('verifyEmailVerifying')
-                  : status === 'success'
+                  : viewState.status === 'success'
                     ? t('verifyEmailSuccess')
                     : t('verifyEmailFailed')}
               </CardDescription>
@@ -93,20 +127,22 @@ function VerifyEmailContent() {
                 aria-live="polite"
                 className="flex flex-col items-center gap-4 py-4 text-center"
               >
-                {status === 'verifying' && (
+                {viewState.status === 'verifying' && (
                   <HiOutlineMail className="size-10 text-teal-500" aria-hidden="true" />
                 )}
-                {status === 'success' && (
+                {viewState.status === 'success' && (
                   <HiOutlineCheckCircle className="size-10 text-emerald-500" aria-hidden="true" />
                 )}
-                {status === 'error' && (
+                {viewState.status === 'error' && (
                   <HiOutlineExclamationCircle className="size-10 text-red-500" aria-hidden="true" />
                 )}
 
-                {message && <p className="text-sm text-neutral-700">{message}</p>}
+                {viewState.message && (
+                  <p className="text-sm text-neutral-700">{viewState.message}</p>
+                )}
 
                 <div className="flex flex-col gap-2 sm:flex-row">
-                  {status === 'success' && (
+                  {viewState.status === 'success' && (
                     <Link
                       href="/login"
                       className="inline-flex items-center justify-center rounded-xl bg-teal-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-teal-700"
@@ -114,7 +150,7 @@ function VerifyEmailContent() {
                       {t('signIn')}
                     </Link>
                   )}
-                  {status === 'error' && (
+                  {viewState.status === 'error' && (
                     <Link
                       href="/check-email"
                       className="inline-flex items-center justify-center rounded-xl border border-teal-600 px-5 py-3 text-sm font-semibold text-teal-600 transition-colors hover:bg-teal-50"

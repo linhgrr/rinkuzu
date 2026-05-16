@@ -785,7 +785,8 @@ function QuizResultPageClient() {
   const t = useTranslations('quiz');
   const tProfile = useTranslations('profile');
   const searchParams = useSearchParams();
-  const attemptId = searchParams.get('attemptId');
+  const get = searchParams.get.bind(searchParams);
+  const attemptId = get('attemptId');
   const encodedSlug = routePathSegment(useRequiredRouteParam('slug'));
   const { state, dispatch, stats, toggleBookmark, removeBookmark } =
     useQuizResultPageData(attemptId);

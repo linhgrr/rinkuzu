@@ -36,7 +36,7 @@ export function ResetPassword({ url }: ResetPasswordProps) {
   return (
     <Html>
       <Head />
-      <Preview>Reset your RinKuzu password — link expires in 30 minutes</Preview>
+      <Preview>Reset your RinKuzu password: link expires in 30 minutes</Preview>
       <Body style={main}>
         <Container style={container}>
           <Section style={logoContainer}>
@@ -66,7 +66,7 @@ export function ResetPassword({ url }: ResetPasswordProps) {
           <Hr style={hr} />
 
           <Text style={footer}>
-            If you didn&apos;t request a reset, you can safely ignore this email — your password
+            If you didn&apos;t request a reset, you can safely ignore this email, your password
             won&apos;t change.
           </Text>
         </Container>
@@ -74,5 +74,3 @@ export function ResetPassword({ url }: ResetPasswordProps) {
     </Html>
   );
 }
-
-export default ResetPassword;

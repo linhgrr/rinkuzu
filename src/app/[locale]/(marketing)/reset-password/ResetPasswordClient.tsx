@@ -39,7 +39,8 @@ type FormValues = z.infer<typeof formSchema>;
 function ResetPasswordContent() {
   const t = useTranslations('auth');
   const searchParams = useSearchParams();
-  const token = searchParams.get('token') ?? '';
+  const get = searchParams.get.bind(searchParams);
+  const token = get('token') ?? '';
 
   const [showPassword, setShowPassword] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
@@ -170,7 +171,7 @@ function ResetPasswordContent() {
                           onClick={() => setShowPassword((v) => !v)}
                           aria-pressed={showPassword}
                           aria-label={showPassword ? t('hidePassword') : t('showPassword')}
-                          className="absolute inset-y-0 right-3 my-auto flex h-9 w-9 items-center justify-center rounded-md text-neutral-400 hover:text-neutral-600"
+                          className="absolute inset-y-0 right-3 my-auto flex size-9 items-center justify-center rounded-md text-neutral-400 hover:text-neutral-600"
                           tabIndex={-1}
                         >
                           {showPassword ? (

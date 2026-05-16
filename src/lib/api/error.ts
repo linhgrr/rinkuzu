@@ -8,40 +8,58 @@ type ApiErrorObject = {
 export type ApiErrorPayload = {
   success?: unknown;
   error?: unknown;
-  detail?: unknown;
-  message?: unknown;
 };
+
+export type StandardErrorBody = {
+  success: false;
+  error: {
+    code: string;
+    message: string;
+    detail?: string;
+    meta?: Record<string, unknown> | Array<Record<string, unknown>>;
+  };
+};
+
+function readErrorObject(payload: ApiErrorPayload | null | undefined): ApiErrorObject | null {
+  if (!payload || typeof payload !== 'object') return null;
+  const error = payload.error;
+  if (!error || typeof error !== 'object') return null;
+  return error as ApiErrorObject;
+}
 
 export function extractApiErrorMessage(
   payload: ApiErrorPayload | null | undefined,
   fallback: string,
 ): string {
-  if (payload && typeof payload === 'object') {
-    const error = payload.error;
-
-    if (typeof error === 'string' && error.trim()) {
-      return error.trim();
-    }
-
-    if (error && typeof error === 'object') {
-      const errorObject = error as ApiErrorObject;
-      const detail = typeof errorObject.detail === 'string' ? errorObject.detail.trim() : '';
-      const message = typeof errorObject.message === 'string' ? errorObject.message.trim() : '';
-      const code = typeof errorObject.code === 'string' ? errorObject.code.trim() : '';
-
-      if (detail) return detail;
-      if (message) return message;
-      if (code) return code;
-    }
-
-    const detail = typeof payload.detail === 'string' ? payload.detail.trim() : '';
-    const message = typeof payload.message === 'string' ? payload.message.trim() : '';
-
-    if (detail) return detail;
-    if (message) return message;
+  const errorObject = readErrorObject(payload);
+  if (!errorObject) {
+    return fallback;
   }
 
+  const detail = typeof errorObject.detail === 'string' ? errorObject.detail.trim() : '';
+  const message = typeof errorObject.message === 'string' ? errorObject.message.trim() : '';
+  const code = typeof errorObject.code === 'string' ? errorObject.code.trim() : '';
+
+  if (detail) return detail;
+  if (message) return message;
+  if (code) return code;
   return fallback;
+}
+
+export function extractApiErrorCode(payload: ApiErrorPayload | null | undefined): string | null {
+  const errorObject = readErrorObject(payload);
+  if (!errorObject) return null;
+  return typeof errorObject.code === 'string' && errorObject.code.trim()
+    ? errorObject.code.trim()
+    : null;
+}
+
+export function extractApiErrorMeta<T = unknown>(
+  payload: ApiErrorPayload | null | undefined,
+): T | null {
+  const errorObject = readErrorObject(payload);
+  if (!errorObject) return null;
+  return (errorObject.meta as T | undefined) ?? null;
 }
 
 export function extractUnknownErrorMessage(error: unknown, fallback: string): string {
@@ -55,19 +73,24 @@ export function extractUnknownErrorMessage(error: unknown, fallback: string): st
   return fallback;
 }
 
-export function buildStandardErrorBody(
-  code: string,
-  detail: string,
-  extras?: Record<string, unknown>,
-  message: string = 'Request failed',
-) {
+export function buildStandardErrorBody({
+  code,
+  message,
+  detail,
+  meta,
+}: {
+  code: string;
+  message: string;
+  detail?: string;
+  meta?: Record<string, unknown> | Array<Record<string, unknown>>;
+}): StandardErrorBody {
   return {
-    success: false as const,
+    success: false,
     error: {
       code,
       message,
-      detail,
+      ...(detail ? { detail } : {}),
+      ...(meta !== undefined ? { meta } : {}),
     },
-    ...(extras ?? {}),
   };
 }

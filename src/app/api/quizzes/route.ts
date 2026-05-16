@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
-import { apiErr } from '@/lib/api/response';
+import { apiErr, apiOk } from '@/lib/api/response';
 
 const quizService = serviceFactory.getQuizService();
 
@@ -33,12 +33,9 @@ export async function GET(request: NextRequest) {
       compact,
     });
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        quizzes: result.quizzes,
-        pagination: result.pagination,
-      },
+    return apiOk({
+      quizzes: result.quizzes,
+      pagination: result.pagination,
     });
   } catch (error: unknown) {
     console.error('Get quizzes error:', error);
@@ -65,14 +62,9 @@ export async function POST(request: NextRequest) {
       pdfUrl,
     });
 
-    return NextResponse.json(
-      {
-        success: true,
-        message: 'Quiz created successfully and sent for approval',
-        data: quiz,
-      },
-      { status: 201 },
-    );
+    return apiOk(quiz, 201, {
+      meta: { message: 'Quiz created successfully and sent for approval' },
+    });
   } catch (error: unknown) {
     console.error('Create quiz error:', error);
     const message = error instanceof Error ? error.message : '';

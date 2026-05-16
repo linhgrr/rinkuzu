@@ -1,21 +1,78 @@
+import {
+  extractApiErrorCode,
+  extractApiErrorMessage,
+  extractApiErrorMeta,
+  type ApiErrorPayload,
+} from './error';
+
 export class ApiResponseError extends Error {
   status: number;
   payload: unknown;
+  code: string | null;
+  detail: string | null;
+  meta: unknown;
 
-  constructor(message: string, status: number, payload: unknown) {
+  constructor({
+    message,
+    status,
+    payload,
+    code,
+    detail,
+    meta,
+  }: {
+    message: string;
+    status: number;
+    payload: unknown;
+    code?: string | null;
+    detail?: string | null;
+    meta?: unknown;
+  }) {
     super(message);
     this.name = 'ApiResponseError';
     this.status = status;
     this.payload = payload;
+    this.code = code ?? null;
+    this.detail = detail ?? null;
+    this.meta = meta ?? null;
   }
 }
 
-export type ApiSuccessResponse<T, Extra extends Record<string, unknown> = Record<string, never>> = {
+export type ApiSuccessResponse<
+  T,
+  Meta extends Record<string, unknown> = Record<string, unknown>,
+> = {
   success: true;
   data: T;
-} & Extra;
+  meta?: Meta;
+};
 
-async function parseApiBody(response: Response): Promise<{ payload: unknown; rawText: string }> {
+type ParsedApiBody = { payload: unknown; rawText: string };
+
+type StandardSuccessEnvelope<T> = {
+  success: true;
+  data: T;
+  meta?: Record<string, unknown>;
+};
+
+function isStandardSuccessEnvelope<T>(payload: unknown): payload is StandardSuccessEnvelope<T> {
+  return (
+    !!payload &&
+    typeof payload === 'object' &&
+    (payload as { success?: unknown }).success === true &&
+    'data' in payload
+  );
+}
+
+function isStandardErrorEnvelope(payload: unknown): payload is ApiErrorPayload {
+  return (
+    !!payload &&
+    typeof payload === 'object' &&
+    (payload as { success?: unknown }).success === false &&
+    'error' in payload
+  );
+}
+
+async function parseApiBody(response: Response): Promise<ParsedApiBody> {
   let rawText: string;
   try {
     rawText = await response.text();
@@ -44,52 +101,53 @@ async function parseApiBody(response: Response): Promise<{ payload: unknown; raw
   }
 }
 
+function invalidEnvelopeError(status: number, payload: unknown, rawText: string): ApiResponseError {
+  return new ApiResponseError({
+    message: 'Invalid API response envelope',
+    status,
+    payload: payload ?? rawText,
+    code: 'invalid_response_envelope',
+    detail: rawText || null,
+  });
+}
+
 /**
  * Low-level API client for callers that need the full success envelope.
- * Use this when a route returns top-level metadata like `message`.
  */
 export async function fetchApiResponse<
   T,
-  Extra extends Record<string, unknown> = Record<string, never>,
->(input: RequestInfo | URL, init?: RequestInit): Promise<ApiSuccessResponse<T, Extra>> {
+  Meta extends Record<string, unknown> = Record<string, unknown>,
+>(input: RequestInfo | URL, init?: RequestInit): Promise<ApiSuccessResponse<T, Meta>> {
   const response = await fetch(input, init);
   const { payload: rawPayload, rawText } = await parseApiBody(response);
 
-  if (response.ok && (response.status === 204 || rawPayload === null)) {
+  if (response.status === 204) {
     return {
       success: true,
       data: null as T,
-    } as ApiSuccessResponse<T, Extra>;
+    } as ApiSuccessResponse<T, Meta>;
   }
 
-  // Narrow the parsed JSON payload for property access
-  const payload = rawPayload as {
-    success?: boolean;
-    error?: unknown;
-    detail?: unknown;
-    message?: unknown;
-    data?: unknown;
-  } | null;
+  if (response.ok && isStandardSuccessEnvelope<T>(rawPayload)) {
+    return rawPayload as ApiSuccessResponse<T, Meta>;
+  }
 
-  if (!response.ok || payload?.success !== true) {
-    const errorObj = payload?.error;
-    const errorMessage =
-      typeof errorObj === 'object' && errorObj !== null
-        ? String(
-            (errorObj as Record<string, unknown>)['detail'] ||
-              (errorObj as Record<string, unknown>)['message'] ||
-              rawText,
-          )
-        : String(errorObj ?? payload?.detail ?? payload?.message ?? rawText);
-
-    throw new ApiResponseError(
-      errorMessage || `Request failed with status ${response.status}`,
-      response.status,
-      rawPayload ?? rawText,
+  if (isStandardErrorEnvelope(rawPayload)) {
+    const message = extractApiErrorMessage(
+      rawPayload,
+      `Request failed with status ${response.status}`,
     );
+    throw new ApiResponseError({
+      message,
+      status: response.status,
+      payload: rawPayload,
+      code: extractApiErrorCode(rawPayload),
+      detail: message,
+      meta: extractApiErrorMeta(rawPayload),
+    });
   }
 
-  return rawPayload as ApiSuccessResponse<T, Extra>;
+  throw invalidEnvelopeError(response.status, rawPayload, rawText);
 }
 
 /**

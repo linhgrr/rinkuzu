@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
 import { AsyncRouteParams } from '@/types/next-route';
-import { apiOk, apiErr } from '@/lib/api/response';
+import { apiOk, apiErr, apiServiceErr } from '@/lib/api/response';
 
 export async function POST(request: NextRequest, { params }: AsyncRouteParams<{ slug: string }>) {
   try {
@@ -15,11 +15,11 @@ export async function POST(request: NextRequest, { params }: AsyncRouteParams<{ 
     const { answers, userEmail } = payload as { answers?: unknown; userEmail?: string };
 
     if (!answers || !Array.isArray(answers)) {
-      return apiErr('invalid_request', 'Answers array is required', 400);
+      return apiErr('validation_error', 'Answers array is required', 400);
     }
 
     if (!session?.user?.email && !userEmail) {
-      return apiErr('email_required', 'User email is required', 400);
+      return apiErr('validation_error', 'User email is required', 400);
     }
 
     const quizService = serviceFactory.getQuizService();
@@ -27,11 +27,7 @@ export async function POST(request: NextRequest, { params }: AsyncRouteParams<{ 
     const result = await quizService.submitQuizAttempt(slug, answers, session, userEmail);
 
     if (!result.success) {
-      return apiErr(
-        'service_error',
-        String(result.error ?? 'Request failed'),
-        result.statusCode || 400,
-      );
+      return apiServiceErr(result, 400);
     }
 
     return apiOk(result.data);

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { withAdmin } from '@/lib/api/auth';
 import connectDB from '@/lib/mongoose';
 import Category from '@/models/Category';
@@ -22,10 +22,7 @@ export const GET = withAdmin(async (_request: NextRequest, context) => {
       return apiErr('not_found', 'Category not found', 404);
     }
 
-    return NextResponse.json({
-      success: true,
-      data: category,
-    });
+    return apiOk(category);
   } catch (error: unknown) {
     console.error('Get category error:', error);
     return apiErr('internal_error', 'Internal server error', 500);
@@ -73,10 +70,7 @@ export const PUT = withAdmin(async (request: NextRequest, context) => {
     await category.save();
     await category.populate('createdBy', 'email');
 
-    return NextResponse.json({
-      success: true,
-      data: category,
-    });
+    return apiOk(category);
   } catch (error: unknown) {
     console.error('Update category error:', error);
     return apiErr('internal_error', 'Internal server error', 500);
@@ -113,7 +107,7 @@ export const DELETE = withAdmin(async (_request: NextRequest, context) => {
 
     await Category.findByIdAndDelete(id);
 
-    return apiOk(null, 200, { message: 'Category deleted successfully' });
+    return apiOk(null, 200, { meta: { message: 'Category deleted successfully' } });
   } catch (error: unknown) {
     console.error('Delete category error:', error);
     return apiErr('internal_error', 'Internal server error', 500);

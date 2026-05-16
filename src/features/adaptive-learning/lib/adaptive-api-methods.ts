@@ -105,34 +105,26 @@ export async function uploadPdf(
   pageBatchSize: number = DEFAULT_PIPELINE_PAGE_BATCH_SIZE,
 ): Promise<PipelineUploadResponse> {
   // 1. Get presigned URL
-  const presignedRes = await timedFetch('/api/storage/presigned-url', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      fileName: file.name,
-      contentType: file.type || 'application/pdf',
-      fileSize: file.size,
-      purpose: 'quiz',
-    }),
-    timeoutMs: PRESIGNED_URL_TIMEOUT_MS,
-  });
-
-  if (!presignedRes.ok) {
-    throw new AdaptiveApiError({
-      message: 'Failed to get upload URL',
-      code: 'presigned_url_failed',
-      status: presignedRes.status,
-    });
-  }
-
-  const data = await presignedRes.json();
-  const { uploadUrl, s3Key } = data.data || {};
+  const { uploadUrl, s3Key } = await executeRequest<{ uploadUrl?: string; s3Key?: string }>(
+    '/api/storage/presigned-url',
+    'POST',
+    {
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        fileName: file.name,
+        contentType: file.type || 'application/pdf',
+        fileSize: file.size,
+        purpose: 'quiz',
+      }),
+      timeoutMs: PRESIGNED_URL_TIMEOUT_MS,
+    },
+  );
 
   if (!uploadUrl || !s3Key) {
     throw new AdaptiveApiError({
       message: 'Invalid presigned url response',
-      code: 'presigned_url_invalid',
-      status: presignedRes.status,
+      code: 'upstream_invalid_envelope',
+      retryable: true,
     });
   }
 
@@ -149,7 +141,7 @@ export async function uploadPdf(
   if (!uploadRes.ok) {
     throw new AdaptiveApiError({
       message: 'Failed to upload file to S3',
-      code: 's3_upload_failed',
+      code: 'upstream_error',
       status: uploadRes.status,
       retryable: uploadRes.status >= 500,
     });

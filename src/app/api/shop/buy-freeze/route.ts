@@ -1,9 +1,8 @@
-import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import connectDB from '@/lib/mongoose';
 import UserProgress from '@/models/UserProgress';
 import { authOptions } from '@/lib/auth';
-import { apiErr } from '@/lib/api/response';
+import { apiErr, apiOk } from '@/lib/api/response';
 
 export async function POST(_req: Request) {
   try {
@@ -35,14 +34,14 @@ export async function POST(_req: Request) {
     userProgress.streakFreezeCount += 1;
     await userProgress.save();
 
-    return NextResponse.json({
-      success: true,
-      message: 'Streak freeze purchased',
-      data: {
+    return apiOk(
+      {
         xp: userProgress.totalXp,
         streakFreezeCount: userProgress.streakFreezeCount,
       },
-    });
+      200,
+      { meta: { message: 'Streak freeze purchased' } },
+    );
   } catch (error) {
     console.error('Error buying freeze:', error);
     return apiErr('internal_error', 'Internal Server Error', 500);

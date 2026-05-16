@@ -8,6 +8,9 @@ import {
   createSessionFromPipeline,
   getPipelineJobStatus,
   isAdaptiveApiError,
+  isAdaptivePipelineNotReadyError,
+  isAdaptiveRequestAbortedError,
+  isAdaptiveServiceUnavailableError,
   isRetryableAdaptiveError,
 } from '@/features/adaptive-learning/lib/api-client';
 import { ADAPTIVE_ROUTES } from '@/features/adaptive-learning/lib/routes';
@@ -140,21 +143,21 @@ export const useProcessingState = (t: TranslateFn) => {
             code: err.code,
             action: 'upload' as const,
           };
-        if (err.code === 'temporary_unavailable')
+        if (isAdaptiveServiceUnavailableError(err))
           return {
             message: t('processing.errors.serviceUnavailable'),
             retryable: true,
             code: err.code,
             action: 'upload' as const,
           };
-        if (err.code === 'request_aborted' || err.code === 'network_error')
+        if (isAdaptiveRequestAbortedError(err))
           return {
             message: t('processing.errors.connectionInterrupted'),
             retryable: true,
             code: err.code,
             action: 'upload' as const,
           };
-        if (err.code === 'pipeline_not_ready')
+        if (isAdaptivePipelineNotReadyError(err))
           return {
             message: t('processing.errors.sessionNotReady'),
             retryable: true,
@@ -226,13 +229,14 @@ export const useProcessingState = (t: TranslateFn) => {
   const getRetryNotice = useCallback(
     (err: unknown, phase: 'polling' | 'createSession') => {
       if (phase === 'createSession')
-        return isAdaptiveApiError(err) && err.code === 'pipeline_not_ready'
+        return isAdaptivePipelineNotReadyError(err)
           ? t('processing.notices.retryingCreateSession')
           : t('processing.notices.sessionSetupUnconfirmed');
 
       if (isAdaptiveApiError(err)) {
-        if (err.code === 'request_aborted') return t('processing.notices.connectionInterrupted');
-        if (err.code === 'temporary_unavailable' || err.code === 'network_error')
+        if (isAdaptiveRequestAbortedError(err))
+          return t('processing.notices.connectionInterrupted');
+        if (isAdaptiveServiceUnavailableError(err))
           return t('processing.notices.backendSlowRetrying');
       }
 

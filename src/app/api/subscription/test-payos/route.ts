@@ -18,7 +18,7 @@ export async function GET() {
     const isConnected = await payosService.testConnection();
 
     if (!isConnected) {
-      return apiErr('service_error', 'PayOS service connection failed', 500);
+      return apiErr('service_unavailable', 'PayOS service connection failed', 503);
     }
 
     return apiOk(
@@ -31,7 +31,7 @@ export async function GET() {
         },
       },
       200,
-      { message: 'PayOS service is working correctly' },
+      { meta: { message: 'PayOS service is working correctly' } },
     );
   } catch (error) {
     console.error('PayOS test error:', error);

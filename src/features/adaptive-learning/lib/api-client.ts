@@ -5,6 +5,9 @@ export {
   AdaptiveApiError,
   isRetryableAdaptiveError,
   isAdaptiveApiError,
+  isAdaptivePipelineNotReadyError,
+  isAdaptiveRequestAbortedError,
+  isAdaptiveServiceUnavailableError,
   isSessionNotFoundError,
 } from './adaptive-api-error';
 

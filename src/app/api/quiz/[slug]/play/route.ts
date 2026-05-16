@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
 import { AsyncRouteParams } from '@/types/next-route';
-import { apiOk, apiErr } from '@/lib/api/response';
+import { apiOk, apiErr, apiServiceErr } from '@/lib/api/response';
 
 const quizService = serviceFactory.getQuizService();
 
@@ -18,11 +18,7 @@ export async function GET(request: NextRequest, { params }: AsyncRouteParams<{ s
     const result = await quizService.getQuizForPlay(slug, userRole, userId);
 
     if (!result.success) {
-      return apiErr(
-        'service_error',
-        String(result.error ?? 'Request failed'),
-        result.statusCode || 500,
-      );
+      return apiServiceErr(result, 500);
     }
 
     return apiOk(result.data);

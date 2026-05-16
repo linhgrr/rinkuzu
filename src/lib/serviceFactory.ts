@@ -1,6 +1,5 @@
 import type { QuizService } from '@/services/quiz/QuizService';
 import { UserService } from '@/services/user/UserService';
-import { AuthService } from '@/services/auth/AuthService';
 import { BookmarkService } from '@/services/bookmark/BookmarkService';
 import { CategoryService } from '@/services/category/CategoryService';
 import { AdminService } from '@/services/admin/AdminService';
@@ -30,7 +29,6 @@ export class ServiceFactory {
   private services: {
     quiz?: QuizService;
     user?: UserService;
-    auth?: AuthService;
     bookmark?: BookmarkService;
     category?: CategoryService;
     admin?: AdminService;
@@ -80,13 +78,6 @@ export class ServiceFactory {
       this.services.user = new UserService(this.repositories.user, this.repositories.attempt);
     }
     return this.services.user;
-  }
-
-  getAuthService(): AuthService {
-    if (!this.services.auth) {
-      this.services.auth = new AuthService(this.repositories.user);
-    }
-    return this.services.auth;
   }
 
   getBookmarkService(): BookmarkService {

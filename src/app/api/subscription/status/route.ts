@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { ServiceFactory } from '@/lib/serviceFactory';
-import { apiErr } from '@/lib/api/response';
+import { apiErr, apiOk } from '@/lib/api/response';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,14 +17,12 @@ export async function GET(_request: NextRequest) {
     const subscription = await subscriptionService.getUserSubscription((session.user as any).id);
     const isPremium = await subscriptionService.isUserPremium((session.user as any).id);
 
-    return NextResponse.json(
+    return apiOk(
       {
-        success: true,
-        data: {
-          subscription: isPremium ? subscription : null,
-          isPremium,
-        },
+        subscription: isPremium ? subscription : null,
+        isPremium,
       },
+      200,
       {
         headers: {
           'Cache-Control': 'no-store, no-cache, must-revalidate',

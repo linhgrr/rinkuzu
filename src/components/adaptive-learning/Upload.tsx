@@ -15,6 +15,8 @@ import { useTranslations } from 'next-intl';
 import {
   AdaptiveApiError,
   checkApiHealth,
+  isAdaptiveRequestAbortedError,
+  isAdaptiveServiceUnavailableError,
   uploadPdf,
 } from '@/features/adaptive-learning/lib/api-client';
 import { ADAPTIVE_ROUTES } from '@/features/adaptive-learning/lib/routes';
@@ -33,9 +35,9 @@ export default function AdaptiveLearningUpload() {
     (err: unknown) => {
       if (err instanceof AdaptiveApiError) {
         if (err.code === 'unauthorized') return t('uploadPage.errors.unauthorized');
-        if (err.code === 'request_aborted' || err.code === 'network_error')
-          return t('uploadPage.errors.connectionInterrupted');
-        if (err.code === 'temporary_unavailable') return t('uploadPage.errors.serviceUnavailable');
+        if (isAdaptiveRequestAbortedError(err)) return t('uploadPage.errors.connectionInterrupted');
+        if (isAdaptiveServiceUnavailableError(err))
+          return t('uploadPage.errors.serviceUnavailable');
         if (err.code === 'conflict') return t('uploadPage.errors.conflict');
       }
 

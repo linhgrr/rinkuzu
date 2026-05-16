@@ -1,9 +1,9 @@
 import mongoose from 'mongoose';
-import { NextResponse } from 'next/server';
 import { RateLimiterMongo } from 'rate-limiter-flexible';
 import connectDB from '@/lib/mongoose';
 import { ServiceFactory } from '@/lib/serviceFactory';
 import type { AdaptiveUserRole } from '@/lib/adaptive-learning/config';
+import { apiErr } from '@/lib/api/response';
 
 export type LlmRateLimitAction =
   | 'quiz_ask_ai'
@@ -232,26 +232,29 @@ export function buildLlmRateLimitHeaders(result: LlmRateLimitResult): HeadersIni
 }
 
 export function buildLlmRateLimitResponse(result: LlmRateLimitResult) {
-  return NextResponse.json(
-    {
-      detail: 'LLM rate limit exceeded',
-      code: 'llm_rate_limit_exceeded',
-      action: result.action,
-      tier: result.tier,
-      retryAfterSeconds: result.retryAfterSeconds,
-      limits: {
-        minute: {
-          limit: result.minute.limit,
-          remaining: result.minute.remaining,
-          resetAt: result.minute.resetAt.toISOString(),
-        },
-        day: {
-          limit: result.day.limit,
-          remaining: result.day.remaining,
-          resetAt: result.day.resetAt.toISOString(),
-        },
+  const response = apiErr('llm_rate_limit_exceeded', 'LLM rate limit exceeded', 429, {
+    action: result.action,
+    tier: result.tier,
+    retryAfterSeconds: result.retryAfterSeconds,
+    limits: {
+      minute: {
+        limit: result.minute.limit,
+        remaining: result.minute.remaining,
+        resetAt: result.minute.resetAt.toISOString(),
+      },
+      day: {
+        limit: result.day.limit,
+        remaining: result.day.remaining,
+        resetAt: result.day.resetAt.toISOString(),
       },
     },
-    { status: 429, headers: buildLlmRateLimitHeaders(result) },
-  );
+  });
+
+  Object.entries(buildLlmRateLimitHeaders(result)).forEach(([key, value]) => {
+    if (value !== undefined) {
+      response.headers.set(key, String(value));
+    }
+  });
+
+  return response;
 }

@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { withAdmin } from '@/lib/api/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
 import connectDB from '@/lib/mongoose';
 import User from '@/models/User';
 import Plan from '@/models/Plan';
-import { apiErr, apiOk } from '@/lib/api/response';
+import { apiErr, apiOk, apiServiceErr } from '@/lib/api/response';
 
 const userService = serviceFactory.getUserService();
 const adminService = serviceFactory.getAdminService();
@@ -23,10 +23,7 @@ export const GET = withAdmin(async (request: NextRequest) => {
       search,
     });
 
-    return NextResponse.json({
-      success: true,
-      data: result,
-    });
+    return apiOk(result);
   } catch (error: any) {
     console.error('Get users error:', error);
     return apiErr('internal_error', 'Internal server error', 500);
@@ -50,13 +47,10 @@ export const PUT = withAdmin(async (request: NextRequest, context) => {
     const result = await adminService.updateUserRole(userId, role, adminEmail);
 
     if (!result.success) {
-      return apiErr('service_error', result.error ?? 'Request failed', result.statusCode || 400);
+      return apiServiceErr(result, 400);
     }
 
-    return NextResponse.json({
-      success: true,
-      data: result.data,
-    });
+    return apiOk(result.data);
   } catch (error: any) {
     console.error('Update user role error:', error);
     return apiErr('internal_error', 'Internal server error', 500);
@@ -81,10 +75,10 @@ export const DELETE = withAdmin(async (request: NextRequest, context) => {
     const result = await adminService.deleteUser(userId, adminEmail);
 
     if (!result.success) {
-      return apiErr('service_error', result.error ?? 'Request failed', result.statusCode || 400);
+      return apiServiceErr(result, 400);
     }
 
-    return apiOk(null, 200, { message: 'User deleted successfully' });
+    return apiOk(null, 200, { meta: { message: 'User deleted successfully' } });
   } catch (error: any) {
     console.error('Delete user error:', error);
     return apiErr('internal_error', 'Internal server error', 500);
@@ -157,17 +151,17 @@ export const POST = withAdmin(async (request: NextRequest) => {
 
     await subscription.save();
 
-    return NextResponse.json({
-      success: true,
-      message: 'Subscription added successfully',
-      data: {
+    return apiOk(
+      {
         user: user.email,
         plan: plan.name,
         startDate,
         endDate,
         isActive: true,
       },
-    });
+      200,
+      { meta: { message: 'Subscription added successfully' } },
+    );
   } catch (error: any) {
     console.error('Add subscription error:', error);
     return apiErr('internal_error', 'Internal server error', 500);

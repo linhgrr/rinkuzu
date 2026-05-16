@@ -8,6 +8,8 @@ import {
   AdaptiveApiError,
   createSessionFromPipeline,
   getSubjectProgressHistory,
+  isAdaptiveRequestAbortedError,
+  isAdaptiveServiceUnavailableError,
 } from '@/features/adaptive-learning/lib/api-client';
 import { saveSessionJobMapping } from '../lib/session-storage';
 import type { SessionHistoryItem } from '@/features/adaptive-learning/types';
@@ -52,11 +54,11 @@ export const useSessionHistoryState = () => {
     (err: unknown) => {
       if (err instanceof AdaptiveApiError) {
         if (err.code === 'unauthorized') return t('processing.errors.unauthorized');
-        if (err.code === 'temporary_unavailable') return t('processing.errors.serviceUnavailable');
+        if (isAdaptiveServiceUnavailableError(err))
+          return t('processing.errors.serviceUnavailable');
         if (err.code === 'not_found') return t('subjectDetails.sessionMissing');
         if (err.code === 'conflict') return t('processing.errors.conflict');
-        if (err.code === 'request_aborted' || err.code === 'network_error')
-          return t('processing.errors.connectionInterrupted');
+        if (isAdaptiveRequestAbortedError(err)) return t('processing.errors.connectionInterrupted');
       }
       return t('processing.errors.generic');
     },

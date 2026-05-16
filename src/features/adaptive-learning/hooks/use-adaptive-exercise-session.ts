@@ -4,6 +4,8 @@ import {
   getExercise,
   getNextConcept,
   getTheory,
+  isAdaptiveRequestAbortedError,
+  isAdaptiveServiceUnavailableError,
   isSessionNotFoundError,
   submitAnswer,
 } from '@/features/adaptive-learning/lib/api-client';
@@ -39,13 +41,7 @@ function resolveExerciseFeedback(
     intent === 'load' ? t('exercise.failedToLoadExercise') : t('exercise.failedToSubmitAnswer');
 
   if (error instanceof AdaptiveApiError) {
-    if (
-      error.code === 'temporary_unavailable' ||
-      error.code === 'request_aborted' ||
-      error.code === 'network_error' ||
-      error.code === 'upstream_html_error' ||
-      error.code === 'invalid_response'
-    ) {
+    if (isAdaptiveRequestAbortedError(error) || isAdaptiveServiceUnavailableError(error)) {
       return intent === 'load' ? t('exercise.serviceUnavailable') : t('exercise.submitUnavailable');
     }
   }

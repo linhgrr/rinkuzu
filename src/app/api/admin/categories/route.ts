@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { withAdmin } from '@/lib/api/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
-import { apiErr } from '@/lib/api/response';
+import { apiErr, apiOk, apiServiceErr } from '@/lib/api/response';
 
 // GET /api/admin/categories - Get all categories (for admin)
 export const GET = withAdmin(async (request: NextRequest) => {
@@ -17,13 +17,10 @@ export const GET = withAdmin(async (request: NextRequest) => {
     const result = await adminService.getCategories(searchOptions);
 
     if (!result.success) {
-      return apiErr('service_error', result.error ?? 'Request failed', result.statusCode || 400);
+      return apiServiceErr(result, 400);
     }
 
-    return NextResponse.json({
-      success: true,
-      data: result.data,
-    });
+    return apiOk(result.data);
   } catch (error: unknown) {
     console.error('Get categories error:', error);
     return apiErr('internal_error', 'Internal server error', 500);
@@ -39,13 +36,10 @@ export const POST = withAdmin(async (request: NextRequest, context) => {
     const result = await adminService.createCategory(body, context.userId);
 
     if (!result.success) {
-      return apiErr('service_error', result.error ?? 'Request failed', result.statusCode || 400);
+      return apiServiceErr(result, 400);
     }
 
-    return NextResponse.json({
-      success: true,
-      data: result.data,
-    });
+    return apiOk(result.data);
   } catch (error: unknown) {
     console.error('Create category error:', error);
     return apiErr('internal_error', 'Internal server error', 500);

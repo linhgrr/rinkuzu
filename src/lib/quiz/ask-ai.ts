@@ -1,4 +1,6 @@
 import { consumeOpenAISseResponse } from '@/lib/ai/stream';
+import type { ApiSuccessResponse } from '@/lib/api/client';
+import { extractApiErrorMessage, type ApiErrorPayload } from '@/lib/api/error';
 
 interface QuizAiChatMessage {
   role: 'user' | 'assistant';
@@ -22,20 +24,7 @@ interface QuizAskAiResponseData {
   turn_count: number;
 }
 
-interface QuizAskAiErrorDetail {
-  code?: string;
-  message?: string;
-  detail?: string;
-  meta?: unknown;
-}
-
-interface QuizAskAiEnvelope {
-  success: boolean;
-  error?: string | QuizAskAiErrorDetail;
-  detail?: string;
-  message?: string;
-  data?: QuizAskAiResponseData;
-}
+type QuizAskAiEnvelope = ApiSuccessResponse<QuizAskAiResponseData> | ApiErrorPayload;
 
 interface StreamQuizAiOptions {
   signal?: AbortSignal;
@@ -52,29 +41,7 @@ async function requestQuizAI(payload: QuizAskAiRequest, signal?: AbortSignal): P
 }
 
 function extractQuizAiErrorMessage(body: QuizAskAiEnvelope, status: number): string {
-  if (typeof body.error === 'string' && body.error.trim()) {
-    return body.error.trim();
-  }
-
-  if (body.error && typeof body.error === 'object') {
-    const detail = typeof body.error.detail === 'string' ? body.error.detail.trim() : '';
-    const message = typeof body.error.message === 'string' ? body.error.message.trim() : '';
-    const code = typeof body.error.code === 'string' ? body.error.code.trim() : '';
-
-    if (detail) return detail;
-    if (message) return message;
-    if (code) return code;
-  }
-
-  if (typeof body.detail === 'string' && body.detail.trim()) {
-    return body.detail.trim();
-  }
-
-  if (typeof body.message === 'string' && body.message.trim()) {
-    return body.message.trim();
-  }
-
-  return `HTTP error ${status}`;
+  return extractApiErrorMessage(body, `HTTP error ${status}`);
 }
 
 export async function streamQuizAI(
@@ -85,6 +52,7 @@ export async function streamQuizAI(
   return consumeOpenAISseResponse<QuizAskAiEnvelope>(response, {
     onContent: options.onContent,
     extractErrorMessage: extractQuizAiErrorMessage,
-    extractFallbackContent: (body) => (body.success && body.data ? body.data.explanation : null),
+    extractFallbackContent: (body) =>
+      body.success === true && 'data' in body ? body.data?.explanation : null,
   });
 }

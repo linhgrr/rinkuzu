@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
 import { AsyncRouteParams } from '@/types/next-route';
-import { apiOk, apiErr } from '@/lib/api/response';
+import { apiOk, apiErr, apiServiceErr } from '@/lib/api/response';
 
 export async function POST(request: NextRequest, { params }: AsyncRouteParams<{ slug: string }>) {
   try {
@@ -15,17 +15,17 @@ export async function POST(request: NextRequest, { params }: AsyncRouteParams<{ 
     }
     const userEmail = session.user.email;
     if (!userEmail) {
-      return apiErr('email_required', 'User email is required', 400);
+      return apiErr('validation_error', 'User email is required', 400);
     }
 
     const { content } = await request.json();
 
     if (!content || content.trim().length === 0) {
-      return apiErr('invalid_request', 'Report content is required', 400);
+      return apiErr('validation_error', 'Report content is required', 400);
     }
 
     if (content.length > 2000) {
-      return apiErr('invalid_request', 'Report content too long (max 2000 characters)', 400);
+      return apiErr('validation_error', 'Report content too long (max 2000 characters)', 400);
     }
 
     const quizService = serviceFactory.getQuizService();
@@ -38,14 +38,12 @@ export async function POST(request: NextRequest, { params }: AsyncRouteParams<{ 
     );
 
     if (!result.success) {
-      return apiErr(
-        'service_error',
-        String(result.error ?? 'Request failed'),
-        result.statusCode || 400,
-      );
+      return apiServiceErr(result, 400);
     }
 
-    return apiOk({ message: 'Report submitted successfully', reportId: result.data });
+    return apiOk({ reportId: result.data }, 200, {
+      meta: { message: 'Report submitted successfully' },
+    });
   } catch (error) {
     console.error('Error submitting report:', error);
     return apiErr('internal_error', 'Internal server error', 500);

@@ -55,8 +55,8 @@ async function fetchWithRetry(
     } catch (error: unknown) {
       if (error instanceof ApiResponseError && error.status === 409) {
         const payload =
-          error.payload && typeof error.payload === 'object'
-            ? (error.payload as { retryAfter?: unknown })
+          error.meta && typeof error.meta === 'object'
+            ? (error.meta as { retryAfter?: unknown })
             : null;
         const retryAfter =
           typeof payload?.retryAfter === 'number'

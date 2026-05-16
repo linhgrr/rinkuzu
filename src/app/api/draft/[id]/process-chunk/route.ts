@@ -1,5 +1,5 @@
 // /src/app/api/draft/[id]/process-chunk/route.ts
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import connectDB from '@/lib/mongoose';
@@ -8,8 +8,8 @@ import { extractQuizFromS3Key } from '@/lib/quiz/extractApi';
 import { randomUUID } from 'crypto';
 import { AsyncRouteParams } from '@/types/next-route';
 import { buildLlmRateLimitResponse, checkLlmRateLimit, isAdminRole } from '@/lib/llm/rate-limit';
-import { buildStandardErrorBody } from '@/lib/api/error';
-import { apiOk } from '@/lib/api/response';
+
+import { apiErr, apiOk } from '@/lib/api/response';
 
 export async function POST(request: NextRequest, { params }: AsyncRouteParams<{ id: string }>) {
   try {
@@ -18,9 +18,7 @@ export async function POST(request: NextRequest, { params }: AsyncRouteParams<{ 
     const userId = (session?.user as any)?.id;
     const userRole = (session?.user as any)?.role;
     if (!userId) {
-      return NextResponse.json(buildStandardErrorBody('unauthorized', 'Unauthorized'), {
-        status: 401,
-      });
+      return apiErr('unauthorized', 'Unauthorized', 401);
     }
 
     let chunkIndex: number;
@@ -28,17 +26,11 @@ export async function POST(request: NextRequest, { params }: AsyncRouteParams<{ 
       const body = await request.json();
       chunkIndex = body.chunkIndex;
     } catch (_parseError) {
-      return NextResponse.json(
-        buildStandardErrorBody('invalid_request_body', 'Invalid or empty request body'),
-        { status: 400 },
-      );
+      return apiErr('validation_error', 'Invalid or empty request body', 400);
     }
 
     if (typeof chunkIndex !== 'number' || chunkIndex < 0) {
-      return NextResponse.json(
-        buildStandardErrorBody('invalid_chunk_index', 'Valid chunkIndex is required'),
-        { status: 400 },
-      );
+      return apiErr('validation_error', 'Valid chunkIndex is required', 400);
     }
 
     if (!isAdminRole(userRole)) {
@@ -93,9 +85,7 @@ export async function POST(request: NextRequest, { params }: AsyncRouteParams<{ 
       });
 
       if (!draft) {
-        return NextResponse.json(buildStandardErrorBody('draft_not_found', 'Draft not found'), {
-          status: 404,
-        });
+        return apiErr('not_found', 'Draft not found', 404);
       }
 
       const chunk = draft.chunks.chunkDetails.find((c: any) => c.index === chunkIndex);
@@ -111,19 +101,14 @@ export async function POST(request: NextRequest, { params }: AsyncRouteParams<{ 
             },
           },
           200,
-          { message: 'Chunk already processed' },
+          { meta: { message: 'Chunk already processed' } },
         );
       }
 
       // Another request is processing it
-      return NextResponse.json(
-        buildStandardErrorBody(
-          'chunk_processing_conflict',
-          'Chunk is being processed by another request',
-          { retryAfter: 5000 },
-        ),
-        { status: 409 },
-      );
+      return apiErr('conflict', 'Chunk is being processed by another request', 409, {
+        retryAfter: 5000,
+      });
     }
 
     // We have the lock, use lockResult as draft
@@ -131,23 +116,17 @@ export async function POST(request: NextRequest, { params }: AsyncRouteParams<{ 
 
     // 2. Initial check - is the client already gone?
     if (request.signal.aborted) {
-      return NextResponse.json(buildStandardErrorBody('request_aborted', 'Request aborted'), {
-        status: 499,
-      });
+      return apiErr('request_aborted', 'Request aborted', 499);
     }
 
     if (!draft.pdfData.pdfKey) {
-      return NextResponse.json(buildStandardErrorBody('pdf_not_available', 'PDF not available'), {
-        status: 400,
-      });
+      return apiErr('validation_error', 'PDF not available', 400);
     }
 
     const chunkDetail = draft.chunks.chunkDetails.find((c: any) => c.index === chunkIndex);
 
     if (!chunkDetail) {
-      return NextResponse.json(buildStandardErrorBody('chunk_not_found', 'Chunk not found'), {
-        status: 404,
-      });
+      return apiErr('not_found', 'Chunk not found', 404);
     }
 
     try {
@@ -264,13 +243,7 @@ export async function POST(request: NextRequest, { params }: AsyncRouteParams<{ 
         },
       );
 
-      return NextResponse.json({
-        success: false,
-        error: {
-          code: 'chunk_processing_failed',
-          message: 'Chunk processing failed',
-          detail: extractError.message,
-        },
+      return apiErr('internal_error', extractError.message, 500, {
         progress: {
           processed: draft.chunks.processed,
           total: draft.chunks.total,
@@ -280,10 +253,7 @@ export async function POST(request: NextRequest, { params }: AsyncRouteParams<{ 
     }
   } catch (error) {
     console.error('Process chunk error:', error);
-    return NextResponse.json(
-      buildStandardErrorBody('process_chunk_failed', 'Failed to process chunk'),
-      { status: 500 },
-    );
+    return apiErr('internal_error', 'Failed to process chunk', 500);
   }
 }
 

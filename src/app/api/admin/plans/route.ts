@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { withAdmin } from '@/lib/api/auth';
 import connectDB from '@/lib/mongoose';
 import Plan from '@/models/Plan';
@@ -11,7 +11,7 @@ export const GET = withAdmin(async () => {
 
     const plans = await Plan.find().lean();
 
-    return NextResponse.json({ success: true, data: plans });
+    return apiOk(plans);
   } catch (error: unknown) {
     console.error('Admin get plans error:', error);
     return apiErr('internal_error', 'Internal server error', 500);
@@ -66,7 +66,7 @@ export const PATCH = withAdmin(async (request: NextRequest) => {
     if (!updated) {
       return apiErr('not_found', 'Plan not found', 404);
     }
-    return NextResponse.json({ success: true, data: updated });
+    return apiOk(updated);
   } catch (error: unknown) {
     console.error('Admin update plan error:', error);
     return apiErr('internal_error', 'Internal server error', 500);
@@ -122,7 +122,7 @@ export const POST = withAdmin(async (request: NextRequest) => {
 
     const savedPlan = await newPlan.save();
 
-    return NextResponse.json({ success: true, data: savedPlan });
+    return apiOk(savedPlan);
   } catch (error: unknown) {
     console.error('Admin create plan error:', error);
     return apiErr('internal_error', 'Internal server error', 500);
@@ -146,7 +146,7 @@ export const DELETE = withAdmin(async (request: NextRequest) => {
       return apiErr('not_found', 'Plan not found', 404);
     }
 
-    return apiOk(null, 200, { message: 'Plan deleted successfully' });
+    return apiOk(null, 200, { meta: { message: 'Plan deleted successfully' } });
   } catch (error: unknown) {
     console.error('Admin delete plan error:', error);
     return apiErr('internal_error', 'Internal server error', 500);

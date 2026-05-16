@@ -35,6 +35,18 @@ function localizePath(pathname: string, locale: string): string {
   return `/${locale}${pathname}`;
 }
 
+function applySecurityHeaders<T extends Response>(response: T): T {
+  response.headers.set('X-Content-Type-Options', 'nosniff');
+  response.headers.set('X-Frame-Options', 'DENY');
+  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  response.headers.set(
+    'Permissions-Policy',
+    'camera=(), microphone=(), geolocation=(), interest-cohort=()',
+  );
+  response.headers.set('X-DNS-Prefetch-Control', 'on');
+  return response;
+}
+
 export default async function middleware(request: NextRequest) {
   const { locale, pathWithoutLocale } = getLocaleFromPath(request.nextUrl.pathname);
   const isAdminRoute = matchesPrefix(pathWithoutLocale, ADMIN_PREFIX);
@@ -58,21 +70,21 @@ export default async function middleware(request: NextRequest) {
         'callbackUrl',
         `${request.nextUrl.pathname}${request.nextUrl.search}`,
       );
-      return NextResponse.redirect(loginUrl);
+      return applySecurityHeaders(NextResponse.redirect(loginUrl));
     }
 
     if (isAdminRoute && token?.role !== 'admin') {
       const homeUrl = new URL(localizePath('/', locale), request.url);
-      return NextResponse.redirect(homeUrl);
+      return applySecurityHeaders(NextResponse.redirect(homeUrl));
     }
 
     if (isGuestOnlyRoute && token) {
       const dashboardUrl = new URL(localizePath('/dashboard', locale), request.url);
-      return NextResponse.redirect(dashboardUrl);
+      return applySecurityHeaders(NextResponse.redirect(dashboardUrl));
     }
   }
 
-  return intlMiddleware(request);
+  return applySecurityHeaders(intlMiddleware(request));
 }
 
 export const config = {

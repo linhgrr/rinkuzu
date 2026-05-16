@@ -4,6 +4,10 @@ import { QuizListOptions } from '@/interfaces/services/IQuizService';
 import { ServiceResult } from '@/interfaces/services/types';
 import { PaginationMeta } from '@/types';
 
+function escapeRegexLiteral(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 export class QuizAdminService {
   constructor(
     private quizRepository: IQuizRepository,
@@ -44,7 +48,7 @@ export class QuizAdminService {
 
     // Add search functionality
     if (search && search.trim()) {
-      const searchRegex = new RegExp(search.trim(), 'i');
+      const searchRegex = new RegExp(escapeRegexLiteral(search.trim()), 'i');
       filter.$and = filter.$and || [];
       filter.$and.push({
         $or: [{ title: searchRegex }, { description: searchRegex }],

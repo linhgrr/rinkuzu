@@ -11,13 +11,32 @@ import { apiErr, apiOk } from '@/lib/api/response';
 
 // Simple slug generator (inline to avoid import issues)
 function generateSlug(title: string): string {
-  return title
-    .toLowerCase()
-    .trim()
-    .replace(/[^\w\s-]/g, '')
-    .replace(/[\s_-]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .substring(0, 100);
+  const normalized = title.toLowerCase().trim();
+  let slug = '';
+  let previousWasSeparator = false;
+
+  for (const char of normalized) {
+    const isAsciiLetter = char >= 'a' && char <= 'z';
+    const isDigit = char >= '0' && char <= '9';
+    const isSeparator = char === ' ' || char === '_' || char === '-';
+
+    if (isAsciiLetter || isDigit) {
+      slug += char;
+      previousWasSeparator = false;
+      continue;
+    }
+
+    if (isSeparator && slug.length > 0 && !previousWasSeparator) {
+      slug += '-';
+      previousWasSeparator = true;
+    }
+  }
+
+  if (slug.endsWith('-')) {
+    slug = slug.slice(0, -1);
+  }
+
+  return slug.slice(0, 100);
 }
 
 interface ValidationResult {

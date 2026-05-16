@@ -1,10 +1,12 @@
 import { NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { ZodError } from 'zod';
 import { authOptions } from '@/lib/auth';
 import connectDB from '@/lib/mongoose';
 import User from '@/models/User';
 import { hashPassword, verifyPassword } from '@/lib/password';
 import { apiErr, apiOk } from '@/lib/api/response';
+import { changePasswordSchema, flattenZodError } from '@/lib/validation/auth';
 
 export async function PUT(request: NextRequest) {
   try {
@@ -14,14 +16,22 @@ export async function PUT(request: NextRequest) {
       return apiErr('unauthorized', 'Authentication required', 401);
     }
 
-    const { currentPassword, newPassword } = await request.json();
-
-    if (!currentPassword || !newPassword) {
-      return apiErr('validation_error', 'Current password and new password are required', 400);
+    let payload: unknown;
+    try {
+      payload = await request.json();
+    } catch {
+      return apiErr('validation_error', 'Request body must be valid JSON', 400);
     }
 
-    if (newPassword.length < 6) {
-      return apiErr('validation_error', 'New password must be at least 6 characters', 400);
+    let input;
+    try {
+      input = changePasswordSchema.parse(payload);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        const { detail, fields } = flattenZodError(error);
+        return apiErr('validation_error', detail, 400, { fields });
+      }
+      throw error;
     }
 
     await connectDB();
@@ -36,12 +46,12 @@ export async function PUT(request: NextRequest) {
       return apiErr('validation_error', 'Password change is not available for this account', 400);
     }
 
-    const isValid = await verifyPassword(currentPassword, user.password);
+    const isValid = await verifyPassword(input.currentPassword, user.password);
     if (!isValid) {
       return apiErr('validation_error', 'Current password is incorrect', 400);
     }
 
-    const hashedPassword = await hashPassword(newPassword);
+    const hashedPassword = await hashPassword(input.newPassword);
     await User.updateOne({ email: session.user.email }, { password: hashedPassword });
 
     return apiOk(null, 200, { meta: { message: 'Password updated successfully' } });

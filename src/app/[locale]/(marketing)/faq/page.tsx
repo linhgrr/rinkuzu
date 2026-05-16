@@ -68,10 +68,9 @@ export default async function FAQPage({ params }: Props) {
     : "If you can't find what you're looking for, email support@rinkuzu.app and our team will respond within 24-48 hours.";
   const registerHref = isVi ? '/register' : `/${locale}/register`;
 
-  // Strip HTML tags from answers for plain-text schema
   const plainFaqs = faqs.map((f) => ({
     q: f.q,
-    a: f.a.replace(/<[^>]+>/g, ''),
+    a: f.a,
   }));
   const plainFaqSchema = buildFaqSchema(plainFaqs);
 

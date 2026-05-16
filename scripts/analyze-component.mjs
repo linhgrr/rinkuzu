@@ -401,14 +401,16 @@ function main() {
   let componentPath = args[0];
   let absolutePath = path.resolve(process.cwd(), componentPath);
 
-  // Check if path exists
-  if (!fs.existsSync(absolutePath)) {
+  let absolutePathStat;
+  try {
+    absolutePathStat = fs.statSync(absolutePath);
+  } catch {
     console.error(` Error: Path not found: ${componentPath}`);
     process.exit(1);
   }
 
   // If directory, try to find entry file
-  if (fs.statSync(absolutePath).isDirectory()) {
+  if (absolutePathStat.isDirectory()) {
     const resolvedFile = resolveDirectoryEntry(absolutePath, componentPath);
     if (resolvedFile) {
       absolutePath = resolvedFile.absolutePath;
@@ -430,7 +432,25 @@ function main() {
   }
 
   // Read source code
-  const sourceCode = fs.readFileSync(absolutePath, 'utf-8');
+  let fileDescriptor;
+  let sourceCode;
+  try {
+    fileDescriptor = fs.openSync(absolutePath, 'r');
+    const sourceStat = fs.fstatSync(fileDescriptor);
+    if (!sourceStat.isFile()) {
+      throw new Error(`Resolved path is not a file: ${componentPath}`);
+    }
+    sourceCode = fs.readFileSync(fileDescriptor, 'utf-8');
+  } catch (error) {
+    console.error(
+      ` Error: Failed to read component source: ${error instanceof Error ? error.message : 'Unknown error'}`,
+    );
+    process.exit(1);
+  } finally {
+    if (typeof fileDescriptor === 'number') {
+      fs.closeSync(fileDescriptor);
+    }
+  }
 
   // Analyze
   const analyzer = new ComponentAnalyzer();

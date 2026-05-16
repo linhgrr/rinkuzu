@@ -10,14 +10,14 @@ const withPWA = require('next-pwa')({
   buildExcludes: [/app-build-manifest\.json$/],
   runtimeCaching: [
     {
-      urlPattern: /^https:\/\/fonts\.googleapis\.com/,
+      urlPattern: /^https:\/\/fonts\.googleapis\.com(?:\/|$)/,
       handler: 'StaleWhileRevalidate',
       options: {
         cacheName: 'google-fonts-stylesheets',
       },
     },
     {
-      urlPattern: /^https:\/\/fonts\.gstatic\.com/,
+      urlPattern: /^https:\/\/fonts\.gstatic\.com(?:\/|$)/,
       handler: 'CacheFirst',
       options: {
         cacheName: 'google-fonts-webfonts',

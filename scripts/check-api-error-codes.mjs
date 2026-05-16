@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 
 const frontendRoot = process.cwd();
@@ -10,9 +10,13 @@ const backendContractPath = path.join(
   'contracts',
   'api-error-codes.json',
 );
+const backendApiRoot = path.join(workspaceRoot, 'rinkuzu-ai-api', 'api');
 
 const frontendContract = JSON.parse(readFileSync(frontendContractPath, 'utf8'));
-const backendContract = JSON.parse(readFileSync(backendContractPath, 'utf8'));
+const hasBackendCheckout = existsSync(backendContractPath) && existsSync(backendApiRoot);
+const backendContract = hasBackendCheckout
+  ? JSON.parse(readFileSync(backendContractPath, 'utf8'))
+  : null;
 const allowedCodes = new Set(Object.keys(frontendContract.defaultMessagesByCode));
 
 const IGNORED_DIRS = new Set([
@@ -77,7 +81,7 @@ function missingCodeEntries(label, entries) {
     }));
 }
 
-if (JSON.stringify(frontendContract) !== JSON.stringify(backendContract)) {
+if (backendContract && JSON.stringify(frontendContract) !== JSON.stringify(backendContract)) {
   console.error('API error code contract drift detected between frontend and backend.');
   console.error(`- frontend: ${frontendContractPath}`);
   console.error(`- backend:  ${backendContractPath}`);
@@ -111,11 +115,13 @@ const frontendCodeUsages = collectMatches({
   regex: /apiErr\(\s*['"]([a-z0-9_]+)['"]/g,
 });
 
-const backendCodeUsages = collectMatches({
-  baseDir: path.join(workspaceRoot, 'rinkuzu-ai-api', 'api'),
-  includeFile: (filePath) => filePath.endsWith('.py'),
-  regex: /(?:^|[^\w])(?:code|error_code)\s*=\s*['"]([a-z0-9_]+)['"]/gm,
-});
+const backendCodeUsages = hasBackendCheckout
+  ? collectMatches({
+      baseDir: backendApiRoot,
+      includeFile: (filePath) => filePath.endsWith('.py'),
+      regex: /(?:^|[^\w])(?:code|error_code)\s*=\s*['"]([a-z0-9_]+)['"]/gm,
+    })
+  : new Map();
 
 const missingFrontendCodes = missingCodeEntries('frontend', frontendCodeUsages);
 const missingBackendCodes = missingCodeEntries('backend', backendCodeUsages);
@@ -129,6 +135,13 @@ if (missingFrontendCodes.length > 0 || missingBackendCodes.length > 0) {
     }
   }
   process.exit(1);
+}
+
+if (!hasBackendCheckout) {
+  process.stdout.write(
+    'API error code contract check passed (backend checkout not present; skipped cross-repo drift check).\n',
+  );
+  process.exit(0);
 }
 
 process.stdout.write('API error code contract check passed.\n');

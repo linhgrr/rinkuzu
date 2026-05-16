@@ -6,26 +6,24 @@ describe('api client helpers', () => {
     vi.restoreAllMocks();
   });
 
-  it('fetchApiResponse preserves the success envelope and top-level extras', async () => {
+  it('fetchApiResponse preserves the standard success envelope', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response(
         JSON.stringify({
           success: true,
           data: [{ _id: 'plan-1', name: 'Pro' }],
-          message: 'ok',
+          meta: { message: 'ok' },
         }),
         { status: 200, headers: { 'Content-Type': 'application/json' } },
       ),
     );
 
     await expect(
-      fetchApiResponse<Array<{ _id: string; name: string }>, { message: string }>(
-        '/api/admin/plans',
-      ),
+      fetchApiResponse<Array<{ _id: string; name: string }>>('/api/admin/plans'),
     ).resolves.toEqual({
       success: true,
       data: [{ _id: 'plan-1', name: 'Pro' }],
-      message: 'ok',
+      meta: { message: 'ok' },
     });
   });
 
@@ -68,7 +66,11 @@ describe('api client helpers', () => {
         new Response(
           JSON.stringify({
             success: false,
-            error: { message: 'Request failed' },
+            error: {
+              code: 'validation_error',
+              message: 'Invalid request',
+              detail: 'Request failed',
+            },
           }),
           { status: 400, headers: { 'Content-Type': 'application/json' } },
         ),
@@ -76,7 +78,22 @@ describe('api client helpers', () => {
 
     await expect(fetchApiData('/api/categories/math')).rejects.toMatchObject({
       name: 'ApiResponseError',
+      code: 'validation_error',
       message: 'Request failed',
+    });
+  });
+
+  it('throws ApiResponseError when the API returns a non-standard payload', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ quizzes: [] }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    );
+
+    await expect(fetchApiData('/api/quizzes?page=1')).rejects.toMatchObject({
+      name: 'ApiResponseError',
+      code: 'invalid_response_envelope',
     });
   });
 });

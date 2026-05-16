@@ -13,10 +13,10 @@ export async function POST(req: Request) {
     const { s3Key, filename, subject_id, page_batch_size } = body;
 
     if (!s3Key || typeof s3Key !== 'string') {
-      return apiErr('missing_s3_key', 'Missing s3Key', 400);
+      return apiErr('validation_error', 'Missing s3Key', 400);
     }
     if (!filename || typeof filename !== 'string') {
-      return apiErr('missing_filename', 'Missing filename', 400);
+      return apiErr('validation_error', 'Missing filename', 400);
     }
 
     const getCommand = new GetObjectCommand({

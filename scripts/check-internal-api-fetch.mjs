@@ -22,10 +22,6 @@ const allowedDirectInternalFetches = new Map([
     'src/features/adaptive-learning/lib/adaptive-api-methods.ts',
     'Adaptive transport owns its own low-level health/upload flow and is the approved boundary.',
   ],
-  [
-    'src/services/imageUploadService.ts',
-    'Image upload uses multipart FormData — fetchApiData sets Content-Type to application/json which breaks multipart boundary handling.',
-  ],
 ]);
 
 const failures = [];

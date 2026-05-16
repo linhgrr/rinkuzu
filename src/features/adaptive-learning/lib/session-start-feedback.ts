@@ -1,7 +1,12 @@
 'use client';
 
 import type { TranslateFn } from '@/features/adaptive-learning/types';
-import { AdaptiveApiError } from '@/features/adaptive-learning/lib/api-client';
+import {
+  AdaptiveApiError,
+  isAdaptivePipelineNotReadyError,
+  isAdaptiveRequestAbortedError,
+  isAdaptiveServiceUnavailableError,
+} from '@/features/adaptive-learning/lib/api-client';
 
 export function getSessionStartFeedback(
   t: TranslateFn,
@@ -9,18 +14,14 @@ export function getSessionStartFeedback(
   error: unknown,
 ): { message: string; retryable: boolean } {
   if (error instanceof AdaptiveApiError) {
-    if (error.code === 'pipeline_not_ready') {
+    if (isAdaptivePipelineNotReadyError(error)) {
       return {
         message: t(`${prefix}.sessionNotReady`),
         retryable: true,
       };
     }
 
-    if (
-      error.code === 'temporary_unavailable' ||
-      error.code === 'request_aborted' ||
-      error.code === 'network_error'
-    ) {
+    if (isAdaptiveRequestAbortedError(error) || isAdaptiveServiceUnavailableError(error)) {
       return {
         message: t(`${prefix}.sessionUnavailable`),
         retryable: true,

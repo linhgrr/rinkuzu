@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { withAdmin } from '@/lib/api/auth';
 import { ServiceFactory } from '@/lib/serviceFactory';
-import { apiErr } from '@/lib/api/response';
+import { apiErr, apiOk, apiServiceErr } from '@/lib/api/response';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,7 +23,7 @@ export const GET = withAdmin(async (_request: NextRequest, context) => {
       return apiErr('not_found', 'Subscription not found', 404);
     }
 
-    return NextResponse.json({ success: true, data: subscription });
+    return apiOk(subscription);
   } catch (error: unknown) {
     console.error('Admin subscription detail error:', error);
     return apiErr('internal_error', 'Internal server error', 500);
@@ -42,9 +42,9 @@ export const PATCH = withAdmin(async (request: NextRequest, context) => {
     const subscriptionService = ServiceFactory.createSubscriptionService();
     const result = await subscriptionService.updateSubscriptionById(id, body);
     if (!result.success) {
-      return apiErr('service_error', result.error ?? 'Request failed', 400);
+      return apiServiceErr(result, 400);
     }
-    return NextResponse.json({ success: true, data: result.data });
+    return apiOk(result.data);
   } catch (error: unknown) {
     console.error('Admin subscription update error:', error);
     return apiErr('internal_error', 'Internal server error', 500);

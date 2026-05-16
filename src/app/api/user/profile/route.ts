@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import connectDB from '@/lib/mongoose';
 import User from '@/models/User';
-import { apiErr } from '@/lib/api/response';
+import { apiErr, apiOk } from '@/lib/api/response';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,17 +24,14 @@ export async function GET() {
       return apiErr('not_found', 'User not found', 404);
     }
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        email: user.email,
-        displayName: user.displayName || '',
-        bio: user.bio || '',
-        avatar: user.avatar || '',
-        role: user.role,
-        createdAt: user.createdAt,
-        subscription: user.subscription,
-      },
+    return apiOk({
+      email: user.email,
+      displayName: user.displayName || '',
+      bio: user.bio || '',
+      avatar: user.avatar || '',
+      role: user.role,
+      createdAt: user.createdAt,
+      subscription: user.subscription,
     });
   } catch (error) {
     console.error('Get profile error:', error);
@@ -75,16 +72,13 @@ export async function PUT(request: NextRequest) {
       return apiErr('not_found', 'User not found', 404);
     }
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        email: user.email,
-        displayName: user.displayName || '',
-        bio: user.bio || '',
-        avatar: user.avatar || '',
-        role: user.role,
-        createdAt: user.createdAt,
-      },
+    return apiOk({
+      email: user.email,
+      displayName: user.displayName || '',
+      bio: user.bio || '',
+      avatar: user.avatar || '',
+      role: user.role,
+      createdAt: user.createdAt,
     });
   } catch (error) {
     console.error('Update profile error:', error);

@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { withAdmin } from '@/lib/api/auth';
 import { ServiceFactory } from '@/lib/serviceFactory';
 import { buildPaginationMeta } from '@/repositories/pagination';
-import { apiErr } from '@/lib/api/response';
+import { apiErr, apiOk } from '@/lib/api/response';
 import type { ISubscription } from '@/models/Subscription';
 
 export const dynamic = 'force-dynamic';
@@ -40,12 +40,9 @@ export const GET = withAdmin(async (request: NextRequest) => {
     const startIndex = (page - 1) * limit;
     const paginatedResults = filteredResults.slice(startIndex, startIndex + limit);
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        subscriptions: paginatedResults,
-        pagination: buildPaginationMeta(page, limit, total),
-      },
+    return apiOk({
+      subscriptions: paginatedResults,
+      pagination: buildPaginationMeta(page, limit, total),
     });
   } catch (error: unknown) {
     console.error('Admin subscriptions list error:', error);

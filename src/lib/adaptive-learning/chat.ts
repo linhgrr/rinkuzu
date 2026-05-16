@@ -1,14 +1,18 @@
 import { consumeOpenAISseResponse } from '@/lib/ai/stream';
+import type { ApiSuccessResponse } from '@/lib/api/client';
+import { extractApiErrorMessage, type ApiErrorPayload } from '@/lib/api/error';
 
 export interface AdaptiveTutorChatRequest {
   userQuestion: string;
 }
 
-interface AdaptiveTutorChatResponse {
+interface AdaptiveTutorChatResponseData {
   explanation?: string;
-  detail?: string;
-  error?: string;
 }
+
+type AdaptiveTutorChatEnvelope =
+  | ApiSuccessResponse<AdaptiveTutorChatResponseData>
+  | ApiErrorPayload;
 
 interface StreamAdaptiveTutorChatOptions {
   signal?: AbortSignal;
@@ -27,9 +31,10 @@ export async function streamAdaptiveTutorChat(
     signal: options.signal,
   });
 
-  return consumeOpenAISseResponse<AdaptiveTutorChatResponse>(response, {
+  return consumeOpenAISseResponse<AdaptiveTutorChatEnvelope>(response, {
     onContent: options.onContent,
-    extractErrorMessage: (body, status) => body.detail || body.error || `HTTP error ${status}`,
-    extractFallbackContent: (body) => body.explanation,
+    extractErrorMessage: (body, status) => extractApiErrorMessage(body, `HTTP error ${status}`),
+    extractFallbackContent: (body) =>
+      body.success === true && 'data' in body ? body.data?.explanation : null,
   });
 }

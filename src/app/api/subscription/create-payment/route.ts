@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { ServiceFactory } from '@/lib/serviceFactory';
 import connectDB from '@/lib/mongoose';
 import Plan from '@/models/Plan';
-import { apiErr } from '@/lib/api/response';
+import { apiErr, apiOk } from '@/lib/api/response';
 
 export async function POST(request: NextRequest) {
   try {
@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
       planId,
     );
 
-    return NextResponse.json({ success: true, data: paymentData });
+    return apiOk(paymentData);
   } catch (error: any) {
     console.error('Error creating payment request:', error);
     return apiErr('internal_error', error.message || 'Failed to create payment request', 500);

@@ -376,11 +376,14 @@ export default function ProfileQuizzes() {
     try {
       dispatch({ type: 'delete:start', quizId });
 
-      const data = await fetchApiResponse<null, { message?: string }>(`/api/quizzes/${quizId}`, {
-        method: 'DELETE',
-      });
+      const response = await fetchApiResponse<null, { message?: string }>(
+        `/api/quizzes/${quizId}`,
+        {
+          method: 'DELETE',
+        },
+      );
       dispatch({ type: 'delete:success', quizId });
-      toast.success(data.message || 'Quiz deleted successfully');
+      toast.success(response.meta?.message || 'Quiz deleted successfully');
     } catch (error: unknown) {
       dispatch({
         type: 'delete:error',

@@ -18,7 +18,7 @@ export async function DELETE(request: NextRequest, { params }: AsyncRouteParams<
 
     await bookmarkService.deleteBookmarkByUser(id, session.user.email);
 
-    return apiOk(null, 200, { message: 'Bookmark removed' });
+    return apiOk(null, 200, { meta: { message: 'Bookmark removed' } });
   } catch (error: unknown) {
     console.error('Error removing bookmark:', error);
 

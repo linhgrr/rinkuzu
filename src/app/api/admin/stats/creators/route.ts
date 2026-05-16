@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
-import { apiErr } from '@/lib/api/response';
+import { apiErr, apiOk, apiServiceErr } from '@/lib/api/response';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,13 +18,10 @@ export async function GET(_request: NextRequest) {
     const result = await adminService.getCreatorStats();
 
     if (!result.success) {
-      return apiErr('service_error', result.error ?? 'Request failed', result.statusCode || 500);
+      return apiServiceErr(result, 500);
     }
 
-    return NextResponse.json({
-      success: true,
-      data: result.data,
-    });
+    return apiOk(result.data);
   } catch (error) {
     console.error('Error fetching creator stats:', error);
     return apiErr('internal_error', 'Failed to fetch creator statistics', 500);

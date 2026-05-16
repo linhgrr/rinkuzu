@@ -1,10 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { PutObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { authOptions } from '@/lib/auth';
 import { s3Client, BUCKET_NAME } from '@/lib/s3';
-import { buildStandardErrorBody, extractUnknownErrorMessage } from '@/lib/api/error';
+import { extractUnknownErrorMessage } from '@/lib/api/error';
+import { apiErr, apiOk } from '@/lib/api/response';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,9 +24,7 @@ export async function POST(request: NextRequest) {
     const userId = session?.user?.id;
 
     if (!userId) {
-      return NextResponse.json(buildStandardErrorBody('unauthorized', 'Unauthorized'), {
-        status: 401,
-      });
+      return apiErr('unauthorized', 'Unauthorized', 401);
     }
 
     const body = await request.json();
@@ -35,24 +34,15 @@ export async function POST(request: NextRequest) {
     const purpose = String(body?.purpose || '').trim() as UploadPurpose;
 
     if (!fileName) {
-      return NextResponse.json(
-        buildStandardErrorBody('invalid_file_name', 'fileName is required'),
-        { status: 400 },
-      );
+      return apiErr('validation_error', 'fileName is required', 400);
     }
 
     if (contentType !== 'application/pdf') {
-      return NextResponse.json(
-        buildStandardErrorBody('invalid_content_type', 'Only PDF files are supported'),
-        { status: 400 },
-      );
+      return apiErr('validation_error', 'Only PDF files are supported', 400);
     }
 
     if (!Number.isFinite(fileSize) || fileSize <= 0 || fileSize > MAX_FILE_SIZE) {
-      return NextResponse.json(
-        buildStandardErrorBody('invalid_file_size', 'Invalid file size (max 50MB)'),
-        { status: 400 },
-      );
+      return apiErr('validation_error', 'Invalid file size (max 50MB)', 400);
     }
 
     let prefix = '';
@@ -61,10 +51,7 @@ export async function POST(request: NextRequest) {
     } else if (purpose === 'adaptive') {
       prefix = 'uploads/adaptive_pipeline';
     } else {
-      return NextResponse.json(
-        buildStandardErrorBody('invalid_upload_purpose', 'Invalid purpose specified'),
-        { status: 400 },
-      );
+      return apiErr('validation_error', 'Invalid purpose specified', 400);
     }
 
     const safeName = sanitizeFileName(fileName);
@@ -78,22 +65,17 @@ export async function POST(request: NextRequest) {
 
     const uploadUrl = await getSignedUrl(s3Client, command, { expiresIn: URL_EXPIRES_IN_SECONDS });
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        uploadUrl,
-        s3Key: key,
-        expiresIn: URL_EXPIRES_IN_SECONDS,
-      },
+    return apiOk({
+      uploadUrl,
+      s3Key: key,
+      expiresIn: URL_EXPIRES_IN_SECONDS,
     });
   } catch (error: unknown) {
     console.error('Failed to create presigned upload URL:', error);
-    return NextResponse.json(
-      buildStandardErrorBody(
-        'presigned_url_failed',
-        extractUnknownErrorMessage(error, 'Internal server error'),
-      ),
-      { status: 500 },
+    return apiErr(
+      'upstream_error',
+      extractUnknownErrorMessage(error, 'Internal server error'),
+      500,
     );
   }
 }

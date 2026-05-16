@@ -20,7 +20,7 @@ import {
 } from '@/components/ui/Card';
 import Pagination from '@/components/ui/Pagination';
 import CategorySearch from '@/features/categories/components/CategorySearch';
-import { formatDisplayDate } from '@/shared/utils/constants';
+import { formatDisplayDate } from '@/shared/utils/date';
 import { fetchApiData } from '@/lib/api/client';
 import {
   HiOutlineSearch,

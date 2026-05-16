@@ -5,13 +5,12 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
-import { fetchApiData } from '@/lib/api/client';
+import { fetchApiData, fetchApiResponse } from '@/lib/api/client';
 
 interface SetupStatus {
   adminExists: boolean;
   setupAllowed: boolean;
   userCount: number;
-  message?: string;
 }
 
 interface SetupState {
@@ -81,10 +80,13 @@ export default function SetupPage() {
     dispatch({ type: 'patch', value: { creating: true, error: '', success: '' } });
 
     try {
-      const data = await fetchApiData<{ message: string }>('/api/admin/setup', {
+      const response = await fetchApiResponse<null, { message?: string }>('/api/admin/setup', {
         method: 'POST',
       });
-      dispatch({ type: 'patch', value: { success: data.message } });
+      dispatch({
+        type: 'patch',
+        value: { success: response.meta?.message || 'System initialized' },
+      });
       setTimeout(() => {
         push('/login');
       }, 3000);

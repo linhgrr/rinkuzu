@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
   try {
     const checksumKey = process.env['PAYOS_CHECKSUM_KEY'];
     if (!checksumKey) {
-      return apiErr('config_error', 'Webhook is not configured', 500);
+      return apiErr('configuration_error', 'Webhook is not configured', 500);
     }
 
     const body = JSON.parse(await request.text()) as {
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (body.success !== true || body.code !== '00') {
-      return apiOk(null, 200, { message: 'Webhook ignored' });
+      return apiOk(null, 200, { meta: { message: 'Webhook ignored' } });
     }
 
     const orderCode = Number(body.data['orderCode']);

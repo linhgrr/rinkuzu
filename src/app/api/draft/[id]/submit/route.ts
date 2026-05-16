@@ -1,5 +1,5 @@
 // /src/app/api/draft/[id]/submit/route.ts
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import connectDB from '@/lib/mongoose';
@@ -124,18 +124,9 @@ export async function POST(request: NextRequest, { params }: AsyncRouteParams<{ 
     const validation = validateQuestions(questionsToUse);
 
     if (!validation.isValid) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: {
-            code: 'validation_error',
-            message: 'Request failed',
-            detail: 'Validation failed',
-          },
-          details: validation.errors,
-        },
-        { status: 400 },
-      );
+      return apiErr('validation_error', 'Validation failed', 400, {
+        details: validation.errors,
+      });
     }
 
     // Generate unique slug

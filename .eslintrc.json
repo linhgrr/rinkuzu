@@ -23,6 +23,25 @@
       }
     ]
   },
+  "overrides": [
+    {
+      "files": ["src/app/api/**/route.ts"],
+      "excludedFiles": [
+        "src/app/api/auth/*nextauth*/route.ts",
+        "src/app/api/adaptive-learning/**/route.ts",
+        "src/app/api/quiz/ask-ai/route.ts"
+      ],
+      "rules": {
+        "no-restricted-syntax": [
+          "error",
+          {
+            "selector": "MemberExpression[object.name='NextResponse'][property.name='json']",
+            "message": "Use apiOk() / apiErr() from '@/lib/api/response' instead of NextResponse.json so all routes share one envelope."
+          }
+        ]
+      }
+    }
+  ],
   "ignorePatterns": [
     "node_modules/",
     ".next/",

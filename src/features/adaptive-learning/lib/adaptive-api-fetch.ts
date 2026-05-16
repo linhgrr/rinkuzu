@@ -19,18 +19,14 @@ type StandardSuccessResponse<T> = {
   meta?: Record<string, unknown> | null;
 };
 
-type StandardErrorDetail = {
-  code?: string;
-  message?: string;
-  detail?: string;
-  meta?: unknown;
-};
-
 type StandardErrorResponse = {
-  success?: false;
-  error?: string | StandardErrorDetail;
-  detail?: string;
-  message?: string;
+  success: false;
+  error: {
+    code?: string;
+    message?: string;
+    detail?: string;
+    meta?: unknown;
+  };
 };
 
 const inFlightGetRequests = new Map<string, Promise<unknown>>();
@@ -38,6 +34,24 @@ const responseCache = new Map<string, { expiresAt: number; data: unknown }>();
 
 function isAbortLikeError(error: unknown): boolean {
   return error instanceof Error && error.name === 'AbortError';
+}
+
+function isStandardSuccessEnvelope<T>(payload: unknown): payload is StandardSuccessResponse<T> {
+  return (
+    !!payload &&
+    typeof payload === 'object' &&
+    (payload as { success?: unknown }).success === true &&
+    'data' in payload
+  );
+}
+
+function isStandardErrorEnvelope(payload: unknown): payload is StandardErrorResponse {
+  return (
+    !!payload &&
+    typeof payload === 'object' &&
+    (payload as { success?: unknown }).success === false &&
+    'error' in payload
+  );
 }
 
 function normalizeNetworkFailure(error: unknown): AdaptiveApiError {
@@ -51,16 +65,16 @@ function normalizeNetworkFailure(error: unknown): AdaptiveApiError {
 
   if (error instanceof Error) {
     return new AdaptiveApiError({
-      message: error.message || 'Network request failed',
-      code: 'network_error',
+      message: error.message || 'Service unavailable',
+      code: 'service_unavailable',
       detail: error.message,
       retryable: true,
     });
   }
 
   return new AdaptiveApiError({
-    message: 'Network request failed',
-    code: 'network_error',
+    message: 'Service unavailable',
+    code: 'service_unavailable',
     retryable: true,
   });
 }
@@ -75,60 +89,86 @@ function looksLikeHtmlPayload(value: string): boolean {
   );
 }
 
-function normalizeAdaptiveError(status: number, detail: string): AdaptiveApiError {
-  const trimmedDetail = detail.trim();
+function normalizeAdaptiveError({
+  status,
+  code,
+  message,
+  detail,
+}: {
+  status: number;
+  code?: string | null;
+  message?: string | null;
+  detail?: string | null;
+}): AdaptiveApiError {
+  const trimmedDetail = detail?.trim() || '';
+  const trimmedMessage = message?.trim() || '';
+  const normalizedCode = code?.trim() || '';
 
   if (looksLikeHtmlPayload(trimmedDetail)) {
     return new AdaptiveApiError({
       message: 'Adaptive service temporarily unavailable',
-      code: 'upstream_html_error',
+      code: 'upstream_error',
       status,
-      detail: 'upstream_html_error',
+      detail: trimmedDetail || 'Upstream service returned HTML',
       retryable: true,
     });
   }
 
-  if (status === 400 && /not completed/i.test(trimmedDetail)) {
+  if (
+    normalizedCode === 'pipeline_not_completed' ||
+    (status === 409 && /not completed/i.test(trimmedDetail))
+  ) {
     return new AdaptiveApiError({
-      message: trimmedDetail || 'Processing is not ready yet',
-      code: 'pipeline_not_ready',
+      message: trimmedMessage || 'Processing is not ready yet',
+      code: 'pipeline_not_completed',
       status,
-      detail: trimmedDetail,
+      detail: trimmedDetail || trimmedMessage,
       retryable: true,
     });
   }
 
-  if (status === 401) {
+  if (normalizedCode === 'unauthorized' || status === 401) {
     return new AdaptiveApiError({
-      message: 'Unauthorized',
+      message: trimmedMessage || 'Unauthorized',
       code: 'unauthorized',
       status,
       detail: trimmedDetail,
     });
   }
 
-  if (status === 404) {
+  if (normalizedCode === 'not_found' || status === 404) {
     return new AdaptiveApiError({
-      message: 'Requested resource was not found',
+      message: trimmedMessage || 'Requested resource was not found',
       code: 'not_found',
       status,
       detail: trimmedDetail,
     });
   }
 
-  if (status === 409) {
+  if (normalizedCode === 'conflict' || status === 409) {
     return new AdaptiveApiError({
-      message: trimmedDetail || 'Resource state conflict',
+      message: trimmedMessage || 'Resource state conflict',
       code: 'conflict',
       status,
       detail: trimmedDetail,
     });
   }
 
-  if (status === 429 || status === 502 || status === 503 || status === 504) {
+  if (
+    normalizedCode === 'rate_limit_exceeded' ||
+    normalizedCode === 'upstream_error' ||
+    normalizedCode === 'upstream_html_error' ||
+    normalizedCode === 'upstream_invalid_json' ||
+    normalizedCode === 'upstream_invalid_envelope' ||
+    normalizedCode === 'service_unavailable' ||
+    normalizedCode === 'upstream_timeout' ||
+    [429, 502, 503, 504].includes(status)
+  ) {
     return new AdaptiveApiError({
-      message: trimmedDetail || 'Adaptive service temporarily unavailable',
-      code: 'temporary_unavailable',
+      message: trimmedMessage || 'Adaptive service temporarily unavailable',
+      code:
+        (normalizedCode === 'upstream_html_error' ? 'upstream_error' : normalizedCode) ||
+        (status === 502 ? 'upstream_error' : 'service_unavailable'),
       status,
       detail: trimmedDetail,
       retryable: true,
@@ -136,10 +176,10 @@ function normalizeAdaptiveError(status: number, detail: string): AdaptiveApiErro
   }
 
   return new AdaptiveApiError({
-    message: trimmedDetail || `API Error ${status}`,
-    code: 'request_failed',
+    message: trimmedMessage || trimmedDetail || `API Error ${status}`,
+    code: normalizedCode || 'request_failed',
     status,
-    detail: trimmedDetail,
+    detail: trimmedDetail || undefined,
   });
 }
 
@@ -161,53 +201,6 @@ async function parseResponseBody(res: Response): Promise<{ payload: unknown; raw
     payload: parseJsonText(rawText),
     rawText,
   };
-}
-
-function extractAdaptiveErrorDetail(payload: unknown, rawText: string): string {
-  if (payload && typeof payload === 'object') {
-    const errorPayload = payload as StandardErrorResponse;
-    const error = errorPayload.error;
-
-    if (typeof error === 'string' && error.trim()) {
-      return error.trim();
-    }
-
-    if (error && typeof error === 'object') {
-      const detail = typeof error.detail === 'string' ? error.detail.trim() : '';
-      const message = typeof error.message === 'string' ? error.message.trim() : '';
-      const code = typeof error.code === 'string' ? error.code.trim() : '';
-
-      if (detail) return detail;
-      if (message) return message;
-      if (code) return code;
-    }
-
-    const detail = typeof errorPayload.detail === 'string' ? errorPayload.detail.trim() : '';
-    const message = typeof errorPayload.message === 'string' ? errorPayload.message.trim() : '';
-
-    if (detail) return detail;
-    if (message) return message;
-  }
-
-  return rawText.trim();
-}
-
-function unwrapStandardSuccess<T>(
-  payload: unknown,
-): { matched: true; data: T } | { matched: false } {
-  if (
-    payload &&
-    typeof payload === 'object' &&
-    (payload as StandardSuccessResponse<T> | StandardErrorResponse).success === true &&
-    'data' in payload
-  ) {
-    return {
-      matched: true,
-      data: (payload as StandardSuccessResponse<T>).data,
-    };
-  }
-
-  return { matched: false };
 }
 
 async function timedFetch(url: string, options?: TimedFetchOptions): Promise<Response> {
@@ -286,8 +279,20 @@ async function executeRequest<T>(
 
   if (!res.ok) {
     const { payload, rawText } = await parseResponseBody(res);
-    const detail = extractAdaptiveErrorDetail(payload, rawText) || res.statusText;
-    throw normalizeAdaptiveError(res.status, detail);
+    if (isStandardErrorEnvelope(payload)) {
+      throw normalizeAdaptiveError({
+        status: res.status,
+        code: payload.error.code,
+        message: payload.error.message,
+        detail: payload.error.detail || payload.error.message,
+      });
+    }
+
+    throw normalizeAdaptiveError({
+      status: res.status,
+      message: 'Request failed',
+      detail: rawText || res.statusText,
+    });
   }
 
   if (res.status === 204) {
@@ -295,28 +300,25 @@ async function executeRequest<T>(
   }
 
   const { payload, rawText } = await parseResponseBody(res);
-  const unwrapped = unwrapStandardSuccess<T>(payload);
-
-  if (unwrapped.matched) {
-    return unwrapped.data;
+  if (rawText && payload === null) {
+    throw new AdaptiveApiError({
+      message: looksLikeHtmlPayload(rawText)
+        ? 'Adaptive service temporarily unavailable'
+        : 'Adaptive service returned invalid JSON',
+      code: looksLikeHtmlPayload(rawText) ? 'upstream_error' : 'upstream_invalid_json',
+      status: res.status,
+      detail: rawText || undefined,
+      retryable: true,
+    });
   }
 
-  if (
-    payload &&
-    typeof payload === 'object' &&
-    (payload as StandardErrorResponse).success === false
-  ) {
-    const detail = extractAdaptiveErrorDetail(payload, rawText) || res.statusText;
-    throw normalizeAdaptiveError(res.status, detail);
-  }
-
-  if (payload !== null) {
-    return payload as T;
+  if (isStandardSuccessEnvelope<T>(payload)) {
+    return payload.data;
   }
 
   throw new AdaptiveApiError({
-    message: 'Adaptive service returned an unexpected response',
-    code: 'invalid_response',
+    message: 'Adaptive service returned an invalid response envelope',
+    code: 'upstream_invalid_envelope',
     status: res.status,
     detail: rawText || undefined,
     retryable: true,
@@ -329,7 +331,6 @@ async function apiFetch<T>(path: string, options?: ApiFetchOptions): Promise<T> 
   const dedupeKey = options?.dedupeKey || path;
 
   if (!isGet) {
-    // Writes can affect several derived reads in adaptive dashboards.
     if (method === 'POST' || method === 'PATCH' || method === 'PUT' || method === 'DELETE') {
       invalidateCacheByPrefixes([
         '/api/adaptive-learning/session/',

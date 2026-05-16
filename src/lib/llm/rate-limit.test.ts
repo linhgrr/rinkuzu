@@ -1,11 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { buildStandardErrorBody } from '@/lib/api/error';
 
 const connectDBMock = vi.fn().mockResolvedValue({});
 const isUserPremiumMock = vi.fn();
 const createSubscriptionServiceMock = vi.fn(() => ({
   isUserPremium: isUserPremiumMock,
 }));
-const nextJsonMock = vi.fn((body, init) => ({ body, init }));
+const nextJsonMock = vi.fn((body, init) => ({
+  body,
+  init,
+  headers: new Headers(init?.headers),
+}));
 const rateLimiterCtorMock = vi.fn();
 
 vi.mock('@/lib/mongoose', () => ({
@@ -106,6 +111,29 @@ describe('LLM rate limiter', () => {
     expect(nextJsonMock).toHaveBeenCalledOnce();
     const [body, init] = nextJsonMock.mock.calls[0] ?? [];
     expect(init.status).toBe(429);
-    expect(body.code).toBe('llm_rate_limit_exceeded');
+    expect(body).toEqual(
+      buildStandardErrorBody({
+        code: 'llm_rate_limit_exceeded',
+        message: 'Rate limit exceeded',
+        detail: 'LLM rate limit exceeded',
+        meta: {
+          action: result.action,
+          tier: result.tier,
+          retryAfterSeconds: result.retryAfterSeconds,
+          limits: {
+            minute: {
+              limit: result.minute.limit,
+              remaining: result.minute.remaining,
+              resetAt: result.minute.resetAt.toISOString(),
+            },
+            day: {
+              limit: result.day.limit,
+              remaining: result.day.remaining,
+              resetAt: result.day.resetAt.toISOString(),
+            },
+          },
+        },
+      }),
+    );
   });
 });

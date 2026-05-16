@@ -44,7 +44,7 @@ export async function PUT(request: NextRequest) {
     const hashedPassword = await hashPassword(newPassword);
     await User.updateOne({ email: session.user.email }, { password: hashedPassword });
 
-    return apiOk(null, 200, { message: 'Password updated successfully' });
+    return apiOk(null, 200, { meta: { message: 'Password updated successfully' } });
   } catch (error) {
     console.error('Change password error:', error);
     return apiErr('internal_error', 'Internal server error', 500);

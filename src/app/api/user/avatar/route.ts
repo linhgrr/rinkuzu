@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import connectDB from '@/lib/mongoose';
@@ -51,6 +51,7 @@ export async function PUT(request: NextRequest) {
     const imgbbRes = await fetch(IMGBB_API_URL, {
       method: 'POST',
       body: upstream,
+      cache: 'no-store',
       signal: AbortSignal.timeout(30_000),
     });
     const imgbbJson = (await imgbbRes.json()) as {
@@ -59,16 +60,13 @@ export async function PUT(request: NextRequest) {
     };
 
     if (!imgbbRes.ok || !imgbbJson.success || !imgbbJson.data) {
-      return apiErr('upload_failed', 'Image upload failed', 502);
+      return apiErr('upstream_error', 'Image upload failed', 502);
     }
 
     const avatarUrl = imgbbJson.data.display_url;
     await User.updateOne({ email: session.user.email }, { avatar: avatarUrl });
 
-    return NextResponse.json({
-      success: true,
-      data: { avatar: avatarUrl },
-    });
+    return apiOk({ avatar: avatarUrl });
   } catch (error) {
     console.error('Upload avatar error:', error);
     return apiErr('internal_error', 'Internal server error', 500);
@@ -94,7 +92,7 @@ export async function DELETE() {
       await User.updateOne({ email: session.user.email }, { $unset: { avatar: 1 } });
     }
 
-    return apiOk(null, 200, { message: 'Avatar removed' });
+    return apiOk(null, 200, { meta: { message: 'Avatar removed' } });
   } catch (error) {
     console.error('Delete avatar error:', error);
     return apiErr('internal_error', 'Internal server error', 500);

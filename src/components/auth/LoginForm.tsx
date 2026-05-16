@@ -1,28 +1,56 @@
 'use client';
 
-import { Suspense, useEffect, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card, CardContent } from '@/components/ui/Card';
-import { HiOutlineMail, HiOutlineLockClosed, HiOutlineExclamationCircle } from '@/components/icons';
+import {
+  HiOutlineMail,
+  HiOutlineLockClosed,
+  HiOutlineExclamationCircle,
+  HiOutlineEye,
+  HiOutlineEyeOff,
+} from '@/components/icons';
+import { GoogleLogo } from '@/components/auth/GoogleLogo';
 import { defaultLocale, locales } from '@/i18n/config';
+import { loginSchema, type LoginInput } from '@/lib/validation/auth';
 
 interface LoginFormProps {
   locale: string;
+  googleEnabled?: boolean;
 }
 
-function LoginFormContent({ locale }: LoginFormProps) {
+type ErrorState = {
+  message: string;
+  code?: string;
+};
+
+function LoginFormContent({ locale, googleEnabled }: LoginFormProps) {
   const t = useTranslations('auth');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [serverError, setServerError] = useState<ErrorState | null>(null);
+  const [retrySeconds, setRetrySeconds] = useState(0);
+  const retryRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const { prefetch, refresh, replace } = useRouter();
   const searchParams = useSearchParams();
+
+  const form = useForm<LoginInput>({
+    resolver: zodResolver(loginSchema),
+    mode: 'onTouched',
+    defaultValues: { email: '', password: '' },
+  });
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = form;
 
   const callbackUrl = useMemo(() => {
     const fallback = locale === defaultLocale ? '/dashboard' : `/${locale}/dashboard`;
@@ -56,111 +84,216 @@ function LoginFormContent({ locale }: LoginFormProps) {
     prefetch(callbackUrl);
   }, [callbackUrl, prefetch]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
+  useEffect(() => {
+    return () => {
+      if (retryRef.current) clearInterval(retryRef.current);
+    };
+  }, []);
 
-    if (!email.trim() || !password.trim()) {
-      setError(t('pleaseBothEmailPassword'));
-      setLoading(false);
-      return;
-    }
+  const startRetryCountdown = (seconds: number) => {
+    setRetrySeconds(seconds);
+    if (retryRef.current) clearInterval(retryRef.current);
+    retryRef.current = setInterval(() => {
+      setRetrySeconds((prev) => {
+        if (prev <= 1) {
+          if (retryRef.current) clearInterval(retryRef.current);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
 
-    let shouldResetLoading = true;
+  const onSubmit = handleSubmit(async (values) => {
+    if (retrySeconds > 0) return;
+    setServerError(null);
 
     try {
       const result = await signIn('credentials', {
-        email: email.trim(),
-        password,
+        email: values.email,
+        password: values.password,
         redirect: false,
         callbackUrl,
       });
 
       if (result?.error) {
-        setError(t('invalidEmailPassword'));
-      } else if (result?.ok) {
-        shouldResetLoading = false;
+        const code = result.error;
+        if (code === 'account_locked') {
+          startRetryCountdown(15 * 60);
+          setServerError({ code, message: t('accountLocked') });
+        } else if (code === 'email_not_verified') {
+          setServerError({ code, message: t('emailNotVerified') });
+        } else if (code === 'invalid_credentials' || code === 'CredentialsSignin') {
+          setServerError({ code: 'invalid_credentials', message: t('invalidEmailPassword') });
+        } else {
+          setServerError({ code, message: t('loginFailed') });
+        }
+        return;
+      }
+      if (result?.ok) {
         replace(callbackUrl);
         refresh();
         return;
-      } else {
-        setError(t('loginFailed'));
       }
-    } catch (error) {
-      console.error('Login exception:', error);
-      setError(`${t('loginError')}. ${t('checkConnectionAndRetry')}`);
-    } finally {
-      if (shouldResetLoading) {
-        setLoading(false);
-      }
+      setServerError({ code: 'unknown', message: t('loginFailed') });
+    } catch (caught) {
+      console.error('Login exception:', caught);
+      setServerError({ code: 'network', message: t('loginError') });
     }
-  };
+  });
+
+  const submitDisabled = isSubmitting || retrySeconds > 0;
+  const lockoutCountdownLabel =
+    retrySeconds > 0
+      ? `${Math.floor(retrySeconds / 60)
+          .toString()
+          .padStart(2, '0')}:${(retrySeconds % 60).toString().padStart(2, '0')}`
+      : '';
+  const emailValue = form.watch('email');
 
   return (
     <CardContent className="pt-0">
-      <form className="space-y-6" onSubmit={handleSubmit}>
-        {error && (
+      {googleEnabled && (
+        <div className="space-y-4">
+          <button
+            type="button"
+            onClick={() => signIn('google', { callbackUrl })}
+            disabled={isSubmitting}
+            aria-label={t('continueWithGoogle')}
+            className="flex w-full items-center justify-center gap-3 rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm font-medium text-neutral-700 shadow-sm transition-colors hover:bg-neutral-50 disabled:opacity-60"
+          >
+            <GoogleLogo />
+            {t('continueWithGoogle')}
+          </button>
+          <div className="relative my-6 flex items-center">
+            <div className="flex-grow border-t border-neutral-200" aria-hidden="true" />
+            <span className="mx-3 text-xs uppercase tracking-wide text-neutral-400">
+              {t('orContinueWithEmail')}
+            </span>
+            <div className="flex-grow border-t border-neutral-200" aria-hidden="true" />
+          </div>
+        </div>
+      )}
+      <form className="space-y-6" onSubmit={onSubmit} noValidate>
+        {serverError && (
           <Card
             variant="bordered"
             className="border-red-200 bg-red-50 p-4 animate-fadeInUp"
             role="alert"
-            aria-live="polite"
+            aria-live="assertive"
           >
-            <div className="flex items-center text-red-700">
+            <div className="flex items-start text-red-700">
               <HiOutlineExclamationCircle
-                className="size-5 mr-2 flex-shrink-0"
+                className="size-5 mr-2 mt-0.5 flex-shrink-0"
                 aria-hidden="true"
               />
-              <span className="text-sm font-medium">{error}</span>
+              <div className="text-sm">
+                <p className="font-medium">{serverError.message}</p>
+                {serverError.code === 'account_locked' && retrySeconds > 0 && (
+                  <p className="mt-1 text-red-600">
+                    {t('tryAgainIn')} <span className="font-mono">{lockoutCountdownLabel}</span>
+                  </p>
+                )}
+                {serverError.code === 'email_not_verified' && (
+                  <p className="mt-2">
+                    <span>{t('emailNotVerifiedResendHint')} </span>
+                    <Link
+                      href={`/check-email?email=${encodeURIComponent(emailValue.trim().toLowerCase())}`}
+                      className="font-semibold text-red-700 underline hover:text-red-800"
+                    >
+                      {t('resendVerificationInline')}
+                    </Link>
+                    <span>.</span>
+                  </p>
+                )}
+              </div>
             </div>
           </Card>
         )}
 
-        <div className="space-y-5">
-          <Input
-            label={t('emailAddress')}
-            id="email"
-            name="email"
-            type="email"
-            autoComplete="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder={t('enterEmail')}
-            icon={<HiOutlineMail className="size-5" />}
-          />
+        <fieldset disabled={isSubmitting} className="space-y-5 disabled:opacity-60">
+          <div>
+            <Input
+              label={t('emailAddress')}
+              id="email"
+              type="email"
+              autoComplete="email"
+              required
+              placeholder={t('enterEmail')}
+              icon={<HiOutlineMail className="size-5" />}
+              aria-invalid={errors.email ? true : undefined}
+              aria-describedby={errors.email ? 'email-error' : undefined}
+              {...register('email')}
+            />
+            {errors.email && (
+              <p id="email-error" className="mt-1.5 text-xs text-red-600">
+                {t('invalidEmailFormat')}
+              </p>
+            )}
+          </div>
 
-          <Input
-            label={t('password')}
-            id="password"
-            name="password"
-            type="password"
-            autoComplete="current-password"
-            autoCapitalize="off"
-            autoCorrect="off"
-            spellCheck={false}
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder={t('enterPassword')}
-            icon={<HiOutlineLockClosed className="size-5" />}
-          />
-        </div>
+          <div>
+            <div className="relative">
+              <Input
+                label={t('password')}
+                id="password"
+                type={showPassword ? 'text' : 'password'}
+                autoComplete="current-password"
+                autoCapitalize="off"
+                autoCorrect="off"
+                spellCheck={false}
+                required
+                placeholder={t('enterPassword')}
+                icon={<HiOutlineLockClosed className="size-5" />}
+                aria-invalid={errors.password ? true : undefined}
+                aria-describedby={errors.password ? 'password-error' : undefined}
+                {...register('password')}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                aria-pressed={showPassword}
+                aria-label={showPassword ? t('hidePassword') : t('showPassword')}
+                className="absolute inset-y-0 right-3 my-auto flex h-9 w-9 items-center justify-center rounded-md text-neutral-400 transition-colors hover:text-neutral-600"
+                tabIndex={-1}
+              >
+                {showPassword ? (
+                  <HiOutlineEyeOff className="size-5" aria-hidden="true" />
+                ) : (
+                  <HiOutlineEye className="size-5" aria-hidden="true" />
+                )}
+              </button>
+            </div>
+            {errors.password && (
+              <p id="password-error" className="mt-1.5 text-xs text-red-600">
+                {t('passwordRequired')}
+              </p>
+            )}
+            <div className="mt-2 text-right">
+              <Link
+                href="/forgot-password"
+                className="text-sm font-medium text-teal-600 hover:text-teal-700"
+              >
+                {t('forgotPassword')}
+              </Link>
+            </div>
+          </div>
+        </fieldset>
 
         <div className="pt-2">
           <Button
             type="submit"
-            loading={loading}
+            loading={isSubmitting}
+            disabled={submitDisabled}
+            aria-busy={isSubmitting}
             size="lg"
             className="w-full bg-teal-600 text-white hover:bg-teal-700 shadow-sm border-0"
           >
-            {loading ? t('signingIn') : t('signInButton')}
+            {isSubmitting ? t('signingIn') : t('signInButton')}
           </Button>
         </div>
       </form>
 
-      {/* Sign Up Link */}
       <div className="mt-8 border-t border-neutral-200/70 pt-6">
         <div className="text-center">
           <p className="text-sm text-neutral-600">
@@ -190,10 +323,10 @@ function LoginFormFallback() {
   );
 }
 
-export function LoginForm({ locale }: LoginFormProps) {
+export function LoginForm({ locale, googleEnabled }: LoginFormProps) {
   return (
     <Suspense fallback={<LoginFormFallback />}>
-      <LoginFormContent locale={locale} />
+      <LoginFormContent locale={locale} googleEnabled={googleEnabled} />
     </Suspense>
   );
 }

@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
 import { AsyncRouteParams } from '@/types/next-route';
-import { apiOk, apiErr } from '@/lib/api/response';
+import { apiOk, apiErr, apiServiceErr } from '@/lib/api/response';
 
 export async function GET(request: NextRequest, { params }: AsyncRouteParams<{ slug: string }>) {
   try {
@@ -14,11 +14,7 @@ export async function GET(request: NextRequest, { params }: AsyncRouteParams<{ s
     const result = await quizService.getQuizForFlashcards(slug, session);
 
     if (!result.success) {
-      return apiErr(
-        'service_error',
-        String(result.error ?? 'Request failed'),
-        result.statusCode || 400,
-      );
+      return apiServiceErr(result, 400);
     }
 
     return apiOk(result.data);

@@ -1,7 +1,6 @@
-import { NextResponse } from 'next/server';
 import { withAdmin } from '@/lib/api/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
-import { apiErr } from '@/lib/api/response';
+import { apiErr, apiOk } from '@/lib/api/response';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,7 +22,7 @@ export const GET = withAdmin(async () => {
       !categoryResult.success ||
       !creatorResult.success
     ) {
-      return apiErr('service_error', 'Failed to fetch statistics', 500);
+      return apiErr('internal_error', 'Failed to fetch statistics', 500);
     }
 
     // Combine all stats data
@@ -38,10 +37,7 @@ export const GET = withAdmin(async () => {
       growthTrends: { users: [], quizzes: [], attempts: [] },
     };
 
-    return NextResponse.json({
-      success: true,
-      data: combinedStats,
-    });
+    return apiOk(combinedStats);
   } catch (error) {
     console.error('Error fetching admin stats:', error);
     return apiErr('internal_error', 'Failed to fetch statistics', 500);

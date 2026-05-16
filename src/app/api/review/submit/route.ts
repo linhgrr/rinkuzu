@@ -215,7 +215,7 @@ export async function POST(req: Request) {
         },
       },
       200,
-      { message: 'Review submitted' },
+      { meta: { message: 'Review submitted' } },
     );
   } catch (error) {
     console.error('Error submitting review:', error);

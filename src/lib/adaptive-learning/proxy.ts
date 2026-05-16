@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { apiErr, apiForward } from '@/lib/api/response';
+import { type ApiErrorPayload } from '@/lib/api/error';
 import { isCacheSafeAdaptivePath } from './cache-policy';
 import {
   buildAdaptiveServiceHeaders,
@@ -54,6 +56,11 @@ function isHtmlResponse(contentType: string | null): boolean {
   return (contentType || '').toLowerCase().includes('text/html');
 }
 
+function isJsonResponse(contentType: string | null): boolean {
+  const normalized = (contentType || '').toLowerCase();
+  return normalized.includes('application/json') || normalized.includes('+json');
+}
+
 function copyUpstreamResponseHeaders(response: Response): Headers {
   const responseHeaders = new Headers();
 
@@ -67,6 +74,32 @@ function copyUpstreamResponseHeaders(response: Response): Headers {
   return responseHeaders;
 }
 
+function applyResponseHeaders(target: Response, headers: Headers): Response {
+  headers.forEach((value, key) => target.headers.set(key, value));
+  return target;
+}
+
+function isStandardSuccessEnvelope(payload: unknown): payload is {
+  success: true;
+  data: unknown;
+} {
+  return (
+    !!payload &&
+    typeof payload === 'object' &&
+    (payload as { success?: unknown }).success === true &&
+    'data' in payload
+  );
+}
+
+function isStandardErrorEnvelope(payload: unknown): payload is ApiErrorPayload {
+  return (
+    !!payload &&
+    typeof payload === 'object' &&
+    (payload as { success?: unknown }).success === false &&
+    'error' in payload
+  );
+}
+
 export async function proxyAdaptiveRequest(
   req: Request,
   targetPath: string,
@@ -77,13 +110,11 @@ export async function proxyAdaptiveRequest(
     const userId = (session?.user as any)?.id;
     const userRole = (session?.user as any)?.role;
     if (!userId) {
-      return NextResponse.json({ detail: 'Unauthorized' }, { status: 401 });
+      return apiErr('unauthorized', 'Unauthorized', 401);
     }
 
     const targetUrl = buildTargetUrl(req, targetPath);
-
     const headers: Record<string, string> = buildAdaptiveServiceHeaders(userId, userRole);
-
     const method = options?.method || req.method;
 
     const llmAction = classifyAdaptiveLlmAction(targetPath, method);
@@ -119,7 +150,6 @@ export async function proxyAdaptiveRequest(
           cacheOptions.tags.length > 0;
 
         return await fetch(targetUrl.toString(), {
-          // PROXY: backend AI API
           method,
           headers,
           body,
@@ -139,12 +169,11 @@ export async function proxyAdaptiveRequest(
 
     const contentTypeHeader = response.headers.get('content-type');
     if (isHtmlResponse(contentTypeHeader)) {
-      return NextResponse.json(
-        {
-          detail: 'Adaptive service temporarily unavailable',
-          code: 'upstream_html_error',
-        },
-        { status: response.ok ? 502 : response.status },
+      return apiErr(
+        'upstream_html_error',
+        'Adaptive service temporarily unavailable',
+        response.ok ? 502 : response.status,
+        { targetPath },
       );
     }
 
@@ -154,6 +183,74 @@ export async function proxyAdaptiveRequest(
       Object.entries(rateLimitHeaders).forEach(([key, value]) => responseHeaders.set(key, value));
     }
 
+    if (!response.ok) {
+      const upstreamText = await response.text();
+      let payload: unknown = null;
+
+      if (upstreamText) {
+        try {
+          payload = JSON.parse(upstreamText);
+        } catch {
+          payload = null;
+        }
+      }
+
+      if (!isStandardErrorEnvelope(payload)) {
+        return applyResponseHeaders(
+          apiErr(
+            'upstream_invalid_envelope',
+            upstreamText || 'Adaptive service returned a non-standard error envelope',
+            502,
+            { targetPath, upstreamStatus: response.status },
+          ),
+          responseHeaders,
+        );
+      }
+
+      const forwarded = apiForward(payload as Record<string, unknown>, response.status);
+      return applyResponseHeaders(forwarded, responseHeaders);
+    }
+
+    if (response.status === 204) {
+      return new Response(null, {
+        status: response.status,
+        headers: responseHeaders,
+      });
+    }
+
+    if (isJsonResponse(contentTypeHeader)) {
+      const upstreamText = await response.text();
+      let payload: unknown = null;
+
+      if (upstreamText) {
+        try {
+          payload = JSON.parse(upstreamText);
+        } catch {
+          return applyResponseHeaders(
+            apiErr('upstream_invalid_json', 'Adaptive service returned invalid JSON', 502, {
+              targetPath,
+            }),
+            responseHeaders,
+          );
+        }
+      }
+
+      if (!isStandardSuccessEnvelope(payload)) {
+        return applyResponseHeaders(
+          apiErr(
+            'upstream_invalid_envelope',
+            'Adaptive service returned a non-standard success envelope',
+            502,
+            { targetPath },
+          ),
+          responseHeaders,
+        );
+      }
+
+      const normalized = apiForward(payload as Record<string, unknown>, response.status);
+      return applyResponseHeaders(normalized, responseHeaders);
+    }
+
     return new NextResponse(response.body, {
       status: response.status,
       headers: responseHeaders,
@@ -161,14 +258,11 @@ export async function proxyAdaptiveRequest(
   } catch (error) {
     if (error instanceof Error && error.name === 'AbortError') {
       if (req.signal.aborted) {
-        return new Response(null, { status: 499 });
+        return apiErr('request_aborted', 'Request was cancelled by the client', 499);
       }
-      return NextResponse.json({ detail: 'Adaptive service request timed out' }, { status: 504 });
+      return apiErr('upstream_timeout', 'Adaptive service request timed out', 504);
     }
     console.error(`Adaptive proxy failed for ${targetPath}:`, error);
-    return NextResponse.json(
-      { detail: 'Internal server error while proxying adaptive request' },
-      { status: 500 },
-    );
+    return apiErr('internal_error', 'Internal server error while proxying adaptive request', 500);
   }
 }

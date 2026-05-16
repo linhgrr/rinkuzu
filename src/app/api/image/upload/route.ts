@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { apiErr } from '@/lib/api/response';
+import { apiErr, apiOk } from '@/lib/api/response';
 
 const IMGBB_API_URL = 'https://api.imgbb.com/1/upload';
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -61,22 +61,19 @@ export async function POST(request: NextRequest) {
 
   if (!response.ok || !json.success || !json.data) {
     console.error('ImgBB upload failed:', json);
-    return apiErr('upload_failed', 'Image upload failed', 502);
+    return apiErr('upstream_error', 'Image upload failed', 502);
   }
 
   const d = json.data;
-  return NextResponse.json({
-    success: true,
-    data: {
-      id: d.id,
-      url: d.url,
-      displayUrl: d.display_url,
-      thumbnailUrl: d.thumb?.url ?? d.display_url,
-      mediumUrl: d.medium?.url,
-      deleteUrl: d.delete_url,
-      width: d.width,
-      height: d.height,
-      size: d.size,
-    },
+  return apiOk({
+    id: d.id,
+    url: d.url,
+    displayUrl: d.display_url,
+    thumbnailUrl: d.thumb?.url ?? d.display_url,
+    mediumUrl: d.medium?.url,
+    deleteUrl: d.delete_url,
+    width: d.width,
+    height: d.height,
+    size: d.size,
   });
 }

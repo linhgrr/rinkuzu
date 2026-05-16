@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { ServiceFactory } from '@/lib/serviceFactory';
-import { apiErr } from '@/lib/api/response';
+import { apiOk, apiErr } from '@/lib/api/response';
 import { extractUnknownErrorMessage } from '@/lib/api/error';
 
 export async function POST(request: NextRequest) {
@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
       session.user.id,
     );
 
-    return NextResponse.json({ success: true, data: result });
+    return apiOk(result);
   } catch (error: unknown) {
     console.error('Error verifying payment:', error);
     return apiErr(

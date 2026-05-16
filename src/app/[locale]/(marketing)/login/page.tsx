@@ -2,9 +2,9 @@ import Link from 'next/link';
 import Image from 'next/image';
 import type { Metadata } from 'next';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
-import { HiOutlineLockClosed, HiOutlineShieldCheck } from '@/components/icons';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { getTranslations } from 'next-intl/server';
+import { isGoogleLoginEnabled } from '@/lib/auth';
 
 export const metadata: Metadata = {
   title: 'Sign In | RinKuzu',
@@ -60,23 +60,8 @@ export default async function LoginPage({ params }: { params: Promise<{ locale: 
               <CardDescription className="text-base">{t('enterCredentials')}</CardDescription>
             </CardHeader>
 
-            <LoginForm locale={locale} />
+            <LoginForm locale={locale} googleEnabled={isGoogleLoginEnabled} />
           </Card>
-
-          {/* Additional Info */}
-          <div className="mt-8 text-center animate-fadeInUp" style={{ animationDelay: '400ms' }}>
-            <p className="text-sm text-neutral-500">{t('secureLogin')}</p>
-            <div className="mt-4 flex items-center justify-center gap-x-4 text-xs text-neutral-400">
-              <div className="flex items-center">
-                <HiOutlineShieldCheck className="mr-1 size-4" />
-                {t('sslEncrypted')}
-              </div>
-              <div className="flex items-center">
-                <HiOutlineLockClosed className="mr-1 size-4" />
-                {t('privacyProtected')}
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </div>

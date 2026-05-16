@@ -31,7 +31,7 @@ export default function ReportQuiz({ quizSlug, quizTitle }: ReportQuizProps) {
     setIsSubmitting(true);
 
     try {
-      await fetchApiData<{ message: string; reportId: string }>(`/api/quiz/${quizSlug}/report`, {
+      await fetchApiData<{ reportId: string }>(`/api/quiz/${quizSlug}/report`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

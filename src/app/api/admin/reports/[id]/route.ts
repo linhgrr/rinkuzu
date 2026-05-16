@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { withAdmin } from '@/lib/api/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
-import { apiErr, apiOk } from '@/lib/api/response';
+import { apiErr, apiOk, apiServiceErr } from '@/lib/api/response';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,13 +22,10 @@ export const PATCH = withAdmin(async (request: NextRequest, context) => {
     const result = await adminService.updateReportStatus(id, status);
 
     if (!result.success) {
-      return apiErr('service_error', result.error ?? 'Request failed', result.statusCode || 500);
+      return apiServiceErr(result, 500);
     }
 
-    return NextResponse.json({
-      success: true,
-      data: result.data,
-    });
+    return apiOk(result.data);
   } catch (error: unknown) {
     console.error('Error updating report:', error);
     return apiErr('internal_error', 'Internal server error', 500);
@@ -47,10 +44,10 @@ export const DELETE = withAdmin(async (request: NextRequest, context) => {
     const result = await adminService.deleteReport(id);
 
     if (!result.success) {
-      return apiErr('service_error', result.error ?? 'Request failed', result.statusCode || 500);
+      return apiServiceErr(result, 500);
     }
 
-    return apiOk(null, 200, { message: 'Report deleted successfully' });
+    return apiOk(null, 200, { meta: { message: 'Report deleted successfully' } });
   } catch (error: unknown) {
     console.error('Error deleting report:', error);
     return apiErr('internal_error', 'Internal server error', 500);

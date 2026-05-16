@@ -73,7 +73,7 @@ export async function GET(req: Request) {
 
     if (!response.ok) {
       return apiErr(
-        'library_images_unavailable',
+        'upstream_error',
         'Failed to fetch library images from upstream service',
         response.status,
       );
@@ -85,6 +85,6 @@ export async function GET(req: Request) {
     return apiOk({ images });
   } catch (error) {
     console.error('Failed to fetch random library images:', error);
-    return apiErr('library_images_unavailable', 'Failed to fetch random library images', 500);
+    return apiErr('upstream_error', 'Failed to fetch random library images', 500);
   }
 }

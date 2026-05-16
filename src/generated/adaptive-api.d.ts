@@ -882,8 +882,6 @@ export interface components {
        * @default 2
        */
       retry_after_seconds: number;
-      /** Message */
-      message: string;
     };
     /** PipelineSessionCreateResponse */
     PipelineSessionCreateResponse: {

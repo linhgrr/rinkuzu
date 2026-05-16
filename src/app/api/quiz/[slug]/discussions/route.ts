@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
 import { AsyncRouteParams } from '@/types/next-route';
-import { apiOk, apiErr } from '@/lib/api/response';
+import { apiOk, apiErr, apiServiceErr } from '@/lib/api/response';
 
 // GET /api/quiz/[slug]/discussions - Get all discussions for a quiz
 export async function GET(request: NextRequest, { params }: AsyncRouteParams<{ slug: string }>) {
@@ -15,11 +15,7 @@ export async function GET(request: NextRequest, { params }: AsyncRouteParams<{ s
     const result = await quizService.getQuizDiscussions(slug, session);
 
     if (!result.success) {
-      return apiErr(
-        'service_error',
-        String(result.error ?? 'Request failed'),
-        result.statusCode || 400,
-      );
+      return apiServiceErr(result, 400);
     }
 
     return apiOk(result.data);
@@ -41,7 +37,7 @@ export async function POST(request: NextRequest, { params }: AsyncRouteParams<{ 
     const { questionIndex, content } = await request.json();
 
     if (typeof questionIndex !== 'number' || !content?.trim()) {
-      return apiErr('invalid_request', 'Question index and content are required', 400);
+      return apiErr('validation_error', 'Question index and content are required', 400);
     }
 
     const quizService = serviceFactory.getQuizService();
@@ -55,11 +51,7 @@ export async function POST(request: NextRequest, { params }: AsyncRouteParams<{ 
     );
 
     if (!result.success) {
-      return apiErr(
-        'service_error',
-        String(result.error ?? 'Request failed'),
-        result.statusCode || 400,
-      );
+      return apiServiceErr(result, 400);
     }
 
     return apiOk(result.data);

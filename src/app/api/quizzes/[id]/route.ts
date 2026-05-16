@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
 import { AsyncRouteParams } from '@/types/next-route';
-import { apiErr, apiOk } from '@/lib/api/response';
+import { apiErr, apiOk, apiServiceErr } from '@/lib/api/response';
 import type { IQuiz } from '@/interfaces/repositories/IQuizRepository';
 
 // GET /api/quizzes/[id] - Get specific quiz
@@ -24,7 +24,7 @@ export async function GET(request: NextRequest, { params }: AsyncRouteParams<{ i
     const result = await quizService.getQuizById(id, userEmail, session.user.role);
 
     if (!result.success) {
-      return apiErr('service_error', result.error ?? 'Request failed', result.statusCode || 400);
+      return apiServiceErr(result, 400);
     }
 
     const data: IQuiz | undefined = result.data;
@@ -49,10 +49,7 @@ export async function GET(request: NextRequest, { params }: AsyncRouteParams<{ i
       }
     }
 
-    return NextResponse.json({
-      success: true,
-      data: data,
-    });
+    return apiOk(data);
   } catch (error: unknown) {
     console.error('Get quiz error:', error);
     return apiErr('internal_error', 'Internal server error', 500);
@@ -78,13 +75,10 @@ export async function PUT(request: NextRequest, { params }: AsyncRouteParams<{ i
     const result = await quizService.updateQuiz(id, quizData, userEmail, session.user.role);
 
     if (!result.success) {
-      return apiErr('service_error', result.error ?? 'Request failed', result.statusCode || 400);
+      return apiServiceErr(result, 400);
     }
 
-    return NextResponse.json({
-      success: true,
-      data: result.data,
-    });
+    return apiOk(result.data);
   } catch (error: unknown) {
     console.error('Update quiz error:', error);
     return apiErr('internal_error', 'Internal server error', 500);
@@ -109,10 +103,10 @@ export async function DELETE(request: NextRequest, { params }: AsyncRouteParams<
     const result = await quizService.deleteQuiz(id, userEmail, session.user.role);
 
     if (!result.success) {
-      return apiErr('service_error', result.error ?? 'Request failed', result.statusCode || 400);
+      return apiServiceErr(result, 400);
     }
 
-    return apiOk(null, 200, { message: 'Quiz deleted successfully' });
+    return apiOk(null, 200, { meta: { message: 'Quiz deleted successfully' } });
   } catch (error: unknown) {
     console.error('Delete quiz error:', error);
     return apiErr('internal_error', 'Internal server error', 500);

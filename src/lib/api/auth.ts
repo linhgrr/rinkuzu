@@ -1,6 +1,5 @@
 import { getServerSession } from 'next-auth';
 import type { Session } from 'next-auth';
-import { authOptions } from '@/lib/auth';
 import { NextRequest } from 'next/server';
 import { apiErr } from './response';
 
@@ -22,6 +21,21 @@ type RouteHandler<TParams extends RouteParams = RouteParams> = (
   context: AuthContext<TParams>,
 ) => Promise<Response>;
 
+let authOptionsPromise: Promise<Awaited<ReturnType<typeof loadAuthOptions>>> | null = null;
+
+async function loadAuthOptions() {
+  const mod = await import('@/lib/auth');
+  return mod.authOptions;
+}
+
+async function getAuthOptions() {
+  if (!authOptionsPromise) {
+    authOptionsPromise = loadAuthOptions();
+  }
+
+  return authOptionsPromise;
+}
+
 /**
  * Wraps an API route handler with authentication and optional role check.
  * Returns 401 if not authenticated, 403 if wrong role.
@@ -35,7 +49,7 @@ function withAuth<TParams extends RouteParams = RouteParams>(
     request: NextRequest,
     routeContext: { params: Promise<TParams> },
   ): Promise<Response> => {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession(await getAuthOptions());
 
     if (!session?.user) {
       return apiErr('unauthorized', 'Unauthorized', 401);

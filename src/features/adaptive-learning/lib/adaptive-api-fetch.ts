@@ -307,7 +307,7 @@ async function executeRequest<T>(
         : 'Adaptive service returned invalid JSON',
       code: looksLikeHtmlPayload(rawText) ? 'upstream_error' : 'upstream_invalid_json',
       status: res.status,
-      detail: rawText || undefined,
+      detail: rawText,
       retryable: true,
     });
   }

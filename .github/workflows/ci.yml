@@ -124,7 +124,7 @@ jobs:
 
       - name: React Doctor
         id: react-doctor
-        uses: millionco/react-doctor@main
+        uses: millionco/react-doctor@3bb230f7528c70a8514c89632657a78ba51e015f
         with:
           directory: .
           diff: master

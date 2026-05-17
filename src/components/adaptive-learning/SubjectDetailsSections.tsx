@@ -210,7 +210,7 @@ export const SubjectDetailsTabs = ({
 }) => {
   const handleKeyDown = (e: React.KeyboardEvent, currentIndex: number) => {
     const tabs = TAB_CONFIG;
-    let nextIndex = currentIndex;
+    let nextIndex: number;
     if (e.key === 'ArrowRight') nextIndex = (currentIndex + 1) % tabs.length;
     else if (e.key === 'ArrowLeft') nextIndex = (currentIndex - 1 + tabs.length) % tabs.length;
     else return;

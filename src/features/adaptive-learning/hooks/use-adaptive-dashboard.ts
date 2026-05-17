@@ -257,26 +257,25 @@ export const useAdaptiveDashboard = ({
       ]);
       if (!isActive) return;
       const [healthResult, subjectsResult, historyResult] = await hydrationPromise;
-      if (isActive) {
-        const nextState: Partial<AdaptiveDashboardState> = {
-          loading: false,
-          apiOnline: healthResult.status === 'fulfilled' ? healthResult.value : false,
-        };
-        if (subjectsResult.status === 'fulfilled') {
-          nextState.subjects = subjectsResult.value;
-        } else {
-          console.error('Failed to hydrate subjects', subjectsResult.reason);
-          nextState.error = t('connectionLimited');
-        }
-
-        if (historyResult.status === 'fulfilled') {
-          nextState.sessionHistory = historyResult.value;
-        } else {
-          console.error('Failed to hydrate session history', historyResult.reason);
-        }
-
-        dispatch({ type: 'hydrate', value: nextState });
+      if (!isActive) return;
+      const nextState: Partial<AdaptiveDashboardState> = {
+        loading: false,
+        apiOnline: healthResult.status === 'fulfilled' ? healthResult.value : false,
+      };
+      if (subjectsResult.status === 'fulfilled') {
+        nextState.subjects = subjectsResult.value;
+      } else {
+        console.error('Failed to hydrate subjects', subjectsResult.reason);
+        nextState.error = t('connectionLimited');
       }
+
+      if (historyResult.status === 'fulfilled') {
+        nextState.sessionHistory = historyResult.value;
+      } else {
+        console.error('Failed to hydrate session history', historyResult.reason);
+      }
+
+      dispatch({ type: 'hydrate', value: nextState });
     };
 
     void hydrateDashboard();

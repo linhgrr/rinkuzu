@@ -1,6 +1,7 @@
 import { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import GoogleProvider from 'next-auth/providers/google';
+import { randomUUID } from 'node:crypto';
 
 import connectDB from './mongoose';
 import User from '@/models/User';
@@ -31,9 +32,7 @@ const LOCKOUT_DURATION_MS = readPositiveIntEnv('AUTH_LOCKOUT_DURATION_MINUTES', 
 let dummyHashPromise: Promise<string> | null = null;
 function getDummyHash(): Promise<string> {
   if (!dummyHashPromise) {
-    dummyHashPromise = hashPassword(
-      `__rinkuzu_timing_decoy_${Math.random().toString(36)}_${Date.now()}__`,
-    );
+    dummyHashPromise = hashPassword(`__rinkuzu_timing_decoy_${randomUUID()}_${Date.now()}__`);
   }
   return dummyHashPromise;
 }

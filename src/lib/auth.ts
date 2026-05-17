@@ -7,16 +7,23 @@ import User from '@/models/User';
 import { hashPassword, verifyPassword } from './password';
 import { recordAuthEvent } from './audit';
 import { loginSchema } from './validation/auth';
-import { env } from './env';
 
-const isProd = env.NODE_ENV === 'production';
+const isProd = process.env['NODE_ENV'] === 'production';
 
-const SESSION_MAX_AGE_SECONDS = env.SESSION_MAX_AGE_SECONDS ?? 8 * 60 * 60;
-const SESSION_UPDATE_AGE_SECONDS = env.SESSION_UPDATE_AGE_SECONDS ?? 60 * 60;
+function readPositiveIntEnv(name: string, fallback: number): number {
+  const raw = process.env[name];
+  if (!raw) return fallback;
 
-const LOCKOUT_MAX_ATTEMPTS = env.AUTH_LOCKOUT_MAX_ATTEMPTS;
-const LOCKOUT_WINDOW_MS = env.AUTH_LOCKOUT_WINDOW_MINUTES * 60_000;
-const LOCKOUT_DURATION_MS = env.AUTH_LOCKOUT_DURATION_MINUTES * 60_000;
+  const parsed = Number.parseInt(raw, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+const SESSION_MAX_AGE_SECONDS = readPositiveIntEnv('SESSION_MAX_AGE_SECONDS', 8 * 60 * 60);
+const SESSION_UPDATE_AGE_SECONDS = readPositiveIntEnv('SESSION_UPDATE_AGE_SECONDS', 60 * 60);
+
+const LOCKOUT_MAX_ATTEMPTS = readPositiveIntEnv('AUTH_LOCKOUT_MAX_ATTEMPTS', 5);
+const LOCKOUT_WINDOW_MS = readPositiveIntEnv('AUTH_LOCKOUT_WINDOW_MINUTES', 15) * 60_000;
+const LOCKOUT_DURATION_MS = readPositiveIntEnv('AUTH_LOCKOUT_DURATION_MINUTES', 15) * 60_000;
 
 // Pre-computed bcrypt hash of an unguessable random string. Used to keep the
 // authorize() runtime constant when the email does not exist — frustrates
@@ -45,10 +52,10 @@ class AuthError extends Error {
 }
 
 const googleProvider =
-  env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET
+  process.env['GOOGLE_CLIENT_ID'] && process.env['GOOGLE_CLIENT_SECRET']
     ? GoogleProvider({
-        clientId: env.GOOGLE_CLIENT_ID,
-        clientSecret: env.GOOGLE_CLIENT_SECRET,
+        clientId: process.env['GOOGLE_CLIENT_ID'],
+        clientSecret: process.env['GOOGLE_CLIENT_SECRET'],
         authorization: {
           params: {
             prompt: 'consent',
@@ -349,5 +356,5 @@ export const authOptions: NextAuthOptions = {
   pages: {
     signIn: '/login',
   },
-  secret: env.NEXTAUTH_SECRET,
+  secret: process.env['NEXTAUTH_SECRET'],
 };

@@ -4,7 +4,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import connectDB from '@/lib/mongoose';
 import DraftQuiz from '@/models/DraftQuiz';
-import { deletePDF, OBJECT_STORAGE_PUBLIC_BASE_URL } from '@/lib/s3';
+import { BUCKET_NAME, deletePDF, OBJECT_STORAGE_PUBLIC_BASE_URL } from '@/lib/s3';
 import { apiErr, apiOk } from '@/lib/api/response';
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
@@ -46,8 +46,7 @@ export async function POST(request: NextRequest) {
         return apiErr('forbidden', 'Invalid s3Key for current user', 403);
       }
 
-      const bucket = process.env['OBJECT_STORAGE_BUCKET'] || 'rinkuzu-pdfs';
-      pdfUrl = `${OBJECT_STORAGE_PUBLIC_BASE_URL}/${bucket}/${pdfKey}`;
+      pdfUrl = `${OBJECT_STORAGE_PUBLIC_BASE_URL}/${BUCKET_NAME}/${pdfKey}`;
 
       const parsedFileSize = Number(rawFileSize);
       fileSize = Number.isFinite(parsedFileSize) && parsedFileSize > 0 ? parsedFileSize : 0;

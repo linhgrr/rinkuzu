@@ -6,6 +6,8 @@ import { Resend } from 'resend';
 import { PasswordChanged } from './templates/PasswordChanged';
 import { ResetPassword } from './templates/ResetPassword';
 import { VerifyEmail } from './templates/VerifyEmail';
+import { env } from '@/lib/env';
+import { publicEnv } from '@/lib/public-env';
 
 type MailMessage = {
   to: string;
@@ -20,38 +22,15 @@ let cachedResend: Resend | null = null;
 
 function getResendClient(): Resend {
   if (cachedResend) return cachedResend;
-  const apiKey = process.env['RESEND_API_KEY'];
-  if (!apiKey) {
-    throw new Error('RESEND_API_KEY is not set');
-  }
-  cachedResend = new Resend(apiKey);
+  cachedResend = new Resend(env.RESEND_API_KEY);
   return cachedResend;
 }
 
-function logToConsole(msg: MailMessage): void {
-  console.warn('[mail:dev] queued', {
-    to: msg.to,
-    subject: msg.subject,
-    preview: msg.text.slice(0, 200),
-  });
-}
-
 export async function sendTransactionalMail(msg: MailMessage): Promise<void> {
-  const from = process.env['MAIL_FROM'];
-  const apiKey = process.env['RESEND_API_KEY'];
-
-  if (!apiKey || !from) {
-    if (process.env['NODE_ENV'] === 'production') {
-      throw new Error('Mailer is not configured: set RESEND_API_KEY and MAIL_FROM');
-    }
-    logToConsole(msg);
-    return;
-  }
-
   try {
     const client = getResendClient();
     const { data, error } = await client.emails.send({
-      from,
+      from: env.MAIL_FROM,
       to: [msg.to],
       subject: msg.subject,
       html: msg.html,
@@ -69,16 +48,12 @@ export async function sendTransactionalMail(msg: MailMessage): Promise<void> {
     console.warn('[mail:resend] sent', { id: data.id, to: msg.to, subject: msg.subject });
   } catch (error) {
     console.error('[mail] send failed', error);
-    if (process.env['NODE_ENV'] === 'production') throw error;
+    throw error;
   }
 }
 
 function siteUrl(): string {
-  return (
-    process.env['NEXT_PUBLIC_SITE_URL'] ||
-    process.env['NEXTAUTH_URL'] ||
-    'http://localhost:3000'
-  ).replace(/\/$/, '');
+  return publicEnv.NEXT_PUBLIC_SITE_URL.replace(/\/$/, '');
 }
 
 async function renderMail(element: React.ReactElement): Promise<{ html: string; text: string }> {

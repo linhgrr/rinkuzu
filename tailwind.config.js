@@ -3,13 +3,7 @@ module.exports = {
   darkMode: ['class', '[data-theme="dark"]'],
   content: {
     relative: true,
-    files: [
-      './**/*.{js,ts,jsx,tsx,mdx}',
-      '!./node_modules/**/*',
-      '!./.next/**/*',
-      '!./coverage/**/*',
-      '!./dist/**/*',
-    ],
+    files: ['./src/**/*.{js,ts,jsx,tsx,mdx}'],
   },
   theme: {
     extend: {

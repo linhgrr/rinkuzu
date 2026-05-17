@@ -1,20 +1,12 @@
 import type { Metadata } from 'next';
 import { defaultLocale, locales, type Locale } from '@/i18n/config';
-
-// IMPORTANT: Set NEXT_PUBLIC_SITE_URL=https://www.rinkuzu.app in Vercel environment variables.
-// This value is used for all canonical URLs, Open Graph tags, hreflangs, sitemaps, and JSON-LD schemas.
-// If unset, this fallback is used.
-const FALLBACK_SITE_URL = 'https://www.rinkuzu.app';
+import { publicEnv } from '@/lib/public-env';
 
 function trimTrailingSlash(url: string): string {
   return url.endsWith('/') ? url.slice(0, -1) : url;
 }
 
-export const siteUrl = new URL(
-  trimTrailingSlash(
-    process.env['NEXT_PUBLIC_SITE_URL'] || process.env['NEXTAUTH_URL'] || FALLBACK_SITE_URL,
-  ),
-);
+export const siteUrl = new URL(trimTrailingSlash(publicEnv.NEXT_PUBLIC_SITE_URL));
 
 function normalizeSeoPath(path: string): string {
   if (!path || path.trim() === '') return '/';

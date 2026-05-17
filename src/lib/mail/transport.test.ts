@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { resendSendMock, ResendCtor } = vi.hoisted(() => {
   const resendSendMock = vi.fn();
@@ -19,19 +19,9 @@ describe('sendTransactionalMail', () => {
     resendSendMock.mockReset();
     resendSendMock.mockResolvedValue({ data: { id: 're_123' }, error: null });
     __resetMailClient();
-    delete process.env['RESEND_API_KEY'];
-    process.env['MAIL_FROM'] = 'noreply@example.com';
-  });
-
-  afterEach(() => {
-    delete process.env['RESEND_API_KEY'];
-    delete process.env['MAIL_FROM'];
-    vi.unstubAllEnvs();
   });
 
   it('sends via Resend SDK with idempotency key', async () => {
-    process.env['RESEND_API_KEY'] = 'rk_test';
-
     await sendTransactionalMail({
       to: 'a@b.com',
       subject: 'hi',
@@ -52,8 +42,6 @@ describe('sendTransactionalMail', () => {
   });
 
   it('throws when Resend returns error in production', async () => {
-    process.env['RESEND_API_KEY'] = 'rk_test';
-    vi.stubEnv('NODE_ENV', 'production');
     resendSendMock.mockResolvedValueOnce({
       data: null,
       error: { name: 'validation_error', message: 'Invalid `from`' },
@@ -69,7 +57,7 @@ describe('sendTransactionalMail', () => {
     ).rejects.toThrow(/validation_error.*Invalid `from`/);
   });
 
-  it('logs to console in dev when no API key', async () => {
+  it('logs a successful Resend send', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
     await sendTransactionalMail({
@@ -80,14 +68,14 @@ describe('sendTransactionalMail', () => {
     });
 
     expect(warn).toHaveBeenCalledWith(
-      '[mail:dev] queued',
-      expect.objectContaining({ to: 'a@b.com', subject: 'hi' }),
+      '[mail:resend] sent',
+      expect.objectContaining({ id: 're_123', to: 'a@b.com', subject: 'hi' }),
     );
-    expect(resendSendMock).not.toHaveBeenCalled();
+    expect(resendSendMock).toHaveBeenCalledTimes(1);
   });
 
-  it('throws in production when API key missing', async () => {
-    vi.stubEnv('NODE_ENV', 'production');
+  it('throws when Resend returns no id and no error', async () => {
+    resendSendMock.mockResolvedValueOnce({ data: null, error: null });
 
     await expect(
       sendTransactionalMail({
@@ -96,6 +84,6 @@ describe('sendTransactionalMail', () => {
         html: '<p>hi</p>',
         text: 'hi',
       }),
-    ).rejects.toThrow(/Mailer is not configured/);
+    ).rejects.toThrow(/returned no id and no error/);
   });
 });

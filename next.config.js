@@ -112,6 +112,22 @@ const withPWA = require('next-pwa')({
 const createNextIntlPlugin = require('next-intl/plugin');
 const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 
+function requireOriginEnv(name) {
+  const value = process.env[name];
+  if (typeof value !== 'string' || value.trim() === '') {
+    throw new Error(`${name} is required`);
+  }
+  const raw = value.trim();
+
+  try {
+    return new URL(raw.includes('://') ? raw : `https://${raw}`).origin;
+  } catch {
+    throw new Error(`${name} must be a valid URL`);
+  }
+}
+
+const objectStorageConnectOrigin = requireOriginEnv('OBJECT_STORAGE_ENDPOINT_EXTERNAL');
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -177,7 +193,14 @@ const nextConfig = {
               "img-src 'self' data: https: blob:",
               "font-src 'self' data:",
               "media-src 'self' https://d8j0ntlcm91z4.cloudfront.net https://*.cloudfront.net",
-              "connect-src 'self' blob: data: https://www.googletagmanager.com https://www.google-analytics.com https://raw.githack.com https://raw.githubusercontent.com https://objectstorageapi.ap-southeast-1.clawcloudrun.com",
+              [
+                "connect-src 'self' blob: data:",
+                'https://www.googletagmanager.com',
+                'https://www.google-analytics.com',
+                'https://raw.githack.com',
+                'https://raw.githubusercontent.com',
+                objectStorageConnectOrigin,
+              ].join(' '),
               "frame-src 'none'",
               "object-src 'none'",
               "base-uri 'self'",

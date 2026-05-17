@@ -6,6 +6,7 @@ import { IPayOSService } from '@/interfaces/services/IPayOSService';
 import { ISubscriptionRepository } from '@/interfaces/repositories/ISubscriptionRepository';
 import { IUserRepository } from '@/interfaces/repositories/IUserRepository';
 import { assertTrustedPayosCheckoutUrl } from '@/lib/security/trusted-navigation';
+import { env } from '@/lib/env';
 
 export class SubscriptionPaymentService {
   constructor(
@@ -52,7 +53,7 @@ export class SubscriptionPaymentService {
     });
 
     // Create payment request with PayOS
-    const baseUrl = process.env['NEXTAUTH_URL'] || 'http://localhost:3001';
+    const baseUrl = env.NEXTAUTH_URL;
     const returnUrl = `${baseUrl}/payment/success?orderCode=${orderCode}`;
     const cancelUrl = `${baseUrl}/payment/cancel?orderCode=${orderCode}`;
 

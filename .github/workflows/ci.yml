@@ -123,18 +123,7 @@ jobs:
         run: npm ci
 
       - name: React Doctor
-        id: react-doctor
-        uses: millionco/react-doctor@3bb230f7528c70a8514c89632657a78ba51e015f
-        with:
-          directory: .
-          diff: master
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          node-version: '22'
-
-      - name: Require perfect React Doctor score
-        run: |
-          echo "React Doctor score: ${{ steps.react-doctor.outputs.score }}"
-          test "${{ steps.react-doctor.outputs.score }}" = "100"
+        run: npm run check:react-doctor
 
   perf-advisory:
     needs: quality

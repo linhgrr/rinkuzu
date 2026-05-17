@@ -250,14 +250,11 @@ export const useAdaptiveDashboard = ({
       }
 
       dispatch({ type: 'patch', value: { loading: true } });
-      const hydrationPromise = Promise.allSettled([
+      const [healthResult, subjectsResult, historyResult] = await Promise.allSettled([
         checkApiHealth(),
         getSubjects(),
         getSubjectProgressHistory(5),
       ]);
-      if (!isActive) return;
-      const [healthResult, subjectsResult, historyResult] = await hydrationPromise;
-      if (!isActive) return;
       const nextState: Partial<AdaptiveDashboardState> = {
         loading: false,
         apiOnline: healthResult.status === 'fulfilled' ? healthResult.value : false,
@@ -275,7 +272,9 @@ export const useAdaptiveDashboard = ({
         console.error('Failed to hydrate session history', historyResult.reason);
       }
 
-      dispatch({ type: 'hydrate', value: nextState });
+      if (isActive) {
+        dispatch({ type: 'hydrate', value: nextState });
+      }
     };
 
     void hydrateDashboard();

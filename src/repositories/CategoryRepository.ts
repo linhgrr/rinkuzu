@@ -3,6 +3,7 @@ import Category from '@/models/Category';
 import { buildPaginationMeta } from '@/repositories/pagination';
 import { BaseRepository } from '@/repositories/base';
 import { ICategory, ICategoryRepository } from '@/interfaces/repositories/ICategoryRepository';
+import type { FilterQuery } from 'mongoose';
 
 function normalizeSlug(value: string): string {
   return decodeURIComponent(value)
@@ -70,7 +71,7 @@ export class CategoryRepository extends BaseRepository<ICategory> implements ICa
     const limit = options.limit || 10;
     const skip = (page - 1) * limit;
 
-    const query: any = {};
+    const query: FilterQuery<ICategory> = {};
     if (options.search) {
       query.name = { $regex: options.search, $options: 'i' };
     }
@@ -154,7 +155,20 @@ export class CategoryRepository extends BaseRepository<ICategory> implements ICa
     }));
   }
 
-  async getStatsWithQuizCount(): Promise<any[]> {
+  async getStatsWithQuizCount(): Promise<
+    Array<{
+      _id: string;
+      name: string;
+      description?: string;
+      color: string;
+      slug?: string;
+      quizCount: number;
+      isActive: boolean;
+      createdBy: string;
+      createdAt: Date;
+      updatedAt: Date;
+    }>
+  > {
     await connectDB();
     const result = await Category.aggregate([
       {

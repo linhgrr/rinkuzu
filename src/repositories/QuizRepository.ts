@@ -3,7 +3,9 @@ import Quiz from '@/models/Quiz';
 import { IQuiz, IQuizRepository } from '@/interfaces/repositories/IQuizRepository';
 import { buildPaginationMeta } from '@/repositories/pagination';
 import { BaseRepository } from '@/repositories/base';
-import { Types } from 'mongoose';
+import { Types, type FilterQuery, type UpdateQuery } from 'mongoose';
+
+type QuizSort = Record<string, 1 | -1>;
 
 export class QuizRepository extends BaseRepository<IQuiz> implements IQuizRepository {
   constructor() {
@@ -42,11 +44,11 @@ export class QuizRepository extends BaseRepository<IQuiz> implements IQuizReposi
   }
 
   async findAll(
-    filter: any = {},
+    filter: FilterQuery<IQuiz> = {},
     options: {
       page?: number;
       limit?: number;
-      sort?: any;
+      sort?: QuizSort;
       populate?: string[];
       compact?: boolean;
     } = {},
@@ -59,10 +61,10 @@ export class QuizRepository extends BaseRepository<IQuiz> implements IQuizReposi
     const page = options.page || 1;
     const limit = options.limit || 10;
     const skip = (page - 1) * limit;
-    const sort = options.sort || { createdAt: -1 };
+    const sort: QuizSort = options.sort || { createdAt: -1 };
 
     if (options.compact) {
-      const normalizedFilter = { ...filter };
+      const normalizedFilter: FilterQuery<IQuiz> = { ...filter };
 
       if (
         typeof normalizedFilter.category === 'string' &&
@@ -194,7 +196,7 @@ export class QuizRepository extends BaseRepository<IQuiz> implements IQuizReposi
     const limit = options.limit || 10;
     const skip = (page - 1) * limit;
 
-    const filter: any = { author: userId };
+    const filter: FilterQuery<IQuiz> = { author: userId };
     if (options.status) {
       filter.status = options.status;
     }
@@ -259,9 +261,9 @@ export class QuizRepository extends BaseRepository<IQuiz> implements IQuizReposi
 
   async updateStatus(id: string, status: string, reviewNote?: string): Promise<IQuiz | null> {
     await connectDB();
-    const updateData: any = { status };
+    const updateData: UpdateQuery<IQuiz> = { status };
     if (reviewNote) {
-      updateData.reviewNote = reviewNote;
+      updateData['reviewNote'] = reviewNote;
     }
     return (await Quiz.findByIdAndUpdate(id, updateData, {
       new: true,

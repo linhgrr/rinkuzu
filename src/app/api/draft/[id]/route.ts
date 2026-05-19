@@ -1,11 +1,8 @@
 // /src/app/api/draft/[id]/route.ts
-import { NextRequest } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { withAuth } from '@/lib/api/auth';
 import connectDB from '@/lib/mongoose';
 import DraftQuiz from '@/models/DraftQuiz';
 import { deletePDF } from '@/lib/s3';
-import { AsyncRouteParams } from '@/types/next-route';
 import { apiErr, apiOk } from '@/lib/api/response';
 
 type DraftQuestion = {
@@ -51,14 +48,9 @@ type DraftQuizLean = {
   expiresAt: Date;
 };
 
-export async function GET(request: NextRequest, { params }: AsyncRouteParams<{ id: string }>) {
+export const GET = withAuth<{ id: string }>(async (_request, { params, userId }) => {
   try {
-    const { id } = await params;
-    const session = await getServerSession(authOptions);
-    const userId = (session?.user as { id?: string } | undefined)?.id;
-    if (!userId) {
-      return apiErr('unauthorized', 'Unauthorized', 401);
-    }
+    const { id } = params;
 
     await connectDB();
 
@@ -86,16 +78,11 @@ export async function GET(request: NextRequest, { params }: AsyncRouteParams<{ i
     console.error('Get draft error:', error);
     return apiErr('internal_error', 'Failed to get draft', 500);
   }
-}
+});
 
-export async function DELETE(request: NextRequest, { params }: AsyncRouteParams<{ id: string }>) {
+export const DELETE = withAuth<{ id: string }>(async (_request, { params, userId }) => {
   try {
-    const { id } = await params;
-    const session = await getServerSession(authOptions);
-    const userId = (session?.user as { id?: string } | undefined)?.id;
-    if (!userId) {
-      return apiErr('unauthorized', 'Unauthorized', 401);
-    }
+    const { id } = params;
 
     await connectDB();
 
@@ -128,4 +115,4 @@ export async function DELETE(request: NextRequest, { params }: AsyncRouteParams<
     console.error('Delete draft error:', error);
     return apiErr('internal_error', 'Failed to delete draft', 500);
   }
-}
+});

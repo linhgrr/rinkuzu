@@ -1,6 +1,6 @@
 import { IQuiz } from '@/interfaces/repositories/IQuizRepository';
+import { createSubscriptionService } from '@/lib/subscription-factory';
 import { ServiceResult } from '@/interfaces/services/types';
-import { ServiceFactory } from '@/lib/serviceFactory';
 
 export function getAuthorId(author: IQuiz['author'] | undefined): string | undefined {
   if (!author) return undefined;
@@ -29,7 +29,7 @@ export async function checkPrivateQuizAccess(
   const authorId = getAuthorId(quiz.author);
   if (userRole === 'admin' || authorId === userId) return null;
 
-  const subscriptionService = ServiceFactory.createSubscriptionService();
+  const subscriptionService = createSubscriptionService();
   const isPremium = await subscriptionService.isUserPremium(userId);
 
   if (isPremium) return null;

@@ -41,7 +41,7 @@ async function getAuthOptions() {
  * Returns 401 if not authenticated, 403 if wrong role.
  * Provides userId, email, and session to the handler.
  */
-function withAuth<TParams extends RouteParams = RouteParams>(
+export function withAuth<TParams extends RouteParams = RouteParams>(
   handler: RouteHandler<TParams>,
   options?: WithAuthOptions,
 ) {

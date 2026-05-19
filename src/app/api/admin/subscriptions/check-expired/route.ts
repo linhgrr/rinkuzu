@@ -1,10 +1,10 @@
 import { NextRequest } from 'next/server';
+import { createSubscriptionService } from '@/lib/subscription-factory';
 import { withAdmin } from '@/lib/api/auth';
-import { ServiceFactory } from '@/lib/serviceFactory';
 import { apiErr, apiOk } from '@/lib/api/response';
 
 const doCheckExpired = async () => {
-  const subscriptionService = ServiceFactory.createSubscriptionService();
+  const subscriptionService = createSubscriptionService();
   const updatedCount = await subscriptionService.checkAndUpdateExpiredSubscriptions();
   return apiOk({ updatedCount }, 200, {
     meta: { message: 'Expired subscriptions checked and updated successfully' },

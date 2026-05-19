@@ -3,7 +3,7 @@ import Subscription, { ISubscription } from '@/models/Subscription';
 import { buildPaginationMeta } from '@/repositories/pagination';
 import { BaseRepository } from '@/repositories/base';
 import { ISubscriptionRepository } from '@/interfaces/repositories/ISubscriptionRepository';
-import mongoose from 'mongoose';
+import mongoose, { type FilterQuery } from 'mongoose';
 
 export class SubscriptionRepository
   extends BaseRepository<ISubscription>
@@ -79,7 +79,7 @@ export class SubscriptionRepository
   }
 
   async findWithPagination(
-    filter: any,
+    filter: FilterQuery<ISubscription>,
     page: number,
     limit: number,
   ): Promise<{

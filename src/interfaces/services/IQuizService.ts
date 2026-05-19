@@ -2,6 +2,7 @@ import { IQuiz } from '@/interfaces/repositories/IQuizRepository';
 import type { IQuestion } from '@/models/Quiz';
 import { PaginationMeta } from '@/types';
 import { ServiceResult } from '@/interfaces/services/types';
+import type { Session } from 'next-auth';
 
 export interface CreateQuizRequest {
   title: string;
@@ -23,6 +24,32 @@ export interface QuizListOptions {
   userId?: string;
   onlyMine?: boolean;
   compact?: boolean;
+}
+
+export interface DiscussionCommentDTO {
+  _id: string;
+  questionIndex: number;
+  content: string;
+  authorId: string;
+  authorEmail?: string;
+  authorName?: string;
+  authorAvatar?: string;
+  createdAt: Date;
+  updatedAt?: Date;
+}
+
+export interface FlashcardCardDTO {
+  question: string;
+  answer: string;
+  questionImage?: string;
+  optionImages?: (string | undefined)[];
+}
+
+export interface FlashcardQuizDTO {
+  _id: string;
+  title: string;
+  description?: string;
+  cards: FlashcardCardDTO[];
 }
 
 export interface IQuizService {
@@ -60,7 +87,7 @@ export interface IQuizService {
   submitQuizAttempt(
     slug: string,
     answers: (number | number[])[],
-    session: Record<string, unknown> | null,
+    session: Session | null,
     userEmail?: string,
   ): Promise<
     ServiceResult<{
@@ -73,21 +100,21 @@ export interface IQuizService {
 
   getQuizDiscussions(
     slug: string,
-    session?: Record<string, unknown> | null,
-  ): Promise<ServiceResult<any[]>>;
+    session?: Session | null,
+  ): Promise<ServiceResult<DiscussionCommentDTO[]>>;
 
   addDiscussionComment(
     slug: string,
     questionIndex: number,
     content: string,
     userEmail: string,
-    session?: Record<string, unknown> | null,
-  ): Promise<ServiceResult<any>>;
+    session?: Session | null,
+  ): Promise<ServiceResult<DiscussionCommentDTO>>;
 
   getQuizForFlashcards(
     slug: string,
-    session: Record<string, unknown> | null,
-  ): Promise<ServiceResult<any>>;
+    session: Session | null,
+  ): Promise<ServiceResult<FlashcardQuizDTO>>;
 
   reportQuiz(
     slug: string,

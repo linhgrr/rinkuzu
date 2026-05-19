@@ -1,8 +1,7 @@
 import { NextRequest } from 'next/server';
-import { getServerSession } from 'next-auth';
+import { createSubscriptionService } from '@/lib/subscription-factory';
 import { z, ZodError } from 'zod';
-import { authOptions } from '@/lib/auth';
-import { ServiceFactory } from '@/lib/serviceFactory';
+import { withAuth } from '@/lib/api/auth';
 import { apiOk, apiErr } from '@/lib/api/response';
 import { extractUnknownErrorMessage } from '@/lib/api/error';
 
@@ -13,13 +12,8 @@ const verifySubscriptionSchema = z.object({
   ]),
 });
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest, { userId }) => {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return apiErr('unauthorized', 'Unauthorized', 401);
-    }
-
     let payload: unknown;
     try {
       payload = await request.json();
@@ -37,13 +31,13 @@ export async function POST(request: NextRequest) {
       throw error;
     }
 
-    const subscriptionService = ServiceFactory.createSubscriptionService();
+    const subscriptionService = createSubscriptionService();
     const numericOrderCode =
       typeof input.orderCode === 'string' ? Number.parseInt(input.orderCode, 10) : input.orderCode;
 
     const result = await subscriptionService.verifyAndActivateSubscription(
       numericOrderCode,
-      session.user.id,
+      userId,
     );
 
     return apiOk(result);
@@ -55,4 +49,4 @@ export async function POST(request: NextRequest) {
       500,
     );
   }
-}
+});

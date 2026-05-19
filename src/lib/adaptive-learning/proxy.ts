@@ -107,8 +107,8 @@ export async function proxyAdaptiveRequest(
 ) {
   try {
     const session = await getServerSession(authOptions);
-    const userId = (session?.user as any)?.id;
-    const userRole = (session?.user as any)?.role;
+    const userId = session?.user?.id;
+    const userRole = session?.user?.role;
     if (!userId) {
       return apiErr('unauthorized', 'Unauthorized', 401);
     }

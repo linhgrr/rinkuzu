@@ -678,14 +678,20 @@ describe('SubscriptionService billing hardening', () => {
       'subscription.isActive': true,
     });
 
-    await expect(service.updateSubscriptionById('sub-1', { status: 'bad' })).resolves.toEqual({
+    await expect(
+      service.updateSubscriptionById('sub-1', { status: 'bad' as never }),
+    ).resolves.toEqual({
       success: false,
       error: 'Invalid subscription status',
+      statusCode: 400,
     });
-    await expect(service.updateSubscriptionById('sub-1', { foo: 'bar' })).resolves.toEqual({
-      success: false,
-      error: 'No valid subscription fields provided',
-    });
+    await expect(service.updateSubscriptionById('sub-1', { foo: 'bar' } as never)).resolves.toEqual(
+      {
+        success: false,
+        error: 'No valid subscription fields provided',
+        statusCode: 400,
+      },
+    );
   });
 
   it('returns safe errors for missing or failing admin subscription updates', async () => {
@@ -701,10 +707,12 @@ describe('SubscriptionService billing hardening', () => {
     await expect(service.updateSubscriptionById('missing', { isActive: false })).resolves.toEqual({
       success: false,
       error: 'Subscription not found',
+      statusCode: 404,
     });
     await expect(service.updateSubscriptionById('sub-1', { isActive: false })).resolves.toEqual({
       success: false,
       error: 'database unavailable',
+      statusCode: 500,
     });
     expect(subscriptionRepository.updateById).toHaveBeenCalledTimes(2);
   });

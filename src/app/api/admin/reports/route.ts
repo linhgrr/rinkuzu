@@ -8,10 +8,13 @@ export const dynamic = 'force-dynamic';
 export const GET = withAdmin(async (request: NextRequest) => {
   try {
     const { searchParams } = new URL(request.url);
+    const status = searchParams.get('status');
+    const pageRaw = searchParams.get('page');
+    const limitRaw = searchParams.get('limit');
     const searchParamsObj = {
-      status: searchParams.get('status'),
-      page: searchParams.get('page'),
-      limit: searchParams.get('limit'),
+      ...(status ? { search: status } : {}),
+      page: pageRaw ? parseInt(pageRaw, 10) : 1,
+      limit: limitRaw ? parseInt(limitRaw, 10) : 20,
     };
 
     const adminService = serviceFactory.getAdminService();

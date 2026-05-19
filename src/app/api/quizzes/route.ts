@@ -1,15 +1,20 @@
 import { NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { withAuth } from '@/lib/api/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
 import { apiErr, apiOk } from '@/lib/api/response';
 
 const quizService = serviceFactory.getQuizService();
 
-// GET /api/quizzes - List quizzes with filtering
+// GET /api/quizzes - List quizzes with filtering.
+// Public + authenticated dual path: anonymous callers see only published+public quizzes.
+//
+const _authOptions = authOptions;
+
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession(_authOptions);
     const isGuest = !session?.user;
     const url = new URL(request.url);
     const status = isGuest ? 'published' : url.searchParams.get('status') || undefined;
@@ -27,8 +32,8 @@ export async function GET(request: NextRequest) {
       page,
       limit,
       isPrivate: isGuest ? false : undefined,
-      userRole: (session?.user as { role?: string })?.role,
-      userId: (session?.user as { id?: string })?.id,
+      userRole: session?.user?.role,
+      userId: session?.user?.id,
       onlyMine: !isGuest && mine !== null && mine !== 'false',
       compact,
     });
@@ -44,16 +49,11 @@ export async function GET(request: NextRequest) {
 }
 
 // POST /api/quizzes - Create quiz from prepared data
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest, { userId }) => {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return apiErr('unauthorized', 'Unauthorized', 401);
-    }
-
     const { title, description, category, questions, isPrivate, pdfUrl } = await request.json();
 
-    const quiz = await quizService.createQuiz((session.user as { id: string }).id, {
+    const quiz = await quizService.createQuiz(userId, {
       title,
       description,
       category,
@@ -80,4 +80,4 @@ export async function POST(request: NextRequest) {
 
     return apiErr('internal_error', 'Internal server error', 500);
   }
-}
+});

@@ -5,11 +5,15 @@ import { serviceFactory } from '@/lib/serviceFactory';
 import { AsyncRouteParams } from '@/types/next-route';
 import { apiOk, apiErr, apiServiceErr } from '@/lib/api/response';
 
+// Public + authenticated dual path: anonymous attempts pass `userEmail` in body.
+//
+const _authOptions = authOptions;
+
 export async function POST(request: NextRequest, { params }: AsyncRouteParams<{ slug: string }>) {
   try {
     const [{ slug }, session, payload] = await Promise.all([
       params,
-      getServerSession(authOptions),
+      getServerSession(_authOptions),
       request.json(),
     ]);
     const { answers, userEmail } = payload as { answers?: unknown; userEmail?: string };
@@ -24,7 +28,12 @@ export async function POST(request: NextRequest, { params }: AsyncRouteParams<{ 
 
     const quizService = serviceFactory.getQuizService();
 
-    const result = await quizService.submitQuizAttempt(slug, answers, session, userEmail);
+    const result = await quizService.submitQuizAttempt(
+      slug,
+      answers as (number | number[])[],
+      session,
+      userEmail,
+    );
 
     if (!result.success) {
       return apiServiceErr(result, 400);

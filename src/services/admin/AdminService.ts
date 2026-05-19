@@ -1,10 +1,26 @@
-import { IAdminService } from '@/interfaces/services/IAdminService';
+import {
+  IAdminService,
+  type AdminActivityStats,
+  type AdminCategoryDTO,
+  type AdminCategoryStat,
+  type AdminCreatorStat,
+  type AdminMessageResult,
+  type AdminPaginatedCategories,
+  type AdminPaginatedUsers,
+  type AdminReportItem,
+  type AdminStats,
+  type SearchParams,
+} from '@/interfaces/services/IAdminService';
 import { ICategoryRepository } from '@/interfaces/repositories/ICategoryRepository';
 import { IUserRepository } from '@/interfaces/repositories/IUserRepository';
 import { IReportRepository } from '@/interfaces/repositories/IReportRepository';
 import { IQuizRepository } from '@/interfaces/repositories/IQuizRepository';
 import { IAttemptRepository } from '@/interfaces/repositories/IAttemptRepository';
 import { ServiceResult } from '@/interfaces/services/types';
+
+function toMessage(error: unknown, fallback: string): string {
+  return error instanceof Error ? error.message : fallback;
+}
 
 export class AdminService implements IAdminService {
   constructor(
@@ -15,7 +31,9 @@ export class AdminService implements IAdminService {
     private attemptRepository: IAttemptRepository,
   ) {}
 
-  async getCategories(searchParams: any): Promise<ServiceResult<any>> {
+  async getCategories(
+    searchParams: SearchParams,
+  ): Promise<ServiceResult<AdminPaginatedCategories>> {
     try {
       const { search, page = 1, limit = 20 } = searchParams;
 
@@ -28,7 +46,7 @@ export class AdminService implements IAdminService {
       return {
         success: true,
         data: {
-          categories: result.categories,
+          categories: result.categories as AdminCategoryDTO[],
           pagination: result.pagination,
         },
       };
@@ -42,11 +60,19 @@ export class AdminService implements IAdminService {
     }
   }
 
-  async createCategory(categoryData: any, adminId: string): Promise<ServiceResult<any>> {
+  async createCategory(
+    categoryData: Record<string, unknown>,
+    adminId: string,
+  ): Promise<ServiceResult<AdminCategoryDTO>> {
     try {
-      const { name, description, color } = categoryData;
+      const name = typeof categoryData['name'] === 'string' ? categoryData['name'].trim() : '';
+      const description =
+        typeof categoryData['description'] === 'string'
+          ? categoryData['description'].trim()
+          : undefined;
+      const color = typeof categoryData['color'] === 'string' ? categoryData['color'] : undefined;
 
-      if (!name?.trim()) {
+      if (!name) {
         return {
           success: false,
           error: 'Category name is required',
@@ -56,7 +82,7 @@ export class AdminService implements IAdminService {
 
       // Check if category exists
       const existing = await this.categoryRepository.findAll({
-        search: name.trim(),
+        search: name,
       });
 
       if (existing.categories.length > 0) {
@@ -68,15 +94,15 @@ export class AdminService implements IAdminService {
       }
 
       const category = await this.categoryRepository.create({
-        name: name.trim(),
-        description: description?.trim(),
+        name,
+        description,
         color: color || '#009d8c',
         createdBy: adminId,
       });
 
       return {
         success: true,
-        data: category,
+        data: category as AdminCategoryDTO,
       };
     } catch (error) {
       console.error('Create category error:', error);
@@ -88,7 +114,10 @@ export class AdminService implements IAdminService {
     }
   }
 
-  async updateCategory(id: string, categoryData: any): Promise<ServiceResult<any>> {
+  async updateCategory(
+    id: string,
+    categoryData: Record<string, unknown>,
+  ): Promise<ServiceResult<AdminCategoryDTO>> {
     try {
       const category = await this.categoryRepository.update(id, categoryData);
 
@@ -102,7 +131,7 @@ export class AdminService implements IAdminService {
 
       return {
         success: true,
-        data: category,
+        data: category as AdminCategoryDTO,
       };
     } catch (error) {
       console.error('Update category error:', error);
@@ -140,7 +169,7 @@ export class AdminService implements IAdminService {
     }
   }
 
-  async getUsers(searchParams: any): Promise<ServiceResult<any>> {
+  async getUsers(searchParams: SearchParams): Promise<ServiceResult<AdminPaginatedUsers>> {
     try {
       const { search, page = 1, limit = 10 } = searchParams;
 
@@ -152,7 +181,7 @@ export class AdminService implements IAdminService {
 
       return {
         success: true,
-        data: result,
+        data: result as unknown as AdminPaginatedUsers,
       };
     } catch (error) {
       console.error('Get users error:', error);
@@ -168,7 +197,7 @@ export class AdminService implements IAdminService {
     userId: string,
     role: string,
     adminEmail: string,
-  ): Promise<ServiceResult<any>> {
+  ): Promise<ServiceResult<AdminMessageResult>> {
     try {
       if (role !== 'admin' && role !== 'user') {
         return {
@@ -195,7 +224,7 @@ export class AdminService implements IAdminService {
         };
       }
 
-      const _updated = await this.userRepository.update(userId, { role });
+      await this.userRepository.update(userId, { role });
 
       return {
         success: true,
@@ -246,7 +275,7 @@ export class AdminService implements IAdminService {
     }
   }
 
-  async getReports(_searchParams: any): Promise<ServiceResult<any>> {
+  async getReports(_searchParams: SearchParams): Promise<ServiceResult<AdminReportItem[]>> {
     try {
       // Implement reports logic if needed
       return {
@@ -262,7 +291,10 @@ export class AdminService implements IAdminService {
     }
   }
 
-  async updateReportStatus(_reportId: string, _status: string): Promise<ServiceResult<any>> {
+  async updateReportStatus(
+    _reportId: string,
+    _status: string,
+  ): Promise<ServiceResult<AdminMessageResult>> {
     try {
       // Implement report status update logic if needed
       return {
@@ -278,7 +310,7 @@ export class AdminService implements IAdminService {
     }
   }
 
-  async getStats(): Promise<ServiceResult<any>> {
+  async getStats(): Promise<ServiceResult<AdminStats>> {
     try {
       const [totalUsers, roleStats, quizStats, totalAttempts, totalCategories, activeCategories] =
         await Promise.all([
@@ -320,7 +352,7 @@ export class AdminService implements IAdminService {
     }
   }
 
-  async getActivityStats(): Promise<ServiceResult<any>> {
+  async getActivityStats(): Promise<ServiceResult<AdminActivityStats>> {
     try {
       const now = new Date();
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -341,13 +373,13 @@ export class AdminService implements IAdminService {
         recentQuizzes,
         recentAttempts,
       ] = await Promise.all([
-        this.userRepository.count({ createdAt: { $gte: today } } as any),
+        this.userRepository.count({ createdAt: { $gte: today } }),
         this.quizRepository.count({ createdAt: { $gte: today } }),
         this.attemptRepository.count({ takenAt: { $gte: today } }),
-        this.userRepository.count({ createdAt: { $gte: thisWeek } } as any),
+        this.userRepository.count({ createdAt: { $gte: thisWeek } }),
         this.quizRepository.count({ createdAt: { $gte: thisWeek } }),
         this.attemptRepository.count({ takenAt: { $gte: thisWeek } }),
-        this.userRepository.count({ createdAt: { $gte: thisMonth } } as any),
+        this.userRepository.count({ createdAt: { $gte: thisMonth } }),
         this.quizRepository.count({ createdAt: { $gte: thisMonth } }),
         this.attemptRepository.count({ takenAt: { $gte: thisMonth } }),
         this.userRepository.findAll({ limit: 5 }),
@@ -376,7 +408,10 @@ export class AdminService implements IAdminService {
             },
           },
           recentActivity: {
-            users: recentUsers.users.map((u: any) => ({ email: u.email, createdAt: u.createdAt })),
+            users: recentUsers.users.map((u) => ({
+              email: (u as { email: string }).email,
+              createdAt: (u as { createdAt?: Date }).createdAt,
+            })),
             quizzes: recentQuizzes.quizzes,
             attempts: recentAttempts,
           },
@@ -392,12 +427,12 @@ export class AdminService implements IAdminService {
     }
   }
 
-  async getCategoryStats(): Promise<ServiceResult<any>> {
+  async getCategoryStats(): Promise<ServiceResult<AdminCategoryStat[]>> {
     try {
       const stats = await this.categoryRepository.getStatsWithQuizCount();
       return {
         success: true,
-        data: stats,
+        data: stats as unknown as AdminCategoryStat[],
       };
     } catch (_error) {
       return {
@@ -408,7 +443,7 @@ export class AdminService implements IAdminService {
     }
   }
 
-  async getCreatorStats(): Promise<ServiceResult<any>> {
+  async getCreatorStats(): Promise<ServiceResult<AdminCreatorStat[]>> {
     try {
       // Implement creator stats if needed
       return {
@@ -424,7 +459,7 @@ export class AdminService implements IAdminService {
     }
   }
 
-  async initializeSystem(): Promise<ServiceResult<any>> {
+  async initializeSystem(): Promise<ServiceResult<AdminMessageResult>> {
     try {
       // Implement system initialization if needed
       return {
@@ -450,7 +485,7 @@ export class AdminService implements IAdminService {
     } catch (error) {
       return {
         success: false,
-        error: (error as any)?.message || 'Failed to delete report',
+        error: toMessage(error, 'Failed to delete report'),
         statusCode: 500,
       };
     }

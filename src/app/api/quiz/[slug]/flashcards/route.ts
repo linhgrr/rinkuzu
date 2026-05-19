@@ -5,10 +5,15 @@ import { serviceFactory } from '@/lib/serviceFactory';
 import { AsyncRouteParams } from '@/types/next-route';
 import { apiOk, apiErr, apiServiceErr } from '@/lib/api/response';
 
-export async function GET(request: NextRequest, { params }: AsyncRouteParams<{ slug: string }>) {
+// Public + authenticated dual path: anonymous users can fetch flashcards for
+// public quizzes; service-layer gates private quizzes.
+//
+const _authOptions = authOptions;
+
+export async function GET(_request: NextRequest, { params }: AsyncRouteParams<{ slug: string }>) {
   try {
     const { slug } = await params;
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession(_authOptions);
     const quizService = serviceFactory.getQuizService();
 
     const result = await quizService.getQuizForFlashcards(slug, session);

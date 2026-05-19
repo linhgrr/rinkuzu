@@ -5,10 +5,17 @@ import { serviceFactory } from '@/lib/serviceFactory';
 import { AsyncRouteParams } from '@/types/next-route';
 import { apiErr, apiOk, apiServiceErr } from '@/lib/api/response';
 
+// This route accepts BOTH authenticated users (via session) and anonymous
+// users that pass `userEmail` as a query param to inspect their own attempt.
+// Because of the dual path it cannot be wrapped by withAuth — boundary is
+// enforced inline below.
+//
+const _authOptions = authOptions;
+
 export async function GET(request: NextRequest, { params }: AsyncRouteParams<{ id: string }>) {
   try {
     const { id } = await params;
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession(_authOptions);
     const { searchParams } = new URL(request.url);
     const userEmail = searchParams.get('userEmail');
 

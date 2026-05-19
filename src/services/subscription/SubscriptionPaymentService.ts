@@ -1,5 +1,6 @@
 import connectDB from '@/lib/mongoose';
 import crypto from 'crypto';
+import mongoose, { Types } from 'mongoose';
 import Plan from '@/models/Plan';
 import { PaymentRequest } from '@/interfaces/services/ISubscriptionService';
 import { IPayOSService } from '@/interfaces/services/IPayOSService';
@@ -7,6 +8,26 @@ import { ISubscriptionRepository } from '@/interfaces/repositories/ISubscription
 import { IUserRepository } from '@/interfaces/repositories/IUserRepository';
 import { assertTrustedPayosCheckoutUrl } from '@/lib/security/trusted-navigation';
 import { env } from '@/lib/env';
+
+interface UserSubscriptionEmbed {
+  endDate?: Date | string | null;
+  isActive?: boolean;
+}
+
+interface UserWithName {
+  email: string;
+  name?: string;
+  subscription?: UserSubscriptionEmbed;
+}
+
+/**
+ * Mongoose normally coerces string ids to ObjectId at schema validation
+ * time, but unit tests mock the repository and bypass that path. Coerce
+ * defensively here so the persisted shape always matches `ISubscription.user`.
+ */
+function toUserObjectId(userId: string): Types.ObjectId | string {
+  return Types.ObjectId.isValid(userId) ? new mongoose.Types.ObjectId(userId) : userId;
+}
 
 export class SubscriptionPaymentService {
   constructor(
@@ -43,7 +64,7 @@ export class SubscriptionPaymentService {
 
     // Create subscription record
     await this.subscriptionRepository.create({
-      user: userId as any,
+      user: toUserObjectId(userId) as Types.ObjectId,
       userEmail: user.email,
       type: planId,
       amount: plan.price,
@@ -73,7 +94,7 @@ export class SubscriptionPaymentService {
         returnUrl,
         cancelUrl,
         user.email,
-        (user as any).name,
+        (user as UserWithName).name,
       );
 
       if (paymentResponse.code !== '00') {
@@ -128,8 +149,8 @@ export class SubscriptionPaymentService {
   }
 
   private async isUserPremiumInternal(userId: string): Promise<boolean> {
-    const user = await this.userRepository.findById(userId);
-    const subscription = (user as any)?.subscription;
+    const user = (await this.userRepository.findById(userId)) as UserWithName | null;
+    const subscription = user?.subscription;
     if (!subscription) return false;
     if (!subscription.isActive) return false;
     if (subscription.endDate) {

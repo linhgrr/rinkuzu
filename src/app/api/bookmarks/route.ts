@@ -1,16 +1,14 @@
 import { NextRequest } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { withAuth } from '@/lib/api/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
 import { apiErr, apiOk } from '@/lib/api/response';
 
 const bookmarkService = serviceFactory.getBookmarkService();
 
 // GET - Get all bookmarks for current user
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest, { email }) => {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    if (!email) {
       return apiErr('unauthorized', 'Unauthorized', 401);
     }
 
@@ -18,7 +16,7 @@ export async function GET(request: NextRequest) {
     const page = parseInt(url.searchParams.get('page') || '1');
     const limit = parseInt(url.searchParams.get('limit') || '10');
 
-    const result = await bookmarkService.getBookmarksByUser(session.user.email, { page, limit });
+    const result = await bookmarkService.getBookmarksByUser(email, { page, limit });
 
     return apiOk({
       bookmarks: result.bookmarks,
@@ -28,20 +26,19 @@ export async function GET(request: NextRequest) {
     console.error('Error fetching bookmarks:', error);
     return apiErr('internal_error', 'Failed to fetch bookmarks', 500);
   }
-}
+});
 
 // POST - Create new bookmark
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest, { email }) => {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    if (!email) {
       return apiErr('unauthorized', 'Unauthorized', 401);
     }
 
     const body = await request.json();
     const { quiz, question, questionIndex } = body;
 
-    const bookmark = await bookmarkService.createBookmark(session.user.email, {
+    const bookmark = await bookmarkService.createBookmark(email, {
       quiz,
       question,
       questionIndex,
@@ -58,4 +55,4 @@ export async function POST(request: NextRequest) {
 
     return apiErr('internal_error', 'Failed to create bookmark', 500);
   }
-}
+});

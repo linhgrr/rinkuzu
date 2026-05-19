@@ -1,7 +1,5 @@
 import { NextRequest } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { withAuth } from '@/lib/api/auth';
+import { withAuth, withOptionalAuth } from '@/lib/api/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
 import { apiErr, apiOk } from '@/lib/api/response';
 
@@ -9,12 +7,8 @@ const quizService = serviceFactory.getQuizService();
 
 // GET /api/quizzes - List quizzes with filtering.
 // Public + authenticated dual path: anonymous callers see only published+public quizzes.
-//
-const _authOptions = authOptions;
-
-export async function GET(request: NextRequest) {
+export const GET = withOptionalAuth(async (request: NextRequest, { session, userId }) => {
   try {
-    const session = await getServerSession(_authOptions);
     const isGuest = !session?.user;
     const url = new URL(request.url);
     const status = isGuest ? 'published' : url.searchParams.get('status') || undefined;
@@ -33,7 +27,7 @@ export async function GET(request: NextRequest) {
       limit,
       isPrivate: isGuest ? false : undefined,
       userRole: session?.user?.role,
-      userId: session?.user?.id,
+      userId: userId ?? undefined,
       onlyMine: !isGuest && mine !== null && mine !== 'false',
       compact,
     });
@@ -46,7 +40,7 @@ export async function GET(request: NextRequest) {
     console.error('Get quizzes error:', error);
     return apiErr('internal_error', 'Internal server error', 500);
   }
-}
+});
 
 // POST /api/quizzes - Create quiz from prepared data
 export const POST = withAuth(async (request: NextRequest, { userId }) => {

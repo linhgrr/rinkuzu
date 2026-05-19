@@ -1,30 +1,24 @@
 import { NextRequest } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { withOptionalAuth } from '@/lib/api/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
-import { AsyncRouteParams } from '@/types/next-route';
 import { apiOk, apiErr, apiServiceErr } from '@/lib/api/response';
 
-// Public + authenticated dual path: anonymous users can fetch flashcards for
-// public quizzes; service-layer gates private quizzes.
-//
-const _authOptions = authOptions;
+export const GET = withOptionalAuth<{ slug: string }>(
+  async (_request: NextRequest, { params, session }) => {
+    try {
+      const { slug } = params;
+      const quizService = serviceFactory.getQuizService();
 
-export async function GET(_request: NextRequest, { params }: AsyncRouteParams<{ slug: string }>) {
-  try {
-    const { slug } = await params;
-    const session = await getServerSession(_authOptions);
-    const quizService = serviceFactory.getQuizService();
+      const result = await quizService.getQuizForFlashcards(slug, session);
 
-    const result = await quizService.getQuizForFlashcards(slug, session);
+      if (!result.success) {
+        return apiServiceErr(result, 400);
+      }
 
-    if (!result.success) {
-      return apiServiceErr(result, 400);
+      return apiOk(result.data);
+    } catch (error: unknown) {
+      console.error('Get flashcard quiz error:', error);
+      return apiErr('internal_error', 'Internal server error', 500);
     }
-
-    return apiOk(result.data);
-  } catch (error: unknown) {
-    console.error('Get flashcard quiz error:', error);
-    return apiErr('internal_error', 'Internal server error', 500);
-  }
-}
+  },
+);

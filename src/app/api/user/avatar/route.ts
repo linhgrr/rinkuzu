@@ -1,6 +1,5 @@
 import { NextRequest } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { withAuth } from '@/lib/api/auth';
 import connectDB from '@/lib/mongoose';
 import User from '@/models/User';
 import { apiErr, apiOk } from '@/lib/api/response';
@@ -9,11 +8,9 @@ const IMGBB_API_URL = 'https://api.imgbb.com/1/upload';
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
-export async function PUT(request: NextRequest) {
+export const PUT = withAuth(async (request: NextRequest, { email }) => {
   try {
-    const session = await getServerSession(authOptions);
-
-    if (!session?.user?.email) {
+    if (!email) {
       return apiErr('unauthorized', 'Authentication required', 401);
     }
 
@@ -34,7 +31,7 @@ export async function PUT(request: NextRequest) {
 
     await connectDB();
 
-    const user = await User.findOne({ email: session.user.email }).select('_id');
+    const user = await User.findOne({ email }).select('_id');
     if (!user) {
       return apiErr('not_found', 'User not found', 404);
     }
@@ -64,32 +61,30 @@ export async function PUT(request: NextRequest) {
     }
 
     const avatarUrl = imgbbJson.data.display_url;
-    await User.updateOne({ email: session.user.email }, { avatar: avatarUrl });
+    await User.updateOne({ email }, { avatar: avatarUrl });
 
     return apiOk({ avatar: avatarUrl });
   } catch (error) {
     console.error('Upload avatar error:', error);
     return apiErr('internal_error', 'Internal server error', 500);
   }
-}
+});
 
-export async function DELETE() {
+export const DELETE = withAuth(async (_request, { email }) => {
   try {
-    const session = await getServerSession(authOptions);
-
-    if (!session?.user?.email) {
+    if (!email) {
       return apiErr('unauthorized', 'Authentication required', 401);
     }
 
     await connectDB();
 
-    const user = await User.findOne({ email: session.user.email }).select('avatar');
+    const user = await User.findOne({ email }).select('avatar');
     if (!user) {
       return apiErr('not_found', 'User not found', 404);
     }
 
     if (user.avatar) {
-      await User.updateOne({ email: session.user.email }, { $unset: { avatar: 1 } });
+      await User.updateOne({ email }, { $unset: { avatar: 1 } });
     }
 
     return apiOk(null, 200, { meta: { message: 'Avatar removed' } });
@@ -97,4 +92,4 @@ export async function DELETE() {
     console.error('Delete avatar error:', error);
     return apiErr('internal_error', 'Internal server error', 500);
   }
-}
+});

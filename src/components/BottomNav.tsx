@@ -126,9 +126,9 @@ export default function BottomNav() {
       href: '/profile',
       labelKey: 'profile',
       icon: (isActive: boolean) =>
-        (session.user as any)?.avatar ? (
+        session.user?.avatar ? (
           <Image
-            src={(session.user as any).avatar}
+            src={session.user.avatar}
             alt=""
             width={24}
             height={24}
@@ -142,9 +142,7 @@ export default function BottomNav() {
             <span
               className={`text-xs font-bold ${isActive ? 'text-brand-trust' : 'text-neutral-500'}`}
             >
-              {((session.user as any)?.displayName || session.user?.email || 'U')
-                .charAt(0)
-                .toUpperCase()}
+              {(session.user?.displayName || session.user?.email || 'U').charAt(0).toUpperCase()}
             </span>
           </div>
         ),

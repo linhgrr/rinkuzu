@@ -8,7 +8,7 @@ export const GET = withAdmin(async (request: NextRequest) => {
   try {
     const { searchParams } = new URL(request.url);
     const searchOptions = {
-      search: searchParams.get('search'),
+      search: searchParams.get('search') ?? undefined,
       page: parseInt(searchParams.get('page') || '1'),
       limit: parseInt(searchParams.get('limit') || '20'),
     };

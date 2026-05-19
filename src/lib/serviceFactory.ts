@@ -1,4 +1,4 @@
-import type { QuizService } from '@/services/quiz/QuizService';
+import { QuizService } from '@/services/quiz/QuizService';
 import { UserService } from '@/services/user/UserService';
 import { BookmarkService } from '@/services/bookmark/BookmarkService';
 import { CategoryService } from '@/services/category/CategoryService';
@@ -11,31 +11,34 @@ import { AttemptRepository } from '@/repositories/AttemptRepository';
 import { DiscussionRepository } from '@/repositories/DiscussionRepository';
 import { ReportRepository } from '@/repositories/ReportRepository';
 import { BookmarkRepository } from '@/repositories/BookmarkRepository';
-import { SubscriptionRepository } from '@/repositories/SubscriptionRepository';
-import { SubscriptionService } from '@/services/subscription/SubscriptionService';
-import { PayOSService } from '@/services/payment/PayOSService';
+
+import { createSubscriptionService } from '@/lib/subscription-factory';
+import type { SubscriptionService } from '@/services/subscription/SubscriptionService';
+
+interface Repositories {
+  quiz: QuizRepository;
+  user: UserRepository;
+  category: CategoryRepository;
+  attempt: AttemptRepository;
+  discussion: DiscussionRepository;
+  report: ReportRepository;
+  bookmark: BookmarkRepository;
+}
+
+interface Services {
+  quiz?: QuizService;
+  user?: UserService;
+  bookmark?: BookmarkService;
+  category?: CategoryService;
+  admin?: AdminService;
+}
 
 export class ServiceFactory {
   private static instance: ServiceFactory;
-  private repositories: {
-    quiz: QuizRepository;
-    user: UserRepository;
-    category: CategoryRepository;
-    attempt: AttemptRepository;
-    discussion: DiscussionRepository;
-    report: ReportRepository;
-    bookmark: BookmarkRepository;
-  };
-  private services: {
-    quiz?: QuizService;
-    user?: UserService;
-    bookmark?: BookmarkService;
-    category?: CategoryService;
-    admin?: AdminService;
-  } = {};
+  private repositories: Repositories;
+  private services: Services = {};
 
   private constructor() {
-    // Initialize repositories
     this.repositories = {
       quiz: new QuizRepository(),
       user: new UserRepository(),
@@ -56,12 +59,7 @@ export class ServiceFactory {
 
   getQuizService(): QuizService {
     if (!this.services.quiz) {
-      // Dynamic import to avoid circular dependency (QuizService imports ServiceFactory)
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const { QuizService: QuizServiceImpl } = require('@/services/quiz/QuizService') as {
-        QuizService: new (...args: any[]) => QuizService;
-      };
-      this.services.quiz = new QuizServiceImpl(
+      this.services.quiz = new QuizService(
         this.repositories.quiz,
         this.repositories.category,
         this.repositories.user,
@@ -127,12 +125,12 @@ export class ServiceFactory {
     return this.repositories.report;
   }
 
+  /**
+   * @deprecated Import `createSubscriptionService` from `@/lib/subscription-factory` directly.
+   * Kept for backward-compat; resolves to the standalone factory.
+   */
   static createSubscriptionService(): SubscriptionService {
-    const subscriptionRepository = new SubscriptionRepository();
-    const userRepository = new UserRepository();
-    const payosService = new PayOSService();
-
-    return new SubscriptionService(subscriptionRepository, userRepository, payosService);
+    return createSubscriptionService();
   }
 }
 

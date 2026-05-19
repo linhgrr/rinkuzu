@@ -1,47 +1,35 @@
-import { ICategory } from '@/interfaces/repositories/ICategoryRepository';
+import { IQuiz } from '@/interfaces/repositories/IQuizRepository';
+import type { ICategory as ICategoryDoc } from '@/interfaces/repositories/ICategoryRepository';
 import type { PaginationMeta } from '@/types';
+import type { ServiceResult } from '@/interfaces/services/types';
 
-interface CategoryWithStats extends ICategory {
+export interface CategoryWithStats {
+  _id: string;
+  name: string;
+  description?: string;
+  color: string;
+  slug?: string;
   quizCount: number;
+  isActive: boolean;
+  createdBy?: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-interface CategoryBySlugResult {
-  category: ICategory;
-  quizzes: unknown[];
+export interface CategoryBySlugResult {
+  category: ICategoryDoc;
+  quizzes: IQuiz[];
   pagination: PaginationMeta;
 }
 
 export interface ICategoryService {
-  getCategories(): Promise<{
-    success: boolean;
-    data?: CategoryWithStats[];
-    error?: string;
-    statusCode?: number;
-  }>;
-
+  getCategories(): Promise<ServiceResult<CategoryWithStats[]>>;
   getCategoryBySlug(
     slug: string,
     page?: number,
     limit?: number,
     search?: string,
-  ): Promise<{
-    success: boolean;
-    data?: CategoryBySlugResult;
-    error?: string;
-    statusCode?: number;
-  }>;
-
-  searchCategories(query: string): Promise<{
-    success: boolean;
-    data?: ICategory[];
-    error?: string;
-    statusCode?: number;
-  }>;
-
-  getCategoryStats(): Promise<{
-    success: boolean;
-    data?: CategoryWithStats[];
-    error?: string;
-    statusCode?: number;
-  }>;
+  ): Promise<ServiceResult<CategoryBySlugResult>>;
+  searchCategories(query: string): Promise<ServiceResult<ICategoryDoc[]>>;
+  getCategoryStats(): Promise<ServiceResult<CategoryWithStats[]>>;
 }

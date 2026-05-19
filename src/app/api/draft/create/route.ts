@@ -1,7 +1,6 @@
 // /src/app/api/draft/create/route.ts
 import { NextRequest } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { withAuth } from '@/lib/api/auth';
 import connectDB from '@/lib/mongoose';
 import DraftQuiz from '@/models/DraftQuiz';
 import { BUCKET_NAME, deletePDF, OBJECT_STORAGE_PUBLIC_BASE_URL } from '@/lib/s3';
@@ -10,14 +9,8 @@ import { apiErr, apiOk } from '@/lib/api/response';
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 const EXPIRY_HOURS = 48;
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest, { userId }) => {
   try {
-    const session = await getServerSession(authOptions);
-    const userId = (session?.user as { id?: string } | undefined)?.id;
-    if (!userId) {
-      return apiErr('unauthorized', 'Unauthorized', 401);
-    }
-
     const body = await request.json();
     const {
       title,
@@ -136,4 +129,4 @@ export async function POST(request: NextRequest) {
     console.error('Draft create error:', error);
     return apiErr('internal_error', 'Failed to create draft', 500);
   }
-}
+});

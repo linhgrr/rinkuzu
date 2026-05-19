@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
+import { createSubscriptionService } from '@/lib/subscription-factory';
 import { RateLimiterMongo } from 'rate-limiter-flexible';
 import connectDB from '@/lib/mongoose';
-import { ServiceFactory } from '@/lib/serviceFactory';
 import type { AdaptiveUserRole } from '@/lib/adaptive-learning/config';
 import { apiErr } from '@/lib/api/response';
 
@@ -189,7 +189,7 @@ export async function checkLlmRateLimit(
 ): Promise<LlmRateLimitResult> {
   await connectDB();
 
-  const subscriptionService = ServiceFactory.createSubscriptionService();
+  const subscriptionService = createSubscriptionService();
   const tier: Tier = (await subscriptionService.isUserPremium(userId)) ? 'premium' : 'free';
 
   const [minute, day] = await Promise.all([

@@ -1,10 +1,10 @@
 import { IQuizRepository, IQuiz } from '@/interfaces/repositories/IQuizRepository';
+import { createSubscriptionService } from '@/lib/subscription-factory';
 import { ICategoryRepository } from '@/interfaces/repositories/ICategoryRepository';
 import { IUserRepository } from '@/interfaces/repositories/IUserRepository';
 import { CreateQuizRequest } from '@/interfaces/services/IQuizService';
 import { ServiceResult } from '@/interfaces/services/types';
 import { generateSlug } from '@/lib/utils';
-import { ServiceFactory } from '@/lib/serviceFactory';
 import { getAuthorId } from './quiz-helpers';
 
 const VALID_QUESTION_TYPES = new Set(['single', 'multiple']);
@@ -125,7 +125,7 @@ export class QuizCrudService {
     userEmail?: string,
     userRole?: string,
     userId?: string,
-  ): Promise<ServiceResult<any>> {
+  ): Promise<ServiceResult<IQuiz>> {
     try {
       const quiz = await this.quizRepository.findById(id);
 
@@ -159,7 +159,7 @@ export class QuizCrudService {
 
         // Check if user has premium subscription
         if (userId) {
-          const subscriptionService = ServiceFactory.createSubscriptionService();
+          const subscriptionService = createSubscriptionService();
           const isPremium = await subscriptionService.isUserPremium(userId);
 
           if (!isPremium) {
@@ -191,10 +191,10 @@ export class QuizCrudService {
 
   async updateQuiz(
     id: string,
-    quizData: any,
+    quizData: Partial<IQuiz>,
     userEmail: string,
     userRole?: string,
-  ): Promise<ServiceResult<any>> {
+  ): Promise<ServiceResult<IQuiz>> {
     try {
       const quiz = await this.quizRepository.findById(id);
 
@@ -208,9 +208,7 @@ export class QuizCrudService {
 
       // Check permissions
       const isAdmin = userRole === 'admin';
-      const isAuthor = (quiz.author as any)?._id
-        ? (quiz.author as any)._id.toString() === userEmail
-        : quiz.author === userEmail;
+      const isAuthor = getAuthorId(quiz.author) === userEmail;
 
       if (!isAdmin && !isAuthor) {
         return {
@@ -221,6 +219,14 @@ export class QuizCrudService {
       }
 
       const updatedQuiz = await this.quizRepository.update(id, quizData);
+
+      if (!updatedQuiz) {
+        return {
+          success: false,
+          error: 'Quiz not found',
+          statusCode: 404,
+        };
+      }
 
       return {
         success: true,
@@ -254,9 +260,7 @@ export class QuizCrudService {
 
       // Check permissions
       const isAdmin = userRole === 'admin';
-      const isAuthor = (quiz.author as any)?._id
-        ? (quiz.author as any)._id.toString() === userEmail
-        : quiz.author === userEmail;
+      const isAuthor = getAuthorId(quiz.author) === userEmail;
 
       if (!isAdmin && !isAuthor) {
         return {

@@ -1,17 +1,11 @@
 import { NextRequest } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { withAuth } from '@/lib/api/auth';
 import { apiErr, apiOk } from '@/lib/api/response';
 
 const IMGBB_API_URL = 'https://api.imgbb.com/1/upload';
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
-export async function POST(request: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
-    return apiErr('unauthorized', 'Authentication required', 401);
-  }
-
+export const POST = withAuth(async (request: NextRequest) => {
   const apiKey = process.env['IMGBB_API_KEY'];
   if (!apiKey) {
     return apiErr('configuration_error', 'Image upload not configured', 500);
@@ -77,4 +71,4 @@ export async function POST(request: NextRequest) {
     height: d.height,
     size: d.size,
   });
-}
+});

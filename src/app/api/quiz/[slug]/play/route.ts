@@ -7,13 +7,18 @@ import { apiOk, apiErr, apiServiceErr } from '@/lib/api/response';
 
 const quizService = serviceFactory.getQuizService();
 
-export async function GET(request: NextRequest, { params }: AsyncRouteParams<{ slug: string }>) {
+// Public + authenticated dual path: anonymous players still need quiz data,
+// auth shapes only access to private quizzes (handled inside the service).
+//
+const _authOptions = authOptions;
+
+export async function GET(_request: NextRequest, { params }: AsyncRouteParams<{ slug: string }>) {
   try {
     const { slug } = await params;
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession(_authOptions);
 
-    const userRole = (session?.user as { role?: string })?.role;
-    const userId = (session?.user as { id?: string })?.id;
+    const userRole = session?.user?.role;
+    const userId = session?.user?.id;
 
     const result = await quizService.getQuizForPlay(slug, userRole, userId);
 

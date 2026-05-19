@@ -5,6 +5,20 @@ import { IPayOSService } from '@/interfaces/services/IPayOSService';
 import { ISubscriptionRepository } from '@/interfaces/repositories/ISubscriptionRepository';
 import { IUserRepository } from '@/interfaces/repositories/IUserRepository';
 import { DurationUtils } from '@/types/subscription';
+import type { ISubscription } from '@/models/Subscription';
+
+interface UserSubscriptionEmbed {
+  endDate?: Date | string | null;
+  isActive?: boolean;
+}
+
+interface UserWithSubscription {
+  subscription?: UserSubscriptionEmbed;
+}
+
+interface SubscriptionWithId extends ISubscription {
+  _id: { toString(): string };
+}
 
 export class SubscriptionActivationService {
   constructor(
@@ -125,13 +139,13 @@ export class SubscriptionActivationService {
   }
 
   async cancelSubscription(userId: string): Promise<{ success: boolean }> {
-    const user = await this.userRepository.findById(userId);
+    const user = (await this.userRepository.findById(userId)) as UserWithSubscription | null;
     if (!user) {
       throw new Error('User not found');
     }
 
     // Check if user has an active subscription with end date (time-limited subscription)
-    if (!(user as any).subscription?.endDate) {
+    if (!user.subscription?.endDate) {
       throw new Error('Only time-limited subscriptions can be cancelled');
     }
 
@@ -144,10 +158,10 @@ export class SubscriptionActivationService {
     const subscriptions = await this.subscriptionRepository.findByUser(userId);
     const activeSubscription = subscriptions.find(
       (sub) => sub.status === 'completed' && sub.isActive,
-    );
+    ) as SubscriptionWithId | undefined;
 
     if (activeSubscription) {
-      await this.subscriptionRepository.updateById((activeSubscription as any)._id.toString(), {
+      await this.subscriptionRepository.updateById(activeSubscription._id.toString(), {
         isActive: false,
       });
     }
@@ -156,7 +170,7 @@ export class SubscriptionActivationService {
   }
 
   private async activateSubscription(
-    subscription: any,
+    subscription: ISubscription,
     orderCode: number,
     transactionReference?: string,
   ): Promise<SubscriptionActivation> {

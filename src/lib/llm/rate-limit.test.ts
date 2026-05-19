@@ -17,10 +17,8 @@ vi.mock('@/lib/mongoose', () => ({
   default: connectDBMock,
 }));
 
-vi.mock('@/lib/serviceFactory', () => ({
-  ServiceFactory: {
-    createSubscriptionService: createSubscriptionServiceMock,
-  },
+vi.mock('@/lib/subscription-factory', () => ({
+  createSubscriptionService: createSubscriptionServiceMock,
 }));
 
 vi.mock('next/server', () => ({

@@ -11,6 +11,7 @@
         "allow": ["warn", "error"]
       }
     ],
+    "react-hooks/exhaustive-deps": "error",
     "unused-imports/no-unused-imports": "error",
     "@typescript-eslint/no-non-null-assertion": "error",
     "@typescript-eslint/no-unused-vars": [
@@ -20,6 +21,17 @@
         "caughtErrorsIgnorePattern": "^_",
         "varsIgnorePattern": "^_",
         "ignoreRestSiblings": true
+      }
+    ],
+    "no-restricted-syntax": [
+      "error",
+      {
+        "selector": "TSAsExpression[typeAnnotation.type='TSAnyKeyword'][expression.type='Identifier'][expression.name='session']",
+        "message": "Do not cast 'session' to any. Session is fully typed via src/types/next-auth.d.ts — use session.user.id / session.user.role directly."
+      },
+      {
+        "selector": "TSAsExpression[typeAnnotation.type='TSAnyKeyword'][expression.type='MemberExpression'][expression.object.name='session']",
+        "message": "Do not cast 'session.X' to any. Session is fully typed via src/types/next-auth.d.ts."
       }
     ]
   },
@@ -37,6 +49,46 @@
           {
             "selector": "MemberExpression[object.name='NextResponse'][property.name='json']",
             "message": "Use apiOk() / apiErr() from '@/lib/api/response' instead of NextResponse.json so all routes share one envelope."
+          },
+          {
+            "selector": "TSAsExpression[typeAnnotation.type='TSAnyKeyword']",
+            "message": "Do not use 'as any' in API routes. Validate inputs with zod, type session via withAuth/withAdmin from '@/lib/api/auth'."
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/services/**/*.ts", "src/repositories/**/*.ts", "src/interfaces/**/*.ts"],
+      "excludedFiles": ["**/*.test.ts", "**/*.spec.ts"],
+      "rules": {
+        "@typescript-eslint/no-explicit-any": "error"
+      }
+    },
+    {
+      "files": ["src/app/api/**/route.ts"],
+      "excludedFiles": [
+        "src/lib/auth.ts",
+        "src/lib/api/auth.ts",
+        "src/app/api/auth/**/route.ts",
+        "src/app/api/attempts/**/route.ts",
+        "src/app/api/quiz/*/attempt/route.ts",
+        "src/app/api/quiz/*/discussions/route.ts",
+        "src/app/api/quiz/*/flashcards/route.ts",
+        "src/app/api/quiz/*/play/route.ts",
+        "src/app/api/quiz/ask-ai/route.ts",
+        "src/app/api/quizzes/route.ts"
+      ],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              {
+                "name": "next-auth",
+                "importNames": ["getServerSession"],
+                "message": "Do not call getServerSession directly. Use withAuth/withAdmin from '@/lib/api/auth' so role/permission checks stay centralized."
+              }
+            ]
           }
         ]
       }

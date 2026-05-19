@@ -9,6 +9,7 @@ import { hashPassword, verifyPassword } from './password';
 import { recordAuthEvent } from './audit';
 import { loginSchema } from './validation/auth';
 import { env } from './env';
+import type { UserRole } from '@/types/next-auth';
 
 const isProd = env.NODE_ENV === 'production';
 
@@ -209,9 +210,15 @@ export const authOptions: NextAuthOptions = {
       // Only special-case Google. Credentials flow is fully handled in authorize().
       if (account?.provider !== 'google') return true;
 
-      const email = (profile as any)?.email?.toLowerCase().trim();
-      const emailVerified =
-        (profile as any)?.email_verified ?? (profile as any)?.emailVerified ?? false;
+      const googleProfile = (profile ?? {}) as {
+        email?: string;
+        email_verified?: boolean;
+        emailVerified?: boolean;
+        name?: string;
+        picture?: string;
+      };
+      const email = googleProfile.email?.toLowerCase().trim();
+      const emailVerified = googleProfile.email_verified ?? googleProfile.emailVerified ?? false;
 
       if (!email || !emailVerified) {
         return false;
@@ -227,8 +234,8 @@ export const authOptions: NextAuthOptions = {
         const setOnInsert: Record<string, unknown> = {
           role: 'user',
         };
-        if ((profile as any)?.name) update['displayName'] = (profile as any).name;
-        if ((profile as any)?.picture) update['avatar'] = (profile as any).picture;
+        if (googleProfile.name) update['displayName'] = googleProfile.name;
+        if (googleProfile.picture) update['avatar'] = googleProfile.picture;
 
         const user = await User.findOneAndUpdate(
           { email },
@@ -250,16 +257,22 @@ export const authOptions: NextAuthOptions = {
     },
     async jwt({ token, user, account, profile }) {
       if (user) {
-        token.role = (user as any).role;
-        token['avatar'] = (user as any).avatar;
-        token['displayName'] = (user as any).displayName;
-        token['pwc'] = (user as any).passwordChangedAt ?? null;
+        const u = user as {
+          role?: UserRole;
+          avatar?: string;
+          displayName?: string;
+          passwordChangedAt?: number | null;
+        };
+        if (u.role) token.role = u.role;
+        if (u.avatar !== undefined) token.avatar = u.avatar;
+        if (u.displayName !== undefined) token.displayName = u.displayName;
+        token.pwc = u.passwordChangedAt ?? null;
       }
 
       // Google sign-ins don't run our `authorize`, so user.id is the Google
       // sub. Fetch the Mongo user we just upserted and pin token.sub to it.
       if (account?.provider === 'google' && profile && typeof profile === 'object') {
-        const email = (profile as any).email?.toLowerCase().trim();
+        const email = (profile as { email?: string }).email?.toLowerCase().trim();
         if (email) {
           try {
             await connectDB();
@@ -267,17 +280,17 @@ export const authOptions: NextAuthOptions = {
               .select('_id role avatar displayName passwordChangedAt')
               .lean<{
                 _id: { toString(): string };
-                role?: 'admin' | 'user';
+                role?: UserRole;
                 avatar?: string;
                 displayName?: string;
                 passwordChangedAt?: Date | null;
               }>();
             if (dbUser) {
               token.sub = dbUser._id.toString();
-              token.role = dbUser.role ?? token.role;
-              token['avatar'] = dbUser.avatar ?? token['avatar'];
-              token['displayName'] = dbUser.displayName ?? token['displayName'];
-              token['pwc'] = dbUser.passwordChangedAt
+              if (dbUser.role) token.role = dbUser.role;
+              if (dbUser.avatar !== undefined) token.avatar = dbUser.avatar;
+              if (dbUser.displayName !== undefined) token.displayName = dbUser.displayName;
+              token.pwc = dbUser.passwordChangedAt
                 ? new Date(dbUser.passwordChangedAt).getTime()
                 : null;
             }
@@ -301,7 +314,7 @@ export const authOptions: NextAuthOptions = {
           .select('passwordChangedAt role avatar displayName email')
           .lean<{
             passwordChangedAt?: Date | null;
-            role?: 'admin' | 'user';
+            role?: UserRole;
             avatar?: string;
             displayName?: string;
             email?: string;
@@ -311,7 +324,7 @@ export const authOptions: NextAuthOptions = {
           return { ...session, user: undefined as never };
         }
 
-        const tokenPwc = typeof token['pwc'] === 'number' ? (token['pwc'] as number) : null;
+        const tokenPwc = typeof token.pwc === 'number' ? token.pwc : null;
         const dbPwc = dbUser.passwordChangedAt
           ? new Date(dbUser.passwordChangedAt).getTime()
           : null;
@@ -320,11 +333,11 @@ export const authOptions: NextAuthOptions = {
           return { ...session, user: undefined as never };
         }
 
-        (session.user as any).id = token.sub;
-        (session.user as any).role = dbUser.role ?? token.role;
-        (session.user as any).avatar = dbUser.avatar ?? token['avatar'];
-        (session.user as any).displayName = dbUser.displayName ?? token['displayName'];
-        if (dbUser.email) (session.user as any).email = dbUser.email;
+        session.user.id = token.sub;
+        session.user.role = dbUser.role ?? token.role;
+        session.user.avatar = dbUser.avatar ?? token.avatar;
+        session.user.displayName = dbUser.displayName ?? token.displayName;
+        if (dbUser.email) session.user.email = dbUser.email;
       } catch (error) {
         console.error('session-callback failed:', error);
         // Fail-closed on transient DB errors — drop the user payload.

@@ -3,7 +3,10 @@ import { IUserRepository } from '@/interfaces/repositories/IUserRepository';
 import { IDiscussionRepository } from '@/interfaces/repositories/IDiscussionRepository';
 import { IReportRepository } from '@/interfaces/repositories/IReportRepository';
 import { ServiceResult } from '@/interfaces/services/types';
+import type { Session } from 'next-auth';
 import { getAuthorId, checkPrivateQuizAccess } from './quiz-helpers';
+
+type DiscussionRecord = Awaited<ReturnType<IDiscussionRepository['findByQuiz']>>[number];
 
 export class QuizDiscussionService {
   constructor(
@@ -13,7 +16,10 @@ export class QuizDiscussionService {
     private reportRepository: IReportRepository,
   ) {}
 
-  async getQuizDiscussions(slug: string, session?: any): Promise<ServiceResult<any[]>> {
+  async getQuizDiscussions(
+    slug: string,
+    session?: Session | null,
+  ): Promise<ServiceResult<DiscussionRecord[]>> {
     try {
       const quiz = await this.quizRepository.findBySlug(slug);
 
@@ -94,8 +100,8 @@ export class QuizDiscussionService {
     questionIndex: number,
     content: string,
     userEmail: string,
-    session?: any,
-  ): Promise<ServiceResult<any>> {
+    session?: Session | null,
+  ): Promise<ServiceResult<DiscussionRecord>> {
     try {
       const quiz = await this.quizRepository.findBySlug(slug);
 
@@ -187,6 +193,14 @@ export class QuizDiscussionService {
           comments: [...(existingDiscussion.comments || []), commentData],
         },
       );
+
+      if (!updatedDiscussion) {
+        return {
+          success: false,
+          error: 'Failed to add comment',
+          statusCode: 500,
+        };
+      }
 
       return {
         success: true,

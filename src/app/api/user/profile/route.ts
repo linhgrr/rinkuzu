@@ -1,22 +1,19 @@
 import { NextRequest } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { withAuth } from '@/lib/api/auth';
 import connectDB from '@/lib/mongoose';
 import User from '@/models/User';
 import { apiErr, apiOk } from '@/lib/api/response';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export const GET = withAuth(async (_request, { email }) => {
   try {
-    const session = await getServerSession(authOptions);
-
-    if (!session?.user?.email) {
+    if (!email) {
       return apiErr('unauthorized', 'Authentication required', 401);
     }
 
     await connectDB();
-    const user = await User.findOne({ email: session.user.email }).select(
+    const user = await User.findOne({ email }).select(
       'email displayName bio avatar role createdAt subscription',
     );
 
@@ -37,13 +34,11 @@ export async function GET() {
     console.error('Get profile error:', error);
     return apiErr('internal_error', 'Internal server error', 500);
   }
-}
+});
 
-export async function PUT(request: NextRequest) {
+export const PUT = withAuth(async (request: NextRequest, { email }) => {
   try {
-    const session = await getServerSession(authOptions);
-
-    if (!session?.user?.email) {
+    if (!email) {
       return apiErr('unauthorized', 'Authentication required', 401);
     }
 
@@ -63,7 +58,7 @@ export async function PUT(request: NextRequest) {
     if (displayName !== undefined) updateData['displayName'] = displayName.trim();
     if (bio !== undefined) updateData['bio'] = bio.trim();
 
-    const user = await User.findOneAndUpdate({ email: session.user.email }, updateData, {
+    const user = await User.findOneAndUpdate({ email }, updateData, {
       new: true,
       select: 'email displayName bio avatar role createdAt',
     });
@@ -84,4 +79,4 @@ export async function PUT(request: NextRequest) {
     console.error('Update profile error:', error);
     return apiErr('internal_error', 'Internal server error', 500);
   }
-}
+});

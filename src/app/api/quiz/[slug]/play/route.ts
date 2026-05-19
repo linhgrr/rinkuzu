@@ -1,34 +1,26 @@
 import { NextRequest } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { withOptionalAuth } from '@/lib/api/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
-import { AsyncRouteParams } from '@/types/next-route';
 import { apiOk, apiErr, apiServiceErr } from '@/lib/api/response';
 
 const quizService = serviceFactory.getQuizService();
 
-// Public + authenticated dual path: anonymous players still need quiz data,
-// auth shapes only access to private quizzes (handled inside the service).
-//
-const _authOptions = authOptions;
+export const GET = withOptionalAuth<{ slug: string }>(
+  async (_request: NextRequest, { params, userId, session }) => {
+    try {
+      const { slug } = params;
+      const userRole = session?.user?.role;
 
-export async function GET(_request: NextRequest, { params }: AsyncRouteParams<{ slug: string }>) {
-  try {
-    const { slug } = await params;
-    const session = await getServerSession(_authOptions);
+      const result = await quizService.getQuizForPlay(slug, userRole, userId ?? undefined);
 
-    const userRole = session?.user?.role;
-    const userId = session?.user?.id;
+      if (!result.success) {
+        return apiServiceErr(result, 500);
+      }
 
-    const result = await quizService.getQuizForPlay(slug, userRole, userId);
-
-    if (!result.success) {
-      return apiServiceErr(result, 500);
+      return apiOk(result.data);
+    } catch (error: unknown) {
+      console.error('Get quiz for play error:', error);
+      return apiErr('internal_error', 'Internal server error', 500);
     }
-
-    return apiOk(result.data);
-  } catch (error: unknown) {
-    console.error('Get quiz for play error:', error);
-    return apiErr('internal_error', 'Internal server error', 500);
-  }
-}
+  },
+);

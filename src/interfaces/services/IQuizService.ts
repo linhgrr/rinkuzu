@@ -27,14 +27,22 @@ export interface QuizListOptions {
 }
 
 export interface DiscussionCommentDTO {
+  authorId: string;
+  authorEmail: string;
+  authorName?: string;
+  authorAvatar?: string;
+  content: string;
+  isEdited: boolean;
+  createdAt: Date;
+}
+
+export interface QuizDiscussionDTO {
   _id: string;
   questionIndex: number;
   content: string;
-  authorId: string;
-  authorEmail?: string;
-  authorName?: string;
-  authorAvatar?: string;
-  createdAt: Date;
+  ownerId: string;
+  comments: DiscussionCommentDTO[];
+  createdAt?: Date;
   updatedAt?: Date;
 }
 
@@ -101,7 +109,7 @@ export interface IQuizService {
   getQuizDiscussions(
     slug: string,
     session?: Session | null,
-  ): Promise<ServiceResult<DiscussionCommentDTO[]>>;
+  ): Promise<ServiceResult<QuizDiscussionDTO[]>>;
 
   addDiscussionComment(
     slug: string,
@@ -109,7 +117,7 @@ export interface IQuizService {
     content: string,
     userEmail: string,
     session?: Session | null,
-  ): Promise<ServiceResult<DiscussionCommentDTO>>;
+  ): Promise<ServiceResult<QuizDiscussionDTO>>;
 
   getQuizForFlashcards(
     slug: string,

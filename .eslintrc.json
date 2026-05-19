@@ -66,18 +66,7 @@
     },
     {
       "files": ["src/app/api/**/route.ts"],
-      "excludedFiles": [
-        "src/lib/auth.ts",
-        "src/lib/api/auth.ts",
-        "src/app/api/auth/**/route.ts",
-        "src/app/api/attempts/**/route.ts",
-        "src/app/api/quiz/*/attempt/route.ts",
-        "src/app/api/quiz/*/discussions/route.ts",
-        "src/app/api/quiz/*/flashcards/route.ts",
-        "src/app/api/quiz/*/play/route.ts",
-        "src/app/api/quiz/ask-ai/route.ts",
-        "src/app/api/quizzes/route.ts"
-      ],
+      "excludedFiles": ["src/lib/auth.ts", "src/lib/api/auth.ts", "src/app/api/auth/**/route.ts"],
       "rules": {
         "no-restricted-imports": [
           "error",
@@ -86,7 +75,7 @@
               {
                 "name": "next-auth",
                 "importNames": ["getServerSession"],
-                "message": "Do not call getServerSession directly. Use withAuth/withAdmin from '@/lib/api/auth' so role/permission checks stay centralized."
+                "message": "Do not call getServerSession directly. Use withAuth/withAdmin/withOptionalAuth from '@/lib/api/auth' so role/permission checks stay centralized."
               }
             ]
           }

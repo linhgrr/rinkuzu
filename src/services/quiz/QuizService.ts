@@ -2,7 +2,7 @@ import {
   IQuizService,
   CreateQuizRequest,
   QuizListOptions,
-  type DiscussionCommentDTO,
+  type QuizDiscussionDTO,
   type FlashcardQuizDTO,
 } from '@/interfaces/services/IQuizService';
 import { PaginationMeta } from '@/types';
@@ -139,10 +139,8 @@ export class QuizService implements IQuizService {
   async getQuizDiscussions(
     slug: string,
     session?: Session | null,
-  ): Promise<ServiceResult<DiscussionCommentDTO[]>> {
-    return this.discussionService.getQuizDiscussions(slug, session) as unknown as Promise<
-      ServiceResult<DiscussionCommentDTO[]>
-    >;
+  ): Promise<ServiceResult<QuizDiscussionDTO[]>> {
+    return this.discussionService.getQuizDiscussions(slug, session);
   }
 
   async addDiscussionComment(
@@ -151,14 +149,14 @@ export class QuizService implements IQuizService {
     content: string,
     userEmail: string,
     session?: Session | null,
-  ): Promise<ServiceResult<DiscussionCommentDTO>> {
+  ): Promise<ServiceResult<QuizDiscussionDTO>> {
     return this.discussionService.addDiscussionComment(
       slug,
       questionIndex,
       content,
       userEmail,
       session,
-    ) as unknown as Promise<ServiceResult<DiscussionCommentDTO>>;
+    );
   }
 
   async getQuizFlashcards(

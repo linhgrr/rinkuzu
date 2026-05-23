@@ -3,6 +3,7 @@ import type {
   SessionHistoryItem,
 } from '@/features/adaptive-learning/types';
 import { fetchApiData } from '@/lib/api/client';
+import { logger } from '@/lib/logger';
 import {
   buildAdaptiveServiceHeaders,
   resolveAdaptiveApiUrl,
@@ -73,7 +74,7 @@ export async function fetchAdaptiveDashboardData(
 
     return { subjects, sessionHistory };
   } catch (error) {
-    console.error('Failed fetching adaptive learning data server-side:', error);
+    logger.error({ error }, 'Failed fetching adaptive learning data server-side');
     return { subjects: [], sessionHistory: [] };
   }
 }

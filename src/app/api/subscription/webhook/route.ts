@@ -1,7 +1,8 @@
 import crypto from 'crypto';
+import { createSubscriptionService } from '@/lib/subscription-factory';
 import { NextRequest } from 'next/server';
-import { ServiceFactory } from '@/lib/serviceFactory';
 import { apiErr, apiOk } from '@/lib/api/response';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -55,7 +56,7 @@ export async function POST(request: NextRequest) {
       return apiErr('validation_error', 'Invalid order code', 400);
     }
 
-    const subscriptionService = ServiceFactory.createSubscriptionService();
+    const subscriptionService = createSubscriptionService();
     await subscriptionService.activateVerifiedSubscription(orderCode, {
       orderCode: body.data['orderCode'] as string | number,
       amount: body.data['amount'] as string | number,
@@ -65,7 +66,7 @@ export async function POST(request: NextRequest) {
 
     return apiOk(null);
   } catch (error) {
-    console.error('PayOS webhook error:', error);
+    logger.error({ error }, 'PayOS webhook error');
     return apiErr('internal_error', 'Webhook processing failed', 500);
   }
 }

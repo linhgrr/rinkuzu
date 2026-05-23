@@ -1,22 +1,15 @@
-import { getServerSession } from 'next-auth';
+import { withAuth } from '@/lib/api/auth';
 import connectDB from '@/lib/mongoose';
 import QuestionProgress from '@/models/QuestionProgress';
-import { authOptions } from '@/lib/auth';
 import { apiErr, apiOk } from '@/lib/api/response';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export const GET = withAuth(async (_request, { userId }) => {
   try {
-    const session = await getServerSession(authOptions);
-
-    if (!session || !session.user) {
-      return apiErr('unauthorized', 'Unauthorized', 401);
-    }
-
     await connectDB();
 
-    const userId = (session.user as any).id;
     const now = new Date();
 
     // Find questions due for review (or new ones if we implement that logic here)
@@ -33,7 +26,7 @@ export async function GET() {
       count: dueQuestions.length,
     });
   } catch (error) {
-    console.error('Error fetching due reviews:', error);
+    logger.error({ error }, 'Error fetching due reviews');
     return apiErr('internal_error', 'Internal Server Error', 500);
   }
-}
+});

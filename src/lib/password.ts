@@ -1,6 +1,7 @@
 import 'server-only';
 import argon2 from 'argon2';
 import * as bcrypt from 'bcryptjs';
+import { logger } from '@/lib/logger';
 
 // Password hashing functions (SERVER-SIDE ONLY)
 export async function hashPassword(password: string): Promise<string> {
@@ -28,7 +29,7 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
 
     return false;
   } catch (error) {
-    console.error('Password verification error (not a mismatch — unexpected failure):', error);
+    logger.error({ error }, 'Password verification error (not a mismatch — unexpected failure)');
     return false;
   }
 }

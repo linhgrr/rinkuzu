@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { assertOk, assertFail } from '@/interfaces/services/types';
 import { UserService } from './UserService';
 
 function createService(overrides: Record<string, any> = {}) {
@@ -174,10 +175,10 @@ describe('UserService', () => {
 
       const result = await service.getAttemptDetails('attempt-1', 'user@test.com');
 
-      expect(result.success).toBe(true);
-      expect(result.data?.quiz.questions).toHaveLength(2);
-      expect(result.data?.quiz.questions[0]?.isCorrect).toBe(true);
-      expect(result.data?.quiz.questions[1]?.isCorrect).toBe(true);
+      assertOk(result);
+      expect(result.data.quiz.questions).toHaveLength(2);
+      expect(result.data.quiz.questions[0]?.isCorrect).toBe(true);
+      expect(result.data.quiz.questions[1]?.isCorrect).toBe(true);
     });
 
     it('handles anonymous users (no user record)', async () => {
@@ -204,7 +205,7 @@ describe('UserService', () => {
 
       const result = await service.getAttemptDetails('attempt-1', 'anon@test.com');
 
-      expect(result.success).toBe(true);
+      assertOk(result);
       // Anonymous: email is used as userId
       expect(attemptRepository.findByIdWithQuiz).toHaveBeenCalledWith('attempt-1', 'anon@test.com');
     });
@@ -218,7 +219,7 @@ describe('UserService', () => {
 
       const result = await service.getAttemptDetails('missing', 'user@test.com');
 
-      expect(result.success).toBe(false);
+      assertFail(result);
       expect(result.error).toBe('Attempt not found');
       expect(result.statusCode).toBe(404);
     });
@@ -232,7 +233,7 @@ describe('UserService', () => {
 
       const result = await service.getAttemptDetails('attempt-1', 'user@test.com');
 
-      expect(result.success).toBe(false);
+      assertFail(result);
       expect(result.error).toBe('Failed to get attempt details');
       expect(result.statusCode).toBe(500);
     });

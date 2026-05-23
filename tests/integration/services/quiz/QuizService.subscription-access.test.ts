@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { assertOk, assertFail } from '@/interfaces/services/types';
 
 import { QuizService } from '@/services/quiz/QuizService';
 import { ServiceFactory } from '@/lib/serviceFactory';
@@ -56,7 +57,7 @@ describe('QuizService subscription access gates', () => {
 
     const result = await service.submitQuizAttempt('private-quiz', [0], null, 'anon@example.com');
 
-    expect(result.success).toBe(false);
+    assertFail(result);
     expect(result.statusCode).toBe(401);
     expect(result.error).toBe('Authentication required to access private quiz');
   });
@@ -69,9 +70,10 @@ describe('QuizService subscription access gates', () => {
 
     const result = await service.getQuizDiscussions('private-quiz', {
       user: { id: 'user-1', role: 'user' },
+      expires: '2099-01-01',
     });
 
-    expect(result.success).toBe(false);
+    assertFail(result);
     expect(result.statusCode).toBe(403);
     expect(result.error).toBe('Premium subscription required to access private quizzes');
     expect(discussionRepository.findByQuiz).not.toHaveBeenCalled();
@@ -86,9 +88,10 @@ describe('QuizService subscription access gates', () => {
 
     const result = await service.getQuizDiscussions('private-quiz', {
       user: { id: 'user-1', role: 'user' },
+      expires: '2099-01-01',
     });
 
-    expect(result.success).toBe(true);
+    assertOk(result);
     expect(discussionRepository.findByQuiz).toHaveBeenCalledWith('quiz-1');
     expect(discussionRepository.create).toHaveBeenCalledOnce();
   });

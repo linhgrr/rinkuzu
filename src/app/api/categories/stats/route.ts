@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { serviceFactory } from '@/lib/serviceFactory';
 import { apiErr, apiOk, apiServiceErr } from '@/lib/api/response';
+import { logger } from '@/lib/logger';
 
 // GET /api/categories/stats - Get category statistics for public display
 export async function GET(_request: NextRequest) {
@@ -27,7 +28,7 @@ export async function GET(_request: NextRequest) {
       totalCategories: categoriesWithStats.length,
     });
   } catch (error: unknown) {
-    console.error('Get category stats error:', error);
+    logger.error({ error }, 'Get category stats error');
     return apiErr('internal_error', 'Internal server error', 500);
   }
 }

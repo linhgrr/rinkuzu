@@ -41,7 +41,7 @@ async function getAuthOptions() {
  * Returns 401 if not authenticated, 403 if wrong role.
  * Provides userId, email, and session to the handler.
  */
-function withAuth<TParams extends RouteParams = RouteParams>(
+export function withAuth<TParams extends RouteParams = RouteParams>(
   handler: RouteHandler<TParams>,
   options?: WithAuthOptions,
 ) {
@@ -88,4 +88,43 @@ export function withAdmin<TParams extends RouteParams = RouteParams>(
   handler: RouteHandler<TParams>,
 ) {
   return withAuth(handler, { role: 'admin' });
+}
+
+type OptionalAuthContext<TParams extends RouteParams = RouteParams> = {
+  userId: string | null;
+  email: string | null;
+  session: Session | null;
+  params: TParams;
+};
+
+type OptionalAuthHandler<TParams extends RouteParams = RouteParams> = (
+  request: NextRequest,
+  context: OptionalAuthContext<TParams>,
+) => Promise<Response>;
+
+/**
+ * Wraps a route that supports BOTH authenticated and anonymous access.
+ *
+ * Use this for endpoints where the response shape changes based on whether
+ * a session exists (e.g. public quiz play, anonymous attempts) instead of
+ * calling `getServerSession(authOptions)` inline. Keeps every route on the
+ * same auth boundary even when auth itself is optional.
+ */
+export function withOptionalAuth<TParams extends RouteParams = RouteParams>(
+  handler: OptionalAuthHandler<TParams>,
+) {
+  return async (
+    request: NextRequest,
+    routeContext: { params: Promise<TParams> },
+  ): Promise<Response> => {
+    const session = await getServerSession(await getAuthOptions());
+    const params = await routeContext.params;
+
+    return handler(request, {
+      userId: session?.user?.id ?? null,
+      email: session?.user?.email ?? null,
+      session: session ?? null,
+      params,
+    });
+  };
 }

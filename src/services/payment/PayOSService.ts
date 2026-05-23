@@ -6,6 +6,7 @@ import {
   PayOSVerifyResponse,
 } from '@/interfaces/services/IPayOSService';
 import { env } from '@/lib/env';
+import { logger } from '@/lib/logger';
 
 export class PayOSService implements IPayOSService {
   private clientId: string;
@@ -92,26 +93,26 @@ export class PayOSService implements IPayOSService {
       try {
         data = JSON.parse(responseText);
       } catch (_parseError) {
-        console.error('Failed to parse PayOS response body', {
-          endpoint,
-          status: response.status,
-        });
+        logger.error({ endpoint, status: response.status }, 'Failed to parse PayOS response body');
         throw new Error('Invalid response from PayOS API');
       }
 
       if (!response.ok) {
-        console.error('PayOS API error:', {
-          endpoint,
-          status: response.status,
-          code: typeof data?.code === 'string' ? data.code : undefined,
-          message: typeof data?.message === 'string' ? data.message : response.statusText,
-        });
+        logger.error(
+          {
+            endpoint,
+            status: response.status,
+            code: typeof data?.code === 'string' ? data.code : undefined,
+            message: typeof data?.message === 'string' ? data.message : response.statusText,
+          },
+          'PayOS API error',
+        );
         throw new Error(`PayOS API error: ${data.message || response.statusText}`);
       }
 
       return data as T;
     } catch (error) {
-      console.error('PayOS API request failed:', error);
+      logger.error({ error }, 'PayOS API request failed');
       if (error instanceof Error) {
         throw error;
       }
@@ -181,7 +182,7 @@ export class PayOSService implements IPayOSService {
       this.generateSignature(dataStr);
       return true;
     } catch (error) {
-      console.error('PayOS connection test failed:', error);
+      logger.error({ error }, 'PayOS connection test failed');
       return false;
     }
   }

@@ -1,10 +1,41 @@
+import mongoose from 'mongoose';
 import connectDB from '@/lib/mongoose';
 import Plan from '@/models/Plan';
+import Subscription from '@/models/Subscription';
+import User from '@/models/User';
 import { SubscriptionActivation } from '@/interfaces/services/ISubscriptionService';
 import { IPayOSService } from '@/interfaces/services/IPayOSService';
 import { ISubscriptionRepository } from '@/interfaces/repositories/ISubscriptionRepository';
 import { IUserRepository } from '@/interfaces/repositories/IUserRepository';
 import { DurationUtils } from '@/types/subscription';
+import type { ISubscription } from '@/models/Subscription';
+
+interface UserSubscriptionEmbed {
+  endDate?: Date | string | null;
+  isActive?: boolean;
+}
+
+interface UserWithSubscription {
+  subscription?: UserSubscriptionEmbed;
+}
+
+interface SubscriptionWithId extends ISubscription {
+  _id: { toString(): string };
+}
+
+/**
+ * Idempotent activation guard. The webhook can fire multiple times for the
+ * same PayOS transaction (PayOS retries on non-2xx, network blips, manual
+ * replays). We rely on the unique sparse index on `payosTransactionId` plus
+ * an explicit pre-check so duplicate webhook deliveries don't extend the
+ * end date or grant a second billing cycle.
+ */
+async function findExistingActivation(
+  transactionReference: string | undefined,
+): Promise<ISubscription | null> {
+  if (!transactionReference) return null;
+  return Subscription.findOne({ payosTransactionId: transactionReference }).lean<ISubscription>();
+}
 
 export class SubscriptionActivationService {
   constructor(
@@ -125,13 +156,13 @@ export class SubscriptionActivationService {
   }
 
   async cancelSubscription(userId: string): Promise<{ success: boolean }> {
-    const user = await this.userRepository.findById(userId);
+    const user = (await this.userRepository.findById(userId)) as UserWithSubscription | null;
     if (!user) {
       throw new Error('User not found');
     }
 
     // Check if user has an active subscription with end date (time-limited subscription)
-    if (!(user as any).subscription?.endDate) {
+    if (!user.subscription?.endDate) {
       throw new Error('Only time-limited subscriptions can be cancelled');
     }
 
@@ -144,10 +175,10 @@ export class SubscriptionActivationService {
     const subscriptions = await this.subscriptionRepository.findByUser(userId);
     const activeSubscription = subscriptions.find(
       (sub) => sub.status === 'completed' && sub.isActive,
-    );
+    ) as SubscriptionWithId | undefined;
 
     if (activeSubscription) {
-      await this.subscriptionRepository.updateById((activeSubscription as any)._id.toString(), {
+      await this.subscriptionRepository.updateById(activeSubscription._id.toString(), {
         isActive: false,
       });
     }
@@ -156,10 +187,25 @@ export class SubscriptionActivationService {
   }
 
   private async activateSubscription(
-    subscription: any,
+    subscription: ISubscription,
     orderCode: number,
     transactionReference?: string,
   ): Promise<SubscriptionActivation> {
+    // Idempotency check: if this PayOS transaction was already applied, do
+    // not re-run the activation. Returns the existing snapshot.
+    const existing = await findExistingActivation(transactionReference);
+    if (existing && existing.status === 'completed') {
+      return {
+        success: true,
+        subscription: {
+          type: existing.type,
+          startDate: existing.startDate ?? existing.createdAt,
+          endDate: existing.endDate,
+          isActive: existing.isActive,
+        },
+      };
+    }
+
     // Calculate subscription dates using new duration system
     const plan = await Plan.findById(subscription.type);
     if (!plan) {
@@ -188,26 +234,68 @@ export class SubscriptionActivationService {
       }
     }
 
-    // Update subscription status
-    await this.subscriptionRepository.updateByOrderId(orderCode.toString(), {
-      status: 'completed',
-      payosTransactionId: transactionReference,
-      startDate,
-      endDate,
-      isActive: true,
-    });
+    // Run subscription + user updates atomically. Either both succeed or
+    // both roll back, so we never end up with a paid subscription that
+    // wasn't reflected on the user record (or vice versa).
+    await connectDB();
+    const session = await mongoose.startSession();
+    try {
+      await session.withTransaction(async () => {
+        await Subscription.updateOne(
+          { payosOrderId: orderCode.toString() },
+          {
+            $set: {
+              status: 'completed',
+              payosTransactionId: transactionReference,
+              startDate,
+              endDate,
+              isActive: true,
+            },
+          },
+          { session },
+        );
 
-    // Update user subscription
-    await this.userRepository.updateById(subscription.user.toString(), {
-      subscription: {
-        type: subscription.type,
-        startDate,
-        endDate,
-        isActive: true,
-        payosOrderId: orderCode.toString(),
-        payosTransactionId: transactionReference,
-      },
-    });
+        await User.updateOne(
+          { _id: subscription.user },
+          {
+            $set: {
+              subscription: {
+                type: subscription.type,
+                startDate,
+                endDate,
+                isActive: true,
+                payosOrderId: orderCode.toString(),
+                payosTransactionId: transactionReference,
+              },
+            },
+          },
+          { session },
+        );
+      });
+    } catch (error: unknown) {
+      // Duplicate-key (E11000) on payosTransactionId means another concurrent
+      // webhook delivery already activated this subscription. Treat as success
+      // by returning the existing snapshot.
+      const isDuplicateKey =
+        error instanceof Error && 'code' in error && (error as { code?: number }).code === 11000;
+      if (isDuplicateKey) {
+        const settled = await findExistingActivation(transactionReference);
+        if (settled?.status === 'completed') {
+          return {
+            success: true,
+            subscription: {
+              type: settled.type,
+              startDate: settled.startDate ?? settled.createdAt,
+              endDate: settled.endDate,
+              isActive: settled.isActive,
+            },
+          };
+        }
+      }
+      throw error;
+    } finally {
+      await session.endSession();
+    }
 
     return {
       success: true,

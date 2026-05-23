@@ -4,6 +4,7 @@ import connectDB from '@/lib/mongoose';
 import Plan from '@/models/Plan';
 import { DurationUtils } from '@/types/subscription';
 import { apiErr, apiOk } from '@/lib/api/response';
+import { logger } from '@/lib/logger';
 
 export const GET = withAdmin(async () => {
   try {
@@ -13,7 +14,7 @@ export const GET = withAdmin(async () => {
 
     return apiOk(plans);
   } catch (error: unknown) {
-    console.error('Admin get plans error:', error);
+    logger.error({ error }, 'Admin get plans error');
     return apiErr('internal_error', 'Internal server error', 500);
   }
 });
@@ -68,7 +69,7 @@ export const PATCH = withAdmin(async (request: NextRequest) => {
     }
     return apiOk(updated);
   } catch (error: unknown) {
-    console.error('Admin update plan error:', error);
+    logger.error({ error }, 'Admin update plan error');
     return apiErr('internal_error', 'Internal server error', 500);
   }
 });
@@ -124,7 +125,7 @@ export const POST = withAdmin(async (request: NextRequest) => {
 
     return apiOk(savedPlan);
   } catch (error: unknown) {
-    console.error('Admin create plan error:', error);
+    logger.error({ error }, 'Admin create plan error');
     return apiErr('internal_error', 'Internal server error', 500);
   }
 });
@@ -148,7 +149,7 @@ export const DELETE = withAdmin(async (request: NextRequest) => {
 
     return apiOk(null, 200, { meta: { message: 'Plan deleted successfully' } });
   } catch (error: unknown) {
-    console.error('Admin delete plan error:', error);
+    logger.error({ error }, 'Admin delete plan error');
     return apiErr('internal_error', 'Internal server error', 500);
   }
 });

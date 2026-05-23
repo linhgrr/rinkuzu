@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
 import { apiErr, apiForward } from '@/lib/api/response';
 import { type ApiErrorPayload } from '@/lib/api/error';
+import { logger } from '@/lib/logger';
 import { isCacheSafeAdaptivePath } from './cache-policy';
 import {
   buildAdaptiveServiceHeaders,
   resolveAdaptiveApiUrl,
   resolveAdaptiveProxyTimeoutMs,
+  type AdaptiveUserRole,
 } from './config';
 import {
   buildLlmRateLimitHeaders,
@@ -25,6 +25,15 @@ type ProxyOptions = {
     revalidateSeconds: number;
     tags: string[];
   };
+};
+
+/**
+ * Authenticated context required to call the adaptive service.
+ * Callers obtain this from `withAuth` / `withOptionalAuth` in @/lib/api/auth.
+ */
+export type ProxyAuthContext = {
+  userId: string;
+  userRole?: AdaptiveUserRole | null;
 };
 
 const UPSTREAM_RESPONSE_HEADERS = [
@@ -103,15 +112,11 @@ function isStandardErrorEnvelope(payload: unknown): payload is ApiErrorPayload {
 export async function proxyAdaptiveRequest(
   req: Request,
   targetPath: string,
+  auth: ProxyAuthContext,
   options?: ProxyOptions,
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    const userId = (session?.user as any)?.id;
-    const userRole = (session?.user as any)?.role;
-    if (!userId) {
-      return apiErr('unauthorized', 'Unauthorized', 401);
-    }
+    const { userId, userRole } = auth;
 
     const targetUrl = buildTargetUrl(req, targetPath);
     const headers: Record<string, string> = buildAdaptiveServiceHeaders(userId, userRole);
@@ -262,7 +267,7 @@ export async function proxyAdaptiveRequest(
       }
       return apiErr('upstream_timeout', 'Adaptive service request timed out', 504);
     }
-    console.error(`Adaptive proxy failed for ${targetPath}:`, error);
+    logger.error({ targetPath, error }, 'Adaptive proxy failed');
     return apiErr('internal_error', 'Internal server error while proxying adaptive request', 500);
   }
 }

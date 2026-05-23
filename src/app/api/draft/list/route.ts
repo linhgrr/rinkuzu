@@ -1,21 +1,14 @@
 // /src/app/api/draft/list/route.ts
-import { NextRequest } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { withAuth } from '@/lib/api/auth';
 import connectDB from '@/lib/mongoose';
 import DraftQuiz from '@/models/DraftQuiz';
 import { apiErr, apiOk } from '@/lib/api/response';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(_request: NextRequest) {
+export const GET = withAuth(async (_request, { userId }) => {
   try {
-    const session = await getServerSession(authOptions);
-    const userId = (session?.user as { id?: string } | undefined)?.id;
-    if (!userId) {
-      return apiErr('unauthorized', 'Unauthorized', 401);
-    }
-
     await connectDB();
 
     const drafts = await DraftQuiz.find({
@@ -41,7 +34,7 @@ export async function GET(_request: NextRequest) {
       })),
     });
   } catch (error) {
-    console.error('List drafts error:', error);
+    logger.error({ error }, 'List drafts error');
     return apiErr('internal_error', 'Failed to list drafts', 500);
   }
-}
+});

@@ -1,18 +1,13 @@
 import { NextRequest } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { ServiceFactory } from '@/lib/serviceFactory';
+import { createSubscriptionService } from '@/lib/subscription-factory';
+import { withAuth } from '@/lib/api/auth';
 import connectDB from '@/lib/mongoose';
 import Plan from '@/models/Plan';
 import { apiErr, apiOk } from '@/lib/api/response';
+import { logger } from '@/lib/logger';
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest, { userId }) => {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return apiErr('unauthorized', 'Unauthorized', 401);
-    }
-
     const { planId } = await request.json();
 
     if (!planId) {
@@ -26,15 +21,13 @@ export async function POST(request: NextRequest) {
       return apiErr('validation_error', 'Invalid plan ID', 400);
     }
 
-    const subscriptionService = ServiceFactory.createSubscriptionService();
-    const paymentData = await subscriptionService.createPaymentRequest(
-      (session.user as any).id,
-      planId,
-    );
+    const subscriptionService = createSubscriptionService();
+    const paymentData = await subscriptionService.createPaymentRequest(userId, planId);
 
     return apiOk(paymentData);
-  } catch (error: any) {
-    console.error('Error creating payment request:', error);
-    return apiErr('internal_error', error.message || 'Failed to create payment request', 500);
+  } catch (error: unknown) {
+    logger.error({ error }, 'Error creating payment request');
+    const message = error instanceof Error ? error.message : 'Failed to create payment request';
+    return apiErr('internal_error', message, 500);
   }
-}
+});

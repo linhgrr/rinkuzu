@@ -9,6 +9,7 @@ import { createSecureToken, wasIssuedRecently } from '@/lib/auth-tokens';
 import { buildPasswordResetMessage, sendTransactionalMail } from '@/lib/mail';
 import { flattenZodError, forgotPasswordSchema } from '@/lib/validation/auth';
 import { checkAuthRateLimit, rateLimitResponse } from '@/lib/auth-rate-limit';
+import { logger } from '@/lib/logger';
 
 const RESET_TOKEN_TTL_MS = 30 * 60_000;
 const RESET_MIN_INTERVAL_MS = 60_000;
@@ -81,7 +82,7 @@ export async function POST(request: NextRequest) {
 
     return neutralResponse();
   } catch (error) {
-    console.error('Forgot-password error:', error);
+    logger.error({ error }, 'Forgot-password error');
     // Never leak failures to anonymous callers — return same neutral payload.
     return neutralResponse();
   }

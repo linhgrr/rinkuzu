@@ -10,6 +10,7 @@ import { createSecureToken } from '@/lib/auth-tokens';
 import { buildVerifyEmailMessage, sendTransactionalMail } from '@/lib/mail';
 import { recordAuthEvent, extractRequestContext } from '@/lib/audit';
 import { checkAuthRateLimit, rateLimitResponse } from '@/lib/auth-rate-limit';
+import { logger } from '@/lib/logger';
 
 const VERIFICATION_TTL_MS = 24 * 60 * 60_000;
 
@@ -71,7 +72,7 @@ export async function POST(request: NextRequest) {
       await sendTransactionalMail(await buildVerifyEmailMessage(user.email, verification.raw));
     } catch (mailError) {
       // Don't fail registration if mail provider is down — surface in audit log.
-      console.error('register: failed to send verification email', mailError);
+      logger.error({ mailError }, 'register: failed to send verification email');
     }
 
     await Promise.all([
@@ -101,7 +102,7 @@ export async function POST(request: NextRequest) {
       { meta: { message: neutralMessage } },
     );
   } catch (error) {
-    console.error('Registration error:', error);
+    logger.error({ error }, 'Registration error');
     return apiErr('internal_error', 'Internal server error', 500);
   }
 }

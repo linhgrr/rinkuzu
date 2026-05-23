@@ -8,6 +8,7 @@ import { ResetPassword } from './templates/ResetPassword';
 import { VerifyEmail } from './templates/VerifyEmail';
 import { env } from '@/lib/env';
 import { publicEnv } from '@/lib/public-env';
+import { logger } from '@/lib/logger';
 
 type MailMessage = {
   to: string;
@@ -47,7 +48,7 @@ export async function sendTransactionalMail(msg: MailMessage): Promise<void> {
 
     console.warn('[mail:resend] sent', { id: data.id, to: msg.to, subject: msg.subject });
   } catch (error) {
-    console.error('[mail] send failed', error);
+    logger.error({ error }, '[mail] send failed');
     throw error;
   }
 }

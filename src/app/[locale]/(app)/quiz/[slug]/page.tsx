@@ -576,15 +576,16 @@ export default function QuizPlayerPage() {
         if (isActive) {
           dispatch({ type: 'loadQuizSuccess', quiz: nextQuiz, userAnswers: initialAnswers });
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         if (!isActive) {
           return;
         }
 
-        if (error.message === 'Premium subscription required to access private quizzes') {
+        const message = error instanceof Error ? error.message : '';
+        if (message === 'Premium subscription required to access private quizzes') {
           dispatch({ type: 'requirePremium' });
         } else {
-          dispatch({ type: 'loadQuizError', error: error.message || 'Quiz not found' });
+          dispatch({ type: 'loadQuizError', error: message || 'Quiz not found' });
         }
       }
     };
@@ -628,7 +629,7 @@ export default function QuizPlayerPage() {
     handleQuizComplete,
     completeSubmit,
     submitQuiz,
-  } = useQuizSubmission<QuizPlayerQuiz>({
+  } = useQuizSubmission<QuizPlayerQuiz, ShuffledQuizQuestion>({
     slug,
     quiz,
     userAnswers: state.userAnswers,

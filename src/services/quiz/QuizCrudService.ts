@@ -1,11 +1,12 @@
 import { IQuizRepository, IQuiz } from '@/interfaces/repositories/IQuizRepository';
+import { createSubscriptionService } from '@/lib/subscription-factory';
 import { ICategoryRepository } from '@/interfaces/repositories/ICategoryRepository';
 import { IUserRepository } from '@/interfaces/repositories/IUserRepository';
 import { CreateQuizRequest } from '@/interfaces/services/IQuizService';
 import { ServiceResult } from '@/interfaces/services/types';
 import { generateSlug } from '@/lib/utils';
-import { ServiceFactory } from '@/lib/serviceFactory';
 import { getAuthorId } from './quiz-helpers';
+import { logger } from '@/lib/logger';
 
 const VALID_QUESTION_TYPES = new Set(['single', 'multiple']);
 
@@ -125,7 +126,7 @@ export class QuizCrudService {
     userEmail?: string,
     userRole?: string,
     userId?: string,
-  ): Promise<ServiceResult<any>> {
+  ): Promise<ServiceResult<IQuiz>> {
     try {
       const quiz = await this.quizRepository.findById(id);
 
@@ -159,7 +160,7 @@ export class QuizCrudService {
 
         // Check if user has premium subscription
         if (userId) {
-          const subscriptionService = ServiceFactory.createSubscriptionService();
+          const subscriptionService = createSubscriptionService();
           const isPremium = await subscriptionService.isUserPremium(userId);
 
           if (!isPremium) {
@@ -180,7 +181,7 @@ export class QuizCrudService {
 
       return { success: true, data: quiz };
     } catch (error) {
-      console.error('Error in getQuizById:', error);
+      logger.error({ error }, 'Error in getQuizById');
       return {
         success: false,
         error: 'Internal server error',
@@ -191,10 +192,10 @@ export class QuizCrudService {
 
   async updateQuiz(
     id: string,
-    quizData: any,
+    quizData: Partial<IQuiz>,
     userEmail: string,
     userRole?: string,
-  ): Promise<ServiceResult<any>> {
+  ): Promise<ServiceResult<IQuiz>> {
     try {
       const quiz = await this.quizRepository.findById(id);
 
@@ -208,9 +209,7 @@ export class QuizCrudService {
 
       // Check permissions
       const isAdmin = userRole === 'admin';
-      const isAuthor = (quiz.author as any)?._id
-        ? (quiz.author as any)._id.toString() === userEmail
-        : quiz.author === userEmail;
+      const isAuthor = getAuthorId(quiz.author) === userEmail;
 
       if (!isAdmin && !isAuthor) {
         return {
@@ -222,12 +221,20 @@ export class QuizCrudService {
 
       const updatedQuiz = await this.quizRepository.update(id, quizData);
 
+      if (!updatedQuiz) {
+        return {
+          success: false,
+          error: 'Quiz not found',
+          statusCode: 404,
+        };
+      }
+
       return {
         success: true,
         data: updatedQuiz,
       };
     } catch (error) {
-      console.error('Update quiz error:', error);
+      logger.error({ error }, 'Update quiz error');
       return {
         success: false,
         error: 'Failed to update quiz',
@@ -254,9 +261,7 @@ export class QuizCrudService {
 
       // Check permissions
       const isAdmin = userRole === 'admin';
-      const isAuthor = (quiz.author as any)?._id
-        ? (quiz.author as any)._id.toString() === userEmail
-        : quiz.author === userEmail;
+      const isAuthor = getAuthorId(quiz.author) === userEmail;
 
       if (!isAdmin && !isAuthor) {
         return {
@@ -273,7 +278,7 @@ export class QuizCrudService {
         data: result,
       };
     } catch (error) {
-      console.error('Delete quiz error:', error);
+      logger.error({ error }, 'Delete quiz error');
       return {
         success: false,
         error: 'Failed to delete quiz',

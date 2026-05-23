@@ -1,18 +1,16 @@
 import { NextRequest } from 'next/server';
-import { getServerSession } from 'next-auth';
 import { ZodError } from 'zod';
-import { authOptions } from '@/lib/auth';
+import { withAuth } from '@/lib/api/auth';
 import connectDB from '@/lib/mongoose';
 import User from '@/models/User';
 import { hashPassword, verifyPassword } from '@/lib/password';
 import { apiErr, apiOk } from '@/lib/api/response';
 import { changePasswordSchema, flattenZodError } from '@/lib/validation/auth';
+import { logger } from '@/lib/logger';
 
-export async function PUT(request: NextRequest) {
+export const PUT = withAuth(async (request: NextRequest, { email }) => {
   try {
-    const session = await getServerSession(authOptions);
-
-    if (!session?.user?.email) {
+    if (!email) {
       return apiErr('unauthorized', 'Authentication required', 401);
     }
 
@@ -36,7 +34,7 @@ export async function PUT(request: NextRequest) {
 
     await connectDB();
 
-    const user = await User.findOne({ email: session.user.email }).select('password isAnonymous');
+    const user = await User.findOne({ email }).select('password isAnonymous');
 
     if (!user) {
       return apiErr('not_found', 'User not found', 404);
@@ -52,11 +50,11 @@ export async function PUT(request: NextRequest) {
     }
 
     const hashedPassword = await hashPassword(input.newPassword);
-    await User.updateOne({ email: session.user.email }, { password: hashedPassword });
+    await User.updateOne({ email }, { password: hashedPassword });
 
     return apiOk(null, 200, { meta: { message: 'Password updated successfully' } });
   } catch (error) {
-    console.error('Change password error:', error);
+    logger.error({ error }, 'Change password error');
     return apiErr('internal_error', 'Internal server error', 500);
   }
-}
+});

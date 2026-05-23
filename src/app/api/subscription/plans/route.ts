@@ -1,9 +1,10 @@
-import { ServiceFactory } from '@/lib/serviceFactory';
+import { createSubscriptionService } from '@/lib/subscription-factory';
 import { apiErr, apiOk } from '@/lib/api/response';
+import { logger } from '@/lib/logger';
 
 export async function GET() {
   try {
-    const subscriptionService = ServiceFactory.createSubscriptionService();
+    const subscriptionService = createSubscriptionService();
     const plans = await subscriptionService.getSubscriptionPlans();
 
     // Transform plans to include duration info
@@ -23,7 +24,7 @@ export async function GET() {
       },
     });
   } catch (error) {
-    console.error('Error fetching subscription plans:', error);
+    logger.error({ error }, 'Error fetching subscription plans');
     return apiErr('internal_error', 'Failed to fetch subscription plans', 500);
   }
 }

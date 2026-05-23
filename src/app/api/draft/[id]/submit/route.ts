@@ -1,13 +1,13 @@
 // /src/app/api/draft/[id]/submit/route.ts
 import { NextRequest } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { withAuth } from '@/lib/api/auth';
 import connectDB from '@/lib/mongoose';
 import DraftQuiz from '@/models/DraftQuiz';
 import Quiz from '@/models/Quiz';
 import { deletePDF } from '@/lib/s3';
-import { AsyncRouteParams } from '@/types/next-route';
 import { apiErr, apiOk } from '@/lib/api/response';
+import { validateQuestionList } from '@/lib/validation/question';
+import { logger } from '@/lib/logger';
 
 // Simple slug generator (inline to avoid import issues)
 function generateSlug(title: string): string {
@@ -39,84 +39,9 @@ function generateSlug(title: string): string {
   return slug.slice(0, 100);
 }
 
-interface ValidationResult {
-  isValid: boolean;
-  errors: string[];
-  warnings: string[];
-}
-
-function validateQuestions(questions: any[]): ValidationResult {
-  const errors: string[] = [];
-  const warnings: string[] = [];
-
-  if (!questions || questions.length === 0) {
-    errors.push('Cần ít nhất 1 câu hỏi');
-    return { isValid: false, errors, warnings };
-  }
-
-  questions.forEach((q, index) => {
-    const prefix = `Câu ${index + 1}`;
-
-    // Required fields
-    if (!q.question?.trim()) {
-      errors.push(`${prefix}: Thiếu nội dung câu hỏi`);
-    }
-
-    if (!Array.isArray(q.options) || q.options.length < 2) {
-      errors.push(`${prefix}: Cần ít nhất 2 đáp án`);
-    }
-
-    // Check for empty options
-    const emptyOptions = q.options?.filter((opt: string) => !opt?.trim());
-    if (emptyOptions?.length > 0) {
-      errors.push(`${prefix}: Có đáp án trống`);
-    }
-
-    // Validate correct answer
-    if (q.type === 'single') {
-      if (
-        typeof q.correctIndex !== 'number' ||
-        q.correctIndex < 0 ||
-        q.correctIndex >= q.options?.length
-      ) {
-        errors.push(`${prefix}: Đáp án đúng không hợp lệ`);
-      }
-    } else if (q.type === 'multiple') {
-      if (!Array.isArray(q.correctIndexes) || q.correctIndexes.length === 0) {
-        errors.push(`${prefix}: Cần chọn ít nhất 1 đáp án đúng`);
-      } else {
-        const invalidIndexes = q.correctIndexes.filter(
-          (idx: number) => idx < 0 || idx >= q.options?.length,
-        );
-        if (invalidIndexes.length > 0) {
-          errors.push(`${prefix}: Có đáp án đúng không hợp lệ`);
-        }
-      }
-    } else {
-      errors.push(`${prefix}: Loại câu hỏi không hợp lệ`);
-    }
-  });
-
-  // Warnings (non-blocking)
-  if (questions.length < 5) {
-    warnings.push('Quiz nên có ít nhất 5 câu hỏi');
-  }
-
-  return {
-    isValid: errors.length === 0,
-    errors,
-    warnings,
-  };
-}
-
-export async function POST(request: NextRequest, { params }: AsyncRouteParams<{ id: string }>) {
+export const POST = withAuth<{ id: string }>(async (request: NextRequest, { params, userId }) => {
   try {
-    const { id } = await params;
-    const session = await getServerSession(authOptions);
-    const userId = (session?.user as { id?: string } | undefined)?.id;
-    if (!userId) {
-      return apiErr('unauthorized', 'Unauthorized', 401);
-    }
+    const { id } = params;
 
     const body = await request.json();
     const { title, categoryId, description, questions: editedQuestions } = body;
@@ -139,8 +64,8 @@ export async function POST(request: NextRequest, { params }: AsyncRouteParams<{ 
     // Allow submit if completed OR if has questions (partial completion)
     const questionsToUse = editedQuestions || draft.questions;
 
-    // Validate questions
-    const validation = validateQuestions(questionsToUse);
+    // Validate questions via shared zod schema
+    const validation = validateQuestionList(questionsToUse);
 
     if (!validation.isValid) {
       return apiErr('validation_error', 'Validation failed', 400, {
@@ -156,7 +81,7 @@ export async function POST(request: NextRequest, { params }: AsyncRouteParams<{ 
       slug = `${baseSlug}-${counter++}`;
     }
 
-    // Create quiz
+    // Create quiz from validated questions
     const quiz = await Quiz.create({
       title: title || draft.title,
       description: description || '',
@@ -164,12 +89,12 @@ export async function POST(request: NextRequest, { params }: AsyncRouteParams<{ 
       status: 'pending', // Requires admin approval
       author: userId,
       slug,
-      questions: questionsToUse.map((q: any) => ({
+      questions: validation.questions.map((q) => ({
         question: q.question,
         options: q.options,
         type: q.type,
-        correctIndex: q.correctIndex,
-        correctIndexes: q.correctIndexes,
+        correctIndex: q.type === 'single' ? q.correctIndex : undefined,
+        correctIndexes: q.type === 'multiple' ? q.correctIndexes : undefined,
       })),
       isPrivate: false,
     });
@@ -183,7 +108,7 @@ export async function POST(request: NextRequest, { params }: AsyncRouteParams<{ 
         await deletePDF(draft.pdfData.pdfKey);
         console.warn('Deleted PDF from S3 after submit:', draft.pdfData.pdfKey);
       } catch (s3Error) {
-        console.error('Failed to delete PDF from S3 after submit:', s3Error);
+        logger.error({ s3Error }, 'Failed to delete PDF from S3 after submit');
         // Don't fail the request - quiz was created successfully
       }
     }
@@ -194,7 +119,7 @@ export async function POST(request: NextRequest, { params }: AsyncRouteParams<{ 
       warnings: validation.warnings,
     });
   } catch (error) {
-    console.error('Submit draft error:', error);
+    logger.error({ error }, 'Submit draft error');
     return apiErr('internal_error', 'Failed to submit draft', 500);
   }
-}
+});

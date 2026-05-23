@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { assertOk, assertFail } from '@/interfaces/services/types';
 import { CategoryService } from './CategoryService';
 
 function createService(overrides: Record<string, any> = {}) {
@@ -44,9 +45,9 @@ describe('CategoryService', () => {
 
       const result = await service.getCategories();
 
-      expect(result.success).toBe(true);
+      assertOk(result);
       expect(result.data).toHaveLength(1);
-      expect(result.data?.[0]).toMatchObject({
+      expect(result.data[0]).toMatchObject({
         _id: 'cat-1',
         name: 'Math',
         slug: 'math',
@@ -67,7 +68,8 @@ describe('CategoryService', () => {
 
       const result = await service.getCategories();
 
-      expect(result.data?.[0]?.slug).toBe('artificial-intelligence');
+      assertOk(result);
+      expect(result.data[0]?.slug).toBe('artificial-intelligence');
     });
 
     it('returns error when repository throws', async () => {
@@ -76,7 +78,7 @@ describe('CategoryService', () => {
 
       const result = await service.getCategories();
 
-      expect(result.success).toBe(false);
+      assertFail(result);
       expect(result.error).toBe('Failed to fetch categories');
       expect(result.statusCode).toBe(500);
     });
@@ -104,9 +106,9 @@ describe('CategoryService', () => {
 
       const result = await service.getCategoryBySlug('math');
 
-      expect(result.success).toBe(true);
-      expect(result.data?.category._id).toBe('cat-1');
-      expect(result.data?.quizzes).toHaveLength(1);
+      assertOk(result);
+      expect(result.data.category._id).toBe('cat-1');
+      expect(result.data.quizzes).toHaveLength(1);
       expect(quizRepository.findAll).toHaveBeenCalledWith(
         expect.objectContaining({ category: 'cat-1', status: 'published', isPrivate: false }),
         expect.objectContaining({ page: 1, limit: 12 }),
@@ -119,7 +121,7 @@ describe('CategoryService', () => {
 
       const result = await service.getCategoryBySlug('missing');
 
-      expect(result.success).toBe(false);
+      assertFail(result);
       expect(result.error).toBe('Category not found');
       expect(result.statusCode).toBe(404);
     });
@@ -134,7 +136,7 @@ describe('CategoryService', () => {
 
       const result = await service.getCategoryBySlug('inactive');
 
-      expect(result.success).toBe(false);
+      assertFail(result);
       expect(result.error).toBe('Category is inactive');
       expect(result.statusCode).toBe(404);
     });
@@ -148,7 +150,7 @@ describe('CategoryService', () => {
 
       const result = await service.getCategoryBySlug('no-id');
 
-      expect(result.success).toBe(false);
+      assertFail(result);
       expect(result.error).toBe('Category data is invalid');
       expect(result.statusCode).toBe(500);
     });
@@ -190,7 +192,7 @@ describe('CategoryService', () => {
 
       const result = await service.getCategoryBySlug('math');
 
-      expect(result.success).toBe(false);
+      assertFail(result);
       expect(result.error).toBe('Failed to get category');
       expect(result.statusCode).toBe(500);
     });
@@ -203,7 +205,7 @@ describe('CategoryService', () => {
 
       const result = await service.searchCategories('math');
 
-      expect(result.success).toBe(true);
+      assertOk(result);
       expect(result.data).toHaveLength(1);
       expect(categoryRepository.search).toHaveBeenCalledWith('math');
     });
@@ -213,7 +215,7 @@ describe('CategoryService', () => {
 
       const result = await service.searchCategories('');
 
-      expect(result.success).toBe(false);
+      assertFail(result);
       expect(result.error).toBe('Search query is required');
       expect(result.statusCode).toBe(400);
     });
@@ -237,7 +239,7 @@ describe('CategoryService', () => {
 
       const result = await service.getCategoryStats();
 
-      expect(result.success).toBe(true);
+      assertOk(result);
       expect(result.data).toHaveLength(1);
     });
 
@@ -247,7 +249,7 @@ describe('CategoryService', () => {
 
       const result = await service.getCategoryStats();
 
-      expect(result.success).toBe(false);
+      assertFail(result);
       expect(result.error).toBe('Failed to get category stats');
       expect(result.statusCode).toBe(500);
     });

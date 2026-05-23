@@ -3,6 +3,45 @@ import { IUserRepository } from '@/interfaces/repositories/IUserRepository';
 import { IAttemptRepository } from '@/interfaces/repositories/IAttemptRepository';
 import { IUser } from '@/types/index';
 import { ServiceResult } from '@/interfaces/services/types';
+import type { IQuestion } from '@/models/Quiz';
+import { logger } from '@/lib/logger';
+
+export interface UserAttemptSummary {
+  _id: string;
+  score: number;
+  takenAt: Date;
+  quiz: {
+    title: string;
+    slug: string;
+    description: string;
+    totalQuestions: number;
+  };
+}
+
+export interface AttemptQuestionDetail {
+  question: string;
+  options: string[];
+  type: 'single' | 'multiple';
+  correctIndex?: number;
+  correctIndexes?: number[];
+  questionImage?: string;
+  optionImages?: (string | undefined)[];
+  userAnswer: number | number[];
+  isCorrect: boolean;
+}
+
+export interface AttemptDetails {
+  _id: string;
+  score: number;
+  takenAt: Date;
+  answers: (number | number[])[];
+  quiz: {
+    title: string;
+    slug: string;
+    description: string;
+    questions: AttemptQuestionDetail[];
+  };
+}
 
 export class UserService implements IUserService {
   constructor(
@@ -14,7 +53,7 @@ export class UserService implements IUserService {
     userEmail: string,
     options?: { page?: number; limit?: number },
   ): Promise<{
-    attempts: any[];
+    attempts: UserAttemptSummary[];
     pagination: {
       currentPage: number;
       totalPages: number;
@@ -37,7 +76,7 @@ export class UserService implements IUserService {
       const result = await this.attemptRepository.findByUser(user._id.toString(), { page, limit });
 
       // Format attempts - quiz is always populated from findByUser
-      const formattedAttempts = result.attempts.map((attempt) => {
+      const formattedAttempts: UserAttemptSummary[] = result.attempts.map((attempt) => {
         const populatedQuiz = attempt.quiz as {
           _id: string;
           title?: string;
@@ -46,7 +85,7 @@ export class UserService implements IUserService {
           questions?: unknown[];
         };
         return {
-          _id: attempt._id,
+          _id: String(attempt._id),
           score: attempt.score,
           takenAt: attempt.takenAt,
           quiz: {
@@ -63,7 +102,7 @@ export class UserService implements IUserService {
         pagination: result.pagination,
       };
     } catch (error) {
-      console.error('Get user attempts error:', error);
+      logger.error({ error }, 'Get user attempts error');
       throw error;
     }
   }
@@ -103,19 +142,14 @@ export class UserService implements IUserService {
     return await this.userRepository.findAll(options);
   }
 
-  async getAttemptDetails(attemptId: string, userEmail: string): Promise<ServiceResult<any>> {
+  async getAttemptDetails(
+    attemptId: string,
+    userEmail: string,
+  ): Promise<ServiceResult<AttemptDetails>> {
     try {
       // Find user
       const user = await this.userRepository.findByEmail(userEmail);
-      let userId: string;
-
-      if (user) {
-        // Logged in user
-        userId = user._id.toString();
-      } else {
-        // Anonymous user - use email as identifier
-        userId = userEmail;
-      }
+      const userId = user ? user._id.toString() : userEmail;
 
       // Get attempt with quiz details
       const attempt = await this.attemptRepository.findByIdWithQuiz(attemptId, userId);
@@ -128,49 +162,56 @@ export class UserService implements IUserService {
         };
       }
 
-      // Format the response with question details and user answers
-      const formattedAttempt = {
-        _id: attempt._id,
-        score: attempt.score,
-        takenAt: attempt.takenAt,
-        answers: attempt.answers,
-        quiz: {
-          title: (attempt.quiz as { title?: string }).title ?? '',
-          slug: (attempt.quiz as { slug?: string }).slug ?? '',
-          description: (attempt.quiz as { description?: string }).description ?? '',
-          questions:
-            (attempt.quiz as { questions?: unknown[] }).questions?.map(
-              (question: any, index: number) => ({
-                question: question.question,
-                options: question.options,
-                type: question.type,
-                correctIndex: question.correctIndex,
-                correctIndexes: question.correctIndexes,
-                questionImage: question.questionImage,
-                optionImages: question.optionImages,
-                userAnswer: attempt.answers[index],
-                isCorrect:
-                  question.type === 'single'
-                    ? attempt.answers[index] === question.correctIndex
-                    : Array.isArray(attempt.answers[index]) &&
-                        Array.isArray(question.correctIndexes)
-                      ? question.correctIndexes.length ===
-                          (attempt.answers[index] as number[]).length &&
-                        (question.correctIndexes as number[]).every((idx: number) =>
-                          (attempt.answers[index] as number[]).includes(idx),
-                        )
-                      : false,
-              }),
-            ) ?? [],
-        },
+      const populatedQuiz = attempt.quiz as {
+        title?: string;
+        slug?: string;
+        description?: string;
+        questions?: IQuestion[];
       };
+      const answers = attempt.answers as (number | number[])[];
+
+      const questions: AttemptQuestionDetail[] = (populatedQuiz.questions ?? []).map(
+        (question, index) => {
+          const userAnswer = answers[index] ?? -1;
+          let isCorrect = false;
+          if (question.type === 'single') {
+            isCorrect = userAnswer === question.correctIndex;
+          } else if (Array.isArray(userAnswer) && Array.isArray(question.correctIndexes)) {
+            isCorrect =
+              question.correctIndexes.length === userAnswer.length &&
+              question.correctIndexes.every((idx) => userAnswer.includes(idx));
+          }
+          return {
+            question: question.question,
+            options: question.options,
+            type: question.type,
+            correctIndex: question.correctIndex,
+            correctIndexes: question.correctIndexes,
+            questionImage: question.questionImage,
+            optionImages: question.optionImages,
+            userAnswer,
+            isCorrect,
+          };
+        },
+      );
 
       return {
         success: true,
-        data: formattedAttempt,
+        data: {
+          _id: String(attempt._id),
+          score: attempt.score,
+          takenAt: attempt.takenAt,
+          answers,
+          quiz: {
+            title: populatedQuiz.title ?? '',
+            slug: populatedQuiz.slug ?? '',
+            description: populatedQuiz.description ?? '',
+            questions,
+          },
+        },
       };
     } catch (error) {
-      console.error('Get attempt details error:', error);
+      logger.error({ error }, 'Get attempt details error');
       return {
         success: false,
         error: 'Failed to get attempt details',

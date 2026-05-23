@@ -1,4 +1,4 @@
-import { proxyAdaptiveRequest } from '@/lib/adaptive-learning/proxy';
+import { proxyAdaptiveRequest } from '@/lib/adaptive/proxy';
 import { buildLlmRateLimitResponse, checkLlmRateLimit, isAdminRole } from '@/lib/llm/rate-limit';
 import { withOptionalAuth } from '@/lib/api/auth';
 

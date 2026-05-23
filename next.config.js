@@ -153,6 +153,21 @@ const nextConfig = {
         destination: 'https://www.rinkuzu.app/:path*',
         permanent: true,
       },
+      {
+        source: '/adaptive-learning',
+        destination: '/adaptive',
+        permanent: true,
+      },
+      {
+        source: '/adaptive-learning/:path*',
+        destination: '/adaptive/:path*',
+        permanent: true,
+      },
+      {
+        source: '/api/adaptive-learning/:path*',
+        destination: '/api/adaptive/:path*',
+        permanent: true,
+      },
     ];
   },
   async headers() {

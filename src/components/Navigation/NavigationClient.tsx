@@ -283,7 +283,7 @@ const MobileMenu = memo(function MobileMenu({
               {t('createQuiz')}
             </Link>
             <Link
-              href="/adaptive-learning"
+              href="/adaptive"
               className="block px-4 py-3 text-sm font-medium text-neutral-900 hover:bg-neutral-50 rounded-xl transition-colors"
               onClick={onClose}
             >

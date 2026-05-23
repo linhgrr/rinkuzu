@@ -229,7 +229,7 @@ function DashboardHeroSection({
 
             <div className="flex flex-col items-center gap-4 sm:flex-row">
               <Link
-                href="/adaptive-learning"
+                href="/adaptive"
                 className="flex h-12 w-full items-center justify-center gap-2 whitespace-nowrap rounded-full border border-brand-action bg-brand-action px-8 text-base font-bold text-white shadow-lg transition-[background-color,box-shadow] duration-300 hover:bg-brand-action-hover hover:shadow-orange sm:w-auto"
               >
                 <span>{tDashboard('startLearning')}</span>

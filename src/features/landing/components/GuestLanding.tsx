@@ -100,7 +100,7 @@ export function GuestLanding({ quizzes, isAuthenticated = false }: GuestLandingP
             </h2>
             <div className="flex flex-wrap justify-center gap-4">
               <Link
-                href="/adaptive-learning"
+                href="/adaptive"
                 className="inline-flex items-center justify-center rounded-full bg-white px-8 py-4 font-semibold text-black hover:bg-neutral-100 transition-colors duration-200 text-lg"
               >
                 {t('get_started_free')}

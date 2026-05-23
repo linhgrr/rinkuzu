@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 import { createSubscriptionService } from '@/lib/subscription-factory';
 import { RateLimiterMongo } from 'rate-limiter-flexible';
 import connectDB from '@/lib/mongoose';
-import type { AdaptiveUserRole } from '@/lib/adaptive-learning/config';
+import type { AdaptiveUserRole } from '@/lib/adaptive/config';
 import { apiErr } from '@/lib/api/response';
 
 type LlmRateLimitAction =

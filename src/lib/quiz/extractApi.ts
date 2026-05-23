@@ -1,4 +1,4 @@
-import { buildAdaptiveServiceHeaders, resolveAdaptiveApiUrl } from '@/lib/adaptive-learning/config';
+import { buildAdaptiveServiceHeaders, resolveAdaptiveApiUrl } from '@/lib/adaptive/config';
 import { fetchApiData } from '@/lib/api/client';
 import type { IQuestion } from '@/models/Quiz';
 

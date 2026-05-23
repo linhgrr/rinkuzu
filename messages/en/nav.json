@@ -31,5 +31,13 @@
   "settings": "Settings",
   "statistics": "Statistics",
   "quizReports": "Quiz Reports",
-  "closeMenu": "Close menu"
+  "closeMenu": "Close menu",
+  "groupQuizBuilder": "Quiz Builder",
+  "groupAdaptiveLearning": "Adaptive Learning",
+  "groupAccount": "Account",
+  "groupAdmin": "Admin",
+  "subscription": "Subscription",
+  "adaptiveLibrary": "Library",
+  "adaptiveUpload": "New Subject",
+  "createQuizShort": "Create"
 }

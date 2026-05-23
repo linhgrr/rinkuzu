@@ -31,5 +31,13 @@
   "settings": "Cài đặt",
   "statistics": "Thống kê",
   "quizReports": "Báo cáo Quiz",
-  "closeMenu": "Đóng menu"
+  "closeMenu": "Đóng menu",
+  "groupQuizBuilder": "Tạo Quiz",
+  "groupAdaptiveLearning": "Học Thích Ứng",
+  "groupAccount": "Tài khoản",
+  "groupAdmin": "Quản trị",
+  "subscription": "Gói đăng ký",
+  "adaptiveLibrary": "Thư viện",
+  "adaptiveUpload": "Môn mới",
+  "createQuizShort": "Tạo"
 }

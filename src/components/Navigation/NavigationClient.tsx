@@ -10,12 +10,8 @@ import { useTranslations } from 'next-intl';
 import { isAdaptiveExerciseModePath } from '@/lib/routing/pathname';
 import { Button } from '@/components/ui/Button';
 import {
-  HiOutlineClock,
-  HiOutlineBookmark,
   HiOutlineSparkles,
   HiOutlineDocumentText,
-  HiOutlineUsers,
-  HiOutlineTag,
   HiOutlineLogout,
   HiOutlineMenu,
   HiOutlineX,
@@ -112,33 +108,15 @@ const UserMenu = memo(function UserMenu({
               </div>
             </div>
 
-            {/* Menu Items */}
+            {/* Menu Items — account only. Product nav lives in Sidebar/BottomNav. */}
             <div className="py-2">
               <Link
-                href="/my-quizzes"
+                href="/profile"
                 className="flex items-center gap-3 px-5 py-2.5 text-sm text-neutral-900 hover:bg-neutral-50 transition-colors cursor-pointer"
                 onClick={onClose}
               >
-                <HiOutlineDocumentText className="size-5 text-neutral-500" />
-                {t('myQuizzes')}
-              </Link>
-
-              <Link
-                href="/history"
-                className="flex items-center gap-3 px-5 py-2.5 text-sm text-neutral-900 hover:bg-neutral-50 transition-colors cursor-pointer"
-                onClick={onClose}
-              >
-                <HiOutlineClock className="size-5 text-neutral-500" />
-                {t('history')}
-              </Link>
-
-              <Link
-                href="/bookmarks"
-                className="flex items-center gap-3 px-5 py-2.5 text-sm text-neutral-900 hover:bg-neutral-50 transition-colors cursor-pointer"
-                onClick={onClose}
-              >
-                <HiOutlineBookmark className="size-5 text-neutral-500" />
-                {t('bookmarks')}
+                <HiOutlineCog className="size-5 text-neutral-500" />
+                {t('profile')}
               </Link>
 
               <Link
@@ -147,18 +125,7 @@ const UserMenu = memo(function UserMenu({
                 onClick={onClose}
               >
                 <HiOutlineSparkles className="size-5 text-neutral-500" />
-                {t('premium')}
-              </Link>
-
-              <div className="h-px bg-neutral-100 my-1" />
-
-              <Link
-                href="/profile"
-                className="flex items-center gap-3 px-5 py-2.5 text-sm text-neutral-900 hover:bg-neutral-50 transition-colors cursor-pointer"
-                onClick={onClose}
-              >
-                <HiOutlineCog className="size-5 text-neutral-500" />
-                {t('profile')}
+                {t('subscription')}
               </Link>
 
               {session?.user?.role === 'admin' && (
@@ -170,23 +137,7 @@ const UserMenu = memo(function UserMenu({
                     onClick={onClose}
                   >
                     <HiOutlineDocumentText className="size-5" />
-                    {t('reviewQueue')}
-                  </Link>
-                  <Link
-                    href="/admin/users"
-                    className="flex items-center gap-3 px-5 py-2.5 text-sm text-brand-trust hover:bg-green-50 transition-colors cursor-pointer"
-                    onClick={onClose}
-                  >
-                    <HiOutlineUsers className="size-5" />
-                    {t('users')}
-                  </Link>
-                  <Link
-                    href="/admin/categories"
-                    className="flex items-center gap-3 px-5 py-2.5 text-sm text-brand-trust hover:bg-green-50 transition-colors cursor-pointer"
-                    onClick={onClose}
-                  >
-                    <HiOutlineTag className="size-5" />
-                    {t('categories')}
+                    {t('adminPanel')}
                   </Link>
                 </>
               )}
@@ -269,67 +220,93 @@ const MobileMenu = memo(function MobileMenu({
             </div>
 
             <Link
-              href="/"
+              href="/dashboard"
               className="block px-4 py-3 text-sm font-medium text-neutral-900 hover:bg-neutral-50 rounded-xl transition-colors"
               onClick={onClose}
             >
               {t('home')}
             </Link>
+
+            <p className="px-4 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-neutral-400">
+              {t('groupQuizBuilder')}
+            </p>
             <Link
               href="/create"
-              className="block px-4 py-3 text-sm font-medium text-neutral-900 hover:bg-neutral-50 rounded-xl transition-colors"
+              className="block px-4 py-2.5 text-sm font-medium text-neutral-900 hover:bg-neutral-50 rounded-xl transition-colors"
               onClick={onClose}
             >
               {t('createQuiz')}
             </Link>
             <Link
-              href="/adaptive"
-              className="block px-4 py-3 text-sm font-medium text-neutral-900 hover:bg-neutral-50 rounded-xl transition-colors"
-              onClick={onClose}
-            >
-              {t('adaptiveLearning')}
-            </Link>
-            <Link
-              href="/explore"
-              className="block px-4 py-3 text-sm font-medium text-neutral-900 hover:bg-neutral-50 rounded-xl transition-colors"
-              onClick={onClose}
-            >
-              {t('explore')}
-            </Link>
-            <Link
               href="/my-quizzes"
-              className="block px-4 py-3 text-sm font-medium text-neutral-900 hover:bg-neutral-50 rounded-xl transition-colors"
+              className="block px-4 py-2.5 text-sm font-medium text-neutral-900 hover:bg-neutral-50 rounded-xl transition-colors"
               onClick={onClose}
             >
               {t('myQuizzes')}
             </Link>
             <Link
               href="/review"
-              className="block px-4 py-3 text-sm font-medium text-neutral-900 hover:bg-neutral-50 rounded-xl transition-colors"
+              className="block px-4 py-2.5 text-sm font-medium text-neutral-900 hover:bg-neutral-50 rounded-xl transition-colors"
               onClick={onClose}
             >
               {t('review')}
             </Link>
             <Link
               href="/history"
-              className="block px-4 py-3 text-sm font-medium text-neutral-900 hover:bg-neutral-50 rounded-xl transition-colors"
+              className="block px-4 py-2.5 text-sm font-medium text-neutral-900 hover:bg-neutral-50 rounded-xl transition-colors"
               onClick={onClose}
             >
               {t('history')}
             </Link>
             <Link
               href="/bookmarks"
-              className="block px-4 py-3 text-sm font-medium text-neutral-900 hover:bg-neutral-50 rounded-xl transition-colors"
+              className="block px-4 py-2.5 text-sm font-medium text-neutral-900 hover:bg-neutral-50 rounded-xl transition-colors"
               onClick={onClose}
             >
               {t('bookmarks')}
             </Link>
             <Link
+              href="/explore"
+              className="block px-4 py-2.5 text-sm font-medium text-neutral-900 hover:bg-neutral-50 rounded-xl transition-colors"
+              onClick={onClose}
+            >
+              {t('explore')}
+            </Link>
+
+            <p className="px-4 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-neutral-400">
+              {t('groupAdaptiveLearning')}
+            </p>
+            <Link
+              href="/adaptive"
+              className="block px-4 py-2.5 text-sm font-medium text-neutral-900 hover:bg-neutral-50 rounded-xl transition-colors"
+              onClick={onClose}
+            >
+              {t('adaptiveLibrary')}
+            </Link>
+            <Link
+              href="/adaptive/upload"
+              className="block px-4 py-2.5 text-sm font-medium text-neutral-900 hover:bg-neutral-50 rounded-xl transition-colors"
+              onClick={onClose}
+            >
+              {t('adaptiveUpload')}
+            </Link>
+
+            <p className="px-4 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-neutral-400">
+              {t('groupAccount')}
+            </p>
+            <Link
               href="/profile"
-              className="block px-4 py-3 text-sm font-medium text-neutral-900 hover:bg-neutral-50 rounded-xl transition-colors"
+              className="block px-4 py-2.5 text-sm font-medium text-neutral-900 hover:bg-neutral-50 rounded-xl transition-colors"
               onClick={onClose}
             >
               {t('profile')}
+            </Link>
+            <Link
+              href="/subscription"
+              className="block px-4 py-2.5 text-sm font-medium text-neutral-900 hover:bg-neutral-50 rounded-xl transition-colors"
+              onClick={onClose}
+            >
+              {t('subscription')}
             </Link>
 
             {session?.user?.role === 'admin' && (

@@ -73,7 +73,7 @@ export default function AdaptiveLearningDashboard({
   );
 
   return (
-    <div className={`${inter.className} min-h-screen bg-[#faf8ff] text-[#131b2e]`}>
+    <div className={`${inter.className} min-h-screen bg-neutral-50 text-neutral-900`}>
       <main className="mx-auto w-full max-w-7xl p-8 md:p-12">
         <DashboardHeader
           apiOnline={apiOnline}

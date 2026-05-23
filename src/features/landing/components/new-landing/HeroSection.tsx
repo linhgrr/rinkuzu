@@ -78,8 +78,19 @@ const HeroSection = ({ isAuthenticated = false }: { isAuthenticated?: boolean })
               {t('subtitle')}
             </p>
 
-            {/* CTA */}
-            <GlowPillButton label={t('ctaStartLearning')} variant="light" href="/register" />
+            {/* CTAs — explicit two-product entry */}
+            <div className="flex flex-col items-center gap-3 sm:flex-row">
+              <GlowPillButton
+                label={t('ctaQuizBuilder')}
+                variant="light"
+                href={isAuthenticated ? '/create' : '/register?next=/create'}
+              />
+              <GlowPillButton
+                label={t('ctaAdaptiveLearning')}
+                variant="dark"
+                href={isAuthenticated ? '/adaptive' : '/register?next=/adaptive'}
+              />
+            </div>
           </div>
         </div>
       </div>

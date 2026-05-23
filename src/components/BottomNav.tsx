@@ -14,8 +14,12 @@ import {
   HiPlus,
   HiOutlineSearch,
   HiSearch,
+  HiOutlineAcademicCap,
+  HiOutlineUpload,
+  HiOutlineChartBar,
 } from '@/components/icons';
 import {
+  getProductScope,
   isAdaptiveExerciseModePath,
   matchesPrefix,
   stripLocaleFromPath,
@@ -35,7 +39,25 @@ const AUTH_REQUIRED_PREFIXES = [
   '/draft',
   '/edit',
   '/admin',
+  '/adaptive',
 ];
+
+type IconRender = (isActive: boolean) => React.ReactNode;
+
+interface NavTab {
+  href: string;
+  labelKey: string;
+  /** Used to highlight a tab when the active path is one of its sub-routes. */
+  matchPrefix?: string;
+  /** Render the centered floating button instead of an inline icon. */
+  isCenter?: boolean;
+  icon: IconRender;
+}
+
+function isTabActive(pathWithoutLocale: string, tab: NavTab): boolean {
+  if (tab.matchPrefix) return matchesPrefix(pathWithoutLocale, tab.matchPrefix);
+  return pathWithoutLocale === tab.href;
+}
 
 export default function BottomNav() {
   const pathname = usePathname();
@@ -45,10 +67,10 @@ export default function BottomNav() {
   const isProtectedRoute = AUTH_REQUIRED_PREFIXES.some((prefix) =>
     matchesPrefix(pathWithoutLocale, prefix),
   );
-  const isQuizRoute = matchesPrefix(pathWithoutLocale, '/quiz');
+  const isQuizPlayRoute = matchesPrefix(pathWithoutLocale, '/quiz');
 
-  // Hide bottom navigation in exercise mode to prevent distractions
-  if (isAdaptiveExerciseModePath(pathname || '/') || isQuizRoute) {
+  // Hide bottom navigation in exercise mode and quiz-taking screens
+  if (isAdaptiveExerciseModePath(pathname || '/') || isQuizPlayRoute) {
     return null;
   }
 
@@ -75,106 +97,154 @@ export default function BottomNav() {
     return null;
   }
 
-  const navItems = [
-    {
-      href: '/dashboard',
-      labelKey: 'home',
-      icon: (isActive: boolean) =>
-        isActive ? (
-          <HiHome className="size-6 text-brand-trust" />
-        ) : (
-          <HiOutlineHome className="size-6 text-neutral-500" />
-        ),
-    },
-    {
-      href: '/review',
-      labelKey: 'review',
-      icon: (isActive: boolean) =>
-        isActive ? (
-          <HiInbox className="size-6 text-brand-trust" />
-        ) : (
-          <HiOutlineInbox className="size-6 text-neutral-500" />
-        ),
-    },
-    {
-      href: '/create',
-      labelKey: 'create',
-      icon: (isActive: boolean) => (
+  const profileTab: NavTab = {
+    href: '/profile',
+    labelKey: 'profile',
+    icon: (isActive) =>
+      session.user?.avatar ? (
+        <Image
+          src={session.user.avatar}
+          alt=""
+          width={24}
+          height={24}
+          className={`w-6 h-6 rounded-full object-cover border-2 ${isActive ? 'border-brand-trust' : 'border-neutral-400'}`}
+          unoptimized
+        />
+      ) : (
         <div
-          className={`w-12 h-12 -mt-6 rounded-full flex items-center justify-center shadow-[0_8px_16px_rgb(0,0,0,0.12)] border-[3px] border-white transition-transform duration-300 ${isActive ? 'bg-brand-action-hover scale-105' : 'bg-brand-action hover:scale-105'}`}
-          aria-label="Create new quiz"
+          className={`w-6 h-6 rounded-full flex items-center justify-center border-2 ${isActive ? 'border-brand-trust' : 'border-neutral-400'}`}
         >
-          {isActive ? (
-            <HiPlus className="size-6 text-white" aria-hidden="true" />
-          ) : (
-            <HiOutlinePlus className="size-6 text-white" aria-hidden="true" />
-          )}
+          <span
+            className={`text-xs font-bold ${isActive ? 'text-brand-trust' : 'text-neutral-500'}`}
+          >
+            {(session.user?.displayName || session.user?.email || 'U').charAt(0).toUpperCase()}
+          </span>
         </div>
       ),
-    },
-    {
-      href: '/explore',
-      labelKey: 'explore',
-      icon: (isActive: boolean) =>
-        isActive ? (
-          <HiSearch className="size-6 text-brand-trust" />
+  };
+
+  const homeTab: NavTab = {
+    href: '/dashboard',
+    labelKey: 'tabHome',
+    icon: (isActive) =>
+      isActive ? (
+        <HiHome className="size-6 text-brand-trust" />
+      ) : (
+        <HiOutlineHome className="size-6 text-neutral-500" />
+      ),
+  };
+
+  const exploreTab: NavTab = {
+    href: '/explore',
+    labelKey: 'tabExplore',
+    icon: (isActive) =>
+      isActive ? (
+        <HiSearch className="size-6 text-brand-trust" />
+      ) : (
+        <HiOutlineSearch className="size-6 text-neutral-500" />
+      ),
+  };
+
+  const reviewTab: NavTab = {
+    href: '/review',
+    labelKey: 'review',
+    icon: (isActive) =>
+      isActive ? (
+        <HiInbox className="size-6 text-brand-trust" />
+      ) : (
+        <HiOutlineInbox className="size-6 text-neutral-500" />
+      ),
+  };
+
+  const createTab: NavTab = {
+    href: '/create',
+    labelKey: 'createQuizShort',
+    matchPrefix: '/create',
+    isCenter: true,
+    icon: (isActive) => (
+      <div
+        className={`w-12 h-12 -mt-6 rounded-full flex items-center justify-center shadow-[0_8px_16px_rgb(0,0,0,0.12)] border-[3px] border-white transition-transform duration-300 ${isActive ? 'bg-brand-action-hover scale-105' : 'bg-brand-action hover:scale-105'}`}
+        aria-label="Create quiz"
+      >
+        {isActive ? (
+          <HiPlus className="size-6 text-white" aria-hidden="true" />
         ) : (
-          <HiOutlineSearch className="size-6 text-neutral-500" />
-        ),
-    },
-    {
-      href: '/profile',
-      labelKey: 'profile',
-      icon: (isActive: boolean) =>
-        session.user?.avatar ? (
-          <Image
-            src={session.user.avatar}
-            alt=""
-            width={24}
-            height={24}
-            className={`w-6 h-6 rounded-full object-cover border-2 ${isActive ? 'border-brand-trust' : 'border-neutral-400'}`}
-            unoptimized
-          />
-        ) : (
-          <div
-            className={`w-6 h-6 rounded-full flex items-center justify-center border-2 ${isActive ? 'border-brand-trust' : 'border-neutral-400'}`}
-          >
-            <span
-              className={`text-xs font-bold ${isActive ? 'text-brand-trust' : 'text-neutral-500'}`}
-            >
-              {(session.user?.displayName || session.user?.email || 'U').charAt(0).toUpperCase()}
-            </span>
-          </div>
-        ),
-    },
-  ];
+          <HiOutlinePlus className="size-6 text-white" aria-hidden="true" />
+        )}
+      </div>
+    ),
+  };
+
+  const adaptiveLibraryTab: NavTab = {
+    href: '/adaptive',
+    labelKey: 'tabLibrary',
+    icon: (isActive) => (
+      <HiOutlineAcademicCap
+        className={`size-6 ${isActive ? 'text-brand-trust' : 'text-neutral-500'}`}
+      />
+    ),
+  };
+
+  const adaptiveUploadTab: NavTab = {
+    href: '/adaptive/upload',
+    labelKey: 'tabUpload',
+    isCenter: true,
+    icon: (isActive) => (
+      <div
+        className={`w-12 h-12 -mt-6 rounded-full flex items-center justify-center shadow-[0_8px_16px_rgb(0,0,0,0.12)] border-[3px] border-white transition-transform duration-300 ${isActive ? 'bg-brand-trust scale-105' : 'bg-brand-trust hover:scale-105'}`}
+        aria-label="Upload subject"
+      >
+        <HiOutlineUpload className="size-6 text-white" aria-hidden="true" />
+      </div>
+    ),
+  };
+
+  const adaptiveProgressTab: NavTab = {
+    href: '/dashboard',
+    labelKey: 'tabProgress',
+    icon: (isActive) => (
+      <HiOutlineChartBar
+        className={`size-6 ${isActive ? 'text-brand-trust' : 'text-neutral-500'}`}
+      />
+    ),
+  };
+
+  const scope = getProductScope(pathname || '/');
+  let tabs: NavTab[];
+  if (scope === 'adaptive') {
+    tabs = [homeTab, adaptiveLibraryTab, adaptiveUploadTab, adaptiveProgressTab, profileTab];
+  } else if (scope === 'quiz') {
+    tabs = [homeTab, reviewTab, createTab, exploreTab, profileTab];
+  } else {
+    // Hub (e.g. /dashboard, /subscription) — same default as Quiz scope so the
+    // primary "+" CTA stays prominent for the most common create action.
+    tabs = [homeTab, reviewTab, createTab, exploreTab, profileTab];
+  }
 
   return (
     <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-t border-neutral-200/60 shadow-[0_-4px_20px_rgb(0,0,0,0.04)] px-2 pt-2 z-50 safe-area-bottom">
       <div className="flex justify-around items-end">
-        {navItems.map((item) => {
-          const isActive = pathWithoutLocale === item.href;
-          const isCreate = item.href === '/create';
+        {tabs.map((tab) => {
+          const isActive = isTabActive(pathWithoutLocale, tab);
 
           return (
             <Link
-              key={item.href}
-              href={item.href}
-              className={`flex flex-col items-center justify-center min-w-[56px] min-h-[48px] px-3 py-1 rounded-xl transition-colors active:bg-neutral-100 ${isCreate ? '' : 'gap-0.5'}`}
+              key={tab.href + tab.labelKey}
+              href={tab.href}
+              className={`flex flex-col items-center justify-center min-w-[56px] min-h-[48px] px-3 py-1 rounded-xl transition-colors active:bg-neutral-100 ${tab.isCenter ? '' : 'gap-0.5'}`}
             >
-              {typeof item.icon === 'function' ? item.icon(isActive) : null}
-              {!isCreate && (
+              {tab.icon(isActive)}
+              {!tab.isCenter && (
                 <span
                   className={`text-[10px] font-medium ${isActive ? 'text-brand-trust' : 'text-neutral-500'}`}
                 >
-                  {t(item.labelKey)}
+                  {t(tab.labelKey)}
                 </span>
               )}
             </Link>
           );
         })}
       </div>
-      {/* Safe Area for iPhone Home Indicator */}
       <div className="h-[env(safe-area-inset-bottom,8px)]"></div>
     </div>
   );

@@ -39,5 +39,11 @@
   "subscription": "Gói đăng ký",
   "adaptiveLibrary": "Thư viện",
   "adaptiveUpload": "Môn mới",
-  "createQuizShort": "Tạo"
+  "createQuizShort": "Tạo",
+  "tabHome": "Trang chủ",
+  "tabLibrary": "Thư viện",
+  "tabUpload": "Tải lên",
+  "tabProgress": "Tiến độ",
+  "tabHub": "Chuyển",
+  "tabExplore": "Khám phá"
 }

@@ -39,5 +39,11 @@
   "subscription": "Subscription",
   "adaptiveLibrary": "Library",
   "adaptiveUpload": "New Subject",
-  "createQuizShort": "Create"
+  "createQuizShort": "Create",
+  "tabHome": "Home",
+  "tabLibrary": "Library",
+  "tabUpload": "Upload",
+  "tabProgress": "Progress",
+  "tabHub": "Switch",
+  "tabExplore": "Explore"
 }

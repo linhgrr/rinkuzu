@@ -1,17 +1,12 @@
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { withAdmin } from '@/lib/api/auth';
 import { apiErr, apiOk } from '@/lib/api/response';
 import { PayOSService } from '@/services/payment/PayOSService';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export const GET = withAdmin(async () => {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user || session.user.role !== 'admin') {
-      return apiErr('forbidden', 'Admin access required', 403);
-    }
-
     const payosService = new PayOSService();
 
     // Test the connection
@@ -34,7 +29,7 @@ export async function GET() {
       { meta: { message: 'PayOS service is working correctly' } },
     );
   } catch (error) {
-    console.error('PayOS test error:', error);
+    logger.error({ error }, 'PayOS test error');
     return apiErr('internal_error', 'PayOS test failed', 500);
   }
-}
+});

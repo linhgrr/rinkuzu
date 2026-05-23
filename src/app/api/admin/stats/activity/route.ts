@@ -1,19 +1,13 @@
 import { NextRequest } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { withAdmin } from '@/lib/api/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
 import { apiErr, apiOk, apiServiceErr } from '@/lib/api/response';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(_request: NextRequest) {
+export const GET = withAdmin(async (_request: NextRequest) => {
   try {
-    const session = await getServerSession(authOptions);
-
-    if (!session?.user || (session.user as any).role !== 'admin') {
-      return apiErr('forbidden', 'Unauthorized - Admin access required', 401);
-    }
-
     const adminService = serviceFactory.getAdminService();
     const result = await adminService.getActivityStats();
 
@@ -23,7 +17,7 @@ export async function GET(_request: NextRequest) {
 
     return apiOk(result.data);
   } catch (error) {
-    console.error('Error fetching activity stats:', error);
+    logger.error({ error }, 'Error fetching activity stats');
     return apiErr('internal_error', 'Failed to fetch activity statistics', 500);
   }
-}
+});

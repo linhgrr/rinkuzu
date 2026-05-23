@@ -2,6 +2,8 @@ import {
   IQuizService,
   CreateQuizRequest,
   QuizListOptions,
+  type QuizDiscussionDTO,
+  type FlashcardQuizDTO,
 } from '@/interfaces/services/IQuizService';
 import { PaginationMeta } from '@/types';
 import { IQuizRepository, IQuiz } from '@/interfaces/repositories/IQuizRepository';
@@ -11,6 +13,8 @@ import { IAttemptRepository } from '@/interfaces/repositories/IAttemptRepository
 import { IDiscussionRepository } from '@/interfaces/repositories/IDiscussionRepository';
 import { IReportRepository } from '@/interfaces/repositories/IReportRepository';
 import { ServiceResult } from '@/interfaces/services/types';
+import type { IQuestion } from '@/models/Quiz';
+import type { Session } from 'next-auth';
 
 import { QuizCrudService } from './QuizCrudService';
 import { QuizPlayService } from './QuizPlayService';
@@ -24,12 +28,12 @@ export class QuizService implements IQuizService {
   private discussionService: QuizDiscussionService;
 
   constructor(
-    private quizRepository: IQuizRepository,
-    private categoryRepository: ICategoryRepository,
-    private userRepository: IUserRepository,
-    private attemptRepository: IAttemptRepository,
-    private discussionRepository: IDiscussionRepository,
-    private reportRepository: IReportRepository,
+    quizRepository: IQuizRepository,
+    categoryRepository: ICategoryRepository,
+    userRepository: IUserRepository,
+    attemptRepository: IAttemptRepository,
+    discussionRepository: IDiscussionRepository,
+    reportRepository: IReportRepository,
   ) {
     this.crudService = new QuizCrudService(quizRepository, categoryRepository, userRepository);
     this.playService = new QuizPlayService(quizRepository, userRepository, attemptRepository);
@@ -58,7 +62,7 @@ export class QuizService implements IQuizService {
     userEmail?: string,
     userRole?: string,
     userId?: string,
-  ): Promise<ServiceResult<any>> {
+  ): Promise<ServiceResult<IQuiz>> {
     return this.crudService.getQuizById(id, userEmail, userRole, userId);
   }
 
@@ -66,16 +70,20 @@ export class QuizService implements IQuizService {
     return this.crudService.getQuizBySlug(slug);
   }
 
-  async getQuizForPlay(slug: string, userRole?: string, userId?: string): Promise<any> {
+  async getQuizForPlay(
+    slug: string,
+    userRole?: string,
+    userId?: string,
+  ): Promise<ServiceResult<IQuiz>> {
     return this.playService.getQuizForPlay(slug, userRole, userId);
   }
 
   async updateQuiz(
     id: string,
-    quizData: any,
+    quizData: Partial<IQuiz>,
     userEmail: string,
     userRole?: string,
-  ): Promise<ServiceResult<any>> {
+  ): Promise<ServiceResult<IQuiz>> {
     return this.crudService.updateQuiz(id, quizData, userEmail, userRole);
   }
 
@@ -87,11 +95,11 @@ export class QuizService implements IQuizService {
     return this.crudService.deleteQuiz(id, userEmail, userRole);
   }
 
-  async approveQuiz(id: string): Promise<ServiceResult<any>> {
+  async approveQuiz(id: string): Promise<ServiceResult<IQuiz>> {
     return this.adminService.approveQuiz(id);
   }
 
-  async rejectQuiz(id: string, reason?: string): Promise<ServiceResult<any>> {
+  async rejectQuiz(id: string, reason?: string): Promise<ServiceResult<IQuiz>> {
     return this.adminService.rejectQuiz(id, reason);
   }
 
@@ -99,7 +107,7 @@ export class QuizService implements IQuizService {
     title: string,
     description: string,
     pdfFiles: File[],
-  ): Promise<ServiceResult<any>> {
+  ): Promise<ServiceResult<{ title: string; description: string; questions: IQuestion[] }>> {
     return this.adminService.previewFromPdf(title, description, pdfFiles);
   }
 
@@ -114,14 +122,24 @@ export class QuizService implements IQuizService {
 
   async submitQuizAttempt(
     slug: string,
-    answers: any[],
-    session: any,
+    answers: (number | number[])[],
+    session: Session | null,
     userEmail?: string,
-  ): Promise<ServiceResult<any>> {
+  ): Promise<
+    ServiceResult<{
+      score: number;
+      correctAnswers: number;
+      totalQuestions: number;
+      attemptId: string;
+    }>
+  > {
     return this.playService.submitQuizAttempt(slug, answers, session, userEmail);
   }
 
-  async getQuizDiscussions(slug: string, session?: any): Promise<ServiceResult<any[]>> {
+  async getQuizDiscussions(
+    slug: string,
+    session?: Session | null,
+  ): Promise<ServiceResult<QuizDiscussionDTO[]>> {
     return this.discussionService.getQuizDiscussions(slug, session);
   }
 
@@ -130,8 +148,8 @@ export class QuizService implements IQuizService {
     questionIndex: number,
     content: string,
     userEmail: string,
-    session?: any,
-  ): Promise<ServiceResult<any>> {
+    session?: Session | null,
+  ): Promise<ServiceResult<QuizDiscussionDTO>> {
     return this.discussionService.addDiscussionComment(
       slug,
       questionIndex,
@@ -141,11 +159,17 @@ export class QuizService implements IQuizService {
     );
   }
 
-  async getQuizFlashcards(slug: string, session?: any): Promise<any> {
+  async getQuizFlashcards(
+    slug: string,
+    session?: Session | null,
+  ): Promise<ServiceResult<FlashcardQuizDTO>> {
     return this.playService.getQuizFlashcards(slug, session);
   }
 
-  async getQuizForFlashcards(slug: string, session: any): Promise<ServiceResult<any>> {
+  async getQuizForFlashcards(
+    slug: string,
+    session: Session | null,
+  ): Promise<ServiceResult<FlashcardQuizDTO>> {
     return this.playService.getQuizForFlashcards(slug, session);
   }
 }

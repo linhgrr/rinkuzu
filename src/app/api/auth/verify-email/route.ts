@@ -8,6 +8,7 @@ import { hashToken } from '@/lib/auth-tokens';
 import { recordAuthEvent, extractRequestContext } from '@/lib/audit';
 import { flattenZodError, verifyEmailSchema } from '@/lib/validation/auth';
 import { checkAuthRateLimit, rateLimitResponse } from '@/lib/auth-rate-limit';
+import { logger } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   let payload: unknown;
@@ -62,7 +63,7 @@ export async function POST(request: NextRequest) {
       meta: { message: 'Email verified. You can now sign in.' },
     });
   } catch (error) {
-    console.error('Verify-email error:', error);
+    logger.error({ error }, 'Verify-email error');
     return apiErr('internal_error', 'Failed to verify email', 500);
   }
 }

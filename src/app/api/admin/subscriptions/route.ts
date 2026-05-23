@@ -1,9 +1,10 @@
 import { NextRequest } from 'next/server';
+import { createSubscriptionService } from '@/lib/subscription-factory';
 import { withAdmin } from '@/lib/api/auth';
-import { ServiceFactory } from '@/lib/serviceFactory';
 import { buildPaginationMeta } from '@/repositories/pagination';
 import { apiErr, apiOk } from '@/lib/api/response';
 import type { ISubscription } from '@/models/Subscription';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,7 +18,7 @@ export const GET = withAdmin(async (request: NextRequest) => {
       search: searchParams.get('search'),
     };
 
-    const subscriptionService = ServiceFactory.createSubscriptionService();
+    const subscriptionService = createSubscriptionService();
     const result = await subscriptionService.getSubscriptionHistory('');
 
     // Filter and paginate results based on search params
@@ -45,7 +46,7 @@ export const GET = withAdmin(async (request: NextRequest) => {
       pagination: buildPaginationMeta(page, limit, total),
     });
   } catch (error: unknown) {
-    console.error('Admin subscriptions list error:', error);
+    logger.error({ error }, 'Admin subscriptions list error');
     return apiErr('internal_error', 'Internal server error', 500);
   }
 });

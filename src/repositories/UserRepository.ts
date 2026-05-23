@@ -4,6 +4,7 @@ import { IUser } from '@/types/index';
 import { buildPaginationMeta } from '@/repositories/pagination';
 import { BaseRepository } from '@/repositories/base';
 import { IUserRepository } from '@/interfaces/repositories/IUserRepository';
+import type { FilterQuery, UpdateQuery } from 'mongoose';
 
 export class UserRepository extends BaseRepository<IUser> implements IUserRepository {
   constructor() {
@@ -38,7 +39,7 @@ export class UserRepository extends BaseRepository<IUser> implements IUserReposi
     const skip = (page - 1) * limit;
 
     // Build query
-    const query: any = {};
+    const query: FilterQuery<IUser> = {};
     if (options?.search) {
       query.email = { $regex: options.search, $options: 'i' };
     }
@@ -83,7 +84,7 @@ export class UserRepository extends BaseRepository<IUser> implements IUserReposi
       .lean()) as unknown as IUser[];
   }
 
-  async updateById(id: string, updateData: any): Promise<IUser | null> {
+  async updateById(id: string, updateData: UpdateQuery<IUser>): Promise<IUser | null> {
     await connectDB();
     return (await User.findByIdAndUpdate(id, updateData, {
       new: true,

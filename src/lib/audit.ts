@@ -4,6 +4,7 @@ import type { Types } from 'mongoose';
 
 import connectDB from '@/lib/mongoose';
 import AuditLog, { type AuditEvent } from '@/models/AuditLog';
+import { logger } from '@/lib/logger';
 
 type AuditInput = {
   event: AuditEvent;
@@ -30,7 +31,7 @@ export async function recordAuthEvent(input: AuditInput): Promise<void> {
       metadata: input.metadata ?? null,
     });
   } catch (error) {
-    console.error('[audit] failed to record', input.event, error);
+    logger.error({ event: input.event, error }, '[audit] failed to record');
   }
 }
 

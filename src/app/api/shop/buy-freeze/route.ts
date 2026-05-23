@@ -1,18 +1,12 @@
-import { getServerSession } from 'next-auth';
+import { withAuth } from '@/lib/api/auth';
 import connectDB from '@/lib/mongoose';
 import UserProgress from '@/models/UserProgress';
-import { authOptions } from '@/lib/auth';
 import { apiErr, apiOk } from '@/lib/api/response';
+import { logger } from '@/lib/logger';
 
-export async function POST(_req: Request) {
+export const POST = withAuth(async (_request, { userId }) => {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session || !session.user) {
-      return apiErr('unauthorized', 'Unauthorized', 401);
-    }
-
     await connectDB();
-    const userId = (session.user as any).id;
 
     const userProgress = await UserProgress.findOne({ userId });
     if (!userProgress) {
@@ -43,7 +37,7 @@ export async function POST(_req: Request) {
       { meta: { message: 'Streak freeze purchased' } },
     );
   } catch (error) {
-    console.error('Error buying freeze:', error);
+    logger.error({ error }, 'Error buying freeze');
     return apiErr('internal_error', 'Internal Server Error', 500);
   }
-}
+});

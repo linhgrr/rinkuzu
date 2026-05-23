@@ -10,6 +10,7 @@ import { buildPasswordChangedMessage, sendTransactionalMail } from '@/lib/mail';
 import { recordAuthEvent, extractRequestContext } from '@/lib/audit';
 import { flattenZodError, resetPasswordSchema } from '@/lib/validation/auth';
 import { checkAuthRateLimit, rateLimitResponse } from '@/lib/auth-rate-limit';
+import { logger } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   let payload: unknown;
@@ -74,7 +75,7 @@ export async function POST(request: NextRequest) {
       meta: { message: 'Password updated. Please sign in with your new password.' },
     });
   } catch (error) {
-    console.error('Reset-password error:', error);
+    logger.error({ error }, 'Reset-password error');
     return apiErr('internal_error', 'Failed to reset password', 500);
   }
 }

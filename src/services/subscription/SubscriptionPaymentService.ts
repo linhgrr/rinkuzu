@@ -1,5 +1,6 @@
 import connectDB from '@/lib/mongoose';
 import crypto from 'crypto';
+import mongoose, { Types } from 'mongoose';
 import Plan from '@/models/Plan';
 import { PaymentRequest } from '@/interfaces/services/ISubscriptionService';
 import { IPayOSService } from '@/interfaces/services/IPayOSService';
@@ -7,6 +8,27 @@ import { ISubscriptionRepository } from '@/interfaces/repositories/ISubscription
 import { IUserRepository } from '@/interfaces/repositories/IUserRepository';
 import { assertTrustedPayosCheckoutUrl } from '@/lib/security/trusted-navigation';
 import { env } from '@/lib/env';
+import { logger } from '@/lib/logger';
+
+interface UserSubscriptionEmbed {
+  endDate?: Date | string | null;
+  isActive?: boolean;
+}
+
+interface UserWithName {
+  email: string;
+  name?: string;
+  subscription?: UserSubscriptionEmbed;
+}
+
+/**
+ * Mongoose normally coerces string ids to ObjectId at schema validation
+ * time, but unit tests mock the repository and bypass that path. Coerce
+ * defensively here so the persisted shape always matches `ISubscription.user`.
+ */
+function toUserObjectId(userId: string): Types.ObjectId | string {
+  return Types.ObjectId.isValid(userId) ? new mongoose.Types.ObjectId(userId) : userId;
+}
 
 export class SubscriptionPaymentService {
   constructor(
@@ -43,7 +65,7 @@ export class SubscriptionPaymentService {
 
     // Create subscription record
     await this.subscriptionRepository.create({
-      user: userId as any,
+      user: toUserObjectId(userId) as Types.ObjectId,
       userEmail: user.email,
       type: planId,
       amount: plan.price,
@@ -73,23 +95,29 @@ export class SubscriptionPaymentService {
         returnUrl,
         cancelUrl,
         user.email,
-        (user as any).name,
+        (user as UserWithName).name,
       );
 
       if (paymentResponse.code !== '00') {
-        console.error('PayOS payment error:', {
-          orderCode,
-          code: paymentResponse.code,
-          description: paymentResponse.desc,
-        });
+        logger.error(
+          {
+            orderCode,
+            code: paymentResponse.code,
+            description: paymentResponse.desc,
+          },
+          'PayOS payment error',
+        );
         throw new Error(paymentResponse.desc || 'Failed to create payment request');
       }
 
       if (!paymentResponse.data?.checkoutUrl) {
-        console.error('PayOS response missing payment URL:', {
-          orderCode,
-          code: paymentResponse.code,
-        });
+        logger.error(
+          {
+            orderCode,
+            code: paymentResponse.code,
+          },
+          'PayOS response missing payment URL',
+        );
         throw new Error('Payment URL not received from PayOS');
       }
 
@@ -114,13 +142,13 @@ export class SubscriptionPaymentService {
         },
       };
     } catch (error) {
-      console.error('Error in createPaymentRequest:', error);
+      logger.error({ error }, 'Error in createPaymentRequest');
 
       // Clean up the subscription record if payment creation failed
       try {
         await this.subscriptionRepository.deleteByOrderId(orderCode.toString());
       } catch (cleanupError) {
-        console.error('Failed to cleanup subscription record:', cleanupError);
+        logger.error({ cleanupError }, 'Failed to cleanup subscription record');
       }
 
       throw error;
@@ -128,8 +156,8 @@ export class SubscriptionPaymentService {
   }
 
   private async isUserPremiumInternal(userId: string): Promise<boolean> {
-    const user = await this.userRepository.findById(userId);
-    const subscription = (user as any)?.subscription;
+    const user = (await this.userRepository.findById(userId)) as UserWithName | null;
+    const subscription = user?.subscription;
     if (!subscription) return false;
     if (!subscription.isActive) return false;
     if (subscription.endDate) {

@@ -77,6 +77,7 @@ async function parseApiBody(response: Response): Promise<ParsedApiBody> {
   try {
     rawText = await response.text();
   } catch (bodyError) {
+    // Client-safe module: cannot import the pino logger (server-only).
     console.error('parseApiBody: failed to read response body', bodyError);
     return { payload: null, rawText: '' };
   }

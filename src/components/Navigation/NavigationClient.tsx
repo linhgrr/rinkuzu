@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback, memo } from 'react';
 import { useSession, signOut } from 'next-auth/react';
+import type { Session } from 'next-auth';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
@@ -26,7 +27,7 @@ import { GuestLinks } from './GuestLinks';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 
 interface UserMenuProps {
-  session: any;
+  session: Session | null;
   isOpen: boolean;
   onToggle: () => void;
   onClose: () => void;
@@ -57,9 +58,9 @@ const UserMenu = memo(function UserMenu({
         className="flex items-center gap-2 rounded-full"
         aria-label="Toggle user menu"
       >
-        {(session.user as any)?.avatar ? (
+        {session?.user?.avatar ? (
           <Image
-            src={(session.user as any).avatar}
+            src={session?.user.avatar}
             alt=""
             width={28}
             height={28}
@@ -68,9 +69,7 @@ const UserMenu = memo(function UserMenu({
           />
         ) : (
           <div className="size-7 bg-brand-trust rounded-full flex items-center justify-center text-white text-sm font-medium">
-            {((session.user as any)?.displayName || session.user?.email || 'U')
-              .charAt(0)
-              .toUpperCase()}
+            {(session?.user?.displayName || session?.user?.email || 'U').charAt(0).toUpperCase()}
           </div>
         )}
       </Button>
@@ -88,9 +87,9 @@ const UserMenu = memo(function UserMenu({
             {/* User Header */}
             <div className="px-5 py-4 border-b border-neutral-100">
               <div className="flex items-center gap-3">
-                {(session.user as any)?.avatar ? (
+                {session?.user?.avatar ? (
                   <Image
-                    src={(session.user as any).avatar}
+                    src={session?.user.avatar}
                     alt=""
                     width={44}
                     height={44}
@@ -99,16 +98,16 @@ const UserMenu = memo(function UserMenu({
                   />
                 ) : (
                   <div className="size-11 bg-brand-trust rounded-full flex items-center justify-center text-white font-semibold text-lg">
-                    {((session.user as any)?.displayName || session.user?.email || 'U')
+                    {(session?.user?.displayName || session?.user?.email || 'U')
                       .charAt(0)
                       .toUpperCase()}
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-neutral-900 truncate">
-                    {(session.user as any)?.displayName || session.user?.email?.split('@')[0]}
+                    {session?.user?.displayName || session?.user?.email?.split('@')[0]}
                   </p>
-                  <p className="text-xs text-neutral-500 truncate">{session.user?.email}</p>
+                  <p className="text-xs text-neutral-500 truncate">{session?.user?.email}</p>
                 </div>
               </div>
             </div>
@@ -162,7 +161,7 @@ const UserMenu = memo(function UserMenu({
                 {t('settings')}
               </Link>
 
-              {(session.user as any)?.role === 'admin' && (
+              {session?.user?.role === 'admin' && (
                 <>
                   <div className="h-px bg-neutral-100 my-2" />
                   <Link
@@ -213,7 +212,7 @@ const UserMenu = memo(function UserMenu({
 });
 
 interface MobileMenuProps {
-  session: any;
+  session: Session | null;
   isOpen: boolean;
   onClose: () => void;
   isAuthLoading?: boolean;
@@ -255,16 +254,16 @@ const MobileMenu = memo(function MobileMenu({
             {/* User Info */}
             <div className="mb-3 flex items-center gap-3 rounded-2xl bg-neutral-50 p-3">
               <div className="size-10 bg-brand-trust rounded-full flex items-center justify-center text-white font-medium">
-                {((session.user as any)?.displayName || session.user?.email || 'U')
+                {(session?.user?.displayName || session?.user?.email || 'U')
                   .charAt(0)
                   .toUpperCase()}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-neutral-900 truncate">
-                  {(session.user as any)?.displayName || session.user?.email?.split('@')[0]}
+                  {session?.user?.displayName || session?.user?.email?.split('@')[0]}
                 </p>
                 <p className="text-xs text-neutral-500">
-                  {(session.user as any)?.role === 'admin' ? tAuth('administrator') : tAuth('user')}
+                  {session?.user?.role === 'admin' ? tAuth('administrator') : tAuth('user')}
                 </p>
               </div>
             </div>
@@ -319,7 +318,7 @@ const MobileMenu = memo(function MobileMenu({
               {t('settings')}
             </Link>
 
-            {(session.user as any)?.role === 'admin' && (
+            {session?.user?.role === 'admin' && (
               <>
                 <div className="h-px bg-neutral-200 my-3" />
                 <Link
@@ -378,7 +377,7 @@ const MobileMenu = memo(function MobileMenu({
 interface NavigationClientProps {
   className?: string;
   transparent?: boolean;
-  initialSession?: any;
+  initialSession?: Session | null;
 }
 
 /**
@@ -448,7 +447,7 @@ export default function NavigationClient({
     setIsMenuOpen(false);
   }, []);
 
-  const isAdmin = (session?.user as any)?.role === 'admin';
+  const isAdmin = session?.user?.role === 'admin';
 
   const navClasses = transparent
     ? isScrolled
@@ -527,7 +526,7 @@ export default function NavigationClient({
 
         {/* Mobile Navigation */}
         <MobileMenu
-          session={session}
+          session={session ?? null}
           isOpen={isMenuOpen}
           onClose={handleMobileMenuClose}
           isAuthLoading={isAuthLoading}

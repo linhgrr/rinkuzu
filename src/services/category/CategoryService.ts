@@ -1,7 +1,13 @@
-import { ICategoryService } from '@/interfaces/services/ICategoryService';
-import { ICategoryRepository } from '@/interfaces/repositories/ICategoryRepository';
-import { IQuizRepository } from '@/interfaces/repositories/IQuizRepository';
+import {
+  ICategoryService,
+  type CategoryBySlugResult,
+  type CategoryWithStats,
+} from '@/interfaces/services/ICategoryService';
+import { ICategoryRepository, ICategory } from '@/interfaces/repositories/ICategoryRepository';
+import { IQuizRepository, IQuiz } from '@/interfaces/repositories/IQuizRepository';
 import { ServiceResult } from '@/interfaces/services/types';
+import type { FilterQuery } from 'mongoose';
+import { logger } from '@/lib/logger';
 
 export class CategoryService implements ICategoryService {
   constructor(
@@ -9,12 +15,12 @@ export class CategoryService implements ICategoryService {
     private quizRepository: IQuizRepository,
   ) {}
 
-  async getCategories(): Promise<ServiceResult<any[]>> {
+  async getCategories(): Promise<ServiceResult<CategoryWithStats[]>> {
     try {
       const categoriesWithStats = await this.categoryRepository.getStatsWithQuizCount();
 
       // Transform the data to include slug
-      const categories = categoriesWithStats.map((cat: any) => ({
+      const categories: CategoryWithStats[] = categoriesWithStats.map((cat) => ({
         _id: cat._id,
         name: cat.name,
         description: cat.description,
@@ -27,6 +33,7 @@ export class CategoryService implements ICategoryService {
             .replace(/\s+/g, '-')
             .replace(/[^a-z0-9-]/g, ''),
         isActive: cat.isActive,
+        createdBy: cat.createdBy,
         createdAt: cat.createdAt,
         updatedAt: cat.updatedAt,
       }));
@@ -36,7 +43,7 @@ export class CategoryService implements ICategoryService {
         data: categories,
       };
     } catch (error) {
-      console.error('Get categories error:', error);
+      logger.error({ error }, 'Get categories error');
       return {
         success: false,
         error: 'Failed to fetch categories',
@@ -50,7 +57,7 @@ export class CategoryService implements ICategoryService {
     page: number = 1,
     limit: number = 12,
     search?: string,
-  ): Promise<ServiceResult<any>> {
+  ): Promise<ServiceResult<CategoryBySlugResult>> {
     try {
       const category = await this.categoryRepository.findBySlug(slug);
 
@@ -79,7 +86,7 @@ export class CategoryService implements ICategoryService {
       }
 
       // Build filter for quizzes
-      const filter: any = {
+      const filter: FilterQuery<IQuiz> = {
         category: category._id,
         status: 'published',
         isPrivate: false,
@@ -111,7 +118,7 @@ export class CategoryService implements ICategoryService {
         },
       };
     } catch (error) {
-      console.error('Get category by slug error:', error);
+      logger.error({ error }, 'Get category by slug error');
       return {
         success: false,
         error: 'Failed to get category',
@@ -120,7 +127,7 @@ export class CategoryService implements ICategoryService {
     }
   }
 
-  async searchCategories(query: string): Promise<ServiceResult<any[]>> {
+  async searchCategories(query: string): Promise<ServiceResult<ICategory[]>> {
     try {
       if (!query.trim()) {
         return {
@@ -137,7 +144,7 @@ export class CategoryService implements ICategoryService {
         data: categories,
       };
     } catch (error) {
-      console.error('Search categories error:', error);
+      logger.error({ error }, 'Search categories error');
       return {
         success: false,
         error: 'Failed to search categories',
@@ -146,16 +153,16 @@ export class CategoryService implements ICategoryService {
     }
   }
 
-  async getCategoryStats(): Promise<ServiceResult<any[]>> {
+  async getCategoryStats(): Promise<ServiceResult<CategoryWithStats[]>> {
     try {
-      const stats = await this.categoryRepository.getStatsWithQuizCount();
+      const stats = (await this.categoryRepository.getStatsWithQuizCount()) as CategoryWithStats[];
 
       return {
         success: true,
         data: stats,
       };
     } catch (error) {
-      console.error('Get category stats error:', error);
+      logger.error({ error }, 'Get category stats error');
       return {
         success: false,
         error: 'Failed to get category stats',

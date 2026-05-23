@@ -3,6 +3,9 @@ import { ICategoryRepository } from '@/interfaces/repositories/ICategoryReposito
 import { QuizListOptions } from '@/interfaces/services/IQuizService';
 import { ServiceResult } from '@/interfaces/services/types';
 import { PaginationMeta } from '@/types';
+import type { IQuestion } from '@/models/Quiz';
+import type { FilterQuery } from 'mongoose';
+import { logger } from '@/lib/logger';
 
 function escapeRegexLiteral(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -31,7 +34,7 @@ export class QuizAdminService {
       compact,
     } = options;
 
-    let filter: any = {};
+    const filter: FilterQuery<IQuiz> = {};
 
     if (status) filter.status = status;
     if (typeof isPrivate === 'boolean') filter.isPrivate = isPrivate;
@@ -64,16 +67,20 @@ export class QuizAdminService {
     });
   }
 
-  async approveQuiz(id: string): Promise<ServiceResult<any>> {
+  async approveQuiz(id: string): Promise<ServiceResult<IQuiz>> {
     try {
       const quiz = await this.quizRepository.updateStatus(id, 'published');
+
+      if (!quiz) {
+        return { success: false, error: 'Quiz not found', statusCode: 404 };
+      }
 
       return {
         success: true,
         data: quiz,
       };
     } catch (error) {
-      console.error('Approve quiz error:', error);
+      logger.error({ error }, 'Approve quiz error');
       return {
         success: false,
         error: 'Failed to approve quiz',
@@ -82,16 +89,20 @@ export class QuizAdminService {
     }
   }
 
-  async rejectQuiz(id: string, reason?: string): Promise<ServiceResult<any>> {
+  async rejectQuiz(id: string, reason?: string): Promise<ServiceResult<IQuiz>> {
     try {
       const quiz = await this.quizRepository.updateStatus(id, 'rejected', reason);
+
+      if (!quiz) {
+        return { success: false, error: 'Quiz not found', statusCode: 404 };
+      }
 
       return {
         success: true,
         data: quiz,
       };
     } catch (error) {
-      console.error('Reject quiz error:', error);
+      logger.error({ error }, 'Reject quiz error');
       return {
         success: false,
         error: 'Failed to reject quiz',
@@ -104,7 +115,7 @@ export class QuizAdminService {
     title: string,
     description: string,
     _pdfFiles: File[],
-  ): Promise<ServiceResult<any>> {
+  ): Promise<ServiceResult<{ title: string; description: string; questions: IQuestion[] }>> {
     try {
       // This would typically process PDF files and extract questions
       // For now, return a mock preview

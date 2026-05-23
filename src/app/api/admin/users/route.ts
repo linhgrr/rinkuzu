@@ -5,6 +5,7 @@ import connectDB from '@/lib/mongoose';
 import User from '@/models/User';
 import Plan from '@/models/Plan';
 import { apiErr, apiOk, apiServiceErr } from '@/lib/api/response';
+import { logger } from '@/lib/logger';
 
 const userService = serviceFactory.getUserService();
 const adminService = serviceFactory.getAdminService();
@@ -24,8 +25,8 @@ export const GET = withAdmin(async (request: NextRequest) => {
     });
 
     return apiOk(result);
-  } catch (error: any) {
-    console.error('Get users error:', error);
+  } catch (error: unknown) {
+    logger.error({ error }, 'Get users error');
     return apiErr('internal_error', 'Internal server error', 500);
   }
 });
@@ -51,8 +52,8 @@ export const PUT = withAdmin(async (request: NextRequest, context) => {
     }
 
     return apiOk(result.data);
-  } catch (error: any) {
-    console.error('Update user role error:', error);
+  } catch (error: unknown) {
+    logger.error({ error }, 'Update user role error');
     return apiErr('internal_error', 'Internal server error', 500);
   }
 });
@@ -79,8 +80,8 @@ export const DELETE = withAdmin(async (request: NextRequest, context) => {
     }
 
     return apiOk(null, 200, { meta: { message: 'User deleted successfully' } });
-  } catch (error: any) {
-    console.error('Delete user error:', error);
+  } catch (error: unknown) {
+    logger.error({ error }, 'Delete user error');
     return apiErr('internal_error', 'Internal server error', 500);
   }
 });
@@ -162,8 +163,8 @@ export const POST = withAdmin(async (request: NextRequest) => {
       200,
       { meta: { message: 'Subscription added successfully' } },
     );
-  } catch (error: any) {
-    console.error('Add subscription error:', error);
+  } catch (error: unknown) {
+    logger.error({ error }, 'Add subscription error');
     return apiErr('internal_error', 'Internal server error', 500);
   }
 });

@@ -1,9 +1,53 @@
 import { IQuizRepository } from '@/interfaces/repositories/IQuizRepository';
 import { IUserRepository } from '@/interfaces/repositories/IUserRepository';
-import { IDiscussionRepository } from '@/interfaces/repositories/IDiscussionRepository';
+import {
+  IDiscussionRepository,
+  type IDiscussion,
+} from '@/interfaces/repositories/IDiscussionRepository';
 import { IReportRepository } from '@/interfaces/repositories/IReportRepository';
 import { ServiceResult } from '@/interfaces/services/types';
+import type { DiscussionCommentDTO, QuizDiscussionDTO } from '@/interfaces/services/IQuizService';
+import type { IUserPreview } from '@/types/index';
+import type { Session } from 'next-auth';
+import { logger } from '@/lib/logger';
 import { getAuthorId, checkPrivateQuizAccess } from './quiz-helpers';
+
+function isPopulatedAuthor(author: string | IUserPreview): author is IUserPreview {
+  return typeof author === 'object' && author !== null && '_id' in author;
+}
+
+function toCommentDTO(comment: NonNullable<IDiscussion['comments']>[number]): DiscussionCommentDTO {
+  if (isPopulatedAuthor(comment.author)) {
+    return {
+      authorId: String(comment.author._id),
+      authorEmail: comment.authorEmail,
+      authorName: comment.author.displayName ?? comment.author.name,
+      authorAvatar: comment.author.avatar,
+      content: comment.content,
+      isEdited: comment.isEdited,
+      createdAt: comment.createdAt,
+    };
+  }
+  return {
+    authorId: comment.author,
+    authorEmail: comment.authorEmail,
+    content: comment.content,
+    isEdited: comment.isEdited,
+    createdAt: comment.createdAt,
+  };
+}
+
+function toDiscussionDTO(discussion: IDiscussion): QuizDiscussionDTO {
+  return {
+    _id: String(discussion._id),
+    questionIndex: discussion.questionIndex,
+    content: discussion.content,
+    ownerId: discussion.user,
+    comments: (discussion.comments ?? []).map(toCommentDTO),
+    createdAt: discussion.createdAt,
+    updatedAt: discussion.updatedAt,
+  };
+}
 
 export class QuizDiscussionService {
   constructor(
@@ -13,7 +57,10 @@ export class QuizDiscussionService {
     private reportRepository: IReportRepository,
   ) {}
 
-  async getQuizDiscussions(slug: string, session?: any): Promise<ServiceResult<any[]>> {
+  async getQuizDiscussions(
+    slug: string,
+    session?: Session | null,
+  ): Promise<ServiceResult<QuizDiscussionDTO[]>> {
     try {
       const quiz = await this.quizRepository.findBySlug(slug);
 
@@ -77,10 +124,10 @@ export class QuizDiscussionService {
 
       return {
         success: true,
-        data: allDiscussions,
+        data: allDiscussions.map(toDiscussionDTO),
       };
     } catch (error) {
-      console.error('Get quiz discussions error:', error);
+      logger.error({ error }, 'Get quiz discussions error');
       return {
         success: false,
         error: 'Failed to fetch discussions',
@@ -94,8 +141,8 @@ export class QuizDiscussionService {
     questionIndex: number,
     content: string,
     userEmail: string,
-    session?: any,
-  ): Promise<ServiceResult<any>> {
+    session?: Session | null,
+  ): Promise<ServiceResult<QuizDiscussionDTO>> {
     try {
       const quiz = await this.quizRepository.findBySlug(slug);
 
@@ -188,12 +235,20 @@ export class QuizDiscussionService {
         },
       );
 
+      if (!updatedDiscussion) {
+        return {
+          success: false,
+          error: 'Failed to add comment',
+          statusCode: 500,
+        };
+      }
+
       return {
         success: true,
-        data: updatedDiscussion,
+        data: toDiscussionDTO(updatedDiscussion),
       };
     } catch (error) {
-      console.error('Add discussion comment error:', error);
+      logger.error({ error }, 'Add discussion comment error');
       return {
         success: false,
         error: 'Failed to add comment',
@@ -248,7 +303,7 @@ export class QuizDiscussionService {
         data: report._id.toString(),
       };
     } catch (error) {
-      console.error('Report quiz error:', error);
+      logger.error({ error }, 'Report quiz error');
       return {
         success: false,
         error: 'Failed to report quiz',

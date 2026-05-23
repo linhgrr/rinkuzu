@@ -4,6 +4,7 @@ import connectDB from '@/lib/mongoose';
 import Category from '@/models/Category';
 import Quiz from '@/models/Quiz';
 import { apiErr, apiOk } from '@/lib/api/response';
+import { logger } from '@/lib/logger';
 
 // GET /api/admin/categories/[id] - Get single category
 export const GET = withAdmin(async (_request: NextRequest, context) => {
@@ -24,7 +25,7 @@ export const GET = withAdmin(async (_request: NextRequest, context) => {
 
     return apiOk(category);
   } catch (error: unknown) {
-    console.error('Get category error:', error);
+    logger.error({ error }, 'Get category error');
     return apiErr('internal_error', 'Internal server error', 500);
   }
 });
@@ -72,7 +73,7 @@ export const PUT = withAdmin(async (request: NextRequest, context) => {
 
     return apiOk(category);
   } catch (error: unknown) {
-    console.error('Update category error:', error);
+    logger.error({ error }, 'Update category error');
     return apiErr('internal_error', 'Internal server error', 500);
   }
 });
@@ -109,7 +110,7 @@ export const DELETE = withAdmin(async (_request: NextRequest, context) => {
 
     return apiOk(null, 200, { meta: { message: 'Category deleted successfully' } });
   } catch (error: unknown) {
-    console.error('Delete category error:', error);
+    logger.error({ error }, 'Delete category error');
     return apiErr('internal_error', 'Internal server error', 500);
   }
 });

@@ -1,25 +1,25 @@
 import { NextRequest } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { withOptionalAuth } from '@/lib/api/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
-import { AsyncRouteParams } from '@/types/next-route';
 import { apiOk, apiErr, apiServiceErr } from '@/lib/api/response';
+import { logger } from '@/lib/logger';
 
-export async function GET(request: NextRequest, { params }: AsyncRouteParams<{ slug: string }>) {
-  try {
-    const { slug } = await params;
-    const session = await getServerSession(authOptions);
-    const quizService = serviceFactory.getQuizService();
+export const GET = withOptionalAuth<{ slug: string }>(
+  async (_request: NextRequest, { params, session }) => {
+    try {
+      const { slug } = params;
+      const quizService = serviceFactory.getQuizService();
 
-    const result = await quizService.getQuizForFlashcards(slug, session);
+      const result = await quizService.getQuizForFlashcards(slug, session);
 
-    if (!result.success) {
-      return apiServiceErr(result, 400);
+      if (!result.success) {
+        return apiServiceErr(result, 400);
+      }
+
+      return apiOk(result.data);
+    } catch (error: unknown) {
+      logger.error({ error }, 'Get flashcard quiz error');
+      return apiErr('internal_error', 'Internal server error', 500);
     }
-
-    return apiOk(result.data);
-  } catch (error: unknown) {
-    console.error('Get flashcard quiz error:', error);
-    return apiErr('internal_error', 'Internal server error', 500);
-  }
-}
+  },
+);

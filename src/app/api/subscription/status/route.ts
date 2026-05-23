@@ -1,21 +1,16 @@
 import { NextRequest } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { ServiceFactory } from '@/lib/serviceFactory';
+import { createSubscriptionService } from '@/lib/subscription-factory';
+import { withAuth } from '@/lib/api/auth';
 import { apiErr, apiOk } from '@/lib/api/response';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(_request: NextRequest) {
+export const GET = withAuth(async (_request: NextRequest, { userId }) => {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return apiErr('unauthorized', 'Unauthorized', 401);
-    }
-
-    const subscriptionService = ServiceFactory.createSubscriptionService();
-    const subscription = await subscriptionService.getUserSubscription((session.user as any).id);
-    const isPremium = await subscriptionService.isUserPremium((session.user as any).id);
+    const subscriptionService = createSubscriptionService();
+    const subscription = await subscriptionService.getUserSubscription(userId);
+    const isPremium = await subscriptionService.isUserPremium(userId);
 
     return apiOk(
       {
@@ -30,7 +25,7 @@ export async function GET(_request: NextRequest) {
       },
     );
   } catch (error) {
-    console.error('Error fetching subscription status:', error);
+    logger.error({ error }, 'Error fetching subscription status');
     return apiErr('internal_error', 'Failed to fetch subscription status', 500);
   }
-}
+});

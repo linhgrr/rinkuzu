@@ -733,11 +733,11 @@ export default function EditQuizPage() {
     return null;
   }
 
-  const isAdmin = (session.user as any)?.role === 'admin';
+  const isAdmin = session.user?.role === 'admin';
   const isAuthor =
     typeof state.quiz.author === 'string'
-      ? state.quiz.author === (session.user as any).id
-      : (state.quiz.author as any)?._id === (session.user as any).id;
+      ? state.quiz.author === session.user.id
+      : (state.quiz.author as { _id?: string })?._id === session.user.id;
 
   if (!isAdmin && !isAuthor) {
     return (

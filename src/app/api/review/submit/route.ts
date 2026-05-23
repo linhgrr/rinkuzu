@@ -1,19 +1,13 @@
-import { getServerSession } from 'next-auth';
+import { withAuth } from '@/lib/api/auth';
 import connectDB from '@/lib/mongoose';
 import QuestionProgress from '@/models/QuestionProgress';
 import UserProgress from '@/models/UserProgress';
-import { authOptions } from '@/lib/auth';
 import { calculateNextReview, SRSRating } from '@/services/srs.service';
 import { apiErr, apiOk } from '@/lib/api/response';
+import { logger } from '@/lib/logger';
 
-export async function POST(req: Request) {
+export const POST = withAuth(async (req, { userId }) => {
   try {
-    const session = await getServerSession(authOptions);
-
-    if (!session || !session.user) {
-      return apiErr('unauthorized', 'Unauthorized', 401);
-    }
-
     const body = await req.json();
     const { questionId, quizSlug, rating, questionRef } = body;
 
@@ -22,7 +16,6 @@ export async function POST(req: Request) {
     }
 
     await connectDB();
-    const userId = (session.user as any).id;
 
     // 1. Get or Create QuestionProgress
     let qProgress = await QuestionProgress.findOne({
@@ -84,6 +77,7 @@ export async function POST(req: Request) {
 
     // Basic XP Logic
     let xpGain = 0;
+    let streakFreezeUsed = false;
     switch (rating) {
       case 'easy':
         xpGain = 15;
@@ -128,7 +122,7 @@ export async function POST(req: Request) {
           uProgress.streakFreezeCount -= 1;
           uProgress.currentStreak += 1; // Preserve and increment
           // We can signal this to the UI if we want
-          (req as any).streakFreezeUsed = true;
+          streakFreezeUsed = true;
         } else {
           // Missed more than one day or no freeze
           uProgress.currentStreak = 1;
@@ -211,14 +205,14 @@ export async function POST(req: Request) {
           xp: uProgress.totalXp,
           streak: uProgress.currentStreak,
           xpGained: xpGain,
-          streakFreezeUsed: (req as any).streakFreezeUsed || false,
+          streakFreezeUsed: streakFreezeUsed,
         },
       },
       200,
       { meta: { message: 'Review submitted' } },
     );
   } catch (error) {
-    console.error('Error submitting review:', error);
+    logger.error({ error }, 'Error submitting review');
     return apiErr('internal_error', 'Internal Server Error', 500);
   }
-}
+});

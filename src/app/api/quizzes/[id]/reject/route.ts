@@ -1,18 +1,12 @@
 import { NextRequest } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { withAdmin } from '@/lib/api/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
-import { AsyncRouteParams } from '@/types/next-route';
 import { apiErr, apiOk, apiServiceErr } from '@/lib/api/response';
+import { logger } from '@/lib/logger';
 
-export async function POST(request: NextRequest, { params }: AsyncRouteParams<{ id: string }>) {
+export const POST = withAdmin<{ id: string }>(async (request: NextRequest, { params }) => {
   try {
-    const { id } = await params;
-    const session = await getServerSession(authOptions);
-    if (!session?.user || (session.user as any).role !== 'admin') {
-      return apiErr('forbidden', 'Admin access required', 403);
-    }
-
+    const { id } = params;
     const { reason } = await request.json();
     const quizService = serviceFactory.getQuizService();
 
@@ -23,8 +17,8 @@ export async function POST(request: NextRequest, { params }: AsyncRouteParams<{ 
     }
 
     return apiOk(result.data, 200, { meta: { message: 'Quiz rejected successfully' } });
-  } catch (error: any) {
-    console.error('Reject quiz error:', error);
+  } catch (error) {
+    logger.error({ error }, 'Reject quiz error');
     return apiErr('internal_error', 'Internal server error', 500);
   }
-}
+});

@@ -9,6 +9,7 @@ import { buildVerifyEmailMessage, sendTransactionalMail } from '@/lib/mail';
 import { recordAuthEvent, extractRequestContext } from '@/lib/audit';
 import { flattenZodError, resendVerificationSchema } from '@/lib/validation/auth';
 import { checkAuthRateLimit, rateLimitResponse } from '@/lib/auth-rate-limit';
+import { logger } from '@/lib/logger';
 
 const VERIFICATION_TTL_MS = 24 * 60 * 60_000;
 const VERIFICATION_MIN_INTERVAL_MS = 60_000;
@@ -85,7 +86,7 @@ export async function POST(request: NextRequest) {
 
     return neutral();
   } catch (error) {
-    console.error('Resend-verification error:', error);
+    logger.error({ error }, 'Resend-verification error');
     return neutral();
   }
 }

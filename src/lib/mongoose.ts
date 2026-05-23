@@ -1,32 +1,32 @@
+import 'server-only';
 import mongoose from 'mongoose';
+
+import { env } from './env';
 
 interface MongooseCache {
   conn: typeof mongoose | null;
   promise: Promise<typeof mongoose> | null;
 }
 
-// In production, use a global variable to avoid multiple connections
-let cached: MongooseCache = (global as any).mongoose;
-
-if (!cached) {
-  cached = (global as any).mongoose = { conn: null, promise: null };
+// In production / hot-reload dev, cache the mongoose connection on the
+// global object so HMR doesn't open a fresh connection on every request.
+declare global {
+  // eslint-disable-next-line no-var -- intentional global cache slot
+  var __rinkuzuMongoose: MongooseCache | undefined;
 }
 
-async function connectDB(): Promise<typeof mongoose> {
-  if (!process.env['MONGODB_URI']) {
-    throw new Error('Please add your MONGODB_URI to .env.local');
-  }
+const cached: MongooseCache = globalThis.__rinkuzuMongoose ?? { conn: null, promise: null };
+globalThis.__rinkuzuMongoose = cached;
 
+async function connectDB(): Promise<typeof mongoose> {
   if (cached.conn) {
     return cached.conn;
   }
 
   if (!cached.promise) {
-    const opts = {
+    cached.promise = mongoose.connect(env.MONGODB_URI, {
       bufferCommands: false,
-    };
-
-    cached.promise = mongoose.connect(process.env['MONGODB_URI'], opts);
+    });
   }
 
   try {

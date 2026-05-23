@@ -1,11 +1,11 @@
 import { NextRequest } from 'next/server';
-import { getServerSession } from 'next-auth';
 import { PutObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { authOptions } from '@/lib/auth';
+import { withAuth } from '@/lib/api/auth';
 import { s3Client, BUCKET_NAME } from '@/lib/s3';
 import { extractUnknownErrorMessage } from '@/lib/api/error';
 import { apiErr, apiOk } from '@/lib/api/response';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,15 +18,8 @@ function sanitizeFileName(name: string): string {
   return name.replace(/[^a-zA-Z0-9._-]/g, '_');
 }
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest, { userId }) => {
   try {
-    const session = await getServerSession(authOptions);
-    const userId = session?.user?.id;
-
-    if (!userId) {
-      return apiErr('unauthorized', 'Unauthorized', 401);
-    }
-
     const body = await request.json();
     const fileName = String(body?.fileName || '').trim();
     const contentType = String(body?.contentType || 'application/pdf').trim();
@@ -71,11 +64,11 @@ export async function POST(request: NextRequest) {
       expiresIn: URL_EXPIRES_IN_SECONDS,
     });
   } catch (error: unknown) {
-    console.error('Failed to create presigned upload URL:', error);
+    logger.error({ error }, 'Failed to create presigned upload URL');
     return apiErr(
       'upstream_error',
       extractUnknownErrorMessage(error, 'Internal server error'),
       500,
     );
   }
-}
+});

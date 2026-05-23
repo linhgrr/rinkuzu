@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { buildStandardErrorBody } from './error';
-import type { ServiceResult } from '@/interfaces/services/types';
 import { getApiErrorCodeFromStatus, getDefaultApiErrorMessage } from './error-codes';
 
 function errorCodeFromStatus(status: number): string {
@@ -46,10 +45,10 @@ export function apiForward(payload: Record<string, unknown>, status: number): Ne
   return NextResponse.json(payload, { status });
 }
 
-export function apiServiceErr<T>(
-  result: Pick<ServiceResult<T>, 'error' | 'statusCode'>,
+export function apiServiceErr(
+  result: { success: false; error: string; statusCode: number },
   fallbackStatus = 400,
   meta?: Record<string, unknown>,
 ): NextResponse {
-  return apiStatusErr(result.error ?? 'Request failed', result.statusCode || fallbackStatus, meta);
+  return apiStatusErr(result.error, result.statusCode || fallbackStatus, meta);
 }

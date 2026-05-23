@@ -1,16 +1,22 @@
 import { proxyAdaptiveRequest } from '@/lib/adaptive-learning/proxy';
-import { AsyncRouteParams } from '@/types/next-route';
+import { withAuth } from '@/lib/api/auth';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(req: Request, { params }: AsyncRouteParams<{ path: string[] }>) {
-  const { path } = await params;
-  return proxyAdaptiveRequest(req, `/api/history/${path.join('/')}`);
-}
-
-export async function DELETE(req: Request, { params }: AsyncRouteParams<{ path: string[] }>) {
-  const { path } = await params;
+export const GET = withAuth<{ path: string[] }>(async (req, { params, userId, session }) => {
+  const { path } = params;
   return proxyAdaptiveRequest(req, `/api/history/${path.join('/')}`, {
-    method: 'DELETE',
+    userId,
+    userRole: session.user.role,
   });
-}
+});
+
+export const DELETE = withAuth<{ path: string[] }>(async (req, { params, userId, session }) => {
+  const { path } = params;
+  return proxyAdaptiveRequest(
+    req,
+    `/api/history/${path.join('/')}`,
+    { userId, userRole: session.user.role },
+    { method: 'DELETE' },
+  );
+});

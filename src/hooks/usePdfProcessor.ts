@@ -1,8 +1,16 @@
 // /src/hooks/usePdfProcessor.ts
+//
+// Post-US-507: BE owns Mode A drafts and runs extraction in a single
+// background task. This hook polls /api/draft/{id} until the draft reaches
+// a terminal status (`completed` or `error`). The legacy chunk-loop is gone.
+//
+// Public surface (`startProcessing`, `stopProcessing`, `resumeProcessing`)
+// is preserved so existing consumers (DraftSyncProvider, create page,
+// FloatingDraftProgress) keep working without changes.
+
 import { useCallback, useEffect, useRef } from 'react';
-import pLimit from 'p-limit';
 import { toast } from 'sonner';
-import { ApiResponseError, fetchApiData, fetchApiResponse } from '@/lib/api/client';
+import { fetchApiData } from '@/lib/api/client';
 import { extractUnknownErrorMessage } from '@/lib/api/error';
 import { useDraftStore } from '@/store/useDraftStore';
 
@@ -13,76 +21,18 @@ interface ChunkInfo {
   status: string;
 }
 
-const MAX_RETRIES = 3;
-const INITIAL_RETRY_DELAY = 1000;
-const MAX_CONCURRENT_CHUNKS = 3;
-const MAX_ERRORS_BEFORE_ABORT = 3;
-
-async function fetchWithRetry(
-  url: string,
-  options: RequestInit,
-  retries: number = MAX_RETRIES,
-): Promise<{
-  questions: any[];
-  progress?: {
-    isComplete?: boolean;
-    totalQuestions?: number;
+interface DraftSnapshot {
+  status: 'uploading' | 'processing' | 'completed' | 'error' | 'expired';
+  questions?: Array<unknown>;
+  title?: string;
+  chunks?: {
+    processed?: number;
+    total?: number;
   };
-}> {
-  const attemptFetch = async (
-    attempt: number,
-    lastError: Error | null,
-  ): Promise<{
-    questions: any[];
-    progress?: {
-      isComplete?: boolean;
-      totalQuestions?: number;
-    };
-  }> => {
-    if (attempt >= retries) {
-      throw lastError || new Error('All retries failed');
-    }
-
-    try {
-      const response = await fetchApiResponse<{
-        questions: any[];
-        progress?: {
-          isComplete?: boolean;
-          totalQuestions?: number;
-        };
-      }>(url, options);
-      return response.data;
-    } catch (error: unknown) {
-      if (error instanceof ApiResponseError && error.status === 409) {
-        const payload =
-          error.meta && typeof error.meta === 'object'
-            ? (error.meta as { retryAfter?: unknown })
-            : null;
-        const retryAfter =
-          typeof payload?.retryAfter === 'number'
-            ? payload.retryAfter
-            : INITIAL_RETRY_DELAY * Math.pow(2, attempt);
-        await new Promise((resolve) => setTimeout(resolve, retryAfter));
-        return attemptFetch(attempt + 1, lastError);
-      }
-
-      const nextError =
-        error instanceof Error
-          ? error
-          : new Error(extractUnknownErrorMessage(error, 'Network request failed'));
-
-      if (error instanceof Error && error.name === 'AbortError') {
-        throw error;
-      }
-
-      const delay = INITIAL_RETRY_DELAY * Math.pow(2, attempt);
-      await new Promise((resolve) => setTimeout(resolve, delay));
-      return attemptFetch(attempt + 1, nextError);
-    }
-  };
-
-  return attemptFetch(0, null);
 }
+
+const POLL_INTERVAL_MS = 3000;
+const MAX_POLLS = 200; // ~10 minutes hard cap
 
 export function usePdfProcessor() {
   const { updateDraftProgress, completeDraft, setDraftError } = useDraftStore();
@@ -99,35 +49,37 @@ export function usePdfProcessor() {
     };
   }, []);
 
-  const processChunk = useCallback(
-    async (
-      draftId: string,
-      chunkIndex: number,
-      signal?: AbortSignal,
-    ): Promise<{
-      success: boolean;
-      questions: any[];
-      isComplete: boolean;
-      totalQuestions: number;
-    }> => {
-      const payload = await fetchWithRetry(`/api/draft/${draftId}/process-chunk`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chunkIndex }),
-        signal,
-      });
-      return {
-        success: true,
-        questions: payload.questions || [],
-        isComplete: payload.progress?.isComplete || false,
-        totalQuestions: payload.progress?.totalQuestions || 0,
-      };
+  const pollOnce = useCallback(
+    async (draftId: string, signal: AbortSignal): Promise<DraftSnapshot | null> => {
+      try {
+        const data = await fetchApiData<{ draft: DraftSnapshot }>(`/api/draft/${draftId}`, {
+          signal,
+        });
+        return data.draft ?? null;
+      } catch (error) {
+        if (error instanceof Error && error.name === 'AbortError') return null;
+        // Treat 404 / network as "stop polling, mark error".
+        throw error;
+      }
     },
     [],
   );
 
+  const sleep = (ms: number, signal: AbortSignal): Promise<void> =>
+    new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        signal.removeEventListener('abort', onAbort);
+        resolve();
+      }, ms);
+      const onAbort = () => {
+        clearTimeout(timeout);
+        reject(new DOMException('Aborted', 'AbortError'));
+      };
+      signal.addEventListener('abort', onAbort, { once: true });
+    });
+
   const startProcessing = useCallback(
-    async (draftId: string, chunks: ChunkInfo[], title: string) => {
+    async (draftId: string, _chunks: ChunkInfo[], title: string) => {
       if (processingRef.current[draftId]) {
         console.warn(`Draft ${draftId} is already being processed`);
         return;
@@ -137,93 +89,68 @@ export function usePdfProcessor() {
       const abortController = new AbortController();
       abortControllersRef.current[draftId] = abortController;
 
-      const pendingChunks = chunks
-        .filter(
-          (chunk) =>
-            chunk.status === 'pending' || chunk.status === 'error' || chunk.status === 'processing',
-        )
-        .sort((left, right) => left.index - right.index);
-
-      let processedCount = chunks.filter((chunk) => chunk.status === 'done').length;
-      let totalQuestions = 0;
-      let totalErrors = 0;
-      let hasCompleted = false;
-      let hasAbortedForErrors = false;
-      const limit = pLimit(MAX_CONCURRENT_CHUNKS);
-
       try {
-        await Promise.all(
-          pendingChunks.map((chunk) =>
-            limit(async () => {
-              if (abortController.signal.aborted || hasCompleted || hasAbortedForErrors) {
-                return;
-              }
+        for (let attempt = 0; attempt < MAX_POLLS; attempt++) {
+          if (abortController.signal.aborted) return;
 
-              try {
-                const result = await processChunk(draftId, chunk.index, abortController.signal);
+          let snapshot: DraftSnapshot | null;
+          try {
+            snapshot = await pollOnce(draftId, abortController.signal);
+          } catch (error) {
+            if (error instanceof Error && error.name === 'AbortError') return;
+            const message = extractUnknownErrorMessage(error, 'Failed to fetch draft status');
+            setDraftError(draftId, message);
+            toast.error(`Lỗi xử lý "${title}"`, { description: message });
+            return;
+          }
 
-                if (!result.success) {
-                  return;
-                }
+          if (!snapshot) return;
 
-                processedCount++;
-                totalQuestions = result.totalQuestions;
+          if (snapshot.status === 'completed') {
+            const totalQuestions = snapshot.questions?.length ?? 0;
+            completeDraft(draftId, totalQuestions);
+            toast.success(`"${title}" đã sẵn sàng!`, {
+              description: `${totalQuestions} câu hỏi được trích xuất`,
+              action: {
+                label: 'Xem',
+                onClick: () => (window.location.href = `/draft/${draftId}/edit`),
+              },
+            });
+            return;
+          }
 
-                updateDraftProgress(draftId, {
-                  chunksProcessed: processedCount,
-                  questionsCount: totalQuestions,
-                  status: 'processing',
-                });
+          if (snapshot.status === 'error' || snapshot.status === 'expired') {
+            setDraftError(draftId, 'Trích xuất thất bại hoặc bản nháp đã hết hạn');
+            toast.error(`Lỗi xử lý "${title}"`, { description: 'Vui lòng thử lại sau' });
+            return;
+          }
 
-                if (result.isComplete) {
-                  hasCompleted = true;
-                  completeDraft(draftId, totalQuestions);
-                  toast.success(`"${title}" đã sẵn sàng!`, {
-                    description: `${totalQuestions} câu hỏi được trích xuất`,
-                    action: {
-                      label: 'Xem',
-                      onClick: () => (window.location.href = `/draft/${draftId}/edit`),
-                    },
-                  });
-                  abortController.abort();
-                }
-              } catch (chunkError: unknown) {
-                if (chunkError instanceof Error && chunkError.name === 'AbortError') {
-                  return;
-                }
-
-                totalErrors++;
-                console.error(`Chunk ${chunk.index} failed:`, chunkError);
-
-                if (totalErrors >= MAX_ERRORS_BEFORE_ABORT) {
-                  hasAbortedForErrors = true;
-                  setDraftError(
-                    draftId,
-                    `Quá nhiều lỗi khi xử lý chunk: ${extractUnknownErrorMessage(chunkError, 'Unknown chunk error')}`,
-                  );
-                  toast.error(`Lỗi xử lý "${title}"`, {
-                    description: 'Vui lòng thử lại sau',
-                  });
-                  abortController.abort();
-                }
-              }
-            }),
-          ),
-        );
-      } catch (error: unknown) {
-        if (!(error instanceof Error && error.name === 'AbortError')) {
-          const message = extractUnknownErrorMessage(error, 'Failed to process PDF draft');
-          setDraftError(draftId, message);
-          toast.error(`Lỗi xử lý "${title}"`, {
-            description: message,
+          // Still in flight — surface flat progress.
+          updateDraftProgress(draftId, {
+            chunksProcessed: 0,
+            chunksTotal: 1,
+            questionsCount: snapshot.questions?.length ?? 0,
+            status: 'processing',
           });
+
+          try {
+            await sleep(POLL_INTERVAL_MS, abortController.signal);
+          } catch {
+            return;
+          }
         }
+
+        // Hit the cap.
+        setDraftError(draftId, 'Hết thời gian chờ xử lý PDF');
+        toast.error(`Quá lâu để xử lý "${title}"`, {
+          description: 'Vui lòng thử lại sau',
+        });
       } finally {
         delete processingRef.current[draftId];
         delete abortControllersRef.current[draftId];
       }
     },
-    [completeDraft, processChunk, setDraftError, updateDraftProgress],
+    [completeDraft, pollOnce, setDraftError, updateDraftProgress],
   );
 
   const stopProcessing = useCallback((draftId: string) => {
@@ -238,13 +165,11 @@ export function usePdfProcessor() {
   const resumeProcessing = useCallback(
     async (draftId: string) => {
       try {
-        const { draft } = await fetchApiData<{ draft: any }>(`/api/draft/${draftId}`);
+        const { draft } = await fetchApiData<{ draft: DraftSnapshot }>(`/api/draft/${draftId}`);
+        if (draft.status === 'completed') return;
+        if (draft.status === 'error' || draft.status === 'expired') return;
 
-        if (draft.status === 'completed') {
-          return;
-        }
-
-        await startProcessing(draftId, draft.chunks.chunkDetails, draft.title);
+        await startProcessing(draftId, [], draft.title ?? '');
       } catch (error) {
         console.error('Resume processing error:', error);
       }

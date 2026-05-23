@@ -46,7 +46,7 @@ export async function DashboardEmptyState({ locale, userName }: DashboardEmptySt
         </Link>
 
         <Link
-          href="/adaptive-learning"
+          href="/adaptive"
           className="group flex flex-col gap-3 rounded-2xl border border-neutral-200 bg-neutral-50 p-6 transition-[border-color,box-shadow] hover:border-brand-trust hover:shadow-md"
         >
           <div className="flex size-12 items-center justify-center rounded-xl bg-brand-trust text-white">

@@ -109,7 +109,7 @@ export function buildSoftwareApplicationSchema(locale: Locale | string) {
     name: 'RinKuzu Adaptive Learning',
     applicationCategory: 'EducationalApplication',
     operatingSystem: 'Web',
-    url: canonicalFor(locale, '/adaptive-learning'),
+    url: canonicalFor(locale, '/adaptive'),
     offers: {
       '@type': 'Offer',
       price: '0',

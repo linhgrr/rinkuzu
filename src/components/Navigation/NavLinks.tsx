@@ -12,7 +12,7 @@ interface NavLink {
 const LINKS: NavLink[] = [
   { href: '/dashboard', labelKey: 'home' },
   { href: '/create', labelKey: 'create' },
-  { href: '/adaptive-learning', labelKey: 'adaptiveLearning' },
+  { href: '/adaptive', labelKey: 'adaptiveLearning' },
   { href: '/explore', labelKey: 'explore' },
 ];
 

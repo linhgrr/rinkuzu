@@ -78,7 +78,7 @@ export function Features() {
             </div>
             <h3 className="text-white font-semibold text-lg mb-2">{t('feature3.title')}</h3>
             <p className="text-white/60 text-sm mb-4">{t('feature3.description')}</p>
-            <GlowPillButton label={t('feature3.button')} variant="dark" href="/adaptive-learning" />
+            <GlowPillButton label={t('feature3.button')} variant="dark" href="/adaptive" />
           </div>
 
           {/* Feature 4 */}

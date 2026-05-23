@@ -8,8 +8,8 @@ import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
 
 const NAV_LINKS_EN = [
-  { labelKey: 'navAiQuiz', href: '/adaptive-learning' },
-  { labelKey: 'navKnowledgeGraph', href: '/adaptive-learning' },
+  { labelKey: 'navAiQuiz', href: '/adaptive' },
+  { labelKey: 'navKnowledgeGraph', href: '/adaptive' },
   { labelKey: 'navAbout', href: '/about' },
   { labelKey: 'navBlog', href: '/blog' },
   { labelKey: 'navPricing', href: '/pricing' },
@@ -100,7 +100,7 @@ const Navbar = ({ isAuthenticated = false }: { isAuthenticated?: boolean }) => {
           <GlowPillButton
             label={isAuthenticated ? t('navUploadPdf') : t('getStarted')}
             variant="dark"
-            href={isAuthenticated ? '/adaptive-learning/upload' : '/register'}
+            href={isAuthenticated ? '/adaptive/upload' : '/register'}
           />
         </div>
       </div>
@@ -164,7 +164,7 @@ const Navbar = ({ isAuthenticated = false }: { isAuthenticated?: boolean }) => {
               <GlowPillButton
                 label={isAuthenticated ? t('navUploadPdf') : t('getStarted')}
                 variant="dark"
-                href={isAuthenticated ? '/adaptive-learning/upload' : '/register'}
+                href={isAuthenticated ? '/adaptive/upload' : '/register'}
               />
             </div>
           </div>

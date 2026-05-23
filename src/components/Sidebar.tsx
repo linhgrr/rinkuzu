@@ -61,7 +61,7 @@ export default function Sidebar({ isOpen, onToggle, currentPath }: SidebarProps)
       icon: <HiOutlineBookmark className="w-full h-full" />,
     },
     {
-      href: '/adaptive-learning',
+      href: '/adaptive',
       labelKey: 'adaptiveLearning',
       icon: <HiOutlineAcademicCap className="w-full h-full" />,
     },

@@ -5,12 +5,12 @@ type LocalePathInfo = {
   pathWithoutLocale: string;
 };
 
-const EXERCISE_MODE_PREFIXES = ['/adaptive-learning/exercise', '/adaptive-learning/result'];
+const EXERCISE_MODE_PREFIXES = ['/adaptive/exercise', '/adaptive/result'];
 
 const NO_FOOTER_PREFIXES = [
-  '/adaptive-learning/exercise',
-  '/adaptive-learning/result',
-  '/adaptive-learning/processing',
+  '/adaptive/exercise',
+  '/adaptive/result',
+  '/adaptive/processing',
   '/quiz',
   '/create',
   '/edit',

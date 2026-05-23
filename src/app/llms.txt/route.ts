@@ -63,7 +63,7 @@ ${SITE_NAME} is an AI-powered adaptive learning platform. ${DESCRIPTION}
 
 ## Key Pages
 - / — Homepage and product overview
-- /adaptive-learning — AI quiz generator feature page
+- /adaptive — AI quiz generator feature page
 - /pricing — Pricing plans
 - /faq — Frequently asked questions
 - /register — Create a free account

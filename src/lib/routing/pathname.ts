@@ -73,3 +73,36 @@ export function shouldHideGlobalFooter(pathname: string): boolean {
   const pathWithoutLocale = stripLocaleFromPath(pathname);
   return NO_FOOTER_PREFIXES.some((prefix) => matchesPrefix(pathWithoutLocale, prefix));
 }
+
+export type ProductScope = 'adaptive' | 'quiz' | 'hub';
+
+const ADAPTIVE_SCOPE_PREFIXES = ['/adaptive'];
+const QUIZ_SCOPE_PREFIXES = [
+  '/create',
+  '/edit',
+  '/draft',
+  '/my-quizzes',
+  '/review',
+  '/history',
+  '/bookmarks',
+  '/explore',
+  '/quiz',
+  '/categories',
+  '/category',
+];
+
+/**
+ * Returns which product surface a given path belongs to. Used by the
+ * mobile bottom nav to swap its tab set when the user is inside a
+ * specific product (Quiz Builder vs Adaptive Learning).
+ */
+export function getProductScope(pathname: string): ProductScope {
+  const pathWithoutLocale = stripLocaleFromPath(pathname);
+  if (ADAPTIVE_SCOPE_PREFIXES.some((prefix) => matchesPrefix(pathWithoutLocale, prefix))) {
+    return 'adaptive';
+  }
+  if (QUIZ_SCOPE_PREFIXES.some((prefix) => matchesPrefix(pathWithoutLocale, prefix))) {
+    return 'quiz';
+  }
+  return 'hub';
+}

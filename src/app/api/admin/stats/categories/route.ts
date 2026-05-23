@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { withAdmin } from '@/lib/api/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
 import { apiErr, apiOk, apiServiceErr } from '@/lib/api/response';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,7 +17,7 @@ export const GET = withAdmin(async (_request: NextRequest) => {
 
     return apiOk(result.data);
   } catch (error) {
-    console.error('Error fetching category stats:', error);
+    logger.error({ error }, 'Error fetching category stats');
     return apiErr('internal_error', 'Failed to fetch category statistics', 500);
   }
 });

@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { serviceFactory } from '@/lib/serviceFactory';
 import { apiErr, apiOk, apiServiceErr } from '@/lib/api/response';
+import { logger } from '@/lib/logger';
 
 // GET /api/categories - Get all active categories
 export async function GET(_request: NextRequest) {
@@ -15,7 +16,7 @@ export async function GET(_request: NextRequest) {
 
     return apiOk(result.data);
   } catch (error: unknown) {
-    console.error('Get categories error:', error);
+    logger.error({ error }, 'Get categories error');
     return apiErr('internal_error', 'Internal server error', 500);
   }
 }

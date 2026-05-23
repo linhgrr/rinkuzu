@@ -9,6 +9,7 @@ import { ServiceResult } from '@/interfaces/services/types';
 import type { DiscussionCommentDTO, QuizDiscussionDTO } from '@/interfaces/services/IQuizService';
 import type { IUserPreview } from '@/types/index';
 import type { Session } from 'next-auth';
+import { logger } from '@/lib/logger';
 import { getAuthorId, checkPrivateQuizAccess } from './quiz-helpers';
 
 function isPopulatedAuthor(author: string | IUserPreview): author is IUserPreview {
@@ -126,7 +127,7 @@ export class QuizDiscussionService {
         data: allDiscussions.map(toDiscussionDTO),
       };
     } catch (error) {
-      console.error('Get quiz discussions error:', error);
+      logger.error({ error }, 'Get quiz discussions error');
       return {
         success: false,
         error: 'Failed to fetch discussions',
@@ -247,7 +248,7 @@ export class QuizDiscussionService {
         data: toDiscussionDTO(updatedDiscussion),
       };
     } catch (error) {
-      console.error('Add discussion comment error:', error);
+      logger.error({ error }, 'Add discussion comment error');
       return {
         success: false,
         error: 'Failed to add comment',
@@ -302,7 +303,7 @@ export class QuizDiscussionService {
         data: report._id.toString(),
       };
     } catch (error) {
-      console.error('Report quiz error:', error);
+      logger.error({ error }, 'Report quiz error');
       return {
         success: false,
         error: 'Failed to report quiz',

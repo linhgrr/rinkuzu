@@ -12,6 +12,7 @@ import { serviceFactory } from '@/lib/serviceFactory';
 import { locales, type Locale } from '@/i18n/config';
 import { canonicalFor } from '@/lib/seo';
 import { INDEXABLE_STATIC_PUBLIC_ROUTES } from '@/lib/seo.routes';
+import { logger } from '@/lib/logger';
 
 function toEntry(
   locale: Locale | string,
@@ -60,7 +61,7 @@ export async function GET(): Promise<Response> {
       }
     }
   } catch (error) {
-    console.error('locale sitemap: quiz generation failed', error);
+    logger.error({ error }, 'locale sitemap: quiz generation failed');
   }
 
   // Sort

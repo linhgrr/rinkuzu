@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { createSubscriptionService } from '@/lib/subscription-factory';
 import { withAdmin } from '@/lib/api/auth';
 import { apiErr, apiOk, apiServiceErr } from '@/lib/api/response';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,7 +26,7 @@ export const GET = withAdmin(async (_request: NextRequest, context) => {
 
     return apiOk(subscription);
   } catch (error: unknown) {
-    console.error('Admin subscription detail error:', error);
+    logger.error({ error }, 'Admin subscription detail error');
     return apiErr('internal_error', 'Internal server error', 500);
   }
 });
@@ -46,7 +47,7 @@ export const PATCH = withAdmin(async (request: NextRequest, context) => {
     }
     return apiOk(result.data);
   } catch (error: unknown) {
-    console.error('Admin subscription update error:', error);
+    logger.error({ error }, 'Admin subscription update error');
     return apiErr('internal_error', 'Internal server error', 500);
   }
 });

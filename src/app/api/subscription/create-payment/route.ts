@@ -4,6 +4,7 @@ import { withAuth } from '@/lib/api/auth';
 import connectDB from '@/lib/mongoose';
 import Plan from '@/models/Plan';
 import { apiErr, apiOk } from '@/lib/api/response';
+import { logger } from '@/lib/logger';
 
 export const POST = withAuth(async (request: NextRequest, { userId }) => {
   try {
@@ -25,7 +26,7 @@ export const POST = withAuth(async (request: NextRequest, { userId }) => {
 
     return apiOk(paymentData);
   } catch (error: unknown) {
-    console.error('Error creating payment request:', error);
+    logger.error({ error }, 'Error creating payment request');
     const message = error instanceof Error ? error.message : 'Failed to create payment request';
     return apiErr('internal_error', message, 500);
   }

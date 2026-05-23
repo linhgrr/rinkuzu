@@ -4,6 +4,7 @@ import { z, ZodError } from 'zod';
 import { withAuth } from '@/lib/api/auth';
 import { apiOk, apiErr } from '@/lib/api/response';
 import { extractUnknownErrorMessage } from '@/lib/api/error';
+import { logger } from '@/lib/logger';
 
 const verifySubscriptionSchema = z.object({
   orderCode: z.union([
@@ -42,7 +43,7 @@ export const POST = withAuth(async (request: NextRequest, { userId }) => {
 
     return apiOk(result);
   } catch (error: unknown) {
-    console.error('Error verifying payment:', error);
+    logger.error({ error }, 'Error verifying payment');
     return apiErr(
       'internal_error',
       extractUnknownErrorMessage(error, 'Failed to verify payment'),

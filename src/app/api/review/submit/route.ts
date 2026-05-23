@@ -4,6 +4,7 @@ import QuestionProgress from '@/models/QuestionProgress';
 import UserProgress from '@/models/UserProgress';
 import { calculateNextReview, SRSRating } from '@/services/srs.service';
 import { apiErr, apiOk } from '@/lib/api/response';
+import { logger } from '@/lib/logger';
 
 export const POST = withAuth(async (req, { userId }) => {
   try {
@@ -211,7 +212,7 @@ export const POST = withAuth(async (req, { userId }) => {
       { meta: { message: 'Review submitted' } },
     );
   } catch (error) {
-    console.error('Error submitting review:', error);
+    logger.error({ error }, 'Error submitting review');
     return apiErr('internal_error', 'Internal Server Error', 500);
   }
 });

@@ -3,6 +3,7 @@ import { serviceFactory } from '@/lib/serviceFactory';
 import { defaultLocale, locales } from '@/i18n/config';
 import { canonicalFor } from '@/lib/seo';
 import { INDEXABLE_STATIC_PUBLIC_ROUTES } from '@/lib/seo.routes';
+import { logger } from '@/lib/logger';
 
 // Extended sitemap entry type that includes hreflang alternates.
 // Next.js MetadataRoute.Sitemap doesn't expose the 'links' field directly,
@@ -69,7 +70,7 @@ export default async function sitemap(): Promise<SitemapEntry[]> {
       }
     }
   } catch (error) {
-    console.error('sitemap quiz generation failed', error);
+    logger.error({ error }, 'sitemap quiz generation failed');
   }
 
   // Ensure default locale root is first for consistency.

@@ -258,9 +258,15 @@ function ProfileQuizCard({
             <div className="mt-2 flex flex-wrap items-center gap-x-2 text-xs text-neutral-500">
               <span>{quiz.questions.length} Qs</span>
               <span>•</span>
-              <span style={{ color: (quiz.category as any)?.color }}>
-                {(quiz.category as any)?.name || t('noCategory')}
-              </span>
+              {(() => {
+                const cat = quiz.category as { color?: string; name?: string } | string | undefined;
+                const isPopulated = cat && typeof cat === 'object';
+                return (
+                  <span style={{ color: isPopulated ? cat.color : undefined }}>
+                    {(isPopulated ? cat.name : undefined) || t('noCategory')}
+                  </span>
+                );
+              })()}
               <span>•</span>
               <QuizCreatedAt createdAt={quiz.createdAt} />
             </div>

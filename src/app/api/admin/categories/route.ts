@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { withAdmin } from '@/lib/api/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
 import { apiErr, apiOk, apiServiceErr } from '@/lib/api/response';
+import { logger } from '@/lib/logger';
 
 // GET /api/admin/categories - Get all categories (for admin)
 export const GET = withAdmin(async (request: NextRequest) => {
@@ -22,7 +23,7 @@ export const GET = withAdmin(async (request: NextRequest) => {
 
     return apiOk(result.data);
   } catch (error: unknown) {
-    console.error('Get categories error:', error);
+    logger.error({ error }, 'Get categories error');
     return apiErr('internal_error', 'Internal server error', 500);
   }
 });
@@ -41,7 +42,7 @@ export const POST = withAdmin(async (request: NextRequest, context) => {
 
     return apiOk(result.data);
   } catch (error: unknown) {
-    console.error('Create category error:', error);
+    logger.error({ error }, 'Create category error');
     return apiErr('internal_error', 'Internal server error', 500);
   }
 });

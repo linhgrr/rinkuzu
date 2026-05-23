@@ -6,6 +6,7 @@ import User from '@/models/User';
 import { hashPassword, verifyPassword } from '@/lib/password';
 import { apiErr, apiOk } from '@/lib/api/response';
 import { changePasswordSchema, flattenZodError } from '@/lib/validation/auth';
+import { logger } from '@/lib/logger';
 
 export const PUT = withAuth(async (request: NextRequest, { email }) => {
   try {
@@ -53,7 +54,7 @@ export const PUT = withAuth(async (request: NextRequest, { email }) => {
 
     return apiOk(null, 200, { meta: { message: 'Password updated successfully' } });
   } catch (error) {
-    console.error('Change password error:', error);
+    logger.error({ error }, 'Change password error');
     return apiErr('internal_error', 'Internal server error', 500);
   }
 });

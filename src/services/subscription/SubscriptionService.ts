@@ -11,6 +11,7 @@ import { IPayOSService } from '@/interfaces/services/IPayOSService';
 import { ISubscriptionRepository } from '@/interfaces/repositories/ISubscriptionRepository';
 import { IUserRepository } from '@/interfaces/repositories/IUserRepository';
 import type { ServiceResult } from '@/interfaces/services/types';
+import { logger } from '@/lib/logger';
 
 import { SubscriptionPaymentService } from './SubscriptionPaymentService';
 import { SubscriptionActivationService } from './SubscriptionActivationService';
@@ -186,7 +187,7 @@ export class SubscriptionService implements ISubscriptionService {
         features: plan.features,
       }));
     } catch (error) {
-      console.error('Error fetching plans from database:', error);
+      logger.error({ error }, 'Error fetching plans from database');
       // Return empty array if database error
       return [];
     }

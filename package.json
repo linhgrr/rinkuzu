@@ -85,6 +85,7 @@
     "next-intl": "^4.11.0",
     "p-limit": "^6.2.0",
     "pdf-lib": "^1.17.1",
+    "pino": "^9.14.0",
     "rate-limiter-flexible": "^8.3.0",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",

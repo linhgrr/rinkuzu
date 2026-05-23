@@ -17,6 +17,7 @@ import { IReportRepository } from '@/interfaces/repositories/IReportRepository';
 import { IQuizRepository } from '@/interfaces/repositories/IQuizRepository';
 import { IAttemptRepository } from '@/interfaces/repositories/IAttemptRepository';
 import { ServiceResult } from '@/interfaces/services/types';
+import { logger } from '@/lib/logger';
 
 function toMessage(error: unknown, fallback: string): string {
   return error instanceof Error ? error.message : fallback;
@@ -51,7 +52,7 @@ export class AdminService implements IAdminService {
         },
       };
     } catch (error) {
-      console.error('Get categories error:', error);
+      logger.error({ error }, 'Get categories error');
       return {
         success: false,
         error: 'Failed to get categories',
@@ -105,7 +106,7 @@ export class AdminService implements IAdminService {
         data: category as AdminCategoryDTO,
       };
     } catch (error) {
-      console.error('Create category error:', error);
+      logger.error({ error }, 'Create category error');
       return {
         success: false,
         error: 'Failed to create category',
@@ -134,7 +135,7 @@ export class AdminService implements IAdminService {
         data: category as AdminCategoryDTO,
       };
     } catch (error) {
-      console.error('Update category error:', error);
+      logger.error({ error }, 'Update category error');
       return {
         success: false,
         error: 'Failed to update category',
@@ -160,7 +161,7 @@ export class AdminService implements IAdminService {
         data: true,
       };
     } catch (error) {
-      console.error('Delete category error:', error);
+      logger.error({ error }, 'Delete category error');
       return {
         success: false,
         error: 'Failed to delete category',
@@ -184,7 +185,7 @@ export class AdminService implements IAdminService {
         data: result as unknown as AdminPaginatedUsers,
       };
     } catch (error) {
-      console.error('Get users error:', error);
+      logger.error({ error }, 'Get users error');
       return {
         success: false,
         error: 'Failed to get users',
@@ -231,7 +232,7 @@ export class AdminService implements IAdminService {
         data: { message: `User role updated to ${role}` },
       };
     } catch (error) {
-      console.error('Update user role error:', error);
+      logger.error({ error }, 'Update user role error');
       return {
         success: false,
         error: 'Failed to update user role',
@@ -266,7 +267,7 @@ export class AdminService implements IAdminService {
         data: deleted,
       };
     } catch (error) {
-      console.error('Delete user error:', error);
+      logger.error({ error }, 'Delete user error');
       return {
         success: false,
         error: 'Failed to delete user',
@@ -343,7 +344,7 @@ export class AdminService implements IAdminService {
         },
       };
     } catch (error) {
-      console.error('getStats error:', error);
+      logger.error({ error }, 'getStats error');
       return {
         success: false,
         error: 'Failed to get stats',
@@ -418,7 +419,7 @@ export class AdminService implements IAdminService {
         },
       };
     } catch (error) {
-      console.error('getActivityStats error:', error);
+      logger.error({ error }, 'getActivityStats error');
       return {
         success: false,
         error: 'Failed to get activity stats',

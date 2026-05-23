@@ -1,16 +1,22 @@
 import { proxyAdaptiveRequest } from '@/lib/adaptive-learning/proxy';
-import { AsyncRouteParams } from '@/types/next-route';
+import { withAuth } from '@/lib/api/auth';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(req: Request, { params }: AsyncRouteParams<{ path: string[] }>) {
-  const { path } = await params;
-  return proxyAdaptiveRequest(req, `/api/session/${path.join('/')}`);
-}
-
-export async function POST(req: Request, { params }: AsyncRouteParams<{ path: string[] }>) {
-  const { path } = await params;
+export const GET = withAuth<{ path: string[] }>(async (req, { params, userId, session }) => {
+  const { path } = params;
   return proxyAdaptiveRequest(req, `/api/session/${path.join('/')}`, {
-    method: 'POST',
+    userId,
+    userRole: session.user.role,
   });
-}
+});
+
+export const POST = withAuth<{ path: string[] }>(async (req, { params, userId, session }) => {
+  const { path } = params;
+  return proxyAdaptiveRequest(
+    req,
+    `/api/session/${path.join('/')}`,
+    { userId, userRole: session.user.role },
+    { method: 'POST' },
+  );
+});

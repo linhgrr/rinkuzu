@@ -4,6 +4,7 @@ import { IAttemptRepository } from '@/interfaces/repositories/IAttemptRepository
 import { IUser } from '@/types/index';
 import { ServiceResult } from '@/interfaces/services/types';
 import type { IQuestion } from '@/models/Quiz';
+import { logger } from '@/lib/logger';
 
 export interface UserAttemptSummary {
   _id: string;
@@ -101,7 +102,7 @@ export class UserService implements IUserService {
         pagination: result.pagination,
       };
     } catch (error) {
-      console.error('Get user attempts error:', error);
+      logger.error({ error }, 'Get user attempts error');
       throw error;
     }
   }
@@ -210,7 +211,7 @@ export class UserService implements IUserService {
         },
       };
     } catch (error) {
-      console.error('Get attempt details error:', error);
+      logger.error({ error }, 'Get attempt details error');
       return {
         success: false,
         error: 'Failed to get attempt details',

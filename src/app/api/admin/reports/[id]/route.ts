@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { withAdmin } from '@/lib/api/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
 import { apiErr, apiOk, apiServiceErr } from '@/lib/api/response';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,7 +28,7 @@ export const PATCH = withAdmin(async (request: NextRequest, context) => {
 
     return apiOk(result.data);
   } catch (error: unknown) {
-    console.error('Error updating report:', error);
+    logger.error({ error }, 'Error updating report');
     return apiErr('internal_error', 'Internal server error', 500);
   }
 });
@@ -49,7 +50,7 @@ export const DELETE = withAdmin(async (request: NextRequest, context) => {
 
     return apiOk(null, 200, { meta: { message: 'Report deleted successfully' } });
   } catch (error: unknown) {
-    console.error('Error deleting report:', error);
+    logger.error({ error }, 'Error deleting report');
     return apiErr('internal_error', 'Internal server error', 500);
   }
 });

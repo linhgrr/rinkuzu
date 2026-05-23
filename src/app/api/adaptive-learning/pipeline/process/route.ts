@@ -4,10 +4,12 @@ import { GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { s3Client, BUCKET_NAME } from '@/lib/s3';
 import { apiErr } from '@/lib/api/response';
+import { withAuth } from '@/lib/api/auth';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
-export async function POST(req: Request) {
+export const POST = withAuth(async (req, { userId, session }) => {
   try {
     const body = await req.json();
     const { s3Key, filename, subject_id, page_batch_size } = body;
@@ -34,17 +36,22 @@ export async function POST(req: Request) {
       ...(typeof page_batch_size === 'number' ? { page_batch_size } : {}),
     };
 
-    const response = await proxyAdaptiveRequest(req, '/api/pipeline/process', {
-      method: 'POST',
-      body: JSON.stringify(proxiedBody),
-      contentType: 'application/json',
-      timeoutMs: 180_000,
-    });
+    const response = await proxyAdaptiveRequest(
+      req,
+      '/api/pipeline/process',
+      { userId, userRole: session.user.role },
+      {
+        method: 'POST',
+        body: JSON.stringify(proxiedBody),
+        contentType: 'application/json',
+        timeoutMs: 180_000,
+      },
+    );
 
     invalidateAdaptiveServiceCache();
     return response;
   } catch (error) {
-    console.error('Error proxying pipeline process request:', error);
+    logger.error({ error }, 'Error proxying pipeline process request');
     return apiErr('internal_error', 'Internal server error while processing upload', 500);
   }
-}
+});

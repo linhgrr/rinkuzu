@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { withAuth, withOptionalAuth } from '@/lib/api/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
 import { apiOk, apiErr, apiServiceErr } from '@/lib/api/response';
+import { logger } from '@/lib/logger';
 
 // GET /api/quiz/[slug]/discussions - Get all discussions for a quiz.
 // Public + authenticated dual path: read access is open; service layer
@@ -20,7 +21,7 @@ export const GET = withOptionalAuth<{ slug: string }>(
 
       return apiOk(result.data);
     } catch (error) {
-      console.error('Error fetching discussions:', error);
+      logger.error({ error }, 'Error fetching discussions');
       return apiErr('internal_error', 'Failed to fetch discussions', 500);
     }
   },
@@ -57,7 +58,7 @@ export const POST = withAuth<{ slug: string }>(
 
       return apiOk(result.data);
     } catch (error) {
-      console.error('Error adding comment:', error);
+      logger.error({ error }, 'Error adding comment');
       return apiErr('internal_error', 'Failed to add comment', 500);
     }
   },

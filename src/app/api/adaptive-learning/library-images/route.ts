@@ -1,4 +1,5 @@
 import { apiErr, apiOk } from '@/lib/api/response';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -84,7 +85,7 @@ export async function GET(req: Request) {
 
     return apiOk({ images });
   } catch (error) {
-    console.error('Failed to fetch random library images:', error);
+    logger.error({ error }, 'Failed to fetch random library images');
     return apiErr('upstream_error', 'Failed to fetch random library images', 500);
   }
 }

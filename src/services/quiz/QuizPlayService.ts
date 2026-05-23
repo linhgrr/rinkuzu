@@ -10,6 +10,7 @@ import UserProgress from '@/models/UserProgress';
 import type { IQuestion } from '@/models/Quiz';
 import type { Session } from 'next-auth';
 import { getAuthorId, checkPrivateQuizAccess } from './quiz-helpers';
+import { logger } from '@/lib/logger';
 
 type Answer = number | number[];
 
@@ -108,7 +109,7 @@ export class QuizPlayService {
 
       return { success: true, data: quizForPlay };
     } catch (error) {
-      console.error('Error in getQuizForPlay:', error);
+      logger.error({ error }, 'Error in getQuizForPlay');
       return {
         success: false,
         error: 'Internal server error',
@@ -434,7 +435,7 @@ export class QuizPlayService {
         },
       };
     } catch (error) {
-      console.error('Submit quiz attempt error:', error);
+      logger.error({ error }, 'Submit quiz attempt error');
       return {
         success: false,
         error: 'Failed to submit quiz attempt',
@@ -506,7 +507,7 @@ export class QuizPlayService {
         },
       };
     } catch (error) {
-      console.error('Get quiz flashcards error:', error);
+      logger.error({ error }, 'Get quiz flashcards error');
       return {
         success: false,
         error: 'Failed to get quiz flashcards',
@@ -586,7 +587,7 @@ export class QuizPlayService {
         },
       };
     } catch (error) {
-      console.error('Get quiz for flashcards error:', error);
+      logger.error({ error }, 'Get quiz for flashcards error');
       return {
         success: false,
         error: 'Failed to get quiz for flashcards',

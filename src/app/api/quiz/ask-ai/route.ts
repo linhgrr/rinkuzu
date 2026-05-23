@@ -15,8 +15,13 @@ export const POST = withOptionalAuth(async (req, { userId, session }) => {
     }
   }
 
-  return proxyAdaptiveRequest(req, '/api/quiz/ask-ai', {
-    method: 'POST',
-    timeoutMs: 180_000,
-  });
+  return proxyAdaptiveRequest(
+    req,
+    '/api/quiz/ask-ai',
+    { userId: userId ?? 'anonymous', userRole },
+    {
+      method: 'POST',
+      timeoutMs: 180_000,
+    },
+  );
 });

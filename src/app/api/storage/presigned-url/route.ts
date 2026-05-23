@@ -5,6 +5,7 @@ import { withAuth } from '@/lib/api/auth';
 import { s3Client, BUCKET_NAME } from '@/lib/s3';
 import { extractUnknownErrorMessage } from '@/lib/api/error';
 import { apiErr, apiOk } from '@/lib/api/response';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -63,7 +64,7 @@ export const POST = withAuth(async (request: NextRequest, { userId }) => {
       expiresIn: URL_EXPIRES_IN_SECONDS,
     });
   } catch (error: unknown) {
-    console.error('Failed to create presigned upload URL:', error);
+    logger.error({ error }, 'Failed to create presigned upload URL');
     return apiErr(
       'upstream_error',
       extractUnknownErrorMessage(error, 'Internal server error'),

@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { createSubscriptionService } from '@/lib/subscription-factory';
 import { withAdmin } from '@/lib/api/auth';
 import { apiErr, apiOk } from '@/lib/api/response';
+import { logger } from '@/lib/logger';
 
 const doCheckExpired = async () => {
   const subscriptionService = createSubscriptionService();
@@ -23,7 +24,7 @@ export async function POST(request: NextRequest) {
 
     return adminHandler(request, { params: Promise.resolve({}) });
   } catch (error: unknown) {
-    console.error('Error checking expired subscriptions:', error);
+    logger.error({ error }, 'Error checking expired subscriptions');
     return apiErr('internal_error', 'Failed to check expired subscriptions', 500);
   }
 }

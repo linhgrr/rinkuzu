@@ -2,6 +2,7 @@ import { withAuth } from '@/lib/api/auth';
 import connectDB from '@/lib/mongoose';
 import UserProgress from '@/models/UserProgress';
 import { apiErr, apiOk } from '@/lib/api/response';
+import { logger } from '@/lib/logger';
 
 export const POST = withAuth(async (_request, { userId }) => {
   try {
@@ -36,7 +37,7 @@ export const POST = withAuth(async (_request, { userId }) => {
       { meta: { message: 'Streak freeze purchased' } },
     );
   } catch (error) {
-    console.error('Error buying freeze:', error);
+    logger.error({ error }, 'Error buying freeze');
     return apiErr('internal_error', 'Internal Server Error', 500);
   }
 });

@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { withAuth } from '@/lib/api/auth';
 import { apiErr, apiOk } from '@/lib/api/response';
+import { logger } from '@/lib/logger';
 
 const IMGBB_API_URL = 'https://api.imgbb.com/1/upload';
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -55,7 +56,7 @@ export const POST = withAuth(async (request: NextRequest) => {
   };
 
   if (!response.ok || !json.success || !json.data) {
-    console.error('ImgBB upload failed:', json);
+    logger.error({ json }, 'ImgBB upload failed');
     return apiErr('upstream_error', 'Image upload failed', 502);
   }
 

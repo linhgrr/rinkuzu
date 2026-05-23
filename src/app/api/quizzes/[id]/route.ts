@@ -3,6 +3,7 @@ import { withAuth } from '@/lib/api/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
 import { apiErr, apiOk, apiServiceErr } from '@/lib/api/response';
 import type { IQuiz } from '@/interfaces/repositories/IQuizRepository';
+import { logger } from '@/lib/logger';
 
 // GET /api/quizzes/[id] - Get specific quiz
 export const GET = withAuth<{ id: string }>(async (_request, { params, email, session }) => {
@@ -35,13 +36,13 @@ export const GET = withAuth<{ id: string }>(async (_request, { params, email, se
           }
         }
       } catch (error) {
-        console.error('Failed to refresh signed URL for quiz:', error);
+        logger.error({ error }, 'Failed to refresh signed URL for quiz');
       }
     }
 
     return apiOk(data);
   } catch (error: unknown) {
-    console.error('Get quiz error:', error);
+    logger.error({ error }, 'Get quiz error');
     return apiErr('internal_error', 'Internal server error', 500);
   }
 });
@@ -66,7 +67,7 @@ export const PUT = withAuth<{ id: string }>(
 
       return apiOk(result.data);
     } catch (error: unknown) {
-      console.error('Update quiz error:', error);
+      logger.error({ error }, 'Update quiz error');
       return apiErr('internal_error', 'Internal server error', 500);
     }
   },
@@ -89,7 +90,7 @@ export const DELETE = withAuth<{ id: string }>(async (_request, { params, email,
 
     return apiOk(null, 200, { meta: { message: 'Quiz deleted successfully' } });
   } catch (error: unknown) {
-    console.error('Delete quiz error:', error);
+    logger.error({ error }, 'Delete quiz error');
     return apiErr('internal_error', 'Internal server error', 500);
   }
 });

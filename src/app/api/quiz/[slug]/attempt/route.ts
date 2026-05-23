@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { withOptionalAuth } from '@/lib/api/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
 import { apiOk, apiErr, apiServiceErr } from '@/lib/api/response';
+import { logger } from '@/lib/logger';
 
 // Public + authenticated dual path: anonymous attempts pass `userEmail` in body.
 export const POST = withOptionalAuth<{ slug: string }>(
@@ -34,7 +35,7 @@ export const POST = withOptionalAuth<{ slug: string }>(
 
       return apiOk(result.data);
     } catch (error: unknown) {
-      console.error('Submit attempt error:', error);
+      logger.error({ error }, 'Submit attempt error');
       return apiErr('internal_error', 'Internal server error', 500);
     }
   },

@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { withAdmin } from '@/lib/api/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
 import { apiErr, apiOk, apiServiceErr } from '@/lib/api/response';
+import { logger } from '@/lib/logger';
 
 export const POST = withAdmin<{ id: string }>(async (_request: NextRequest, { params }) => {
   try {
@@ -18,7 +19,7 @@ export const POST = withAdmin<{ id: string }>(async (_request: NextRequest, { pa
       meta: { message: 'Quiz approved and published successfully' },
     });
   } catch (error) {
-    console.error('Approve quiz error:', error);
+    logger.error({ error }, 'Approve quiz error');
     return apiErr('internal_error', 'Internal server error', 500);
   }
 });

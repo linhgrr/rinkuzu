@@ -8,6 +8,7 @@ import { randomUUID } from 'crypto';
 import { buildLlmRateLimitResponse, checkLlmRateLimit, isAdminRole } from '@/lib/llm/rate-limit';
 
 import { apiErr, apiOk } from '@/lib/api/response';
+import { logger } from '@/lib/logger';
 
 interface ChunkDetail {
   index: number;
@@ -265,7 +266,7 @@ export const POST = withAuth<{ id: string }>(
         });
       }
     } catch (error) {
-      console.error('Process chunk error:', error);
+      logger.error({ error }, 'Process chunk error');
       return apiErr('internal_error', 'Failed to process chunk', 500);
     }
   },

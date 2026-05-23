@@ -18,6 +18,7 @@ import { fetchApiData } from '@/lib/api/client';
 import { extractUnknownErrorMessage } from '@/lib/api/error';
 import { getPdfPageCount, uploadPdfViaPresignedUrl } from '@/lib/pdf';
 import { openInNewTabSafely } from '@/lib/security/trusted-navigation';
+import { useCreateResponsiveRedirect } from '@/hooks/useCreateResponsiveRedirect';
 import {
   HiOutlineArrowRight,
   HiOutlineDocumentText,
@@ -625,6 +626,7 @@ export default function CreateQuizPage() {
   const { push, replace } = useRouter();
   const { addDraft } = useDraftStore();
   const [state, dispatch] = useReducer(createQuizReducer, initialCreateQuizState);
+  const isRedirecting = useCreateResponsiveRedirect('desktop');
 
   useEffect(() => {
     if (typeof window !== 'undefined' && window.innerWidth < 768) {
@@ -731,6 +733,14 @@ export default function CreateQuizPage() {
       dispatch({ type: 'patch', value: { extracting: false } });
     }
   };
+
+  if (isRedirecting) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-neutral-50">
+        <div className="size-10 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen">

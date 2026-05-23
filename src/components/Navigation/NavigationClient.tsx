@@ -158,7 +158,7 @@ const UserMenu = memo(function UserMenu({
                 onClick={onClose}
               >
                 <HiOutlineCog className="size-5 text-neutral-500" />
-                {t('settings')}
+                {t('profile')}
               </Link>
 
               {session?.user?.role === 'admin' && (
@@ -283,6 +283,13 @@ const MobileMenu = memo(function MobileMenu({
               {t('createQuiz')}
             </Link>
             <Link
+              href="/adaptive-learning"
+              className="block px-4 py-3 text-sm font-medium text-neutral-900 hover:bg-neutral-50 rounded-xl transition-colors"
+              onClick={onClose}
+            >
+              {t('adaptiveLearning')}
+            </Link>
+            <Link
               href="/explore"
               className="block px-4 py-3 text-sm font-medium text-neutral-900 hover:bg-neutral-50 rounded-xl transition-colors"
               onClick={onClose}
@@ -295,6 +302,13 @@ const MobileMenu = memo(function MobileMenu({
               onClick={onClose}
             >
               {t('myQuizzes')}
+            </Link>
+            <Link
+              href="/review"
+              className="block px-4 py-3 text-sm font-medium text-neutral-900 hover:bg-neutral-50 rounded-xl transition-colors"
+              onClick={onClose}
+            >
+              {t('review')}
             </Link>
             <Link
               href="/history"
@@ -315,7 +329,7 @@ const MobileMenu = memo(function MobileMenu({
               className="block px-4 py-3 text-sm font-medium text-neutral-900 hover:bg-neutral-50 rounded-xl transition-colors"
               onClick={onClose}
             >
-              {t('settings')}
+              {t('profile')}
             </Link>
 
             {session?.user?.role === 'admin' && (

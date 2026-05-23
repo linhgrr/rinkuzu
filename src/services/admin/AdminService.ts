@@ -460,22 +460,6 @@ export class AdminService implements IAdminService {
     }
   }
 
-  async initializeSystem(): Promise<ServiceResult<AdminMessageResult>> {
-    try {
-      // Implement system initialization if needed
-      return {
-        success: true,
-        data: { message: 'System initialized' },
-      };
-    } catch (_error) {
-      return {
-        success: false,
-        error: 'Failed to initialize system',
-        statusCode: 500,
-      };
-    }
-  }
-
   async deleteReport(reportId: string): Promise<ServiceResult<boolean>> {
     try {
       const deleted = await this.reportRepository.delete(reportId);

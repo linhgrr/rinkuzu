@@ -55,5 +55,12 @@
   "weekOne": "WEEK 1",
   "nextRewardStreak": "Next Reward: Day {day} Streak",
   "onboardingTipTitle": "Onboarding Tip",
-  "onboardingTipContent": "Focus on accuracy early on. Your adaptive engine will adjust difficulty automatically."
+  "onboardingTipContent": "Focus on accuracy early on. Your adaptive engine will adjust difficulty automatically.",
+  "emptyStateTitle": "Welcome to RinKuzu",
+  "emptyStateDescription": "Two ways to learn: turn a PDF into a static quiz, or let the adaptive engine build a personalized curriculum.",
+  "emptyStateCreateQuiz": "Create your first quiz",
+  "emptyStateCreateQuizSub": "Upload a PDF, get a quiz",
+  "emptyStateAdaptive": "Try Adaptive Learning",
+  "emptyStateAdaptiveSub": "AI-paced personalized lessons",
+  "emptyStateExplore": "Or browse public quizzes"
 }

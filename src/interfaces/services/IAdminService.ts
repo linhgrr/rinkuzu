@@ -134,7 +134,4 @@ export interface IAdminService {
   getActivityStats(): Promise<ServiceResult<AdminActivityStats>>;
   getCategoryStats(): Promise<ServiceResult<AdminCategoryStat[]>>;
   getCreatorStats(): Promise<ServiceResult<AdminCreatorStat[]>>;
-
-  // Setup
-  initializeSystem(): Promise<ServiceResult<AdminMessageResult>>;
 }

@@ -19,6 +19,7 @@ import { LevelBadge } from '@/features/dashboard/components/LevelBadge';
 import { ROUTES } from '@/shared/constants';
 import { DashboardHeroMascot } from './DashboardHeroMascot';
 import { DashboardShareButton } from './DashboardShareButton';
+import { DashboardEmptyState } from './DashboardEmptyState';
 
 interface DashboardStats {
   streak: number;
@@ -427,6 +428,22 @@ export async function DashboardPageShell({
   const shareText = `I'm on a ${stats?.streak || 0} day streak learning with RinKuzu! Earned ${stats?.xp || 0} XP so far. Level ${stats?.level || 1}!`;
   const levelProgress = Math.max(0, Math.min(100, stats?.levelProgress || 0));
   const nextStreakMilestone = Math.max(5, Math.ceil((stats?.streak || 0) / 5) * 5);
+  const isFreshAccount =
+    (stats?.xp ?? 0) === 0 &&
+    (stats?.streak ?? 0) === 0 &&
+    quizzes.length === 0 &&
+    yourQuizzes.length === 0;
+
+  if (isFreshAccount) {
+    return (
+      <div className="min-h-screen bg-neutral-50 pb-12 font-sans">
+        <Navigation initialSession={session} />
+        <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
+          <DashboardEmptyState locale={locale} userName={userName} />
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-neutral-50 pb-12 font-sans selection:bg-neutral-900 selection:text-white">

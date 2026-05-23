@@ -17,7 +17,6 @@ const NO_FOOTER_PREFIXES = [
   '/admin',
   '/login',
   '/register',
-  '/setup',
   '/history',
   '/profile',
 ];

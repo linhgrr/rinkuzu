@@ -88,7 +88,7 @@ export default function BottomNav() {
     },
     {
       href: '/review',
-      labelKey: 'history',
+      labelKey: 'review',
       icon: (isActive: boolean) =>
         isActive ? (
           <HiInbox className="size-6 text-brand-trust" />

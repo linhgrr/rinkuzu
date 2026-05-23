@@ -55,5 +55,12 @@
   "weekOne": "TUẦN 1",
   "nextRewardStreak": "Phần thưởng tiếp theo: Chuỗi {day} ngày",
   "onboardingTipTitle": "Mẹo cho người mới",
-  "onboardingTipContent": "Hãy ưu tiên độ chính xác ở giai đoạn đầu. Hệ thống học thích ứng sẽ tự điều chỉnh độ khó cho bạn."
+  "onboardingTipContent": "Hãy ưu tiên độ chính xác ở giai đoạn đầu. Hệ thống học thích ứng sẽ tự điều chỉnh độ khó cho bạn.",
+  "emptyStateTitle": "Chào mừng đến RinKuzu",
+  "emptyStateDescription": "Hai cách học: tạo quiz tĩnh từ PDF, hoặc để AI dựng lộ trình học thích ứng cá nhân hóa.",
+  "emptyStateCreateQuiz": "Tạo quiz đầu tiên",
+  "emptyStateCreateQuizSub": "Tải PDF, nhận quiz ngay",
+  "emptyStateAdaptive": "Thử Học Thích Ứng",
+  "emptyStateAdaptiveSub": "AI dẫn dắt theo nhịp của bạn",
+  "emptyStateExplore": "Hoặc xem các quiz công khai"
 }

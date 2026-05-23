@@ -174,7 +174,7 @@ function FlashcardFallbackState({
         <CardContent className="p-6 text-center">
           <h2 className="text-xl font-semibold text-neutral-900 mb-4">{title}</h2>
           <p className="text-neutral-600 mb-4">{description}</p>
-          <Link href="/quizzes">
+          <Link href="/explore">
             <Button>{browseLabel}</Button>
           </Link>
         </CardContent>
@@ -214,7 +214,7 @@ function FlashcardResultsView({
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex items-center">
-              <Link href="/quizzes" className="flex items-center">
+              <Link href="/explore" className="flex items-center">
                 <div className="h-10 flex items-center justify-center">
                   <Image
                     src="/images/auth_logo.png"
@@ -230,7 +230,7 @@ function FlashcardResultsView({
               <Link href={`/quiz/${quiz.slug}`}>
                 <Button variant="outline">{t('takeQuiz')}</Button>
               </Link>
-              <Link href="/quizzes">
+              <Link href="/explore">
                 <Button variant="outline">{tCommon('browseQuizzes')}</Button>
               </Link>
             </div>
@@ -308,7 +308,7 @@ function FlashcardResultsView({
           <Link href={`/quiz/${quiz.slug}`}>
             <Button variant="outline">{t('takeQuiz')}</Button>
           </Link>
-          <Link href="/quizzes">
+          <Link href="/explore">
             <Button variant="outline">{tCommon('browseQuizzes')}</Button>
           </Link>
         </div>
@@ -373,7 +373,7 @@ function FlashcardDeckView({
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex items-center">
-              <Link href="/quizzes" className="flex items-center">
+              <Link href="/explore" className="flex items-center">
                 <div className="h-10 flex items-center justify-center">
                   <Image
                     src="/images/auth_logo.png"
@@ -391,7 +391,7 @@ function FlashcardDeckView({
                   {t('takeQuiz')}
                 </Button>
               </Link>
-              <Link href="/quizzes" className="hidden sm:block">
+              <Link href="/explore" className="hidden sm:block">
                 <Button variant="outline" size="sm">
                   {tCommon('browseQuizzes')}
                 </Button>

@@ -11,7 +11,6 @@ export const ROUTES = {
   HISTORY: '/profile', // Consolidated
   EXPLORE: '/explore',
   SUBSCRIPTION: '/subscription',
-  SETUP: '/setup',
 
   // Dynamic routes
   QUIZ: {

@@ -22,7 +22,6 @@ export const PRIVATE_ROUTE_PREFIXES = [
   '/profile',
   '/history',
   '/review',
-  '/setup',
   '/subscription',
   '/create',
   '/adaptive-learning/upload',

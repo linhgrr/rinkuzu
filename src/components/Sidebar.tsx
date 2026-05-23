@@ -22,6 +22,7 @@ import {
   HiOutlineDocumentText,
   HiOutlineClock,
   HiOutlineBookmark,
+  HiOutlineInbox,
 } from '@/components/icons';
 
 interface SidebarProps {
@@ -45,6 +46,11 @@ export default function Sidebar({ isOpen, onToggle, currentPath }: SidebarProps)
       icon: <HiOutlineDocumentText className="w-full h-full" />,
     },
     {
+      href: '/review',
+      labelKey: 'review',
+      icon: <HiOutlineInbox className="w-full h-full" />,
+    },
+    {
       href: '/history',
       labelKey: 'history',
       icon: <HiOutlineClock className="w-full h-full" />,
@@ -66,7 +72,7 @@ export default function Sidebar({ isOpen, onToggle, currentPath }: SidebarProps)
     },
     {
       href: '/profile',
-      labelKey: 'settings',
+      labelKey: 'profile',
       icon: <HiOutlineCog className="w-full h-full" />,
     },
   ];

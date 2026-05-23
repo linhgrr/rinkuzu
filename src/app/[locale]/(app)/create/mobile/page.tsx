@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/Button';
 import { fetchApiData } from '@/lib/api/client';
 import { extractUnknownErrorMessage } from '@/lib/api/error';
 import { getPdfPageCount, uploadPdfViaPresignedUrl } from '@/lib/pdf';
+import { useCreateResponsiveRedirect } from '@/hooks/useCreateResponsiveRedirect';
 
 type CategoryLike = {
   _id: string;
@@ -74,6 +75,7 @@ export default function MobileCreatePage() {
   const { push } = useRouter();
   const { addDraft } = useDraftStore();
   const [state, dispatch] = useReducer(mobileCreateReducer, initialState);
+  const isRedirecting = useCreateResponsiveRedirect('mobile');
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles[0]) {
@@ -147,6 +149,14 @@ export default function MobileCreatePage() {
       dispatch({ type: 'patch', value: { isUploading: false } });
     }
   };
+
+  if (isRedirecting) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-neutral-50">
+        <div className="size-10 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-neutral-50 px-4 py-6 pb-24">

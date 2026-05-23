@@ -158,41 +158,42 @@ function normalizeIsoDate(value: unknown): string {
   if (!value) return '';
   if (value instanceof Date) return value.toISOString();
   if (typeof value === 'string') return value;
-  const parsed = new Date(value as any);
+  if (typeof value !== 'string' && typeof value !== 'number') return '';
+  const parsed = new Date(value);
   return Number.isNaN(parsed.getTime()) ? '' : parsed.toISOString();
 }
 
-function serializeQuizForClient(rawQuiz: any): DashboardQuiz {
-  const category = rawQuiz?.category;
-  const author = rawQuiz?.author;
+function serializeQuizForClient(rawQuiz: unknown): DashboardQuiz {
+  const quiz = (rawQuiz ?? {}) as Record<string, unknown>;
+  const category = quiz['category'] as Record<string, unknown> | null | undefined;
+  const author = quiz['author'] as Record<string, unknown> | null | undefined;
+  const questions = Array.isArray(quiz['questions']) ? (quiz['questions'] as unknown[]) : [];
 
   return {
-    _id: normalizeId(rawQuiz?._id),
-    title: String(rawQuiz?.title || ''),
-    description: String(rawQuiz?.description || ''),
-    slug: String(rawQuiz?.slug || ''),
-    status: rawQuiz?.status,
-    isPrivate: rawQuiz?.isPrivate,
-    createdAt: normalizeIsoDate(rawQuiz?.createdAt),
-    updatedAt: rawQuiz?.updatedAt ? normalizeIsoDate(rawQuiz.updatedAt) : undefined,
+    _id: normalizeId(quiz['_id']),
+    title: String(quiz['title'] || ''),
+    description: String(quiz['description'] || ''),
+    slug: String(quiz['slug'] || ''),
+    status: quiz['status'] as DashboardQuiz['status'],
+    isPrivate: Boolean(quiz['isPrivate']),
+    createdAt: normalizeIsoDate(quiz['createdAt']),
+    updatedAt: quiz['updatedAt'] ? normalizeIsoDate(quiz['updatedAt']) : undefined,
     questionCount:
-      typeof rawQuiz?.questionCount === 'number'
-        ? rawQuiz.questionCount
-        : Array.isArray(rawQuiz?.questions)
-          ? rawQuiz.questions.length
-          : 0,
-    questions: Array.isArray(rawQuiz?.questions) ? rawQuiz.questions : [],
+      typeof quiz['questionCount'] === 'number'
+        ? (quiz['questionCount'] as number)
+        : questions.length,
+    questions: questions as DashboardQuiz['questions'],
     category: category
       ? {
-          _id: normalizeId(category?._id),
-          name: String(category?.name || ''),
-          color: String(category?.color || ''),
+          _id: normalizeId(category['_id']),
+          name: String(category['name'] || ''),
+          color: String(category['color'] || ''),
         }
       : null,
     author: author
       ? {
-          _id: author?._id ? normalizeId(author._id) : undefined,
-          email: author?.email ? String(author.email) : '',
+          _id: author['_id'] ? normalizeId(author['_id']) : undefined,
+          email: author['email'] ? String(author['email']) : '',
         }
       : null,
   };

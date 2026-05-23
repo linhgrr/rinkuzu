@@ -737,7 +737,7 @@ export default function EditQuizPage() {
   const isAuthor =
     typeof state.quiz.author === 'string'
       ? state.quiz.author === session.user.id
-      : (state.quiz.author as any)?._id === session.user.id;
+      : (state.quiz.author as { _id?: string })?._id === session.user.id;
 
   if (!isAdmin && !isAuthor) {
     return (

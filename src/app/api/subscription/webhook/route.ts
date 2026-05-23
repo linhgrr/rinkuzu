@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import { createSubscriptionService } from '@/lib/subscription-factory';
 import { NextRequest } from 'next/server';
 import { apiErr, apiOk } from '@/lib/api/response';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -65,7 +66,7 @@ export async function POST(request: NextRequest) {
 
     return apiOk(null);
   } catch (error) {
-    console.error('PayOS webhook error:', error);
+    logger.error({ error }, 'PayOS webhook error');
     return apiErr('internal_error', 'Webhook processing failed', 500);
   }
 }

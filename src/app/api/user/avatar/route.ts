@@ -3,6 +3,7 @@ import { withAuth } from '@/lib/api/auth';
 import connectDB from '@/lib/mongoose';
 import User from '@/models/User';
 import { apiErr, apiOk } from '@/lib/api/response';
+import { logger } from '@/lib/logger';
 
 const IMGBB_API_URL = 'https://api.imgbb.com/1/upload';
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
@@ -65,7 +66,7 @@ export const PUT = withAuth(async (request: NextRequest, { email }) => {
 
     return apiOk({ avatar: avatarUrl });
   } catch (error) {
-    console.error('Upload avatar error:', error);
+    logger.error({ error }, 'Upload avatar error');
     return apiErr('internal_error', 'Internal server error', 500);
   }
 });
@@ -89,7 +90,7 @@ export const DELETE = withAuth(async (_request, { email }) => {
 
     return apiOk(null, 200, { meta: { message: 'Avatar removed' } });
   } catch (error) {
-    console.error('Delete avatar error:', error);
+    logger.error({ error }, 'Delete avatar error');
     return apiErr('internal_error', 'Internal server error', 500);
   }
 });

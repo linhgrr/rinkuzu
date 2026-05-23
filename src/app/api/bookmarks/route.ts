@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { withAuth } from '@/lib/api/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
 import { apiErr, apiOk } from '@/lib/api/response';
+import { logger } from '@/lib/logger';
 
 const bookmarkService = serviceFactory.getBookmarkService();
 
@@ -23,7 +24,7 @@ export const GET = withAuth(async (request: NextRequest, { email }) => {
       pagination: result.pagination,
     });
   } catch (error) {
-    console.error('Error fetching bookmarks:', error);
+    logger.error({ error }, 'Error fetching bookmarks');
     return apiErr('internal_error', 'Failed to fetch bookmarks', 500);
   }
 });
@@ -46,7 +47,7 @@ export const POST = withAuth(async (request: NextRequest, { email }) => {
 
     return apiOk(bookmark);
   } catch (error: unknown) {
-    console.error('Error creating bookmark:', error);
+    logger.error({ error }, 'Error creating bookmark');
     const message = error instanceof Error ? error.message : '';
 
     if (message === 'Question already bookmarked') {

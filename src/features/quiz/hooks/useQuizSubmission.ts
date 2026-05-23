@@ -5,7 +5,7 @@ import { fetchApiData } from '@/lib/api/client';
 
 type QuizAnswer = number | number[];
 
-interface UseQuizSubmissionParams<TQuiz> {
+interface UseQuizSubmissionParams<TQuiz, TQuestion = unknown> {
   slug: string;
   quiz: TQuiz | null;
   userAnswers: QuizAnswer[];
@@ -15,10 +15,10 @@ interface UseQuizSubmissionParams<TQuiz> {
   onSubmitStart?: () => void;
   onSubmitError: (message: string) => void;
   mapAnswersToOriginalOrder: (quiz: TQuiz, answers: QuizAnswer[]) => QuizAnswer[];
-  isQuestionAnswered: (question: any, answer: QuizAnswer) => boolean;
+  isQuestionAnswered: (question: TQuestion, answer: QuizAnswer) => boolean;
 }
 
-export function useQuizSubmission<TQuiz>({
+export function useQuizSubmission<TQuiz, TQuestion = unknown>({
   slug,
   quiz,
   userAnswers,
@@ -29,7 +29,7 @@ export function useQuizSubmission<TQuiz>({
   onSubmitError,
   mapAnswersToOriginalOrder,
   isQuestionAnswered,
-}: UseQuizSubmissionParams<TQuiz>) {
+}: UseQuizSubmissionParams<TQuiz, TQuestion>) {
   const [submitting, setSubmitting] = useState(false);
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
   const [unansweredCount, setUnansweredCount] = useState(0);
@@ -98,7 +98,8 @@ export function useQuizSubmission<TQuiz>({
   const submitQuiz = useCallback(async (): Promise<boolean> => {
     if (!quiz || submitting) return false;
 
-    const questions = (quiz as any).questions ?? [];
+    const questions: TQuestion[] = ((quiz as { questions?: TQuestion[] }).questions ??
+      []) as TQuestion[];
     const unanswered = userAnswers.filter((answer, index) => {
       const question = questions[index];
       return !isQuestionAnswered(question, answer);

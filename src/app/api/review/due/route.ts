@@ -2,6 +2,7 @@ import { withAuth } from '@/lib/api/auth';
 import connectDB from '@/lib/mongoose';
 import QuestionProgress from '@/models/QuestionProgress';
 import { apiErr, apiOk } from '@/lib/api/response';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,7 +26,7 @@ export const GET = withAuth(async (_request, { userId }) => {
       count: dueQuestions.length,
     });
   } catch (error) {
-    console.error('Error fetching due reviews:', error);
+    logger.error({ error }, 'Error fetching due reviews');
     return apiErr('internal_error', 'Internal Server Error', 500);
   }
 });

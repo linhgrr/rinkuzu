@@ -5,6 +5,7 @@ import connectDB from '@/lib/mongoose';
 import DraftQuiz from '@/models/DraftQuiz';
 import { BUCKET_NAME, deletePDF, OBJECT_STORAGE_PUBLIC_BASE_URL } from '@/lib/s3';
 import { apiErr, apiOk } from '@/lib/api/response';
+import { logger } from '@/lib/logger';
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 const EXPIRY_HOURS = 48;
@@ -98,11 +99,11 @@ export const POST = withAuth(async (request: NextRequest, { userId }) => {
       });
     } catch (dbError) {
       // Rollback S3 upload
-      console.error('Draft creation failed, rolling back S3:', dbError);
+      logger.error({ dbError }, 'Draft creation failed, rolling back S3');
       try {
         await deletePDF(pdfKey);
       } catch (s3Error) {
-        console.error('S3 rollback failed:', s3Error);
+        logger.error({ s3Error }, 'S3 rollback failed');
       }
       throw dbError;
     }
@@ -126,7 +127,7 @@ export const POST = withAuth(async (request: NextRequest, { userId }) => {
       201,
     );
   } catch (error) {
-    console.error('Draft create error:', error);
+    logger.error({ error }, 'Draft create error');
     return apiErr('internal_error', 'Failed to create draft', 500);
   }
 });

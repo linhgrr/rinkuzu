@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { withAuth, withOptionalAuth } from '@/lib/api/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
 import { apiErr, apiOk } from '@/lib/api/response';
+import { logger } from '@/lib/logger';
 
 const quizService = serviceFactory.getQuizService();
 
@@ -37,7 +38,7 @@ export const GET = withOptionalAuth(async (request: NextRequest, { session, user
       pagination: result.pagination,
     });
   } catch (error: unknown) {
-    console.error('Get quizzes error:', error);
+    logger.error({ error }, 'Get quizzes error');
     return apiErr('internal_error', 'Internal server error', 500);
   }
 });
@@ -60,7 +61,7 @@ export const POST = withAuth(async (request: NextRequest, { userId }) => {
       meta: { message: 'Quiz created successfully and sent for approval' },
     });
   } catch (error: unknown) {
-    console.error('Create quiz error:', error);
+    logger.error({ error }, 'Create quiz error');
     const message = error instanceof Error ? error.message : '';
 
     if (

@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { withAuth } from '@/lib/api/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
 import { apiErr, apiOk, apiServiceErr } from '@/lib/api/response';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,7 +21,7 @@ export const GET = withAuth(async (request: NextRequest) => {
 
     return apiOk(result.data);
   } catch (error: unknown) {
-    console.error('Search categories error:', error);
+    logger.error({ error }, 'Search categories error');
     return apiErr('internal_error', 'Internal server error', 500);
   }
 });

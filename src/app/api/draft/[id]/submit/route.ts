@@ -7,6 +7,7 @@ import Quiz from '@/models/Quiz';
 import { deletePDF } from '@/lib/s3';
 import { apiErr, apiOk } from '@/lib/api/response';
 import { validateQuestionList } from '@/lib/validation/question';
+import { logger } from '@/lib/logger';
 
 // Simple slug generator (inline to avoid import issues)
 function generateSlug(title: string): string {
@@ -107,7 +108,7 @@ export const POST = withAuth<{ id: string }>(async (request: NextRequest, { para
         await deletePDF(draft.pdfData.pdfKey);
         console.warn('Deleted PDF from S3 after submit:', draft.pdfData.pdfKey);
       } catch (s3Error) {
-        console.error('Failed to delete PDF from S3 after submit:', s3Error);
+        logger.error({ s3Error }, 'Failed to delete PDF from S3 after submit');
         // Don't fail the request - quiz was created successfully
       }
     }
@@ -118,7 +119,7 @@ export const POST = withAuth<{ id: string }>(async (request: NextRequest, { para
       warnings: validation.warnings,
     });
   } catch (error) {
-    console.error('Submit draft error:', error);
+    logger.error({ error }, 'Submit draft error');
     return apiErr('internal_error', 'Failed to submit draft', 500);
   }
 });

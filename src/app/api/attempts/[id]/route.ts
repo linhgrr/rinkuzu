@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { withOptionalAuth } from '@/lib/api/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
 import { apiErr, apiOk, apiServiceErr } from '@/lib/api/response';
+import { logger } from '@/lib/logger';
 
 // This route accepts BOTH authenticated users (via session) and anonymous
 // users that pass `userEmail` as a query param to inspect their own attempt.
@@ -32,7 +33,7 @@ export const GET = withOptionalAuth<{ id: string }>(
 
       return apiOk(result.data);
     } catch (error: unknown) {
-      console.error('Get attempt details error:', error);
+      logger.error({ error }, 'Get attempt details error');
       return apiErr('internal_error', 'Internal server error', 500);
     }
   },

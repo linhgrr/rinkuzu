@@ -10,6 +10,7 @@ import { recordAuthEvent } from './audit';
 import { loginSchema } from './validation/auth';
 import { env } from './env';
 import type { UserRole } from '@/types/next-auth';
+import { logger } from '@/lib/logger';
 
 const isProd = env.NODE_ENV === 'production';
 
@@ -251,7 +252,7 @@ export const authOptions: NextAuthOptions = {
         });
         return true;
       } catch (error) {
-        console.error('Google signIn upsert failed:', error);
+        logger.error({ error }, 'Google signIn upsert failed');
         return false;
       }
     },
@@ -295,7 +296,7 @@ export const authOptions: NextAuthOptions = {
                 : null;
             }
           } catch (error) {
-            console.error('jwt-callback google lookup failed:', error);
+            logger.error({ error }, 'jwt-callback google lookup failed');
           }
         }
       }
@@ -339,7 +340,7 @@ export const authOptions: NextAuthOptions = {
         session.user.displayName = dbUser.displayName ?? token.displayName;
         if (dbUser.email) session.user.email = dbUser.email;
       } catch (error) {
-        console.error('session-callback failed:', error);
+        logger.error({ error }, 'session-callback failed');
         // Fail-closed on transient DB errors — drop the user payload.
         return { ...session, user: undefined as never };
       }

@@ -77,6 +77,17 @@ SubscriptionSchema.index({ user: 1, createdAt: -1 });
 SubscriptionSchema.index({ status: 1, createdAt: -1 });
 SubscriptionSchema.index({ status: 1, isActive: 1, endDate: 1 });
 SubscriptionSchema.index({ payosOrderId: 1 }, { unique: true });
+// Idempotency: webhook retries with the same PayOS transaction id must not
+// activate the subscription twice. Sparse so pending rows (no transaction id
+// yet) don't collide.
+SubscriptionSchema.index(
+  { payosTransactionId: 1 },
+  {
+    unique: true,
+    sparse: true,
+    partialFilterExpression: { payosTransactionId: { $type: 'string' } },
+  },
+);
 
 // Prevent re-compilation in development
 const Subscription =

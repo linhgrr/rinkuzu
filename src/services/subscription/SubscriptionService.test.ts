@@ -14,6 +14,37 @@ vi.mock('@/models/Plan', () => ({
   },
 }));
 
+vi.mock('@/models/Subscription', () => ({
+  default: {
+    updateOne: vi.fn().mockResolvedValue({}),
+    findOne: vi.fn().mockReturnValue({
+      lean: vi.fn().mockResolvedValue(null),
+    }),
+  },
+}));
+
+vi.mock('@/models/User', () => ({
+  default: {
+    updateOne: vi.fn().mockResolvedValue({}),
+  },
+}));
+
+vi.mock('mongoose', async () => {
+  const actual = await vi.importActual<typeof import('mongoose')>('mongoose');
+  const startSession = vi.fn().mockResolvedValue({
+    withTransaction: vi.fn(async (fn: () => Promise<unknown>) => fn()),
+    endSession: vi.fn().mockResolvedValue(undefined),
+  });
+  return {
+    ...actual,
+    default: {
+      ...actual.default,
+      startSession,
+    },
+    startSession,
+  };
+});
+
 function createService(overrides: Partial<any> = {}) {
   const subscriptionRepository = {
     create: vi.fn(),
@@ -351,7 +382,7 @@ describe('SubscriptionService billing hardening', () => {
       durationInfo: { iso8601: 'P1M' },
     } as any);
 
-    const { service, subscriptionRepository, userRepository } = createService({
+    const { service } = createService({
       subscriptionRepository: {
         findByOrderId: vi.fn().mockResolvedValue({
           user: { toString: () => 'user-1' },
@@ -370,23 +401,31 @@ describe('SubscriptionService billing hardening', () => {
     });
 
     expect(result.success).toBe(true);
-    expect(subscriptionRepository.updateByOrderId).toHaveBeenCalledWith(
-      '123',
+    const Subscription = (await import('@/models/Subscription')).default;
+    const User = (await import('@/models/User')).default;
+    expect(Subscription.updateOne).toHaveBeenCalledWith(
+      { payosOrderId: '123' },
       expect.objectContaining({
-        status: 'completed',
-        payosTransactionId: 'payos-ref',
-        isActive: true,
-      }),
-    );
-    expect(userRepository.updateById).toHaveBeenCalledWith(
-      'user-1',
-      expect.objectContaining({
-        subscription: expect.objectContaining({
-          payosOrderId: '123',
+        $set: expect.objectContaining({
+          status: 'completed',
           payosTransactionId: 'payos-ref',
           isActive: true,
         }),
       }),
+      expect.objectContaining({ session: expect.anything() }),
+    );
+    expect(User.updateOne).toHaveBeenCalledWith(
+      expect.objectContaining({ _id: expect.anything() }),
+      expect.objectContaining({
+        $set: expect.objectContaining({
+          subscription: expect.objectContaining({
+            payosOrderId: '123',
+            payosTransactionId: 'payos-ref',
+            isActive: true,
+          }),
+        }),
+      }),
+      expect.objectContaining({ session: expect.anything() }),
     );
   });
 
@@ -549,7 +588,7 @@ describe('SubscriptionService billing hardening', () => {
       duration: '6 months',
     } as any);
 
-    const { service, subscriptionRepository, userRepository } = createService({
+    const { service } = createService({
       subscriptionRepository: {
         findByOrderId: vi.fn().mockResolvedValue({
           user: { toString: () => 'user-1' },
@@ -567,15 +606,23 @@ describe('SubscriptionService billing hardening', () => {
     });
 
     expect(result.subscription.endDate).toBeInstanceOf(Date);
-    expect(subscriptionRepository.updateByOrderId).toHaveBeenCalledWith(
-      '123',
-      expect.objectContaining({ endDate: expect.any(Date) }),
-    );
-    expect(userRepository.updateById).toHaveBeenCalledWith(
-      'user-1',
+    const Subscription = (await import('@/models/Subscription')).default;
+    const User = (await import('@/models/User')).default;
+    expect(Subscription.updateOne).toHaveBeenCalledWith(
+      { payosOrderId: '123' },
       expect.objectContaining({
-        subscription: expect.objectContaining({ endDate: expect.any(Date) }),
+        $set: expect.objectContaining({ endDate: expect.any(Date) }),
       }),
+      expect.objectContaining({ session: expect.anything() }),
+    );
+    expect(User.updateOne).toHaveBeenCalledWith(
+      expect.objectContaining({ _id: expect.anything() }),
+      expect.objectContaining({
+        $set: expect.objectContaining({
+          subscription: expect.objectContaining({ endDate: expect.any(Date) }),
+        }),
+      }),
+      expect.objectContaining({ session: expect.anything() }),
     );
   });
 

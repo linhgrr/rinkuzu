@@ -8,6 +8,7 @@ import { ISubscriptionRepository } from '@/interfaces/repositories/ISubscription
 import { IUserRepository } from '@/interfaces/repositories/IUserRepository';
 import { assertTrustedPayosCheckoutUrl } from '@/lib/security/trusted-navigation';
 import { env } from '@/lib/env';
+import { logger } from '@/lib/logger';
 
 interface UserSubscriptionEmbed {
   endDate?: Date | string | null;
@@ -98,19 +99,25 @@ export class SubscriptionPaymentService {
       );
 
       if (paymentResponse.code !== '00') {
-        console.error('PayOS payment error:', {
-          orderCode,
-          code: paymentResponse.code,
-          description: paymentResponse.desc,
-        });
+        logger.error(
+          {
+            orderCode,
+            code: paymentResponse.code,
+            description: paymentResponse.desc,
+          },
+          'PayOS payment error',
+        );
         throw new Error(paymentResponse.desc || 'Failed to create payment request');
       }
 
       if (!paymentResponse.data?.checkoutUrl) {
-        console.error('PayOS response missing payment URL:', {
-          orderCode,
-          code: paymentResponse.code,
-        });
+        logger.error(
+          {
+            orderCode,
+            code: paymentResponse.code,
+          },
+          'PayOS response missing payment URL',
+        );
         throw new Error('Payment URL not received from PayOS');
       }
 
@@ -135,13 +142,13 @@ export class SubscriptionPaymentService {
         },
       };
     } catch (error) {
-      console.error('Error in createPaymentRequest:', error);
+      logger.error({ error }, 'Error in createPaymentRequest');
 
       // Clean up the subscription record if payment creation failed
       try {
         await this.subscriptionRepository.deleteByOrderId(orderCode.toString());
       } catch (cleanupError) {
-        console.error('Failed to cleanup subscription record:', cleanupError);
+        logger.error({ cleanupError }, 'Failed to cleanup subscription record');
       }
 
       throw error;

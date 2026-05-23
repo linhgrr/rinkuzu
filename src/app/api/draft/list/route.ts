@@ -3,6 +3,7 @@ import { withAuth } from '@/lib/api/auth';
 import connectDB from '@/lib/mongoose';
 import DraftQuiz from '@/models/DraftQuiz';
 import { apiErr, apiOk } from '@/lib/api/response';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -33,7 +34,7 @@ export const GET = withAuth(async (_request, { userId }) => {
       })),
     });
   } catch (error) {
-    console.error('List drafts error:', error);
+    logger.error({ error }, 'List drafts error');
     return apiErr('internal_error', 'Failed to list drafts', 500);
   }
 });

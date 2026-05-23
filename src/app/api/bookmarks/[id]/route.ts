@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { withAuth } from '@/lib/api/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
 import { apiErr, apiOk } from '@/lib/api/response';
+import { logger } from '@/lib/logger';
 
 const bookmarkService = serviceFactory.getBookmarkService();
 
@@ -17,7 +18,7 @@ export const DELETE = withAuth<{ id: string }>(async (_request: NextRequest, { p
 
     return apiOk(null, 200, { meta: { message: 'Bookmark removed' } });
   } catch (error: unknown) {
-    console.error('Error removing bookmark:', error);
+    logger.error({ error }, 'Error removing bookmark');
 
     if (error instanceof Error && error.message === 'Bookmark not found or unauthorized') {
       return apiErr('not_found', error.message, 404);

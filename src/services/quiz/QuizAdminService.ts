@@ -5,6 +5,7 @@ import { ServiceResult } from '@/interfaces/services/types';
 import { PaginationMeta } from '@/types';
 import type { IQuestion } from '@/models/Quiz';
 import type { FilterQuery } from 'mongoose';
+import { logger } from '@/lib/logger';
 
 function escapeRegexLiteral(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -79,7 +80,7 @@ export class QuizAdminService {
         data: quiz,
       };
     } catch (error) {
-      console.error('Approve quiz error:', error);
+      logger.error({ error }, 'Approve quiz error');
       return {
         success: false,
         error: 'Failed to approve quiz',
@@ -101,7 +102,7 @@ export class QuizAdminService {
         data: quiz,
       };
     } catch (error) {
-      console.error('Reject quiz error:', error);
+      logger.error({ error }, 'Reject quiz error');
       return {
         success: false,
         error: 'Failed to reject quiz',

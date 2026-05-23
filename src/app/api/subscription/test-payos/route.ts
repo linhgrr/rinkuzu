@@ -1,6 +1,7 @@
 import { withAdmin } from '@/lib/api/auth';
 import { apiErr, apiOk } from '@/lib/api/response';
 import { PayOSService } from '@/services/payment/PayOSService';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,7 +29,7 @@ export const GET = withAdmin(async () => {
       { meta: { message: 'PayOS service is working correctly' } },
     );
   } catch (error) {
-    console.error('PayOS test error:', error);
+    logger.error({ error }, 'PayOS test error');
     return apiErr('internal_error', 'PayOS test failed', 500);
   }
 });

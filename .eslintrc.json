@@ -65,7 +65,7 @@
       }
     },
     {
-      "files": ["src/app/api/**/route.ts"],
+      "files": ["src/app/api/**/route.ts", "src/lib/adaptive-learning/proxy.ts"],
       "excludedFiles": ["src/lib/auth.ts", "src/lib/api/auth.ts", "src/app/api/auth/**/route.ts"],
       "rules": {
         "no-restricted-imports": [

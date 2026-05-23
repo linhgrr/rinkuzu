@@ -1,11 +1,14 @@
 import { proxyAdaptiveRequest } from '@/lib/adaptive-learning/proxy';
-import { AsyncRouteParams } from '@/types/next-route';
+import { withAuth } from '@/lib/api/auth';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(req: Request, { params }: AsyncRouteParams<{ jobId: string }>) {
-  const { jobId } = await params;
-  return proxyAdaptiveRequest(req, `/api/pipeline/jobs/${jobId}`, {
-    timeoutMs: 25_000,
-  });
-}
+export const GET = withAuth<{ jobId: string }>(async (req, { params, userId, session }) => {
+  const { jobId } = params;
+  return proxyAdaptiveRequest(
+    req,
+    `/api/pipeline/jobs/${jobId}`,
+    { userId, userRole: session.user.role },
+    { timeoutMs: 25_000 },
+  );
+});

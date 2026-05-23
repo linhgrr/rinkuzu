@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { withAdmin } from '@/lib/api/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
 import { apiErr, apiOk, apiServiceErr } from '@/lib/api/response';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,7 +27,7 @@ export const POST = withAdmin(async (_request: NextRequest) => {
       meta: { message: message || 'System initialized' },
     });
   } catch (error) {
-    console.error('Admin setup error:', error);
+    logger.error({ error }, 'Admin setup error');
     return apiErr('internal_error', 'Failed to initialize system', 500);
   }
 });
@@ -52,7 +53,7 @@ export async function GET() {
       { meta: { message: 'Setup status checked' } },
     );
   } catch (error) {
-    console.error('Admin setup check error:', error);
+    logger.error({ error }, 'Admin setup check error');
     return apiErr('internal_error', 'Failed to check admin setup status', 500);
   }
 }

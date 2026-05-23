@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { withAuth } from '@/lib/api/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
 import { apiOk, apiErr, apiServiceErr } from '@/lib/api/response';
+import { logger } from '@/lib/logger';
 
 export const POST = withAuth<{ slug: string }>(
   async (request: NextRequest, { params, email, session }) => {
@@ -38,7 +39,7 @@ export const POST = withAuth<{ slug: string }>(
         meta: { message: 'Report submitted successfully' },
       });
     } catch (error) {
-      console.error('Error submitting report:', error);
+      logger.error({ error }, 'Error submitting report');
       return apiErr('internal_error', 'Internal server error', 500);
     }
   },

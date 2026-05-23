@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { withAuth } from '@/lib/api/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
 import { apiErr, apiOk } from '@/lib/api/response';
+import { logger } from '@/lib/logger';
 
 const userService = serviceFactory.getUserService();
 
@@ -25,7 +26,7 @@ export const GET = withAuth(async (request: NextRequest, { email }) => {
       pagination: result.pagination,
     });
   } catch (error: unknown) {
-    console.error('Get user attempts error:', error);
+    logger.error({ error }, 'Get user attempts error');
     const message = error instanceof Error ? error.message : '';
 
     if (message === 'User not found') {

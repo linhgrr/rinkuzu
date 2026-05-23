@@ -6,6 +6,7 @@ import { CreateQuizRequest } from '@/interfaces/services/IQuizService';
 import { ServiceResult } from '@/interfaces/services/types';
 import { generateSlug } from '@/lib/utils';
 import { getAuthorId } from './quiz-helpers';
+import { logger } from '@/lib/logger';
 
 const VALID_QUESTION_TYPES = new Set(['single', 'multiple']);
 
@@ -180,7 +181,7 @@ export class QuizCrudService {
 
       return { success: true, data: quiz };
     } catch (error) {
-      console.error('Error in getQuizById:', error);
+      logger.error({ error }, 'Error in getQuizById');
       return {
         success: false,
         error: 'Internal server error',
@@ -233,7 +234,7 @@ export class QuizCrudService {
         data: updatedQuiz,
       };
     } catch (error) {
-      console.error('Update quiz error:', error);
+      logger.error({ error }, 'Update quiz error');
       return {
         success: false,
         error: 'Failed to update quiz',
@@ -277,7 +278,7 @@ export class QuizCrudService {
         data: result,
       };
     } catch (error) {
-      console.error('Delete quiz error:', error);
+      logger.error({ error }, 'Delete quiz error');
       return {
         success: false,
         error: 'Failed to delete quiz',

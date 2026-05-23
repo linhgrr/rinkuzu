@@ -3,6 +3,7 @@ import { withAuth } from '@/lib/api/auth';
 import connectDB from '@/lib/mongoose';
 import User from '@/models/User';
 import { apiErr, apiOk } from '@/lib/api/response';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,7 +32,7 @@ export const GET = withAuth(async (_request, { email }) => {
       subscription: user.subscription,
     });
   } catch (error) {
-    console.error('Get profile error:', error);
+    logger.error({ error }, 'Get profile error');
     return apiErr('internal_error', 'Internal server error', 500);
   }
 });
@@ -76,7 +77,7 @@ export const PUT = withAuth(async (request: NextRequest, { email }) => {
       createdAt: user.createdAt,
     });
   } catch (error) {
-    console.error('Update profile error:', error);
+    logger.error({ error }, 'Update profile error');
     return apiErr('internal_error', 'Internal server error', 500);
   }
 });

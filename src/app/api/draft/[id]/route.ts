@@ -4,6 +4,7 @@ import connectDB from '@/lib/mongoose';
 import DraftQuiz from '@/models/DraftQuiz';
 import { deletePDF } from '@/lib/s3';
 import { apiErr, apiOk } from '@/lib/api/response';
+import { logger } from '@/lib/logger';
 
 type DraftQuestion = {
   question: string;
@@ -69,13 +70,13 @@ export const GET = withAuth<{ id: string }>(async (_request, { params, userId })
         const { getSignedPDFUrl } = await import('@/lib/s3');
         draft.pdfData.pdfUrl = await getSignedPDFUrl(draft.pdfData.pdfKey);
       } catch (error) {
-        console.error('Failed to refresh signed URL:', error);
+        logger.error({ error }, 'Failed to refresh signed URL');
       }
     }
 
     return apiOk({ draft });
   } catch (error) {
-    console.error('Get draft error:', error);
+    logger.error({ error }, 'Get draft error');
     return apiErr('internal_error', 'Failed to get draft', 500);
   }
 });
@@ -105,14 +106,14 @@ export const DELETE = withAuth<{ id: string }>(async (_request, { params, userId
         await deletePDF(draft.pdfData.pdfKey);
         console.warn('Deleted PDF from S3:', draft.pdfData.pdfKey);
       } catch (s3Error) {
-        console.error('Failed to delete PDF from S3:', s3Error);
+        logger.error({ s3Error }, 'Failed to delete PDF from S3');
         // Don't fail the request, S3 cleanup is best-effort
       }
     }
 
     return apiOk(null);
   } catch (error) {
-    console.error('Delete draft error:', error);
+    logger.error({ error }, 'Delete draft error');
     return apiErr('internal_error', 'Failed to delete draft', 500);
   }
 });

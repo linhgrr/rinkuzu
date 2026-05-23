@@ -7,6 +7,7 @@ import { ICategoryRepository, ICategory } from '@/interfaces/repositories/ICateg
 import { IQuizRepository, IQuiz } from '@/interfaces/repositories/IQuizRepository';
 import { ServiceResult } from '@/interfaces/services/types';
 import type { FilterQuery } from 'mongoose';
+import { logger } from '@/lib/logger';
 
 export class CategoryService implements ICategoryService {
   constructor(
@@ -42,7 +43,7 @@ export class CategoryService implements ICategoryService {
         data: categories,
       };
     } catch (error) {
-      console.error('Get categories error:', error);
+      logger.error({ error }, 'Get categories error');
       return {
         success: false,
         error: 'Failed to fetch categories',
@@ -117,7 +118,7 @@ export class CategoryService implements ICategoryService {
         },
       };
     } catch (error) {
-      console.error('Get category by slug error:', error);
+      logger.error({ error }, 'Get category by slug error');
       return {
         success: false,
         error: 'Failed to get category',
@@ -143,7 +144,7 @@ export class CategoryService implements ICategoryService {
         data: categories,
       };
     } catch (error) {
-      console.error('Search categories error:', error);
+      logger.error({ error }, 'Search categories error');
       return {
         success: false,
         error: 'Failed to search categories',
@@ -161,7 +162,7 @@ export class CategoryService implements ICategoryService {
         data: stats,
       };
     } catch (error) {
-      console.error('Get category stats error:', error);
+      logger.error({ error }, 'Get category stats error');
       return {
         success: false,
         error: 'Failed to get category stats',

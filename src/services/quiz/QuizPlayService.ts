@@ -226,9 +226,9 @@ export class QuizPlayService {
             correctAnswers++;
           }
         } else if (question.type === 'multiple') {
-          const userAnswers = Array.isArray(userAnswer) ? [...userAnswer].sort() : [];
+          const userAnswers = Array.isArray(userAnswer) ? userAnswer.toSorted() : [];
           const correctAnswers_q = Array.isArray(question.correctIndexes)
-            ? [...question.correctIndexes].sort()
+            ? question.correctIndexes.toSorted()
             : [];
 
           if (JSON.stringify(userAnswers) === JSON.stringify(correctAnswers_q)) {
@@ -269,9 +269,9 @@ export class QuizPlayService {
           if (question.type === 'single') {
             isCorrect = userAnswer === question.correctIndex;
           } else if (question.type === 'multiple') {
-            const userAnswers = Array.isArray(userAnswer) ? [...userAnswer].sort() : [];
+            const userAnswers = Array.isArray(userAnswer) ? userAnswer.toSorted() : [];
             const correctAnswers_q = Array.isArray(question.correctIndexes)
-              ? [...question.correctIndexes].sort()
+              ? question.correctIndexes.toSorted()
               : [];
             isCorrect = JSON.stringify(userAnswers) === JSON.stringify(correctAnswers_q);
           }

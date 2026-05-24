@@ -66,14 +66,16 @@ export async function POST(request: NextRequest) {
       user.emailVerificationExpires = new Date(Date.now() + VERIFICATION_TTL_MS);
       await user.save();
 
-      await sendTransactionalMail(await buildVerifyEmailMessage(user.email, raw));
-      await recordAuthEvent({
-        event: 'email_verification_sent',
-        userId: user._id,
-        email: user.email,
-        ip,
-        userAgent,
-      });
+      await Promise.all([
+        sendTransactionalMail(await buildVerifyEmailMessage(user.email, raw)),
+        recordAuthEvent({
+          event: 'email_verification_sent',
+          userId: user._id,
+          email: user.email,
+          ip,
+          userAgent,
+        }),
+      ]);
     } else {
       await recordAuthEvent({
         event: 'email_verification_sent',

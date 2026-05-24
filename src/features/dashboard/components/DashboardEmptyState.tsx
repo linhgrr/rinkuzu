@@ -17,9 +17,7 @@ export async function DashboardEmptyState({ locale, userName }: DashboardEmptySt
 
   return (
     <section className="rounded-3xl border border-neutral-200 bg-white p-8 sm:p-12">
-      <p className="text-sm font-medium text-brand-trust">
-        {t('welcome', { name: userName })}
-      </p>
+      <p className="text-sm font-medium text-brand-trust">{t('welcome', { name: userName })}</p>
       <h1 className="mt-2 text-3xl font-bold text-neutral-900 sm:text-4xl">
         {t('emptyStateTitle')}
       </h1>
@@ -34,9 +32,7 @@ export async function DashboardEmptyState({ locale, userName }: DashboardEmptySt
             <HiOutlineDocumentText className="size-6" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold text-neutral-900">
-              {t('emptyStateCreateQuiz')}
-            </h2>
+            <h2 className="text-lg font-semibold text-neutral-900">{t('emptyStateCreateQuiz')}</h2>
             <p className="mt-1 text-sm text-neutral-600">{t('emptyStateCreateQuizSub')}</p>
           </div>
           <span className="mt-auto inline-flex items-center gap-1 text-sm font-semibold text-brand-action">

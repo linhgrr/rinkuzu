@@ -13,11 +13,7 @@ import {
 import { ADAPTIVE_ROUTES } from '@/features/adaptive/lib/routes';
 import { getJobIdForSession, saveSessionJobMapping } from '../lib/session-storage';
 import { getSessionStartFeedback } from '../lib/session-start-feedback';
-import type {
-  SessionStatus,
-  SubjectHistoryDetail,
-  TranslateFn,
-} from '@/features/adaptive/types';
+import type { SessionStatus, SubjectHistoryDetail, TranslateFn } from '@/features/adaptive/types';
 
 type SubjectTab = 'graph' | 'mastery' | 'history';
 

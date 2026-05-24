@@ -20,11 +20,7 @@ import dagre from 'dagre';
 import { Spinner } from '@/components/ui/Spinner';
 import { getConceptDetail } from '@/features/adaptive/lib/api-client';
 import { useKnowledgeGraph } from '@/hooks/useAdaptive';
-import type {
-  ConceptDetail,
-  KnowledgeGraphData,
-  KnowledgeNode,
-} from '@/features/adaptive/types';
+import type { ConceptDetail, KnowledgeGraphData, KnowledgeNode } from '@/features/adaptive/types';
 import ConceptDetailPanel from './ConceptDetail';
 
 interface KnowledgeGraphProps {

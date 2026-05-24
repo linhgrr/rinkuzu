@@ -323,6 +323,7 @@ export function ExerciseHistoryTable({ exercises }: ExerciseHistoryTableProps) {
                 </td>
                 <td className="px-5 py-3 text-center">
                   <button
+                    type="button"
                     onClick={() => setSelectedExercise(exercise)}
                     className="rounded-md p-1 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-900"
                     title={t('history.table.viewDetails')}

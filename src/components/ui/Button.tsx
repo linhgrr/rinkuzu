@@ -55,6 +55,7 @@ function Button({
 
   return (
     <button
+      type="button"
       className={cn(
         'btn',
         variants[variant],

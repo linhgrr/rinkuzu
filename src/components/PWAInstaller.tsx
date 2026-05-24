@@ -156,12 +156,14 @@ export default function PWAInstaller() {
             </div>
             <div className="flex gap-2 ml-4">
               <button
+                type="button"
                 onClick={() => void handleInstallClick()}
                 className="bg-white text-brand-trust px-3 py-1 rounded text-sm font-medium hover:bg-neutral-100 transition-colors"
               >
                 {t('install')}
               </button>
               <button
+                type="button"
                 onClick={dismissInstallBanner}
                 className="text-white opacity-70 hover:opacity-100 transition-opacity"
                 aria-label="Dismiss"
@@ -175,6 +177,7 @@ export default function PWAInstaller() {
 
       {state.isInstallable ? (
         <button
+          type="button"
           onClick={() => void handleInstallClick()}
           className="hidden md:inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-neutral-700 hover:text-neutral-900 transition-colors"
           title={t('installApp')}

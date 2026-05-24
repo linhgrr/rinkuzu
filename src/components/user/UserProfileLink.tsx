@@ -1,5 +1,6 @@
 import Link from 'next/link';
-import { UserAvatar, UserIdentity, getUserDisplayName } from './UserAvatar';
+import { UserAvatar } from './UserAvatar';
+import { type UserIdentity, getUserDisplayName } from './user-identity';
 import { cn } from '@/lib/utils';
 import { ROUTES } from '@/shared/constants';
 

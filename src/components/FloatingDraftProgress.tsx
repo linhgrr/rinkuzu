@@ -69,6 +69,7 @@ export function FloatingDraftProgress() {
           <div className="px-4 py-3 border-b border-neutral-100 flex items-center justify-between">
             <h3 className="font-semibold text-sm text-neutral-900">{t('processingPDF')}</h3>
             <button
+              type="button"
               onClick={() => setIsExpanded(false)}
               className="p-1 text-neutral-400 hover:text-neutral-600 transition-colors"
             >
@@ -92,6 +93,7 @@ export function FloatingDraftProgress() {
 
       {/* Floating Button */}
       <button
+        type="button"
         onClick={() => setIsExpanded(!isExpanded)}
         className="flex items-center gap-2.5 px-4 py-2.5 rounded-full
                    bg-white/95 backdrop-blur-xl shadow-lg border border-neutral-200/60
@@ -230,6 +232,7 @@ function DraftItem({
                   {t('questionsGenerated', { count: draft.questionsCount ?? 0 })}
                 </p>
                 <button
+                  type="button"
                   onClick={onCancel}
                   className="text-xs text-red-600 hover:text-red-700 font-medium"
                 >
@@ -258,6 +261,7 @@ function DraftItem({
 
         {draft.status === 'completed' && (
           <button
+            type="button"
             onClick={onRemove}
             className="p-1.5 text-neutral-400 hover:text-neutral-600 transition-colors"
           >

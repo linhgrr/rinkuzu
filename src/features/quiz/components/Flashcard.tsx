@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useEffectEvent, useMemo, useReducer } from 'react';
+import { useCallback, useEffect, useMemo, useReducer } from 'react';
 import { useTranslations } from 'next-intl';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -345,45 +345,49 @@ export function Flashcard({
   );
   const animatedCardStyle = useMemo(() => getAnimatedCardStyle(state), [state]);
 
-  const triggerSwipe = useEffectEvent((direction: SwipeDirection) => {
-    if (state.isTransitioning) {
-      return;
-    }
+  const triggerSwipe = useCallback(
+    (direction: SwipeDirection) => {
+      if (state.isTransitioning) {
+        return;
+      }
 
-    dispatch({ type: 'swipeStart', direction });
-    onSwipe(direction);
-    window.setTimeout(() => {
-      dispatch({ type: 'swipeFinish' });
-    }, 300);
-  });
+      dispatch({ type: 'swipeStart', direction });
+      onSwipe(direction);
+      window.setTimeout(() => {
+        dispatch({ type: 'swipeFinish' });
+      }, 300);
+    },
+    [onSwipe, state.isTransitioning],
+  );
 
-  const handleKeyDown = useEffectEvent((event: KeyboardEvent) => {
-    if (state.isTransitioning) {
-      return;
-    }
+  const handleKeyDown = useCallback(
+    (event: KeyboardEvent) => {
+      if (state.isTransitioning) {
+        return;
+      }
 
-    switch (event.code) {
-      case 'Space':
-        event.preventDefault();
-        dispatch({ type: 'toggleFlipped' });
-        break;
-      case 'ArrowLeft':
-        if (state.isFlipped) {
-          triggerSwipe('left');
-        } else {
-          dispatch({ type: 'setFlipped', value: true });
-        }
-        break;
-      case 'ArrowRight':
-        if (state.isFlipped) {
-          triggerSwipe('right');
-        }
-        break;
-    }
-  });
+      switch (event.code) {
+        case 'Space':
+          event.preventDefault();
+          dispatch({ type: 'toggleFlipped' });
+          break;
+        case 'ArrowLeft':
+          if (state.isFlipped) {
+            triggerSwipe('left');
+          } else {
+            dispatch({ type: 'setFlipped', value: true });
+          }
+          break;
+        case 'ArrowRight':
+          if (state.isFlipped) {
+            triggerSwipe('right');
+          }
+          break;
+      }
+    },
+    [state.isTransitioning, state.isFlipped, triggerSwipe],
+  );
 
-  // React 19 effect events intentionally stay out of deps to avoid re-subscribing listeners.
-  /* eslint-disable react-hooks/exhaustive-deps */
   useEffect(() => {
     const listener = (event: KeyboardEvent) => {
       handleKeyDown(event);
@@ -391,8 +395,7 @@ export function Flashcard({
 
     window.addEventListener('keydown', listener);
     return () => window.removeEventListener('keydown', listener);
-  }, []);
-  /* eslint-enable react-hooks/exhaustive-deps */
+  }, [handleKeyDown]);
 
   useEffect(() => {
     dispatch({ type: 'resetForQuestion' });

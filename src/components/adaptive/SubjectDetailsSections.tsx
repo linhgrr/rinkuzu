@@ -221,6 +221,7 @@ export const SubjectDetailsTabs = ({
       <div className="flex gap-1" role="tablist">
         {TAB_CONFIG.map(({ key, icon: Icon, labelKey }, index) => (
           <button
+            type="button"
             key={key}
             id={`tab-${key}`}
             role="tab"

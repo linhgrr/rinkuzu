@@ -135,6 +135,7 @@ export default function ReviewCard({ question, onResult }: ReviewCardProps) {
             {/* Rating Buttons */}
             <div className="mt-4 md:mt-8 grid grid-cols-4 gap-2 md:gap-3 pt-4 border-t">
               <button
+                type="button"
                 className="flex flex-col items-center p-2 rounded-lg hover:bg-red-50 active:bg-red-100 transition-colors group min-h-[68px]"
                 onClick={() => onResult('fail')}
                 aria-label="Rate as Again - Press 1"
@@ -148,6 +149,7 @@ export default function ReviewCard({ question, onResult }: ReviewCardProps) {
               </button>
 
               <button
+                type="button"
                 className="flex flex-col items-center p-2 rounded-lg hover:bg-orange-50 active:bg-orange-100 transition-colors group min-h-[68px]"
                 onClick={() => onResult('hard')}
                 aria-label="Rate as Hard - Press 2"
@@ -161,6 +163,7 @@ export default function ReviewCard({ question, onResult }: ReviewCardProps) {
               </button>
 
               <button
+                type="button"
                 className="flex flex-col items-center p-2 rounded-lg hover:bg-green-50 active:bg-green-100 transition-colors group min-h-[68px]"
                 onClick={() => onResult('good')}
                 aria-label="Rate as Good - Press 3"
@@ -174,6 +177,7 @@ export default function ReviewCard({ question, onResult }: ReviewCardProps) {
               </button>
 
               <button
+                type="button"
                 className="flex flex-col items-center p-2 rounded-lg hover:bg-green-50 active:bg-green-100 transition-colors group min-h-[68px]"
                 onClick={() => onResult('easy')}
                 aria-label="Rate as Easy - Press 4"

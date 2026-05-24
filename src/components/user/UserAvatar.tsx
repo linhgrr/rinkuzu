@@ -1,27 +1,6 @@
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
-
-export interface UserIdentity {
-  _id?: string;
-  email?: string | null;
-  name?: string | null;
-  displayName?: string | null;
-  avatar?: string | null;
-}
-
-export function getUserDisplayName(user: UserIdentity): string {
-  const trimmedDisplayName = user.displayName?.trim();
-  if (trimmedDisplayName) return trimmedDisplayName;
-
-  const trimmedName = user.name?.trim();
-  if (trimmedName) return trimmedName;
-
-  if (user.email) {
-    return user.email.split('@')[0];
-  }
-
-  return 'User';
-}
+import { getUserDisplayName, type UserIdentity } from './user-identity';
 
 function getUserInitial(user: UserIdentity): string {
   return getUserDisplayName(user).charAt(0).toUpperCase();

@@ -16,14 +16,6 @@ export type ServiceResult<T> =
   | { success: true; data: T }
   | { success: false; error: string; statusCode: number };
 
-export const ok = <T>(data: T): ServiceResult<T> => ({ success: true, data });
-
-export const fail = <T = never>(error: string, statusCode: number): ServiceResult<T> => ({
-  success: false,
-  error,
-  statusCode,
-});
-
 /**
  * Test helper: assert success and narrow. Throws if the result is a failure.
  * Allows callers to access `result.data` safely after the call.

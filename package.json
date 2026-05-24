@@ -71,7 +71,7 @@
     "@zxcvbn-ts/core": "^3.0.4",
     "@zxcvbn-ts/language-common": "^3.0.4",
     "@zxcvbn-ts/language-en": "^3.0.2",
-    "argon2": "^0.40.3",
+    "argon2": "^0.44.0",
     "bcryptjs": "^3.0.3",
     "clsx": "^2.1.1",
     "dagre": "^0.8.5",

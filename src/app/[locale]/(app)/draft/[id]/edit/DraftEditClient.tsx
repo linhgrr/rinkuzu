@@ -452,7 +452,7 @@ function QuestionEditor({
 
           return (
             <div
-              key={optIdx}
+              key={`${optIdx}-${opt}`}
               className={`px-3 py-2 rounded-lg text-sm ${
                 isCorrect ? 'bg-green-100 text-green-800' : 'bg-white text-neutral-600'
               }`}

@@ -157,7 +157,7 @@ function MobileQuestionCard({
             {currentQuestion.options.map((option, optionIndex) => (
               <button
                 type="button"
-                key={optionIndex}
+                key={`${optionIndex}-${option}`}
                 onClick={() => handleOptionSelect(optionIndex)}
                 disabled={isSubmitting}
                 className={`w-full rounded-xl border-2 p-4 text-left transition-all duration-150 disabled:pointer-events-none disabled:opacity-70 ${

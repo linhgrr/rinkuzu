@@ -13,12 +13,11 @@ interface SpinnerProps {
 
 export function Spinner({ size = 'md', className = '' }: SpinnerProps) {
   return (
-    <div
+    <output
       className={`animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust ${SIZES[size]} ${className}`}
-      role="status"
       aria-label="Loading"
     >
       <span className="sr-only">Loading…</span>
-    </div>
+    </output>
   );
 }

@@ -1,7 +1,10 @@
 import type { CSSProperties } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
-import { HeroSection, FeatureSection, HowItWorksSection, FaqSection } from './new-landing';
+import HeroSection from './new-landing/HeroSection';
+import { Features as FeatureSection } from './new-landing/Features';
+import { HowItWorks as HowItWorksSection } from './new-landing/HowItWorks';
+import { FAQ as FaqSection } from './new-landing/FAQ';
 
 interface Quiz {
   _id: string;

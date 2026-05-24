@@ -4,6 +4,10 @@
       {
         "files": ["package.json"],
         "rules": ["deslop/unused-dev-dependency"]
+      },
+      {
+        "files": ["src/components/adaptive/ConceptDetail.tsx"],
+        "rules": ["react-doctor/prefer-tag-over-role"]
       }
     ]
   }

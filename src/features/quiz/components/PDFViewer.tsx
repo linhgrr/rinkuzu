@@ -75,6 +75,7 @@ function PDFViewerFrame({ displayUrl }: { displayUrl: string }) {
         src={displayUrl}
         className="h-full w-full border-0"
         title="PDF Viewer"
+        sandbox="allow-scripts allow-same-origin allow-popups"
         onLoad={() => setIsLoading(false)}
       />
     </>

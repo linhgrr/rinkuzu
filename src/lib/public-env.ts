@@ -9,10 +9,25 @@ type PublicEnv = z.infer<typeof publicEnvSchema>;
 
 let cached: PublicEnv | null = null;
 
+/**
+ * Read NEXT_PUBLIC_* values via direct property access so Next.js inlines
+ * them at build time. Reading from `process.env` as an object is not
+ * inlined and returns `undefined` in the browser bundle.
+ */
 function loadPublicEnv(): PublicEnv {
   if (cached) return cached;
 
-  const parsed = publicEnvSchema.safeParse(process.env);
+  // Direct property access so Next.js inlines the value at build time.
+  // Bracket access (`process.env['NEXT_PUBLIC_*']`) is NOT inlined.
+  // @ts-expect-error noPropertyAccessFromIndexSignature — required for Next inlining
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL as string | undefined;
+  // @ts-expect-error noPropertyAccessFromIndexSignature — required for Next inlining
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL as string | undefined;
+
+  const parsed = publicEnvSchema.safeParse({
+    NEXT_PUBLIC_SITE_URL: siteUrl,
+    NEXT_PUBLIC_API_URL: apiUrl,
+  });
 
   if (!parsed.success) {
     const issues = parsed.error.issues

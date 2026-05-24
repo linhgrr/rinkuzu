@@ -86,8 +86,7 @@ export function ForgotPasswordClient() {
 
             <CardContent className="pt-0">
               {success ? (
-                <div
-                  role="status"
+                <output
                   aria-live="polite"
                   className="flex flex-col items-center gap-4 py-4 text-center"
                 >
@@ -99,7 +98,7 @@ export function ForgotPasswordClient() {
                   >
                     {t('backToLogin')}
                   </Link>
-                </div>
+                </output>
               ) : (
                 <form className="space-y-6" onSubmit={onSubmit} noValidate>
                   {serverError && (

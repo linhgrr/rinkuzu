@@ -122,8 +122,7 @@ function VerifyEmailContent() {
             </CardHeader>
 
             <CardContent className="pt-2">
-              <div
-                role="status"
+              <output
                 aria-live="polite"
                 className="flex flex-col items-center gap-4 py-4 text-center"
               >
@@ -159,7 +158,7 @@ function VerifyEmailContent() {
                     </Link>
                   )}
                 </div>
-              </div>
+              </output>
             </CardContent>
           </Card>
         </div>

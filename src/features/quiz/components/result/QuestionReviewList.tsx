@@ -216,7 +216,7 @@ export function QuestionReviewList({
 
                         return (
                           <div
-                            key={optIdx}
+                            key={`${optIdx}-${option}`}
                             className={`text-sm p-2 rounded border flex items-center ${
                               isCorrectAnswer
                                 ? 'bg-green-100 border-green-300 text-green-800'

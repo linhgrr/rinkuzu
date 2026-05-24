@@ -119,8 +119,7 @@ function ResetPasswordContent() {
 
             <CardContent className="pt-0">
               {success ? (
-                <div
-                  role="status"
+                <output
                   aria-live="polite"
                   className="flex flex-col items-center gap-4 py-4 text-center"
                 >
@@ -129,7 +128,7 @@ function ResetPasswordContent() {
                   <Link href="/login" className="font-semibold text-teal-600 hover:text-teal-700">
                     {t('backToLogin')}
                   </Link>
-                </div>
+                </output>
               ) : (
                 <form className="space-y-6" onSubmit={onSubmit} noValidate>
                   {serverError && (

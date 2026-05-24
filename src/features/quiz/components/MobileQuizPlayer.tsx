@@ -48,6 +48,7 @@ function MobileQuizHeader({
     <div className="flex-shrink-0 border-b border-neutral-100 bg-white px-4 py-3 safe-area-top">
       <div className="flex items-center justify-between">
         <button
+          type="button"
           onClick={goPrev}
           disabled={isFirst || isSubmitting}
           className="rounded-full p-2 -ml-2 transition-colors active:bg-neutral-100"
@@ -80,6 +81,7 @@ function MobileQuizHeader({
         </div>
 
         <button
+          type="button"
           onClick={goNext}
           disabled={isLast || isSubmitting}
           className="rounded-full p-2 -mr-2 transition-colors active:bg-neutral-100"
@@ -154,6 +156,7 @@ function MobileQuestionCard({
           <div className="flex-1 space-y-2.5 overflow-y-auto pb-2">
             {currentQuestion.options.map((option, optionIndex) => (
               <button
+                type="button"
                 key={optionIndex}
                 onClick={() => handleOptionSelect(optionIndex)}
                 disabled={isSubmitting}
@@ -214,6 +217,7 @@ function MobileQuizFooter({
       )}
 
       <button
+        type="button"
         onClick={handleComplete}
         disabled={isSubmitting}
         className={`w-full rounded-full py-4 font-semibold flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-80 disabled:active:scale-100 ${

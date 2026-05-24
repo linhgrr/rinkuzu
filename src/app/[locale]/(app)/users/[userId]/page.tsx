@@ -4,7 +4,8 @@ import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { Types } from 'mongoose';
 import Navigation from '@/components/Navigation';
-import { UserAvatar, UserIdentity, getUserDisplayName } from '@/components/user/UserAvatar';
+import { UserAvatar } from '@/components/user/UserAvatar';
+import { type UserIdentity, getUserDisplayName } from '@/components/user/user-identity';
 import {
   Badge,
   Card,

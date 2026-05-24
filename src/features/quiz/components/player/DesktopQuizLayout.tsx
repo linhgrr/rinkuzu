@@ -371,6 +371,7 @@ function DesktopQuestionOverview({
 
             return (
               <button
+                type="button"
                 key={question._id ?? `${question.question}-${question.options.join('|')}`}
                 onClick={() => onJumpToQuestion(index)}
                 className={`size-8 rounded text-xs font-medium transition-colors ${

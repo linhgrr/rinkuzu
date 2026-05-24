@@ -40,7 +40,11 @@ export function BookmarkPanel({
         >
           <div className="flex items-center justify-between">
             <span className="font-medium">{bookmarkMessage}</span>
-            <button onClick={onDismissMessage} className="text-neutral-500 hover:text-neutral-700">
+            <button
+              type="button"
+              onClick={onDismissMessage}
+              className="text-neutral-500 hover:text-neutral-700"
+            >
               {'✕'}
             </button>
           </div>

@@ -164,6 +164,7 @@ export default function MasteryMatrix({ sessionId, filterActiveOnly = false }: M
         </div>
         <div className="flex gap-2">
           <button
+            type="button"
             onClick={handleSortByMastery}
             className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
               sortBy === 'mastery'
@@ -174,6 +175,7 @@ export default function MasteryMatrix({ sessionId, filterActiveOnly = false }: M
             {t('masteryMatrix.sortByMastery')}
           </button>
           <button
+            type="button"
             onClick={handleSortByName}
             className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
               sortBy === 'name'

@@ -29,7 +29,7 @@ import { fetchApiData } from '@/lib/api/client';
 import { routePathSegment } from '@/lib/routing/routeParams';
 import { useRequiredRouteParam } from '@/lib/routing/useRequiredRouteParam';
 import { QuizPageSchema } from '@/components/seo/QuizPageSchema';
-import { getUserDisplayName } from '@/components/user/UserAvatar';
+import { getUserDisplayName } from '@/components/user/user-identity';
 
 type ShuffledQuizQuestion = IQuiz['questions'][number] & {
   optionIndexMap: number[];

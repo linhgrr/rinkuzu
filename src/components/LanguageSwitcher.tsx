@@ -53,6 +53,7 @@ const LanguageSwitcher = memo(function LanguageSwitcher({
       <div className={`flex items-center gap-2 ${className}`}>
         {locales.map((loc) => (
           <button
+            type="button"
             key={loc}
             onClick={() => handleLocaleChange(loc)}
             className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
@@ -69,6 +70,7 @@ const LanguageSwitcher = memo(function LanguageSwitcher({
   return (
     <div className={`relative ${className}`} ref={dropdownRef}>
       <button
+        type="button"
         onClick={toggleDropdown}
         className="flex items-center gap-2 px-3.5 py-2 rounded-lg text-base font-semibold text-neutral-700 hover:bg-neutral-100 transition-colors"
         aria-label={tCommon('changeLanguage')}
@@ -96,6 +98,7 @@ const LanguageSwitcher = memo(function LanguageSwitcher({
           <div className="absolute right-0 mt-2 w-40 bg-white rounded-xl shadow-[var(--shadow-md)] border border-neutral-100 overflow-hidden z-20 animate-scaleIn origin-top-right">
             {locales.map((loc) => (
               <button
+                type="button"
                 key={loc}
                 onClick={() => handleLocaleChange(loc)}
                 className={`w-full flex items-center gap-3 px-4 py-3 text-sm transition-colors ${

@@ -27,7 +27,7 @@ const baseQuestion = z.object({
   optionImages: z.array(z.string().optional()).optional(),
 });
 
-export const singleChoiceQuestionSchema = baseQuestion
+const singleChoiceQuestionSchema = baseQuestion
   .extend({
     type: z.literal('single'),
     correctIndex: z.number().int().nonnegative(),
@@ -38,7 +38,7 @@ export const singleChoiceQuestionSchema = baseQuestion
     path: ['correctIndex'],
   });
 
-export const multipleChoiceQuestionSchema = baseQuestion
+const multipleChoiceQuestionSchema = baseQuestion
   .extend({
     type: z.literal('multiple'),
     correctIndex: z.number().int().nonnegative().optional(),
@@ -55,12 +55,12 @@ export const multipleChoiceQuestionSchema = baseQuestion
     path: ['correctIndexes'],
   });
 
-export const questionSchema = z.discriminatedUnion('type', [
+const questionSchema = z.discriminatedUnion('type', [
   singleChoiceQuestionSchema,
   multipleChoiceQuestionSchema,
 ]);
 
-export const questionListSchema = z
+const questionListSchema = z
   .array(questionSchema)
   .min(1, 'At least one question is required');
 

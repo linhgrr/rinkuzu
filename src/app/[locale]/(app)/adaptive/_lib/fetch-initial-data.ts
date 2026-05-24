@@ -1,7 +1,4 @@
-import type {
-  PipelineJobHistoryItem,
-  SessionHistoryItem,
-} from '@/features/adaptive/types';
+import type { PipelineJobHistoryItem, SessionHistoryItem } from '@/features/adaptive/types';
 import { fetchApiData } from '@/lib/api/client';
 import { logger } from '@/lib/logger';
 import {

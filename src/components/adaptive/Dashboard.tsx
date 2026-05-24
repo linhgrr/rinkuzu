@@ -13,10 +13,7 @@ import {
 } from './DashboardSections';
 import { useAdaptiveDashboard } from '@/features/adaptive/hooks/use-adaptive-dashboard';
 import { toDashboardSubject } from '@/features/adaptive/lib/dashboard-view-model';
-import type {
-  PipelineJobHistoryItem,
-  SessionHistoryItem,
-} from '@/features/adaptive/types';
+import type { PipelineJobHistoryItem, SessionHistoryItem } from '@/features/adaptive/types';
 
 const inter = Inter({ subsets: ['latin'] });
 

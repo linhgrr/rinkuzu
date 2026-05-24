@@ -7,11 +7,7 @@ import { ADAPTIVE_ROUTES } from '@/features/adaptive/lib/routes';
 import { getJobIdForSession, getSessionExerciseOutcome } from '../lib/session-storage';
 import { buildExercisePromptText } from '@/features/adaptive/lib/exercise-prompt';
 import { BLOOM_LABELS } from '@/features/adaptive/types';
-import type {
-  Exercise,
-  SessionHistoryDetail,
-  SubmitResult,
-} from '@/features/adaptive/types';
+import type { Exercise, SessionHistoryDetail, SubmitResult } from '@/features/adaptive/types';
 
 type TranslateFn = (key: string, values?: Record<string, string | number | Date>) => string;
 

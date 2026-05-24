@@ -80,12 +80,9 @@ export async function getConceptDetail(
   sessionId: string,
   conceptId: string,
 ): Promise<ConceptDetail> {
-  return apiFetch<ConceptDetail>(
-    `/api/adaptive/session/${sessionId}/concept/${conceptId}`,
-    {
-      cacheTtlMs: 10_000,
-    },
-  );
+  return apiFetch<ConceptDetail>(`/api/adaptive/session/${sessionId}/concept/${conceptId}`, {
+    cacheTtlMs: 10_000,
+  });
 }
 
 export async function checkApiHealth(): Promise<boolean> {
@@ -192,11 +189,9 @@ export async function getSubjectHistoryDetail(jobId: string): Promise<SubjectHis
 }
 
 export async function getSubjectHistoryDetailFresh(jobId: string): Promise<SubjectHistoryDetail> {
-  return executeRequest<SubjectHistoryDetail>(
-    `/api/adaptive/history/subjects/${jobId}`,
-    'GET',
-    { cache: 'no-store' },
-  );
+  return executeRequest<SubjectHistoryDetail>(`/api/adaptive/history/subjects/${jobId}`, 'GET', {
+    cache: 'no-store',
+  });
 }
 
 export async function prefetchStartLearningData(sessionId: string): Promise<void> {

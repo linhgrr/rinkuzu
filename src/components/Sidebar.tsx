@@ -59,7 +59,9 @@ function loadCollapseState(): string[] {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) return DEFAULT_OPEN_GROUPS;
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed.filter((id) => typeof id === 'string') : DEFAULT_OPEN_GROUPS;
+    return Array.isArray(parsed)
+      ? parsed.filter((id) => typeof id === 'string')
+      : DEFAULT_OPEN_GROUPS;
   } catch {
     return DEFAULT_OPEN_GROUPS;
   }
@@ -218,8 +220,8 @@ export default function Sidebar({ isOpen, onToggle, currentPath }: SidebarProps)
   const groupContainingActive = useMemo(() => {
     if (!currentPath) return null;
     return (
-      visibleGroups.find((group) => group.items.some((item) => isItemActive(item, currentPath)))?.id ??
-      null
+      visibleGroups.find((group) => group.items.some((item) => isItemActive(item, currentPath)))
+        ?.id ?? null
     );
   }, [visibleGroups, currentPath]);
 
@@ -285,9 +287,7 @@ export default function Sidebar({ isOpen, onToggle, currentPath }: SidebarProps)
                   >
                     <span>{t(group.labelKey)}</span>
                     <HiChevronRight
-                      className={`size-3.5 transition-transform ${
-                        isOpenGroup ? 'rotate-90' : ''
-                      }`}
+                      className={`size-3.5 transition-transform ${isOpenGroup ? 'rotate-90' : ''}`}
                     />
                   </Button>
                 ) : (

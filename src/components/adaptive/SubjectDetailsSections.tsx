@@ -15,11 +15,7 @@ import {
   HiOutlineLightningBolt,
   HiOutlineTrendingUp,
 } from '@/components/icons';
-import type {
-  SessionHistoryDetail,
-  SessionStatus,
-  TranslateFn,
-} from '@/features/adaptive/types';
+import type { SessionHistoryDetail, SessionStatus, TranslateFn } from '@/features/adaptive/types';
 
 function SectionSkeleton() {
   return (

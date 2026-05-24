@@ -142,6 +142,7 @@ export function StreamingChatModal({
         <div>
           {isTextarea ? (
             <textarea
+              aria-label={inputPlaceholder}
               value={userQuestion}
               onChange={(event) => onUserQuestionChange(event.target.value)}
               onKeyDown={onKeyDown}
@@ -152,6 +153,7 @@ export function StreamingChatModal({
             />
           ) : (
             <input
+              aria-label={inputPlaceholder}
               className="w-full border border-neutral-300 rounded px-3 py-2 focus:ring-2 focus:ring-brand-trust focus:border-transparent"
               value={userQuestion}
               onChange={(event) => onUserQuestionChange(event.target.value)}

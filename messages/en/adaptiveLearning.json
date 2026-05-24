@@ -215,6 +215,7 @@
       "bloomLevel": "Bloom Level",
       "result": "Result",
       "time": "Time",
+      "actions": "Actions",
       "noExercise": "No exercises yet.",
       "exerciseDetails": "Exercise Details",
       "viewDetails": "View Details",

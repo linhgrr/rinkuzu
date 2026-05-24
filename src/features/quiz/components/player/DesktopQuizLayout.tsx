@@ -271,6 +271,7 @@ function DesktopQuestionCard({
               >
                 <input
                   type={currentQuestion.type === 'single' ? 'radio' : 'checkbox'}
+                  aria-label={`Option ${String.fromCharCode(65 + index)}`}
                   name={`question-${currentQuestionIndex}`}
                   value={index}
                   checked={isSelected}

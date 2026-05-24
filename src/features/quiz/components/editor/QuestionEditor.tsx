@@ -117,6 +117,7 @@ export function QuestionEditor({
                   <label className="flex items-center">
                     <input
                       type="radio"
+                      aria-label="Single choice"
                       checked={q.type === 'single'}
                       onChange={() => onToggleType(index, 'single')}
                     />{' '}
@@ -125,6 +126,7 @@ export function QuestionEditor({
                   <label className="flex items-center">
                     <input
                       type="radio"
+                      aria-label="Multiple choice"
                       checked={q.type === 'multiple'}
                       onChange={() => onToggleType(index, 'multiple')}
                     />{' '}
@@ -141,6 +143,7 @@ export function QuestionEditor({
                     {q.type === 'single' ? (
                       <input
                         type="radio"
+                        aria-label={`Mark option ${optIdx + 1} as correct`}
                         name={`correct-${index}`}
                         checked={q.correctIndex === optIdx}
                         onChange={() => onSetSingleCorrect(index, optIdx)}
@@ -148,6 +151,7 @@ export function QuestionEditor({
                     ) : (
                       <input
                         type="checkbox"
+                        aria-label={`Mark option ${optIdx + 1} as correct`}
                         checked={q.correctIndexes?.includes(optIdx)}
                         onChange={(e) => onToggleMultipleCorrect(index, optIdx, e.target.checked)}
                       />

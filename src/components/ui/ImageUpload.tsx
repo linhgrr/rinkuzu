@@ -213,6 +213,7 @@ function ImageUpload({
       <input
         ref={fileInputRef}
         type="file"
+        aria-label="Upload image"
         accept="image/*"
         onChange={handleFileSelect}
         className="hidden"

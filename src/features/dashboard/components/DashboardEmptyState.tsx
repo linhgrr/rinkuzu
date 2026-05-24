@@ -18,7 +18,7 @@ export async function DashboardEmptyState({ locale, userName }: DashboardEmptySt
   return (
     <section className="rounded-3xl border border-neutral-200 bg-white p-8 sm:p-12">
       <p className="text-sm font-medium text-brand-trust">{t('welcome', { name: userName })}</p>
-      <h1 className="mt-2 text-3xl font-bold text-neutral-900 sm:text-4xl">
+      <h1 className="mt-2 text-3xl font-semibold text-neutral-900 sm:text-4xl">
         {t('emptyStateTitle')}
       </h1>
       <p className="mt-3 max-w-2xl text-base text-neutral-600">{t('emptyStateDescription')}</p>

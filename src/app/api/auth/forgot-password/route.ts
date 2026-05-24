@@ -62,14 +62,16 @@ export async function POST(request: NextRequest) {
       user.passwordResetExpires = new Date(Date.now() + RESET_TOKEN_TTL_MS);
       await user.save();
 
-      await sendTransactionalMail(await buildPasswordResetMessage(user.email, raw));
-      await recordAuthEvent({
-        event: 'password_reset_requested',
-        userId: user._id,
-        email: user.email,
-        ip,
-        userAgent,
-      });
+      await Promise.all([
+        sendTransactionalMail(await buildPasswordResetMessage(user.email, raw)),
+        recordAuthEvent({
+          event: 'password_reset_requested',
+          userId: user._id,
+          email: user.email,
+          ip,
+          userAgent,
+        }),
+      ]);
     } else {
       await recordAuthEvent({
         event: 'password_reset_requested',

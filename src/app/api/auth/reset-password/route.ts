@@ -62,14 +62,16 @@ export async function POST(request: NextRequest) {
     }
     await user.save();
 
-    await sendTransactionalMail(await buildPasswordChangedMessage(user.email));
-    await recordAuthEvent({
-      event: 'password_reset_completed',
-      userId: user._id,
-      email: user.email,
-      ip,
-      userAgent,
-    });
+    await Promise.all([
+      sendTransactionalMail(await buildPasswordChangedMessage(user.email)),
+      recordAuthEvent({
+        event: 'password_reset_completed',
+        userId: user._id,
+        email: user.email,
+        ip,
+        userAgent,
+      }),
+    ]);
 
     return apiOk(null, 200, {
       meta: { message: 'Password updated. Please sign in with your new password.' },

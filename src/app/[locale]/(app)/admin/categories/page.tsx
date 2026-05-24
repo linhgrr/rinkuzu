@@ -484,6 +484,7 @@ function CategoryFormModal({
             <input
               id="color"
               type="color"
+              aria-label={colorLabel}
               value={formData.color}
               onChange={(event) => onFormFieldChange('color', event.target.value)}
               className="h-8 w-12 rounded border border-neutral-300"
@@ -502,6 +503,7 @@ function CategoryFormModal({
           <input
             id="isActive"
             type="checkbox"
+            aria-label={activeLabel}
             checked={formData.isActive}
             onChange={(event) => onFormFieldChange('isActive', event.target.checked)}
             className="size-4 rounded border-neutral-300 text-brand-trust focus:ring-brand-trust"

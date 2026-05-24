@@ -60,9 +60,7 @@ const questionSchema = z.discriminatedUnion('type', [
   multipleChoiceQuestionSchema,
 ]);
 
-const questionListSchema = z
-  .array(questionSchema)
-  .min(1, 'At least one question is required');
+const questionListSchema = z.array(questionSchema).min(1, 'At least one question is required');
 
 export type QuestionInput = z.infer<typeof questionSchema>;
 export type SingleChoiceQuestion = z.infer<typeof singleChoiceQuestionSchema>;

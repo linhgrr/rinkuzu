@@ -607,6 +607,7 @@ function PlanCard({
                 <label className="flex items-center">
                   <input
                     type="checkbox"
+                    aria-label="Active"
                     checked={form.isActive}
                     onChange={(e) =>
                       setForm((prev) => ({

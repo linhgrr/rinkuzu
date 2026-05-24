@@ -279,7 +279,9 @@ export function ExerciseHistoryTable({ exercises }: ExerciseHistoryTableProps) {
               <th className="w-1/3 px-5 py-3 text-left">{t('history.table.question')}</th>
               <th className="px-5 py-3 text-center">{t('history.table.result')}</th>
               <th className="px-5 py-3 text-left">{t('history.table.time')}</th>
-              <th className="px-5 py-3 text-center" />
+              <th className="px-5 py-3 text-center">
+                <span className="sr-only">{t('history.table.actions')}</span>
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-neutral-100">

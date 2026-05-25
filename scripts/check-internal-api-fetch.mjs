@@ -11,7 +11,7 @@ const allowedDirectInternalFetches = new Map([
     'Chunk processing needs custom retry and 409 backoff handling before decoding the response.',
   ],
   [
-    'src/lib/adaptive-learning/chat.ts',
+    'src/lib/adaptive/chat.ts',
     'Adaptive tutor chat streams SSE data and must hand the raw Response to the stream parser.',
   ],
   [
@@ -19,7 +19,7 @@ const allowedDirectInternalFetches = new Map([
     'Quiz AI transport mixes normal JSON and SSE streaming, so the shared request boundary keeps raw Response handling in one place.',
   ],
   [
-    'src/features/adaptive-learning/lib/adaptive-api-methods.ts',
+    'src/features/adaptive/lib/adaptive-api-methods.ts',
     'Adaptive transport owns its own low-level health/upload flow and is the approved boundary.',
   ],
 ]);

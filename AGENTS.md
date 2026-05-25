@@ -42,3 +42,7 @@ This project is indexed by GitNexus as **rinkuzu** (6637 symbols, 12010 relation
 | Index, status, clean, wiki CLI commands      | `.claude/skills/gitnexus/gitnexus-cli/SKILL.md`             |
 
 <!-- gitnexus:end -->
+
+# Git policy
+
+- NEVER pass `--no-verify` to `git commit`, `git push`, or any other git command. Pre-commit / pre-push hooks are mandatory. If a hook fails, fix the underlying issue — do not bypass.

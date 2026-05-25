@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import {
   HiOutlineSearch,
@@ -85,11 +85,7 @@ function isItemActive(item: NavItem, currentPath?: string): boolean {
 export default function Sidebar({ isOpen, onToggle, currentPath }: SidebarProps) {
   const { data: session } = useSession();
   const t = useTranslations('nav');
-  const [openGroups, setOpenGroups] = useState<string[]>(DEFAULT_OPEN_GROUPS);
-
-  useEffect(() => {
-    setOpenGroups(loadCollapseState());
-  }, []);
+  const [openGroups, setOpenGroups] = useState<string[]>(() => loadCollapseState());
 
   const userRole = (session?.user as { role?: string } | undefined)?.role;
 

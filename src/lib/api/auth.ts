@@ -117,8 +117,10 @@ export function withOptionalAuth<TParams extends RouteParams = RouteParams>(
     request: NextRequest,
     routeContext: { params: Promise<TParams> },
   ): Promise<Response> => {
-    const session = await getServerSession(await getAuthOptions());
-    const params = await routeContext.params;
+    const [session, params] = await Promise.all([
+      getServerSession(await getAuthOptions()),
+      routeContext.params,
+    ]);
 
     return handler(request, {
       userId: session?.user?.id ?? null,

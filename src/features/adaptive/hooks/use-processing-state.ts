@@ -509,7 +509,6 @@ export const useProcessingState = (t: TranslateFn) => {
     const mediaQuery = window.matchMedia('(min-width: 1024px)');
     const applyMatch = () => setShowGraphPanel(mediaQuery.matches);
 
-    applyMatch();
     mediaQuery.addEventListener('change', applyMatch);
 
     return () => {

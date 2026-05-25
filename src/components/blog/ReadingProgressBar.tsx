@@ -2,22 +2,22 @@
 
 import React, { useEffect, useState } from 'react';
 
+const computeCompletion = () => {
+  if (typeof window === 'undefined') return 0;
+  const currentProgress = window.scrollY;
+  const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
+  const next = scrollHeight > 0 ? (currentProgress / scrollHeight) * 100 : 0;
+  return Math.min(100, Math.max(0, next));
+};
+
 export const ReadingProgressBar = () => {
-  const [completion, setCompletion] = useState(0);
+  const [completion, setCompletion] = useState<number>(() => computeCompletion());
 
   useEffect(() => {
-    const updateScrollCompletion = () => {
-      const currentProgress = window.scrollY;
-      const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
-      const nextCompletion = scrollHeight > 0 ? (currentProgress / scrollHeight) * 100 : 0;
-      setCompletion(Math.min(100, Math.max(0, nextCompletion)));
-    };
-
-    updateScrollCompletion();
-    window.addEventListener('scroll', updateScrollCompletion, { passive: true });
-
+    const update = () => setCompletion(computeCompletion());
+    window.addEventListener('scroll', update, { passive: true });
     return () => {
-      window.removeEventListener('scroll', updateScrollCompletion);
+      window.removeEventListener('scroll', update);
     };
   }, []);
 

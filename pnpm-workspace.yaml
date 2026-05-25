@@ -3,6 +3,7 @@ engineStrict: true
 pmOnFail: error
 strictPeerDependencies: false
 verifyDepsBeforeRun: error
+minimumReleaseAge: 10080
 allowBuilds:
   '@parcel/watcher': true
   '@swc/core': true

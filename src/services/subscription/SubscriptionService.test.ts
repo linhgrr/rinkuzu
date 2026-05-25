@@ -856,4 +856,140 @@ describe('SubscriptionService billing hardening', () => {
       status: 'expired',
     });
   });
+
+  it('returns the stored snapshot when the PayOS transaction was already activated', async () => {
+    vi.mocked(Plan.findById).mockResolvedValue({
+      durationInfo: { iso8601: 'P1M' },
+    } as any);
+
+    const Subscription = (await import('@/models/Subscription')).default;
+    const existingSnapshot = {
+      type: 'premium',
+      status: 'completed',
+      startDate: new Date('2099-01-01T00:00:00Z'),
+      endDate: new Date('2099-02-01T00:00:00Z'),
+      isActive: true,
+      createdAt: new Date('2099-01-01T00:00:00Z'),
+    };
+    vi.mocked(Subscription.findOne).mockReturnValueOnce({
+      lean: vi.fn().mockResolvedValue(existingSnapshot),
+    } as any);
+
+    const { service } = createService({
+      subscriptionRepository: {
+        findByOrderId: vi.fn().mockResolvedValue({
+          user: { toString: () => 'user-1' },
+          type: 'premium',
+          amount: 99000,
+          status: 'pending',
+        }),
+      },
+    });
+
+    const result = await service.activateVerifiedSubscription(123, {
+      orderCode: '123',
+      amount: 99000,
+      reference: 'duplicate-ref',
+      status: 'PAID',
+      code: '00',
+    });
+
+    expect(result).toEqual({
+      success: true,
+      subscription: {
+        type: 'premium',
+        startDate: existingSnapshot.startDate,
+        endDate: existingSnapshot.endDate,
+        isActive: true,
+      },
+    });
+    expect(Subscription.updateOne).not.toHaveBeenCalled();
+  });
+
+  it('recovers from concurrent activation duplicate-key errors', async () => {
+    vi.mocked(Plan.findById).mockResolvedValue({
+      durationInfo: { iso8601: 'P1M' },
+    } as any);
+
+    const Subscription = (await import('@/models/Subscription')).default;
+    const settledSnapshot = {
+      type: 'premium',
+      status: 'completed',
+      startDate: new Date('2099-03-01T00:00:00Z'),
+      endDate: new Date('2099-04-01T00:00:00Z'),
+      isActive: true,
+      createdAt: new Date('2099-03-01T00:00:00Z'),
+    };
+
+    vi.mocked(Subscription.findOne)
+      .mockReturnValueOnce({ lean: vi.fn().mockResolvedValue(null) } as any)
+      .mockReturnValueOnce({ lean: vi.fn().mockResolvedValue(settledSnapshot) } as any);
+
+    const mongooseModule = await import('mongoose');
+    const dupError = Object.assign(new Error('E11000 duplicate key'), { code: 11000 });
+    vi.mocked(mongooseModule.startSession).mockResolvedValueOnce({
+      withTransaction: vi.fn().mockRejectedValue(dupError),
+      endSession: vi.fn().mockResolvedValue(undefined),
+    } as any);
+
+    const { service } = createService({
+      subscriptionRepository: {
+        findByOrderId: vi.fn().mockResolvedValue({
+          user: { toString: () => 'user-1' },
+          type: 'premium',
+          amount: 99000,
+          status: 'pending',
+        }),
+      },
+    });
+
+    const result = await service.activateVerifiedSubscription(456, {
+      orderCode: '456',
+      amount: 99000,
+      reference: 'concurrent-ref',
+      status: 'PAID',
+      code: '00',
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.subscription.endDate).toEqual(settledSnapshot.endDate);
+  });
+
+  it('rethrows non-duplicate transaction failures during activation', async () => {
+    vi.mocked(Plan.findById).mockResolvedValue({
+      durationInfo: { iso8601: 'P1M' },
+    } as any);
+
+    const Subscription = (await import('@/models/Subscription')).default;
+    vi.mocked(Subscription.findOne).mockReturnValueOnce({
+      lean: vi.fn().mockResolvedValue(null),
+    } as any);
+
+    const mongooseModule = await import('mongoose');
+    vi.mocked(mongooseModule.startSession).mockResolvedValueOnce({
+      withTransaction: vi.fn().mockRejectedValue(new Error('mongo unreachable')),
+      endSession: vi.fn().mockResolvedValue(undefined),
+    } as any);
+
+    const { service } = createService({
+      subscriptionRepository: {
+        findByOrderId: vi.fn().mockResolvedValue({
+          user: { toString: () => 'user-1' },
+          type: 'premium',
+          amount: 99000,
+          status: 'pending',
+        }),
+      },
+    });
+
+    await expect(
+      service.activateVerifiedSubscription(789, {
+        orderCode: '789',
+        amount: 99000,
+        reference: 'failure-ref',
+        status: 'PAID',
+        code: '00',
+      }),
+    ).rejects.toThrow('mongo unreachable');
+  });
 });

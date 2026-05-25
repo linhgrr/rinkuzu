@@ -17,6 +17,7 @@ import {
 } from '@xyflow/react';
 
 import dagre from 'dagre';
+import { Lock } from 'lucide-react';
 import { Spinner } from '@/components/ui/Spinner';
 import { getConceptDetail } from '@/features/adaptive/lib/api-client';
 import { useKnowledgeGraph } from '@/hooks/useAdaptive';
@@ -34,6 +35,41 @@ function getNodeColor(status: KnowledgeNode['status']) {
   return 'var(--border-default)';
 }
 
+function getNodeBorderColor(status: KnowledgeNode['status']) {
+  if (status === 'locked') return undefined;
+  if (status === 'available') return 'var(--border-default)';
+  return getNodeColor(status);
+}
+
+type EdgeVariant = 'locked' | 'mastered' | 'default';
+
+const EDGE_STYLES: Record<
+  EdgeVariant,
+  { stroke: string; strokeWidth: number; dashed: boolean; opacity: number; animated: boolean }
+> = {
+  locked: {
+    stroke: 'var(--border-default)',
+    strokeWidth: 1.5,
+    dashed: true,
+    opacity: 0.5,
+    animated: false,
+  },
+  mastered: {
+    stroke: 'var(--brand-trust)',
+    strokeWidth: 2.5,
+    dashed: false,
+    opacity: 1,
+    animated: true,
+  },
+  default: {
+    stroke: 'var(--text-secondary, #525252)',
+    strokeWidth: 1.5,
+    dashed: false,
+    opacity: 1,
+    animated: true,
+  },
+};
+
 function getMasteryOpacity(mastery: number) {
   return 0.4 + mastery * 0.6;
 }
@@ -48,38 +84,39 @@ const ConceptNode = memo(function ConceptNode({ data }: NodeProps<Node<ConceptNo
   const color = getNodeColor(data.status);
   const opacity = getMasteryOpacity(data.mastery);
   const isLocked = data.status === 'locked';
+  const isFilled = data.status === 'mastered' || data.status === 'in_progress';
+  const showDot = data.status === 'in_progress';
 
   return (
     <div
-      className={`min-w-[140px] rounded-xl border bg-white px-3 py-2.5 transition-colors duration-200 ${isLocked ? 'border-neutral-200 opacity-60' : 'hover:border-neutral-400'}`}
+      className={`relative min-w-[140px] rounded-xl border bg-white px-3 py-2.5 transition-colors duration-200 ${isLocked ? 'border-neutral-200 opacity-60' : 'hover:border-neutral-400'}`}
       style={{
-        borderColor: isLocked
-          ? undefined
-          : data.status === 'available'
-            ? 'var(--border-default)'
-            : color,
-        backgroundColor:
-          data.status === 'mastered' || data.status === 'in_progress' ? color : undefined,
-        color: data.status === 'mastered' || data.status === 'in_progress' ? 'white' : undefined,
+        borderColor: getNodeBorderColor(data.status),
+        backgroundColor: isFilled ? color : undefined,
+        color: isFilled ? 'white' : undefined,
       }}
     >
       <Handle type="target" position={Position.Top} className="!h-1.5 !w-1.5 !bg-neutral-400" />
 
       <div className="flex flex-col items-center justify-center gap-1.5">
         <div
-          className={`text-center text-xs font-medium tracking-tight ${data.status === 'mastered' || data.status === 'in_progress' ? 'text-white' : 'text-neutral-900'}`}
+          className={`text-center text-xs font-medium tracking-tight ${isFilled ? 'text-white' : 'text-neutral-900'}`}
         >
           {data.label.length > 25 ? `${data.label.substring(0, 23)}...` : data.label}
         </div>
 
-        <div className="flex items-center gap-1.5">
-          <div className="size-1.5 rounded-full" style={{ backgroundColor: color, opacity }} />
-          <span
-            className={`text-[10px] font-mono ${data.status === 'mastered' || data.status === 'in_progress' ? 'text-white/80' : 'text-neutral-500'}`}
-          >
-            {Math.round(data.mastery * 100)}%
-          </span>
-        </div>
+        {isLocked ? (
+          <Lock aria-hidden className="size-3 text-neutral-400" strokeWidth={2.25} />
+        ) : (
+          <div className="flex items-center gap-1.5">
+            {showDot && <div className="size-1.5 rounded-full bg-white" style={{ opacity }} />}
+            <span
+              className={`text-[10px] font-mono ${isFilled ? 'text-white/80' : 'text-neutral-500'}`}
+            >
+              {Math.round(data.mastery * 100)}%
+            </span>
+          </div>
+        )}
       </div>
 
       {data.status === 'in_progress' && (
@@ -151,17 +188,32 @@ function GraphFlow({
 
   const initialEdges: Edge[] = useMemo(() => {
     if (!graphData) return [];
-    return graphData.edges.map((e, index) => ({
-      id: `${e.source}-${e.target}-${index}`,
-      source: e.source,
-      target: e.target,
-      type: 'default',
-      animated: true,
-      style: { stroke: 'var(--border-default)', strokeWidth: 2 },
-      markerEnd: { type: MarkerType.ArrowClosed, color: 'var(--border-default)' },
-      interactionWidth: 10,
-    }));
-  }, [graphData]);
+    const statusById = new Map(initialNodes.map((n) => [n.id, n.data.status] as const));
+    return graphData.edges.map((e, index) => {
+      const variant: EdgeVariant =
+        statusById.get(e.target) === 'locked'
+          ? 'locked'
+          : statusById.get(e.source) === 'mastered'
+            ? 'mastered'
+            : 'default';
+      const s = EDGE_STYLES[variant];
+      return {
+        id: `${e.source}-${e.target}-${index}`,
+        source: e.source,
+        target: e.target,
+        type: 'default',
+        animated: s.animated,
+        style: {
+          stroke: s.stroke,
+          strokeWidth: s.strokeWidth,
+          strokeDasharray: s.dashed ? '4 4' : undefined,
+          opacity: s.opacity,
+        },
+        markerEnd: { type: MarkerType.ArrowClosed, color: s.stroke },
+        interactionWidth: 10,
+      };
+    });
+  }, [graphData, initialNodes]);
 
   const { nodes, edges } = useMemo(() => {
     if (initialNodes.length === 0) return { nodes: [], edges: [] };
@@ -205,7 +257,11 @@ function GraphFlow({
 
 export default function KnowledgeGraph({ sessionId }: KnowledgeGraphProps) {
   const t = useTranslations('adaptiveLearning');
-  const { data: graphData, isLoading: loading } = useKnowledgeGraph(sessionId);
+  const {
+    data: graphData,
+    isLoading: loading,
+    error: graphFetchError,
+  } = useKnowledgeGraph(sessionId);
   const [selectedConcept, setSelectedConcept] = useState<ConceptDetail | null>(null);
   const [graphError, setGraphError] = useState<string | null>(null);
   const conceptDetailCacheRef = useRef<Map<string, ConceptDetail>>(new Map());
@@ -264,6 +320,16 @@ export default function KnowledgeGraph({ sessionId }: KnowledgeGraphProps) {
     return (
       <div className="flex h-[400px] w-full items-center justify-center rounded-xl border border-neutral-200 bg-white">
         <Spinner />
+      </div>
+    );
+  }
+
+  if (graphFetchError) {
+    return (
+      <div className="flex h-[400px] w-full items-center justify-center rounded-xl border border-red-100 bg-red-50">
+        <p role="alert" className="text-sm text-red-700">
+          {t('processing.errors.generic')}
+        </p>
       </div>
     );
   }

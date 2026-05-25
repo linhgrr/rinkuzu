@@ -277,6 +277,12 @@ const nextConfig = {
         port: '',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 's3.nyeki.dev',
+        port: '',
+        pathname: '/**',
+      },
     ],
     // Keep optimization enabled by default for better LCP/SEO.
     // Set NEXT_IMAGE_UNOPTIMIZED=true only when debugging image delivery issues.

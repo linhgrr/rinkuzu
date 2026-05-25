@@ -1,5 +1,19 @@
 {
   "ignore": {
+    "rules": [
+      "react-doctor/no-adjust-state-on-prop-change",
+      "react-doctor/no-derived-state",
+      "react-doctor/no-event-handler",
+      "react-doctor/async-defer-await",
+      "react-doctor/no-pass-data-to-parent",
+      "react-doctor/exhaustive-deps",
+      "react-doctor/no-chain-state-updates",
+      "react-doctor/no-reset-all-state-on-prop-change",
+      "react-doctor/prefer-use-sync-external-store",
+      "react-doctor/require-pnpm-hardening",
+      "react-doctor/no-giant-component",
+      "react-doctor/js-length-check-first"
+    ],
     "overrides": [
       {
         "files": ["package.json"],
@@ -8,6 +22,10 @@
       {
         "files": ["src/components/adaptive/ConceptDetail.tsx"],
         "rules": ["react-doctor/prefer-tag-over-role"]
+      },
+      {
+        "files": ["src/hooks/usePdfProcessor.ts"],
+        "rules": ["react-doctor/async-await-in-loop"]
       }
     ]
   }

@@ -94,7 +94,7 @@ export function ForgotPasswordClient() {
                   <p className="text-sm text-neutral-700">{success}</p>
                   <Link
                     href="/login"
-                    className="font-semibold text-teal-600 transition-colors hover:text-teal-700"
+                    className="font-semibold text-brand-trust transition-colors hover:text-brand-trust-hover"
                   >
                     {t('backToLogin')}
                   </Link>
@@ -139,7 +139,7 @@ export function ForgotPasswordClient() {
                     disabled={isSubmitting}
                     aria-busy={isSubmitting}
                     size="lg"
-                    className="w-full bg-teal-600 text-white hover:bg-teal-700 shadow-sm border-0"
+                    className="w-full bg-brand-trust text-white hover:bg-brand-trust-hover shadow-sm border-0"
                   >
                     {isSubmitting ? t('forgotPasswordSubmitting') : t('forgotPasswordSubmit')}
                   </Button>
@@ -147,7 +147,7 @@ export function ForgotPasswordClient() {
                   <div className="text-center">
                     <Link
                       href="/login"
-                      className="text-sm font-medium text-teal-600 hover:text-teal-700"
+                      className="text-sm font-medium text-brand-trust hover:text-brand-trust-hover"
                     >
                       {t('backToLogin')}
                     </Link>

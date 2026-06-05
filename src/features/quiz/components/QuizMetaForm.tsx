@@ -133,7 +133,6 @@ export default function QuizMetaForm({
               <input
                 type="checkbox"
                 id={privateCheckboxId}
-                aria-label="Private quiz"
                 checked={isPrivate}
                 onChange={(e) => onPrivateChange(e.target.checked)}
                 disabled={disabled}

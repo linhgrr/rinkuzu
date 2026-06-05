@@ -43,5 +43,8 @@
   "signIn": "Đăng nhập",
   "getStarted": "Bắt đầu",
   "logout": "Đăng xuất",
-  "changeLanguage": "Đổi ngôn ngữ"
+  "changeLanguage": "Đổi ngôn ngữ",
+  "clearSelection": "Xóa lựa chọn",
+  "searchCategoriesPlaceholder": "Tìm danh mục...",
+  "pagination": "Phân trang"
 }

@@ -45,5 +45,8 @@
   "tabUpload": "Tải lên",
   "tabProgress": "Tiến độ",
   "tabHub": "Chuyển",
-  "tabExplore": "Khám phá"
+  "tabExplore": "Khám phá",
+  "createQuizAria": "Tạo quiz",
+  "uploadSubjectAria": "Tải lên môn học",
+  "toggleUserMenu": "Mở menu người dùng"
 }

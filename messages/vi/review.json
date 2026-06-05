@@ -18,5 +18,6 @@
   "questionProgress": "{current} / {total}",
   "xpEarned": "Đã kiếm {xp} XP",
   "question": "Câu hỏi",
-  "tapToSeeAnswer": "Chạm để xem đáp án"
+  "tapToSeeAnswer": "Chạm để xem đáp án",
+  "rateAs": "Đánh giá {label} - Nhấn {number}"
 }

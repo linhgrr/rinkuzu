@@ -45,5 +45,8 @@
   "tabUpload": "Upload",
   "tabProgress": "Progress",
   "tabHub": "Switch",
-  "tabExplore": "Explore"
+  "tabExplore": "Explore",
+  "createQuizAria": "Create quiz",
+  "uploadSubjectAria": "Upload subject",
+  "toggleUserMenu": "Toggle user menu"
 }

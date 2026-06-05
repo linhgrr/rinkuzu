@@ -154,6 +154,7 @@ function CreatePlanModal({
   }) => Promise<boolean>;
   createLabel: string;
 }) {
+  const t = useTranslations('admin');
   const [form, setForm] = useState<PlanFormState>(createPlanFormState);
   const [uiState, setUiState] = useState({
     createLoading: false,
@@ -247,7 +248,7 @@ function CreatePlanModal({
                 type="text"
                 value={form.name}
                 onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
-                placeholder="e.g., Premium Monthly"
+                placeholder={t('planNamePlaceholder')}
                 className="w-full"
               />
             </div>
@@ -330,7 +331,7 @@ function CreatePlanModal({
                   type="text"
                   value={feature.value}
                   onChange={(e) => handleFeatureChange(feature.id, e.target.value)}
-                  placeholder="Enter feature"
+                  placeholder={t('enterFeature')}
                   className="flex-1"
                 />
                 <Button
@@ -413,6 +414,7 @@ function PlanCard({
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const [form, setForm] = useState<PlanFormState>(() => createEditFormState(plan));
+  const tPlanCard = useTranslations('admin');
   const [uiState, setUiState] = useState({
     featureToRemoveId: null as string | null,
     showDeleteConfirm: false,
@@ -560,7 +562,7 @@ function PlanCard({
                     <Input
                       value={feature.value}
                       onChange={(e) => handleFeatureChange(feature.id, e.target.value)}
-                      placeholder="Feature description"
+                      placeholder={tPlanCard('featureDescription')}
                       className="flex-1"
                     />
                     <Button
@@ -607,7 +609,6 @@ function PlanCard({
                 <label className="flex items-center">
                   <input
                     type="checkbox"
-                    aria-label="Active"
                     checked={form.isActive}
                     onChange={(e) =>
                       setForm((prev) => ({

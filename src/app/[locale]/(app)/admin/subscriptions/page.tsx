@@ -186,6 +186,7 @@ function SubscriptionSearchBar({
   statusFilter,
   searchLabel,
   clearLabel,
+  searchPlaceholder,
   onSearchTermChange,
   onSubmit,
   onClear,
@@ -194,6 +195,7 @@ function SubscriptionSearchBar({
   statusFilter: string;
   searchLabel: string;
   clearLabel: string;
+  searchPlaceholder: string;
   onSearchTermChange: (value: string) => void;
   onSubmit: (event: React.FormEvent) => void;
   onClear: () => void;
@@ -203,7 +205,7 @@ function SubscriptionSearchBar({
       <div className="max-w-md flex-1">
         <Input
           type="text"
-          placeholder="Search by user email..."
+          placeholder={searchPlaceholder}
           value={searchTerm}
           onChange={(event) => onSearchTermChange(event.target.value)}
           className="w-full"
@@ -605,6 +607,7 @@ export default function AdminSubscriptionsPage() {
           statusFilter={state.statusFilter}
           searchLabel={tCommon('search')}
           clearLabel={tCommon('clear')}
+          searchPlaceholder={t('searchByEmailPlaceholder')}
           onSearchTermChange={setSearchTerm}
           onSubmit={handleSearch}
           onClear={handleClearFilters}

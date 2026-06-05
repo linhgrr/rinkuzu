@@ -111,5 +111,8 @@
   "yourChoice": "Bạn đã chọn",
   "removeBookmarkTitle": "Xóa câu hỏi đã lưu?",
   "removeBookmarkConfirm": "Xóa câu hỏi này khỏi danh sách đã lưu?",
-  "removeBookmark": "Xóa câu hỏi đã lưu"
+  "removeBookmark": "Xóa câu hỏi đã lưu",
+  "previousQuestion": "Câu hỏi trước",
+  "nextQuestion": "Câu hỏi tiếp theo",
+  "questionImageAlt": "Hình ảnh cho câu hỏi {number}"
 }

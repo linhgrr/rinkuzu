@@ -15,6 +15,9 @@ interface ModalProps {
   size?: 'small' | 'medium' | 'large' | 'wide' | 'full';
 }
 
+const FOCUSABLE_SELECTOR =
+  'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
 export function Modal({
   isOpen,
   onClose,
@@ -25,6 +28,59 @@ export function Modal({
   size = 'medium',
 }: ModalProps) {
   const tCommon = useTranslations('common');
+  const titleId = React.useId();
+  const descriptionId = React.useId();
+  const panelRef = React.useRef<HTMLDivElement>(null);
+
+  // Escape to close + trap Tab focus within the dialog while open.
+  React.useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.stopPropagation();
+        onClose();
+        return;
+      }
+      if (event.key !== 'Tab') return;
+
+      const panel = panelRef.current;
+      if (!panel) return;
+      const focusable = Array.from(panel.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)).filter(
+        (el) => el.offsetParent !== null,
+      );
+      if (focusable.length === 0) {
+        event.preventDefault();
+        panel.focus();
+        return;
+      }
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown, true);
+    return () => document.removeEventListener('keydown', handleKeyDown, true);
+  }, [isOpen, onClose]);
+
+  // Move focus into the dialog on open; restore it to the trigger on close.
+  React.useEffect(() => {
+    if (!isOpen) return;
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    const panel = panelRef.current;
+    const firstFocusable = panel?.querySelector<HTMLElement>(FOCUSABLE_SELECTOR);
+    (firstFocusable ?? panel)?.focus();
+
+    return () => {
+      previouslyFocused?.focus?.();
+    };
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -45,12 +101,19 @@ export function Modal({
           className="absolute inset-0 bg-black/50"
           onClick={onClose}
           aria-label={tCommon('close')}
+          tabIndex={-1}
         />
 
         {/* Modal */}
         <div
+          ref={panelRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={title ? titleId : undefined}
+          aria-describedby={description ? descriptionId : undefined}
+          tabIndex={-1}
           className={cn(
-            'relative w-full overflow-y-auto overscroll-contain rounded-2xl bg-white shadow-2xl ring-1 ring-black/5 max-h-[calc(100vh-2rem)] sm:max-h-[90vh]',
+            'relative w-full overflow-y-auto overscroll-contain rounded-2xl bg-white shadow-2xl ring-1 ring-black/5 max-h-[calc(100vh-2rem)] sm:max-h-[90vh] focus:outline-none',
             sizeClasses[size],
             className,
           )}
@@ -59,9 +122,15 @@ export function Modal({
           {(title || description) && (
             <div className="border-b border-neutral-100 p-5 pr-14 sm:p-6 sm:pr-16">
               {title && (
-                <h2 className="text-lg font-semibold leading-7 text-neutral-900">{title}</h2>
+                <h2 id={titleId} className="text-lg font-semibold leading-7 text-neutral-900">
+                  {title}
+                </h2>
               )}
-              {description && <p className="mt-1 text-sm text-neutral-500">{description}</p>}
+              {description && (
+                <p id={descriptionId} className="mt-1 text-sm text-neutral-500">
+                  {description}
+                </p>
+              )}
             </div>
           )}
 

@@ -213,7 +213,7 @@ function ImageUpload({
       <input
         ref={fileInputRef}
         type="file"
-        aria-label="Upload image"
+        aria-label={t('uploadImageAria')}
         accept="image/*"
         onChange={handleFileSelect}
         className="hidden"
@@ -282,10 +282,11 @@ interface QuestionImageUploadProps {
 }
 
 export function QuestionImageUpload(props: QuestionImageUploadProps) {
+  const t = useTranslations('upload');
   return (
     <ImageUpload
       {...props}
-      placeholder="Add image to question (optional)"
+      placeholder={t('addQuestionImage')}
       maxWidth={600}
       maxHeight={400}
       className="w-full"
@@ -300,10 +301,11 @@ interface OptionImageUploadProps {
 }
 
 export function OptionImageUpload(props: OptionImageUploadProps) {
+  const t = useTranslations('upload');
   return (
     <ImageUpload
       {...props}
-      placeholder="Add image to option (optional)"
+      placeholder={t('addOptionImage')}
       maxWidth={200}
       maxHeight={150}
       className="mt-2"

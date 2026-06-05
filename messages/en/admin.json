@@ -153,5 +153,10 @@
   "deleteQuizConfirm": "Are you sure you want to delete this quiz?",
   "author": "Author:",
   "deleteQuizWarning": "Warning: This action cannot be undone.",
-  "deleteQuizButton": "Delete Quiz"
+  "deleteQuizButton": "Delete Quiz",
+  "planNamePlaceholder": "e.g., Premium Monthly",
+  "enterFeature": "Enter feature",
+  "featureDescription": "Feature description",
+  "searchByEmailPlaceholder": "Search by user email...",
+  "internalNotesPlaceholder": "Add internal notes about this report..."
 }

@@ -2,6 +2,7 @@
 
 import { useEffect, useReducer, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { CategoryOptionItem } from '@/features/categories/components/CategoryOptionItem';
@@ -92,6 +93,7 @@ function CategorySearch({
   onCategorySelect,
   showInHomepage = false,
 }: CategorySearchProps) {
+  const t = useTranslations('common');
   const [state, dispatch] = useReducer(categorySearchReducer, initialState);
 
   const searchRef = useRef<HTMLInputElement>(null);
@@ -241,7 +243,7 @@ function CategorySearch({
         <Input
           ref={searchRef}
           type="text"
-          placeholder="Search categories..."
+          placeholder={t('searchCategoriesPlaceholder')}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => dispatch({ type: 'open' })}

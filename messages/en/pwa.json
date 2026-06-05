@@ -3,5 +3,6 @@
   "installApp": "Install App",
   "install": "Install",
   "installRinKuzu": "Install RinKuzu",
-  "addToHomeScreen": "Add to home screen for quick access and offline use"
+  "addToHomeScreen": "Add to home screen for quick access and offline use",
+  "dismiss": "Dismiss"
 }

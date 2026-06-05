@@ -109,5 +109,6 @@
   "removeBookmarkTitle": "Remove bookmark?",
   "removeBookmarkConfirm": "Remove the bookmark from \"{title}\"? You can bookmark it again later.",
   "removeAvatarConfirmTitle": "Remove profile photo?",
-  "removeAvatarConfirmMessage": "This will remove your current profile photo from your account."
+  "removeAvatarConfirmMessage": "This will remove your current profile photo from your account.",
+  "uploadAvatar": "Upload avatar"
 }

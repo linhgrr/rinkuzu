@@ -322,12 +322,14 @@ function CategoriesPagination({
   previousLabel,
   nextLabel,
   showingResultsLabel,
+  paginationLabel,
   onPageChange,
 }: {
   pagination: PaginationMeta;
   previousLabel: string;
   nextLabel: string;
   showingResultsLabel: string;
+  paginationLabel: string;
   onPageChange: (page: number) => void;
 }) {
   return (
@@ -357,7 +359,7 @@ function CategoriesPagination({
         <div>
           <nav
             className="isolate inline-flex -space-x-px rounded-md shadow-sm"
-            aria-label="Pagination"
+            aria-label={paginationLabel}
           >
             <Button
               onClick={() => onPageChange(pagination.currentPage - 1)}
@@ -708,6 +710,7 @@ export default function AdminCategoriesPage() {
             previousLabel={tCommon('previous')}
             nextLabel={tCommon('next')}
             showingResultsLabel={showingResultsLabel}
+            paginationLabel={tCommon('pagination')}
             onPageChange={(page) => dispatch({ type: 'setPage', value: page })}
           />
         ) : null}

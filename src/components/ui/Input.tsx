@@ -22,7 +22,8 @@ function Input({
   ref,
   ...props
 }: InputProps) {
-  const inputId = id || label?.toLowerCase().replace(/\s+/g, '-');
+  const reactId = React.useId();
+  const inputId = id || (label ? label.toLowerCase().replace(/\s+/g, '-') : reactId);
 
   const iconSizes = {
     sm: 'w-4 h-4',
@@ -88,7 +89,8 @@ type TextareaProps = React.TextareaHTMLAttributes<HTMLTextAreaElement> & {
 };
 
 function Textarea({ className, error, label, id, ref, ...props }: TextareaProps) {
-  const textareaId = id || label?.toLowerCase().replace(/\s+/g, '-');
+  const reactId = React.useId();
+  const textareaId = id || (label ? label.toLowerCase().replace(/\s+/g, '-') : reactId);
 
   return (
     <div className="w-full">

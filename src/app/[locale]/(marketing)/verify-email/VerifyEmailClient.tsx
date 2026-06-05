@@ -127,7 +127,7 @@ function VerifyEmailContent() {
                 className="flex flex-col items-center gap-4 py-4 text-center"
               >
                 {viewState.status === 'verifying' && (
-                  <HiOutlineMail className="size-10 text-teal-500" aria-hidden="true" />
+                  <HiOutlineMail className="size-10 text-brand-trust" aria-hidden="true" />
                 )}
                 {viewState.status === 'success' && (
                   <HiOutlineCheckCircle className="size-10 text-emerald-500" aria-hidden="true" />
@@ -144,7 +144,7 @@ function VerifyEmailContent() {
                   {viewState.status === 'success' && (
                     <Link
                       href="/login"
-                      className="inline-flex items-center justify-center rounded-xl bg-teal-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-teal-700"
+                      className="inline-flex items-center justify-center rounded-xl bg-brand-trust px-5 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-brand-trust-hover"
                     >
                       {t('signIn')}
                     </Link>
@@ -152,7 +152,7 @@ function VerifyEmailContent() {
                   {viewState.status === 'error' && (
                     <Link
                       href="/check-email"
-                      className="inline-flex items-center justify-center rounded-xl border border-teal-600 px-5 py-3 text-sm font-semibold text-teal-600 transition-colors hover:bg-teal-50"
+                      className="inline-flex items-center justify-center rounded-xl border border-brand-trust px-5 py-3 text-sm font-semibold text-brand-trust transition-colors hover:bg-green-50"
                     >
                       {t('resendVerification')}
                     </Link>

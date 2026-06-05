@@ -199,7 +199,6 @@
     },
     "cancelProcessing": "Cancel",
     "retryProcessing": "Retry",
-    "cancelling": "Cancelling…",
     "processingFailed": "Processing failed",
     "processingEta": "ETA {eta}"
   },

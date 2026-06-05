@@ -336,6 +336,7 @@ async function apiFetch<T>(path: string, options?: ApiFetchOptions): Promise<T> 
         '/api/adaptive/session/',
         '/api/adaptive/history/',
         '/api/adaptive/subjects',
+        '/api/adaptive/pipeline/',
       ]);
     }
     return executeRequest<T>(path, method, options);

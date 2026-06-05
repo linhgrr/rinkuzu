@@ -30,4 +30,7 @@ export {
   prefetchStartLearningData,
   getSubjects,
   deleteSubject,
+  listPipelineJobs,
+  retryPipelineJob,
+  cancelPipelineJob,
 } from './adaptive-api-methods';

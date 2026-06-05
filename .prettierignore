@@ -14,3 +14,10 @@ pnpm-lock.yaml
 .env.local
 .env.*.local
 .lighthouseci/
+
+# Local agent / automation tooling caches (not source)
+.agents/
+.claude/
+.playwright-mcp/
+.gstack/
+.windsurf/

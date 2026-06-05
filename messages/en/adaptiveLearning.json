@@ -196,7 +196,12 @@
         "description": "Most scholars in your level are exploring environmental sciences this week. Join the discussion.",
         "duration": "8 min read"
       }
-    }
+    },
+    "cancelProcessing": "Cancel",
+    "retryProcessing": "Retry",
+    "cancelling": "Cancelling…",
+    "processingFailed": "Processing failed",
+    "processingEta": "ETA {eta}"
   },
   "history": {
     "title": "Exercise History",

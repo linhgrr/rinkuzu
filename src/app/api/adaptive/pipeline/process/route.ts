@@ -32,6 +32,7 @@ export const POST = withAuth(async (req, { userId, session }) => {
     const proxiedBody = {
       file_url,
       filename,
+      source_s3_key: s3Key,
       subject_id,
       ...(typeof page_batch_size === 'number' ? { page_batch_size } : {}),
     };

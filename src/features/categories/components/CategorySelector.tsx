@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Input } from '@/components/ui/Input';
 import { CategoryOptionItem } from '@/features/categories/components/CategoryOptionItem';
 import { useDropdownOutside } from '@/components/ui/hooks/use-dropdown-outside';
@@ -29,6 +30,7 @@ export function CategorySelector({
   required = false,
   disabled = false,
 }: CategorySelectorProps) {
+  const t = useTranslations('common');
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -156,7 +158,7 @@ export function CategorySelector({
             type="button"
             onClick={clearSelection}
             className="absolute right-3 top-1/2 transform -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
-            aria-label="Clear selection"
+            aria-label={t('clearSelection')}
           >
             <svg
               className="size-4"

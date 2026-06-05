@@ -157,7 +157,7 @@ function CheckEmailContent() {
                   disabled={isSubmitting || cooldown > 0}
                   aria-busy={isSubmitting}
                   size="lg"
-                  className="w-full bg-teal-600 text-white hover:bg-teal-700 shadow-sm border-0"
+                  className="w-full bg-brand-trust text-white hover:bg-brand-trust-hover shadow-sm border-0"
                 >
                   {buttonLabel}
                 </Button>
@@ -165,7 +165,7 @@ function CheckEmailContent() {
                 <div className="text-center">
                   <Link
                     href="/login"
-                    className="text-sm font-medium text-teal-600 hover:text-teal-700"
+                    className="text-sm font-medium text-brand-trust hover:text-brand-trust-hover"
                   >
                     {t('backToLogin')}
                   </Link>

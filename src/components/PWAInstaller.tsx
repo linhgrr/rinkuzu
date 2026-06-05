@@ -166,7 +166,7 @@ export default function PWAInstaller() {
                 type="button"
                 onClick={dismissInstallBanner}
                 className="text-white opacity-70 hover:opacity-100 transition-opacity"
-                aria-label="Dismiss"
+                aria-label={t('dismiss')}
               >
                 ✕
               </button>

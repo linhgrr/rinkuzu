@@ -153,5 +153,10 @@
   "deleteQuizConfirm": "Bạn có chắc chắn muốn xóa quiz này?",
   "author": "Tác giả:",
   "deleteQuizWarning": "Cảnh báo: Hành động này không thể hoàn tác.",
-  "deleteQuizButton": "Xóa Quiz"
+  "deleteQuizButton": "Xóa Quiz",
+  "planNamePlaceholder": "ví dụ: Premium Hàng tháng",
+  "enterFeature": "Nhập tính năng",
+  "featureDescription": "Mô tả tính năng",
+  "searchByEmailPlaceholder": "Tìm theo email người dùng...",
+  "internalNotesPlaceholder": "Thêm ghi chú nội bộ về báo cáo này..."
 }

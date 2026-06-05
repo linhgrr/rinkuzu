@@ -235,7 +235,7 @@ function PersonalInfoSection({
             <input
               ref={fileInputRef}
               type="file"
-              aria-label="Upload avatar"
+              aria-label={t('uploadAvatar')}
               accept="image/jpeg,image/png,image/webp"
               className="hidden"
               onChange={onChangeAvatar}

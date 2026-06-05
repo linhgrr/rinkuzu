@@ -9,15 +9,16 @@ const SIZES = {
 interface SpinnerProps {
   size?: keyof typeof SIZES;
   className?: string;
+  label?: string;
 }
 
-export function Spinner({ size = 'md', className = '' }: SpinnerProps) {
+export function Spinner({ size = 'md', className = '', label = 'Loading' }: SpinnerProps) {
   return (
     <output
       className={`animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust ${SIZES[size]} ${className}`}
-      aria-label="Loading"
+      aria-label={label}
     >
-      <span className="sr-only">Loading…</span>
+      <span className="sr-only">{label}</span>
     </output>
   );
 }

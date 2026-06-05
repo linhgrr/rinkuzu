@@ -71,7 +71,7 @@ function RegisterSuccessState({
           <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
             <Link
               href="/login"
-              className="inline-flex items-center justify-center rounded-xl bg-teal-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-teal-700"
+              className="inline-flex items-center justify-center rounded-xl bg-brand-trust px-5 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-brand-trust-hover"
             >
               {backToLoginLabel}
             </Link>
@@ -126,7 +126,7 @@ function RegisterFormFooter({
           {questionLabel}{' '}
           <Link
             href="/login"
-            className="font-semibold text-teal-600 transition-colors hover:text-teal-700"
+            className="font-semibold text-brand-trust transition-colors hover:text-brand-trust-hover"
           >
             {actionLabel}
           </Link>
@@ -372,14 +372,14 @@ export function RegisterPageClient({ googleEnabled = false }: RegisterPageClient
                 <label className="flex items-start gap-2 text-sm text-neutral-700">
                   <input
                     type="checkbox"
-                    className="mt-0.5 size-4 rounded border-neutral-300 text-teal-600 focus:ring-teal-500"
+                    className="mt-0.5 size-4 rounded border-neutral-300 text-brand-trust focus:ring-brand-trust"
                     {...register('agreeTerms')}
                   />
                   <span>
                     {t('agreeTermsCheckbox')}{' '}
                     <Link
                       href="/terms"
-                      className="font-medium text-teal-600 hover:text-teal-700"
+                      className="font-medium text-brand-trust hover:text-brand-trust-hover"
                       target="_blank"
                       rel="noopener"
                     >
@@ -388,7 +388,7 @@ export function RegisterPageClient({ googleEnabled = false }: RegisterPageClient
                     ·{' '}
                     <Link
                       href="/privacy"
-                      className="font-medium text-teal-600 hover:text-teal-700"
+                      className="font-medium text-brand-trust hover:text-brand-trust-hover"
                       target="_blank"
                       rel="noopener"
                     >
@@ -407,7 +407,7 @@ export function RegisterPageClient({ googleEnabled = false }: RegisterPageClient
                     disabled={isSubmitting || !isValid}
                     aria-busy={isSubmitting}
                     size="lg"
-                    className="w-full border-0 bg-teal-600 text-white shadow-sm hover:bg-teal-700"
+                    className="w-full border-0 bg-brand-trust text-white shadow-sm hover:bg-brand-trust-hover"
                   >
                     {isSubmitting ? t('creatingAccount') : t('createAccountButton')}
                   </Button>

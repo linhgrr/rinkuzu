@@ -125,7 +125,10 @@ function ResetPasswordContent() {
                 >
                   <HiOutlineCheckCircle className="size-10 text-emerald-500" aria-hidden="true" />
                   <p className="text-sm text-neutral-700">{success}</p>
-                  <Link href="/login" className="font-semibold text-teal-600 hover:text-teal-700">
+                  <Link
+                    href="/login"
+                    className="font-semibold text-brand-trust hover:text-brand-trust-hover"
+                  >
                     {t('backToLogin')}
                   </Link>
                 </output>
@@ -210,7 +213,7 @@ function ResetPasswordContent() {
                     disabled={isSubmitting || !isValid || !token}
                     aria-busy={isSubmitting}
                     size="lg"
-                    className="w-full bg-teal-600 text-white hover:bg-teal-700 shadow-sm border-0"
+                    className="w-full bg-brand-trust text-white hover:bg-brand-trust-hover shadow-sm border-0"
                   >
                     {isSubmitting ? t('resetPasswordSubmitting') : t('resetPasswordSubmit')}
                   </Button>

@@ -17,5 +17,8 @@
   "failedToUpload": "Không thể tải hình ảnh",
   "removeImage": "Xóa ảnh",
   "removeImageTitle": "Xóa ảnh?",
-  "removeImageConfirm": "Xóa ảnh này khỏi câu hỏi? Bạn có thể tải ảnh khác lên sau."
+  "removeImageConfirm": "Xóa ảnh này khỏi câu hỏi? Bạn có thể tải ảnh khác lên sau.",
+  "uploadImageAria": "Tải lên hình ảnh",
+  "addQuestionImage": "Thêm ảnh cho câu hỏi (tùy chọn)",
+  "addOptionImage": "Thêm ảnh cho phương án (tùy chọn)"
 }

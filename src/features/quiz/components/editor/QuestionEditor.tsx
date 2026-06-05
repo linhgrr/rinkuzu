@@ -117,7 +117,6 @@ export function QuestionEditor({
                   <label className="flex items-center">
                     <input
                       type="radio"
-                      aria-label="Single choice"
                       checked={q.type === 'single'}
                       onChange={() => onToggleType(index, 'single')}
                     />{' '}
@@ -126,7 +125,6 @@ export function QuestionEditor({
                   <label className="flex items-center">
                     <input
                       type="radio"
-                      aria-label="Multiple choice"
                       checked={q.type === 'multiple'}
                       onChange={() => onToggleType(index, 'multiple')}
                     />{' '}

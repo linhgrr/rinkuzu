@@ -42,7 +42,7 @@ function MobileQuizHeader({
   isLast: boolean;
   isSubmitting: boolean;
   questions: Question[];
-  t: (key: string) => string;
+  t: (key: string, values?: Record<string, string | number>) => string;
 }) {
   return (
     <div className="flex-shrink-0 border-b border-neutral-100 bg-white px-4 py-3 safe-area-top">
@@ -52,7 +52,7 @@ function MobileQuizHeader({
           onClick={goPrev}
           disabled={isFirst || isSubmitting}
           className="rounded-full p-2 -ml-2 transition-colors active:bg-neutral-100"
-          aria-label="Previous question"
+          aria-label={t('previousQuestion')}
         >
           <HiOutlineChevronLeft
             className={`size-6 ${isFirst ? 'text-neutral-300' : 'text-neutral-600'}`}
@@ -85,7 +85,7 @@ function MobileQuizHeader({
           onClick={goNext}
           disabled={isLast || isSubmitting}
           className="rounded-full p-2 -mr-2 transition-colors active:bg-neutral-100"
-          aria-label="Next question"
+          aria-label={t('nextQuestion')}
         >
           <HiOutlineChevronRight
             className={`size-6 ${isLast ? 'text-neutral-300' : 'text-neutral-600'}`}
@@ -116,7 +116,7 @@ function MobileQuestionCard({
   handleTouchStart: (event: TouchEvent<HTMLDivElement>) => void;
   isOptionSelected: (optionIndex: number) => boolean;
   isSubmitting: boolean;
-  t: (key: string) => string;
+  t: (key: string, values?: Record<string, string | number>) => string;
 }) {
   return (
     <div className="flex-1 overflow-hidden p-4">
@@ -134,7 +134,7 @@ function MobileQuestionCard({
             <div className="mb-4 flex-shrink-0 overflow-hidden rounded-xl bg-neutral-100">
               <Image
                 src={currentQuestion.questionImage}
-                alt={`Image for question ${currentIndex + 1}`}
+                alt={t('questionImageAlt', { number: currentIndex + 1 })}
                 width={400}
                 height={144}
                 className="h-auto max-h-36 w-full object-contain"

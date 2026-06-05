@@ -43,5 +43,8 @@
   "signIn": "Sign In",
   "getStarted": "Get Started",
   "logout": "Logout",
-  "changeLanguage": "Change language"
+  "changeLanguage": "Change language",
+  "clearSelection": "Clear selection",
+  "searchCategoriesPlaceholder": "Search categories...",
+  "pagination": "Pagination"
 }

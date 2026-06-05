@@ -38,8 +38,11 @@ export const TableOfContents = ({ headings }: TableOfContentsProps) => {
   }, [headings]);
 
   return (
-    <nav className="space-y-1" aria-label="Table of contents">
-      <h4 className="text-xs font-semibold text-neutral-400 uppercase tracking-widest mb-4">
+    <nav className="space-y-1" aria-labelledby="toc-heading">
+      <h4
+        id="toc-heading"
+        className="text-xs font-semibold text-neutral-400 uppercase tracking-widest mb-4"
+      >
         Table of Contents
       </h4>
       <ul className="space-y-3">

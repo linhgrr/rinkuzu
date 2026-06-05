@@ -235,7 +235,7 @@ function PDFViewerComponent({ files, onClose }: { files: File[]; onClose: () => 
 
   return (
     <div className="w-full h-full flex flex-col">
-      <div className="flex-shrink-0 p-3 bg-gradient-to-r from-green-50 to-teal-50 border-b border-green-200">
+      <div className="flex-shrink-0 p-3 bg-gradient-to-r from-green-50 to-green-100 border-b border-green-200">
         <div className="flex items-center justify-between text-sm">
           <div className="flex items-center gap-x-2">
             <HiOutlineDocumentText className="size-4 text-brand-trust" />

@@ -111,5 +111,8 @@
   "multipleChoiceHelper": "Select multiple answers",
   "removeBookmarkTitle": "Remove bookmark?",
   "removeBookmarkConfirm": "Remove this question from your bookmarks?",
-  "removeBookmark": "Remove bookmark"
+  "removeBookmark": "Remove bookmark",
+  "previousQuestion": "Previous question",
+  "nextQuestion": "Next question",
+  "questionImageAlt": "Image for question {number}"
 }

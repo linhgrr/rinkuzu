@@ -18,5 +18,6 @@
   "questionProgress": "{current} of {total}",
   "xpEarned": "{xp} XP earned",
   "question": "Question",
-  "tapToSeeAnswer": "Tap to see answer"
+  "tapToSeeAnswer": "Tap to see answer",
+  "rateAs": "Rate as {label} - Press {number}"
 }

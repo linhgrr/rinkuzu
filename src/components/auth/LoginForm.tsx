@@ -255,8 +255,7 @@ function LoginFormContent({ locale, googleEnabled }: LoginFormProps) {
                 onClick={() => setShowPassword((v) => !v)}
                 aria-pressed={showPassword}
                 aria-label={showPassword ? t('hidePassword') : t('showPassword')}
-                className="absolute inset-y-0 right-3 my-auto flex size-9 items-center justify-center rounded-md text-neutral-400 transition-colors hover:text-neutral-600"
-                tabIndex={-1}
+                className="absolute inset-y-0 right-3 my-auto flex size-9 items-center justify-center rounded-md text-neutral-400 transition-colors hover:text-neutral-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-trust"
               >
                 {showPassword ? (
                   <HiOutlineEyeOff className="size-5" aria-hidden="true" />
@@ -273,7 +272,7 @@ function LoginFormContent({ locale, googleEnabled }: LoginFormProps) {
             <div className="mt-2 text-right">
               <Link
                 href="/forgot-password"
-                className="text-sm font-medium text-teal-600 hover:text-teal-700"
+                className="text-sm font-medium text-brand-trust hover:text-brand-trust-hover"
               >
                 {t('forgotPassword')}
               </Link>
@@ -288,7 +287,7 @@ function LoginFormContent({ locale, googleEnabled }: LoginFormProps) {
             disabled={submitDisabled}
             aria-busy={isSubmitting}
             size="lg"
-            className="w-full bg-teal-600 text-white hover:bg-teal-700 shadow-sm border-0"
+            className="w-full bg-brand-trust text-white hover:bg-brand-trust-hover shadow-sm border-0"
           >
             {isSubmitting ? t('signingIn') : t('signInButton')}
           </Button>
@@ -301,7 +300,7 @@ function LoginFormContent({ locale, googleEnabled }: LoginFormProps) {
             {t('dontHaveAccount')}{' '}
             <Link
               href="/register"
-              className="font-semibold text-teal-600 hover:text-teal-700 transition-colors"
+              className="font-semibold text-brand-trust hover:text-brand-trust-hover transition-colors"
             >
               {t('createAccount')}
             </Link>

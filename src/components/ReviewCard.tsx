@@ -138,7 +138,7 @@ export default function ReviewCard({ question, onResult }: ReviewCardProps) {
                 type="button"
                 className="flex flex-col items-center p-2 rounded-lg hover:bg-red-50 active:bg-red-100 transition-colors group min-h-[68px]"
                 onClick={() => onResult('fail')}
-                aria-label="Rate as Again - Press 1"
+                aria-label={t('rateAs', { label: t('again'), number: 1 })}
               >
                 <div className="mb-1 flex size-10 items-center justify-center rounded-full bg-red-100 text-red-600 transition-transform group-hover:scale-110 md:mb-2 md:size-11">
                   <span className="font-bold text-sm md:text-base">1</span>
@@ -152,7 +152,7 @@ export default function ReviewCard({ question, onResult }: ReviewCardProps) {
                 type="button"
                 className="flex flex-col items-center p-2 rounded-lg hover:bg-orange-50 active:bg-orange-100 transition-colors group min-h-[68px]"
                 onClick={() => onResult('hard')}
-                aria-label="Rate as Hard - Press 2"
+                aria-label={t('rateAs', { label: t('hard'), number: 2 })}
               >
                 <div className="mb-1 flex size-10 items-center justify-center rounded-full bg-orange-100 text-orange-600 transition-transform group-hover:scale-110 md:mb-2 md:size-11">
                   <span className="font-bold text-sm md:text-base">2</span>
@@ -166,7 +166,7 @@ export default function ReviewCard({ question, onResult }: ReviewCardProps) {
                 type="button"
                 className="flex flex-col items-center p-2 rounded-lg hover:bg-green-50 active:bg-green-100 transition-colors group min-h-[68px]"
                 onClick={() => onResult('good')}
-                aria-label="Rate as Good - Press 3"
+                aria-label={t('rateAs', { label: t('good'), number: 3 })}
               >
                 <div className="mb-1 flex size-10 items-center justify-center rounded-full bg-green-100 text-green-600 transition-transform group-hover:scale-110 md:mb-2 md:size-11">
                   <span className="font-bold text-sm md:text-base">3</span>
@@ -180,7 +180,7 @@ export default function ReviewCard({ question, onResult }: ReviewCardProps) {
                 type="button"
                 className="flex flex-col items-center p-2 rounded-lg hover:bg-green-50 active:bg-green-100 transition-colors group min-h-[68px]"
                 onClick={() => onResult('easy')}
-                aria-label="Rate as Easy - Press 4"
+                aria-label={t('rateAs', { label: t('easy'), number: 4 })}
               >
                 <div className="mb-1 flex size-10 items-center justify-center rounded-full bg-green-100 text-green-600 transition-transform group-hover:scale-110 md:mb-2 md:size-11">
                   <span className="font-bold text-sm md:text-base">4</span>

@@ -17,5 +17,8 @@
   "failedToUpload": "Failed to upload image",
   "removeImage": "Remove image",
   "removeImageTitle": "Remove image?",
-  "removeImageConfirm": "Remove this image from the question? You can upload another image later."
+  "removeImageConfirm": "Remove this image from the question? You can upload another image later.",
+  "uploadImageAria": "Upload image",
+  "addQuestionImage": "Add image to question (optional)",
+  "addOptionImage": "Add image to option (optional)"
 }

@@ -52,7 +52,7 @@ const UserMenu = memo(function UserMenu({
         size="icon"
         onClick={onToggle}
         className="flex items-center gap-2 rounded-full"
-        aria-label="Toggle user menu"
+        aria-label={t('toggleUserMenu')}
       >
         {session?.user?.avatar ? (
           <Image

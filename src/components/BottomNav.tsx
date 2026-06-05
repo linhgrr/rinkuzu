@@ -164,7 +164,7 @@ export default function BottomNav() {
     icon: (isActive) => (
       <div
         className={`w-12 h-12 -mt-6 rounded-full flex items-center justify-center shadow-[0_8px_16px_rgb(0,0,0,0.12)] border-[3px] border-white transition-transform duration-300 ${isActive ? 'bg-brand-action-hover scale-105' : 'bg-brand-action hover:scale-105'}`}
-        aria-label="Create quiz"
+        aria-label={t('createQuizAria')}
       >
         {isActive ? (
           <HiPlus className="size-6 text-white" aria-hidden="true" />
@@ -192,7 +192,7 @@ export default function BottomNav() {
     icon: (isActive) => (
       <div
         className={`w-12 h-12 -mt-6 rounded-full flex items-center justify-center shadow-[0_8px_16px_rgb(0,0,0,0.12)] border-[3px] border-white transition-transform duration-300 ${isActive ? 'bg-brand-trust scale-105' : 'bg-brand-trust hover:scale-105'}`}
-        aria-label="Upload subject"
+        aria-label={t('uploadSubjectAria')}
       >
         <HiOutlineUpload className="size-6 text-white" aria-hidden="true" />
       </div>

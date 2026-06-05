@@ -215,6 +215,7 @@ function ReportReviewModal({
   onResolve: () => void;
   onDismiss: () => void;
 }) {
+  const tAdmin = useTranslations('admin');
   return (
     <Modal isOpen={!!report} onClose={onClose} title="Review Report">
       {report ? (
@@ -250,7 +251,7 @@ function ReportReviewModal({
               className="resize-none"
               rows={4}
               maxLength={1000}
-              placeholder="Add internal notes about this report..."
+              placeholder={tAdmin('internalNotesPlaceholder')}
             />
             <div className="mt-1 text-xs text-neutral-500">{adminNotes.length}/1000</div>
           </div>

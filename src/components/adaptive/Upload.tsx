@@ -101,7 +101,7 @@ export default function AdaptiveLearningUpload() {
         localStorage.setItem('al_pipeline_subject_name', subjectName.trim());
         toast.success(t('processing.status.queuedForProcessing'));
         setTimeout(() => {
-          push(ADAPTIVE_ROUTES.processing);
+          push(ADAPTIVE_ROUTES.dashboard);
         }, 500);
       } catch (err) {
         const message = getFriendlyUploadError(err);

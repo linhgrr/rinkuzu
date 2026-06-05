@@ -8,8 +8,7 @@ import { STATUS_LABEL_KEYS } from '@/features/adaptive/lib/pipeline-status-label
 export type SubjectRuntime =
   | { kind: 'ready' }
   | { kind: 'processing'; progressPercent: number; stageLabel: string; etaSeconds: number | null }
-  | { kind: 'retryable'; message: string }
-  | { kind: 'cancelling' };
+  | { kind: 'retryable'; message: string };
 
 type DashboardSubjectMetrics = {
   masteredConcepts: number;
@@ -130,6 +129,7 @@ const getJobDisplayTitle = (job: PipelineJobListItem): string => {
 export const buildDashboardSubjectFromJob = (
   job: PipelineJobListItem,
   t: TranslateFn,
+  tProcessing: TranslateFn = t,
 ): DashboardSubject => {
   const displayTitle = getJobDisplayTitle(job);
 
@@ -140,13 +140,13 @@ export const buildDashboardSubjectFromJob = (
   } else if (job.status === 'failed' || job.status === 'cancelled') {
     runtime = {
       kind: 'retryable',
-      message: job.user_message || t('processing.errors.pipelineFailed'),
+      message: job.user_message || tProcessing('processing.errors.pipelineFailed'),
     };
   } else if (IN_FLIGHT_STATUSES.has(job.status)) {
     runtime = {
       kind: 'processing',
       progressPercent: Math.round(job.progress * 100),
-      stageLabel: t(`processing.status.${STATUS_LABEL_KEYS[job.status]}`),
+      stageLabel: tProcessing(`processing.status.${STATUS_LABEL_KEYS[job.status]}`),
       etaSeconds: job.eta_seconds,
     };
   } else {
@@ -154,7 +154,9 @@ export const buildDashboardSubjectFromJob = (
     runtime = {
       kind: 'processing',
       progressPercent: Math.round(job.progress * 100),
-      stageLabel: t(`processing.status.${STATUS_LABEL_KEYS[job.status] ?? 'waitingToStart'}`),
+      stageLabel: tProcessing(
+        `processing.status.${STATUS_LABEL_KEYS[job.status] ?? 'waitingToStart'}`,
+      ),
       etaSeconds: job.eta_seconds,
     };
   }
@@ -195,7 +197,7 @@ export const buildDashboardSubjectFromJob = (
         ? progressPercent > 0
           ? t('continueLearning')
           : t('startLearning')
-        : t('processing.status.processing'),
+        : tProcessing('processing.status.processing'),
     metrics,
     runtime,
   };

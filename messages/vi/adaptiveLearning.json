@@ -199,7 +199,6 @@
     },
     "cancelProcessing": "Hủy xử lý",
     "retryProcessing": "Thử lại",
-    "cancelling": "Đang hủy…",
     "processingFailed": "Xử lý thất bại",
     "processingEta": "Còn khoảng {eta}"
   },

@@ -89,7 +89,6 @@ const SubjectLibraryListItem = memo(function SubjectLibraryListItem({
 
   const isProcessing = runtime.kind === 'processing';
   const isRetryable = runtime.kind === 'retryable';
-  const isCancelling = runtime.kind === 'cancelling';
 
   return (
     <div className="flex flex-col gap-4 rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-5">
@@ -139,12 +138,12 @@ const SubjectLibraryListItem = memo(function SubjectLibraryListItem({
             </>
           )}
 
-          {(isCancelling || runtime.kind === 'ready') && (
+          {runtime.kind === 'ready' && (
             <>
               <p className="mt-2 text-sm font-semibold text-brand-trust">{subject.progressLabel}</p>
               <div className="mt-2 h-1.5 w-full max-w-xs rounded-full bg-neutral-100">
                 <div
-                  className={`h-full rounded-full ${isCancelling ? 'bg-neutral-300' : 'bg-brand-trust'}`}
+                  className="h-full rounded-full bg-brand-trust"
                   style={{ width: `${subject.metrics.progressPercent}%` }}
                 />
               </div>
@@ -176,21 +175,12 @@ const SubjectLibraryListItem = memo(function SubjectLibraryListItem({
         {isProcessing && (
           <Button
             onClick={() => onCancel?.(subject.job_id)}
-            disabled={busy || isCancelling}
+            disabled={busy}
             aria-label={t('cancelProcessing')}
             className="rounded-full bg-neutral-100 px-5 text-sm font-bold text-red-600 hover:bg-red-50 hover:text-red-700"
           >
             <HiOutlineX className="mr-1.5 size-4" />
             {t('cancelProcessing')}
-          </Button>
-        )}
-
-        {isCancelling && (
-          <Button
-            disabled
-            className="cursor-not-allowed rounded-full bg-neutral-100 px-5 text-sm font-bold text-neutral-400"
-          >
-            {t('cancelling')}
           </Button>
         )}
 

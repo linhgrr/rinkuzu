@@ -215,9 +215,9 @@ export const useAdaptiveDashboard = ({
       const enriched = job.status === 'completed' ? enrichedByJobId.get(job.job_id) : undefined;
       return enriched
         ? toDashboardSubject(enriched, locale, t)
-        : buildDashboardSubjectFromJob(job, t);
+        : buildDashboardSubjectFromJob(job, t, tAdaptive);
     });
-  }, [enrichedByJobId, jobLibrary.jobs, locale, t]);
+  }, [enrichedByJobId, jobLibrary.jobs, locale, t, tAdaptive]);
 
   const normalizedSubjects = useMemo(() => {
     return mergedSubjects.map((subject) => ({

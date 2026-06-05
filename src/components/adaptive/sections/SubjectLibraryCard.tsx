@@ -49,7 +49,6 @@ export const SubjectLibraryCard = memo(function SubjectLibraryCard({
 
   const isProcessing = runtime.kind === 'processing';
   const isRetryable = runtime.kind === 'retryable';
-  const isCancelling = runtime.kind === 'cancelling';
 
   return (
     <div className="flex h-full flex-col justify-between rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm transition-[transform,box-shadow] duration-300 hover:-translate-y-1.5 hover:shadow-xl">
@@ -116,33 +115,12 @@ export const SubjectLibraryCard = memo(function SubjectLibraryCard({
             {!runtime.etaSeconds && <div className="mb-4" />}
             <Button
               onClick={() => onCancel?.(subject.job_id)}
-              disabled={busy || isCancelling}
+              disabled={busy}
               aria-label={t('cancelProcessing')}
               className="w-full rounded-full bg-neutral-100 text-sm font-bold text-red-600 hover:bg-red-50 hover:text-red-700"
             >
               <HiOutlineX className="mr-1.5 size-4" />
               {t('cancelProcessing')}
-            </Button>
-          </>
-        )}
-
-        {isCancelling && (
-          <>
-            <div className="mb-2 flex items-center justify-between text-[10px] font-bold text-neutral-400">
-              <span>{subject.metrics.progressPercent}%</span>
-              <span>{subject.progressLabel}</span>
-            </div>
-            <div className="mb-6 h-1.5 w-full rounded-full bg-neutral-100">
-              <div
-                className="h-full rounded-full bg-neutral-300"
-                style={{ width: `${subject.metrics.progressPercent}%` }}
-              />
-            </div>
-            <Button
-              disabled
-              className="w-full cursor-not-allowed rounded-full bg-neutral-100 text-sm font-bold text-neutral-400"
-            >
-              {t('cancelling')}
             </Button>
           </>
         )}

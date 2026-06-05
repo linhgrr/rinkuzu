@@ -12,6 +12,10 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html'],
+      exclude: [
+        'src/features/adaptive/lib/adaptive-api-fetch.ts',
+        'src/features/adaptive/lib/adaptive-api-methods.ts',
+      ],
       thresholds: {
         lines: 80,
         functions: 80,

@@ -3,7 +3,12 @@
 import Image from 'next/image';
 import { memo } from 'react';
 import { Button } from '@/components/ui/Button';
-import { HiOutlineBookOpen, HiOutlineTrash } from '@/components/icons';
+import {
+  HiOutlineBookOpen,
+  HiOutlineRefresh,
+  HiOutlineTrash,
+  HiOutlineX,
+} from '@/components/icons';
 import type { DashboardSubject } from '@/features/adaptive/lib/dashboard-view-model';
 import type { PipelineJobHistoryItem, TranslateFn } from '@/features/adaptive/types';
 
@@ -14,8 +19,18 @@ type SubjectLibraryCardProps = {
   imageUrl?: string;
   onOpenSubject: (jobId: string) => void;
   onDelete: (job: PipelineJobHistoryItem) => void;
+  onRetry?: (jobId: string) => void;
+  onCancel?: (jobId: string) => void;
+  busy?: boolean;
   t: TranslateFn;
 };
+
+/** Format etaSeconds into a compact human-readable string. */
+function formatEta(etaSeconds: number): string {
+  if (etaSeconds < 60) return `~${Math.round(etaSeconds)}s`;
+  const minutes = Math.round(etaSeconds / 60);
+  return `~${minutes}m`;
+}
 
 export const SubjectLibraryCard = memo(function SubjectLibraryCard({
   subject,
@@ -23,10 +38,18 @@ export const SubjectLibraryCard = memo(function SubjectLibraryCard({
   deleting,
   onOpenSubject,
   onDelete,
+  onRetry,
+  onCancel,
+  busy = false,
   imageUrl,
   t,
 }: SubjectLibraryCardProps) {
+  const { runtime } = subject;
   const progressBarClass = 'bg-brand-trust';
+
+  const isProcessing = runtime.kind === 'processing';
+  const isRetryable = runtime.kind === 'retryable';
+  const isCancelling = runtime.kind === 'cancelling';
 
   return (
     <div className="flex h-full flex-col justify-between rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm transition-[transform,box-shadow] duration-300 hover:-translate-y-1.5 hover:shadow-xl">
@@ -73,23 +96,95 @@ export const SubjectLibraryCard = memo(function SubjectLibraryCard({
       </div>
 
       <div>
-        <div className="mb-2 flex items-center justify-between text-[10px] font-bold text-brand-trust">
-          <span>{subject.metrics.progressPercent}%</span>
-          <span>{subject.progressLabel}</span>
-        </div>
-        <div className="mb-6 h-1.5 w-full rounded-full bg-neutral-100">
-          <div
-            className={`h-full rounded-full ${progressBarClass}`}
-            style={{ width: `${subject.metrics.progressPercent}%` }}
-          />
-        </div>
-        <Button
-          onClick={() => onOpenSubject(subject.job_id)}
-          disabled={loading}
-          className="w-full rounded-full bg-neutral-100 text-sm font-bold text-brand-trust hover:bg-brand-trust hover:text-white"
-        >
-          {loading ? t('creatingSession') : subject.ctaLabel}
-        </Button>
+        {isProcessing && (
+          <>
+            <div className="mb-1 flex items-center justify-between text-[10px] font-bold text-brand-trust">
+              <span>{runtime.progressPercent}%</span>
+              <span className="truncate pl-2 text-neutral-500">{runtime.stageLabel}</span>
+            </div>
+            <div className="mb-1 h-1.5 w-full rounded-full bg-neutral-100">
+              <div
+                className={`h-full rounded-full ${progressBarClass} transition-all duration-500`}
+                style={{ width: `${runtime.progressPercent}%` }}
+              />
+            </div>
+            {runtime.etaSeconds != null && (
+              <p className="mb-4 text-[10px] text-neutral-400">
+                {t('processingEta', { eta: formatEta(runtime.etaSeconds) })}
+              </p>
+            )}
+            {!runtime.etaSeconds && <div className="mb-4" />}
+            <Button
+              onClick={() => onCancel?.(subject.job_id)}
+              disabled={busy || isCancelling}
+              aria-label={t('cancelProcessing')}
+              className="w-full rounded-full bg-neutral-100 text-sm font-bold text-red-600 hover:bg-red-50 hover:text-red-700"
+            >
+              <HiOutlineX className="mr-1.5 size-4" />
+              {t('cancelProcessing')}
+            </Button>
+          </>
+        )}
+
+        {isCancelling && (
+          <>
+            <div className="mb-2 flex items-center justify-between text-[10px] font-bold text-neutral-400">
+              <span>{subject.metrics.progressPercent}%</span>
+              <span>{subject.progressLabel}</span>
+            </div>
+            <div className="mb-6 h-1.5 w-full rounded-full bg-neutral-100">
+              <div
+                className="h-full rounded-full bg-neutral-300"
+                style={{ width: `${subject.metrics.progressPercent}%` }}
+              />
+            </div>
+            <Button
+              disabled
+              className="w-full cursor-not-allowed rounded-full bg-neutral-100 text-sm font-bold text-neutral-400"
+            >
+              {t('cancelling')}
+            </Button>
+          </>
+        )}
+
+        {isRetryable && (
+          <>
+            <p className="mb-4 text-xs text-red-500">
+              {t('processingFailed')}: {runtime.message}
+            </p>
+            <Button
+              onClick={() => onRetry?.(subject.job_id)}
+              disabled={busy}
+              aria-label={t('retryProcessing')}
+              className="w-full rounded-full bg-neutral-100 text-sm font-bold text-brand-trust hover:bg-brand-trust hover:text-white"
+            >
+              <HiOutlineRefresh className="mr-1.5 size-4" />
+              {t('retryProcessing')}
+            </Button>
+          </>
+        )}
+
+        {runtime.kind === 'ready' && (
+          <>
+            <div className="mb-2 flex items-center justify-between text-[10px] font-bold text-brand-trust">
+              <span>{subject.metrics.progressPercent}%</span>
+              <span>{subject.progressLabel}</span>
+            </div>
+            <div className="mb-6 h-1.5 w-full rounded-full bg-neutral-100">
+              <div
+                className={`h-full rounded-full ${progressBarClass}`}
+                style={{ width: `${subject.metrics.progressPercent}%` }}
+              />
+            </div>
+            <Button
+              onClick={() => onOpenSubject(subject.job_id)}
+              disabled={loading}
+              className="w-full rounded-full bg-neutral-100 text-sm font-bold text-brand-trust hover:bg-brand-trust hover:text-white"
+            >
+              {loading ? t('creatingSession') : subject.ctaLabel}
+            </Button>
+          </>
+        )}
       </div>
     </div>
   );

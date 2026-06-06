@@ -39,8 +39,12 @@ npm run dev
 # Login -> Create/Upload -> upload PDF -> app calls /api/quiz/upload-url,
 # then extraction endpoint -> review/edit draft -> publish -> play quiz.
 
-# 4) Mode B: Adaptive Learning
-# Go to /adaptive-learning/upload -> upload PDF -> processing job starts
+# 4) Mode B: Adaptive Learning (library-centric)
+# Go to /adaptive/upload -> upload PDF -> redirected to the dashboard, where the
+# document appears immediately as a live card (progress + stage + ETA) polled in
+# a single consolidated loop. On failure the card shows a one-click Retry
+# (re-runs from the stored S3 source, no re-upload); a Cancel button stops a
+# running job. /adaptive/processing remains as an optional deep-link detail view.
 # -> open subject/session -> do exercises -> see result page.
 ```
 

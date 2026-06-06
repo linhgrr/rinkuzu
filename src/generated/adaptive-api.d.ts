@@ -13,7 +13,10 @@ export interface paths {
     };
     get?: never;
     put?: never;
-    /** Start Session */
+    /**
+     * Start Session
+     * @description Create a new adaptive learning session.
+     */
     post: operations['start_session_api_session_start_post'];
     delete?: never;
     options?: never;
@@ -30,7 +33,10 @@ export interface paths {
     };
     get?: never;
     put?: never;
-    /** Next Concept */
+    /**
+     * Next Concept
+     * @description Recommend the next concept to study based on mastery and prerequisites.
+     */
     post: operations['next_concept_api_session__session_id__next_concept_post'];
     delete?: never;
     options?: never;
@@ -45,7 +51,10 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    /** Theory */
+    /**
+     * Theory
+     * @description Retrieve theory content for the current pending concept.
+     */
     get: operations['theory_api_session__session_id__theory_get'];
     put?: never;
     post?: never;
@@ -64,7 +73,10 @@ export interface paths {
     };
     get?: never;
     put?: never;
-    /** Generate Exercise */
+    /**
+     * Generate Exercise
+     * @description Generate an exercise for the current concept at the appropriate Bloom level.
+     */
     post: operations['generate_exercise_api_session__session_id__exercise_post'];
     delete?: never;
     options?: never;
@@ -81,7 +93,10 @@ export interface paths {
     };
     get?: never;
     put?: never;
-    /** Submit Answer */
+    /**
+     * Submit Answer
+     * @description Evaluate the user's answer and update BKT mastery estimates.
+     */
     post: operations['submit_answer_api_session__session_id__submit_post'];
     delete?: never;
     options?: never;
@@ -98,7 +113,10 @@ export interface paths {
     };
     get?: never;
     put?: never;
-    /** Chat About Exercise */
+    /**
+     * Chat About Exercise
+     * @description Chat with an AI tutor about the current exercise, with optional RAG context.
+     */
     post: operations['chat_about_exercise_api_session__session_id__chat_post'];
     delete?: never;
     options?: never;
@@ -113,7 +131,10 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    /** Session Status */
+    /**
+     * Session Status
+     * @description Return the current status and progress of a learning session.
+     */
     get: operations['session_status_api_session__session_id__status_get'];
     put?: never;
     post?: never;
@@ -130,7 +151,10 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    /** Get Knowledge Graph */
+    /**
+     * Get Knowledge Graph
+     * @description Return the prerequisite knowledge graph for a session.
+     */
     get: operations['get_knowledge_graph_api_session__session_id__graph_get'];
     put?: never;
     post?: never;
@@ -147,7 +171,10 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    /** Get Mastery Matrix */
+    /**
+     * Get Mastery Matrix
+     * @description Return the concept x Bloom-level mastery matrix for a session.
+     */
     get: operations['get_mastery_matrix_api_session__session_id__mastery_matrix_get'];
     put?: never;
     post?: never;
@@ -164,7 +191,10 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    /** Get Concept Detail */
+    /**
+     * Get Concept Detail
+     * @description Return detailed information about a specific concept.
+     */
     get: operations['get_concept_detail_api_session__session_id__concept__concept_id__get'];
     put?: never;
     post?: never;
@@ -214,7 +244,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/pipeline/jobs/{job_id}': {
+  '/api/pipeline/jobs': {
     parameters: {
       query?: never;
       header?: never;
@@ -222,9 +252,29 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * Get Job Status
-     * @description Get pipeline job status and progress.
+     * List Jobs
+     * @description List recent pipeline jobs of all statuses for the current user.
+     *
+     *     Returns per-job live fields the frontend library needs: progress, retryable,
+     *     eta_seconds, retry_after_seconds, is_terminal, is_delayed.
      */
+    get: operations['list_jobs_api_pipeline_jobs_get'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/pipeline/jobs/{job_id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get Job Status */
     get: operations['get_job_status_api_pipeline_jobs__job_id__get'];
     put?: never;
     post?: never;
@@ -254,6 +304,49 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/pipeline/jobs/{job_id}/cancel': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Cancel Job
+     * @description Request cancellation of a pipeline job.
+     *
+     *     Works regardless of pipeline runtime availability so a stuck job can always
+     *     be cancelled. No-ops when the job has already reached a terminal state.
+     */
+    post: operations['cancel_job_api_pipeline_jobs__job_id__cancel_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/pipeline/jobs/{job_id}/retry': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Retry Job Endpoint
+     * @description Retry a terminal, retryable pipeline job by re-fetching its S3 source.
+     */
+    post: operations['retry_job_endpoint_api_pipeline_jobs__job_id__retry_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/history/subjects': {
     parameters: {
       query?: never;
@@ -261,10 +354,7 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    /**
-     * List Subjects
-     * @description List all completed pipeline jobs (= subjects) enriched with mastery stats.
-     */
+    /** List Subjects */
     get: operations['list_subjects_api_history_subjects_get'];
     put?: never;
     post?: never;
@@ -281,10 +371,7 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    /**
-     * List Subject Progress
-     * @description List recent subject-level progress records.
-     */
+    /** List Subject Progress */
     get: operations['list_subject_progress_api_history_subjects_progress_get'];
     put?: never;
     post?: never;
@@ -301,17 +388,11 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    /**
-     * Get Subject History
-     * @description Get subject-level learning history for one pipeline job.
-     */
+    /** Get Subject History */
     get: operations['get_subject_history_api_history_subjects__job_id__get'];
     put?: never;
     post?: never;
-    /**
-     * Delete Subject
-     * @description Delete a subject (pipeline job) and optionally its sessions.
-     */
+    /** Delete Subject */
     delete: operations['delete_subject_api_history_subjects__job_id__delete'];
     options?: never;
     head?: never;
@@ -325,10 +406,7 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    /**
-     * List Pipeline Jobs
-     * @description List recent pipeline jobs.
-     */
+    /** List Pipeline Jobs */
     get: operations['list_pipeline_jobs_api_history_pipeline_jobs_get'];
     put?: never;
     post?: never;
@@ -345,10 +423,7 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    /**
-     * Get Pipeline Job
-     * @description Get full pipeline job result.
-     */
+    /** Get Pipeline Job */
     get: operations['get_pipeline_job_api_history_pipeline_jobs__job_id__get'];
     put?: never;
     post?: never;
@@ -365,10 +440,16 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    /** List Quiz Drafts */
+    /**
+     * List Quiz Drafts
+     * @description List recent quiz drafts for the authenticated user.
+     */
     get: operations['list_quiz_drafts_api_quiz_drafts_get'];
     put?: never;
-    /** Create Quiz Draft */
+    /**
+     * Create Quiz Draft
+     * @description Create a new quiz draft and enqueue AI processing.
+     */
     post: operations['create_quiz_draft_api_quiz_drafts_post'];
     delete?: never;
     options?: never;
@@ -383,15 +464,24 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    /** Get Quiz Draft */
+    /**
+     * Get Quiz Draft
+     * @description Retrieve a single quiz draft by ID.
+     */
     get: operations['get_quiz_draft_api_quiz_drafts__draft_id__get'];
     put?: never;
     post?: never;
-    /** Delete Quiz Draft */
+    /**
+     * Delete Quiz Draft
+     * @description Delete a quiz draft owned by the authenticated user.
+     */
     delete: operations['delete_quiz_draft_api_quiz_drafts__draft_id__delete'];
     options?: never;
     head?: never;
-    /** Patch Quiz Draft */
+    /**
+     * Patch Quiz Draft
+     * @description Update fields of an existing quiz draft.
+     */
     patch: operations['patch_quiz_draft_api_quiz_drafts__draft_id__patch'];
     trace?: never;
   };
@@ -404,7 +494,10 @@ export interface paths {
     };
     get?: never;
     put?: never;
-    /** Submit Quiz Draft */
+    /**
+     * Submit Quiz Draft
+     * @description Finalize a quiz draft and persist it as a published quiz.
+     */
     post: operations['submit_quiz_draft_api_quiz_drafts__draft_id__submit_post'];
     delete?: never;
     options?: never;
@@ -421,7 +514,10 @@ export interface paths {
     };
     get?: never;
     put?: never;
-    /** Ask Ai About Quiz */
+    /**
+     * Ask Ai About Quiz
+     * @description Ask an AI tutor for help understanding a quiz question (stream or single response).
+     */
     post: operations['ask_ai_about_quiz_api_quiz_ask_ai_post'];
     delete?: never;
     options?: never;
@@ -571,10 +667,7 @@ export interface components {
       step: number;
       /** Max Steps */
       max_steps: number;
-      /** Theory */
-      theory?: {
-        [key: string]: unknown;
-      } | null;
+      theory?: components['schemas']['TheoryResponse'] | null;
       recommendation_reason?: components['schemas']['RecommendationReason'] | null;
     };
     /**
@@ -665,6 +758,27 @@ export interface components {
       /** Reason */
       reason: string;
     };
+    /** PipelineGraphNodeResponse */
+    PipelineGraphNodeResponse: {
+      /** Id */
+      id: string;
+      /** Index */
+      index: number;
+      /** Name */
+      name: string;
+      /**
+       * Definition
+       * @default
+       */
+      definition: string;
+    };
+    /** PipelineGraphResponse */
+    PipelineGraphResponse: {
+      /** Nodes */
+      nodes?: components['schemas']['PipelineGraphNodeResponse'][];
+      /** Edges */
+      edges?: components['schemas']['PipelinePartialGraphEdgeResponse'][];
+    };
     /** PipelineJobHistoryListResponse */
     PipelineJobHistoryListResponse: {
       /** Jobs */
@@ -674,7 +788,7 @@ export interface components {
     };
     /** PipelineJobResultResponse */
     PipelineJobResultResponse: {
-      graph?: components['schemas']['KnowledgeGraphResponse'];
+      graph?: components['schemas']['PipelineGraphResponse'];
       /** Stats */
       stats?: {
         [key: string]: unknown;
@@ -699,25 +813,7 @@ export interface components {
        * @default
        */
       subject_id: string;
-      /**
-       * Status
-       * @enum {string}
-       */
-      status:
-        | 'pending'
-        | 'queued'
-        | 'loading'
-        | 'chunking'
-        | 'extracting'
-        | 'embedding'
-        | 'merging'
-        | 'ranking'
-        | 'verifying'
-        | 'building_graph'
-        | 'optimizing'
-        | 'completed'
-        | 'failed'
-        | 'cancelled';
+      status: components['schemas']['PipelineStatus'];
       /**
        * Current Step
        * @default
@@ -778,6 +874,13 @@ export interface components {
       error_code?: string | null;
       /** User Message */
       user_message?: string | null;
+      /** Eta Seconds */
+      eta_seconds?: number | null;
+      /**
+       * Retry Count
+       * @default 0
+       */
+      retry_count: number;
       /**
        * Retryable
        * @default false
@@ -814,7 +917,7 @@ export interface components {
       heartbeat_at: number;
       /**
        * Retry After Seconds
-       * @default 2
+       * @default 3
        */
       retry_after_seconds: number;
       partial_graph?: components['schemas']['PipelinePartialGraphResponse'] | null;
@@ -851,25 +954,7 @@ export interface components {
       file_size: number;
       /** Subject Id */
       subject_id: string;
-      /**
-       * Status
-       * @enum {string}
-       */
-      status:
-        | 'pending'
-        | 'queued'
-        | 'loading'
-        | 'chunking'
-        | 'extracting'
-        | 'embedding'
-        | 'merging'
-        | 'ranking'
-        | 'verifying'
-        | 'building_graph'
-        | 'optimizing'
-        | 'completed'
-        | 'failed'
-        | 'cancelled';
+      status: components['schemas']['PipelineStatus'];
       /** Status Url */
       status_url: string;
       /**
@@ -879,7 +964,7 @@ export interface components {
       page_batch_size: number;
       /**
        * Retry After Seconds
-       * @default 2
+       * @default 3
        */
       retry_after_seconds: number;
     };
@@ -899,6 +984,26 @@ export interface components {
        */
       status: 'active';
     };
+    /**
+     * PipelineStatus
+     * @description Authoritative lifecycle states for content pipeline jobs.
+     * @enum {string}
+     */
+    PipelineStatus:
+      | 'pending'
+      | 'queued'
+      | 'loading'
+      | 'chunking'
+      | 'extracting'
+      | 'embedding'
+      | 'merging'
+      | 'ranking'
+      | 'verifying'
+      | 'building_graph'
+      | 'optimizing'
+      | 'completed'
+      | 'failed'
+      | 'cancelled';
     /** ProcessDocumentRequest */
     ProcessDocumentRequest: {
       /** File Url */
@@ -907,11 +1012,8 @@ export interface components {
       filename: string;
       /** Subject Id */
       subject_id?: string | null;
-      /**
-       * Prs Threshold
-       * @default 0.75
-       */
-      prs_threshold: number;
+      /** Prs Threshold */
+      prs_threshold?: number | null;
       /**
        * Min Confidence
        * @default 0.6
@@ -927,22 +1029,45 @@ export interface components {
        * @default 10
        */
       page_batch_size: number;
+      /** Source S3 Key */
+      source_s3_key?: string | null;
     };
     /** QuizDraftCreateRequest */
     QuizDraftCreateRequest: {
-      /** Title */
+      /**
+       * Title
+       * @description Quiz title.
+       */
       title: string;
-      /** S3 Key */
+      /**
+       * S3 Key
+       * @description S3 object key for the source document.
+       */
       s3_key: string;
-      /** File Name */
+      /**
+       * File Name
+       * @description Original filename of the uploaded document.
+       */
       file_name: string;
-      /** File Size */
+      /**
+       * File Size
+       * @description File size in bytes.
+       */
       file_size?: number | null;
-      /** Category Id */
+      /**
+       * Category Id
+       * @description Optional category identifier.
+       */
       category_id?: string | null;
-      /** Description */
+      /**
+       * Description
+       * @description Optional quiz description.
+       */
       description?: string | null;
-      /** Prompt */
+      /**
+       * Prompt
+       * @description Custom AI prompt to guide question generation.
+       */
       prompt?: string | null;
     };
     /** QuizDraftPatchRequest */
@@ -954,11 +1079,23 @@ export interface components {
       /** Category Id */
       category_id?: string | null;
       /** Questions */
-      questions?:
-        | {
-            [key: string]: unknown;
-          }[]
-        | null;
+      questions?: components['schemas']['QuizDraftQuestion'][] | null;
+    };
+    /** QuizDraftQuestion */
+    QuizDraftQuestion: {
+      /** Question */
+      question: string;
+      /**
+       * Type
+       * @enum {string}
+       */
+      type: 'single' | 'multiple';
+      /** Options */
+      options: string[];
+      /** Correctindex */
+      correctIndex?: number | null;
+      /** Correctindexes */
+      correctIndexes?: number[];
     };
     /** QuizDraftSubmitRequest */
     QuizDraftSubmitRequest: {
@@ -1034,56 +1171,104 @@ export interface components {
     SessionCreateRequest: {
       /**
        * Max Steps
+       * @description Maximum number of exercise steps in the session.
        * @default 9999
        */
       max_steps: number;
       /**
        * Use Default Data
+       * @description If true, seeds the session with built-in example concepts.
        * @default true
        */
       use_default_data: boolean;
     };
     /** SessionCreateResponse */
     SessionCreateResponse: {
-      /** Session Id */
+      /**
+       * Session Id
+       * @description Unique session identifier.
+       */
       session_id: string;
-      /** N Concepts */
+      /**
+       * N Concepts
+       * @description Number of concepts available in this session.
+       */
       n_concepts: number;
-      /** Concepts */
+      /**
+       * Concepts
+       * @description Ordered list of concept summaries.
+       */
       concepts: {
         [key: string]: unknown;
       }[];
       /**
        * Status
+       * @description Session state: active, completed, or cancelled.
        * @default active
        */
       status: string;
     };
     /** SessionStatusResponse */
     SessionStatusResponse: {
-      /** Session Id */
+      /**
+       * Session Id
+       * @description Session identifier.
+       */
       session_id: string;
-      /** Status */
+      /**
+       * Status
+       * @description Current session status.
+       */
       status: string;
-      /** Step */
+      /**
+       * Step
+       * @description Number of exercises answered so far.
+       */
       step: number;
-      /** Max Steps */
+      /**
+       * Max Steps
+       * @description Session step limit.
+       */
       max_steps: number;
-      /** Concepts Visited */
+      /**
+       * Concepts Visited
+       * @description Number of distinct concepts encountered.
+       */
       concepts_visited: number;
-      /** Total Concepts */
+      /**
+       * Total Concepts
+       * @description Total concepts in the session curriculum.
+       */
       total_concepts: number;
-      /** Avg Mastery */
+      /**
+       * Avg Mastery
+       * @description Average BKT mastery across all concepts.
+       */
       avg_mastery: number;
-      /** Coverage */
+      /**
+       * Coverage
+       * @description Fraction of concepts that have been visited at least once.
+       */
       coverage: number;
-      /** Total Correct */
+      /**
+       * Total Correct
+       * @description Cumulative count of correct answers.
+       */
       total_correct: number;
-      /** Total Answered */
+      /**
+       * Total Answered
+       * @description Cumulative count of answered exercises.
+       */
       total_answered: number;
-      /** Accuracy */
+      /**
+       * Accuracy
+       * @description Ratio of correct answers to total answered.
+       */
       accuracy: number;
-      /** Exercises */
+      /**
+       * Exercises
+       * @description Recent exercise history entries.
+       */
       exercises: {
         [key: string]: unknown;
       }[];
@@ -1595,7 +1780,7 @@ export interface components {
       session_completed: boolean;
       /** Stats */
       stats: {
-        [key: string]: unknown;
+        [key: string]: number;
       };
     };
     /** TheoryResponse */
@@ -1698,6 +1883,7 @@ export interface operations {
         'x-service-token'?: string | null;
       };
       path: {
+        /** @description Resource identifier (alphanumeric, hyphens, underscores) */
         session_id: string;
       };
       cookie?: never;
@@ -1732,6 +1918,7 @@ export interface operations {
         'x-service-token'?: string | null;
       };
       path: {
+        /** @description Resource identifier (alphanumeric, hyphens, underscores) */
         session_id: string;
       };
       cookie?: never;
@@ -1766,6 +1953,7 @@ export interface operations {
         'x-service-token'?: string | null;
       };
       path: {
+        /** @description Resource identifier (alphanumeric, hyphens, underscores) */
         session_id: string;
       };
       cookie?: never;
@@ -1800,6 +1988,7 @@ export interface operations {
         'x-service-token'?: string | null;
       };
       path: {
+        /** @description Resource identifier (alphanumeric, hyphens, underscores) */
         session_id: string;
       };
       cookie?: never;
@@ -1838,6 +2027,7 @@ export interface operations {
         'x-service-token'?: string | null;
       };
       path: {
+        /** @description Resource identifier (alphanumeric, hyphens, underscores) */
         session_id: string;
       };
       cookie?: never;
@@ -1876,6 +2066,7 @@ export interface operations {
         'x-service-token'?: string | null;
       };
       path: {
+        /** @description Resource identifier (alphanumeric, hyphens, underscores) */
         session_id: string;
       };
       cookie?: never;
@@ -1910,6 +2101,7 @@ export interface operations {
         'x-service-token'?: string | null;
       };
       path: {
+        /** @description Resource identifier (alphanumeric, hyphens, underscores) */
         session_id: string;
       };
       cookie?: never;
@@ -1944,6 +2136,7 @@ export interface operations {
         'x-service-token'?: string | null;
       };
       path: {
+        /** @description Resource identifier (alphanumeric, hyphens, underscores) */
         session_id: string;
       };
       cookie?: never;
@@ -1978,7 +2171,9 @@ export interface operations {
         'x-service-token'?: string | null;
       };
       path: {
+        /** @description Resource identifier (alphanumeric, hyphens, underscores) */
         session_id: string;
+        /** @description Resource identifier (alphanumeric, hyphens, underscores) */
         concept_id: string;
       };
       cookie?: never;
@@ -2061,6 +2256,40 @@ export interface operations {
       };
     };
   };
+  list_jobs_api_pipeline_jobs_get: {
+    parameters: {
+      query?: {
+        limit?: number;
+      };
+      header?: {
+        'x-user-id'?: string | null;
+        'x-service-token'?: string | null;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['StandardResponse_dict_'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
   get_job_status_api_pipeline_jobs__job_id__get: {
     parameters: {
       query?: never;
@@ -2069,6 +2298,7 @@ export interface operations {
         'x-service-token'?: string | null;
       };
       path: {
+        /** @description Resource identifier (alphanumeric, hyphens, underscores) */
         job_id: string;
       };
       cookie?: never;
@@ -2105,6 +2335,7 @@ export interface operations {
         'x-service-token'?: string | null;
       };
       path: {
+        /** @description Resource identifier (alphanumeric, hyphens, underscores) */
         job_id: string;
       };
       cookie?: never;
@@ -2118,6 +2349,76 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['StandardResponse_PipelineSessionCreateResponse_'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  cancel_job_api_pipeline_jobs__job_id__cancel_post: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-user-id'?: string | null;
+        'x-service-token'?: string | null;
+      };
+      path: {
+        /** @description Resource identifier (alphanumeric, hyphens, underscores) */
+        job_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['StandardResponse_dict_'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  retry_job_endpoint_api_pipeline_jobs__job_id__retry_post: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-user-id'?: string | null;
+        'x-service-token'?: string | null;
+      };
+      path: {
+        /** @description Resource identifier (alphanumeric, hyphens, underscores) */
+        job_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['StandardResponse_dict_'];
         };
       };
       /** @description Validation Error */
@@ -2207,6 +2508,7 @@ export interface operations {
         'x-service-token'?: string | null;
       };
       path: {
+        /** @description Resource identifier (alphanumeric, hyphens, underscores) */
         job_id: string;
       };
       cookie?: never;
@@ -2243,6 +2545,7 @@ export interface operations {
         'x-service-token'?: string | null;
       };
       path: {
+        /** @description Resource identifier (alphanumeric, hyphens, underscores) */
         job_id: string;
       };
       cookie?: never;
@@ -2311,6 +2614,7 @@ export interface operations {
         'x-service-token'?: string | null;
       };
       path: {
+        /** @description Resource identifier (alphanumeric, hyphens, underscores) */
         job_id: string;
       };
       cookie?: never;
@@ -2415,6 +2719,7 @@ export interface operations {
         'x-service-token'?: string | null;
       };
       path: {
+        /** @description Resource identifier (alphanumeric, hyphens, underscores) */
         draft_id: string;
       };
       cookie?: never;
@@ -2449,6 +2754,7 @@ export interface operations {
         'x-service-token'?: string | null;
       };
       path: {
+        /** @description Resource identifier (alphanumeric, hyphens, underscores) */
         draft_id: string;
       };
       cookie?: never;
@@ -2483,6 +2789,7 @@ export interface operations {
         'x-service-token'?: string | null;
       };
       path: {
+        /** @description Resource identifier (alphanumeric, hyphens, underscores) */
         draft_id: string;
       };
       cookie?: never;
@@ -2521,6 +2828,7 @@ export interface operations {
         'x-service-token'?: string | null;
       };
       path: {
+        /** @description Resource identifier (alphanumeric, hyphens, underscores) */
         draft_id: string;
       };
       cookie?: never;

@@ -7,10 +7,12 @@ import { Input } from '@/components/ui/Input';
 import {
   HiOutlineBookOpen,
   HiOutlineCloudUpload,
+  HiOutlineRefresh,
   HiOutlineSearch,
   HiOutlineTrash,
   HiOutlineViewGrid,
   HiOutlineViewList,
+  HiOutlineX,
 } from '@/components/icons';
 import { useRandomLibraryImages } from '@/features/adaptive/hooks/use-random-library-images';
 import type { DashboardSubject } from '@/features/adaptive/lib/dashboard-view-model';
@@ -27,20 +29,33 @@ type LibraryProps = {
   onGoUpload: () => void;
   onOpenSubject: (jobId: string) => void;
   onDelete: (job: PipelineJobHistoryItem) => void;
+  onRetry?: (jobId: string) => void;
+  onCancel?: (jobId: string) => void;
+  busyJobId?: string | null;
   viewMode: 'grid' | 'list';
   onViewModeChange: (mode: 'grid' | 'list') => void;
   t: TranslateFn;
 };
 
-type SubjectLibraryCardProps = {
+type ListItemProps = {
   subject: DashboardSubject;
   loading: boolean;
   deleting: boolean;
   imageUrl?: string;
   onOpenSubject: (jobId: string) => void;
   onDelete: (job: PipelineJobHistoryItem) => void;
+  onRetry?: (jobId: string) => void;
+  onCancel?: (jobId: string) => void;
+  busy?: boolean;
   t: TranslateFn;
 };
+
+/** Format etaSeconds into a compact human-readable string. */
+function formatEta(etaSeconds: number): string {
+  if (etaSeconds < 60) return `~${Math.round(etaSeconds)}s`;
+  const minutes = Math.round(etaSeconds / 60);
+  return `~${minutes}m`;
+}
 
 const UploadCard = ({ onGoUpload, t }: { onGoUpload: () => void; t: TranslateFn }) => (
   <div className="group flex min-h-[21rem] flex-col items-center justify-center rounded-2xl border-2 border-dashed border-neutral-300 p-8 text-center transition-colors duration-300 hover:border-brand-trust/50 hover:bg-brand-trust/5">
@@ -64,9 +79,17 @@ const SubjectLibraryListItem = memo(function SubjectLibraryListItem({
   deleting,
   onOpenSubject,
   onDelete,
+  onRetry,
+  onCancel,
+  busy = false,
   imageUrl,
   t,
-}: SubjectLibraryCardProps) {
+}: ListItemProps) {
+  const { runtime } = subject;
+
+  const isProcessing = runtime.kind === 'processing';
+  const isRetryable = runtime.kind === 'retryable';
+
   return (
     <div className="flex flex-col gap-4 rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-5">
       <div className="flex min-w-0 items-start gap-4">
@@ -84,7 +107,7 @@ const SubjectLibraryListItem = memo(function SubjectLibraryListItem({
             <HiOutlineBookOpen className="size-8 text-neutral-300" />
           )}
         </div>
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <h3
             className="truncate text-lg font-semibold text-neutral-900"
             title={subject.displayTitle}
@@ -94,15 +117,47 @@ const SubjectLibraryListItem = memo(function SubjectLibraryListItem({
           <p className="mt-1 text-xs font-medium uppercase tracking-tight text-neutral-600">
             {subject.lastOpenedLabel}
           </p>
-          <p className="mt-2 text-sm font-semibold text-brand-trust">{subject.progressLabel}</p>
-          <div className="mt-2 h-1.5 w-full max-w-xs rounded-full bg-neutral-100">
-            <div
-              className="h-full rounded-full bg-brand-trust"
-              style={{ width: `${subject.metrics.progressPercent}%` }}
-            />
-          </div>
+
+          {isProcessing && (
+            <>
+              <div className="mt-2 flex items-center justify-between text-[10px] font-bold text-brand-trust">
+                <span>{runtime.progressPercent}%</span>
+                <span className="truncate pl-2 text-neutral-500">{runtime.stageLabel}</span>
+              </div>
+              <div className="mt-1 h-1.5 w-full max-w-xs rounded-full bg-neutral-100">
+                <div
+                  className="h-full rounded-full bg-brand-trust transition-all duration-500"
+                  style={{ width: `${runtime.progressPercent}%` }}
+                />
+              </div>
+              {runtime.etaSeconds != null && (
+                <p className="mt-1 text-[10px] text-neutral-400">
+                  {t('processingEta', { eta: formatEta(runtime.etaSeconds) })}
+                </p>
+              )}
+            </>
+          )}
+
+          {runtime.kind === 'ready' && (
+            <>
+              <p className="mt-2 text-sm font-semibold text-brand-trust">{subject.progressLabel}</p>
+              <div className="mt-2 h-1.5 w-full max-w-xs rounded-full bg-neutral-100">
+                <div
+                  className="h-full rounded-full bg-brand-trust"
+                  style={{ width: `${subject.metrics.progressPercent}%` }}
+                />
+              </div>
+            </>
+          )}
+
+          {isRetryable && (
+            <p className="mt-2 text-xs text-red-500">
+              {t('processingFailed')}: {runtime.message}
+            </p>
+          )}
         </div>
       </div>
+
       <div className="flex items-center justify-end gap-2 sm:justify-start">
         <Button
           type="button"
@@ -116,13 +171,40 @@ const SubjectLibraryListItem = memo(function SubjectLibraryListItem({
         >
           <HiOutlineTrash className="size-4" />
         </Button>
-        <Button
-          onClick={() => onOpenSubject(subject.job_id)}
-          disabled={loading}
-          className="rounded-full bg-neutral-100 px-5 text-sm font-bold text-brand-trust hover:bg-brand-trust hover:text-white"
-        >
-          {loading ? t('creatingSession') : subject.ctaLabel}
-        </Button>
+
+        {isProcessing && (
+          <Button
+            onClick={() => onCancel?.(subject.job_id)}
+            disabled={busy}
+            aria-label={t('cancelProcessing')}
+            className="rounded-full bg-neutral-100 px-5 text-sm font-bold text-red-600 hover:bg-red-50 hover:text-red-700"
+          >
+            <HiOutlineX className="mr-1.5 size-4" />
+            {t('cancelProcessing')}
+          </Button>
+        )}
+
+        {isRetryable && (
+          <Button
+            onClick={() => onRetry?.(subject.job_id)}
+            disabled={busy}
+            aria-label={t('retryProcessing')}
+            className="rounded-full bg-neutral-100 px-5 text-sm font-bold text-brand-trust hover:bg-brand-trust hover:text-white"
+          >
+            <HiOutlineRefresh className="mr-1.5 size-4" />
+            {t('retryProcessing')}
+          </Button>
+        )}
+
+        {runtime.kind === 'ready' && (
+          <Button
+            onClick={() => onOpenSubject(subject.job_id)}
+            disabled={loading}
+            className="rounded-full bg-neutral-100 px-5 text-sm font-bold text-brand-trust hover:bg-brand-trust hover:text-white"
+          >
+            {loading ? t('creatingSession') : subject.ctaLabel}
+          </Button>
+        )}
       </div>
     </div>
   );
@@ -138,6 +220,9 @@ export const LibrarySection = ({
   onGoUpload,
   onOpenSubject,
   onDelete,
+  onRetry,
+  onCancel,
+  busyJobId,
   viewMode,
   onViewModeChange,
   t,
@@ -214,6 +299,7 @@ export const LibrarySection = ({
               />
             ))
           : subjects.map((subject, index) => {
+              const busy = busyJobId === subject.job_id;
               const sharedProps = {
                 subject,
                 imageUrl:
@@ -224,6 +310,9 @@ export const LibrarySection = ({
                 deleting: deletingJobId === subject.job_id,
                 onOpenSubject,
                 onDelete,
+                onRetry,
+                onCancel,
+                busy,
                 t,
               };
 

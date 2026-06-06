@@ -11,6 +11,12 @@ import {
 import { ADAPTIVE_ROUTES } from '@/features/adaptive/lib/routes';
 import { saveSessionJobMapping } from '../lib/session-storage';
 import { getSessionStartFeedback } from '../lib/session-start-feedback';
+import { useJobLibrary } from './use-job-library';
+import {
+  buildDashboardSubjectFromJob,
+  toDashboardSubject,
+  type DashboardSubject,
+} from '@/features/adaptive/lib/dashboard-view-model';
 import type {
   PipelineJobHistoryItem,
   SessionHistoryItem,
@@ -75,6 +81,7 @@ type UseAdaptiveDashboardParams = {
   initialSubjects: PipelineJobHistoryItem[];
   initialSessionHistory: SessionHistoryItem[];
   didHydrateFromServer: boolean;
+  locale: string;
   t: TranslateFn;
   tAdaptive: TranslateFn;
 };
@@ -108,6 +115,7 @@ export const useAdaptiveDashboard = ({
   initialSubjects,
   initialSessionHistory,
   didHydrateFromServer,
+  locale,
   t,
   tAdaptive,
 }: UseAdaptiveDashboardParams) => {
@@ -119,6 +127,11 @@ export const useAdaptiveDashboard = ({
     error: null,
     apiOnline: true,
     sessionHistory: initialSessionHistory,
+  });
+
+  const jobLibrary = useJobLibrary({
+    enabled: dashboardState.apiOnline === true,
+    initialJobs: [],
   });
   const [loadingJobId, setLoadingJobId] = useState<string | null>(null);
   const [deletingJobId, setDeletingJobId] = useState<string | null>(null);
@@ -170,7 +183,7 @@ export const useAdaptiveDashboard = ({
     setDeletingJobId(itemToDelete.job_id);
     try {
       await deleteSubject(itemToDelete.job_id, true);
-      await refreshSubjects();
+      await Promise.all([refreshSubjects(), jobLibrary.refresh()]);
       clearSelectedPipelineJob(itemToDelete.job_id);
       toast.success(t('deleteSuccess'));
     } catch (err) {
@@ -180,29 +193,46 @@ export const useAdaptiveDashboard = ({
       setDeletingJobId(null);
       setItemToDelete(null);
     }
-  }, [deletingJobId, itemToDelete, loadingJobId, refreshSubjects, t]);
+  }, [deletingJobId, itemToDelete, jobLibrary, loadingJobId, refreshSubjects, t]);
 
   const handleCancelDelete = useCallback(() => {
     if (!deletingJobId) setItemToDelete(null);
   }, [deletingJobId]);
 
-  const normalizedSubjects = useMemo(() => {
-    return dashboardState.subjects.map((job) => {
-      const displayName = job.filename?.replace(/\.[^.]+$/, '') || job.subject_id || job.job_id;
-      return {
-        job,
-        normalizedDisplayName: displayName.toLowerCase(),
-      };
-    });
+  // Map of completed + mastery-enriched subjects (from getSubjects), keyed by job_id,
+  // so completed cards can show mastery %/labels via toDashboardSubject.
+  const enrichedByJobId = useMemo(() => {
+    const map = new Map<string, PipelineJobHistoryItem>();
+    for (const subject of dashboardState.subjects) {
+      map.set(subject.job_id, subject);
+    }
+    return map;
   }, [dashboardState.subjects]);
+
+  // Merge all-status jobs (live polling) with completed mastery enrichment.
+  const mergedSubjects = useMemo<DashboardSubject[]>(() => {
+    return jobLibrary.jobs.map((job) => {
+      const enriched = job.status === 'completed' ? enrichedByJobId.get(job.job_id) : undefined;
+      return enriched
+        ? toDashboardSubject(enriched, locale, t)
+        : buildDashboardSubjectFromJob(job, t, tAdaptive);
+    });
+  }, [enrichedByJobId, jobLibrary.jobs, locale, t, tAdaptive]);
+
+  const normalizedSubjects = useMemo(() => {
+    return mergedSubjects.map((subject) => ({
+      subject,
+      normalizedDisplayName: subject.displayTitle.toLowerCase(),
+    }));
+  }, [mergedSubjects]);
 
   const filteredSubjects = useMemo(() => {
     const normalizedQuery = deferredSearchQuery.trim().toLowerCase();
-    if (!normalizedQuery) return normalizedSubjects.map(({ job }) => job);
+    if (!normalizedQuery) return normalizedSubjects.map(({ subject }) => subject);
 
-    return normalizedSubjects.reduce<PipelineJobHistoryItem[]>((matches, subject) => {
-      if (subject.normalizedDisplayName.includes(normalizedQuery)) {
-        matches.push(subject.job);
+    return normalizedSubjects.reduce<DashboardSubject[]>((matches, item) => {
+      if (item.normalizedDisplayName.includes(normalizedQuery)) {
+        matches.push(item.subject);
       }
       return matches;
     }, []);
@@ -286,6 +316,8 @@ export const useAdaptiveDashboard = ({
 
   return {
     apiOnline: dashboardState.apiOnline,
+    busyJobId: jobLibrary.busyJobId,
+    cancel: jobLibrary.cancel,
     dailyGoalProgress,
     deletingJobId,
     error: dashboardState.error,
@@ -298,6 +330,7 @@ export const useAdaptiveDashboard = ({
     itemToDelete,
     loading: dashboardState.loading,
     loadingJobId,
+    retry: jobLibrary.retry,
     searchQuery,
     sessionHistory: dashboardState.sessionHistory,
     setSearchQuery,

@@ -15,6 +15,7 @@ import {
   DeleteSubjectResponse,
   NextConcept,
   TheoryData,
+  PipelineJobListItem,
 } from '@/features/adaptive/types';
 
 import {
@@ -217,4 +218,30 @@ export async function deleteSubject(
     `/api/adaptive/history/subjects/${jobId}?delete_sessions=${deleteSessions ? 'true' : 'false'}`,
     { method: 'DELETE' },
   );
+}
+
+export async function listPipelineJobs(limit = 50): Promise<PipelineJobListItem[]> {
+  const res = await apiFetch<{ jobs: PipelineJobListItem[]; count: number }>(
+    `/api/adaptive/pipeline/jobs?limit=${limit}`,
+    { timeoutMs: PIPELINE_STATUS_TIMEOUT_MS, cache: 'no-store' },
+  );
+  return res.jobs;
+}
+
+export async function retryPipelineJob(
+  jobId: string,
+): Promise<{ job_id: string; status: string; retry_count?: number }> {
+  return apiFetch(`/api/adaptive/pipeline/jobs/${jobId}/retry`, {
+    method: 'POST',
+    timeoutMs: PIPELINE_CREATE_SESSION_TIMEOUT_MS,
+  });
+}
+
+export async function cancelPipelineJob(
+  jobId: string,
+): Promise<{ job_id: string; status: string }> {
+  return apiFetch(`/api/adaptive/pipeline/jobs/${jobId}/cancel`, {
+    method: 'POST',
+    timeoutMs: PIPELINE_STATUS_TIMEOUT_MS,
+  });
 }

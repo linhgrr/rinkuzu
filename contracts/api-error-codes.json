@@ -16,6 +16,7 @@
     "pipeline_timeout": "Pipeline timed out",
     "pipeline_failed": "Pipeline failed",
     "pipeline_cancelled": "Pipeline cancelled",
+    "pipeline_stalled": "Processing stalled and was stopped. You can retry.",
     "upstream_timeout": "Service unavailable",
     "upstream_error": "Upstream service error",
     "upstream_invalid_json": "Upstream service error",

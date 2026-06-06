@@ -15,6 +15,7 @@ import {
 } from '@/features/adaptive/lib/api-client';
 import { ADAPTIVE_ROUTES } from '@/features/adaptive/lib/routes';
 import { saveSessionJobMapping } from '../lib/session-storage';
+import { STATUS_LABEL_KEYS } from '../lib/pipeline-status-labels';
 import type { PipelineJobStatus, PipelineStatus } from '@/features/adaptive/types';
 
 const STATUS_TO_STEP: Record<PipelineStatus, number> = {
@@ -32,23 +33,6 @@ const STATUS_TO_STEP: Record<PipelineStatus, number> = {
   completed: 6,
   failed: -1,
   cancelled: -1,
-};
-
-const STATUS_LABEL_KEYS: Record<PipelineStatus, string> = {
-  pending: 'waitingToStart',
-  queued: 'queuedForProcessing',
-  loading: 'readingDocument',
-  chunking: 'splittingChunks',
-  extracting: 'extractingConceptsWithAI',
-  embedding: 'computingEmbeddings',
-  merging: 'mergingDuplicateConcepts',
-  ranking: 'rankingPrerequisites',
-  verifying: 'verifyingRelationsWithAI',
-  building_graph: 'buildingKnowledgeGraph',
-  optimizing: 'optimizingDAG',
-  completed: 'completed',
-  failed: 'failed',
-  cancelled: 'failed',
 };
 
 type TranslateFn = (key: string, values?: Record<string, string | number | Date>) => string;

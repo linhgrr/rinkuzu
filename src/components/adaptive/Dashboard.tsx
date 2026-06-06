@@ -35,6 +35,8 @@ export default function AdaptiveLearningDashboard({
 
   const {
     apiOnline,
+    busyJobId,
+    cancel,
     dailyGoalProgress,
     deletingJobId,
     error,
@@ -47,6 +49,7 @@ export default function AdaptiveLearningDashboard({
     itemToDelete,
     loading,
     loadingJobId,
+    retry,
     searchQuery,
     setSearchQuery,
     streakDays,
@@ -55,14 +58,12 @@ export default function AdaptiveLearningDashboard({
     initialSubjects,
     initialSessionHistory,
     didHydrateFromServer,
+    locale,
     t: tDashboard,
     tAdaptive,
   });
 
-  const dashboardSubjects = useMemo(
-    () => filteredSubjects.map((subject) => toDashboardSubject(subject, locale, tDashboard)),
-    [filteredSubjects, locale, tDashboard],
-  );
+  const dashboardSubjects = filteredSubjects;
 
   const upNextDashboardSubject = useMemo(
     () => (upNextSubject ? toDashboardSubject(upNextSubject, locale, tDashboard) : null),
@@ -102,6 +103,9 @@ export default function AdaptiveLearningDashboard({
           onGoUpload={handleGoUpload}
           onOpenSubject={handleOpenSubject}
           onDelete={handleDeleteClick}
+          onRetry={retry}
+          onCancel={cancel}
+          busyJobId={busyJobId}
           viewMode={viewMode}
           onViewModeChange={setViewMode}
           t={tDashboard}

@@ -196,7 +196,11 @@
         "description": "Phần lớn học viên cùng cấp độ với bạn đang khám phá khoa học môi trường trong tuần này. Hãy tham gia.",
         "duration": "8 phút đọc"
       }
-    }
+    },
+    "cancelProcessing": "Hủy xử lý",
+    "retryProcessing": "Thử lại",
+    "processingFailed": "Xử lý thất bại",
+    "processingEta": "Còn khoảng {eta}"
   },
   "history": {
     "title": "Lịch sử bài tập",

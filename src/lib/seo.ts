@@ -50,11 +50,14 @@ export function buildLocalizedMetadata({
   path,
   title,
   description,
-  imagePath = '/icons/icon-512x512.png',
+  imagePath,
   robots,
 }: LocalizedMetadataInput): Metadata {
   const canonical = canonicalFor(locale, path);
-  const imageUrl = new URL(imagePath, siteUrl).toString();
+  // Default to the dynamic 1200x630 OG endpoint so social previews render at the
+  // correct aspect ratio. Square icons (icon-512x512.png) get letterboxed/cropped.
+  const resolvedImagePath = imagePath ?? `/og?title=${encodeURIComponent(title)}`;
+  const imageUrl = new URL(resolvedImagePath, siteUrl).toString();
 
   return {
     title,

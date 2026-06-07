@@ -51,10 +51,10 @@ export const metadata: Metadata = {
     url: '/',
     images: [
       {
-        url: '/images/navbar_logo.png',
+        url: '/og',
         width: 1200,
         height: 630,
-        alt: 'RinKuzu',
+        alt: 'RinKuzu - AI Quiz Generator from PDF',
       },
     ],
   },

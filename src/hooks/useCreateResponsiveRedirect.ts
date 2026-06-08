@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { matchesMedia } from '@/hooks/useMediaQuery';
 
 const MOBILE_BREAKPOINT_PX = 768;
 
@@ -23,9 +24,7 @@ export function useCreateResponsiveRedirect(currentVariant: Variant): boolean {
       return;
     }
 
-    const isMobileViewport = window.matchMedia(
-      `(max-width: ${MOBILE_BREAKPOINT_PX - 1}px)`,
-    ).matches;
+    const isMobileViewport = matchesMedia(`(max-width: ${MOBILE_BREAKPOINT_PX - 1}px)`);
     const target: Variant = isMobileViewport ? 'mobile' : 'desktop';
 
     if (target === currentVariant) {

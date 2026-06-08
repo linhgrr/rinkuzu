@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server';
+import { NextRequest, after } from 'next/server';
 import { ZodError } from 'zod';
 
 import connectDB from '@/lib/mongoose';
@@ -62,16 +62,20 @@ export async function POST(request: NextRequest) {
       user.passwordResetExpires = new Date(Date.now() + RESET_TOKEN_TTL_MS);
       await user.save();
 
-      await Promise.all([
-        sendTransactionalMail(await buildPasswordResetMessage(user.email, raw)),
-        recordAuthEvent({
-          event: 'password_reset_requested',
-          userId: user._id,
-          email: user.email,
-          ip,
-          userAgent,
-        }),
-      ]);
+      // Mail delivery + audit are side effects that don't shape the neutral
+      // response, so defer them to keep the request fast and timing-uniform.
+      after(async () => {
+        await Promise.all([
+          sendTransactionalMail(await buildPasswordResetMessage(user.email, raw)),
+          recordAuthEvent({
+            event: 'password_reset_requested',
+            userId: user._id,
+            email: user.email,
+            ip,
+            userAgent,
+          }),
+        ]);
+      });
     } else {
       await recordAuthEvent({
         event: 'password_reset_requested',

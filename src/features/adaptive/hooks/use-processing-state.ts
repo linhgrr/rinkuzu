@@ -14,6 +14,7 @@ import {
   isRetryableAdaptiveError,
 } from '@/features/adaptive/lib/api-client';
 import { ADAPTIVE_ROUTES } from '@/features/adaptive/lib/routes';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { saveSessionJobMapping } from '../lib/session-storage';
 import { STATUS_LABEL_KEYS } from '../lib/pipeline-status-labels';
 import type { PipelineJobStatus, PipelineStatus } from '@/features/adaptive/types';
@@ -75,7 +76,9 @@ export const useProcessingState = (t: TranslateFn) => {
   const [partialGraph, setPartialGraph] = useState<PipelineJobStatus['partial_graph']>(null);
   const [creatingSession, setCreatingSession] = useState(false);
   const filename = useMemo(() => getStoredFilename(t('processing.defaultFilename')), [t]);
-  const [showGraphPanel, setShowGraphPanel] = useState(false);
+  // Reactive viewport flag — the shared hook seeds the initial value on mount
+  // (the previous inline effect only updated on change, missing first paint).
+  const showGraphPanel = useMediaQuery('(min-width: 1024px)');
 
   const pollingRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const navigationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -488,17 +491,6 @@ export const useProcessingState = (t: TranslateFn) => {
       void pollJob(jobId);
     };
   }, [pollJob]);
-
-  useEffect(() => {
-    const mediaQuery = window.matchMedia('(min-width: 1024px)');
-    const applyMatch = () => setShowGraphPanel(mediaQuery.matches);
-
-    mediaQuery.addEventListener('change', applyMatch);
-
-    return () => {
-      mediaQuery.removeEventListener('change', applyMatch);
-    };
-  }, []);
 
   useEffect(() => {
     const jobId = localStorage.getItem('al_pipeline_job_id');

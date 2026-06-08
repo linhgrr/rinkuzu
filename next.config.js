@@ -236,8 +236,9 @@ const nextConfig = {
     ];
   },
   // Server Actions are enabled by default.
+  reactCompiler: true,
   experimental: {
-    optimizePackageImports: ['react-icons', 'react-markdown', 'lucide-react'],
+    optimizePackageImports: ['react-icons', 'react-markdown', 'lucide-react', 'framer-motion'],
   },
   images: {
     remotePatterns: [

@@ -3,60 +3,59 @@
 
 import { useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
+import useSWR from 'swr';
 import { useDraftStore } from '@/store/useDraftStore';
 import { usePdfProcessor } from '@/hooks/usePdfProcessor';
 import { fetchApiData } from '@/lib/api/client';
 
 const SYNC_INTERVAL = 30000; // 30 seconds
 
+type DraftListResponse = {
+  drafts: Array<{ _id: string; status: string; expiresAt: string }>;
+};
+
 export function DraftSyncProvider({ children }: { children: React.ReactNode }) {
   const { data: session } = useSession();
-  const { getActiveDrafts, cleanupExpiredDrafts, syncWithServer } = useDraftStore();
+  // Subscribe to each action individually instead of the whole store, so this
+  // provider doesn't re-render every time any draft changes.
+  const cleanupExpiredDrafts = useDraftStore((s) => s.cleanupExpiredDrafts);
+  const syncWithServer = useDraftStore((s) => s.syncWithServer);
   const { resumeProcessing } = usePdfProcessor();
-  const hasInitialized = useRef(false);
-  const syncIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const processingDraftsRef = useRef<Set<string>>(new Set());
 
-  // Initial sync on mount
+  // Sync server draft state via SWR (dedup + cache + periodic revalidation),
+  // replacing the manual fetch + setInterval polling.
+  const { data: draftList } = useSWR<DraftListResponse>(
+    session?.user ? '/api/draft/list' : null,
+    (url: string) => fetchApiData<DraftListResponse>(url),
+    {
+      refreshInterval: SYNC_INTERVAL,
+      revalidateOnFocus: false,
+    },
+  );
+
+  // Reconcile the local store whenever fresh server state arrives.
   useEffect(() => {
-    if (!session?.user || hasInitialized.current) return;
-    hasInitialized.current = true;
+    if (!draftList) return;
+    cleanupExpiredDrafts();
+    syncWithServer(draftList.drafts);
+  }, [draftList, cleanupExpiredDrafts, syncWithServer]);
 
-    const initSync = async () => {
-      // Cleanup expired first
-      cleanupExpiredDrafts();
-
-      // Fetch server state and sync
-      try {
-        const data = await fetchApiData<{
-          drafts: Array<{ _id: string; status: string; expiresAt: string }>;
-        }>('/api/draft/list');
-        syncWithServer(data.drafts);
-      } catch (error) {
-        console.error('Failed to sync drafts:', error);
-      }
-    };
-
-    initSync();
-
-    // Periodic cleanup
-    syncIntervalRef.current = setInterval(() => {
-      cleanupExpiredDrafts();
-    }, SYNC_INTERVAL);
-
-    return () => {
-      if (syncIntervalRef.current) {
-        clearInterval(syncIntervalRef.current);
-      }
-    };
-  }, [session, cleanupExpiredDrafts, syncWithServer]);
+  // Periodic local cleanup of expired drafts, independent of network state.
+  useEffect(() => {
+    if (!session?.user) return;
+    const id = setInterval(() => cleanupExpiredDrafts(), SYNC_INTERVAL);
+    return () => clearInterval(id);
+  }, [session, cleanupExpiredDrafts]);
 
   // Watch for new processing drafts and resume them
   useEffect(() => {
     if (!session?.user) return;
 
     const checkAndResume = async () => {
-      const drafts = getActiveDrafts();
+      // Read the latest store snapshot on demand instead of subscribing —
+      // this value is only used inside the callback.
+      const drafts = useDraftStore.getState().getActiveDrafts();
       const processingDrafts = drafts.filter((d) => d.status === 'processing');
 
       for (const draft of processingDrafts) {
@@ -85,7 +84,7 @@ export function DraftSyncProvider({ children }: { children: React.ReactNode }) {
     return () => {
       clearInterval(checkInterval);
     };
-  }, [session, getActiveDrafts, resumeProcessing]);
+  }, [session, resumeProcessing]);
 
   return <>{children}</>;
 }

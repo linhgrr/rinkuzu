@@ -14,10 +14,19 @@ export const ReadingProgressBar = () => {
   const [completion, setCompletion] = useState<number>(() => computeCompletion());
 
   useEffect(() => {
-    const update = () => setCompletion(computeCompletion());
+    let frame = 0;
+    const update = () => {
+      // Coalesce bursts of scroll events into one state update per frame.
+      if (frame) return;
+      frame = window.requestAnimationFrame(() => {
+        frame = 0;
+        setCompletion(computeCompletion());
+      });
+    };
     window.addEventListener('scroll', update, { passive: true });
     return () => {
       window.removeEventListener('scroll', update);
+      if (frame) window.cancelAnimationFrame(frame);
     };
   }, []);
 

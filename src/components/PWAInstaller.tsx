@@ -2,6 +2,7 @@
 
 import { useEffect, useReducer } from 'react';
 import { useTranslations } from 'next-intl';
+import { matchesMedia } from '@/hooks/useMediaQuery';
 
 interface BeforeInstallPromptEvent extends Event {
   readonly platforms: string[];
@@ -52,7 +53,7 @@ export default function PWAInstaller() {
   const [state, dispatch] = useReducer(pwaInstallerReducer, initialState);
 
   useEffect(() => {
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+    const isStandalone = matchesMedia('(display-mode: standalone)');
     const isInWebAppiOS = (window.navigator as IOSNavigator).standalone === true;
     const isAppInstalled = isStandalone || isInWebAppiOS;
 

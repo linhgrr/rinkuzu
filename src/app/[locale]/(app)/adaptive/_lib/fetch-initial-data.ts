@@ -10,30 +10,44 @@ import {
 type AdaptiveDashboardPayload = {
   subjects: PipelineJobHistoryItem[];
   sessionHistory: SessionHistoryItem[];
+  apiOnline: boolean | null;
+  initialErrorKey: 'connectionLimited' | null;
 };
+
+type AdaptiveFetchResult<T> =
+  | {
+      ok: true;
+      data: T;
+    }
+  | {
+      ok: false;
+    };
+
+const INITIAL_DASHBOARD_TIMEOUT_MS = 6_000;
 
 const fetchAdaptiveJson = async <T>(
   baseUrl: string,
   path: string,
   headers: Record<string, string>,
   timeoutMs: number,
-): Promise<T | null> => {
+): Promise<AdaptiveFetchResult<T>> => {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
     try {
-      return await fetchApiData<T>(`${baseUrl}${path}`, {
+      const data = await fetchApiData<T>(`${baseUrl}${path}`, {
         headers,
         cache: 'no-store',
         signal: controller.signal,
       });
+      return { ok: true, data };
     } catch (error) {
       console.warn(
         `fetchAdaptiveJson: failed to load ${path}`,
         error instanceof Error ? error.message : error,
       );
-      return null;
+      return { ok: false };
     }
   } finally {
     clearTimeout(timeout);
@@ -45,7 +59,7 @@ export async function fetchAdaptiveDashboardData(
 ): Promise<AdaptiveDashboardPayload> {
   try {
     const baseUrl = resolveAdaptiveApiUrl();
-    const timeoutMs = resolveAdaptiveProxyTimeoutMs();
+    const timeoutMs = Math.min(resolveAdaptiveProxyTimeoutMs(), INITIAL_DASHBOARD_TIMEOUT_MS);
     const headers = buildAdaptiveServiceHeaders(userId);
 
     const [subjectsResult, historyResult] = await Promise.allSettled([
@@ -64,14 +78,36 @@ export async function fetchAdaptiveDashboardData(
     ]);
 
     const subjects =
-      subjectsResult.status === 'fulfilled' ? (subjectsResult.value?.subjects ?? []) : [];
+      subjectsResult.status === 'fulfilled' && subjectsResult.value.ok
+        ? (subjectsResult.value.data.subjects ?? [])
+        : [];
 
     const sessionHistory =
-      historyResult.status === 'fulfilled' ? (historyResult.value?.subjects ?? []) : [];
+      historyResult.status === 'fulfilled' && historyResult.value.ok
+        ? (historyResult.value.data.subjects ?? [])
+        : [];
 
-    return { subjects, sessionHistory };
+    const subjectsFailed =
+      subjectsResult.status === 'rejected' ||
+      (subjectsResult.status === 'fulfilled' && !subjectsResult.value.ok);
+    const historyFailed =
+      historyResult.status === 'rejected' ||
+      (historyResult.status === 'fulfilled' && !historyResult.value.ok);
+    const hasInitialError = subjectsFailed || historyFailed;
+
+    return {
+      subjects,
+      sessionHistory,
+      apiOnline: subjectsFailed && historyFailed ? false : true,
+      initialErrorKey: hasInitialError ? 'connectionLimited' : null,
+    };
   } catch (error) {
     logger.error({ error }, 'Failed fetching adaptive learning data server-side');
-    return { subjects: [], sessionHistory: [] };
+    return {
+      subjects: [],
+      sessionHistory: [],
+      apiOnline: false,
+      initialErrorKey: 'connectionLimited',
+    };
   }
 }

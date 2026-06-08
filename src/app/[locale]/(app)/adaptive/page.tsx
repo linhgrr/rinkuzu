@@ -1,8 +1,10 @@
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 import { getServerSession } from 'next-auth';
 import { getTranslations } from 'next-intl/server';
 import AdaptiveLearningGuest from '@/features/adaptive/components/AdaptiveLearningGuest';
 import { fetchAdaptiveDashboardData } from './_lib/fetch-initial-data';
+import { AdaptiveDashboardRouteSkeleton } from './_components/AdaptiveDashboardRouteSkeleton';
 import AdaptiveLearningDashboard from '@/components/adaptive/Dashboard';
 import { authOptions } from '@/lib/auth';
 import { buildLocalizedMetadata } from '@/lib/seo';
@@ -41,7 +43,9 @@ export default async function AdaptiveLearningPage({ params }: PageProps) {
     <>
       <JsonLd id="adaptive-software-schema" data={softwareSchema} />
       {session?.user ? (
-        <AdaptiveDashboardLoader userId={session.user.id} />
+        <Suspense fallback={<AdaptiveDashboardRouteSkeleton />}>
+          <AdaptiveDashboardLoader userId={session.user.id} />
+        </Suspense>
       ) : (
         <AdaptiveLearningGuest locale={locale} t={t} />
       )}
@@ -51,11 +55,14 @@ export default async function AdaptiveLearningPage({ params }: PageProps) {
 
 // Separate async server component for authenticated dashboard data
 async function AdaptiveDashboardLoader({ userId }: { userId: string }) {
-  const { subjects, sessionHistory } = await fetchAdaptiveDashboardData(userId);
+  const { apiOnline, initialErrorKey, subjects, sessionHistory } =
+    await fetchAdaptiveDashboardData(userId);
   return (
     <AdaptiveLearningDashboard
       initialSubjects={subjects}
       initialSessionHistory={sessionHistory}
+      initialApiOnline={apiOnline}
+      initialErrorKey={initialErrorKey}
       didHydrateFromServer
     />
   );

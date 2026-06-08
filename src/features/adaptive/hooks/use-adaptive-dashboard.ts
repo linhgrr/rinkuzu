@@ -80,6 +80,8 @@ const clearSelectedPipelineJob = (jobId: string) => {
 type UseAdaptiveDashboardParams = {
   initialSubjects: PipelineJobHistoryItem[];
   initialSessionHistory: SessionHistoryItem[];
+  initialApiOnline: boolean | null;
+  initialError: string | null;
   didHydrateFromServer: boolean;
   locale: string;
   t: TranslateFn;
@@ -114,6 +116,8 @@ const adaptiveDashboardReducer = (
 export const useAdaptiveDashboard = ({
   initialSubjects,
   initialSessionHistory,
+  initialApiOnline,
+  initialError,
   didHydrateFromServer,
   locale,
   t,
@@ -124,8 +128,8 @@ export const useAdaptiveDashboard = ({
   const [dashboardState, dispatch] = useReducer(adaptiveDashboardReducer, {
     subjects: initialSubjects,
     loading: false,
-    error: null,
-    apiOnline: true,
+    error: initialError,
+    apiOnline: initialApiOnline,
     sessionHistory: initialSessionHistory,
   });
 
@@ -274,7 +278,13 @@ export const useAdaptiveDashboard = ({
         if (!isActive) return;
         const healthResult = await checkApiHealth().catch(() => false);
         if (isActive) {
-          dispatch({ type: 'hydrate', value: { apiOnline: healthResult } });
+          dispatch({
+            type: 'hydrate',
+            value: {
+              apiOnline: healthResult,
+              error: healthResult ? initialError : (initialError ?? t('connectionLimited')),
+            },
+          });
         }
         return;
       }
@@ -289,6 +299,9 @@ export const useAdaptiveDashboard = ({
         loading: false,
         apiOnline: healthResult.status === 'fulfilled' ? healthResult.value : false,
       };
+      if (nextState.apiOnline === false) {
+        nextState.error = t('connectionLimited');
+      }
       if (subjectsResult.status === 'fulfilled') {
         nextState.subjects = subjectsResult.value;
       } else {
@@ -312,7 +325,7 @@ export const useAdaptiveDashboard = ({
     return () => {
       isActive = false;
     };
-  }, [didHydrateFromServer, t]);
+  }, [didHydrateFromServer, initialError, t]);
 
   return {
     apiOnline: dashboardState.apiOnline,

@@ -20,12 +20,16 @@ const inter = Inter({ subsets: ['latin'] });
 interface DashboardProps {
   initialSubjects: PipelineJobHistoryItem[];
   initialSessionHistory: SessionHistoryItem[];
+  initialApiOnline?: boolean | null;
+  initialErrorKey?: 'connectionLimited' | null;
   didHydrateFromServer?: boolean;
 }
 
 export default function AdaptiveLearningDashboard({
   initialSubjects,
   initialSessionHistory,
+  initialApiOnline = true,
+  initialErrorKey = null,
   didHydrateFromServer = false,
 }: DashboardProps) {
   const tAdaptive = useTranslations('adaptiveLearning');
@@ -57,6 +61,8 @@ export default function AdaptiveLearningDashboard({
   } = useAdaptiveDashboard({
     initialSubjects,
     initialSessionHistory,
+    initialApiOnline,
+    initialError: initialErrorKey ? tDashboard(initialErrorKey) : null,
     didHydrateFromServer,
     locale,
     t: tDashboard,

@@ -1,3 +1,4 @@
+import { after } from 'next/server';
 import { withAuth } from '@/lib/api/auth';
 import connectDB from '@/lib/mongoose';
 import QuestionProgress from '@/models/QuestionProgress';
@@ -17,12 +18,15 @@ export const POST = withAuth(async (req, { userId }) => {
 
     await connectDB();
 
-    // 1. Get or Create QuestionProgress
-    let qProgress = await QuestionProgress.findOne({
-      userId,
-      quizSlug,
-      questionId,
-    });
+    // 1. Get or Create QuestionProgress + UserProgress (independent reads, fetch in parallel)
+    let [qProgress, uProgress] = await Promise.all([
+      QuestionProgress.findOne({
+        userId,
+        quizSlug,
+        questionId,
+      }),
+      UserProgress.findOne({ userId }),
+    ]);
 
     if (!qProgress) {
       // Create new if not exists (first time answering)
@@ -68,9 +72,7 @@ export const POST = withAuth(async (req, { userId }) => {
 
     await qProgress.save();
 
-    // 4. Update UserProgress (Streak & XP)
-    let uProgress = await UserProgress.findOne({ userId });
-
+    // 4. Update UserProgress (Streak & XP) — already fetched above in parallel
     if (!uProgress) {
       uProgress = new UserProgress({ userId });
     }
@@ -190,13 +192,18 @@ export const POST = withAuth(async (req, { userId }) => {
       uProgress.lastSessionDate = now;
     }
 
-    // Stats
-    uProgress.totalQuestionsLearned = await QuestionProgress.countDocuments({
-      userId,
-      srsLevel: { $gt: 0 },
-    });
-
     await uProgress.save();
+
+    // Recompute learned-question count after the response is sent.
+    // It feeds a stat field that is not part of this response payload,
+    // so blocking on the expensive countDocuments would only add latency.
+    after(async () => {
+      const totalQuestionsLearned = await QuestionProgress.countDocuments({
+        userId,
+        srsLevel: { $gt: 0 },
+      });
+      await UserProgress.updateOne({ userId }, { totalQuestionsLearned });
+    });
 
     return apiOk(
       {

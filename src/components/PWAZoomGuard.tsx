@@ -1,12 +1,13 @@
 'use client';
 
 import { useEffect } from 'react';
+import { matchesMedia } from '@/hooks/useMediaQuery';
 
 function isStandalonePWA() {
   const navigatorWithStandalone = window.navigator as Navigator & { standalone?: boolean };
   return (
-    window.matchMedia('(display-mode: standalone)').matches ||
-    window.matchMedia('(display-mode: fullscreen)').matches ||
+    matchesMedia('(display-mode: standalone)') ||
+    matchesMedia('(display-mode: fullscreen)') ||
     navigatorWithStandalone.standalone === true
   );
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useReducer } from 'react';
+import { useHotkeys } from 'react-hotkeys-hook';
 import { useTranslations } from 'next-intl';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -360,42 +361,40 @@ export function Flashcard({
     [onSwipe, state.isTransitioning],
   );
 
-  const handleKeyDown = useCallback(
-    (event: KeyboardEvent) => {
-      if (state.isTransitioning) {
-        return;
-      }
+  useHotkeys(
+    'space',
+    (event) => {
+      if (state.isTransitioning) return;
+      event.preventDefault();
+      dispatch({ type: 'toggleFlipped' });
+    },
+    { preventDefault: true },
+    [state.isTransitioning],
+  );
 
-      switch (event.code) {
-        case 'Space':
-          event.preventDefault();
-          dispatch({ type: 'toggleFlipped' });
-          break;
-        case 'ArrowLeft':
-          if (state.isFlipped) {
-            triggerSwipe('left');
-          } else {
-            dispatch({ type: 'setFlipped', value: true });
-          }
-          break;
-        case 'ArrowRight':
-          if (state.isFlipped) {
-            triggerSwipe('right');
-          }
-          break;
+  useHotkeys(
+    'left',
+    () => {
+      if (state.isTransitioning) return;
+      if (state.isFlipped) {
+        triggerSwipe('left');
+      } else {
+        dispatch({ type: 'setFlipped', value: true });
       }
     },
     [state.isTransitioning, state.isFlipped, triggerSwipe],
   );
 
-  useEffect(() => {
-    const listener = (event: KeyboardEvent) => {
-      handleKeyDown(event);
-    };
-
-    window.addEventListener('keydown', listener);
-    return () => window.removeEventListener('keydown', listener);
-  }, [handleKeyDown]);
+  useHotkeys(
+    'right',
+    () => {
+      if (state.isTransitioning) return;
+      if (state.isFlipped) {
+        triggerSwipe('right');
+      }
+    },
+    [state.isTransitioning, state.isFlipped, triggerSwipe],
+  );
 
   useEffect(() => {
     dispatch({ type: 'resetForQuestion' });

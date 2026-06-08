@@ -2,6 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import { useEffect, useState } from 'react';
+import { matchesMedia } from '@/hooks/useMediaQuery';
 
 const DashboardMascot3D = dynamic(() => import('./DashboardMascot3D'), {
   ssr: false,
@@ -22,7 +23,7 @@ export function DashboardHeroMascot() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    if (!window.matchMedia('(min-width: 1024px)').matches) return;
+    if (!matchesMedia('(min-width: 1024px)')) return;
 
     let timeoutId: number | null = null;
     let idleId: number | null = null;

@@ -1,6 +1,9 @@
 'use client';
 
 import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { useSession } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
@@ -14,32 +17,43 @@ interface ReportQuizProps {
   quizTitle: string;
 }
 
+const reportSchema = z.object({
+  content: z.string().trim().min(1).max(2000),
+});
+type ReportFormValues = z.infer<typeof reportSchema>;
+
 export default function ReportQuiz({ quizSlug, quizTitle }: ReportQuizProps) {
   const { data: session } = useSession();
   const t = useTranslations('report');
   const tCommon = useTranslations('common');
   const [isOpen, setIsOpen] = useState(false);
-  const [content, setContent] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const {
+    register,
+    handleSubmit,
+    watch,
+    reset,
+    formState: { isSubmitting, isValid },
+  } = useForm<ReportFormValues>({
+    resolver: zodResolver(reportSchema),
+    mode: 'onChange',
+    defaultValues: { content: '' },
+  });
 
-    if (!content.trim()) return;
+  const contentLength = watch('content').length;
 
-    setIsSubmitting(true);
-
+  const onSubmit = handleSubmit(async ({ content }) => {
     try {
       await fetchApiData<{ reportId: string }>(`/api/quiz/${quizSlug}/report`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ content: content.trim() }),
+        body: JSON.stringify({ content }),
       });
       setIsSubmitted(true);
-      setContent('');
+      reset({ content: '' });
       setTimeout(() => {
         setIsOpen(false);
         setIsSubmitted(false);
@@ -47,10 +61,8 @@ export default function ReportQuiz({ quizSlug, quizTitle }: ReportQuizProps) {
     } catch (error) {
       console.error('Error submitting report:', error);
       toast.error(error instanceof Error ? error.message : t('failedToSubmit'));
-    } finally {
-      setIsSubmitting(false);
     }
-  };
+  });
 
   if (!session) {
     return null;
@@ -99,7 +111,7 @@ export default function ReportQuiz({ quizSlug, quizTitle }: ReportQuizProps) {
               <p className="text-neutral-600">{t('thankYou')}</p>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={onSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-neutral-700 mb-2">
                   {t('quiz')}: <span className="font-semibold">{quizTitle}</span>
@@ -116,17 +128,15 @@ export default function ReportQuiz({ quizSlug, quizTitle }: ReportQuizProps) {
                 </label>
                 <Textarea
                   id="content"
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
                   className="resize-none"
                   rows={6}
                   maxLength={2000}
                   placeholder={t('placeholder')}
-                  required
+                  {...register('content')}
                 />
                 <div className="flex justify-between mt-1">
                   <span className="text-xs text-neutral-500">{t('describeClearly')}</span>
-                  <span className="text-xs text-neutral-500">{content.length}/2000</span>
+                  <span className="text-xs text-neutral-500">{contentLength}/2000</span>
                 </div>
               </div>
 
@@ -142,7 +152,7 @@ export default function ReportQuiz({ quizSlug, quizTitle }: ReportQuizProps) {
                 <Button
                   type="submit"
                   loading={isSubmitting}
-                  disabled={!content.trim() || isSubmitting}
+                  disabled={!isValid || isSubmitting}
                   className="flex-1"
                 >
                   {isSubmitting ? t('submitting') : t('submitReport')}

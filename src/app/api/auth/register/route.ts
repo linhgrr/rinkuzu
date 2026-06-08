@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server';
+import { NextRequest, after } from 'next/server';
 import { ZodError } from 'zod';
 
 import connectDB from '@/lib/mongoose';
@@ -47,13 +47,16 @@ export async function POST(request: NextRequest) {
     const existing = await User.findOne({ email: input.email }).select('_id').lean();
     if (existing) {
       // Neutral response — never leak account existence to anonymous callers.
-      await recordAuthEvent({
-        event: 'register',
-        email: input.email,
-        ip,
-        userAgent,
-        metadata: { reason: 'duplicate_email' },
-      });
+      // Audit write is a side effect; defer it so the response returns immediately.
+      after(() =>
+        recordAuthEvent({
+          event: 'register',
+          email: input.email,
+          ip,
+          userAgent,
+          metadata: { reason: 'duplicate_email' },
+        }),
+      );
       return apiOk({ email: input.email }, 201, { meta: { message: neutralMessage } });
     }
 
@@ -75,22 +78,25 @@ export async function POST(request: NextRequest) {
       logger.error({ mailError }, 'register: failed to send verification email');
     }
 
-    await Promise.all([
-      recordAuthEvent({
-        event: 'register',
-        userId: user._id,
-        email: user.email,
-        ip,
-        userAgent,
-      }),
-      recordAuthEvent({
-        event: 'email_verification_sent',
-        userId: user._id,
-        email: user.email,
-        ip,
-        userAgent,
-      }),
-    ]);
+    // Audit writes are non-blocking side effects — defer until after the response.
+    after(() =>
+      Promise.all([
+        recordAuthEvent({
+          event: 'register',
+          userId: user._id,
+          email: user.email,
+          ip,
+          userAgent,
+        }),
+        recordAuthEvent({
+          event: 'email_verification_sent',
+          userId: user._id,
+          email: user.email,
+          ip,
+          userAgent,
+        }),
+      ]),
+    );
 
     return apiOk(
       {

@@ -1,12 +1,13 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
 import { Icon } from '@iconify/react';
-import { useSession } from 'next-auth/react';
+import { useSession, signOut } from 'next-auth/react';
 import { useTranslations, useLocale } from 'next-intl';
 import { Link, usePathname, useRouter } from '@/i18n/navigation';
 import { ROUTES } from '@/shared/constants';
+import { useDropdownOutside } from '@/components/ui/hooks/use-dropdown-outside';
 
 const ICON = {
   home: 'material-symbols:home-outline-rounded',
@@ -20,6 +21,8 @@ const ICON = {
   lang: 'lets-icons:world-2-light',
   sidebar: 'mynaui:sidebar',
   admin: 'material-symbols:shield-outline-rounded',
+  user: 'solar:user-circle-linear',
+  logout: 'solar:logout-2-linear',
 } as const;
 
 // Single source of truth: sub-item row height. The sliding active indicator
@@ -384,6 +387,92 @@ function LanguageDropdown({
   );
 }
 
+function UserMenuDropdown({
+  avatar,
+  fallbackInitial,
+  displayName,
+  email,
+  t,
+}: {
+  avatar?: string | null;
+  fallbackInitial: string;
+  displayName?: string | null;
+  email?: string | null;
+  t: (key: string) => string;
+}) {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  useDropdownOutside(containerRef, open, () => setOpen(false));
+
+  return (
+    <div className="relative" ref={containerRef}>
+      <button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        className="flex items-center rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        aria-haspopup="true"
+        aria-expanded={open}
+        aria-label={t('toggleUserMenu')}
+      >
+        {avatar ? (
+          <Image
+            src={avatar}
+            alt=""
+            width={44}
+            height={44}
+            className="size-11 rounded-full object-cover"
+            unoptimized
+          />
+        ) : (
+          <span className="flex size-11 items-center justify-center rounded-full bg-accent-warm font-home text-base font-semibold text-ink">
+            {fallbackInitial}
+          </span>
+        )}
+      </button>
+      {open ? (
+        <div className="absolute right-0 top-[52px] z-50 w-56 overflow-hidden rounded-[12px] border border-line bg-surface py-1 shadow-lg">
+          {displayName || email ? (
+            <>
+              <div className="flex flex-col gap-0.5 px-4 py-3">
+                {displayName ? (
+                  <span className="truncate font-home text-base font-semibold leading-[1.4] text-ink">
+                    {displayName}
+                  </span>
+                ) : null}
+                {email ? (
+                  <span className="truncate font-home text-sm leading-[1.4] text-ink-muted">
+                    {email}
+                  </span>
+                ) : null}
+              </div>
+              <div className="h-px bg-line" />
+            </>
+          ) : null}
+          <Link
+            href="/profile"
+            onClick={() => setOpen(false)}
+            className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left font-home text-base leading-[1.4] text-ink transition-colors hover:bg-accent-soft/60"
+          >
+            <Icon icon={ICON.user} className="size-5" aria-hidden="true" />
+            <span>{t('profile')}</span>
+          </Link>
+          <button
+            type="button"
+            onClick={() => {
+              setOpen(false);
+              void signOut({ callbackUrl: '/' });
+            }}
+            className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left font-home text-base leading-[1.4] text-ink transition-colors hover:bg-accent-soft/60"
+          >
+            <Icon icon={ICON.logout} className="size-5" aria-hidden="true" />
+            <span>{t('logout')}</span>
+          </button>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function AppTopbar({
   collapsed,
   onToggleSidebar,
@@ -391,6 +480,9 @@ function AppTopbar({
   onSelectLocale,
   avatar,
   fallbackInitial,
+  displayName,
+  email,
+  t,
 }: {
   collapsed: boolean;
   onToggleSidebar: () => void;
@@ -398,6 +490,9 @@ function AppTopbar({
   onSelectLocale: (locale: 'en' | 'vi') => void;
   avatar?: string | null;
   fallbackInitial: string;
+  displayName?: string | null;
+  email?: string | null;
+  t: (key: string) => string;
 }) {
   return (
     <header className="fixed inset-x-0 top-0 z-50 flex h-[72px] border-b border-line bg-surface">
@@ -453,20 +548,13 @@ function AppTopbar({
 
         <LanguageDropdown currentLocale={currentLocale} onSelect={onSelectLocale} />
 
-        {avatar ? (
-          <Image
-            src={avatar}
-            alt=""
-            width={44}
-            height={44}
-            className="size-11 rounded-full object-cover"
-            unoptimized
-          />
-        ) : (
-          <div className="flex size-11 items-center justify-center rounded-full bg-accent-warm font-home text-base font-semibold text-ink">
-            {fallbackInitial}
-          </div>
-        )}
+        <UserMenuDropdown
+          avatar={avatar}
+          fallbackInitial={fallbackInitial}
+          displayName={displayName}
+          email={email}
+          t={t}
+        />
       </div>
     </header>
   );
@@ -508,6 +596,9 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
         onSelectLocale={selectLocale}
         avatar={avatar}
         fallbackInitial={fallbackInitial}
+        displayName={session?.user?.displayName}
+        email={session?.user?.email}
+        t={t}
       />
       <AppSidebar
         collapsed={collapsed}

@@ -1,13 +1,10 @@
 'use client';
 
 import { Suspense, useReducer, useEffect, useCallback, memo } from 'react';
-import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import useSWR from 'swr';
-import Navigation from '@/components/Navigation';
-import Sidebar from '@/components/Sidebar';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import {
@@ -52,7 +49,6 @@ interface PaginationData {
 }
 
 interface ExploreState {
-  isSidebarOpen: boolean;
   page: number;
   search: string;
   committedSearch: string;
@@ -60,7 +56,6 @@ interface ExploreState {
 }
 
 type ExploreAction =
-  | { type: 'sidebar:toggle' }
   | { type: 'page:set'; page: number }
   | { type: 'search:set'; search: string }
   | { type: 'search:commit' }
@@ -69,8 +64,6 @@ type ExploreAction =
 
 function exploreReducer(state: ExploreState, action: ExploreAction): ExploreState {
   switch (action.type) {
-    case 'sidebar:toggle':
-      return { ...state, isSidebarOpen: !state.isSidebarOpen };
     case 'page:set':
       return { ...state, page: action.page };
     case 'search:set':
@@ -175,13 +168,11 @@ const EmptyState = memo(function EmptyState({ onClear }: { onClear: () => void }
 
 function ExploreContent() {
   const t = useTranslations('explore');
-  const { data: session } = useSession();
   const { replace } = useRouter();
   const searchParams = useSearchParams();
   const get = searchParams.get.bind(searchParams);
   const initialSearch = get('q') || '';
   const [state, dispatch] = useReducer(exploreReducer, {
-    isSidebarOpen: true,
     page: parseInt(get('page') || '1', 10),
     search: initialSearch,
     committedSearch: initialSearch,
@@ -237,10 +228,6 @@ function ExploreContent() {
     [state.search, state.categoryId, updateURL],
   );
 
-  const handleSidebarToggle = useCallback(() => {
-    dispatch({ type: 'sidebar:toggle' });
-  }, []);
-
   const handleSearchChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const newSearch = e.target.value;
@@ -270,25 +257,8 @@ function ExploreContent() {
 
   return (
     <div className="min-h-screen bg-neutral-50 pb-24 md:pb-8">
-      <Navigation />
-
-      {/* Sidebar - hidden on mobile */}
-      {session && (
-        <div className="hidden md:block">
-          <Sidebar
-            isOpen={state.isSidebarOpen}
-            onToggle={handleSidebarToggle}
-            currentPath="/explore"
-          />
-        </div>
-      )}
-
-      <main
-        className={`py-6 md:py-8 px-4 sm:px-6 lg:px-8 transition-all duration-300 ${
-          session && state.isSidebarOpen ? 'md:ml-64' : session ? 'md:ml-16' : 'max-w-6xl mx-auto'
-        }`}
-      >
-        <div className={session ? 'max-w-6xl mx-auto' : ''}>
+      <main className="py-6 md:py-8 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-6xl mx-auto">
           {/* Search */}
           <div className="mb-8 space-y-4">
             <div className="flex flex-col md:flex-row justify-end items-start md:items-center gap-4">

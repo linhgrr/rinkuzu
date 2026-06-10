@@ -3,7 +3,7 @@
 import { Suspense, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 
-function ProfilePageFallback() {
+export function ProfilePageFallback() {
   const tCommon = useTranslations('common');
 
   return (

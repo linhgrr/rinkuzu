@@ -47,34 +47,89 @@
     --red-500: #e5484d;
     --yellow-500: #f5b700;
 
-    /* Background */
-    --bg-page: var(--neutral-0);
-    --bg-section: var(--neutral-50);
-    --bg-surface: var(--neutral-0);
-    --bg-surface-muted: var(--neutral-100);
-    --bg-surface-warm: #fffaf4;
+    /* Background — overridden to resolve through Figma semantic layer */
+    --bg-page: var(--surface-page);
+    --bg-section: var(--surface-warm);
+    --bg-surface: var(--surface);
+    --bg-surface-muted: var(--surface-warm);
+    --bg-surface-warm: var(--surface-warm);
 
-    /* Text */
-    --text-primary: var(--neutral-900);
-    --text-secondary: var(--neutral-600);
-    --text-muted: var(--neutral-500);
-    --text-inverse: var(--neutral-0);
+    /* Text — overridden to Figma ink */
+    --text-primary: var(--ink);
+    --text-secondary: var(--ink-muted);
+    --text-muted: var(--ink-muted);
+    --text-inverse: var(--accent-text);
 
-    /* Border */
-    --border-subtle: rgba(24, 24, 21, 0.08);
-    --border-default: rgba(24, 24, 21, 0.12);
-    --border-strong: rgba(24, 24, 21, 0.18);
+    /* Border — overridden to Figma line */
+    --border-subtle: var(--line);
+    --border-default: var(--line);
+    --border-strong: var(--line-blue);
 
-    /* Brand meaning */
-    --brand-primary: var(--green-500);
-    --brand-primary-hover: var(--green-600);
-    --brand-primary-active: var(--green-700);
-    --brand-action: var(--orange-500);
-    --brand-action-hover: var(--orange-600);
-    --brand-action-active: var(--orange-700);
-    --brand-trust: var(--green-500);
-    --brand-trust-hover: var(--green-600);
-    --brand-trust-active: var(--green-700);
+    /* Brand meaning — overridden to Figma accent (orange) */
+    --brand-primary: var(--accent);
+    --brand-primary-hover: var(--accent-hover);
+    --brand-primary-active: var(--primary-6);
+    --brand-action: var(--accent);
+    --brand-action-hover: var(--accent-hover);
+    --brand-action-active: var(--primary-6);
+    --brand-trust: var(--accent);
+    --brand-trust-hover: var(--accent-hover);
+    --brand-trust-active: var(--primary-6);
+
+    /* ===== Figma design tokens — source of truth (Rinkuzu FINAL) ===== */
+    /* Primary (orange) */
+    --primary-0: #fffbf8;
+    --primary-1: #fff2e9;
+    --primary-2: #ffe5d4;
+    --primary-3: #ffd6bb;
+    --primary: #ff7c23;
+    --primary-5: #ea660c;
+    --primary-6: #d05908;
+    --primary-7: #733810;
+    --primary-8: #441f05;
+    --cta: #fa621d;
+    /* Neutral (warm) */
+    --neutral-white: #ffffff;
+    --neutral-warm-2: #fffcf9;
+    --neutral-warm-3: #fffaf5;
+    --neutral-warm-31: #f6e2d5;
+    --neutral-warm-4: #d9d5d0;
+    --neutral-warm-5: #bab7b3;
+    --neutral-warm-6: #595856;
+    --neutral-warm-7: #403f3d;
+    --neutral-warm-8: #2a0b00;
+    /* Secondary (cool blue) */
+    --secondary-1: #f8fbff;
+    --secondary-2: #e2ecfc;
+    --secondary-3: #c2d6e4;
+    --secondary-4: #718ebd;
+
+    /* Semantic layer — resolves through Figma primitives (no prefix, app-wide) */
+    --surface: var(--neutral-white);
+    --surface-page: var(--neutral-warm-2);
+    --surface-warm: var(--neutral-warm-3);
+    --surface-blue: var(--secondary-1);
+    --hero: rgba(255, 214, 187, 0.6);
+    --ink: var(--primary-8);
+    --ink-strong: var(--primary-8);
+    --ink-muted: rgba(68, 31, 5, 0.5);
+    --accent: var(--primary);
+    --accent-hover: var(--cta);
+    --accent-soft: var(--primary-2);
+    --accent-warm: var(--primary-3);
+    --accent-pale: var(--primary-2);
+    --accent-text: var(--primary-0);
+    --line: rgba(68, 31, 5, 0.1);
+    --line-blue: var(--secondary-4);
+    --progress-track: var(--neutral-warm-31);
+    --progress-blue-track: var(--secondary-3);
+    --progress-blue: var(--secondary-4);
+    --badge-cool: var(--secondary-2);
+    --divider-warm: var(--primary-3);
+    --card-shadow-accent: 2px 2px 0 var(--primary-3);
+    --font-home:
+      var(--font-montserrat), Montserrat, Inter, ui-sans-serif, system-ui, -apple-system,
+      BlinkMacSystemFont, 'Segoe UI', sans-serif;
 
     /* Learning states */
     --state-correct: var(--green-500);

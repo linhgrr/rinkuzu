@@ -262,20 +262,20 @@ function SectionTitle({
   return (
     <div className="flex w-full flex-col gap-1">
       <div className="flex w-full items-center gap-1">
-        <h2 className="min-w-0 flex-1 font-home text-lg font-semibold leading-[1.4] text-home-ink">
+        <h2 className="min-w-0 flex-1 font-home text-lg font-semibold leading-[1.4] text-ink">
           {title}
         </h2>
         {href ? (
           <Link
             href={href}
-            className="flex shrink-0 items-center gap-2 font-home text-base font-semibold leading-[1.4] text-home-ink-strong hover:text-home-accent"
+            className="flex shrink-0 items-center gap-2 font-home text-base font-semibold leading-[1.4] text-ink-strong hover:text-accent"
           >
             <span>View all</span>
             <HiOutlineChevronRight className="size-5" aria-hidden="true" />
           </Link>
         ) : null}
       </div>
-      <p className="font-home text-base font-normal leading-[1.4] text-home-ink">{subtitle}</p>
+      <p className="font-home text-base font-normal leading-[1.4] text-ink">{subtitle}</p>
     </div>
   );
 }
@@ -337,9 +337,9 @@ function HeroArtwork() {
 
 function HomeHero() {
   return (
-    <section className="relative min-h-[295px] rounded-[20px] border border-home-accent bg-home-hero px-6 py-7">
+    <section className="relative min-h-[295px] rounded-[20px] border border-accent bg-hero px-6 py-7">
       <HeroArtwork />
-      <div className="relative z-10 flex max-w-[505px] flex-col gap-5 text-home-ink">
+      <div className="relative z-10 flex max-w-[505px] flex-col gap-5 text-ink">
         <h1 className="font-home text-[36px] font-bold leading-[1.25] tracking-normal">
           Personalize Your Learning Path with AI
         </h1>
@@ -350,7 +350,7 @@ function HomeHero() {
       </div>
       <Link
         href="/adaptive"
-        className="relative z-10 mt-9 inline-flex rounded-full bg-home-accent px-5 py-3 font-home text-lg font-semibold leading-[1.4] text-home-accent-text hover:bg-[#d94300]"
+        className="relative z-10 mt-9 inline-flex rounded-full bg-accent px-5 py-3 font-home text-lg font-semibold leading-[1.4] text-accent-text hover:bg-accent-hover"
       >
         Start learning
       </Link>
@@ -360,7 +360,7 @@ function HomeHero() {
 
 function QuizBuilderCard() {
   return (
-    <section className="flex min-h-[295px] flex-col gap-6 rounded-[20px] border border-home-border bg-home-surface p-5">
+    <section className="flex min-h-[295px] flex-col gap-6 rounded-[20px] border border-line bg-surface p-5">
       <SectionTitle title="Quiz Builder" subtitle="Create quizzes from your PDF files" />
       <QuizUploadDropzone />
     </section>
@@ -450,9 +450,7 @@ function MetricItem({
     <div className="flex w-[100px] flex-col items-center gap-2.5 text-center">
       <ProgressIcon kind={icon} />
       <div className="flex w-full flex-col items-center gap-1">
-        <p className="font-home text-base font-normal leading-[1.4] text-home-ink-strong">
-          {label}
-        </p>
+        <p className="font-home text-base font-normal leading-[1.4] text-ink-strong">{label}</p>
         <p className="font-home text-[22px] font-semibold leading-[1.35] text-black">{value}</p>
       </div>
     </div>
@@ -466,7 +464,7 @@ function LearningProgressCard({ stats }: { stats: HomeDashboardStats }) {
   const studyHours = Math.max(20, Math.ceil((stats.totalReviewSessions ?? 0) * 0.4));
 
   return (
-    <section className="flex min-h-[357px] flex-col gap-7 rounded-[20px] border border-home-border bg-home-surface p-5">
+    <section className="flex min-h-[357px] flex-col gap-7 rounded-[20px] border border-line bg-surface p-5">
       <SectionTitle
         title="Learning Progress"
         subtitle="Progress you’ve made this week"
@@ -475,16 +473,16 @@ function LearningProgressCard({ stats }: { stats: HomeDashboardStats }) {
 
       <div className="flex w-full items-center justify-between">
         <MetricItem icon="fire" label="Day Streak" value={String(streak)} />
-        <span className="h-[62px] w-0.5 rounded-[10px] bg-home-divider-warm" aria-hidden="true" />
+        <span className="h-[62px] w-0.5 rounded-[10px] bg-divider-warm" aria-hidden="true" />
         <MetricItem icon="target" label="Accuracy" value={`${accuracy}%`} />
-        <span className="h-[62px] w-0.5 rounded-[10px] bg-home-divider-warm" aria-hidden="true" />
+        <span className="h-[62px] w-0.5 rounded-[10px] bg-divider-warm" aria-hidden="true" />
         <MetricItem icon="chart" label="Study time" value={`${studyHours}h`} />
       </div>
 
-      <div className="flex w-full items-center justify-between rounded-[10px] border border-home-accent-warm/30 bg-home-surface-warm p-5">
+      <div className="flex w-full items-center justify-between rounded-[10px] border border-accent-warm/30 bg-surface-warm p-5">
         {days.map((day) => (
           <div key={day.label} className="flex flex-col items-center gap-1">
-            <p className="font-home text-sm font-normal leading-[1.4] text-home-ink-strong">
+            <p className="font-home text-sm font-normal leading-[1.4] text-ink-strong">
               {day.label}
             </p>
             {day.active ? (
@@ -507,16 +505,16 @@ function LearningProgressCard({ stats }: { stats: HomeDashboardStats }) {
 
 const LEARNING_CARD_TONES = {
   warm: {
-    card: 'border-home-accent-warm/30 bg-home-surface-warm',
-    badge: 'bg-home-accent-pale',
-    track: 'bg-home-progress-track',
-    bar: 'bg-gradient-to-b from-[#ff7c23] to-[#ffbf94]',
+    card: 'border-accent-warm/30 bg-surface-warm',
+    badge: 'bg-accent-pale',
+    track: 'bg-progress-track',
+    bar: 'bg-gradient-to-b from-primary to-primary-3',
   },
   cool: {
-    card: 'border-home-border bg-home-surface-blue',
-    badge: 'bg-[#e2ecfc]',
-    track: 'bg-home-progress-blue-track',
-    bar: 'bg-home-progress-blue',
+    card: 'border-line bg-surface-blue',
+    badge: 'bg-badge-cool',
+    track: 'bg-progress-blue-track',
+    bar: 'bg-progress-blue',
   },
 } as const;
 
@@ -529,13 +527,13 @@ function LearningCard({ item }: { item: LearningCardItem }) {
       className={cn(
         'flex min-h-[181px] flex-col gap-6 rounded-xl border p-4 transition-transform hover:-translate-y-0.5',
         tone.card,
-        item.raised && 'shadow-[var(--home-card-shadow-accent)]',
+        item.raised && 'shadow-accent',
       )}
     >
       <div className="flex items-center justify-between">
         <span
           className={cn(
-            'rounded-full px-2.5 py-1.5 font-home text-sm font-normal leading-[1.4] text-home-ink',
+            'rounded-full px-2.5 py-1.5 font-home text-sm font-normal leading-[1.4] text-ink',
             tone.badge,
           )}
         >
@@ -553,7 +551,7 @@ function LearningCard({ item }: { item: LearningCardItem }) {
       </div>
 
       <div className="flex flex-1 flex-col justify-end gap-3">
-        <h3 className="line-clamp-2 min-h-11 font-home text-base font-semibold leading-[1.4] text-home-ink-strong">
+        <h3 className="line-clamp-2 min-h-11 font-home text-base font-semibold leading-[1.4] text-ink-strong">
           {item.title}
         </h3>
         <div className={cn('h-2 w-full rounded-full', tone.track)}>
@@ -562,7 +560,7 @@ function LearningCard({ item }: { item: LearningCardItem }) {
             style={{ width: `${item.progress}%` }}
           />
         </div>
-        <p className="font-sans text-sm font-normal leading-none text-home-ink-muted">
+        <p className="font-sans text-sm font-normal leading-none text-ink-muted">
           {item.timeLabel}
         </p>
       </div>
@@ -578,7 +576,7 @@ function ContinueLearning({
   viewAllHref: string;
 }) {
   return (
-    <section className="flex flex-col gap-6 rounded-[20px] border border-home-border bg-home-surface p-5">
+    <section className="flex flex-col gap-6 rounded-[20px] border border-line bg-surface p-5">
       <SectionTitle
         title="Continue Learning"
         subtitle="Resume your quizzes or AI learning paths from where you left off"
@@ -607,13 +605,13 @@ export function HomeDashboard({
   );
 
   return (
-    <div className="px-4 pb-20 pt-4 font-home text-home-ink selection:bg-home-accent-soft">
+    <div className="px-4 pb-20 pt-4 font-home text-ink selection:bg-accent-soft">
       <div className="mx-auto max-w-[1340px]">
         <div className="mb-6 flex flex-col gap-1">
-          <h1 className="font-home text-2xl font-semibold leading-[1.4] text-home-ink">
+          <h1 className="font-home text-2xl font-semibold leading-[1.4] text-ink">
             Welcome back {userName} !
           </h1>
-          <p className="font-home text-base font-normal leading-[1.4] text-home-ink">
+          <p className="font-home text-base font-normal leading-[1.4] text-ink">
             Continue your learning journey and keep your progress going
           </p>
         </div>

@@ -123,15 +123,10 @@ function SidebarSubItem({ href, label, active }: { href: string; label: string; 
     <Link
       href={href}
       className={`relative flex h-10 items-center gap-2.5 pl-6 pr-2.5 font-home text-base leading-[1.4] transition-colors ${
-        active
-          ? 'font-semibold text-home-accent'
-          : 'font-normal text-home-ink hover:text-home-accent'
+        active ? 'font-semibold text-accent' : 'font-normal text-ink hover:text-accent'
       }`}
     >
-      <span
-        className="h-10 w-px border-l border-dashed border-home-border-blue/70"
-        aria-hidden="true"
-      />
+      <span className="h-10 w-px border-l border-dashed border-line-blue/70" aria-hidden="true" />
       <span className="whitespace-nowrap">{label}</span>
     </Link>
   );
@@ -158,7 +153,7 @@ function SidebarItem({
 }) {
   const base = `flex h-12 w-full items-center rounded-[10px] font-home text-base font-semibold leading-[1.4] transition-colors ${
     collapsed ? 'justify-center px-0' : 'px-3'
-  } ${active ? 'bg-home-accent-soft text-home-accent' : 'text-home-ink hover:bg-home-accent-soft/60'}`;
+  } ${active ? 'bg-accent-soft text-accent' : 'text-ink hover:bg-accent-soft/60'}`;
 
   const inner = (
     <>
@@ -248,7 +243,7 @@ function NavSection({
         <div className="relative overflow-hidden pt-3" aria-hidden={!showItems}>
           {activeIndex >= 0 ? (
             <span
-              className="absolute left-6 top-3 h-10 w-0.5 rounded-full bg-home-accent transition-transform duration-300 ease-out"
+              className="absolute left-6 top-3 h-10 w-0.5 rounded-full bg-accent transition-transform duration-300 ease-out"
               style={{ transform: `translateY(${activeIndex * SUB_ITEM_HEIGHT_PX}px)` }}
               aria-hidden="true"
             />
@@ -284,7 +279,7 @@ function AppSidebar({
 }) {
   return (
     <aside
-      className={`fixed left-0 top-[72px] z-40 hidden h-[calc(100vh-72px)] flex-col justify-between overflow-y-auto border-r border-home-border bg-home-surface py-6 transition-[width] duration-300 ease-out [scrollbar-width:none] lg:flex [&::-webkit-scrollbar]:hidden ${
+      className={`fixed left-0 top-[72px] z-40 hidden h-[calc(100vh-72px)] flex-col justify-between overflow-y-auto border-r border-line bg-surface py-6 transition-[width] duration-300 ease-out [scrollbar-width:none] lg:flex [&::-webkit-scrollbar]:hidden ${
         collapsed ? 'w-[88px] px-3' : 'w-[280px] px-5'
       }`}
     >
@@ -303,7 +298,7 @@ function AppSidebar({
       </nav>
 
       <div className="flex w-full flex-col gap-4">
-        <div className={`h-px bg-home-border ${collapsed ? 'w-full' : 'w-[220px]'}`} />
+        <div className={`h-px bg-line ${collapsed ? 'w-full' : 'w-[220px]'}`} />
         {BOTTOM_NAV.map((entry) => (
           <NavSection
             key={entry.id}
@@ -340,7 +335,7 @@ function LanguageDropdown({
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
-        className="flex h-11 items-center gap-1.5 rounded-[10px] px-2 font-home text-base leading-[1.4] text-home-ink hover:bg-home-accent-soft/60"
+        className="flex h-11 items-center gap-1.5 rounded-[10px] px-2 font-home text-base leading-[1.4] text-ink hover:bg-accent-soft/60"
         aria-haspopup="true"
         aria-expanded={open}
         aria-label="Change language"
@@ -356,7 +351,7 @@ function LanguageDropdown({
       {open ? (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} aria-hidden="true" />
-          <div className="absolute right-0 top-[52px] z-50 w-44 overflow-hidden rounded-[12px] border border-home-border bg-home-surface py-1 shadow-lg">
+          <div className="absolute right-0 top-[52px] z-50 w-44 overflow-hidden rounded-[12px] border border-line bg-surface py-1 shadow-lg">
             {LANG_OPTIONS.map((option) => {
               const active = option.value === currentLocale;
               return (
@@ -368,9 +363,7 @@ function LanguageDropdown({
                     if (!active) onSelect(option.value);
                   }}
                   className={`flex w-full items-center justify-between px-4 py-2.5 text-left font-home text-base leading-[1.4] transition-colors ${
-                    active
-                      ? 'font-semibold text-home-accent'
-                      : 'text-home-ink hover:bg-home-accent-soft/60'
+                    active ? 'font-semibold text-accent' : 'text-ink hover:bg-accent-soft/60'
                   }`}
                 >
                   <span>{option.label}</span>
@@ -407,9 +400,9 @@ function AppTopbar({
   fallbackInitial: string;
 }) {
   return (
-    <header className="fixed inset-x-0 top-0 z-50 flex h-[72px] border-b border-home-border bg-home-surface">
+    <header className="fixed inset-x-0 top-0 z-50 flex h-[72px] border-b border-line bg-surface">
       <div
-        className={`flex h-full w-full items-center justify-between border-r border-home-border px-5 transition-[width] duration-300 ease-out lg:pl-8 ${
+        className={`flex h-full w-full items-center justify-between border-r border-line px-5 transition-[width] duration-300 ease-out lg:pl-8 ${
           collapsed ? 'lg:w-[88px]' : 'lg:w-[280px]'
         }`}
       >
@@ -442,7 +435,7 @@ function AppTopbar({
         <button
           type="button"
           onClick={onToggleSidebar}
-          className="flex size-10 items-center justify-center rounded-[10px] text-home-ink hover:bg-home-accent-soft/60"
+          className="flex size-10 items-center justify-center rounded-[10px] text-ink hover:bg-accent-soft/60"
           aria-label="Toggle sidebar"
         >
           <Icon icon={ICON.sidebar} className="size-6" aria-hidden="true" />
@@ -452,7 +445,7 @@ function AppTopbar({
       <div className="hidden flex-1 items-center justify-end gap-3 px-6 lg:flex">
         <button
           type="button"
-          className="flex h-11 w-12 items-center justify-center rounded-[10px] text-home-ink hover:bg-home-accent-soft/60"
+          className="flex h-11 w-12 items-center justify-center rounded-[10px] text-ink hover:bg-accent-soft/60"
           aria-label="Notifications"
         >
           <Icon icon={ICON.bell} className="size-6" aria-hidden="true" />
@@ -470,7 +463,7 @@ function AppTopbar({
             unoptimized
           />
         ) : (
-          <div className="flex size-11 items-center justify-center rounded-full bg-home-accent-warm font-home text-base font-semibold text-home-ink">
+          <div className="flex size-11 items-center justify-center rounded-full bg-accent-warm font-home text-base font-semibold text-ink">
             {fallbackInitial}
           </div>
         )}

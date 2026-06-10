@@ -2,7 +2,9 @@ import Image from 'next/image';
 import { Link } from '@/i18n/navigation';
 import { ROUTES } from '@/shared/constants';
 import { cn } from '@/lib/utils';
-import { HiOutlineChevronRight } from '@/components/icons';
+import { SurfaceCard } from '@/components/ui/SurfaceCard';
+import { SectionHeading } from '@/components/ui/SectionHeading';
+import { Pill } from '@/components/ui/Pill';
 import { ADAPTIVE_ROUTES } from '@/features/adaptive/lib/routes';
 import type { PipelineJobHistoryItem } from '@/features/adaptive/types';
 import { QuizUploadDropzone } from './QuizUploadDropzone';
@@ -250,36 +252,6 @@ function buildWeekDays(weeklyActivity: HomeDashboardStats['weeklyActivity']) {
   });
 }
 
-function SectionTitle({
-  title,
-  subtitle,
-  href,
-}: {
-  title: string;
-  subtitle: string;
-  href?: string;
-}) {
-  return (
-    <div className="flex w-full flex-col gap-1">
-      <div className="flex w-full items-center gap-1">
-        <h2 className="min-w-0 flex-1 font-home text-lg font-semibold leading-[1.4] text-ink">
-          {title}
-        </h2>
-        {href ? (
-          <Link
-            href={href}
-            className="flex shrink-0 items-center gap-2 font-home text-base font-semibold leading-[1.4] text-ink-strong hover:text-accent"
-          >
-            <span>View all</span>
-            <HiOutlineChevronRight className="size-5" aria-hidden="true" />
-          </Link>
-        ) : null}
-      </div>
-      <p className="font-home text-base font-normal leading-[1.4] text-ink">{subtitle}</p>
-    </div>
-  );
-}
-
 function HeroArtwork() {
   return (
     <div className="pointer-events-none absolute inset-0 hidden md:block" aria-hidden="true">
@@ -360,10 +332,10 @@ function HomeHero() {
 
 function QuizBuilderCard() {
   return (
-    <section className="flex min-h-[295px] flex-col gap-6 rounded-[20px] border border-line bg-surface p-5">
-      <SectionTitle title="Quiz Builder" subtitle="Create quizzes from your PDF files" />
+    <SurfaceCard className="flex min-h-[295px] flex-col gap-6">
+      <SectionHeading title="Quiz Builder" subtitle="Create quizzes from your PDF files" />
       <QuizUploadDropzone />
-    </section>
+    </SurfaceCard>
   );
 }
 
@@ -464,8 +436,8 @@ function LearningProgressCard({ stats }: { stats: HomeDashboardStats }) {
   const studyHours = Math.max(20, Math.ceil((stats.totalReviewSessions ?? 0) * 0.4));
 
   return (
-    <section className="flex min-h-[357px] flex-col gap-7 rounded-[20px] border border-line bg-surface p-5">
-      <SectionTitle
+    <SurfaceCard className="flex min-h-[357px] flex-col gap-7">
+      <SectionHeading
         title="Learning Progress"
         subtitle="Progress you’ve made this week"
         href={ROUTES.DASHBOARD}
@@ -499,20 +471,18 @@ function LearningProgressCard({ stats }: { stats: HomeDashboardStats }) {
           </div>
         ))}
       </div>
-    </section>
+    </SurfaceCard>
   );
 }
 
 const LEARNING_CARD_TONES = {
   warm: {
     card: 'border-accent-warm/30 bg-surface-warm',
-    badge: 'bg-accent-pale',
     track: 'bg-progress-track',
     bar: 'bg-gradient-to-b from-primary to-primary-3',
   },
   cool: {
     card: 'border-line bg-surface-blue',
-    badge: 'bg-badge-cool',
     track: 'bg-progress-blue-track',
     bar: 'bg-progress-blue',
   },
@@ -531,14 +501,7 @@ function LearningCard({ item }: { item: LearningCardItem }) {
       )}
     >
       <div className="flex items-center justify-between">
-        <span
-          className={cn(
-            'rounded-full px-2.5 py-1.5 font-home text-sm font-normal leading-[1.4] text-ink',
-            tone.badge,
-          )}
-        >
-          {item.category}
-        </span>
+        <Pill tone={item.tone}>{item.category}</Pill>
         {item.isAi ? (
           <Image
             src={`${ASSET_BASE}/ai-spark.svg`}
@@ -576,8 +539,8 @@ function ContinueLearning({
   viewAllHref: string;
 }) {
   return (
-    <section className="flex flex-col gap-6 rounded-[20px] border border-line bg-surface p-5">
-      <SectionTitle
+    <SurfaceCard className="flex flex-col gap-6">
+      <SectionHeading
         title="Continue Learning"
         subtitle="Resume your quizzes or AI learning paths from where you left off"
         href={viewAllHref}
@@ -587,7 +550,7 @@ function ContinueLearning({
           <LearningCard key={item.id} item={item} />
         ))}
       </div>
-    </section>
+    </SurfaceCard>
   );
 }
 

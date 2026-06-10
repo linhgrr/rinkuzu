@@ -158,7 +158,7 @@ function getStatusColor(status: string) {
     case 'rejected':
       return 'bg-red-100 text-red-800';
     default:
-      return 'bg-neutral-100 text-neutral-800';
+      return 'bg-surface-warm text-ink';
   }
 }
 
@@ -171,8 +171,27 @@ function getStatusIcon(status: string) {
     case 'rejected':
       return <HiOutlineXCircle className="size-5 text-red-500" />;
     default:
-      return <HiOutlineDocumentText className="size-5 text-neutral-500" />;
+      return <HiOutlineDocumentText className="size-5 text-ink-muted" />;
   }
+}
+
+function StatCard({
+  value,
+  label,
+  valueClassName = 'text-ink',
+}: {
+  value: number;
+  label: string;
+  valueClassName?: string;
+}) {
+  return (
+    <Card>
+      <CardContent className="p-4 text-center">
+        <div className={`text-2xl font-bold ${valueClassName}`}>{value}</div>
+        <div className="text-xs text-ink-muted">{label}</div>
+      </CardContent>
+    </Card>
+  );
 }
 
 function ProfileQuizzesStats({
@@ -186,38 +205,26 @@ function ProfileQuizzesStats({
   t: (key: string) => string;
   tCommon: (key: string) => string;
 }) {
+  const countByStatus = (status: string) => quizzes.filter((quiz) => quiz.status === status).length;
+
   return (
     <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-      <Card>
-        <CardContent className="p-4 text-center">
-          <div className="text-2xl font-bold text-neutral-900">{pagination.totalItems}</div>
-          <div className="text-xs text-neutral-600">{tCommon('total')}</div>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardContent className="p-4 text-center">
-          <div className="text-2xl font-bold text-yellow-600">
-            {quizzes.filter((quiz) => quiz.status === 'pending').length}
-          </div>
-          <div className="text-xs text-neutral-600">{t('pending')}</div>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardContent className="p-4 text-center">
-          <div className="text-2xl font-bold text-green-600">
-            {quizzes.filter((quiz) => quiz.status === 'published').length}
-          </div>
-          <div className="text-xs text-neutral-600">{t('published')}</div>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardContent className="p-4 text-center">
-          <div className="text-2xl font-bold text-red-600">
-            {quizzes.filter((quiz) => quiz.status === 'rejected').length}
-          </div>
-          <div className="text-xs text-neutral-600">{t('rejected')}</div>
-        </CardContent>
-      </Card>
+      <StatCard value={pagination.totalItems} label={tCommon('total')} />
+      <StatCard
+        value={countByStatus('pending')}
+        label={t('pending')}
+        valueClassName="text-yellow-600"
+      />
+      <StatCard
+        value={countByStatus('published')}
+        label={t('published')}
+        valueClassName="text-green-600"
+      />
+      <StatCard
+        value={countByStatus('rejected')}
+        label={t('rejected')}
+        valueClassName="text-red-600"
+      />
     </div>
   );
 }
@@ -242,7 +249,7 @@ function ProfileQuizCard({
               <CardTitle className="truncate text-lg">{quiz.title}</CardTitle>
               <span className="shrink-0 text-xl">{getStatusIcon(quiz.status)}</span>
               {quiz.isPrivate && (
-                <span className="flex shrink-0 items-center rounded-full bg-neutral-100 px-2 py-0.5 text-xs text-neutral-600">
+                <span className="flex shrink-0 items-center rounded-full bg-surface-warm px-2 py-0.5 text-xs text-ink-muted">
                   <HiOutlineLockClosed className="mr-1 size-3" /> {t('private')}
                 </span>
               )}
@@ -255,7 +262,7 @@ function ProfileQuizCard({
             <CardDescription className="mt-1 line-clamp-2 text-sm">
               {quiz.description || t('noDescription')}
             </CardDescription>
-            <div className="mt-2 flex flex-wrap items-center gap-x-2 text-xs text-neutral-500">
+            <div className="mt-2 flex flex-wrap items-center gap-x-2 text-xs text-ink-muted">
               <span>{quiz.questions.length} Qs</span>
               <span>•</span>
               {(() => {
@@ -277,7 +284,7 @@ function ProfileQuizCard({
               <Button
                 size="sm"
                 variant="outline"
-                className="border-orange-200 text-brand-action hover:border-orange-300 hover:text-brand-action-hover"
+                className="border-accent/30 text-accent hover:border-accent/50 hover:text-accent-hover"
               >
                 <HiOutlinePlay className="size-4" />
               </Button>
@@ -402,8 +409,8 @@ export default function ProfileQuizzes() {
     return (
       <div className="flex justify-center py-12">
         <div className="flex flex-col items-center gap-3">
-          <div className="size-8 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
-          <div className="text-sm text-neutral-500">{tCommon('loading')}</div>
+          <div className="size-8 animate-spin rounded-full border-2 border-line border-t-accent" />
+          <div className="text-sm text-ink-muted">{tCommon('loading')}</div>
         </div>
       </div>
     );
@@ -412,7 +419,7 @@ export default function ProfileQuizzes() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
-        <h2 className="text-2xl font-semibold text-neutral-900">{t('myQuizzes')}</h2>
+        <h2 className="text-2xl font-semibold text-ink">{t('myQuizzes')}</h2>
 
         <div className="flex w-full items-center gap-x-4 sm:w-auto">
           <select
@@ -420,7 +427,7 @@ export default function ProfileQuizzes() {
             onChange={(e) => {
               dispatch({ type: 'filter:set', filter: e.target.value as QuizFilter });
             }}
-            className="flex-1 rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-brand-trust focus:outline-none focus:ring-2 focus:ring-brand-trust sm:flex-none"
+            className="flex-1 rounded-md border border-line px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent sm:flex-none"
           >
             <option value="all">{t('allStatus')}</option>
             <option value="pending">{t('pending')}</option>
@@ -452,7 +459,7 @@ export default function ProfileQuizzes() {
           <Card>
             <CardContent className="text-center py-12">
               <EmptyState
-                icon={<HiOutlineDocumentText className="size-12 text-neutral-400" />}
+                icon={<HiOutlineDocumentText className="size-12 text-ink-muted" />}
                 title={t('noQuizzes')}
                 description={t('createFirst')}
                 action={

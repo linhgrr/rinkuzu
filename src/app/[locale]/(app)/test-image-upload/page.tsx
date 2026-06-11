@@ -65,11 +65,11 @@ export default function TestImageUploadPage() {
   };
 
   return (
-    <div className="min-h-screen bg-neutral-50 py-8">
+    <div className="min-h-screen bg-surface-page py-8">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-semibold text-neutral-900">Image Upload Test & Debug</h1>
-          <p className="text-neutral-600 mt-2">
+          <h1 className="text-3xl font-semibold text-ink">Image Upload Test & Debug</h1>
+          <p className="text-ink-muted mt-2">
             Test drag & drop, click to upload, and paste (Ctrl+V) functionality with real-time
             logging
           </p>
@@ -106,15 +106,15 @@ export default function TestImageUploadPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 {['Option A', 'Option B', 'Option C', 'Option D'].map((option, index) => (
-                  <div key={option} className="border border-neutral-200 rounded-lg p-4">
-                    <h4 className="font-medium text-neutral-900 mb-3">{option}</h4>
+                  <div key={option} className="border border-line rounded-lg p-4">
+                    <h4 className="font-medium text-ink mb-3">{option}</h4>
                     <OptionImageUpload
                       currentImage={optionImages[index]}
                       onImageUploaded={(imageUrl) => updateOptionImage(index, imageUrl)}
                       onImageRemoved={() => removeOptionImage(index)}
                     />
                     {optionImages[index] && (
-                      <div className="mt-2 p-2 bg-green-50 rounded text-xs text-brand-trust break-all">
+                      <div className="mt-2 p-2 bg-green-50 rounded text-xs text-accent break-all">
                         Image: {optionImages[index]}
                       </div>
                     )}
@@ -123,9 +123,9 @@ export default function TestImageUploadPage() {
               </CardContent>
             </Card>
 
-            <div className="bg-neutral-100 rounded-lg p-4">
-              <h3 className="font-medium text-neutral-900 mb-2">How to test:</h3>
-              <ul className="text-sm text-neutral-600 space-y-1">
+            <div className="bg-surface-warm rounded-lg p-4">
+              <h3 className="font-medium text-ink mb-2">How to test:</h3>
+              <ul className="text-sm text-ink-muted space-y-1">
                 <li>
                   • <strong>Click to upload:</strong> Click on the upload area and select an image
                   file
@@ -177,13 +177,13 @@ export default function TestImageUploadPage() {
 
                 {/* Activity Logs */}
                 <div>
-                  <h4 className="font-medium text-neutral-900 mb-2">Activity Logs:</h4>
-                  <div className="h-64 overflow-y-auto bg-neutral-50 rounded p-2 text-xs font-mono">
+                  <h4 className="font-medium text-ink mb-2">Activity Logs:</h4>
+                  <div className="h-64 overflow-y-auto bg-surface-page rounded p-2 text-xs font-mono">
                     {logs.length === 0 ? (
-                      <div className="italic text-neutral-500">No activity yet…</div>
+                      <div className="italic text-ink-muted">No activity yet…</div>
                     ) : (
                       logs.map((log) => (
-                        <div key={log} className="mb-1 text-neutral-700">
+                        <div key={log} className="mb-1 text-ink">
                           {log}
                         </div>
                       ))
@@ -199,7 +199,7 @@ export default function TestImageUploadPage() {
                 <CardTitle>ImgBB Service Test</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-sm text-neutral-600 space-y-2">
+                <div className="text-sm text-ink-muted space-y-2">
                   <div>
                     API Key: {process.env['NODE_ENV'] === 'development' ? 'db3e6e11...' : 'Hidden'}
                   </div>

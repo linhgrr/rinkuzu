@@ -53,7 +53,7 @@
     ]
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.971.0",
+    "@aws-sdk/client-s3": "^3.1066.0",
     "@aws-sdk/s3-request-presigner": "^3.971.0",
     "@hookform/resolvers": "^5.2.2",
     "@iconify/react": "^6.0.2",

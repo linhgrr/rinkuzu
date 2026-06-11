@@ -181,7 +181,7 @@ export default function ReviewPage() {
         <div className="max-w-2xl mx-auto px-4 py-8 text-center">
           <Card className="p-6">
             <div className="size-16 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-4">
-              <HiOutlineCheckCircle className="size-8 text-brand-trust" />
+              <HiOutlineCheckCircle className="size-8 text-accent" />
             </div>
             <h2 className="text-2xl font-semibold mb-2">{t('noCards')}</h2>
             <p className="text-ink-muted mb-6">{t('comeBack')}</p>

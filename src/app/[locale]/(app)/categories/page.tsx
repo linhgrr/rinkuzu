@@ -16,7 +16,6 @@ import {
   CardTitle,
   Badge,
 } from '@/components/ui/Card';
-import Navigation from '@/components/Navigation';
 import { ROUTES } from '@/shared/constants';
 import {
   HiOutlineSearch,
@@ -96,17 +95,17 @@ export default function CategoriesPage() {
 
   const getCategoryColor = (color: string) => {
     const colorMap: { [key: string]: string } = {
-      blue: 'bg-green-50 text-brand-trust border-green-100',
+      blue: 'bg-green-50 text-accent border-green-100',
       green: 'bg-green-100 text-green-700 border-green-200',
       purple: 'bg-green-100 text-green-700 border-green-200',
       red: 'bg-red-50 text-red-700 border-red-100',
       yellow: 'bg-yellow-50 text-yellow-700 border-yellow-100',
-      indigo: 'bg-green-50 text-brand-trust border-green-100',
+      indigo: 'bg-green-50 text-accent border-green-100',
       pink: 'bg-pink-50 text-pink-700 border-pink-100',
-      gray: 'bg-neutral-100 text-neutral-700 border-neutral-200',
+      gray: 'bg-surface-warm text-ink border-line',
       cyan: 'bg-cyan-50 text-cyan-700 border-cyan-100',
       orange: 'bg-orange-50 text-orange-700 border-orange-100',
-      teal: 'bg-green-100 text-brand-trust-hover border-green-200',
+      teal: 'bg-green-100 text-accent-hover border-green-200',
     };
     return colorMap[color?.toLowerCase()] || colorMap['green'];
   };
@@ -123,7 +122,6 @@ export default function CategoriesPage() {
   if (state.status === 'loading') {
     return (
       <div className="min-h-screen">
-        <Navigation />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-8">
           <div className="flex justify-center items-center h-64">
             <div className="h-16 flex items-center justify-center mx-auto mb-4 animate-pulse">
@@ -145,7 +143,6 @@ export default function CategoriesPage() {
   if (state.error) {
     return (
       <div className="min-h-screen">
-        <Navigation />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-8">
           <Card variant="bordered" className="p-6 mb-8 border-red-200 bg-red-50">
             <div className="flex items-center text-red-700">
@@ -160,16 +157,14 @@ export default function CategoriesPage() {
 
   return (
     <div className="min-h-screen pb-24 md:pb-8">
-      <Navigation />
-
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 md:pt-20 pb-8">
         {/* Breadcrumb */}
-        <nav className="mb-4 flex items-center gap-x-2 text-sm text-neutral-500 md:mb-6">
-          <Link href={ROUTES.DASHBOARD} className="hover:text-neutral-700">
+        <nav className="mb-4 flex items-center gap-x-2 text-sm text-ink-muted md:mb-6">
+          <Link href={ROUTES.DASHBOARD} className="hover:text-ink">
             {tNav('home')}
           </Link>
           <span>›</span>
-          <span className="text-neutral-900 font-medium">{t('title')}</span>
+          <span className="text-ink font-medium">{t('title')}</span>
         </nav>
 
         {/* Search */}
@@ -192,7 +187,7 @@ export default function CategoriesPage() {
                 <Button
                   variant="ghost"
                   onClick={() => dispatch({ type: 'patch', value: { searchTerm: '' } })}
-                  className="text-brand-trust hover:text-brand-trust-hover w-full sm:w-auto"
+                  className="text-accent hover:text-accent-hover w-full sm:w-auto"
                 >
                   {tCommon('cancel')}
                 </Button>
@@ -203,7 +198,7 @@ export default function CategoriesPage() {
 
         {/* Results Info */}
         <div className="flex items-center justify-between mb-6 md:mb-8">
-          <p className="text-sm md:text-base text-neutral-600">
+          <p className="text-sm md:text-base text-ink-muted">
             Showing {filteredCategories.length} of {state.categories.length} categories
             {state.searchTerm && (
               <span className="ml-2">
@@ -216,11 +211,11 @@ export default function CategoriesPage() {
         {/* Categories Grid */}
         {filteredCategories.length === 0 ? (
           <Card variant="glass" className="p-12 text-center">
-            <div className="mx-auto mb-6 flex size-20 items-center justify-center rounded-full bg-gradient-to-br from-neutral-100 to-neutral-200">
-              <HiOutlineInbox className="size-8 text-neutral-400" />
+            <div className="mx-auto mb-6 flex size-20 items-center justify-center rounded-full bg-surface-warm">
+              <HiOutlineInbox className="size-8 text-ink-muted" />
             </div>
-            <h3 className="text-xl font-semibold text-neutral-900 mb-3">{t('title')}</h3>
-            <p className="text-neutral-600 mb-6">
+            <h3 className="text-xl font-semibold text-ink mb-3">{t('title')}</h3>
+            <p className="text-ink-muted mb-6">
               {state.searchTerm
                 ? 'Try adjusting your search criteria or browse all categories.'
                 : 'No categories available yet.'}
@@ -250,23 +245,20 @@ export default function CategoriesPage() {
                     <Badge variant="success" size="sm" className={getCategoryColor(category.color)}>
                       {t('title')}
                     </Badge>
-                    <span className="text-xs font-medium text-neutral-500">
+                    <span className="text-xs font-medium text-ink-muted">
                       {t('quizCount', { count: category.quizCount })}
                     </span>
                   </div>
-                  <CardTitle
-                    size="md"
-                    className="line-clamp-2 text-neutral-900 group-hover:text-brand-trust"
-                  >
+                  <CardTitle size="md" className="line-clamp-2 text-ink group-hover:text-accent">
                     {category.name}
                   </CardTitle>
                   <CardDescription className="line-clamp-2 mt-2">
                     {category.description}
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="pt-4 border-t border-neutral-100">
+                <CardContent className="pt-4 border-t border-line">
                   <div className="flex items-center justify-between gap-3">
-                    <span className="text-sm text-neutral-600">
+                    <span className="text-sm text-ink-muted">
                       {t('quizCount', { count: category.quizCount })}
                     </span>
                     <Button

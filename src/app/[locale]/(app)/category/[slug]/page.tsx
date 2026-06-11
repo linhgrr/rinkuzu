@@ -17,7 +17,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/Card';
-import Navigation from '@/components/Navigation';
 import { routePathSegment } from '@/lib/routing/routeParams';
 import { useRequiredRouteParam } from '@/lib/routing/useRequiredRouteParam';
 import { PaginationMeta } from '@/types';
@@ -72,17 +71,17 @@ function formatDate(dateString: string) {
 
 function getCategoryColor(color: string) {
   const colorMap: Record<string, string> = {
-    blue: 'bg-green-100 text-brand-trust border-green-200',
+    blue: 'bg-green-100 text-accent border-green-200',
     green: 'bg-green-100 text-green-700 border-green-200',
     purple: 'bg-violet-100 text-violet-700 border-violet-200',
     red: 'bg-red-100 text-red-700 border-red-200',
     yellow: 'bg-yellow-100 text-yellow-700 border-yellow-200',
     indigo: 'bg-indigo-100 text-indigo-700 border-indigo-200',
     pink: 'bg-pink-100 text-pink-700 border-pink-200',
-    gray: 'bg-neutral-100 text-neutral-700 border-neutral-200',
+    gray: 'bg-surface-warm text-ink border-line',
     cyan: 'bg-cyan-100 text-cyan-700 border-cyan-200',
     orange: 'bg-orange-100 text-orange-700 border-orange-200',
-    teal: 'bg-green-100 text-brand-trust-hover border-green-200',
+    teal: 'bg-green-100 text-accent-hover border-green-200',
   };
   return colorMap[color?.toLowerCase()] || colorMap['purple'];
 }
@@ -90,7 +89,6 @@ function getCategoryColor(color: string) {
 function CategoryLoadingState() {
   return (
     <div className="min-h-screen">
-      <Navigation />
       <div className="mx-auto max-w-7xl px-4 pb-8 pt-20 sm:px-6 lg:px-8">
         <div className="flex h-64 items-center justify-center">
           <div className="mx-auto mb-4 flex h-16 items-center justify-center animate-pulse">
@@ -112,7 +110,6 @@ function CategoryLoadingState() {
 function CategoryErrorState({ message }: { message: string }) {
   return (
     <div className="min-h-screen">
-      <Navigation />
       <div className="mx-auto max-w-7xl px-4 pb-8 pt-20 sm:px-6 lg:px-8">
         <Card variant="bordered" className="mb-8 border-red-200 bg-red-50 p-6">
           <div className="flex items-center text-red-700">
@@ -135,16 +132,16 @@ function CategoryBreadcrumbs({
   homeLabel: string;
 }) {
   return (
-    <nav className="mb-6 flex items-center gap-x-2 text-sm text-neutral-500">
-      <Link href="/" className="hover:text-neutral-700">
+    <nav className="mb-6 flex items-center gap-x-2 text-sm text-ink-muted">
+      <Link href="/" className="hover:text-ink">
         {homeLabel}
       </Link>
       <span>›</span>
-      <Link href="/categories" className="hover:text-neutral-700">
+      <Link href="/categories" className="hover:text-ink">
         {categoriesLabel}
       </Link>
       <span>›</span>
-      <span className="font-medium text-neutral-900">{categoryName}</span>
+      <span className="font-medium text-ink">{categoryName}</span>
     </nav>
   );
 }
@@ -166,8 +163,8 @@ function CategoryHeader({
           {category.name.charAt(0)}
         </div>
         <div>
-          <h1 className="text-3xl font-semibold text-neutral-900">{category.name}</h1>
-          <p className="mt-1 text-neutral-600">
+          <h1 className="text-3xl font-semibold text-ink">{category.name}</h1>
+          <p className="mt-1 text-ink-muted">
             {category.description} • {quizCountLabel}
           </p>
         </div>
@@ -242,7 +239,7 @@ function CategoryResultsBar({
 }) {
   return (
     <div className="mb-8 flex items-center justify-between">
-      <p className="text-neutral-600">
+      <p className="text-ink-muted">
         Showing {quizzesCount} of {pagination.totalItems} quizzes
         {searchTerm ? (
           <span className="ml-2">
@@ -255,13 +252,9 @@ function CategoryResultsBar({
           </span>
         ) : null}
       </p>
-      {isLoading ? <span className="text-sm text-neutral-500">{loadingLabel}...</span> : null}
+      {isLoading ? <span className="text-sm text-ink-muted">{loadingLabel}...</span> : null}
       {searchTerm ? (
-        <Button
-          variant="ghost"
-          onClick={onClear}
-          className="text-brand-trust hover:text-brand-trust-hover"
-        >
+        <Button variant="ghost" onClick={onClear} className="text-accent hover:text-accent-hover">
           {clearLabel}
         </Button>
       ) : null}
@@ -300,23 +293,23 @@ function CategoryQuizCard({
               {quiz.category?.name}
             </Badge>
           </div>
-          <span className="text-xs text-neutral-500">
+          <span className="text-xs text-ink-muted">
             {quiz.questionCount} {questionsLabel}
           </span>
         </div>
-        <CardTitle size="md" className="transition-colors group-hover:text-brand-trust">
+        <CardTitle size="md" className="transition-colors group-hover:text-accent">
           {quiz.title}
         </CardTitle>
         <CardDescription className="line-clamp-2">{quiz.description}</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="mb-4 flex items-center justify-between text-sm text-neutral-500">
+        <div className="mb-4 flex items-center justify-between text-sm text-ink-muted">
           <div className="flex min-w-0 items-center gap-2">
             <span className="shrink-0">By</span>
             <UserProfileLink
               user={quiz.author}
               avatarSize={28}
-              className="max-w-[65%] text-sm font-medium text-neutral-600"
+              className="max-w-[65%] text-sm font-medium text-ink-muted"
               nameClassName="text-sm"
             />
           </div>
@@ -367,11 +360,11 @@ function EmptyCategoryQuizzesState({
 }) {
   return (
     <Card variant="glass" className="p-12 text-center">
-      <div className="mx-auto mb-6 flex size-20 items-center justify-center rounded-full bg-gradient-to-br from-neutral-100 to-neutral-200">
-        <HiOutlineInbox className="size-8 text-neutral-400" />
+      <div className="mx-auto mb-6 flex size-20 items-center justify-center rounded-full bg-surface-warm">
+        <HiOutlineInbox className="size-8 text-ink-muted" />
       </div>
-      <h3 className="mb-3 text-xl font-semibold text-neutral-900">No quizzes found</h3>
-      <p className="mb-6 text-neutral-600">
+      <h3 className="mb-3 text-xl font-semibold text-ink">No quizzes found</h3>
+      <p className="mb-6 text-ink-muted">
         {searchTerm
           ? `No quizzes match "${searchTerm}" in ${categoryName}`
           : `No quizzes available in ${categoryName} yet`}
@@ -495,8 +488,6 @@ export default function CategoryPage() {
 
   return (
     <div className="min-h-screen">
-      <Navigation />
-
       <div className="mx-auto max-w-7xl px-4 pb-8 pt-20 sm:px-6 lg:px-8">
         <CategoryBreadcrumbs
           categoryName={category?.name}

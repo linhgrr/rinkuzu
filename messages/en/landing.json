@@ -10,10 +10,10 @@
     "poweredBy": "Powered by",
     "geminiAi": "Gemini AI",
     "headline": "Master Any Subject at Your Own Pace",
-    "subtitle": "Transform any PDF document into an interactive learning journey. Our adaptive AI extracts concepts, builds your knowledge graph, and tailors exercises across all Bloom's cognitive levels to ensure deep mastery.",
+    "subtitle": "Transform any PDF document into an interactive learning journey. Our personalized learning AI extracts concepts, builds your knowledge graph, and tailors exercises across all Bloom's cognitive levels to ensure deep mastery.",
     "ctaStartLearning": "Start Learning Now",
     "ctaQuizBuilder": "Try Quiz Builder",
-    "ctaAdaptiveLearning": "Try Adaptive Learning",
+    "ctaAdaptiveLearning": "Try Personalized Learning",
     "login": "Login",
     "getStarted": "Get Started",
     "navAiQuiz": "AI Quiz Generator",
@@ -50,7 +50,7 @@
       "description": "Rin-chan is always ready to explain any questions and guide you through exercises."
     },
     "feature3": {
-      "title": "Adaptive Learning",
+      "title": "Personalized Learning",
       "description": "Learning paths personalized based on your own strengths and weaknesses.",
       "button": "Start Learning"
     },
@@ -90,7 +90,7 @@
   "faq": {
     "title": "Frequently Asked Questions",
     "q1": "What is RinKuzu?",
-    "a1": "RinKuzu is an AI-powered adaptive learning platform that transforms PDF documents into personalized quiz-based learning journeys using knowledge graphs and Bloom's Taxonomy.",
+    "a1": "RinKuzu is an AI-powered personalized learning platform that transforms PDF documents into personalized quiz-based learning journeys using knowledge graphs and Bloom's Taxonomy.",
     "q2": "How do I generate a quiz from a PDF?",
     "a2": "Upload any PDF document (lecture notes, textbooks, or internal docs) and RinKuzu's AI automatically extracts key concepts, identifies prerequisites, and generates quizzes with explanations.",
     "q3": "Is RinKuzu free to use?",
@@ -101,7 +101,7 @@
     "a5": "A knowledge graph maps relationships between concepts in your material. RinKuzu builds a visual graph showing prerequisite chains so you can see the learning path from fundamentals to advanced topics.",
     "q6": "What is Bloom's Taxonomy and how does RinKuzu use it?",
     "a6": "Bloom's Taxonomy classifies cognitive levels from Remember to Create. RinKuzu generates questions at each level, from basic recall to higher-order reasoning, ensuring deep mastery of every concept.",
-    "q7": "How does adaptive learning work on RinKuzu?",
+    "q7": "How does personalized learning work on RinKuzu?",
     "a7": "RinKuzu tracks your performance using Bayesian Knowledge Tracing (BKT), prioritizing questions on your weakest concepts. The AI adjusts difficulty dynamically for maximum efficiency.",
     "q8": "Can I share my quizzes with others?",
     "a8": "Yes! Set your quizzes to public to share with friends, classmates, or the RinKuzu community. Browse the Explore page for quizzes created by other users.",
@@ -137,7 +137,7 @@
   "ready_to_start": "Ready to start your learning journey?",
   "footer": {
     "contact": "Contact",
-    "description": "AI-powered adaptive learning platform. Transform any PDF into a personalized quiz journey.",
+    "description": "AI-powered personalized learning platform. Transform any PDF into a personalized quiz journey.",
     "links": {
       "title": "Links",
       "home": "Home",

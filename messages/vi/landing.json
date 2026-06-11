@@ -13,7 +13,7 @@
     "subtitle": "Biến mọi tài liệu PDF thành hành trình học tập tương tác. AI thích ứng của chúng tôi trích xuất các khái niệm, xây dựng đồ thị kiến thức của bạn, và điều chỉnh bài tập theo tất cả các cấp độ nhận thức Bloom để đảm bảo thành thạo sâu.",
     "ctaStartLearning": "Bắt đầu học ngay",
     "ctaQuizBuilder": "Thử Quiz Builder",
-    "ctaAdaptiveLearning": "Thử Học Thích Ứng",
+    "ctaAdaptiveLearning": "Thử Học Cá Nhân Hóa",
     "login": "Đăng nhập",
     "getStarted": "Bắt đầu ngay",
     "navAiQuiz": "Tạo Quiz bằng AI",
@@ -50,7 +50,7 @@
       "description": "Rin-chan luôn sẵn sàng giải thích mọi thắc mắc và hướng dẫn bạn giải bài tập."
     },
     "feature3": {
-      "title": "Học Tập Thích Ứng",
+      "title": "Học Cá Nhân Hóa",
       "description": "Lộ trình học được cá nhân hóa dựa trên thế mạnh và điểm yếu của riêng bạn.",
       "button": "Bắt đầu học"
     },
@@ -90,7 +90,7 @@
   "faq": {
     "title": "Câu hỏi thường gặp",
     "q1": "RinKuzu là gì?",
-    "a1": "RinKuzu là nền tảng học tập thích ứng sử dụng AI, chuyển đổi tài liệu PDF thành lộ trình học cá nhân hóa dựa trên đồ thị kiến thức và phân loại Bloom.",
+    "a1": "RinKuzu là nền tảng học cá nhân hóa sử dụng AI, chuyển đổi tài liệu PDF thành lộ trình học cá nhân hóa dựa trên đồ thị kiến thức và phân loại Bloom.",
     "q2": "Làm thế nào để tạo quiz từ file PDF?",
     "a2": "Chỉ cần tải file PDF (bài giảng, giáo trình, hoặc tài liệu nội bộ) và AI của RinKuzu sẽ tự động trích xuất khái niệm, xác định tiên quyết, và tạo quiz kèm lời giải thích.",
     "q3": "RinKuzu có miễn phí không?",
@@ -101,7 +101,7 @@
     "a5": "Đồ thị kiến thức liên kết các khái niệm trong tài liệu của bạn. RinKuzu xây dựng đồ thị trực quan thể hiện chuỗi tiên quyết, giúp bạn thấy lộ trình từ cơ bản đến nâng cao.",
     "q6": "Phân loại Bloom là gì và RinKuzu sử dụng như thế nào?",
     "a6": "Phân loại Bloom gồm 6 cấp độ nhận thức: Nhớ, Hiểu, Áp dụng, Phân tích, Đánh giá, và Sáng tạo. RinKuzu tạo câu hỏi ở mỗi cấp độ để đảm bảo thành thạo sâu từ nhớ đến suy luận bậc cao.",
-    "q7": "Học tập thích ứng trên RinKuzu hoạt động ra sao?",
+    "q7": "Học cá nhân hóa trên RinKuzu hoạt động ra sao?",
     "a7": "RinKuzu theo dõi hiệu suất bằng Bayesian Knowledge Tracing (BKT), ưu tiên câu hỏi về khái niệm yếu nhất của bạn. AI điều chỉnh độ khó động để tối đa hóa hiệu quả học tập.",
     "q8": "Tôi có thể chia sẻ quiz không?",
     "a8": "Có! Đặt quiz ở chế độ công khai để chia sẻ với bạn bè, lớp học, hoặc cộng đồng RinKuzu. Khám phá trang Explore để tìm quiz từ người dùng khác.",
@@ -137,7 +137,7 @@
   },
   "footer": {
     "contact": "Liên hệ",
-    "description": "Nền tảng học tập thích ứng bằng AI. Biến mọi tài liệu PDF thành hành trình luyện quiz cá nhân hóa.",
+    "description": "Nền tảng học cá nhân hóa bằng AI. Biến mọi tài liệu PDF thành hành trình luyện quiz cá nhân hóa.",
     "links": {
       "title": "Liên kết",
       "home": "Trang chủ",

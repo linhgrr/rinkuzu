@@ -1,4 +1,4 @@
-# RinKuzu SaaS Design System — Green-Led Brand with Orange CTA Accent
+# RinKuzu Design System — Figma Home Dashboard & Product UI Tokens
 
 ## 0. Product Context
 
@@ -16,6 +16,77 @@ The system uses a professional SaaS foundation with a warm education-focused ide
 - **Soft depth = approachable intelligence**
 
 This is not a generic orange/green theme. It is a green-led learning SaaS identity with orange reserved for high-intent action moments.
+
+### 0.1 Current Home Redesign Source of Truth
+
+The authenticated home/dashboard screen is now sourced from the Figma frame:
+
+- File: `Rinkuzu website - FINAL`
+- Node: `2102:4700`
+- URL: `https://www.figma.com/design/NAj8r48fIqdjpK6SbLzYl0/Rinkuzu-website---FINAL--?node-id=2102-4700&m=dev`
+- Code entry: `src/features/dashboard/components/DashboardPageShell.tsx`
+- Component set: `src/features/dashboard/components/HomeDashboard.tsx`
+- Assets: `public/images/home-redesign/`
+
+This frame introduces a dashboard-specific warm token layer. The older green-led system remains valid for non-dashboard surfaces until those screens are intentionally migrated. Do not mix the old green dashboard cards with the new home shell.
+
+Home desktop frame rules:
+
+- Canvas: `1920x1080`
+- Sidebar: `280px`, fixed left, starts below `72px` topbar
+- Topbar: `72px`, surface `#fefefe`, border `#e8eeff`
+- Main content: `1340px` centered inside the `1640px` area after the sidebar
+- Main x position on 1920px desktop: `430px`
+- Main grid: `900px` left column, `416px` right column, `24px` gap
+- Header y position: `96px`
+- Hero/upload y position: `180px`
+- Lower cards y position: `499px`
+
+Home component inventory:
+
+- `HomeTopbar`: logo block, sidebar toggle, notification, language, avatar
+- `HomeSidebar`: Home, Quiz Builder group, Personal Learning group, Explore, Setting, Help
+- `HomeHero`: warm AI learning banner with Figma character assets
+- `QuizBuilderCard`: dashed PDF upload surface
+- `LearningProgressCard`: streak, accuracy, study time, weekly activity
+- `ContinueLearning`: eight learning cards in a `4x2` desktop grid
+
+Home-specific primitive tokens:
+
+```css
+:root {
+  --home-bg-page: #f8f8f8;
+  --home-bg-surface: #fefefe;
+  --home-bg-surface-blue: #f8fbff;
+  --home-bg-surface-warm: #fffbf8;
+  --home-bg-hero: rgba(255, 214, 187, 0.6);
+  --home-ink: #3d1300;
+  --home-ink-strong: #441f05;
+  --home-ink-muted: rgba(61, 19, 0, 0.5);
+  --home-accent: #ef4a00;
+  --home-accent-soft: #fce4d3;
+  --home-accent-warm: #ffd6bb;
+  --home-accent-pale: #ffe5d3;
+  --home-accent-text: #fff4ee;
+  --home-border: #e8eeff;
+  --home-border-blue: #7185bd;
+  --home-progress-track: #ebd4c5;
+  --home-progress-blue-track: #c2d6e4;
+  --home-progress-blue: #718ebd;
+  --home-divider-warm: rgba(255, 214, 187, 0.5);
+  --home-card-shadow-accent: 2px 2px 0 #ff9768;
+}
+```
+
+Home typography:
+
+- Font family: Montserrat
+- Title: `36px`, `700`, `line-height: 1.25`, letter spacing `0`
+- Section title: `18px`, `600`, `line-height: 1.4`
+- Body: `16px`, `400`, `line-height: 1.4`
+- Body semibold: `16px`, `600`, `line-height: 1.4`
+- Metric value: `22px`, `600`, `line-height: 1.35`
+- Sub text: `14px`, `400`, `line-height: 1.4`
 
 ---
 
@@ -1046,22 +1117,35 @@ Use a warm orange gradient background with a green success proof element.
 
 ## 7.2 Dashboard
 
-Dashboard layout:
+Authenticated Home Dashboard layout is the Figma `2102:4700` implementation, not the older green dashboard composition.
 
-- Sidebar navigation
-- Top progress summary
-- Recommended next action
-- Recent quizzes
-- Weak concepts
-- Knowledge graph preview
+Desktop structure:
+
+- Fixed left sidebar: `280px`
+- Fixed topbar: `72px`
+- Main content width: `1340px`
+- Content grid: `900px / 416px`
+- Grid gap: `24px`
+- Card radius: `20px` for panels, `12px` for learning cards, `10px` for compact controls
+
+Primary panels:
+
+- Hero: `900x295`, `--home-bg-hero`, `--home-accent` border, Montserrat title
+- Quiz Builder: `416x295`, dashed upload area, `--home-bg-surface-blue`
+- Learning Progress: `416x357`, three metrics, weekly activity row
+- Continue Learning: `900x501`, eight cards in two rows
 
 Primary action on dashboard:
 
-- Upload PDF / Generate Quiz → orange
+- Start learning → `--home-accent`
+- Upload PDF / Create quiz → dashed blue border with accent hover
+- View all links → `--home-ink-strong`
 
-Success areas:
+Success/progress areas:
 
-- Mastery score / completed quizzes → green
+- Warm AI cards use orange gradient progress bars
+- Cool static quiz cards use blue progress bars
+- Activity days use Figma fire asset for active days and outline circle for inactive days
 
 ---
 

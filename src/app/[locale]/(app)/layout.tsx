@@ -7,6 +7,7 @@ import BottomNav from '@/components/BottomNav';
 import { GlobalFooter } from '@/components/GlobalFooter';
 import { MainLayoutWrapper } from '@/components/MainLayoutWrapper';
 import { ClientOnlyAppAddons } from '@/components/ClientOnlyAppAddons';
+import { AppChrome } from '@/components/app-chrome/AppChrome';
 import { authOptions } from '@/lib/auth';
 
 export default async function AppLayout({
@@ -25,10 +26,12 @@ export default async function AppLayout({
   return (
     <NextIntlClientProvider messages={messages}>
       <Providers session={session}>
-        <MainLayoutWrapper>
-          {children}
-          <GlobalFooter />
-        </MainLayoutWrapper>
+        <AppChrome>
+          <MainLayoutWrapper>
+            {children}
+            <GlobalFooter />
+          </MainLayoutWrapper>
+        </AppChrome>
         <BottomNav />
         <ClientOnlyAppAddons />
       </Providers>

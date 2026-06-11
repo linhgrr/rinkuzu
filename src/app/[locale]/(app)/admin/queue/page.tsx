@@ -1,12 +1,9 @@
 'use client';
 
 import { useEffect, useReducer, useSyncExternalStore } from 'react';
-import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
-import Navigation from '@/components/Navigation';
 import Pagination from '@/components/ui/Pagination';
-import Sidebar from '@/components/Sidebar';
 import { Button } from '@/components/ui/Button';
 import {
   Badge,
@@ -44,7 +41,6 @@ type QueueFilter = 'pending' | 'all';
 type QueueModal = 'reject' | 'preview' | 'delete' | null;
 
 interface AdminQueueState {
-  isSidebarOpen: boolean;
   quizzes: IQuiz[];
   loading: boolean;
   error: string;
@@ -59,7 +55,6 @@ interface AdminQueueState {
 
 type AdminQueueAction =
   | { type: 'patch'; value: Partial<AdminQueueState> }
-  | { type: 'toggleSidebar' }
   | { type: 'startFetch' }
   | { type: 'fetchSuccess'; quizzes: IQuiz[]; pagination: PaginationData }
   | { type: 'fetchError'; message: string }
@@ -72,7 +67,6 @@ type AdminQueueAction =
   | { type: 'removeQuiz'; quizId: string };
 
 const initialState: AdminQueueState = {
-  isSidebarOpen: true,
   quizzes: [],
   loading: true,
   error: '',
@@ -94,8 +88,6 @@ function adminQueueReducer(state: AdminQueueState, action: AdminQueueAction): Ad
   switch (action.type) {
     case 'patch':
       return { ...state, ...action.value };
-    case 'toggleSidebar':
-      return { ...state, isSidebarOpen: !state.isSidebarOpen };
     case 'startFetch':
       return { ...state, loading: true, error: '' };
     case 'fetchSuccess':
@@ -180,47 +172,17 @@ function HydratedDateText({ dateString }: { dateString: string | Date }) {
   );
 }
 
-function AdminQueueLayout({
-  currentPath,
-  isSidebarOpen,
-  onToggleSidebar,
-  children,
-}: {
-  currentPath: string;
-  isSidebarOpen: boolean;
-  onToggleSidebar: () => void;
-  children: React.ReactNode;
-}) {
+function AdminQueueLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-white">
-      <Navigation />
-      <Sidebar isOpen={isSidebarOpen} onToggle={onToggleSidebar} currentPath={currentPath} />
-      <main
-        className={`max-w-none px-4 py-8 transition-[margin] duration-300 sm:px-6 lg:px-8 ${isSidebarOpen ? 'ml-64' : 'ml-16'}`}
-      >
-        {children}
-      </main>
+      <main className="max-w-none px-4 py-8 sm:px-6 lg:px-8">{children}</main>
     </div>
   );
 }
 
-function AdminQueueLoadingState({
-  currentPath,
-  isSidebarOpen,
-  onToggleSidebar,
-  tCommon,
-}: {
-  currentPath: string;
-  isSidebarOpen: boolean;
-  onToggleSidebar: () => void;
-  tCommon: TranslateFn;
-}) {
+function AdminQueueLoadingState({ tCommon }: { tCommon: TranslateFn }) {
   return (
-    <AdminQueueLayout
-      currentPath={currentPath}
-      isSidebarOpen={isSidebarOpen}
-      onToggleSidebar={onToggleSidebar}
-    >
+    <AdminQueueLayout>
       <div className="flex justify-center py-12">
         <div className="flex flex-col items-center gap-3">
           <div className="size-12 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
@@ -602,7 +564,6 @@ export default function AdminQueuePage() {
   const t = useTranslations('admin');
   const tCommon = useTranslations('common');
   const tProfile = useTranslations('profile');
-  const pathname = usePathname();
   const [state, dispatch] = useReducer(adminQueueReducer, initialState);
 
   useEffect(() => {
@@ -706,22 +667,11 @@ export default function AdminQueuePage() {
   };
 
   if (state.loading) {
-    return (
-      <AdminQueueLoadingState
-        currentPath={pathname}
-        isSidebarOpen={state.isSidebarOpen}
-        onToggleSidebar={() => dispatch({ type: 'toggleSidebar' })}
-        tCommon={tCommon}
-      />
-    );
+    return <AdminQueueLoadingState tCommon={tCommon} />;
   }
 
   return (
-    <AdminQueueLayout
-      currentPath={pathname}
-      isSidebarOpen={state.isSidebarOpen}
-      onToggleSidebar={() => dispatch({ type: 'toggleSidebar' })}
-    >
+    <AdminQueueLayout>
       <div className="mx-auto max-w-6xl">
         <QueuePageHeader
           filter={state.filter}

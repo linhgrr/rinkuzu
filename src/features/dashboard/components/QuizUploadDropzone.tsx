@@ -2,6 +2,7 @@
 
 import { useRef, useState } from 'react';
 import Image from 'next/image';
+import { useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
 import { ROUTES } from '@/shared/constants';
 
@@ -10,6 +11,7 @@ const MAX_SIZE = 50 * 1024 * 1024;
 
 export function QuizUploadDropzone() {
   const router = useRouter();
+  const t = useTranslations('dashboard.home');
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragActive, setDragActive] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -17,11 +19,11 @@ export function QuizUploadDropzone() {
   const handleFile = (file: File | undefined) => {
     if (!file) return;
     if (file.type !== 'application/pdf') {
-      setError('Only PDF files are supported');
+      setError(t('upload.errors.onlyPdf'));
       return;
     }
     if (file.size > MAX_SIZE) {
-      setError('File exceeds 50MB');
+      setError(t('upload.errors.fileTooLarge'));
       return;
     }
     setError(null);
@@ -70,10 +72,10 @@ export function QuizUploadDropzone() {
         className="size-10"
       />
       <span className="font-home text-base font-semibold leading-[1.4] text-ink">
-        Click or drag & drop it here to upload
+        {t('upload.cta')}
       </span>
       <span className="font-home text-sm font-normal leading-[1.4] text-ink-muted">
-        {error ?? 'PDF format, max to 50MB per file'}
+        {error ?? t('upload.hint')}
       </span>
     </div>
   );

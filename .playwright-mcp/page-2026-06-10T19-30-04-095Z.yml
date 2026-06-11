@@ -1,0 +1,141 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e3]:
+      - link "RinKuzu" [ref=e4] [cursor=pointer]:
+        - /url: /en/dashboard
+        - img "RinKuzu" [ref=e5]
+        - img
+      - button "Toggle sidebar" [ref=e6] [cursor=pointer]
+    - generic [ref=e7]:
+      - button "Notifications" [ref=e8] [cursor=pointer]
+      - button "Change language" [ref=e10] [cursor=pointer]:
+        - generic [ref=e11]: English
+      - button "Toggle user menu" [ref=e13] [cursor=pointer]
+  - complementary [ref=e14]:
+    - navigation [ref=e15]:
+      - link "Home" [ref=e16] [cursor=pointer]:
+        - /url: /en/dashboard
+        - generic [ref=e19]: Home
+      - generic [ref=e20]:
+        - button "Quiz Builder" [ref=e21] [cursor=pointer]:
+          - generic [ref=e24]: Quiz Builder
+        - generic [ref=e26]:
+          - link "My Quizzes" [ref=e28] [cursor=pointer]:
+            - /url: /en/my-quizzes
+            - generic [ref=e30]: My Quizzes
+          - link "Review" [ref=e31] [cursor=pointer]:
+            - /url: /en/review
+            - generic [ref=e33]: Review
+          - link "History" [ref=e34] [cursor=pointer]:
+            - /url: /en/history
+            - generic [ref=e36]: History
+          - link "Bookmarks" [ref=e37] [cursor=pointer]:
+            - /url: /en/bookmarks
+            - generic [ref=e39]: Bookmarks
+      - generic [ref=e40]:
+        - button "Adaptive Learning" [ref=e41] [cursor=pointer]:
+          - generic [ref=e44]: Adaptive Learning
+        - generic [ref=e46]:
+          - link "Library" [ref=e47] [cursor=pointer]:
+            - /url: /en/adaptive
+            - generic [ref=e49]: Library
+          - link "New Subject" [ref=e50] [cursor=pointer]:
+            - /url: /en/adaptive/upload
+            - generic [ref=e52]: New Subject
+      - generic [ref=e53]:
+        - button "Admin" [ref=e54] [cursor=pointer]:
+          - generic [ref=e57]: Admin
+        - generic [ref=e59]:
+          - link [ref=e60] [cursor=pointer]:
+            - /url: /en/admin/queue
+            - generic [ref=e62]: Quiz Queue
+          - link [ref=e63] [cursor=pointer]:
+            - /url: /en/admin/users
+            - generic [ref=e65]: User Management
+          - link [ref=e66] [cursor=pointer]:
+            - /url: /en/admin/categories
+            - generic [ref=e68]: Categories
+          - link [ref=e69] [cursor=pointer]:
+            - /url: /en/admin/subscriptions
+            - generic [ref=e71]: Subscriptions
+          - link [ref=e72] [cursor=pointer]:
+            - /url: /en/admin/plans
+            - generic [ref=e74]: Pricing Plans
+          - link [ref=e75] [cursor=pointer]:
+            - /url: /en/admin/stats
+            - generic [ref=e77]: Statistics
+          - link [ref=e78] [cursor=pointer]:
+            - /url: /en/admin/reports
+            - generic [ref=e80]: Quiz Reports
+      - link "Explore" [ref=e81] [cursor=pointer]:
+        - /url: /en/explore
+        - generic [ref=e84]: Explore
+    - generic [ref=e85]:
+      - generic [ref=e87]:
+        - button "Settings" [ref=e88] [cursor=pointer]:
+          - generic [ref=e91]: Settings
+        - generic [ref=e93]:
+          - link "Profile" [ref=e94] [cursor=pointer]:
+            - /url: /en/profile
+            - generic [ref=e96]: Profile
+          - link "Subscription" [ref=e97] [cursor=pointer]:
+            - /url: /en/subscription
+            - generic [ref=e99]: Subscription
+      - link "Help & Supporting" [ref=e100] [cursor=pointer]:
+        - /url: /en/contact
+        - generic [ref=e103]: Help & Supporting
+  - main [ref=e105]:
+    - paragraph [ref=e109]: Loading...
+    - generic [ref=e112]:
+      - generic [ref=e113]:
+        - generic [ref=e114]:
+          - link "RinKuzu Logo" [ref=e115] [cursor=pointer]:
+            - /url: /
+            - img "RinKuzu Logo" [ref=e116]
+          - paragraph [ref=e117]: AI-powered adaptive learning platform. Transform any PDF into a personalized quiz journey.
+        - generic [ref=e118]:
+          - heading "Links" [level=4] [ref=e119]
+          - list [ref=e120]:
+            - listitem [ref=e121]:
+              - link "Home" [ref=e122] [cursor=pointer]:
+                - /url: /
+            - listitem [ref=e123]:
+              - link "About" [ref=e124] [cursor=pointer]:
+                - /url: /about
+            - listitem [ref=e125]:
+              - link "Pricing" [ref=e126] [cursor=pointer]:
+                - /url: /pricing
+            - listitem [ref=e127]:
+              - link "FAQ" [ref=e128] [cursor=pointer]:
+                - /url: /faq
+            - listitem [ref=e129]:
+              - link "Blog" [ref=e130] [cursor=pointer]:
+                - /url: /blog
+        - generic [ref=e131]:
+          - heading "Legal" [level=4] [ref=e132]
+          - list [ref=e133]:
+            - listitem [ref=e134]:
+              - link "Privacy Policy" [ref=e135] [cursor=pointer]:
+                - /url: /privacy
+            - listitem [ref=e136]:
+              - link "Terms of Service" [ref=e137] [cursor=pointer]:
+                - /url: /terms
+            - listitem [ref=e138]:
+              - link "Cookie Policy" [ref=e139] [cursor=pointer]:
+                - /url: /cookies
+            - listitem [ref=e140]:
+              - link "Contact" [ref=e141] [cursor=pointer]:
+                - /url: /contact
+        - generic [ref=e142]:
+          - heading "Newsletter" [level=4] [ref=e143]
+          - paragraph [ref=e144]: Subscribe to receive the latest news and offers from RinKuzu.
+          - generic [ref=e145]:
+            - textbox "Your email" [ref=e148]
+            - button "Subscribe" [ref=e149] [cursor=pointer]:
+              - generic [ref=e150]: Subscribe
+      - generic [ref=e151]:
+        - paragraph [ref=e152]: Copyright 2026 RinKuzu. All rights reserved.
+        - paragraph [ref=e153]: support@rinkuzu.app
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=e159] [cursor=pointer]:
+    - img [ref=e160]

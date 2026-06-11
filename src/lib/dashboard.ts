@@ -6,6 +6,14 @@ import UserProgress from '@/models/UserProgress';
 import QuestionProgress from '@/models/QuestionProgress';
 import Quiz from '@/models/Quiz';
 import { calculateLevel, xpForNextLevel, levelProgress } from '@/lib/gamification';
+import { fetchApiData } from '@/lib/api/client';
+import { logger } from '@/lib/logger';
+import {
+  buildAdaptiveServiceHeaders,
+  resolveAdaptiveApiUrl,
+  resolveAdaptiveProxyTimeoutMs,
+} from '@/lib/adaptive/config';
+import type { PipelineJobHistoryItem } from '@/features/adaptive/types';
 import { Types } from 'mongoose';
 
 type DashboardQuiz = {
@@ -80,6 +88,9 @@ type DashboardQuizAggregationResult = {
     color?: unknown;
   } | null;
 };
+
+const HOME_ADAPTIVE_SUBJECT_LIMIT = 4;
+const HOME_ADAPTIVE_SUBJECT_TIMEOUT_MS = 1_500;
 
 function toWeeklyActivityObject(activity: unknown): DashboardStatsData['weeklyActivity'] {
   if (!activity) {
@@ -313,6 +324,30 @@ const getCachedPublishedDashboardQuizzes = unstable_cache(
   },
 );
 
+async function getDashboardAdaptiveSubjects(userId: string): Promise<PipelineJobHistoryItem[]> {
+  const timeoutMs = Math.min(resolveAdaptiveProxyTimeoutMs(), HOME_ADAPTIVE_SUBJECT_TIMEOUT_MS);
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const data = await fetchApiData<{ subjects?: PipelineJobHistoryItem[] }>(
+      `${resolveAdaptiveApiUrl()}/api/history/subjects`,
+      {
+        headers: buildAdaptiveServiceHeaders(userId),
+        cache: 'no-store',
+        signal: controller.signal,
+      },
+    );
+
+    return (data.subjects ?? []).slice(0, HOME_ADAPTIVE_SUBJECT_LIMIT);
+  } catch (error) {
+    logger.warn({ error }, 'Failed fetching adaptive subjects for home dashboard');
+    return [];
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 export const getDashboardBootstrapData = cache(
   async (
     userId: string,
@@ -321,6 +356,7 @@ export const getDashboardBootstrapData = cache(
     stats: DashboardStatsData;
     quizzes: DashboardQuiz[];
     yourQuizzes: DashboardQuiz[];
+    adaptiveSubjects: PipelineJobHistoryItem[];
   }> => {
     await connectDB();
 
@@ -328,16 +364,18 @@ export const getDashboardBootstrapData = cache(
       ? new Types.ObjectId(userId)
       : userId;
 
-    const [stats, quizzes, yourQuizzes] = await Promise.all([
+    const [stats, quizzes, yourQuizzes, adaptiveSubjects] = await Promise.all([
       getUserProgressStats(userId, { skipConnect: true }),
       getCachedPublishedDashboardQuizzes(),
       getDashboardQuizList({ author: authorFilter }, 3),
+      getDashboardAdaptiveSubjects(userId),
     ]);
 
     return {
       stats,
       quizzes,
       yourQuizzes,
+      adaptiveSubjects,
     };
   },
 );

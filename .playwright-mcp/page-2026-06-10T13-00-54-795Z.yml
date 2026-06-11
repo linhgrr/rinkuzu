@@ -1,0 +1,47 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e4]:
+    - generic [ref=e5]:
+      - link "RinKuzu Logo" [ref=e7] [cursor=pointer]:
+        - /url: /
+        - img "RinKuzu Logo" [ref=e9]
+      - generic [ref=e10]:
+        - heading "Welcome back!" [level=1] [ref=e11]
+        - paragraph [ref=e12]: Sign in to continue your learning journey
+    - generic [ref=e14]:
+      - generic [ref=e15]:
+        - heading "Sign In" [level=3] [ref=e16]
+        - paragraph [ref=e17]: Enter your credentials to access your account
+      - generic [ref=e18]:
+        - generic [ref=e19]:
+          - button "Continue with Google" [ref=e20] [cursor=pointer]:
+            - img [ref=e21]
+            - text: Continue with Google
+          - generic [ref=e28]: or continue with email
+        - generic [ref=e30]:
+          - group [ref=e31]:
+            - generic [ref=e33]:
+              - generic [ref=e34]: Email Address
+              - generic [ref=e35]:
+                - img [ref=e38]
+                - textbox "Email Address" [ref=e40]:
+                  - /placeholder: Enter your email
+            - generic [ref=e41]:
+              - generic [ref=e42]:
+                - generic [ref=e43]:
+                  - generic [ref=e44]: Password
+                  - generic [ref=e45]:
+                    - img [ref=e48]
+                    - textbox "Password" [ref=e50]:
+                      - /placeholder: Enter your password
+                - button "Show password" [ref=e51] [cursor=pointer]:
+                  - img [ref=e52]
+              - link "Forgot password?" [ref=e56] [cursor=pointer]:
+                - /url: /forgot-password
+          - button "Sign In" [ref=e58] [cursor=pointer]:
+            - generic [ref=e59]: Sign In
+        - paragraph [ref=e62]:
+          - text: Don't have an account?
+          - link "Create Account" [ref=e63] [cursor=pointer]:
+            - /url: /register
+  - button "Open Next.js Dev Tools" [ref=e69] [cursor=pointer]:
+    - img [ref=e70]

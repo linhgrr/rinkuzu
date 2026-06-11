@@ -123,6 +123,44 @@
   "featured_quizzes": "Quiz Nổi Bật",
   "featured_quizzes_description": "Khám phá các bộ quiz chất lượng từ cộng đồng RinKuzu.",
   "start_quiz": "Bắt đầu Quiz",
+  "page": {
+    "meta": {
+      "title": "Tạo Quiz AI từ PDF - Đồ thị Kiến thức | RinKuzu",
+      "description": "Tạo quiz từ PDF bằng AI, học theo đồ thị kiến thức và luyện tập cá nhân hóa cho học sinh, sinh viên và giáo viên."
+    },
+    "mockQuizzes": {
+      "quiz1": {
+        "title": "Giải tích 1 (MI1111)",
+        "description": "Bộ câu hỏi toàn diện về đạo hàm, tích phân và bài toán ứng dụng dành cho sinh viên đại học.",
+        "category": "Toán học"
+      },
+      "quiz2": {
+        "title": "Vật lý đại cương 1 (PH1110)",
+        "description": "Câu hỏi trắc nghiệm về Cơ học và Nhiệt động lực học bám sát định dạng thi giữa kỳ và cuối kỳ.",
+        "category": "Khoa học"
+      },
+      "quiz3": {
+        "title": "Nhập môn lập trình C (IT1110)",
+        "description": "Luyện tập câu hỏi về kiểu dữ liệu, vòng lặp, mảng và con trỏ trong ngôn ngữ C.",
+        "category": "Khoa học máy tính"
+      },
+      "quiz4": {
+        "title": "Triết học Mác - Lênin (SSH1110)",
+        "description": "Bộ quiz ôn tập lý thuyết chính trị được thiết kế cho sinh viên năm nhất đại học.",
+        "category": "Chính trị"
+      },
+      "quiz5": {
+        "title": "Tiếng Anh cơ bản (FL1100)",
+        "description": "Luyện nghe và đọc theo các dạng đề thi phổ biến trong môi trường đại học.",
+        "category": "Ngoại ngữ"
+      },
+      "quiz6": {
+        "title": "Cấu trúc dữ liệu & Giải thuật (IT3011)",
+        "description": "Rèn luyện tư duy giải quyết vấn đề với sắp xếp, tìm kiếm và các cấu trúc cây nâng cao.",
+        "category": "Khoa học máy tính"
+      }
+    }
+  },
   "get_started_free": "Bắt đầu miễn phí",
   "view_pricing": "Xem bảng giá",
   "ready_to_start": "Sẵn sàng bắt đầu hành trình học tập?",

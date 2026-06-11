@@ -8,6 +8,7 @@ type LocalePathInfo = {
 const EXERCISE_MODE_PREFIXES = ['/adaptive/exercise', '/adaptive/result'];
 
 const NO_FOOTER_PREFIXES = [
+  '/',
   '/adaptive/exercise',
   '/adaptive/result',
   '/adaptive/processing',

@@ -37,6 +37,12 @@
   },
   "overrides": [
     {
+      "files": ["src/features/landing/components/home/**/*.tsx"],
+      "rules": {
+        "@next/next/no-img-element": "off"
+      }
+    },
+    {
       "files": ["src/app/api/**/route.ts"],
       "excludedFiles": [
         "src/app/api/auth/*nextauth*/route.ts",

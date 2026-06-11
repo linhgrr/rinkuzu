@@ -519,9 +519,9 @@ function AppTopbar({
           <Image
             src="/images/rinku88-icon.png"
             alt=""
-            width={40}
-            height={40}
-            className={`size-10 object-contain transition-[opacity,transform] duration-200 ease-out ${
+            width={48}
+            height={48}
+            className={`size-12 object-contain transition-[opacity,transform] duration-200 ease-out ${
               collapsed ? 'opacity-100' : 'pointer-events-none absolute opacity-0 translate-x-2'
             }`}
             aria-hidden="true"

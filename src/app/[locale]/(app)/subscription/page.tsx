@@ -5,10 +5,10 @@ import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
 import { fetchApiData } from '@/lib/api/client';
 import { assertTrustedPayosCheckoutUrl } from '@/lib/security/trusted-navigation';
-import Navigation from '@/components/Navigation';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
+import { FullPageSpinner } from '@/components/ui/FullPageSpinner';
 import { HiOutlineCheck, HiOutlineShieldCheck } from '@/components/icons';
 
 const vndCurrencyFormatter = new Intl.NumberFormat('vi-VN', {
@@ -150,19 +150,11 @@ export default function SubscriptionPage() {
   const hasActivePremium = Boolean(state.subscriptionStatus?.isPremium);
 
   if (state.status === 'loading') {
-    return (
-      <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="size-12 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust mx-auto" />
-          <p className="mt-4 text-neutral-600">{t('loading')}</p>
-        </div>
-      </div>
-    );
+    return <FullPageSpinner label={t('loading')} />;
   }
 
   return (
-    <div className="min-h-screen bg-neutral-50 pb-24 md:pb-8">
-      <Navigation />
+    <div className="min-h-screen bg-surface-page pb-24 md:pb-8">
       <div className="py-6 md:py-8">
         <div className="max-w-6xl mx-auto px-4">
           {/* Current Subscription Status */}
@@ -182,7 +174,7 @@ export default function SubscriptionPage() {
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
                 <div>
-                  <p className="text-sm text-brand-trust">{t('title')}</p>
+                  <p className="text-sm text-accent">{t('title')}</p>
                   <p
                     className={`font-medium ${hasActivePremium ? 'text-green-800' : 'text-amber-800'}`}
                   >
@@ -190,7 +182,7 @@ export default function SubscriptionPage() {
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm text-brand-trust">{t('expiresOn')}</p>
+                  <p className="text-sm text-accent">{t('expiresOn')}</p>
                   <p
                     className={`font-medium ${hasActivePremium ? 'text-green-800' : 'text-amber-800'}`}
                   >
@@ -214,13 +206,11 @@ export default function SubscriptionPage() {
                 )}
 
                 <div className="text-center mb-4 md:mb-6">
-                  <h3 className="text-xl md:text-2xl font-semibold text-neutral-900 mb-2">
-                    {plan.name}
-                  </h3>
-                  <div className="text-2xl md:text-4xl font-bold text-brand-trust mb-2">
+                  <h3 className="text-xl md:text-2xl font-semibold text-ink mb-2">{plan.name}</h3>
+                  <div className="text-2xl md:text-4xl font-bold text-accent mb-2">
                     {formatPrice(plan.price)}
                   </div>
-                  <p className="text-sm md:text-base text-neutral-600">
+                  <p className="text-sm md:text-base text-ink-muted">
                     {plan.durationDisplay || plan.duration}
                   </p>
                 </div>
@@ -229,7 +219,7 @@ export default function SubscriptionPage() {
                   {plan.features.map((feature) => (
                     <li key={feature} className="flex items-start">
                       <HiOutlineCheck className="size-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
-                      <span className="text-neutral-700">{feature}</span>
+                      <span className="text-ink">{feature}</span>
                     </li>
                   ))}
                 </ul>
@@ -251,7 +241,7 @@ export default function SubscriptionPage() {
             title={t('subscribe')}
             message={
               <div className="space-y-4">
-                <p className="text-neutral-700">
+                <p className="text-ink">
                   {state.selectedPlan?.name} -{' '}
                   {state.selectedPlan ? formatPrice(state.selectedPlan.price) : ''}
                 </p>

@@ -511,62 +511,42 @@ function LearningCard({ item }: { item: LearningCardItem }) {
   const tone = LEARNING_CARD_TONES[item.tone];
 
   return (
-    <div className="group relative">
-      {/* Stacked ghost layers — fan out behind the card on hover */}
-      <div
-        aria-hidden="true"
-        className={cn(
-          'pointer-events-none absolute inset-0 -z-10 rounded-xl border opacity-0 transition-all duration-300 ease-out group-hover:translate-x-1.5 group-hover:translate-y-1.5 group-hover:opacity-60',
-          tone.card,
-        )}
-      />
-      <div
-        aria-hidden="true"
-        className={cn(
-          'pointer-events-none absolute inset-0 -z-20 rounded-xl border opacity-0 transition-all duration-300 ease-out group-hover:translate-x-3 group-hover:translate-y-3 group-hover:opacity-30',
-          tone.card,
-        )}
-      />
+    <Link
+      href={item.href}
+      className={cn(
+        'flex min-h-[181px] flex-col gap-6 rounded-xl border p-4 transition-transform hover:-translate-y-0.5',
+        tone.card,
+        item.raised && 'shadow-accent',
+      )}
+    >
+      <div className="flex items-center justify-between">
+        <Pill tone={item.tone}>{item.category}</Pill>
+        {item.isAi ? (
+          <Image
+            src={`${ASSET_BASE}/ai-spark.svg`}
+            alt=""
+            width={24}
+            height={24}
+            className="size-6"
+          />
+        ) : null}
+      </div>
 
-      <Link
-        href={item.href}
-        className={cn(
-          'relative z-10 flex min-h-[181px] flex-col gap-6 rounded-xl border p-4 transition-all duration-300 ease-out group-hover:-translate-y-1 group-hover:shadow-lg',
-          tone.card,
-          item.raised && 'shadow-accent',
-        )}
-      >
-        <div className="flex items-center justify-between gap-2">
-          <Pill tone={item.tone} className="inline-block max-w-[70%] truncate">
-            {item.category}
-          </Pill>
-          {item.isAi ? (
-            <Image
-              src={`${ASSET_BASE}/ai-spark.svg`}
-              alt=""
-              width={24}
-              height={24}
-              className="size-6 shrink-0"
-            />
-          ) : null}
+      <div className="flex flex-1 flex-col justify-end gap-3">
+        <h3 className="line-clamp-2 min-h-11 font-home text-base font-semibold leading-[1.4] text-ink-strong">
+          {item.title}
+        </h3>
+        <div className={cn('h-2 w-full rounded-full', tone.track)}>
+          <span
+            className={cn('block h-2 rounded-full', tone.bar)}
+            style={{ width: `${item.progress}%` }}
+          />
         </div>
-
-        <div className="flex flex-1 flex-col justify-end gap-3">
-          <h3 className="line-clamp-2 min-h-11 font-home text-base font-semibold leading-[1.4] text-ink-strong">
-            {item.title}
-          </h3>
-          <div className={cn('h-2 w-full rounded-full', tone.track)}>
-            <span
-              className={cn('block h-2 rounded-full', tone.bar)}
-              style={{ width: `${item.progress}%` }}
-            />
-          </div>
-          <p className="font-sans text-sm font-normal leading-none text-ink-muted">
-            {item.timeLabel}
-          </p>
-        </div>
-      </Link>
-    </div>
+        <p className="font-sans text-sm font-normal leading-none text-ink-muted">
+          {item.timeLabel}
+        </p>
+      </div>
+    </Link>
   );
 }
 

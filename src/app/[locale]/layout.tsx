@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { notFound } from 'next/navigation';
-import { Inter } from 'next/font/google';
+import { Inter, Montserrat, Unbounded, Vina_Sans } from 'next/font/google';
 import Script from 'next/script';
 import '../globals.css';
 import { routing } from '@/i18n/routing';
@@ -20,6 +20,27 @@ const inter = Inter({
   subsets: ['latin', 'vietnamese'],
   display: 'swap',
   variable: '--font-inter',
+});
+
+const montserrat = Montserrat({
+  subsets: ['latin', 'vietnamese'],
+  display: 'swap',
+  variable: '--font-montserrat',
+  weight: ['400', '600', '700'],
+});
+
+const unbounded = Unbounded({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-unbounded',
+  weight: ['300', '400', '500', '600', '700', '800'],
+});
+
+const vinaSans = Vina_Sans({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-vina-sans',
+  weight: ['400'],
 });
 
 export const viewport: Viewport = {
@@ -147,7 +168,9 @@ export default async function LocaleLayout({
         <link rel="preconnect" href="https://www.googletagmanager.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://www.google-analytics.com" crossOrigin="anonymous" />
       </head>
-      <body className={`${inter.className} min-h-screen antialiased bg-neutral-50`}>
+      <body
+        className={`${inter.className} ${montserrat.variable} ${unbounded.variable} ${vinaSans.variable} min-h-screen bg-neutral-50 antialiased`}
+      >
         <NextIntlClientProvider messages={messages}>
           <JsonLd id="org-schema" data={organizationSchema} />
           <JsonLd id="website-schema" data={websiteSchema} />

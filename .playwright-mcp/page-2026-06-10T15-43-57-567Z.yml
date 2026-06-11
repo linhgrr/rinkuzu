@@ -1,0 +1,220 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e3]:
+      - link "RinKuzu" [ref=e4] [cursor=pointer]:
+        - /url: /en/dashboard
+        - img "RinKuzu" [ref=e5]
+      - button "Toggle sidebar" [ref=e6] [cursor=pointer]
+    - generic [ref=e7]:
+      - button "Notifications" [ref=e8] [cursor=pointer]
+      - button "Change language" [ref=e10] [cursor=pointer]:
+        - generic [ref=e11]: English
+  - complementary [ref=e12]:
+    - navigation [ref=e13]:
+      - link "Home" [ref=e14] [cursor=pointer]:
+        - /url: /en/dashboard
+        - generic [ref=e17]: Home
+      - generic [ref=e18]:
+        - button "Quiz Builder" [ref=e19] [cursor=pointer]:
+          - generic [ref=e22]: Quiz Builder
+        - generic [ref=e23]:
+          - link "My Quizzes" [ref=e24] [cursor=pointer]:
+            - /url: /en/my-quizzes
+            - generic [ref=e26]: My Quizzes
+          - link "Review" [ref=e27] [cursor=pointer]:
+            - /url: /en/review
+            - generic [ref=e29]: Review
+          - link "History" [ref=e30] [cursor=pointer]:
+            - /url: /en/history
+            - generic [ref=e32]: History
+          - link "Bookmarks" [ref=e33] [cursor=pointer]:
+            - /url: /en/bookmarks
+            - generic [ref=e35]: Bookmarks
+      - generic [ref=e36]:
+        - button "Adaptive Learning" [ref=e37] [cursor=pointer]:
+          - generic [ref=e40]: Adaptive Learning
+        - generic [ref=e41]:
+          - link "Library" [ref=e42] [cursor=pointer]:
+            - /url: /en/adaptive
+            - generic [ref=e44]: Library
+          - link "New Subject" [ref=e45] [cursor=pointer]:
+            - /url: /en/adaptive/upload
+            - generic [ref=e47]: New Subject
+      - button "Admin" [ref=e49] [cursor=pointer]:
+        - generic [ref=e52]: Admin
+      - link "Explore" [ref=e53] [cursor=pointer]:
+        - /url: /en/explore
+        - generic [ref=e56]: Explore
+    - generic [ref=e57]:
+      - generic [ref=e59]:
+        - button "Settings" [ref=e60] [cursor=pointer]:
+          - generic [ref=e63]: Settings
+        - generic [ref=e64]:
+          - link "Profile" [ref=e65] [cursor=pointer]:
+            - /url: /en/profile
+            - generic [ref=e67]: Profile
+          - link "Subscription" [ref=e68] [cursor=pointer]:
+            - /url: /en/subscription
+            - generic [ref=e70]: Subscription
+      - link "Help & Supporting" [ref=e71] [cursor=pointer]:
+        - /url: /en/contact
+        - generic [ref=e74]: Help & Supporting
+  - main [ref=e76]:
+    - generic [ref=e78]:
+      - generic [ref=e79]:
+        - heading "Welcome back vip !" [level=1] [ref=e80]
+        - paragraph [ref=e81]: Continue your learning journey and keep your progress going
+      - generic [ref=e82]:
+        - generic [ref=e83]:
+          - generic [ref=e84]:
+            - generic [ref=e85]:
+              - heading "Personalize Your Learning Path with AI" [level=1] [ref=e86]
+              - paragraph [ref=e87]: AI analyzes your progress and recommends the right lessons, quizzes, and skills to improve next.
+            - link "Start learning" [ref=e88] [cursor=pointer]:
+              - /url: /en/adaptive
+          - generic [ref=e89]:
+            - generic [ref=e90]:
+              - generic [ref=e91]:
+                - heading "Continue Learning" [level=2] [ref=e92]
+                - link "View all" [ref=e93] [cursor=pointer]:
+                  - /url: /en/profile
+                  - generic [ref=e94]: View all
+                  - img [ref=e95]
+              - paragraph [ref=e97]: Resume your quizzes or AI learning paths from where you left off
+            - generic [ref=e98]:
+              - link "Khác grrr 1 day ago" [ref=e99] [cursor=pointer]:
+                - /url: /en/quiz/grrr
+                - generic [ref=e101]: Khác
+                - generic [ref=e102]:
+                  - heading "grrr" [level=3] [ref=e103]
+                  - paragraph [ref=e106]: 1 day ago
+              - link "IT3160 - Nhập môn trí tuệ nhân tạo LMS nhập môn AI 1 day ago" [ref=e107] [cursor=pointer]:
+                - /url: /en/quiz/lms-nhp-mn-ai-751668
+                - generic [ref=e109]: IT3160 - Nhập môn trí tuệ nhân tạo
+                - generic [ref=e110]:
+                  - heading "LMS nhập môn AI" [level=3] [ref=e111]
+                  - paragraph [ref=e114]: 1 day ago
+              - link "Nhật ngành 2 Nhật ngành 2 FULL (Form K67) 1 day ago" [ref=e115] [cursor=pointer]:
+                - /url: /en/quiz/nht-ngnh-2-full-127550
+                - generic [ref=e117]: Nhật ngành 2
+                - generic [ref=e118]:
+                  - heading "Nhật ngành 2 FULL (Form K67)" [level=3] [ref=e119]
+                  - paragraph [ref=e122]: 1 day ago
+              - link "Khác kkkk 1 day ago" [ref=e123] [cursor=pointer]:
+                - /url: /en/quiz/kkkk
+                - generic [ref=e125]: Khác
+                - generic [ref=e126]:
+                  - heading "kkkk" [level=3] [ref=e127]
+                  - paragraph [ref=e130]: 1 day ago
+              - link "Khác sss 1 day ago" [ref=e131] [cursor=pointer]:
+                - /url: /en/quiz/sss
+                - generic [ref=e133]: Khác
+                - generic [ref=e134]:
+                  - heading "sss" [level=3] [ref=e135]
+                  - paragraph [ref=e138]: 1 day ago
+              - link "UI UX Design It is a long established fact... 1 day ago" [ref=e139] [cursor=pointer]:
+                - /url: /en/profile
+                - generic [ref=e141]: UI UX Design
+                - generic [ref=e142]:
+                  - heading "It is a long established fact..." [level=3] [ref=e143]
+                  - paragraph [ref=e146]: 1 day ago
+              - link "UI UX Design It is a long established fact... 1 day ago" [ref=e147] [cursor=pointer]:
+                - /url: /en/profile
+                - generic [ref=e149]: UI UX Design
+                - generic [ref=e150]:
+                  - heading "It is a long established fact..." [level=3] [ref=e151]
+                  - paragraph [ref=e154]: 1 day ago
+              - link "UI UX Design Triết học Mac-Lenin 1 day ago" [ref=e155] [cursor=pointer]:
+                - /url: /en/profile
+                - generic [ref=e157]: UI UX Design
+                - generic [ref=e158]:
+                  - heading "Triết học Mac-Lenin" [level=3] [ref=e159]
+                  - paragraph [ref=e162]: 1 day ago
+        - generic [ref=e163]:
+          - generic [ref=e164]:
+            - generic [ref=e165]:
+              - heading "Quiz Builder" [level=2] [ref=e167]
+              - paragraph [ref=e168]: Create quizzes from your PDF files
+            - button "Click or drag & drop it here to upload PDF format, max to 50MB per file" [ref=e169] [cursor=pointer]:
+              - generic [ref=e170]: Click or drag & drop it here to upload
+              - generic [ref=e171]: PDF format, max to 50MB per file
+          - generic [ref=e172]:
+            - generic [ref=e173]:
+              - generic [ref=e174]:
+                - heading "Learning Progress" [level=2] [ref=e175]
+                - link "View all" [ref=e176] [cursor=pointer]:
+                  - /url: /en/dashboard
+                  - generic [ref=e177]: View all
+                  - img [ref=e178]
+              - paragraph [ref=e180]: Progress you’ve made this week
+            - generic [ref=e181]:
+              - generic [ref=e183]:
+                - paragraph [ref=e184]: Day Streak
+                - paragraph [ref=e185]: "1"
+              - generic [ref=e188]:
+                - paragraph [ref=e189]: Accuracy
+                - paragraph [ref=e190]: 0%
+              - generic [ref=e193]:
+                - paragraph [ref=e194]: Study time
+                - paragraph [ref=e195]: 20h
+            - generic [ref=e196]:
+              - paragraph [ref=e198]: Sun
+              - paragraph [ref=e200]: Mon
+              - paragraph [ref=e202]: Tue
+              - paragraph [ref=e204]: Wed
+              - paragraph [ref=e206]: Thir
+              - paragraph [ref=e208]: Frid
+              - paragraph [ref=e210]: Sat
+    - generic [ref=e213]:
+      - generic [ref=e214]:
+        - generic [ref=e215]:
+          - link "RinKuzu Logo" [ref=e216] [cursor=pointer]:
+            - /url: /
+            - img "RinKuzu Logo" [ref=e217]
+          - paragraph [ref=e218]: AI-powered adaptive learning platform. Transform any PDF into a personalized quiz journey.
+        - generic [ref=e219]:
+          - heading "Links" [level=4] [ref=e220]
+          - list [ref=e221]:
+            - listitem [ref=e222]:
+              - link "Home" [ref=e223] [cursor=pointer]:
+                - /url: /
+            - listitem [ref=e224]:
+              - link "About" [ref=e225] [cursor=pointer]:
+                - /url: /about
+            - listitem [ref=e226]:
+              - link "Pricing" [ref=e227] [cursor=pointer]:
+                - /url: /pricing
+            - listitem [ref=e228]:
+              - link "FAQ" [ref=e229] [cursor=pointer]:
+                - /url: /faq
+            - listitem [ref=e230]:
+              - link "Blog" [ref=e231] [cursor=pointer]:
+                - /url: /blog
+        - generic [ref=e232]:
+          - heading "Legal" [level=4] [ref=e233]
+          - list [ref=e234]:
+            - listitem [ref=e235]:
+              - link "Privacy Policy" [ref=e236] [cursor=pointer]:
+                - /url: /privacy
+            - listitem [ref=e237]:
+              - link "Terms of Service" [ref=e238] [cursor=pointer]:
+                - /url: /terms
+            - listitem [ref=e239]:
+              - link "Cookie Policy" [ref=e240] [cursor=pointer]:
+                - /url: /cookies
+            - listitem [ref=e241]:
+              - link "Contact" [ref=e242] [cursor=pointer]:
+                - /url: /contact
+        - generic [ref=e243]:
+          - heading "Newsletter" [level=4] [ref=e244]
+          - paragraph [ref=e245]: Subscribe to receive the latest news and offers from RinKuzu.
+          - generic [ref=e246]:
+            - textbox "Your email" [ref=e249]
+            - button "Subscribe" [ref=e250] [cursor=pointer]:
+              - generic [ref=e251]: Subscribe
+      - generic [ref=e252]:
+        - paragraph [ref=e253]: Copyright 2026 RinKuzu. All rights reserved.
+        - paragraph [ref=e254]: support@rinkuzu.app
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=e260] [cursor=pointer]:
+    - img [ref=e261]

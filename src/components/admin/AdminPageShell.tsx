@@ -1,9 +1,6 @@
 'use client';
 
-import { ReactNode, useState } from 'react';
-import { usePathname } from 'next/navigation';
-import Navigation from '@/components/Navigation';
-import Sidebar from '@/components/Sidebar';
+import { ReactNode } from 'react';
 
 interface AdminPageShellProps {
   children: ReactNode;
@@ -11,20 +8,9 @@ interface AdminPageShellProps {
 }
 
 export function AdminPageShell({ children, contentClassName = '' }: AdminPageShellProps) {
-  const pathname = usePathname();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-
   return (
     <div className="min-h-screen bg-white">
-      <Navigation />
-      <Sidebar
-        isOpen={isSidebarOpen}
-        onToggle={() => setIsSidebarOpen((prev) => !prev)}
-        currentPath={pathname}
-      />
-      <main
-        className={`max-w-none px-4 py-8 transition-[margin] duration-300 sm:px-6 lg:px-8 ${isSidebarOpen ? 'ml-64' : 'ml-16'} ${contentClassName}`.trim()}
-      >
+      <main className={`max-w-none px-4 py-8 sm:px-6 lg:px-8 ${contentClassName}`.trim()}>
         {children}
       </main>
     </div>

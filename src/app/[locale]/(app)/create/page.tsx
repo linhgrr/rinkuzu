@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation';
 import { useDropzone } from 'react-dropzone';
 import { useTranslations } from 'next-intl';
 import useSWR from 'swr';
-import Navigation from '@/components/Navigation';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
@@ -744,8 +743,6 @@ export default function CreateQuizPage() {
 
   return (
     <div className="min-h-screen">
-      <Navigation />
-
       <main className="pt-20">
         <div className="flex min-h-screen transition-[width] duration-300">
           <div

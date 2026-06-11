@@ -4,12 +4,11 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useReducer } from 'react';
 import { signOut, useSession } from 'next-auth/react';
-import { usePathname, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
-import Sidebar from '@/components/Sidebar';
 import PDFViewer from '@/features/quiz/components/PDFViewer';
 import { QuestionEditor } from '@/features/quiz/components/editor/QuestionEditor';
 import type { Question } from '@/features/quiz/components/editor/QuestionEditor';
@@ -42,7 +41,6 @@ type EditPageStatus = 'loading' | 'ready' | 'error';
 interface EditQuizState {
   status: EditPageStatus;
   isMenuOpen: boolean;
-  isSidebarOpen: boolean;
   quiz: IQuiz | null;
   saving: boolean;
   deleting: boolean;
@@ -65,7 +63,6 @@ type EditQuizAction =
   | { type: 'loadSuccess'; quiz: IQuiz }
   | { type: 'loadError'; message: string }
   | { type: 'toggleMenu' }
-  | { type: 'toggleSidebar' }
   | { type: 'togglePdfViewer' }
   | { type: 'setTitle'; value: string }
   | { type: 'setDescription'; value: string }
@@ -85,7 +82,6 @@ type EditQuizAction =
 const initialState: EditQuizState = {
   status: 'loading',
   isMenuOpen: false,
-  isSidebarOpen: true,
   quiz: null,
   saving: false,
   deleting: false,
@@ -134,8 +130,6 @@ function editQuizReducer(state: EditQuizState, action: EditQuizAction): EditQuiz
       return { ...state, status: 'error', error: action.message };
     case 'toggleMenu':
       return { ...state, isMenuOpen: !state.isMenuOpen };
-    case 'toggleSidebar':
-      return { ...state, isSidebarOpen: !state.isSidebarOpen };
     case 'togglePdfViewer':
       return { ...state, showPDFViewer: !state.showPDFViewer };
     case 'setTitle':
@@ -604,7 +598,6 @@ function PdfReferencePanel({ pdfUrl, onClose }: { pdfUrl: string; onClose: () =>
 export default function EditQuizPage() {
   const { data: session } = useSession();
   const { push } = useRouter();
-  const pathname = usePathname();
   const encodedQuizId = routePathSegment(useRequiredRouteParam('id'));
   const [state, dispatch] = useReducer(editQuizReducer, initialState);
 
@@ -759,15 +752,7 @@ export default function EditQuizPage() {
         onToggleMenu={() => dispatch({ type: 'toggleMenu' })}
       />
 
-      <Sidebar
-        isOpen={state.isSidebarOpen}
-        onToggle={() => dispatch({ type: 'toggleSidebar' })}
-        currentPath={pathname}
-      />
-
-      <main
-        className={`max-w-none px-4 py-8 transition-[margin] duration-300 sm:px-6 lg:px-8 ${state.isSidebarOpen ? 'ml-64' : 'ml-16'}`}
-      >
+      <main className="max-w-none px-4 py-8 sm:px-6 lg:px-8">
         <div className="flex min-h-screen transition-[width] duration-300">
           <div
             className={`transition-[width,padding] duration-300 ${state.showPDFViewer && state.pdfUrl ? 'lg:w-1/2 lg:pr-4' : 'w-full'}`}

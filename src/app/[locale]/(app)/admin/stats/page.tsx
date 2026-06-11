@@ -1,11 +1,8 @@
 'use client';
 
 import { useEffect, useReducer } from 'react';
-import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { fetchApiData } from '@/lib/api/client';
-import Navigation from '@/components/Navigation';
-import Sidebar from '@/components/Sidebar';
 import { Button } from '@/components/ui/Button';
 import {
   Badge,
@@ -85,7 +82,6 @@ type TranslateFn = (key: string, values?: Record<string, string | number | Date>
 type StatsModalType = 'categories' | 'creators' | 'activity' | null;
 
 interface AdminStatsState {
-  isSidebarOpen: boolean;
   stats: AdminStats | null;
   loading: boolean;
   error: string;
@@ -93,7 +89,6 @@ interface AdminStatsState {
 }
 
 type AdminStatsAction =
-  | { type: 'toggleSidebar' }
   | { type: 'startFetch' }
   | { type: 'fetchSuccess'; stats: AdminStats }
   | { type: 'fetchError'; message: string }
@@ -101,7 +96,6 @@ type AdminStatsAction =
   | { type: 'closeModal' };
 
 const initialState: AdminStatsState = {
-  isSidebarOpen: true,
   stats: null,
   loading: true,
   error: '',
@@ -110,8 +104,6 @@ const initialState: AdminStatsState = {
 
 function adminStatsReducer(state: AdminStatsState, action: AdminStatsAction): AdminStatsState {
   switch (action.type) {
-    case 'toggleSidebar':
-      return { ...state, isSidebarOpen: !state.isSidebarOpen };
     case 'startFetch':
       return { ...state, loading: true, error: '' };
     case 'fetchSuccess':
@@ -150,49 +142,17 @@ function getStatusBadge(status: string) {
   }
 }
 
-function AdminStatsLayout({
-  children,
-  currentPath,
-  isSidebarOpen,
-  onToggleSidebar,
-}: {
-  children: React.ReactNode;
-  currentPath: string;
-  isSidebarOpen: boolean;
-  onToggleSidebar: () => void;
-}) {
+function AdminStatsLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-white">
-      <Navigation />
-      <div className="flex">
-        <Sidebar isOpen={isSidebarOpen} onToggle={onToggleSidebar} currentPath={currentPath} />
-        <main
-          className={`flex-1 transition-[margin] duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-16'}`}
-        >
-          <div className="p-8">{children}</div>
-        </main>
-      </div>
+      <div className="p-8">{children}</div>
     </div>
   );
 }
 
-function AdminStatsLoadingState({
-  currentPath,
-  isSidebarOpen,
-  onToggleSidebar,
-  t,
-}: {
-  currentPath: string;
-  isSidebarOpen: boolean;
-  onToggleSidebar: () => void;
-  t: TranslateFn;
-}) {
+function AdminStatsLoadingState({ t }: { t: TranslateFn }) {
   return (
-    <AdminStatsLayout
-      currentPath={currentPath}
-      isSidebarOpen={isSidebarOpen}
-      onToggleSidebar={onToggleSidebar}
-    >
+    <AdminStatsLayout>
       <div className="flex min-h-[400px] items-center justify-center">
         <div className="text-center">
           <div className="mx-auto size-12 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
@@ -716,7 +676,6 @@ function AdminStatsModals({
 
 export default function AdminStatsPage() {
   const t = useTranslations('admin');
-  const pathname = usePathname();
   const [state, dispatch] = useReducer(adminStatsReducer, initialState);
 
   useEffect(() => {
@@ -738,22 +697,11 @@ export default function AdminStatsPage() {
   }, []);
 
   if (state.loading) {
-    return (
-      <AdminStatsLoadingState
-        currentPath={pathname}
-        isSidebarOpen={state.isSidebarOpen}
-        onToggleSidebar={() => dispatch({ type: 'toggleSidebar' })}
-        t={t}
-      />
-    );
+    return <AdminStatsLoadingState t={t} />;
   }
 
   return (
-    <AdminStatsLayout
-      currentPath={pathname}
-      isSidebarOpen={state.isSidebarOpen}
-      onToggleSidebar={() => dispatch({ type: 'toggleSidebar' })}
-    >
+    <AdminStatsLayout>
       {state.stats ? (
         <AdminStatsContent
           stats={state.stats}

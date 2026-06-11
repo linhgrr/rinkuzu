@@ -1,4 +1,5 @@
 import Image from 'next/image';
+import { getLocale, getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import { ROUTES } from '@/shared/constants';
 import { cn } from '@/lib/utils';
@@ -76,32 +77,16 @@ const ASSET_BASE = '/images/home-redesign';
 const CONTINUE_LEARNING_CARD_LIMIT = 8;
 const QUIZ_BUILDER_LIBRARY_HREF = '/my-quizzes';
 
-const FALLBACK_CARD_SHARED = {
-  category: 'Quiz Builder',
-  tone: 'cool',
-  isAi: false,
-  timeLabel: 'Recently updated',
-} as const;
-
-const FALLBACK_CARD_SEEDS: ReadonlyArray<readonly [title: string, progress: number]> = [
-  ['It is a long established fact...', 36],
-  ['Vật lý đại cương', 63],
-  ['Tiếng anh chuyên ngành', 89],
-  ['It is a long established fact...', 64],
-  ['It is a long established fact...', 65],
-  ['It is a long established fact...', 91],
-  ['It is a long established fact...', 62],
-  ['Triết học Mac-Lenin', 34],
+const FALLBACK_CARD_SEEDS: ReadonlyArray<readonly [key: string, progress: number]> = [
+  ['fallback1', 36],
+  ['fallback2', 63],
+  ['fallback3', 89],
+  ['fallback4', 64],
+  ['fallback5', 65],
+  ['fallback6', 91],
+  ['fallback7', 62],
+  ['fallback8', 34],
 ];
-
-const fallbackLearningCards: Array<Omit<LearningCardItem, 'href'>> = FALLBACK_CARD_SEEDS.map(
-  ([title, progress], index) => ({
-    id: `fallback-${index + 1}`,
-    title,
-    progress,
-    ...FALLBACK_CARD_SHARED,
-  }),
-);
 
 function uniqueQuizzes(quizzes: HomeDashboardQuiz[]) {
   const seen = new Set<string>();
@@ -118,21 +103,25 @@ function toTimestampMs(value?: number | null): number | null {
   return value < 1_000_000_000_000 ? value * 1000 : value;
 }
 
-function formatLearningCardTime(value?: string | number | null): string {
+function formatLearningCardTime(
+  value: string | number | null | undefined,
+  locale: string,
+  t: Awaited<ReturnType<typeof getTranslations>>,
+): string {
   const timestamp =
     typeof value === 'number' ? toTimestampMs(value) : value ? new Date(value).getTime() : null;
 
-  if (!timestamp || !Number.isFinite(timestamp)) return 'Recently updated';
+  if (!timestamp || !Number.isFinite(timestamp)) return t('time.recentlyUpdated');
 
   const diffMs = Date.now() - timestamp;
   if (diffMs >= 0) {
     const days = Math.floor(diffMs / (24 * 60 * 60 * 1000));
-    if (days === 0) return 'Today';
-    if (days === 1) return '1 day ago';
-    if (days <= 7) return `${days} days ago`;
+    if (days === 0) return t('time.today');
+    if (days === 1) return t('time.dayAgo', { count: 1 });
+    if (days <= 7) return t('time.daysAgo', { count: days });
   }
 
-  return new Date(timestamp).toLocaleDateString('en-GB');
+  return new Date(timestamp).toLocaleDateString(locale === 'vi' ? 'vi-VN' : 'en-GB');
 }
 
 function clampProgress(value: number): number {
@@ -158,16 +147,18 @@ function getAdaptiveSubjectProgress(subject: HomeDashboardAdaptiveSubject): numb
 
 function buildAdaptiveLearningCards(
   adaptiveSubjects: HomeDashboardAdaptiveSubject[],
+  locale: string,
+  t: Awaited<ReturnType<typeof getTranslations>>,
 ): LearningCardItem[] {
   return adaptiveSubjects.slice(0, CONTINUE_LEARNING_CARD_LIMIT).map((subject, index) => ({
     id: `adaptive-${subject.job_id}`,
     title: getAdaptiveSubjectTitle(subject),
-    category: 'AI Learning',
+    category: t('learningCard.aiLearning'),
     progress: getAdaptiveSubjectProgress(subject),
     href: ADAPTIVE_ROUTES.dashboard,
     tone: 'warm' as const,
     isAi: true,
-    timeLabel: formatLearningCardTime(subject.completed_at),
+    timeLabel: formatLearningCardTime(subject.completed_at, locale, t),
     raised: index === 2,
   }));
 }
@@ -175,6 +166,9 @@ function buildAdaptiveLearningCards(
 function buildQuizBuilderCards(
   quizzes: HomeDashboardQuiz[],
   yourQuizzes: HomeDashboardQuiz[],
+  fallbackLearningCards: Array<Omit<LearningCardItem, 'href'>>,
+  locale: string,
+  t: Awaited<ReturnType<typeof getTranslations>>,
 ): LearningCardItem[] {
   return uniqueQuizzes([...yourQuizzes, ...quizzes])
     .slice(0, CONTINUE_LEARNING_CARD_LIMIT)
@@ -182,7 +176,8 @@ function buildQuizBuilderCards(
       id: quiz._id,
       title:
         quiz.title || fallbackLearningCards[index]?.title || 'It is a long established fact...',
-      category: quiz.category?.name || fallbackLearningCards[index]?.category || 'Quiz Builder',
+      category:
+        quiz.category?.name || fallbackLearningCards[index]?.category || t('quizBuilder.title'),
       progress: Math.min(
         96,
         Math.max(28, 34 + ((quiz.questionCount ?? quiz.questions.length) % 9) * 7),
@@ -190,7 +185,7 @@ function buildQuizBuilderCards(
       href: quiz.slug ? ROUTES.QUIZ.VIEW(quiz.slug) : QUIZ_BUILDER_LIBRARY_HREF,
       tone: 'cool' as const,
       isAi: false,
-      timeLabel: formatLearningCardTime(quiz.updatedAt ?? quiz.createdAt),
+      timeLabel: formatLearningCardTime(quiz.updatedAt ?? quiz.createdAt, locale, t),
     }));
 }
 
@@ -198,9 +193,12 @@ function buildLearningCards(
   adaptiveSubjects: HomeDashboardAdaptiveSubject[],
   quizzes: HomeDashboardQuiz[],
   yourQuizzes: HomeDashboardQuiz[],
+  fallbackLearningCards: Array<Omit<LearningCardItem, 'href'>>,
+  locale: string,
+  t: Awaited<ReturnType<typeof getTranslations>>,
 ): { items: LearningCardItem[]; viewAllHref: string } {
-  const adaptiveCards = buildAdaptiveLearningCards(adaptiveSubjects);
-  const quizCards = buildQuizBuilderCards(quizzes, yourQuizzes);
+  const adaptiveCards = buildAdaptiveLearningCards(adaptiveSubjects, locale, t);
+  const quizCards = buildQuizBuilderCards(quizzes, yourQuizzes, fallbackLearningCards, locale, t);
   const sourceCards = [...adaptiveCards, ...quizCards].slice(0, CONTINUE_LEARNING_CARD_LIMIT);
   const viewAllHref =
     adaptiveCards.length > 0 ? ADAPTIVE_ROUTES.dashboard : QUIZ_BUILDER_LIBRARY_HREF;
@@ -220,16 +218,15 @@ function buildLearningCards(
   return { items, viewAllHref };
 }
 
-function buildWeekDays(weeklyActivity: HomeDashboardStats['weeklyActivity']) {
+function buildWeekDays(weeklyActivity: HomeDashboardStats['weeklyActivity'], labels: string[]) {
   const values = Object.values(weeklyActivity ?? {});
   const hasActivity = values.some((activity) => (activity.questionsReviewed ?? 0) > 0);
-  const fallbackActive = new Set(['Mon', 'Tue', 'Wed']);
-  const labels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thir', 'Frid', 'Sat'];
+  const fallbackActive = new Set([1, 2, 3]);
 
   if (!hasActivity) {
-    return labels.map((label) => ({
+    return labels.map((label, index) => ({
       label,
-      active: fallbackActive.has(label),
+      active: fallbackActive.has(index),
     }));
   }
 
@@ -307,33 +304,36 @@ function HeroArtwork() {
   );
 }
 
-function HomeHero() {
+function HomeHero({
+  title,
+  description,
+  ctaLabel,
+}: {
+  title: string;
+  description: string;
+  ctaLabel: string;
+}) {
   return (
     <section className="relative min-h-[295px] rounded-[20px] border border-accent bg-hero px-6 py-7">
       <HeroArtwork />
       <div className="relative z-10 flex max-w-[505px] flex-col gap-5 text-ink">
-        <h1 className="font-home text-[36px] font-bold leading-[1.25] tracking-normal">
-          Personalize Your Learning Path with AI
-        </h1>
-        <p className="font-home text-base font-normal leading-[1.4]">
-          AI analyzes your progress and recommends the right lessons, quizzes, and skills to improve
-          next.
-        </p>
+        <h1 className="font-home text-[36px] font-bold leading-[1.25] tracking-normal">{title}</h1>
+        <p className="font-home text-base font-normal leading-[1.4]">{description}</p>
       </div>
       <Link
         href="/adaptive"
         className="relative z-10 mt-9 inline-flex rounded-full bg-accent px-5 py-3 font-home text-lg font-semibold leading-[1.4] text-accent-text hover:bg-accent-hover"
       >
-        Start learning
+        {ctaLabel}
       </Link>
     </section>
   );
 }
 
-function QuizBuilderCard() {
+function QuizBuilderCard({ title, subtitle }: { title: string; subtitle: string }) {
   return (
     <SurfaceCard className="flex min-h-[295px] flex-col gap-6">
-      <SectionHeading title="Quiz Builder" subtitle="Create quizzes from your PDF files" />
+      <SectionHeading title={title} subtitle={subtitle} />
       <QuizUploadDropzone />
     </SurfaceCard>
   );
@@ -429,8 +429,26 @@ function MetricItem({
   );
 }
 
-function LearningProgressCard({ stats }: { stats: HomeDashboardStats }) {
-  const days = buildWeekDays(stats.weeklyActivity);
+function LearningProgressCardBody({
+  stats,
+  title,
+  subtitle,
+  viewAllLabel,
+  streakLabel,
+  accuracyLabel,
+  studyTimeLabel,
+  weekdayLabels,
+}: {
+  stats: HomeDashboardStats;
+  title: string;
+  subtitle: string;
+  viewAllLabel: string;
+  streakLabel: string;
+  accuracyLabel: string;
+  studyTimeLabel: string;
+  weekdayLabels: string[];
+}) {
+  const days = buildWeekDays(stats.weeklyActivity, weekdayLabels);
   const streak = stats.streak || 10;
   const accuracy = stats.averageAccuracy ?? 52;
   const studyHours = Math.max(20, Math.ceil((stats.totalReviewSessions ?? 0) * 0.4));
@@ -438,17 +456,18 @@ function LearningProgressCard({ stats }: { stats: HomeDashboardStats }) {
   return (
     <SurfaceCard className="flex min-h-[357px] flex-col gap-7">
       <SectionHeading
-        title="Learning Progress"
-        subtitle="Progress you’ve made this week"
+        title={title}
+        subtitle={subtitle}
         href={ROUTES.DASHBOARD}
+        viewAllLabel={viewAllLabel}
       />
 
       <div className="flex w-full items-center justify-between">
-        <MetricItem icon="fire" label="Day Streak" value={String(streak)} />
+        <MetricItem icon="fire" label={streakLabel} value={String(streak)} />
         <span className="h-[62px] w-0.5 rounded-[10px] bg-divider-warm" aria-hidden="true" />
-        <MetricItem icon="target" label="Accuracy" value={`${accuracy}%`} />
+        <MetricItem icon="target" label={accuracyLabel} value={`${accuracy}%`} />
         <span className="h-[62px] w-0.5 rounded-[10px] bg-divider-warm" aria-hidden="true" />
-        <MetricItem icon="chart" label="Study time" value={`${studyHours}h`} />
+        <MetricItem icon="chart" label={studyTimeLabel} value={`${studyHours}h`} />
       </div>
 
       <div className="flex w-full items-center justify-between rounded-[10px] border border-accent-warm/30 bg-surface-warm p-5">
@@ -534,16 +553,23 @@ function LearningCard({ item }: { item: LearningCardItem }) {
 function ContinueLearning({
   items,
   viewAllHref,
+  title,
+  subtitle,
+  viewAllLabel,
 }: {
   items: LearningCardItem[];
   viewAllHref: string;
+  title: string;
+  subtitle: string;
+  viewAllLabel: string;
 }) {
   return (
     <SurfaceCard className="flex flex-col gap-6">
       <SectionHeading
-        title="Continue Learning"
-        subtitle="Resume your quizzes or AI learning paths from where you left off"
+        title={title}
+        subtitle={subtitle}
         href={viewAllHref}
+        viewAllLabel={viewAllLabel}
       />
       <div className="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2 xl:grid-cols-4">
         {items.map((item) => (
@@ -554,39 +580,83 @@ function ContinueLearning({
   );
 }
 
-export function HomeDashboard({
+export async function HomeDashboard({
   stats,
   quizzes,
   yourQuizzes,
   adaptiveSubjects,
   userName,
 }: HomeDashboardProps) {
+  const locale = await getLocale();
+  const t = await getTranslations('dashboard.home');
+  const fallbackLearningCards: Array<Omit<LearningCardItem, 'href'>> = FALLBACK_CARD_SEEDS.map(
+    ([key, progress], index) => ({
+      id: `fallback-${index + 1}`,
+      title: t(`fallbackCards.${key}.title`),
+      progress,
+      category: t(`fallbackCards.${key}.category`),
+      tone: 'cool',
+      isAi: false,
+      timeLabel: t('time.recentlyUpdated'),
+    }),
+  );
   const { items: learningCards, viewAllHref } = buildLearningCards(
     adaptiveSubjects,
     quizzes,
     yourQuizzes,
+    fallbackLearningCards,
+    locale,
+    t,
   );
+  const weekdayLabels = [
+    t('weekdays.sun'),
+    t('weekdays.mon'),
+    t('weekdays.tue'),
+    t('weekdays.wed'),
+    t('weekdays.thu'),
+    t('weekdays.fri'),
+    t('weekdays.sat'),
+  ];
 
   return (
     <div className="px-4 pb-20 pt-4 font-home text-ink selection:bg-accent-soft">
       <div className="mx-auto max-w-[1340px]">
         <div className="mb-6 flex flex-col gap-1">
           <h1 className="font-home text-2xl font-semibold leading-[1.4] text-ink">
-            Welcome back {userName} !
+            {t('welcomeBack', { name: userName })}
           </h1>
           <p className="font-home text-base font-normal leading-[1.4] text-ink">
-            Continue your learning journey and keep your progress going
+            {t('welcomeSubtitle')}
           </p>
         </div>
 
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,900px)_416px]">
           <div className="flex min-w-0 flex-col gap-6">
-            <HomeHero />
-            <ContinueLearning items={learningCards} viewAllHref={viewAllHref} />
+            <HomeHero
+              title={t('hero.title')}
+              description={t('hero.description')}
+              ctaLabel={t('hero.cta')}
+            />
+            <ContinueLearning
+              items={learningCards}
+              viewAllHref={viewAllHref}
+              title={t('continueLearning.title')}
+              subtitle={t('continueLearning.subtitle')}
+              viewAllLabel={t('viewAll')}
+            />
           </div>
           <div className="flex min-w-0 flex-col gap-6">
-            <QuizBuilderCard />
-            <LearningProgressCard stats={stats} />
+            <QuizBuilderCard title={t('quizBuilder.title')} subtitle={t('quizBuilder.subtitle')} />
+            <LearningProgressCardBody
+              stats={stats}
+              title={t('learningProgress.title')}
+              subtitle={t('learningProgress.subtitle')}
+              viewAllLabel={t('viewAll')}
+              streakLabel={t('learningProgress.dayStreak')}
+              accuracyLabel={t('learningProgress.accuracy')}
+              studyTimeLabel={t('learningProgress.studyTime')}
+              weekdayLabels={weekdayLabels}
+            />
           </div>
         </div>
       </div>

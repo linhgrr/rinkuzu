@@ -123,6 +123,44 @@
   "featured_quizzes": "Featured Quizzes",
   "featured_quizzes_description": "Browse quizzes created by the RinKuzu community on a wide range of subjects.",
   "start_quiz": "Start Quiz",
+  "page": {
+    "meta": {
+      "title": "AI Quiz Generator from PDF - Knowledge Graph | RinKuzu",
+      "description": "Generate quizzes from PDFs with AI, build knowledge graph learning paths, and run personalized practice sessions for students and teachers."
+    },
+    "mockQuizzes": {
+      "quiz1": {
+        "title": "Calculus 1 (MI1111)",
+        "description": "A comprehensive set of derivative, integral, and application problems for university students.",
+        "category": "Mathematics"
+      },
+      "quiz2": {
+        "title": "General Physics 1 (PH1110)",
+        "description": "Multiple-choice questions on Mechanics and Thermodynamics aligned with midterm and final exam formats.",
+        "category": "Science"
+      },
+      "quiz3": {
+        "title": "Introduction to C Programming (IT1110)",
+        "description": "Practice questions on data types, loops, arrays, and pointers in the C language.",
+        "category": "Computer Science"
+      },
+      "quiz4": {
+        "title": "Marxism-Leninism Philosophy (SSH1110)",
+        "description": "Political theory review quizzes designed for first-year university students.",
+        "category": "Politics"
+      },
+      "quiz5": {
+        "title": "Basic English (FL1100)",
+        "description": "Listening and reading practice following common university exam formats.",
+        "category": "Languages"
+      },
+      "quiz6": {
+        "title": "Data Structures & Algorithms (IT3011)",
+        "description": "Strengthen problem-solving with sorting, searching, and advanced tree-based structures.",
+        "category": "Computer Science"
+      }
+    }
+  },
   "cta": {
     "title": "Ready to Level Up Your Knowledge?",
     "subtitle": "Join thousands of students who are learning more effectively every day with RinKuzu.",

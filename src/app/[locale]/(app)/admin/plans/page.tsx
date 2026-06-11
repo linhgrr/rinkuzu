@@ -1,13 +1,11 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { fetchApiData } from '@/lib/api/client';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
-import Sidebar from '@/components/Sidebar';
 import {
   SubscriptionDurationType,
   PREDEFINED_DURATIONS,
@@ -16,7 +14,6 @@ import {
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { Modal } from '@/components/ui/Modal';
 import { HiOutlinePlus, HiOutlineCheck, HiOutlineX } from '@/components/icons';
-import Navigation from '@/components/Navigation';
 
 const vndCurrencyFormatter = new Intl.NumberFormat('vi-VN', {
   style: 'currency',
@@ -699,8 +696,6 @@ function PlanCard({
 export default function AdminPlansPage() {
   const t = useTranslations('admin');
   const tCommon = useTranslations('common');
-  const pathname = usePathname();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [plans, setPlans] = useState<DisplayPlan[]>([]);
   const [status, setStatus] = useState<PageStatus>({
     loading: true,
@@ -827,17 +822,7 @@ export default function AdminPlansPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      <Navigation />
-
-      <Sidebar
-        isOpen={isSidebarOpen}
-        onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
-        currentPath={pathname}
-      />
-
-      <main
-        className={`max-w-none px-4 py-8 transition-[margin] duration-300 sm:px-6 lg:px-8 ${isSidebarOpen ? 'ml-64' : 'ml-16'}`}
-      >
+      <main className="max-w-none px-4 py-8 sm:px-6 lg:px-8">
         {status.loading ? (
           <div className="flex justify-center py-12">
             <div className="flex flex-col items-center gap-3">

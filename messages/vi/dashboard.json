@@ -62,5 +62,66 @@
   "emptyStateCreateQuizSub": "Tải PDF, nhận quiz ngay",
   "emptyStateAdaptive": "Thử Học Cá Nhân Hóa",
   "emptyStateAdaptiveSub": "AI dẫn dắt theo nhịp của bạn",
-  "emptyStateExplore": "Hoặc xem các quiz công khai"
+  "emptyStateExplore": "Hoặc xem các quiz công khai",
+  "home": {
+    "welcomeBack": "Chào mừng trở lại {name}!",
+    "welcomeSubtitle": "Tiếp tục hành trình học tập và duy trì đà tiến bộ của bạn",
+    "viewAll": "Xem tất cả",
+    "hero": {
+      "title": "Cá nhân hóa lộ trình học tập của bạn với AI",
+      "description": "AI phân tích tiến độ và gợi ý đúng bài học, quiz và kỹ năng bạn nên cải thiện tiếp theo.",
+      "cta": "Bắt đầu học"
+    },
+    "quizBuilder": {
+      "title": "Tạo Quiz",
+      "subtitle": "Tạo quiz từ tệp PDF của bạn"
+    },
+    "upload": {
+      "cta": "Nhấp hoặc kéo thả tệp vào đây để tải lên",
+      "hint": "Định dạng PDF, tối đa 50MB mỗi tệp",
+      "errors": {
+        "onlyPdf": "Chỉ hỗ trợ tệp PDF",
+        "fileTooLarge": "Tệp vượt quá 50MB"
+      }
+    },
+    "learningProgress": {
+      "title": "Tiến độ học tập",
+      "subtitle": "Tiến độ bạn đạt được trong tuần này",
+      "dayStreak": "Chuỗi ngày",
+      "accuracy": "Độ chính xác",
+      "studyTime": "Thời gian học"
+    },
+    "continueLearning": {
+      "title": "Tiếp tục học",
+      "subtitle": "Tiếp tục các quiz hoặc lộ trình học AI từ nơi bạn đã dừng lại"
+    },
+    "learningCard": {
+      "aiLearning": "Học với AI"
+    },
+    "time": {
+      "recentlyUpdated": "Mới cập nhật",
+      "today": "Hôm nay",
+      "dayAgo": "{count} ngày trước",
+      "daysAgo": "{count} ngày trước"
+    },
+    "weekdays": {
+      "sun": "CN",
+      "mon": "T2",
+      "tue": "T3",
+      "wed": "T4",
+      "thu": "T5",
+      "fri": "T6",
+      "sat": "T7"
+    },
+    "fallbackCards": {
+      "fallback1": { "title": "Đây là một sự thật đã được khẳng định...", "category": "Tạo Quiz" },
+      "fallback2": { "title": "Vật lý đại cương", "category": "Tạo Quiz" },
+      "fallback3": { "title": "Tiếng Anh chuyên ngành", "category": "Tạo Quiz" },
+      "fallback4": { "title": "Đây là một sự thật đã được khẳng định...", "category": "Tạo Quiz" },
+      "fallback5": { "title": "Đây là một sự thật đã được khẳng định...", "category": "Tạo Quiz" },
+      "fallback6": { "title": "Đây là một sự thật đã được khẳng định...", "category": "Tạo Quiz" },
+      "fallback7": { "title": "Đây là một sự thật đã được khẳng định...", "category": "Tạo Quiz" },
+      "fallback8": { "title": "Triết học Mác - Lênin", "category": "Tạo Quiz" }
+    }
+  }
 }

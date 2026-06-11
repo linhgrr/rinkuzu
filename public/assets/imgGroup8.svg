@@ -1,0 +1,21 @@
+<svg preserveAspectRatio="none" width="100%" height="100%" overflow="visible" style="display: block;" viewBox="0 0 1770.6 400.3" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Group 4">
+<circle id="Ellipse 3" cx="656.3" cy="23.3" r="11" fill="var(--fill-0, #FD761A)"/>
+<path id="Vector 9" d="M20.4966 179.843L19.2301 180.647L20.8373 183.18L22.1039 182.376L21.3003 181.11L20.4966 179.843ZM647.987 22.6096L647.907 24.1074L647.987 22.6096ZM1749.3 142.11L1732.15 139.684L1738.62 155.749L1749.3 142.11ZM21.3003 181.11L22.1039 182.376C114.911 123.491 370.124 9.32855 647.907 24.1074L647.987 22.6096L648.066 21.1117C369.49 6.29056 113.664 120.729 20.4966 179.843L21.3003 181.11ZM647.987 22.6096L647.907 24.1074C733.991 28.6873 807.113 53.7963 877.911 85.1796C948.605 116.516 1017.29 154.274 1093.91 183.803C1247.49 242.992 1433.74 269.523 1737.36 148.541L1736.8 147.147L1736.24 145.754C1433.31 266.464 1247.84 239.914 1094.99 181.004C1018.4 151.484 950.191 113.938 879.127 82.437C808.168 50.9824 734.665 25.719 648.066 21.1117L647.987 22.6096Z" fill="var(--stroke-0, #FD761A)"/>
+<g id="Vector 10" filter="url(#filter0_f_0_62)">
+<path d="M21.3003 181.11C114.288 122.11 369.807 7.80956 647.987 22.6096C995.711 41.1096 1132.12 393.61 1749.3 142.11" stroke="var(--stroke-0, #FD761A)" stroke-width="4" stroke-linecap="round"/>
+</g>
+<circle id="Ellipse 1" cx="99.3003" cy="139.3" r="11" fill="var(--fill-0, #FD761A)"/>
+<circle id="Ellipse 2" cx="1213.3" cy="219.3" r="11" fill="var(--fill-0, #FD761A)"/>
+<path id="Vector 11" d="M99.3003 139.3L99.3003 399.3" stroke="var(--stroke-0, #FD761A)" stroke-width="2" stroke-linecap="round"/>
+<path id="Vector 13" d="M656.3 23.3L656.3 399.3" stroke="var(--stroke-0, #FD761A)" stroke-width="2" stroke-linecap="round"/>
+<path id="Vector 12" d="M1213.3 219.3L1213.3 399.3" stroke="var(--stroke-0, #FD761A)" stroke-width="2" stroke-linecap="round"/>
+</g>
+<defs>
+<filter id="filter0_f_0_62" x="7.15256e-07" y="0" width="1770.6" height="253.576" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+<feFlood flood-opacity="0" result="BackgroundImageFix"/>
+<feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape"/>
+<feGaussianBlur stdDeviation="9.65" result="effect1_foregroundBlur_0_62"/>
+</filter>
+</defs>
+</svg>

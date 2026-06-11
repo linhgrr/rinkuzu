@@ -1,0 +1,280 @@
+- generic [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e3]:
+      - link "RinKuzu" [ref=e4] [cursor=pointer]:
+        - /url: /en/dashboard
+        - img "RinKuzu" [ref=e5]
+        - img
+      - button "Toggle sidebar" [ref=e6] [cursor=pointer]:
+        - img [ref=e85]
+    - generic [ref=e87]:
+      - button "Notifications" [ref=e88] [cursor=pointer]:
+        - img [ref=e89]
+      - button "Change language" [ref=e94] [cursor=pointer]:
+        - img [ref=e95]
+        - generic [ref=e99]: English
+        - img [ref=e100]
+      - generic [ref=e102]:
+        - button "Toggle user menu" [expanded] [active] [ref=e103] [cursor=pointer]
+        - generic [ref=e362]:
+          - generic [ref=e363]:
+            - generic [ref=e364]: vip
+            - generic [ref=e365]: linh.nbt225732@sis.hust.edu.vn
+          - link "Profile" [ref=e367] [cursor=pointer]:
+            - /url: /en/profile
+            - img [ref=e368]
+            - generic [ref=e373]: Profile
+          - button "Logout" [ref=e374] [cursor=pointer]:
+            - img [ref=e375]
+            - generic [ref=e379]: Logout
+  - complementary [ref=e104]:
+    - navigation [ref=e105]:
+      - link "Home" [ref=e106] [cursor=pointer]:
+        - /url: /en/dashboard
+        - generic [ref=e107]:
+          - img [ref=e109]
+          - generic [ref=e111]: Home
+      - generic [ref=e112]:
+        - button "Quiz Builder" [ref=e113] [cursor=pointer]:
+          - generic [ref=e114]:
+            - img [ref=e116]
+            - generic [ref=e118]: Quiz Builder
+          - img [ref=e119]
+        - generic [ref=e122]:
+          - link "My Quizzes" [ref=e123] [cursor=pointer]:
+            - /url: /en/my-quizzes
+            - generic [ref=e125]: My Quizzes
+          - link "Review" [ref=e126] [cursor=pointer]:
+            - /url: /en/review
+            - generic [ref=e128]: Review
+          - link "History" [ref=e129] [cursor=pointer]:
+            - /url: /en/history
+            - generic [ref=e131]: History
+          - link "Bookmarks" [ref=e132] [cursor=pointer]:
+            - /url: /en/bookmarks
+            - generic [ref=e134]: Bookmarks
+      - generic [ref=e135]:
+        - button "Adaptive Learning" [ref=e136] [cursor=pointer]:
+          - generic [ref=e137]:
+            - img [ref=e139]
+            - generic [ref=e143]: Adaptive Learning
+          - img [ref=e144]
+        - generic [ref=e147]:
+          - link "Library" [ref=e148] [cursor=pointer]:
+            - /url: /en/adaptive
+            - generic [ref=e150]: Library
+          - link "New Subject" [ref=e151] [cursor=pointer]:
+            - /url: /en/adaptive/upload
+            - generic [ref=e153]: New Subject
+      - generic [ref=e154]:
+        - button "Admin" [ref=e155] [cursor=pointer]:
+          - generic [ref=e156]:
+            - img [ref=e158]
+            - generic [ref=e160]: Admin
+          - img [ref=e161]
+        - generic [ref=e164]:
+          - link [ref=e165] [cursor=pointer]:
+            - /url: /en/admin/queue
+            - generic [ref=e167]: Quiz Queue
+          - link [ref=e168] [cursor=pointer]:
+            - /url: /en/admin/users
+            - generic [ref=e170]: User Management
+          - link [ref=e171] [cursor=pointer]:
+            - /url: /en/admin/categories
+            - generic [ref=e173]: Categories
+          - link [ref=e174] [cursor=pointer]:
+            - /url: /en/admin/subscriptions
+            - generic [ref=e176]: Subscriptions
+          - link [ref=e177] [cursor=pointer]:
+            - /url: /en/admin/plans
+            - generic [ref=e179]: Pricing Plans
+          - link [ref=e180] [cursor=pointer]:
+            - /url: /en/admin/stats
+            - generic [ref=e182]: Statistics
+          - link [ref=e183] [cursor=pointer]:
+            - /url: /en/admin/reports
+            - generic [ref=e185]: Quiz Reports
+      - link "Explore" [ref=e186] [cursor=pointer]:
+        - /url: /en/explore
+        - generic [ref=e187]:
+          - img [ref=e189]
+          - generic [ref=e193]: Explore
+    - generic [ref=e194]:
+      - generic [ref=e196]:
+        - button "Settings" [ref=e197] [cursor=pointer]:
+          - generic [ref=e198]:
+            - img [ref=e200]
+            - generic [ref=e202]: Settings
+          - img [ref=e203]
+        - generic [ref=e206]:
+          - link "Profile" [ref=e207] [cursor=pointer]:
+            - /url: /en/profile
+            - generic [ref=e209]: Profile
+          - link "Subscription" [ref=e210] [cursor=pointer]:
+            - /url: /en/subscription
+            - generic [ref=e212]: Subscription
+      - link "Help & Supporting" [ref=e213] [cursor=pointer]:
+        - /url: /en/contact
+        - generic [ref=e214]:
+          - img [ref=e216]
+          - generic [ref=e218]: Help & Supporting
+  - main [ref=e8]:
+    - generic [ref=e220]:
+      - generic [ref=e221]:
+        - heading "Welcome back vip !" [level=1] [ref=e222]
+        - paragraph [ref=e223]: Continue your learning journey and keep your progress going
+      - generic [ref=e224]:
+        - generic [ref=e225]:
+          - generic [ref=e226]:
+            - generic [ref=e227]:
+              - heading "Personalize Your Learning Path with AI" [level=1] [ref=e228]
+              - paragraph [ref=e229]: AI analyzes your progress and recommends the right lessons, quizzes, and skills to improve next.
+            - link "Start learning" [ref=e230] [cursor=pointer]:
+              - /url: /en/adaptive
+          - generic [ref=e231]:
+            - generic [ref=e232]:
+              - generic [ref=e233]:
+                - heading "Continue Learning" [level=2] [ref=e234]
+                - link "View all" [ref=e235] [cursor=pointer]:
+                  - /url: /en/my-quizzes
+                  - generic [ref=e236]: View all
+                  - img [ref=e237]
+              - paragraph [ref=e239]: Resume your quizzes or AI learning paths from where you left off
+            - generic [ref=e240]:
+              - link "Khác kkkk 22/03/2026" [ref=e241] [cursor=pointer]:
+                - /url: /en/quiz/kkkk
+                - generic [ref=e243]: Khác
+                - generic [ref=e244]:
+                  - heading "kkkk" [level=3] [ref=e245]
+                  - paragraph [ref=e248]: 22/03/2026
+              - link "Khác sss 16/03/2026" [ref=e249] [cursor=pointer]:
+                - /url: /en/quiz/sss
+                - generic [ref=e251]: Khác
+                - generic [ref=e252]:
+                  - heading "sss" [level=3] [ref=e253]
+                  - paragraph [ref=e256]: 16/03/2026
+              - link "Khác grrr 17/01/2026" [ref=e257] [cursor=pointer]:
+                - /url: /en/quiz/grrr
+                - generic [ref=e259]: Khác
+                - generic [ref=e260]:
+                  - heading "grrr" [level=3] [ref=e261]
+                  - paragraph [ref=e264]: 17/01/2026
+              - link "IT3160 - Nhập môn trí tuệ nhân tạo LMS nhập môn AI 01/07/2025" [ref=e265] [cursor=pointer]:
+                - /url: /en/quiz/lms-nhp-mn-ai-751668
+                - generic [ref=e267]: IT3160 - Nhập môn trí tuệ nhân tạo
+                - generic [ref=e268]:
+                  - heading "LMS nhập môn AI" [level=3] [ref=e269]
+                  - paragraph [ref=e272]: 01/07/2025
+              - link "Nhật ngành 2 Nhật ngành 2 FULL (Form K67) 28/06/2025" [ref=e273] [cursor=pointer]:
+                - /url: /en/quiz/nht-ngnh-2-full-127550
+                - generic [ref=e275]: Nhật ngành 2
+                - generic [ref=e276]:
+                  - heading "Nhật ngành 2 FULL (Form K67)" [level=3] [ref=e277]
+                  - paragraph [ref=e280]: 28/06/2025
+              - link "Quiz Builder It is a long established fact... Recently updated" [ref=e281] [cursor=pointer]:
+                - /url: /en/my-quizzes
+                - generic [ref=e283]: Quiz Builder
+                - generic [ref=e284]:
+                  - heading "It is a long established fact..." [level=3] [ref=e285]
+                  - paragraph [ref=e288]: Recently updated
+              - link "Quiz Builder It is a long established fact... Recently updated" [ref=e289] [cursor=pointer]:
+                - /url: /en/my-quizzes
+                - generic [ref=e291]: Quiz Builder
+                - generic [ref=e292]:
+                  - heading "It is a long established fact..." [level=3] [ref=e293]
+                  - paragraph [ref=e296]: Recently updated
+              - link "Quiz Builder Triết học Mac-Lenin Recently updated" [ref=e297] [cursor=pointer]:
+                - /url: /en/my-quizzes
+                - generic [ref=e299]: Quiz Builder
+                - generic [ref=e300]:
+                  - heading "Triết học Mac-Lenin" [level=3] [ref=e301]
+                  - paragraph [ref=e304]: Recently updated
+        - generic [ref=e305]:
+          - generic [ref=e306]:
+            - generic [ref=e307]:
+              - heading "Quiz Builder" [level=2] [ref=e309]
+              - paragraph [ref=e310]: Create quizzes from your PDF files
+            - button "Click or drag & drop it here to upload PDF format, max to 50MB per file" [ref=e311] [cursor=pointer]:
+              - generic [ref=e312]: Click or drag & drop it here to upload
+              - generic [ref=e313]: PDF format, max to 50MB per file
+          - generic [ref=e314]:
+            - generic [ref=e315]:
+              - generic [ref=e316]:
+                - heading "Learning Progress" [level=2] [ref=e317]
+                - link "View all" [ref=e318] [cursor=pointer]:
+                  - /url: /en/dashboard
+                  - generic [ref=e319]: View all
+                  - img [ref=e320]
+              - paragraph [ref=e322]: Progress you’ve made this week
+            - generic [ref=e323]:
+              - generic [ref=e327]:
+                - paragraph [ref=e328]: Day Streak
+                - paragraph [ref=e329]: "1"
+              - generic [ref=e334]:
+                - paragraph [ref=e335]: Accuracy
+                - paragraph [ref=e336]: 0%
+              - generic [ref=e341]:
+                - paragraph [ref=e342]: Study time
+                - paragraph [ref=e343]: 20h
+            - generic [ref=e344]:
+              - paragraph [ref=e346]: Sun
+              - paragraph [ref=e348]: Mon
+              - paragraph [ref=e350]: Tue
+              - paragraph [ref=e352]: Wed
+              - paragraph [ref=e355]: Thir
+              - paragraph [ref=e357]: Frid
+              - paragraph [ref=e359]: Sat
+    - generic [ref=e34]:
+      - generic [ref=e35]:
+        - generic [ref=e36]:
+          - link "RinKuzu Logo" [ref=e37] [cursor=pointer]:
+            - /url: /
+            - img "RinKuzu Logo" [ref=e38]
+          - paragraph [ref=e39]: AI-powered adaptive learning platform. Transform any PDF into a personalized quiz journey.
+        - generic [ref=e40]:
+          - heading "Links" [level=4] [ref=e41]
+          - list [ref=e42]:
+            - listitem [ref=e43]:
+              - link "Home" [ref=e44] [cursor=pointer]:
+                - /url: /
+            - listitem [ref=e45]:
+              - link "About" [ref=e46] [cursor=pointer]:
+                - /url: /about
+            - listitem [ref=e47]:
+              - link "Pricing" [ref=e48] [cursor=pointer]:
+                - /url: /pricing
+            - listitem [ref=e49]:
+              - link "FAQ" [ref=e50] [cursor=pointer]:
+                - /url: /faq
+            - listitem [ref=e51]:
+              - link "Blog" [ref=e52] [cursor=pointer]:
+                - /url: /blog
+        - generic [ref=e53]:
+          - heading "Legal" [level=4] [ref=e54]
+          - list [ref=e55]:
+            - listitem [ref=e56]:
+              - link "Privacy Policy" [ref=e57] [cursor=pointer]:
+                - /url: /privacy
+            - listitem [ref=e58]:
+              - link "Terms of Service" [ref=e59] [cursor=pointer]:
+                - /url: /terms
+            - listitem [ref=e60]:
+              - link "Cookie Policy" [ref=e61] [cursor=pointer]:
+                - /url: /cookies
+            - listitem [ref=e62]:
+              - link "Contact" [ref=e63] [cursor=pointer]:
+                - /url: /contact
+        - generic [ref=e64]:
+          - heading "Newsletter" [level=4] [ref=e65]
+          - paragraph [ref=e66]: Subscribe to receive the latest news and offers from RinKuzu.
+          - generic [ref=e67]:
+            - textbox "Your email" [ref=e70]
+            - button "Subscribe" [ref=e71] [cursor=pointer]:
+              - generic [ref=e72]: Subscribe
+      - generic [ref=e73]:
+        - paragraph [ref=e74]: Copyright 2026 RinKuzu. All rights reserved.
+        - paragraph [ref=e75]: support@rinkuzu.app
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=e81] [cursor=pointer]:
+    - img [ref=e82]
+  - alert [ref=e360]

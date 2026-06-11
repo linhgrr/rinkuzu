@@ -198,6 +198,8 @@ module.exports = {
           'Segoe UI',
           'sans-serif',
         ],
+        unbounded: ['var(--font-unbounded)', 'Unbounded', 'sans-serif'],
+        'vina-sans': ['var(--font-vina-sans)', '"Vina Sans"', 'sans-serif'],
         mono: ['JetBrains Mono', 'SFMono-Regular', 'Consolas', 'monospace'],
       },
       fontSize: {
@@ -243,6 +245,7 @@ module.exports = {
         'slide-in': 'slideIn 0.3s cubic-bezier(0.25, 0.1, 0.25, 1)',
         'scroll-left': 'scrollLeft 30s linear infinite',
         'skeleton-shimmer': 'skeletonShimmer 1.4s ease-in-out infinite',
+        'float-bob': 'floatBob 3.6s ease-in-out infinite',
       },
       keyframes: {
         fadeIn: {
@@ -268,6 +271,10 @@ module.exports = {
         skeletonShimmer: {
           '0%': { backgroundPosition: '100% 0' },
           '100%': { backgroundPosition: '-100% 0' },
+        },
+        floatBob: {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(-14px)' },
         },
       },
       transitionTimingFunction: {

@@ -1,6 +1,7 @@
 import { Link } from '@/i18n/navigation';
 import { imgCharacterImg, imgGroup } from './constants';
 import { AnimatedText } from './AnimatedText';
+import { Magnetic } from './motion-primitives';
 
 export default function Hero({ isAuthenticated = false }: { isAuthenticated?: boolean }) {
   const uploadHref = isAuthenticated ? '/adaptive/upload' : '/register?next=/adaptive/upload';
@@ -30,29 +31,33 @@ export default function Hero({ isAuthenticated = false }: { isAuthenticated?: bo
           </p>
 
           <div className="flex flex-col sm:flex-row gap-[16px] items-start sm:items-center">
-            <Link
-              href={demoHref}
-              className="border border-[#ff541b] flex h-[56px] items-center justify-center px-[32px] rounded-[100px] hover:bg-[#ff541b]/20 transition-colors w-full sm:w-auto"
-            >
-              <span className="font-unbounded font-medium text-[18px] text-white whitespace-nowrap">
-                Try Demo
-              </span>
-            </Link>
-            <Link
-              href={uploadHref}
-              className="bg-[#ff541b] flex gap-[10px] h-[56px] items-center justify-center px-[32px] rounded-[100px] hover:bg-[#fd761a] transition-colors w-full sm:w-auto shadow-lg shadow-[#ff541b]/20"
-            >
-              <span className="size-[28px] relative flex items-center justify-center overflow-hidden">
-                <img
-                  alt="Upload"
-                  className="absolute inset-[12.5%_20.83%_12.5%_20.84%] max-w-none w-[66.6%] h-[66.6%]"
-                  src={imgGroup}
-                />
-              </span>
-              <span className="font-unbounded font-medium text-[18px] text-white whitespace-nowrap">
-                Upload PDF
-              </span>
-            </Link>
+            <Magnetic className="w-full sm:w-auto">
+              <Link
+                href={demoHref}
+                className="border border-[#ff541b] flex h-[56px] items-center justify-center px-[32px] rounded-[100px] hover:bg-[#ff541b]/20 transition-[colors,transform] active:scale-[0.97] w-full sm:w-auto"
+              >
+                <span className="font-unbounded font-medium text-[18px] text-white whitespace-nowrap">
+                  Try Demo
+                </span>
+              </Link>
+            </Magnetic>
+            <Magnetic className="w-full sm:w-auto">
+              <Link
+                href={uploadHref}
+                className="bg-[#ff541b] flex gap-[10px] h-[56px] items-center justify-center px-[32px] rounded-[100px] hover:bg-[#fd761a] transition-[colors,transform] active:scale-[0.97] w-full sm:w-auto shadow-lg shadow-[#ff541b]/20"
+              >
+                <span className="size-[28px] relative flex items-center justify-center overflow-hidden">
+                  <img
+                    alt="Upload"
+                    className="absolute inset-[12.5%_20.83%_12.5%_20.84%] max-w-none w-[66.6%] h-[66.6%]"
+                    src={imgGroup}
+                  />
+                </span>
+                <span className="font-unbounded font-medium text-[18px] text-white whitespace-nowrap">
+                  Upload PDF
+                </span>
+              </Link>
+            </Magnetic>
           </div>
         </div>
       </div>

@@ -1,7 +1,11 @@
 'use client';
 
 import { useRef, useState, useEffect } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
 import { imgGroup8 } from './constants';
+import { Reveal } from './motion-primitives';
+
+const EASE_OUT: [number, number, number, number] = [0.16, 1, 0.3, 1];
 
 const DESIGN_W = 1728;
 const LINE_H = 387;
@@ -31,6 +35,7 @@ const cards = [
 export default function HowItWorks() {
   const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
+  const reduce = useReducedMotion();
 
   useEffect(() => {
     const el = containerRef.current;
@@ -47,7 +52,7 @@ export default function HowItWorks() {
   return (
     <div className="flex flex-col gap-16 xl:gap-[128px] items-center w-full">
       {/* Title */}
-      <div className="flex flex-col font-unbounded font-extrabold justify-center leading-[0] relative shrink-0 text-4xl md:text-[48px] text-center text-white w-full">
+      <Reveal className="flex flex-col font-unbounded font-extrabold justify-center leading-[0] relative shrink-0 text-4xl md:text-[48px] text-center text-white w-full">
         <p className="leading-[1.2] md:leading-[normal]">
           <span>{`LET `}</span>
           <span className="text-[#fd761a]">AI DO HARD</span>
@@ -57,21 +62,27 @@ export default function HowItWorks() {
             WORK
           </span>
         </p>
-      </div>
+      </Reveal>
 
       {/* Scaled container: line + cards scale together */}
       <div ref={containerRef} className="w-full">
         {/* Mobile layout */}
         <div className="flex flex-col gap-8 items-center px-4 xl:hidden">
-          {cards.map((c) => (
-            <Card key={c.num} num={c.num} title={c.title} desc={c.desc} pb={56} />
+          {cards.map((c, i) => (
+            <Reveal key={c.num} delay={i * 0.12} className="w-full flex justify-center">
+              <Card num={c.num} title={c.title} desc={c.desc} pb={56} />
+            </Reveal>
           ))}
         </div>
 
         {/* Desktop: wrapper whose height matches the visual (scaled) size */}
-        <div
+        <motion.div
           className="hidden xl:block relative overflow-visible"
           style={{ height: CONTENT_H * scale }}
+          initial={reduce ? false : { opacity: 0, y: 32 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.2 }}
+          transition={{ duration: 0.7, ease: EASE_OUT }}
         >
           <div
             className="absolute top-0 left-0 flex flex-col items-center"
@@ -96,7 +107,7 @@ export default function HowItWorks() {
               ))}
             </div>
           </div>
-        </div>
+        </motion.div>
       </div>
     </div>
   );

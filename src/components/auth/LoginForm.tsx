@@ -10,7 +10,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Card, CardContent } from '@/components/ui/Card';
+import { Card } from '@/components/ui/Card';
 import {
   HiOutlineMail,
   HiOutlineLockClosed,
@@ -18,13 +18,14 @@ import {
   HiOutlineEye,
   HiOutlineEyeOff,
 } from '@/components/icons';
-import { GoogleLogo } from '@/components/auth/GoogleLogo';
+import { GoogleAuthButton } from '@/components/auth/GoogleAuthButton';
 import { defaultLocale, locales } from '@/i18n/config';
 import { loginSchema, type LoginInput } from '@/lib/validation/auth';
 
 interface LoginFormProps {
   locale: string;
   googleEnabled?: boolean;
+  onSwitchMode?: () => void;
 }
 
 type ErrorState = {
@@ -32,7 +33,7 @@ type ErrorState = {
   code?: string;
 };
 
-function LoginFormContent({ locale, googleEnabled }: LoginFormProps) {
+function LoginFormContent({ locale, googleEnabled, onSwitchMode }: LoginFormProps) {
   const t = useTranslations('auth');
   const [showPassword, setShowPassword] = useState(false);
   const [serverError, setServerError] = useState<ErrorState | null>(null);
@@ -153,28 +154,8 @@ function LoginFormContent({ locale, googleEnabled }: LoginFormProps) {
   const emailValue = form.watch('email');
 
   return (
-    <CardContent className="pt-0">
-      {googleEnabled && (
-        <div className="space-y-4">
-          <button
-            type="button"
-            onClick={() => signIn('google', { callbackUrl })}
-            disabled={isSubmitting}
-            aria-label={t('continueWithGoogle')}
-            className="flex w-full items-center justify-center gap-3 rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm font-medium text-neutral-700 shadow-sm transition-colors hover:bg-neutral-50 disabled:opacity-60"
-          >
-            <GoogleLogo />
-            {t('continueWithGoogle')}
-          </button>
-          <div className="relative my-6 flex items-center">
-            <div className="flex-grow border-t border-neutral-200" aria-hidden="true" />
-            <span className="mx-3 text-xs uppercase tracking-wide text-neutral-400">
-              {t('orContinueWithEmail')}
-            </span>
-            <div className="flex-grow border-t border-neutral-200" aria-hidden="true" />
-          </div>
-        </div>
-      )}
+    <div>
+      {googleEnabled && <GoogleAuthButton callbackUrl={callbackUrl} disabled={isSubmitting} />}
       <form className="space-y-6" onSubmit={onSubmit} noValidate>
         {serverError && (
           <Card
@@ -212,12 +193,14 @@ function LoginFormContent({ locale, googleEnabled }: LoginFormProps) {
           </Card>
         )}
 
-        <fieldset disabled={isSubmitting} className="space-y-5 disabled:opacity-60">
+        <fieldset disabled={isSubmitting} className="space-y-6 disabled:opacity-60">
           <div>
             <Input
               label={t('emailAddress')}
               id="email"
               type="email"
+              inputSize="lg"
+              className="rounded-full"
               autoComplete="email"
               required
               placeholder={t('enterEmail')}
@@ -239,6 +222,8 @@ function LoginFormContent({ locale, googleEnabled }: LoginFormProps) {
                 label={t('password')}
                 id="password"
                 type={showPassword ? 'text' : 'password'}
+                inputSize="lg"
+                className="rounded-full pr-12"
                 autoComplete="current-password"
                 autoCapitalize="off"
                 autoCorrect="off"
@@ -255,7 +240,7 @@ function LoginFormContent({ locale, googleEnabled }: LoginFormProps) {
                 onClick={() => setShowPassword((v) => !v)}
                 aria-pressed={showPassword}
                 aria-label={showPassword ? t('hidePassword') : t('showPassword')}
-                className="absolute inset-y-0 right-3 my-auto flex size-9 items-center justify-center rounded-md text-neutral-400 transition-colors hover:text-neutral-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-trust"
+                className="absolute bottom-2 right-4 flex size-9 items-center justify-center rounded-full text-neutral-400 transition-colors hover:text-neutral-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-trust"
               >
                 {showPassword ? (
                   <HiOutlineEyeOff className="size-5" aria-hidden="true" />
@@ -287,39 +272,49 @@ function LoginFormContent({ locale, googleEnabled }: LoginFormProps) {
             disabled={submitDisabled}
             aria-busy={isSubmitting}
             size="lg"
-            className="w-full bg-brand-trust text-white hover:bg-brand-trust-hover shadow-sm border-0"
+            className="w-full rounded-full bg-brand-trust text-white hover:bg-brand-trust-hover shadow-sm border-0"
           >
             {isSubmitting ? t('signingIn') : t('signInButton')}
           </Button>
         </div>
       </form>
 
-      <div className="mt-8 border-t border-neutral-200/70 pt-6">
+      <div className="mt-8 border-t border-line pt-6">
         <div className="text-center">
-          <p className="text-sm text-neutral-600">
+          <p className="text-sm text-ink-muted">
             {t('dontHaveAccount')}{' '}
-            <Link
-              href="/register"
-              className="font-semibold text-brand-trust hover:text-brand-trust-hover transition-colors"
-            >
-              {t('createAccount')}
-            </Link>
+            {onSwitchMode ? (
+              <button
+                type="button"
+                onClick={onSwitchMode}
+                className="font-semibold text-brand-trust transition-colors hover:text-brand-trust-hover"
+              >
+                {t('createAccount')}
+              </button>
+            ) : (
+              <Link
+                href="/register"
+                className="font-semibold text-brand-trust hover:text-brand-trust-hover transition-colors"
+              >
+                {t('createAccount')}
+              </Link>
+            )}
           </p>
         </div>
       </div>
-    </CardContent>
+    </div>
   );
 }
 
 function LoginFormFallback() {
   return (
-    <CardContent className="pt-0">
+    <div>
       <div className="space-y-4 py-6" aria-hidden="true">
-        <div className="h-12 rounded-xl bg-neutral-100" />
-        <div className="h-12 rounded-xl bg-neutral-100" />
-        <div className="h-12 rounded-xl bg-neutral-100" />
+        <div className="h-12 rounded-full bg-surface-warm" />
+        <div className="h-12 rounded-full bg-surface-warm" />
+        <div className="h-12 rounded-full bg-surface-warm" />
       </div>
-    </CardContent>
+    </div>
   );
 }
 

@@ -142,8 +142,8 @@ export default function ReviewPage() {
   if (phase === 'completed') {
     return (
       <div className="min-h-screen bg-surface-page">
-        <div className="max-w-2xl mx-auto px-4 py-12">
-          <Card className="p-8 text-center animate-fadeInUp">
+        <div className="max-w-2xl mx-auto px-4 py-8">
+          <Card className="p-6 text-center animate-fadeInUp">
             <div className="size-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
               <HiOutlineEmojiHappy className="text-4xl text-green-600" />
             </div>
@@ -178,8 +178,8 @@ export default function ReviewPage() {
   if (questions.length === 0) {
     return (
       <div className="min-h-screen bg-surface-page">
-        <div className="max-w-2xl mx-auto px-4 py-12 text-center">
-          <Card className="p-12">
+        <div className="max-w-2xl mx-auto px-4 py-8 text-center">
+          <Card className="p-6">
             <div className="size-16 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-4">
               <HiOutlineCheckCircle className="size-8 text-brand-trust" />
             </div>

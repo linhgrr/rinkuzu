@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { FullPageSpinner } from '@/components/ui/FullPageSpinner';
 import { fetchApiData } from '@/lib/api/client';
 
 type PaymentStatus = 'loading' | 'success' | 'error';
@@ -84,18 +85,11 @@ function PaymentSuccessContent() {
   };
 
   if (viewState.status === 'loading') {
-    return (
-      <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="size-12 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust mx-auto" />
-          <p className="mt-4 text-neutral-600">{t('verifyingPayment')}</p>
-        </div>
-      </div>
-    );
+    return <FullPageSpinner label={t('verifyingPayment')} />;
   }
 
   return (
-    <div className="min-h-screen bg-neutral-50 flex items-center justify-center py-8">
+    <div className="min-h-screen bg-surface-page flex items-center justify-center py-8">
       <div className="max-w-md mx-auto px-4">
         <Card className="p-8 text-center">
           {viewState.status === 'success' ? (
@@ -115,10 +109,8 @@ function PaymentSuccessContent() {
                   />
                 </svg>
               </div>
-              <h1 className="text-2xl font-semibold text-neutral-900 mb-4">
-                {t('paymentSuccessTitle')}
-              </h1>
-              <p className="text-neutral-600 mb-6">{viewState.message}</p>
+              <h1 className="text-2xl font-semibold text-ink mb-4">{t('paymentSuccessTitle')}</h1>
+              <p className="text-ink-muted mb-6">{viewState.message}</p>
               <div className="space-y-3">
                 <Button onClick={handleGoHome} className="w-full">
                   {t('backToHome')}
@@ -145,8 +137,8 @@ function PaymentSuccessContent() {
                   />
                 </svg>
               </div>
-              <h1 className="text-2xl font-semibold text-neutral-900 mb-4">{t('errorTitle')}</h1>
-              <p className="text-neutral-600 mb-6">{viewState.message}</p>
+              <h1 className="text-2xl font-semibold text-ink mb-4">{t('errorTitle')}</h1>
+              <p className="text-ink-muted mb-6">{viewState.message}</p>
               <div className="space-y-3">
                 <Button onClick={handleGoHome} className="w-full">
                   {t('backToHome')}
@@ -165,14 +157,7 @@ function PaymentSuccessContent() {
 
 function PaymentSuccessLoading() {
   const t = useTranslations('common');
-  return (
-    <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
-      <div className="text-center">
-        <div className="size-12 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust mx-auto" />
-        <p className="mt-4 text-neutral-600">{t('loading')}</p>
-      </div>
-    </div>
-  );
+  return <FullPageSpinner label={t('loading')} />;
 }
 
 export default function PaymentSuccessPage() {

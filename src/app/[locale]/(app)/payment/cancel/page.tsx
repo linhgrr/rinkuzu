@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { FullPageSpinner } from '@/components/ui/FullPageSpinner';
 
 function PaymentCancelContent() {
   const t = useTranslations('subscription');
@@ -22,7 +23,7 @@ function PaymentCancelContent() {
   };
 
   return (
-    <div className="min-h-screen bg-neutral-50 flex items-center justify-center py-8">
+    <div className="min-h-screen bg-surface-page flex items-center justify-center py-8">
       <div className="max-w-md mx-auto px-4">
         <Card className="p-8 text-center">
           <div className="size-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -40,13 +41,11 @@ function PaymentCancelContent() {
               />
             </svg>
           </div>
-          <h1 className="text-2xl font-semibold text-neutral-900 mb-4">
-            {t('paymentCancelledTitle')}
-          </h1>
-          <p className="text-neutral-600 mb-6">
+          <h1 className="text-2xl font-semibold text-ink mb-4">{t('paymentCancelledTitle')}</h1>
+          <p className="text-ink-muted mb-6">
             {t('paymentCancelledMessage')}
             {orderCode && (
-              <span className="block text-sm text-neutral-500 mt-2">
+              <span className="block text-sm text-ink-muted mt-2">
                 {t('orderCode')}: {orderCode}
               </span>
             )}
@@ -67,14 +66,7 @@ function PaymentCancelContent() {
 
 function PaymentCancelLoading() {
   const t = useTranslations('common');
-  return (
-    <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
-      <div className="text-center">
-        <div className="size-12 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust mx-auto" />
-        <p className="mt-4 text-neutral-600">{t('loading')}</p>
-      </div>
-    </div>
-  );
+  return <FullPageSpinner label={t('loading')} />;
 }
 
 export default function PaymentCancelPage() {

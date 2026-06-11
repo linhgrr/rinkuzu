@@ -31,14 +31,14 @@ export default function AppError({
           />
         </svg>
       </div>
-      <h2 className="mb-2 text-xl font-semibold text-neutral-900">Something went wrong</h2>
-      <p className="mb-6 max-w-md text-sm text-neutral-500">
+      <h2 className="mb-2 text-xl font-semibold text-ink">Something went wrong</h2>
+      <p className="mb-6 max-w-md text-sm text-ink-muted">
         An unexpected error occurred while loading this page. Please try again.
       </p>
       <button
         type="button"
         onClick={reset}
-        className="rounded-full bg-neutral-900 px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-neutral-800"
+        className="rounded-full bg-accent px-6 py-2.5 text-sm font-semibold text-accent-text transition-colors hover:bg-accent-hover"
       >
         Try again
       </button>

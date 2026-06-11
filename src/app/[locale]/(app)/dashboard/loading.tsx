@@ -1,6 +1,6 @@
 export default function DashboardLoading() {
   return (
-    <div className="min-h-screen bg-neutral-50 pb-12">
+    <div className="min-h-screen bg-surface-page pb-12">
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8" aria-hidden="true">
           <div className="lg:col-span-8 space-y-8">

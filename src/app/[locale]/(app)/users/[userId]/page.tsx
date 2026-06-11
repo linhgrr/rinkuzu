@@ -3,7 +3,6 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { Types } from 'mongoose';
-import Navigation from '@/components/Navigation';
 import { UserAvatar } from '@/components/user/UserAvatar';
 import { type UserIdentity, getUserDisplayName } from '@/components/user/user-identity';
 import {
@@ -146,30 +145,28 @@ export default async function PublicUserProfilePage({
   );
 
   return (
-    <div className="min-h-screen bg-neutral-50">
-      <Navigation />
-
+    <div className="min-h-screen bg-surface-page">
       <main className="mx-auto max-w-6xl px-4 pb-12 pt-20 sm:px-6 lg:px-8">
         <div className="grid gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
-          <Card className="h-fit overflow-hidden border-neutral-200 shadow-sm">
+          <Card className="h-fit overflow-hidden border-line shadow-sm">
             <CardContent className="flex flex-col items-center gap-4 p-8 text-center">
               <UserAvatar user={profileUser} size={112} />
               <div className="space-y-2">
-                <h1 className="text-2xl font-semibold text-neutral-900">{displayName}</h1>
-                <p className="text-sm text-neutral-500">{t('publicProfile')}</p>
+                <h1 className="text-2xl font-semibold text-ink">{displayName}</h1>
+                <p className="text-sm text-ink-muted">{t('publicProfile')}</p>
               </div>
-              <div className="grid w-full gap-3 rounded-2xl bg-neutral-100 p-4 text-left text-sm text-neutral-600">
+              <div className="grid w-full gap-3 rounded-2xl bg-surface-warm p-4 text-left text-sm text-ink-muted">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.16em] text-neutral-400">
+                  <p className="text-xs uppercase tracking-[0.16em] text-ink-muted">
                     {t('joinDate')}
                   </p>
-                  <p className="mt-1 font-medium text-neutral-900">{joinDate}</p>
+                  <p className="mt-1 font-medium text-ink">{joinDate}</p>
                 </div>
                 <div>
-                  <p className="text-xs uppercase tracking-[0.16em] text-neutral-400">
+                  <p className="text-xs uppercase tracking-[0.16em] text-ink-muted">
                     {t('publishedQuizzes')}
                   </p>
-                  <p className="mt-1 font-medium text-neutral-900">
+                  <p className="mt-1 font-medium text-ink">
                     {t('publishedQuizzesCount', { count: quizzes.length })}
                   </p>
                 </div>
@@ -178,13 +175,13 @@ export default async function PublicUserProfilePage({
           </Card>
 
           <div className="space-y-6">
-            <Card className="border-neutral-200 shadow-sm">
+            <Card className="border-line shadow-sm">
               <CardHeader>
                 <CardTitle>{t('bioLabel')}</CardTitle>
                 <CardDescription>{t('publicProfileDescription')}</CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="whitespace-pre-wrap text-sm leading-7 text-neutral-700">
+                <p className="whitespace-pre-wrap text-sm leading-7 text-ink">
                   {profileUser.bio?.trim() || t('publicProfileNoBio')}
                 </p>
               </CardContent>
@@ -193,16 +190,14 @@ export default async function PublicUserProfilePage({
             <section className="space-y-4">
               <div className="flex items-end justify-between">
                 <div>
-                  <h2 className="text-xl font-semibold text-neutral-900">
-                    {t('publishedQuizzes')}
-                  </h2>
-                  <p className="text-sm text-neutral-500">{t('publicProfileQuizDescription')}</p>
+                  <h2 className="text-xl font-semibold text-ink">{t('publishedQuizzes')}</h2>
+                  <p className="text-sm text-ink-muted">{t('publicProfileQuizDescription')}</p>
                 </div>
               </div>
 
               {quizzes.length === 0 ? (
-                <Card className="border-dashed border-neutral-300 bg-white/80">
-                  <CardContent className="p-8 text-center text-sm text-neutral-500">
+                <Card className="border-dashed border-line bg-surface/80">
+                  <CardContent className="p-8 text-center text-sm text-ink-muted">
                     {t('noPublicQuizzes')}
                   </CardContent>
                 </Card>
@@ -211,7 +206,7 @@ export default async function PublicUserProfilePage({
                   {quizzes.map((quiz) => (
                     <Card
                       key={quiz._id}
-                      className="flex h-full flex-col justify-between border-neutral-200 shadow-sm"
+                      className="flex h-full flex-col justify-between border-line shadow-sm"
                     >
                       <CardHeader className="space-y-3">
                         {quiz.category && (
@@ -230,7 +225,7 @@ export default async function PublicUserProfilePage({
                         </div>
                       </CardHeader>
                       <CardContent className="space-y-4">
-                        <div className="flex items-center justify-between text-xs text-neutral-500">
+                        <div className="flex items-center justify-between text-xs text-ink-muted">
                           <span>
                             {quiz.questionCount} {tQuiz('questions')}
                           </span>

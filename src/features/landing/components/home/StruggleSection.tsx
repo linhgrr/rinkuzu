@@ -1,10 +1,26 @@
+'use client';
+
+import { motion, useReducedMotion } from 'framer-motion';
 import { imgGroup1, imgSolarDocumentAddBold, imgTablerClockFilled } from './constants';
+import { Reveal } from './motion-primitives';
+
+const EASE_OUT: [number, number, number, number] = [0.16, 1, 0.3, 1];
 
 export default function StruggleSection() {
+  const reduce = useReducedMotion();
+  const cardReveal = (delay: number) =>
+    reduce
+      ? {}
+      : {
+          initial: { opacity: 0, y: 32 },
+          whileInView: { opacity: 1, y: 0 },
+          viewport: { once: true, amount: 0.3 },
+          transition: { duration: 0.6, delay, ease: EASE_OUT },
+        };
   return (
     <div className="relative w-full max-w-[1303px] mx-auto flex flex-col gap-16 md:gap-[128px] items-center z-10 px-4 md:px-0">
       {/* Title */}
-      <div className="font-unbounded font-extrabold text-center text-white w-full">
+      <Reveal className="font-unbounded font-extrabold text-center text-white w-full">
         <h2 className="text-3xl sm:text-4xl md:text-[48px] leading-[1.4]">
           <span className="text-[#fd761a]">STRUGGLING</span>
           <span>{` `}</span>
@@ -16,12 +32,16 @@ export default function StruggleSection() {
           <span>{` `}</span>
           <span>EFFECTIVELY ?</span>
         </h2>
-      </div>
+      </Reveal>
 
       {/* Cards Container */}
       <div className="flex flex-col md:flex-row items-stretch md:items-end justify-center w-full gap-6 md:gap-0">
         {/* Card 1 */}
-        <div className="flex flex-col gap-4 md:gap-[22px] p-6 md:px-[32px] md:py-[56px] rounded-2xl md:rounded-l-[24px] md:rounded-tr-none w-full md:w-[461px] bg-[rgba(43,43,43,0.2)] backdrop-blur-sm border border-white/5 relative group transition-transform hover:-translate-y-2">
+        <motion.div
+          {...cardReveal(0)}
+          whileHover={reduce ? undefined : { y: -8 }}
+          className="flex flex-col gap-4 md:gap-[22px] p-6 md:px-[32px] md:py-[56px] rounded-2xl md:rounded-l-[24px] md:rounded-tr-none w-full md:w-[461px] bg-[rgba(43,43,43,0.2)] backdrop-blur-sm border border-white/5 relative group"
+        >
           <div className="absolute inset-0 pointer-events-none rounded-[inherit] shadow-[inset_2px_-4px_13px_0px_rgba(253,118,26,0.6)]" />
 
           <div className="bg-white rounded-full w-12 h-12 md:w-[56px] md:h-[56px] flex items-center justify-center shadow-lg relative z-10">
@@ -44,10 +64,14 @@ export default function StruggleSection() {
               conceptual framework.
             </p>
           </div>
-        </div>
+        </motion.div>
 
         {/* Card 2 (Center Highlighted) */}
-        <div className="bg-[#ff541b] flex flex-col gap-4 md:gap-[22px] p-6 md:px-[28px] md:py-[56px] rounded-2xl md:rounded-t-[24px] md:rounded-b-none w-full md:w-[381px] z-20 md:-mx-4 shadow-2xl relative md:h-[449px] transition-transform hover:-translate-y-4">
+        <motion.div
+          {...cardReveal(0.12)}
+          whileHover={reduce ? undefined : { y: -16 }}
+          className="bg-[#ff541b] flex flex-col gap-4 md:gap-[22px] p-6 md:px-[28px] md:py-[56px] rounded-2xl md:rounded-t-[24px] md:rounded-b-none w-full md:w-[381px] z-20 md:-mx-4 shadow-2xl relative md:h-[449px]"
+        >
           <div className="bg-white rounded-full w-12 h-12 md:w-[56px] md:h-[56px] flex items-center justify-center shadow-lg relative z-10">
             <img
               alt="Document"
@@ -68,10 +92,14 @@ export default function StruggleSection() {
               starting point.
             </p>
           </div>
-        </div>
+        </motion.div>
 
         {/* Card 3 */}
-        <div className="flex flex-col gap-4 md:gap-[22px] p-6 md:px-[32px] md:py-[56px] rounded-2xl md:rounded-r-[24px] md:rounded-tl-none w-full md:w-[461px] bg-[rgba(43,43,43,0.2)] backdrop-blur-sm border border-white/5 relative group transition-transform hover:-translate-y-2">
+        <motion.div
+          {...cardReveal(0.24)}
+          whileHover={reduce ? undefined : { y: -8 }}
+          className="flex flex-col gap-4 md:gap-[22px] p-6 md:px-[32px] md:py-[56px] rounded-2xl md:rounded-r-[24px] md:rounded-tl-none w-full md:w-[461px] bg-[rgba(43,43,43,0.2)] backdrop-blur-sm border border-white/5 relative group"
+        >
           <div className="absolute inset-0 pointer-events-none rounded-[inherit] shadow-[inset_-4px_-4px_13px_0px_rgba(253,118,26,0.6)]" />
 
           <div className="bg-white rounded-full w-12 h-12 md:w-[56px] md:h-[56px] flex items-center justify-center shadow-lg relative z-10">
@@ -94,7 +122,7 @@ export default function StruggleSection() {
               synthesis.
             </p>
           </div>
-        </div>
+        </motion.div>
       </div>
     </div>
   );

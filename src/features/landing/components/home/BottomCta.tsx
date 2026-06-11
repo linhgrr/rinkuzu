@@ -1,5 +1,6 @@
 import { Link } from '@/i18n/navigation';
 import { imgGroup11 } from './constants';
+import { Magnetic } from './motion-primitives';
 
 export default function BottomCta({ isAuthenticated = false }: { isAuthenticated?: boolean }) {
   const uploadHref = isAuthenticated ? '/adaptive/upload' : '/register?next=/adaptive/upload';
@@ -22,17 +23,19 @@ export default function BottomCta({ isAuthenticated = false }: { isAuthenticated
         </p>
       </div>
 
-      <Link
-        href={uploadHref}
-        className="bg-white flex gap-[10px] h-[56px] items-center justify-center px-[32px] rounded-[100px] hover:bg-gray-50 transition-colors"
-      >
-        <span className="relative shrink-0 size-[28px] overflow-hidden">
-          <img alt="Upload" className="block w-full h-full object-contain" src={imgGroup11} />
-        </span>
-        <span className="font-unbounded font-medium text-[18px] text-[#ff541b] whitespace-nowrap leading-[1.5]">
-          Upload PDF
-        </span>
-      </Link>
+      <Magnetic>
+        <Link
+          href={uploadHref}
+          className="bg-white flex gap-[10px] h-[56px] items-center justify-center px-[32px] rounded-[100px] hover:bg-gray-50 transition-[colors,transform] active:scale-[0.97]"
+        >
+          <span className="relative shrink-0 size-[28px] overflow-hidden">
+            <img alt="Upload" className="block w-full h-full object-contain" src={imgGroup11} />
+          </span>
+          <span className="font-unbounded font-medium text-[18px] text-[#ff541b] whitespace-nowrap leading-[1.5]">
+            Upload PDF
+          </span>
+        </Link>
+      </Magnetic>
     </div>
   );
 }

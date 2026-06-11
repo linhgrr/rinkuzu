@@ -68,7 +68,7 @@ jobs:
         run: npm run test:integration
         env:
           MONGODB_URI: mongodb://localhost:27017/test
-          NEXTAUTH_SECRET: test-secret
+          NEXTAUTH_SECRET: test-nextauth-secret-at-least-32-characters
           NEXTAUTH_URL: http://localhost:3000
           JWT_SECRET: test-jwt-secret
           JWT_EXPIRES_IN: 30m
@@ -78,7 +78,7 @@ jobs:
         run: npm run build
         env:
           MONGODB_URI: mongodb://localhost:27017/test
-          NEXTAUTH_SECRET: test-secret
+          NEXTAUTH_SECRET: test-nextauth-secret-at-least-32-characters
           NEXTAUTH_URL: http://localhost:3000
           NEXT_PUBLIC_SITE_URL: http://localhost:3000
           JWT_SECRET: test-jwt-secret

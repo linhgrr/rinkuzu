@@ -1,13 +1,12 @@
 'use client';
 
-import { useEffect, useReducer, useState } from 'react';
+import { useEffect, useReducer } from 'react';
 import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { ImageDisplay } from '@/components/ui/ImageDisplay';
 import { DynamicMarkdownRenderer as MarkdownRenderer } from '@/components/ui/DynamicMarkdownRenderer';
-import Sidebar from '@/components/Sidebar';
 import {
   HiOutlineArrowLeft,
   HiOutlineChartBar,
@@ -171,8 +170,8 @@ function AttemptQuestionCard({
       </CardHeader>
       <CardContent className="space-y-5 px-4 pb-5 pt-4 sm:space-y-6 sm:px-6 sm:pb-6">
         <section>
-          <h4 className="mb-2 text-sm font-semibold text-neutral-900">{t('questionPrompt')}:</h4>
-          <div className="break-words rounded-2xl bg-neutral-50 p-3 text-sm leading-6 sm:p-4 sm:text-base">
+          <h4 className="mb-2 text-sm font-semibold text-ink">{t('questionPrompt')}:</h4>
+          <div className="break-words rounded-2xl bg-surface-warm p-3 text-sm leading-6 sm:p-4 sm:text-base">
             <MarkdownRenderer content={question.question} />
             {question.questionImage && (
               <div className="mt-3 overflow-hidden rounded-xl">
@@ -183,7 +182,7 @@ function AttemptQuestionCard({
         </section>
 
         <section>
-          <h5 className="mb-2 text-sm font-semibold text-neutral-900">{t('yourAnswer')}:</h5>
+          <h5 className="mb-2 text-sm font-semibold text-ink">{t('yourAnswer')}:</h5>
           <div
             className={cn(
               'break-words rounded-2xl border p-3 text-sm font-semibold leading-6 sm:p-4 sm:text-base',
@@ -198,7 +197,7 @@ function AttemptQuestionCard({
 
         {!question.isCorrect && (
           <section>
-            <h5 className="mb-2 text-sm font-semibold text-neutral-900">{t('correctAnswer')}:</h5>
+            <h5 className="mb-2 text-sm font-semibold text-ink">{t('correctAnswer')}:</h5>
             <div className="break-words rounded-2xl border border-green-200 bg-green-50 p-3 text-sm font-semibold leading-6 text-green-800 sm:p-4 sm:text-base">
               {Array.isArray(correctAnswerText) ? correctAnswerText.join(', ') : correctAnswerText}
             </div>
@@ -206,7 +205,7 @@ function AttemptQuestionCard({
         )}
 
         <section>
-          <h5 className="mb-2 text-sm font-semibold text-neutral-900">{t('allOptions')}:</h5>
+          <h5 className="mb-2 text-sm font-semibold text-ink">{t('allOptions')}:</h5>
           <div className="space-y-3">
             {question.options.map((option, optionIndex) => {
               const isUserChoice =
@@ -228,11 +227,11 @@ function AttemptQuestionCard({
                       ? 'border-green-500 bg-green-50'
                       : isUserChoice
                         ? 'border-red-500 bg-red-50'
-                        : 'border-neutral-200 bg-neutral-50',
+                        : 'border-line bg-surface-warm',
                   )}
                 >
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                    <div className="min-w-0 flex-1 break-words text-sm leading-6 text-neutral-800 sm:text-base">
+                    <div className="min-w-0 flex-1 break-words text-sm leading-6 text-ink sm:text-base">
                       <span className="font-semibold">
                         {String.fromCharCode(65 + optionIndex)}.
                       </span>{' '}
@@ -308,7 +307,7 @@ function AttemptSummary({
           {
             value: `${attempt.score}%`,
             label: t('totalScore'),
-            className: 'text-brand-trust bg-emerald-50',
+            className: 'text-accent bg-emerald-50',
           },
         ].map((stat) => (
           <Card key={stat.label} className="overflow-hidden">
@@ -321,7 +320,7 @@ function AttemptSummary({
               >
                 {stat.value}
               </div>
-              <div className="text-xs font-medium text-neutral-600 sm:text-sm">{stat.label}</div>
+              <div className="text-xs font-medium text-ink-muted sm:text-sm">{stat.label}</div>
             </CardContent>
           </Card>
         ))}
@@ -333,7 +332,7 @@ function AttemptSummary({
         ))}
       </div>
 
-      <div className="grid grid-cols-1 gap-3 border-t border-neutral-200 pt-6 sm:flex sm:justify-center sm:gap-4">
+      <div className="grid grid-cols-1 gap-3 border-t border-line pt-6 sm:flex sm:justify-center sm:gap-4">
         <Link href={historyLink}>
           <Button variant="outline" size="lg" className="w-full justify-center sm:w-auto">
             <span className="inline-flex items-center gap-2">
@@ -363,7 +362,6 @@ export default function AttemptDetailPage() {
   const encodedAttemptId = routePathSegment(attemptId);
 
   const [state, dispatch] = useReducer(attemptDetailReducer, initialAttemptDetailState);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const historyLink = '/history';
 
   useEffect(() => {
@@ -396,41 +394,30 @@ export default function AttemptDetailPage() {
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.10),transparent_34%),linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)]">
-      <Sidebar
-        isOpen={isSidebarOpen}
-        onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
-        currentPath="/history"
-      />
-
-      <main
-        className={cn(
-          'px-3 pb-24 pt-20 transition-all duration-300 sm:px-6 lg:px-8',
-          isSidebarOpen ? 'md:ml-64' : 'md:ml-16',
-        )}
-      >
+      <main className="px-3 pb-24 pt-20 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-4xl space-y-5 sm:space-y-8">
           <header className="rounded-[28px] border border-white/80 bg-white/90 p-4 shadow-[0_18px_60px_rgba(15,23,42,0.08)] backdrop-blur sm:p-6">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div className="min-w-0 flex-1">
-                <nav className="mb-3 flex min-w-0 flex-wrap items-center gap-2 text-xs font-medium text-neutral-500 sm:text-sm">
+                <nav className="mb-3 flex min-w-0 flex-wrap items-center gap-2 text-xs font-medium text-ink-muted sm:text-sm">
                   <Link
                     href={historyLink}
-                    className="rounded-full bg-neutral-100 px-3 py-1 hover:text-neutral-700"
+                    className="rounded-full bg-surface-warm px-3 py-1 hover:text-ink"
                   >
                     {t('history')}
                   </Link>
                   <span>/</span>
-                  <span className="text-neutral-900">{t('title')}</span>
+                  <span className="text-ink">{t('title')}</span>
                 </nav>
-                <h1 className="text-balance text-2xl font-semibold tracking-[-0.03em] text-neutral-950 sm:text-3xl">
+                <h1 className="text-balance text-2xl font-semibold tracking-[-0.03em] text-ink sm:text-3xl">
                   {t('title')}
                 </h1>
                 {state.attempt && (
                   <div className="mt-3 space-y-3">
-                    <h2 className="break-words text-lg font-semibold leading-snug text-neutral-800 sm:text-xl">
+                    <h2 className="break-words text-lg font-semibold leading-snug text-ink sm:text-xl">
                       {state.attempt.quiz.title}
                     </h2>
-                    <div className="grid gap-2 text-sm text-neutral-600 sm:grid-cols-3">
+                    <div className="grid gap-2 text-sm text-ink-muted sm:grid-cols-3">
                       <span className="inline-flex min-w-0 items-center gap-1.5 rounded-2xl bg-green-50 px-3 py-2 text-green-800">
                         <HiOutlineChartBar className="size-4 shrink-0" />
                         <span className="truncate">
@@ -443,7 +430,7 @@ export default function AttemptDetailPage() {
                           {state.attempt.quiz.questions.length} {t('questions')}
                         </span>
                       </span>
-                      <span className="inline-flex min-w-0 items-center gap-1.5 rounded-2xl bg-neutral-100 px-3 py-2 text-neutral-700">
+                      <span className="inline-flex min-w-0 items-center gap-1.5 rounded-2xl bg-surface-warm px-3 py-2 text-ink">
                         <HiOutlineClock className="size-4 shrink-0" />
                         <span className="truncate">
                           {formatAttemptDate(state.attempt.takenAt, locale)}
@@ -479,7 +466,7 @@ export default function AttemptDetailPage() {
 
           {state.loading ? (
             <Card>
-              <CardContent className="flex justify-center py-12 text-neutral-500">
+              <CardContent className="flex justify-center py-12 text-ink-muted">
                 {tCommon('loading')}
               </CardContent>
             </Card>
@@ -489,8 +476,8 @@ export default function AttemptDetailPage() {
                 <div className="mb-4 flex justify-center text-red-600">
                   <HiOutlineXCircle className="size-8" />
                 </div>
-                <h3 className="mb-2 text-lg font-semibold text-neutral-900">{tCommon('error')}</h3>
-                <p className="mb-4 break-words text-neutral-600">{state.error}</p>
+                <h3 className="mb-2 text-lg font-semibold text-ink">{tCommon('error')}</h3>
+                <p className="mb-4 break-words text-ink-muted">{state.error}</p>
                 <Link href={historyLink}>
                   <Button>{t('backToHistory')}</Button>
                 </Link>

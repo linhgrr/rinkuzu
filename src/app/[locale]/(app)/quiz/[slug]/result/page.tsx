@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { FullPageSpinner } from '@/components/ui/FullPageSpinner';
 import {
   useStreamingChatSession,
   type ChatMessage,
@@ -254,17 +255,6 @@ async function fetchBookmarkLookup(resultData: QuizResult): Promise<BookmarkLook
   };
 }
 
-function QuizResultLoadingState({ message }: { message: string }) {
-  return (
-    <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
-      <div className="text-center">
-        <div className="size-12 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust mx-auto" />
-        <p className="mt-4 text-neutral-600">{message}</p>
-      </div>
-    </div>
-  );
-}
-
 function QuizResultErrorState({
   actionLabel,
   error,
@@ -275,13 +265,13 @@ function QuizResultErrorState({
   title: string;
 }) {
   return (
-    <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
+    <div className="min-h-screen bg-surface-page flex items-center justify-center">
       <Card className="max-w-md">
         <CardHeader>
           <CardTitle className="text-center text-red-600">{title}</CardTitle>
         </CardHeader>
         <CardContent className="text-center">
-          <p className="text-neutral-600 mb-4">{error}</p>
+          <p className="text-ink-muted mb-4">{error}</p>
           <Link href="/">
             <Button>{actionLabel}</Button>
           </Link>
@@ -677,13 +667,13 @@ function QuizResultReadyState({
   const tCommon = useTranslations('common');
 
   return (
-    <div className="min-h-screen bg-neutral-50">
-      <div className="bg-white shadow-sm border-b">
+    <div className="min-h-screen bg-surface-page">
+      <div className="bg-surface shadow-sm border-b">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="text-center">
-            <h1 className="text-2xl font-semibold text-neutral-900">{t('quizComplete')}</h1>
-            <p className="mt-2 text-neutral-600">{result.quiz.title}</p>
-            <p className="text-sm text-neutral-500" suppressHydrationWarning>
+            <h1 className="text-2xl font-semibold text-ink">{t('quizComplete')}</h1>
+            <p className="mt-2 text-ink-muted">{result.quiz.title}</p>
+            <p className="text-sm text-ink-muted" suppressHydrationWarning>
               {t('completedOn')}{' '}
               {new Date(result.takenAt).toLocaleDateString('vi-VN', {
                 year: 'numeric',
@@ -807,7 +797,7 @@ function QuizResultPageClient() {
   const result = state.result;
 
   if (state.status === 'loading') {
-    return <QuizResultLoadingState message={`${t('loadingQuiz')}...`} />;
+    return <FullPageSpinner label={`${t('loadingQuiz')}...`} />;
   }
 
   if (state.error || !result) {
@@ -869,7 +859,7 @@ function QuizResultPageClient() {
 
 export default function QuizResultPage() {
   return (
-    <Suspense fallback={<QuizResultLoadingState message="Loading results..." />}>
+    <Suspense fallback={<FullPageSpinner label="Loading results..." />}>
       <QuizResultPageClient />
     </Suspense>
   );

@@ -76,13 +76,9 @@ export default function HowItWorks() {
         </div>
 
         {/* Desktop: wrapper whose height matches the visual (scaled) size */}
-        <motion.div
+        <div
           className="hidden xl:block relative overflow-visible"
           style={{ height: CONTENT_H * scale }}
-          initial={reduce ? false : { opacity: 0, y: 32 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.2 }}
-          transition={{ duration: 0.7, ease: EASE_OUT }}
         >
           <div
             className="absolute top-0 left-0 flex flex-col items-center"
@@ -102,12 +98,20 @@ export default function HowItWorks() {
             </div>
 
             <div className="flex gap-[96px] items-start shrink-0">
-              {cards.map((c) => (
-                <Card key={c.num} {...c} />
+              {cards.map((c, i) => (
+                <motion.div
+                  key={c.num}
+                  initial={reduce ? false : { opacity: 0, y: 40 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, amount: 0.4 }}
+                  transition={{ duration: 0.6, delay: i * 0.2, ease: EASE_OUT }}
+                >
+                  <Card {...c} />
+                </motion.div>
               ))}
             </div>
           </div>
-        </motion.div>
+        </div>
       </div>
     </div>
   );

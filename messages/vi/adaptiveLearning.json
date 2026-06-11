@@ -5,7 +5,7 @@
     "close": "Đóng",
     "confirm": "Xác nhận"
   },
-  "dashboardTitle": "Trung tâm học tập thích ứng",
+  "dashboardTitle": "Trung tâm học cá nhân hóa",
   "dashboardDescription": "Theo dõi lộ trình học cá nhân hóa, tải thêm tài liệu và làm chủ kiến thức với hướng dẫn từ AI.",
   "dashboardSubtitle": "Học tập cá nhân hóa với AI",
   "backendOffline": "Backend đang offline. Chạy: cd full-demo/api && uvicorn api.main:app --reload --port 8000",
@@ -67,7 +67,7 @@
   "uploadPage": {
     "back": "Quay lại",
     "startLearning": "Bắt đầu học",
-    "description": "Tải lên PDF để bắt đầu phiên học thích ứng.",
+    "description": "Tải lên PDF để bắt đầu phiên học cá nhân hóa.",
     "subjectName": "Tên môn học",
     "subjectNamePlaceholder": "Ví dụ: Nhập môn Machine Learning, Cấu trúc dữ liệu",
     "subjectRequired": "Trường này bắt buộc để tạo phiên học cá nhân hóa.",
@@ -82,7 +82,7 @@
       "connectionInterrupted": "Kết nối tải lên đã bị gián đoạn. Vui lòng thử tải lại PDF.",
       "serviceUnavailable": "Dịch vụ học tập đang bận tạm thời. Vui lòng đợi một chút rồi thử lại.",
       "conflict": "Tài liệu này hiện chưa thể được đưa vào hàng chờ xử lý. Vui lòng thử lại.",
-      "onlyPdf": "Hệ thống chỉ hỗ trợ tệp PDF cho luồng học thích ứng.",
+      "onlyPdf": "Hệ thống chỉ hỗ trợ tệp PDF cho luồng học cá nhân hóa.",
       "fileTooLarge": "Tệp PDF này quá lớn. Vui lòng tải lên tệp nhỏ hơn {maxSizeMb} MB."
     },
     "subject": "Môn học",
@@ -106,7 +106,7 @@
     "yourDocuments": "Tài liệu của bạn",
     "relations": "Quan hệ",
     "welcomeBack": "Chào mừng trở lại.",
-    "mascotAlt": "Linh vật học tập thích ứng",
+    "mascotAlt": "Linh vật học cá nhân hóa",
     "goalAriaLabel": "Mục tiêu hằng ngày",
     "pickUpDescription": "Tiếp tục từ nơi bạn đã dừng lại và giữ chuỗi học tập của mình.",
     "continueLearning": "Tiếp tục học",
@@ -117,7 +117,7 @@
     "nextLevelDescription": "Quay lại tài liệu này để cải thiện kỹ năng của bạn. Dựa trên các lần học trước, bạn đã sẵn sàng cho cấp độ tiếp theo.",
     "continueSession": "Tiếp tục phiên học",
     "uploadMaterialTitle": "Tải lên tài liệu",
-    "uploadMaterialHint": "Bắt đầu bằng cách tải lên tệp PDF để tạo trải nghiệm học tập thích ứng.",
+    "uploadMaterialHint": "Bắt đầu bằng cách tải lên tệp PDF để tạo trải nghiệm học cá nhân hóa.",
     "uploadDocument": "Tải tài liệu lên",
     "yourLibrary": "Thư viện của bạn",
     "libraryDescription": "Tất cả tài liệu học tập đã tải lên và xử lý.",
@@ -500,32 +500,32 @@
   },
   "meta": {
     "dashboard": {
-      "title": "Học tập thích ứng | Rinkuzu",
+      "title": "Học cá nhân hóa | Rinkuzu",
       "description": "Lộ trình học cá nhân hóa dựa trên tài liệu của bạn"
     },
     "upload": {
-      "title": "Tải tài liệu | Học tập thích ứng",
+      "title": "Tải tài liệu | Học cá nhân hóa",
       "description": "Tải PDF để bắt đầu hành trình học cá nhân hóa"
     },
     "processing": {
-      "title": "Đang xử lý... | Học tập thích ứng",
+      "title": "Đang xử lý... | Học cá nhân hóa",
       "description": "AI đang phân tích tài liệu"
     },
     "subject": {
-      "title": "Lộ trình môn học | Học tập thích ứng",
+      "title": "Lộ trình môn học | Học cá nhân hóa",
       "description": "Sơ đồ kiến thức và ma trận độ thành thạo của môn học"
     },
     "exercise": {
-      "title": "Bài tập | Học tập thích ứng",
+      "title": "Bài tập | Học cá nhân hóa",
       "description": "Luyện tập theo khái niệm phù hợp với bạn"
     },
     "result": {
-      "title": "Kết quả | Học tập thích ứng",
+      "title": "Kết quả | Học cá nhân hóa",
       "description": "Phản hồi bài tập"
     }
   },
   "guest": {
-    "heroTitle": "Học tập thích ứng AI cho các môn STEM",
+    "heroTitle": "Học cá nhân hóa bằng AI cho các môn STEM",
     "loginCta": "Đăng nhập để bắt đầu học",
     "registerCta": "Tạo tài khoản",
     "faqTitle": "Câu hỏi thường gặp",
@@ -534,7 +534,7 @@
     "startNow": "Bắt đầu ngay",
     "faq": {
       "howItWorks": {
-        "question": "Học tập thích ứng hoạt động như thế nào?",
+        "question": "Học cá nhân hóa hoạt động như thế nào?",
         "answer": "Bạn tải lên PDF, AI trích xuất khái niệm, xây dựng đồ thị kiến thức tiên quyết, sau đó đề xuất bài tập theo cấp độ Bloom."
       },
       "forBeginners": {

@@ -5,7 +5,7 @@
     "close": "Close",
     "confirm": "Confirm"
   },
-  "dashboardTitle": "Adaptive Learning Center",
+  "dashboardTitle": "Personalized Learning Center",
   "dashboardDescription": "Track your personalized learning path, upload new materials, and master concepts with AI-driven guidance.",
   "dashboardSubtitle": "AI-powered personalized learning",
   "backendOffline": "Backend offline. Start: cd full-demo/api && uvicorn api.main:app --reload --port 8000",
@@ -67,7 +67,7 @@
   "uploadPage": {
     "back": "Back",
     "startLearning": "Start Learning",
-    "description": "Upload a PDF to begin your adaptive learning session.",
+    "description": "Upload a PDF to begin your personalized learning session.",
     "subjectName": "Subject Name",
     "subjectNamePlaceholder": "e.g. Machine Learning Basics, Data Structures",
     "subjectRequired": "This field is required to start a personalized session.",
@@ -82,7 +82,7 @@
       "connectionInterrupted": "The upload connection was interrupted. Please try uploading the PDF again.",
       "serviceUnavailable": "The learning service is temporarily busy. Please wait a moment and try again.",
       "conflict": "This material could not be queued right now. Please try again.",
-      "onlyPdf": "Only PDF files are supported for adaptive learning.",
+      "onlyPdf": "Only PDF files are supported for personalized learning.",
       "fileTooLarge": "This PDF is too large. Please upload a file smaller than {maxSizeMb} MB."
     },
     "subject": "Subject",
@@ -117,7 +117,7 @@
     "nextLevelDescription": "Dive back into this document to improve your mastery. Based on your previous runs, you are ready for the next level.",
     "continueSession": "Continue Session",
     "uploadMaterialTitle": "Upload Material",
-    "uploadMaterialHint": "Get started by uploading a PDF document to generate an adaptive learning experience.",
+    "uploadMaterialHint": "Get started by uploading a PDF document to generate a personalized learning experience.",
     "uploadDocument": "Upload Document",
     "yourLibrary": "Your Library",
     "libraryDescription": "All uploaded and processed study materials.",
@@ -500,32 +500,32 @@
   },
   "meta": {
     "dashboard": {
-      "title": "Adaptive Learning | Rinkuzu",
+      "title": "Personalized Learning | Rinkuzu",
       "description": "Personalized learning path based on your documents"
     },
     "upload": {
-      "title": "Upload Material | Adaptive Learning",
+      "title": "Upload Material | Personalized Learning",
       "description": "Upload PDFs to start your personalized learning journey"
     },
     "processing": {
-      "title": "Processing... | Adaptive Learning",
+      "title": "Processing... | Personalized Learning",
       "description": "AI analysis in progress"
     },
     "subject": {
-      "title": "Subject Path | Adaptive Learning",
+      "title": "Subject Path | Personalized Learning",
       "description": "Knowledge Graph and Mastery Matrix for your subject"
     },
     "exercise": {
-      "title": "Exercise | Adaptive Learning",
+      "title": "Exercise | Personalized Learning",
       "description": "Practice concepts tailored to your needs"
     },
     "result": {
-      "title": "Result | Adaptive Learning",
+      "title": "Result | Personalized Learning",
       "description": "Exercise feedback"
     }
   },
   "guest": {
-    "heroTitle": "AI Adaptive Learning for STEM subjects",
+    "heroTitle": "AI Personalized Learning for STEM subjects",
     "loginCta": "Login to start learning",
     "registerCta": "Create account",
     "faqTitle": "Frequently asked questions",
@@ -534,7 +534,7 @@
     "startNow": "Start now",
     "faq": {
       "howItWorks": {
-        "question": "How does adaptive learning work?",
+        "question": "How does personalized learning work?",
         "answer": "You upload a PDF, AI extracts concepts, builds prerequisite knowledge graph, then recommends Bloom-level exercises."
       },
       "forBeginners": {

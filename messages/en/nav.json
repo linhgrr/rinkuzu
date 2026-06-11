@@ -1,6 +1,6 @@
 {
   "home": "Home",
-  "adaptiveLearning": "Adaptive Learning",
+  "adaptiveLearning": "Personalized Learning",
   "explore": "Explore",
   "create": "Create Quiz",
   "createQuiz": "Create Quiz",
@@ -33,7 +33,7 @@
   "quizReports": "Quiz Reports",
   "closeMenu": "Close menu",
   "groupQuizBuilder": "Quiz Builder",
-  "groupAdaptiveLearning": "Adaptive Learning",
+  "groupAdaptiveLearning": "Personalized Learning",
   "groupAccount": "Account",
   "groupAdmin": "Admin",
   "subscription": "Subscription",

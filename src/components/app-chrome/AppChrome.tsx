@@ -497,44 +497,82 @@ function AppTopbar({
   return (
     <header className="fixed inset-x-0 top-0 z-50 flex h-[72px] border-b border-line bg-surface">
       <div
-        className={`flex h-full w-full items-center justify-between border-r border-line px-5 transition-[width] duration-300 ease-out lg:pl-8 ${
-          collapsed ? 'lg:w-[88px]' : 'lg:w-[280px]'
+        className={`relative flex h-full w-full items-center border-r border-line transition-[width] duration-300 ease-out ${
+          collapsed
+            ? 'justify-center px-3 lg:w-[88px]'
+            : 'justify-between px-5 lg:w-[280px] lg:pl-8'
         }`}
       >
-        <Link
-          href={ROUTES.DASHBOARD}
-          className="relative flex h-[40px] items-center overflow-hidden"
-          aria-label="RinKuzu"
-        >
-          <Image
-            src="/images/auth_logo.webp"
-            alt="RinKuzu"
-            width={130}
-            height={40}
-            className={`h-[40px] w-auto object-contain transition-[opacity,transform] duration-200 ease-out ${
-              collapsed ? 'pointer-events-none absolute opacity-0 -translate-x-2' : 'opacity-100'
-            }`}
-            priority
-          />
-          <Image
-            src="/images/rinku88-icon.png"
-            alt=""
-            width={48}
-            height={48}
-            className={`size-12 object-contain transition-[opacity,transform] duration-200 ease-out ${
-              collapsed ? 'opacity-100' : 'pointer-events-none absolute opacity-0 translate-x-2'
-            }`}
-            aria-hidden="true"
-          />
-        </Link>
-        <button
-          type="button"
-          onClick={onToggleSidebar}
-          className="flex size-10 items-center justify-center rounded-[10px] text-ink hover:bg-accent-soft/60"
-          aria-label="Toggle sidebar"
-        >
-          <Icon icon={ICON.sidebar} className="size-6" aria-hidden="true" />
-        </button>
+        {collapsed ? (
+          <div className="group relative size-[44px] shrink-0">
+            <Link
+              href={ROUTES.DASHBOARD}
+              className="relative flex size-[44px] items-center justify-center overflow-hidden rounded-[12px] transition-[opacity,transform] duration-200 ease-out group-hover:scale-90 group-hover:opacity-0"
+              aria-label="RinKuzu"
+            >
+              <Image
+                src="/images/auth_logo.webp"
+                alt="RinKuzu"
+                width={130}
+                height={40}
+                className="pointer-events-none absolute h-[40px] w-auto -translate-x-2 object-contain opacity-0 transition-[opacity,transform] duration-200 ease-out"
+                priority
+              />
+              <Image
+                src="/images/rinku88-icon.png"
+                alt=""
+                width={48}
+                height={48}
+                className="size-[44px] object-contain transition-[opacity,transform] duration-200 ease-out"
+                aria-hidden="true"
+              />
+            </Link>
+            <button
+              type="button"
+              onClick={onToggleSidebar}
+              className="pointer-events-none absolute inset-0 flex scale-90 items-center justify-center rounded-[12px] text-ink opacity-0 transition-[opacity,transform,background-color] duration-200 ease-out hover:bg-accent-soft/60 group-hover:pointer-events-auto group-hover:scale-100 group-hover:opacity-100"
+              aria-label="Open sidebar"
+              title="Open sidebar"
+              tabIndex={-1}
+            >
+              <Icon icon={ICON.sidebar} className="size-6" aria-hidden="true" />
+            </button>
+          </div>
+        ) : (
+          <>
+            <Link
+              href={ROUTES.DASHBOARD}
+              className="relative flex h-[40px] items-center overflow-hidden"
+              aria-label="RinKuzu"
+            >
+              <Image
+                src="/images/auth_logo.webp"
+                alt="RinKuzu"
+                width={130}
+                height={40}
+                className="h-[40px] w-auto object-contain transition-[opacity,transform] duration-200 ease-out opacity-100"
+                priority
+              />
+              <Image
+                src="/images/rinku88-icon.png"
+                alt=""
+                width={48}
+                height={48}
+                className="pointer-events-none absolute size-12 translate-x-2 object-contain opacity-0 transition-[opacity,transform] duration-200 ease-out"
+                aria-hidden="true"
+              />
+            </Link>
+            <button
+              type="button"
+              onClick={onToggleSidebar}
+              className="flex size-10 items-center justify-center rounded-[10px] text-ink hover:bg-accent-soft/60"
+              aria-label="Collapse sidebar"
+              title="Collapse sidebar"
+            >
+              <Icon icon={ICON.sidebar} className="size-6" aria-hidden="true" />
+            </button>
+          </>
+        )}
       </div>
 
       <div className="hidden flex-1 items-center justify-end gap-3 px-6 lg:flex">

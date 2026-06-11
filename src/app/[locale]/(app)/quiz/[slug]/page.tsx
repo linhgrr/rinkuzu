@@ -5,7 +5,6 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
-import Navigation from '@/components/Navigation';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle, Badge } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
@@ -354,17 +353,28 @@ function quizPlayerReducer(state: QuizPlayerState, action: QuizPlayerAction): Qu
   }
 }
 
+function QuizGateHeader({ title, subtitle }: { title: string; subtitle?: string }) {
+  return (
+    <CardHeader className="text-center">
+      <div className="inline-flex items-center justify-center p-3 bg-gradient-to-br from-green-500/10 to-accent/10 rounded-2xl mb-4 mx-auto w-fit">
+        <HiOutlineDocumentText className="size-6 text-accent" />
+      </div>
+      <CardTitle className="text-2xl text-ink mb-2">{title}</CardTitle>
+      {subtitle && <p className="text-ink-muted">{subtitle}</p>}
+    </CardHeader>
+  );
+}
+
 function QuizLoadingState({ t }: { t: (key: string) => string }) {
   return (
     <div className="min-h-screen">
-      <Navigation />
       <div className="flex items-center justify-center min-h-[70vh]">
         <div className="text-center">
-          <div className="inline-flex items-center justify-center p-4 bg-gradient-to-br from-green-500/10 to-brand-trust/10 rounded-2xl mb-6">
-            <div className="size-8 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
+          <div className="inline-flex items-center justify-center p-4 bg-gradient-to-br from-green-500/10 to-accent/10 rounded-2xl mb-6">
+            <div className="size-8 animate-spin rounded-full border-2 border-line border-t-accent" />
           </div>
-          <h2 className="text-xl font-semibold text-neutral-900 mb-2">{t('loadingQuiz')}</h2>
-          <p className="text-neutral-600">{t('preparingQuiz')}</p>
+          <h2 className="text-xl font-semibold text-ink mb-2">{t('loadingQuiz')}</h2>
+          <p className="text-ink-muted">{t('preparingQuiz')}</p>
         </div>
       </div>
     </div>
@@ -374,7 +384,6 @@ function QuizLoadingState({ t }: { t: (key: string) => string }) {
 function QuizErrorState({ error, t }: { error: string; t: (key: string) => string }) {
   return (
     <div className="min-h-screen">
-      <Navigation />
       <div className="flex items-center justify-center min-h-[70vh] px-4">
         <Card
           variant="glass"
@@ -387,7 +396,7 @@ function QuizErrorState({ error, t }: { error: string; t: (key: string) => strin
             <CardTitle className="text-red-600 text-xl">{t('quizNotFound')}</CardTitle>
           </CardHeader>
           <CardContent className="text-center">
-            <p className="text-neutral-600 mb-6">{error}</p>
+            <p className="text-ink-muted mb-6">{error}</p>
             <Link href="/">
               <Button variant="gradient" className="w-full">
                 <HiOutlineArrowLeft className="size-4 mr-2" />
@@ -404,19 +413,12 @@ function QuizErrorState({ error, t }: { error: string; t: (key: string) => strin
 function QuizPremiumState({ onClose, t }: { onClose: () => void; t: (key: string) => string }) {
   return (
     <div className="min-h-screen">
-      <Navigation />
       <div className="flex items-center justify-center min-h-[70vh] px-4">
         <Card
           variant="glass"
           className="max-w-md w-full backdrop-blur-xl border-white/30 shadow-xl"
         >
-          <CardHeader className="text-center">
-            <div className="inline-flex items-center justify-center p-3 bg-gradient-to-br from-green-500/10 to-brand-trust/10 rounded-2xl mb-4 mx-auto w-fit">
-              <HiOutlineDocumentText className="size-6 text-brand-trust" />
-            </div>
-            <CardTitle className="text-2xl text-neutral-900 mb-2">{t('quizAccess')}</CardTitle>
-            <p className="text-neutral-600">{t('loadingQuizInfo')}</p>
-          </CardHeader>
+          <QuizGateHeader title={t('quizAccess')} subtitle={t('loadingQuizInfo')} />
         </Card>
       </div>
 
@@ -444,22 +446,15 @@ function QuizEmailGate({
 }) {
   return (
     <div className="min-h-screen">
-      <Navigation />
       <div className="flex items-center justify-center min-h-[80vh] px-4">
         <Card
           variant="glass"
           className="max-w-lg w-full backdrop-blur-xl border-white/30 shadow-xl animate-fadeInUp"
         >
-          <CardHeader className="text-center">
-            <div className="inline-flex items-center justify-center p-3 bg-gradient-to-br from-green-500/10 to-brand-trust/10 rounded-2xl mb-4 mx-auto w-fit">
-              <HiOutlineDocumentText className="size-6 text-brand-trust" />
-            </div>
-            <CardTitle className="text-2xl text-neutral-900 mb-2">{quiz.title}</CardTitle>
-            {quiz.description && <p className="text-neutral-600">{quiz.description}</p>}
-          </CardHeader>
+          <QuizGateHeader title={quiz.title} subtitle={quiz.description || undefined} />
           <CardContent>
             <div className="space-y-6">
-              <div className="flex justify-center gap-x-8 py-4 bg-neutral-50/50 rounded-xl">
+              <div className="flex justify-center gap-x-8 py-4 bg-surface-warm/50 rounded-xl">
                 <div className="text-center">
                   <Badge variant="purple" className="mb-1">
                     {quiz.questions.length} {t('questions')}
@@ -482,8 +477,8 @@ function QuizEmailGate({
               )}
 
               <Card variant="bordered" className="border-green-200 bg-green-50 p-4">
-                <div className="text-center text-brand-trust">
-                  <HiOutlineLightBulb className="size-6 mx-auto mb-2 text-brand-trust" />
+                <div className="text-center text-accent">
+                  <HiOutlineLightBulb className="size-6 mx-auto mb-2 text-accent" />
                   <p className="text-sm font-medium">
                     <Link href="/login" className="underline hover:text-green-700">
                       {t('login')}
@@ -504,7 +499,7 @@ function QuizEmailGate({
                   required
                   icon={<HiOutlineMail className="size-5" />}
                 />
-                <p className="mt-2 text-xs text-neutral-500">{t('weWillUseEmail')}</p>
+                <p className="mt-2 text-xs text-ink-muted">{t('weWillUseEmail')}</p>
               </div>
 
               <div className="space-y-3">

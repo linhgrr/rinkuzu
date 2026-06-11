@@ -512,26 +512,19 @@ function LearningCard({ item }: { item: LearningCardItem }) {
 
   return (
     <div className="group relative">
-      {/* Stacked ghost layers — fan out behind the card on hover */}
-      <div
+      {/* Second orange outline that slides down-right on hover, like a card layered behind */}
+      <span
         aria-hidden="true"
         className={cn(
-          'pointer-events-none absolute inset-0 -z-10 rounded-xl border opacity-0 transition-all duration-300 ease-out group-hover:translate-x-1.5 group-hover:translate-y-1.5 group-hover:opacity-60',
-          tone.card,
-        )}
-      />
-      <div
-        aria-hidden="true"
-        className={cn(
-          'pointer-events-none absolute inset-0 -z-20 rounded-xl border opacity-0 transition-all duration-300 ease-out group-hover:translate-x-3 group-hover:translate-y-3 group-hover:opacity-30',
-          tone.card,
+          'pointer-events-none absolute inset-0 rounded-2xl border-2 border-accent opacity-0 transition-all duration-200 ease-out',
+          'group-hover:translate-x-1.5 group-hover:translate-y-1.5 group-hover:opacity-100',
         )}
       />
 
       <Link
         href={item.href}
         className={cn(
-          'relative z-10 flex min-h-[181px] flex-col gap-6 rounded-xl border p-4 transition-all duration-300 ease-out group-hover:-translate-y-1 group-hover:shadow-lg',
+          'relative flex min-h-[181px] flex-col gap-6 rounded-2xl border p-4 transition-transform duration-200 ease-out group-hover:-translate-y-0.5',
           tone.card,
           item.raised && 'shadow-accent',
         )}

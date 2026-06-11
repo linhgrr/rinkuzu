@@ -110,20 +110,20 @@ const QuizCard = memo(function QuizCard({ quiz, href }: QuizCardProps) {
             <Badge variant={CategoryBadgeVariant(quiz.category?.color)}>
               {quiz.category?.name || 'General'}
             </Badge>
-            <span className="text-xs text-neutral-400">{formatDisplayDate(quiz.createdAt)}</span>
+            <span className="text-xs text-ink-muted">{formatDisplayDate(quiz.createdAt)}</span>
           </div>
-          <CardTitle className="line-clamp-2 transition-colors group-hover:text-brand-trust">
+          <CardTitle className="line-clamp-2 transition-colors group-hover:text-accent">
             {quiz.title}
           </CardTitle>
           <CardDescription className="line-clamp-2">{quiz.description}</CardDescription>
         </CardHeader>
         <CardContent className="mt-auto pt-0">
-          <div className="mt-2 flex items-center justify-between border-t pt-4 text-sm text-neutral-500">
+          <div className="mt-2 flex items-center justify-between border-t pt-4 text-sm text-ink-muted">
             <span className="flex items-center gap-1">
               <HiOutlineQuestionMarkCircle className="size-4" /> {questionCount}{' '}
               {tQuiz('questions')}
             </span>
-            <span className="flex items-center gap-1 font-medium text-brand-trust group-hover:underline">
+            <span className="flex items-center gap-1 font-medium text-accent group-hover:underline">
               {tQuiz('takeQuiz')} <HiOutlineArrowRight className="size-4" />
             </span>
           </div>
@@ -140,10 +140,10 @@ const LoadingSkeleton = memo(function LoadingSkeleton() {
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {skeletonKeys.map((skeletonKey) => (
         <Card key={skeletonKey} className="animate-pulse">
-          <div className="h-48 bg-neutral-200 rounded-t-xl"></div>
+          <div className="h-48 bg-surface-warm rounded-t-xl"></div>
           <CardContent className="p-4 space-y-3">
-            <div className="h-6 bg-neutral-200 rounded w-3/4"></div>
-            <div className="h-4 bg-neutral-200 rounded w-1/2"></div>
+            <div className="h-6 bg-surface-warm rounded w-3/4"></div>
+            <div className="h-4 bg-surface-warm rounded w-1/2"></div>
           </CardContent>
         </Card>
       ))}
@@ -156,9 +156,9 @@ const EmptyState = memo(function EmptyState({ onClear }: { onClear: () => void }
 
   return (
     <div className="text-center py-20">
-      <HiOutlineSearch className="size-16 text-neutral-300 mx-auto mb-4" />
-      <h3 className="text-xl font-semibold text-neutral-900">{t('noQuizzes')}</h3>
-      <p className="text-neutral-500 mt-2">{t('tryAdjusting')}</p>
+      <HiOutlineSearch className="size-16 text-ink-muted mx-auto mb-4" />
+      <h3 className="text-xl font-semibold text-ink">{t('noQuizzes')}</h3>
+      <p className="text-ink-muted mt-2">{t('tryAdjusting')}</p>
       <Button variant="ghost" className="mt-4" onClick={onClear}>
         {t('clearFilters')}
       </Button>
@@ -256,7 +256,7 @@ function ExploreContent() {
   );
 
   return (
-    <div className="min-h-screen bg-neutral-50 pb-24 md:pb-8">
+    <div className="min-h-screen bg-surface-page pb-24 md:pb-8">
       <main className="py-6 md:py-8 px-4 sm:px-6 lg:px-8">
         <div className="max-w-6xl mx-auto">
           {/* Search */}
@@ -286,7 +286,7 @@ function ExploreContent() {
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className="h-auto rounded-full border border-neutral-200 px-3 py-1 text-xs font-medium hover:bg-neutral-200"
+                  className="h-auto rounded-full border border-line px-3 py-1 text-xs font-medium hover:bg-surface-warm"
                   onClick={handleClearCategory}
                   aria-label={t('clearCategoryFilter')}
                 >
@@ -330,10 +330,10 @@ function ExploreFallback() {
   const t = useTranslations('common');
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-neutral-50">
+    <div className="min-h-screen flex items-center justify-center bg-surface-page">
       <div className="text-center animate-pulse">
-        <div className="size-12 bg-neutral-200 rounded-xl mx-auto mb-4" />
-        <p className="text-[var(--text-muted)]">{t('loading')}</p>
+        <div className="size-12 bg-surface-warm rounded-xl mx-auto mb-4" />
+        <p className="text-ink-muted">{t('loading')}</p>
       </div>
     </div>
   );

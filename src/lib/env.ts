@@ -25,13 +25,6 @@ const envSchema = z
     ADAPTIVE_PROXY_TIMEOUT_MS: z.coerce.number().int().positive(),
     INTERNAL_SERVICE_TOKEN: z.string().min(1, 'INTERNAL_SERVICE_TOKEN is required'),
 
-    // Feature flag: route /api/draft/* to the BE FastAPI service instead of
-    // the legacy Mongoose DraftQuiz model. See decision 0014 / story US-507.
-    DRAFT_USE_BE_PROXY: z
-      .enum(['true', 'false'])
-      .default('false')
-      .transform((v) => v === 'true'),
-
     OBJECT_STORAGE_ENDPOINT_EXTERNAL: z
       .string()
       .url('OBJECT_STORAGE_ENDPOINT_EXTERNAL must be a valid URL'),

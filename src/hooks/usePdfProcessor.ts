@@ -1,8 +1,8 @@
 // /src/hooks/usePdfProcessor.ts
 //
-// Post-US-507: BE owns Mode A drafts and runs extraction in a single
-// background task. This hook polls /api/draft/{id} until the draft reaches
-// a terminal status (`completed` or `error`). The legacy chunk-loop is gone.
+// The FastAPI service owns quiz drafts and runs OCR + a single LLM extraction
+// call in a background task. This hook polls /api/quiz-drafts/{id} (a thin Next
+// proxy to FastAPI) until the draft reaches a terminal status.
 //
 // Public surface (`startProcessing`, `stopProcessing`, `resumeProcessing`)
 // is preserved so existing consumers (DraftSyncProvider, create page,
@@ -10,26 +10,9 @@
 
 import { useCallback, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
-import { fetchApiData } from '@/lib/api/client';
 import { extractUnknownErrorMessage } from '@/lib/api/error';
+import { getQuizDraft, mapDraftStatus, type QuizDraft } from '@/lib/quiz/draftApi';
 import { useDraftStore } from '@/store/useDraftStore';
-
-interface ChunkInfo {
-  index: number;
-  startPage: number;
-  endPage: number;
-  status: string;
-}
-
-interface DraftSnapshot {
-  status: 'uploading' | 'processing' | 'completed' | 'error' | 'expired';
-  questions?: Array<unknown>;
-  title?: string;
-  chunks?: {
-    processed?: number;
-    total?: number;
-  };
-}
 
 const POLL_INTERVAL_MS = 3000;
 const MAX_POLLS = 200; // ~10 minutes hard cap
@@ -50,12 +33,9 @@ export function usePdfProcessor() {
   }, []);
 
   const pollOnce = useCallback(
-    async (draftId: string, signal: AbortSignal): Promise<DraftSnapshot | null> => {
+    async (draftId: string, signal: AbortSignal): Promise<QuizDraft | null> => {
       try {
-        const data = await fetchApiData<{ draft: DraftSnapshot }>(`/api/draft/${draftId}`, {
-          signal,
-        });
-        return data.draft ?? null;
+        return await getQuizDraft(draftId, { signal });
       } catch (error) {
         if (error instanceof Error && error.name === 'AbortError') return null;
         // Treat 404 / network as "stop polling, mark error".
@@ -79,7 +59,7 @@ export function usePdfProcessor() {
     });
 
   const startProcessing = useCallback(
-    async (draftId: string, _chunks: ChunkInfo[], title: string) => {
+    async (draftId: string, title: string) => {
       if (processingRef.current[draftId]) {
         console.warn(`Draft ${draftId} is already being processed`);
         return;
@@ -93,7 +73,7 @@ export function usePdfProcessor() {
         for (let attempt = 0; attempt < MAX_POLLS; attempt++) {
           if (abortController.signal.aborted) return;
 
-          let snapshot: DraftSnapshot | null;
+          let snapshot: QuizDraft | null;
           try {
             snapshot = await pollOnce(draftId, abortController.signal);
           } catch (error) {
@@ -106,7 +86,9 @@ export function usePdfProcessor() {
 
           if (!snapshot) return;
 
-          if (snapshot.status === 'completed') {
+          const mapped = mapDraftStatus(snapshot.status);
+
+          if (mapped === 'completed') {
             const totalQuestions = snapshot.questions?.length ?? 0;
             completeDraft(draftId, totalQuestions);
             toast.success(`"${title}" đã sẵn sàng!`, {
@@ -119,11 +101,14 @@ export function usePdfProcessor() {
             return;
           }
 
-          if (snapshot.status === 'error' || snapshot.status === 'expired') {
+          // `submitted` (null) and the error statuses both stop polling; only
+          // the error set surfaces a failure toast.
+          if (mapped === 'error') {
             setDraftError(draftId, 'Trích xuất thất bại hoặc bản nháp đã hết hạn');
             toast.error(`Lỗi xử lý "${title}"`, { description: 'Vui lòng thử lại sau' });
             return;
           }
+          if (mapped === null) return;
 
           // Still in flight — surface flat progress.
           updateDraftProgress(draftId, {
@@ -165,11 +150,11 @@ export function usePdfProcessor() {
   const resumeProcessing = useCallback(
     async (draftId: string) => {
       try {
-        const { draft } = await fetchApiData<{ draft: DraftSnapshot }>(`/api/draft/${draftId}`);
-        if (draft.status === 'completed') return;
-        if (draft.status === 'error' || draft.status === 'expired') return;
+        const draft = await getQuizDraft(draftId);
+        // Only (re)start polling while the draft is still in flight.
+        if (mapDraftStatus(draft.status) !== 'processing') return;
 
-        await startProcessing(draftId, [], draft.title ?? '');
+        await startProcessing(draftId, draft.title ?? '');
       } catch (error) {
         console.error('Resume processing error:', error);
       }

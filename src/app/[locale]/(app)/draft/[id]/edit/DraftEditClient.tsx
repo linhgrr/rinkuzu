@@ -173,7 +173,7 @@ export default function DraftEditClient({ initialDraft, initialCategory, locale 
         quizId: string;
         slug: string;
         warnings: string[];
-      }>(`/api/draft/${initialDraft._id}/submit`, {
+      }>(`/api/quiz-drafts/${initialDraft._id}/submit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

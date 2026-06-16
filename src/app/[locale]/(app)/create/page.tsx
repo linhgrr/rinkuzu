@@ -8,14 +8,15 @@ import { useTranslations } from 'next-intl';
 import useSWR from 'swr';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
-import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import QuizMetaForm from '@/features/quiz/components/QuizMetaForm';
 import PDFViewer from '@/features/quiz/components/PDFViewer';
 import { useDraftStore } from '@/store/useDraftStore';
+import { usePendingQuizUploadStore } from '@/store/usePendingQuizUploadStore';
 import { toast } from 'sonner';
-import { fetchApiData } from '@/lib/api/client';
 import { extractUnknownErrorMessage } from '@/lib/api/error';
 import { getPdfPageCount, uploadPdfViaPresignedUrl } from '@/lib/pdf';
+import { createQuizDraft } from '@/lib/quiz/draftApi';
+import { MAX_QUIZ_PDF_BYTES, MAX_QUIZ_PDF_MB } from '@/lib/quiz/constants';
 import { openInNewTabSafely } from '@/lib/security/trusted-navigation';
 import { useCreateResponsiveRedirect } from '@/hooks/useCreateResponsiveRedirect';
 import {
@@ -26,7 +27,6 @@ import {
   HiOutlineEye,
   HiOutlineEyeOff,
   HiOutlineRefresh,
-  HiOutlineTrash,
   HiOutlineUpload,
   HiOutlineX,
 } from '@/components/icons';
@@ -44,18 +44,15 @@ interface CreateQuizState {
   aiPrompt: string;
   selectedCategory: Category | null;
   isPrivate: boolean;
-  pdfFiles: File[];
+  pdfFile: File | null;
   showPDFViewer: boolean;
   extracting: boolean;
   error: string;
-  showRemoveAllConfirm: boolean;
 }
 
 type CreateQuizAction =
   | { type: 'patch'; value: Partial<CreateQuizState> }
-  | { type: 'appendPdfFiles'; files: File[] }
-  | { type: 'removePdfFile'; index: number }
-  | { type: 'clearPdfFiles' };
+  | { type: 'setPdfFile'; file: File | null };
 
 interface PdfPreviewData {
   pdfUrl: string;
@@ -71,34 +68,18 @@ const initialCreateQuizState: CreateQuizState = {
   aiPrompt: '',
   selectedCategory: null,
   isPrivate: false,
-  pdfFiles: [],
+  pdfFile: null,
   showPDFViewer: false,
   extracting: false,
   error: '',
-  showRemoveAllConfirm: false,
 };
 
 function createQuizReducer(state: CreateQuizState, action: CreateQuizAction): CreateQuizState {
   switch (action.type) {
     case 'patch':
       return { ...state, ...action.value };
-    case 'appendPdfFiles':
-      return {
-        ...state,
-        pdfFiles: [...state.pdfFiles, ...action.files],
-      };
-    case 'removePdfFile':
-      return {
-        ...state,
-        pdfFiles: state.pdfFiles.filter((_, index) => index !== action.index),
-      };
-    case 'clearPdfFiles':
-      return {
-        ...state,
-        pdfFiles: [],
-        showPDFViewer: false,
-        showRemoveAllConfirm: false,
-      };
+    case 'setPdfFile':
+      return { ...state, pdfFile: action.file, showPDFViewer: false };
     default:
       return state;
   }
@@ -147,41 +128,20 @@ function PreviewPlaceholder({ message }: { message: string }) {
   );
 }
 
-function PDFViewerComponent({ files, onClose }: { files: File[]; onClose: () => void }) {
+function PDFViewerComponent({ file, onClose }: { file: File; onClose: () => void }) {
   const t = useTranslations('create');
   const tCommon = useTranslations('common');
   const previewKey = useMemo(
-    () =>
-      files.length === 0
-        ? null
-        : [
-            'create-pdf-preview',
-            ...files.map((file) => `${file.name}:${file.size}:${file.lastModified}`),
-          ],
-    [files],
+    () => ['create-pdf-preview', `${file.name}:${file.size}:${file.lastModified}`],
+    [file],
   );
   const { data, error, isLoading } = useSWR<PdfPreviewData>(
     previewKey,
-    async () => {
-      if (files.length === 1) {
-        return {
-          pdfUrl: URL.createObjectURL(files[0]),
-          fileInfo: `1 file: ${files[0].name} (${(files[0].size / 1024 / 1024).toFixed(2)} MB)`,
-          totalPages: await getPdfPageCount(files[0]),
-        };
-      }
-
-      const merged = await mergePdfFiles(files);
-      const mergedFile = new File([merged], 'merged.pdf', { type: 'application/pdf' });
-      const names = files.map((file) => file.name).join(', ');
-      const totalSize = files.reduce((sum, file) => sum + file.size, 0);
-
-      return {
-        pdfUrl: URL.createObjectURL(mergedFile),
-        totalPages: await getPdfPageCount(mergedFile),
-        fileInfo: `${files.length} files merged: ${names} (${(totalSize / 1024 / 1024).toFixed(2)} MB total)`,
-      };
-    },
+    async () => ({
+      pdfUrl: URL.createObjectURL(file),
+      fileInfo: `${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`,
+      totalPages: await getPdfPageCount(file),
+    }),
     {
       revalidateOnFocus: false,
     },
@@ -200,9 +160,7 @@ function PDFViewerComponent({ files, onClose }: { files: File[]; onClose: () => 
       <div className="w-full h-full flex items-center justify-center bg-neutral-50">
         <div className="text-center">
           <div className="size-8 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust mx-auto mb-2" />
-          <p className="text-sm text-neutral-600">
-            {files.length > 1 ? t('mergingPDFs', { count: files.length }) : t('loadingPDF')}
-          </p>
+          <p className="text-sm text-neutral-600">{t('loadingPDF')}</p>
           <p className="text-xs text-neutral-500 mt-1">{t('thisWillTakeMoment')}</p>
         </div>
       </div>
@@ -215,7 +173,7 @@ function PDFViewerComponent({ files, onClose }: { files: File[]; onClose: () => 
         <div className="text-center text-red-600 max-w-sm">
           <HiOutlineExclamationCircle className="size-8 mx-auto mb-2" />
           <p className="text-sm font-medium mb-1">{t('pdfLoadingError')}</p>
-          <p className="text-xs">{extractUnknownErrorMessage(error, 'Failed to load PDF files')}</p>
+          <p className="text-xs">{extractUnknownErrorMessage(error, 'Failed to load PDF file')}</p>
         </div>
       </div>
     );
@@ -291,12 +249,9 @@ interface UploadSectionProps {
   isDragActive: boolean;
   getInputProps: ReturnType<typeof useDropzone>['getInputProps'];
   getRootProps: ReturnType<typeof useDropzone>['getRootProps'];
-  onRemoveAll: () => void;
-  onRemoveFile: (index: number) => void;
-  pdfFiles: File[];
+  onRemoveFile: () => void;
+  pdfFile: File | null;
   t: Translator;
-  tCommon: Translator;
-  totalUploadedSizeMb: string;
 }
 
 function UploadSection({
@@ -304,112 +259,76 @@ function UploadSection({
   getInputProps,
   getRootProps,
   isDragActive,
-  onRemoveAll,
   onRemoveFile,
-  pdfFiles,
+  pdfFile,
   t,
-  tCommon,
-  totalUploadedSizeMb,
 }: UploadSectionProps) {
   return (
     <div>
       <label className="block text-sm font-semibold text-neutral-700 mb-3">
         {t('pdfDocument')}
       </label>
-      <div
-        {...getRootProps()}
-        className={`cursor-pointer rounded-2xl border-2 border-dashed p-8 text-center transition-[background-color,border-color,transform] duration-300 ${isDragActive ? 'scale-105 border-brand-action/60 bg-orange-50/50' : 'border-neutral-300 hover:border-brand-action/40 hover:bg-orange-50/30'}`}
-      >
-        <input {...getInputProps()} />
-        <div className="space-y-4">
-          <div
-            className={`inline-flex items-center justify-center p-4 rounded-2xl ${isDragActive ? 'bg-orange-500/10' : 'bg-neutral-100'} transition-colors duration-300`}
-          >
-            <HiOutlineUpload
-              className={`size-8 ${isDragActive ? 'text-brand-action' : 'text-neutral-400'}`}
-            />
-          </div>
-          <div className="text-center">
-            {extracting ? (
-              <div className="flex items-center justify-center gap-x-2">
-                <div className="size-5 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
-                <p className="text-sm font-semibold text-brand-trust">{t('processingFiles')}</p>
+      {pdfFile ? (
+        <Card variant="bordered" className="p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-x-3 min-w-0 flex-1">
+              <div className="p-2 bg-red-100 rounded-xl flex-shrink-0">
+                <HiOutlineDocumentText className="size-6 text-red-600" />
               </div>
-            ) : isDragActive ? (
-              <p className="text-lg font-semibold text-brand-action">{t('dropPDFHere')}</p>
-            ) : (
-              <div>
-                <p className="text-lg font-semibold text-neutral-700 mb-2">
-                  <span className="text-brand-action hover:text-brand-action-hover transition-colors">
-                    {t('clickToUpload')}
-                  </span>{' '}
-                  {t('dragAndDrop')}
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-neutral-900 truncate" title={pdfFile.name}>
+                  {pdfFile.name}
                 </p>
-                <p className="text-sm text-neutral-500">{t('multiplePDFAllowed')}</p>
-                <p className="text-xs text-neutral-400 mt-1">{t('supportedFormats')}</p>
+                <p className="text-xs text-neutral-500">
+                  {(pdfFile.size / 1024 / 1024).toFixed(2)} MB
+                </p>
               </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {pdfFiles.length > 0 && (
-        <div className="mt-4 space-y-2">
-          <div className="flex items-center justify-between mb-4">
-            <h4 className="text-sm font-semibold text-neutral-700">
-              {t('selectedFiles', { count: pdfFiles.length })}
-            </h4>
+            </div>
             <Button
               type="button"
               variant="ghost"
               size="sm"
-              onClick={onRemoveAll}
+              onClick={onRemoveFile}
+              disabled={extracting}
               className="px-3 text-red-600 hover:bg-red-50 hover:text-red-700"
             >
-              <HiOutlineTrash className="size-4 mr-1" />
-              {tCommon('removeAll')}
+              <HiOutlineX className="size-4" />
             </Button>
           </div>
-
-          <div className="space-y-3 max-h-60 overflow-y-auto">
-            {pdfFiles.map((file, index) => (
-              <Card
-                key={`${file.name}-${file.size}-${file.lastModified}`}
-                variant="bordered"
-                className="p-4 hover:shadow-md transition-shadow"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-x-3 min-w-0 flex-1">
-                    <div className="p-2 bg-red-100 rounded-xl flex-shrink-0">
-                      <HiOutlineDocumentText className="size-6 text-red-600" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p
-                        className="text-sm font-semibold text-neutral-900 truncate"
-                        title={file.name}
-                      >
-                        {file.name}
-                      </p>
-                      <p className="text-xs text-neutral-500">
-                        {(file.size / 1024 / 1024).toFixed(2)} MB
-                      </p>
-                    </div>
-                  </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onRemoveFile(index)}
-                    className="px-3 text-red-600 hover:bg-red-50 hover:text-red-700"
-                  >
-                    <HiOutlineX className="size-4" />
-                  </Button>
+        </Card>
+      ) : (
+        <div
+          {...getRootProps()}
+          className={`cursor-pointer rounded-2xl border-2 border-dashed p-8 text-center transition-[background-color,border-color,transform] duration-300 ${isDragActive ? 'scale-105 border-brand-action/60 bg-orange-50/50' : 'border-neutral-300 hover:border-brand-action/40 hover:bg-orange-50/30'}`}
+        >
+          <input {...getInputProps()} />
+          <div className="space-y-4">
+            <div
+              className={`inline-flex items-center justify-center p-4 rounded-2xl ${isDragActive ? 'bg-orange-500/10' : 'bg-neutral-100'} transition-colors duration-300`}
+            >
+              <HiOutlineUpload
+                className={`size-8 ${isDragActive ? 'text-brand-action' : 'text-neutral-400'}`}
+              />
+            </div>
+            <div className="text-center">
+              {isDragActive ? (
+                <p className="text-lg font-semibold text-brand-action">{t('dropPDFHere')}</p>
+              ) : (
+                <div>
+                  <p className="text-lg font-semibold text-neutral-700 mb-2">
+                    <span className="text-brand-action hover:text-brand-action-hover transition-colors">
+                      {t('clickToUpload')}
+                    </span>{' '}
+                    {t('dragAndDrop')}
+                  </p>
+                  <p className="text-sm text-neutral-500">
+                    {t('singlePDFMaxSize', { size: MAX_QUIZ_PDF_MB })}
+                  </p>
+                  <p className="text-xs text-neutral-400 mt-1">{t('supportedFormats')}</p>
                 </div>
-              </Card>
-            ))}
+              )}
+            </div>
           </div>
-
-          <p className="text-xs text-neutral-500">Total size: {totalUploadedSizeMb} MB</p>
         </div>
       )}
     </div>
@@ -426,19 +345,17 @@ interface FormCardProps {
   onCategoryChange: (value: Category | null) => void;
   onDescriptionChange: (value: string) => void;
   onPrivateChange: (value: boolean) => void;
-  onRemoveAll: () => void;
-  onRemoveFile: (index: number) => void;
+  onRemoveFile: () => void;
   onSubmit: (event: React.FormEvent) => void;
   onTitleChange: (value: string) => void;
   onTogglePreview: () => void;
-  pdfFiles: File[];
+  pdfFile: File | null;
   selectedCategory: Category | null;
   showPDFViewer: boolean;
   title: string;
   description: string;
   aiPrompt: string;
   isPrivate: boolean;
-  totalUploadedSizeMb: string;
   t: Translator;
   tCommon: Translator;
 }
@@ -456,18 +373,16 @@ function CreateQuizFormCard({
   onCategoryChange,
   onDescriptionChange,
   onPrivateChange,
-  onRemoveAll,
   onRemoveFile,
   onSubmit,
   onTitleChange,
   onTogglePreview,
-  pdfFiles,
+  pdfFile,
   selectedCategory,
   showPDFViewer,
   t,
   tCommon,
   title,
-  totalUploadedSizeMb,
 }: FormCardProps) {
   return (
     <>
@@ -519,16 +434,13 @@ function CreateQuizFormCard({
               getInputProps={getInputProps}
               getRootProps={getRootProps}
               isDragActive={isDragActive}
-              onRemoveAll={onRemoveAll}
               onRemoveFile={onRemoveFile}
-              pdfFiles={pdfFiles}
+              pdfFile={pdfFile}
               t={t}
-              tCommon={tCommon}
-              totalUploadedSizeMb={totalUploadedSizeMb}
             />
 
             <div className="flex flex-col gap-4 pt-4">
-              {pdfFiles.length > 0 && (
+              {pdfFile && (
                 <div className="flex justify-center">
                   <Button
                     type="button"
@@ -559,7 +471,7 @@ function CreateQuizFormCard({
                   variant="gradient"
                   size="lg"
                   loading={extracting}
-                  disabled={!title.trim() || !selectedCategory?._id || pdfFiles.length === 0}
+                  disabled={!title.trim() || !selectedCategory?._id || !pdfFile}
                   className="w-full sm:w-auto"
                 >
                   {extracting ? (
@@ -584,12 +496,12 @@ function CreateQuizFormCard({
 }
 
 function PreviewPanel({
-  files,
+  file,
   isOpen,
   onClose,
   placeholder,
 }: {
-  files: File[];
+  file: File | null;
   isOpen: boolean;
   onClose: () => void;
   placeholder: string;
@@ -603,12 +515,12 @@ function PreviewPanel({
       <div className="sticky top-24 h-[calc(100vh-6rem)]">
         <Card className="h-full flex flex-col shadow-2xl border-2 border-green-200 bg-white">
           <CardContent className="flex-1 flex flex-col p-4 min-h-0">
-            {files.length === 0 ? (
+            {!file ? (
               <PreviewPlaceholder message={placeholder} />
             ) : (
               <div className="flex-1 border border-neutral-200 rounded overflow-hidden">
                 <div className="w-full h-full">
-                  <PDFViewerComponent files={files} onClose={onClose} />
+                  <PDFViewerComponent file={file} onClose={onClose} />
                 </div>
               </div>
             )}
@@ -624,6 +536,7 @@ export default function CreateQuizPage() {
   const tCommon = useTranslations('common');
   const { push, replace } = useRouter();
   const { addDraft } = useDraftStore();
+  const consumePendingFile = usePendingQuizUploadStore((s) => s.consumeFile);
   const [state, dispatch] = useReducer(createQuizReducer, initialCreateQuizState);
   const isRedirecting = useCreateResponsiveRedirect('desktop');
 
@@ -633,22 +546,27 @@ export default function CreateQuizPage() {
     }
   }, [replace]);
 
+  // Pick up a PDF dropped on the dashboard, handed off via the pending store.
+  useEffect(() => {
+    const pending = consumePendingFile();
+    if (pending) {
+      dispatch({ type: 'setPdfFile', file: pending });
+    }
+  }, [consumePendingFile]);
+
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop: (acceptedFiles: File[]) => {
-      if (acceptedFiles.length > 0) {
-        dispatch({ type: 'appendPdfFiles', files: acceptedFiles });
+      const file = acceptedFiles[0];
+      if (file) {
+        dispatch({ type: 'setPdfFile', file });
       }
     },
     accept: { 'application/pdf': ['.pdf'] },
-    maxFiles: 10,
-    maxSize: 50 * 1024 * 1024,
+    maxFiles: 1,
+    maxSize: MAX_QUIZ_PDF_BYTES,
+    multiple: false,
     disabled: state.extracting,
   });
-
-  const totalUploadedSizeMb = useMemo(() => {
-    const bytes = state.pdfFiles.reduce((sum, file) => sum + file.size, 0);
-    return (bytes / 1024 / 1024).toFixed(2);
-  }, [state.pdfFiles]);
 
   const handleBackgroundExtract = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -663,7 +581,7 @@ export default function CreateQuizPage() {
       return;
     }
 
-    if (state.pdfFiles.length === 0) {
+    if (!state.pdfFile) {
       dispatch({ type: 'patch', value: { error: t('uploadOnePDF') } });
       return;
     }
@@ -671,55 +589,35 @@ export default function CreateQuizPage() {
     dispatch({ type: 'patch', value: { extracting: true, error: '' } });
 
     try {
-      const uploadFile =
-        state.pdfFiles.length === 1
-          ? state.pdfFiles[0]
-          : new File([await mergePdfFiles(state.pdfFiles)], 'merged.pdf', {
-              type: 'application/pdf',
-            });
-
-      const detectedTotalPages = await getPdfPageCount(uploadFile);
+      const uploadFile = state.pdfFile;
       const { s3Key } = await uploadPdfViaPresignedUrl(uploadFile);
       const trimmedTitle = state.title.trim();
       const trimmedDescription = state.description.trim();
       const trimmedPrompt = state.aiPrompt.trim();
 
-      const data = await fetchApiData<{
-        draftId: string;
-        chunks: { total: number };
-        totalPages: number;
-        expiresAt: string;
-      }>('/api/draft/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: trimmedTitle,
-          s3Key,
-          fileName: uploadFile.name,
-          fileSize: uploadFile.size,
-          totalPages: detectedTotalPages,
-          categoryId: state.selectedCategory._id,
-          description: trimmedDescription || undefined,
-          prompt: trimmedPrompt || undefined,
-          isPrivate: state.isPrivate,
-        }),
+      const draft = await createQuizDraft({
+        title: trimmedTitle,
+        s3Key,
+        fileName: uploadFile.name,
+        fileSize: uploadFile.size,
+        categoryId: state.selectedCategory._id,
+        description: trimmedDescription || undefined,
+        prompt: trimmedPrompt || undefined,
       });
 
       addDraft({
-        id: data.draftId,
+        id: draft.draft_id,
         title: trimmedTitle,
         status: 'processing',
-        chunksTotal: data.chunks.total,
+        chunksTotal: 1,
         chunksProcessed: 0,
         chunksError: 0,
         questionsCount: 0,
         createdAt: new Date().toISOString(),
-        expiresAt: data.expiresAt,
+        expiresAt: draft.expires_at,
       });
 
-      toast.success(t('processingStarted'), {
-        description: t('pagesChunks', { pages: data.totalPages, chunks: data.chunks.total }),
-      });
+      toast.success(t('processingStarted'));
 
       push('/');
     } catch (error: unknown) {
@@ -765,8 +663,7 @@ export default function CreateQuizPage() {
                 dispatch({ type: 'patch', value: { description: value } })
               }
               onPrivateChange={(value) => dispatch({ type: 'patch', value: { isPrivate: value } })}
-              onRemoveAll={() => dispatch({ type: 'patch', value: { showRemoveAllConfirm: true } })}
-              onRemoveFile={(index) => dispatch({ type: 'removePdfFile', index })}
+              onRemoveFile={() => dispatch({ type: 'setPdfFile', file: null })}
               onSubmit={(event) => {
                 void handleBackgroundExtract(event);
               }}
@@ -774,57 +671,23 @@ export default function CreateQuizPage() {
               onTogglePreview={() =>
                 dispatch({ type: 'patch', value: { showPDFViewer: !state.showPDFViewer } })
               }
-              pdfFiles={state.pdfFiles}
+              pdfFile={state.pdfFile}
               selectedCategory={state.selectedCategory}
               showPDFViewer={state.showPDFViewer}
               t={t}
               tCommon={tCommon}
               title={state.title}
-              totalUploadedSizeMb={totalUploadedSizeMb}
             />
           </div>
 
           <PreviewPanel
-            files={state.pdfFiles}
+            file={state.pdfFile}
             isOpen={state.showPDFViewer}
             onClose={() => dispatch({ type: 'patch', value: { showPDFViewer: false } })}
             placeholder={t('uploadPDFToPreview')}
           />
         </div>
-
-        <ConfirmModal
-          isOpen={state.showRemoveAllConfirm}
-          title={t('confirmRemoveAllTitle')}
-          message={t('confirmRemoveAllMessage', { count: state.pdfFiles.length })}
-          confirmText={tCommon('removeAll')}
-          cancelText={tCommon('cancel')}
-          confirmVariant="destructive"
-          onConfirm={() => dispatch({ type: 'clearPdfFiles' })}
-          onCancel={() => dispatch({ type: 'patch', value: { showRemoveAllConfirm: false } })}
-        />
       </main>
     </div>
   );
-}
-
-async function mergePdfFiles(files: File[]): Promise<Blob> {
-  const pdfDocumentPromise = import('pdf-lib');
-  const arrayBufferPromise = Promise.all(files.map((file) => file.arrayBuffer()));
-  const [{ PDFDocument }, arrayBuffers] = await Promise.all([
-    pdfDocumentPromise,
-    arrayBufferPromise,
-  ]);
-  const [mergedPdf, pdfs] = await Promise.all([
-    PDFDocument.create(),
-    Promise.all(arrayBuffers.map((arrayBuffer) => PDFDocument.load(arrayBuffer))),
-  ]);
-  const copyOperations = pdfs.map((pdf) => mergedPdf.copyPages(pdf, pdf.getPageIndices()));
-  const pageGroups = await Promise.all(copyOperations);
-
-  pageGroups.forEach((pages) => {
-    pages.forEach((page) => mergedPdf.addPage(page));
-  });
-
-  const mergedPdfBytes = await mergedPdf.save();
-  return new Blob([mergedPdfBytes as BlobPart], { type: 'application/pdf' });
 }

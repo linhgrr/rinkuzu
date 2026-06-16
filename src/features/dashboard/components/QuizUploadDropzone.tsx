@@ -5,13 +5,15 @@ import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
 import { ROUTES } from '@/shared/constants';
+import { usePendingQuizUploadStore } from '@/store/usePendingQuizUploadStore';
+import { MAX_QUIZ_PDF_BYTES } from '@/lib/quiz/constants';
 
 const ASSET_BASE = '/images/home-redesign';
-const MAX_SIZE = 50 * 1024 * 1024;
 
 export function QuizUploadDropzone() {
   const router = useRouter();
   const t = useTranslations('dashboard.home');
+  const setPendingFile = usePendingQuizUploadStore((s) => s.setFile);
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragActive, setDragActive] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -22,11 +24,12 @@ export function QuizUploadDropzone() {
       setError(t('upload.errors.onlyPdf'));
       return;
     }
-    if (file.size > MAX_SIZE) {
+    if (file.size > MAX_QUIZ_PDF_BYTES) {
       setError(t('upload.errors.fileTooLarge'));
       return;
     }
     setError(null);
+    setPendingFile(file);
     router.push(ROUTES.CREATE_QUIZ);
   };
 

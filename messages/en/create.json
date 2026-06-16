@@ -17,9 +17,8 @@
   "dropPDFHere": "Drop PDF here",
   "clickToUpload": "Click to upload",
   "dragAndDrop": "or drag and drop",
-  "multiplePDFAllowed": "Multiple PDF files allowed",
-  "supportedFormats": "Supported formats: PDF (max 50MB per file)",
-  "selectedFiles": "{count} file(s) selected",
+  "singlePDFMaxSize": "A single PDF (max {size}MB)",
+  "supportedFormats": "Supported formats: PDF (max 5MB)",
   "hidePDFPreview": "Hide PDF Preview",
   "showPDFPreview": "Show PDF Preview",
   "createQuizBackground": "Create Quiz",
@@ -65,7 +64,6 @@
   "quizTitleRequiredError": "Quiz title is required",
   "oneQuestionRequired": "At least one question is required",
   "failedToExtract": "Failed to extract questions from PDF",
-  "mergingPDFs": "Merging {count} PDFs...",
   "loadingPDF": "Loading PDF...",
   "thisWillTakeMoment": "This might take a moment...",
   "pdfLoadingError": "PDF Loading Error",
@@ -74,11 +72,7 @@
   "openInNewTab": "Open in New Tab",
   "hidePreview": "Hide Preview",
   "processingStarted": "Processing started",
-  "pagesChunks": "{pages} pages, {chunks} chunks",
   "failedToStartProcessing": "Failed to start processing",
-  "confirmRemoveAllTitle": "Remove all files?",
-  "confirmRemoveAllMessage": "Are you sure you want to remove all {count} files? This action cannot be undone.",
   "confirmRemoveQuestionTitle": "Remove question?",
-  "confirmRemoveQuestionMessage": "Are you sure you want to remove question {number}?",
-  "removeAll": "Remove All"
+  "confirmRemoveQuestionMessage": "Are you sure you want to remove question {number}?"
 }

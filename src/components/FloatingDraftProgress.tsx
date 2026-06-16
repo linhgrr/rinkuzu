@@ -50,7 +50,7 @@ export function FloatingDraftProgress() {
 
     // Notify server to delete the draft
     try {
-      await fetchApiData<null>(`/api/draft/${id}`, { method: 'DELETE' });
+      await fetchApiData<null>(`/api/quiz-drafts/${id}`, { method: 'DELETE' });
     } catch (error) {
       console.error('Failed to delete draft on server:', error);
     }

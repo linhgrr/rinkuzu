@@ -17,9 +17,8 @@
   "dropPDFHere": "Thả PDF vào đây",
   "clickToUpload": "Nhấn để tải lên",
   "dragAndDrop": "hoặc kéo và thả",
-  "multiplePDFAllowed": "Cho phép nhiều tệp PDF",
-  "supportedFormats": "Định dạng hỗ trợ: PDF (tối đa 50MB mỗi tệp)",
-  "selectedFiles": "Đã chọn {count} tệp",
+  "singlePDFMaxSize": "Một tệp PDF (tối đa {size}MB)",
+  "supportedFormats": "Định dạng hỗ trợ: PDF (tối đa 5MB)",
   "hidePDFPreview": "Ẩn xem trước PDF",
   "showPDFPreview": "Hiện xem trước PDF",
   "createQuizBackground": "Tạo Quiz",
@@ -65,7 +64,6 @@
   "quizTitleRequiredError": "Tiêu đề quiz là bắt buộc",
   "oneQuestionRequired": "Cần ít nhất một câu hỏi",
   "failedToExtract": "Trích xuất câu hỏi từ PDF thất bại",
-  "mergingPDFs": "Đang gộp {count} tệp PDF...",
   "loadingPDF": "Đang tải PDF...",
   "thisWillTakeMoment": "Có thể mất một chút thời gian...",
   "pdfLoadingError": "Lỗi tải PDF",
@@ -74,11 +72,7 @@
   "openInNewTab": "Mở trong tab mới",
   "hidePreview": "Ẩn xem trước",
   "processingStarted": "Bắt đầu xử lý",
-  "pagesChunks": "{pages} trang, {chunks} phần",
   "failedToStartProcessing": "Không thể bắt đầu xử lý",
-  "confirmRemoveAllTitle": "Xóa tất cả tệp?",
-  "confirmRemoveAllMessage": "Bạn có chắc muốn xóa tất cả {count} tệp không? Hành động này không thể hoàn tác.",
   "confirmRemoveQuestionTitle": "Xóa câu hỏi?",
-  "confirmRemoveQuestionMessage": "Bạn có chắc muốn xóa câu hỏi số {number} không?",
-  "removeAll": "Xóa tất cả"
+  "confirmRemoveQuestionMessage": "Bạn có chắc muốn xóa câu hỏi số {number} không?"
 }

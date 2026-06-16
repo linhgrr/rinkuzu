@@ -78,10 +78,10 @@
     },
     "upload": {
       "cta": "Click or drag & drop it here to upload",
-      "hint": "PDF format, max to 50MB per file",
+      "hint": "PDF format, max 5MB",
       "errors": {
         "onlyPdf": "Only PDF files are supported",
-        "fileTooLarge": "File exceeds 50MB"
+        "fileTooLarge": "File exceeds 5MB"
       }
     },
     "learningProgress": {

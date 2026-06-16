@@ -6,13 +6,9 @@ import { useSession } from 'next-auth/react';
 import useSWR from 'swr';
 import { useDraftStore } from '@/store/useDraftStore';
 import { usePdfProcessor } from '@/hooks/usePdfProcessor';
-import { fetchApiData } from '@/lib/api/client';
+import { listQuizDrafts, mapDraftStatus } from '@/lib/quiz/draftApi';
 
 const SYNC_INTERVAL = 30000; // 30 seconds
-
-type DraftListResponse = {
-  drafts: Array<{ _id: string; status: string; expiresAt: string }>;
-};
 
 export function DraftSyncProvider({ children }: { children: React.ReactNode }) {
   const { data: session } = useSession();
@@ -25,20 +21,27 @@ export function DraftSyncProvider({ children }: { children: React.ReactNode }) {
 
   // Sync server draft state via SWR (dedup + cache + periodic revalidation),
   // replacing the manual fetch + setInterval polling.
-  const { data: draftList } = useSWR<DraftListResponse>(
-    session?.user ? '/api/draft/list' : null,
-    (url: string) => fetchApiData<DraftListResponse>(url),
+  const { data: draftList } = useSWR(
+    session?.user ? 'quiz-drafts-sync' : null,
+    () => listQuizDrafts(),
     {
       refreshInterval: SYNC_INTERVAL,
       revalidateOnFocus: false,
     },
   );
 
-  // Reconcile the local store whenever fresh server state arrives.
+  // Reconcile the local store whenever fresh server state arrives. The store's
+  // syncWithServer expects Mongo-style ids; map the FastAPI snake_case shape.
   useEffect(() => {
     if (!draftList) return;
     cleanupExpiredDrafts();
-    syncWithServer(draftList.drafts);
+    syncWithServer(
+      draftList.flatMap((draft) => {
+        const status = mapDraftStatus(draft.status);
+        if (!status) return [];
+        return [{ _id: draft.draft_id, status, expiresAt: draft.expires_at }];
+      }),
+    );
   }, [draftList, cleanupExpiredDrafts, syncWithServer]);
 
   // Periodic local cleanup of expired drafts, independent of network state.

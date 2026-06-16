@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useReducer } from 'react';
+import { useCallback, useEffect, useReducer } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -16,9 +16,11 @@ import { toast } from 'sonner';
 import { CategorySelector } from '@/features/categories/components/CategorySelector';
 import { Input, Textarea } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
-import { fetchApiData } from '@/lib/api/client';
 import { extractUnknownErrorMessage } from '@/lib/api/error';
-import { getPdfPageCount, uploadPdfViaPresignedUrl } from '@/lib/pdf';
+import { uploadPdfViaPresignedUrl } from '@/lib/pdf';
+import { createQuizDraft } from '@/lib/quiz/draftApi';
+import { MAX_QUIZ_PDF_BYTES } from '@/lib/quiz/constants';
+import { usePendingQuizUploadStore } from '@/store/usePendingQuizUploadStore';
 import { useCreateResponsiveRedirect } from '@/hooks/useCreateResponsiveRedirect';
 
 type CategoryLike = {
@@ -74,8 +76,17 @@ export default function MobileCreatePage() {
   const tCommon = useTranslations('common');
   const { push } = useRouter();
   const { addDraft } = useDraftStore();
+  const consumePendingFile = usePendingQuizUploadStore((s) => s.consumeFile);
   const [state, dispatch] = useReducer(mobileCreateReducer, initialState);
   const isRedirecting = useCreateResponsiveRedirect('mobile');
+
+  // Pick up a PDF dropped on the dashboard, if any.
+  useEffect(() => {
+    const pending = consumePendingFile();
+    if (pending) {
+      dispatch({ type: 'setFile', value: pending });
+    }
+  }, [consumePendingFile]);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles[0]) {
@@ -87,7 +98,7 @@ export default function MobileCreatePage() {
     onDrop,
     accept: { 'application/pdf': ['.pdf'] },
     maxFiles: 1,
-    maxSize: 50 * 1024 * 1024,
+    maxSize: MAX_QUIZ_PDF_BYTES,
     disabled: state.isUploading,
   });
 
@@ -98,48 +109,32 @@ export default function MobileCreatePage() {
 
     try {
       const { s3Key } = await uploadPdfViaPresignedUrl(state.file);
-      const detectedTotalPages = await getPdfPageCount(state.file);
 
-      // Create draft via API
-      const data = await fetchApiData<{
-        draftId: string;
-        chunks: { total: number };
-        totalPages: number;
-        expiresAt: string;
-      }>('/api/draft/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: state.title.trim(),
-          description: state.description.trim() || undefined,
-          category: state.selectedCategory?._id,
-          s3Key,
-          fileName: state.file.name,
-          fileSize: state.file.size,
-          totalPages: detectedTotalPages,
-          prompt: state.aiPrompt.trim() || undefined,
-        }),
+      const draft = await createQuizDraft({
+        title: state.title.trim(),
+        s3Key,
+        fileName: state.file.name,
+        fileSize: state.file.size,
+        categoryId: state.selectedCategory?._id,
+        description: state.description.trim() || undefined,
+        prompt: state.aiPrompt.trim() || undefined,
       });
 
-      // Add to store
       addDraft({
-        id: data.draftId,
+        id: draft.draft_id,
         title: state.title.trim(),
         status: 'processing',
-        chunksTotal: data.chunks.total,
+        chunksTotal: 1,
         chunksProcessed: 0,
         chunksError: 0,
         questionsCount: 0,
         createdAt: new Date().toISOString(),
-        expiresAt: data.expiresAt,
+        expiresAt: draft.expires_at,
       });
 
-      toast.success(t('processingStarted'), {
-        description: t('pagesChunks', { pages: data.totalPages, chunks: data.chunks.total }),
-      });
+      toast.success(t('processingStarted'));
 
-      // Navigate away first, then DraftSyncProvider will resume processing
-      // This prevents the abort that happens when this component unmounts
+      // Navigate away first, then DraftSyncProvider resumes polling.
       push('/dashboard');
     } catch (error: unknown) {
       toast.error(tCommon('error'), {

@@ -78,10 +78,10 @@
     },
     "upload": {
       "cta": "Nhấp hoặc kéo thả tệp vào đây để tải lên",
-      "hint": "Định dạng PDF, tối đa 50MB mỗi tệp",
+      "hint": "Định dạng PDF, tối đa 5MB",
       "errors": {
         "onlyPdf": "Chỉ hỗ trợ tệp PDF",
-        "fileTooLarge": "Tệp vượt quá 50MB"
+        "fileTooLarge": "Tệp vượt quá 5MB"
       }
     },
     "learningProgress": {

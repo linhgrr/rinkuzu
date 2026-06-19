@@ -70,7 +70,6 @@ interface LearningCardItem {
   tone: 'warm' | 'cool';
   isAi: boolean;
   timeLabel: string;
-  raised?: boolean;
 }
 
 const ASSET_BASE = '/images/home-redesign';
@@ -150,7 +149,7 @@ function buildAdaptiveLearningCards(
   locale: string,
   t: Awaited<ReturnType<typeof getTranslations>>,
 ): LearningCardItem[] {
-  return adaptiveSubjects.slice(0, CONTINUE_LEARNING_CARD_LIMIT).map((subject, index) => ({
+  return adaptiveSubjects.slice(0, CONTINUE_LEARNING_CARD_LIMIT).map((subject) => ({
     id: `adaptive-${subject.job_id}`,
     title: getAdaptiveSubjectTitle(subject),
     category: t('learningCard.aiLearning'),
@@ -159,7 +158,6 @@ function buildAdaptiveLearningCards(
     tone: 'warm' as const,
     isAi: true,
     timeLabel: formatLearningCardTime(subject.completed_at, locale, t),
-    raised: index === 2,
   }));
 }
 
@@ -499,11 +497,13 @@ const LEARNING_CARD_TONES = {
     card: 'border-accent-warm/30 bg-surface-warm',
     track: 'bg-progress-track',
     bar: 'bg-gradient-to-b from-primary to-primary-3',
+    hover: 'hover:shadow-accent',
   },
   cool: {
     card: 'border-line bg-surface-blue',
     track: 'bg-progress-blue-track',
     bar: 'bg-progress-blue',
+    hover: 'hover:shadow-[2px_2px_0_var(--progress-blue)]',
   },
 } as const;
 
@@ -514,9 +514,9 @@ function LearningCard({ item }: { item: LearningCardItem }) {
     <Link
       href={item.href}
       className={cn(
-        'flex min-h-[181px] flex-col gap-6 rounded-xl border p-4 transition-transform hover:-translate-y-0.5',
+        'flex min-h-[181px] flex-col gap-6 rounded-xl border p-4 transition-[transform,box-shadow] hover:-translate-y-0.5',
         tone.card,
-        item.raised && 'shadow-accent',
+        tone.hover,
       )}
     >
       <div className="flex items-center justify-between">

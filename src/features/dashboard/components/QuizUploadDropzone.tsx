@@ -3,6 +3,7 @@
 import { useRef, useState } from 'react';
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
+import { toast } from 'sonner';
 import { useRouter } from '@/i18n/navigation';
 import { ROUTES } from '@/shared/constants';
 import { usePendingQuizUploadStore } from '@/store/usePendingQuizUploadStore';
@@ -18,14 +19,19 @@ export function QuizUploadDropzone() {
   const [dragActive, setDragActive] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const showError = (message: string) => {
+    setError(message);
+    toast.error(message);
+  };
+
   const handleFile = (file: File | undefined) => {
     if (!file) return;
     if (file.type !== 'application/pdf') {
-      setError(t('upload.errors.onlyPdf'));
+      showError(t('upload.errors.onlyPdf'));
       return;
     }
     if (file.size > MAX_QUIZ_PDF_BYTES) {
-      setError(t('upload.errors.fileTooLarge'));
+      showError(t('upload.errors.fileTooLarge'));
       return;
     }
     setError(null);
@@ -65,7 +71,10 @@ export function QuizUploadDropzone() {
         type="file"
         accept="application/pdf"
         className="hidden"
-        onChange={(event) => handleFile(event.target.files?.[0])}
+        onChange={(event) => {
+          handleFile(event.target.files?.[0]);
+          event.currentTarget.value = '';
+        }}
       />
       <Image
         src={`${ASSET_BASE}/upload-icon.svg`}
@@ -77,7 +86,12 @@ export function QuizUploadDropzone() {
       <span className="font-home text-base font-semibold leading-[1.4] text-ink">
         {t('upload.cta')}
       </span>
-      <span className="font-home text-sm font-normal leading-[1.4] text-ink-muted">
+      <span
+        className={`font-home text-sm font-normal leading-[1.4] ${
+          error ? 'text-red-600' : 'text-ink-muted'
+        }`}
+        aria-live="polite"
+      >
         {error ?? t('upload.hint')}
       </span>
     </div>

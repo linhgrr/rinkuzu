@@ -30,6 +30,16 @@ export class QuizCrudService {
       throw new Error('Invalid or inactive category selected');
     }
 
+    if (isPrivate) {
+      const user = await this.userRepository.findById(userId);
+      const canCreatePrivateQuiz =
+        user?.role === 'admin' || (await createSubscriptionService().isUserPremium(userId));
+
+      if (!canCreatePrivateQuiz) {
+        throw new Error('Premium subscription required to create private quizzes');
+      }
+    }
+
     // Validate questions format
     for (let i = 0; i < questions.length; i++) {
       const question = questions[i];
@@ -109,7 +119,7 @@ export class QuizCrudService {
       author: userId,
       category,
       questions,
-      status: 'pending',
+      status: 'published',
       isPrivate: !!isPrivate,
       pdfUrl,
     });
@@ -217,6 +227,21 @@ export class QuizCrudService {
           error: 'Access denied',
           statusCode: 403,
         };
+      }
+
+      if (quizData.isPrivate && !quiz.isPrivate && !isAdmin) {
+        const user = await this.userRepository.findByEmail(userEmail);
+        const isPremium = user?._id
+          ? await createSubscriptionService().isUserPremium(String(user._id))
+          : false;
+
+        if (!isPremium) {
+          return {
+            success: false,
+            error: 'Premium subscription required to create private quizzes',
+            statusCode: 403,
+          };
+        }
       }
 
       const updatedQuiz = await this.quizRepository.update(id, quizData);

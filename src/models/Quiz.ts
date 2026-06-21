@@ -110,7 +110,7 @@ const QuizSchema = new Schema<IQuiz>(
     status: {
       type: String,
       enum: ['pending', 'published', 'rejected'],
-      default: 'pending',
+      default: 'published',
     },
     author: {
       type: Schema.Types.ObjectId,

@@ -19,17 +19,27 @@ export const GET = withOptionalAuth(async (request: NextRequest, { session, user
     const limit = parseInt(url.searchParams.get('limit') || '10');
     const mine = url.searchParams.get('mine');
     const compact = url.searchParams.get('compact') === 'true';
+    const visibility = url.searchParams.get('visibility');
+    const onlyMine = !isGuest && mine !== null && mine !== 'false';
+    const isAdmin = session?.user?.role === 'admin';
 
     const result = await quizService.getQuizzes({
-      status,
+      status: !isGuest && !onlyMine && !isAdmin ? 'published' : status,
       search,
       category,
       page,
       limit,
-      isPrivate: isGuest ? false : undefined,
+      isPrivate:
+        isGuest || (!onlyMine && !isAdmin)
+          ? false
+          : visibility === 'private'
+            ? true
+            : visibility === 'public'
+              ? false
+              : undefined,
       userRole: session?.user?.role,
       userId: userId ?? undefined,
-      onlyMine: !isGuest && mine !== null && mine !== 'false',
+      onlyMine,
       compact,
     });
 
@@ -58,7 +68,7 @@ export const POST = withAuth(async (request: NextRequest, { userId }) => {
     });
 
     return apiOk(quiz, 201, {
-      meta: { message: 'Quiz created successfully and sent for approval' },
+      meta: { message: 'Quiz created successfully' },
     });
   } catch (error: unknown) {
     logger.error({ error }, 'Create quiz error');
@@ -67,6 +77,7 @@ export const POST = withAuth(async (request: NextRequest, { userId }) => {
     if (
       message.includes('Title, category, and questions are required') ||
       message.includes('Invalid or inactive category selected') ||
+      message.includes('Premium subscription required to create private quizzes') ||
       message.includes('Question') ||
       message.includes('Type must be')
     ) {

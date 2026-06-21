@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
@@ -8,14 +8,14 @@ import { useRouter } from '@/i18n/navigation';
 import { ROUTES } from '@/shared/constants';
 import { usePendingQuizUploadStore } from '@/store/usePendingQuizUploadStore';
 import { MAX_QUIZ_PDF_BYTES } from '@/lib/quiz/constants';
+import { cn } from '@/lib/utils';
 
 const ASSET_BASE = '/images/home-redesign';
 
-export function QuizUploadDropzone() {
+export function QuizUploadDropzone({ className }: { className?: string }) {
   const router = useRouter();
   const t = useTranslations('dashboard.home');
   const setPendingFile = usePendingQuizUploadStore((s) => s.setFile);
-  const inputRef = useRef<HTMLInputElement>(null);
   const [dragActive, setDragActive] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -40,16 +40,7 @@ export function QuizUploadDropzone() {
   };
 
   return (
-    <div
-      role="button"
-      tabIndex={0}
-      onClick={() => inputRef.current?.click()}
-      onKeyDown={(event) => {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault();
-          inputRef.current?.click();
-        }
-      }}
+    <label
       onDragOver={(event) => {
         event.preventDefault();
         setDragActive(true);
@@ -60,17 +51,19 @@ export function QuizUploadDropzone() {
         setDragActive(false);
         handleFile(event.dataTransfer.files?.[0]);
       }}
-      className={`flex min-h-[180px] flex-1 cursor-pointer flex-col items-center justify-center gap-1.5 rounded-[10px] border border-dashed p-4 text-center transition-colors ${
+      className={cn(
+        'flex min-h-[180px] flex-1 cursor-pointer flex-col items-center justify-center gap-1.5 rounded-[10px] border border-dashed p-4 text-center transition-colors',
         dragActive
           ? 'border-accent bg-accent-soft/40'
-          : 'border-line-blue bg-surface-blue hover:border-accent hover:bg-accent-soft/30'
-      }`}
+          : 'border-line-blue bg-surface-blue hover:border-accent hover:bg-accent-soft/30',
+        className,
+      )}
     >
       <input
-        ref={inputRef}
         type="file"
         accept="application/pdf"
         className="hidden"
+        aria-label={t('upload.cta')}
         onChange={(event) => {
           handleFile(event.target.files?.[0]);
           event.currentTarget.value = '';
@@ -94,6 +87,6 @@ export function QuizUploadDropzone() {
       >
         {error ?? t('upload.hint')}
       </span>
-    </div>
+    </label>
   );
 }

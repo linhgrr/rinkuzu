@@ -7,19 +7,16 @@ type LocalePathInfo = {
 
 const EXERCISE_MODE_PREFIXES = ['/adaptive/exercise', '/adaptive/result'];
 
-const NO_FOOTER_PREFIXES = [
+const FOOTER_PATHS = [
   '/',
-  '/adaptive/exercise',
-  '/adaptive/result',
-  '/adaptive/processing',
-  '/quiz',
-  '/create',
-  '/edit',
-  '/admin',
-  '/login',
-  '/register',
-  '/history',
-  '/profile',
+  '/about',
+  '/pricing',
+  '/faq',
+  '/blog',
+  '/privacy',
+  '/terms',
+  '/cookies',
+  '/contact',
 ];
 
 function normalizePath(pathname: string): string {
@@ -72,7 +69,8 @@ export function isAdaptiveExerciseModePath(pathname: string): boolean {
 
 export function shouldHideGlobalFooter(pathname: string): boolean {
   const pathWithoutLocale = stripLocaleFromPath(pathname);
-  return NO_FOOTER_PREFIXES.some((prefix) => matchesPrefix(pathWithoutLocale, prefix));
+  const shouldShowFooter = FOOTER_PATHS.some((path) => matchesPrefix(pathWithoutLocale, path));
+  return !shouldShowFooter;
 }
 
 export type ProductScope = 'adaptive' | 'quiz' | 'hub';

@@ -327,14 +327,20 @@ function HomeHero({
   ctaLabel: string;
 }) {
   return (
-    <section className="relative min-h-[280px] overflow-hidden rounded-[20px] border border-accent bg-hero px-5 py-6 sm:min-h-[295px] sm:px-6 sm:py-7">
-      <Image
-        src="/images/personal-learning-grid.png"
-        alt=""
-        fill
-        sizes="(min-width: 1280px) 900px, 100vw"
-        className="pointer-events-none absolute inset-0 size-full object-cover opacity-30"
-      />
+    <section className="relative min-h-[280px] rounded-[20px] border border-accent bg-hero px-5 py-6 sm:min-h-[295px] sm:px-6 sm:py-7">
+      <div
+        className="pointer-events-none absolute inset-0 overflow-hidden rounded-[inherit] opacity-30"
+        aria-hidden="true"
+      >
+        <div
+          className="size-full"
+          style={{
+            backgroundImage:
+              'linear-gradient(to right, rgba(68, 31, 5, 0.18) 1px, transparent 1px), linear-gradient(to bottom, rgba(68, 31, 5, 0.18) 1px, transparent 1px)',
+            backgroundSize: '20px 20px',
+          }}
+        />
+      </div>
       <HeroArtwork />
       <div className="relative z-10 flex max-w-[505px] flex-col gap-4 text-ink sm:gap-5">
         <h1 className="font-home text-[28px] font-bold leading-[1.25] tracking-normal sm:text-[32px] min-[1684px]:text-[36px]">

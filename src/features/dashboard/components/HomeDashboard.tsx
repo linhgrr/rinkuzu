@@ -249,7 +249,10 @@ function buildWeekDays(weeklyActivity: HomeDashboardStats['weeklyActivity'], lab
 
 function HeroArtwork() {
   return (
-    <div className="pointer-events-none absolute inset-0 hidden md:block" aria-hidden="true">
+    <div
+      className="pointer-events-none absolute inset-0 hidden min-[1684px]:block"
+      aria-hidden="true"
+    >
       <div className="absolute left-[555px] top-[81px] h-[214px] w-[230px] overflow-hidden">
         <Image
           src={`${ASSET_BASE}/hero-flower.png`}
@@ -324,7 +327,7 @@ function HomeHero({
   ctaLabel: string;
 }) {
   return (
-    <section className="relative min-h-[295px] overflow-hidden rounded-[20px] border border-accent bg-hero px-6 py-7">
+    <section className="relative min-h-[280px] overflow-hidden rounded-[20px] border border-accent bg-hero px-5 py-6 sm:min-h-[295px] sm:px-6 sm:py-7">
       <Image
         src="/images/personal-learning-grid.png"
         alt=""
@@ -333,13 +336,15 @@ function HomeHero({
         className="pointer-events-none absolute inset-0 size-full object-cover opacity-30"
       />
       <HeroArtwork />
-      <div className="relative z-10 flex max-w-[505px] flex-col gap-5 text-ink">
-        <h1 className="font-home text-[36px] font-bold leading-[1.25] tracking-normal">{title}</h1>
+      <div className="relative z-10 flex max-w-[505px] flex-col gap-4 text-ink sm:gap-5">
+        <h1 className="font-home text-[28px] font-bold leading-[1.25] tracking-normal sm:text-[32px] min-[1684px]:text-[36px]">
+          {title}
+        </h1>
         <p className="font-home text-base font-normal leading-[1.4]">{description}</p>
       </div>
       <Link
         href="/adaptive"
-        className="relative z-10 mt-9 inline-flex rounded-full bg-accent px-5 py-3 font-home text-lg font-semibold leading-[1.4] text-accent-text hover:bg-accent-hover"
+        className="relative z-10 mt-7 inline-flex rounded-full bg-accent px-5 py-3 font-home text-base font-semibold leading-[1.4] text-accent-text hover:bg-accent-hover sm:mt-9 sm:text-lg"
       >
         {ctaLabel}
       </Link>
@@ -349,7 +354,7 @@ function HomeHero({
 
 function QuizBuilderCard({ title, subtitle }: { title: string; subtitle: string }) {
   return (
-    <SurfaceCard className="flex min-h-[295px] flex-col gap-6">
+    <SurfaceCard className="flex min-h-[280px] flex-col gap-6 p-4 sm:min-h-[295px] sm:p-5">
       <SectionHeading title={title} subtitle={subtitle} />
       <QuizUploadDropzone />
     </SurfaceCard>
@@ -436,11 +441,15 @@ function MetricItem({
   value: string;
 }) {
   return (
-    <div className="flex w-[100px] flex-col items-center gap-2.5 text-center">
+    <div className="flex min-w-0 flex-1 flex-col items-center gap-2.5 text-center sm:w-[100px] sm:flex-none">
       <ProgressIcon kind={icon} />
       <div className="flex w-full flex-col items-center gap-1">
-        <p className="font-home text-base font-normal leading-[1.4] text-ink-strong">{label}</p>
-        <p className="font-home text-[22px] font-semibold leading-[1.35] text-black">{value}</p>
+        <p className="font-home text-sm font-normal leading-[1.4] text-ink-strong sm:text-base">
+          {label}
+        </p>
+        <p className="font-home text-xl font-semibold leading-[1.35] text-black sm:text-[22px]">
+          {value}
+        </p>
       </div>
     </div>
   );
@@ -471,7 +480,7 @@ function LearningProgressCardBody({
   const studyHours = Math.max(20, Math.ceil((stats.totalReviewSessions ?? 0) * 0.4));
 
   return (
-    <SurfaceCard className="flex min-h-[357px] flex-col gap-7">
+    <SurfaceCard className="flex min-h-[357px] flex-col gap-6 p-4 sm:gap-7 sm:p-5">
       <SectionHeading
         title={title}
         subtitle={subtitle}
@@ -487,10 +496,10 @@ function LearningProgressCardBody({
         <MetricItem icon="chart" label={studyTimeLabel} value={`${studyHours}h`} />
       </div>
 
-      <div className="flex w-full items-center justify-between rounded-[10px] border border-accent-warm/30 bg-surface-warm p-5">
+      <div className="grid w-full grid-cols-7 items-center rounded-[10px] border border-accent-warm/30 bg-surface-warm px-2 py-4 sm:p-5">
         {days.map((day) => (
-          <div key={day.label} className="flex flex-col items-center gap-1">
-            <p className="font-home text-sm font-normal leading-[1.4] text-ink-strong">
+          <div key={day.label} className="flex min-w-0 flex-col items-center gap-1">
+            <p className="truncate font-home text-xs font-normal leading-[1.4] text-ink-strong sm:text-sm">
               {day.label}
             </p>
             {day.active ? (
@@ -583,14 +592,14 @@ function ContinueLearning({
   viewAllLabel: string;
 }) {
   return (
-    <SurfaceCard className="flex flex-col gap-6">
+    <SurfaceCard className="flex flex-col gap-6 p-4 sm:p-5">
       <SectionHeading
         title={title}
         subtitle={subtitle}
         href={viewAllHref}
         viewAllLabel={viewAllLabel}
       />
-      <div className="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2 min-[1180px]:grid-cols-4">
         {items.map((item) => (
           <LearningCard key={item.id} item={item} />
         ))}
@@ -637,9 +646,9 @@ export async function HomeDashboard({
   ];
 
   return (
-    <div className="px-4 pb-20 pt-4 font-home text-ink selection:bg-accent-soft">
+    <div className="px-4 pb-20 pt-5 font-home text-ink selection:bg-accent-soft sm:px-6 sm:pt-6 lg:px-8">
       <div className="mx-auto max-w-[1340px]">
-        <div className="mb-6 flex flex-col gap-1">
+        <div className="mb-5 flex flex-col gap-1 sm:mb-6">
           <h1 className="font-home text-2xl font-semibold leading-[1.4] text-ink">
             {t('welcomeBack', { name: userName })}
           </h1>
@@ -648,7 +657,7 @@ export async function HomeDashboard({
           </p>
         </div>
 
-        <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,900px)_416px]">
+        <div className="grid grid-cols-1 gap-6 min-[1684px]:grid-cols-[minmax(0,900px)_416px]">
           <div className="flex min-w-0 flex-col gap-6">
             <HomeHero
               title={t('hero.title')}
@@ -663,7 +672,7 @@ export async function HomeDashboard({
               viewAllLabel={t('viewAll')}
             />
           </div>
-          <div className="flex min-w-0 flex-col gap-6">
+          <div className="grid min-w-0 grid-cols-1 gap-6 md:grid-cols-2 min-[1684px]:flex min-[1684px]:flex-col">
             <QuizBuilderCard title={t('quizBuilder.title')} subtitle={t('quizBuilder.subtitle')} />
             <LearningProgressCardBody
               stats={stats}

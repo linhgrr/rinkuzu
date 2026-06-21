@@ -264,7 +264,13 @@ function HeroArtwork() {
           className="relative h-[58.977px] w-[135.648px] flex-none"
           style={{ transform: 'rotate(35.03deg) scaleX(-1)' }}
         >
-          <Image src={`${ASSET_BASE}/hero-pink-loop.svg`} alt="" fill className="max-w-none" />
+          <Image
+            src={`${ASSET_BASE}/hero-pink-loop.svg`}
+            alt=""
+            fill
+            sizes="136px"
+            className="max-w-none"
+          />
         </div>
       </div>
       <div className="absolute left-[765px] top-[123px] flex h-[181px] w-[158px] items-center justify-center">
@@ -272,7 +278,13 @@ function HeroArtwork() {
           className="relative h-[151.794px] w-[103.985px] flex-none"
           style={{ transform: 'rotate(-155.26deg)' }}
         >
-          <Image src={`${ASSET_BASE}/hero-blue-squiggle.svg`} alt="" fill className="max-w-none" />
+          <Image
+            src={`${ASSET_BASE}/hero-blue-squiggle.svg`}
+            alt=""
+            fill
+            sizes="104px"
+            className="max-w-none"
+          />
         </div>
       </div>
       <Image
@@ -312,7 +324,14 @@ function HomeHero({
   ctaLabel: string;
 }) {
   return (
-    <section className="relative min-h-[295px] rounded-[20px] border border-accent bg-hero px-6 py-7">
+    <section className="relative min-h-[295px] overflow-hidden rounded-[20px] border border-accent bg-hero px-6 py-7">
+      <Image
+        src="/images/personal-learning-grid.png"
+        alt=""
+        fill
+        sizes="(min-width: 1280px) 900px, 100vw"
+        className="pointer-events-none absolute inset-0 size-full object-cover opacity-30"
+      />
       <HeroArtwork />
       <div className="relative z-10 flex max-w-[505px] flex-col gap-5 text-ink">
         <h1 className="font-home text-[36px] font-bold leading-[1.25] tracking-normal">{title}</h1>
@@ -587,8 +606,7 @@ export async function HomeDashboard({
   adaptiveSubjects,
   userName,
 }: HomeDashboardProps) {
-  const locale = await getLocale();
-  const t = await getTranslations('dashboard.home');
+  const [locale, t] = await Promise.all([getLocale(), getTranslations('dashboard.home')]);
   const fallbackLearningCards: Array<Omit<LearningCardItem, 'href'>> = FALLBACK_CARD_SEEDS.map(
     ([key, progress], index) => ({
       id: `fallback-${index + 1}`,

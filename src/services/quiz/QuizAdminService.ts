@@ -1,21 +1,16 @@
 import { IQuizRepository, IQuiz } from '@/interfaces/repositories/IQuizRepository';
-import { ICategoryRepository } from '@/interfaces/repositories/ICategoryRepository';
 import { QuizListOptions } from '@/interfaces/services/IQuizService';
 import { ServiceResult } from '@/interfaces/services/types';
 import { PaginationMeta } from '@/types';
 import type { IQuestion } from '@/models/Quiz';
 import type { FilterQuery } from 'mongoose';
-import { logger } from '@/lib/logger';
 
 function escapeRegexLiteral(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 export class QuizAdminService {
-  constructor(
-    private quizRepository: IQuizRepository,
-    private categoryRepository: ICategoryRepository,
-  ) {}
+  constructor(private quizRepository: IQuizRepository) {}
 
   async getQuizzes(options: QuizListOptions): Promise<{
     quizzes: IQuiz[];
@@ -65,50 +60,6 @@ export class QuizAdminService {
       populate: ['author', 'category'],
       compact,
     });
-  }
-
-  async approveQuiz(id: string): Promise<ServiceResult<IQuiz>> {
-    try {
-      const quiz = await this.quizRepository.updateStatus(id, 'published');
-
-      if (!quiz) {
-        return { success: false, error: 'Quiz not found', statusCode: 404 };
-      }
-
-      return {
-        success: true,
-        data: quiz,
-      };
-    } catch (error) {
-      logger.error({ error }, 'Approve quiz error');
-      return {
-        success: false,
-        error: 'Failed to approve quiz',
-        statusCode: 500,
-      };
-    }
-  }
-
-  async rejectQuiz(id: string, reason?: string): Promise<ServiceResult<IQuiz>> {
-    try {
-      const quiz = await this.quizRepository.updateStatus(id, 'rejected', reason);
-
-      if (!quiz) {
-        return { success: false, error: 'Quiz not found', statusCode: 404 };
-      }
-
-      return {
-        success: true,
-        data: quiz,
-      };
-    } catch (error) {
-      logger.error({ error }, 'Reject quiz error');
-      return {
-        success: false,
-        error: 'Failed to reject quiz',
-        statusCode: 500,
-      };
-    }
   }
 
   async previewFromPdf(

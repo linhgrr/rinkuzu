@@ -3,6 +3,7 @@
 import { useEffect, useReducer, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
+import { useSession } from 'next-auth/react';
 import useSWR from 'swr';
 import { useDraftStore } from '@/store/useDraftStore';
 import { fetchApiData } from '@/lib/api/client';
@@ -116,6 +117,7 @@ export default function DraftEditClient({ initialDraft, initialCategory, locale 
   const _tCommon = useTranslations('common');
   const { push } = useRouter();
   const { removeDraft } = useDraftStore();
+  const { data: session } = useSession();
   const [state, dispatch] = useReducer(draftEditorReducer, {
     questions: initialDraft.questions || [],
     title: initialDraft.title || '',
@@ -125,6 +127,12 @@ export default function DraftEditClient({ initialDraft, initialCategory, locale 
     showPDFViewer: true,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { data: subscriptionStatus } = useSWR(
+    session?.user?.role === 'admin' ? null : '/api/subscription/status',
+    (url: string) => fetchApiData<{ isPremium: boolean }>(url),
+  );
+  const canCreatePrivateQuiz =
+    session?.user?.role === 'admin' || subscriptionStatus?.isPremium === true;
   const pdfUrl = initialDraft.pdfData?.pdfUrl || null;
   const { data: pdfDataUrl } = useSWR(
     pdfUrl ? ['draft-edit-pdf', pdfUrl] : null,
@@ -189,7 +197,7 @@ export default function DraftEditClient({ initialDraft, initialCategory, locale 
       // Remove from store
       removeDraft(initialDraft._id);
 
-      toast.success('Quiz đã được gửi để duyệt!');
+      toast.success('Quiz đã được xuất bản!');
       push(`/${locale}/quiz/${data.slug}`);
     } catch (error: unknown) {
       toast.error('Lỗi', { description: extractUnknownErrorMessage(error, 'Không thể gửi quiz') });
@@ -259,8 +267,12 @@ export default function DraftEditClient({ initialDraft, initialCategory, locale 
                 privateLabel: t('privateQuiz'),
                 privateDescription: t('privateQuizDescription'),
               }}
-              isPrivate={state.isPrivate}
-              onPrivateChange={(value) => dispatch({ type: 'setIsPrivate', value })}
+              isPrivate={canCreatePrivateQuiz ? state.isPrivate : undefined}
+              onPrivateChange={
+                canCreatePrivateQuiz
+                  ? (value) => dispatch({ type: 'setIsPrivate', value })
+                  : undefined
+              }
               disabled={isSubmitting}
             />
 

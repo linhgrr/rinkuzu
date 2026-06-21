@@ -5,6 +5,7 @@ import { useEffect, useMemo, useReducer } from 'react';
 import { useRouter } from 'next/navigation';
 import { useDropzone } from 'react-dropzone';
 import { useTranslations } from 'next-intl';
+import { useSession } from 'next-auth/react';
 import useSWR from 'swr';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -14,6 +15,7 @@ import { useDraftStore } from '@/store/useDraftStore';
 import { usePendingQuizUploadStore } from '@/store/usePendingQuizUploadStore';
 import { toast } from 'sonner';
 import { extractUnknownErrorMessage } from '@/lib/api/error';
+import { fetchApiData } from '@/lib/api/client';
 import { getPdfPageCount, uploadPdfViaPresignedUrl } from '@/lib/pdf';
 import { createQuizDraft } from '@/lib/quiz/draftApi';
 import { MAX_QUIZ_PDF_BYTES, MAX_QUIZ_PDF_MB } from '@/lib/quiz/constants';
@@ -336,6 +338,7 @@ function UploadSection({
 }
 
 interface FormCardProps {
+  canCreatePrivateQuiz: boolean;
   extracting: boolean;
   error: string;
   getInputProps: ReturnType<typeof useDropzone>['getInputProps'];
@@ -362,6 +365,7 @@ interface FormCardProps {
 
 function CreateQuizFormCard({
   aiPrompt,
+  canCreatePrivateQuiz,
   description,
   error,
   extracting,
@@ -421,8 +425,8 @@ function CreateQuizFormCard({
                 promptPlaceholder: t('aiPromptPlaceholder'),
                 promptHelper: t('aiPromptHelper'),
               }}
-              isPrivate={isPrivate}
-              onPrivateChange={onPrivateChange}
+              isPrivate={canCreatePrivateQuiz ? isPrivate : undefined}
+              onPrivateChange={canCreatePrivateQuiz ? onPrivateChange : undefined}
               privateCheckboxId="isPrivateUpload"
               aiPrompt={aiPrompt}
               onAiPromptChange={onAiPromptChange}
@@ -536,9 +540,16 @@ export default function CreateQuizPage() {
   const tCommon = useTranslations('common');
   const { push, replace } = useRouter();
   const { addDraft } = useDraftStore();
+  const { data: session } = useSession();
   const consumePendingFile = usePendingQuizUploadStore((s) => s.consumeFile);
   const [state, dispatch] = useReducer(createQuizReducer, initialCreateQuizState);
   const isRedirecting = useCreateResponsiveRedirect('desktop');
+  const { data: subscriptionStatus } = useSWR(
+    session?.user?.role === 'admin' ? null : '/api/subscription/status',
+    (url: string) => fetchApiData<{ isPremium: boolean }>(url),
+  );
+  const canCreatePrivateQuiz =
+    session?.user?.role === 'admin' || subscriptionStatus?.isPremium === true;
 
   useEffect(() => {
     if (typeof window !== 'undefined' && window.innerWidth < 768) {
@@ -648,6 +659,7 @@ export default function CreateQuizPage() {
           >
             <CreateQuizFormCard
               aiPrompt={state.aiPrompt}
+              canCreatePrivateQuiz={canCreatePrivateQuiz}
               description={state.description}
               error={state.error}
               extracting={state.extracting}

@@ -88,10 +88,6 @@ export interface IQuizService {
 
   deleteQuiz(id: string, userEmail: string, userRole?: string): Promise<ServiceResult<boolean>>;
 
-  approveQuiz(id: string): Promise<ServiceResult<IQuiz>>;
-
-  rejectQuiz(id: string, reason?: string): Promise<ServiceResult<IQuiz>>;
-
   submitQuizAttempt(
     slug: string,
     answers: (number | number[])[],

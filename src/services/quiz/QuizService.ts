@@ -37,7 +37,7 @@ export class QuizService implements IQuizService {
   ) {
     this.crudService = new QuizCrudService(quizRepository, categoryRepository, userRepository);
     this.playService = new QuizPlayService(quizRepository, userRepository, attemptRepository);
-    this.adminService = new QuizAdminService(quizRepository, categoryRepository);
+    this.adminService = new QuizAdminService(quizRepository);
     this.discussionService = new QuizDiscussionService(
       quizRepository,
       userRepository,
@@ -93,14 +93,6 @@ export class QuizService implements IQuizService {
     userRole?: string,
   ): Promise<ServiceResult<boolean>> {
     return this.crudService.deleteQuiz(id, userEmail, userRole);
-  }
-
-  async approveQuiz(id: string): Promise<ServiceResult<IQuiz>> {
-    return this.adminService.approveQuiz(id);
-  }
-
-  async rejectQuiz(id: string, reason?: string): Promise<ServiceResult<IQuiz>> {
-    return this.adminService.rejectQuiz(id, reason);
   }
 
   async previewFromPdf(

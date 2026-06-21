@@ -1,5 +1,5 @@
-// Hybrid submit: the published Quiz lives in the Next/Mongoose domain (slug,
-// admin approval), while the draft lifecycle is owned by FastAPI. So we create
+// Hybrid submit: the published Quiz lives in the Next/Mongoose domain, while
+// the draft lifecycle is owned by FastAPI. So we create
 // the Quiz here from the editor's questions, then tell FastAPI to mark the
 // draft submitted (which also cleans up the source PDF).
 import { NextRequest } from 'next/server';
@@ -104,6 +104,10 @@ export const POST = withAuth<{ id: string }>(
       });
     } catch (error) {
       logger.error({ error }, 'Submit draft error');
+      const message = error instanceof Error ? error.message : '';
+      if (message.includes('Premium subscription required to create private quizzes')) {
+        return apiErr('forbidden', message, 403);
+      }
       return apiErr('internal_error', 'Failed to submit draft', 500);
     }
   },

@@ -1,9 +1,8 @@
 'use client';
 
-import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useReducer } from 'react';
-import { signOut, useSession } from 'next-auth/react';
+import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
@@ -14,13 +13,10 @@ import { QuestionEditor } from '@/features/quiz/components/editor/QuestionEditor
 import type { Question } from '@/features/quiz/components/editor/QuestionEditor';
 import { QuizMetaFormEditor } from '@/features/quiz/components/editor/QuizMetaForm';
 import {
-  HiChevronDown,
   HiOutlineClipboardCopy,
   HiOutlineDocumentText,
   HiOutlineEyeOff,
   HiOutlineInformationCircle,
-  HiOutlineLogout,
-  HiOutlineMenu,
   HiOutlineSave,
   HiOutlineTrash,
 } from '@/components/icons';
@@ -40,7 +36,6 @@ type EditPageStatus = 'loading' | 'ready' | 'error';
 
 interface EditQuizState {
   status: EditPageStatus;
-  isMenuOpen: boolean;
   quiz: IQuiz | null;
   saving: boolean;
   deleting: boolean;
@@ -62,7 +57,6 @@ type EditQuizAction =
   | { type: 'startLoading' }
   | { type: 'loadSuccess'; quiz: IQuiz }
   | { type: 'loadError'; message: string }
-  | { type: 'toggleMenu' }
   | { type: 'togglePdfViewer' }
   | { type: 'setTitle'; value: string }
   | { type: 'setDescription'; value: string }
@@ -81,7 +75,6 @@ type EditQuizAction =
 
 const initialState: EditQuizState = {
   status: 'loading',
-  isMenuOpen: false,
   quiz: null,
   saving: false,
   deleting: false,
@@ -128,8 +121,6 @@ function editQuizReducer(state: EditQuizState, action: EditQuizAction): EditQuiz
     }
     case 'loadError':
       return { ...state, status: 'error', error: action.message };
-    case 'toggleMenu':
-      return { ...state, isMenuOpen: !state.isMenuOpen };
     case 'togglePdfViewer':
       return { ...state, showPDFViewer: !state.showPDFViewer };
     case 'setTitle':
@@ -275,111 +266,12 @@ function EditQuizMessageState({
         </CardHeader>
         <CardContent className="text-center">
           <p className="mb-4 text-neutral-600">{description}</p>
-          <Link href="/pending">
+          <Link href="/my-quizzes">
             <Button>{actionLabel}</Button>
           </Link>
         </CardContent>
       </Card>
     </div>
-  );
-}
-
-function EditQuizTopNav({
-  isMenuOpen,
-  sessionEmail,
-  onToggleMenu,
-}: {
-  isMenuOpen: boolean;
-  sessionEmail?: string | null;
-  onToggleMenu: () => void;
-}) {
-  return (
-    <nav className="sticky top-0 z-50 border-b border-neutral-100 bg-white/80 backdrop-blur-md">
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-        <div className="flex h-16 items-center justify-between">
-          <div className="flex items-center">
-            <Link href="/" className="group flex items-center">
-              <div className="flex h-10 items-center justify-center transition-transform group-hover:scale-105">
-                <Image
-                  src="/images/auth_logo.png"
-                  alt="RinKuzu Logo"
-                  width={96}
-                  height={40}
-                  className="h-10 w-auto object-contain"
-                />
-              </div>
-            </Link>
-          </div>
-
-          <div className="hidden items-center gap-x-8 md:flex">
-            <Link href="/" className="text-neutral-600 transition-colors hover:text-neutral-900">
-              All Quizzes
-            </Link>
-
-            <div className="relative">
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={onToggleMenu}
-                className="h-auto gap-2 px-0 text-neutral-600 hover:text-neutral-900"
-              >
-                <div className="flex size-8 items-center justify-center rounded-full bg-gradient-to-br from-brand-trust to-green-600">
-                  <span className="text-sm font-medium text-white">
-                    {sessionEmail?.charAt(0).toUpperCase()}
-                  </span>
-                </div>
-                <HiChevronDown
-                  className={`size-4 transition-transform ${isMenuOpen ? 'rotate-180' : ''}`}
-                />
-              </Button>
-
-              {isMenuOpen ? (
-                <div className="absolute right-0 mt-2 w-48 rounded-lg border border-neutral-100 bg-white py-1 shadow-lg">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    onClick={() => signOut()}
-                    className="h-10 w-full justify-start rounded-none px-4 text-sm text-neutral-700 hover:bg-neutral-50"
-                  >
-                    <HiOutlineLogout className="mr-2 inline-block" /> Sign Out
-                  </Button>
-                </div>
-              ) : null}
-            </div>
-          </div>
-
-          <div className="md:hidden">
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={onToggleMenu}
-              size="icon"
-              className="text-neutral-600 hover:text-neutral-900"
-            >
-              <HiOutlineMenu className="size-6" />
-            </Button>
-          </div>
-        </div>
-
-        {isMenuOpen ? (
-          <div className="border-t border-neutral-100 py-4 md:hidden">
-            <div className="space-y-2">
-              <Link href="/" className="block px-4 py-2 text-neutral-600 hover:text-neutral-900">
-                All Quizzes
-              </Link>
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => signOut()}
-                className="h-10 w-full justify-start px-4 text-neutral-600 hover:text-neutral-900"
-              >
-                Sign Out
-              </Button>
-            </div>
-          </div>
-        ) : null}
-      </div>
-    </nav>
   );
 }
 
@@ -491,7 +383,7 @@ function EditQuizActionBar({
   return (
     <div className="flex justify-between">
       <div className="flex gap-x-4">
-        <Link href="/pending">
+        <Link href="/my-quizzes">
           <Button type="button" variant="outline">
             Cancel
           </Button>
@@ -674,7 +566,7 @@ export default function EditQuizPage() {
         },
       });
       window.setTimeout(() => {
-        push('/pending');
+        push('/my-quizzes');
       }, 2000);
     } catch (error) {
       dispatch({
@@ -695,7 +587,7 @@ export default function EditQuizPage() {
       await fetchApiData<null>(`/api/quizzes/${encodedQuizId}`, {
         method: 'DELETE',
       });
-      push('/pending');
+      push('/my-quizzes');
     } catch (error) {
       dispatch({
         type: 'patch',
@@ -742,16 +634,10 @@ export default function EditQuizPage() {
     );
   }
 
-  const canEdit = state.quiz.status === 'pending' || state.quiz.status === 'rejected' || isAdmin;
+  const canEdit = isAuthor || isAdmin;
 
   return (
     <div className="min-h-screen bg-white">
-      <EditQuizTopNav
-        isMenuOpen={state.isMenuOpen}
-        sessionEmail={session.user?.email}
-        onToggleMenu={() => dispatch({ type: 'toggleMenu' })}
-      />
-
       <main className="max-w-none px-4 py-8 sm:px-6 lg:px-8">
         <div className="flex min-h-screen transition-[width] duration-300">
           <div

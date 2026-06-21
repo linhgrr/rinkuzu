@@ -18,7 +18,7 @@ type HeroProps = {
 function PersonalLearningArtwork() {
   return (
     <div
-      className="pointer-events-none absolute right-[-65px] top-[72px] hidden h-[303px] w-[455px] overflow-hidden min-[1280px]:block"
+      className="pointer-events-none absolute right-[-65px] top-[72px] hidden h-[303px] w-[455px] min-[1280px]:block"
       aria-hidden="true"
     >
       <div className="absolute bottom-[-5px] left-[7px] h-[336px] w-[400px] rotate-[-18.4deg]">
@@ -82,21 +82,24 @@ export const HeroSection = ({
 
   return (
     <section className="relative min-h-[340px] overflow-hidden rounded-2xl border border-accent bg-surface-warm px-4 py-4 sm:min-h-[320px] sm:px-5 sm:py-5 md:h-[308px] md:min-h-0 md:rounded-[20px] md:px-6">
-      <Image
-        src="/images/personal-learning-grid.png"
-        alt=""
-        fill
-        sizes="(min-width: 1280px) 900px, 100vw"
-        className="pointer-events-none absolute inset-0 size-full object-cover opacity-30"
-      />
+      <div
+        className="pointer-events-none absolute inset-0 overflow-hidden rounded-[inherit] opacity-30"
+        aria-hidden="true"
+      >
+        <div
+          className="size-full"
+          style={{
+            backgroundImage:
+              'linear-gradient(to right, rgba(68, 31, 5, 0.18) 1px, transparent 1px), linear-gradient(to bottom, rgba(68, 31, 5, 0.18) 1px, transparent 1px)',
+            backgroundSize: '20px 20px',
+          }}
+        />
+      </div>
       <PersonalLearningArtwork />
       <div className="relative z-10 flex min-h-[306px] w-full flex-col text-ink sm:min-h-[278px] md:h-full md:min-h-0 min-[1280px]:max-w-[55%]">
-        <div className="mb-3 flex items-start justify-between gap-3 min-[1280px]:block">
+        <div className="mb-3 flex items-start">
           <div className="flex size-9 shrink-0 items-center justify-center rounded-[6px] bg-accent-soft text-accent sm:size-10">
             <HiOutlineSparkles className="size-5 sm:size-6" aria-hidden="true" />
-          </div>
-          <div className="max-w-[52%] truncate rounded-full bg-accent-soft px-3 py-2 font-home text-xs text-ink sm:text-sm min-[1280px]:absolute min-[1280px]:right-[-285px] min-[1280px]:top-1 min-[1280px]:max-w-none min-[1280px]:px-4">
-            {t('heroBadge')}
           </div>
         </div>
         <h2 className="line-clamp-2 text-wrap-balance font-home text-2xl font-semibold leading-[1.25] sm:text-[28px] md:text-[30px]">

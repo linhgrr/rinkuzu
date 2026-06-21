@@ -4,7 +4,6 @@ import Providers from '@/app/providers';
 import { getScopedMessages } from '@/i18n/messages';
 import { APP_MESSAGE_NAMESPACES } from '@/i18n/namespaces';
 import BottomNav from '@/components/BottomNav';
-import { GlobalFooter } from '@/components/GlobalFooter';
 import { MainLayoutWrapper } from '@/components/MainLayoutWrapper';
 import { ClientOnlyAppAddons } from '@/components/ClientOnlyAppAddons';
 import { AppChrome } from '@/components/app-chrome/AppChrome';
@@ -27,10 +26,7 @@ export default async function AppLayout({
     <NextIntlClientProvider messages={messages}>
       <Providers session={session}>
         <AppChrome>
-          <MainLayoutWrapper>
-            {children}
-            <GlobalFooter />
-          </MainLayoutWrapper>
+          <MainLayoutWrapper>{children}</MainLayoutWrapper>
         </AppChrome>
         <BottomNav />
         <ClientOnlyAppAddons />

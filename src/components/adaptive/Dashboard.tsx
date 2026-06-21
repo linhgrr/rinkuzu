@@ -1,21 +1,18 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { Inter } from 'next/font/google';
+import { useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import {
   DashboardDeleteModal,
-  DashboardHeader,
-  DailyProgressCard,
-  FloatingUploadAction,
   HeroSection,
   LibrarySection,
+  RecentActivity,
+  UploadMaterialCard,
 } from './DashboardSections';
 import { useAdaptiveDashboard } from '@/features/adaptive/hooks/use-adaptive-dashboard';
 import { toDashboardSubject } from '@/features/adaptive/lib/dashboard-view-model';
 import type { PipelineJobHistoryItem, SessionHistoryItem } from '@/features/adaptive/types';
-
-const inter = Inter({ subsets: ['latin'] });
 
 interface DashboardProps {
   initialSubjects: PipelineJobHistoryItem[];
@@ -34,14 +31,12 @@ export default function AdaptiveLearningDashboard({
 }: DashboardProps) {
   const tAdaptive = useTranslations('adaptiveLearning');
   const tDashboard = useTranslations('adaptiveLearning.dashboard');
+  const searchParams = useSearchParams();
   const locale = tAdaptive('common.locale_date');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-
   const {
     apiOnline,
     busyJobId,
     cancel,
-    dailyGoalProgress,
     deletingJobId,
     error,
     filteredSubjects,
@@ -54,9 +49,8 @@ export default function AdaptiveLearningDashboard({
     loading,
     loadingJobId,
     retry,
-    searchQuery,
+    sessionHistory,
     setSearchQuery,
-    streakDays,
     upNextSubject,
   } = useAdaptiveDashboard({
     initialSubjects,
@@ -71,23 +65,32 @@ export default function AdaptiveLearningDashboard({
 
   const dashboardSubjects = filteredSubjects;
 
-  const upNextDashboardSubject = useMemo(
-    () => (upNextSubject ? toDashboardSubject(upNextSubject, locale, tDashboard) : null),
-    [locale, tDashboard, upNextSubject],
-  );
+  useEffect(() => {
+    setSearchQuery(searchParams.get('search') ?? '');
+  }, [searchParams, setSearchQuery]);
+
+  const upNextDashboardSubject = upNextSubject
+    ? toDashboardSubject(upNextSubject, locale, tDashboard)
+    : null;
 
   return (
-    <div className={`${inter.className} min-h-screen bg-neutral-50 text-neutral-900`}>
-      <main className="mx-auto w-full max-w-7xl p-8 md:p-12">
-        <DashboardHeader
-          apiOnline={apiOnline}
-          dailyGoalProgress={dailyGoalProgress}
-          error={error}
-          streakDays={streakDays}
-          t={tDashboard}
-        />
+    <div className="pb-16 font-home text-ink selection:bg-accent-soft sm:pb-20">
+      <div className="mb-5 flex flex-col gap-1 sm:mb-6">
+        <h1 className="font-home text-[22px] font-semibold leading-[1.35] sm:text-2xl sm:leading-[1.4]">
+          {tDashboard('pageTitle')}
+        </h1>
+        <p className="max-w-[65ch] font-home text-sm leading-[1.5] sm:text-base sm:leading-[1.4]">
+          {tDashboard('pageSubtitle')}
+        </p>
+        {apiOnline === false || error ? (
+          <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-700 ring-1 ring-amber-200">
+            {error ?? tDashboard('connectionLimited')}
+          </p>
+        ) : null}
+      </div>
 
-        <section className="mb-16 grid grid-cols-1 gap-8 lg:grid-cols-12">
+      <div className="grid grid-cols-1 gap-4 sm:gap-5 md:grid-cols-2 min-[1684px]:grid-cols-[minmax(0,900px)_416px] min-[1684px]:gap-6">
+        <div className="min-w-0 md:col-span-2 min-[1684px]:col-span-1 min-[1684px]:col-start-1 min-[1684px]:row-start-1">
           <HeroSection
             subject={upNextDashboardSubject}
             loading={loading}
@@ -96,29 +99,31 @@ export default function AdaptiveLearningDashboard({
             onOpenSubject={handleOpenSubject}
             t={tDashboard}
           />
-          <DailyProgressCard dailyGoalProgress={dailyGoalProgress} t={tDashboard} />
-        </section>
+        </div>
 
-        <LibrarySection
-          subjects={dashboardSubjects}
-          loading={loading}
-          loadingJobId={loadingJobId}
-          deletingJobId={deletingJobId}
-          searchQuery={searchQuery}
-          setSearchQuery={setSearchQuery}
-          onGoUpload={handleGoUpload}
-          onOpenSubject={handleOpenSubject}
-          onDelete={handleDeleteClick}
-          onRetry={retry}
-          onCancel={cancel}
-          busyJobId={busyJobId}
-          viewMode={viewMode}
-          onViewModeChange={setViewMode}
-          t={tDashboard}
-        />
-      </main>
+        <div className="min-w-0 md:col-start-1 md:row-start-2 min-[1684px]:col-start-2 min-[1684px]:row-start-1">
+          <UploadMaterialCard onGoUpload={handleGoUpload} t={tDashboard} />
+        </div>
 
-      <FloatingUploadAction onClick={handleGoUpload} t={tDashboard} />
+        <div className="min-w-0 md:col-span-2 md:row-start-3 min-[1684px]:col-span-1 min-[1684px]:col-start-1 min-[1684px]:row-start-2">
+          <LibrarySection
+            subjects={dashboardSubjects}
+            loading={loading}
+            loadingJobId={loadingJobId}
+            deletingJobId={deletingJobId}
+            onOpenSubject={handleOpenSubject}
+            onDelete={handleDeleteClick}
+            onRetry={retry}
+            onCancel={cancel}
+            busyJobId={busyJobId}
+            t={tDashboard}
+          />
+        </div>
+
+        <div className="min-w-0 md:col-start-2 md:row-start-2 min-[1684px]:col-start-2">
+          <RecentActivity sessions={sessionHistory} t={tDashboard} />
+        </div>
+      </div>
 
       <DashboardDeleteModal
         cancelText={tAdaptive('common.cancel')}

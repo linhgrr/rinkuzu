@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import Image from 'next/image';
 import { Icon } from '@iconify/react';
 import { useSession, signOut } from 'next-auth/react';
@@ -23,6 +23,7 @@ const ICON = {
   admin: 'material-symbols:shield-outline-rounded',
   user: 'solar:user-circle-linear',
   logout: 'solar:logout-2-linear',
+  search: 'iconoir:search',
 } as const;
 
 // Single source of truth: sub-item row height. The sliding active indicator
@@ -575,24 +576,50 @@ function AppTopbar({
         )}
       </div>
 
-      <div className="hidden flex-1 items-center justify-end gap-3 px-6 lg:flex">
-        <button
-          type="button"
-          className="flex h-11 w-12 items-center justify-center rounded-[10px] text-ink hover:bg-accent-soft/60"
-          aria-label="Notifications"
-        >
-          <Icon icon={ICON.bell} className="size-6" aria-hidden="true" />
-        </button>
+      <div className="hidden flex-1 lg:flex">
+        <div className="mx-auto flex w-full max-w-[1404px] items-center justify-between gap-6 px-8">
+          <form
+            className="w-full max-w-[486px]"
+            action={`/${currentLocale}/adaptive`}
+            method="get"
+            role="search"
+          >
+            <label className="relative block">
+              <span className="sr-only">{t('lessonSearch')}</span>
+              <Icon
+                icon={ICON.search}
+                className="pointer-events-none absolute left-5 top-1/2 size-6 -translate-y-1/2 text-ink"
+                aria-hidden="true"
+              />
+              <input
+                type="search"
+                name="search"
+                placeholder={t('lessonSearch')}
+                className="h-11 w-full rounded-[12px] border border-line bg-surface-warm pl-[52px] pr-4 font-home text-base text-ink outline-none placeholder:text-ink-muted focus:border-accent"
+              />
+            </label>
+          </form>
 
-        <LanguageDropdown currentLocale={currentLocale} onSelect={onSelectLocale} />
+          <div className="flex shrink-0 items-center gap-3">
+            <button
+              type="button"
+              className="flex h-11 w-12 items-center justify-center rounded-[10px] text-ink hover:bg-accent-soft/60"
+              aria-label="Notifications"
+            >
+              <Icon icon={ICON.bell} className="size-6" aria-hidden="true" />
+            </button>
 
-        <UserMenuDropdown
-          avatar={avatar}
-          fallbackInitial={fallbackInitial}
-          displayName={displayName}
-          email={email}
-          t={t}
-        />
+            <LanguageDropdown currentLocale={currentLocale} onSelect={onSelectLocale} />
+
+            <UserMenuDropdown
+              avatar={avatar}
+              fallbackInitial={fallbackInitial}
+              displayName={displayName}
+              email={email}
+              t={t}
+            />
+          </div>
+        </div>
       </div>
     </header>
   );
@@ -609,9 +636,8 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
 
   const userRole = (session?.user as { role?: string } | undefined)?.role;
 
-  const visibleNav = useMemo(
-    () => PRIMARY_NAV.filter((entry) => !entry.requiredRole || entry.requiredRole === userRole),
-    [userRole],
+  const visibleNav = PRIMARY_NAV.filter(
+    (entry) => !entry.requiredRole || entry.requiredRole === userRole,
   );
 
   const toggleGroup = (id: string) =>

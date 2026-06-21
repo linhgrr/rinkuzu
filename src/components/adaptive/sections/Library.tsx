@@ -1,328 +1,203 @@
 'use client';
 
-import Image from 'next/image';
-import { memo } from 'react';
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
-import {
-  HiOutlineBookOpen,
-  HiOutlineCloudUpload,
-  HiOutlineRefresh,
-  HiOutlineSearch,
-  HiOutlineTrash,
-  HiOutlineViewGrid,
-  HiOutlineViewList,
-  HiOutlineX,
-} from '@/components/icons';
-import { useRandomLibraryImages } from '@/features/adaptive/hooks/use-random-library-images';
+import { HiOutlineRefresh, HiOutlineTrash, HiOutlineX } from '@/components/icons';
+import { SectionHeading } from '@/components/ui/SectionHeading';
+import { SurfaceCard } from '@/components/ui/SurfaceCard';
+import { cn } from '@/lib/utils';
 import type { DashboardSubject } from '@/features/adaptive/lib/dashboard-view-model';
 import type { PipelineJobHistoryItem, TranslateFn } from '@/features/adaptive/types';
-import { SubjectLibraryCard } from './SubjectLibraryCard';
 
 type LibraryProps = {
   subjects: DashboardSubject[];
   loading: boolean;
   loadingJobId: string | null;
   deletingJobId: string | null;
-  searchQuery: string;
-  setSearchQuery: (value: string) => void;
-  onGoUpload: () => void;
   onOpenSubject: (jobId: string) => void;
   onDelete: (job: PipelineJobHistoryItem) => void;
   onRetry?: (jobId: string) => void;
   onCancel?: (jobId: string) => void;
   busyJobId?: string | null;
-  viewMode: 'grid' | 'list';
-  onViewModeChange: (mode: 'grid' | 'list') => void;
   t: TranslateFn;
 };
 
-type ListItemProps = {
-  subject: DashboardSubject;
-  loading: boolean;
-  deleting: boolean;
-  imageUrl?: string;
-  onOpenSubject: (jobId: string) => void;
-  onDelete: (job: PipelineJobHistoryItem) => void;
-  onRetry?: (jobId: string) => void;
-  onCancel?: (jobId: string) => void;
-  busy?: boolean;
-  t: TranslateFn;
-};
-
-/** Format etaSeconds into a compact human-readable string. */
-function formatEta(etaSeconds: number): string {
-  if (etaSeconds < 60) return `~${Math.round(etaSeconds)}s`;
-  const minutes = Math.round(etaSeconds / 60);
-  return `~${minutes}m`;
+function getCardState(subject: DashboardSubject, t: TranslateFn) {
+  if (subject.runtime.kind === 'processing') {
+    return {
+      label: t('statusInProgress'),
+      badge: 'bg-badge-cool text-blue-600',
+      progress: subject.runtime.progressPercent,
+    };
+  }
+  if (subject.runtime.kind === 'retryable') {
+    return { label: t('statusNotStarted'), badge: 'bg-neutral-100 text-neutral-500', progress: 0 };
+  }
+  if (subject.metrics.progressPercent >= 100) {
+    return { label: t('statusCompleted'), badge: 'bg-green-50 text-green-600', progress: 100 };
+  }
+  if (subject.metrics.progressPercent > 0) {
+    return {
+      label: t('statusInProgress'),
+      badge: 'bg-badge-cool text-blue-600',
+      progress: subject.metrics.progressPercent,
+    };
+  }
+  return { label: t('statusNotStarted'), badge: 'bg-neutral-100 text-neutral-500', progress: 0 };
 }
 
-const UploadCard = ({ onGoUpload, t }: { onGoUpload: () => void; t: TranslateFn }) => (
-  <div className="group flex min-h-[21rem] flex-col items-center justify-center rounded-2xl border-2 border-dashed border-neutral-300 p-8 text-center transition-colors duration-300 hover:border-brand-trust/50 hover:bg-brand-trust/5">
-    <div className="mb-6 flex size-20 items-center justify-center rounded-full bg-green-500/10 transition-transform duration-300 group-hover:scale-110">
-      <HiOutlineCloudUpload className="size-10 text-brand-action" />
-    </div>
-    <h3 className="mb-2 text-xl font-semibold text-neutral-900">{t('uploadNewPdf')}</h3>
-    <p className="mb-6 text-sm text-neutral-600">{t('uploadDragDropHint')}</p>
-    <Button
-      onClick={onGoUpload}
-      className="rounded-full bg-brand-action px-8 font-bold text-white shadow-md hover:bg-brand-action-hover"
-    >
-      {t('chooseFile')}
-    </Button>
-  </div>
-);
-
-const SubjectLibraryListItem = memo(function SubjectLibraryListItem({
+function SubjectCard({
   subject,
   loading,
   deleting,
+  busy,
   onOpenSubject,
   onDelete,
   onRetry,
   onCancel,
-  busy = false,
-  imageUrl,
   t,
-}: ListItemProps) {
-  const { runtime } = subject;
-
-  const isProcessing = runtime.kind === 'processing';
-  const isRetryable = runtime.kind === 'retryable';
+}: {
+  subject: DashboardSubject;
+  loading: boolean;
+  deleting: boolean;
+  busy: boolean;
+  onOpenSubject: (jobId: string) => void;
+  onDelete: (job: PipelineJobHistoryItem) => void;
+  onRetry?: (jobId: string) => void;
+  onCancel?: (jobId: string) => void;
+  t: TranslateFn;
+}) {
+  const state = getCardState(subject, t);
+  const canOpen = subject.runtime.kind === 'ready';
 
   return (
-    <div className="flex flex-col gap-4 rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-5">
-      <div className="flex min-w-0 items-start gap-4">
-        <div className="flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-neutral-100">
-          {imageUrl ? (
-            <Image
-              src={imageUrl}
-              alt={subject.displayTitle}
-              width={80}
-              height={80}
-              className="h-full w-full object-cover opacity-75"
-              sizes="80px"
-            />
-          ) : (
-            <HiOutlineBookOpen className="size-8 text-neutral-300" />
-          )}
-        </div>
-        <div className="min-w-0 flex-1">
-          <h3
-            className="truncate text-lg font-semibold text-neutral-900"
-            title={subject.displayTitle}
-          >
-            {subject.displayTitle}
-          </h3>
-          <p className="mt-1 text-xs font-medium uppercase tracking-tight text-neutral-600">
-            {subject.lastOpenedLabel}
-          </p>
-
-          {isProcessing && (
-            <>
-              <div className="mt-2 flex items-center justify-between text-[10px] font-bold text-brand-trust">
-                <span>{runtime.progressPercent}%</span>
-                <span className="truncate pl-2 text-neutral-500">{runtime.stageLabel}</span>
-              </div>
-              <div className="mt-1 h-1.5 w-full max-w-xs rounded-full bg-neutral-100">
-                <div
-                  className="h-full rounded-full bg-brand-trust transition-all duration-500"
-                  style={{ width: `${runtime.progressPercent}%` }}
-                />
-              </div>
-              {runtime.etaSeconds != null && (
-                <p className="mt-1 text-[10px] text-neutral-400">
-                  {t('processingEta', { eta: formatEta(runtime.etaSeconds) })}
-                </p>
-              )}
-            </>
-          )}
-
-          {runtime.kind === 'ready' && (
-            <>
-              <p className="mt-2 text-sm font-semibold text-brand-trust">{subject.progressLabel}</p>
-              <div className="mt-2 h-1.5 w-full max-w-xs rounded-full bg-neutral-100">
-                <div
-                  className="h-full rounded-full bg-brand-trust"
-                  style={{ width: `${subject.metrics.progressPercent}%` }}
-                />
-              </div>
-            </>
-          )}
-
-          {isRetryable && (
-            <p className="mt-2 text-xs text-red-500">
-              {t('processingFailed')}: {runtime.message}
-            </p>
-          )}
-        </div>
-      </div>
-
-      <div className="flex items-center justify-end gap-2 sm:justify-start">
-        <Button
+    <article
+      className={cn(
+        'group relative flex min-h-[196px] flex-col rounded-xl border border-accent-warm/50 bg-surface-warm p-4 font-home text-ink transition-[transform,box-shadow] sm:min-h-[212px]',
+        canOpen && 'cursor-pointer hover:-translate-y-0.5 hover:shadow-accent',
+      )}
+    >
+      {canOpen ? (
+        <button
           type="button"
-          variant="ghost"
-          size="icon"
-          onClick={() => onDelete(subject)}
-          disabled={loading || deleting}
-          className="text-red-700 hover:bg-red-50 hover:text-red-800"
+          className="absolute inset-0 rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          onClick={() => onOpenSubject(subject.job_id)}
+          disabled={loading}
+          aria-label={`${subject.ctaLabel}: ${subject.displayTitle}`}
+        />
+      ) : null}
+      <div className="pointer-events-none relative flex items-start justify-between gap-2">
+        <span className={cn('rounded-[6px] px-2 py-1 text-sm font-semibold', state.badge)}>
+          {state.label}
+        </span>
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            onDelete(subject);
+          }}
+          disabled={deleting}
+          className="pointer-events-auto relative rounded-md p-1 text-ink-muted opacity-100 transition-opacity hover:bg-red-50 hover:text-red-600 focus:opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
           aria-label={t('deleteMaterial')}
-          title={t('deleteMaterial')}
         >
           <HiOutlineTrash className="size-4" />
-        </Button>
-
-        {isProcessing && (
-          <Button
-            onClick={() => onCancel?.(subject.job_id)}
-            disabled={busy}
-            aria-label={t('cancelProcessing')}
-            className="rounded-full bg-neutral-100 px-5 text-sm font-bold text-red-600 hover:bg-red-50 hover:text-red-700"
-          >
-            <HiOutlineX className="mr-1.5 size-4" />
-            {t('cancelProcessing')}
-          </Button>
-        )}
-
-        {isRetryable && (
-          <Button
-            onClick={() => onRetry?.(subject.job_id)}
-            disabled={busy}
-            aria-label={t('retryProcessing')}
-            className="rounded-full bg-neutral-100 px-5 text-sm font-bold text-brand-trust hover:bg-brand-trust hover:text-white"
-          >
-            <HiOutlineRefresh className="mr-1.5 size-4" />
-            {t('retryProcessing')}
-          </Button>
-        )}
-
-        {runtime.kind === 'ready' && (
-          <Button
-            onClick={() => onOpenSubject(subject.job_id)}
-            disabled={loading}
-            className="rounded-full bg-neutral-100 px-5 text-sm font-bold text-brand-trust hover:bg-brand-trust hover:text-white"
-          >
-            {loading ? t('creatingSession') : subject.ctaLabel}
-          </Button>
-        )}
+        </button>
       </div>
-    </div>
+
+      <h3
+        className="pointer-events-none relative mt-3 line-clamp-2 min-h-11 text-base font-semibold leading-[1.4]"
+        title={subject.displayTitle}
+      >
+        {subject.displayTitle}
+      </h3>
+
+      <div className="pointer-events-none relative mt-auto">
+        {subject.runtime.kind === 'retryable' ? (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={(event) => {
+              event.stopPropagation();
+              onRetry?.(subject.job_id);
+            }}
+            className="pointer-events-auto mb-3 flex items-center gap-1 text-sm font-semibold text-accent hover:text-accent-hover"
+          >
+            <HiOutlineRefresh className="size-4" /> {t('retryProcessing')}
+          </button>
+        ) : null}
+        {subject.runtime.kind === 'processing' ? (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={(event) => {
+              event.stopPropagation();
+              onCancel?.(subject.job_id);
+            }}
+            className="pointer-events-auto mb-3 flex items-center gap-1 text-sm font-semibold text-red-600"
+          >
+            <HiOutlineX className="size-4" /> {t('cancelProcessing')}
+          </button>
+        ) : null}
+        <div className="mb-2 flex items-center justify-between text-sm">
+          <span>{t('progressLabel')}</span>
+          <span>{state.progress}%</span>
+        </div>
+        <div className="h-2 overflow-hidden rounded-full bg-progress-track">
+          <div
+            className="h-full rounded-full bg-gradient-to-r from-primary to-primary-3"
+            style={{ width: `${state.progress}%` }}
+          />
+        </div>
+        <p className="mt-4 text-sm text-ink-muted">{subject.lastOpenedLabel}</p>
+      </div>
+    </article>
   );
-});
+}
 
 export const LibrarySection = ({
   subjects,
   loading,
   loadingJobId,
   deletingJobId,
-  searchQuery,
-  setSearchQuery,
-  onGoUpload,
   onOpenSubject,
   onDelete,
   onRetry,
   onCancel,
   busyJobId,
-  viewMode,
-  onViewModeChange,
   t,
-}: LibraryProps) => {
-  const libraryImages = useRandomLibraryImages(subjects.length);
-
-  return (
-    <section className="mb-16">
-      <div className="mb-8 flex items-end justify-between gap-4">
-        <div>
-          <h2 className={`text-3xl font-semibold tracking-tight text-neutral-900`}>
-            {t('knowledgeLibrary')}
-          </h2>
-          <p className="text-base text-neutral-600">{t('knowledgeLibrarySubtitle')}</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="relative">
-            <HiOutlineSearch className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-neutral-500" />
-            <Input
-              type="text"
-              placeholder={t('searchPlaceholder')}
-              aria-label={t('searchPlaceholder')}
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-              className="w-[10.5rem] rounded-full border-neutral-300/70 bg-white pl-10 pr-4 sm:w-auto"
+}: LibraryProps) => (
+  <SurfaceCard className="flex min-h-[420px] flex-col gap-5 rounded-2xl p-4 sm:min-h-[555px] sm:gap-6 sm:p-5 md:rounded-[20px]">
+    <SectionHeading
+      title={t('knowledgeLibrary')}
+      subtitle={t('knowledgeLibraryFigmaSubtitle')}
+      href="/adaptive"
+      viewAllLabel={t('viewAll')}
+    />
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 min-[1500px]:grid-cols-4">
+      {loading && subjects.length === 0
+        ? Array.from({ length: 8 }).map((_, index) => (
+            <div
+              key={index}
+              className="min-h-[196px] animate-pulse rounded-xl bg-surface-warm sm:min-h-[212px]"
             />
-          </div>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className={`rounded-full ${
-              viewMode === 'grid'
-                ? 'bg-neutral-100 text-neutral-900'
-                : 'text-neutral-500 hover:bg-neutral-100'
-            }`}
-            aria-label={t('gridView')}
-            aria-pressed={viewMode === 'grid'}
-            onClick={() => onViewModeChange('grid')}
-          >
-            <HiOutlineViewGrid className="size-5" />
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className={`rounded-full ${
-              viewMode === 'list'
-                ? 'bg-neutral-100 text-neutral-900'
-                : 'text-neutral-500 hover:bg-neutral-100'
-            }`}
-            aria-label={t('listView')}
-            aria-pressed={viewMode === 'list'}
-            onClick={() => onViewModeChange('list')}
-          >
-            <HiOutlineViewList className="size-5" />
-          </Button>
-        </div>
-      </div>
-
-      <div
-        className={
-          viewMode === 'grid'
-            ? 'grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4'
-            : 'grid grid-cols-1 gap-4'
-        }
-      >
-        <UploadCard onGoUpload={onGoUpload} t={t} />
-        {loading && subjects.length === 0
-          ? Array.from({ length: 3 }).map((_, index) => (
-              <div
-                key={`library-skeleton-${index}`}
-                className="min-h-[21rem] animate-pulse rounded-2xl border border-neutral-200 bg-white/60"
+          ))
+        : subjects
+            .slice(0, 8)
+            .map((subject) => (
+              <SubjectCard
+                key={subject.job_id}
+                subject={subject}
+                loading={loadingJobId === subject.job_id}
+                deleting={deletingJobId === subject.job_id}
+                busy={busyJobId === subject.job_id}
+                onOpenSubject={onOpenSubject}
+                onDelete={onDelete}
+                onRetry={onRetry}
+                onCancel={onCancel}
+                t={t}
               />
-            ))
-          : subjects.map((subject, index) => {
-              const busy = busyJobId === subject.job_id;
-              const sharedProps = {
-                subject,
-                imageUrl:
-                  libraryImages.length > 0
-                    ? libraryImages[index % libraryImages.length]
-                    : undefined,
-                loading: loadingJobId === subject.job_id,
-                deleting: deletingJobId === subject.job_id,
-                onOpenSubject,
-                onDelete,
-                onRetry,
-                onCancel,
-                busy,
-                t,
-              };
-
-              return viewMode === 'grid' ? (
-                <SubjectLibraryCard key={subject.job_id} {...sharedProps} />
-              ) : (
-                <SubjectLibraryListItem key={subject.job_id} {...sharedProps} />
-              );
-            })}
-      </div>
-    </section>
-  );
-};
+            ))}
+    </div>
+    {!loading && subjects.length === 0 ? (
+      <p className="m-auto font-home text-base text-ink-muted">{t('noDocumentsDescription')}</p>
+    ) : null}
+  </SurfaceCard>
+);

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useReducer } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
 import { toast } from 'sonner';
@@ -114,11 +115,7 @@ function QuizCard({
   const author = getAuthor(quiz);
 
   return (
-    <article className="group relative flex min-h-[142px] flex-col overflow-visible rounded-xl border border-line-blue/35 bg-surface-blue p-4 shadow-[1px_1px_2px_rgba(0,0,0,0.03)] transition-[transform,box-shadow,border-color,background-color] duration-200 ease-out hover:-translate-y-0.5 hover:border-accent/35 hover:bg-white hover:shadow-[0_12px_30px_rgba(68,31,5,0.10)] focus-within:-translate-y-0.5 focus-within:border-accent/35 focus-within:bg-white focus-within:shadow-[0_12px_30px_rgba(68,31,5,0.10)] motion-reduce:transform-none motion-reduce:transition-none">
-      <span
-        className="pointer-events-none absolute inset-x-4 top-0 h-px origin-left scale-x-0 bg-accent transition-transform duration-200 ease-out group-hover:scale-x-100 group-focus-within:scale-x-100 motion-reduce:transition-none"
-        aria-hidden="true"
-      />
+    <article className="group relative flex min-h-[146px] flex-col rounded-xl border border-[#e2ecfc] bg-surface-blue p-4 shadow-[1px_1px_4px_rgba(0,0,0,0.03)] transition-shadow duration-150 ease-out hover:shadow-[2px_2px_0_#718ebd] focus-within:shadow-[2px_2px_0_#718ebd] motion-reduce:transition-none">
       <div className="flex items-center justify-between text-sm text-ink/40">
         <span>{t('questionCount', { count: getQuestionCount(quiz) })}</span>
         <details className="relative">
@@ -144,15 +141,11 @@ function QuizCard({
       </div>
 
       <Link href={`/${locale}/quiz/${quiz.slug}`} className="mt-2 flex flex-1 flex-col">
-        <h3 className="line-clamp-2 font-home text-base font-semibold leading-[1.35] text-ink transition-colors duration-200 group-hover:text-accent group-focus-within:text-accent">
+        <h3 className="line-clamp-2 font-home text-base font-semibold leading-[1.4] text-ink">
           {quiz.title}
         </h3>
         <div className="mt-auto flex items-center gap-2 pt-3 text-sm text-ink">
-          <UserAvatar
-            user={author}
-            size={26}
-            className="transition-transform duration-200 group-hover:scale-105 group-focus-within:scale-105 motion-reduce:transform-none motion-reduce:transition-none"
-          />
+          <UserAvatar user={author} size={26} />
           <span className="min-w-0 truncate">
             {author.displayName || author.name || author.email || 'RinKuzu learner'}
           </span>
@@ -249,8 +242,12 @@ export default function ProfileQuizzes() {
 
         <div className="grid grid-cols-1 items-start gap-6 min-[1684px]:grid-cols-[minmax(0,900px)_416px]">
           <section className="relative min-h-[470px] overflow-hidden rounded-[20px] border border-line-blue/35 bg-white p-5 shadow-[1px_1px_4px_rgba(0,0,0,0.03)]">
-            <div
-              className="pointer-events-none absolute -bottom-28 -right-24 size-[540px] rounded-full bg-accent-soft/30 blur-3xl"
+            <Image
+              src="/images/my-quizzes/flower.svg"
+              alt=""
+              width={595}
+              height={598}
+              className="pointer-events-none absolute right-[-67px] top-[203px] hidden h-[598px] w-[595px] max-w-none select-none lg:block"
               aria-hidden="true"
             />
 

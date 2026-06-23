@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import { Button } from '@/components/ui/Button';
+import { Skeleton } from '@/components/ui/Skeleton';
 import { HiOutlineSparkles } from '@/components/icons';
 import type { DashboardSubject } from '@/features/adaptive/lib/dashboard-view-model';
 import type { TranslateFn } from '@/features/adaptive/types';
@@ -73,7 +74,7 @@ export const HeroSection = ({
 }: HeroProps) => {
   if (loading && !subject) {
     return (
-      <section className="min-h-[340px] animate-pulse rounded-2xl border border-accent/40 bg-surface-warm sm:min-h-[320px] md:h-[308px] md:min-h-0 md:rounded-[20px]" />
+      <Skeleton className="min-h-[340px] rounded-2xl border border-accent/40 sm:min-h-[320px] md:h-[308px] md:min-h-0 md:rounded-[20px]" />
     );
   }
 

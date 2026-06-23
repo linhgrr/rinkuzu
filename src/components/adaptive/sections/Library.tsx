@@ -3,6 +3,7 @@
 import { HiOutlineRefresh, HiOutlineTrash, HiOutlineX } from '@/components/icons';
 import { SectionHeading } from '@/components/ui/SectionHeading';
 import { SurfaceCard } from '@/components/ui/SurfaceCard';
+import { Skeleton } from '@/components/ui/Skeleton';
 import { cn } from '@/lib/utils';
 import type { DashboardSubject } from '@/features/adaptive/lib/dashboard-view-model';
 import type { PipelineJobHistoryItem, TranslateFn } from '@/features/adaptive/types';
@@ -154,25 +155,22 @@ function SubjectCard({
 
 function LibraryCardSkeleton() {
   return (
-    <div
-      className="flex min-h-[196px] animate-pulse flex-col rounded-xl border border-accent-warm/30 bg-surface-warm p-4 sm:min-h-[212px]"
-      aria-hidden="true"
-    >
+    <Skeleton className="flex min-h-[196px] flex-col rounded-xl border border-accent-warm/30 p-4 sm:min-h-[212px]">
       <div className="flex items-start justify-between gap-3">
-        <div className="h-7 w-24 rounded-md bg-primary-2/70" />
-        <div className="size-6 rounded-md bg-primary-2/55" />
+        <div className="h-7 w-24 rounded-md bg-primary-2/50" />
+        <div className="size-6 rounded-md bg-primary-2/40" />
       </div>
-      <div className="mt-4 h-5 w-4/5 rounded bg-primary-2/70" />
-      <div className="mt-2 h-5 w-3/5 rounded bg-primary-2/55" />
+      <div className="mt-4 h-5 w-4/5 rounded bg-primary-2/50" />
+      <div className="mt-2 h-5 w-3/5 rounded bg-primary-2/40" />
       <div className="mt-auto">
         <div className="mb-2 flex items-center justify-between">
-          <div className="h-4 w-16 rounded bg-primary-2/55" />
-          <div className="h-4 w-9 rounded bg-primary-2/55" />
+          <div className="h-4 w-16 rounded bg-primary-2/40" />
+          <div className="h-4 w-9 rounded bg-primary-2/40" />
         </div>
-        <div className="h-2 w-full rounded-full bg-primary-2/70" />
-        <div className="mt-4 h-4 w-28 rounded bg-primary-2/55" />
+        <div className="h-2 w-full rounded-full bg-primary-2/50" />
+        <div className="mt-4 h-4 w-28 rounded bg-primary-2/40" />
       </div>
-    </div>
+    </Skeleton>
   );
 }
 

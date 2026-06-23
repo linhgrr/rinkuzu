@@ -152,6 +152,30 @@ function SubjectCard({
   );
 }
 
+function LibraryCardSkeleton() {
+  return (
+    <div
+      className="flex min-h-[196px] animate-pulse flex-col rounded-xl border border-accent-warm/30 bg-surface-warm p-4 sm:min-h-[212px]"
+      aria-hidden="true"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="h-7 w-24 rounded-md bg-primary-2/70" />
+        <div className="size-6 rounded-md bg-primary-2/55" />
+      </div>
+      <div className="mt-4 h-5 w-4/5 rounded bg-primary-2/70" />
+      <div className="mt-2 h-5 w-3/5 rounded bg-primary-2/55" />
+      <div className="mt-auto">
+        <div className="mb-2 flex items-center justify-between">
+          <div className="h-4 w-16 rounded bg-primary-2/55" />
+          <div className="h-4 w-9 rounded bg-primary-2/55" />
+        </div>
+        <div className="h-2 w-full rounded-full bg-primary-2/70" />
+        <div className="mt-4 h-4 w-28 rounded bg-primary-2/55" />
+      </div>
+    </div>
+  );
+}
+
 export const LibrarySection = ({
   subjects,
   loading,
@@ -171,14 +195,12 @@ export const LibrarySection = ({
       href="/adaptive"
       viewAllLabel={t('viewAll')}
     />
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 min-[1500px]:grid-cols-4">
+    <div
+      className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 min-[1500px]:grid-cols-4"
+      aria-busy={loading}
+    >
       {loading && subjects.length === 0
-        ? Array.from({ length: 8 }).map((_, index) => (
-            <div
-              key={index}
-              className="min-h-[196px] animate-pulse rounded-xl bg-surface-warm sm:min-h-[212px]"
-            />
-          ))
+        ? Array.from({ length: 8 }).map((_, index) => <LibraryCardSkeleton key={index} />)
         : subjects
             .slice(0, 8)
             .map((subject) => (

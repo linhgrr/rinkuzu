@@ -28,6 +28,7 @@ export type LibraryPollerOptions = {
   cancelJob: (jobId: string) => Promise<unknown>;
   onJobs: (jobs: PipelineJobListItem[]) => void;
   onBusy: (jobId: string | null) => void;
+  onTickSettled: () => void;
   /** Override for testing — defaults to global setTimeout */
   schedule?: (fn: () => void, ms: number) => ReturnType<typeof setTimeout>;
   /** Override for testing — defaults to global clearTimeout */
@@ -48,6 +49,7 @@ export function createLibraryPoller({
   cancelJob,
   onJobs,
   onBusy,
+  onTickSettled,
   schedule = setTimeout,
   unschedule = clearTimeout,
 }: LibraryPollerOptions): LibraryPoller {
@@ -102,6 +104,7 @@ export function createLibraryPoller({
       scheduleNext(delayMs);
     } finally {
       inFlight = false;
+      onTickSettled();
     }
   };
 
@@ -161,6 +164,7 @@ export type UseJobLibraryArgs = {
 
 export type UseJobLibraryResult = {
   jobs: PipelineJobListItem[];
+  loading: boolean;
   busyJobId: string | null;
   retry: (jobId: string) => Promise<void>;
   cancel: (jobId: string) => Promise<void>;
@@ -172,6 +176,7 @@ export function useJobLibrary({
   initialJobs = /* v8 ignore next */ [],
 }: UseJobLibraryArgs): UseJobLibraryResult {
   const [jobs, setJobs] = useState<PipelineJobListItem[]>(initialJobs);
+  const [hasLoaded, setHasLoaded] = useState(initialJobs.length > 0);
   const [busyJobId, setBusyJobId] = useState<string | null>(null);
 
   // Keep a stable ref to the poller instance across renders.
@@ -186,6 +191,7 @@ export function useJobLibrary({
       cancelJob: cancelPipelineJob,
       onJobs: setJobs,
       onBusy: setBusyJobId,
+      onTickSettled: () => setHasLoaded(true),
     });
   }
 
@@ -219,6 +225,7 @@ export function useJobLibrary({
 
   return {
     jobs,
+    loading: enabled && !hasLoaded,
     busyJobId,
     retry: retryWithToast,
     cancel: cancelWithToast,

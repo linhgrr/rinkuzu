@@ -46,6 +46,7 @@ export default function AdaptiveLearningDashboard({
     handleGoUpload,
     handleOpenSubject,
     itemToDelete,
+    libraryLoading,
     loading,
     loadingJobId,
     retry,
@@ -108,7 +109,7 @@ export default function AdaptiveLearningDashboard({
         <div className="min-w-0 md:col-span-2 md:row-start-3 min-[1684px]:col-span-1 min-[1684px]:col-start-1 min-[1684px]:row-start-2">
           <LibrarySection
             subjects={dashboardSubjects}
-            loading={loading}
+            loading={libraryLoading}
             loadingJobId={loadingJobId}
             deletingJobId={deletingJobId}
             onOpenSubject={handleOpenSubject}

@@ -10,7 +10,10 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { createLibraryPoller } from '@/features/adaptive/hooks/use-job-library';
+import {
+  createLibraryPoller,
+  type LibraryPollerOptions,
+} from '@/features/adaptive/hooks/use-job-library';
 import type { PipelineJobListItem } from '@/features/adaptive/types';
 
 // ---------------------------------------------------------------------------
@@ -92,6 +95,13 @@ class FakeTimers {
   }
 }
 
+function createTestLibraryPoller(options: Omit<LibraryPollerOptions, 'onTickSettled'>) {
+  return createLibraryPoller({
+    ...options,
+    onTickSettled: vi.fn(),
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
@@ -119,7 +129,7 @@ describe('createLibraryPoller', () => {
 
     const onJobs = vi.fn();
 
-    const poller = createLibraryPoller({
+    const poller = createTestLibraryPoller({
       listJobs,
       retryJob: vi.fn(),
       cancelJob: vi.fn(),
@@ -162,7 +172,7 @@ describe('createLibraryPoller', () => {
     const onBusy = vi.fn();
     const onJobs = vi.fn();
 
-    const poller = createLibraryPoller({
+    const poller = createTestLibraryPoller({
       listJobs,
       retryJob,
       cancelJob: vi.fn(),
@@ -213,7 +223,7 @@ describe('createLibraryPoller', () => {
     const cancelJob = vi.fn().mockResolvedValue({ job_id: 'j1', status: 'cancelled' });
     const onBusy = vi.fn();
 
-    const poller = createLibraryPoller({
+    const poller = createTestLibraryPoller({
       listJobs,
       retryJob: vi.fn(),
       cancelJob,
@@ -255,7 +265,7 @@ describe('createLibraryPoller', () => {
 
     const onJobs = vi.fn();
 
-    const poller = createLibraryPoller({
+    const poller = createTestLibraryPoller({
       listJobs,
       retryJob: vi.fn(),
       cancelJob: vi.fn(),
@@ -285,8 +295,60 @@ describe('createLibraryPoller', () => {
     expect(timers.pendingCount).toBe(0);
   });
 
+  it('reports when the initial library request settles, including errors', async () => {
+    const onTickSettled = vi.fn();
+    const poller = createLibraryPoller({
+      listJobs: vi.fn().mockRejectedValue(new Error('network error')),
+      retryJob: vi.fn(),
+      cancelJob: vi.fn(),
+      onJobs: vi.fn(),
+      onBusy: vi.fn(),
+      onTickSettled,
+      schedule: (fn, ms) => timers.schedule(fn, ms),
+      unschedule: (id) => timers.unschedule(id),
+    });
+
+    poller.start();
+    await new Promise<void>((resolve) => setImmediate(resolve));
+    await new Promise<void>((resolve) => setImmediate(resolve));
+
+    expect(onTickSettled).toHaveBeenCalledTimes(1);
+  });
+
   // -------------------------------------------------------------------------
-  // 5. stop() cancels the pending timer and prevents further fetches
+  // 6. Missing retry hints use the minimum polling delay
+  // -------------------------------------------------------------------------
+  it('uses the minimum polling delay when retry_after_seconds is missing', async () => {
+    const activeJob = makeJob('j1', 'extracting');
+    Reflect.deleteProperty(activeJob, 'retry_after_seconds');
+    const listJobs = vi
+      .fn()
+      .mockResolvedValueOnce([activeJob])
+      .mockResolvedValueOnce([makeJob('j1', 'completed', 0)]);
+
+    const poller = createTestLibraryPoller({
+      listJobs,
+      retryJob: vi.fn(),
+      cancelJob: vi.fn(),
+      onJobs: vi.fn(),
+      onBusy: vi.fn(),
+      schedule: (fn, ms) => timers.schedule(fn, ms),
+      unschedule: (id) => timers.unschedule(id),
+    });
+
+    poller.start();
+    await new Promise<void>((resolve) => setImmediate(resolve));
+    await new Promise<void>((resolve) => setImmediate(resolve));
+
+    await timers.advanceBy(999);
+    expect(listJobs).toHaveBeenCalledTimes(1);
+
+    await timers.advanceBy(1);
+    expect(listJobs).toHaveBeenCalledTimes(2);
+  });
+
+  // -------------------------------------------------------------------------
+  // 7. stop() cancels the pending timer and prevents further fetches
   // -------------------------------------------------------------------------
   it('stop() cancels scheduled poll and prevents further fetches', async () => {
     const listJobs = vi
@@ -294,7 +356,7 @@ describe('createLibraryPoller', () => {
       .mockResolvedValueOnce([makeJob('j1', 'extracting', 2)]) // schedules next poll
       .mockResolvedValue([makeJob('j1', 'extracting', 2)]);
 
-    const poller = createLibraryPoller({
+    const poller = createTestLibraryPoller({
       listJobs,
       retryJob: vi.fn(),
       cancelJob: vi.fn(),
@@ -325,7 +387,7 @@ describe('createLibraryPoller', () => {
   });
 
   // -------------------------------------------------------------------------
-  // 6. In-flight guard prevents overlapping ticks
+  // 8. In-flight guard prevents overlapping ticks
   // -------------------------------------------------------------------------
   it('does not double-fetch while a tick is in-flight', async () => {
     let resolveFirst!: (v: PipelineJobListItem[]) => void;
@@ -339,7 +401,7 @@ describe('createLibraryPoller', () => {
       )
       .mockResolvedValue([makeJob('j1', 'completed', 0)]);
 
-    const poller = createLibraryPoller({
+    const poller = createTestLibraryPoller({
       listJobs,
       retryJob: vi.fn(),
       cancelJob: vi.fn(),
@@ -373,7 +435,7 @@ describe('createLibraryPoller', () => {
       .mockResolvedValueOnce([makeJob('j1', 'extracting', 60)]) // 60s → clamp to 10000ms
       .mockResolvedValueOnce([makeJob('j1', 'completed', 0)]);
 
-    const poller = createLibraryPoller({
+    const poller = createTestLibraryPoller({
       listJobs,
       retryJob: vi.fn(),
       cancelJob: vi.fn(),
@@ -420,7 +482,7 @@ describe('createLibraryPoller', () => {
 
     const scheduledDelays: number[] = [];
 
-    const poller = createLibraryPoller({
+    const poller = createTestLibraryPoller({
       listJobs,
       retryJob: vi.fn(),
       cancelJob: vi.fn(),
@@ -458,7 +520,7 @@ describe('createLibraryPoller', () => {
 
     const onJobs = vi.fn();
 
-    const poller = createLibraryPoller({
+    const poller = createTestLibraryPoller({
       listJobs,
       retryJob: vi.fn(),
       cancelJob: vi.fn(),
@@ -498,7 +560,7 @@ describe('createLibraryPoller', () => {
     );
 
     const scheduledDelays: number[] = [];
-    const poller = createLibraryPoller({
+    const poller = createTestLibraryPoller({
       listJobs,
       retryJob: vi.fn(),
       cancelJob: vi.fn(),
@@ -542,7 +604,7 @@ describe('createLibraryPoller', () => {
     const onJobs = vi.fn();
     const scheduledDelays: number[] = [];
 
-    const poller = createLibraryPoller({
+    const poller = createTestLibraryPoller({
       listJobs,
       retryJob: vi.fn(),
       cancelJob: vi.fn(),

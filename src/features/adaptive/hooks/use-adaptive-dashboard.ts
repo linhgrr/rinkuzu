@@ -342,6 +342,7 @@ export const useAdaptiveDashboard = ({
     handleOpenSubject,
     itemToDelete,
     loading: dashboardState.loading,
+    libraryLoading: jobLibrary.loading,
     loadingJobId,
     retry: jobLibrary.retry,
     searchQuery,

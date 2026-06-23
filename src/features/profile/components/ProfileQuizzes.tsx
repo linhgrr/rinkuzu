@@ -7,6 +7,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
+import { Skeleton } from '@/components/ui/Skeleton';
 import { UserAvatar } from '@/components/user/UserAvatar';
 import { QuizUploadDropzone } from '@/features/dashboard/components/QuizUploadDropzone';
 import { fetchApiData, fetchApiResponse } from '@/lib/api/client';
@@ -161,6 +162,23 @@ function QuizCard({
   );
 }
 
+function QuizCardSkeleton() {
+  return (
+    <Skeleton className="flex min-h-[146px] flex-col rounded-xl border border-line-blue/30 bg-surface-blue p-4">
+      <div className="flex items-center justify-between">
+        <div className="h-4 w-20 rounded bg-line-blue/30" />
+        <div className="size-7 rounded-md bg-line-blue/25" />
+      </div>
+      <div className="mt-3 h-5 w-4/5 rounded bg-line-blue/30" />
+      <div className="mt-2 h-5 w-3/5 rounded bg-line-blue/25" />
+      <div className="mt-auto flex items-center gap-2 pt-3">
+        <div className="size-[26px] rounded-full bg-line-blue/30" />
+        <div className="h-4 w-28 rounded bg-line-blue/25" />
+      </div>
+    </Skeleton>
+  );
+}
+
 export default function ProfileQuizzes() {
   const t = useTranslations('profile');
   const tCommon = useTranslations('common');
@@ -277,47 +295,46 @@ export default function ProfileQuizzes() {
               </div>
             ) : null}
 
-            {state.loading ? (
-              <div className="relative mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {Array.from({ length: 6 }).map((_, index) => (
-                  <div
-                    key={index}
-                    className="h-[142px] animate-pulse rounded-xl border border-line-blue/30 bg-surface-blue"
-                  />
-                ))}
-              </div>
-            ) : groupedQuizzes.length === 0 ? (
-              <div className="relative flex min-h-[360px] flex-col items-center justify-center text-center">
-                <HiOutlineDocumentText className="size-12 text-ink/25" />
-                <h3 className="mt-4 text-lg font-semibold text-ink">{t('noQuizzes')}</h3>
-                <p className="mt-1 max-w-sm text-sm text-ink/55">{t('createFirst')}</p>
-                <Link href="/create" className="mt-5">
-                  <Button>{t('newQuiz')}</Button>
-                </Link>
-              </div>
-            ) : (
-              <div className="relative mt-6 space-y-7">
-                {groupedQuizzes.map((group) => (
-                  <div key={monthKey(group.date)}>
-                    <h3 className="mb-4 text-base font-normal text-ink">
-                      {formatMonth(group.date, locale)}
-                    </h3>
-                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                      {group.quizzes.map((quiz) => (
-                        <QuizCard
-                          key={quiz._id}
-                          quiz={quiz}
-                          locale={locale}
-                          onDelete={(selected) =>
-                            dispatch({ type: 'delete:prompt', quiz: selected })
-                          }
-                        />
-                      ))}
+            <div aria-busy={state.loading}>
+              {state.loading ? (
+                <div className="relative mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {Array.from({ length: 6 }, (_, index) => (
+                    <QuizCardSkeleton key={`quiz-card-skeleton-${index}`} />
+                  ))}
+                </div>
+              ) : groupedQuizzes.length === 0 ? (
+                <div className="relative flex min-h-[360px] flex-col items-center justify-center text-center">
+                  <HiOutlineDocumentText className="size-12 text-ink/25" />
+                  <h3 className="mt-4 text-lg font-semibold text-ink">{t('noQuizzes')}</h3>
+                  <p className="mt-1 max-w-sm text-sm text-ink/55">{t('createFirst')}</p>
+                  <Link href="/create" className="mt-5">
+                    <Button>{t('newQuiz')}</Button>
+                  </Link>
+                </div>
+              ) : (
+                <div className="relative mt-6 space-y-7">
+                  {groupedQuizzes.map((group) => (
+                    <div key={monthKey(group.date)}>
+                      <h3 className="mb-4 text-base font-normal text-ink">
+                        {formatMonth(group.date, locale)}
+                      </h3>
+                      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                        {group.quizzes.map((quiz) => (
+                          <QuizCard
+                            key={quiz._id}
+                            quiz={quiz}
+                            locale={locale}
+                            onDelete={(selected) =>
+                              dispatch({ type: 'delete:prompt', quiz: selected })
+                            }
+                          />
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
+                  ))}
+                </div>
+              )}
+            </div>
           </section>
 
           <aside className="rounded-[20px] border border-line-blue/35 bg-white p-5 shadow-[1px_1px_2px_rgba(0,0,0,0.03)]">

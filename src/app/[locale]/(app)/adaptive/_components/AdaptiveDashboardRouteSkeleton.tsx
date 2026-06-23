@@ -1,42 +1,63 @@
+import { Skeleton } from '@/components/ui/Skeleton';
+
 export function AdaptiveDashboardRouteSkeleton() {
   return (
-    <div className="min-h-screen bg-surface-page text-ink">
-      <main className="mx-auto w-full max-w-7xl p-8 md:p-12">
-        <div className="mb-12 flex flex-col items-start justify-between gap-6 md:flex-row md:items-center">
-          <div className="w-full max-w-xl">
-            <div className="h-12 w-72 animate-pulse rounded-lg bg-surface-warm md:h-14" />
-            <div className="mt-3 h-6 w-full max-w-md animate-pulse rounded bg-surface-warm" />
-            <div className="mt-4 h-7 w-48 animate-pulse rounded-full bg-surface-warm" />
-          </div>
-          <div className="flex flex-wrap items-center gap-4">
-            <div className="h-11 w-36 animate-pulse rounded-full bg-surface-warm" />
-            <div className="h-11 w-44 animate-pulse rounded-full bg-surface-warm" />
-          </div>
+    <div
+      className="pb-16 font-home sm:pb-20"
+      aria-busy="true"
+      aria-label="Loading personal learning dashboard"
+    >
+      <div className="mb-5 space-y-2 sm:mb-6">
+        <Skeleton className="h-8 w-72 max-w-full rounded-md" />
+        <Skeleton className="h-6 w-[32rem] max-w-full rounded-md" />
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 sm:gap-5 md:grid-cols-2 min-[1684px]:grid-cols-[minmax(0,900px)_416px] min-[1684px]:gap-6">
+        <div className="min-w-0 md:col-span-2 min-[1684px]:col-span-1 min-[1684px]:col-start-1 min-[1684px]:row-start-1">
+          <Skeleton className="min-h-[340px] rounded-2xl border border-accent/40 sm:min-h-[320px] md:h-[308px] md:min-h-0 md:rounded-[20px]" />
         </div>
 
-        <section className="mb-16 grid grid-cols-1 gap-8 lg:grid-cols-12">
-          <div className="h-[23rem] animate-pulse rounded-2xl border border-line bg-surface/70 lg:col-span-8" />
-          <div className="h-[23rem] animate-pulse rounded-2xl border border-line bg-surface/70 lg:col-span-4" />
-        </section>
-
-        <section className="mb-16">
-          <div className="mb-8 flex items-end justify-between gap-4">
-            <div>
-              <div className="h-9 w-64 animate-pulse rounded bg-surface-warm" />
-              <div className="mt-3 h-5 w-80 max-w-full animate-pulse rounded bg-surface-warm" />
+        <div className="min-w-0 md:col-start-1 md:row-start-2 min-[1684px]:col-start-2 min-[1684px]:row-start-1">
+          <section className="flex h-full min-h-[260px] flex-col gap-4 rounded-2xl border border-line bg-surface p-4 sm:min-h-[280px] sm:gap-5 sm:p-5 md:min-h-[308px] md:rounded-[20px] min-[1684px]:h-[308px]">
+            <div className="space-y-2">
+              <Skeleton className="h-6 w-40 rounded-md" />
+              <Skeleton className="h-5 w-64 max-w-full rounded-md" />
             </div>
-            <div className="hidden h-10 w-56 animate-pulse rounded-full bg-surface-warm sm:block" />
-          </div>
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {Array.from({ length: 4 }).map((_, index) => (
-              <div
-                key={index}
-                className="min-h-[21rem] animate-pulse rounded-2xl border border-line bg-surface/70"
-              />
-            ))}
-          </div>
-        </section>
-      </main>
+            <Skeleton className="min-h-[170px] flex-1 rounded-[10px]" />
+          </section>
+        </div>
+
+        <div className="min-w-0 md:col-span-2 md:row-start-3 min-[1684px]:col-span-1 min-[1684px]:col-start-1 min-[1684px]:row-start-2">
+          <section className="flex min-h-[420px] flex-col gap-5 rounded-2xl border border-line bg-surface p-4 sm:min-h-[555px] sm:gap-6 sm:p-5 md:rounded-[20px]">
+            <div className="space-y-2">
+              <Skeleton className="h-6 w-48 rounded-md" />
+              <Skeleton className="h-5 w-72 max-w-full rounded-md" />
+            </div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 min-[1500px]:grid-cols-4">
+              {Array.from({ length: 8 }, (_, index) => (
+                <Skeleton
+                  key={`adaptive-library-skeleton-${index}`}
+                  className="min-h-[196px] rounded-xl border border-accent-warm/30 sm:min-h-[212px]"
+                />
+              ))}
+            </div>
+          </section>
+        </div>
+
+        <div className="min-w-0 md:col-start-2 md:row-start-2 min-[1684px]:col-start-2">
+          <section className="h-full min-h-[280px] rounded-2xl border border-line bg-surface p-4 sm:min-h-[308px] sm:p-5 md:min-h-[343px] md:rounded-[20px]">
+            <Skeleton className="h-6 w-40 rounded-md" />
+            <div className="mt-6 space-y-5">
+              {Array.from({ length: 4 }, (_, index) => (
+                <div key={`adaptive-activity-skeleton-${index}`} className="space-y-2">
+                  <Skeleton className="h-5 w-full rounded-md" />
+                  <Skeleton className="h-4 w-2/3 rounded-md" />
+                </div>
+              ))}
+            </div>
+          </section>
+        </div>
+      </div>
     </div>
   );
 }

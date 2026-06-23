@@ -6,6 +6,7 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import { HiOutlineSparkles } from '@/components/icons';
 import type { DashboardSubject } from '@/features/adaptive/lib/dashboard-view-model';
 import type { TranslateFn } from '@/features/adaptive/types';
+import { cn } from '@/lib/utils';
 
 type HeroProps = {
   subject: DashboardSubject | null;
@@ -111,22 +112,29 @@ export const HeroSection = ({
         </p>
 
         <div className="mt-auto w-full max-w-[470px]">
-          <div className="mb-2 flex items-center justify-between gap-3 font-home text-sm font-semibold sm:text-base">
-            <span>{t('yourProgress')}</span>
-            <span className="shrink-0 tabular-nums">
-              {t('masterPercent', { percent: progress })}
-            </span>
-          </div>
-          <div className="h-2.5 overflow-hidden rounded-full bg-progress-track sm:h-3">
-            <div
-              className="h-full rounded-full bg-gradient-to-r from-primary to-primary-3 transition-[width] duration-500"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
+          {subject ? (
+            <>
+              <div className="mb-2 flex items-center justify-between gap-3 font-home text-sm font-semibold sm:text-base">
+                <span>{t('yourProgress')}</span>
+                <span className="shrink-0 tabular-nums">
+                  {t('masterPercent', { percent: progress })}
+                </span>
+              </div>
+              <div className="h-2.5 overflow-hidden rounded-full bg-progress-track sm:h-3">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-primary to-primary-3 transition-[width] duration-500"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+            </>
+          ) : null}
           <Button
             onClick={() => (subject ? onOpenSubject(subject.job_id) : onGoUpload())}
             disabled={isOpening}
-            className="mt-5 h-auto w-full rounded-full bg-accent px-5 py-3 font-home text-base font-semibold text-accent-text hover:bg-accent-hover sm:mt-6 sm:w-auto sm:text-lg"
+            className={cn(
+              'h-auto w-full rounded-full bg-accent px-5 py-3 font-home text-base font-semibold text-accent-text hover:bg-accent-hover sm:w-auto sm:text-lg',
+              subject ? 'mt-5 sm:mt-6' : '',
+            )}
           >
             {subject
               ? isOpening

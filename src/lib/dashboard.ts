@@ -14,6 +14,8 @@ import {
   resolveAdaptiveProxyTimeoutMs,
 } from '@/lib/adaptive/config';
 import type { PipelineJobHistoryItem } from '@/features/adaptive/types';
+import { serviceFactory } from '@/lib/serviceFactory';
+import type { IQuizProgress } from '@/interfaces/repositories/IQuizProgressRepository';
 import { Types } from 'mongoose';
 
 type DashboardQuiz = {
@@ -36,6 +38,16 @@ type DashboardQuiz = {
     _id?: string;
     email: string;
   } | null;
+};
+
+export type DashboardInProgressQuiz = {
+  quizId: string;
+  title: string;
+  slug: string;
+  category: { name: string; color: string } | null;
+  answeredCount: number;
+  totalQuestions: number;
+  updatedAt: string;
 };
 
 interface DashboardStatsData {
@@ -348,6 +360,54 @@ async function getDashboardAdaptiveSubjects(userId: string): Promise<PipelineJob
   }
 }
 
+const HOME_IN_PROGRESS_QUIZ_LIMIT = 6;
+
+function serializeInProgressQuiz(raw: IQuizProgress): DashboardInProgressQuiz | null {
+  const quiz = raw.quiz;
+  if (!quiz || typeof quiz === 'string') {
+    return null;
+  }
+
+  const slug = typeof quiz.slug === 'string' ? quiz.slug : '';
+  if (!slug) {
+    return null;
+  }
+
+  const category =
+    quiz.category && typeof quiz.category === 'object'
+      ? {
+          name: String((quiz.category as { name?: string }).name || ''),
+          color: String((quiz.category as { color?: string }).color || ''),
+        }
+      : null;
+
+  return {
+    quizId: normalizeId(quiz._id),
+    title: String(quiz.title || ''),
+    slug,
+    category,
+    answeredCount: raw.answeredCount ?? 0,
+    totalQuestions: raw.totalQuestions ?? 0,
+    updatedAt: normalizeIsoDate(raw.updatedAt),
+  };
+}
+
+async function getDashboardInProgressQuizzes(
+  userId: string,
+  limit: number = HOME_IN_PROGRESS_QUIZ_LIMIT,
+): Promise<DashboardInProgressQuiz[]> {
+  try {
+    const repo = serviceFactory.getQuizProgressRepository();
+    const records = await repo.findInProgressByUser(userId, limit);
+    return records
+      .map(serializeInProgressQuiz)
+      .filter((item): item is DashboardInProgressQuiz => item !== null);
+  } catch (error) {
+    logger.warn({ error }, 'Failed fetching in-progress quizzes for home dashboard');
+    return [];
+  }
+}
+
 export const getDashboardBootstrapData = cache(
   async (
     userId: string,
@@ -357,6 +417,7 @@ export const getDashboardBootstrapData = cache(
     quizzes: DashboardQuiz[];
     yourQuizzes: DashboardQuiz[];
     adaptiveSubjects: PipelineJobHistoryItem[];
+    inProgressQuizzes: DashboardInProgressQuiz[];
   }> => {
     await connectDB();
 
@@ -364,11 +425,12 @@ export const getDashboardBootstrapData = cache(
       ? new Types.ObjectId(userId)
       : userId;
 
-    const [stats, quizzes, yourQuizzes, adaptiveSubjects] = await Promise.all([
+    const [stats, quizzes, yourQuizzes, adaptiveSubjects, inProgressQuizzes] = await Promise.all([
       getUserProgressStats(userId, { skipConnect: true }),
       getCachedPublishedDashboardQuizzes(),
       getDashboardQuizList({ author: authorFilter }, 3),
       getDashboardAdaptiveSubjects(userId),
+      getDashboardInProgressQuizzes(userId),
     ]);
 
     return {
@@ -376,6 +438,7 @@ export const getDashboardBootstrapData = cache(
       quizzes,
       yourQuizzes,
       adaptiveSubjects,
+      inProgressQuizzes,
     };
   },
 );

@@ -96,7 +96,8 @@
       "subtitle": "Tiếp tục các quiz hoặc lộ trình học AI từ nơi bạn đã dừng lại"
     },
     "learningCard": {
-      "aiLearning": "Học với AI"
+      "aiLearning": "Học với AI",
+      "inProgress": "Đang làm dở"
     },
     "time": {
       "recentlyUpdated": "Mới cập nhật",

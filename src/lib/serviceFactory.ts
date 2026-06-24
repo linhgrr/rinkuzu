@@ -11,6 +11,7 @@ import { AttemptRepository } from '@/repositories/AttemptRepository';
 import { DiscussionRepository } from '@/repositories/DiscussionRepository';
 import { ReportRepository } from '@/repositories/ReportRepository';
 import { BookmarkRepository } from '@/repositories/BookmarkRepository';
+import { QuizProgressRepository } from '@/repositories/QuizProgressRepository';
 
 import { createSubscriptionService } from '@/lib/subscription-factory';
 import type { SubscriptionService } from '@/services/subscription/SubscriptionService';
@@ -23,6 +24,7 @@ interface Repositories {
   discussion: DiscussionRepository;
   report: ReportRepository;
   bookmark: BookmarkRepository;
+  quizProgress: QuizProgressRepository;
 }
 
 interface Services {
@@ -47,6 +49,7 @@ export class ServiceFactory {
       discussion: new DiscussionRepository(),
       report: new ReportRepository(),
       bookmark: new BookmarkRepository(),
+      quizProgress: new QuizProgressRepository(),
     };
   }
 
@@ -66,6 +69,7 @@ export class ServiceFactory {
         this.repositories.attempt,
         this.repositories.discussion,
         this.repositories.report,
+        this.repositories.quizProgress,
       );
     }
     return this.services.quiz;
@@ -113,12 +117,20 @@ export class ServiceFactory {
     return this.repositories.user;
   }
 
+  getQuizRepository(): QuizRepository {
+    return this.repositories.quiz;
+  }
+
   getCategoryRepository(): CategoryRepository {
     return this.repositories.category;
   }
 
   getAttemptRepository(): AttemptRepository {
     return this.repositories.attempt;
+  }
+
+  getQuizProgressRepository(): QuizProgressRepository {
+    return this.repositories.quizProgress;
   }
 
   getReportRepository(): ReportRepository {

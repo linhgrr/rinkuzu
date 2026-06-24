@@ -1,4 +1,5 @@
 import type { Session } from 'next-auth';
+import type { DashboardInProgressQuiz } from '@/lib/dashboard';
 import {
   HomeDashboard,
   type HomeDashboardAdaptiveSubject,
@@ -14,6 +15,7 @@ interface DashboardPageShellProps {
   quizzes: HomeDashboardQuiz[];
   yourQuizzes: HomeDashboardQuiz[];
   adaptiveSubjects: HomeDashboardAdaptiveSubject[];
+  inProgressQuizzes: DashboardInProgressQuiz[];
 }
 
 export async function DashboardPageShell({
@@ -23,6 +25,7 @@ export async function DashboardPageShell({
   quizzes,
   yourQuizzes,
   adaptiveSubjects,
+  inProgressQuizzes,
 }: DashboardPageShellProps) {
   const userName = session.user?.displayName || userEmail?.split('@')[0] || 'User';
 
@@ -32,6 +35,7 @@ export async function DashboardPageShell({
       quizzes={quizzes}
       yourQuizzes={yourQuizzes}
       adaptiveSubjects={adaptiveSubjects}
+      inProgressQuizzes={inProgressQuizzes}
       userName={userName}
     />
   );

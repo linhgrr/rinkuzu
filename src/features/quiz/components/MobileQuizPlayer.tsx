@@ -17,6 +17,10 @@ interface Question {
 
 interface MobileQuizPlayerProps {
   questions: Question[];
+  answers: Record<string, number | number[]>;
+  currentIndex: number;
+  onAnswersChange: (answers: Record<string, number | number[]>) => void;
+  onIndexChange: (index: number) => void;
   onComplete: (answers: Record<string, number | number[]>) => boolean | Promise<boolean>;
   onExit?: () => void;
   submitting?: boolean;
@@ -263,14 +267,16 @@ function MobileQuizFooter({
 
 export function MobileQuizPlayer({
   questions,
+  answers,
+  currentIndex,
+  onAnswersChange,
+  onIndexChange,
   onComplete,
   onExit: _onExit,
   submitting = false,
   submissionError,
 }: MobileQuizPlayerProps) {
   const t = useTranslations('quiz');
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [answers, setAnswers] = useState<Record<string, number | number[]>>({});
   const [submitIntent, setSubmitIntent] = useState(false);
   const touchStartXRef = useRef<number | null>(null);
   const touchCurrentXRef = useRef<number | null>(null);
@@ -282,15 +288,15 @@ export function MobileQuizPlayer({
 
   const goNext = useCallback(() => {
     if (!isLast && !isSubmitting) {
-      setCurrentIndex((prev) => prev + 1);
+      onIndexChange(currentIndex + 1);
     }
-  }, [isLast, isSubmitting]);
+  }, [currentIndex, isLast, isSubmitting, onIndexChange]);
 
   const goPrev = useCallback(() => {
     if (!isFirst && !isSubmitting) {
-      setCurrentIndex((prev) => prev - 1);
+      onIndexChange(currentIndex - 1);
     }
-  }, [isFirst, isSubmitting]);
+  }, [currentIndex, isFirst, isSubmitting, onIndexChange]);
 
   const handleTouchStart = useCallback((event: TouchEvent<HTMLDivElement>) => {
     const touchX = event.touches[0]?.clientX;
@@ -333,18 +339,16 @@ export function MobileQuizPlayer({
       const qId = currentQuestion._id;
 
       if (currentQuestion.type === 'single') {
-        setAnswers((prev) => ({ ...prev, [qId]: optionIndex }));
+        onAnswersChange({ ...answers, [qId]: optionIndex });
       } else {
-        setAnswers((prev) => {
-          const current = (prev[qId] as number[]) || [];
-          const newAnswers = current.includes(optionIndex)
-            ? current.filter((i) => i !== optionIndex)
-            : [...current, optionIndex];
-          return { ...prev, [qId]: newAnswers };
-        });
+        const current = (answers[qId] as number[]) || [];
+        const newAnswers = current.includes(optionIndex)
+          ? current.filter((i) => i !== optionIndex)
+          : [...current, optionIndex];
+        onAnswersChange({ ...answers, [qId]: newAnswers });
       }
     },
-    [currentQuestion, isSubmitting],
+    [answers, currentQuestion, isSubmitting, onAnswersChange],
   );
 
   const isOptionSelected = useCallback(

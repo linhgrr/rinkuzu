@@ -114,6 +114,41 @@ describe('UserService', () => {
       expect(result.attempts[0].quiz.totalQuestions).toBe(0);
     });
 
+    it('preserves an attempt when its quiz has been deleted', async () => {
+      const { service, userRepository, attemptRepository } = createService();
+      userRepository.findByEmail.mockResolvedValue({
+        _id: { toString: () => 'user-1' },
+      });
+      attemptRepository.findByUser.mockResolvedValue({
+        attempts: [
+          {
+            _id: 'attempt-orphaned',
+            score: 75,
+            takenAt: new Date(),
+            totalQuestions: 12,
+            quiz: null,
+          },
+        ],
+        pagination: {
+          currentPage: 1,
+          totalPages: 1,
+          totalItems: 1,
+          itemsPerPage: 10,
+          hasNextPage: false,
+          hasPrevPage: false,
+        },
+      });
+
+      const result = await service.getUserAttempts('user@test.com');
+
+      expect(result.attempts[0].quiz).toEqual({
+        title: 'Deleted quiz',
+        slug: '',
+        description: '',
+        totalQuestions: 12,
+      });
+    });
+
     it('passes pagination options to repository', async () => {
       const { service, userRepository, attemptRepository } = createService();
       userRepository.findByEmail.mockResolvedValue({

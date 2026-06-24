@@ -8,6 +8,7 @@ import { SectionHeading } from '@/components/ui/SectionHeading';
 import { Pill } from '@/components/ui/Pill';
 import { ADAPTIVE_ROUTES } from '@/features/adaptive/lib/routes';
 import type { PipelineJobHistoryItem } from '@/features/adaptive/types';
+import type { DashboardInProgressQuiz } from '@/lib/dashboard';
 import { QuizUploadDropzone } from './QuizUploadDropzone';
 
 export interface HomeDashboardStats {
@@ -58,6 +59,7 @@ interface HomeDashboardProps {
   quizzes: HomeDashboardQuiz[];
   yourQuizzes: HomeDashboardQuiz[];
   adaptiveSubjects: HomeDashboardAdaptiveSubject[];
+  inProgressQuizzes: DashboardInProgressQuiz[];
   userName: string;
 }
 
@@ -187,17 +189,42 @@ function buildQuizBuilderCards(
     }));
 }
 
+function buildInProgressLearningCards(
+  inProgressQuizzes: DashboardInProgressQuiz[],
+  locale: string,
+  t: Awaited<ReturnType<typeof getTranslations>>,
+): LearningCardItem[] {
+  return inProgressQuizzes
+    .filter((quiz) => quiz.slug && quiz.totalQuestions > 0)
+    .slice(0, CONTINUE_LEARNING_CARD_LIMIT)
+    .map((quiz) => ({
+      id: `in-progress-${quiz.quizId}`,
+      title: quiz.title || t('quizBuilder.title'),
+      category: t('learningCard.inProgress'),
+      progress: clampProgress((quiz.answeredCount / quiz.totalQuestions) * 100),
+      href: ROUTES.QUIZ.VIEW(quiz.slug),
+      tone: 'cool' as const,
+      isAi: false,
+      timeLabel: formatLearningCardTime(quiz.updatedAt, locale, t),
+    }));
+}
+
 function buildLearningCards(
   adaptiveSubjects: HomeDashboardAdaptiveSubject[],
   quizzes: HomeDashboardQuiz[],
   yourQuizzes: HomeDashboardQuiz[],
+  inProgressQuizzes: DashboardInProgressQuiz[],
   fallbackLearningCards: Array<Omit<LearningCardItem, 'href'>>,
   locale: string,
   t: Awaited<ReturnType<typeof getTranslations>>,
 ): { items: LearningCardItem[]; viewAllHref: string } {
+  const inProgressCards = buildInProgressLearningCards(inProgressQuizzes, locale, t);
   const adaptiveCards = buildAdaptiveLearningCards(adaptiveSubjects, locale, t);
   const quizCards = buildQuizBuilderCards(quizzes, yourQuizzes, fallbackLearningCards, locale, t);
-  const sourceCards = [...adaptiveCards, ...quizCards].slice(0, CONTINUE_LEARNING_CARD_LIMIT);
+  const sourceCards = [...inProgressCards, ...adaptiveCards, ...quizCards].slice(
+    0,
+    CONTINUE_LEARNING_CARD_LIMIT,
+  );
   const viewAllHref =
     adaptiveCards.length > 0 ? ADAPTIVE_ROUTES.dashboard : QUIZ_BUILDER_LIBRARY_HREF;
 
@@ -619,6 +646,7 @@ export async function HomeDashboard({
   quizzes,
   yourQuizzes,
   adaptiveSubjects,
+  inProgressQuizzes,
   userName,
 }: HomeDashboardProps) {
   const [locale, t] = await Promise.all([getLocale(), getTranslations('dashboard.home')]);
@@ -637,6 +665,7 @@ export async function HomeDashboard({
     adaptiveSubjects,
     quizzes,
     yourQuizzes,
+    inProgressQuizzes,
     fallbackLearningCards,
     locale,
     t,

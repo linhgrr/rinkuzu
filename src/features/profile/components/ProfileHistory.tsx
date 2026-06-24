@@ -283,11 +283,13 @@ export default function ProfileHistory() {
                               {t('details')}
                             </Button>
                           </Link>
-                          <Link href={`/quiz/${attempt.quiz.slug}`}>
-                            <Button variant="outline" size="sm">
-                              {t('redo')}
-                            </Button>
-                          </Link>
+                          {attempt.quiz.slug ? (
+                            <Link href={`/quiz/${attempt.quiz.slug}`}>
+                              <Button variant="outline" size="sm">
+                                {t('redo')}
+                              </Button>
+                            </Link>
+                          ) : null}
                         </div>
                       </div>
                     </div>

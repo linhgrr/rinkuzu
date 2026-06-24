@@ -1,9 +1,14 @@
 import connectDB from '@/lib/mongoose';
 import Quiz from '@/models/Quiz';
+import Attempt from '@/models/Attempt';
+import Bookmark from '@/models/Bookmark';
+import Discussion from '@/models/Discussion';
+import QuestionProgress from '@/models/QuestionProgress';
+import Report from '@/models/Report';
 import { IQuiz, IQuizRepository } from '@/interfaces/repositories/IQuizRepository';
 import { buildPaginationMeta } from '@/repositories/pagination';
 import { BaseRepository } from '@/repositories/base';
-import { Types, type FilterQuery, type UpdateQuery } from 'mongoose';
+import mongoose, { Types, type FilterQuery, type UpdateQuery } from 'mongoose';
 
 type QuizSort = Record<string, 1 | -1>;
 
@@ -41,6 +46,37 @@ export class QuizRepository extends BaseRepository<IQuiz> implements IQuizReposi
       .populate('author', 'email name displayName avatar')
       .populate('category', 'name color')
       .lean()) as unknown as IQuiz | null;
+  }
+
+  override async delete(id: string): Promise<boolean> {
+    await connectDB();
+    const session = await mongoose.startSession();
+    let deleted = false;
+
+    try {
+      await session.withTransaction(async () => {
+        const quiz = await Quiz.findById(id)
+          .select('_id slug')
+          .session(session)
+          .lean<{ _id: Types.ObjectId; slug: string } | null>();
+        if (!quiz) return;
+
+        await Promise.all([
+          Attempt.deleteMany({ quiz: quiz._id }).session(session),
+          Discussion.deleteMany({ quiz: quiz._id }).session(session),
+          Report.deleteMany({ quizId: String(quiz._id) }).session(session),
+          Bookmark.deleteMany({ 'quiz.slug': quiz.slug }).session(session),
+          QuestionProgress.deleteMany({ quizSlug: quiz.slug }).session(session),
+        ]);
+
+        const result = await Quiz.deleteOne({ _id: quiz._id }).session(session);
+        deleted = result.deletedCount === 1;
+      });
+
+      return deleted;
+    } finally {
+      await session.endSession();
+    }
   }
 
   async findAll(

@@ -1,6 +1,7 @@
 import { IQuizRepository, IQuiz } from '@/interfaces/repositories/IQuizRepository';
 import { IUserRepository } from '@/interfaces/repositories/IUserRepository';
 import { IAttemptRepository } from '@/interfaces/repositories/IAttemptRepository';
+import { IQuizProgressRepository } from '@/interfaces/repositories/IQuizProgressRepository';
 import { ServiceResult } from '@/interfaces/services/types';
 import type { FlashcardCardDTO, FlashcardQuizDTO } from '@/interfaces/services/IQuizService';
 import { createSubscriptionService } from '@/lib/subscription-factory';
@@ -23,6 +24,7 @@ export class QuizPlayService {
     private quizRepository: IQuizRepository,
     private userRepository: IUserRepository,
     private attemptRepository: IAttemptRepository,
+    private quizProgressRepository?: IQuizProgressRepository,
   ) {}
 
   async getQuizForPlay(
@@ -423,6 +425,15 @@ export class QuizPlayService {
           totalQuestionsWeek > 0 ? Math.round((totalCorrectWeek / totalQuestionsWeek) * 100) : 0;
 
         await uProgress.save();
+
+        // Clear any saved in-progress state now that the attempt is submitted.
+        if (this.quizProgressRepository && quiz._id) {
+          try {
+            await this.quizProgressRepository.deleteByUserAndQuiz(userId, String(quiz._id));
+          } catch (error) {
+            logger.warn({ error }, 'Failed to clear quiz progress after submit');
+          }
+        }
       }
 
       return {

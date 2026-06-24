@@ -75,7 +75,8 @@ export class UserService implements IUserService {
       const limit = options?.limit || 10;
       const result = await this.attemptRepository.findByUser(user._id.toString(), { page, limit });
 
-      // Format attempts - quiz is always populated from findByUser
+      // Deleted quizzes leave historical attempts with a null populated quiz.
+      // Preserve the attempt instead of failing the entire history endpoint.
       const formattedAttempts: UserAttemptSummary[] = result.attempts.map((attempt) => {
         const populatedQuiz = attempt.quiz as {
           _id: string;
@@ -83,16 +84,16 @@ export class UserService implements IUserService {
           slug?: string;
           description?: string;
           questions?: unknown[];
-        };
+        } | null;
         return {
           _id: String(attempt._id),
           score: attempt.score,
           takenAt: attempt.takenAt,
           quiz: {
-            title: populatedQuiz.title ?? '',
-            slug: populatedQuiz.slug ?? '',
-            description: populatedQuiz.description ?? '',
-            totalQuestions: populatedQuiz.questions?.length ?? 0,
+            title: populatedQuiz ? (populatedQuiz.title ?? '') : 'Deleted quiz',
+            slug: populatedQuiz?.slug ?? '',
+            description: populatedQuiz?.description ?? '',
+            totalQuestions: populatedQuiz?.questions?.length ?? attempt.totalQuestions ?? 0,
           },
         };
       });

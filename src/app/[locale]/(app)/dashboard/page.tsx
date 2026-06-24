@@ -31,6 +31,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
       quizzes={bootstrapData.quizzes}
       yourQuizzes={bootstrapData.yourQuizzes}
       adaptiveSubjects={bootstrapData.adaptiveSubjects}
+      inProgressQuizzes={bootstrapData.inProgressQuizzes}
     />
   );
 }

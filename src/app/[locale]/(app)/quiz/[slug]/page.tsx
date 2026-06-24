@@ -18,10 +18,12 @@ import {
   HiOutlineRefresh,
 } from '@/components/icons';
 import { PremiumRequiredModal } from '@/features/quiz/components/PremiumRequiredModal';
+import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { DesktopQuizLayout } from '@/features/quiz/components/player/DesktopQuizLayout';
 import { MobileQuizLayout } from '@/features/quiz/components/player/MobileQuizLayout';
 import { useQuizAIExplain } from '@/features/quiz/hooks/useQuizAIExplain';
 import { useQuizSubmission } from '@/features/quiz/hooks/useQuizSubmission';
+import { useQuizProgress, type SavedQuizProgress } from '@/features/quiz/hooks/useQuizProgress';
 import { useQuizViewport } from '@/features/quiz/hooks/useQuizViewport';
 import { IQuiz } from '@/types';
 import { fetchApiData } from '@/lib/api/client';
@@ -146,12 +148,79 @@ function createQuizPlayerData(rawQuiz: IQuiz, log: (...args: unknown[]) => void)
   };
 }
 
+function rebuildPlayerQuizFromLayout(
+  rawQuiz: IQuiz,
+  questionOrder: number[],
+  optionOrders: number[][],
+): QuizPlayerQuiz | null {
+  if (
+    questionOrder.length !== rawQuiz.questions.length ||
+    optionOrders.length !== rawQuiz.questions.length
+  ) {
+    return null;
+  }
+
+  const questions: ShuffledQuizQuestion[] = [];
+
+  for (let shuffledIndex = 0; shuffledIndex < questionOrder.length; shuffledIndex += 1) {
+    const originalIndex = questionOrder[shuffledIndex];
+    const optionIndexMap = optionOrders[shuffledIndex];
+    const sourceQuestion =
+      originalIndex !== undefined ? rawQuiz.questions[originalIndex] : undefined;
+
+    if (!sourceQuestion || !Array.isArray(optionIndexMap)) {
+      return null;
+    }
+    if (optionIndexMap.length !== sourceQuestion.options.length) {
+      return null;
+    }
+
+    const optionsValid = optionIndexMap.every(
+      (optionOriginal) =>
+        typeof optionOriginal === 'number' &&
+        optionOriginal >= 0 &&
+        optionOriginal < sourceQuestion.options.length,
+    );
+    if (!optionsValid) {
+      return null;
+    }
+
+    const options = optionIndexMap.map(
+      (optionOriginal) => sourceQuestion.options[optionOriginal] ?? '',
+    );
+    const optionImages = sourceQuestion.optionImages
+      ? optionIndexMap.map((optionOriginal) => sourceQuestion.optionImages?.[optionOriginal])
+      : undefined;
+
+    questions.push({
+      ...sourceQuestion,
+      options,
+      optionImages,
+      optionIndexMap,
+      originalQuestionIndex: originalIndex as number,
+    });
+  }
+
+  return {
+    ...rawQuiz,
+    questions,
+    questionIndexMap: questionOrder,
+  } satisfies QuizPlayerQuiz;
+}
+
 function isQuestionAnswered(question: ShuffledQuizQuestion, answer: QuizAnswer): boolean {
   if (question.type === 'single') {
     return answer !== -1;
   }
 
   return Array.isArray(answer) && answer.length > 0;
+}
+
+function countAnswered(quiz: QuizPlayerQuiz, answers: QuizAnswer[]): number {
+  return answers.filter((answer, index) => {
+    const question = quiz.questions[index];
+    return question ? isQuestionAnswered(question, answer) : false;
+  }).length;
 }
 
 function mapAnswersToOriginalOrder(
@@ -238,12 +307,21 @@ interface QuizPlayerState {
   isDiscussionCollapsed: boolean;
   showMobileDiscussion: boolean;
   showPremiumModal: boolean;
+  resumePrompt: { currentQuestionIndex: number; userAnswers: QuizAnswer[] } | null;
 }
 
 type QuizPlayerAction =
   | { type: 'patch'; value: Partial<QuizPlayerState> }
   | { type: 'setSessionEmail'; email: string }
   | { type: 'loadQuizSuccess'; quiz: QuizPlayerQuiz; userAnswers: QuizAnswer[] }
+  | {
+      type: 'loadQuizWithResume';
+      quiz: QuizPlayerQuiz;
+      userAnswers: QuizAnswer[];
+      resumePrompt: { currentQuestionIndex: number; userAnswers: QuizAnswer[] };
+    }
+  | { type: 'acceptResume' }
+  | { type: 'declineResume'; quiz: QuizPlayerQuiz; userAnswers: QuizAnswer[] }
   | { type: 'loadQuizError'; error: string }
   | { type: 'requirePremium' }
   | { type: 'selectAnswer'; answerIndex: number }
@@ -263,6 +341,7 @@ const initialQuizPlayerState: QuizPlayerState = {
   isDiscussionCollapsed: true,
   showMobileDiscussion: false,
   showPremiumModal: false,
+  resumePrompt: null,
 };
 
 function quizPlayerReducer(state: QuizPlayerState, action: QuizPlayerAction): QuizPlayerState {
@@ -280,9 +359,40 @@ function quizPlayerReducer(state: QuizPlayerState, action: QuizPlayerAction): Qu
         ...state,
         quiz: action.quiz,
         userAnswers: action.userAnswers,
+        currentQuestionIndex: 0,
         status: 'ready',
         error: '',
         showPremiumModal: false,
+        resumePrompt: null,
+      };
+    case 'loadQuizWithResume':
+      return {
+        ...state,
+        quiz: action.quiz,
+        userAnswers: action.userAnswers,
+        currentQuestionIndex: 0,
+        status: 'ready',
+        error: '',
+        showPremiumModal: false,
+        resumePrompt: action.resumePrompt,
+      };
+    case 'acceptResume':
+      if (!state.resumePrompt) {
+        return state;
+      }
+      return {
+        ...state,
+        userAnswers: state.resumePrompt.userAnswers,
+        currentQuestionIndex: state.resumePrompt.currentQuestionIndex,
+        resumePrompt: null,
+      };
+    case 'declineResume':
+      return {
+        ...state,
+        quiz: action.quiz,
+        userAnswers: action.userAnswers,
+        currentQuestionIndex: 0,
+        resumePrompt: null,
       };
     case 'loadQuizError':
       return {
@@ -533,7 +643,7 @@ function QuizEmailGate({
 
 export default function QuizPlayerPage() {
   const t = useTranslations('quiz');
-  const { data: session } = useSession();
+  const { data: session, status: sessionStatus } = useSession();
   const { push } = useRouter();
   const slug = useRequiredRouteParam('slug');
   const encodedSlug = routePathSegment(slug);
@@ -553,6 +663,12 @@ export default function QuizPlayerPage() {
     closeAIModal,
   } = useQuizAIExplain();
   const sessionEmail = session?.user?.email || undefined;
+  const progressEnabled = Boolean(session?.user?.email);
+
+  const { loadProgress, saveProgress, flushSave, clearProgress } = useQuizProgress({
+    slug,
+    enabled: progressEnabled,
+  });
 
   useEffect(() => {
     if (session?.user?.email) {
@@ -561,6 +677,11 @@ export default function QuizPlayerPage() {
   }, [session]);
 
   useEffect(() => {
+    // Wait until the auth state is settled so we know whether to look for saved progress.
+    if (sessionStatus === 'loading') {
+      return;
+    }
+
     let isActive = true;
 
     const loadQuiz = async () => {
@@ -568,9 +689,44 @@ export default function QuizPlayerPage() {
         const data = await fetchApiData<IQuiz>(`/api/quiz/${encodedSlug}/play`);
         const { quiz: nextQuiz, initialAnswers } = createQuizPlayerData(data, debugLog);
 
-        if (isActive) {
-          dispatch({ type: 'loadQuizSuccess', quiz: nextQuiz, userAnswers: initialAnswers });
+        let savedProgress: SavedQuizProgress | null = null;
+        if (progressEnabled) {
+          savedProgress = await loadProgress();
         }
+
+        if (!isActive) {
+          return;
+        }
+
+        if (savedProgress && savedProgress.answeredCount > 0) {
+          const restoredQuiz = rebuildPlayerQuizFromLayout(
+            data,
+            savedProgress.questionOrder,
+            savedProgress.optionOrders,
+          );
+
+          if (restoredQuiz && savedProgress.userAnswers.length === restoredQuiz.questions.length) {
+            const safeIndex = Math.min(
+              Math.max(savedProgress.currentQuestionIndex, 0),
+              restoredQuiz.questions.length - 1,
+            );
+            dispatch({
+              type: 'loadQuizWithResume',
+              quiz: restoredQuiz,
+              userAnswers: initialAnswers,
+              resumePrompt: {
+                currentQuestionIndex: safeIndex,
+                userAnswers: savedProgress.userAnswers,
+              },
+            });
+            return;
+          }
+
+          // Saved layout no longer matches the quiz — discard it and start fresh.
+          void clearProgress();
+        }
+
+        dispatch({ type: 'loadQuizSuccess', quiz: nextQuiz, userAnswers: initialAnswers });
       } catch (error: unknown) {
         if (!isActive) {
           return;
@@ -590,7 +746,8 @@ export default function QuizPlayerPage() {
     return () => {
       isActive = false;
     };
-  }, [encodedSlug]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [encodedSlug, sessionStatus, progressEnabled]);
 
   const startQuiz = () => {
     if (!sessionEmail && !state.userEmail.trim()) {
@@ -641,7 +798,73 @@ export default function QuizPlayerPage() {
   });
 
   const exitQuiz = () => {
+    void flushSave();
     push('/');
+  };
+
+  // Auto-save in-progress state (logged-in users only). The resume prompt is
+  // still pending until the user answers it, so don't save during that window.
+  useEffect(() => {
+    if (!progressEnabled || !quiz || state.status !== 'ready' || state.resumePrompt) {
+      return;
+    }
+
+    const answeredCount = countAnswered(quiz, state.userAnswers);
+    if (answeredCount === 0) {
+      return;
+    }
+
+    saveProgress({
+      questionOrder: quiz.questionIndexMap,
+      optionOrders: quiz.questions.map((question) => question.optionIndexMap),
+      userAnswers: state.userAnswers,
+      currentQuestionIndex: state.currentQuestionIndex,
+      answeredCount,
+      totalQuestions: quiz.questions.length,
+    });
+  }, [
+    progressEnabled,
+    quiz,
+    state.status,
+    state.resumePrompt,
+    state.userAnswers,
+    state.currentQuestionIndex,
+    saveProgress,
+  ]);
+
+  // Persist progress if the tab is closed/hidden mid-quiz.
+  useEffect(() => {
+    if (!progressEnabled) {
+      return;
+    }
+
+    const handleVisibility = () => {
+      if (document.visibilityState === 'hidden') {
+        void flushSave();
+      }
+    };
+
+    window.addEventListener('beforeunload', flushSave);
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      window.removeEventListener('beforeunload', flushSave);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, [progressEnabled, flushSave]);
+
+  const handleAcceptResume = () => {
+    dispatch({ type: 'acceptResume' });
+  };
+
+  const handleDeclineResume = () => {
+    void clearProgress();
+    if (state.quiz) {
+      const initialAnswers: QuizAnswer[] = state.quiz.questions.map((question) =>
+        question.type === 'multiple' ? [] : -1,
+      );
+      dispatch({ type: 'declineResume', quiz: state.quiz, userAnswers: initialAnswers });
+    }
   };
 
   if (state.status === 'loading') {
@@ -697,17 +920,28 @@ export default function QuizPlayerPage() {
         questionCount={quiz.questions.length}
       />
 
-      {isMobile && !state.showEmailInput && (
+      {state.resumePrompt && <div className="min-h-screen" aria-hidden="true" />}
+
+      {!state.resumePrompt && isMobile && !state.showEmailInput && (
         <MobileQuizLayout
           quiz={quiz}
+          userAnswers={state.userAnswers}
+          currentQuestionIndex={state.currentQuestionIndex}
+          onAnswersChange={(answers) =>
+            dispatch({ type: 'patch', value: { userAnswers: answers } })
+          }
+          onIndexChange={(index) => dispatch({ type: 'setCurrentQuestionIndex', value: index })}
           onComplete={handleQuizComplete}
-          onExit={() => push('/')}
+          onExit={() => {
+            void flushSave();
+            push('/');
+          }}
           submitting={submitting}
           error={state.error}
         />
       )}
 
-      {!isMobile && (
+      {!state.resumePrompt && !isMobile && (
         <DesktopQuizLayout
           slug={slug}
           quizTitle={quiz.title}
@@ -768,6 +1002,19 @@ export default function QuizPlayerPage() {
           t={t}
         />
       )}
+
+      <ConfirmModal
+        isOpen={Boolean(state.resumePrompt)}
+        title={t('resumeTitle')}
+        message={t('resumeMessage', {
+          question: (state.resumePrompt?.currentQuestionIndex ?? 0) + 1,
+        })}
+        confirmText={t('resumeContinue')}
+        cancelText={t('resumeRestart')}
+        confirmVariant="primary"
+        onConfirm={handleAcceptResume}
+        onCancel={handleDeclineResume}
+      />
     </>
   );
 }

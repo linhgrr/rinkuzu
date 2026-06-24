@@ -96,7 +96,8 @@
       "subtitle": "Resume your quizzes or AI learning paths from where you left off"
     },
     "learningCard": {
-      "aiLearning": "AI Learning"
+      "aiLearning": "AI Learning",
+      "inProgress": "In progress"
     },
     "time": {
       "recentlyUpdated": "Recently updated",

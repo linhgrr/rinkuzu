@@ -12,6 +12,7 @@ import { IUserRepository } from '@/interfaces/repositories/IUserRepository';
 import { IAttemptRepository } from '@/interfaces/repositories/IAttemptRepository';
 import { IDiscussionRepository } from '@/interfaces/repositories/IDiscussionRepository';
 import { IReportRepository } from '@/interfaces/repositories/IReportRepository';
+import { IQuizProgressRepository } from '@/interfaces/repositories/IQuizProgressRepository';
 import { ServiceResult } from '@/interfaces/services/types';
 import type { IQuestion } from '@/models/Quiz';
 import type { Session } from 'next-auth';
@@ -34,9 +35,15 @@ export class QuizService implements IQuizService {
     attemptRepository: IAttemptRepository,
     discussionRepository: IDiscussionRepository,
     reportRepository: IReportRepository,
+    quizProgressRepository?: IQuizProgressRepository,
   ) {
     this.crudService = new QuizCrudService(quizRepository, categoryRepository, userRepository);
-    this.playService = new QuizPlayService(quizRepository, userRepository, attemptRepository);
+    this.playService = new QuizPlayService(
+      quizRepository,
+      userRepository,
+      attemptRepository,
+      quizProgressRepository,
+    );
     this.adminService = new QuizAdminService(quizRepository);
     this.discussionService = new QuizDiscussionService(
       quizRepository,

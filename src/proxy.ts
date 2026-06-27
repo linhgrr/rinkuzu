@@ -18,8 +18,6 @@ const AUTH_REQUIRED_PREFIXES = [
   '/create',
   '/profile',
   '/review',
-  '/categories',
-  '/category',
   '/subscription',
   '/history',
   '/draft',

@@ -21,7 +21,6 @@ export class QuizRepository extends BaseRepository<IQuiz> implements IQuizReposi
     await connectDB();
     return (await Quiz.findById(id)
       .populate('author', 'email name displayName avatar')
-      .populate('category', 'name color')
       .lean()) as unknown as IQuiz | null;
   }
 
@@ -29,7 +28,6 @@ export class QuizRepository extends BaseRepository<IQuiz> implements IQuizReposi
     await connectDB();
     return (await Quiz.findOne({ slug })
       .populate('author', 'email name displayName avatar')
-      .populate('category', 'name color')
       .lean()) as unknown as IQuiz | null;
   }
 
@@ -44,7 +42,6 @@ export class QuizRepository extends BaseRepository<IQuiz> implements IQuizReposi
     await connectDB();
     return (await Quiz.findByIdAndUpdate(id, quizData, { new: true })
       .populate('author', 'email name displayName avatar')
-      .populate('category', 'name color')
       .lean()) as unknown as IQuiz | null;
   }
 
@@ -103,10 +100,10 @@ export class QuizRepository extends BaseRepository<IQuiz> implements IQuizReposi
       const normalizedFilter: FilterQuery<IQuiz> = { ...filter };
 
       if (
-        typeof normalizedFilter.category === 'string' &&
-        Types.ObjectId.isValid(normalizedFilter.category)
+        typeof normalizedFilter.folder === 'string' &&
+        Types.ObjectId.isValid(normalizedFilter.folder)
       ) {
-        normalizedFilter.category = new Types.ObjectId(normalizedFilter.category);
+        normalizedFilter.folder = new Types.ObjectId(normalizedFilter.folder);
       }
       if (
         typeof normalizedFilter.author === 'string' &&
@@ -123,24 +120,10 @@ export class QuizRepository extends BaseRepository<IQuiz> implements IQuizReposi
           { $limit: limit },
           {
             $lookup: {
-              from: 'categories',
-              localField: 'category',
-              foreignField: '_id',
-              as: 'categoryDoc',
-            },
-          },
-          {
-            $lookup: {
               from: 'users',
               localField: 'author',
               foreignField: '_id',
               as: 'authorDoc',
-            },
-          },
-          {
-            $unwind: {
-              path: '$categoryDoc',
-              preserveNullAndEmptyArrays: true,
             },
           },
           {
@@ -166,11 +149,7 @@ export class QuizRepository extends BaseRepository<IQuiz> implements IQuizReposi
               },
               createdAt: 1,
               updatedAt: 1,
-              category: {
-                _id: { $ifNull: ['$categoryDoc._id', '$category'] },
-                name: '$categoryDoc.name',
-                color: '$categoryDoc.color',
-              },
+              folder: 1,
               questionCount: { $size: { $ifNull: ['$questions', []] } },
               questions: { $literal: [] },
             },
@@ -190,10 +169,6 @@ export class QuizRepository extends BaseRepository<IQuiz> implements IQuizReposi
     if (options.populate?.includes('author')) {
       query = query.populate('author', 'email name displayName avatar');
     }
-    if (options.populate?.includes('category')) {
-      query = query.populate('category', 'name color');
-    }
-
     const [quizzes, total] = await Promise.all([
       query.sort(sort).skip(skip).limit(limit).lean() as unknown as IQuiz[],
       Quiz.countDocuments(filter),
@@ -239,7 +214,6 @@ export class QuizRepository extends BaseRepository<IQuiz> implements IQuizReposi
 
     const [quizzes, total] = await Promise.all([
       Quiz.find(filter)
-        .populate('category', 'name color')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
@@ -265,31 +239,10 @@ export class QuizRepository extends BaseRepository<IQuiz> implements IQuizReposi
     ]);
   }
 
-  async countByCategory(): Promise<{ _id: string; count: number }[]> {
-    await connectDB();
-    return await Quiz.aggregate([
-      {
-        $group: {
-          _id: '$category',
-          count: { $sum: 1 },
-        },
-      },
-      {
-        $lookup: {
-          from: 'categories',
-          localField: '_id',
-          foreignField: '_id',
-          as: 'categoryInfo',
-        },
-      },
-    ]);
-  }
-
   async findRecentQuizzes(limit: number = 10): Promise<IQuiz[]> {
     await connectDB();
     return (await Quiz.find({ status: 'published' })
       .populate('author', 'email name displayName avatar')
-      .populate('category', 'name color')
       .sort({ createdAt: -1 })
       .limit(limit)
       .lean()) as unknown as IQuiz[];

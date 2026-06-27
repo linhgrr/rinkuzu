@@ -7,7 +7,6 @@ import {
 } from '@/interfaces/services/IQuizService';
 import { PaginationMeta } from '@/types';
 import { IQuizRepository, IQuiz } from '@/interfaces/repositories/IQuizRepository';
-import { ICategoryRepository } from '@/interfaces/repositories/ICategoryRepository';
 import { IUserRepository } from '@/interfaces/repositories/IUserRepository';
 import { IAttemptRepository } from '@/interfaces/repositories/IAttemptRepository';
 import { IDiscussionRepository } from '@/interfaces/repositories/IDiscussionRepository';
@@ -30,14 +29,13 @@ export class QuizService implements IQuizService {
 
   constructor(
     quizRepository: IQuizRepository,
-    categoryRepository: ICategoryRepository,
     userRepository: IUserRepository,
     attemptRepository: IAttemptRepository,
     discussionRepository: IDiscussionRepository,
     reportRepository: IReportRepository,
     quizProgressRepository?: IQuizProgressRepository,
   ) {
-    this.crudService = new QuizCrudService(quizRepository, categoryRepository, userRepository);
+    this.crudService = new QuizCrudService(quizRepository, userRepository);
     this.playService = new QuizPlayService(
       quizRepository,
       userRepository,
@@ -88,18 +86,14 @@ export class QuizService implements IQuizService {
   async updateQuiz(
     id: string,
     quizData: Partial<IQuiz>,
-    userEmail: string,
+    userId: string,
     userRole?: string,
   ): Promise<ServiceResult<IQuiz>> {
-    return this.crudService.updateQuiz(id, quizData, userEmail, userRole);
+    return this.crudService.updateQuiz(id, quizData, userId, userRole);
   }
 
-  async deleteQuiz(
-    id: string,
-    userEmail: string,
-    userRole?: string,
-  ): Promise<ServiceResult<boolean>> {
-    return this.crudService.deleteQuiz(id, userEmail, userRole);
+  async deleteQuiz(id: string, userId: string, userRole?: string): Promise<ServiceResult<boolean>> {
+    return this.crudService.deleteQuiz(id, userId, userRole);
   }
 
   async previewFromPdf(

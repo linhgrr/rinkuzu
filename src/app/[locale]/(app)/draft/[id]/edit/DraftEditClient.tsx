@@ -41,7 +41,7 @@ interface DraftQuestion {
 interface Draft {
   _id: string;
   title: string;
-  categoryId?: string;
+  folderId?: string | null;
   questions: DraftQuestion[];
   status: string;
   createdAt: string;
@@ -52,16 +52,8 @@ interface Draft {
   };
 }
 
-interface Category {
-  _id: string;
-  name: string;
-  description?: string;
-  color?: string;
-}
-
 interface Props {
   initialDraft: Draft;
-  initialCategory: Category | null;
   locale: string;
 }
 
@@ -70,7 +62,7 @@ interface DraftEditorState {
   title: string;
   description: string;
   isPrivate: boolean;
-  selectedCategory: Category | null;
+  selectedFolderId: string | null;
   showPDFViewer: boolean;
 }
 
@@ -78,7 +70,7 @@ type DraftEditorAction =
   | { type: 'setTitle'; value: string }
   | { type: 'setDescription'; value: string }
   | { type: 'setIsPrivate'; value: boolean }
-  | { type: 'setSelectedCategory'; value: Category | null }
+  | { type: 'setSelectedFolder'; value: string | null }
   | { type: 'setShowPDFViewer'; value: boolean }
   | { type: 'updateQuestion'; index: number; updates: Partial<DraftQuestion> }
   | { type: 'deleteQuestion'; index: number };
@@ -91,8 +83,8 @@ function draftEditorReducer(state: DraftEditorState, action: DraftEditorAction):
       return { ...state, description: action.value };
     case 'setIsPrivate':
       return { ...state, isPrivate: action.value };
-    case 'setSelectedCategory':
-      return { ...state, selectedCategory: action.value };
+    case 'setSelectedFolder':
+      return { ...state, selectedFolderId: action.value };
     case 'setShowPDFViewer':
       return { ...state, showPDFViewer: action.value };
     case 'updateQuestion':
@@ -112,7 +104,7 @@ function draftEditorReducer(state: DraftEditorState, action: DraftEditorAction):
   }
 }
 
-export default function DraftEditClient({ initialDraft, initialCategory, locale }: Props) {
+export default function DraftEditClient({ initialDraft, locale }: Props) {
   const t = useTranslations('create');
   const _tCommon = useTranslations('common');
   const { push } = useRouter();
@@ -123,7 +115,7 @@ export default function DraftEditClient({ initialDraft, initialCategory, locale 
     title: initialDraft.title || '',
     description: '',
     isPrivate: false,
-    selectedCategory: initialCategory,
+    selectedFolderId: initialDraft.folderId ?? null,
     showPDFViewer: true,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -164,11 +156,6 @@ export default function DraftEditClient({ initialDraft, initialCategory, locale 
   };
 
   const handleSubmit = async () => {
-    if (!state.selectedCategory) {
-      toast.error('Vui lòng chọn danh mục');
-      return;
-    }
-
     if (state.questions.length === 0) {
       toast.error('Cần ít nhất 1 câu hỏi');
       return;
@@ -186,7 +173,7 @@ export default function DraftEditClient({ initialDraft, initialCategory, locale 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: state.title,
-          categoryId: state.selectedCategory._id,
+          folderId: state.selectedFolderId,
           description: state.description,
           questions: state.questions,
           pdfUrl,
@@ -255,15 +242,14 @@ export default function DraftEditClient({ initialDraft, initialCategory, locale 
               onTitleChange={(value) => dispatch({ type: 'setTitle', value })}
               description={state.description}
               onDescriptionChange={(value) => dispatch({ type: 'setDescription', value })}
-              selectedCategory={state.selectedCategory}
-              onCategoryChange={(value) => dispatch({ type: 'setSelectedCategory', value })}
+              selectedFolderId={state.selectedFolderId}
+              onFolderChange={(value) => dispatch({ type: 'setSelectedFolder', value })}
               labels={{
                 title: t('quizTitle'),
                 titlePlaceholder: t('enterTitle'),
                 description: t('descriptionOptional'),
                 descriptionPlaceholder: t('provideContext'),
-                category: t('category'),
-                categoryPlaceholder: t('searchSelectCategory'),
+                folder: 'Folder',
                 privateLabel: t('privateQuiz'),
                 privateDescription: t('privateQuizDescription'),
               }}
@@ -331,7 +317,7 @@ export default function DraftEditClient({ initialDraft, initialCategory, locale 
                 <Button
                   type="button"
                   onClick={handleSubmit}
-                  disabled={isSubmitting || !state.selectedCategory || state.questions.length === 0}
+                  disabled={isSubmitting || state.questions.length === 0}
                   className="flex items-center gap-2 px-6 py-3"
                 >
                   {isSubmitting ? (

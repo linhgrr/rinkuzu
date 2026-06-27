@@ -51,7 +51,7 @@ export interface QuizDraft {
   draft_id: string;
   title: string;
   description: string;
-  category_id: string | null;
+  folder_id: string | null;
   prompt: string | null;
   pdf: QuizDraftPdf;
   status: QuizDraftStatus;
@@ -64,18 +64,30 @@ export interface QuizDraft {
   expires_at: string;
 }
 
+export type LegacyQuizDraftTransport = Omit<QuizDraft, 'folder_id'> & {
+  category_id?: string | null;
+  folder_id?: string | null;
+};
+
+export function normalizeQuizDraftTransport(draft: LegacyQuizDraftTransport): QuizDraft {
+  return {
+    ...draft,
+    folder_id: draft.folder_id ?? draft.category_id ?? null,
+  };
+}
+
 export interface CreateQuizDraftInput {
   title: string;
   s3Key: string;
   fileName: string;
   fileSize: number;
-  categoryId?: string;
+  folderId?: string | null;
   description?: string;
   prompt?: string;
 }
 
 export async function createQuizDraft(input: CreateQuizDraftInput): Promise<QuizDraft> {
-  const { draft } = await fetchApiData<{ draft: QuizDraft }>('/api/quiz-drafts', {
+  const { draft } = await fetchApiData<{ draft: LegacyQuizDraftTransport }>('/api/quiz-drafts', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -83,31 +95,39 @@ export async function createQuizDraft(input: CreateQuizDraftInput): Promise<Quiz
       s3_key: input.s3Key,
       file_name: input.fileName,
       file_size: input.fileSize,
-      category_id: input.categoryId,
+      // Compatibility transport: FastAPI still names this storage slot
+      // category_id. The Next domain exposes it only as folderId/folder_id.
+      category_id: input.folderId,
       description: input.description,
       prompt: input.prompt,
     }),
   });
-  return draft;
+  return normalizeQuizDraftTransport(draft);
 }
 
 export async function getQuizDraft(
   draftId: string,
   init?: { signal?: AbortSignal },
 ): Promise<QuizDraft> {
-  const { draft } = await fetchApiData<{ draft: QuizDraft }>(`/api/quiz-drafts/${draftId}`, init);
-  return draft;
+  const { draft } = await fetchApiData<{ draft: LegacyQuizDraftTransport }>(
+    `/api/quiz-drafts/${draftId}`,
+    init,
+  );
+  return normalizeQuizDraftTransport(draft);
 }
 
 export async function listQuizDrafts(init?: { signal?: AbortSignal }): Promise<QuizDraft[]> {
-  const { drafts } = await fetchApiData<{ drafts: QuizDraft[] }>('/api/quiz-drafts', init);
-  return drafts;
+  const { drafts } = await fetchApiData<{ drafts: LegacyQuizDraftTransport[] }>(
+    '/api/quiz-drafts',
+    init,
+  );
+  return drafts.map(normalizeQuizDraftTransport);
 }
 
 export interface PatchQuizDraftInput {
   title?: string;
   description?: string;
-  categoryId?: string;
+  folderId?: string | null;
   questions?: IQuestion[];
 }
 
@@ -115,17 +135,20 @@ export async function patchQuizDraft(
   draftId: string,
   input: PatchQuizDraftInput,
 ): Promise<QuizDraft> {
-  const { draft } = await fetchApiData<{ draft: QuizDraft }>(`/api/quiz-drafts/${draftId}`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      title: input.title,
-      description: input.description,
-      category_id: input.categoryId,
-      questions: input.questions,
-    }),
-  });
-  return draft;
+  const { draft } = await fetchApiData<{ draft: LegacyQuizDraftTransport }>(
+    `/api/quiz-drafts/${draftId}`,
+    {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: input.title,
+        description: input.description,
+        category_id: input.folderId,
+        questions: input.questions,
+      }),
+    },
+  );
+  return normalizeQuizDraftTransport(draft);
 }
 
 export async function deleteQuizDraft(draftId: string): Promise<void> {
@@ -134,7 +157,7 @@ export async function deleteQuizDraft(draftId: string): Promise<void> {
 
 export interface SubmitQuizDraftInput {
   title: string;
-  categoryId: string;
+  folderId?: string | null;
   description?: string;
   questions: IQuestion[];
   isPrivate?: boolean;

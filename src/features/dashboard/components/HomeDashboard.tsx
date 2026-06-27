@@ -45,11 +45,6 @@ export interface HomeDashboardQuiz {
   updatedAt?: string;
   questionCount?: number;
   questions: unknown[];
-  category?: {
-    _id?: string;
-    name: string;
-    color: string;
-  } | null;
 }
 
 export type HomeDashboardAdaptiveSubject = PipelineJobHistoryItem;
@@ -176,8 +171,7 @@ function buildQuizBuilderCards(
       id: quiz._id,
       title:
         quiz.title || fallbackLearningCards[index]?.title || 'It is a long established fact...',
-      category:
-        quiz.category?.name || fallbackLearningCards[index]?.category || t('quizBuilder.title'),
+      category: fallbackLearningCards[index]?.category || t('quizBuilder.title'),
       progress: Math.min(
         96,
         Math.max(28, 34 + ((quiz.questionCount ?? quiz.questions.length) % 9) * 7),

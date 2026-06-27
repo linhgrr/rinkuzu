@@ -1,23 +1,15 @@
 'use client';
 
 import { Input, Textarea } from '@/components/ui/Input';
-import { CategorySelector } from '@/features/categories/components/CategorySelector';
+import { FolderSelector } from '@/features/folders/components/FolderSelector';
 import { HiOutlineLockClosed, HiOutlineTag } from '@/components/icons';
-
-type CategoryLike = {
-  _id: string;
-  name: string;
-  description?: string;
-  color?: string;
-};
 
 type QuizMetaLabels = {
   title: string;
   titlePlaceholder: string;
   description: string;
   descriptionPlaceholder: string;
-  category: string;
-  categoryPlaceholder: string;
+  folder: string;
   privateLabel?: string;
   privateDescription?: string;
   promptLabel?: string;
@@ -30,14 +22,12 @@ type QuizMetaFormProps = {
   onTitleChange: (value: string) => void;
   description: string;
   onDescriptionChange: (value: string) => void;
-  selectedCategory: CategoryLike | null;
-  onCategoryChange: (category: CategoryLike | null) => void;
+  selectedFolderId: string | null;
+  onFolderChange: (folderId: string | null) => void;
   labels: QuizMetaLabels;
   disabled?: boolean;
-  requiredCategory?: boolean;
   titleMaxLength?: number;
   descriptionMaxLength?: number;
-  categoryDisabled?: boolean;
   isPrivate?: boolean;
   onPrivateChange?: (checked: boolean) => void;
   privateCheckboxId?: string;
@@ -51,14 +41,12 @@ export default function QuizMetaForm({
   onTitleChange,
   description,
   onDescriptionChange,
-  selectedCategory,
-  onCategoryChange,
+  selectedFolderId,
+  onFolderChange,
   labels,
   disabled = false,
-  requiredCategory = true,
   titleMaxLength = 200,
   descriptionMaxLength = 1000,
-  categoryDisabled = false,
   isPrivate,
   onPrivateChange,
   privateCheckboxId = 'isPrivateQuiz',
@@ -114,16 +102,8 @@ export default function QuizMetaForm({
       )}
 
       <div>
-        <label className="block text-sm font-semibold text-neutral-700 mb-3">
-          {labels.category}
-        </label>
-        <CategorySelector
-          value={selectedCategory}
-          onChange={onCategoryChange}
-          placeholder={labels.categoryPlaceholder}
-          required={requiredCategory}
-          disabled={disabled || categoryDisabled}
-        />
+        <label className="block text-sm font-semibold text-neutral-700 mb-3">{labels.folder}</label>
+        <FolderSelector value={selectedFolderId} onChange={onFolderChange} disabled={disabled} />
       </div>
 
       {showPrivate && (

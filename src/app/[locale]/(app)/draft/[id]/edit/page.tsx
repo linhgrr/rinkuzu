@@ -2,8 +2,6 @@
 import { notFound, redirect } from 'next/navigation';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import connectDB from '@/lib/mongoose';
-import Category from '@/models/Category';
 import DraftEditClient from './DraftEditClient';
 import { getSignedPDFUrl } from '@/lib/s3';
 import { fetchQuizDraftServer } from '@/lib/quiz/draftServer';
@@ -23,28 +21,17 @@ export default async function DraftEditPage({ params }: Props) {
     notFound();
   }
 
-  // The S3 presign and the category lookup are independent — run them together.
-  // PDF preview signing uses the S3 store shared with FastAPI; category metadata
-  // still lives in the Next-owned Mongo collection.
-  const [pdfUrl, initialCategory] = await Promise.all([
-    draft.pdf?.s3_key
-      ? getSignedPDFUrl(draft.pdf.s3_key).catch((error) => {
-          console.error('Failed to refresh signed URL:', error);
-          return undefined;
-        })
-      : Promise.resolve(undefined),
-    draft.category_id
-      ? connectDB()
-          .then(() => Category.findById(draft.category_id).lean())
-          .then((category) => (category ? JSON.parse(JSON.stringify(category)) : null))
-          .catch(() => null)
-      : Promise.resolve(null),
-  ]);
+  const pdfUrl = await (draft.pdf?.s3_key
+    ? getSignedPDFUrl(draft.pdf.s3_key).catch((error) => {
+        console.error('Failed to refresh signed URL:', error);
+        return undefined;
+      })
+    : Promise.resolve(undefined));
 
   const initialDraft = {
     _id: draft.draft_id,
     title: draft.title,
-    categoryId: draft.category_id ?? undefined,
+    folderId: draft.folder_id ?? null,
     questions: draft.questions,
     status: draft.status,
     createdAt: draft.created_at,
@@ -55,11 +42,5 @@ export default async function DraftEditPage({ params }: Props) {
     },
   };
 
-  return (
-    <DraftEditClient
-      initialDraft={initialDraft}
-      initialCategory={initialCategory}
-      locale={locale}
-    />
-  );
+  return <DraftEditClient initialDraft={initialDraft} locale={locale} />;
 }

@@ -7,7 +7,7 @@ import type { Session } from 'next-auth';
 export interface CreateQuizRequest {
   title: string;
   description?: string;
-  category: string;
+  folderId?: string | null;
   questions: IQuestion[];
   isPrivate: boolean;
   pdfUrl?: string;
@@ -16,7 +16,7 @@ export interface CreateQuizRequest {
 export interface QuizListOptions {
   status?: string;
   search?: string;
-  category?: string;
+  folder?: string | null;
   page?: number;
   limit?: number;
   isPrivate?: boolean;
@@ -82,11 +82,11 @@ export interface IQuizService {
   updateQuiz(
     id: string,
     quizData: Partial<IQuiz>,
-    userEmail: string,
+    userId: string,
     userRole?: string,
   ): Promise<ServiceResult<IQuiz>>;
 
-  deleteQuiz(id: string, userEmail: string, userRole?: string): Promise<ServiceResult<boolean>>;
+  deleteQuiz(id: string, userId: string, userRole?: string): Promise<ServiceResult<boolean>>;
 
   submitQuizAttempt(
     slug: string,

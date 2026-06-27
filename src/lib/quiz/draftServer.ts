@@ -5,7 +5,11 @@ import {
   resolveAdaptiveApiUrl,
   resolveAdaptiveProxyTimeoutMs,
 } from '@/lib/adaptive/config';
-import type { QuizDraft } from '@/lib/quiz/draftApi';
+import {
+  normalizeQuizDraftTransport,
+  type LegacyQuizDraftTransport,
+  type QuizDraft,
+} from '@/lib/quiz/draftApi';
 
 // Server-side fetch of a single quiz draft straight from FastAPI (the edit
 // page is a Server Component and cannot go through the same-origin proxy).
@@ -19,7 +23,7 @@ export async function fetchQuizDraftServer(
   const timeout = setTimeout(() => controller.abort(), resolveAdaptiveProxyTimeoutMs());
 
   try {
-    const { draft } = await fetchApiData<{ draft: QuizDraft }>(
+    const { draft } = await fetchApiData<{ draft: LegacyQuizDraftTransport }>(
       `${baseUrl}/api/quiz/drafts/${draftId}`,
       {
         headers,
@@ -27,7 +31,7 @@ export async function fetchQuizDraftServer(
         signal: controller.signal,
       },
     );
-    return draft ?? null;
+    return draft ? normalizeQuizDraftTransport(draft) : null;
   } catch {
     return null;
   } finally {

@@ -76,7 +76,7 @@ describe('api client helpers', () => {
         ),
     );
 
-    await expect(fetchApiData('/api/categories/math')).rejects.toMatchObject({
+    await expect(fetchApiData('/api/quizzes/missing')).rejects.toMatchObject({
       name: 'ApiResponseError',
       code: 'validation_error',
       message: 'Request failed',

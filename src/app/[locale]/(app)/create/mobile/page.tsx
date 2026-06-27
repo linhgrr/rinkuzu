@@ -13,7 +13,7 @@ import {
   HiOutlineX,
 } from '@/components/icons';
 import { toast } from 'sonner';
-import { CategorySelector } from '@/features/categories/components/CategorySelector';
+import { FolderSelector } from '@/features/folders/components/FolderSelector';
 import { Input, Textarea } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { extractUnknownErrorMessage } from '@/lib/api/error';
@@ -23,18 +23,11 @@ import { MAX_QUIZ_PDF_BYTES } from '@/lib/quiz/constants';
 import { usePendingQuizUploadStore } from '@/store/usePendingQuizUploadStore';
 import { useCreateResponsiveRedirect } from '@/hooks/useCreateResponsiveRedirect';
 
-type CategoryLike = {
-  _id: string;
-  name: string;
-  description?: string;
-  color?: string;
-};
-
 type MobileCreateState = {
   file: File | null;
   title: string;
   description: string;
-  selectedCategory: CategoryLike | null;
+  selectedFolderId: string | null;
   aiPrompt: string;
   isUploading: boolean;
 };
@@ -47,7 +40,7 @@ const initialState: MobileCreateState = {
   file: null,
   title: '',
   description: '',
-  selectedCategory: null,
+  selectedFolderId: null,
   aiPrompt: '',
   isUploading: false,
 };
@@ -115,7 +108,7 @@ export default function MobileCreatePage() {
         s3Key,
         fileName: state.file.name,
         fileSize: state.file.size,
-        categoryId: state.selectedCategory?._id,
+        folderId: state.selectedFolderId,
         description: state.description.trim() || undefined,
         prompt: state.aiPrompt.trim() || undefined,
       });
@@ -194,7 +187,7 @@ export default function MobileCreatePage() {
                     file: null,
                     title: '',
                     description: '',
-                    selectedCategory: null,
+                    selectedFolderId: null,
                     aiPrompt: '',
                   },
                 });
@@ -250,17 +243,15 @@ export default function MobileCreatePage() {
         </div>
       )}
 
-      {/* Category Selector */}
+      {/* Folder Selector */}
       {state.file && (
         <div className="mt-5">
-          <label className="block text-sm font-medium text-neutral-700 mb-2">{t('category')}</label>
-          <CategorySelector
-            value={state.selectedCategory}
-            onChange={(selectedCategory) =>
-              dispatch({ type: 'patch', value: { selectedCategory } })
+          <p className="block text-sm font-medium text-neutral-700 mb-2">Folder</p>
+          <FolderSelector
+            value={state.selectedFolderId}
+            onChange={(selectedFolderId) =>
+              dispatch({ type: 'patch', value: { selectedFolderId } })
             }
-            placeholder={t('searchSelectCategory')}
-            required
             disabled={state.isUploading}
           />
         </div>
@@ -285,7 +276,7 @@ export default function MobileCreatePage() {
       )}
 
       {/* Submit Button */}
-      {state.file && state.title.trim() && state.selectedCategory && (
+      {state.file && state.title.trim() && (
         <Button
           type="button"
           onClick={handleSubmit}

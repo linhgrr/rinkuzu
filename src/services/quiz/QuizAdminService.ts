@@ -19,7 +19,7 @@ export class QuizAdminService {
     const {
       status,
       search,
-      category,
+      folder,
       page = 1,
       limit = 10,
       isPrivate,
@@ -39,9 +39,8 @@ export class QuizAdminService {
       filter.author = userId;
     }
 
-    // Add category filter
-    if (category && category.trim()) {
-      filter.category = category.trim();
+    if (onlyMine && folder !== undefined) {
+      filter.folder = folder;
     }
 
     // Add search functionality
@@ -57,7 +56,7 @@ export class QuizAdminService {
       page,
       limit,
       sort: { createdAt: -1 },
-      populate: ['author', 'category'],
+      populate: ['author'],
       compact,
     });
   }

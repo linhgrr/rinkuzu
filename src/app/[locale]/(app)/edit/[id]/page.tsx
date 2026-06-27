@@ -25,13 +25,6 @@ import { routePathSegment } from '@/lib/routing/routeParams';
 import { useRequiredRouteParam } from '@/lib/routing/useRequiredRouteParam';
 import { IQuiz } from '@/types';
 
-interface Category {
-  _id: string;
-  name: string;
-  description?: string;
-  color?: string;
-}
-
 type EditPageStatus = 'loading' | 'ready' | 'error';
 
 interface EditQuizState {
@@ -45,7 +38,7 @@ interface EditQuizState {
   success: string;
   title: string;
   description: string;
-  selectedCategory: Category | null;
+  selectedFolderId: string | null;
   editableQuestions: Question[];
   isPrivate: boolean;
   pdfUrl: string | null;
@@ -60,7 +53,7 @@ type EditQuizAction =
   | { type: 'togglePdfViewer' }
   | { type: 'setTitle'; value: string }
   | { type: 'setDescription'; value: string }
-  | { type: 'setCategory'; value: Category | null }
+  | { type: 'setFolder'; value: string | null }
   | { type: 'setPrivate'; value: boolean }
   | { type: 'setQuestionToRemove'; value: number | null }
   | { type: 'updateQuestionField'; index: number; field: keyof Question; value: unknown }
@@ -84,7 +77,7 @@ const initialState: EditQuizState = {
   success: '',
   title: '',
   description: '',
-  selectedCategory: null,
+  selectedFolderId: null,
   editableQuestions: [],
   isPrivate: false,
   pdfUrl: null,
@@ -111,7 +104,7 @@ function editQuizReducer(state: EditQuizState, action: EditQuizAction): EditQuiz
         quiz: loadedQuiz,
         title: loadedQuiz.title,
         description: loadedQuiz.description || '',
-        selectedCategory: loadedQuiz.category as Category,
+        selectedFolderId: loadedQuiz.folder ?? null,
         editableQuestions: toQuestionArray(loadedQuiz.questions),
         isPrivate: loadedQuiz.isPrivate || false,
         pdfUrl: loadedPdfUrl,
@@ -127,8 +120,8 @@ function editQuizReducer(state: EditQuizState, action: EditQuizAction): EditQuiz
       return { ...state, title: action.value };
     case 'setDescription':
       return { ...state, description: action.value };
-    case 'setCategory':
-      return { ...state, selectedCategory: action.value };
+    case 'setFolder':
+      return { ...state, selectedFolderId: action.value };
     case 'setPrivate':
       return { ...state, isPrivate: action.value };
     case 'setQuestionToRemove':
@@ -519,11 +512,6 @@ export default function EditQuizPage() {
       return;
     }
 
-    if (!state.selectedCategory) {
-      dispatch({ type: 'patch', value: { error: 'Please select a category' } });
-      return;
-    }
-
     dispatch({ type: 'patch', value: { saving: true, error: '', success: '' } });
 
     try {
@@ -551,7 +539,7 @@ export default function EditQuizPage() {
         body: JSON.stringify({
           title: state.title.trim(),
           description: state.description.trim(),
-          category: state.selectedCategory._id,
+          folder: state.selectedFolderId,
           questions: formattedQuestions,
           isPrivate: state.isPrivate,
         }),
@@ -662,14 +650,11 @@ export default function EditQuizPage() {
                   onTitleChange={(value) => dispatch({ type: 'setTitle', value })}
                   description={state.description}
                   onDescriptionChange={(value) => dispatch({ type: 'setDescription', value })}
-                  selectedCategory={state.selectedCategory}
-                  onCategoryChange={(category) =>
-                    dispatch({ type: 'setCategory', value: category as Category | null })
-                  }
+                  selectedFolderId={state.selectedFolderId}
+                  onFolderChange={(value) => dispatch({ type: 'setFolder', value })}
                   isPrivate={state.isPrivate}
                   onPrivateChange={(value) => dispatch({ type: 'setPrivate', value })}
                   disabled={!canEdit}
-                  categoryDisabled={!canEdit}
                   quiz={state.quiz}
                 />
 

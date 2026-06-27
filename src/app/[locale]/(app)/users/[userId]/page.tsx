@@ -5,14 +5,7 @@ import { getTranslations } from 'next-intl/server';
 import { Types } from 'mongoose';
 import { UserAvatar } from '@/components/user/UserAvatar';
 import { type UserIdentity, getUserDisplayName } from '@/components/user/user-identity';
-import {
-  Badge,
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/Card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import connectDB from '@/lib/mongoose';
 import { buildLocalizedMetadata } from '@/lib/seo';
@@ -55,22 +48,6 @@ interface PublicQuizRecord {
   slug: string;
   createdAt: Date;
   questions?: Array<unknown>;
-  category?: {
-    name: string;
-    color: string;
-  } | null;
-}
-
-function getCategoryBadgeVariant(color: string) {
-  const map: Record<string, 'info' | 'success' | 'warning' | 'danger' | 'purple' | 'default'> = {
-    blue: 'info',
-    green: 'success',
-    yellow: 'warning',
-    red: 'danger',
-    purple: 'purple',
-  };
-
-  return map[color?.toLowerCase()] || 'default';
 }
 
 export async function generateMetadata({
@@ -107,8 +84,7 @@ export default async function PublicUserProfilePage({
       status: 'published',
       isPrivate: false,
     })
-      .populate('category', 'name color')
-      .select('title description slug category createdAt questions')
+      .select('title description slug createdAt questions')
       .sort({ createdAt: -1 })
       .lean(),
     getTranslations({ locale, namespace: 'profile' }),
@@ -132,12 +108,6 @@ export default async function PublicUserProfilePage({
     createdAtIso: new Date(quiz.createdAt).toISOString(),
     createdAtLabel: publicProfileShortDateFormatters[localeKey].format(new Date(quiz.createdAt)),
     questionCount: Array.isArray(quiz.questions) ? quiz.questions.length : 0,
-    category: quiz.category
-      ? {
-          name: quiz.category.name,
-          color: quiz.category.color,
-        }
-      : null,
   }));
 
   const joinDate = publicProfileLongDateFormatters[localeKey].format(
@@ -209,14 +179,6 @@ export default async function PublicUserProfilePage({
                       className="flex h-full flex-col justify-between border-line shadow-sm"
                     >
                       <CardHeader className="space-y-3">
-                        {quiz.category && (
-                          <Badge
-                            variant={getCategoryBadgeVariant(quiz.category.color)}
-                            className="w-fit"
-                          >
-                            {quiz.category.name}
-                          </Badge>
-                        )}
                         <div>
                           <CardTitle className="line-clamp-2 text-lg">{quiz.title}</CardTitle>
                           <CardDescription className="mt-2 line-clamp-3">

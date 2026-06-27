@@ -250,8 +250,6 @@ export default function AdminQuizManagementPage() {
                     />
                     <span>•</span>
                     <span>{t('questionTotal', { count: questionCount(quiz) })}</span>
-                    <span>•</span>
-                    <span>{(quiz.category as any)?.name || tProfile('noCategory')}</span>
                   </div>
                 </div>
 

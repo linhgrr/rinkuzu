@@ -23,32 +23,16 @@ interface AdminStats {
     pendingQuizzes: number;
     rejectedQuizzes: number;
     totalAttempts: number;
-    totalCategories: number;
-    activeCategories: number;
   };
   timeBasedStats: {
     today: { newUsers: number; newQuizzes: number; attempts: number };
     thisWeek: { newUsers: number; newQuizzes: number; attempts: number };
     thisMonth: { newUsers: number; newQuizzes: number; attempts: number };
   };
-  topCategories: Array<{
-    name: string;
-    color: string;
-    quizCount: number;
-    totalQuestions: number;
-  }>;
   topCreators: Array<{
     email: string;
     quizCount: number;
     totalQuestions: number;
-  }>;
-  categoryStats: Array<{
-    name: string;
-    color: string;
-    isActive: boolean;
-    totalQuizzes: number;
-    publishedQuizzes: number;
-    pendingQuizzes: number;
   }>;
   recentActivity: {
     users: Array<{ email: string; createdAt: string }>;
@@ -57,7 +41,6 @@ interface AdminStats {
       status: string;
       createdAt: string;
       author: { email: string };
-      category: { name: string };
     }>;
     attempts: Array<{
       score: number;
@@ -79,7 +62,7 @@ interface AdminStats {
 }
 
 type TranslateFn = (key: string, values?: Record<string, string | number | Date>) => string;
-type StatsModalType = 'categories' | 'creators' | 'activity' | null;
+type StatsModalType = 'creators' | 'activity' | null;
 
 interface AdminStatsState {
   stats: AdminStats | null;
@@ -385,46 +368,6 @@ function RankingListCard({
   );
 }
 
-function TopCategoriesSection({
-  stats,
-  t,
-  onOpenModal,
-}: {
-  stats: AdminStats;
-  t: TranslateFn;
-  onOpenModal: () => void;
-}) {
-  return (
-    <RankingListCard
-      title={t('topCategories')}
-      description={t('mostQuizzes')}
-      buttonLabel={t('viewAll')}
-      onViewAll={onOpenModal}
-    >
-      {stats.topCategories.slice(0, 5).map((category, index) => (
-        <div
-          key={category.name}
-          className="flex items-center justify-between rounded-lg bg-neutral-50 p-3"
-        >
-          <div className="flex items-center gap-x-3">
-            <span className="text-sm font-medium text-neutral-500">#{index + 1}</span>
-            <div className="size-4 rounded-full" style={{ backgroundColor: category.color }} />
-            <span className="font-medium">{category.name}</span>
-          </div>
-          <div className="text-right text-sm">
-            <div className="font-medium">
-              {category.quizCount} {t('quiz')}
-            </div>
-            <div className="text-neutral-500">
-              {category.totalQuestions} {t('questions')}
-            </div>
-          </div>
-        </div>
-      ))}
-    </RankingListCard>
-  );
-}
-
 function TopCreatorsSection({
   stats,
   t,
@@ -545,77 +488,16 @@ function RecentActivityCard({
   );
 }
 
-function CategoryStatisticsCard({ stats, t }: { stats: AdminStats; t: TranslateFn }) {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{t('categoryStatistics')}</CardTitle>
-        <CardDescription>{t('detailsByCategory')}</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b">
-                <th className="px-4 py-3 text-left">{t('category')}</th>
-                <th className="px-4 py-3 text-center">{t('totalQuizzesCol')}</th>
-                <th className="px-4 py-3 text-center">{t('publishedCol')}</th>
-                <th className="px-4 py-3 text-center">{t('pendingCol')}</th>
-                <th className="px-4 py-3 text-center">{t('statusCol')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {stats.categoryStats.slice(0, 10).map((category) => (
-                <tr key={category.name} className="border-b hover:bg-neutral-50">
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-x-3">
-                      <div
-                        className="size-3 rounded-full"
-                        style={{ backgroundColor: category.color }}
-                      />
-                      <span className="font-medium">{category.name}</span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-center font-medium">{category.totalQuizzes}</td>
-                  <td className="px-4 py-3 text-center text-green-600">
-                    {category.publishedQuizzes}
-                  </td>
-                  <td className="px-4 py-3 text-center text-yellow-600">
-                    {category.pendingQuizzes}
-                  </td>
-                  <td className="px-4 py-3 text-center">
-                    <span
-                      className={`inline-flex min-h-[28px] items-center rounded-full px-3 text-[13px] font-medium ${
-                        category.isActive
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-red-100 text-red-800'
-                      }`}
-                    >
-                      {category.isActive ? t('active') : t('inactiveStatus')}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
 function AdminStatsContent({
   stats,
   error,
   t,
-  onOpenCategories,
   onOpenCreators,
   onOpenActivity,
 }: {
   stats: AdminStats;
   error: string;
   t: TranslateFn;
-  onOpenCategories: () => void;
   onOpenCreators: () => void;
   onOpenActivity: () => void;
 }) {
@@ -627,12 +509,8 @@ function AdminStatsContent({
         <OverviewCards stats={stats} t={t} />
         <TimeBasedStatsCard stats={stats} t={t} />
         <QuizStatusCard stats={stats} t={t} />
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          <TopCategoriesSection stats={stats} t={t} onOpenModal={onOpenCategories} />
-          <TopCreatorsSection stats={stats} t={t} onOpenModal={onOpenCreators} />
-        </div>
+        <TopCreatorsSection stats={stats} t={t} onOpenModal={onOpenCreators} />
         <RecentActivityCard stats={stats} t={t} onOpenModal={onOpenActivity} />
-        <CategoryStatisticsCard stats={stats} t={t} />
       </div>
     </>
   );
@@ -649,13 +527,6 @@ function AdminStatsModals({
 }) {
   return (
     <>
-      <StatsModal
-        isOpen={activeModal === 'categories'}
-        onClose={onClose}
-        title={t('allCategories')}
-        type="categories"
-        apiEndpoint="/api/admin/stats/categories"
-      />
       <StatsModal
         isOpen={activeModal === 'creators'}
         onClose={onClose}
@@ -707,7 +578,6 @@ export default function AdminStatsPage() {
           stats={state.stats}
           error={state.error}
           t={t}
-          onOpenCategories={() => dispatch({ type: 'openModal', modal: 'categories' })}
           onOpenCreators={() => dispatch({ type: 'openModal', modal: 'creators' })}
           onOpenActivity={() => dispatch({ type: 'openModal', modal: 'activity' })}
         />

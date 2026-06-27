@@ -86,8 +86,6 @@ const QUIZ_SCOPE_PREFIXES = [
   '/bookmarks',
   '/explore',
   '/quiz',
-  '/categories',
-  '/category',
 ];
 
 /**

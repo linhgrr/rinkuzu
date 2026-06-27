@@ -38,6 +38,7 @@ export {
   HiOutlineCollection,
   HiOutlineCreditCard,
   HiOutlineCurrencyDollar,
+  HiOutlineFolder,
   HiOutlineDesktopComputer,
   HiOutlineDocumentText,
   HiOutlineDotsVertical,

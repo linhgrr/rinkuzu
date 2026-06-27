@@ -7,7 +7,6 @@ export interface IQuizProgress {
         _id: string;
         title?: string;
         slug?: string;
-        category?: { _id?: string; name?: string; color?: string } | string | null;
       };
   questionOrder: number[];
   optionOrders: number[][];

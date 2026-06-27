@@ -1,33 +1,34 @@
 import { IQuizRepository, IQuiz } from '@/interfaces/repositories/IQuizRepository';
 import { createSubscriptionService } from '@/lib/subscription-factory';
-import { ICategoryRepository } from '@/interfaces/repositories/ICategoryRepository';
 import { IUserRepository } from '@/interfaces/repositories/IUserRepository';
 import { CreateQuizRequest } from '@/interfaces/services/IQuizService';
 import { ServiceResult } from '@/interfaces/services/types';
 import { generateSlug } from '@/lib/utils';
 import { getAuthorId } from './quiz-helpers';
 import { logger } from '@/lib/logger';
+import connectDB from '@/lib/mongoose';
+import Folder from '@/models/Folder';
+import { isValidObjectId } from 'mongoose';
 
 const VALID_QUESTION_TYPES = new Set(['single', 'multiple']);
 
 export class QuizCrudService {
   constructor(
     private quizRepository: IQuizRepository,
-    private categoryRepository: ICategoryRepository,
     private userRepository: IUserRepository,
   ) {}
 
   async createQuiz(userId: string, quizData: CreateQuizRequest): Promise<IQuiz> {
-    const { title, description, category, questions, isPrivate, pdfUrl } = quizData;
+    const { title, description, folderId, questions, isPrivate, pdfUrl } = quizData;
 
-    if (!title || !category || !questions || !Array.isArray(questions) || questions.length === 0) {
-      throw new Error('Title, category, and questions are required');
+    if (!title || !questions || !Array.isArray(questions) || questions.length === 0) {
+      throw new Error('Title and questions are required');
     }
-
-    // Validate category exists and is active
-    const categoryDoc = await this.categoryRepository.findById(category);
-    if (!categoryDoc || !categoryDoc.isActive) {
-      throw new Error('Invalid or inactive category selected');
+    if (folderId) {
+      if (!isValidObjectId(folderId)) throw new Error('Invalid folder selected');
+      await connectDB();
+      const ownsFolder = await Folder.exists({ _id: folderId, owner: userId });
+      if (!ownsFolder) throw new Error('Invalid folder selected');
     }
 
     if (isPrivate) {
@@ -117,7 +118,7 @@ export class QuizCrudService {
       description,
       slug,
       author: userId,
-      category,
+      folder: folderId ?? null,
       questions,
       status: 'published',
       isPrivate: !!isPrivate,
@@ -203,7 +204,7 @@ export class QuizCrudService {
   async updateQuiz(
     id: string,
     quizData: Partial<IQuiz>,
-    userEmail: string,
+    userId: string,
     userRole?: string,
   ): Promise<ServiceResult<IQuiz>> {
     try {
@@ -219,7 +220,7 @@ export class QuizCrudService {
 
       // Check permissions
       const isAdmin = userRole === 'admin';
-      const isAuthor = getAuthorId(quiz.author) === userEmail;
+      const isAuthor = getAuthorId(quiz.author) === userId;
 
       if (!isAdmin && !isAuthor) {
         return {
@@ -230,10 +231,8 @@ export class QuizCrudService {
       }
 
       if (quizData.isPrivate && !quiz.isPrivate && !isAdmin) {
-        const user = await this.userRepository.findByEmail(userEmail);
-        const isPremium = user?._id
-          ? await createSubscriptionService().isUserPremium(String(user._id))
-          : false;
+        const user = await this.userRepository.findById(userId);
+        const isPremium = user ? await createSubscriptionService().isUserPremium(userId) : false;
 
         if (!isPremium) {
           return {
@@ -268,11 +267,7 @@ export class QuizCrudService {
     }
   }
 
-  async deleteQuiz(
-    id: string,
-    userEmail: string,
-    userRole?: string,
-  ): Promise<ServiceResult<boolean>> {
+  async deleteQuiz(id: string, userId: string, userRole?: string): Promise<ServiceResult<boolean>> {
     try {
       const quiz = await this.quizRepository.findById(id);
 
@@ -286,7 +281,7 @@ export class QuizCrudService {
 
       // Check permissions
       const isAdmin = userRole === 'admin';
-      const isAuthor = getAuthorId(quiz.author) === userEmail;
+      const isAuthor = getAuthorId(quiz.author) === userId;
 
       if (!isAdmin && !isAuthor) {
         return {

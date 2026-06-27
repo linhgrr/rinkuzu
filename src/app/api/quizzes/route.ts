@@ -14,7 +14,7 @@ export const GET = withOptionalAuth(async (request: NextRequest, { session, user
     const url = new URL(request.url);
     const status = isGuest ? 'published' : url.searchParams.get('status') || undefined;
     const search = url.searchParams.get('search') || undefined;
-    const category = url.searchParams.get('category') || undefined;
+    const folderParam = url.searchParams.get('folder');
     const page = parseInt(url.searchParams.get('page') || '1');
     const limit = parseInt(url.searchParams.get('limit') || '10');
     const mine = url.searchParams.get('mine');
@@ -26,7 +26,12 @@ export const GET = withOptionalAuth(async (request: NextRequest, { session, user
     const result = await quizService.getQuizzes({
       status: !isGuest && !onlyMine && !isAdmin ? 'published' : status,
       search,
-      category,
+      folder:
+        onlyMine && folderParam !== null
+          ? folderParam === 'null' || folderParam === 'default'
+            ? null
+            : folderParam
+          : undefined,
       page,
       limit,
       isPrivate:
@@ -56,12 +61,12 @@ export const GET = withOptionalAuth(async (request: NextRequest, { session, user
 // POST /api/quizzes - Create quiz from prepared data
 export const POST = withAuth(async (request: NextRequest, { userId }) => {
   try {
-    const { title, description, category, questions, isPrivate, pdfUrl } = await request.json();
+    const { title, description, folderId, questions, isPrivate, pdfUrl } = await request.json();
 
     const quiz = await quizService.createQuiz(userId, {
       title,
       description,
-      category,
+      folderId,
       questions,
       isPrivate,
       pdfUrl,
@@ -75,8 +80,8 @@ export const POST = withAuth(async (request: NextRequest, { userId }) => {
     const message = error instanceof Error ? error.message : '';
 
     if (
-      message.includes('Title, category, and questions are required') ||
-      message.includes('Invalid or inactive category selected') ||
+      message.includes('Title and questions are required') ||
+      message.includes('Invalid folder selected') ||
       message.includes('Premium subscription required to create private quizzes') ||
       message.includes('Question') ||
       message.includes('Type must be')

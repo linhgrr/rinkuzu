@@ -7,7 +7,7 @@ export interface IQuiz {
   description?: string;
   slug: string;
   author: string | IUserPreview;
-  category: string;
+  folder?: string | null;
   questions: IQuestion[];
   status: 'pending' | 'published' | 'rejected';
   isPrivate: boolean;
@@ -62,8 +62,6 @@ export interface IQuizRepository {
   count(filter?: Record<string, unknown>): Promise<number>;
 
   countByStatus(): Promise<{ _id: string; count: number }[]>;
-
-  countByCategory(): Promise<{ _id: string; count: number }[]>;
 
   findRecentQuizzes(limit?: number): Promise<IQuiz[]>;
 

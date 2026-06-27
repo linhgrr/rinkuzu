@@ -906,9 +906,6 @@ export default function QuizPlayerPage() {
     typeof quiz.author === 'string'
       ? quiz.author
       : getUserDisplayName(quiz.author as any) || 'RinKuzu Community';
-  const categoryName =
-    typeof quiz.category === 'string' ? quiz.category : (quiz.category as any)?.name || undefined;
-
   return (
     <>
       <QuizPageSchema
@@ -916,7 +913,6 @@ export default function QuizPlayerPage() {
         quizTitle={quiz.title}
         quizDescription={quiz.description}
         authorName={authorName}
-        categoryName={categoryName}
         questionCount={quiz.questions.length}
       />
 

@@ -1,17 +1,13 @@
 import {
   IAdminService,
   type AdminActivityStats,
-  type AdminCategoryDTO,
-  type AdminCategoryStat,
   type AdminCreatorStat,
   type AdminMessageResult,
-  type AdminPaginatedCategories,
   type AdminPaginatedUsers,
   type AdminReportItem,
   type AdminStats,
   type SearchParams,
 } from '@/interfaces/services/IAdminService';
-import { ICategoryRepository } from '@/interfaces/repositories/ICategoryRepository';
 import { IUserRepository } from '@/interfaces/repositories/IUserRepository';
 import { IReportRepository } from '@/interfaces/repositories/IReportRepository';
 import { IQuizRepository } from '@/interfaces/repositories/IQuizRepository';
@@ -25,150 +21,11 @@ function toMessage(error: unknown, fallback: string): string {
 
 export class AdminService implements IAdminService {
   constructor(
-    private categoryRepository: ICategoryRepository,
     private userRepository: IUserRepository,
     private reportRepository: IReportRepository,
     private quizRepository: IQuizRepository,
     private attemptRepository: IAttemptRepository,
   ) {}
-
-  async getCategories(
-    searchParams: SearchParams,
-  ): Promise<ServiceResult<AdminPaginatedCategories>> {
-    try {
-      const { search, page = 1, limit = 20 } = searchParams;
-
-      const result = await this.categoryRepository.findAll({
-        page,
-        limit,
-        search,
-      });
-
-      return {
-        success: true,
-        data: {
-          categories: result.categories as AdminCategoryDTO[],
-          pagination: result.pagination,
-        },
-      };
-    } catch (error) {
-      logger.error({ error }, 'Get categories error');
-      return {
-        success: false,
-        error: 'Failed to get categories',
-        statusCode: 500,
-      };
-    }
-  }
-
-  async createCategory(
-    categoryData: Record<string, unknown>,
-    adminId: string,
-  ): Promise<ServiceResult<AdminCategoryDTO>> {
-    try {
-      const name = typeof categoryData['name'] === 'string' ? categoryData['name'].trim() : '';
-      const description =
-        typeof categoryData['description'] === 'string'
-          ? categoryData['description'].trim()
-          : undefined;
-      const color = typeof categoryData['color'] === 'string' ? categoryData['color'] : undefined;
-
-      if (!name) {
-        return {
-          success: false,
-          error: 'Category name is required',
-          statusCode: 400,
-        };
-      }
-
-      // Check if category exists
-      const existing = await this.categoryRepository.findAll({
-        search: name,
-      });
-
-      if (existing.categories.length > 0) {
-        return {
-          success: false,
-          error: 'Category with this name already exists',
-          statusCode: 400,
-        };
-      }
-
-      const category = await this.categoryRepository.create({
-        name,
-        description,
-        color: color || '#009d8c',
-        createdBy: adminId,
-      });
-
-      return {
-        success: true,
-        data: category as AdminCategoryDTO,
-      };
-    } catch (error) {
-      logger.error({ error }, 'Create category error');
-      return {
-        success: false,
-        error: 'Failed to create category',
-        statusCode: 500,
-      };
-    }
-  }
-
-  async updateCategory(
-    id: string,
-    categoryData: Record<string, unknown>,
-  ): Promise<ServiceResult<AdminCategoryDTO>> {
-    try {
-      const category = await this.categoryRepository.update(id, categoryData);
-
-      if (!category) {
-        return {
-          success: false,
-          error: 'Category not found',
-          statusCode: 404,
-        };
-      }
-
-      return {
-        success: true,
-        data: category as AdminCategoryDTO,
-      };
-    } catch (error) {
-      logger.error({ error }, 'Update category error');
-      return {
-        success: false,
-        error: 'Failed to update category',
-        statusCode: 500,
-      };
-    }
-  }
-
-  async deleteCategory(id: string): Promise<ServiceResult<boolean>> {
-    try {
-      const deleted = await this.categoryRepository.delete(id);
-
-      if (!deleted) {
-        return {
-          success: false,
-          error: 'Category not found',
-          statusCode: 404,
-        };
-      }
-
-      return {
-        success: true,
-        data: true,
-      };
-    } catch (error) {
-      logger.error({ error }, 'Delete category error');
-      return {
-        success: false,
-        error: 'Failed to delete category',
-        statusCode: 500,
-      };
-    }
-  }
 
   async getUsers(searchParams: SearchParams): Promise<ServiceResult<AdminPaginatedUsers>> {
     try {
@@ -313,15 +170,12 @@ export class AdminService implements IAdminService {
 
   async getStats(): Promise<ServiceResult<AdminStats>> {
     try {
-      const [totalUsers, roleStats, quizStats, totalAttempts, totalCategories, activeCategories] =
-        await Promise.all([
-          this.userRepository.count(),
-          this.userRepository.countByRole(),
-          this.quizRepository.countByStatus(),
-          this.attemptRepository.count({}),
-          this.categoryRepository.count({}),
-          this.categoryRepository.count({ isActive: true }),
-        ]);
+      const [totalUsers, roleStats, quizStats, totalAttempts] = await Promise.all([
+        this.userRepository.count(),
+        this.userRepository.countByRole(),
+        this.quizRepository.countByStatus(),
+        this.attemptRepository.count({}),
+      ]);
 
       const totalAdmins = roleStats.find((r) => r._id === 'admin')?.count || 0;
       const publishedQuizzes = quizStats.find((s) => s._id === 'published')?.count || 0;
@@ -339,8 +193,6 @@ export class AdminService implements IAdminService {
           pendingQuizzes,
           rejectedQuizzes,
           totalAttempts,
-          totalCategories,
-          activeCategories,
         },
       };
     } catch (error) {
@@ -384,7 +236,7 @@ export class AdminService implements IAdminService {
         this.quizRepository.count({ createdAt: { $gte: thisMonth } }),
         this.attemptRepository.count({ takenAt: { $gte: thisMonth } }),
         this.userRepository.findAll({ limit: 5 }),
-        this.quizRepository.findAll({}, { limit: 5, populate: ['author', 'category'] }),
+        this.quizRepository.findAll({}, { limit: 5, populate: ['author'] }),
         this.attemptRepository.findRecentActivity(5),
       ]);
 
@@ -423,22 +275,6 @@ export class AdminService implements IAdminService {
       return {
         success: false,
         error: 'Failed to get activity stats',
-        statusCode: 500,
-      };
-    }
-  }
-
-  async getCategoryStats(): Promise<ServiceResult<AdminCategoryStat[]>> {
-    try {
-      const stats = await this.categoryRepository.getStatsWithQuizCount();
-      return {
-        success: true,
-        data: stats as unknown as AdminCategoryStat[],
-      };
-    } catch (_error) {
-      return {
-        success: false,
-        error: 'Failed to get category stats',
         statusCode: 500,
       };
     }

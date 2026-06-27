@@ -80,7 +80,6 @@ const PRIMARY_NAV: NavEntry[] = [
     items: [
       { href: '/admin/queue', labelKey: 'quizManagement' },
       { href: '/admin/users', labelKey: 'userManagement' },
-      { href: '/admin/categories', labelKey: 'categories' },
       { href: '/admin/subscriptions', labelKey: 'subscriptions' },
       { href: '/admin/plans', labelKey: 'pricingPlans' },
       { href: '/admin/stats', labelKey: 'statistics' },

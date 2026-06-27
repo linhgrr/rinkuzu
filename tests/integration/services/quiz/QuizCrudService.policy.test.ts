@@ -1,6 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { IQuizRepository } from '@/interfaces/repositories/IQuizRepository';
-import type { ICategoryRepository } from '@/interfaces/repositories/ICategoryRepository';
 import type { IUserRepository } from '@/interfaces/repositories/IUserRepository';
 import { QuizCrudService } from '@/services/quiz/QuizCrudService';
 
@@ -19,16 +18,13 @@ describe('QuizCrudService quiz publication policy', () => {
     findBySlug: vi.fn(),
     create: vi.fn(),
   } as unknown as IQuizRepository;
-  const categoryRepository = {
-    findById: vi.fn(),
-  } as unknown as ICategoryRepository;
   const userRepository = {
     findById: vi.fn(),
   } as unknown as IUserRepository;
 
   const request = {
     title: 'Published immediately',
-    category: 'category-1',
+    folderId: null,
     questions: [
       {
         question: 'Question?',
@@ -42,10 +38,6 @@ describe('QuizCrudService quiz publication policy', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(categoryRepository.findById).mockResolvedValue({
-      _id: 'category-1',
-      isActive: true,
-    } as never);
     vi.mocked(quizRepository.findBySlug).mockResolvedValue(null);
     vi.mocked(quizRepository.create).mockImplementation(async (quiz) => quiz as never);
     vi.mocked(userRepository.findById).mockResolvedValue({
@@ -56,7 +48,7 @@ describe('QuizCrudService quiz publication policy', () => {
   });
 
   it('publishes a new public quiz without admin approval', async () => {
-    const service = new QuizCrudService(quizRepository, categoryRepository, userRepository);
+    const service = new QuizCrudService(quizRepository, userRepository);
 
     await service.createQuiz('user-1', request);
 
@@ -69,7 +61,7 @@ describe('QuizCrudService quiz publication policy', () => {
   });
 
   it('rejects private quiz creation for a free user', async () => {
-    const service = new QuizCrudService(quizRepository, categoryRepository, userRepository);
+    const service = new QuizCrudService(quizRepository, userRepository);
 
     await expect(service.createQuiz('user-1', { ...request, isPrivate: true })).rejects.toThrow(
       'Premium subscription required to create private quizzes',
@@ -79,7 +71,7 @@ describe('QuizCrudService quiz publication policy', () => {
 
   it('allows a premium user to create a private quiz', async () => {
     subscriptionMocks.isUserPremium.mockResolvedValue(true);
-    const service = new QuizCrudService(quizRepository, categoryRepository, userRepository);
+    const service = new QuizCrudService(quizRepository, userRepository);
 
     await service.createQuiz('user-1', { ...request, isPrivate: true });
 
@@ -96,7 +88,7 @@ describe('QuizCrudService quiz publication policy', () => {
       _id: 'admin-1',
       role: 'admin',
     } as never);
-    const service = new QuizCrudService(quizRepository, categoryRepository, userRepository);
+    const service = new QuizCrudService(quizRepository, userRepository);
 
     await service.createQuiz('admin-1', { ...request, isPrivate: true });
 

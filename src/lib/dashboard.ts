@@ -29,11 +29,6 @@ type DashboardQuiz = {
   updatedAt?: string;
   questionCount?: number;
   questions: unknown[];
-  category?: {
-    _id?: string;
-    name: string;
-    color: string;
-  } | null;
   author?: {
     _id?: string;
     email: string;
@@ -44,7 +39,6 @@ export type DashboardInProgressQuiz = {
   quizId: string;
   title: string;
   slug: string;
-  category: { name: string; color: string } | null;
   answeredCount: number;
   totalQuestions: number;
   updatedAt: string;
@@ -94,11 +88,6 @@ type DashboardQuizAggregationResult = {
   createdAt?: unknown;
   updatedAt?: unknown;
   questionCount?: unknown;
-  category?: {
-    _id?: unknown;
-    name?: unknown;
-    color?: unknown;
-  } | null;
 };
 
 const HOME_ADAPTIVE_SUBJECT_LIMIT = 4;
@@ -188,7 +177,6 @@ function normalizeIsoDate(value: unknown): string {
 
 function serializeQuizForClient(rawQuiz: unknown): DashboardQuiz {
   const quiz = (rawQuiz ?? {}) as Record<string, unknown>;
-  const category = quiz['category'] as Record<string, unknown> | null | undefined;
   const author = quiz['author'] as Record<string, unknown> | null | undefined;
   const questions = Array.isArray(quiz['questions']) ? (quiz['questions'] as unknown[]) : [];
 
@@ -206,13 +194,6 @@ function serializeQuizForClient(rawQuiz: unknown): DashboardQuiz {
         ? (quiz['questionCount'] as number)
         : questions.length,
     questions: questions as DashboardQuiz['questions'],
-    category: category
-      ? {
-          _id: normalizeId(category['_id']),
-          name: String(category['name'] || ''),
-          color: String(category['color'] || ''),
-        }
-      : null,
     author: author
       ? {
           _id: author['_id'] ? normalizeId(author['_id']) : undefined,
@@ -290,20 +271,6 @@ async function getDashboardQuizList(
     { $sort: { createdAt: -1 } },
     { $limit: limit },
     {
-      $lookup: {
-        from: 'categories',
-        localField: 'category',
-        foreignField: '_id',
-        as: 'categoryDoc',
-      },
-    },
-    {
-      $unwind: {
-        path: '$categoryDoc',
-        preserveNullAndEmptyArrays: true,
-      },
-    },
-    {
       $project: {
         _id: 1,
         title: 1,
@@ -316,11 +283,6 @@ async function getDashboardQuizList(
         questionCount: { $size: { $ifNull: ['$questions', []] } },
         // Keep payload small for dashboard cards.
         questions: { $literal: [] },
-        category: {
-          _id: '$categoryDoc._id',
-          name: '$categoryDoc.name',
-          color: '$categoryDoc.color',
-        },
       },
     },
   ]).exec();
@@ -373,19 +335,10 @@ function serializeInProgressQuiz(raw: IQuizProgress): DashboardInProgressQuiz | 
     return null;
   }
 
-  const category =
-    quiz.category && typeof quiz.category === 'object'
-      ? {
-          name: String((quiz.category as { name?: string }).name || ''),
-          color: String((quiz.category as { color?: string }).color || ''),
-        }
-      : null;
-
   return {
     quizId: normalizeId(quiz._id),
     title: String(quiz.title || ''),
     slug,
-    category,
     answeredCount: raw.answeredCount ?? 0,
     totalQuestions: raw.totalQuestions ?? 0,
     updatedAt: normalizeIsoDate(raw.updatedAt),

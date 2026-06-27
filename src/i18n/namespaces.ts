@@ -5,7 +5,6 @@ export const APP_MESSAGE_NAMESPACES = [
   'admin',
   'attemptDetail',
   'auth',
-  'categories',
   'common',
   'create',
   'dashboard',

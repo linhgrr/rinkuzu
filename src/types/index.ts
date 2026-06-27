@@ -20,23 +20,11 @@ export interface IUser {
   createdAt?: Date;
 }
 
-/** Internal helper for IQuiz; not exported directly. */
-interface ICategory {
-  _id: string;
-  name: string;
-  description?: string;
-  color: string;
-  isActive: boolean;
-  createdBy: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
 export interface IQuiz {
   _id: string;
   title: string;
   description?: string;
-  category: string | ICategory;
+  folder?: string | null;
   status: 'pending' | 'published' | 'rejected';
   author: string | IUser | IUserPreview;
   slug: string;

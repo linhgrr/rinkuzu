@@ -7,27 +7,12 @@ export interface SearchParams {
   limit?: number;
 }
 
-export interface AdminCategoryDTO {
-  _id: string;
-  name: string;
-  description?: string;
-  color?: string;
-  isActive?: boolean;
-  createdAt?: Date;
-  updatedAt?: Date;
-}
-
 export interface AdminUserDTO {
   _id: string;
   email: string;
   displayName?: string;
   role: 'admin' | 'user';
   createdAt?: Date;
-}
-
-export interface AdminPaginatedCategories {
-  categories: AdminCategoryDTO[];
-  pagination: PaginationMeta;
 }
 
 export interface AdminPaginatedUsers {
@@ -62,8 +47,6 @@ export interface AdminStats extends AdminQuizStatusBreakdown {
   totalUsers: number;
   totalAdmins: number;
   totalAttempts: number;
-  totalCategories: number;
-  activeCategories: number;
 }
 
 export interface AdminTimeBucket {
@@ -90,12 +73,6 @@ export interface AdminActivityStats {
   };
 }
 
-export interface AdminCategoryStat {
-  _id: string;
-  name: string;
-  quizCount: number;
-}
-
 export interface AdminCreatorStat {
   _id: string;
   email: string;
@@ -103,18 +80,6 @@ export interface AdminCreatorStat {
 }
 
 export interface IAdminService {
-  // Category management
-  getCategories(searchParams: SearchParams): Promise<ServiceResult<AdminPaginatedCategories>>;
-  createCategory(
-    categoryData: Record<string, unknown>,
-    adminId: string,
-  ): Promise<ServiceResult<AdminCategoryDTO>>;
-  updateCategory(
-    id: string,
-    categoryData: Record<string, unknown>,
-  ): Promise<ServiceResult<AdminCategoryDTO>>;
-  deleteCategory(id: string): Promise<ServiceResult<boolean>>;
-
   // User management
   getUsers(searchParams: SearchParams): Promise<ServiceResult<AdminPaginatedUsers>>;
   updateUserRole(
@@ -132,6 +97,5 @@ export interface IAdminService {
   // Statistics
   getStats(): Promise<ServiceResult<AdminStats>>;
   getActivityStats(): Promise<ServiceResult<AdminActivityStats>>;
-  getCategoryStats(): Promise<ServiceResult<AdminCategoryStat[]>>;
   getCreatorStats(): Promise<ServiceResult<AdminCreatorStat[]>>;
 }

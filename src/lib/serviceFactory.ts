@@ -1,12 +1,10 @@
 import { QuizService } from '@/services/quiz/QuizService';
 import { UserService } from '@/services/user/UserService';
 import { BookmarkService } from '@/services/bookmark/BookmarkService';
-import { CategoryService } from '@/services/category/CategoryService';
 import { AdminService } from '@/services/admin/AdminService';
 
 import { QuizRepository } from '@/repositories/QuizRepository';
 import { UserRepository } from '@/repositories/UserRepository';
-import { CategoryRepository } from '@/repositories/CategoryRepository';
 import { AttemptRepository } from '@/repositories/AttemptRepository';
 import { DiscussionRepository } from '@/repositories/DiscussionRepository';
 import { ReportRepository } from '@/repositories/ReportRepository';
@@ -19,7 +17,6 @@ import type { SubscriptionService } from '@/services/subscription/SubscriptionSe
 interface Repositories {
   quiz: QuizRepository;
   user: UserRepository;
-  category: CategoryRepository;
   attempt: AttemptRepository;
   discussion: DiscussionRepository;
   report: ReportRepository;
@@ -31,7 +28,6 @@ interface Services {
   quiz?: QuizService;
   user?: UserService;
   bookmark?: BookmarkService;
-  category?: CategoryService;
   admin?: AdminService;
 }
 
@@ -44,7 +40,6 @@ export class ServiceFactory {
     this.repositories = {
       quiz: new QuizRepository(),
       user: new UserRepository(),
-      category: new CategoryRepository(),
       attempt: new AttemptRepository(),
       discussion: new DiscussionRepository(),
       report: new ReportRepository(),
@@ -64,7 +59,6 @@ export class ServiceFactory {
     if (!this.services.quiz) {
       this.services.quiz = new QuizService(
         this.repositories.quiz,
-        this.repositories.category,
         this.repositories.user,
         this.repositories.attempt,
         this.repositories.discussion,
@@ -89,20 +83,9 @@ export class ServiceFactory {
     return this.services.bookmark;
   }
 
-  getCategoryService(): CategoryService {
-    if (!this.services.category) {
-      this.services.category = new CategoryService(
-        this.repositories.category,
-        this.repositories.quiz,
-      );
-    }
-    return this.services.category;
-  }
-
   getAdminService(): AdminService {
     if (!this.services.admin) {
       this.services.admin = new AdminService(
-        this.repositories.category,
         this.repositories.user,
         this.repositories.report,
         this.repositories.quiz,
@@ -119,10 +102,6 @@ export class ServiceFactory {
 
   getQuizRepository(): QuizRepository {
     return this.repositories.quiz;
-  }
-
-  getCategoryRepository(): CategoryRepository {
-    return this.repositories.category;
   }
 
   getAttemptRepository(): AttemptRepository {

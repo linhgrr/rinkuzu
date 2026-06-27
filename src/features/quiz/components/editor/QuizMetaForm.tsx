@@ -5,13 +5,6 @@ import { HiOutlinePencilAlt } from '@/components/icons';
 import QuizMetaFormBase from '@/features/quiz/components/QuizMetaForm';
 import type { IQuiz } from '@/types';
 
-interface Category {
-  _id: string;
-  name: string;
-  description?: string;
-  color?: string;
-}
-
 type QuizMetaFormEditorProps = {
   error: string;
   success: string;
@@ -19,12 +12,11 @@ type QuizMetaFormEditorProps = {
   onTitleChange: (value: string) => void;
   description: string;
   onDescriptionChange: (value: string) => void;
-  selectedCategory: Category | null;
-  onCategoryChange: (category: Category | null) => void;
+  selectedFolderId: string | null;
+  onFolderChange: (folderId: string | null) => void;
   isPrivate: boolean;
   onPrivateChange: (checked: boolean) => void;
   disabled: boolean;
-  categoryDisabled: boolean;
   quiz: IQuiz | null;
 };
 
@@ -38,12 +30,11 @@ export function QuizMetaFormEditor({
   onTitleChange,
   description,
   onDescriptionChange,
-  selectedCategory,
-  onCategoryChange,
+  selectedFolderId,
+  onFolderChange,
   isPrivate,
   onPrivateChange,
   disabled,
-  categoryDisabled,
   quiz,
 }: QuizMetaFormEditorProps) {
   const createdAt = quiz ? new Date(quiz.createdAt) : null;
@@ -77,15 +68,14 @@ export function QuizMetaFormEditor({
           onTitleChange={onTitleChange}
           description={description}
           onDescriptionChange={onDescriptionChange}
-          selectedCategory={selectedCategory}
-          onCategoryChange={(category) => onCategoryChange(category as Category | null)}
+          selectedFolderId={selectedFolderId}
+          onFolderChange={onFolderChange}
           labels={{
             title: 'Quiz Title',
             titlePlaceholder: 'Enter a descriptive title for your quiz',
             description: 'Description (Optional)',
             descriptionPlaceholder: 'Provide additional context about the quiz',
-            category: 'Category *',
-            categoryPlaceholder: 'Search and select a category...',
+            folder: 'Folder',
             privateLabel: 'Private Quiz',
             privateDescription: '(Only visible to you and admins)',
           }}
@@ -93,7 +83,6 @@ export function QuizMetaFormEditor({
           onPrivateChange={onPrivateChange}
           privateCheckboxId="isPrivate"
           disabled={disabled}
-          categoryDisabled={categoryDisabled}
         />
 
         {/* Quiz Content Info */}

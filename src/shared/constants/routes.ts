@@ -6,7 +6,6 @@ export const ROUTES = {
   REGISTER: '/register',
   CREATE_QUIZ: '/create',
   PENDING_QUIZZES: '/profile', // Consolidated
-  CATEGORIES: '/categories',
   BOOKMARKS: '/profile', // Consolidated
   HISTORY: '/profile', // Consolidated
   EXPLORE: '/explore',
@@ -17,10 +16,6 @@ export const ROUTES = {
     VIEW: (slug: string) => `/quiz/${slug}`,
     FLASHCARDS: (slug: string) => `/quiz/${slug}/flashcards`,
     RESULT: (slug: string) => `/quiz/${slug}/result`,
-  },
-
-  CATEGORY: {
-    VIEW: (slug: string) => `/category/${slug}`,
   },
 
   USER: {
@@ -40,7 +35,6 @@ export const ROUTES = {
 
   // Admin routes
   ADMIN: {
-    CATEGORIES: '/admin/categories',
     PLANS: '/admin/plans',
     QUEUE: '/admin/queue',
     REPORTS: '/admin/reports',

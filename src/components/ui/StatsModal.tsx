@@ -13,7 +13,7 @@ interface StatsModalProps {
   isOpen: boolean;
   onClose: () => void;
   title: string;
-  type: 'categories' | 'creators' | 'activity';
+  type: 'creators' | 'activity';
   apiEndpoint: string;
   children?: React.ReactNode;
 }
@@ -29,7 +29,6 @@ interface PaginationData {
 
 interface StatsModalPayload {
   pagination: PaginationData;
-  categories?: any[];
   creators?: any[];
   activities?: any[];
   data?: any[];
@@ -116,8 +115,6 @@ function statsModalReducer(state: StatsModalState, action: StatsModalAction): St
 
 function getDataKey(type: StatsModalProps['type']) {
   switch (type) {
-    case 'categories':
-      return 'categories';
     case 'creators':
       return 'creators';
     case 'activity':
@@ -129,12 +126,6 @@ function getDataKey(type: StatsModalProps['type']) {
 
 function getSortOptions(type: StatsModalProps['type'], t: (key: string) => string): SortOption[] {
   switch (type) {
-    case 'categories':
-      return [
-        { value: 'quizCount', label: t('quizCount') },
-        { value: 'name', label: t('name') },
-        { value: 'createdAt', label: t('createdAt') },
-      ];
     case 'creators':
       return [
         { value: 'quizCount', label: t('quizCount') },
@@ -154,51 +145,6 @@ function formatDateValue(dateString: string) {
     hour: '2-digit',
     minute: '2-digit',
   });
-}
-
-function CategoryItem({
-  category,
-  index,
-  page,
-  limit,
-  t,
-}: {
-  category: any;
-  index: number;
-  page: number;
-  limit: number;
-  t: (key: string) => string;
-}) {
-  return (
-    <div className="flex items-center justify-between p-4 bg-neutral-50 rounded-lg hover:bg-neutral-100 transition-colors">
-      <div className="flex items-center gap-x-4">
-        <span className="text-sm font-medium text-neutral-500">
-          #{index + 1 + (page - 1) * limit}
-        </span>
-        <div className="size-4 rounded-full" style={{ backgroundColor: category.color }} />
-        <div>
-          <h4 className="font-medium text-neutral-900">{category.name}</h4>
-          <p className="text-sm text-neutral-600">{category.description}</p>
-        </div>
-      </div>
-      <div className="text-right">
-        <div className="text-sm font-medium">
-          {category.totalQuizzes || category.quizCount} quiz
-        </div>
-        <div className="text-xs text-neutral-500">
-          {category.publishedQuizzes} {t('published')} • {category.totalQuestions}{' '}
-          {t('questionsCount')}
-        </div>
-        <div className="text-xs text-neutral-400">
-          {category.isActive ? (
-            <span className="text-green-600">{t('active')}</span>
-          ) : (
-            <span className="text-red-600">{t('inactive')}</span>
-          )}
-        </div>
-      </div>
-    </div>
-  );
 }
 
 function CreatorItem({
@@ -326,8 +272,6 @@ function ActivityItem({ activity, t }: { activity: any; t: (key: string) => stri
                 nameClassName="text-sm"
               />
               <span>•</span>
-              <span>{activityData.category?.name}</span>
-              <span>•</span>
               <span>
                 {activityData.questionCount} {t('questionsCount')}
               </span>
@@ -429,17 +373,6 @@ function StatsModalContent({
     <div className="space-y-3">
       {data.map((item, index) => {
         switch (type) {
-          case 'categories':
-            return (
-              <CategoryItem
-                key={item._id || index}
-                category={item}
-                index={index}
-                page={page}
-                limit={limit}
-                t={t}
-              />
-            );
           case 'creators':
             return (
               <CreatorItem

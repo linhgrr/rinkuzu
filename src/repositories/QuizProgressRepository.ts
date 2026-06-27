@@ -67,11 +67,7 @@ export class QuizProgressRepository
     const records = await QuizProgress.find({ userId })
       .sort({ updatedAt: -1 })
       .limit(limit)
-      .populate({
-        path: 'quiz',
-        select: 'title slug category',
-        populate: { path: 'category', select: 'name color' },
-      })
+      .populate({ path: 'quiz', select: 'title slug' })
       .lean();
     return records as unknown as IQuizProgress[];
   }

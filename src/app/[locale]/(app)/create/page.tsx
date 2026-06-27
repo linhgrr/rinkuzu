@@ -33,18 +33,11 @@ import {
   HiOutlineX,
 } from '@/components/icons';
 
-interface Category {
-  _id: string;
-  name: string;
-  description?: string;
-  color?: string;
-}
-
 interface CreateQuizState {
   title: string;
   description: string;
   aiPrompt: string;
-  selectedCategory: Category | null;
+  selectedFolderId: string | null;
   isPrivate: boolean;
   pdfFile: File | null;
   showPDFViewer: boolean;
@@ -68,7 +61,7 @@ const initialCreateQuizState: CreateQuizState = {
   title: '',
   description: '',
   aiPrompt: '',
-  selectedCategory: null,
+  selectedFolderId: null,
   isPrivate: false,
   pdfFile: null,
   showPDFViewer: false,
@@ -345,7 +338,7 @@ interface FormCardProps {
   getRootProps: ReturnType<typeof useDropzone>['getRootProps'];
   isDragActive: boolean;
   onAiPromptChange: (value: string) => void;
-  onCategoryChange: (value: Category | null) => void;
+  onFolderChange: (value: string | null) => void;
   onDescriptionChange: (value: string) => void;
   onPrivateChange: (value: boolean) => void;
   onRemoveFile: () => void;
@@ -353,7 +346,7 @@ interface FormCardProps {
   onTitleChange: (value: string) => void;
   onTogglePreview: () => void;
   pdfFile: File | null;
-  selectedCategory: Category | null;
+  selectedFolderId: string | null;
   showPDFViewer: boolean;
   title: string;
   description: string;
@@ -374,7 +367,7 @@ function CreateQuizFormCard({
   isDragActive,
   isPrivate,
   onAiPromptChange,
-  onCategoryChange,
+  onFolderChange,
   onDescriptionChange,
   onPrivateChange,
   onRemoveFile,
@@ -382,7 +375,7 @@ function CreateQuizFormCard({
   onTitleChange,
   onTogglePreview,
   pdfFile,
-  selectedCategory,
+  selectedFolderId,
   showPDFViewer,
   t,
   tCommon,
@@ -410,15 +403,14 @@ function CreateQuizFormCard({
               onTitleChange={onTitleChange}
               description={description}
               onDescriptionChange={onDescriptionChange}
-              selectedCategory={selectedCategory}
-              onCategoryChange={onCategoryChange}
+              selectedFolderId={selectedFolderId}
+              onFolderChange={onFolderChange}
               labels={{
                 title: t('quizTitle'),
                 titlePlaceholder: t('enterTitle'),
                 description: t('descriptionOptional'),
                 descriptionPlaceholder: t('provideContext'),
-                category: t('category'),
-                categoryPlaceholder: t('searchSelectCategory'),
+                folder: 'Folder',
                 privateLabel: t('privateQuiz'),
                 privateDescription: t('privateQuizDescription'),
                 promptLabel: t('aiPromptLabel'),
@@ -475,7 +467,7 @@ function CreateQuizFormCard({
                   variant="gradient"
                   size="lg"
                   loading={extracting}
-                  disabled={!title.trim() || !selectedCategory?._id || !pdfFile}
+                  disabled={!title.trim() || !pdfFile}
                   className="w-full sm:w-auto"
                 >
                   {extracting ? (
@@ -587,11 +579,6 @@ export default function CreateQuizPage() {
       return;
     }
 
-    if (!state.selectedCategory?._id) {
-      dispatch({ type: 'patch', value: { error: t('selectCategory') } });
-      return;
-    }
-
     if (!state.pdfFile) {
       dispatch({ type: 'patch', value: { error: t('uploadOnePDF') } });
       return;
@@ -611,7 +598,7 @@ export default function CreateQuizPage() {
         s3Key,
         fileName: uploadFile.name,
         fileSize: uploadFile.size,
-        categoryId: state.selectedCategory._id,
+        folderId: state.selectedFolderId,
         description: trimmedDescription || undefined,
         prompt: trimmedPrompt || undefined,
       });
@@ -668,8 +655,8 @@ export default function CreateQuizPage() {
               isDragActive={isDragActive}
               isPrivate={state.isPrivate}
               onAiPromptChange={(value) => dispatch({ type: 'patch', value: { aiPrompt: value } })}
-              onCategoryChange={(value) =>
-                dispatch({ type: 'patch', value: { selectedCategory: value } })
+              onFolderChange={(value) =>
+                dispatch({ type: 'patch', value: { selectedFolderId: value } })
               }
               onDescriptionChange={(value) =>
                 dispatch({ type: 'patch', value: { description: value } })
@@ -684,7 +671,7 @@ export default function CreateQuizPage() {
                 dispatch({ type: 'patch', value: { showPDFViewer: !state.showPDFViewer } })
               }
               pdfFile={state.pdfFile}
-              selectedCategory={state.selectedCategory}
+              selectedFolderId={state.selectedFolderId}
               showPDFViewer={state.showPDFViewer}
               t={t}
               tCommon={tCommon}

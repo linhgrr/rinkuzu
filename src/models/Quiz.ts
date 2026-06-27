@@ -13,7 +13,7 @@ export interface IQuestion {
 interface IQuiz extends Document {
   title: string;
   description?: string;
-  category: Types.ObjectId;
+  folder?: Types.ObjectId | null;
   status: 'pending' | 'published' | 'rejected';
   author: Types.ObjectId;
   slug: string;
@@ -102,10 +102,10 @@ const QuizSchema = new Schema<IQuiz>(
       trim: true,
       maxlength: [1000, 'Description cannot exceed 1000 characters'],
     },
-    category: {
+    folder: {
       type: Schema.Types.ObjectId,
-      ref: 'Category',
-      required: [true, 'Category is required'],
+      ref: 'Folder',
+      default: null,
     },
     status: {
       type: String,
@@ -151,9 +151,8 @@ const QuizSchema = new Schema<IQuiz>(
 QuizSchema.index({ status: 1, createdAt: -1 });
 QuizSchema.index({ status: 1, isPrivate: 1, createdAt: -1 });
 QuizSchema.index({ author: 1, createdAt: -1 });
-QuizSchema.index({ category: 1, status: 1, isPrivate: 1, createdAt: -1 });
-QuizSchema.index({ category: 1, status: 1, createdAt: -1 });
 QuizSchema.index({ author: 1, status: 1, createdAt: -1 });
+QuizSchema.index({ author: 1, folder: 1, createdAt: -1 });
 // slug index is already created via unique: true in schema
 
 // Prevent re-compilation in development

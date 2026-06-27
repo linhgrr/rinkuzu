@@ -95,7 +95,6 @@ export class QuizPlayService {
         description: quiz.description,
         author: quiz.author,
         slug: quiz.slug,
-        category: quiz.category,
         status: quiz.status,
         isPrivate: quiz.isPrivate,
         createdAt: quiz.createdAt,

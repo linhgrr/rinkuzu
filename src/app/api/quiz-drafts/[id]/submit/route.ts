@@ -57,11 +57,7 @@ export const POST = withAuth<{ id: string }>(
     try {
       const { id } = params;
       const body = await request.json();
-      const { title, categoryId, description, questions: editedQuestions, isPrivate } = body;
-
-      if (!categoryId) {
-        return apiErr('validation_error', 'Category is required', 400);
-      }
+      const { title, folderId, description, questions: editedQuestions, isPrivate } = body;
 
       const validation = validateQuestionList(editedQuestions);
       if (!validation.isValid) {
@@ -89,7 +85,7 @@ export const POST = withAuth<{ id: string }>(
       const quiz = await quizService.createQuiz(userId, {
         title: title || 'Untitled quiz',
         description: description || '',
-        category: categoryId,
+        folderId: folderId ?? null,
         questions: validation.questions,
         isPrivate: Boolean(isPrivate),
       });

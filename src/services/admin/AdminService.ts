@@ -14,6 +14,7 @@ import { IQuizRepository } from '@/interfaces/repositories/IQuizRepository';
 import { IAttemptRepository } from '@/interfaces/repositories/IAttemptRepository';
 import { ServiceResult } from '@/interfaces/services/types';
 import { logger } from '@/lib/logger';
+import { normalizeAdminRecentAttempt } from '@/services/admin/adminActivity';
 
 function toMessage(error: unknown, fallback: string): string {
   return error instanceof Error ? error.message : fallback;
@@ -266,7 +267,7 @@ export class AdminService implements IAdminService {
               createdAt: (u as { createdAt?: Date }).createdAt,
             })),
             quizzes: recentQuizzes.quizzes,
-            attempts: recentAttempts,
+            attempts: recentAttempts.map(normalizeAdminRecentAttempt),
           },
         },
       };

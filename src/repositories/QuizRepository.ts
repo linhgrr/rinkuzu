@@ -5,6 +5,8 @@ import Bookmark from '@/models/Bookmark';
 import Discussion from '@/models/Discussion';
 import QuestionProgress from '@/models/QuestionProgress';
 import Report from '@/models/Report';
+import FolderQuiz from '@/models/FolderQuiz';
+import QuizProgress from '@/models/QuizProgress';
 import { IQuiz, IQuizRepository } from '@/interfaces/repositories/IQuizRepository';
 import { buildPaginationMeta } from '@/repositories/pagination';
 import { BaseRepository } from '@/repositories/base';
@@ -64,6 +66,8 @@ export class QuizRepository extends BaseRepository<IQuiz> implements IQuizReposi
           Report.deleteMany({ quizId: String(quiz._id) }).session(session),
           Bookmark.deleteMany({ 'quiz.slug': quiz.slug }).session(session),
           QuestionProgress.deleteMany({ quizSlug: quiz.slug }).session(session),
+          FolderQuiz.deleteMany({ quiz: quiz._id }).session(session),
+          QuizProgress.deleteMany({ quiz: quiz._id }).session(session),
         ]);
 
         const result = await Quiz.deleteOne({ _id: quiz._id }).session(session);

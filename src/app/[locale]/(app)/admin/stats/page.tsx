@@ -43,10 +43,11 @@ interface AdminStats {
       author: { email: string };
     }>;
     attempts: Array<{
+      id: string;
       score: number;
       takenAt: string;
       user: { email: string } | null;
-      quiz: { title: string };
+      quiz: { title: string } | null;
     }>;
   };
   scoreStats: {
@@ -469,11 +470,10 @@ function RecentActivityCard({
 
           <ActivityColumn title={t('recentAttempts')} titleClassName="text-brand-trust">
             {stats.recentActivity.attempts.slice(0, 5).map((attempt) => (
-              <div
-                key={`${attempt.user?.email || 'anonymous'}-${attempt.quiz.title}-${attempt.takenAt}`}
-                className="rounded bg-green-50 p-2 text-sm"
-              >
-                <div className="truncate font-medium">{attempt.quiz.title}</div>
+              <div key={attempt.id} className="rounded bg-green-50 p-2 text-sm">
+                <div className="truncate font-medium">
+                  {attempt.quiz?.title || t('deletedQuiz')}
+                </div>
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-neutral-500">{attempt.user?.email || t('anonymous')}</span>
                   <span className="font-medium">{attempt.score}%</span>

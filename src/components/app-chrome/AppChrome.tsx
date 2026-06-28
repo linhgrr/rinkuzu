@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import { Icon } from '@iconify/react';
 import { useSession, signOut } from 'next-auth/react';
@@ -476,6 +476,8 @@ function UserMenuDropdown({
 function AppTopbar({
   collapsed,
   onToggleSidebar,
+  mobileMenuOpen,
+  onToggleMobileMenu,
   currentLocale,
   onSelectLocale,
   avatar,
@@ -486,6 +488,8 @@ function AppTopbar({
 }: {
   collapsed: boolean;
   onToggleSidebar: () => void;
+  mobileMenuOpen: boolean;
+  onToggleMobileMenu: () => void;
   currentLocale: string;
   onSelectLocale: (locale: 'en' | 'vi') => void;
   avatar?: string | null;
@@ -495,9 +499,9 @@ function AppTopbar({
   t: (key: string) => string;
 }) {
   return (
-    <header className="fixed inset-x-0 top-0 z-50 flex h-[72px] border-b border-line bg-surface">
+    <header className="fixed inset-x-0 top-0 z-50 flex h-16 border-b border-line bg-surface lg:h-[72px]">
       <div
-        className={`relative flex h-full w-full items-center border-r border-line transition-[width] duration-300 ease-out ${
+        className={`relative hidden h-full items-center border-r border-line transition-[width] duration-300 ease-out lg:flex ${
           collapsed
             ? 'justify-center px-3 lg:w-[88px]'
             : 'justify-between px-5 lg:w-[280px] lg:pl-8'
@@ -575,6 +579,50 @@ function AppTopbar({
         )}
       </div>
 
+      <div className="flex h-full w-full items-center justify-between px-4 lg:hidden">
+        <Link
+          href={ROUTES.DASHBOARD}
+          className="relative flex h-10 items-center overflow-hidden"
+          aria-label="RinKuzu"
+        >
+          <Image
+            src="/images/auth_logo.webp"
+            alt="RinKuzu"
+            width={130}
+            height={40}
+            className="h-10 w-auto object-contain"
+            priority
+          />
+        </Link>
+
+        <button
+          type="button"
+          onClick={onToggleMobileMenu}
+          className="flex size-11 items-center justify-center rounded-[12px] border border-line bg-surface-warm text-ink transition-colors hover:bg-accent-soft/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          aria-label={mobileMenuOpen ? t('closeMenu') : t('openMenu')}
+          aria-expanded={mobileMenuOpen}
+          aria-controls="mobile-app-menu"
+        >
+          <span className="relative flex size-6 items-center justify-center" aria-hidden="true">
+            <span
+              className={`absolute h-0.5 w-6 rounded-full bg-current transition-transform duration-200 ${
+                mobileMenuOpen ? 'translate-y-0 rotate-45' : '-translate-y-2'
+              }`}
+            />
+            <span
+              className={`absolute h-0.5 w-6 rounded-full bg-current transition-opacity duration-200 ${
+                mobileMenuOpen ? 'opacity-0' : 'opacity-100'
+              }`}
+            />
+            <span
+              className={`absolute h-0.5 w-6 rounded-full bg-current transition-transform duration-200 ${
+                mobileMenuOpen ? 'translate-y-0 -rotate-45' : 'translate-y-2'
+              }`}
+            />
+          </span>
+        </button>
+      </div>
+
       <div className="hidden flex-1 lg:flex">
         <div className="mx-auto flex w-full max-w-[1404px] items-center justify-between gap-6 px-8">
           <form
@@ -624,6 +672,142 @@ function AppTopbar({
   );
 }
 
+function MobileMenuItem({
+  href,
+  icon,
+  label,
+  active,
+  onNavigate,
+}: {
+  href: string;
+  icon?: string;
+  label: string;
+  active: boolean;
+  onNavigate: () => void;
+}) {
+  return (
+    <Link
+      href={href}
+      onClick={onNavigate}
+      className={`flex h-12 items-center gap-3 rounded-[12px] px-3 font-home text-base font-semibold leading-[1.4] transition-colors ${
+        active ? 'bg-accent-soft text-accent' : 'text-ink hover:bg-accent-soft/60'
+      }`}
+    >
+      {icon ? <ShellIcon name={icon} /> : <span className="ml-9" aria-hidden="true" />}
+      <span className="truncate">{label}</span>
+    </Link>
+  );
+}
+
+function MobileMenuGroup({
+  entry,
+  pathname,
+  t,
+  onNavigate,
+}: {
+  entry: NavEntry;
+  pathname: string;
+  t: (key: string) => string;
+  onNavigate: () => void;
+}) {
+  const childActive = entryHasActiveChild(pathname, entry);
+  const selfActive = isHrefActive(pathname, entry.href, entry.matchPrefix);
+  const active = selfActive || childActive;
+
+  return (
+    <div className="flex flex-col gap-1">
+      {entry.href ? (
+        <MobileMenuItem
+          href={entry.href}
+          icon={entry.icon}
+          label={t(entry.labelKey)}
+          active={active}
+          onNavigate={onNavigate}
+        />
+      ) : (
+        <div
+          className={`flex h-12 items-center gap-3 rounded-[12px] px-3 font-home text-base font-semibold leading-[1.4] ${
+            active ? 'bg-accent-soft text-accent' : 'text-ink'
+          }`}
+        >
+          <ShellIcon name={entry.icon} />
+          <span className="truncate">{t(entry.labelKey)}</span>
+        </div>
+      )}
+
+      {entry.items?.length ? (
+        <div className="ml-9 flex flex-col gap-1 border-l border-dashed border-line-blue/70 pl-3">
+          {entry.items.map((item) => (
+            <MobileMenuItem
+              key={item.href}
+              href={item.href}
+              label={t(item.labelKey)}
+              active={isHrefActive(pathname, item.href, item.matchPrefix)}
+              onNavigate={onNavigate}
+            />
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function MobileAppMenu({
+  open,
+  pathname,
+  visibleNav,
+  t,
+  onClose,
+}: {
+  open: boolean;
+  pathname: string;
+  visibleNav: NavEntry[];
+  t: (key: string) => string;
+  onClose: () => void;
+}) {
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-x-0 bottom-0 top-16 z-40 lg:hidden">
+      <button
+        type="button"
+        className="absolute inset-0 bg-ink/20 backdrop-blur-[1px]"
+        aria-label={t('dismissMenu')}
+        onClick={onClose}
+      />
+      <nav
+        id="mobile-app-menu"
+        className="absolute left-3 right-3 top-3 max-h-[calc(100dvh-6rem)] overflow-y-auto rounded-[18px] border border-line bg-surface p-3 shadow-[0_18px_48px_rgba(42,11,0,0.18)]"
+        aria-label={t('mainNavigation')}
+      >
+        <div className="flex flex-col gap-2">
+          {visibleNav.map((entry) => (
+            <MobileMenuGroup
+              key={entry.id}
+              entry={entry}
+              pathname={pathname}
+              t={t}
+              onNavigate={onClose}
+            />
+          ))}
+        </div>
+        <div className="my-3 h-px bg-line" />
+        <div className="flex flex-col gap-2">
+          {BOTTOM_NAV.map((entry) => (
+            <MobileMenuGroup
+              key={entry.id}
+              entry={entry}
+              pathname={pathname}
+              t={t}
+              onNavigate={onClose}
+            />
+          ))}
+        </div>
+      </nav>
+    </div>
+  );
+}
+
 export function AppChrome({ children }: { children: React.ReactNode }) {
   const { data: session } = useSession();
   const t = useTranslations('nav');
@@ -631,6 +815,7 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState<string[]>(['quiz', 'adaptive', 'account']);
 
   const userRole = (session?.user as { role?: string } | undefined)?.role;
@@ -650,11 +835,24 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
     .charAt(0)
     .toUpperCase();
 
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    document.body.style.overflow = mobileMenuOpen ? 'hidden' : '';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [mobileMenuOpen]);
+
   return (
     <>
       <AppTopbar
         collapsed={collapsed}
         onToggleSidebar={() => setCollapsed((prev) => !prev)}
+        mobileMenuOpen={mobileMenuOpen}
+        onToggleMobileMenu={() => setMobileMenuOpen((prev) => !prev)}
         currentLocale={currentLocale}
         onSelectLocale={selectLocale}
         avatar={avatar}
@@ -662,6 +860,13 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
         displayName={session?.user?.displayName}
         email={session?.user?.email}
         t={t}
+      />
+      <MobileAppMenu
+        open={mobileMenuOpen}
+        pathname={pathname}
+        visibleNav={visibleNav}
+        t={t}
+        onClose={() => setMobileMenuOpen(false)}
       />
       <AppSidebar
         collapsed={collapsed}
@@ -672,7 +877,7 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
         toggleGroup={toggleGroup}
       />
       <div
-        className={`pt-[72px] transition-[padding] duration-300 ease-out ${
+        className={`pt-16 transition-[padding] duration-300 ease-out lg:pt-[72px] ${
           collapsed ? 'lg:pl-[88px]' : 'lg:pl-[280px]'
         }`}
       >

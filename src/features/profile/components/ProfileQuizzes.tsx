@@ -19,6 +19,7 @@ import {
 } from '@/lib/quiz/library';
 import { IQuiz, PaginationMeta } from '@/types';
 import { HiOutlineDocumentText } from '@/components/icons';
+import { groupQuizzesByMonthAndWeek } from '@/features/profile/lib/quizDateGroups';
 
 type QuizFilter = QuizLibraryFilter;
 type LibraryQuiz = IQuiz & {
@@ -87,21 +88,26 @@ function reducer(state: State, action: Action): State {
   }
 }
 
-function dayKey(date: Date): string {
-  return [
-    date.getFullYear(),
-    String(date.getMonth() + 1).padStart(2, '0'),
-    String(date.getDate()).padStart(2, '0'),
-  ].join('-');
-}
-
-const DAY_FORMATTERS = {
-  en: new Intl.DateTimeFormat('en', { day: 'numeric', month: 'long', year: 'numeric' }),
-  vi: new Intl.DateTimeFormat('vi', { day: 'numeric', month: 'long', year: 'numeric' }),
+const MONTH_FORMATTERS = {
+  en: new Intl.DateTimeFormat('en', { month: 'long', year: 'numeric' }),
+  vi: new Intl.DateTimeFormat('vi', { month: 'long', year: 'numeric' }),
 } as const;
 
-function formatDay(date: Date, locale: string): string {
-  return DAY_FORMATTERS[locale === 'vi' ? 'vi' : 'en'].format(date);
+const WEEK_FORMATTERS = {
+  en: new Intl.DateTimeFormat('en', { day: 'numeric', month: 'short' }),
+  vi: new Intl.DateTimeFormat('vi', { day: 'numeric', month: 'short' }),
+} as const;
+
+function localeKey(locale: string): keyof typeof MONTH_FORMATTERS {
+  return locale === 'vi' ? 'vi' : 'en';
+}
+
+function formatMonth(date: Date, locale: string): string {
+  return MONTH_FORMATTERS[localeKey(locale)].format(date);
+}
+
+function formatWeek(startDate: Date, endDate: Date, locale: string): string {
+  return WEEK_FORMATTERS[localeKey(locale)].formatRange(startDate, endDate);
 }
 
 export default function ProfileQuizzes({ tab = 'quizzes' }: { tab?: 'quizzes' | 'folders' }) {
@@ -139,17 +145,7 @@ export default function ProfileQuizzes({ tab = 'quizzes' }: { tab?: 'quizzes' | 
   const visibleQuizzes = state.quizzes.filter((quiz) =>
     matchesLibraryStatus(quiz.libraryStatus, state.filter),
   );
-  const groups = new Map<string, { date: Date; quizzes: LibraryQuiz[] }>();
-  for (const quiz of visibleQuizzes) {
-    const date = new Date(quiz.displayDate ?? quiz.createdAt);
-    const key = dayKey(date);
-    const group = groups.get(key) ?? { date, quizzes: [] };
-    group.quizzes.push(quiz);
-    groups.set(key, group);
-  }
-  const groupedQuizzes = Array.from(groups.values()).toSorted(
-    (a, b) => b.date.getTime() - a.date.getTime(),
-  );
+  const groupedQuizzes = groupQuizzesByMonthAndWeek(visibleQuizzes);
 
   async function deleteQuiz(quizId: string) {
     dispatch({ type: 'delete:start', quizId });
@@ -260,28 +256,46 @@ export default function ProfileQuizzes({ tab = 'quizzes' }: { tab?: 'quizzes' | 
                     </Link>
                   </div>
                 ) : (
-                  <div className="relative mt-6 space-y-7">
-                    {groupedQuizzes.map((group) => (
-                      <div key={dayKey(group.date)}>
-                        <h3 className="mb-4 text-base font-normal text-ink">
-                          {formatDay(group.date, locale)}
-                        </h3>
-                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                          {group.quizzes.map((quiz) => (
-                            <QuizCard
-                              key={quiz._id}
-                              quiz={quiz}
-                              locale={locale}
-                              onDelete={
-                                quiz.ownedByMe
-                                  ? (selected) =>
-                                      dispatch({ type: 'delete:prompt', quiz: selected })
-                                  : undefined
-                              }
-                            />
+                  <div className="relative mt-6 space-y-9">
+                    {groupedQuizzes.map((month) => (
+                      <section key={month.key} aria-labelledby={`quiz-month-${month.key}`}>
+                        <div className="mb-5 flex items-center gap-3">
+                          <h3
+                            id={`quiz-month-${month.key}`}
+                            className="text-lg font-semibold capitalize text-ink"
+                          >
+                            {formatMonth(month.date, locale)}
+                          </h3>
+                          <div className="h-px flex-1 bg-line" aria-hidden="true" />
+                        </div>
+
+                        <div className="space-y-7">
+                          {month.weeks.map((week) => (
+                            <div key={week.key}>
+                              <p className="mb-3 text-sm font-medium text-ink/55">
+                                {t('weekRange', {
+                                  range: formatWeek(week.startDate, week.endDate, locale),
+                                })}
+                              </p>
+                              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                                {week.quizzes.map((quiz) => (
+                                  <QuizCard
+                                    key={quiz._id}
+                                    quiz={quiz}
+                                    locale={locale}
+                                    onDelete={
+                                      quiz.ownedByMe
+                                        ? (selected) =>
+                                            dispatch({ type: 'delete:prompt', quiz: selected })
+                                        : undefined
+                                    }
+                                  />
+                                ))}
+                              </div>
+                            </div>
                           ))}
                         </div>
-                      </div>
+                      </section>
                     ))}
                   </div>
                 )}

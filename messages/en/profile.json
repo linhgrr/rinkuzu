@@ -3,6 +3,7 @@
   "myQuizzes": "My Quizzes",
   "myQuizzesAndFolder": "My Quizzes & Folder",
   "browseManageQuizzes": "Browse and manage your learning quizzes",
+  "weekRange": "Week of {range}",
   "filter_all": "All",
   "filter_public": "Public",
   "filter_private": "Private",

@@ -4,14 +4,7 @@ import { useEffect, useReducer } from 'react';
 import { useTranslations } from 'next-intl';
 import { fetchApiData } from '@/lib/api/client';
 import { Button } from '@/components/ui/Button';
-import {
-  Badge,
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/Card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import StatsModal from '@/components/ui/StatsModal';
 
 interface AdminStats {
@@ -19,9 +12,6 @@ interface AdminStats {
     totalUsers: number;
     totalAdmins: number;
     totalQuizzes: number;
-    publishedQuizzes: number;
-    pendingQuizzes: number;
-    rejectedQuizzes: number;
     totalAttempts: number;
   };
   timeBasedStats: {
@@ -38,7 +28,6 @@ interface AdminStats {
     users: Array<{ email: string; createdAt: string }>;
     quizzes: Array<{
       title: string;
-      status: string;
       createdAt: string;
       author: { email: string };
     }>;
@@ -113,19 +102,6 @@ function formatDate(dateString: string) {
   });
 }
 
-function getStatusBadge(status: string) {
-  switch (status) {
-    case 'published':
-      return <Badge variant="success">{status}</Badge>;
-    case 'pending':
-      return <Badge variant="warning">{status}</Badge>;
-    case 'rejected':
-      return <Badge variant="danger">{status}</Badge>;
-    default:
-      return <Badge variant="default">{status}</Badge>;
-  }
-}
-
 function AdminStatsLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-white">
@@ -193,9 +169,7 @@ function OverviewCards({ stats, t }: { stats: AdminStats; t: TranslateFn }) {
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-green-600">{stats.overview.totalQuizzes}</div>
-          <p className="text-xs text-neutral-500">
-            {t('publishedCount', { count: stats.overview.publishedQuizzes })}
-          </p>
+          <p className="text-xs text-neutral-500">{t('availableQuizzes')}</p>
         </CardContent>
       </Card>
 
@@ -297,41 +271,6 @@ function TimeBasedStatsCard({ stats, t }: { stats: AdminStats; t: TranslateFn })
             itemClassName="text-green-700"
             t={t}
           />
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function QuizStatusCard({ stats, t }: { stats: AdminStats; t: TranslateFn }) {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{t('quizStatus')}</CardTitle>
-        <CardDescription>{t('quizStatusOverview')}</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-          <div className="rounded-lg bg-neutral-50 p-4 text-center">
-            <div className="text-2xl font-bold text-neutral-900">{stats.overview.totalQuizzes}</div>
-            <p className="text-sm text-neutral-600">{t('totalCount')}</p>
-          </div>
-          <div className="rounded-lg bg-green-50 p-4 text-center">
-            <div className="text-2xl font-bold text-green-600">
-              {stats.overview.publishedQuizzes}
-            </div>
-            <p className="text-sm text-green-600">{t('publishedStatus')}</p>
-          </div>
-          <div className="rounded-lg bg-yellow-50 p-4 text-center">
-            <div className="text-2xl font-bold text-yellow-600">
-              {stats.overview.pendingQuizzes}
-            </div>
-            <p className="text-sm text-yellow-600">{t('pendingStatus')}</p>
-          </div>
-          <div className="rounded-lg bg-red-50 p-4 text-center">
-            <div className="text-2xl font-bold text-red-600">{stats.overview.rejectedQuizzes}</div>
-            <p className="text-sm text-red-600">{t('rejectedStatus')}</p>
-          </div>
         </div>
       </CardContent>
     </Card>
@@ -460,10 +399,7 @@ function RecentActivityCard({
             {stats.recentActivity.quizzes.slice(0, 5).map((quiz) => (
               <div key={quiz.title} className="rounded bg-green-50 p-2 text-sm">
                 <div className="truncate font-medium">{quiz.title}</div>
-                <div className="flex items-center gap-x-2 text-xs">
-                  {getStatusBadge(quiz.status)}
-                  <span className="text-neutral-500">{formatDate(quiz.createdAt)}</span>
-                </div>
+                <div className="text-xs text-neutral-500">{formatDate(quiz.createdAt)}</div>
               </div>
             ))}
           </ActivityColumn>
@@ -508,7 +444,6 @@ function AdminStatsContent({
       <div className="space-y-8">
         <OverviewCards stats={stats} t={t} />
         <TimeBasedStatsCard stats={stats} t={t} />
-        <QuizStatusCard stats={stats} t={t} />
         <TopCreatorsSection stats={stats} t={t} onOpenModal={onOpenCreators} />
         <RecentActivityCard stats={stats} t={t} onOpenModal={onOpenActivity} />
       </div>

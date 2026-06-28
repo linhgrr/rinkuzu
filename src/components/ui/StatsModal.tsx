@@ -187,15 +187,6 @@ function CreatorItem({
           {creator.totalQuestions} {t('questionsCount')} • {Math.round(creator.successRate || 0)}%{' '}
           {t('successRate')}
         </div>
-        <div className="text-xs text-neutral-400">
-          <span className="text-green-600">
-            {creator.publishedQuizzes} {t('published')}
-          </span>{' '}
-          •
-          <span className="text-yellow-600 ml-1">
-            {creator.pendingQuizzes} {t('pendingApproval')}
-          </span>
-        </div>
       </div>
     </div>
   );
@@ -289,20 +280,6 @@ function ActivityItem({ activity, t }: { activity: any; t: (key: string) => stri
         )}
         <p className="text-xs text-neutral-400">{formatDateValue(date)}</p>
       </div>
-
-      {activityType === 'quiz' && (
-        <span
-          className={`px-2 py-1 rounded text-xs ${
-            activityData.status === 'published'
-              ? 'bg-green-100 text-green-800'
-              : activityData.status === 'pending'
-                ? 'bg-yellow-100 text-yellow-800'
-                : 'bg-red-100 text-red-800'
-          }`}
-        >
-          {activityData.status}
-        </span>
-      )}
 
       {activityType === 'attempt' && (
         <div className="text-right">
@@ -582,20 +559,23 @@ export default function StatsModal({
 
   const loadData = async (
     page = 1,
-    search = state.searchTerm,
+    search?: string,
     append = false,
-    sortBy = state.sortBy,
-    sortOrder = state.sortOrder,
+    sortBy?: string,
+    sortOrder?: 'asc' | 'desc',
   ) => {
+    const resolvedSearch = search ?? state.searchTerm;
+    const resolvedSortBy = sortBy ?? state.sortBy;
+    const resolvedSortOrder = sortOrder ?? state.sortOrder;
     dispatch({ type: 'loadStart', clearError: !append });
 
     try {
       const params = new URLSearchParams({
         page: page.toString(),
         limit: state.pagination.limit.toString(),
-        ...(search && { search }),
-        ...(sortBy && { sortBy }),
-        sortOrder,
+        ...(resolvedSearch && { search: resolvedSearch }),
+        ...(resolvedSortBy && { sortBy: resolvedSortBy }),
+        sortOrder: resolvedSortOrder,
       });
       const result = await fetchApiData<StatsModalPayload>(
         `${apiEndpoint}${apiEndpoint.includes('?') ? '&' : '?'}${params}`,

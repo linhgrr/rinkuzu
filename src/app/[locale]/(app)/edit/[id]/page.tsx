@@ -268,41 +268,6 @@ function EditQuizMessageState({
   );
 }
 
-function QuizStatusCard({ status }: { status: string }) {
-  return (
-    <Card className="mb-6">
-      <CardContent className="p-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-lg font-semibold text-neutral-900">Quiz Status</h3>
-            <p className="text-sm text-neutral-600">Current approval status</p>
-          </div>
-          <span
-            className={`inline-flex min-h-[28px] items-center rounded-full px-3 text-[13px] font-medium ${
-              status === 'pending'
-                ? 'bg-yellow-100 text-yellow-800'
-                : status === 'published'
-                  ? 'bg-green-100 text-green-800'
-                  : 'bg-red-100 text-red-800'
-            }`}
-          >
-            <div
-              className={`mr-2 size-2 rounded-full ${
-                status === 'pending'
-                  ? 'bg-yellow-500'
-                  : status === 'published'
-                    ? 'bg-green-500'
-                    : 'bg-red-500'
-              }`}
-            />
-            {status.charAt(0).toUpperCase() + status.slice(1)}
-          </span>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
 function ReadOnlyNotice() {
   return (
     <Card className="mb-6">
@@ -314,8 +279,8 @@ function ReadOnlyNotice() {
           <div>
             <h3 className="text-lg font-semibold text-neutral-900">Read Only</h3>
             <p className="text-sm text-neutral-600">
-              This quiz cannot be edited because it is already published. Only admins can edit
-              published quizzes.
+              You do not have permission to edit this quiz. Only its author or an administrator can
+              make changes.
             </p>
           </div>
         </div>
@@ -422,7 +387,7 @@ function EditQuizActionBar({
   );
 }
 
-function PublishedQuizLinkCard({ slug }: { slug: string }) {
+function QuizLinkCard({ slug }: { slug: string }) {
   return (
     <Card className="mt-6">
       <CardHeader>
@@ -638,8 +603,6 @@ export default function EditQuizPage() {
                 onTogglePdfViewer={() => dispatch({ type: 'togglePdfViewer' })}
               />
 
-              <QuizStatusCard status={state.quiz.status} />
-
               {!canEdit ? <ReadOnlyNotice /> : null}
 
               <form onSubmit={handleSubmit} className="space-y-6">
@@ -710,9 +673,7 @@ export default function EditQuizPage() {
                 />
               </form>
 
-              {state.quiz.status === 'published' ? (
-                <PublishedQuizLinkCard slug={state.quiz.slug} />
-              ) : null}
+              <QuizLinkCard slug={state.quiz.slug} />
             </div>
           </div>
 

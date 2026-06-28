@@ -42,11 +42,10 @@ export async function GET(): Promise<Response> {
     }
   }
 
-  // Published public quizzes
+  // Public quizzes
   const quizService = serviceFactory.getQuizService();
   try {
     const quizResult = await quizService.getQuizzes({
-      status: 'published',
       isPrivate: false,
       page: 1,
       limit: 5000,

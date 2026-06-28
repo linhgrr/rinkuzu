@@ -70,7 +70,7 @@ export const GET = withAuth(async (_request: NextRequest, { userId }) => {
       ).values(),
     ];
     const [attemptedQuizzes, linkedQuizIds] = await Promise.all([
-      Quiz.find({ _id: { $in: libraryQuizIds }, author: { $ne: userId }, status: 'published' })
+      Quiz.find({ _id: { $in: libraryQuizIds }, author: { $ne: userId } })
         .select('_id')
         .lean(),
       FolderQuiz.find({ owner: userId }).distinct('quiz'),

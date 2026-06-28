@@ -75,16 +75,6 @@ export class QuizDiscussionService {
       const authorId = getAuthorId(quiz.author);
       const userId = session?.user?.id;
       const userRole = session?.user?.role;
-      const canAccessUnpublished = userRole === 'admin' || (!!userId && authorId === userId);
-
-      if (quiz.status !== 'published' && !canAccessUnpublished) {
-        return {
-          success: false,
-          error: 'Quiz not found',
-          statusCode: 404,
-        };
-      }
-
       const privateAccessError = await checkPrivateQuizAccess(quiz, userId, userRole);
       if (privateAccessError) return privateAccessError;
 
@@ -157,16 +147,6 @@ export class QuizDiscussionService {
       const authorId = getAuthorId(quiz.author);
       const userId = session?.user?.id;
       const userRole = session?.user?.role;
-      const canAccessUnpublished = userRole === 'admin' || (!!userId && authorId === userId);
-
-      if (quiz.status !== 'published' && !canAccessUnpublished) {
-        return {
-          success: false,
-          error: 'Quiz not found',
-          statusCode: 404,
-        };
-      }
-
       const privateAccessError = await checkPrivateQuizAccess(quiz, userId, userRole);
       if (privateAccessError) return privateAccessError;
 

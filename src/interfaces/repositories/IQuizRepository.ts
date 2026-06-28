@@ -9,7 +9,6 @@ export interface IQuiz {
   author: string | IUserPreview;
   folder?: string | null;
   questions: IQuestion[];
-  status: 'pending' | 'published' | 'rejected';
   isPrivate: boolean;
   pdfUrl?: string;
   tags?: string[];
@@ -22,8 +21,6 @@ export interface IQuizRepository {
   findById(id: string): Promise<IQuiz | null>;
 
   findBySlug(slug: string): Promise<IQuiz | null>;
-
-  findBySlugAndStatus(slug: string, status: string): Promise<IQuiz | null>;
 
   create(quizData: Partial<IQuiz>): Promise<IQuiz>;
 
@@ -52,7 +49,6 @@ export interface IQuizRepository {
     options?: {
       page?: number;
       limit?: number;
-      status?: string;
     },
   ): Promise<{
     quizzes: IQuiz[];
@@ -61,9 +57,5 @@ export interface IQuizRepository {
 
   count(filter?: Record<string, unknown>): Promise<number>;
 
-  countByStatus(): Promise<{ _id: string; count: number }[]>;
-
   findRecentQuizzes(limit?: number): Promise<IQuiz[]>;
-
-  updateStatus(id: string, status: string, reviewNote?: string): Promise<IQuiz | null>;
 }

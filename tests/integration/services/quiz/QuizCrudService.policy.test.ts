@@ -47,14 +47,13 @@ describe('QuizCrudService quiz publication policy', () => {
     subscriptionMocks.isUserPremium.mockResolvedValue(false);
   });
 
-  it('publishes a new public quiz without admin approval', async () => {
+  it('creates a public quiz immediately', async () => {
     const service = new QuizCrudService(quizRepository, userRepository);
 
     await service.createQuiz('user-1', request);
 
     expect(quizRepository.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        status: 'published',
         isPrivate: false,
       }),
     );
@@ -77,7 +76,6 @@ describe('QuizCrudService quiz publication policy', () => {
 
     expect(quizRepository.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        status: 'published',
         isPrivate: true,
       }),
     );

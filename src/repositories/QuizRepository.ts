@@ -10,7 +10,7 @@ import QuizProgress from '@/models/QuizProgress';
 import { IQuiz, IQuizRepository } from '@/interfaces/repositories/IQuizRepository';
 import { buildPaginationMeta } from '@/repositories/pagination';
 import { BaseRepository } from '@/repositories/base';
-import mongoose, { Types, type FilterQuery, type UpdateQuery } from 'mongoose';
+import mongoose, { Types, type FilterQuery } from 'mongoose';
 
 type QuizSort = Record<string, 1 | -1>;
 
@@ -29,13 +29,6 @@ export class QuizRepository extends BaseRepository<IQuiz> implements IQuizReposi
   async findBySlug(slug: string): Promise<IQuiz | null> {
     await connectDB();
     return (await Quiz.findOne({ slug })
-      .populate('author', 'email name displayName avatar')
-      .lean()) as unknown as IQuiz | null;
-  }
-
-  async findBySlugAndStatus(slug: string, status: string): Promise<IQuiz | null> {
-    await connectDB();
-    return (await Quiz.findOne({ slug, status })
       .populate('author', 'email name displayName avatar')
       .lean()) as unknown as IQuiz | null;
   }
@@ -142,7 +135,6 @@ export class QuizRepository extends BaseRepository<IQuiz> implements IQuizReposi
               title: 1,
               description: 1,
               slug: 1,
-              status: 1,
               isPrivate: 1,
               author: {
                 _id: { $ifNull: ['$authorDoc._id', '$author'] },
@@ -186,10 +178,7 @@ export class QuizRepository extends BaseRepository<IQuiz> implements IQuizReposi
 
   async findForPlay(slug: string): Promise<IQuiz | null> {
     await connectDB();
-    return (await Quiz.findOne({
-      slug,
-      status: 'published',
-    })
+    return (await Quiz.findOne({ slug })
       .populate('author', 'email name displayName avatar')
       .lean()) as unknown as IQuiz | null;
   }
@@ -199,7 +188,6 @@ export class QuizRepository extends BaseRepository<IQuiz> implements IQuizReposi
     options: {
       page?: number;
       limit?: number;
-      status?: string;
     } = {},
   ): Promise<{
     quizzes: IQuiz[];
@@ -212,10 +200,6 @@ export class QuizRepository extends BaseRepository<IQuiz> implements IQuizReposi
     const skip = (page - 1) * limit;
 
     const filter: FilterQuery<IQuiz> = { author: userId };
-    if (options.status) {
-      filter.status = options.status;
-    }
-
     const [quizzes, total] = await Promise.all([
       Quiz.find(filter)
         .sort({ createdAt: -1 })
@@ -231,35 +215,12 @@ export class QuizRepository extends BaseRepository<IQuiz> implements IQuizReposi
     };
   }
 
-  async countByStatus(): Promise<{ _id: string; count: number }[]> {
-    await connectDB();
-    return await Quiz.aggregate([
-      {
-        $group: {
-          _id: '$status',
-          count: { $sum: 1 },
-        },
-      },
-    ]);
-  }
-
   async findRecentQuizzes(limit: number = 10): Promise<IQuiz[]> {
     await connectDB();
-    return (await Quiz.find({ status: 'published' })
+    return (await Quiz.find()
       .populate('author', 'email name displayName avatar')
       .sort({ createdAt: -1 })
       .limit(limit)
       .lean()) as unknown as IQuiz[];
-  }
-
-  async updateStatus(id: string, status: string, reviewNote?: string): Promise<IQuiz | null> {
-    await connectDB();
-    const updateData: UpdateQuery<IQuiz> = { status };
-    if (reviewNote) {
-      updateData['reviewNote'] = reviewNote;
-    }
-    return (await Quiz.findByIdAndUpdate(id, updateData, {
-      new: true,
-    }).lean()) as unknown as IQuiz | null;
   }
 }

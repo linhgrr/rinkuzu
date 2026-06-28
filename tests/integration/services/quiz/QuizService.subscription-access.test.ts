@@ -20,10 +20,10 @@ function createQuizService(quiz: any) {
 
   const service = new QuizService(
     quizRepository as any,
-    {} as any,
     { findByEmail: vi.fn() } as any,
     { create: vi.fn() } as any,
     discussionRepository as any,
+    {} as any,
     {} as any,
   );
 
@@ -33,7 +33,6 @@ function createQuizService(quiz: any) {
 const privateQuiz = {
   _id: { toString: () => 'quiz-1' },
   author: { _id: { toString: () => 'author-1' } },
-  status: 'published',
   isPrivate: true,
   questions: [
     {

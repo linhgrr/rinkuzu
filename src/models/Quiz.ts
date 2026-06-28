@@ -14,7 +14,6 @@ interface IQuiz extends Document {
   title: string;
   description?: string;
   folder?: Types.ObjectId | null;
-  status: 'pending' | 'published' | 'rejected';
   author: Types.ObjectId;
   slug: string;
   questions: IQuestion[];
@@ -106,11 +105,6 @@ const QuizSchema = new Schema<IQuiz>(
       type: Schema.Types.ObjectId,
       ref: 'Folder',
       default: null,
-    },
-    status: {
-      type: String,
-      enum: ['pending', 'published', 'rejected'],
-      default: 'published',
     },
     author: {
       type: Schema.Types.ObjectId,

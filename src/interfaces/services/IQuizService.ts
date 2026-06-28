@@ -14,7 +14,6 @@ export interface CreateQuizRequest {
 }
 
 export interface QuizListOptions {
-  status?: string;
   search?: string;
   folder?: string | null;
   page?: number;

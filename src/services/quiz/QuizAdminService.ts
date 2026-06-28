@@ -17,7 +17,6 @@ export class QuizAdminService {
     pagination: PaginationMeta;
   }> {
     const {
-      status,
       search,
       folder,
       page = 1,
@@ -31,7 +30,6 @@ export class QuizAdminService {
 
     const filter: FilterQuery<IQuiz> = {};
 
-    if (status) filter.status = status;
     if (typeof isPrivate === 'boolean') filter.isPrivate = isPrivate;
 
     // If caller wants only their own quizzes

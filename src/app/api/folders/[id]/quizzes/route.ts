@@ -23,7 +23,7 @@ export const POST = withAuth<{ id: string }>(async (request: NextRequest, { para
 
     await connectDB();
     const [rawQuiz, rawFolder, attempted, inProgress] = await Promise.all([
-      Quiz.findById(quizId).select('_id author status').lean(),
+      Quiz.findById(quizId).select('_id author').lean(),
       isDefault
         ? Promise.resolve(null)
         : Folder.findOne({ _id: params.id, owner: userId }).select('_id').lean(),
@@ -33,7 +33,6 @@ export const POST = withAuth<{ id: string }>(async (request: NextRequest, { para
     const quiz = rawQuiz as unknown as {
       _id: Types.ObjectId;
       author: Types.ObjectId;
-      status: string;
     } | null;
     const folder = rawFolder as unknown as { _id: Types.ObjectId } | null;
     if (!quiz || (!folder && !isDefault)) {
@@ -41,7 +40,7 @@ export const POST = withAuth<{ id: string }>(async (request: NextRequest, { para
     }
 
     const ownedByMe = String(quiz.author) === userId;
-    if (!ownedByMe && ((!attempted && !inProgress) || quiz.status !== 'published')) {
+    if (!ownedByMe && !attempted && !inProgress) {
       return apiErr('forbidden', 'Only owned or completed quizzes can be added', 403);
     }
 

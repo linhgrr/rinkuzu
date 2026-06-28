@@ -53,7 +53,6 @@ export default async function sitemap(): Promise<SitemapEntry[]> {
 
   try {
     const quizResult = await quizService.getQuizzes({
-      status: 'published',
       isPrivate: false,
       page: 1,
       limit: 5000,

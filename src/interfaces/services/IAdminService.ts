@@ -36,14 +36,8 @@ export interface AdminPaginatedReports {
   pagination?: PaginationMeta;
 }
 
-export interface AdminQuizStatusBreakdown {
+export interface AdminStats {
   totalQuizzes: number;
-  publishedQuizzes: number;
-  pendingQuizzes: number;
-  rejectedQuizzes: number;
-}
-
-export interface AdminStats extends AdminQuizStatusBreakdown {
   totalUsers: number;
   totalAdmins: number;
   totalAttempts: number;

@@ -78,7 +78,7 @@ const PRIMARY_NAV: NavEntry[] = [
     icon: ICON.admin,
     requiredRole: 'admin',
     items: [
-      { href: '/admin/queue', labelKey: 'quizManagement' },
+      { href: '/admin/quizzes', labelKey: 'quizManagement' },
       { href: '/admin/users', labelKey: 'userManagement' },
       { href: '/admin/subscriptions', labelKey: 'subscriptions' },
       { href: '/admin/plans', labelKey: 'pricingPlans' },

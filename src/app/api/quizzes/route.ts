@@ -7,12 +7,11 @@ import { logger } from '@/lib/logger';
 const quizService = serviceFactory.getQuizService();
 
 // GET /api/quizzes - List quizzes with filtering.
-// Public + authenticated dual path: anonymous callers see only published+public quizzes.
+// Public + authenticated dual path: anonymous callers see only public quizzes.
 export const GET = withOptionalAuth(async (request: NextRequest, { session, userId }) => {
   try {
     const isGuest = !session?.user;
     const url = new URL(request.url);
-    const status = isGuest ? 'published' : url.searchParams.get('status') || undefined;
     const search = url.searchParams.get('search') || undefined;
     const folderParam = url.searchParams.get('folder');
     const page = parseInt(url.searchParams.get('page') || '1');
@@ -24,7 +23,6 @@ export const GET = withOptionalAuth(async (request: NextRequest, { session, user
     const isAdmin = session?.user?.role === 'admin';
 
     const result = await quizService.getQuizzes({
-      status: !isGuest && !onlyMine && !isAdmin ? 'published' : status,
       search,
       folder:
         onlyMine && folderParam !== null

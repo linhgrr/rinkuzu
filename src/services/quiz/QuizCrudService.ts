@@ -120,7 +120,6 @@ export class QuizCrudService {
       author: userId,
       folder: folderId ?? null,
       questions,
-      status: 'published',
       isPrivate: !!isPrivate,
       pdfUrl,
     });

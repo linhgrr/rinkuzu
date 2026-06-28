@@ -93,21 +93,12 @@ const MONTH_FORMATTERS = {
   vi: new Intl.DateTimeFormat('vi', { month: 'long', year: 'numeric' }),
 } as const;
 
-const WEEK_FORMATTERS = {
-  en: new Intl.DateTimeFormat('en', { day: 'numeric', month: 'short' }),
-  vi: new Intl.DateTimeFormat('vi', { day: 'numeric', month: 'short' }),
-} as const;
-
 function localeKey(locale: string): keyof typeof MONTH_FORMATTERS {
   return locale === 'vi' ? 'vi' : 'en';
 }
 
 function formatMonth(date: Date, locale: string): string {
   return MONTH_FORMATTERS[localeKey(locale)].format(date);
-}
-
-function formatWeek(startDate: Date, endDate: Date, locale: string): string {
-  return WEEK_FORMATTERS[localeKey(locale)].formatRange(startDate, endDate);
 }
 
 export default function ProfileQuizzes({ tab = 'quizzes' }: { tab?: 'quizzes' | 'folders' }) {
@@ -145,7 +136,10 @@ export default function ProfileQuizzes({ tab = 'quizzes' }: { tab?: 'quizzes' | 
   const visibleQuizzes = state.quizzes.filter((quiz) =>
     matchesLibraryStatus(quiz.libraryStatus, state.filter),
   );
-  const groupedQuizzes = groupQuizzesByMonthAndWeek(visibleQuizzes);
+  const groupedQuizzes = groupQuizzesByMonthAndWeek(visibleQuizzes).map((month) => ({
+    ...month,
+    quizzes: month.weeks.flatMap((week) => week.quizzes),
+  }));
 
   async function deleteQuiz(quizId: string) {
     dispatch({ type: 'delete:start', quizId });
@@ -259,40 +253,26 @@ export default function ProfileQuizzes({ tab = 'quizzes' }: { tab?: 'quizzes' | 
                   <div className="relative mt-6 space-y-9">
                     {groupedQuizzes.map((month) => (
                       <section key={month.key} aria-labelledby={`quiz-month-${month.key}`}>
-                        <div className="mb-5 flex items-center gap-3">
-                          <h3
-                            id={`quiz-month-${month.key}`}
-                            className="text-lg font-semibold capitalize text-ink"
-                          >
-                            {formatMonth(month.date, locale)}
-                          </h3>
-                          <div className="h-px flex-1 bg-line" aria-hidden="true" />
-                        </div>
+                        <h3
+                          id={`quiz-month-${month.key}`}
+                          className="mb-5 text-lg font-semibold capitalize text-ink"
+                        >
+                          {formatMonth(month.date, locale)}
+                        </h3>
 
-                        <div className="space-y-7">
-                          {month.weeks.map((week) => (
-                            <div key={week.key}>
-                              <p className="mb-3 text-sm font-medium text-ink/55">
-                                {t('weekRange', {
-                                  range: formatWeek(week.startDate, week.endDate, locale),
-                                })}
-                              </p>
-                              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                                {week.quizzes.map((quiz) => (
-                                  <QuizCard
-                                    key={quiz._id}
-                                    quiz={quiz}
-                                    locale={locale}
-                                    onDelete={
-                                      quiz.ownedByMe
-                                        ? (selected) =>
-                                            dispatch({ type: 'delete:prompt', quiz: selected })
-                                        : undefined
-                                    }
-                                  />
-                                ))}
-                              </div>
-                            </div>
+                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                          {month.quizzes.map((quiz) => (
+                            <QuizCard
+                              key={quiz._id}
+                              quiz={quiz}
+                              locale={locale}
+                              onDelete={
+                                quiz.ownedByMe
+                                  ? (selected) =>
+                                      dispatch({ type: 'delete:prompt', quiz: selected })
+                                  : undefined
+                              }
+                            />
                           ))}
                         </div>
                       </section>

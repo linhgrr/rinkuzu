@@ -1,10 +1,9 @@
 import { NextRequest } from 'next/server';
 import { withAuth } from '@/lib/api/auth';
-import { apiErr, apiOk } from '@/lib/api/response';
-import { logger } from '@/lib/logger';
-import { getUserProfileByEmail } from '@/lib/user/profile-server';
 import connectDB from '@/lib/mongoose';
 import User from '@/models/User';
+import { apiErr, apiOk } from '@/lib/api/response';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,12 +13,24 @@ export const GET = withAuth(async (_request, { email }) => {
       return apiErr('unauthorized', 'Authentication required', 401);
     }
 
-    const profile = await getUserProfileByEmail(email);
-    if (!profile) {
+    await connectDB();
+    const user = await User.findOne({ email }).select(
+      'email displayName bio avatar role createdAt subscription',
+    );
+
+    if (!user) {
       return apiErr('not_found', 'User not found', 404);
     }
 
-    return apiOk(profile);
+    return apiOk({
+      email: user.email,
+      displayName: user.displayName || '',
+      bio: user.bio || '',
+      avatar: user.avatar || '',
+      role: user.role,
+      createdAt: user.createdAt,
+      subscription: user.subscription,
+    });
   } catch (error) {
     logger.error({ error }, 'Get profile error');
     return apiErr('internal_error', 'Internal server error', 500);

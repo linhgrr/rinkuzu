@@ -89,7 +89,7 @@ type DashboardQuizAggregationResult = {
 };
 
 const HOME_ADAPTIVE_SUBJECT_LIMIT = 4;
-const HOME_ADAPTIVE_SUBJECT_TIMEOUT_MS = 800;
+const HOME_ADAPTIVE_SUBJECT_TIMEOUT_MS = 1_500;
 
 function toWeeklyActivityObject(activity: unknown): DashboardStatsData['weeklyActivity'] {
   if (!activity) {

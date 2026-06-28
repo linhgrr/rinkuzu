@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useReducer, useRef, useState } from 'react';
-import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
@@ -25,20 +24,9 @@ import {
   HiOutlineEyeOff,
   HiOutlineTrash,
 } from '@/components/icons';
+import type { UserProfileData } from '@/lib/user/profile-types';
 
-interface ProfileData {
-  email: string;
-  displayName: string;
-  bio: string;
-  avatar: string;
-  role: string;
-  createdAt: string;
-  subscription?: {
-    type: string;
-    isActive: boolean;
-    endDate?: string;
-  };
-}
+type ProfileData = UserProfileData;
 
 interface ProfileSettingsState {
   profile: ProfileData | null;
@@ -92,6 +80,16 @@ const initialState: ProfileSettingsState = {
   uploadingAvatar: false,
   showRemoveAvatarConfirm: false,
 };
+
+function createInitialState(initialProfile: ProfileData | null = null): ProfileSettingsState {
+  return {
+    ...initialState,
+    profile: initialProfile,
+    loading: initialProfile === null,
+    displayName: initialProfile?.displayName || '',
+    bio: initialProfile?.bio || '',
+  };
+}
 
 function profileSettingsReducer(
   state: ProfileSettingsState,
@@ -466,23 +464,28 @@ function AccountSection({ profile, t }: { profile: ProfileData; t: (key: string)
   );
 }
 
-export default function ProfileSettings() {
-  const { data: session } = useSession();
+export default function ProfileSettings({
+  initialProfile = null,
+}: {
+  initialProfile?: ProfileData | null;
+}) {
   const t = useTranslations('profile');
   const tCommon = useTranslations('common');
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [state, dispatch] = useReducer(profileSettingsReducer, initialState);
+  const [state, dispatch] = useReducer(profileSettingsReducer, initialProfile, createInitialState);
+  const didLoadProfileRef = useRef(false);
 
   useEffect(() => {
-    if (!session) {
-      return;
-    }
+    if (didLoadProfileRef.current) return;
+    didLoadProfileRef.current = true;
 
     let isActive = true;
 
     const fetchProfile = async () => {
       try {
-        dispatch({ type: 'fetch:start' });
+        if (!initialProfile) {
+          dispatch({ type: 'fetch:start' });
+        }
         const data = await fetchApiData<ProfileData>('/api/user/profile');
 
         if (!isActive) {
@@ -505,7 +508,7 @@ export default function ProfileSettings() {
     return () => {
       isActive = false;
     };
-  }, [session, t]);
+  }, [initialProfile, t]);
 
   const handleSaveProfile = async () => {
     dispatch({ type: 'profile:save:start' });

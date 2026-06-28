@@ -43,6 +43,11 @@ interface Bookmark {
   tags?: string[];
 }
 
+export type BookmarksData = {
+  bookmarks: Bookmark[];
+  pagination: PaginationMeta;
+};
+
 type TranslateFn = (key: string, values?: Record<string, string | number | Date>) => string;
 type BookmarkModal = 'ai' | 'remove' | null;
 
@@ -278,7 +283,7 @@ function EmptyBookmarksState({ t, tCommon }: { t: TranslateFn; tCommon: Translat
   );
 }
 
-export default function ProfileBookmarks() {
+export default function ProfileBookmarks({ initialData }: { initialData?: BookmarksData }) {
   const t = useTranslations('profile');
   const tCommon = useTranslations('common');
   const [state, dispatch] = useReducer(profileBookmarksReducer, initialState);
@@ -286,7 +291,12 @@ export default function ProfileBookmarks() {
 
   const { data, error, isLoading, mutate } = useSWR(
     `/api/bookmarks?page=${state.currentPage}&limit=${itemsPerPage}`,
-    fetchApiData<{ bookmarks: Bookmark[]; pagination: PaginationMeta }>,
+    fetchApiData<BookmarksData>,
+    {
+      fallbackData:
+        state.currentPage === (initialData?.pagination.currentPage ?? 1) ? initialData : undefined,
+      keepPreviousData: true,
+    },
   );
 
   const bookmarks = data?.bookmarks ?? [];

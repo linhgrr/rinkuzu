@@ -17,7 +17,6 @@ import {
   TheoryData,
   PipelineJobListItem,
 } from '@/features/adaptive/types';
-import { ADAPTIVE_CACHE_TTL_SECONDS } from '@/lib/adaptive/cache';
 
 import {
   timedFetch,
@@ -89,10 +88,7 @@ export async function getConceptDetail(
 
 export async function checkApiHealth(): Promise<boolean> {
   try {
-    await apiFetch('/api/adaptive/health', {
-      cache: 'no-store',
-      cacheTtlMs: ADAPTIVE_CACHE_TTL_SECONDS.health * 1000,
-    });
+    await apiFetch('/api/adaptive/health', { cache: 'no-store' });
     return true;
   } catch {
     return false;

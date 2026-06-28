@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useReducer, useRef } from 'react';
+import { useEffect, useReducer } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
@@ -25,7 +25,6 @@ type QuizFilter = QuizLibraryFilter;
 type LibraryQuiz = IQuiz & {
   displayDate?: string;
   lastAttemptAt?: string | null;
-  lastProgressAt?: string | null;
   ownedByMe?: boolean;
   libraryStatus?: QuizLibraryStatus;
 };
@@ -58,14 +57,6 @@ const initialState: State = {
   quizToDelete: null,
   deletingQuizId: null,
 };
-
-function createInitialState(initialQuizzes: LibraryQuiz[] = []): State {
-  return {
-    ...initialState,
-    quizzes: initialQuizzes,
-    loading: initialQuizzes.length === 0,
-  };
-}
 
 function reducer(state: State, action: Action): State {
   switch (action.type) {
@@ -119,29 +110,17 @@ function formatWeek(startDate: Date, endDate: Date, locale: string): string {
   return WEEK_FORMATTERS[localeKey(locale)].formatRange(startDate, endDate);
 }
 
-export default function ProfileQuizzes({
-  tab = 'quizzes',
-  initialQuizzes = [],
-}: {
-  tab?: 'quizzes' | 'folders';
-  initialQuizzes?: LibraryQuiz[];
-}) {
+export default function ProfileQuizzes({ tab = 'quizzes' }: { tab?: 'quizzes' | 'folders' }) {
   const t = useTranslations('profile');
   const tCommon = useTranslations('common');
   const locale = useLocale();
-  const [state, dispatch] = useReducer(reducer, initialQuizzes, createInitialState);
-  const didLoadQuizzesRef = useRef(false);
+  const [state, dispatch] = useReducer(reducer, initialState);
 
   useEffect(() => {
-    if (didLoadQuizzesRef.current) return;
-    didLoadQuizzesRef.current = true;
-
     let active = true;
 
     async function loadQuizzes() {
-      if (initialQuizzes.length === 0) {
-        dispatch({ type: 'fetch:start' });
-      }
+      dispatch({ type: 'fetch:start' });
       try {
         const data = await fetchApiData<{ quizzes: LibraryQuiz[]; pagination: PaginationMeta }>(
           '/api/library?limit=100',
@@ -161,7 +140,7 @@ export default function ProfileQuizzes({
     return () => {
       active = false;
     };
-  }, [initialQuizzes.length, t]);
+  }, [t]);
 
   const visibleQuizzes = state.quizzes.filter((quiz) =>
     matchesLibraryStatus(quiz.libraryStatus, state.filter),

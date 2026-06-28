@@ -62,6 +62,18 @@ const initialState: ProfileHistoryState = {
   pagination: null,
 };
 
+function createInitialState(initialData?: {
+  attempts: AttemptHistory[];
+  pagination: PaginationMeta;
+}): ProfileHistoryState {
+  return {
+    ...initialState,
+    attempts: initialData?.attempts ?? [],
+    pagination: initialData?.pagination ?? null,
+    loading: !initialData,
+  };
+}
+
 function profileHistoryReducer(
   state: ProfileHistoryState,
   action: ProfileHistoryAction,
@@ -100,12 +112,20 @@ function AttemptTakenAt({ iso }: { iso: string }) {
   );
 }
 
-export default function ProfileHistory() {
+export default function ProfileHistory({
+  initialData,
+}: {
+  initialData?: { attempts: AttemptHistory[]; pagination: PaginationMeta };
+}) {
   const t = useTranslations('profile');
   const tCommon = useTranslations('common');
-  const [state, dispatch] = useReducer(profileHistoryReducer, initialState);
+  const [state, dispatch] = useReducer(profileHistoryReducer, initialData, createInitialState);
 
   useEffect(() => {
+    if (initialData && state.currentPage === initialData.pagination.currentPage) {
+      return;
+    }
+
     let isActive = true;
 
     const fetchAttempts = async () => {
@@ -146,7 +166,7 @@ export default function ProfileHistory() {
     return () => {
       isActive = false;
     };
-  }, [state.currentPage]);
+  }, [initialData, state.currentPage]);
 
   const getScoreColor = (score: number) => {
     if (score >= 80) return 'text-green-600 bg-green-50';

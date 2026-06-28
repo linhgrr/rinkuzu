@@ -2,12 +2,11 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { usePathname, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 
-import { LoginForm } from '@/components/auth/LoginForm';
-import { RegisterForm } from '@/components/auth/RegisterForm';
 import { defaultLocale } from '@/i18n/config';
 
 type AuthMode = 'login' | 'signup';
@@ -18,6 +17,30 @@ interface AuthShellProps {
 }
 
 const EASE = [0.25, 0.1, 0.25, 1] as const;
+
+function AuthFormFallback() {
+  return (
+    <div className="space-y-4 py-6" aria-hidden="true">
+      <div className="h-12 rounded-full bg-surface-warm" />
+      <div className="h-12 rounded-full bg-surface-warm" />
+      <div className="h-12 rounded-full bg-surface-warm" />
+    </div>
+  );
+}
+
+const LoginForm = dynamic(
+  () => import('@/components/auth/LoginForm').then((mod) => mod.LoginForm),
+  {
+    loading: AuthFormFallback,
+  },
+);
+
+const RegisterForm = dynamic(
+  () => import('@/components/auth/RegisterForm').then((mod) => mod.RegisterForm),
+  {
+    loading: AuthFormFallback,
+  },
+);
 
 export function AuthShell({ locale, googleEnabled }: AuthShellProps) {
   const t = useTranslations('auth');

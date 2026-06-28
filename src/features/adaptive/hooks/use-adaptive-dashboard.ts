@@ -215,13 +215,17 @@ export const useAdaptiveDashboard = ({
 
   // Merge all-status jobs (live polling) with completed mastery enrichment.
   const mergedSubjects = useMemo<DashboardSubject[]>(() => {
+    if (jobLibrary.jobs.length === 0) {
+      return dashboardState.subjects.map((subject) => toDashboardSubject(subject, locale, t));
+    }
+
     return jobLibrary.jobs.map((job) => {
       const enriched = job.status === 'completed' ? enrichedByJobId.get(job.job_id) : undefined;
       return enriched
         ? toDashboardSubject(enriched, locale, t)
         : buildDashboardSubjectFromJob(job, t, tAdaptive);
     });
-  }, [enrichedByJobId, jobLibrary.jobs, locale, t, tAdaptive]);
+  }, [dashboardState.subjects, enrichedByJobId, jobLibrary.jobs, locale, t, tAdaptive]);
 
   const normalizedSubjects = useMemo(() => {
     return mergedSubjects.map((subject) => ({

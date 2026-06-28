@@ -27,6 +27,8 @@
     "refactor-component": "node scripts/refactor-component.mjs",
     "migrate:durations": "node src/scripts/migratePlanDurations.js migrate",
     "migrate:durations:dry-run": "node src/scripts/migratePlanDurations.js dry-run",
+    "cleanup:orphaned-quiz-data": "node scripts/cleanup-orphaned-quiz-data.mjs",
+    "cleanup:orphaned-quiz-data:apply": "node scripts/cleanup-orphaned-quiz-data.mjs --apply",
     "seed:plans": "node src/scripts/seedPlansWithISO8601.js seed",
     "validate:plans": "node src/scripts/seedPlansWithISO8601.js validate",
     "check:subscriptions": "node src/scripts/checkExpiredSubscriptions.js",

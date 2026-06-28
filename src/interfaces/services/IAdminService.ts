@@ -60,6 +60,14 @@ export interface AdminRecentUser {
   createdAt?: Date;
 }
 
+export interface AdminRecentAttempt {
+  id: string;
+  score: number;
+  takenAt: Date;
+  user: { email: string } | null;
+  quiz: { title: string } | null;
+}
+
 export interface AdminActivityStats {
   timeBasedStats: {
     today: AdminTimeBucket;
@@ -69,7 +77,7 @@ export interface AdminActivityStats {
   recentActivity: {
     users: AdminRecentUser[];
     quizzes: unknown[];
-    attempts: unknown[];
+    attempts: AdminRecentAttempt[];
   };
 }
 

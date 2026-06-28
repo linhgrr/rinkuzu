@@ -25,7 +25,6 @@ export interface IQuiz {
   title: string;
   description?: string;
   folder?: string | null;
-  status: 'pending' | 'published' | 'rejected';
   author: string | IUser | IUserPreview;
   slug: string;
   questions: IQuestion[];

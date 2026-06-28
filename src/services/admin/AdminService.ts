@@ -171,18 +171,14 @@ export class AdminService implements IAdminService {
 
   async getStats(): Promise<ServiceResult<AdminStats>> {
     try {
-      const [totalUsers, roleStats, quizStats, totalAttempts] = await Promise.all([
+      const [totalUsers, roleStats, totalQuizzes, totalAttempts] = await Promise.all([
         this.userRepository.count(),
         this.userRepository.countByRole(),
-        this.quizRepository.countByStatus(),
+        this.quizRepository.count(),
         this.attemptRepository.count({}),
       ]);
 
       const totalAdmins = roleStats.find((r) => r._id === 'admin')?.count || 0;
-      const publishedQuizzes = quizStats.find((s) => s._id === 'published')?.count || 0;
-      const pendingQuizzes = quizStats.find((s) => s._id === 'pending')?.count || 0;
-      const rejectedQuizzes = quizStats.find((s) => s._id === 'rejected')?.count || 0;
-      const totalQuizzes = quizStats.reduce((sum, s) => sum + s.count, 0);
 
       return {
         success: true,
@@ -190,9 +186,6 @@ export class AdminService implements IAdminService {
           totalUsers,
           totalAdmins,
           totalQuizzes,
-          publishedQuizzes,
-          pendingQuizzes,
-          rejectedQuizzes,
           totalAttempts,
         },
       };

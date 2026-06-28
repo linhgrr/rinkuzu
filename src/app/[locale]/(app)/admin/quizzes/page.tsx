@@ -30,6 +30,7 @@ interface State {
   visibility: VisibilityFilter;
   page: number;
   previewQuiz: IQuiz | null;
+  previewingQuizId: string | null;
   quizToDelete: IQuiz | null;
   deletingQuizId: string | null;
 }
@@ -55,6 +56,7 @@ const initialState: State = {
   visibility: 'all',
   page: 1,
   previewQuiz: null,
+  previewingQuizId: null,
   quizToDelete: null,
   deletingQuizId: null,
 };
@@ -144,6 +146,28 @@ export default function AdminQuizManagementPage() {
         value: {
           deletingQuizId: null,
           error: error instanceof Error ? error.message : t('quizManagementDeleteError'),
+        },
+      });
+    }
+  }
+
+  async function previewQuiz(quiz: IQuiz) {
+    dispatch({
+      type: 'patch',
+      value: { previewingQuizId: quiz._id, error: '' },
+    });
+    try {
+      const fullQuiz = await fetchApiData<IQuiz>(`/api/quizzes/${quiz._id}`);
+      dispatch({
+        type: 'patch',
+        value: { previewQuiz: fullQuiz, previewingQuizId: null },
+      });
+    } catch (error) {
+      dispatch({
+        type: 'patch',
+        value: {
+          previewingQuizId: null,
+          error: error instanceof Error ? error.message : t('quizManagementLoadError'),
         },
       });
     }
@@ -257,7 +281,8 @@ export default function AdminQuizManagementPage() {
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => dispatch({ type: 'patch', value: { previewQuiz: quiz } })}
+                    disabled={state.previewingQuizId === quiz._id}
+                    onClick={() => void previewQuiz(quiz)}
                   >
                     <HiOutlineEye className="mr-1 size-4" />
                     {t('previewWithAnswers')}

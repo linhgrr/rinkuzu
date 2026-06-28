@@ -60,7 +60,7 @@ export async function generateMetadata({
     locale,
     path: '/users',
     title: 'Public Profile | RinKuzu',
-    description: 'Explore public RinKuzu user profiles and published quizzes.',
+    description: 'Explore public RinKuzu user profiles and public quizzes.',
   });
 }
 
@@ -81,7 +81,6 @@ export default async function PublicUserProfilePage({
     User.findById(userId).select('email name displayName bio avatar createdAt').lean(),
     Quiz.find({
       author: userId,
-      status: 'published',
       isPrivate: false,
     })
       .select('title description slug createdAt questions')
@@ -134,10 +133,10 @@ export default async function PublicUserProfilePage({
                 </div>
                 <div>
                   <p className="text-xs uppercase tracking-[0.16em] text-ink-muted">
-                    {t('publishedQuizzes')}
+                    {t('publicQuizzes')}
                   </p>
                   <p className="mt-1 font-medium text-ink">
-                    {t('publishedQuizzesCount', { count: quizzes.length })}
+                    {t('publicQuizzesCount', { count: quizzes.length })}
                   </p>
                 </div>
               </div>
@@ -160,7 +159,7 @@ export default async function PublicUserProfilePage({
             <section className="space-y-4">
               <div className="flex items-end justify-between">
                 <div>
-                  <h2 className="text-xl font-semibold text-ink">{t('publishedQuizzes')}</h2>
+                  <h2 className="text-xl font-semibold text-ink">{t('publicQuizzes')}</h2>
                   <p className="text-sm text-ink-muted">{t('publicProfileQuizDescription')}</p>
                 </div>
               </div>

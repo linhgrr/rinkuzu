@@ -100,11 +100,9 @@ export function QuizMetaFormEditor({
                     {createdAtLabel}
                   </time>
                 </p>
-                {quiz.status === 'published' && (
-                  <p>
-                    <strong>Slug:</strong> {quiz.slug}
-                  </p>
-                )}
+                <p>
+                  <strong>Slug:</strong> {quiz.slug}
+                </p>
               </div>
             </div>
             <p className="mt-2 text-xs text-neutral-500">

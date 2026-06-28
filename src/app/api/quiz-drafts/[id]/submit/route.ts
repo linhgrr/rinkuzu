@@ -1,4 +1,4 @@
-// Hybrid submit: the published Quiz lives in the Next/Mongoose domain, while
+// Hybrid submit: the Quiz lives in the Next/Mongoose domain, while
 // the draft lifecycle is owned by FastAPI. So we create
 // the Quiz here from the editor's questions, then tell FastAPI to mark the
 // draft submitted (which also cleans up the source PDF).

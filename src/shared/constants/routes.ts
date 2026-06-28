@@ -5,7 +5,6 @@ export const ROUTES = {
   LOGIN: '/login',
   REGISTER: '/register',
   CREATE_QUIZ: '/create',
-  PENDING_QUIZZES: '/profile', // Consolidated
   BOOKMARKS: '/profile', // Consolidated
   HISTORY: '/profile', // Consolidated
   EXPLORE: '/explore',
@@ -36,7 +35,7 @@ export const ROUTES = {
   // Admin routes
   ADMIN: {
     PLANS: '/admin/plans',
-    QUEUE: '/admin/queue',
+    QUIZZES: '/admin/quizzes',
     REPORTS: '/admin/reports',
     STATS: '/admin/stats',
     SUBSCRIPTIONS: '/admin/subscriptions',

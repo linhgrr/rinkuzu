@@ -23,7 +23,6 @@ type DashboardQuiz = {
   title: string;
   description: string;
   slug: string;
-  status?: string;
   isPrivate?: boolean;
   createdAt: string;
   updatedAt?: string;
@@ -83,7 +82,6 @@ type DashboardQuizAggregationResult = {
   title?: unknown;
   description?: unknown;
   slug?: unknown;
-  status?: unknown;
   isPrivate?: unknown;
   createdAt?: unknown;
   updatedAt?: unknown;
@@ -185,7 +183,6 @@ function serializeQuizForClient(rawQuiz: unknown): DashboardQuiz {
     title: String(quiz['title'] || ''),
     description: String(quiz['description'] || ''),
     slug: String(quiz['slug'] || ''),
-    status: quiz['status'] as DashboardQuiz['status'],
     isPrivate: Boolean(quiz['isPrivate']),
     createdAt: normalizeIsoDate(quiz['createdAt']),
     updatedAt: quiz['updatedAt'] ? normalizeIsoDate(quiz['updatedAt']) : undefined,
@@ -276,7 +273,6 @@ async function getDashboardQuizList(
         title: 1,
         description: 1,
         slug: 1,
-        status: 1,
         isPrivate: 1,
         createdAt: 1,
         updatedAt: 1,
@@ -290,9 +286,9 @@ async function getDashboardQuizList(
   return quizzes.map(serializeQuizForClient);
 }
 
-const getCachedPublishedDashboardQuizzes = unstable_cache(
-  async () => getDashboardQuizList({ status: 'published', isPrivate: false }, 3),
-  ['dashboard-published-quizzes-v1'],
+const getCachedPublicDashboardQuizzes = unstable_cache(
+  async () => getDashboardQuizList({ isPrivate: false }, 3),
+  ['dashboard-public-quizzes-v1'],
   {
     revalidate: 60,
   },
@@ -380,7 +376,7 @@ export const getDashboardBootstrapData = cache(
 
     const [stats, quizzes, yourQuizzes, adaptiveSubjects, inProgressQuizzes] = await Promise.all([
       getUserProgressStats(userId, { skipConnect: true }),
-      getCachedPublishedDashboardQuizzes(),
+      getCachedPublicDashboardQuizzes(),
       getDashboardQuizList({ author: authorFilter }, 3),
       getDashboardAdaptiveSubjects(userId),
       getDashboardInProgressQuizzes(userId),

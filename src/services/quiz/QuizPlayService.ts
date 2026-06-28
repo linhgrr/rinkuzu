@@ -44,17 +44,6 @@ export class QuizPlayService {
       }
 
       const authorId = getAuthorId(quiz.author);
-      const isAuthor = !!userId && authorId === userId;
-      const canAccessUnpublished = userRole === 'admin' || isAuthor;
-
-      if (quiz.status !== 'published' && !canAccessUnpublished) {
-        return {
-          success: false,
-          error: 'Quiz is not available',
-          statusCode: 404,
-        };
-      }
-
       // Check permissions for private quizzes
       if (quiz.isPrivate) {
         if (!userId) {
@@ -95,7 +84,6 @@ export class QuizPlayService {
         description: quiz.description,
         author: quiz.author,
         slug: quiz.slug,
-        status: quiz.status,
         isPrivate: quiz.isPrivate,
         createdAt: quiz.createdAt,
         updatedAt: quiz.updatedAt,
@@ -143,20 +131,8 @@ export class QuizPlayService {
         };
       }
 
-      // Check access permission for unpublished quiz
-      const authorId = getAuthorId(quiz.author);
       const userIdFromSession = session?.user?.id;
       const userRole = session?.user?.role;
-      const canAccessUnpublished =
-        userRole === 'admin' || (!!userIdFromSession && authorId === userIdFromSession);
-
-      if (quiz.status !== 'published' && !canAccessUnpublished) {
-        return {
-          success: false,
-          error: 'Quiz not found or not published',
-          statusCode: 404,
-        };
-      }
 
       const privateAccessError = await checkPrivateQuizAccess(quiz, userIdFromSession, userRole);
       if (privateAccessError) return privateAccessError;
@@ -472,14 +448,6 @@ export class QuizPlayService {
       const isAdmin = session?.user?.role === 'admin';
       const isAuthor = !!session?.user?.id && isAuthorMatch(quiz, session.user.id);
 
-      if (quiz.status !== 'published' && !isAdmin && !isAuthor) {
-        return {
-          success: false,
-          error: 'Quiz not found or not published',
-          statusCode: 404,
-        };
-      }
-
       // Check if quiz is private and user has access
       if (quiz.isPrivate && session?.user) {
         if (!isAdmin && !isAuthor) {
@@ -543,14 +511,6 @@ export class QuizPlayService {
 
       const isAdmin = session?.user?.role === 'admin';
       const isAuthor = !!session?.user?.id && isAuthorMatch(quiz, session.user.id);
-
-      if (quiz.status !== 'published' && !isAdmin && !isAuthor) {
-        return {
-          success: false,
-          error: 'Quiz not found or not published',
-          statusCode: 404,
-        };
-      }
 
       // Check if quiz is private and user has access
       if (quiz.isPrivate) {

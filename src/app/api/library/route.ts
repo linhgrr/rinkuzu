@@ -37,10 +37,7 @@ export const GET = withAuth(async (request: NextRequest, { userId }) => {
     const inProgressIds = progressRecords.map((progress) => progress._id);
     const [rawQuizDocuments, rawFolderLinks] = await Promise.all([
       Quiz.find({
-        $or: [
-          { author: userObjectId },
-          { _id: { $in: [...attemptedIds, ...inProgressIds] }, status: 'published' },
-        ],
+        $or: [{ author: userObjectId }, { _id: { $in: [...attemptedIds, ...inProgressIds] } }],
       })
         .populate('author', 'email name displayName avatar')
         .lean(),

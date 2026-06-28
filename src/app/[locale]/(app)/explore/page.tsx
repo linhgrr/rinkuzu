@@ -101,7 +101,6 @@ function ExploreContent() {
   const swrParams = new URLSearchParams({
     page: state.page.toString(),
     limit: limit.toString(),
-    status: 'published',
     compact: 'true',
   });
   if (state.committedSearch) swrParams.append('search', state.committedSearch);

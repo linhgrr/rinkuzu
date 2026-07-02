@@ -158,33 +158,6 @@ export const useDraftStore = create<DraftStore>()(
     }),
     {
       name: 'draft-storage',
-      version: 2,
-      // v1 -> v2 migration: post-US-507 the BE owns Mode A drafts and reports
-      // flat progress only (no per-chunk detail). Collapse any persisted
-      // multi-chunk progress to a single-step shape so the UI stays
-      // consistent at cutover.
-      migrate: (persistedState: unknown, version: number) => {
-        if (!persistedState || typeof persistedState !== 'object') {
-          return { activeDrafts: {} } as { activeDrafts: Record<string, DraftProgress> };
-        }
-        if (version >= 2) return persistedState as { activeDrafts: Record<string, DraftProgress> };
-
-        const state = persistedState as { activeDrafts?: Record<string, DraftProgress> };
-        const drafts = state.activeDrafts ?? {};
-        const migrated: Record<string, DraftProgress> = {};
-
-        for (const [id, draft] of Object.entries(drafts)) {
-          const isComplete = draft.status === 'completed';
-          migrated[id] = {
-            ...draft,
-            chunksTotal: 1,
-            chunksProcessed: isComplete ? 1 : 0,
-            chunksError: draft.status === 'error' ? 1 : 0,
-          };
-        }
-
-        return { activeDrafts: migrated };
-      },
     },
   ),
 );

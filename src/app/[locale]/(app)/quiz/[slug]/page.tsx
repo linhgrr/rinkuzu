@@ -50,7 +50,7 @@ type QuizAnswer = number | number[];
 
 function toAuthorIdentity(author: QuizPlayAuthorViewModel): UserIdentity {
   return {
-    id: author.id ?? '',
+    id: author.id,
     email: author.email,
     name: author.name,
     displayName: author.displayName,

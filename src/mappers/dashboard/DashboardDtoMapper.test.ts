@@ -4,20 +4,48 @@ import { DashboardDtoMapper } from '@/mappers/dashboard/DashboardDtoMapper';
 const now = new Date('2026-07-01T00:00:00Z');
 
 describe('DashboardDtoMapper', () => {
-  it('maps empty progress to explicit zero defaults', () => {
-    expect(DashboardDtoMapper.toStats(null, 3)).toEqual({
-      streak: 0,
-      longestStreak: 0,
-      streakFreezeCount: 0,
-      xp: 0,
-      level: 1,
+  it('maps progress records without field-level fallbacks', () => {
+    expect(
+      DashboardDtoMapper.toStats(
+        {
+          currentStreak: 2,
+          longestStreak: 5,
+          streakFreezeCount: 1,
+          totalXp: 120,
+          weeklyActivity: {
+            '2026-07-01': {
+              questionsReviewed: 4,
+              xpEarned: 20,
+              correctCount: 3,
+              totalCount: 4,
+            },
+          },
+          totalQuestionsLearned: 40,
+          totalReviewSessions: 9,
+          averageAccuracy: 75,
+        },
+        3,
+      ),
+    ).toEqual({
+      streak: 2,
+      longestStreak: 5,
+      streakFreezeCount: 1,
+      xp: 120,
+      level: 2,
       xpToNextLevel: expect.any(Number),
-      levelProgress: 0,
+      levelProgress: 20,
       dueCount: 3,
-      weeklyActivity: {},
-      totalQuestionsLearned: 0,
-      totalReviewSessions: 0,
-      averageAccuracy: 0,
+      weeklyActivity: {
+        '2026-07-01': {
+          questionsReviewed: 4,
+          xpEarned: 20,
+          correctCount: 3,
+          totalCount: 4,
+        },
+      },
+      totalQuestionsLearned: 40,
+      totalReviewSessions: 9,
+      averageAccuracy: 75,
     });
   });
 

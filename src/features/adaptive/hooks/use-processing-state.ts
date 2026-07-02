@@ -310,8 +310,8 @@ export const useProcessingState = (t: TranslateFn) => {
 
   const updatePipelineNotice = useCallback(
     (job: PipelineJobStatus) => {
-      const batchCount = job.batch_count ?? 0;
-      const failedBatchCount = job.failed_batch_count ?? 0;
+      const batchCount = job.batch_count;
+      const failedBatchCount = job.failed_batch_count;
       const partialSuccess = Boolean(job.partial_success);
 
       if (partialSuccess && failedBatchCount > 0) {
@@ -407,7 +407,7 @@ export const useProcessingState = (t: TranslateFn) => {
       try {
         const job = await getPipelineJobStatus(jobId);
         pollRetryDelayRef.current = BASE_POLL_DELAY_MS;
-        setCurrentStep(STATUS_TO_STEP[job.status] ?? 0);
+        setCurrentStep(STATUS_TO_STEP[job.status]);
         setProgress(job.progress * 100);
         setStatusLabel(job.current_step || getStatusLabel(job.status));
 

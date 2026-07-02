@@ -1,16 +1,9 @@
 import type { SessionHistoryItem } from '@/features/adaptive/types/history';
 import type { SessionHistoryViewModel } from '@/features/adaptive/types/session-history-view-model';
+import { requireFirstNonEmptyString } from '@/lib/non-empty-string';
 
 function filenameStem(filename: string): string {
   return filename.replace(/\.[^.]+$/, '');
-}
-
-function firstNonEmptyString(...values: string[]): string {
-  const value = values.find((candidate) => candidate.trim().length > 0);
-  if (!value) {
-    throw new TypeError('Adaptive session history title fields are empty');
-  }
-  return value;
 }
 
 function clampPercent(value: number): number {
@@ -23,7 +16,8 @@ function toPercent(value: number): number {
 }
 
 export function toSessionHistoryViewModel(item: SessionHistoryItem): SessionHistoryViewModel {
-  const displayTitle = firstNonEmptyString(
+  const displayTitle = requireFirstNonEmptyString(
+    'adaptive session history title',
     item.subject_id,
     filenameStem(item.filename),
     item.job_id.substring(0, 8),

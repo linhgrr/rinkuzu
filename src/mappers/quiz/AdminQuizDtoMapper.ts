@@ -7,7 +7,7 @@ import type {
 } from '@/dtos/admin-quiz';
 import type { PaginationMeta } from '@/dtos/common';
 import type { Quiz, QuizAuthorPreview, QuizQuestion } from '@/entities/Quiz';
-import { serializeDate, serializeOptionalDate } from '@/lib/date-serialization';
+import { serializeDate } from '@/lib/date-serialization';
 
 function isAuthorPreview(author: Quiz['author']): author is QuizAuthorPreview {
   return typeof author === 'object' && author !== null;
@@ -60,7 +60,7 @@ export class AdminQuizDtoMapper {
       isPrivate: quiz.isPrivate,
       questionCount: quiz.questionCount ?? quiz.questions.length,
       createdAt: serializeDate(quiz.createdAt, 'quiz.createdAt'),
-      updatedAt: serializeOptionalDate(quiz.updatedAt, 'quiz.updatedAt'),
+      updatedAt: serializeDate(quiz.updatedAt, 'quiz.updatedAt'),
     };
   }
 

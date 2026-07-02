@@ -8,6 +8,7 @@ import type {
   SubjectRuntime,
 } from '@/features/adaptive/types/dashboard-view-model';
 import { formatDate } from '@/lib/formatters';
+import { requireFirstNonEmptyString } from '@/lib/non-empty-string';
 
 const toTimestampMs = (value?: number | null): number | null => {
   if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) return null;
@@ -19,14 +20,6 @@ const clampPercent = (value: number): number => {
   if (!Number.isFinite(value)) return 0;
 
   return Math.max(0, Math.min(100, Math.round(value)));
-};
-
-const firstNonEmptyString = (...values: string[]): string => {
-  const value = values.find((candidate) => candidate.trim().length > 0);
-  if (!value) {
-    throw new TypeError('Adaptive dashboard title fields are empty');
-  }
-  return value;
 };
 
 const getSubjectMetrics = (job: PipelineJobHistoryItem): DashboardSubjectMetrics => {
@@ -55,7 +48,12 @@ const getSubjectMetrics = (job: PipelineJobHistoryItem): DashboardSubjectMetrics
 
 const getDisplayTitle = (job: PipelineJobHistoryItem): string => {
   const filenameTitle = job.filename.replace(/\.[^.]+$/, '');
-  return firstNonEmptyString(job.subject_id, filenameTitle, job.job_id);
+  return requireFirstNonEmptyString(
+    'adaptive dashboard subject title',
+    job.subject_id,
+    filenameTitle,
+    job.job_id,
+  );
 };
 
 const formatLastOpenedLabel = (
@@ -128,7 +126,12 @@ const getPipelineStatusLabelKey = (status: PipelineStatus): string => {
 
 const getJobDisplayTitle = (job: DashboardPipelineJobListItem): string => {
   const filenameTitle = job.filename.replace(/\.[^.]+$/, '');
-  return firstNonEmptyString(job.subject_id, filenameTitle, job.job_id);
+  return requireFirstNonEmptyString(
+    'adaptive dashboard job title',
+    job.subject_id,
+    filenameTitle,
+    job.job_id,
+  );
 };
 
 const getJobProgressPercent = (job: DashboardPipelineJobListItem): number => {

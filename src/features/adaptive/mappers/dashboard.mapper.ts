@@ -21,9 +21,17 @@ const clampPercent = (value: number): number => {
   return Math.max(0, Math.min(100, Math.round(value)));
 };
 
+const firstNonEmptyString = (...values: string[]): string => {
+  const value = values.find((candidate) => candidate.trim().length > 0);
+  if (!value) {
+    throw new TypeError('Adaptive dashboard title fields are empty');
+  }
+  return value;
+};
+
 const getSubjectMetrics = (job: PipelineJobHistoryItem): DashboardSubjectMetrics => {
-  const masteredConcepts = Math.max(0, job.mastered_concept ?? 0);
-  const allConcepts = Math.max(0, job.all_concept ?? job.concepts_after_merge ?? 0);
+  const masteredConcepts = Math.max(0, job.mastered_concept);
+  const allConcepts = Math.max(0, job.all_concept);
 
   if (allConcepts > 0) {
     const boundedMastered = Math.min(masteredConcepts, allConcepts);
@@ -35,7 +43,7 @@ const getSubjectMetrics = (job: PipelineJobHistoryItem): DashboardSubjectMetrics
     };
   }
 
-  const backendProgressPercent = Math.max(0, job.progress_percent ?? 0);
+  const backendProgressPercent = Math.max(0, job.progress_percent);
 
   return {
     masteredConcepts: 0,
@@ -46,8 +54,8 @@ const getSubjectMetrics = (job: PipelineJobHistoryItem): DashboardSubjectMetrics
 };
 
 const getDisplayTitle = (job: PipelineJobHistoryItem): string => {
-  const filenameTitle = job.filename?.replace(/\.[^.]+$/, '');
-  return job.subject_id || filenameTitle || job.job_id;
+  const filenameTitle = job.filename.replace(/\.[^.]+$/, '');
+  return firstNonEmptyString(job.subject_id, filenameTitle, job.job_id);
 };
 
 const formatLastOpenedLabel = (
@@ -87,7 +95,7 @@ export const toDashboardSubject = (
     conceptsExtracted: job.concepts_extracted,
     conceptsAfterMerge: job.concepts_after_merge,
     relationsVerified: job.relations_verified,
-    completedAt: job.completed_at,
+    completedAt: job.completed_at ?? null,
     masteredConcept: job.mastered_concept,
     allConcept: job.all_concept,
     progressPercent: job.progress_percent,
@@ -119,8 +127,8 @@ const getPipelineStatusLabelKey = (status: PipelineStatus): string => {
 };
 
 const getJobDisplayTitle = (job: DashboardPipelineJobListItem): string => {
-  const filenameTitle = job.filename?.replace(/\.[^.]+$/, '');
-  return job.subject_id || filenameTitle || job.job_id;
+  const filenameTitle = job.filename.replace(/\.[^.]+$/, '');
+  return firstNonEmptyString(job.subject_id, filenameTitle, job.job_id);
 };
 
 const getJobProgressPercent = (job: DashboardPipelineJobListItem): number => {
@@ -171,7 +179,7 @@ export const buildDashboardSubjectFromJob = (
     conceptsExtracted: job.concepts_extracted,
     conceptsAfterMerge: job.concepts_after_merge,
     relationsVerified: job.relations_verified,
-    completedAt: job.completed_at ?? 0,
+    completedAt: job.completed_at ?? null,
     masteredConcept: 0,
     allConcept: 0,
     progressPercent,

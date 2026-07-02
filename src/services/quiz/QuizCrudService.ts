@@ -3,13 +3,14 @@ import type { Quiz } from '@/entities/Quiz';
 import { createSubscriptionService } from '@/lib/subscription-factory';
 import { IUserRepository } from '@/interfaces/repositories/IUserRepository';
 import type { IFolderRepository } from '@/interfaces/repositories/IFolderRepository';
-import type { CreateQuizRequestDto, UpdateQuizRequestDto } from '@/dtos/quiz';
+import type { CreateQuizRequestDto, QuizDetailDto, UpdateQuizRequestDto } from '@/dtos/quiz';
 import { ServiceResult } from '@/interfaces/services/types';
 import { generateSlug } from '@/lib/utils';
 import { getAuthorId } from './quiz-helpers';
 import { logger } from '@/lib/logger';
 import { QuizCreationError } from '@/lib/quiz/errors';
 import { isMongoDuplicateKeyError, isMongoDuplicateKeyErrorForField } from '@/lib/mongoose-errors';
+import { QuizDetailDtoMapper } from '@/mappers/quiz/QuizDetailDtoMapper';
 
 const MAX_SLUG_CREATE_ATTEMPTS = 20;
 
@@ -20,25 +21,27 @@ export class QuizCrudService {
     private folderRepository?: IFolderRepository,
   ) {}
 
-  async createQuiz(userId: string, quizData: CreateQuizRequestDto): Promise<Quiz> {
-    return this.createQuizRecord(userId, quizData);
+  async createQuiz(userId: string, quizData: CreateQuizRequestDto): Promise<QuizDetailDto> {
+    return QuizDetailDtoMapper.toDetail(await this.createQuizRecord(userId, quizData));
   }
 
   async createQuizFromDraft(
     userId: string,
     sourceDraftId: string,
     quizData: CreateQuizRequestDto,
-  ): Promise<Quiz> {
+  ): Promise<QuizDetailDto> {
     const existing = await this.quizRepository.findBySourceDraftId(sourceDraftId);
     if (existing) {
       if (getAuthorId(existing.author) !== userId) {
         throw new QuizCreationError('invalid_draft', 'Draft belongs to another user');
       }
-      return existing;
+      return QuizDetailDtoMapper.toDetail(existing);
     }
 
     try {
-      return await this.createQuizRecord(userId, quizData, sourceDraftId);
+      return QuizDetailDtoMapper.toDetail(
+        await this.createQuizRecord(userId, quizData, sourceDraftId),
+      );
     } catch (error) {
       if (!isMongoDuplicateKeyError(error)) {
         throw error;
@@ -48,7 +51,7 @@ export class QuizCrudService {
       if (!concurrentlyCreated || getAuthorId(concurrentlyCreated.author) !== userId) {
         throw error;
       }
-      return concurrentlyCreated;
+      return QuizDetailDtoMapper.toDetail(concurrentlyCreated);
     }
   }
 
@@ -115,7 +118,7 @@ export class QuizCrudService {
     userEmail?: string,
     userRole?: string,
     userId?: string,
-  ): Promise<ServiceResult<Quiz>> {
+  ): Promise<ServiceResult<QuizDetailDto>> {
     try {
       const quiz = await this.quizRepository.findById(id);
 
@@ -139,12 +142,12 @@ export class QuizCrudService {
 
         // Admin can access all private quizzes
         if (userRole === 'admin') {
-          return { success: true, data: quiz };
+          return { success: true, data: QuizDetailDtoMapper.toDetail(quiz) };
         }
 
         // Author can access their own private quizzes
         if (getAuthorId(quiz.author) === userId) {
-          return { success: true, data: quiz };
+          return { success: true, data: QuizDetailDtoMapper.toDetail(quiz) };
         }
 
         // Check if user has premium subscription
@@ -168,7 +171,7 @@ export class QuizCrudService {
         }
       }
 
-      return { success: true, data: quiz };
+      return { success: true, data: QuizDetailDtoMapper.toDetail(quiz) };
     } catch (error) {
       logger.error({ error }, 'Error in getQuizById');
       return {
@@ -184,7 +187,7 @@ export class QuizCrudService {
     quizData: UpdateQuizRequestDto,
     userId: string,
     userRole?: string,
-  ): Promise<ServiceResult<Quiz>> {
+  ): Promise<ServiceResult<QuizDetailDto>> {
     try {
       const quiz = await this.quizRepository.findById(id);
 
@@ -244,7 +247,7 @@ export class QuizCrudService {
 
       return {
         success: true,
-        data: updatedQuiz,
+        data: QuizDetailDtoMapper.toDetail(updatedQuiz),
       };
     } catch (error) {
       logger.error({ error }, 'Update quiz error');

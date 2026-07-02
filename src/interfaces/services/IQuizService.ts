@@ -4,6 +4,7 @@ import type {
   FlashcardQuizDto,
   QuizAttemptResultDto,
   QuizDiscussionDto,
+  QuizDetailDto,
   QuizListDto,
   QuizListOptionsDto,
   QuizPlayDetailDto,
@@ -20,20 +21,20 @@ import type { Session } from 'next-auth';
 export interface IQuizService {
   getQuizzes(options: QuizListOptionsDto): Promise<QuizListDto>;
 
-  createQuiz(userId: string, quizData: CreateQuizRequestDto): Promise<Quiz>;
+  createQuiz(userId: string, quizData: CreateQuizRequestDto): Promise<QuizDetailDto>;
 
   createQuizFromDraft(
     userId: string,
     sourceDraftId: string,
     quizData: CreateQuizRequestDto,
-  ): Promise<Quiz>;
+  ): Promise<QuizDetailDto>;
 
   getQuizById(
     id: string,
     userEmail?: string,
     userRole?: string,
     userId?: string,
-  ): Promise<ServiceResult<Quiz>>;
+  ): Promise<ServiceResult<QuizDetailDto>>;
 
   getQuizBySlug(slug: string): Promise<Quiz | null>;
 
@@ -64,7 +65,7 @@ export interface IQuizService {
     quizData: UpdateQuizRequestDto,
     userId: string,
     userRole?: string,
-  ): Promise<ServiceResult<Quiz>>;
+  ): Promise<ServiceResult<QuizDetailDto>>;
 
   deleteQuiz(id: string, userId: string, userRole?: string): Promise<ServiceResult<boolean>>;
 

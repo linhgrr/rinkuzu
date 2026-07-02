@@ -5,7 +5,6 @@ import { apiErr, apiOk, apiServiceErr } from '@/lib/api/response';
 import { logger } from '@/lib/logger';
 import { readAndValidateJson, readAndValidateRouteParams } from '@/lib/api/request';
 import { quizIdRouteParamsSchema, updateQuizRequestSchema } from '@/dtos/quiz';
-import { QuizDetailDtoMapper } from '@/mappers/quiz/QuizDetailDtoMapper';
 
 // GET /api/quizzes/[id] - Get specific quiz
 export const GET = withAuth(async (_request, { params, email, userId, session }) => {
@@ -50,7 +49,7 @@ export const GET = withAuth(async (_request, { params, email, userId, session })
       }
     }
 
-    return apiOk(data ? QuizDetailDtoMapper.toDetail(data) : undefined);
+    return apiOk(data);
   } catch (error: unknown) {
     logger.error({ error }, 'Get quiz error');
     return apiErr('internal_error', 'Internal server error', 500);
@@ -81,7 +80,7 @@ export const PUT = withAuth(async (request: NextRequest, { params, userId, sessi
       return apiServiceErr(result);
     }
 
-    return apiOk(result.data ? QuizDetailDtoMapper.toDetail(result.data) : undefined);
+    return apiOk(result.data);
   } catch (error: unknown) {
     logger.error({ error }, 'Update quiz error');
     return apiErr('internal_error', 'Internal server error', 500);

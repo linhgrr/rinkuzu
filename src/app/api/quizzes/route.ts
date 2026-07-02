@@ -5,7 +5,6 @@ import { apiErr, apiOk } from '@/lib/api/response';
 import { logger } from '@/lib/logger';
 import { readAndValidateJson, readAndValidateSearchParams } from '@/lib/api/request';
 import { createQuizRequestSchema, quizListQuerySchema } from '@/dtos/quiz';
-import { QuizDetailDtoMapper } from '@/mappers/quiz/QuizDetailDtoMapper';
 import { QuizCreationError } from '@/lib/quiz/errors';
 import { UNFILED_FOLDER_TARGET } from '@/shared/constants/folder';
 
@@ -68,7 +67,7 @@ export const POST = withAuth(async (request: NextRequest, { userId }) => {
 
     const quiz = await quizService.createQuiz(userId, input.data);
 
-    return apiOk(QuizDetailDtoMapper.toDetail(quiz), 201, {
+    return apiOk(quiz, 201, {
       meta: { message: 'Quiz created successfully' },
     });
   } catch (error: unknown) {

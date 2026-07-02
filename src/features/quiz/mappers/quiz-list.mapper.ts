@@ -10,16 +10,7 @@ export function toQuizListItemViewModel(quiz: QuizListItemDto): QuizListItemView
     title: quiz.title,
     description: quiz.description,
     slug: quiz.slug,
-    author:
-      typeof quiz.author === 'object' && quiz.author !== null
-        ? {
-            id: quiz.author.id,
-            email: quiz.author.email,
-            name: quiz.author.name,
-            displayName: quiz.author.displayName,
-            avatar: quiz.author.avatar,
-          }
-        : quiz.author,
+    author: quiz.author,
     folderId: quiz.folder,
     isPrivate: quiz.isPrivate,
     questionCount: quiz.questionCount,

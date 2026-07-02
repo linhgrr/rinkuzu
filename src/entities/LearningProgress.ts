@@ -14,7 +14,7 @@ export interface LibraryQuiz {
   title: string;
   slug: string;
   description?: string;
-  author: string | LibraryQuizAuthor | null;
+  author: LibraryQuizAuthor | null;
   folder: string | null;
   isPrivate: boolean;
   pdfUrl?: string;

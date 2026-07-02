@@ -6,9 +6,9 @@ function isAuthorPreview(author: Quiz['author']): author is QuizAuthorPreview {
   return typeof author === 'object' && author !== null;
 }
 
-function toAuthorDto(author: Quiz['author']): string | QuizListAuthorDto | null {
+function toAuthorDto(author: Quiz['author']): QuizListAuthorDto | null {
   if (!author) return null;
-  if (!isAuthorPreview(author)) return author;
+  if (!isAuthorPreview(author)) return { id: author };
 
   return {
     id: author.id,

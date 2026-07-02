@@ -19,7 +19,7 @@ export interface FolderLibraryQuizViewModel {
   title: string;
   slug: string;
   description?: string;
-  author: string | UserIdentity | null;
+  author: UserIdentity | null;
   folder: string | null;
   isPrivate: boolean;
   questionCount: number;

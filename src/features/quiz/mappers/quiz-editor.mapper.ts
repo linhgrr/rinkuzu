@@ -23,7 +23,7 @@ function toEditorQuestion(question: QuizQuestionDto, index: number): QuizEditorQ
     : {
         ...base,
         type: 'multiple',
-        correctIndexes: question.correctIndexes ?? [],
+        correctIndexes: question.correctIndexes,
       };
 }
 

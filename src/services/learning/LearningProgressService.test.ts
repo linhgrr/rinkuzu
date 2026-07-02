@@ -25,7 +25,7 @@ function libraryQuiz(overrides: Partial<LibraryQuiz> = {}): LibraryQuiz {
     title: 'Algorithms',
     slug: 'algorithms',
     description: 'Practice',
-    author: userId,
+    author: { id: userId },
     folder: null,
     isPrivate: false,
     questionCount: 2,

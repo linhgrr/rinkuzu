@@ -18,7 +18,7 @@ import type { MongoIdLike } from '@/types/mongo';
 
 function mapAuthor(
   author: MongoIdLike | LibraryQuizAuthorPersistenceRecord | null,
-): string | LibraryQuizAuthor | null {
+): LibraryQuizAuthor | null {
   if (!author) return null;
   if (typeof author === 'object' && '_id' in author) {
     return {
@@ -29,7 +29,7 @@ function mapAuthor(
       avatar: author.avatar,
     };
   }
-  return serializeId(author, 'quiz.author');
+  return { id: serializeId(author, 'quiz.author') };
 }
 
 function mapWeeklyActivity(
@@ -51,8 +51,7 @@ export class LearningProgressPersistenceMapper {
   ): LibraryQuiz {
     const id = serializeId(record._id, 'quiz._id');
     const author = mapAuthor(record.author);
-    const authorId = typeof author === 'object' && author ? author.id : author;
-    const ownedByMe = authorId === context.userId;
+    const ownedByMe = author?.id === context.userId;
     const folder = ownedByMe
       ? record.folder
         ? String(record.folder)

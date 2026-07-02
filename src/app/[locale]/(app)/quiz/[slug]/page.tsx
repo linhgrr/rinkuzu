@@ -920,12 +920,9 @@ export default function QuizPlayerPage() {
     return null;
   }
 
-  const authorName =
-    typeof quiz.author === 'string'
-      ? quiz.author
-      : quiz.author
-        ? getUserDisplayName(toAuthorIdentity(quiz.author)) || 'RinKuzu Community'
-        : 'RinKuzu Community';
+  const authorName = quiz.author
+    ? getUserDisplayName(toAuthorIdentity(quiz.author)) || 'RinKuzu Community'
+    : 'RinKuzu Community';
   return (
     <>
       <QuizPageSchema

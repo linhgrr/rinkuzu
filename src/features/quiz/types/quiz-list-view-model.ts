@@ -11,7 +11,7 @@ export interface QuizListItemViewModel {
   title: string;
   description?: string;
   slug: string;
-  author: string | QuizAuthorViewModel | null;
+  author: QuizAuthorViewModel | null;
   folderId: string | null;
   isPrivate: boolean;
   questionCount: number;

@@ -10,15 +10,14 @@ import type { UserIdentity } from '@/components/user/user-identity';
 export interface QuizCardQuiz {
   title: string;
   slug: string;
-  author: string | UserIdentity | null;
+  author: UserIdentity | null;
   isPrivate: boolean;
   questionCount: number;
 }
 
 function getAuthor(quiz: QuizCardQuiz): UserIdentity {
   if (!quiz.author) return { displayName: 'RinKuzu learner' };
-  if (typeof quiz.author === 'object') return quiz.author;
-  return { id: quiz.author, displayName: 'RinKuzu learner' };
+  return quiz.author;
 }
 
 export function QuizCard({

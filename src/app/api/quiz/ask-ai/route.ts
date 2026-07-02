@@ -4,8 +4,8 @@ import { withOptionalAuth } from '@/lib/api/auth';
 
 export const dynamic = 'force-dynamic';
 
-// Public + authenticated dual path: anonymous callers may still proxy to the
-// adaptive backend; rate limiting only applies once we have a userId.
+// Public + authenticated dual path: guest callers may still proxy to the
+// adaptive backend; rate limiting only applies once we have an authenticated user.
 export const POST = withOptionalAuth(async (req, { userId, session }) => {
   const userRole = session?.user?.role;
   if (userId && !isAdminRole(userRole)) {
@@ -18,7 +18,7 @@ export const POST = withOptionalAuth(async (req, { userId, session }) => {
   return proxyAdaptiveRequest(
     req,
     '/api/quiz/ask-ai',
-    { userId: userId ?? 'anonymous', userRole },
+    { userId: userId ?? undefined, userRole },
     {
       method: 'POST',
       timeoutMs: 180_000,

@@ -3,7 +3,7 @@ import type {
   CountBuckets,
   CountBucketThresholds,
   PaginatedRepositoryResult,
-  RequiredRepositoryPaginationOptions,
+  RepositoryPaginationOptions,
 } from '@/interfaces/repositories/types';
 
 interface AttemptSubmissionData {
@@ -39,7 +39,7 @@ export interface AttemptCountFilter {
 export interface IAttemptRepository {
   findByUser(
     userId: string,
-    options: RequiredRepositoryPaginationOptions,
+    options: RepositoryPaginationOptions,
   ): Promise<PaginatedRepositoryResult<Attempt>>;
 
   create(data: CreateAttemptData): Promise<Attempt>;
@@ -48,7 +48,7 @@ export interface IAttemptRepository {
 
   countByQuiz(quizId: string): Promise<number>;
 
-  findRecentActivity(limit?: number): Promise<Attempt[]>;
+  findRecentActivity(limit: number): Promise<Attempt[]>;
 
   findByIdWithQuiz(attemptId: string, owner: AttemptOwnerIdentity): Promise<Attempt | null>;
 

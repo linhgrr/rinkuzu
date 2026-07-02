@@ -4,10 +4,10 @@ import type {
   CountBucketThresholds,
   CreatedAtCountFilter,
   PaginatedRepositoryResult,
-  RequiredRepositoryPaginationOptions,
+  RepositoryPaginationOptions,
 } from '@/interfaces/repositories/types';
 
-export interface UserFindOptions extends RequiredRepositoryPaginationOptions {
+export interface UserFindOptions extends RepositoryPaginationOptions {
   search?: string;
   role?: string;
 }

@@ -38,5 +38,5 @@ export interface IAdminService {
   // Statistics
   getStats(): Promise<ServiceResult<AdminOverviewStatsDto>>;
   getActivityStats(): Promise<ServiceResult<AdminActivityStatsDto>>;
-  getCreatorStats(limit?: number): Promise<ServiceResult<AdminCreatorStatDto[]>>;
+  getCreatorStats(limit: number): Promise<ServiceResult<AdminCreatorStatDto[]>>;
 }

@@ -12,7 +12,7 @@ import type {
   CountBuckets,
   CountBucketThresholds,
   PaginatedRepositoryResult,
-  RequiredRepositoryPaginationOptions,
+  RepositoryPaginationOptions,
 } from '@/interfaces/repositories/types';
 import { AttemptPersistenceMapper } from '@/repositories/mappers/AttemptPersistenceMapper';
 import { AnswerPersistenceMapper } from '@/repositories/mappers/AnswerPersistenceMapper';
@@ -28,7 +28,7 @@ const populatedQuizFields = 'title slug description questions';
 export class AttemptRepository implements IAttemptRepository {
   async findByUser(
     userId: string,
-    options: RequiredRepositoryPaginationOptions,
+    options: RepositoryPaginationOptions,
   ): Promise<PaginatedRepositoryResult<Attempt>> {
     await connectDB();
 
@@ -76,7 +76,7 @@ export class AttemptRepository implements IAttemptRepository {
     return AttemptModel.countDocuments({ quiz: quizId });
   }
 
-  async findRecentActivity(limit = 10): Promise<Attempt[]> {
+  async findRecentActivity(limit: number): Promise<Attempt[]> {
     await connectDB();
     const records = await AttemptModel.find()
       .populate('user', 'email')

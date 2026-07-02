@@ -37,7 +37,7 @@ export class AdminService implements IAdminService {
 
   async getUsers(searchParams: AdminUserListQueryDto): Promise<ServiceResult<AdminUserListDto>> {
     try {
-      const { search, page = 1, limit = 10 } = searchParams;
+      const { search, page, limit } = searchParams;
 
       const result = await this.userRepository.findAll({
         page,
@@ -277,7 +277,7 @@ export class AdminService implements IAdminService {
     }
   }
 
-  async getCreatorStats(limit: number = 20): Promise<ServiceResult<AdminCreatorStatDto[]>> {
+  async getCreatorStats(limit: number): Promise<ServiceResult<AdminCreatorStatDto[]>> {
     try {
       const creators = await this.quizRepository.findTopCreators(limit);
 

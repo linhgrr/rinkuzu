@@ -4,6 +4,7 @@ import { apiErr, apiOk } from '@/lib/api/response';
 import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
+const TOP_CREATORS_LIMIT = 20;
 
 export const GET = withAdmin(async () => {
   try {
@@ -12,7 +13,7 @@ export const GET = withAdmin(async () => {
     const [statsResult, activityResult, creatorResult] = await Promise.all([
       adminService.getStats(),
       adminService.getActivityStats(),
-      adminService.getCreatorStats(),
+      adminService.getCreatorStats(TOP_CREATORS_LIMIT),
     ]);
 
     if (!statsResult.success || !activityResult.success || !creatorResult.success) {

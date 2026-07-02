@@ -1,11 +1,6 @@
 import type { PaginationMeta } from '@/dtos/common';
 
 export interface RepositoryPaginationOptions {
-  page?: number;
-  limit?: number;
-}
-
-export interface RequiredRepositoryPaginationOptions {
   page: number;
   limit: number;
 }

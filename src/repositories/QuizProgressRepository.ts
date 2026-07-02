@@ -70,7 +70,7 @@ export class QuizProgressRepository implements IQuizProgressRepository {
     return result.deletedCount > 0;
   }
 
-  async findInProgressByUser(userId: string, limit: number = 8): Promise<QuizProgress[]> {
+  async findInProgressByUser(userId: string, limit: number): Promise<QuizProgress[]> {
     await connectDB();
     if (!Types.ObjectId.isValid(userId)) {
       return [];

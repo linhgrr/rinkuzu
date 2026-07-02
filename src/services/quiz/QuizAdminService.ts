@@ -104,8 +104,8 @@ export class QuizAdminService {
     const {
       search,
       folder,
-      page = 1,
-      limit = 10,
+      page,
+      limit,
       isPrivate,
       userRole: _userRole,
       userId,

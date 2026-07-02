@@ -1,8 +1,16 @@
-import type { AdminUserDto } from '@/dtos/admin-user';
+import type { AdminUserDto, AdminUserListDto } from '@/dtos/admin-user';
+import type { PaginationMeta } from '@/dtos/common';
 import type { User } from '@/entities/User';
 import { serializeDate, serializeOptionalDate } from '@/lib/date-serialization';
 
 export class AdminUserDtoMapper {
+  static toListDto(users: User[], pagination: PaginationMeta): AdminUserListDto {
+    return {
+      users: users.map(AdminUserDtoMapper.toDto),
+      pagination,
+    };
+  }
+
   static toDto(user: User): AdminUserDto {
     return {
       id: user.id,

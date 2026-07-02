@@ -15,7 +15,6 @@ export interface StatsModalCreatorItemViewModel {
   joinedAt: string;
   joinedAtLabel: string;
   role: 'admin' | 'user';
-  successRate: number;
 }
 
 export interface StatsModalRecentUserViewModel {

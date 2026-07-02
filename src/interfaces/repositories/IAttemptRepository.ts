@@ -3,7 +3,7 @@ import type {
   CountBuckets,
   CountBucketThresholds,
   PaginatedRepositoryResult,
-  RepositoryPaginationOptions,
+  RequiredRepositoryPaginationOptions,
 } from '@/interfaces/repositories/types';
 
 interface AttemptSubmissionData {
@@ -39,7 +39,7 @@ export interface AttemptCountFilter {
 export interface IAttemptRepository {
   findByUser(
     userId: string,
-    options?: RepositoryPaginationOptions,
+    options: RequiredRepositoryPaginationOptions,
   ): Promise<PaginatedRepositoryResult<Attempt>>;
 
   create(data: CreateAttemptData): Promise<Attempt>;

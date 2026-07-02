@@ -1,9 +1,10 @@
 import type { Report, ReportStatus } from '@/entities/Report';
-import type { PaginatedRepositoryResult } from '@/interfaces/repositories/types';
+import type {
+  PaginatedRepositoryResult,
+  RequiredRepositoryPaginationOptions,
+} from '@/interfaces/repositories/types';
 
-export interface ReportFindOptions {
-  page?: number;
-  limit?: number;
+export interface ReportFindOptions extends RequiredRepositoryPaginationOptions {
   status?: ReportStatus;
 }
 
@@ -27,7 +28,7 @@ export interface UpdateReportData {
 export interface IReportRepository {
   findById(id: string): Promise<Report | null>;
 
-  findAll(options?: ReportFindOptions): Promise<PaginatedRepositoryResult<Report>>;
+  findAll(options: ReportFindOptions): Promise<PaginatedRepositoryResult<Report>>;
 
   create(reportData: CreateReportData): Promise<Report>;
 

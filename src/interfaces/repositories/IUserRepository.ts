@@ -4,11 +4,10 @@ import type {
   CountBucketThresholds,
   CreatedAtCountFilter,
   PaginatedRepositoryResult,
+  RequiredRepositoryPaginationOptions,
 } from '@/interfaces/repositories/types';
 
-export interface UserFindOptions {
-  page?: number;
-  limit?: number;
+export interface UserFindOptions extends RequiredRepositoryPaginationOptions {
   search?: string;
   role?: string;
 }
@@ -24,7 +23,7 @@ export interface IUserRepository {
   findPublicProfileById(id: string): Promise<PublicProfileUser | null>;
   updateRole(id: string, role: User['role']): Promise<User | null>;
   delete(id: string): Promise<boolean>;
-  findAll(options?: UserFindOptions): Promise<PaginatedRepositoryResult<User>>;
+  findAll(options: UserFindOptions): Promise<PaginatedRepositoryResult<User>>;
   count(filter?: CreatedAtCountFilter): Promise<number>;
   countByCreatedAtBuckets(thresholds: CountBucketThresholds): Promise<CountBuckets>;
   countByRole(): Promise<UserRoleCount[]>;

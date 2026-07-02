@@ -12,7 +12,7 @@ import type {
   CountBuckets,
   CountBucketThresholds,
   PaginatedRepositoryResult,
-  RepositoryPaginationOptions,
+  RequiredRepositoryPaginationOptions,
 } from '@/interfaces/repositories/types';
 import { AttemptPersistenceMapper } from '@/repositories/mappers/AttemptPersistenceMapper';
 import { AnswerPersistenceMapper } from '@/repositories/mappers/AnswerPersistenceMapper';
@@ -28,12 +28,11 @@ const populatedQuizFields = 'title slug description questions';
 export class AttemptRepository implements IAttemptRepository {
   async findByUser(
     userId: string,
-    options: RepositoryPaginationOptions = {},
+    options: RequiredRepositoryPaginationOptions,
   ): Promise<PaginatedRepositoryResult<Attempt>> {
     await connectDB();
 
-    const page = options.page ?? 1;
-    const limit = options.limit ?? 10;
+    const { page, limit } = options;
     const skip = (page - 1) * limit;
 
     const [records, totalItems] = await Promise.all([

@@ -18,7 +18,7 @@ const inFlightGetRequests = new Map<string, Promise<unknown>>();
 const responseCache = new Map<string, { expiresAt: number; data: unknown }>();
 
 function isAbortLikeError(error: unknown): boolean {
-  return error instanceof Error && error.name === 'AbortError';
+  return error instanceof Error && (error.name === 'AbortError' || error.name === 'TimeoutError');
 }
 
 function normalizeNetworkFailure(error: unknown): AdaptiveApiError {
@@ -171,18 +171,16 @@ async function parseResponseBody(res: Response): Promise<{ payload: unknown; raw
 }
 
 async function timedFetch(url: string, options?: TimedFetchOptions): Promise<Response> {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), options?.timeoutMs ?? DEFAULT_TIMEOUT_MS);
+  const { timeoutMs = DEFAULT_TIMEOUT_MS, signal, ...requestOptions } = options ?? {};
+  const timeoutSignal = AbortSignal.timeout(timeoutMs);
 
   try {
     return await fetch(url, {
-      ...options,
-      signal: controller.signal,
+      ...requestOptions,
+      signal: signal ? AbortSignal.any([signal, timeoutSignal]) : timeoutSignal,
     });
   } catch (error) {
     throw normalizeNetworkFailure(error);
-  } finally {
-    clearTimeout(timeout);
   }
 }
 

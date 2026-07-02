@@ -114,42 +114,34 @@ export async function proxyAdaptiveRequest(
       headers['Content-Type'] = contentType;
     }
 
-    const controller = new AbortController();
     const timeoutMs =
       options?.timeoutMs && options.timeoutMs > 0
         ? options.timeoutMs
         : resolveAdaptiveProxyTimeoutMs();
-    const timeout = setTimeout(() => controller.abort(), timeoutMs);
-    const upstreamAbort = AbortSignal.any([controller.signal, req.signal]);
+    const upstreamAbort = AbortSignal.any([AbortSignal.timeout(timeoutMs), req.signal]);
     const body = options?.body ?? (shouldAttachBody(method) ? await req.text() : undefined);
 
-    const response = await (async () => {
-      try {
-        const cacheOptions = options?.cache;
-        const allowCache =
-          !!cacheOptions &&
-          isCacheSafeAdaptivePath(targetPath) &&
-          !shouldAttachBody(method) &&
-          cacheOptions.revalidateSeconds > 0 &&
-          cacheOptions.tags.length > 0;
+    const cacheOptions = options?.cache;
+    const allowCache =
+      !!cacheOptions &&
+      isCacheSafeAdaptivePath(targetPath) &&
+      !shouldAttachBody(method) &&
+      cacheOptions.revalidateSeconds > 0 &&
+      cacheOptions.tags.length > 0;
 
-        return await fetch(targetUrl.toString(), {
-          method,
-          headers,
-          body,
-          cache: allowCache ? 'force-cache' : 'no-store',
-          next: allowCache
-            ? {
-                revalidate: cacheOptions.revalidateSeconds,
-                tags: cacheOptions.tags,
-              }
-            : undefined,
-          signal: upstreamAbort,
-        });
-      } finally {
-        clearTimeout(timeout);
-      }
-    })();
+    const response = await fetch(targetUrl.toString(), {
+      method,
+      headers,
+      body,
+      cache: allowCache ? 'force-cache' : 'no-store',
+      next: allowCache
+        ? {
+            revalidate: cacheOptions.revalidateSeconds,
+            tags: cacheOptions.tags,
+          }
+        : undefined,
+      signal: upstreamAbort,
+    });
 
     const contentTypeHeader = response.headers.get('content-type');
     if (isHtmlResponse(contentTypeHeader)) {

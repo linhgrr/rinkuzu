@@ -17,8 +17,6 @@ export async function fetchQuizDraftServer(
 ): Promise<QuizDraft | null> {
   const baseUrl = resolveAdaptiveApiUrl();
   const headers = buildAdaptiveServiceHeaders(userId);
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), resolveAdaptiveProxyTimeoutMs());
 
   try {
     const { draft } = await fetchApiData<QuizDraftSingleResponseDto>(
@@ -26,7 +24,7 @@ export async function fetchQuizDraftServer(
       {
         headers,
         cache: 'no-store',
-        signal: controller.signal,
+        signal: AbortSignal.timeout(resolveAdaptiveProxyTimeoutMs()),
       },
     );
     return QuizDraftMapper.toViewModel(draft);
@@ -35,7 +33,5 @@ export async function fetchQuizDraftServer(
       return null;
     }
     throw error;
-  } finally {
-    clearTimeout(timeout);
   }
 }

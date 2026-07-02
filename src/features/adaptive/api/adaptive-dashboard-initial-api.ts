@@ -39,26 +39,19 @@ const fetchAdaptiveJson = async <T>(
   headers: Record<string, string>,
   timeoutMs: number,
 ): Promise<AdaptiveFetchResult<T>> => {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), timeoutMs);
-
   try {
-    try {
-      const data = await fetchApiData<T>(`${baseUrl}${path}`, {
-        headers,
-        cache: 'no-store',
-        signal: controller.signal,
-      });
-      return { ok: true, data };
-    } catch (error) {
-      console.warn(
-        `fetchAdaptiveJson: failed to load ${path}`,
-        error instanceof Error ? error.message : error,
-      );
-      return { ok: false };
-    }
-  } finally {
-    clearTimeout(timeout);
+    const data = await fetchApiData<T>(`${baseUrl}${path}`, {
+      headers,
+      cache: 'no-store',
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+    return { ok: true, data };
+  } catch (error) {
+    console.warn(
+      `fetchAdaptiveJson: failed to load ${path}`,
+      error instanceof Error ? error.message : error,
+    );
+    return { ok: false };
   }
 };
 

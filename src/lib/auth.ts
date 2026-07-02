@@ -22,6 +22,43 @@ const LOCKOUT_MAX_ATTEMPTS = env.AUTH_LOCKOUT_MAX_ATTEMPTS;
 const LOCKOUT_WINDOW_MS = env.AUTH_LOCKOUT_WINDOW_MINUTES * 60_000;
 const LOCKOUT_DURATION_MS = env.AUTH_LOCKOUT_DURATION_MINUTES * 60_000;
 
+type GoogleProfileClaims = {
+  email?: string;
+  emailVerified?: boolean;
+  name?: string;
+  picture?: string;
+};
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function readOptionalString(record: Record<string, unknown>, key: string): string | undefined {
+  const value = record[key];
+  if (typeof value !== 'string') return undefined;
+
+  const normalized = value.trim();
+  return normalized.length > 0 ? normalized : undefined;
+}
+
+function readOptionalBoolean(record: Record<string, unknown>, key: string): boolean | undefined {
+  const value = record[key];
+  return typeof value === 'boolean' ? value : undefined;
+}
+
+function parseGoogleProfileClaims(profile: unknown): GoogleProfileClaims {
+  if (!isRecord(profile)) return {};
+
+  return {
+    email: readOptionalString(profile, 'email')?.toLowerCase(),
+    emailVerified:
+      readOptionalBoolean(profile, 'email_verified') ??
+      readOptionalBoolean(profile, 'emailVerified'),
+    name: readOptionalString(profile, 'name'),
+    picture: readOptionalString(profile, 'picture'),
+  };
+}
+
 // Pre-computed Argon2id hash of an unguessable random string. Used to keep the
 // authorize() runtime constant when the email does not exist — frustrates
 // timing-based user enumeration. Hash generated once at module load.
@@ -193,8 +230,8 @@ export const authOptions: NextAuthOptions = {
           id: user._id.toString(),
           email: user.email,
           role: user.role,
-          avatar: user.avatar ?? '',
-          displayName: user.displayName ?? '',
+          ...(user.avatar ? { avatar: user.avatar } : {}),
+          ...(user.displayName ? { displayName: user.displayName } : {}),
           passwordChangedAt: user.passwordChangedAt ? user.passwordChangedAt.getTime() : null,
         };
       },
@@ -221,17 +258,10 @@ export const authOptions: NextAuthOptions = {
       // Only special-case Google. Credentials flow is fully handled in authorize().
       if (account?.provider !== 'google') return true;
 
-      const googleProfile = (profile ?? {}) as {
-        email?: string;
-        email_verified?: boolean;
-        emailVerified?: boolean;
-        name?: string;
-        picture?: string;
-      };
-      const email = googleProfile.email?.toLowerCase().trim();
-      const emailVerified = googleProfile.email_verified ?? googleProfile.emailVerified ?? false;
+      const googleProfile = parseGoogleProfileClaims(profile);
+      const email = googleProfile.email;
 
-      if (!email || !emailVerified) {
+      if (!email || !googleProfile.emailVerified) {
         return false;
       }
 
@@ -282,7 +312,7 @@ export const authOptions: NextAuthOptions = {
       // Google sign-ins don't run our `authorize`, so user.id is the Google
       // sub. Fetch the Mongo user we just upserted and pin token.sub to it.
       if (account?.provider === 'google' && profile && typeof profile === 'object') {
-        const email = (profile as { email?: string }).email?.toLowerCase().trim();
+        const email = parseGoogleProfileClaims(profile).email;
         if (email) {
           try {
             await connectDB();

@@ -5,7 +5,10 @@ import type {
 } from '@/dtos/dashboard';
 import type { PipelineJobHistoryItem } from '@/features/adaptive/types/pipeline';
 import { toPipelineJobHistoryItem } from '@/features/adaptive/mappers/pipeline.mapper';
-import type { IDashboardRepository } from '@/interfaces/repositories/IDashboardRepository';
+import type {
+  IDashboardRepository,
+  DashboardUserProgressRecord,
+} from '@/interfaces/repositories/IDashboardRepository';
 import type { IDashboardService } from '@/interfaces/services/IDashboardService';
 import {
   buildAdaptiveServiceHeaders,
@@ -21,6 +24,18 @@ type ApiSchemas = components['schemas'];
 const HOME_ADAPTIVE_SUBJECT_LIMIT = 4;
 const HOME_ADAPTIVE_SUBJECT_TIMEOUT_MS = 1_500;
 const HOME_IN_PROGRESS_QUIZ_LIMIT = 6;
+
+const EMPTY_DASHBOARD_USER_PROGRESS: DashboardUserProgressRecord = {
+  currentStreak: 0,
+  longestStreak: 0,
+  streakFreezeCount: 0,
+  totalXp: 0,
+  weeklyActivity: {},
+  totalQuestionsLearned: 0,
+  totalReviewSessions: 0,
+  averageAccuracy: 0,
+};
+
 export class DashboardService implements IDashboardService {
   constructor(private readonly repository: IDashboardRepository) {}
 
@@ -29,7 +44,7 @@ export class DashboardService implements IDashboardService {
       this.repository.findUserProgress(userId),
       this.repository.countDueQuestions(userId, new Date()),
     ]);
-    return DashboardDtoMapper.toStats(progress, dueCount);
+    return DashboardDtoMapper.toStats(progress ?? EMPTY_DASHBOARD_USER_PROGRESS, dueCount);
   }
 
   private async getAdaptiveSubjects(userId: string): Promise<PipelineJobHistoryItem[]> {

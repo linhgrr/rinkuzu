@@ -18,24 +18,21 @@ function trimWeeklyActivity(
 }
 
 export class DashboardDtoMapper {
-  static toStats(
-    progress: DashboardUserProgressRecord | null,
-    dueCount: number,
-  ): DashboardStatsDto {
-    const xp = progress?.totalXp ?? 0;
+  static toStats(progress: DashboardUserProgressRecord, dueCount: number): DashboardStatsDto {
+    const xp = progress.totalXp;
     return {
-      streak: progress?.currentStreak ?? 0,
-      longestStreak: progress?.longestStreak ?? 0,
-      streakFreezeCount: progress?.streakFreezeCount ?? 0,
+      streak: progress.currentStreak,
+      longestStreak: progress.longestStreak,
+      streakFreezeCount: progress.streakFreezeCount,
       xp,
       level: calculateLevel(xp),
       xpToNextLevel: xpForNextLevel(xp),
       levelProgress: levelProgress(xp),
       dueCount,
-      weeklyActivity: trimWeeklyActivity(progress?.weeklyActivity ?? {}),
-      totalQuestionsLearned: progress?.totalQuestionsLearned ?? 0,
-      totalReviewSessions: progress?.totalReviewSessions ?? 0,
-      averageAccuracy: progress?.averageAccuracy ?? 0,
+      weeklyActivity: trimWeeklyActivity(progress.weeklyActivity),
+      totalQuestionsLearned: progress.totalQuestionsLearned,
+      totalReviewSessions: progress.totalReviewSessions,
+      averageAccuracy: progress.averageAccuracy,
     };
   }
 

@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { withAdmin } from '@/lib/api/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
 import { apiErr, apiOk, apiServiceErr } from '@/lib/api/response';
-import { readAndValidateJson } from '@/lib/api/request';
+import { readAndValidateJson, readAndValidateSearchParams } from '@/lib/api/request';
 import { grantUserSubscriptionRequestSchema } from '@/dtos/admin-billing';
 import { getAdminBillingService } from '@/lib/admin-billing-factory';
 import { logger } from '@/lib/logger';
@@ -17,15 +17,9 @@ const adminBillingService = getAdminBillingService();
 
 // GET /api/admin/users - List users with filtering
 export const GET = withAdmin(async (request: NextRequest) => {
-  const searchParams = new URL(request.url).searchParams;
-  const query = adminUserListQuerySchema.safeParse({
-    page: searchParams.get('page') ?? undefined,
-    limit: searchParams.get('limit') ?? undefined,
-    search: searchParams.get('search') ?? undefined,
-    role: searchParams.get('role') ?? undefined,
-  });
+  const query = readAndValidateSearchParams(request, adminUserListQuerySchema);
   if (!query.success) {
-    return apiErr('validation_error', query.error.issues[0]?.message ?? 'Invalid query', 400);
+    return apiErr('validation_error', query.error, 400, { fields: query.fields });
   }
 
   const result = await adminService.getUsers(query.data);
@@ -70,12 +64,9 @@ export const DELETE = withAdmin(async (request: NextRequest, context) => {
       return apiErr('validation_error', 'Admin email is required', 400);
     }
 
-    const url = new URL(request.url);
-    const query = deleteAdminUserQuerySchema.safeParse({
-      userId: url.searchParams.get('userId') ?? undefined,
-    });
+    const query = readAndValidateSearchParams(request, deleteAdminUserQuerySchema);
     if (!query.success) {
-      return apiErr('validation_error', query.error.issues[0]?.message ?? 'Invalid user ID', 400);
+      return apiErr('validation_error', query.error, 400, { fields: query.fields });
     }
 
     const result = await adminService.deleteUser(query.data.userId, adminEmail);

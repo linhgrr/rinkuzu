@@ -1,6 +1,27 @@
+import type { ZodIssue, ZodType } from 'zod';
+
 export type JsonBodyResult =
   | { success: true; data: unknown }
   | { success: false; error: 'Request body must be valid JSON' };
+
+export type ValidationResult<T> =
+  | { success: true; data: T }
+  | { success: false; error: string; fields: Record<string, string> };
+
+function toValidationFailure(
+  issues: ZodIssue[],
+): Extract<ValidationResult<never>, { success: false }> {
+  const fields: Record<string, string> = {};
+  for (const issue of issues) {
+    const key = issue.path.join('.') || '_';
+    fields[key] ??= issue.message;
+  }
+  return {
+    success: false,
+    error: issues[0]?.message ?? 'Validation failed',
+    fields,
+  };
+}
 
 export async function readJsonBody(request: Request): Promise<JsonBodyResult> {
   try {
@@ -12,16 +33,8 @@ export async function readJsonBody(request: Request): Promise<JsonBodyResult> {
 
 export async function readAndValidateJson<T>(
   request: Request,
-  schema: {
-    safeParse(
-      data: unknown,
-    ):
-      | { success: true; data: T }
-      | { success: false; error: { issues: Array<{ path: PropertyKey[]; message: string }> } };
-  },
-): Promise<
-  { success: true; data: T } | { success: false; error: string; fields: Record<string, string> }
-> {
+  schema: ZodType<T>,
+): Promise<ValidationResult<T>> {
   const body = await readJsonBody(request);
   if (!body.success) {
     return {
@@ -33,15 +46,13 @@ export async function readAndValidateJson<T>(
 
   const parsed = schema.safeParse(body.data);
   if (parsed.success) return parsed;
+  return toValidationFailure(parsed.error.issues);
+}
 
-  const fields: Record<string, string> = {};
-  for (const issue of parsed.error.issues) {
-    const key = issue.path.join('.') || '_';
-    fields[key] ??= issue.message;
-  }
-  return {
-    success: false,
-    error: parsed.error.issues[0]?.message ?? 'Validation failed',
-    fields,
-  };
+export function readAndValidateSearchParams<T>(
+  request: Request,
+  schema: ZodType<T>,
+): ValidationResult<T> {
+  const parsed = schema.safeParse(Object.fromEntries(new URL(request.url).searchParams));
+  return parsed.success ? parsed : toValidationFailure(parsed.error.issues);
 }

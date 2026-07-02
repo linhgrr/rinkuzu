@@ -388,6 +388,17 @@ for (const filePath of sourceFiles) {
       }
     }
   }
+
+  if (relativePath.startsWith('src/app/api/') && relativePath.endsWith('/route.ts')) {
+    if (source.includes('searchParams.get(')) {
+      errors.push(
+        `controller validation boundary: use readAndValidateSearchParams in ${relativePath}`,
+      );
+    }
+    if (source.includes('readJsonBody')) {
+      errors.push(`controller validation boundary: use readAndValidateJson in ${relativePath}`);
+    }
+  }
 }
 
 for (const filePath of [

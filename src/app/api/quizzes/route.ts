@@ -3,7 +3,7 @@ import { withAuth, withOptionalAuth } from '@/lib/api/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
 import { apiErr, apiOk } from '@/lib/api/response';
 import { logger } from '@/lib/logger';
-import { readAndValidateJson } from '@/lib/api/request';
+import { readAndValidateJson, readAndValidateSearchParams } from '@/lib/api/request';
 import { createQuizRequestSchema, quizListQuerySchema } from '@/dtos/quiz';
 import { QuizDetailDtoMapper } from '@/mappers/quiz/QuizDetailDtoMapper';
 import { QuizCreationError } from '@/lib/quiz/errors';
@@ -16,20 +16,9 @@ const quizService = serviceFactory.getQuizService();
 export const GET = withOptionalAuth(async (request: NextRequest, { session, userId }) => {
   try {
     const isGuest = !session?.user;
-    const url = new URL(request.url);
-    const query = quizListQuerySchema.safeParse({
-      search: url.searchParams.get('search') ?? undefined,
-      folder: url.searchParams.get('folder') ?? undefined,
-      page: url.searchParams.get('page') ?? undefined,
-      limit: url.searchParams.get('limit') ?? undefined,
-      mine: url.searchParams.get('mine') ?? undefined,
-      compact: url.searchParams.get('compact') ?? undefined,
-      visibility: url.searchParams.get('visibility') ?? undefined,
-    });
+    const query = readAndValidateSearchParams(request, quizListQuerySchema);
     if (!query.success) {
-      return apiErr('validation_error', 'Invalid quiz query parameters', 400, {
-        issues: query.error.flatten().fieldErrors,
-      });
+      return apiErr('validation_error', query.error, 400, { fields: query.fields });
     }
 
     const onlyMine = !isGuest && query.data.mine;

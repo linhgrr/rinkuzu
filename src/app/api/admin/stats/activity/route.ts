@@ -5,18 +5,15 @@ import { apiErr, apiOk, apiServiceErr } from '@/lib/api/response';
 import { logger } from '@/lib/logger';
 import { adminStatsListQuerySchema } from '@/dtos/admin-stats';
 import { buildPaginationMeta } from '@/lib/pagination';
+import { readAndValidateSearchParams } from '@/lib/api/request';
 
 export const dynamic = 'force-dynamic';
 
 export const GET = withAdmin(async (request: NextRequest) => {
   try {
-    const searchParams = new URL(request.url).searchParams;
-    const query = adminStatsListQuerySchema.safeParse({
-      page: searchParams.get('page') ?? undefined,
-      limit: searchParams.get('limit') ?? undefined,
-    });
+    const query = readAndValidateSearchParams(request, adminStatsListQuerySchema);
     if (!query.success) {
-      return apiErr('validation_error', query.error.issues[0]?.message ?? 'Invalid query', 400);
+      return apiErr('validation_error', query.error, 400, { fields: query.fields });
     }
 
     const adminService = serviceFactory.getAdminService();

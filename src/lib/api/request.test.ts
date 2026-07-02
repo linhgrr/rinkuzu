@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
-import { readAndValidateJson, readJsonBody } from '@/lib/api/request';
+import { readAndValidateJson, readAndValidateSearchParams, readJsonBody } from '@/lib/api/request';
 
 describe('readJsonBody', () => {
   it('returns parsed JSON without prescribing a DTO', async () => {
@@ -61,5 +61,29 @@ describe('readJsonBody', () => {
       error: 'Request body must be valid JSON',
       fields: {},
     });
+  });
+
+  it('validates URL search parameters through the same field-error contract', () => {
+    const schema = z.object({
+      page: z.coerce.number().int().min(1, 'Page must be positive'),
+      search: z.string().optional(),
+    });
+
+    expect(
+      readAndValidateSearchParams(
+        new Request('http://localhost/api?page=2&search=algebra'),
+        schema,
+      ),
+    ).toEqual({
+      success: true,
+      data: { page: 2, search: 'algebra' },
+    });
+    expect(readAndValidateSearchParams(new Request('http://localhost/api?page=0'), schema)).toEqual(
+      {
+        success: false,
+        error: 'Page must be positive',
+        fields: { page: 'Page must be positive' },
+      },
+    );
   });
 });

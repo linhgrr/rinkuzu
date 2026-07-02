@@ -3,6 +3,8 @@ import { withOptionalAuth } from '@/lib/api/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
 import { apiErr, apiOk, apiServiceErr } from '@/lib/api/response';
 import { logger } from '@/lib/logger';
+import { attemptDetailQuerySchema } from '@/dtos/user';
+import { readAndValidateSearchParams } from '@/lib/api/request';
 
 // This route accepts BOTH authenticated users (via session) and anonymous
 // users that pass `userEmail` as a query param to inspect their own attempt.
@@ -10,8 +12,11 @@ export const GET = withOptionalAuth<{ id: string }>(
   async (request: NextRequest, { params, email }) => {
     try {
       const { id } = params;
-      const { searchParams } = new URL(request.url);
-      const userEmailParam = searchParams.get('userEmail');
+      const query = readAndValidateSearchParams(request, attemptDetailQuerySchema);
+      if (!query.success) {
+        return apiErr('validation_error', query.error, 400, { fields: query.fields });
+      }
+      const userEmailParam = query.data.userEmail;
 
       // Check if user is authenticated or has userEmail
       if (!email && !userEmailParam) {

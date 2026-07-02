@@ -1,22 +1,16 @@
 import type { DiscussionCommentDto, QuizDiscussionDto, ReportQuizResponseDto } from '@/dtos/quiz';
 import type { Discussion, DiscussionComment } from '@/entities/Discussion';
-import type { UserPreview } from '@/entities/User';
 import { serializeDate, serializeOptionalDate } from '@/lib/date-serialization';
-
-function isPopulatedAuthor(author: string | UserPreview): author is UserPreview {
-  return typeof author === 'object' && author !== null;
-}
 
 export class QuizDiscussionDtoMapper {
   static toCommentDto(comment: DiscussionComment): DiscussionCommentDto {
-    const populatedAuthor = isPopulatedAuthor(comment.author) ? comment.author : null;
     return {
       id: String(comment.id),
       author: {
-        id: populatedAuthor ? populatedAuthor.id : String(comment.author),
-        email: populatedAuthor?.email ?? comment.authorEmail,
-        name: populatedAuthor?.displayName ?? populatedAuthor?.name,
-        avatar: populatedAuthor?.avatar,
+        id: comment.author.id,
+        email: comment.author.email,
+        name: comment.author.displayName ?? comment.author.name,
+        avatar: comment.author.avatar,
       },
       content: comment.content,
       isEdited: comment.isEdited,

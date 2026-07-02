@@ -2,7 +2,7 @@ import type { MongoIdLike } from '@/types/mongo';
 
 export interface DiscussionAuthorPersistenceRecord {
   _id: MongoIdLike;
-  email?: string;
+  email: string;
   name?: string;
   displayName?: string;
   avatar?: string;
@@ -10,8 +10,7 @@ export interface DiscussionAuthorPersistenceRecord {
 
 export interface DiscussionCommentPersistenceRecord {
   _id: MongoIdLike;
-  author: MongoIdLike | DiscussionAuthorPersistenceRecord;
-  authorEmail: string;
+  author: DiscussionAuthorPersistenceRecord;
   content: string;
   isEdited: boolean;
   createdAt: Date;

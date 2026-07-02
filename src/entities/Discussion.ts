@@ -1,9 +1,14 @@
-import type { UserPreview } from '@/entities/User';
+export interface DiscussionAuthor {
+  id: string;
+  email: string;
+  name?: string;
+  displayName?: string;
+  avatar?: string;
+}
 
 export interface DiscussionComment {
   id: string;
-  author: string | UserPreview;
-  authorEmail: string;
+  author: DiscussionAuthor;
   content: string;
   isEdited: boolean;
   createdAt: Date;

@@ -2,7 +2,6 @@ import type { Discussion } from '@/entities/Discussion';
 
 export interface CreateDiscussionCommentData {
   authorId: string;
-  authorEmail: string;
   content: string;
 }
 

@@ -16,7 +16,6 @@ const discussion: Discussion = {
         displayName: 'Rin Learner',
         avatar: 'https://example.com/avatar.png',
       },
-      authorEmail: 'fallback@example.com',
       content: 'Can someone explain this option?',
       isEdited: false,
       createdAt: new Date('2026-07-01T01:00:00Z'),
@@ -49,25 +48,6 @@ describe('QuizDiscussionDtoMapper', () => {
       ],
       createdAt: '2026-07-01T00:00:00.000Z',
       updatedAt: '2026-07-01T02:00:00.000Z',
-    });
-  });
-
-  it('uses stored author email when the author is not populated', () => {
-    const dto = QuizDiscussionDtoMapper.toCommentDto({
-      id: 'comment-2',
-      author: 'user-2',
-      authorEmail: 'author@example.com',
-      content: 'Thanks',
-      isEdited: false,
-      createdAt: new Date('2026-07-01T03:00:00Z'),
-      updatedAt: new Date('2026-07-01T03:00:00Z'),
-    });
-
-    expect(dto.author).toEqual({
-      id: 'user-2',
-      email: 'author@example.com',
-      name: undefined,
-      avatar: undefined,
     });
   });
 

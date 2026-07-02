@@ -1,15 +1,11 @@
-import type { Discussion } from '@/entities/Discussion';
-import type { UserPreview } from '@/entities/User';
+import type { Discussion, DiscussionAuthor } from '@/entities/Discussion';
 import { serializeId } from '@/lib/mongo-id';
 import type {
   DiscussionCommentPersistenceRecord,
   DiscussionPersistenceRecord,
 } from '@/repositories/types/DiscussionPersistence';
 
-function mapAuthor(author: DiscussionCommentPersistenceRecord['author']): string | UserPreview {
-  if (typeof author !== 'object' || !('email' in author)) {
-    return serializeId(author, 'discussion.comment.author');
-  }
+function mapAuthor(author: DiscussionCommentPersistenceRecord['author']): DiscussionAuthor {
   return {
     id: serializeId(author._id, 'discussion.comment.author._id'),
     email: author.email,
@@ -28,7 +24,6 @@ export class DiscussionPersistenceMapper {
       comments: record.comments.map((comment) => ({
         id: serializeId(comment._id, 'discussion.comment._id'),
         author: mapAuthor(comment.author),
-        authorEmail: comment.authorEmail,
         content: comment.content,
         isEdited: comment.isEdited,
         createdAt: comment.createdAt,

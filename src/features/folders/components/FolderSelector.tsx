@@ -1,11 +1,11 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { HiOutlineFolder, HiOutlinePlus } from '@/components/icons';
+import { HiOutlineFolder, HiOutlinePlus } from 'react-icons/hi';
 import { cn } from '@/lib/utils';
 import { AddFolderModal } from './AddFolderModal';
 import { useFolders } from '../hooks/useFolders';
-import type { FolderSummary } from '../types';
+import type { FolderSummaryViewModel } from '@/features/folders/types/folder-view-model';
 
 interface FolderSelectorProps {
   value: string | null;
@@ -18,7 +18,7 @@ export function FolderSelector({ value, onChange, disabled = false }: FolderSele
   const [open, setOpen] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const selected = folders.find((folder) => folder._id === value);
+  const selected = folders.find((folder) => folder.id === value);
 
   useEffect(() => {
     function closeOnOutsideClick(event: MouseEvent) {
@@ -33,9 +33,9 @@ export function FolderSelector({ value, onChange, disabled = false }: FolderSele
     setOpen(false);
   }
 
-  async function handleCreated(folder: FolderSummary) {
+  async function handleCreated(folder: FolderSummaryViewModel) {
     await mutate();
-    onChange(folder._id);
+    onChange(folder.id);
   }
 
   return (
@@ -46,7 +46,7 @@ export function FolderSelector({ value, onChange, disabled = false }: FolderSele
           disabled={disabled}
           onClick={() => setOpen((current) => !current)}
           aria-expanded={open}
-          aria-haspopup="listbox"
+          aria-haspopup="menu"
           className="flex min-h-11 w-full items-center justify-between rounded-xl border border-neutral-300 bg-white px-4 text-left text-sm text-neutral-900 transition-colors hover:border-neutral-400 disabled:cursor-not-allowed disabled:bg-neutral-100"
         >
           <span className="flex items-center gap-2">
@@ -60,13 +60,13 @@ export function FolderSelector({ value, onChange, disabled = false }: FolderSele
 
         {open && (
           <div
-            role="listbox"
+            role="menu"
             className="absolute z-30 mt-2 max-h-72 w-full overflow-auto rounded-xl border border-neutral-200 bg-white p-1 shadow-lg"
           >
             <button
               type="button"
-              role="option"
-              aria-selected={value === null}
+              role="menuitemradio"
+              aria-checked={value === null}
               onClick={() => select(null)}
               className={cn(
                 'w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-neutral-50',
@@ -78,14 +78,14 @@ export function FolderSelector({ value, onChange, disabled = false }: FolderSele
             {isLoading && <p className="px-3 py-2 text-sm text-neutral-500">Loading folders…</p>}
             {folders.map((folder) => (
               <button
-                key={folder._id}
+                key={folder.id}
                 type="button"
-                role="option"
-                aria-selected={value === folder._id}
-                onClick={() => select(folder._id)}
+                role="menuitemradio"
+                aria-checked={value === folder.id}
+                onClick={() => select(folder.id)}
                 className={cn(
                   'w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-neutral-50',
-                  value === folder._id && 'bg-green-50 text-brand-trust',
+                  value === folder.id && 'bg-green-50 text-brand-trust',
                 )}
               >
                 {folder.name}

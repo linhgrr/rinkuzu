@@ -1,11 +1,10 @@
 'use client';
 
 import useSWR from 'swr';
-import { fetchApiData } from '@/lib/api/client';
-import type { FolderListData } from '../types';
+import { fetchFoldersViewModel } from '@/features/folders/api/folders-api';
 
 export function useFolders() {
-  const result = useSWR<FolderListData>('/api/folders', fetchApiData);
+  const result = useSWR('/api/folders', fetchFoldersViewModel);
 
   return {
     ...result,

@@ -93,7 +93,8 @@
     },
     "continueLearning": {
       "title": "Tiếp tục học",
-      "subtitle": "Tiếp tục các quiz hoặc lộ trình học AI từ nơi bạn đã dừng lại"
+      "subtitle": "Tiếp tục các quiz hoặc lộ trình học AI từ nơi bạn đã dừng lại",
+      "emptyAction": "Bắt đầu học"
     },
     "learningCard": {
       "aiLearning": "Học với AI",
@@ -113,16 +114,6 @@
       "thu": "T5",
       "fri": "T6",
       "sat": "T7"
-    },
-    "fallbackCards": {
-      "fallback1": { "title": "Đây là một sự thật đã được khẳng định...", "category": "Tạo Quiz" },
-      "fallback2": { "title": "Vật lý đại cương", "category": "Tạo Quiz" },
-      "fallback3": { "title": "Tiếng Anh chuyên ngành", "category": "Tạo Quiz" },
-      "fallback4": { "title": "Đây là một sự thật đã được khẳng định...", "category": "Tạo Quiz" },
-      "fallback5": { "title": "Đây là một sự thật đã được khẳng định...", "category": "Tạo Quiz" },
-      "fallback6": { "title": "Đây là một sự thật đã được khẳng định...", "category": "Tạo Quiz" },
-      "fallback7": { "title": "Đây là một sự thật đã được khẳng định...", "category": "Tạo Quiz" },
-      "fallback8": { "title": "Triết học Mác - Lênin", "category": "Tạo Quiz" }
     }
   }
 }

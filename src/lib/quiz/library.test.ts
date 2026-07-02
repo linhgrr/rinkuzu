@@ -30,12 +30,12 @@ describe('quiz library activity', () => {
 
 describe('quiz library folder filtering', () => {
   it('includes every folder when no filter is provided', () => {
-    expect(matchesLibraryFolder('folder-1', null)).toBe(true);
+    expect(matchesLibraryFolder('folder-1', undefined)).toBe(true);
   });
 
-  it.each(['null', 'default'])('treats %s as My folder', (folderParam) => {
-    expect(matchesLibraryFolder(null, folderParam)).toBe(true);
-    expect(matchesLibraryFolder('folder-1', folderParam)).toBe(false);
+  it('matches only unfiled quizzes for the null domain filter', () => {
+    expect(matchesLibraryFolder(null, null)).toBe(true);
+    expect(matchesLibraryFolder('folder-1', null)).toBe(false);
   });
 
   it('matches a concrete folder id', () => {

@@ -1,34 +1,69 @@
-import { IQuizRepository, IQuiz } from '@/interfaces/repositories/IQuizRepository';
+import { IQuizRepository } from '@/interfaces/repositories/IQuizRepository';
+import type { Quiz } from '@/entities/Quiz';
 import { createSubscriptionService } from '@/lib/subscription-factory';
 import { IUserRepository } from '@/interfaces/repositories/IUserRepository';
-import { CreateQuizRequest } from '@/interfaces/services/IQuizService';
+import type { IFolderRepository } from '@/interfaces/repositories/IFolderRepository';
+import type { CreateQuizRequestDto, UpdateQuizRequestDto } from '@/dtos/quiz';
 import { ServiceResult } from '@/interfaces/services/types';
 import { generateSlug } from '@/lib/utils';
 import { getAuthorId } from './quiz-helpers';
 import { logger } from '@/lib/logger';
-import connectDB from '@/lib/mongoose';
-import Folder from '@/models/Folder';
-import { isValidObjectId } from 'mongoose';
+import { QuizCreationError } from '@/lib/quiz/errors';
+import { isMongoDuplicateKeyError, isMongoDuplicateKeyErrorForField } from '@/lib/mongoose-errors';
 
-const VALID_QUESTION_TYPES = new Set(['single', 'multiple']);
+const MAX_SLUG_CREATE_ATTEMPTS = 20;
 
 export class QuizCrudService {
   constructor(
     private quizRepository: IQuizRepository,
     private userRepository: IUserRepository,
+    private folderRepository?: IFolderRepository,
   ) {}
 
-  async createQuiz(userId: string, quizData: CreateQuizRequest): Promise<IQuiz> {
+  async createQuiz(userId: string, quizData: CreateQuizRequestDto): Promise<Quiz> {
+    return this.createQuizRecord(userId, quizData);
+  }
+
+  async createQuizFromDraft(
+    userId: string,
+    sourceDraftId: string,
+    quizData: CreateQuizRequestDto,
+  ): Promise<Quiz> {
+    const existing = await this.quizRepository.findBySourceDraftId(sourceDraftId);
+    if (existing) {
+      if (getAuthorId(existing.author) !== userId) {
+        throw new QuizCreationError('invalid_draft', 'Draft belongs to another user');
+      }
+      return existing;
+    }
+
+    try {
+      return await this.createQuizRecord(userId, quizData, sourceDraftId);
+    } catch (error) {
+      if (!isMongoDuplicateKeyError(error)) {
+        throw error;
+      }
+
+      const concurrentlyCreated = await this.quizRepository.findBySourceDraftId(sourceDraftId);
+      if (!concurrentlyCreated || getAuthorId(concurrentlyCreated.author) !== userId) {
+        throw error;
+      }
+      return concurrentlyCreated;
+    }
+  }
+
+  private async createQuizRecord(
+    userId: string,
+    quizData: CreateQuizRequestDto,
+    sourceDraftId?: string,
+  ): Promise<Quiz> {
     const { title, description, folderId, questions, isPrivate, pdfUrl } = quizData;
 
-    if (!title || !questions || !Array.isArray(questions) || questions.length === 0) {
-      throw new Error('Title and questions are required');
-    }
     if (folderId) {
-      if (!isValidObjectId(folderId)) throw new Error('Invalid folder selected');
-      await connectDB();
-      const ownsFolder = await Folder.exists({ _id: folderId, owner: userId });
-      if (!ownsFolder) throw new Error('Invalid folder selected');
+      const ownsFolder = await this.folderRepository?.existsOwnedById(folderId, userId);
+      if (!ownsFolder) {
+        throw new QuizCreationError('invalid_folder', 'Invalid folder selected');
+      }
     }
 
     if (isPrivate) {
@@ -37,97 +72,41 @@ export class QuizCrudService {
         user?.role === 'admin' || (await createSubscriptionService().isUserPremium(userId));
 
       if (!canCreatePrivateQuiz) {
-        throw new Error('Premium subscription required to create private quizzes');
+        throw new QuizCreationError(
+          'premium_required',
+          'Premium subscription required to create private quizzes',
+        );
       }
     }
 
-    // Validate questions format
-    for (let i = 0; i < questions.length; i++) {
-      const question = questions[i];
-
-      if (!question.question || typeof question.question !== 'string') {
-        throw new Error(`Question ${i + 1}: Missing or invalid question text`);
-      }
-
-      if (!question.options || !Array.isArray(question.options)) {
-        throw new Error(`Question ${i + 1}: Missing or invalid options array`);
-      }
-
-      const optionCount = question.options.length;
-
-      if (optionCount < 2) {
-        throw new Error(`Question ${i + 1}: Need at least 2 options`);
-      }
-
-      // Check each option is a string
-      for (let j = 0; j < optionCount; j++) {
-        if (typeof question.options[j] !== 'string') {
-          throw new Error(`Question ${i + 1}, Option ${j + 1}: Must be a string`);
-        }
-      }
-
-      // Validate question type and answers
-      const questionType = question.type || 'single';
-      if (!VALID_QUESTION_TYPES.has(questionType)) {
-        throw new Error(`Question ${i + 1}: Type must be 'single' or 'multiple'`);
-      }
-
-      if (questionType === 'single') {
-        if (
-          typeof question.correctIndex !== 'number' ||
-          question.correctIndex < 0 ||
-          question.correctIndex >= optionCount
-        ) {
-          throw new Error(`Question ${i + 1}: Invalid correct answer index`);
-        }
-      } else {
-        if (!Array.isArray(question.correctIndexes) || question.correctIndexes.length === 0) {
-          throw new Error(
-            `Question ${i + 1}: Multiple choice questions need at least one correct answer`,
-          );
-        }
-
-        const validCorrectIndexes = new Set<number>();
-
-        for (const idx of question.correctIndexes) {
-          if (typeof idx !== 'number' || idx < 0 || idx >= optionCount) {
-            throw new Error(`Question ${i + 1}: Invalid correct answer index`);
-          }
-
-          validCorrectIndexes.add(idx);
-        }
-
-        if (validCorrectIndexes.size !== question.correctIndexes.length) {
-          throw new Error(`Question ${i + 1}: Duplicate correct answer indexes are not allowed`);
-        }
-      }
-    }
-
-    // Generate unique slug
     const baseSlug = generateSlug(title);
-    let slug = baseSlug;
-    let counter = 1;
 
-    while (await this.quizRepository.findBySlug(slug)) {
-      slug = `${baseSlug}-${counter}`;
-      counter++;
+    for (let attempt = 0; attempt < MAX_SLUG_CREATE_ATTEMPTS; attempt += 1) {
+      const slug = attempt === 0 ? baseSlug : `${baseSlug}-${attempt}`;
+
+      try {
+        return await this.quizRepository.create({
+          title,
+          description,
+          slug,
+          author: userId,
+          folder: folderId ?? null,
+          questions,
+          isPrivate,
+          pdfUrl,
+          sourceDraftId,
+        });
+      } catch (error) {
+        if (!isMongoDuplicateKeyErrorForField(error, 'slug')) {
+          throw error;
+        }
+      }
     }
 
-    const quiz = await this.quizRepository.create({
-      title,
-      description,
-      slug,
-      author: userId,
-      folder: folderId ?? null,
-      questions,
-      isPrivate: !!isPrivate,
-      pdfUrl,
-    });
-
-    return quiz;
+    throw new QuizCreationError('slug_conflict', 'Could not generate a unique quiz slug');
   }
 
-  async getQuizBySlug(slug: string): Promise<IQuiz | null> {
+  async getQuizBySlug(slug: string): Promise<Quiz | null> {
     return await this.quizRepository.findBySlug(slug);
   }
 
@@ -136,11 +115,11 @@ export class QuizCrudService {
     userEmail?: string,
     userRole?: string,
     userId?: string,
-  ): Promise<ServiceResult<IQuiz>> {
+  ): Promise<ServiceResult<Quiz>> {
     try {
       const quiz = await this.quizRepository.findById(id);
 
-      if (!quiz || !quiz._id) {
+      if (!quiz) {
         return {
           success: false,
           error: 'Quiz not found',
@@ -202,14 +181,14 @@ export class QuizCrudService {
 
   async updateQuiz(
     id: string,
-    quizData: Partial<IQuiz>,
+    quizData: UpdateQuizRequestDto,
     userId: string,
     userRole?: string,
-  ): Promise<ServiceResult<IQuiz>> {
+  ): Promise<ServiceResult<Quiz>> {
     try {
       const quiz = await this.quizRepository.findById(id);
 
-      if (!quiz || !quiz._id) {
+      if (!quiz) {
         return {
           success: false,
           error: 'Quiz not found',
@@ -242,6 +221,17 @@ export class QuizCrudService {
         }
       }
 
+      if (quizData.folder) {
+        const ownsFolder = await this.folderRepository?.existsOwnedById(quizData.folder, userId);
+        if (!ownsFolder) {
+          return {
+            success: false,
+            error: 'Invalid folder selected',
+            statusCode: 400,
+          };
+        }
+      }
+
       const updatedQuiz = await this.quizRepository.update(id, quizData);
 
       if (!updatedQuiz) {
@@ -270,7 +260,7 @@ export class QuizCrudService {
     try {
       const quiz = await this.quizRepository.findById(id);
 
-      if (!quiz || !quiz._id) {
+      if (!quiz) {
         return {
           success: false,
           error: 'Quiz not found',

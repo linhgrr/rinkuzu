@@ -2,28 +2,33 @@ import { NextRequest } from 'next/server';
 import { withAdmin } from '@/lib/api/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
 import { apiErr, apiOk, apiServiceErr } from '@/lib/api/response';
+import { readAndValidateJson } from '@/lib/api/request';
 import { logger } from '@/lib/logger';
+import { adminReportIdParamsSchema, updateAdminReportRequestSchema } from '@/dtos/admin-report';
 
 export const dynamic = 'force-dynamic';
 
 export const PATCH = withAdmin(async (request: NextRequest, context) => {
   try {
-    const rawId = context.params['id'];
-    const id = Array.isArray(rawId) ? rawId[0] : rawId;
-    if (!id) {
-      return apiErr('validation_error', 'Report id is required', 400);
+    const params = adminReportIdParamsSchema.safeParse(context.params);
+    if (!params.success) {
+      return apiErr(
+        'validation_error',
+        params.error.issues[0]?.message ?? 'Invalid report ID',
+        400,
+      );
     }
-    const { status } = await request.json();
 
-    if (!['pending', 'resolved', 'dismissed'].includes(status)) {
-      return apiErr('validation_error', 'Invalid status', 400);
+    const input = await readAndValidateJson(request, updateAdminReportRequestSchema);
+    if (!input.success) {
+      return apiErr('validation_error', input.error, 400, { fields: input.fields });
     }
 
     const adminService = serviceFactory.getAdminService();
-    const result = await adminService.updateReportStatus(id, status);
+    const result = await adminService.updateReportStatus(params.data.id, input.data, context.email);
 
     if (!result.success) {
-      return apiServiceErr(result, 500);
+      return apiServiceErr(result);
     }
 
     return apiOk(result.data);
@@ -35,17 +40,20 @@ export const PATCH = withAdmin(async (request: NextRequest, context) => {
 
 export const DELETE = withAdmin(async (request: NextRequest, context) => {
   try {
-    const rawId = context.params['id'];
-    const id = Array.isArray(rawId) ? rawId[0] : rawId;
-    if (!id) {
-      return apiErr('validation_error', 'Report id is required', 400);
+    const params = adminReportIdParamsSchema.safeParse(context.params);
+    if (!params.success) {
+      return apiErr(
+        'validation_error',
+        params.error.issues[0]?.message ?? 'Invalid report ID',
+        400,
+      );
     }
 
     const adminService = serviceFactory.getAdminService();
-    const result = await adminService.deleteReport(id);
+    const result = await adminService.deleteReport(params.data.id);
 
     if (!result.success) {
-      return apiServiceErr(result, 500);
+      return apiServiceErr(result);
     }
 
     return apiOk(null, 200, { meta: { message: 'Report deleted successfully' } });

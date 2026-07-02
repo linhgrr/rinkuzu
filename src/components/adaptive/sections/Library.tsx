@@ -1,12 +1,12 @@
 'use client';
 
-import { HiOutlineRefresh, HiOutlineTrash, HiOutlineX } from '@/components/icons';
+import { HiOutlineRefresh, HiOutlineTrash, HiOutlineX } from 'react-icons/hi';
 import { SectionHeading } from '@/components/ui/SectionHeading';
 import { SurfaceCard } from '@/components/ui/SurfaceCard';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { cn } from '@/lib/utils';
-import type { DashboardSubject } from '@/features/adaptive/lib/dashboard-view-model';
-import type { PipelineJobHistoryItem, TranslateFn } from '@/features/adaptive/types';
+import type { DashboardSubject } from '@/features/adaptive/types/dashboard-view-model';
+import type { TranslateFn } from '@/features/adaptive/types/learning';
 
 type LibraryProps = {
   subjects: DashboardSubject[];
@@ -14,7 +14,7 @@ type LibraryProps = {
   loadingJobId: string | null;
   deletingJobId: string | null;
   onOpenSubject: (jobId: string) => void;
-  onDelete: (job: PipelineJobHistoryItem) => void;
+  onDelete: (subject: DashboardSubject) => void;
   onRetry?: (jobId: string) => void;
   onCancel?: (jobId: string) => void;
   busyJobId?: string | null;
@@ -61,7 +61,7 @@ function SubjectCard({
   deleting: boolean;
   busy: boolean;
   onOpenSubject: (jobId: string) => void;
-  onDelete: (job: PipelineJobHistoryItem) => void;
+  onDelete: (subject: DashboardSubject) => void;
   onRetry?: (jobId: string) => void;
   onCancel?: (jobId: string) => void;
   t: TranslateFn;
@@ -80,7 +80,7 @@ function SubjectCard({
         <button
           type="button"
           className="absolute inset-0 rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-          onClick={() => onOpenSubject(subject.job_id)}
+          onClick={() => onOpenSubject(subject.jobId)}
           disabled={loading}
           aria-label={`${subject.ctaLabel}: ${subject.displayTitle}`}
         />
@@ -117,7 +117,7 @@ function SubjectCard({
             disabled={busy}
             onClick={(event) => {
               event.stopPropagation();
-              onRetry?.(subject.job_id);
+              onRetry?.(subject.jobId);
             }}
             className="pointer-events-auto mb-3 flex items-center gap-1 text-sm font-semibold text-accent hover:text-accent-hover"
           >
@@ -130,7 +130,7 @@ function SubjectCard({
             disabled={busy}
             onClick={(event) => {
               event.stopPropagation();
-              onCancel?.(subject.job_id);
+              onCancel?.(subject.jobId);
             }}
             className="pointer-events-auto mb-3 flex items-center gap-1 text-sm font-semibold text-red-600"
           >
@@ -203,11 +203,11 @@ export const LibrarySection = ({
             .slice(0, 8)
             .map((subject) => (
               <SubjectCard
-                key={subject.job_id}
+                key={subject.jobId}
                 subject={subject}
-                loading={loadingJobId === subject.job_id}
-                deleting={deletingJobId === subject.job_id}
-                busy={busyJobId === subject.job_id}
+                loading={loadingJobId === subject.jobId}
+                deleting={deletingJobId === subject.jobId}
+                busy={busyJobId === subject.jobId}
                 onOpenSubject={onOpenSubject}
                 onDelete={onDelete}
                 onRetry={onRetry}

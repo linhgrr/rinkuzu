@@ -2,7 +2,7 @@ import mongoose, { Document, Schema } from 'mongoose';
 
 import { PASSWORD_MIN_LENGTH } from '@/lib/validation/auth';
 
-interface IUser extends Document {
+interface UserDocument extends Document {
   email: string;
   password?: string;
   name?: string;
@@ -10,7 +10,6 @@ interface IUser extends Document {
   bio?: string;
   avatar?: string;
   role: 'admin' | 'user';
-  isAnonymous?: boolean;
 
   // Email verification
   emailVerified?: Date | null;
@@ -40,7 +39,7 @@ interface IUser extends Document {
   createdAt: Date;
 }
 
-const UserSchema = new Schema<IUser>({
+const UserSchema = new Schema<UserDocument>({
   email: {
     type: String,
     required: [true, 'Email is required'],
@@ -51,17 +50,7 @@ const UserSchema = new Schema<IUser>({
   },
   password: {
     type: String,
-    required: function (this: IUser) {
-      return !this.isAnonymous;
-    },
     minlength: [PASSWORD_MIN_LENGTH, `Password must be at least ${PASSWORD_MIN_LENGTH} characters`],
-    validate: {
-      validator: function (this: IUser, password: string) {
-        if (this.isAnonymous) return true;
-        return Boolean(password) && password.length >= PASSWORD_MIN_LENGTH;
-      },
-      message: `Password must be at least ${PASSWORD_MIN_LENGTH} characters`,
-    },
   },
   name: { type: String, required: false },
   displayName: {
@@ -78,8 +67,6 @@ const UserSchema = new Schema<IUser>({
     enum: ['admin', 'user'],
     default: 'user',
   },
-  isAnonymous: { type: Boolean, default: false },
-
   emailVerified: { type: Date, default: null },
   emailVerificationTokenHash: { type: String, default: null },
   emailVerificationExpires: { type: Date, default: null },
@@ -117,12 +104,12 @@ UserSchema.index(
 UserSchema.index({ lockedUntil: 1 }, { sparse: true });
 
 UserSchema.pre('save', function (next) {
-  if (this.isModified('password') && !this.isAnonymous) {
+  if (this.isModified('password') && this.password) {
     this.passwordChangedAt = new Date();
   }
   next();
 });
 
-const User = mongoose.models['User'] || mongoose.model<IUser>('User', UserSchema);
+const User = mongoose.models['User'] || mongoose.model<UserDocument>('User', UserSchema);
 
 export default User;

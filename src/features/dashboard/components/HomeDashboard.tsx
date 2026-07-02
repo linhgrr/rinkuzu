@@ -1,272 +1,31 @@
 import Image from 'next/image';
-import { getLocale, getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
-import { ROUTES } from '@/shared/constants';
 import { cn } from '@/lib/utils';
+import { ROUTES } from '@/shared/constants/routes';
 import { SurfaceCard } from '@/components/ui/SurfaceCard';
 import { SectionHeading } from '@/components/ui/SectionHeading';
 import { Pill } from '@/components/ui/Pill';
-import { ADAPTIVE_ROUTES } from '@/features/adaptive/lib/routes';
-import type { PipelineJobHistoryItem } from '@/features/adaptive/types';
-import type { DashboardInProgressQuiz } from '@/lib/dashboard';
+import type {
+  DashboardHomeCopy,
+  DashboardLearningCardViewModel,
+  DashboardProgressViewModel,
+} from '@/features/dashboard/types/dashboard-view-model';
 import { QuizUploadDropzone } from './QuizUploadDropzone';
 
-export interface HomeDashboardStats {
-  streak: number;
-  longestStreak: number;
-  streakFreezeCount: number;
-  xp: number;
-  level: number;
-  xpToNextLevel: number;
-  levelProgress: number;
-  dueCount: number;
-  weeklyActivity: Record<
-    string,
-    {
-      questionsReviewed: number;
-      xpEarned: number;
-      correctCount: number;
-      totalCount: number;
-    }
-  >;
-  totalQuestionsLearned?: number;
-  totalReviewSessions?: number;
-  averageAccuracy?: number;
-}
-
-export interface HomeDashboardQuiz {
-  _id: string;
-  title: string;
-  description: string;
-  slug: string;
-  status?: string;
-  isPrivate?: boolean;
-  createdAt: string;
-  updatedAt?: string;
-  questionCount?: number;
-  questions: unknown[];
-}
-
-export type HomeDashboardAdaptiveSubject = PipelineJobHistoryItem;
-
 interface HomeDashboardProps {
-  stats: HomeDashboardStats;
-  quizzes: HomeDashboardQuiz[];
-  yourQuizzes: HomeDashboardQuiz[];
-  adaptiveSubjects: HomeDashboardAdaptiveSubject[];
-  inProgressQuizzes: DashboardInProgressQuiz[];
-  userName: string;
-}
-
-interface LearningCardItem {
-  id: string;
-  title: string;
-  category: string;
-  progress: number;
-  href: string;
-  tone: 'warm' | 'cool';
-  isAi: boolean;
-  timeLabel: string;
+  viewModel: {
+    userName: string;
+    progress: DashboardProgressViewModel;
+    continueLearning: {
+      items: DashboardLearningCardViewModel[];
+      viewAllHref: string;
+    };
+  };
+  copy: DashboardHomeCopy;
 }
 
 const ASSET_BASE = '/images/home-redesign';
-const CONTINUE_LEARNING_CARD_LIMIT = 8;
 const QUIZ_BUILDER_LIBRARY_HREF = '/my-quizzes';
-
-const FALLBACK_CARD_SEEDS: ReadonlyArray<readonly [key: string, progress: number]> = [
-  ['fallback1', 36],
-  ['fallback2', 63],
-  ['fallback3', 89],
-  ['fallback4', 64],
-  ['fallback5', 65],
-  ['fallback6', 91],
-  ['fallback7', 62],
-  ['fallback8', 34],
-];
-
-function uniqueQuizzes(quizzes: HomeDashboardQuiz[]) {
-  const seen = new Set<string>();
-
-  return quizzes.filter((quiz) => {
-    if (seen.has(quiz._id)) return false;
-    seen.add(quiz._id);
-    return true;
-  });
-}
-
-function toTimestampMs(value?: number | null): number | null {
-  if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) return null;
-  return value < 1_000_000_000_000 ? value * 1000 : value;
-}
-
-function formatLearningCardTime(
-  value: string | number | null | undefined,
-  locale: string,
-  t: Awaited<ReturnType<typeof getTranslations>>,
-): string {
-  const timestamp =
-    typeof value === 'number' ? toTimestampMs(value) : value ? new Date(value).getTime() : null;
-
-  if (!timestamp || !Number.isFinite(timestamp)) return t('time.recentlyUpdated');
-
-  const diffMs = Date.now() - timestamp;
-  if (diffMs >= 0) {
-    const days = Math.floor(diffMs / (24 * 60 * 60 * 1000));
-    if (days === 0) return t('time.today');
-    if (days === 1) return t('time.dayAgo', { count: 1 });
-    if (days <= 7) return t('time.daysAgo', { count: days });
-  }
-
-  return new Date(timestamp).toLocaleDateString(locale === 'vi' ? 'vi-VN' : 'en-GB');
-}
-
-function clampProgress(value: number): number {
-  if (!Number.isFinite(value)) return 0;
-  return Math.max(0, Math.min(100, Math.round(value)));
-}
-
-function getAdaptiveSubjectTitle(subject: HomeDashboardAdaptiveSubject): string {
-  const filenameTitle = subject.filename?.replace(/\.[^.]+$/, '');
-  return subject.subject_id || filenameTitle || subject.job_id;
-}
-
-function getAdaptiveSubjectProgress(subject: HomeDashboardAdaptiveSubject): number {
-  const allConcepts = Math.max(0, subject.all_concept ?? subject.concepts_after_merge ?? 0);
-  const masteredConcepts = Math.max(0, subject.mastered_concept ?? 0);
-
-  if (allConcepts > 0) {
-    return clampProgress((Math.min(masteredConcepts, allConcepts) / allConcepts) * 100);
-  }
-
-  return clampProgress(subject.progress_percent ?? 0);
-}
-
-function buildAdaptiveLearningCards(
-  adaptiveSubjects: HomeDashboardAdaptiveSubject[],
-  locale: string,
-  t: Awaited<ReturnType<typeof getTranslations>>,
-): LearningCardItem[] {
-  return adaptiveSubjects.slice(0, CONTINUE_LEARNING_CARD_LIMIT).map((subject) => ({
-    id: `adaptive-${subject.job_id}`,
-    title: getAdaptiveSubjectTitle(subject),
-    category: t('learningCard.aiLearning'),
-    progress: getAdaptiveSubjectProgress(subject),
-    href: ADAPTIVE_ROUTES.dashboard,
-    tone: 'warm' as const,
-    isAi: true,
-    timeLabel: formatLearningCardTime(subject.completed_at, locale, t),
-  }));
-}
-
-function buildQuizBuilderCards(
-  quizzes: HomeDashboardQuiz[],
-  yourQuizzes: HomeDashboardQuiz[],
-  fallbackLearningCards: Array<Omit<LearningCardItem, 'href'>>,
-  locale: string,
-  t: Awaited<ReturnType<typeof getTranslations>>,
-): LearningCardItem[] {
-  return uniqueQuizzes([...yourQuizzes, ...quizzes])
-    .slice(0, CONTINUE_LEARNING_CARD_LIMIT)
-    .map((quiz, index) => ({
-      id: quiz._id,
-      title:
-        quiz.title || fallbackLearningCards[index]?.title || 'It is a long established fact...',
-      category: fallbackLearningCards[index]?.category || t('quizBuilder.title'),
-      progress: Math.min(
-        96,
-        Math.max(28, 34 + ((quiz.questionCount ?? quiz.questions.length) % 9) * 7),
-      ),
-      href: quiz.slug ? ROUTES.QUIZ.VIEW(quiz.slug) : QUIZ_BUILDER_LIBRARY_HREF,
-      tone: 'cool' as const,
-      isAi: false,
-      timeLabel: formatLearningCardTime(quiz.updatedAt ?? quiz.createdAt, locale, t),
-    }));
-}
-
-function buildInProgressLearningCards(
-  inProgressQuizzes: DashboardInProgressQuiz[],
-  locale: string,
-  t: Awaited<ReturnType<typeof getTranslations>>,
-): LearningCardItem[] {
-  return inProgressQuizzes
-    .filter((quiz) => quiz.slug && quiz.totalQuestions > 0)
-    .slice(0, CONTINUE_LEARNING_CARD_LIMIT)
-    .map((quiz) => ({
-      id: `in-progress-${quiz.quizId}`,
-      title: quiz.title || t('quizBuilder.title'),
-      category: t('learningCard.inProgress'),
-      progress: clampProgress((quiz.answeredCount / quiz.totalQuestions) * 100),
-      href: ROUTES.QUIZ.VIEW(quiz.slug),
-      tone: 'cool' as const,
-      isAi: false,
-      timeLabel: formatLearningCardTime(quiz.updatedAt, locale, t),
-    }));
-}
-
-function buildLearningCards(
-  adaptiveSubjects: HomeDashboardAdaptiveSubject[],
-  quizzes: HomeDashboardQuiz[],
-  yourQuizzes: HomeDashboardQuiz[],
-  inProgressQuizzes: DashboardInProgressQuiz[],
-  fallbackLearningCards: Array<Omit<LearningCardItem, 'href'>>,
-  locale: string,
-  t: Awaited<ReturnType<typeof getTranslations>>,
-): { items: LearningCardItem[]; viewAllHref: string } {
-  const inProgressCards = buildInProgressLearningCards(inProgressQuizzes, locale, t);
-  const adaptiveCards = buildAdaptiveLearningCards(adaptiveSubjects, locale, t);
-  const quizCards = buildQuizBuilderCards(quizzes, yourQuizzes, fallbackLearningCards, locale, t);
-  const sourceCards = [...inProgressCards, ...adaptiveCards, ...quizCards].slice(
-    0,
-    CONTINUE_LEARNING_CARD_LIMIT,
-  );
-  const viewAllHref =
-    adaptiveCards.length > 0 ? ADAPTIVE_ROUTES.dashboard : QUIZ_BUILDER_LIBRARY_HREF;
-
-  if (sourceCards.length >= CONTINUE_LEARNING_CARD_LIMIT) {
-    return { items: sourceCards, viewAllHref };
-  }
-
-  const items = [
-    ...sourceCards,
-    ...fallbackLearningCards.slice(sourceCards.length).map((card) => ({
-      ...card,
-      href: QUIZ_BUILDER_LIBRARY_HREF,
-    })),
-  ];
-
-  return { items, viewAllHref };
-}
-
-function buildWeekDays(weeklyActivity: HomeDashboardStats['weeklyActivity'], labels: string[]) {
-  const values = Object.values(weeklyActivity ?? {});
-  const hasActivity = values.some((activity) => (activity.questionsReviewed ?? 0) > 0);
-  const fallbackActive = new Set([1, 2, 3]);
-
-  if (!hasActivity) {
-    return labels.map((label, index) => ({
-      label,
-      active: fallbackActive.has(index),
-    }));
-  }
-
-  const today = new Date();
-  const sunday = new Date(today);
-  sunday.setDate(today.getDate() - today.getDay());
-  sunday.setHours(0, 0, 0, 0);
-
-  return labels.map((label, index) => {
-    const date = new Date(sunday);
-    date.setDate(sunday.getDate() + index);
-    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(
-      date.getDate(),
-    ).padStart(2, '0')}`;
-
-    return {
-      label,
-      active: (weeklyActivity[key]?.questionsReviewed ?? 0) > 0,
-    };
-  });
-}
 
 function HeroArtwork() {
   return (
@@ -483,29 +242,22 @@ function MetricItem({
 }
 
 function LearningProgressCardBody({
-  stats,
+  progress,
   title,
   subtitle,
   viewAllLabel,
   streakLabel,
   accuracyLabel,
   studyTimeLabel,
-  weekdayLabels,
 }: {
-  stats: HomeDashboardStats;
+  progress: DashboardProgressViewModel;
   title: string;
   subtitle: string;
   viewAllLabel: string;
   streakLabel: string;
   accuracyLabel: string;
   studyTimeLabel: string;
-  weekdayLabels: string[];
 }) {
-  const days = buildWeekDays(stats.weeklyActivity, weekdayLabels);
-  const streak = stats.streak || 10;
-  const accuracy = stats.averageAccuracy ?? 52;
-  const studyHours = Math.max(20, Math.ceil((stats.totalReviewSessions ?? 0) * 0.4));
-
   return (
     <SurfaceCard className="flex min-h-[357px] flex-col gap-6 p-4 sm:gap-7 sm:p-5">
       <SectionHeading
@@ -516,15 +268,15 @@ function LearningProgressCardBody({
       />
 
       <div className="flex w-full items-center justify-between">
-        <MetricItem icon="fire" label={streakLabel} value={String(streak)} />
+        <MetricItem icon="fire" label={streakLabel} value={String(progress.streak)} />
         <span className="h-[62px] w-0.5 rounded-[10px] bg-divider-warm" aria-hidden="true" />
-        <MetricItem icon="target" label={accuracyLabel} value={`${accuracy}%`} />
+        <MetricItem icon="target" label={accuracyLabel} value={`${progress.accuracyPercent}%`} />
         <span className="h-[62px] w-0.5 rounded-[10px] bg-divider-warm" aria-hidden="true" />
-        <MetricItem icon="chart" label={studyTimeLabel} value={`${studyHours}h`} />
+        <MetricItem icon="chart" label={studyTimeLabel} value={`${progress.studyHours}h`} />
       </div>
 
       <div className="grid w-full grid-cols-7 items-center rounded-[10px] border border-accent-warm/30 bg-surface-warm px-2 py-4 sm:p-5">
-        {days.map((day) => (
+        {progress.weekDays.map((day) => (
           <div key={day.label} className="flex min-w-0 flex-col items-center gap-1">
             <p className="truncate font-home text-xs font-normal leading-[1.4] text-ink-strong sm:text-sm">
               {day.label}
@@ -562,7 +314,7 @@ const LEARNING_CARD_TONES = {
   },
 } as const;
 
-function LearningCard({ item }: { item: LearningCardItem }) {
+function LearningCard({ item }: { item: DashboardLearningCardViewModel }) {
   const tone = LEARNING_CARD_TONES[item.tone];
 
   return (
@@ -611,12 +363,14 @@ function ContinueLearning({
   title,
   subtitle,
   viewAllLabel,
+  emptyActionLabel,
 }: {
-  items: LearningCardItem[];
+  items: DashboardLearningCardViewModel[];
   viewAllHref: string;
   title: string;
   subtitle: string;
   viewAllLabel: string;
+  emptyActionLabel: string;
 }) {
   return (
     <SurfaceCard className="flex flex-col gap-6 p-4 sm:p-5">
@@ -626,92 +380,63 @@ function ContinueLearning({
         href={viewAllHref}
         viewAllLabel={viewAllLabel}
       />
-      <div className="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2 min-[1180px]:grid-cols-4">
-        {items.map((item) => (
-          <LearningCard key={item.id} item={item} />
-        ))}
-      </div>
+      {items.length > 0 ? (
+        <div className="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2 min-[1180px]:grid-cols-4">
+          {items.map((item) => (
+            <LearningCard key={item.id} item={item} />
+          ))}
+        </div>
+      ) : (
+        <Link
+          href={QUIZ_BUILDER_LIBRARY_HREF}
+          className="inline-flex min-h-10 w-fit items-center rounded-lg bg-primary px-4 py-2 font-home text-sm font-semibold text-white transition-colors hover:bg-primary/90"
+        >
+          {emptyActionLabel}
+        </Link>
+      )}
     </SurfaceCard>
   );
 }
 
-export async function HomeDashboard({
-  stats,
-  quizzes,
-  yourQuizzes,
-  adaptiveSubjects,
-  inProgressQuizzes,
-  userName,
-}: HomeDashboardProps) {
-  const [locale, t] = await Promise.all([getLocale(), getTranslations('dashboard.home')]);
-  const fallbackLearningCards: Array<Omit<LearningCardItem, 'href'>> = FALLBACK_CARD_SEEDS.map(
-    ([key, progress], index) => ({
-      id: `fallback-${index + 1}`,
-      title: t(`fallbackCards.${key}.title`),
-      progress,
-      category: t(`fallbackCards.${key}.category`),
-      tone: 'cool',
-      isAi: false,
-      timeLabel: t('time.recentlyUpdated'),
-    }),
-  );
-  const { items: learningCards, viewAllHref } = buildLearningCards(
-    adaptiveSubjects,
-    quizzes,
-    yourQuizzes,
-    inProgressQuizzes,
-    fallbackLearningCards,
-    locale,
-    t,
-  );
-  const weekdayLabels = [
-    t('weekdays.sun'),
-    t('weekdays.mon'),
-    t('weekdays.tue'),
-    t('weekdays.wed'),
-    t('weekdays.thu'),
-    t('weekdays.fri'),
-    t('weekdays.sat'),
-  ];
-
+export function HomeDashboard({ viewModel, copy }: HomeDashboardProps) {
   return (
     <div className="px-4 pb-20 pt-5 font-home text-ink selection:bg-accent-soft sm:px-6 sm:pt-6 lg:px-8">
       <div className="mx-auto max-w-[1340px]">
         <div className="mb-5 flex flex-col gap-1 sm:mb-6">
           <h1 className="font-home text-2xl font-semibold leading-[1.4] text-ink">
-            {t('welcomeBack', { name: userName })}
+            {copy.welcomeTitle}
           </h1>
           <p className="font-home text-base font-normal leading-[1.4] text-ink">
-            {t('welcomeSubtitle')}
+            {copy.welcomeSubtitle}
           </p>
         </div>
 
         <div className="grid grid-cols-1 gap-6 min-[1684px]:grid-cols-[minmax(0,900px)_416px]">
           <div className="flex min-w-0 flex-col gap-6">
             <HomeHero
-              title={t('hero.title')}
-              description={t('hero.description')}
-              ctaLabel={t('hero.cta')}
+              title={copy.hero.title}
+              description={copy.hero.description}
+              ctaLabel={copy.hero.cta}
             />
             <ContinueLearning
-              items={learningCards}
-              viewAllHref={viewAllHref}
-              title={t('continueLearning.title')}
-              subtitle={t('continueLearning.subtitle')}
-              viewAllLabel={t('viewAll')}
+              items={viewModel.continueLearning.items}
+              viewAllHref={viewModel.continueLearning.viewAllHref}
+              title={copy.continueLearning.title}
+              subtitle={copy.continueLearning.subtitle}
+              viewAllLabel={copy.viewAll}
+              emptyActionLabel={copy.continueLearning.emptyAction}
             />
           </div>
           <div className="grid min-w-0 grid-cols-1 gap-6 md:grid-cols-2 min-[1684px]:flex min-[1684px]:flex-col">
-            <QuizBuilderCard title={t('quizBuilder.title')} subtitle={t('quizBuilder.subtitle')} />
+            <QuizBuilderCard title={copy.quizBuilder.title} subtitle={copy.quizBuilder.subtitle} />
             <LearningProgressCardBody
-              stats={stats}
-              title={t('learningProgress.title')}
-              subtitle={t('learningProgress.subtitle')}
-              viewAllLabel={t('viewAll')}
-              streakLabel={t('learningProgress.dayStreak')}
-              accuracyLabel={t('learningProgress.accuracy')}
-              studyTimeLabel={t('learningProgress.studyTime')}
-              weekdayLabels={weekdayLabels}
+              progress={viewModel.progress}
+              title={copy.learningProgress.title}
+              subtitle={copy.learningProgress.subtitle}
+              viewAllLabel={copy.viewAll}
+              streakLabel={copy.learningProgress.dayStreak}
+              accuracyLabel={copy.learningProgress.accuracy}
+              studyTimeLabel={copy.learningProgress.studyTime}
             />
           </div>
         </div>

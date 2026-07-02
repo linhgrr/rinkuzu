@@ -1,5 +1,5 @@
 export interface UserIdentity {
-  _id?: string;
+  id?: string;
   email?: string | null;
   name?: string | null;
   displayName?: string | null;

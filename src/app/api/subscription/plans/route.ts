@@ -1,60 +1,32 @@
 import { createSubscriptionService } from '@/lib/subscription-factory';
 import { apiErr, apiOk } from '@/lib/api/response';
 import { logger } from '@/lib/logger';
+import { DurationUtils, SubscriptionDurationType } from '@/types/subscription';
 
 export async function GET() {
   try {
     const subscriptionService = createSubscriptionService();
     const plans = await subscriptionService.getSubscriptionPlans();
 
-    // Transform plans to include duration info
-    const transformedPlans = plans.map((plan) => ({
-      ...plan,
-      // Include additional duration information for frontend
-      durationDisplay: plan.duration === 'PT0S' ? 'Lifetime' : formatDurationDisplay(plan.duration),
-      isLifetime: plan.duration === 'PT0S',
-      calculatedMonths: parseDurationToMonths(plan.duration),
-    }));
+    const transformedPlans = plans.map((plan) => {
+      const duration = DurationUtils.getDurationInfo(plan.duration);
+      return {
+        ...plan,
+        durationDisplay: duration.displayName,
+        isLifetime: plan.duration === SubscriptionDurationType.LIFETIME,
+        calculatedMonths: duration.months,
+      };
+    });
 
     return apiOk({
       plans: transformedPlans,
       meta: {
         durationFormat: 'ISO8601',
-        supportedDurations: ['P1M', 'P3M', 'P6M', 'P1Y', 'PT0S'],
+        supportedDurations: Object.values(SubscriptionDurationType),
       },
     });
   } catch (error) {
     logger.error({ error }, 'Error fetching subscription plans');
     return apiErr('internal_error', 'Failed to fetch subscription plans', 500);
   }
-}
-
-// Helper function to format duration for display
-function formatDurationDisplay(iso8601Duration: string): string {
-  const durationMap: Record<string, string> = {
-    P1M: '1 Month',
-    P3M: '3 Months',
-    P6M: '6 Months',
-    P1Y: '1 Year',
-    PT0S: 'Lifetime',
-  };
-
-  return durationMap[iso8601Duration] || iso8601Duration;
-}
-
-// Helper function to parse duration to months
-function parseDurationToMonths(iso8601Duration: string): number | undefined {
-  if (iso8601Duration === 'PT0S') return undefined; // Lifetime
-
-  const monthMatch = iso8601Duration.match(/P(\d+)M/);
-  if (monthMatch) {
-    return parseInt(monthMatch[1]);
-  }
-
-  const yearMatch = iso8601Duration.match(/P(\d+)Y/);
-  if (yearMatch) {
-    return parseInt(yearMatch[1]) * 12;
-  }
-
-  return undefined;
 }

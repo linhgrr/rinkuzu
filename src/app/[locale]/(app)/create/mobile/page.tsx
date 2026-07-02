@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useReducer } from 'react';
+import { useEffect, useReducer } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -11,7 +11,7 @@ import {
   HiOutlineArrowRight,
   HiOutlineDesktopComputer,
   HiOutlineX,
-} from '@/components/icons';
+} from 'react-icons/hi';
 import { toast } from 'sonner';
 import { FolderSelector } from '@/features/folders/components/FolderSelector';
 import { Input, Textarea } from '@/components/ui/Input';
@@ -81,11 +81,11 @@ export default function MobileCreatePage() {
     }
   }, [consumePendingFile]);
 
-  const onDrop = useCallback((acceptedFiles: File[]) => {
+  const onDrop = (acceptedFiles: File[]) => {
     if (acceptedFiles[0]) {
       dispatch({ type: 'setFile', value: acceptedFiles[0] });
     }
-  }, []);
+  };
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -114,7 +114,7 @@ export default function MobileCreatePage() {
       });
 
       addDraft({
-        id: draft.draft_id,
+        id: draft.id,
         title: state.title.trim(),
         status: 'processing',
         chunksTotal: 1,
@@ -122,7 +122,7 @@ export default function MobileCreatePage() {
         chunksError: 0,
         questionsCount: 0,
         createdAt: new Date().toISOString(),
-        expiresAt: draft.expires_at,
+        expiresAt: draft.expiresAt,
       });
 
       toast.success(t('processingStarted'));
@@ -133,7 +133,6 @@ export default function MobileCreatePage() {
       toast.error(tCommon('error'), {
         description: extractUnknownErrorMessage(error, t('failedToStartProcessing')),
       });
-    } finally {
       dispatch({ type: 'patch', value: { isUploading: false } });
     }
   };

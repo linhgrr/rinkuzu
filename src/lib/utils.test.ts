@@ -1,13 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import {
-  calculateScore,
-  cn,
-  formatDate,
-  generateSlug,
-  getErrorMessage,
-  truncateText,
-} from './utils';
+import { calculateScore, cn, generateSlug, getErrorMessage, truncateText } from './utils';
 
 describe('utils', () => {
   it('generates a slug with a deterministic suffix shape', () => {
@@ -85,13 +78,6 @@ describe('utils', () => {
 
   it('merges class names with tailwind precedence', () => {
     expect(cn('px-2 py-1', 'px-4')).toBe('py-1 px-4');
-  });
-
-  it('formats date with locale options', () => {
-    const date = new Date('2025-01-01T10:30:00.000Z');
-    const formatted = formatDate(date, 'en-US');
-    expect(formatted).toContain('2025');
-    expect(formatted.length).toBeGreaterThan(0);
   });
 
   it('truncates long text', () => {

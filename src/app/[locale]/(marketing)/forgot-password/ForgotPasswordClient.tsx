@@ -10,12 +10,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
-import {
-  HiOutlineMail,
-  HiOutlineExclamationCircle,
-  HiOutlineCheckCircle,
-} from '@/components/icons';
-import { fetchApiResponse } from '@/lib/api/client';
+import { HiOutlineMail, HiOutlineExclamationCircle, HiOutlineCheckCircle } from 'react-icons/hi';
+import { requestPasswordReset } from '@/features/auth/api/auth-api';
 import { forgotPasswordSchema, type ForgotPasswordInput } from '@/lib/validation/auth';
 
 export function ForgotPasswordClient() {
@@ -36,15 +32,8 @@ export function ForgotPasswordClient() {
   const onSubmit = handleSubmit(async (values) => {
     setServerError(null);
     try {
-      const response = await fetchApiResponse<unknown, { message?: string }>(
-        '/api/auth/forgot-password',
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: values.email }),
-        },
-      );
-      setSuccess(response.meta?.message ?? t('forgotPasswordSent'));
+      const result = await requestPasswordReset(values.email);
+      setSuccess(result.message ?? t('forgotPasswordSent'));
     } catch (caught) {
       setServerError(caught instanceof Error ? caught.message : t('loginError'));
     }

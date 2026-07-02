@@ -1,62 +1,39 @@
-import type { ISubscription } from '@/models/Subscription';
-
-export interface SubscriptionPlan {
-  id: string;
-  name: string;
-  price: number;
-  duration: string;
-  features: string[];
-}
-
-export interface PaymentRequest {
-  orderCode: number;
-  paymentUrl: string;
-  qrCode?: string;
-  amount: number;
-  plan: SubscriptionPlan;
-}
-
-export interface SubscriptionActivation {
-  success: boolean;
-  subscription: {
-    type: string;
-    startDate: Date;
-    endDate?: Date;
-    isActive: boolean;
-  };
-}
-
-interface UserSubscription {
-  type?: string;
-  startDate?: Date;
-  endDate?: Date;
-  isActive?: boolean;
-  payosOrderId?: string;
-  payosTransactionId?: string;
-  status?: string;
-}
+import type {
+  AdminMutableSubscriptionStatus,
+  SubscriptionRecord,
+  UserSubscription,
+} from '@/entities/Subscription';
+import type {
+  PaymentRequestDto,
+  SubscriptionActivationDto,
+  SubscriptionCancellationDto,
+  SubscriptionPlanDto,
+  VerifiedPaymentDto,
+} from '@/dtos/subscription';
+import type { ServiceResult } from '@/interfaces/services/types';
 
 export interface ISubscriptionService {
   getUserSubscription(userId: string): Promise<UserSubscription | null>;
   isUserPremium(userId: string): Promise<boolean>;
-  createPaymentRequest(userId: string, planId: string): Promise<PaymentRequest>;
-  verifyAndActivateSubscription(orderCode: number, userId: string): Promise<SubscriptionActivation>;
+  createPaymentRequest(userId: string, planId: string): Promise<PaymentRequestDto>;
+  verifyAndActivateSubscription(
+    orderCode: number,
+    userId: string,
+  ): Promise<SubscriptionActivationDto>;
   activateVerifiedSubscription(
     orderCode: number,
-    paymentData: {
-      orderCode: string | number;
-      amount: string | number;
-      reference?: string;
-      status?: string;
-      code?: string;
-    },
-  ): Promise<SubscriptionActivation>;
-  getSubscriptionHistory(userId: string): Promise<ISubscription[]>;
-  cancelSubscription(userId: string): Promise<{ success: boolean }>;
-  getSubscriptionPlans(): Promise<SubscriptionPlan[]>;
+    paymentData: VerifiedPaymentDto,
+  ): Promise<SubscriptionActivationDto>;
+  getSubscriptionHistory(userId: string): Promise<SubscriptionRecord[]>;
+  cancelSubscription(userId: string): Promise<SubscriptionCancellationDto>;
+  getSubscriptionPlans(): Promise<SubscriptionPlanDto[]>;
   checkAndUpdateExpiredSubscriptions(): Promise<number>;
   updateSubscriptionById(
     id: string,
-    update: Record<string, unknown>,
-  ): Promise<{ success: boolean; data?: unknown; error?: string }>;
+    update: UpdateSubscriptionStatusInput,
+  ): Promise<ServiceResult<SubscriptionRecord>>;
+}
+
+export interface UpdateSubscriptionStatusInput {
+  status: AdminMutableSubscriptionStatus;
 }

@@ -1,58 +1,37 @@
-import connectDB from '@/lib/mongoose';
 import crypto from 'crypto';
-import mongoose, { Types } from 'mongoose';
-import Plan from '@/models/Plan';
-import { PaymentRequest } from '@/interfaces/services/ISubscriptionService';
+import type { PaymentRequestDto } from '@/dtos/subscription';
 import { IPayOSService } from '@/interfaces/services/IPayOSService';
 import { ISubscriptionRepository } from '@/interfaces/repositories/ISubscriptionRepository';
 import { IUserRepository } from '@/interfaces/repositories/IUserRepository';
+import type { ISubscriptionPlanRepository } from '@/interfaces/repositories/ISubscriptionPlanRepository';
 import { assertTrustedPayosCheckoutUrl } from '@/lib/security/trusted-navigation';
 import { env } from '@/lib/env';
 import { logger } from '@/lib/logger';
-
-interface UserSubscriptionEmbed {
-  endDate?: Date | string | null;
-  isActive?: boolean;
-}
-
-interface UserWithName {
-  email: string;
-  name?: string;
-  subscription?: UserSubscriptionEmbed;
-}
-
-/**
- * Mongoose normally coerces string ids to ObjectId at schema validation
- * time, but unit tests mock the repository and bypass that path. Coerce
- * defensively here so the persisted shape always matches `ISubscription.user`.
- */
-function toUserObjectId(userId: string): Types.ObjectId | string {
-  return Types.ObjectId.isValid(userId) ? new mongoose.Types.ObjectId(userId) : userId;
-}
+import { isSubscriptionExpired } from '@/lib/subscription-date';
+import type { UserSubscriptionSnapshot } from '@/entities/User';
 
 export class SubscriptionPaymentService {
   constructor(
     private subscriptionRepository: ISubscriptionRepository,
     private userRepository: IUserRepository,
     private payosService: IPayOSService,
+    private planRepository: ISubscriptionPlanRepository,
   ) {}
 
-  async createPaymentRequest(userId: string, planId: string): Promise<PaymentRequest> {
-    await connectDB();
-
+  async createPaymentRequest(userId: string, planId: string): Promise<PaymentRequestDto> {
     const user = await this.userRepository.findById(userId);
     if (!user) {
       throw new Error('User not found');
     }
 
     // Get plan from database
-    const plan = await Plan.findById(planId);
-    if (!plan || !plan.isActive) {
+    const plan = await this.planRepository.findActiveById(planId);
+    if (!plan) {
       throw new Error('Invalid subscription plan');
     }
 
     // Check if user already has an active subscription
-    const hasActivePremium = await this.isUserPremiumInternal(userId);
+    const hasActivePremium = this.hasActivePremium(user.subscription);
     if (hasActivePremium) {
       throw new Error('User already has an active subscription');
     }
@@ -65,7 +44,7 @@ export class SubscriptionPaymentService {
 
     // Create subscription record
     await this.subscriptionRepository.create({
-      user: toUserObjectId(userId) as Types.ObjectId,
+      userId,
       userEmail: user.email,
       type: planId,
       amount: plan.price,
@@ -95,7 +74,7 @@ export class SubscriptionPaymentService {
         returnUrl,
         cancelUrl,
         user.email,
-        (user as UserWithName).name,
+        user.name,
       );
 
       if (paymentResponse.code !== '00') {
@@ -134,7 +113,7 @@ export class SubscriptionPaymentService {
         qrCode: paymentResponse.data.qrCode,
         amount: plan.price,
         plan: {
-          id: plan._id.toString(),
+          id: plan.id,
           name: plan.name,
           price: plan.price,
           duration: plan.duration,
@@ -146,7 +125,7 @@ export class SubscriptionPaymentService {
 
       // Clean up the subscription record if payment creation failed
       try {
-        await this.subscriptionRepository.deleteByOrderId(orderCode.toString());
+        await this.subscriptionRepository.deletePendingByOrderId(orderCode.toString());
       } catch (cleanupError) {
         logger.error({ cleanupError }, 'Failed to cleanup subscription record');
       }
@@ -155,21 +134,13 @@ export class SubscriptionPaymentService {
     }
   }
 
-  private async isUserPremiumInternal(userId: string): Promise<boolean> {
-    const user = (await this.userRepository.findById(userId)) as UserWithName | null;
-    const subscription = user?.subscription;
+  private hasActivePremium(subscription: UserSubscriptionSnapshot | undefined): boolean {
     if (!subscription) return false;
     if (!subscription.isActive) return false;
     if (subscription.endDate) {
-      return !this.isExpired(subscription);
+      return !isSubscriptionExpired(subscription);
     }
     return true;
-  }
-
-  private isExpired(subscription: { endDate?: Date | string | null }): boolean {
-    if (!subscription.endDate) return false;
-    const endDate = new Date(subscription.endDate);
-    return Number.isFinite(endDate.getTime()) && endDate.getTime() <= Date.now();
   }
 
   private async generateUniqueOrderCode(): Promise<number> {

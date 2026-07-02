@@ -40,20 +40,8 @@ const PlanSchema = new Schema<IPlan>(
       type: String,
       required: true,
       validate: {
-        validator: function (value: string) {
-          // Allow legacy formats during migration
-          try {
-            if (DurationUtils.isValidISO8601Duration(value)) {
-              return true;
-            }
-            DurationUtils.fromLegacyDuration(value);
-            return true;
-          } catch {
-            return false;
-          }
-        },
-        message:
-          'Invalid duration format. Use ISO 8601 format (P1M, P3M, P1Y) or legacy format for migration.',
+        validator: (value: string) => DurationUtils.isValidISO8601Duration(value),
+        message: 'Invalid duration format. Use ISO 8601 (for example P1M, P3M, P1Y, PT0S).',
       },
     },
     features: {
@@ -71,39 +59,12 @@ const PlanSchema = new Schema<IPlan>(
 );
 
 PlanSchema.virtual('durationInfo').get(function (this: PlanDocument) {
-  try {
-    if (DurationUtils.isValidISO8601Duration(this.duration)) {
-      return DurationUtils.getDurationInfo(this.duration);
-    }
-
-    const iso8601 = DurationUtils.fromLegacyDuration(this.duration);
-    return DurationUtils.getDurationInfo(iso8601);
-  } catch {
-    return {
-      iso8601: this.duration,
-      displayName: this.duration,
-      months: undefined,
-    };
-  }
+  return DurationUtils.getDurationInfo(this.duration);
 });
 
 PlanSchema.virtual('isLifetime').get(function (this: PlanDocument) {
   const info = this.durationInfo;
   return info.months === undefined;
-});
-
-PlanSchema.pre('save', function (this: PlanDocument) {
-  if (!DurationUtils.isValidISO8601Duration(this.duration)) {
-    try {
-      this.duration = DurationUtils.fromLegacyDuration(this.duration);
-    } catch (error) {
-      console.warn(`Could not migrate duration '${this.duration}' for plan ${this.name}:`, error);
-    }
-  }
-});
-
-PlanSchema.virtual('id').get(function (this: PlanDocument) {
-  return this._id;
 });
 
 // Ensure virtuals are included in JSON

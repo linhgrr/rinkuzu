@@ -17,7 +17,7 @@ import {
   HiOutlineAcademicCap,
   HiOutlineUpload,
   HiOutlineChartBar,
-} from '@/components/icons';
+} from 'react-icons/hi';
 import {
   getProductScope,
   isAdaptiveExerciseModePath,

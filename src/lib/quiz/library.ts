@@ -1,4 +1,4 @@
-export type QuizLibraryStatus = 'not_started' | 'in_progress' | 'complete';
+import type { QuizLibraryStatus } from '@/shared/types/quiz-library';
 export type QuizLibraryFilter = 'all' | 'in_progress' | 'complete';
 
 export function resolveQuizLibraryActivity(
@@ -20,11 +20,10 @@ export function resolveQuizLibraryActivity(
 
 export function matchesLibraryFolder(
   quizFolder: string | null,
-  folderParam: string | null,
+  folderFilter: string | null | undefined,
 ): boolean {
-  if (folderParam === null) return true;
-  if (folderParam === 'null' || folderParam === 'default') return quizFolder === null;
-  return quizFolder === folderParam;
+  if (folderFilter === undefined) return true;
+  return quizFolder === folderFilter;
 }
 
 export function matchesLibraryStatus(

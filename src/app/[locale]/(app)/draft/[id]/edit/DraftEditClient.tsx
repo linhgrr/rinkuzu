@@ -6,8 +6,10 @@ import { useTranslations } from 'next-intl';
 import { useSession } from 'next-auth/react';
 import useSWR from 'swr';
 import { useDraftStore } from '@/store/useDraftStore';
-import { fetchApiData } from '@/lib/api/client';
+import { fetchSubscriptionStatusViewModel } from '@/features/subscription/api/subscription-page-api';
 import { extractUnknownErrorMessage } from '@/lib/api/error';
+import { createPdfObjectUrlFromUrl } from '@/lib/pdf';
+import { submitQuizDraft } from '@/lib/quiz/draftApi';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
 import { Textarea } from '@/components/ui/Input';
@@ -23,42 +25,25 @@ import {
   HiOutlineCloudUpload,
   HiOutlineQuestionMarkCircle,
   HiOutlineCollection,
-} from '@/components/icons';
+} from 'react-icons/hi';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import QuizMetaForm from '@/features/quiz/components/QuizMetaForm';
+import type { QuizDraft } from '@/features/quiz/types/quiz-draft';
 
 const PDFViewer = dynamic(() => import('@/features/quiz/components/PDFViewer'), { ssr: false });
 
-interface DraftQuestion {
-  question: string;
-  options: string[];
-  type: 'single' | 'multiple';
-  correctIndex?: number;
-  correctIndexes?: number[];
-}
-
-interface Draft {
-  _id: string;
-  title: string;
-  folderId?: string | null;
-  questions: DraftQuestion[];
-  status: string;
-  createdAt: string;
-  expiresAt: string;
-  pdfData?: {
-    fileName: string;
-    pdfUrl?: string;
-  };
-}
-
-interface Props {
-  initialDraft: Draft;
+interface DraftEditClientProps {
+  initialDraft: QuizDraft;
   locale: string;
+  pdfUrl?: string;
 }
+
+type DraftQuestion = QuizDraft['questions'][number];
+type DraftEditableQuestion = DraftQuestion & { editorId: string };
 
 interface DraftEditorState {
-  questions: DraftQuestion[];
+  questions: DraftEditableQuestion[];
   title: string;
   description: string;
   isPrivate: boolean;
@@ -72,8 +57,30 @@ type DraftEditorAction =
   | { type: 'setIsPrivate'; value: boolean }
   | { type: 'setSelectedFolder'; value: string | null }
   | { type: 'setShowPDFViewer'; value: boolean }
-  | { type: 'updateQuestion'; index: number; updates: Partial<DraftQuestion> }
+  | { type: 'updateQuestionText'; index: number; value: string }
   | { type: 'deleteQuestion'; index: number };
+
+function toEditableQuestions(questions: DraftQuestion[]): DraftEditableQuestion[] {
+  return questions.map((question, index) => ({
+    ...question,
+    editorId: `draft-question-${index}`,
+  }));
+}
+
+function toSubmitQuestions(questions: DraftEditableQuestion[]): DraftQuestion[] {
+  return questions.map((question) => {
+    const base = {
+      question: question.question,
+      options: question.options,
+      questionImage: question.questionImage,
+      optionImages: question.optionImages,
+    };
+
+    return question.type === 'single'
+      ? { ...base, type: 'single', correctIndex: question.correctIndex }
+      : { ...base, type: 'multiple', correctIndexes: question.correctIndexes };
+  });
+}
 
 function draftEditorReducer(state: DraftEditorState, action: DraftEditorAction): DraftEditorState {
   switch (action.type) {
@@ -87,11 +94,11 @@ function draftEditorReducer(state: DraftEditorState, action: DraftEditorAction):
       return { ...state, selectedFolderId: action.value };
     case 'setShowPDFViewer':
       return { ...state, showPDFViewer: action.value };
-    case 'updateQuestion':
+    case 'updateQuestionText':
       return {
         ...state,
         questions: state.questions.map((question, index) =>
-          index === action.index ? { ...question, ...action.updates } : question,
+          index === action.index ? { ...question, question: action.value } : question,
         ),
       };
     case 'deleteQuestion':
@@ -104,36 +111,34 @@ function draftEditorReducer(state: DraftEditorState, action: DraftEditorAction):
   }
 }
 
-export default function DraftEditClient({ initialDraft, locale }: Props) {
+export default function DraftEditClient({
+  initialDraft,
+  locale,
+  pdfUrl = undefined,
+}: DraftEditClientProps) {
   const t = useTranslations('create');
   const _tCommon = useTranslations('common');
   const { push } = useRouter();
   const { removeDraft } = useDraftStore();
   const { data: session } = useSession();
   const [state, dispatch] = useReducer(draftEditorReducer, {
-    questions: initialDraft.questions || [],
-    title: initialDraft.title || '',
-    description: '',
+    questions: toEditableQuestions(initialDraft.questions),
+    title: initialDraft.title,
+    description: initialDraft.description ?? '',
     isPrivate: false,
     selectedFolderId: initialDraft.folderId ?? null,
     showPDFViewer: true,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { data: subscriptionStatus } = useSWR(
-    session?.user?.role === 'admin' ? null : '/api/subscription/status',
-    (url: string) => fetchApiData<{ isPremium: boolean }>(url),
+    session?.user?.role === 'admin' ? null : 'subscription-status',
+    fetchSubscriptionStatusViewModel,
   );
   const canCreatePrivateQuiz =
     session?.user?.role === 'admin' || subscriptionStatus?.isPremium === true;
-  const pdfUrl = initialDraft.pdfData?.pdfUrl || null;
   const { data: pdfDataUrl } = useSWR(
     pdfUrl ? ['draft-edit-pdf', pdfUrl] : null,
-    async ([, url]: [string, string]) => {
-      // EXTERNAL: object storage PDF fetch
-      const res = await fetch(url);
-      const blob = await res.blob();
-      return URL.createObjectURL(blob);
-    },
+    async ([, url]: [string, string]) => createPdfObjectUrlFromUrl(url),
     {
       revalidateOnFocus: false,
     },
@@ -147,8 +152,8 @@ export default function DraftEditClient({ initialDraft, locale }: Props) {
     };
   }, [pdfDataUrl]);
 
-  const handleQuestionEdit = (index: number, updates: Partial<DraftQuestion>) => {
-    dispatch({ type: 'updateQuestion', index, updates });
+  const handleQuestionEdit = (index: number, value: string) => {
+    dispatch({ type: 'updateQuestionText', index, value });
   };
 
   const handleDeleteQuestion = (index: number) => {
@@ -164,31 +169,21 @@ export default function DraftEditClient({ initialDraft, locale }: Props) {
     setIsSubmitting(true);
 
     try {
-      const data = await fetchApiData<{
-        quizId: string;
-        slug: string;
-        warnings: string[];
-      }>(`/api/quiz-drafts/${initialDraft._id}/submit`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: state.title,
-          folderId: state.selectedFolderId,
-          description: state.description,
-          questions: state.questions,
-          pdfUrl,
-          isPrivate: state.isPrivate,
-        }),
+      const data = await submitQuizDraft(initialDraft.id, {
+        title: state.title,
+        folderId: state.selectedFolderId,
+        description: state.description,
+        questions: toSubmitQuestions(state.questions),
+        isPrivate: state.isPrivate,
       });
 
       // Remove from store
-      removeDraft(initialDraft._id);
+      removeDraft(initialDraft.id);
 
       toast.success('Quiz đã được xuất bản!');
       push(`/${locale}/quiz/${data.slug}`);
     } catch (error: unknown) {
       toast.error('Lỗi', { description: extractUnknownErrorMessage(error, 'Không thể gửi quiz') });
-    } finally {
       setIsSubmitting(false);
     }
   };
@@ -272,10 +267,10 @@ export default function DraftEditClient({ initialDraft, locale }: Props) {
               <div className="space-y-4">
                 {state.questions.map((q, index) => (
                   <QuestionEditor
-                    key={`${q.question}-${q.options.join('|')}`}
+                    key={q.editorId}
                     index={index}
                     question={q}
-                    onEdit={(updates) => handleQuestionEdit(index, updates)}
+                    onEdit={(value) => handleQuestionEdit(index, value)}
                     onDelete={() => handleDeleteQuestion(index)}
                   />
                 ))}
@@ -356,8 +351,8 @@ function QuestionEditor({
   onDelete,
 }: {
   index: number;
-  question: DraftQuestion;
-  onEdit: (updates: Partial<DraftQuestion>) => void;
+  question: DraftEditableQuestion;
+  onEdit: (value: string) => void;
   onDelete: () => void;
 }) {
   const [isEditing, setIsEditing] = useState(false);
@@ -369,7 +364,7 @@ function QuestionEditor({
   };
 
   const handleSave = () => {
-    onEdit({ question: editedQuestion });
+    onEdit(editedQuestion);
     setIsEditing(false);
   };
 
@@ -446,11 +441,11 @@ function QuestionEditor({
           const isCorrect =
             question.type === 'single'
               ? question.correctIndex === optIdx
-              : question.correctIndexes?.includes(optIdx);
+              : question.correctIndexes.includes(optIdx);
 
           return (
             <div
-              key={`${optIdx}-${opt}`}
+              key={`${question.editorId}:option:${optIdx}`}
               className={`px-3 py-2 rounded-lg text-sm ${
                 isCorrect ? 'bg-green-100 text-green-800' : 'bg-white text-neutral-600'
               }`}

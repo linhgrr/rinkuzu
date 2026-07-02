@@ -2,16 +2,13 @@
 
 import { Button } from '@/components/ui/Button';
 import { Spinner } from '@/components/ui/Spinner';
-import { HiCheck, HiOutlineArrowLeft, HiOutlineExclamationCircle } from '@/components/icons';
-import type { TranslateFn } from '@/features/adaptive/types';
+import { HiCheck, HiOutlineArrowLeft, HiOutlineExclamationCircle } from 'react-icons/hi';
+import type { TranslateFn } from '@/features/adaptive/types/learning';
 import type {
   ProcessingErrorState,
   ProcessingStats,
   ProcessingStep,
 } from '@/features/adaptive/hooks/use-processing-state';
-
-export { ProcessingTipCard } from './ProcessingTipCard';
-export { ProcessingGraphCard } from './ProcessingGraphCard';
 
 type ProcessingStatusCardProps = {
   creatingSession: boolean;

@@ -7,6 +7,7 @@ import connectDB from './mongoose';
 import User from '@/models/User';
 import { hashPassword, verifyPassword } from './password';
 import { recordAuthEvent } from './audit';
+import { buildSuccessfulLoginPasswordUpdate } from '@/lib/auth/password-rehash';
 import { loginSchema } from './validation/auth';
 import { env } from './env';
 import type { UserRole } from '@/types/next-auth';
@@ -21,7 +22,7 @@ const LOCKOUT_MAX_ATTEMPTS = env.AUTH_LOCKOUT_MAX_ATTEMPTS;
 const LOCKOUT_WINDOW_MS = env.AUTH_LOCKOUT_WINDOW_MINUTES * 60_000;
 const LOCKOUT_DURATION_MS = env.AUTH_LOCKOUT_DURATION_MINUTES * 60_000;
 
-// Pre-computed bcrypt hash of an unguessable random string. Used to keep the
+// Pre-computed Argon2id hash of an unguessable random string. Used to keep the
 // authorize() runtime constant when the email does not exist — frustrates
 // timing-based user enumeration. Hash generated once at module load.
 let dummyHashPromise: Promise<string> | null = null;
@@ -103,9 +104,9 @@ export const authOptions: NextAuthOptions = {
         }
 
         const passwordHash = user?.password ?? (await getDummyHash());
-        const isValidPassword = await verifyPassword(parsed.data.password, passwordHash);
+        const passwordVerification = await verifyPassword(parsed.data.password, passwordHash);
 
-        if (!user || !isValidPassword) {
+        if (!user || !passwordVerification.valid) {
           if (user) {
             const windowStart = user.failedLoginWindowStart;
             const windowExpired =
@@ -146,16 +147,25 @@ export const authOptions: NextAuthOptions = {
           throw new AuthError('invalid_credentials');
         }
 
+        const successfulLoginUpdate: Record<string, unknown> = {
+          failedLoginAttempts: 0,
+          failedLoginWindowStart: null,
+          lockedUntil: null,
+          lastLoginAt: now,
+          lastLoginIp: ip,
+        };
+
+        if (passwordVerification.needsRehash) {
+          Object.assign(
+            successfulLoginUpdate,
+            await buildSuccessfulLoginPasswordUpdate(parsed.data.password, passwordVerification),
+          );
+        }
+
         await User.updateOne(
           { _id: user._id },
           {
-            $set: {
-              failedLoginAttempts: 0,
-              failedLoginWindowStart: null,
-              lockedUntil: null,
-              lastLoginAt: now,
-              lastLoginIp: ip,
-            },
+            $set: successfulLoginUpdate,
           },
         );
 
@@ -183,8 +193,8 @@ export const authOptions: NextAuthOptions = {
           id: user._id.toString(),
           email: user.email,
           role: user.role,
-          avatar: user.avatar || '',
-          displayName: user.displayName || '',
+          avatar: user.avatar ?? '',
+          displayName: user.displayName ?? '',
           passwordChangedAt: user.passwordChangedAt ? user.passwordChangedAt.getTime() : null,
         };
       },
@@ -230,7 +240,6 @@ export const authOptions: NextAuthOptions = {
         const update: Record<string, unknown> = {
           email,
           emailVerified: new Date(),
-          isAnonymous: false,
         };
         const setOnInsert: Record<string, unknown> = {
           role: 'user',
@@ -322,7 +331,7 @@ export const authOptions: NextAuthOptions = {
           }>();
 
         if (!dbUser) {
-          return { ...session, user: undefined as never };
+          return { ...session, user: undefined };
         }
 
         const tokenPwc = typeof token.pwc === 'number' ? token.pwc : null;
@@ -331,9 +340,12 @@ export const authOptions: NextAuthOptions = {
           : null;
 
         if (dbPwc && (!tokenPwc || dbPwc > tokenPwc)) {
-          return { ...session, user: undefined as never };
+          return { ...session, user: undefined };
         }
 
+        if (!session.user) {
+          return { ...session, user: undefined };
+        }
         session.user.id = token.sub;
         session.user.role = dbUser.role ?? token.role;
         session.user.avatar = dbUser.avatar ?? token.avatar;
@@ -342,7 +354,7 @@ export const authOptions: NextAuthOptions = {
       } catch (error) {
         logger.error({ error }, 'session-callback failed');
         // Fail-closed on transient DB errors — drop the user payload.
-        return { ...session, user: undefined as never };
+        return { ...session, user: undefined };
       }
 
       return session;

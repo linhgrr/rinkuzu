@@ -1,20 +1,22 @@
 import mongoose, { Document, Schema, Types } from 'mongoose';
+import { SelectedAnswerSchema } from '@/models/schemas/SelectedAnswerSchema';
+import type { SelectedAnswerPersistenceRecord } from '@/repositories/types/AnswerPersistence';
 
-interface IQuizProgress extends Document {
-  userId: Types.ObjectId | string;
+interface QuizProgressDocument extends Document {
+  userId: Types.ObjectId;
   quiz: Types.ObjectId;
   questionOrder: number[]; // shuffled position -> original question index
   optionOrders: number[][]; // per shuffled question: shuffled option -> original option index
-  userAnswers: (number | number[])[]; // shuffled order; -1 / [] = unanswered
+  userAnswers: SelectedAnswerPersistenceRecord[];
   currentQuestionIndex: number;
   answeredCount: number;
   totalQuestions: number;
   updatedAt: Date;
 }
 
-const QuizProgressSchema = new Schema<IQuizProgress>({
+const QuizProgressSchema = new Schema<QuizProgressDocument>({
   userId: {
-    type: Schema.Types.Mixed,
+    type: Schema.Types.ObjectId,
     ref: 'User',
     required: [true, 'User is required'],
   },
@@ -32,7 +34,7 @@ const QuizProgressSchema = new Schema<IQuizProgress>({
     required: true,
   },
   userAnswers: {
-    type: [Schema.Types.Mixed],
+    type: [SelectedAnswerSchema],
     required: true,
   },
   currentQuestionIndex: {
@@ -61,7 +63,6 @@ QuizProgressSchema.index({ userId: 1, updatedAt: -1 });
 
 const QuizProgress =
   mongoose.models['QuizProgress'] ||
-  mongoose.model<IQuizProgress>('QuizProgress', QuizProgressSchema);
+  mongoose.model<QuizProgressDocument>('QuizProgress', QuizProgressSchema);
 
 export default QuizProgress;
-export type { IQuizProgress };

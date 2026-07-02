@@ -93,7 +93,8 @@
     },
     "continueLearning": {
       "title": "Continue Learning",
-      "subtitle": "Resume your quizzes or AI learning paths from where you left off"
+      "subtitle": "Resume your quizzes or AI learning paths from where you left off",
+      "emptyAction": "Start learning"
     },
     "learningCard": {
       "aiLearning": "AI Learning",
@@ -113,16 +114,6 @@
       "thu": "Thu",
       "fri": "Fri",
       "sat": "Sat"
-    },
-    "fallbackCards": {
-      "fallback1": { "title": "It is a long established fact...", "category": "Quiz Builder" },
-      "fallback2": { "title": "General Physics", "category": "Quiz Builder" },
-      "fallback3": { "title": "English for Specific Purposes", "category": "Quiz Builder" },
-      "fallback4": { "title": "It is a long established fact...", "category": "Quiz Builder" },
-      "fallback5": { "title": "It is a long established fact...", "category": "Quiz Builder" },
-      "fallback6": { "title": "It is a long established fact...", "category": "Quiz Builder" },
-      "fallback7": { "title": "It is a long established fact...", "category": "Quiz Builder" },
-      "fallback8": { "title": "Marxism-Leninism Philosophy", "category": "Quiz Builder" }
     }
   }
 }

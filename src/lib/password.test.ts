@@ -63,23 +63,35 @@ describe('password', () => {
 
     const result = await verifyPassword('my-secret', '$argon2id$hashed-password');
 
-    expect(result).toBe(true);
+    expect(result).toEqual({
+      valid: true,
+      algorithm: 'argon2id',
+      needsRehash: false,
+    });
     expect(mockArgonVerify).toHaveBeenCalledWith('$argon2id$hashed-password', 'my-secret');
   });
 
-  it('falls back to bcrypt for legacy hashes', async () => {
+  it('verifies bcrypt hashes and marks successful matches for argon2 rehash', async () => {
     mockBcryptCompare.mockResolvedValue(true);
 
     const result = await verifyPassword('my-secret', '$2b$12$legacy-hash');
 
-    expect(result).toBe(true);
+    expect(result).toEqual({
+      valid: true,
+      algorithm: 'bcrypt',
+      needsRehash: true,
+    });
     expect(mockBcryptCompare).toHaveBeenCalledWith('my-secret', '$2b$12$legacy-hash');
   });
 
   it('rejects unknown hash formats', async () => {
     const result = await verifyPassword('wrong-secret', 'hashed-password');
 
-    expect(result).toBe(false);
+    expect(result).toEqual({
+      valid: false,
+      algorithm: 'unknown',
+      needsRehash: false,
+    });
   });
 
   it('returns false instead of throwing on verify error', async () => {
@@ -87,6 +99,10 @@ describe('password', () => {
 
     const result = await verifyPassword('my-secret', '$argon2id$hashed-password');
 
-    expect(result).toBe(false);
+    expect(result).toEqual({
+      valid: false,
+      algorithm: 'argon2id',
+      needsRehash: false,
+    });
   });
 });

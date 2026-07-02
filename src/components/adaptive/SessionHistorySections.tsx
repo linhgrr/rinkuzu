@@ -1,26 +1,24 @@
 'use client';
 
-import { memo } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Spinner } from '@/components/ui/Spinner';
-import { HiArrowRight, HiOutlineAcademicCap } from '@/components/icons';
-import type { SessionHistoryItem } from '@/features/adaptive/types';
+import { HiArrowRight, HiOutlineAcademicCap } from 'react-icons/hi';
 import { formatSessionHistoryDate } from '@/features/adaptive/lib/session-history-utils';
+import type { SessionHistoryViewModel } from '@/features/adaptive/types/session-history-view-model';
 
 interface SessionRowProps {
-  item: SessionHistoryItem;
+  item: SessionHistoryViewModel;
   onOpen: (id: string) => void;
 }
 
-const SessionRow = memo(function SessionRow({ item, onOpen }: SessionRowProps) {
+function SessionRow({ item, onOpen }: SessionRowProps) {
   const t = useTranslations('adaptiveLearning');
   const locale = useLocale();
-  const accuracy = Math.round(item.accuracy * 100);
-  const grade = accuracy >= 80 ? 'A+' : accuracy >= 60 ? 'B' : 'C';
+  const grade = item.accuracyPercent >= 80 ? 'A+' : item.accuracyPercent >= 60 ? 'B' : 'C';
   const gradeColor =
-    accuracy >= 80
+    item.accuracyPercent >= 80
       ? 'border-neutral-200 bg-neutral-100 text-neutral-900'
-      : accuracy >= 60
+      : item.accuracyPercent >= 60
         ? 'border-neutral-100 bg-neutral-50 text-neutral-700'
         : 'border-neutral-100 bg-neutral-50 text-neutral-500';
 
@@ -28,7 +26,7 @@ const SessionRow = memo(function SessionRow({ item, onOpen }: SessionRowProps) {
     <button
       type="button"
       className="group flex w-full cursor-pointer flex-col gap-4 rounded-lg border border-neutral-200 bg-white p-5 text-left transition-colors duration-200 hover:border-neutral-800 sm:flex-row sm:items-center sm:justify-between focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-page)]"
-      onClick={() => onOpen(item.job_id)}
+      onClick={() => onOpen(item.jobId)}
     >
       <div className="flex items-center gap-4">
         <div
@@ -40,9 +38,9 @@ const SessionRow = memo(function SessionRow({ item, onOpen }: SessionRowProps) {
           <div className="mb-1 flex items-center gap-3">
             <span
               className="max-w-[200px] truncate text-base font-medium text-neutral-900"
-              title={item.subject_id || item.filename || item.job_id}
+              title={item.displayTitle}
             >
-              {item.subject_id || item.filename || item.job_id.substring(0, 8)}
+              {item.displayTitle}
             </span>
             {item.status === 'completed' ? (
               <span className="inline-flex items-center rounded-md bg-neutral-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-neutral-700">
@@ -50,12 +48,12 @@ const SessionRow = memo(function SessionRow({ item, onOpen }: SessionRowProps) {
               </span>
             ) : (
               <span className="inline-flex items-center rounded-md border border-neutral-200 bg-neutral-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-neutral-600">
-                {t('history.step', { step: item.step, total: item.max_steps })}
+                {t('history.step', { step: item.step, total: item.maxSteps })}
               </span>
             )}
           </div>
           <div className="font-mono text-xs text-neutral-500">
-            {formatSessionHistoryDate(item.updated_at, locale)}
+            {formatSessionHistoryDate(item.updatedAt, locale)}
           </div>
         </div>
       </div>
@@ -66,7 +64,7 @@ const SessionRow = memo(function SessionRow({ item, onOpen }: SessionRowProps) {
             {t('history.correct')}
           </span>
           <span className="text-sm font-mono text-neutral-900">
-            {item.total_correct}/{item.total_answered}
+            {item.totalCorrect}/{item.totalAnswered}
           </span>
         </div>
         <div className="flex flex-col items-end">
@@ -76,12 +74,14 @@ const SessionRow = memo(function SessionRow({ item, onOpen }: SessionRowProps) {
           <div className="flex items-center gap-3">
             <div className="h-1.5 w-20 overflow-hidden rounded-full border border-neutral-200 bg-neutral-100">
               <div
-                className={`h-full rounded-full ${accuracy >= 70 ? 'bg-neutral-900' : 'bg-neutral-400'}`}
-                style={{ width: `${Math.round(item.avg_mastery * 100)}%` }}
+                className={`h-full rounded-full ${
+                  item.averageMasteryPercent >= 70 ? 'bg-neutral-900' : 'bg-neutral-400'
+                }`}
+                style={{ width: `${item.averageMasteryPercent}%` }}
               />
             </div>
             <span className="w-9 text-right font-mono text-sm text-neutral-900">
-              {Math.round(item.avg_mastery * 100)}%
+              {item.averageMasteryPercent}%
             </span>
           </div>
         </div>
@@ -91,7 +91,7 @@ const SessionRow = memo(function SessionRow({ item, onOpen }: SessionRowProps) {
       </div>
     </button>
   );
-});
+}
 
 export const SessionHistoryLoadingState = ({ message }: { message: string }) => (
   <div className="flex items-center justify-center gap-3 py-12 text-neutral-500">
@@ -119,11 +119,11 @@ export const SessionHistoryList = ({
   sessions,
 }: {
   onOpen: (id: string) => void;
-  sessions: SessionHistoryItem[];
+  sessions: SessionHistoryViewModel[];
 }) => (
   <div className="space-y-2">
     {sessions.map((item) => (
-      <SessionRow key={item.job_id} item={item} onOpen={onOpen} />
+      <SessionRow key={item.jobId} item={item} onOpen={onOpen} />
     ))}
   </div>
 );

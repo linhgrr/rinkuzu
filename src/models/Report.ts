@@ -1,14 +1,14 @@
 import mongoose from 'mongoose';
+import type { ReportStatus } from '@/entities/Report';
 
-export interface IReport {
-  _id?: string;
+interface ReportDocument {
   quizId: string;
   quizTitle: string;
   quizSlug: string;
   reporterEmail: string;
   reporterName: string;
   content: string;
-  status: 'pending' | 'resolved' | 'dismissed';
+  status: ReportStatus;
   createdAt: Date;
   updatedAt: Date;
   resolvedAt?: Date;
@@ -16,61 +16,56 @@ export interface IReport {
   adminNotes?: string;
 }
 
-const reportSchema = new mongoose.Schema<IReport>({
-  quizId: {
-    type: String,
-    required: true,
+const reportSchema = new mongoose.Schema<ReportDocument>(
+  {
+    quizId: {
+      type: String,
+      required: true,
+    },
+    quizTitle: {
+      type: String,
+      required: true,
+    },
+    quizSlug: {
+      type: String,
+      required: true,
+    },
+    reporterEmail: {
+      type: String,
+      required: true,
+    },
+    reporterName: {
+      type: String,
+      required: true,
+    },
+    content: {
+      type: String,
+      required: true,
+      maxlength: 2000,
+    },
+    status: {
+      type: String,
+      enum: ['pending', 'resolved', 'dismissed'],
+      default: 'pending',
+    },
+    resolvedAt: {
+      type: Date,
+    },
+    resolvedBy: {
+      type: String,
+    },
+    adminNotes: {
+      type: String,
+      maxlength: 1000,
+    },
   },
-  quizTitle: {
-    type: String,
-    required: true,
-  },
-  quizSlug: {
-    type: String,
-    required: true,
-  },
-  reporterEmail: {
-    type: String,
-    required: true,
-  },
-  reporterName: {
-    type: String,
-    required: true,
-  },
-  content: {
-    type: String,
-    required: true,
-    maxlength: 2000,
-  },
-  status: {
-    type: String,
-    enum: ['pending', 'resolved', 'dismissed'],
-    default: 'pending',
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now,
-  },
-  updatedAt: {
-    type: Date,
-    default: Date.now,
-  },
-  resolvedAt: {
-    type: Date,
-  },
-  resolvedBy: {
-    type: String,
-  },
-  adminNotes: {
-    type: String,
-    maxlength: 1000,
-  },
-});
+  { timestamps: true },
+);
 
 // Index for efficient queries
 reportSchema.index({ status: 1, createdAt: -1 });
 reportSchema.index({ quizId: 1 });
 
-const Report = mongoose.models['Report'] || mongoose.model<IReport>('Report', reportSchema);
+const Report = mongoose.models['Report'] || mongoose.model<ReportDocument>('Report', reportSchema);
 
 export default Report;

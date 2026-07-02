@@ -1,30 +1,31 @@
-import { IBookmarkService, CreateBookmarkRequest } from '@/interfaces/services/IBookmarkService';
-import { IBookmarkRepository, IBookmark } from '@/interfaces/repositories/IBookmarkRepository';
+import type {
+  BookmarkDto,
+  BookmarkListDto,
+  BookmarkListQueryDto,
+  CreateBookmarkRequestDto,
+} from '@/dtos/bookmark';
+import { IBookmarkRepository } from '@/interfaces/repositories/IBookmarkRepository';
+import { IBookmarkService } from '@/interfaces/services/IBookmarkService';
+import { BookmarkDtoMapper } from '@/mappers/bookmark/BookmarkDtoMapper';
 
 export class BookmarkService implements IBookmarkService {
   constructor(private bookmarkRepository: IBookmarkRepository) {}
 
   async getBookmarksByUser(
     userEmail: string,
-    options?: {
-      page?: number;
-      limit?: number;
-    },
-  ): Promise<{
-    bookmarks: IBookmark[];
-    pagination: {
-      currentPage: number;
-      totalPages: number;
-      totalItems: number;
-      itemsPerPage: number;
-      hasNextPage: boolean;
-      hasPrevPage: boolean;
+    options?: BookmarkListQueryDto,
+  ): Promise<BookmarkListDto> {
+    const result = await this.bookmarkRepository.findByUserEmail(userEmail, options);
+    return {
+      bookmarks: result.items.map(BookmarkDtoMapper.toDto),
+      pagination: result.pagination,
     };
-  }> {
-    return await this.bookmarkRepository.findByUserEmail(userEmail, options);
   }
 
-  async createBookmark(userEmail: string, bookmarkData: CreateBookmarkRequest): Promise<IBookmark> {
+  async createBookmark(
+    userEmail: string,
+    bookmarkData: CreateBookmarkRequestDto,
+  ): Promise<BookmarkDto> {
     const { quiz, question, questionIndex } = bookmarkData;
 
     // Check if bookmark already exists
@@ -38,17 +39,14 @@ export class BookmarkService implements IBookmarkService {
       throw new Error('Question already bookmarked');
     }
 
-    return await this.bookmarkRepository.create({
+    const bookmark = await this.bookmarkRepository.create({
       userId: userEmail,
       userEmail,
       quiz,
       question,
       questionIndex,
     });
-  }
-
-  async deleteBookmark(bookmarkId: string): Promise<boolean> {
-    return await this.bookmarkRepository.deleteById(bookmarkId);
+    return BookmarkDtoMapper.toDto(bookmark);
   }
 
   async deleteBookmarkByUser(bookmarkId: string, userEmail: string): Promise<boolean> {

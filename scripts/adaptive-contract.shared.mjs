@@ -18,6 +18,8 @@ const OPENAPI_TYPESCRIPT_BIN = resolve(
   FRONTEND_ROOT,
   `node_modules/.bin/openapi-typescript${BIN_EXT}`,
 );
+const BACKEND_VENV_PYTHON = resolve(BACKEND_ROOT, '.venv/bin/python');
+const UV_BIN = process.env.UV_BIN ?? 'uv';
 
 function run(command, args, options = {}) {
   const pretty = [command, ...args].join(' ');
@@ -40,21 +42,39 @@ function canRun(command) {
   return result.status === 0;
 }
 
-function resolveBackendPython() {
-  const candidates = [
-    process.env.ADAPTIVE_BACKEND_PYTHON,
-    resolve(BACKEND_ROOT, '.venv/bin/python'),
-    'python3',
-    'python',
-  ].filter(Boolean);
+function commandExists(command) {
+  if ((command.includes('/') || command.includes('\\')) && !existsSync(command)) return false;
+  return canRun(command);
+}
 
-  for (const candidate of candidates) {
-    if ((candidate.includes('/') || candidate.includes('\\')) && !existsSync(candidate)) continue;
-    if (canRun(candidate)) return candidate;
+function resolveBackendPythonRunner() {
+  const explicitPython = process.env.ADAPTIVE_BACKEND_PYTHON;
+  if (explicitPython) {
+    if (commandExists(explicitPython)) {
+      return { command: explicitPython, argsPrefix: [] };
+    }
+
+    throw new Error(`ADAPTIVE_BACKEND_PYTHON is set but not runnable: ${explicitPython}`);
+  }
+
+  if (commandExists(BACKEND_VENV_PYTHON)) {
+    return { command: BACKEND_VENV_PYTHON, argsPrefix: [] };
+  }
+
+  if (
+    (existsSync(resolve(BACKEND_ROOT, 'uv.lock')) ||
+      existsSync(resolve(BACKEND_ROOT, 'pyproject.toml'))) &&
+    commandExists(UV_BIN)
+  ) {
+    return { command: UV_BIN, argsPrefix: ['run', 'python'] };
+  }
+
+  for (const candidate of ['python3', 'python']) {
+    if (commandExists(candidate)) return { command: candidate, argsPrefix: [] };
   }
 
   throw new Error(
-    'No usable Python found for backend contract export. Set ADAPTIVE_BACKEND_PYTHON if needed.',
+    'No usable Python runner found for backend contract export. Run `cd ../rinkuzu-ai-api && uv sync`, install Python, or set ADAPTIVE_BACKEND_PYTHON.',
   );
 }
 
@@ -67,7 +87,8 @@ export function ensureGeneratedDir() {
 }
 
 export function exportOpenApi(schemaPath) {
-  run(resolveBackendPython(), ['scripts/export_openapi.py', '--output', schemaPath], {
+  const runner = resolveBackendPythonRunner();
+  run(runner.command, [...runner.argsPrefix, 'scripts/export_openapi.py', '--output', schemaPath], {
     cwd: BACKEND_ROOT,
   });
 }

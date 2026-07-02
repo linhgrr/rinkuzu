@@ -1,24 +1,33 @@
-import {
-  IAdminService,
-  type AdminActivityStats,
-  type AdminCreatorStat,
-  type AdminMessageResult,
-  type AdminPaginatedUsers,
-  type AdminReportItem,
-  type AdminStats,
-  type SearchParams,
-} from '@/interfaces/services/IAdminService';
+import { IAdminService } from '@/interfaces/services/IAdminService';
+import type {
+  AdminMessageDto,
+  AdminUserListDto,
+  AdminUserListQueryDto,
+  UpdateAdminUserRoleRequestDto,
+} from '@/dtos/admin-user';
+import type {
+  AdminReportListDto,
+  AdminReportListQueryDto,
+  UpdateAdminReportRequestDto,
+} from '@/dtos/admin-report';
+import type {
+  AdminActivityStatsDto,
+  AdminCreatorStatDto,
+  AdminOverviewStatsDto,
+} from '@/dtos/admin-stats';
 import { IUserRepository } from '@/interfaces/repositories/IUserRepository';
 import { IReportRepository } from '@/interfaces/repositories/IReportRepository';
 import { IQuizRepository } from '@/interfaces/repositories/IQuizRepository';
 import { IAttemptRepository } from '@/interfaces/repositories/IAttemptRepository';
 import { ServiceResult } from '@/interfaces/services/types';
 import { logger } from '@/lib/logger';
-import { normalizeAdminRecentAttempt } from '@/services/admin/adminActivity';
-
-function toMessage(error: unknown, fallback: string): string {
-  return error instanceof Error ? error.message : fallback;
-}
+import { AdminActivityDtoMapper } from '@/mappers/admin/AdminActivityDtoMapper';
+import { AdminUserDtoMapper } from '@/mappers/admin/AdminUserDtoMapper';
+import { AdminReportDtoMapper } from '@/mappers/admin/AdminReportDtoMapper';
+import { AdminMessageDtoMapper } from '@/mappers/admin/AdminMessageDtoMapper';
+import { serializeDate } from '@/lib/date-serialization';
+import { AdminQuizDtoMapper } from '@/mappers/quiz/AdminQuizDtoMapper';
+import { extractUnknownErrorMessage } from '@/lib/api/error';
 
 export class AdminService implements IAdminService {
   constructor(
@@ -28,7 +37,7 @@ export class AdminService implements IAdminService {
     private attemptRepository: IAttemptRepository,
   ) {}
 
-  async getUsers(searchParams: SearchParams): Promise<ServiceResult<AdminPaginatedUsers>> {
+  async getUsers(searchParams: AdminUserListQueryDto): Promise<ServiceResult<AdminUserListDto>> {
     try {
       const { search, page = 1, limit = 10 } = searchParams;
 
@@ -40,7 +49,10 @@ export class AdminService implements IAdminService {
 
       return {
         success: true,
-        data: result as unknown as AdminPaginatedUsers,
+        data: {
+          users: result.items.map(AdminUserDtoMapper.toDto),
+          pagination: result.pagination,
+        },
       };
     } catch (error) {
       logger.error({ error }, 'Get users error');
@@ -54,9 +66,9 @@ export class AdminService implements IAdminService {
 
   async updateUserRole(
     userId: string,
-    role: string,
+    role: UpdateAdminUserRoleRequestDto['role'],
     adminEmail: string,
-  ): Promise<ServiceResult<AdminMessageResult>> {
+  ): Promise<ServiceResult<AdminMessageDto>> {
     try {
       if (role !== 'admin' && role !== 'user') {
         return {
@@ -83,11 +95,11 @@ export class AdminService implements IAdminService {
         };
       }
 
-      await this.userRepository.update(userId, { role });
+      await this.userRepository.updateRole(userId, role);
 
       return {
         success: true,
-        data: { message: `User role updated to ${role}` },
+        data: AdminMessageDtoMapper.toDto(`User role updated to ${role}`),
       };
     } catch (error) {
       logger.error({ error }, 'Update user role error');
@@ -134,14 +146,25 @@ export class AdminService implements IAdminService {
     }
   }
 
-  async getReports(_searchParams: SearchParams): Promise<ServiceResult<AdminReportItem[]>> {
+  async getReports(
+    searchParams: AdminReportListQueryDto,
+  ): Promise<ServiceResult<AdminReportListDto>> {
     try {
-      // Implement reports logic if needed
+      const result = await this.reportRepository.findAll({
+        page: searchParams.page,
+        limit: searchParams.limit,
+        status: searchParams.status === 'all' ? undefined : searchParams.status,
+      });
+
       return {
         success: true,
-        data: [],
+        data: {
+          reports: result.items.map(AdminReportDtoMapper.toDto),
+          pagination: result.pagination,
+        },
       };
-    } catch (_error) {
+    } catch (error) {
+      logger.error({ error }, 'Get reports error');
       return {
         success: false,
         error: 'Failed to get reports',
@@ -151,16 +174,41 @@ export class AdminService implements IAdminService {
   }
 
   async updateReportStatus(
-    _reportId: string,
-    _status: string,
-  ): Promise<ServiceResult<AdminMessageResult>> {
+    reportId: string,
+    input: UpdateAdminReportRequestDto,
+    adminEmail: string,
+  ): Promise<ServiceResult<AdminMessageDto>> {
     try {
-      // Implement report status update logic if needed
+      const existing = await this.reportRepository.findById(reportId);
+      if (!existing) {
+        return {
+          success: false,
+          error: 'Report not found',
+          statusCode: 404,
+        };
+      }
+
+      const updated = await this.reportRepository.update(reportId, {
+        status: input.status,
+        adminNotes: input.adminNotes,
+        resolvedAt: input.status === 'pending' ? undefined : new Date(),
+        resolvedBy: input.status === 'pending' ? undefined : adminEmail,
+      });
+
+      if (!updated) {
+        return {
+          success: false,
+          error: 'Report not found',
+          statusCode: 404,
+        };
+      }
+
       return {
         success: true,
-        data: { message: 'Report status updated' },
+        data: AdminMessageDtoMapper.toDto(`Report marked as ${input.status}`),
       };
-    } catch (_error) {
+    } catch (error) {
+      logger.error({ error }, 'Update report status error');
       return {
         success: false,
         error: 'Failed to update report status',
@@ -169,7 +217,7 @@ export class AdminService implements IAdminService {
     }
   }
 
-  async getStats(): Promise<ServiceResult<AdminStats>> {
+  async getStats(): Promise<ServiceResult<AdminOverviewStatsDto>> {
     try {
       const [totalUsers, roleStats, totalQuizzes, totalAttempts] = await Promise.all([
         this.userRepository.count(),
@@ -178,7 +226,7 @@ export class AdminService implements IAdminService {
         this.attemptRepository.count({}),
       ]);
 
-      const totalAdmins = roleStats.find((r) => r._id === 'admin')?.count || 0;
+      const totalAdmins = roleStats.find((roleCount) => roleCount.role === 'admin')?.count ?? 0;
 
       return {
         success: true,
@@ -199,68 +247,55 @@ export class AdminService implements IAdminService {
     }
   }
 
-  async getActivityStats(): Promise<ServiceResult<AdminActivityStats>> {
+  async getActivityStats(): Promise<ServiceResult<AdminActivityStatsDto>> {
     try {
       const now = new Date();
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       const thisWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
       const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-      const [
-        newUsersToday,
-        newQuizzesToday,
-        attemptsToday,
-        newUsersWeek,
-        newQuizzesWeek,
-        attemptsWeek,
-        newUsersMonth,
-        newQuizzesMonth,
-        attemptsMonth,
-        recentUsers,
-        recentQuizzes,
-        recentAttempts,
-      ] = await Promise.all([
-        this.userRepository.count({ createdAt: { $gte: today } }),
-        this.quizRepository.count({ createdAt: { $gte: today } }),
-        this.attemptRepository.count({ takenAt: { $gte: today } }),
-        this.userRepository.count({ createdAt: { $gte: thisWeek } }),
-        this.quizRepository.count({ createdAt: { $gte: thisWeek } }),
-        this.attemptRepository.count({ takenAt: { $gte: thisWeek } }),
-        this.userRepository.count({ createdAt: { $gte: thisMonth } }),
-        this.quizRepository.count({ createdAt: { $gte: thisMonth } }),
-        this.attemptRepository.count({ takenAt: { $gte: thisMonth } }),
-        this.userRepository.findAll({ limit: 5 }),
-        this.quizRepository.findAll({}, { limit: 5, populate: ['author'] }),
-        this.attemptRepository.findRecentActivity(5),
-      ]);
+      const [userBuckets, quizBuckets, attemptBuckets, recentUsers, recentQuizzes, recentAttempts] =
+        await Promise.all([
+          this.userRepository.countByCreatedAtBuckets({ today, thisWeek, thisMonth }),
+          this.quizRepository.countByCreatedAtBuckets({ today, thisWeek, thisMonth }),
+          this.attemptRepository.countByTakenAtBuckets({ today, thisWeek, thisMonth }),
+          this.userRepository.findAll({ limit: 5 }),
+          this.quizRepository.findAll({}, { limit: 5, populate: ['author'] }),
+          this.attemptRepository.findRecentActivity(5),
+        ]);
 
       return {
         success: true,
         data: {
           timeBasedStats: {
             today: {
-              newUsers: newUsersToday,
-              newQuizzes: newQuizzesToday,
-              attempts: attemptsToday,
+              newUsers: userBuckets.today,
+              newQuizzes: quizBuckets.today,
+              attempts: attemptBuckets.today,
             },
             thisWeek: {
-              newUsers: newUsersWeek,
-              newQuizzes: newQuizzesWeek,
-              attempts: attemptsWeek,
+              newUsers: userBuckets.thisWeek,
+              newQuizzes: quizBuckets.thisWeek,
+              attempts: attemptBuckets.thisWeek,
             },
             thisMonth: {
-              newUsers: newUsersMonth,
-              newQuizzes: newQuizzesMonth,
-              attempts: attemptsMonth,
+              newUsers: userBuckets.thisMonth,
+              newQuizzes: quizBuckets.thisMonth,
+              attempts: attemptBuckets.thisMonth,
             },
           },
           recentActivity: {
-            users: recentUsers.users.map((u) => ({
-              email: (u as { email: string }).email,
-              createdAt: (u as { createdAt?: Date }).createdAt,
-            })),
-            quizzes: recentQuizzes.quizzes,
-            attempts: recentAttempts.map(normalizeAdminRecentAttempt),
+            users: recentUsers.items.map((u) => {
+              if (!u.createdAt) {
+                throw new TypeError('recentUser.createdAt is required');
+              }
+              return {
+                email: u.email,
+                createdAt: serializeDate(u.createdAt, 'recentUser.createdAt'),
+              };
+            }),
+            quizzes: recentQuizzes.items.map(AdminQuizDtoMapper.toListItem),
+            attempts: recentAttempts.map(AdminActivityDtoMapper.toRecentAttempt),
           },
         },
       };
@@ -274,14 +309,24 @@ export class AdminService implements IAdminService {
     }
   }
 
-  async getCreatorStats(): Promise<ServiceResult<AdminCreatorStat[]>> {
+  async getCreatorStats(limit: number = 20): Promise<ServiceResult<AdminCreatorStatDto[]>> {
     try {
-      // Implement creator stats if needed
+      const creators = await this.quizRepository.findTopCreators(limit);
+
       return {
         success: true,
-        data: [],
+        data: creators.map((creator) => ({
+          id: creator.id,
+          email: creator.email,
+          quizCount: creator.quizCount,
+          totalQuestions: creator.totalQuestions,
+          joinedAt: serializeDate(creator.joinedAt, 'creator.joinedAt'),
+          role: creator.role,
+          successRate: 0,
+        })),
       };
-    } catch (_error) {
+    } catch (error) {
+      logger.error({ error }, 'Get creator stats error');
       return {
         success: false,
         error: 'Failed to get creator stats',
@@ -300,7 +345,7 @@ export class AdminService implements IAdminService {
     } catch (error) {
       return {
         success: false,
-        error: toMessage(error, 'Failed to delete report'),
+        error: extractUnknownErrorMessage(error, 'Failed to delete report'),
         statusCode: 500,
       };
     }

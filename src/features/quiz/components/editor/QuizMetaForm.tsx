@@ -1,9 +1,10 @@
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
-import { HiOutlinePencilAlt } from '@/components/icons';
+import { HiOutlinePencilAlt } from 'react-icons/hi';
 import QuizMetaFormBase from '@/features/quiz/components/QuizMetaForm';
-import type { IQuiz } from '@/types';
+import { formatDate } from '@/lib/formatters';
+import type { QuizEditViewModel } from '@/features/quiz/types/quiz-editor-view-model';
 
 type QuizMetaFormEditorProps = {
   error: string;
@@ -17,7 +18,7 @@ type QuizMetaFormEditorProps = {
   isPrivate: boolean;
   onPrivateChange: (checked: boolean) => void;
   disabled: boolean;
-  quiz: IQuiz | null;
+  quiz: QuizEditViewModel | null;
 };
 
 /**
@@ -37,9 +38,8 @@ export function QuizMetaFormEditor({
   disabled,
   quiz,
 }: QuizMetaFormEditorProps) {
-  const createdAt = quiz ? new Date(quiz.createdAt) : null;
-  const createdAtIso = createdAt?.toISOString() || '';
-  const createdAtLabel = createdAt?.toLocaleDateString() || '';
+  const createdAtIso = quiz?.createdAt ?? '';
+  const createdAtLabel = formatDate(quiz?.createdAt, { emptyLabel: '' });
 
   return (
     <Card className="max-w-2xl">

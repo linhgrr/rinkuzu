@@ -7,7 +7,8 @@ import { DynamicMarkdownRenderer as MarkdownRenderer } from '@/components/ui/Dyn
 import { OptionImage, QuestionImage } from '@/components/ui/ImageDisplay';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
-import { HiOutlineArrowLeft, HiOutlineMail, HiOutlineUser } from '@/components/icons';
+import { ModalActions } from '@/components/ui/ModalActions';
+import { HiOutlineArrowLeft, HiOutlineMail, HiOutlineUser } from 'react-icons/hi';
 import { QuestionDiscussion } from '@/features/quiz/components/QuestionDiscussion';
 import ReportQuiz from '@/features/quiz/components/ReportQuiz';
 
@@ -15,7 +16,7 @@ type QuizAnswer = number | number[];
 type TranslateFn = (key: string, values?: Record<string, string | number | Date>) => string;
 
 interface QuizQuestion {
-  _id?: string;
+  id?: string;
   question: string;
   options: string[];
   type: 'single' | 'multiple';
@@ -373,7 +374,7 @@ function DesktopQuestionOverview({
             return (
               <button
                 type="button"
-                key={question._id ?? `${question.question}-${question.options.join('|')}`}
+                key={question.id ?? `${question.question}-${question.options.join('|')}`}
                 onClick={() => onJumpToQuestion(index)}
                 className={`size-8 rounded text-xs font-medium transition-colors ${
                   index === currentQuestionIndex
@@ -486,14 +487,13 @@ function DesktopExitModal({
           </div>
         </div>
 
-        <div className="flex gap-3 pt-2">
-          <Button variant="outline" onClick={onClose} className="flex-1">
-            {t('continueQuiz')}
-          </Button>
-          <Button onClick={onConfirmExit} className="flex-1 bg-red-600 text-white hover:bg-red-700">
-            {t('exitQuiz')}
-          </Button>
-        </div>
+        <ModalActions
+          cancelText={t('continueQuiz')}
+          confirmText={t('exitQuiz')}
+          confirmVariant="destructive"
+          onCancel={onClose}
+          onConfirm={onConfirmExit}
+        />
       </div>
     </Modal>
   );

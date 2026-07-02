@@ -1,19 +1,69 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useReducer } from 'react';
 import { Button } from '@/components/ui/Button';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { ErrorState } from '@/components/ui/ErrorState';
+import { LoadingState } from '@/components/ui/LoadingState';
 import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
-import { fetchApiData } from '@/lib/api/client';
 import { extractUnknownErrorMessage } from '@/lib/api/error';
-import type { IQuiz, PaginationMeta } from '@/types';
+import {
+  addQuizToFolderViewModel,
+  fetchFolderLibraryQuizViewModels,
+} from '@/features/folders/api/folders-api';
+import type { FolderLibraryQuizViewModel } from '@/features/folders/types/folder-view-model';
+import { UNFILED_FOLDER_TARGET } from '@/shared/constants/folder';
 
-type LibraryQuiz = IQuiz & {
-  folder?: string | null;
-  ownedByMe?: boolean;
-  lastAttemptAt?: string | null;
-  lastProgressAt?: string | null;
+interface State {
+  quizzes: FolderLibraryQuizViewModel[];
+  search: string;
+  loading: boolean;
+  addingId: string | null;
+  error: string;
+}
+
+type Action =
+  | { type: 'load:start' }
+  | { type: 'load:success'; quizzes: FolderLibraryQuizViewModel[] }
+  | { type: 'load:error'; error: string }
+  | { type: 'search:set'; search: string }
+  | { type: 'add:start'; quizId: string }
+  | { type: 'add:success'; quizId: string; folder: string | null }
+  | { type: 'add:error'; error: string };
+
+const initialState: State = {
+  quizzes: [],
+  search: '',
+  loading: false,
+  addingId: null,
+  error: '',
 };
+
+function reducer(state: State, action: Action): State {
+  switch (action.type) {
+    case 'load:start':
+      return { ...state, loading: true, error: '' };
+    case 'load:success':
+      return { ...state, quizzes: action.quizzes, loading: false, error: '' };
+    case 'load:error':
+      return { ...state, loading: false, error: action.error };
+    case 'search:set':
+      return { ...state, search: action.search };
+    case 'add:start':
+      return { ...state, addingId: action.quizId, error: '' };
+    case 'add:success':
+      return {
+        ...state,
+        addingId: null,
+        quizzes: state.quizzes.map((quiz) =>
+          quiz.id === action.quizId ? { ...quiz, folder: action.folder } : quiz,
+        ),
+      };
+    case 'add:error':
+      return { ...state, addingId: null, error: action.error };
+  }
+}
 
 export function AddQuizToFolderModal({
   folderId,
@@ -26,46 +76,53 @@ export function AddQuizToFolderModal({
   onClose: () => void;
   onAdded: () => void;
 }) {
-  const [quizzes, setQuizzes] = useState<LibraryQuiz[]>([]);
-  const [search, setSearch] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [addingId, setAddingId] = useState<string | null>(null);
-  const [error, setError] = useState('');
+  const [state, dispatch] = useReducer(reducer, initialState);
 
   useEffect(() => {
     if (!isOpen) return;
-    setLoading(true);
-    setError('');
-    fetchApiData<{ quizzes: LibraryQuiz[]; pagination: PaginationMeta }>('/api/library?limit=100')
-      .then((data) => setQuizzes(data.quizzes))
-      .catch((requestError) =>
-        setError(extractUnknownErrorMessage(requestError, 'Failed to load quizzes')),
-      )
-      .finally(() => setLoading(false));
+    let active = true;
+    dispatch({ type: 'load:start' });
+
+    async function loadQuizzes() {
+      try {
+        const quizzes = await fetchFolderLibraryQuizViewModels();
+        if (active) dispatch({ type: 'load:success', quizzes });
+      } catch (requestError) {
+        if (active) {
+          dispatch({
+            type: 'load:error',
+            error: extractUnknownErrorMessage(requestError, 'Failed to load quizzes'),
+          });
+        }
+      }
+    }
+
+    void loadQuizzes();
+    return () => {
+      active = false;
+    };
   }, [isOpen]);
 
-  const visibleQuizzes = useMemo(() => {
-    const query = search.trim().toLowerCase();
-    return query ? quizzes.filter((quiz) => quiz.title.toLowerCase().includes(query)) : quizzes;
-  }, [quizzes, search]);
+  const query = state.search.trim().toLowerCase();
+  const visibleQuizzes = query
+    ? state.quizzes.filter((quiz) => quiz.title.toLowerCase().includes(query))
+    : state.quizzes;
 
   async function addQuiz(quizId: string) {
-    setAddingId(quizId);
-    setError('');
+    dispatch({ type: 'add:start', quizId });
     try {
-      await fetchApiData(`/api/folders/${folderId}/quizzes`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ quizId }),
+      await addQuizToFolderViewModel(folderId, quizId);
+      dispatch({
+        type: 'add:success',
+        quizId,
+        folder: folderId === UNFILED_FOLDER_TARGET ? null : folderId,
       });
-      setQuizzes((current) =>
-        current.map((quiz) => (quiz._id === quizId ? { ...quiz, folder: folderId } : quiz)),
-      );
       onAdded();
     } catch (requestError) {
-      setError(extractUnknownErrorMessage(requestError, 'Failed to add quiz'));
-    } finally {
-      setAddingId(null);
+      dispatch({
+        type: 'add:error',
+        error: extractUnknownErrorMessage(requestError, 'Failed to add quiz'),
+      });
     }
   }
 
@@ -81,22 +138,22 @@ export function AddQuizToFolderModal({
         <Input
           aria-label="Search quizzes"
           placeholder="Search quizzes"
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
+          value={state.search}
+          onChange={(event) => dispatch({ type: 'search:set', search: event.target.value })}
         />
-        {error ? <p className="text-sm text-red-600">{error}</p> : null}
+        {state.error ? <ErrorState message={state.error} /> : null}
         <div className="max-h-[55vh] space-y-2 overflow-y-auto">
-          {loading ? (
-            <p className="py-8 text-center text-sm text-ink/55">Loading quizzes…</p>
-          ) : null}
-          {!loading && visibleQuizzes.length === 0 ? (
-            <p className="py-8 text-center text-sm text-ink/55">No quizzes found.</p>
+          {state.loading ? <LoadingState text="Loading quizzes…" className="py-8" /> : null}
+          {!state.loading && visibleQuizzes.length === 0 ? (
+            <EmptyState title="No quizzes found." className="py-8" />
           ) : null}
           {visibleQuizzes.map((quiz) => {
-            const isCurrent = quiz.folder === folderId || (folderId === 'default' && !quiz.folder);
+            const isCurrent =
+              quiz.folder === folderId ||
+              (folderId === UNFILED_FOLDER_TARGET && quiz.folder === null);
             return (
               <div
-                key={quiz._id}
+                key={quiz.id}
                 className="flex items-center justify-between gap-4 rounded-xl border border-line p-4"
               >
                 <div className="min-w-0">
@@ -109,8 +166,8 @@ export function AddQuizToFolderModal({
                   size="sm"
                   variant={isCurrent ? 'outline' : 'primary'}
                   disabled={isCurrent}
-                  loading={addingId === quiz._id}
-                  onClick={() => void addQuiz(quiz._id)}
+                  loading={state.addingId === quiz.id}
+                  onClick={() => void addQuiz(quiz.id)}
                 >
                   {isCurrent ? 'Added' : 'Add'}
                 </Button>

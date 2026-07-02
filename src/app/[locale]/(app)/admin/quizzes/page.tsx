@@ -7,9 +7,22 @@ import Pagination from '@/components/ui/Pagination';
 import { Button } from '@/components/ui/Button';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { QuizPreviewModal } from '@/features/quiz/components/QuizPreviewModal';
-import { UserProfileLink } from '@/components/user/UserProfileLink';
-import { fetchApiData } from '@/lib/api/client';
-import { IQuiz, PaginationMeta } from '@/types';
+import { UserAvatar } from '@/components/user/UserAvatar';
+import { getUserDisplayName } from '@/components/user/user-identity';
+import type {
+  AdminQuizAuthorViewModel,
+  AdminQuizDetailViewModel,
+  AdminQuizListItemViewModel,
+  AdminQuizzesPaginationViewModel,
+  AdminQuizVisibilityViewModel,
+} from '@/features/admin/quizzes/types/admin-quizzes-view-model';
+import {
+  deleteAdminQuiz,
+  fetchAdminQuizDetailViewModel,
+  fetchAdminQuizListViewModel,
+} from '@/features/admin/quizzes/api/admin-quizzes-api';
+import { extractUnknownErrorMessage } from '@/lib/api/error';
+import { ROUTES } from '@/shared/constants/routes';
 import {
   HiOutlineDocumentText,
   HiOutlineEye,
@@ -17,42 +30,46 @@ import {
   HiOutlinePencil,
   HiOutlineSearch,
   HiOutlineTrash,
-} from '@/components/icons';
-
-type VisibilityFilter = 'all' | 'public' | 'private';
+} from 'react-icons/hi';
 
 interface State {
-  quizzes: IQuiz[];
-  pagination: PaginationMeta;
+  quizzes: AdminQuizListItemViewModel[];
+  pagination: AdminQuizzesPaginationViewModel;
   loading: boolean;
   error: string;
-  search: string;
-  visibility: VisibilityFilter;
+  searchInput: string;
+  appliedSearch: string;
+  visibility: AdminQuizVisibilityViewModel;
   page: number;
-  previewQuiz: IQuiz | null;
+  previewQuiz: AdminQuizDetailViewModel | null;
   previewingQuizId: string | null;
-  quizToDelete: IQuiz | null;
+  quizToDelete: AdminQuizListItemViewModel | null;
   deletingQuizId: string | null;
 }
 
 type Action =
   | { type: 'patch'; value: Partial<State> }
-  | { type: 'loaded'; quizzes: IQuiz[]; pagination: PaginationMeta }
+  | {
+      type: 'loaded';
+      quizzes: AdminQuizListItemViewModel[];
+      pagination: AdminQuizzesPaginationViewModel;
+    }
   | { type: 'removed'; quizId: string };
 
 const initialState: State = {
   quizzes: [],
   pagination: {
-    currentPage: 1,
+    page: 1,
     totalPages: 0,
-    totalItems: 0,
-    itemsPerPage: 12,
+    total: 0,
+    limit: 12,
     hasNextPage: false,
     hasPrevPage: false,
   },
   loading: true,
   error: '',
-  search: '',
+  searchInput: '',
+  appliedSearch: '',
   visibility: 'all',
   page: 1,
   previewQuiz: null,
@@ -76,12 +93,12 @@ function reducer(state: State, action: Action): State {
     case 'removed':
       return {
         ...state,
-        quizzes: state.quizzes.filter((quiz) => quiz._id !== action.quizId),
+        quizzes: state.quizzes.filter((quiz) => quiz.id !== action.quizId),
         quizToDelete: null,
         deletingQuizId: null,
         pagination: {
           ...state.pagination,
-          totalItems: Math.max(0, state.pagination.totalItems - 1),
+          total: Math.max(0, state.pagination.total - 1),
         },
       };
     default:
@@ -89,8 +106,22 @@ function reducer(state: State, action: Action): State {
   }
 }
 
-function questionCount(quiz: IQuiz): number {
-  return (quiz as IQuiz & { questionCount?: number }).questionCount ?? quiz.questions.length;
+function AdminQuizAuthorLink({ author }: { author: AdminQuizAuthorViewModel }) {
+  const content = (
+    <>
+      <UserAvatar user={author} size={24} />
+      <span className="truncate">{getUserDisplayName(author)}</span>
+    </>
+  );
+
+  return (
+    <Link
+      href={ROUTES.USER.PROFILE(author.id)}
+      className="inline-flex min-w-0 max-w-[220px] items-center gap-2 rounded-full transition hover:text-brand-trust"
+    >
+      {content}
+    </Link>
+  );
 }
 
 export default function AdminQuizManagementPage() {
@@ -99,65 +130,64 @@ export default function AdminQuizManagementPage() {
   const [state, dispatch] = useReducer(reducer, initialState);
 
   useEffect(() => {
-    const timer = window.setTimeout(async () => {
+    const controller = new AbortController();
+
+    async function loadQuizzes() {
       dispatch({ type: 'patch', value: { loading: true, error: '' } });
       try {
-        const params = new URLSearchParams({
-          page: String(state.page),
-          limit: '12',
-          compact: 'true',
+        const data = await fetchAdminQuizListViewModel({
+          page: state.page,
+          limit: 12,
+          search: state.appliedSearch,
+          visibility: state.visibility,
+          signal: controller.signal,
         });
-        if (state.search.trim()) params.set('search', state.search.trim());
-        if (state.visibility !== 'all') {
-          params.set('visibility', state.visibility);
-        }
-
-        const data = await fetchApiData<{ quizzes: IQuiz[]; pagination: PaginationMeta }>(
-          `/api/quizzes?${params}`,
-        );
         dispatch({ type: 'loaded', quizzes: data.quizzes, pagination: data.pagination });
       } catch (error) {
+        if (error instanceof DOMException && error.name === 'AbortError') return;
         dispatch({
           type: 'patch',
           value: {
             loading: false,
-            error: error instanceof Error ? error.message : t('quizManagementLoadError'),
+            error: extractUnknownErrorMessage(error, t('quizManagementLoadError')),
           },
         });
       }
-    }, 250);
+    }
 
-    return () => window.clearTimeout(timer);
-  }, [state.page, state.search, state.visibility, t]);
+    void loadQuizzes();
+
+    return () => controller.abort();
+  }, [state.page, state.appliedSearch, state.visibility, t]);
 
   const pageStats = {
     public: state.quizzes.filter((quiz) => !quiz.isPrivate).length,
     private: state.quizzes.filter((quiz) => quiz.isPrivate).length,
   };
 
-  async function deleteQuiz(quizId: string) {
+  async function removeQuiz(quizId: string) {
     dispatch({ type: 'patch', value: { deletingQuizId: quizId, error: '' } });
     try {
-      await fetchApiData<null>(`/api/quizzes/${quizId}`, { method: 'DELETE' });
+      await deleteAdminQuiz(quizId);
       dispatch({ type: 'removed', quizId });
     } catch (error) {
       dispatch({
         type: 'patch',
         value: {
           deletingQuizId: null,
-          error: error instanceof Error ? error.message : t('quizManagementDeleteError'),
+          error: extractUnknownErrorMessage(error, t('quizManagementDeleteError')),
         },
       });
     }
   }
 
-  async function previewQuiz(quiz: IQuiz) {
+  async function previewQuiz(quiz: AdminQuizListItemViewModel) {
     dispatch({
       type: 'patch',
-      value: { previewingQuizId: quiz._id, error: '' },
+      value: { previewingQuizId: quiz.id, error: '' },
     });
     try {
-      const fullQuiz = await fetchApiData<IQuiz>(`/api/quizzes/${quiz._id}`);
+      const fullQuiz = await fetchAdminQuizDetailViewModel(quiz.id);
       dispatch({
         type: 'patch',
         value: { previewQuiz: fullQuiz, previewingQuizId: null },
@@ -167,10 +197,17 @@ export default function AdminQuizManagementPage() {
         type: 'patch',
         value: {
           previewingQuizId: null,
-          error: error instanceof Error ? error.message : t('quizManagementLoadError'),
+          error: extractUnknownErrorMessage(error, t('quizManagementLoadError')),
         },
       });
     }
+  }
+
+  function applySearch() {
+    dispatch({
+      type: 'patch',
+      value: { appliedSearch: state.searchInput.trim(), page: 1 },
+    });
   }
 
   return (
@@ -184,20 +221,30 @@ export default function AdminQuizManagementPage() {
           <label className="flex min-w-[280px] items-center gap-2 rounded-xl border border-line bg-white px-3">
             <HiOutlineSearch className="size-5 text-ink/40" />
             <input
-              value={state.search}
+              value={state.searchInput}
               onChange={(event) =>
-                dispatch({ type: 'patch', value: { search: event.target.value, page: 1 } })
+                dispatch({ type: 'patch', value: { searchInput: event.target.value } })
               }
               placeholder={t('searchQuizzes')}
               className="min-h-11 w-full bg-transparent text-sm outline-none"
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') applySearch();
+              }}
             />
           </label>
+          <Button size="sm" variant="outline" onClick={applySearch}>
+            <HiOutlineSearch className="mr-1 size-4" />
+            {t('search')}
+          </Button>
           <select
             value={state.visibility}
             onChange={(event) =>
               dispatch({
                 type: 'patch',
-                value: { visibility: event.target.value as VisibilityFilter, page: 1 },
+                value: {
+                  visibility: event.target.value as AdminQuizVisibilityViewModel,
+                  page: 1,
+                },
               })
             }
             className="min-h-11 rounded-xl border border-line bg-white px-3 text-sm text-ink outline-none focus:border-accent"
@@ -211,7 +258,7 @@ export default function AdminQuizManagementPage() {
 
       <section className="mt-7 grid gap-4 sm:grid-cols-3">
         {[
-          [state.pagination.totalItems, t('totalQuizzes')],
+          [state.pagination.total, t('totalQuizzes')],
           [pageStats.public, t('publicOnPage')],
           [pageStats.private, t('privateOnPage')],
         ].map(([value, label]) => (
@@ -243,7 +290,7 @@ export default function AdminQuizManagementPage() {
           <div className="divide-y divide-line-blue/25">
             {state.quizzes.map((quiz) => (
               <article
-                key={quiz._id}
+                key={quiz.id}
                 className="grid gap-4 p-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center"
               >
                 <div className="min-w-0">
@@ -267,13 +314,9 @@ export default function AdminQuizManagementPage() {
                     </span>
                   </div>
                   <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink/55">
-                    <UserProfileLink
-                      user={quiz.author as any}
-                      avatarSize={24}
-                      className="max-w-[220px]"
-                    />
+                    <AdminQuizAuthorLink author={quiz.author} />
                     <span>•</span>
-                    <span>{t('questionTotal', { count: questionCount(quiz) })}</span>
+                    <span>{t('questionTotal', { count: quiz.questionCount })}</span>
                   </div>
                 </div>
 
@@ -281,13 +324,13 @@ export default function AdminQuizManagementPage() {
                   <Button
                     size="sm"
                     variant="outline"
-                    disabled={state.previewingQuizId === quiz._id}
+                    disabled={state.previewingQuizId === quiz.id}
                     onClick={() => void previewQuiz(quiz)}
                   >
                     <HiOutlineEye className="mr-1 size-4" />
                     {t('previewWithAnswers')}
                   </Button>
-                  <Link href={`/edit/${quiz._id}`}>
+                  <Link href={ROUTES.EDIT.QUIZ(quiz.id)}>
                     <Button size="sm" variant="outline">
                       <HiOutlinePencil className="mr-1 size-4" />
                       {t('editQuiz')}
@@ -311,7 +354,7 @@ export default function AdminQuizManagementPage() {
 
       {state.pagination.totalPages > 1 ? (
         <Pagination
-          currentPage={state.pagination.currentPage}
+          currentPage={state.pagination.page}
           totalPages={state.pagination.totalPages}
           onPageChange={(page) => dispatch({ type: 'patch', value: { page } })}
           className="mt-8 justify-center"
@@ -321,6 +364,7 @@ export default function AdminQuizManagementPage() {
       {state.previewQuiz ? (
         <QuizPreviewModal
           isOpen
+          previewKey={state.previewQuiz.id}
           title={state.previewQuiz.title}
           questions={state.previewQuiz.questions}
           onClose={() => dispatch({ type: 'patch', value: { previewQuiz: null } })}
@@ -334,9 +378,9 @@ export default function AdminQuizManagementPage() {
         confirmText={t('deleteQuizButton')}
         cancelText={t('cancel')}
         confirmVariant="destructive"
-        isLoading={state.deletingQuizId === state.quizToDelete?._id}
+        isLoading={state.deletingQuizId === state.quizToDelete?.id}
         onCancel={() => dispatch({ type: 'patch', value: { quizToDelete: null } })}
-        onConfirm={() => state.quizToDelete && void deleteQuiz(state.quizToDelete._id)}
+        onConfirm={() => state.quizToDelete && void removeQuiz(state.quizToDelete.id)}
       />
     </main>
   );

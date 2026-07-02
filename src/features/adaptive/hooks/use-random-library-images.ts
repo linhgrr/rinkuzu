@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { fetchApiData } from '@/lib/api/client';
+import { fetchAdaptiveLibraryImageUrls } from '@/features/adaptive/api/library-images-api';
 
 const MIN_IMAGE_COUNT = 4;
 const MAX_IMAGE_COUNT = 24;
@@ -13,13 +13,10 @@ export const useRandomLibraryImages = (count: number) => {
 
     const loadImages = async () => {
       try {
-        const { images } = await fetchApiData<{ images: string[] }>(
-          `/api/adaptive/library-images?limit=${requestedCount}`,
-          { cache: 'no-store' },
-        );
+        const images = await fetchAdaptiveLibraryImageUrls(requestedCount);
 
-        if (!cancelled && Array.isArray(images)) {
-          setImageUrls(images.filter((url) => typeof url === 'string' && url.length > 0));
+        if (!cancelled) {
+          setImageUrls(images);
         }
       } catch (error) {
         console.error('Failed to load random library images', error);

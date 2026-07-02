@@ -1,11 +1,11 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 
@@ -18,9 +18,9 @@ import {
   HiOutlineCheckCircle,
   HiOutlineEye,
   HiOutlineEyeOff,
-} from '@/components/icons';
+} from 'react-icons/hi';
 import { PasswordStrengthMeter } from '@/components/auth/PasswordStrengthMeter';
-import { fetchApiResponse } from '@/lib/api/client';
+import { resetPassword } from '@/features/auth/api/auth-api';
 import { passwordSchema } from '@/lib/validation/auth';
 import { usePasswordStrength } from '@/lib/validation/usePasswordStrength';
 
@@ -44,41 +44,30 @@ function ResetPasswordContent() {
 
   const [showPassword, setShowPassword] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
-  const [serverError, setServerError] = useState<string | null>(
-    !token ? t('resetPasswordInvalidToken') : null,
-  );
+  const [serverError, setServerError] = useState<string | null>(null);
 
   const {
     register,
     handleSubmit,
-    watch,
     formState: { errors, isSubmitting, isValid },
+    control,
   } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     mode: 'onTouched',
     defaultValues: { password: '', confirm: '' },
   });
 
-  const password = watch('password');
+  const password = useWatch({ control, name: 'password' }) ?? '';
   const strength = usePasswordStrength(password);
 
-  useEffect(() => {
-    if (!token) setServerError(t('resetPasswordInvalidToken'));
-  }, [token, t]);
+  const visibleServerError = serverError ?? (!token ? t('resetPasswordInvalidToken') : null);
 
   const onSubmit = handleSubmit(async (values) => {
     if (!token) return;
     setServerError(null);
     try {
-      const response = await fetchApiResponse<unknown, { message?: string }>(
-        '/api/auth/reset-password',
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token, password: values.password }),
-        },
-      );
-      setSuccess(response.meta?.message ?? t('resetPasswordSuccess'));
+      const result = await resetPassword({ token, password: values.password });
+      setSuccess(result.message ?? t('resetPasswordSuccess'));
     } catch (caught) {
       setServerError(caught instanceof Error ? caught.message : t('resetPasswordInvalidToken'));
     }
@@ -134,7 +123,7 @@ function ResetPasswordContent() {
                 </output>
               ) : (
                 <form className="space-y-6" onSubmit={onSubmit} noValidate>
-                  {serverError && (
+                  {visibleServerError && (
                     <Card
                       variant="bordered"
                       className="border-red-200 bg-red-50 p-4"
@@ -146,7 +135,7 @@ function ResetPasswordContent() {
                           className="mr-2 size-5 flex-shrink-0"
                           aria-hidden="true"
                         />
-                        <span className="text-sm font-medium">{serverError}</span>
+                        <span className="text-sm font-medium">{visibleServerError}</span>
                       </div>
                     </Card>
                   )}

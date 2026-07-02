@@ -13,7 +13,7 @@ export const GET = withOptionalAuth<{ slug: string }>(
       const result = await quizService.getQuizForFlashcards(slug, session);
 
       if (!result.success) {
-        return apiServiceErr(result, 400);
+        return apiServiceErr(result);
       }
 
       return apiOk(result.data);

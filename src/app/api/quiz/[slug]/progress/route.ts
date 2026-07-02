@@ -1,51 +1,18 @@
 import { NextRequest } from 'next/server';
 import { withAuth } from '@/lib/api/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
-import { apiOk, apiErr } from '@/lib/api/response';
+import { apiOk, apiErr, apiServiceErr } from '@/lib/api/response';
 import { logger } from '@/lib/logger';
+import { readAndValidateJson } from '@/lib/api/request';
+import { savedQuizProgressSchema } from '@/dtos/quiz';
 
-type Answer = number | number[];
-
-interface SaveProgressPayload {
-  questionOrder?: unknown;
-  optionOrders?: unknown;
-  userAnswers?: unknown;
-  currentQuestionIndex?: unknown;
-  answeredCount?: unknown;
-  totalQuestions?: unknown;
-}
-
-function isNumberArray(value: unknown): value is number[] {
-  return Array.isArray(value) && value.every((item) => typeof item === 'number');
-}
-
-function isAnswerArray(value: unknown): value is Answer[] {
-  return (
-    Array.isArray(value) &&
-    value.every(
-      (item) =>
-        typeof item === 'number' ||
-        (Array.isArray(item) && item.every((inner) => typeof inner === 'number')),
-    )
-  );
-}
-
-async function resolveQuizId(slug: string): Promise<string | null> {
-  const quiz = await serviceFactory.getQuizRepository().findBySlug(slug);
-  return quiz?._id ? String(quiz._id) : null;
-}
+const quizService = serviceFactory.getQuizService();
 
 export const GET = withAuth<{ slug: string }>(async (_request: NextRequest, { params, userId }) => {
   try {
-    const quizId = await resolveQuizId(params.slug);
-    if (!quizId) {
-      return apiErr('not_found', 'Quiz not found', 404);
-    }
+    const result = await quizService.getSavedQuizProgress(params.slug, userId);
 
-    const repo = serviceFactory.getQuizProgressRepository();
-    const progress = await repo.findByUserAndQuiz(userId, quizId);
-
-    return apiOk({ progress: progress ?? null });
+    return result.success ? apiOk(result.data) : apiServiceErr(result);
   } catch (error) {
     logger.error({ error }, 'Get quiz progress error');
     return apiErr('internal_error', 'Internal server error', 500);
@@ -54,44 +21,14 @@ export const GET = withAuth<{ slug: string }>(async (_request: NextRequest, { pa
 
 export const PUT = withAuth<{ slug: string }>(async (request: NextRequest, { params, userId }) => {
   try {
-    const quizId = await resolveQuizId(params.slug);
-    if (!quizId) {
-      return apiErr('not_found', 'Quiz not found', 404);
+    const parsedBody = await readAndValidateJson(request, savedQuizProgressSchema);
+    if (!parsedBody.success) {
+      return apiErr('validation_error', parsedBody.error, 400, parsedBody.fields);
     }
 
-    const payload = (await request.json()) as SaveProgressPayload;
+    const result = await quizService.saveQuizProgress(params.slug, userId, parsedBody.data);
 
-    if (
-      !isNumberArray(payload.questionOrder) ||
-      !Array.isArray(payload.optionOrders) ||
-      !payload.optionOrders.every(isNumberArray) ||
-      !isAnswerArray(payload.userAnswers) ||
-      typeof payload.currentQuestionIndex !== 'number' ||
-      typeof payload.answeredCount !== 'number' ||
-      typeof payload.totalQuestions !== 'number'
-    ) {
-      return apiErr('validation_error', 'Invalid progress payload', 400);
-    }
-
-    if (
-      payload.questionOrder.length !== payload.totalQuestions ||
-      payload.userAnswers.length !== payload.totalQuestions ||
-      payload.optionOrders.length !== payload.totalQuestions
-    ) {
-      return apiErr('validation_error', 'Progress payload length mismatch', 400);
-    }
-
-    const repo = serviceFactory.getQuizProgressRepository();
-    await repo.upsert(userId, quizId, {
-      questionOrder: payload.questionOrder,
-      optionOrders: payload.optionOrders as number[][],
-      userAnswers: payload.userAnswers,
-      currentQuestionIndex: payload.currentQuestionIndex,
-      answeredCount: payload.answeredCount,
-      totalQuestions: payload.totalQuestions,
-    });
-
-    return apiOk({ saved: true });
+    return result.success ? apiOk(result.data) : apiServiceErr(result);
   } catch (error) {
     logger.error({ error }, 'Save quiz progress error');
     return apiErr('internal_error', 'Internal server error', 500);
@@ -101,15 +38,9 @@ export const PUT = withAuth<{ slug: string }>(async (request: NextRequest, { par
 export const DELETE = withAuth<{ slug: string }>(
   async (_request: NextRequest, { params, userId }) => {
     try {
-      const quizId = await resolveQuizId(params.slug);
-      if (!quizId) {
-        return apiErr('not_found', 'Quiz not found', 404);
-      }
+      const result = await quizService.deleteSavedQuizProgress(params.slug, userId);
 
-      const repo = serviceFactory.getQuizProgressRepository();
-      await repo.deleteByUserAndQuiz(userId, quizId);
-
-      return apiOk({ deleted: true });
+      return result.success ? apiOk(result.data) : apiServiceErr(result);
     } catch (error) {
       logger.error({ error }, 'Delete quiz progress error');
       return apiErr('internal_error', 'Internal server error', 500);

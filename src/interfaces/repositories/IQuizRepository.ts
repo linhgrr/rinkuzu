@@ -1,61 +1,86 @@
-import type { IUserPreview, PaginationMeta } from '@/types/index';
-import type { IQuestion } from '@/models/Quiz';
+import type { Quiz, QuizQuestionContent } from '@/entities/Quiz';
+import type {
+  CountBuckets,
+  CountBucketThresholds,
+  CreatedAtCountFilter,
+  PaginatedRepositoryResult,
+  RepositoryPaginationOptions,
+} from '@/interfaces/repositories/types';
 
-export interface IQuiz {
-  _id?: string;
+export interface QuizFindOptions extends RepositoryPaginationOptions {
+  sort?: Record<string, 1 | -1>;
+  populate?: string[];
+  compact?: boolean;
+}
+
+type QuizTextSearchCondition = { title: RegExp } | { description: RegExp };
+
+export interface QuizFindFilter {
+  isPrivate?: boolean;
+  author?: string;
+  folder?: string | null;
+  $or?: QuizTextSearchCondition[];
+}
+
+export interface QuizCreatorStatRecord {
+  id: string;
+  email: string;
+  role: 'admin' | 'user';
+  joinedAt: Date;
+  quizCount: number;
+  totalQuestions: number;
+}
+
+export interface CreateQuizData {
   title: string;
   description?: string;
   slug: string;
-  author: string | IUserPreview;
+  author: string;
   folder?: string | null;
-  questions: IQuestion[];
+  questions: QuizQuestionContent[];
   isPrivate: boolean;
   pdfUrl?: string;
   tags?: string[];
-  questionCount?: number;
-  createdAt?: Date;
-  updatedAt?: Date;
+  sourceDraftId?: string;
 }
 
+export type UpdateQuizData = Partial<
+  Pick<
+    CreateQuizData,
+    'title' | 'description' | 'folder' | 'questions' | 'isPrivate' | 'pdfUrl' | 'tags'
+  >
+>;
+
 export interface IQuizRepository {
-  findById(id: string): Promise<IQuiz | null>;
+  findById(id: string): Promise<Quiz | null>;
 
-  findBySlug(slug: string): Promise<IQuiz | null>;
+  findBySlug(slug: string): Promise<Quiz | null>;
 
-  create(quizData: Partial<IQuiz>): Promise<IQuiz>;
+  findBySourceDraftId(sourceDraftId: string): Promise<Quiz | null>;
 
-  update(id: string, quizData: Partial<IQuiz>): Promise<IQuiz | null>;
+  create(quizData: CreateQuizData): Promise<Quiz>;
+
+  update(id: string, quizData: UpdateQuizData): Promise<Quiz | null>;
 
   delete(id: string): Promise<boolean>;
 
   findAll(
-    filter?: Record<string, unknown>,
-    options?: {
-      page?: number;
-      limit?: number;
-      sort?: Record<string, unknown>;
-      populate?: string[];
-      compact?: boolean;
-    },
-  ): Promise<{
-    quizzes: IQuiz[];
-    pagination: PaginationMeta;
-  }>;
+    filter?: QuizFindFilter,
+    options?: QuizFindOptions,
+  ): Promise<PaginatedRepositoryResult<Quiz>>;
 
-  findForPlay(slug: string): Promise<IQuiz | null>;
+  findForPlay(slug: string): Promise<Quiz | null>;
 
   findUserQuizzes(
     userId: string,
-    options?: {
-      page?: number;
-      limit?: number;
-    },
-  ): Promise<{
-    quizzes: IQuiz[];
-    pagination: PaginationMeta;
-  }>;
+    options?: RepositoryPaginationOptions,
+  ): Promise<PaginatedRepositoryResult<Quiz>>;
 
-  count(filter?: Record<string, unknown>): Promise<number>;
+  findPublicByAuthor(userId: string): Promise<Quiz[]>;
 
-  findRecentQuizzes(limit?: number): Promise<IQuiz[]>;
+  count(filter?: CreatedAtCountFilter): Promise<number>;
+
+  countByCreatedAtBuckets(thresholds: CountBucketThresholds): Promise<CountBuckets>;
+
+  findTopCreators(limit?: number): Promise<QuizCreatorStatRecord[]>;
 }

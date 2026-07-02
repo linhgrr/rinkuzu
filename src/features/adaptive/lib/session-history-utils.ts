@@ -1,8 +1,7 @@
+import { formatDateTime } from '@/lib/formatters';
+
 export function formatSessionHistoryDate(ts: number, locale = 'vi-VN') {
   if (!ts) return '—';
 
-  return new Date(ts * 1000).toLocaleString(locale, {
-    dateStyle: 'short',
-    timeStyle: 'short',
-  });
+  return formatDateTime(ts * 1000, { locale, emptyLabel: '—' });
 }

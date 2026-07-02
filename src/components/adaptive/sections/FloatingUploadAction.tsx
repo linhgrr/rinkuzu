@@ -1,8 +1,8 @@
 'use client';
 
 import { Button } from '@/components/ui/Button';
-import { HiOutlineCloudUpload } from '@/components/icons';
-import type { TranslateFn } from '@/features/adaptive/types';
+import { HiOutlineCloudUpload } from 'react-icons/hi';
+import type { TranslateFn } from '@/features/adaptive/types/learning';
 
 type FloatingUploadActionProps = {
   onClick: () => void;

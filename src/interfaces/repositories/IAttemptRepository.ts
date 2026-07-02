@@ -1,60 +1,58 @@
-import type { IQuestion } from '@/models/Quiz';
+import type { Attempt, AttemptAnswer } from '@/entities/Attempt';
+import type {
+  CountBuckets,
+  CountBucketThresholds,
+  PaginatedRepositoryResult,
+  RepositoryPaginationOptions,
+} from '@/interfaces/repositories/types';
 
-export interface IAttempt {
-  _id?: string;
-  user: string;
-  quiz:
-    | string
-    | { _id: string; title?: string; slug?: string; description?: string; questions?: IQuestion[] };
-  answers: (number | number[])[];
+interface AttemptSubmissionData {
+  quizId: string;
+  answers: AttemptAnswer[];
   score: number;
   totalQuestions: number;
   takenAt: Date;
-  timeSpent?: number;
-  createdAt?: Date;
-  updatedAt?: Date;
+}
+
+export type CreateAttemptData =
+  | (AttemptSubmissionData & {
+      userId: string;
+      guestEmail?: never;
+    })
+  | (AttemptSubmissionData & {
+      userId?: never;
+      guestEmail: string;
+    });
+
+export type AttemptOwnerIdentity =
+  | { userId: string; guestEmail?: never }
+  | { userId?: never; guestEmail: string };
+
+export interface AttemptTakenAtFilter {
+  $gte: Date;
+}
+
+export interface AttemptCountFilter {
+  takenAt?: AttemptTakenAtFilter;
 }
 
 export interface IAttemptRepository {
-  findById(id: string): Promise<IAttempt | null>;
-
   findByUser(
     userId: string,
-    options?: {
-      page?: number;
-      limit?: number;
-    },
-  ): Promise<{
-    attempts: IAttempt[];
-    pagination: {
-      currentPage: number;
-      totalPages: number;
-      totalItems: number;
-      itemsPerPage: number;
-      hasNextPage: boolean;
-      hasPrevPage: boolean;
-    };
-  }>;
+    options?: RepositoryPaginationOptions,
+  ): Promise<PaginatedRepositoryResult<Attempt>>;
 
-  create(attemptData: Partial<IAttempt>): Promise<IAttempt>;
+  create(data: CreateAttemptData): Promise<Attempt>;
 
   countByUser(userId: string): Promise<number>;
 
   countByQuiz(quizId: string): Promise<number>;
 
-  findRecentActivity(limit?: number): Promise<IAttempt[]>;
+  findRecentActivity(limit?: number): Promise<Attempt[]>;
 
-  findByUserId(
-    userId: string,
-    page?: number,
-    limit?: number,
-  ): Promise<{ attempts: IAttempt[]; total: number }>;
+  findByIdWithQuiz(attemptId: string, owner: AttemptOwnerIdentity): Promise<Attempt | null>;
 
-  findByIdWithQuiz(attemptId: string, userId: string): Promise<IAttempt | null>;
+  count(filter?: AttemptCountFilter): Promise<number>;
 
-  update(id: string, attemptData: Partial<IAttempt>): Promise<IAttempt | null>;
-
-  delete(id: string): Promise<boolean>;
-
-  count(filter?: Record<string, unknown>): Promise<number>;
+  countByTakenAtBuckets(thresholds: CountBucketThresholds): Promise<CountBuckets>;
 }

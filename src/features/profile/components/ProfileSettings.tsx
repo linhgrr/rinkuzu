@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useReducer, useRef, useState } from 'react';
+import { useEffect, useReducer, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
@@ -11,8 +11,16 @@ import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { Input, Textarea } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
 import { Separator } from '@/components/ui/Separator';
-import { fetchApiData } from '@/lib/api/client';
 import { extractUnknownErrorMessage } from '@/lib/api/error';
+import { AVATAR_ALLOWED_MEDIA_TYPES, AVATAR_MAX_FILE_SIZE } from '@/shared/constants/avatar';
+import {
+  changeProfilePassword,
+  fetchProfileSettingsViewModel,
+  removeProfileAvatar,
+  updateProfileSettingsViewModel,
+  uploadProfileAvatar,
+} from '@/features/profile/api/profile-settings-api';
+import type { ProfileSettingsViewModel } from '@/features/profile/types/profile-settings-view-model';
 import {
   HiOutlineUser,
   HiOutlineLockClosed,
@@ -24,24 +32,10 @@ import {
   HiOutlineEye,
   HiOutlineEyeOff,
   HiOutlineTrash,
-} from '@/components/icons';
-
-interface ProfileData {
-  email: string;
-  displayName: string;
-  bio: string;
-  avatar: string;
-  role: string;
-  createdAt: string;
-  subscription?: {
-    type: string;
-    isActive: boolean;
-    endDate?: string;
-  };
-}
+} from 'react-icons/hi';
 
 interface ProfileSettingsState {
-  profile: ProfileData | null;
+  profile: ProfileSettingsViewModel | null;
   loading: boolean;
   displayName: string;
   bio: string;
@@ -57,11 +51,11 @@ interface ProfileSettingsState {
 
 type ProfileSettingsAction =
   | { type: 'fetch:start' }
-  | { type: 'fetch:success'; profile: ProfileData }
+  | { type: 'fetch:success'; profile: ProfileSettingsViewModel }
   | { type: 'fetch:error' }
   | { type: 'profile:setField'; field: 'displayName' | 'bio'; value: string }
   | { type: 'profile:save:start' }
-  | { type: 'profile:save:success'; profile: ProfileData }
+  | { type: 'profile:save:success'; profile: ProfileSettingsViewModel }
   | { type: 'profile:save:finish' }
   | {
       type: 'password:setField';
@@ -104,8 +98,8 @@ function profileSettingsReducer(
       return {
         ...state,
         profile: action.profile,
-        displayName: action.profile.displayName || '',
-        bio: action.profile.bio || '',
+        displayName: action.profile.displayName ?? '',
+        bio: action.profile.bio ?? '',
         loading: false,
       };
     case 'fetch:error':
@@ -118,8 +112,8 @@ function profileSettingsReducer(
       return {
         ...state,
         profile: state.profile ? { ...state.profile, ...action.profile } : action.profile,
-        displayName: action.profile.displayName || '',
-        bio: action.profile.bio || '',
+        displayName: action.profile.displayName ?? '',
+        bio: action.profile.bio ?? '',
         savingProfile: false,
       };
     case 'profile:save:finish':
@@ -161,13 +155,7 @@ function profileSettingsReducer(
 }
 
 function JoinDateLabel({ value }: { value: string }) {
-  const [label, setLabel] = useState('');
-
-  useEffect(() => {
-    setLabel(new Date(value).toLocaleDateString());
-  }, [value]);
-
-  return <span suppressHydrationWarning>{label}</span>;
+  return <span>{value}</span>;
 }
 
 function PersonalInfoSection({
@@ -194,7 +182,7 @@ function PersonalInfoSection({
   onDisplayNameChange: (value: string) => void;
   onRequestRemoveAvatar: () => void;
   onSaveProfile: () => void;
-  profile: ProfileData;
+  profile: ProfileSettingsViewModel;
   savingProfile: boolean;
   t: (key: string) => string;
   uploadingAvatar: boolean;
@@ -303,7 +291,7 @@ function PersonalInfoSection({
           </label>
           <div className="flex items-center gap-2 text-sm text-neutral-600">
             <HiOutlineCalendar className="size-4 text-neutral-400" />
-            <JoinDateLabel value={profile.createdAt} />
+            <JoinDateLabel value={profile.createdAtLabel} />
           </div>
         </div>
 
@@ -416,7 +404,13 @@ function PasswordSection({
   );
 }
 
-function AccountSection({ profile, t }: { profile: ProfileData; t: (key: string) => string }) {
+function AccountSection({
+  profile,
+  t,
+}: {
+  profile: ProfileSettingsViewModel;
+  t: (key: string) => string;
+}) {
   return (
     <Card className="overflow-hidden">
       <div className="border-b border-neutral-100 px-6 py-5">
@@ -457,7 +451,7 @@ function AccountSection({ profile, t }: { profile: ProfileData; t: (key: string)
           <div className="flex items-center justify-between text-sm">
             <span className="text-neutral-500">{t('joinDate')}</span>
             <span className="font-medium text-neutral-900">
-              <JoinDateLabel value={profile.createdAt} />
+              <JoinDateLabel value={profile.createdAtLabel} />
             </span>
           </div>
         </div>
@@ -483,7 +477,7 @@ export default function ProfileSettings() {
     const fetchProfile = async () => {
       try {
         dispatch({ type: 'fetch:start' });
-        const data = await fetchApiData<ProfileData>('/api/user/profile');
+        const data = await fetchProfileSettingsViewModel();
 
         if (!isActive) {
           return;
@@ -511,10 +505,9 @@ export default function ProfileSettings() {
     dispatch({ type: 'profile:save:start' });
 
     try {
-      const data = await fetchApiData<ProfileData>('/api/user/profile', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ displayName: state.displayName, bio: state.bio }),
+      const data = await updateProfileSettingsViewModel({
+        displayName: state.displayName,
+        bio: state.bio,
       });
       dispatch({ type: 'profile:save:success', profile: data });
       toast.success(t('profileUpdated'));
@@ -538,13 +531,9 @@ export default function ProfileSettings() {
     dispatch({ type: 'password:save:start' });
 
     try {
-      await fetchApiData<null>('/api/user/password', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          currentPassword: state.currentPassword,
-          newPassword: state.newPassword,
-        }),
+      await changeProfilePassword({
+        currentPassword: state.currentPassword,
+        newPassword: state.newPassword,
       });
       dispatch({ type: 'password:save:success' });
       toast.success(t('passwordChanged'));
@@ -560,12 +549,12 @@ export default function ProfileSettings() {
       return;
     }
 
-    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+    if (!AVATAR_ALLOWED_MEDIA_TYPES.some((mediaType) => mediaType === file.type)) {
       toast.error(t('avatarInvalidType'));
       return;
     }
 
-    if (file.size > 2 * 1024 * 1024) {
+    if (file.size > AVATAR_MAX_FILE_SIZE) {
       toast.error(t('avatarTooLarge'));
       return;
     }
@@ -573,21 +562,15 @@ export default function ProfileSettings() {
     dispatch({ type: 'avatar:upload:start' });
 
     try {
-      const formData = new FormData();
-      formData.append('avatar', file);
-      const data = await fetchApiData<{ avatar: string }>('/api/user/avatar', {
-        method: 'PUT',
-        body: formData,
-      });
-      dispatch({ type: 'avatar:update', avatar: data.avatar });
+      const avatar = await uploadProfileAvatar(file);
+      dispatch({ type: 'avatar:update', avatar });
       toast.success(t('avatarUpdated'));
     } catch (error: unknown) {
       dispatch({ type: 'avatar:upload:finish' });
       toast.error(extractUnknownErrorMessage(error, t('errorUploadingAvatar')));
-    } finally {
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
+    }
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   };
 
@@ -595,7 +578,7 @@ export default function ProfileSettings() {
     dispatch({ type: 'avatar:upload:start' });
 
     try {
-      await fetchApiData<null>('/api/user/avatar', { method: 'DELETE' });
+      await removeProfileAvatar();
       dispatch({ type: 'avatar:update', avatar: '' });
       toast.success(t('avatarRemoved'));
     } catch (error: unknown) {

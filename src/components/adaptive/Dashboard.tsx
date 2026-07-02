@@ -3,16 +3,13 @@
 import { useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import {
-  DashboardDeleteModal,
-  HeroSection,
-  LibrarySection,
-  RecentActivity,
-  UploadMaterialCard,
-} from './DashboardSections';
+import { DashboardDeleteModal } from './sections/DashboardDeleteModal';
+import { HeroSection } from './sections/HeroSection';
+import { LibrarySection } from './sections/Library';
+import { RecentActivity, UploadMaterialCard } from './sections/OverviewSidebar';
 import { useAdaptiveDashboard } from '@/features/adaptive/hooks/use-adaptive-dashboard';
-import { toDashboardSubject } from '@/features/adaptive/lib/dashboard-view-model';
-import type { PipelineJobHistoryItem, SessionHistoryItem } from '@/features/adaptive/types';
+import type { SessionHistoryItem } from '@/features/adaptive/types/history';
+import type { PipelineJobHistoryItem } from '@/features/adaptive/types/pipeline';
 
 interface DashboardProps {
   initialSubjects: PipelineJobHistoryItem[];
@@ -70,10 +67,6 @@ export default function AdaptiveLearningDashboard({
     setSearchQuery(searchParams.get('search') ?? '');
   }, [searchParams, setSearchQuery]);
 
-  const upNextDashboardSubject = upNextSubject
-    ? toDashboardSubject(upNextSubject, locale, tDashboard)
-    : null;
-
   return (
     <div className="pb-16 font-home text-ink selection:bg-accent-soft sm:pb-20">
       <div className="mb-5 flex flex-col gap-1 sm:mb-6">
@@ -93,7 +86,7 @@ export default function AdaptiveLearningDashboard({
       <div className="grid grid-cols-1 gap-4 sm:gap-5 md:grid-cols-2 min-[1684px]:grid-cols-[minmax(0,900px)_416px] min-[1684px]:gap-6">
         <div className="min-w-0 md:col-span-2 min-[1684px]:col-span-1 min-[1684px]:col-start-1 min-[1684px]:row-start-1">
           <HeroSection
-            subject={upNextDashboardSubject}
+            subject={upNextSubject}
             loading={loading}
             loadingJobId={loadingJobId}
             onGoUpload={handleGoUpload}

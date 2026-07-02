@@ -2,13 +2,13 @@
 'use client';
 
 import Image from 'next/image';
-import { useState, useCallback, useRef, type TouchEvent } from 'react';
+import { useState, useRef, type TouchEvent } from 'react';
 import { useTranslations } from 'next-intl';
-import { HiOutlineChevronLeft, HiOutlineChevronRight, HiOutlineCheck } from '@/components/icons';
+import { HiOutlineChevronLeft, HiOutlineChevronRight, HiOutlineCheck } from 'react-icons/hi';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 
 interface Question {
-  _id: string;
+  id: string;
   question: string;
   options: string[];
   type: 'single' | 'multiple';
@@ -71,11 +71,11 @@ function MobileQuizHeader({
           <div className="mx-auto mt-2 flex max-w-[200px] flex-wrap justify-center gap-1">
             {questions.map((question, index) => (
               <div
-                key={question._id}
+                key={question.id}
                 className={`size-2 rounded-full transition-colors ${
                   index === currentIndex
                     ? 'bg-brand-action'
-                    : answers[question._id] !== undefined
+                    : answers[question.id] !== undefined
                       ? 'bg-brand-trust'
                       : 'bg-neutral-200'
                 }`}
@@ -131,7 +131,7 @@ function MobileQuestionCard({
         onTouchEnd={handleTouchEnd}
       >
         <div
-          key={currentQuestion._id}
+          key={currentQuestion.id}
           className="flex h-full flex-col overflow-hidden rounded-2xl border border-neutral-100 bg-white p-5 shadow-sm"
         >
           {currentQuestion.questionImage && (
@@ -286,29 +286,29 @@ export function MobileQuizPlayer({
   const isFirst = currentIndex === 0;
   const isLast = currentIndex === questions.length - 1;
 
-  const goNext = useCallback(() => {
+  function goNext() {
     if (!isLast && !isSubmitting) {
       onIndexChange(currentIndex + 1);
     }
-  }, [currentIndex, isLast, isSubmitting, onIndexChange]);
+  }
 
-  const goPrev = useCallback(() => {
+  function goPrev() {
     if (!isFirst && !isSubmitting) {
       onIndexChange(currentIndex - 1);
     }
-  }, [currentIndex, isFirst, isSubmitting, onIndexChange]);
+  }
 
-  const handleTouchStart = useCallback((event: TouchEvent<HTMLDivElement>) => {
+  function handleTouchStart(event: TouchEvent<HTMLDivElement>) {
     const touchX = event.touches[0]?.clientX;
     touchStartXRef.current = touchX ?? null;
     touchCurrentXRef.current = touchX ?? null;
-  }, []);
+  }
 
-  const handleTouchMove = useCallback((event: TouchEvent<HTMLDivElement>) => {
+  function handleTouchMove(event: TouchEvent<HTMLDivElement>) {
     touchCurrentXRef.current = event.touches[0]?.clientX ?? null;
-  }, []);
+  }
 
-  const handleTouchEnd = useCallback(() => {
+  function handleTouchEnd() {
     if (isSubmitting) {
       return;
     }
@@ -328,44 +328,43 @@ export function MobileQuizPlayer({
 
     touchStartXRef.current = null;
     touchCurrentXRef.current = null;
-  }, [goNext, goPrev, isFirst, isLast, isSubmitting]);
+  }
 
-  const handleOptionSelect = useCallback(
-    (optionIndex: number) => {
-      if (isSubmitting) {
-        return;
-      }
+  function handleOptionSelect(optionIndex: number) {
+    if (isSubmitting) {
+      return;
+    }
 
-      const qId = currentQuestion._id;
+    const qId = currentQuestion.id;
 
-      if (currentQuestion.type === 'single') {
-        onAnswersChange({ ...answers, [qId]: optionIndex });
-      } else {
-        const current = (answers[qId] as number[]) || [];
-        const newAnswers = current.includes(optionIndex)
-          ? current.filter((i) => i !== optionIndex)
-          : [...current, optionIndex];
-        onAnswersChange({ ...answers, [qId]: newAnswers });
-      }
-    },
-    [answers, currentQuestion, isSubmitting, onAnswersChange],
-  );
+    if (currentQuestion.type === 'single') {
+      onAnswersChange({ ...answers, [qId]: optionIndex });
+      return;
+    }
 
-  const isOptionSelected = useCallback(
-    (optionIndex: number) => {
-      const answer = answers[currentQuestion._id];
-      if (Array.isArray(answer)) {
-        return answer.includes(optionIndex);
-      }
-      return answer === optionIndex;
-    },
-    [answers, currentQuestion._id],
-  );
+    const storedAnswer = answers[qId];
+    if (storedAnswer !== undefined && !Array.isArray(storedAnswer)) {
+      throw new Error(`Multiple-choice question ${qId} has a scalar answer`);
+    }
+    const current = storedAnswer ?? [];
+    const newAnswers = current.includes(optionIndex)
+      ? current.filter((i) => i !== optionIndex)
+      : [...current, optionIndex];
+    onAnswersChange({ ...answers, [qId]: newAnswers });
+  }
+
+  function isOptionSelected(optionIndex: number) {
+    const answer = answers[currentQuestion.id];
+    if (Array.isArray(answer)) {
+      return answer.includes(optionIndex);
+    }
+    return answer === optionIndex;
+  }
 
   const answeredCount = Object.keys(answers).length;
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
 
-  const submitCurrentAnswers = useCallback(async () => {
+  async function submitCurrentAnswers() {
     if (isSubmitting) {
       return;
     }
@@ -378,12 +377,11 @@ export function MobileQuizPlayer({
       }
     } catch (error) {
       console.error('Quiz submission error:', error);
-    } finally {
-      setSubmitIntent(false);
     }
-  }, [answers, isSubmitting, onComplete]);
+    setSubmitIntent(false);
+  }
 
-  const handleComplete = useCallback(() => {
+  function handleComplete() {
     if (isSubmitting) {
       return;
     }
@@ -393,7 +391,7 @@ export function MobileQuizPlayer({
     } else {
       void submitCurrentAnswers();
     }
-  }, [answeredCount, isSubmitting, questions.length, submitCurrentAnswers]);
+  }
 
   return (
     <div className="fixed inset-0 bg-neutral-50 flex flex-col z-50" aria-busy={isSubmitting}>

@@ -1,34 +1,37 @@
-export interface IReport {
-  _id?: string;
-  quiz: string;
-  reporter: string;
-  reason: string;
-  description?: string;
-  status: 'pending' | 'reviewed' | 'resolved';
-  createdAt?: Date;
-  updatedAt?: Date;
+import type { Report, ReportStatus } from '@/entities/Report';
+import type { PaginatedRepositoryResult } from '@/interfaces/repositories/types';
+
+export interface ReportFindOptions {
+  page?: number;
+  limit?: number;
+  status?: ReportStatus;
+}
+
+export interface CreateReportData {
+  quizId: string;
+  quizTitle: string;
+  quizSlug: string;
+  reporterEmail: string;
+  reporterName: string;
+  content: string;
+  status: ReportStatus;
+}
+
+export interface UpdateReportData {
+  status: ReportStatus;
+  resolvedAt?: Date;
+  resolvedBy?: string;
+  adminNotes?: string;
 }
 
 export interface IReportRepository {
-  findById(id: string): Promise<IReport | null>;
+  findById(id: string): Promise<Report | null>;
 
-  findAll(options?: { page?: number; limit?: number; status?: string }): Promise<{
-    reports: IReport[];
-    pagination: {
-      currentPage: number;
-      totalPages: number;
-      totalItems: number;
-      itemsPerPage: number;
-      hasNextPage: boolean;
-      hasPrevPage: boolean;
-    };
-  }>;
+  findAll(options?: ReportFindOptions): Promise<PaginatedRepositoryResult<Report>>;
 
-  create(reportData: Partial<IReport>): Promise<IReport>;
+  create(reportData: CreateReportData): Promise<Report>;
 
-  update(id: string, reportData: Partial<IReport>): Promise<IReport | null>;
+  update(id: string, reportData: UpdateReportData): Promise<Report | null>;
 
   delete(id: string): Promise<boolean>;
-
-  count(filter?: Record<string, unknown>): Promise<number>;
 }

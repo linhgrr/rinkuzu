@@ -3,6 +3,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { streamQuizAI } from '@/lib/quiz/ask-ai';
 import { extractUnknownErrorMessage } from '@/lib/api/error';
+import {
+  readChatHistories,
+  writeChatHistories,
+  type ChatHistoryPersistence,
+} from '@/features/quiz/lib/chat-history-storage';
 
 export interface ChatMessage {
   role: 'user' | 'assistant';
@@ -11,6 +16,8 @@ export interface ChatMessage {
 }
 
 type ChatHistories = Record<string, ChatMessage[]>;
+
+const EMPTY_CHAT_MESSAGES: ChatMessage[] = [];
 
 interface StreamQuestionPayload {
   question: string;
@@ -27,7 +34,7 @@ interface SendMessageParams {
 }
 
 interface UseStreamingChatSessionOptions {
-  persistenceKey?: string;
+  persistence?: ChatHistoryPersistence;
 }
 
 interface ChatSessionState {
@@ -38,7 +45,21 @@ interface ChatSessionState {
 }
 
 export function useStreamingChatSession(options: UseStreamingChatSessionOptions = {}) {
-  const { persistenceKey } = options;
+  const { persistence } = options;
+  const persistenceScope = persistence?.scope;
+  const persistenceId = persistence?.scope === 'attempt' ? persistence.id : undefined;
+  const stablePersistence = useMemo<ChatHistoryPersistence | undefined>(() => {
+    if (persistenceScope === 'attempt' && persistenceId) {
+      return { scope: 'attempt', id: persistenceId };
+    }
+    return persistenceScope === 'bookmarks' ? { scope: 'bookmarks' } : undefined;
+  }, [persistenceId, persistenceScope]);
+  const persistenceIdentity = stablePersistence
+    ? `${stablePersistence.scope}:${stablePersistence.scope === 'attempt' ? stablePersistence.id : ''}`
+    : null;
+  const [hydratedPersistenceIdentity, setHydratedPersistenceIdentity] = useState<string | null>(
+    null,
+  );
   const [state, setState] = useState<ChatSessionState>({
     chatHistories: {},
     userQuestion: '',
@@ -47,23 +68,16 @@ export function useStreamingChatSession(options: UseStreamingChatSessionOptions 
   });
 
   useEffect(() => {
-    if (!persistenceKey || typeof window === 'undefined') {
+    if (!stablePersistence || typeof window === 'undefined') {
       return;
     }
 
-    let chatHistories: ChatHistories = {};
-    const savedChats = localStorage.getItem(persistenceKey);
-
-    if (savedChats) {
-      try {
-        chatHistories = JSON.parse(savedChats);
-      } catch (error) {
-        console.error('Failed to load chat histories:', error);
-      }
-    }
-
-    setState((prev) => ({ ...prev, chatHistories }));
-  }, [persistenceKey]);
+    setState((prev) => ({
+      ...prev,
+      chatHistories: readChatHistories(stablePersistence),
+    }));
+    setHydratedPersistenceIdentity(persistenceIdentity);
+  }, [persistenceIdentity, stablePersistence]);
 
   const { aiError, chatHistories, loadingAI, userQuestion } = state;
 
@@ -76,16 +90,16 @@ export function useStreamingChatSession(options: UseStreamingChatSessionOptions 
   };
 
   useEffect(() => {
-    if (!persistenceKey || typeof window === 'undefined') {
+    if (
+      !stablePersistence ||
+      typeof window === 'undefined' ||
+      hydratedPersistenceIdentity !== persistenceIdentity
+    ) {
       return;
     }
 
-    if (Object.keys(chatHistories).length > 0) {
-      localStorage.setItem(persistenceKey, JSON.stringify(chatHistories));
-    } else {
-      localStorage.removeItem(persistenceKey);
-    }
-  }, [chatHistories, persistenceKey]);
+    writeChatHistories(stablePersistence, chatHistories);
+  }, [chatHistories, hydratedPersistenceIdentity, persistenceIdentity, stablePersistence]);
 
   const ensureHistory = (historyKey: string | number) => {
     const key = String(historyKey);
@@ -122,7 +136,7 @@ export function useStreamingChatSession(options: UseStreamingChatSessionOptions 
 
   const getHistory = (historyKey: string | number) => {
     const key = String(historyKey);
-    return chatHistories[key] || [];
+    return chatHistories[key] ?? EMPTY_CHAT_MESSAGES;
   };
 
   const sendMessage = async ({
@@ -159,7 +173,11 @@ export function useStreamingChatSession(options: UseStreamingChatSessionOptions 
       ...prev,
       chatHistories: {
         ...prev.chatHistories,
-        [key]: [...(prev.chatHistories[key] || []), userMessage, assistantPlaceholder],
+        [key]: [
+          ...(prev.chatHistories[key] ?? EMPTY_CHAT_MESSAGES),
+          userMessage,
+          assistantPlaceholder,
+        ],
       },
     }));
 
@@ -176,7 +194,7 @@ export function useStreamingChatSession(options: UseStreamingChatSessionOptions 
         {
           onContent: (_, fullContent) => {
             setState((prev) => {
-              const history = [...(prev.chatHistories[key] || [])];
+              const history = [...(prev.chatHistories[key] ?? EMPTY_CHAT_MESSAGES)];
               for (let i = history.length - 1; i >= 0; i -= 1) {
                 if (history[i]?.role === 'assistant') {
                   history[i] = { ...history[i], content: fullContent };
@@ -193,7 +211,7 @@ export function useStreamingChatSession(options: UseStreamingChatSessionOptions 
       );
 
       setState((prev) => {
-        const history = [...(prev.chatHistories[key] || [])];
+        const history = [...(prev.chatHistories[key] ?? EMPTY_CHAT_MESSAGES)];
         for (let i = history.length - 1; i >= 0; i -= 1) {
           if (history[i]?.role === 'assistant') {
             history[i] = { ...history[i], content: explanation };
@@ -209,7 +227,7 @@ export function useStreamingChatSession(options: UseStreamingChatSessionOptions 
       return true;
     } catch (error: unknown) {
       setState((prev) => {
-        const history = [...(prev.chatHistories[key] || [])];
+        const history = [...(prev.chatHistories[key] ?? EMPTY_CHAT_MESSAGES)];
         const lastMessage = history[history.length - 1];
         if (lastMessage?.role === 'assistant' && !lastMessage.content.trim()) {
           history.pop();

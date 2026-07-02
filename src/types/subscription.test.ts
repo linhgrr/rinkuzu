@@ -7,6 +7,7 @@ describe('DurationUtils', () => {
     expect(DurationUtils.parseToMonths('P3M')).toBe(3);
     expect(DurationUtils.parseToMonths('P1Y')).toBe(12);
     expect(DurationUtils.parseToMonths('PT0S')).toBeUndefined();
+    expect(() => DurationUtils.parseToMonths('P1M-junk')).toThrow('Unsupported ISO 8601 duration');
   });
 
   it('calculates end dates and lifetime subscriptions', () => {
@@ -29,14 +30,6 @@ describe('DurationUtils', () => {
       displayName: '2 Months',
       months: 2,
     });
-  });
-
-  it('converts legacy durations and rejects unsupported values', () => {
-    expect(DurationUtils.fromLegacyDuration('6 tháng')).toBe('P6M');
-    expect(DurationUtils.fromLegacyDuration('lifetime')).toBe('PT0S');
-    expect(() => DurationUtils.fromLegacyDuration('forever-ish')).toThrow(
-      'Unknown legacy duration format',
-    );
   });
 
   it('validates only supported ISO duration shapes', () => {

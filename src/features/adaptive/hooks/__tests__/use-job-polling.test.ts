@@ -11,14 +11,14 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createJobPoller } from '@/features/adaptive/hooks/use-job-polling';
 import type { PollSnapshot } from '@/features/adaptive/hooks/use-job-polling';
-import { AdaptiveApiError } from '@/features/adaptive/lib/api-client';
+import { AdaptiveApiError } from '@/features/adaptive/lib/adaptive-api-error';
 
 // ---------------------------------------------------------------------------
 // Minimal snapshot factory
 // ---------------------------------------------------------------------------
 
-function snap(status: string, progress = 0, retry_after_seconds = 1): PollSnapshot {
-  return { status: status as PollSnapshot['status'], progress, retry_after_seconds };
+function snap(status: PollSnapshot['status'], progress = 0, retry_after_seconds = 1): PollSnapshot {
+  return { status, progress, retry_after_seconds };
 }
 
 // ---------------------------------------------------------------------------
@@ -27,18 +27,22 @@ function snap(status: string, progress = 0, retry_after_seconds = 1): PollSnapsh
 
 /** A minimal manual-timer harness that avoids vi.useFakeTimers global side-effects. */
 class FakeTimers {
-  private queue: Array<{ id: number; at: number; fn: () => void }> = [];
-  private counter = 0;
+  private queue: Array<{
+    id: ReturnType<typeof setTimeout>;
+    at: number;
+    fn: () => void;
+  }> = [];
   now = 0;
 
   schedule(fn: () => void, ms: number): ReturnType<typeof setTimeout> {
-    const id = ++this.counter;
+    const id = setTimeout(() => undefined, 0);
+    clearTimeout(id);
     this.queue.push({ id, at: this.now + ms, fn });
-    return id as unknown as ReturnType<typeof setTimeout>;
+    return id;
   }
 
   unschedule(id: ReturnType<typeof setTimeout>): void {
-    this.queue = this.queue.filter((t) => t.id !== (id as unknown as number));
+    this.queue = this.queue.filter((t) => t.id !== id);
   }
 
   /** Advance virtual time by `ms` and fire all timers that are due. */

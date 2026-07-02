@@ -1,4 +1,5 @@
 import { AdaptiveApiError } from './adaptive-api-error';
+import { isStandardErrorEnvelope, isStandardSuccessEnvelope } from '@/lib/api/envelope';
 
 const API_BASE = '';
 const DEFAULT_TIMEOUT_MS = 60_000;
@@ -13,45 +14,11 @@ type ApiFetchOptions = RequestInit & {
   cacheTtlMs?: number;
 };
 
-type StandardSuccessResponse<T> = {
-  success: true;
-  data: T;
-  meta?: Record<string, unknown> | null;
-};
-
-type StandardErrorResponse = {
-  success: false;
-  error: {
-    code?: string;
-    message?: string;
-    detail?: string;
-    meta?: unknown;
-  };
-};
-
 const inFlightGetRequests = new Map<string, Promise<unknown>>();
 const responseCache = new Map<string, { expiresAt: number; data: unknown }>();
 
 function isAbortLikeError(error: unknown): boolean {
   return error instanceof Error && error.name === 'AbortError';
-}
-
-function isStandardSuccessEnvelope<T>(payload: unknown): payload is StandardSuccessResponse<T> {
-  return (
-    !!payload &&
-    typeof payload === 'object' &&
-    (payload as { success?: unknown }).success === true &&
-    'data' in payload
-  );
-}
-
-function isStandardErrorEnvelope(payload: unknown): payload is StandardErrorResponse {
-  return (
-    !!payload &&
-    typeof payload === 'object' &&
-    (payload as { success?: unknown }).success === false &&
-    'error' in payload
-  );
 }
 
 function normalizeNetworkFailure(error: unknown): AdaptiveApiError {
@@ -100,9 +67,9 @@ function normalizeAdaptiveError({
   message?: string | null;
   detail?: string | null;
 }): AdaptiveApiError {
-  const trimmedDetail = detail?.trim() || '';
-  const trimmedMessage = message?.trim() || '';
-  const normalizedCode = code?.trim() || '';
+  const trimmedDetail = detail?.trim() ?? '';
+  const trimmedMessage = message?.trim() ?? '';
+  const normalizedCode = code?.trim() ?? '';
 
   if (looksLikeHtmlPayload(trimmedDetail)) {
     return new AdaptiveApiError({

@@ -1,11 +1,11 @@
 'use client';
 
-import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 
 import { Button } from '@/components/ui/Button';
@@ -17,7 +17,7 @@ import {
   HiOutlineExclamationCircle,
   HiOutlineEye,
   HiOutlineEyeOff,
-} from '@/components/icons';
+} from 'react-icons/hi';
 import { GoogleAuthButton } from '@/components/auth/GoogleAuthButton';
 import { defaultLocale, locales } from '@/i18n/config';
 import { loginSchema, type LoginInput } from '@/lib/validation/auth';
@@ -38,7 +38,6 @@ function LoginFormContent({ locale, googleEnabled, onSwitchMode }: LoginFormProp
   const [showPassword, setShowPassword] = useState(false);
   const [serverError, setServerError] = useState<ErrorState | null>(null);
   const [retrySeconds, setRetrySeconds] = useState(0);
-  const retryRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const { prefetch, refresh, replace } = useRouter();
   const searchParams = useSearchParams();
   const get = searchParams.get.bind(searchParams);
@@ -54,12 +53,12 @@ function LoginFormContent({ locale, googleEnabled, onSwitchMode }: LoginFormProp
     formState: { errors, isSubmitting },
   } = form;
 
-  const callbackUrl = useMemo(() => {
-    const fallback = locale === defaultLocale ? '/dashboard' : `/${locale}/dashboard`;
+  const callbackUrl = (() => {
+    const defaultRedirect = locale === defaultLocale ? '/dashboard' : `/${locale}/dashboard`;
     const raw = get('callbackUrl');
 
     if (!raw || !raw.startsWith('/') || raw.startsWith('//')) {
-      return fallback;
+      return defaultRedirect;
     }
 
     const pathOnly = raw.split('?')[0];
@@ -79,32 +78,25 @@ function LoginFormContent({ locale, googleEnabled, onSwitchMode }: LoginFormProp
       localeRegisterPath,
     ]);
 
-    return blockedCallbacks.has(normalizedPath) ? fallback : raw;
-  }, [get, locale]);
+    return blockedCallbacks.has(normalizedPath) ? defaultRedirect : raw;
+  })();
 
   useEffect(() => {
     prefetch(callbackUrl);
   }, [callbackUrl, prefetch]);
 
-  useEffect(() => {
-    return () => {
-      if (retryRef.current) clearInterval(retryRef.current);
-    };
-  }, []);
-
   const startRetryCountdown = (seconds: number) => {
     setRetrySeconds(seconds);
-    if (retryRef.current) clearInterval(retryRef.current);
-    retryRef.current = setInterval(() => {
-      setRetrySeconds((prev) => {
-        if (prev <= 1) {
-          if (retryRef.current) clearInterval(retryRef.current);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
   };
+
+  useEffect(() => {
+    if (retrySeconds <= 0) return;
+    const intervalId = setInterval(() => {
+      setRetrySeconds((prev) => Math.max(0, prev - 1));
+    }, 1000);
+
+    return () => clearInterval(intervalId);
+  }, [retrySeconds]);
 
   const onSubmit = handleSubmit(async (values) => {
     if (retrySeconds > 0) return;
@@ -151,7 +143,7 @@ function LoginFormContent({ locale, googleEnabled, onSwitchMode }: LoginFormProp
           .toString()
           .padStart(2, '0')}:${(retrySeconds % 60).toString().padStart(2, '0')}`
       : '';
-  const emailValue = form.watch('email');
+  const emailValue = useWatch({ control: form.control, name: 'email' }) ?? '';
 
   return (
     <div>

@@ -1,0 +1,170 @@
+import { beforeEach, describe, expect, it, vi, type Mocked } from 'vitest';
+import type { IAttemptRepository } from '@/interfaces/repositories/IAttemptRepository';
+import type { IQuizProgressRepository } from '@/interfaces/repositories/IQuizProgressRepository';
+import type { IQuizRepository } from '@/interfaces/repositories/IQuizRepository';
+import type { IUserRepository } from '@/interfaces/repositories/IUserRepository';
+import { assertFail, assertOk } from '@/interfaces/services/types';
+import { QuizPlayService } from '@/services/quiz/QuizPlayService';
+
+const quizId = '507f191e810c19729de860ea';
+const userId = '507f191e810c19729de860eb';
+const savedProgress = {
+  questionOrder: [1, 0],
+  optionOrders: [
+    [1, 0],
+    [0, 1],
+  ],
+  userAnswers: [1, [0, 1]],
+  currentQuestionIndex: 1,
+  answeredCount: 2,
+  totalQuestions: 2,
+};
+
+function createService() {
+  const quizRepository: Mocked<IQuizRepository> = {
+    findById: vi.fn(),
+    findBySlug: vi.fn().mockResolvedValue({
+      id: quizId,
+      title: 'Quiz',
+      slug: 'quiz',
+      author: userId,
+      questions: [],
+      isPrivate: false,
+      createdAt: new Date('2026-07-01T00:00:00Z'),
+      updatedAt: new Date('2026-07-01T00:00:00Z'),
+    }),
+    findBySourceDraftId: vi.fn(),
+    create: vi.fn(),
+    update: vi.fn(),
+    delete: vi.fn(),
+    findAll: vi.fn(),
+    findForPlay: vi.fn(),
+    findUserQuizzes: vi.fn(),
+    findPublicByAuthor: vi.fn(),
+    count: vi.fn(),
+    countByCreatedAtBuckets: vi.fn(),
+    findTopCreators: vi.fn(),
+  };
+  const userRepository: Mocked<IUserRepository> = {
+    findByEmail: vi.fn(),
+    findById: vi.fn(),
+    findPublicProfileById: vi.fn(),
+    updateRole: vi.fn(),
+    delete: vi.fn(),
+    findAll: vi.fn(),
+    count: vi.fn(),
+    countByCreatedAtBuckets: vi.fn(),
+    countByRole: vi.fn(),
+  };
+  const attemptRepository: Mocked<IAttemptRepository> = {
+    findByUser: vi.fn(),
+    create: vi.fn(),
+    countByUser: vi.fn(),
+    countByQuiz: vi.fn(),
+    findRecentActivity: vi.fn(),
+    findByIdWithQuiz: vi.fn(),
+    count: vi.fn(),
+    countByTakenAtBuckets: vi.fn(),
+  };
+  const progressRepository: Mocked<IQuizProgressRepository> = {
+    findByUserAndQuiz: vi.fn(),
+    upsert: vi.fn(),
+    deleteByUserAndQuiz: vi.fn(),
+    findInProgressByUser: vi.fn(),
+  };
+
+  return {
+    quizRepository,
+    progressRepository,
+    service: new QuizPlayService(
+      quizRepository,
+      userRepository,
+      attemptRepository,
+      progressRepository,
+    ),
+  };
+}
+
+describe('QuizPlayService progress operations', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('maps saved progress to the response DTO', async () => {
+    const { service, progressRepository } = createService();
+    vi.mocked(progressRepository.findByUserAndQuiz).mockResolvedValue({
+      id: 'progress-1',
+      userId,
+      quiz: quizId,
+      ...savedProgress,
+      updatedAt: new Date('2026-07-01T00:00:00Z'),
+    });
+
+    const result = await service.getSavedQuizProgress('quiz-slug', userId);
+
+    assertOk(result);
+    expect(result.data).toEqual({ progress: savedProgress });
+    expect(progressRepository.findByUserAndQuiz).toHaveBeenCalledWith(userId, quizId);
+  });
+
+  it('saves and deletes progress through the repository', async () => {
+    const { service, progressRepository } = createService();
+    vi.mocked(progressRepository.upsert).mockResolvedValue({
+      id: 'progress-1',
+      userId,
+      quiz: quizId,
+      ...savedProgress,
+      updatedAt: new Date('2026-07-01T00:00:00Z'),
+    });
+    vi.mocked(progressRepository.deleteByUserAndQuiz).mockResolvedValue(true);
+
+    const saveResult = await service.saveQuizProgress('quiz-slug', userId, savedProgress);
+    const deleteResult = await service.deleteSavedQuizProgress('quiz-slug', userId);
+
+    assertOk(saveResult);
+    assertOk(deleteResult);
+    expect(saveResult.data).toEqual({ saved: true });
+    expect(deleteResult.data).toEqual({ deleted: true });
+    expect(progressRepository.upsert).toHaveBeenCalledWith(userId, quizId, savedProgress);
+    expect(progressRepository.deleteByUserAndQuiz).toHaveBeenCalledWith(userId, quizId);
+  });
+
+  it('returns 404 without touching progress storage when the quiz is missing', async () => {
+    const { service, quizRepository, progressRepository } = createService();
+    vi.mocked(quizRepository.findBySlug).mockResolvedValue(null);
+
+    const result = await service.getSavedQuizProgress('missing', userId);
+
+    assertFail(result);
+    expect(result.statusCode).toBe(404);
+    expect(progressRepository.findByUserAndQuiz).not.toHaveBeenCalled();
+  });
+
+  it('never exposes correct answers when a private quiz author starts playing', async () => {
+    const { service, quizRepository } = createService();
+    vi.mocked(quizRepository.findBySlug).mockResolvedValue({
+      id: quizId,
+      title: 'Private quiz',
+      slug: 'private-quiz',
+      author: userId,
+      isPrivate: true,
+      questions: [
+        {
+          id: 'question-1',
+          question: '2 + 2 = ?',
+          options: ['3', '4'],
+          correctIndex: 1,
+          type: 'single',
+        },
+      ],
+      createdAt: new Date('2026-07-01T00:00:00Z'),
+      updatedAt: new Date('2026-07-01T00:00:00Z'),
+    });
+
+    const result = await service.getQuizForPlay('private-quiz', 'user', userId);
+
+    assertOk(result);
+    expect(result.data.questions[0]).not.toHaveProperty('correctIndex');
+    expect(result.data.questions[0]).not.toHaveProperty('correctIndexes');
+  });
+});

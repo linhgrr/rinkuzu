@@ -1,6 +1,6 @@
 import mongoose, { Document, Schema, Types } from 'mongoose';
 
-export interface ISubscription extends Document {
+interface SubscriptionDocument extends Document {
   user: Types.ObjectId;
   userEmail: string;
   type: string;
@@ -17,7 +17,7 @@ export interface ISubscription extends Document {
   updatedAt: Date;
 }
 
-const SubscriptionSchema = new Schema<ISubscription>(
+const SubscriptionSchema = new Schema<SubscriptionDocument>(
   {
     user: {
       type: Schema.Types.ObjectId,
@@ -92,6 +92,6 @@ SubscriptionSchema.index(
 // Prevent re-compilation in development
 const Subscription =
   mongoose.models['Subscription'] ||
-  mongoose.model<ISubscription>('Subscription', SubscriptionSchema);
+  mongoose.model<SubscriptionDocument>('Subscription', SubscriptionSchema);
 
 export default Subscription;

@@ -10,9 +10,8 @@ import { DiscussionRepository } from '@/repositories/DiscussionRepository';
 import { ReportRepository } from '@/repositories/ReportRepository';
 import { BookmarkRepository } from '@/repositories/BookmarkRepository';
 import { QuizProgressRepository } from '@/repositories/QuizProgressRepository';
-
-import { createSubscriptionService } from '@/lib/subscription-factory';
-import type { SubscriptionService } from '@/services/subscription/SubscriptionService';
+import { FolderRepository } from '@/repositories/FolderRepository';
+import { QuizAttemptProgressRepository } from '@/repositories/QuizAttemptProgressRepository';
 
 interface Repositories {
   quiz: QuizRepository;
@@ -22,6 +21,8 @@ interface Repositories {
   report: ReportRepository;
   bookmark: BookmarkRepository;
   quizProgress: QuizProgressRepository;
+  folder: FolderRepository;
+  quizAttemptProgress: QuizAttemptProgressRepository;
 }
 
 interface Services {
@@ -45,6 +46,8 @@ export class ServiceFactory {
       report: new ReportRepository(),
       bookmark: new BookmarkRepository(),
       quizProgress: new QuizProgressRepository(),
+      folder: new FolderRepository(),
+      quizAttemptProgress: new QuizAttemptProgressRepository(),
     };
   }
 
@@ -64,6 +67,8 @@ export class ServiceFactory {
         this.repositories.discussion,
         this.repositories.report,
         this.repositories.quizProgress,
+        this.repositories.folder,
+        this.repositories.quizAttemptProgress,
       );
     }
     return this.services.quiz;
@@ -71,7 +76,11 @@ export class ServiceFactory {
 
   getUserService(): UserService {
     if (!this.services.user) {
-      this.services.user = new UserService(this.repositories.user, this.repositories.attempt);
+      this.services.user = new UserService(
+        this.repositories.user,
+        this.repositories.attempt,
+        this.repositories.quiz,
+      );
     }
     return this.services.user;
   }
@@ -93,35 +102,6 @@ export class ServiceFactory {
       );
     }
     return this.services.admin;
-  }
-
-  // Direct repository access when needed
-  getUserRepository(): UserRepository {
-    return this.repositories.user;
-  }
-
-  getQuizRepository(): QuizRepository {
-    return this.repositories.quiz;
-  }
-
-  getAttemptRepository(): AttemptRepository {
-    return this.repositories.attempt;
-  }
-
-  getQuizProgressRepository(): QuizProgressRepository {
-    return this.repositories.quizProgress;
-  }
-
-  getReportRepository(): ReportRepository {
-    return this.repositories.report;
-  }
-
-  /**
-   * @deprecated Import `createSubscriptionService` from `@/lib/subscription-factory` directly.
-   * Kept for backward-compat; resolves to the standalone factory.
-   */
-  static createSubscriptionService(): SubscriptionService {
-    return createSubscriptionService();
   }
 }
 

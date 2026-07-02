@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useReducer } from 'react';
+import { useEffect, useReducer } from 'react';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import Link from 'next/link';
@@ -11,35 +11,43 @@ import { Modal } from '@/components/ui/Modal';
 import { Textarea } from '@/components/ui/Input';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { AdminPageShell } from '@/components/admin/AdminPageShell';
-import { fetchApiData } from '@/lib/api/client';
+import { ROUTES } from '@/shared/constants/routes';
+import {
+  deleteAdminReport,
+  fetchAdminReportViewModels,
+  updateAdminReportStatus,
+} from '@/features/admin/reports/api/admin-reports-api';
+import type {
+  AdminReportFilterViewModel,
+  AdminReportStatusViewModel,
+  AdminReportViewModel,
+} from '@/features/admin/reports/types/admin-reports-view-model';
 import {
   HiOutlineEye,
   HiOutlinePencil,
   HiOutlineTrash,
   HiOutlineCheck,
   HiOutlineX,
-} from '@/components/icons';
-import { IReport } from '@/models/Report';
-
-type ReportFilter = 'all' | 'pending' | 'resolved' | 'dismissed';
+} from 'react-icons/hi';
 
 interface AdminReportsState {
   status: 'loading' | 'ready';
-  reports: IReport[];
-  statusFilter: ReportFilter;
-  selectedReport: IReport | null;
+  reports: AdminReportViewModel[];
+  statusFilter: AdminReportFilterViewModel;
+  selectedReport: AdminReportViewModel | null;
   adminNotes: string;
   updating: boolean;
-  reportToDelete: IReport | null;
+  reportToDelete: AdminReportViewModel | null;
   deleting: boolean;
 }
 
 type AdminReportsAction =
   | { type: 'patch'; value: Partial<AdminReportsState> }
-  | { type: 'loadSuccess'; value: IReport[] };
+  | { type: 'loadSuccess'; value: AdminReportViewModel[] };
 
-const REPORT_FILTERS: ReportFilter[] = ['all', 'pending', 'resolved', 'dismissed'];
+const REPORT_FILTERS: AdminReportFilterViewModel[] = ['all', 'pending', 'resolved', 'dismissed'];
 
 const initialState: AdminReportsState = {
   status: 'loading',
@@ -66,17 +74,7 @@ function adminReportsReducer(
   }
 }
 
-function formatReportDate(date: Date | string) {
-  return new Date(date).toLocaleDateString('vi-VN', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
-
-function getStatusBadge(status: string) {
+function getStatusBadge(status: AdminReportStatusViewModel) {
   switch (status) {
     case 'pending':
       return <Badge variant="warning">{status}</Badge>;
@@ -84,26 +82,15 @@ function getStatusBadge(status: string) {
       return <Badge variant="success">{status}</Badge>;
     case 'dismissed':
       return <Badge variant="default">{status}</Badge>;
-    default:
-      return <Badge variant="success">{status}</Badge>;
   }
-}
-
-function ReportsHeader() {
-  return (
-    <div className="mb-8">
-      <h1 className="text-3xl font-semibold text-neutral-900">Quiz Reports</h1>
-      <p className="mt-2 text-neutral-600">Manage and review user reports about quiz content</p>
-    </div>
-  );
 }
 
 function ReportFilterBar({
   statusFilter,
   onChange,
 }: {
-  statusFilter: ReportFilter;
-  onChange: (status: ReportFilter) => void;
+  statusFilter: AdminReportFilterViewModel;
+  onChange: (status: AdminReportFilterViewModel) => void;
 }) {
   return (
     <div className="mb-6 flex flex-wrap gap-2">
@@ -126,9 +113,9 @@ function ReportCardItem({
   onReview,
   onDelete,
 }: {
-  report: IReport;
-  onReview: (report: IReport) => void;
-  onDelete: (report: IReport) => void;
+  report: AdminReportViewModel;
+  onReview: (report: AdminReportViewModel) => void;
+  onDelete: (report: AdminReportViewModel) => void;
 }) {
   return (
     <Card className="transition-shadow hover:shadow-md">
@@ -146,7 +133,7 @@ function ReportCardItem({
                   <strong>Reporter:</strong> {report.reporterName} ({report.reporterEmail})
                 </span>
                 <span>
-                  <strong>Date:</strong> {formatReportDate(report.createdAt)}
+                  <strong>Date:</strong> {report.createdAtLabel}
                 </span>
               </div>
             </div>
@@ -164,7 +151,7 @@ function ReportCardItem({
 
             {report.resolvedAt && report.resolvedBy ? (
               <div className="text-xs text-neutral-500">
-                Resolved by {report.resolvedBy} on {formatReportDate(report.resolvedAt)}
+                Resolved by {report.resolvedBy} on {report.resolvedAtLabel}
               </div>
             ) : null}
           </div>
@@ -178,7 +165,7 @@ function ReportCardItem({
               <HiOutlineEye className="mr-1 size-4" /> Review
             </Button>
 
-            <Link href={`/edit/${report.quizId}`}>
+            <Link href={ROUTES.EDIT.QUIZ(report.quizId)}>
               <Button variant="accent" className="min-h-[36px] w-full px-3">
                 <HiOutlinePencil className="mr-1 size-4" /> Edit Quiz
               </Button>
@@ -207,7 +194,7 @@ function ReportReviewModal({
   onResolve,
   onDismiss,
 }: {
-  report: IReport | null;
+  report: AdminReportViewModel | null;
   adminNotes: string;
   updating: boolean;
   onClose: () => void;
@@ -227,7 +214,7 @@ function ReportReviewModal({
                 <strong>Reporter:</strong> {report.reporterName} ({report.reporterEmail})
               </div>
               <div>
-                <strong>Date:</strong> {formatReportDate(report.createdAt)}
+                <strong>Date:</strong> {report.createdAtLabel}
               </div>
               <div>
                 <strong>Status:</strong> {getStatusBadge(report.status)}
@@ -301,32 +288,32 @@ export default function AdminReportsPage() {
   const tCommon = useTranslations('common');
   const [state, dispatch] = useReducer(adminReportsReducer, initialState);
 
-  const loadReports = useCallback(async (statusFilter: ReportFilter) => {
-    try {
-      const params = new URLSearchParams();
-      if (statusFilter !== 'all') {
-        params.append('status', statusFilter);
-      }
-
-      const data = await fetchApiData<IReport[]>(`/api/admin/reports?${params}`);
-      dispatch({ type: 'loadSuccess', value: data });
-    } catch (error) {
-      console.error('Error fetching reports:', error);
-      dispatch({ type: 'patch', value: { status: 'ready' } });
-    }
-  }, []);
-
   useEffect(() => {
-    dispatch({ type: 'patch', value: { status: 'loading' } });
-    void loadReports(state.statusFilter);
-  }, [loadReports, state.statusFilter]);
+    const controller = new AbortController();
 
-  const openReportModal = (report: IReport) => {
+    async function loadReports() {
+      try {
+        const reports = await fetchAdminReportViewModels(state.statusFilter, controller.signal);
+        dispatch({ type: 'loadSuccess', value: reports });
+      } catch (error) {
+        if (error instanceof DOMException && error.name === 'AbortError') return;
+        console.error('Error fetching reports:', error);
+        dispatch({ type: 'patch', value: { status: 'ready' } });
+      }
+    }
+
+    dispatch({ type: 'patch', value: { status: 'loading' } });
+    void loadReports();
+
+    return () => controller.abort();
+  }, [state.statusFilter]);
+
+  const openReportModal = (report: AdminReportViewModel) => {
     dispatch({
       type: 'patch',
       value: {
         selectedReport: report,
-        adminNotes: report.adminNotes || '',
+        adminNotes: report.adminNotesInput,
       },
     });
   };
@@ -335,27 +322,23 @@ export default function AdminReportsPage() {
     dispatch({ type: 'patch', value: { selectedReport: null, adminNotes: '' } });
   };
 
-  const updateReportStatus = async (status: string) => {
+  const updateReportStatus = async (status: AdminReportStatusViewModel) => {
     if (!state.selectedReport) return;
 
     dispatch({ type: 'patch', value: { updating: true } });
     try {
-      await fetchApiData(`/api/admin/reports/${state.selectedReport._id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          status,
-          adminNotes: state.adminNotes.trim(),
-        }),
+      await updateAdminReportStatus({
+        reportId: state.selectedReport.id,
+        status,
+        adminNotes: state.adminNotes.trim(),
       });
-      await loadReports(state.statusFilter);
+      const reports = await fetchAdminReportViewModels(state.statusFilter);
+      dispatch({ type: 'loadSuccess', value: reports });
       closeReportModal();
+      dispatch({ type: 'patch', value: { updating: false } });
     } catch (error) {
       console.error('Error updating report:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to update report');
-    } finally {
       dispatch({ type: 'patch', value: { updating: false } });
     }
   };
@@ -363,25 +346,24 @@ export default function AdminReportsPage() {
   const deleteReport = async (reportId: string) => {
     try {
       dispatch({ type: 'patch', value: { deleting: true } });
-      await fetchApiData<null>(`/api/admin/reports/${reportId}`, {
-        method: 'DELETE',
-      });
-      await loadReports(state.statusFilter);
-      if (state.selectedReport?._id === reportId) {
+      await deleteAdminReport(reportId);
+      const reports = await fetchAdminReportViewModels(state.statusFilter);
+      dispatch({ type: 'loadSuccess', value: reports });
+      if (state.selectedReport?.id === reportId) {
         closeReportModal();
       }
+      dispatch({ type: 'patch', value: { deleting: false } });
     } catch (error) {
       console.error('Error deleting report:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to delete report');
-    } finally {
       dispatch({ type: 'patch', value: { deleting: false } });
     }
   };
 
   const confirmDeleteReport = async () => {
-    if (!state.reportToDelete?._id) return;
-    await deleteReport(state.reportToDelete._id);
-    if (state.selectedReport?._id === state.reportToDelete._id) {
+    if (!state.reportToDelete?.id) return;
+    await deleteReport(state.reportToDelete.id);
+    if (state.selectedReport?.id === state.reportToDelete.id) {
       closeReportModal();
     }
     dispatch({ type: 'patch', value: { reportToDelete: null } });
@@ -394,7 +376,10 @@ export default function AdminReportsPage() {
           <LoadingState text={tCommon('loading')} />
         ) : (
           <>
-            <ReportsHeader />
+            <AdminPageHeader
+              title="Quiz Reports"
+              description="Manage and review user reports about quiz content"
+            />
             <ReportFilterBar
               statusFilter={state.statusFilter}
               onChange={(status) => dispatch({ type: 'patch', value: { statusFilter: status } })}
@@ -415,7 +400,7 @@ export default function AdminReportsPage() {
               ) : (
                 state.reports.map((report) => (
                   <ReportCardItem
-                    key={report._id}
+                    key={report.id}
                     report={report}
                     onReview={openReportModal}
                     onDelete={(value) =>

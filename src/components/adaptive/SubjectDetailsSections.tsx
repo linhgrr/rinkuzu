@@ -14,8 +14,9 @@ import {
   HiOutlineCollection,
   HiOutlineLightningBolt,
   HiOutlineTrendingUp,
-} from '@/components/icons';
-import type { SessionHistoryDetail, SessionStatus, TranslateFn } from '@/features/adaptive/types';
+} from 'react-icons/hi';
+import type { SessionHistoryDetail } from '@/features/adaptive/types/history';
+import type { SessionStatus, TranslateFn } from '@/features/adaptive/types/learning';
 
 function SectionSkeleton() {
   return (
@@ -34,7 +35,8 @@ const MasteryMatrix = dynamic(() => import('./MasteryMatrix'), {
 });
 
 const ExerciseHistoryTable = dynamic(
-  () => import('./SessionHistory').then((module) => ({ default: module.ExerciseHistoryTable })),
+  () =>
+    import('./ExerciseHistoryTable').then((module) => ({ default: module.ExerciseHistoryTable })),
   {
     loading: () => (
       <div className="flex items-center justify-center gap-2 py-10 text-neutral-500">

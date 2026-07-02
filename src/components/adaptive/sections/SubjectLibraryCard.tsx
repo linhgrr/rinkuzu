@@ -1,16 +1,10 @@
 'use client';
 
 import Image from 'next/image';
-import { memo } from 'react';
 import { Button } from '@/components/ui/Button';
-import {
-  HiOutlineBookOpen,
-  HiOutlineRefresh,
-  HiOutlineTrash,
-  HiOutlineX,
-} from '@/components/icons';
-import type { DashboardSubject } from '@/features/adaptive/lib/dashboard-view-model';
-import type { PipelineJobHistoryItem, TranslateFn } from '@/features/adaptive/types';
+import { HiOutlineBookOpen, HiOutlineRefresh, HiOutlineTrash, HiOutlineX } from 'react-icons/hi';
+import type { DashboardSubject } from '@/features/adaptive/types/dashboard-view-model';
+import type { TranslateFn } from '@/features/adaptive/types/learning';
 
 type SubjectLibraryCardProps = {
   subject: DashboardSubject;
@@ -18,7 +12,7 @@ type SubjectLibraryCardProps = {
   deleting: boolean;
   imageUrl?: string;
   onOpenSubject: (jobId: string) => void;
-  onDelete: (job: PipelineJobHistoryItem) => void;
+  onDelete: (subject: DashboardSubject) => void;
   onRetry?: (jobId: string) => void;
   onCancel?: (jobId: string) => void;
   busy?: boolean;
@@ -32,7 +26,7 @@ function formatEta(etaSeconds: number): string {
   return `~${minutes}m`;
 }
 
-export const SubjectLibraryCard = memo(function SubjectLibraryCard({
+export function SubjectLibraryCard({
   subject,
   loading,
   deleting,
@@ -114,7 +108,7 @@ export const SubjectLibraryCard = memo(function SubjectLibraryCard({
             )}
             {!runtime.etaSeconds && <div className="mb-4" />}
             <Button
-              onClick={() => onCancel?.(subject.job_id)}
+              onClick={() => onCancel?.(subject.jobId)}
               disabled={busy}
               aria-label={t('cancelProcessing')}
               className="w-full rounded-full bg-neutral-100 text-sm font-bold text-red-600 hover:bg-red-50 hover:text-red-700"
@@ -131,7 +125,7 @@ export const SubjectLibraryCard = memo(function SubjectLibraryCard({
               {t('processingFailed')}: {runtime.message}
             </p>
             <Button
-              onClick={() => onRetry?.(subject.job_id)}
+              onClick={() => onRetry?.(subject.jobId)}
               disabled={busy}
               aria-label={t('retryProcessing')}
               className="w-full rounded-full bg-neutral-100 text-sm font-bold text-brand-trust hover:bg-brand-trust hover:text-white"
@@ -155,7 +149,7 @@ export const SubjectLibraryCard = memo(function SubjectLibraryCard({
               />
             </div>
             <Button
-              onClick={() => onOpenSubject(subject.job_id)}
+              onClick={() => onOpenSubject(subject.jobId)}
               disabled={loading}
               className="w-full rounded-full bg-neutral-100 text-sm font-bold text-brand-trust hover:bg-brand-trust hover:text-white"
             >
@@ -166,4 +160,4 @@ export const SubjectLibraryCard = memo(function SubjectLibraryCard({
       </div>
     </div>
   );
-});
+}

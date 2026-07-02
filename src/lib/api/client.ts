@@ -1,9 +1,9 @@
+import { extractApiErrorCode, extractApiErrorMessage, extractApiErrorMeta } from './error';
 import {
-  extractApiErrorCode,
-  extractApiErrorMessage,
-  extractApiErrorMeta,
-  type ApiErrorPayload,
-} from './error';
+  isStandardErrorEnvelope,
+  isStandardSuccessEnvelope,
+  type StandardSuccessEnvelope,
+} from './envelope';
 
 export class ApiResponseError extends Error {
   status: number;
@@ -40,37 +40,9 @@ export class ApiResponseError extends Error {
 export type ApiSuccessResponse<
   T,
   Meta extends Record<string, unknown> = Record<string, unknown>,
-> = {
-  success: true;
-  data: T;
-  meta?: Meta;
-};
+> = StandardSuccessEnvelope<T, Meta>;
 
 type ParsedApiBody = { payload: unknown; rawText: string };
-
-type StandardSuccessEnvelope<T> = {
-  success: true;
-  data: T;
-  meta?: Record<string, unknown>;
-};
-
-function isStandardSuccessEnvelope<T>(payload: unknown): payload is StandardSuccessEnvelope<T> {
-  return (
-    !!payload &&
-    typeof payload === 'object' &&
-    (payload as { success?: unknown }).success === true &&
-    'data' in payload
-  );
-}
-
-function isStandardErrorEnvelope(payload: unknown): payload is ApiErrorPayload {
-  return (
-    !!payload &&
-    typeof payload === 'object' &&
-    (payload as { success?: unknown }).success === false &&
-    'error' in payload
-  );
-}
 
 async function parseApiBody(response: Response): Promise<ParsedApiBody> {
   let rawText: string;
@@ -121,17 +93,10 @@ export async function fetchApiResponse<
 >(input: RequestInfo | URL, init?: RequestInit): Promise<ApiSuccessResponse<T, Meta>> {
   const response = await fetch(input, init);
 
-  if (response.status === 204) {
-    return {
-      success: true,
-      data: null as T,
-    } as ApiSuccessResponse<T, Meta>;
-  }
-
   const { payload: rawPayload, rawText } = await parseApiBody(response);
 
-  if (response.ok && isStandardSuccessEnvelope<T>(rawPayload)) {
-    return rawPayload as ApiSuccessResponse<T, Meta>;
+  if (response.ok && isStandardSuccessEnvelope<T, Meta>(rawPayload)) {
+    return rawPayload;
   }
 
   if (isStandardErrorEnvelope(rawPayload)) {

@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { authOptions } from '@/lib/auth';
 import { defaultLocale } from '@/i18n/config';
-import { GuestLanding } from '@/features/landing/components';
+import { GuestLanding } from '@/features/landing/components/GuestLanding';
 import type { Metadata } from 'next';
 import { buildLocalizedMetadata } from '@/lib/seo';
 

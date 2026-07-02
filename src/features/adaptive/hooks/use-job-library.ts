@@ -6,8 +6,8 @@ import {
   listPipelineJobs,
   retryPipelineJob,
   cancelPipelineJob,
-} from '@/features/adaptive/lib/api-client';
-import type { PipelineJobListItem, PipelineStatus } from '@/features/adaptive/types';
+} from '@/features/adaptive/lib/adaptive-api-methods';
+import type { PipelineJobListItem, PipelineStatus } from '@/features/adaptive/types/pipeline';
 
 const MIN_DELAY_MS = 1_000;
 const MAX_DELAY_MS = 10_000;

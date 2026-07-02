@@ -4,6 +4,7 @@ import { defaultLocale, locales } from '@/i18n/config';
 import { canonicalFor } from '@/lib/seo';
 import { INDEXABLE_STATIC_PUBLIC_ROUTES } from '@/lib/seo.routes';
 import { logger } from '@/lib/logger';
+import { serializeDate } from '@/lib/date-serialization';
 
 // Extended sitemap entry type that includes hreflang alternates.
 // Next.js MetadataRoute.Sitemap doesn't expose the 'links' field directly,
@@ -33,6 +34,12 @@ function toEntry(locale: string, path: string, lastModified = new Date()): Sitem
   };
 }
 
+function toRequiredSitemapDate(value: Date | string, fieldName: string): Date {
+  const date = value instanceof Date ? value : new Date(value);
+  serializeDate(date, fieldName);
+  return date;
+}
+
 export default async function sitemap(): Promise<SitemapEntry[]> {
   const entries: SitemapEntry[] = [];
   const seenUrls = new Set<string>();
@@ -57,15 +64,15 @@ export default async function sitemap(): Promise<SitemapEntry[]> {
       page: 1,
       limit: 5000,
       compact: true,
+      onlyMine: false,
     });
 
-    for (const quiz of quizResult.quizzes || []) {
-      if (!quiz?.slug) continue;
+    for (const quiz of quizResult.quizzes) {
       const path = `/quiz/${quiz.slug}`;
-      const quizUpdatedAt = quiz.updatedAt || quiz.createdAt;
+      const quizUpdatedAt = quiz.updatedAt ?? quiz.createdAt;
 
       for (const { locale } of localeVariants(path)) {
-        pushEntry(toEntry(locale, path, new Date(quizUpdatedAt || Date.now())));
+        pushEntry(toEntry(locale, path, toRequiredSitemapDate(quizUpdatedAt, 'quiz.updatedAt')));
       }
     }
   } catch (error) {

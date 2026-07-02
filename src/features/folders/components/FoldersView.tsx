@@ -1,18 +1,69 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useReducer } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
+import { ErrorState } from '@/components/ui/ErrorState';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
-import { HiOutlineDotsVertical, HiOutlineFolder, HiOutlinePlus } from '@/components/icons';
-import { fetchApiData } from '@/lib/api/client';
+import { HiOutlineDotsVertical, HiOutlineFolder, HiOutlinePlus } from 'react-icons/hi';
 import { extractUnknownErrorMessage } from '@/lib/api/error';
+import { deleteFolderViewModel, renameFolderViewModel } from '@/features/folders/api/folders-api';
 import { AddFolderModal } from './AddFolderModal';
 import { useFolders } from '../hooks/useFolders';
-import type { FolderSummary } from '../types';
+import type { FolderSummaryViewModel } from '@/features/folders/types/folder-view-model';
+import { UNFILED_FOLDER_TARGET } from '@/shared/constants/folder';
+
+interface FoldersViewState {
+  showAdd: boolean;
+  renaming: FolderSummaryViewModel | null;
+  renameValue: string;
+  deleting: FolderSummaryViewModel | null;
+  submitting: boolean;
+}
+
+type FoldersViewAction =
+  | { type: 'openAdd' }
+  | { type: 'closeAdd' }
+  | { type: 'startRename'; folder: FolderSummaryViewModel }
+  | { type: 'setRenameValue'; value: string }
+  | { type: 'closeRename' }
+  | { type: 'startDelete'; folder: FolderSummaryViewModel }
+  | { type: 'closeDelete' }
+  | { type: 'setSubmitting'; value: boolean };
+
+const initialFoldersViewState: FoldersViewState = {
+  showAdd: false,
+  renaming: null,
+  renameValue: '',
+  deleting: null,
+  submitting: false,
+};
+
+function foldersViewReducer(state: FoldersViewState, action: FoldersViewAction): FoldersViewState {
+  switch (action.type) {
+    case 'openAdd':
+      return { ...state, showAdd: true };
+    case 'closeAdd':
+      return { ...state, showAdd: false };
+    case 'startRename':
+      return { ...state, renaming: action.folder, renameValue: action.folder.name };
+    case 'setRenameValue':
+      return { ...state, renameValue: action.value };
+    case 'closeRename':
+      return { ...state, renaming: null, renameValue: '' };
+    case 'startDelete':
+      return { ...state, deleting: action.folder };
+    case 'closeDelete':
+      return { ...state, deleting: null };
+    case 'setSubmitting':
+      return { ...state, submitting: action.value };
+    default:
+      return state;
+  }
+}
 
 function FolderCard({
   folder,
@@ -20,7 +71,7 @@ function FolderCard({
   onRename,
   onDelete,
 }: {
-  folder: Pick<FolderSummary, '_id' | 'name' | 'quizCount'>;
+  folder: Pick<FolderSummaryViewModel, 'id' | 'name' | 'quizCount'>;
   href: string;
   onRename?: () => void;
   onDelete?: () => void;
@@ -68,48 +119,38 @@ function FolderCard({
 
 export function FoldersView() {
   const { folders, unfiledCount, isLoading, error, mutate } = useFolders();
-  const [showAdd, setShowAdd] = useState(false);
-  const [renaming, setRenaming] = useState<FolderSummary | null>(null);
-  const [renameValue, setRenameValue] = useState('');
-  const [deleting, setDeleting] = useState<FolderSummary | null>(null);
-  const [submitting, setSubmitting] = useState(false);
+  const [state, dispatch] = useReducer(foldersViewReducer, initialFoldersViewState);
 
   async function renameFolder() {
-    if (!renaming || !renameValue.trim()) return;
-    setSubmitting(true);
+    if (!state.renaming || !state.renameValue.trim()) return;
+    dispatch({ type: 'setSubmitting', value: true });
     try {
-      await fetchApiData(`/api/folders/${renaming._id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: renameValue.trim() }),
-      });
+      await renameFolderViewModel(state.renaming.id, state.renameValue.trim());
       await mutate();
-      setRenaming(null);
+      dispatch({ type: 'closeRename' });
       toast.success('Folder renamed');
     } catch (requestError) {
       toast.error(extractUnknownErrorMessage(requestError, 'Failed to rename folder'));
-    } finally {
-      setSubmitting(false);
     }
+    dispatch({ type: 'setSubmitting', value: false });
   }
 
   async function deleteFolder() {
-    if (!deleting) return;
-    setSubmitting(true);
+    if (!state.deleting) return;
+    dispatch({ type: 'setSubmitting', value: true });
     try {
-      await fetchApiData(`/api/folders/${deleting._id}`, { method: 'DELETE' });
+      await deleteFolderViewModel(state.deleting.id);
       await mutate();
-      setDeleting(null);
+      dispatch({ type: 'closeDelete' });
       toast.success('Folder deleted. Its quizzes were moved to My folder.');
     } catch (requestError) {
       toast.error(extractUnknownErrorMessage(requestError, 'Failed to delete folder'));
-    } finally {
-      setSubmitting(false);
     }
+    dispatch({ type: 'setSubmitting', value: false });
   }
 
   if (error) {
-    return <p className="rounded-xl bg-red-50 p-4 text-sm text-red-700">Failed to load folders.</p>;
+    return <ErrorState message="Failed to load folders." className="rounded-xl" />;
   }
 
   return (
@@ -119,7 +160,7 @@ export function FoldersView() {
           <h2 className="text-lg font-semibold text-ink">Folders</h2>
           <p className="text-sm text-ink/55">Organize your quizzes into personal folders.</p>
         </div>
-        <Button onClick={() => setShowAdd(true)}>
+        <Button onClick={() => dispatch({ type: 'openAdd' })}>
           <HiOutlinePlus className="size-4" /> New folder
         </Button>
       </div>
@@ -132,50 +173,47 @@ export function FoldersView() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <FolderCard
-            folder={{ _id: 'default', name: 'My folder', quizCount: unfiledCount }}
-            href="/my-quizzes/folder/default"
+            folder={{ id: UNFILED_FOLDER_TARGET, name: 'My folder', quizCount: unfiledCount }}
+            href={`/my-quizzes/folder/${UNFILED_FOLDER_TARGET}`}
           />
           {folders.map((folder) => (
             <FolderCard
-              key={folder._id}
+              key={folder.id}
               folder={folder}
-              href={`/my-quizzes/folder/${folder._id}`}
-              onRename={() => {
-                setRenameValue(folder.name);
-                setRenaming(folder);
-              }}
-              onDelete={() => setDeleting(folder)}
+              href={`/my-quizzes/folder/${folder.id}`}
+              onRename={() => dispatch({ type: 'startRename', folder })}
+              onDelete={() => dispatch({ type: 'startDelete', folder })}
             />
           ))}
         </div>
       )}
 
       <AddFolderModal
-        isOpen={showAdd}
-        onClose={() => setShowAdd(false)}
+        isOpen={state.showAdd}
+        onClose={() => dispatch({ type: 'closeAdd' })}
         onCreated={() => void mutate()}
       />
       <Modal
-        isOpen={!!renaming}
-        onClose={() => setRenaming(null)}
+        isOpen={!!state.renaming}
+        onClose={() => dispatch({ type: 'closeRename' })}
         title="Rename folder"
         size="small"
       >
         <div className="space-y-4">
           <Input
             label="Folder name"
-            value={renameValue}
-            onChange={(event) => setRenameValue(event.target.value)}
+            value={state.renameValue}
+            onChange={(event) => dispatch({ type: 'setRenameValue', value: event.target.value })}
             maxLength={100}
           />
           <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setRenaming(null)}>
+            <Button variant="outline" onClick={() => dispatch({ type: 'closeRename' })}>
               Cancel
             </Button>
             <Button
               onClick={() => void renameFolder()}
-              loading={submitting}
-              disabled={!renameValue.trim()}
+              loading={state.submitting}
+              disabled={!state.renameValue.trim()}
             >
               Save
             </Button>
@@ -183,13 +221,13 @@ export function FoldersView() {
         </div>
       </Modal>
       <ConfirmModal
-        isOpen={!!deleting}
+        isOpen={!!state.deleting}
         title="Delete folder"
-        message={`Delete “${deleting?.name ?? ''}”? Its quizzes will move to My folder.`}
+        message={`Delete “${state.deleting?.name ?? ''}”? Its quizzes will move to My folder.`}
         confirmText="Delete"
         confirmVariant="destructive"
-        isLoading={submitting}
-        onCancel={() => setDeleting(null)}
+        isLoading={state.submitting}
+        onCancel={() => dispatch({ type: 'closeDelete' })}
         onConfirm={() => void deleteFolder()}
       />
     </>

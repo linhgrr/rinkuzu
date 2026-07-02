@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { useRouter } from '@/i18n/navigation';
-import { ROUTES } from '@/shared/constants';
+import { ROUTES } from '@/shared/constants/routes';
 import { usePendingQuizUploadStore } from '@/store/usePendingQuizUploadStore';
 import { MAX_QUIZ_PDF_BYTES } from '@/lib/quiz/constants';
 import { cn } from '@/lib/utils';

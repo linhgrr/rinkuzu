@@ -1,25 +1,21 @@
 'use client';
 
-import React, { useCallback, useState } from 'react';
+import React, { useState } from 'react';
 import { useDropzone, type FileRejection } from 'react-dropzone';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import {
-  HiOutlineCloudUpload,
-  HiOutlineDocumentText,
-  HiOutlineArrowLeft,
-} from '@/components/icons';
+import { HiOutlineCloudUpload, HiOutlineDocumentText, HiOutlineArrowLeft } from 'react-icons/hi';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import {
   AdaptiveApiError,
-  checkApiHealth,
   isAdaptiveRequestAbortedError,
   isAdaptiveServiceUnavailableError,
-  uploadPdf,
-} from '@/features/adaptive/lib/api-client';
+} from '@/features/adaptive/lib/adaptive-api-error';
+import { checkApiHealth, uploadPdf } from '@/features/adaptive/lib/adaptive-api-methods';
 import { ADAPTIVE_ROUTES } from '@/features/adaptive/lib/routes';
+import { saveSelectedPipelineJob } from '@/features/adaptive/lib/session-storage';
 
 const DEFAULT_PIPELINE_PAGE_BATCH_SIZE = 10;
 
@@ -31,102 +27,91 @@ export default function AdaptiveLearningUpload() {
   const [error, setError] = useState<string | null>(null);
   const [subjectName, setSubjectName] = useState('');
 
-  const getFriendlyUploadError = useCallback(
-    (err: unknown) => {
-      if (err instanceof AdaptiveApiError) {
-        if (err.code === 'unauthorized') return t('uploadPage.errors.unauthorized');
-        if (isAdaptiveRequestAbortedError(err)) return t('uploadPage.errors.connectionInterrupted');
-        if (isAdaptiveServiceUnavailableError(err))
-          return t('uploadPage.errors.serviceUnavailable');
-        if (err.code === 'conflict') return t('uploadPage.errors.conflict');
-      }
+  const getFriendlyUploadError = (err: unknown) => {
+    if (err instanceof AdaptiveApiError) {
+      if (err.code === 'unauthorized') return t('uploadPage.errors.unauthorized');
+      if (isAdaptiveRequestAbortedError(err)) return t('uploadPage.errors.connectionInterrupted');
+      if (isAdaptiveServiceUnavailableError(err)) return t('uploadPage.errors.serviceUnavailable');
+      if (err.code === 'conflict') return t('uploadPage.errors.conflict');
+    }
 
-      return t('uploadPage.uploadFailed');
-    },
-    [t],
-  );
+    return t('uploadPage.uploadFailed');
+  };
 
-  const onDropRejected = useCallback(
-    (rejections: FileRejection[]) => {
-      const firstError = rejections[0]?.errors[0];
-      if (!firstError) {
-        const message = t('uploadPage.uploadFailed');
-        setError(message);
-        return;
-      }
-
-      if (firstError.code === 'file-too-large') {
-        const message = t('uploadPage.errors.fileTooLarge', { maxSizeMb: 50 });
-        setError(message);
-        return;
-      }
-
-      if (firstError.code === 'file-invalid-type') {
-        const message = t('uploadPage.errors.onlyPdf');
-        setError(message);
-        return;
-      }
-
-      const message = firstError.message || t('uploadPage.uploadFailed');
+  const onDropRejected = (rejections: FileRejection[]) => {
+    const firstError = rejections[0]?.errors[0];
+    if (!firstError) {
+      const message = t('uploadPage.uploadFailed');
       setError(message);
-    },
-    [t],
-  );
+      return;
+    }
 
-  const handleUpload = useCallback(
-    async (file: File) => {
-      if (!subjectName.trim()) {
-        const message = t('uploadPage.subjectRequiredBeforeUpload');
-        setError(message);
-        return;
-      }
+    if (firstError.code === 'file-too-large') {
+      const message = t('uploadPage.errors.fileTooLarge', { maxSizeMb: 50 });
+      setError(message);
+      return;
+    }
 
-      setIsUploading(true);
-      setError(null);
-      setUploadProgress(10);
-      try {
-        const online = await checkApiHealth();
-        if (!online) {
-          const message = t('uploadPage.backendOffline');
-          setError(message);
-          toast.error(message);
-          setIsUploading(false);
-          return;
-        }
-        setUploadProgress(30);
-        const result = await uploadPdf(file, subjectName.trim(), DEFAULT_PIPELINE_PAGE_BATCH_SIZE);
-        setUploadProgress(100);
-        localStorage.setItem('al_pipeline_job_id', result.job_id);
-        localStorage.setItem('al_pipeline_filename', file.name);
-        localStorage.setItem('al_pipeline_subject_name', subjectName.trim());
-        toast.success(t('processing.status.queuedForProcessing'));
-        setTimeout(() => {
-          push(ADAPTIVE_ROUTES.dashboard);
-        }, 500);
-      } catch (err) {
-        const message = getFriendlyUploadError(err);
+    if (firstError.code === 'file-invalid-type') {
+      const message = t('uploadPage.errors.onlyPdf');
+      setError(message);
+      return;
+    }
+
+    const message = firstError.message || t('uploadPage.uploadFailed');
+    setError(message);
+  };
+
+  const handleUpload = async (file: File) => {
+    if (!subjectName.trim()) {
+      const message = t('uploadPage.subjectRequiredBeforeUpload');
+      setError(message);
+      return;
+    }
+
+    setIsUploading(true);
+    setError(null);
+    setUploadProgress(10);
+    try {
+      const online = await checkApiHealth();
+      if (!online) {
+        const message = t('uploadPage.backendOffline');
         setError(message);
         toast.error(message);
         setIsUploading(false);
-        setUploadProgress(0);
+        return;
       }
-    },
-    [getFriendlyUploadError, push, subjectName, t],
-  );
+      setUploadProgress(30);
+      const result = await uploadPdf(file, subjectName.trim(), DEFAULT_PIPELINE_PAGE_BATCH_SIZE);
+      setUploadProgress(100);
+      saveSelectedPipelineJob({
+        jobId: result.job_id,
+        filename: file.name,
+        subjectName: subjectName.trim(),
+      });
+      toast.success(t('processing.status.queuedForProcessing'));
+      setTimeout(() => {
+        push(ADAPTIVE_ROUTES.dashboard);
+      }, 500);
+    } catch (err) {
+      const message = getFriendlyUploadError(err);
+      setError(message);
+      toast.error(message);
+      setIsUploading(false);
+      setUploadProgress(0);
+    }
+  };
 
-  const onDrop = useCallback(
-    (acceptedFiles: File[]) => {
-      if (acceptedFiles.length > 0) {
-        if (!subjectName.trim()) {
-          const message = t('uploadPage.subjectRequiredBeforeSelectFile');
-          setError(message);
-          return;
-        }
-        void handleUpload(acceptedFiles[0]);
+  const onDrop = (acceptedFiles: File[]) => {
+    if (acceptedFiles.length > 0) {
+      if (!subjectName.trim()) {
+        const message = t('uploadPage.subjectRequiredBeforeSelectFile');
+        setError(message);
+        return;
       }
-    },
-    [handleUpload, subjectName, t],
-  );
+      void handleUpload(acceptedFiles[0]);
+    }
+  };
 
   const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
     onDrop,

@@ -3,20 +3,20 @@ import { withOptionalAuth } from '@/lib/api/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
 import { apiOk, apiErr, apiServiceErr } from '@/lib/api/response';
 import { logger } from '@/lib/logger';
+import { readAndValidateJson } from '@/lib/api/request';
+import { submitQuizAttemptRequestSchema } from '@/dtos/quiz';
 
 // Public + authenticated dual path: anonymous attempts pass `userEmail` in body.
 export const POST = withOptionalAuth<{ slug: string }>(
   async (request: NextRequest, { params, session, email }) => {
     try {
       const { slug } = params;
-      const payload = await request.json();
-      const { answers, userEmail } = payload as { answers?: unknown; userEmail?: string };
-
-      if (!answers || !Array.isArray(answers)) {
-        return apiErr('validation_error', 'Answers array is required', 400);
+      const parsedBody = await readAndValidateJson(request, submitQuizAttemptRequestSchema);
+      if (!parsedBody.success) {
+        return apiErr('validation_error', parsedBody.error, 400, parsedBody.fields);
       }
 
-      if (!email && !userEmail) {
+      if (!email && !parsedBody.data.userEmail) {
         return apiErr('validation_error', 'User email is required', 400);
       }
 
@@ -24,13 +24,13 @@ export const POST = withOptionalAuth<{ slug: string }>(
 
       const result = await quizService.submitQuizAttempt(
         slug,
-        answers as (number | number[])[],
+        parsedBody.data.answers,
         session,
-        userEmail,
+        parsedBody.data.userEmail,
       );
 
       if (!result.success) {
-        return apiServiceErr(result, 400);
+        return apiServiceErr(result);
       }
 
       return apiOk(result.data);

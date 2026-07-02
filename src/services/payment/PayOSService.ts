@@ -1,12 +1,19 @@
 import crypto from 'crypto';
 import {
   IPayOSService,
+  PayOSPaymentSignatureData,
   PayOSPaymentRequest,
   PayOSPaymentResponse,
   PayOSVerifyResponse,
 } from '@/interfaces/services/IPayOSService';
 import { env } from '@/lib/env';
 import { logger } from '@/lib/logger';
+import {
+  payosCreatePaymentResponseSchema,
+  payosErrorEnvelopeSchema,
+  payosPaymentLinkResponseSchema,
+} from '@/lib/integrations/payos';
+import type { ZodType } from 'zod';
 
 export class PayOSService implements IPayOSService {
   private clientId: string;
@@ -25,13 +32,7 @@ export class PayOSService implements IPayOSService {
     return crypto.createHmac('sha256', this.checksumKey).update(data).digest('hex');
   }
 
-  private generatePaymentSignature(data: {
-    amount: number;
-    cancelUrl: string;
-    description: string;
-    orderCode: number;
-    returnUrl: string;
-  }): string {
+  private generatePaymentSignature(data: PayOSPaymentSignatureData): string {
     // PayOS requires the data string in alphabetical order of the keys
     const rawSignature = `amount=${data.amount}&cancelUrl=${data.cancelUrl}&description=${data.description}&orderCode=${data.orderCode}&returnUrl=${data.returnUrl}`;
     return this.generateSignature(rawSignature);
@@ -41,7 +42,7 @@ export class PayOSService implements IPayOSService {
     body?: PayOSPaymentRequest | Record<string, unknown> | null,
   ): Record<string, unknown> | undefined {
     if (!body) return undefined;
-    const record = body as Record<string, unknown>;
+    const record: Record<string, unknown> = { ...body };
     return {
       ...record,
       signature: record['signature'] ? '***' : undefined,
@@ -52,6 +53,7 @@ export class PayOSService implements IPayOSService {
 
   private async makeRequest<T>(
     endpoint: string,
+    responseSchema: ZodType<T>,
     method: 'GET' | 'POST' = 'POST',
     body?: PayOSPaymentRequest | Record<string, unknown> | null,
   ): Promise<T> {
@@ -89,7 +91,7 @@ export class PayOSService implements IPayOSService {
         statusText: response.statusText,
       });
 
-      let data;
+      let data: unknown;
       try {
         data = JSON.parse(responseText);
       } catch (_parseError) {
@@ -98,19 +100,35 @@ export class PayOSService implements IPayOSService {
       }
 
       if (!response.ok) {
+        const errorEnvelope = payosErrorEnvelopeSchema.safeParse(data);
         logger.error(
           {
             endpoint,
             status: response.status,
-            code: typeof data?.code === 'string' ? data.code : undefined,
-            message: typeof data?.message === 'string' ? data.message : response.statusText,
+            code: errorEnvelope.success ? errorEnvelope.data.code : undefined,
+            description: errorEnvelope.success ? errorEnvelope.data.desc : undefined,
           },
           'PayOS API error',
         );
-        throw new Error(`PayOS API error: ${data.message || response.statusText}`);
+        throw new Error(
+          `PayOS API error: ${errorEnvelope.success ? errorEnvelope.data.desc : response.statusText}`,
+        );
       }
 
-      return data as T;
+      const parsedResponse = responseSchema.safeParse(data);
+      if (!parsedResponse.success) {
+        logger.error(
+          {
+            endpoint,
+            status: response.status,
+            issues: parsedResponse.error.issues,
+          },
+          'PayOS API response violated its contract',
+        );
+        throw new Error('Invalid response from PayOS API');
+      }
+
+      return parsedResponse.data;
     } catch (error) {
       logger.error({ error }, 'PayOS API request failed');
       if (error instanceof Error) {
@@ -155,15 +173,28 @@ export class PayOSService implements IPayOSService {
 
     console.warn('PayOS createPayment request body:', this.redactRequestBody(requestBody));
 
-    return this.makeRequest<PayOSPaymentResponse>('/v2/payment-requests', 'POST', requestBody);
+    return this.makeRequest<PayOSPaymentResponse>(
+      '/v2/payment-requests',
+      payosCreatePaymentResponseSchema,
+      'POST',
+      requestBody,
+    );
   }
 
   async verifyPayment(orderCode: number): Promise<PayOSVerifyResponse> {
-    return this.makeRequest<PayOSVerifyResponse>(`/v2/payment-requests/${orderCode}`, 'GET');
+    return this.makeRequest<PayOSVerifyResponse>(
+      `/v2/payment-requests/${orderCode}`,
+      payosPaymentLinkResponseSchema,
+      'GET',
+    );
   }
 
   async getPaymentInfo(orderCode: number): Promise<PayOSVerifyResponse> {
-    return this.makeRequest<PayOSVerifyResponse>(`/v2/payment-requests/${orderCode}`, 'GET');
+    return this.makeRequest<PayOSVerifyResponse>(
+      `/v2/payment-requests/${orderCode}`,
+      payosPaymentLinkResponseSchema,
+      'GET',
+    );
   }
 
   async testConnection(): Promise<boolean> {

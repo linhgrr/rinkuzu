@@ -7,7 +7,7 @@ interface ImageDisplayProps {
   className?: string;
   maxWidth?: number;
   maxHeight?: number;
-  fallback?: React.ReactNode;
+  emptyState?: React.ReactNode;
 }
 
 export function ImageDisplay({
@@ -16,10 +16,10 @@ export function ImageDisplay({
   className = '',
   maxWidth = 400,
   maxHeight = 300,
-  fallback,
+  emptyState,
 }: ImageDisplayProps) {
   if (!src) {
-    return fallback ? <>{fallback}</> : null;
+    return emptyState ? <>{emptyState}</> : null;
   }
 
   return (
@@ -30,7 +30,7 @@ export function ImageDisplay({
       className={className}
       maxWidth={maxWidth}
       maxHeight={maxHeight}
-      fallback={fallback}
+      emptyState={emptyState}
     />
   );
 }
@@ -39,7 +39,7 @@ interface ImageDisplayContentProps extends Required<Pick<ImageDisplayProps, 'src
   className: string;
   maxWidth: number;
   maxHeight: number;
-  fallback?: React.ReactNode;
+  emptyState?: React.ReactNode;
 }
 
 function ImageDisplayContent({
@@ -48,12 +48,12 @@ function ImageDisplayContent({
   className,
   maxWidth,
   maxHeight,
-  fallback,
+  emptyState,
 }: ImageDisplayContentProps) {
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
 
   if (status === 'error') {
-    return fallback ? <>{fallback}</> : null;
+    return emptyState ? <>{emptyState}</> : null;
   }
 
   return (
@@ -99,7 +99,7 @@ export function QuestionImage({ src, alt, className = '' }: QuestionImageProps) 
       className={`mb-4 ${className}`}
       maxWidth={600}
       maxHeight={400}
-      fallback={
+      emptyState={
         <div className="text-sm text-neutral-500 italic mb-4">
           Question contains an image that couldn&apos;t be loaded
         </div>
@@ -122,7 +122,7 @@ export function OptionImage({ src, alt, className = '' }: OptionImageProps) {
       className={`ml-2 ${className}`}
       maxWidth={200}
       maxHeight={150}
-      fallback={<div className="text-xs text-neutral-400 italic ml-2">Image option</div>}
+      emptyState={<div className="text-xs text-neutral-400 italic ml-2">Image option</div>}
     />
   );
 }

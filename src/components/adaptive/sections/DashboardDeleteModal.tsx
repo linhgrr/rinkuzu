@@ -1,7 +1,7 @@
 'use client';
 
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
-import type { TranslateFn } from '@/features/adaptive/types';
+import type { TranslateFn } from '@/features/adaptive/types/learning';
 
 type DashboardDeleteModalProps = {
   cancelText: string;

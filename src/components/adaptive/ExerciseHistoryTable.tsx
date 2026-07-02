@@ -1,18 +1,19 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
 import { DynamicMarkdownRenderer } from '@/components/ui/DynamicMarkdownRenderer';
 import { Modal } from '@/components/ui/Modal';
 import Pagination from '@/components/ui/Pagination';
-import { HiCheck, HiOutlineEye, HiOutlineX } from '@/components/icons';
+import { HiCheck, HiOutlineEye, HiOutlineX } from 'react-icons/hi';
 import {
   buildExercisePromptText,
   getExercisePromptSections,
 } from '@/features/adaptive/lib/exercise-prompt';
-import { BLOOM_LABELS } from '@/features/adaptive/types';
-import type { BloomLevel, ExerciseHistoryFull } from '@/features/adaptive/types';
+import { BLOOM_LABELS } from '@/features/adaptive/types/learning';
+import type { ExerciseHistoryFull } from '@/features/adaptive/types/history';
+import type { BloomLevel } from '@/features/adaptive/types/learning';
 import { formatSessionHistoryDate } from '@/features/adaptive/lib/session-history-utils';
 
 const PAGE_SIZE = 10;
@@ -70,7 +71,7 @@ function AnswerTextView({
 
 function getSelectedChoiceKeys(userAnswer: string | null | undefined) {
   return new Set(
-    (userAnswer || '').split(',').flatMap((choice) => {
+    (userAnswer ?? '').split(',').flatMap((choice) => {
       const normalizedChoice = choice.trim().toUpperCase();
       return normalizedChoice ? [normalizedChoice] : [];
     }),
@@ -245,19 +246,14 @@ export function ExerciseHistoryTable({ exercises }: ExerciseHistoryTableProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedExercise, setSelectedExercise] = useState<ExerciseHistoryFull | null>(null);
 
-  const getBloomLabel = useCallback(
-    (level: number) => {
-      const bloomLabel =
-        BLOOM_LABELS[Math.max(0, Math.min(BLOOM_LABELS.length - 1, level - 1))] || 'Remember';
-      return t(BLOOM_TRANSLATION_KEYS[bloomLabel]);
-    },
-    [t],
-  );
+  const getBloomLabel = (level: number) => {
+    const bloomLabel =
+      BLOOM_LABELS[Math.max(0, Math.min(BLOOM_LABELS.length - 1, level - 1))] || 'Remember';
+    return t(BLOOM_TRANSLATION_KEYS[bloomLabel]);
+  };
 
-  const paginatedExercises = useMemo(() => {
-    const start = (currentPage - 1) * PAGE_SIZE;
-    return exercises.slice(start, start + PAGE_SIZE);
-  }, [currentPage, exercises]);
+  const start = (currentPage - 1) * PAGE_SIZE;
+  const paginatedExercises = exercises.slice(start, start + PAGE_SIZE);
 
   const totalPages = Math.ceil(exercises.length / PAGE_SIZE);
 

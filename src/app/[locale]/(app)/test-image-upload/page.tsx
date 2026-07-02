@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { QuestionImageUpload, OptionImageUpload } from '@/components/ui/ImageUpload';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { formatDateTime } from '@/lib/formatters';
 
 export default function TestImageUploadPage() {
   const [questionImage, setQuestionImage] = useState<string>();
@@ -17,7 +18,10 @@ export default function TestImageUploadPage() {
 
   const addLog = (message: string) => {
     console.warn(message);
-    setLogs((prev) => [...prev, `${new Date().toLocaleTimeString()}: ${message}`]);
+    const timestamp = formatDateTime(new Date(), {
+      options: { hour: '2-digit', minute: '2-digit', second: '2-digit' },
+    });
+    setLogs((prev) => [...prev, `${timestamp}: ${message}`]);
   };
 
   const updateQuestionImage = (imageUrl: string) => {

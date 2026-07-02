@@ -1,83 +1,31 @@
 import { NextRequest } from 'next/server';
-import { ZodError } from 'zod';
-
-import connectDB from '@/lib/mongoose';
-import User from '@/models/User';
-import { apiOk, apiErr } from '@/lib/api/response';
-import { hashPassword } from '@/lib/password';
-import { hashToken } from '@/lib/auth-tokens';
-import { buildPasswordChangedMessage, sendTransactionalMail } from '@/lib/mail';
-import { recordAuthEvent, extractRequestContext } from '@/lib/audit';
-import { flattenZodError, resetPasswordSchema } from '@/lib/validation/auth';
+import { apiOk, apiErr, apiServiceErr } from '@/lib/api/response';
+import { readAndValidateJson } from '@/lib/api/request';
+import { resetPasswordSchema } from '@/lib/validation/auth';
+import { extractRequestContext } from '@/lib/audit';
 import { checkAuthRateLimit, rateLimitResponse } from '@/lib/auth-rate-limit';
-import { logger } from '@/lib/logger';
+import { getAuthAccountService } from '@/lib/auth-account-factory';
+
+const authAccountService = getAuthAccountService();
 
 export async function POST(request: NextRequest) {
-  let payload: unknown;
-  try {
-    payload = await request.json();
-  } catch {
-    return apiErr('validation_error', 'Request body must be valid JSON', 400);
+  const input = await readAndValidateJson(request, resetPasswordSchema);
+  if (!input.success) {
+    return apiErr('validation_error', input.error, 400, { fields: input.fields });
   }
 
-  let input;
-  try {
-    input = resetPasswordSchema.parse(payload);
-  } catch (error) {
-    if (error instanceof ZodError) {
-      const { detail, fields } = flattenZodError(error);
-      return apiErr('validation_error', detail, 400, { fields });
-    }
-    throw error;
-  }
-
-  const { ip, userAgent } = extractRequestContext(request);
-
-  const rate = await checkAuthRateLimit('reset_password_token_ip', ip || 'unknown');
+  const context = extractRequestContext(request);
+  const rate = await checkAuthRateLimit('reset_password_token_ip', context.ip || 'unknown');
   if (!rate.allowed) return rateLimitResponse(rate);
 
-  try {
-    await connectDB();
-    const tokenHash = hashToken(input.token);
-    const user = await User.findOne({
-      passwordResetTokenHash: tokenHash,
-      passwordResetExpires: { $gt: new Date() },
-    });
-
-    if (!user) {
-      return apiErr('validation_error', 'Reset link is invalid or has expired', 400);
-    }
-
-    user.password = await hashPassword(input.password);
-    user.passwordResetTokenHash = null;
-    user.passwordResetExpires = null;
-    user.failedLoginAttempts = 0;
-    user.failedLoginWindowStart = null;
-    user.lockedUntil = null;
-    // Reset link click implies email ownership — promote to verified.
-    if (!user.emailVerified) {
-      user.emailVerified = new Date();
-      user.emailVerificationTokenHash = null;
-      user.emailVerificationExpires = null;
-    }
-    await user.save();
-
-    await Promise.all([
-      sendTransactionalMail(await buildPasswordChangedMessage(user.email)),
-      recordAuthEvent({
-        event: 'password_reset_completed',
-        userId: user._id,
-        email: user.email,
-        ip,
-        userAgent,
-      }),
-    ]);
-
-    return apiOk(null, 200, {
-      meta: { message: 'Password updated. Please sign in with your new password.' },
-    });
-  } catch (error) {
-    logger.error({ error }, 'Reset-password error');
-    return apiErr('internal_error', 'Failed to reset password', 500);
-  }
+  const result = await authAccountService.resetPassword(
+    input.data.token,
+    input.data.password,
+    context,
+  );
+  return result.success
+    ? apiOk(null, 200, {
+        meta: { message: 'Password updated. Please sign in with your new password.' },
+      })
+    : apiServiceErr(result);
 }

@@ -1,37 +1,17 @@
 import { consumeOpenAISseResponse } from '@/lib/ai/stream';
-import type { ApiSuccessResponse } from '@/lib/api/client';
-import { extractApiErrorMessage, type ApiErrorPayload } from '@/lib/api/error';
+import { extractApiErrorMessage } from '@/lib/api/error';
+import { QuizTutorRequestMapper } from '@/mappers/quiz/QuizTutorRequestMapper';
+import type { QuizTutorStreamRequestDto } from '@/dtos/quiz-tutor';
+import type { components } from '@/generated/adaptive-api';
 
-interface QuizAiChatMessage {
-  role: 'user' | 'assistant';
-  content: string;
-}
-
-interface QuizAskAiRequest {
-  question: string;
-  options: string[];
-  userQuestion?: string;
-  questionImage?: string;
-  optionImages?: (string | undefined)[];
-  chatHistory?: QuizAiChatMessage[];
-  stream?: boolean;
-}
-
-interface QuizAskAiResponseData {
-  explanation: string;
-  structured: unknown | null;
-  timestamp: string;
-  turn_count: number;
-}
-
-type QuizAskAiEnvelope = ApiSuccessResponse<QuizAskAiResponseData> | ApiErrorPayload;
+type QuizTutorRequest = components['schemas']['QuizTutorRequest'];
 
 interface StreamQuizAiOptions {
   signal?: AbortSignal;
   onContent?: (chunk: string, fullContent: string) => void;
 }
 
-async function requestQuizAI(payload: QuizAskAiRequest, signal?: AbortSignal): Promise<Response> {
+async function requestQuizAI(payload: QuizTutorRequest, signal?: AbortSignal): Promise<Response> {
   return fetch('/api/quiz/ask-ai', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -40,19 +20,20 @@ async function requestQuizAI(payload: QuizAskAiRequest, signal?: AbortSignal): P
   });
 }
 
-function extractQuizAiErrorMessage(body: QuizAskAiEnvelope, status: number): string {
+function extractQuizAiErrorMessage(body: unknown, status: number): string {
   return extractApiErrorMessage(body, `HTTP error ${status}`);
 }
 
 export async function streamQuizAI(
-  payload: QuizAskAiRequest,
+  payload: QuizTutorStreamRequestDto,
   options: StreamQuizAiOptions = {},
 ): Promise<string> {
-  const response = await requestQuizAI({ ...payload, stream: true }, options.signal);
-  return consumeOpenAISseResponse<QuizAskAiEnvelope>(response, {
+  const response = await requestQuizAI(
+    QuizTutorRequestMapper.toApiRequest(payload),
+    options.signal,
+  );
+  return consumeOpenAISseResponse(response, {
     onContent: options.onContent,
     extractErrorMessage: extractQuizAiErrorMessage,
-    extractFallbackContent: (body) =>
-      body.success === true && 'data' in body ? body.data?.explanation : null,
   });
 }

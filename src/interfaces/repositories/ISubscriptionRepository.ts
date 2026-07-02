@@ -1,25 +1,73 @@
-import { ISubscription } from '@/models/Subscription';
-import { PaginationMeta } from '@/types';
+import type {
+  AdminMutableSubscriptionStatus,
+  SubscriptionRecord,
+  SubscriptionStatus,
+} from '@/entities/Subscription';
+import type { PaginatedRepositoryResult } from '@/interfaces/repositories/types';
+
+export interface ActivateSubscriptionData {
+  orderId: string;
+  userId: string;
+  type: string;
+  startDate: Date;
+  endDate?: Date;
+  transactionReference?: string;
+}
+
+export interface CreateSubscriptionData {
+  userId: string;
+  userEmail: string;
+  type: string;
+  amount: number;
+  currency: string;
+  status: SubscriptionStatus;
+  payosOrderId: string;
+}
+
+export interface UpdateSubscriptionData {
+  status?: SubscriptionStatus;
+  payosTransactionId?: string;
+  payosPaymentUrl?: string;
+  startDate?: Date;
+  endDate?: Date;
+  isActive?: boolean;
+}
+
+export type AdminSubscriptionStatusUpdateResult =
+  | { outcome: 'updated'; subscription: SubscriptionRecord }
+  | { outcome: 'not_found' }
+  | { outcome: 'invalid_transition'; currentStatus: SubscriptionStatus };
+
+export type CancelCurrentSubscriptionResult =
+  | { outcome: 'cancelled' }
+  | { outcome: 'already_inactive' }
+  | { outcome: 'user_not_found' }
+  | { outcome: 'not_time_limited' }
+  | { outcome: 'inconsistent_record' };
 
 export interface ISubscriptionRepository {
-  create(subscriptionData: Partial<ISubscription>): Promise<ISubscription>;
-  findById(id: string): Promise<ISubscription | null>;
-  findByOrderId(orderId: string): Promise<ISubscription | null>;
-  findByUser(userId: string): Promise<ISubscription[]>;
-  findExpiredSubscriptions(): Promise<ISubscription[]>;
-  updateById(id: string, updateData: Partial<ISubscription>): Promise<ISubscription | null>;
+  create(subscriptionData: CreateSubscriptionData): Promise<SubscriptionRecord>;
+  findById(id: string): Promise<SubscriptionRecord | null>;
+  findByOrderId(orderId: string): Promise<SubscriptionRecord | null>;
+  findByTransactionReference(transactionReference: string): Promise<SubscriptionRecord | null>;
+  findByUser(userId: string): Promise<SubscriptionRecord[]>;
+  expireDue(now: Date): Promise<number>;
+  updateById(id: string, updateData: UpdateSubscriptionData): Promise<SubscriptionRecord | null>;
   updateByOrderId(
     orderId: string,
-    updateData: Partial<ISubscription>,
-  ): Promise<ISubscription | null>;
-  deleteById(id: string): Promise<boolean>;
-  deleteByOrderId(orderId: string): Promise<boolean>;
+    updateData: UpdateSubscriptionData,
+  ): Promise<SubscriptionRecord | null>;
+  updateAdminStatusById(
+    id: string,
+    status: AdminMutableSubscriptionStatus,
+  ): Promise<AdminSubscriptionStatusUpdateResult>;
+  expireCurrentForUser(userId: string, orderId: string): Promise<boolean>;
+  cancelCurrentForUser(userId: string): Promise<CancelCurrentSubscriptionResult>;
+  activateSubscription(data: ActivateSubscriptionData): Promise<void>;
+  deletePendingByOrderId(orderId: string): Promise<boolean>;
   findWithPagination(
     filter: Record<string, unknown>,
     page: number,
     limit: number,
-  ): Promise<{
-    subscriptions: ISubscription[];
-    pagination: PaginationMeta;
-  }>;
+  ): Promise<PaginatedRepositoryResult<SubscriptionRecord>>;
 }

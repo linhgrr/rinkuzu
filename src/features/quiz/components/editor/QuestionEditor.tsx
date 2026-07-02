@@ -4,24 +4,22 @@ import { Button } from '@/components/ui/Button';
 import { Input, Textarea } from '@/components/ui/Input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
-import { HiOutlineDocumentText, HiOutlinePlus, HiOutlineTrash } from '@/components/icons';
+import { HiOutlineDocumentText, HiOutlinePlus, HiOutlineTrash } from 'react-icons/hi';
 import { QuestionImageManager } from './QuestionImageManager';
+import type { QuizEditorQuestionViewModel } from '@/features/quiz/types/quiz-editor-view-model';
 
-export interface Question {
-  question: string;
-  options: string[];
-  type: 'single' | 'multiple';
-  correctIndex?: number;
-  correctIndexes?: number[];
-  questionImage?: string;
-  optionImages?: (string | undefined)[];
-}
+type EditorQuestion = QuizEditorQuestionViewModel;
+type EditableQuestionField = 'question' | 'options' | 'questionImage' | 'optionImages';
 
 interface QuestionEditorProps {
-  questions: Question[];
+  questions: EditorQuestion[];
   canEdit: boolean;
   questionToRemove: number | null;
-  onUpdateField: (index: number, field: keyof Question, value: Question[keyof Question]) => void;
+  onUpdateField: (
+    index: number,
+    field: EditableQuestionField,
+    value: EditorQuestion[EditableQuestionField],
+  ) => void;
   onUpdateOption: (qIdx: number, optIdx: number, value: string) => void;
   onUpdateQuestionImage: (qIdx: number, url: string) => void;
   onRemoveQuestionImage: (qIdx: number) => void;
@@ -67,6 +65,7 @@ export function QuestionEditor({
               <CardDescription>Edit questions below</CardDescription>
             </div>
             <Button
+              type="button"
               onClick={onAddQuestion}
               size="sm"
               variant="default"
@@ -78,92 +77,96 @@ export function QuestionEditor({
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
-          {questions.map((q, index) => (
-            <div key={`${index + 1}-${q.question}`} className="border p-4 rounded-lg space-y-4">
-              <div className="flex justify-between items-start">
-                <h4 className="font-medium flex items-center gap-2">
-                  <div className="flex size-6 items-center justify-center rounded-full bg-green-100 text-xs text-brand-trust">
-                    {index + 1}
-                  </div>
-                  Question {index + 1}
-                </h4>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => onSetQuestionToRemove(index)}
-                  className="text-red-500 hover:text-red-600 hover:bg-red-50 rounded-full px-3"
-                >
-                  <HiOutlineTrash className="mr-1 size-4" />
-                  Remove
-                </Button>
-              </div>
-              <Textarea
-                value={q.question}
-                onChange={(e) => onUpdateField(index, 'question', e.target.value)}
-                className="min-h-[88px]"
-                rows={2}
-              />
-              <QuestionImageManager
-                questionImage={q.questionImage}
-                optionImages={q.optionImages}
-                onQuestionImageUploaded={(url) => onUpdateQuestionImage(index, url)}
-                onQuestionImageRemoved={() => onRemoveQuestionImage(index)}
-                onOptionImageUploaded={(optIdx, url) => onUpdateOptionImage(index, optIdx, url)}
-                onOptionImageRemoved={(optIdx) => onRemoveOptionImage(index, optIdx)}
-              />
-              <div>
-                <p className="text-sm font-medium mb-1">Question Type</p>
-                <div className="mt-1 flex gap-x-4">
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      checked={q.type === 'single'}
-                      onChange={() => onToggleType(index, 'single')}
-                    />{' '}
-                    <span className="ml-2 text-sm">Single</span>
-                  </label>
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      checked={q.type === 'multiple'}
-                      onChange={() => onToggleType(index, 'multiple')}
-                    />{' '}
-                    <span className="ml-2 text-sm">Multiple</span>
-                  </label>
-                </div>
-              </div>
-              <div className="space-y-2">
-                {q.options.map((opt, optIdx) => (
-                  <div
-                    key={`${String.fromCharCode(65 + optIdx)}-${opt}`}
-                    className="flex items-center gap-x-2"
+          {questions.map((q, index) => {
+            const questionKey = q.editorId;
+            return (
+              <div key={questionKey} className="border p-4 rounded-lg space-y-4">
+                <div className="flex justify-between items-start">
+                  <h4 className="font-medium flex items-center gap-2">
+                    <div className="flex size-6 items-center justify-center rounded-full bg-green-100 text-xs text-brand-trust">
+                      {index + 1}
+                    </div>
+                    Question {index + 1}
+                  </h4>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onSetQuestionToRemove(index)}
+                    className="text-red-500 hover:text-red-600 hover:bg-red-50 rounded-full px-3"
                   >
-                    {q.type === 'single' ? (
+                    <HiOutlineTrash className="mr-1 size-4" />
+                    Remove
+                  </Button>
+                </div>
+                <Textarea
+                  value={q.question}
+                  onChange={(e) => onUpdateField(index, 'question', e.target.value)}
+                  className="min-h-[88px]"
+                  rows={2}
+                />
+                <QuestionImageManager
+                  questionImage={q.questionImage}
+                  optionImages={q.optionImages}
+                  onQuestionImageUploaded={(url) => onUpdateQuestionImage(index, url)}
+                  onQuestionImageRemoved={() => onRemoveQuestionImage(index)}
+                  onOptionImageUploaded={(optIdx, url) => onUpdateOptionImage(index, optIdx, url)}
+                  onOptionImageRemoved={(optIdx) => onRemoveOptionImage(index, optIdx)}
+                />
+                <div>
+                  <p className="text-sm font-medium mb-1">Question Type</p>
+                  <div className="mt-1 flex gap-x-4">
+                    <label className="flex items-center">
                       <input
                         type="radio"
-                        aria-label={`Mark option ${optIdx + 1} as correct`}
-                        name={`correct-${index}`}
-                        checked={q.correctIndex === optIdx}
-                        onChange={() => onSetSingleCorrect(index, optIdx)}
-                      />
-                    ) : (
+                        checked={q.type === 'single'}
+                        onChange={() => onToggleType(index, 'single')}
+                      />{' '}
+                      <span className="ml-2 text-sm">Single</span>
+                    </label>
+                    <label className="flex items-center">
                       <input
-                        type="checkbox"
-                        aria-label={`Mark option ${optIdx + 1} as correct`}
-                        checked={q.correctIndexes?.includes(optIdx)}
-                        onChange={(e) => onToggleMultipleCorrect(index, optIdx, e.target.checked)}
-                      />
-                    )}
-                    <Input
-                      value={opt}
-                      onChange={(e) => onUpdateOption(index, optIdx, e.target.value)}
-                      className="flex-1"
-                    />
+                        type="radio"
+                        checked={q.type === 'multiple'}
+                        onChange={() => onToggleType(index, 'multiple')}
+                      />{' '}
+                      <span className="ml-2 text-sm">Multiple</span>
+                    </label>
                   </div>
-                ))}
+                </div>
+                <div className="space-y-2">
+                  {q.options.map((opt, optIdx) => (
+                    <div
+                      key={`${questionKey}:option:${optIdx}`}
+                      className="flex items-center gap-x-2"
+                    >
+                      {q.type === 'single' ? (
+                        <input
+                          type="radio"
+                          aria-label={`Mark option ${optIdx + 1} as correct`}
+                          name={`correct-${questionKey}`}
+                          checked={q.correctIndex === optIdx}
+                          onChange={() => onSetSingleCorrect(index, optIdx)}
+                        />
+                      ) : (
+                        <input
+                          type="checkbox"
+                          aria-label={`Mark option ${optIdx + 1} as correct`}
+                          checked={q.correctIndexes.includes(optIdx)}
+                          onChange={(e) => onToggleMultipleCorrect(index, optIdx, e.target.checked)}
+                        />
+                      )}
+                      <Input
+                        value={opt}
+                        onChange={(e) => onUpdateOption(index, optIdx, e.target.value)}
+                        className="flex-1"
+                      />
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </CardContent>
       </Card>
 

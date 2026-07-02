@@ -1,7 +1,7 @@
 'use client';
 
-import { HiOutlineLightningBolt, HiOutlineBookOpen } from '@/components/icons';
-import type { TranslateFn } from '@/features/adaptive/types';
+import { HiOutlineLightningBolt, HiOutlineBookOpen } from 'react-icons/hi';
+import type { TranslateFn } from '@/features/adaptive/types/learning';
 
 type DailyProgressCardProps = {
   dailyGoalProgress: { current: number; total: number; percent: number };

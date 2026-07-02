@@ -1,3 +1,5 @@
+import { isRecord, type StandardErrorEnvelope } from '@/lib/api/envelope';
+
 type ApiErrorObject = {
   code?: unknown;
   message?: unknown;
@@ -5,10 +7,7 @@ type ApiErrorObject = {
   meta?: unknown;
 };
 
-export type ApiErrorPayload = {
-  success?: unknown;
-  error?: unknown;
-};
+export type ApiErrorPayload = StandardErrorEnvelope;
 
 type StandardErrorBody = {
   success: false;
@@ -20,20 +19,17 @@ type StandardErrorBody = {
   };
 };
 
-function readErrorObject(payload: ApiErrorPayload | null | undefined): ApiErrorObject | null {
-  if (!payload || typeof payload !== 'object') return null;
-  const error = payload.error;
-  if (!error || typeof error !== 'object') return null;
-  return error as ApiErrorObject;
+function readErrorObject(payload: unknown): ApiErrorObject | null {
+  if (!isRecord(payload)) return null;
+  const error = payload['error'];
+  if (!isRecord(error)) return null;
+  return error;
 }
 
-export function extractApiErrorMessage(
-  payload: ApiErrorPayload | null | undefined,
-  fallback: string,
-): string {
+export function extractApiErrorMessage(payload: unknown, defaultMessage: string): string {
   const errorObject = readErrorObject(payload);
   if (!errorObject) {
-    return fallback;
+    return defaultMessage;
   }
 
   const detail = typeof errorObject.detail === 'string' ? errorObject.detail.trim() : '';
@@ -43,10 +39,10 @@ export function extractApiErrorMessage(
   if (detail) return detail;
   if (message) return message;
   if (code) return code;
-  return fallback;
+  return defaultMessage;
 }
 
-export function extractApiErrorCode(payload: ApiErrorPayload | null | undefined): string | null {
+export function extractApiErrorCode(payload: unknown): string | null {
   const errorObject = readErrorObject(payload);
   if (!errorObject) return null;
   return typeof errorObject.code === 'string' && errorObject.code.trim()
@@ -54,15 +50,13 @@ export function extractApiErrorCode(payload: ApiErrorPayload | null | undefined)
     : null;
 }
 
-export function extractApiErrorMeta<T = unknown>(
-  payload: ApiErrorPayload | null | undefined,
-): T | null {
+export function extractApiErrorMeta<T = unknown>(payload: unknown): T | null {
   const errorObject = readErrorObject(payload);
   if (!errorObject) return null;
   return (errorObject.meta as T | undefined) ?? null;
 }
 
-export function extractUnknownErrorMessage(error: unknown, fallback: string): string {
+export function extractUnknownErrorMessage(error: unknown, defaultMessage: string): string {
   if (error instanceof Error) {
     const message = error.message.trim();
     if (message) {
@@ -70,7 +64,7 @@ export function extractUnknownErrorMessage(error: unknown, fallback: string): st
     }
   }
 
-  return fallback;
+  return defaultMessage;
 }
 
 export function buildStandardErrorBody({

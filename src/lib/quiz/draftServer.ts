@@ -1,15 +1,13 @@
 import 'server-only';
-import { fetchApiData } from '@/lib/api/client';
+import { fetchApiData, ApiResponseError } from '@/lib/api/client';
 import {
   buildAdaptiveServiceHeaders,
   resolveAdaptiveApiUrl,
   resolveAdaptiveProxyTimeoutMs,
 } from '@/lib/adaptive/config';
-import {
-  normalizeQuizDraftTransport,
-  type LegacyQuizDraftTransport,
-  type QuizDraft,
-} from '@/lib/quiz/draftApi';
+import type { QuizDraftSingleResponseDto } from '@/dtos/quiz-draft';
+import type { QuizDraft } from '@/features/quiz/types/quiz-draft';
+import { QuizDraftMapper } from '@/mappers/quiz/QuizDraftMapper';
 
 // Server-side fetch of a single quiz draft straight from FastAPI (the edit
 // page is a Server Component and cannot go through the same-origin proxy).
@@ -23,7 +21,7 @@ export async function fetchQuizDraftServer(
   const timeout = setTimeout(() => controller.abort(), resolveAdaptiveProxyTimeoutMs());
 
   try {
-    const { draft } = await fetchApiData<{ draft: LegacyQuizDraftTransport }>(
+    const { draft } = await fetchApiData<QuizDraftSingleResponseDto>(
       `${baseUrl}/api/quiz/drafts/${draftId}`,
       {
         headers,
@@ -31,9 +29,12 @@ export async function fetchQuizDraftServer(
         signal: controller.signal,
       },
     );
-    return draft ? normalizeQuizDraftTransport(draft) : null;
-  } catch {
-    return null;
+    return QuizDraftMapper.toViewModel(draft);
+  } catch (error) {
+    if (error instanceof ApiResponseError && error.status === 404) {
+      return null;
+    }
+    throw error;
   } finally {
     clearTimeout(timeout);
   }

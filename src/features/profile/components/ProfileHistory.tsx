@@ -1,17 +1,19 @@
 'use client';
 
-import { useEffect, useReducer, useState } from 'react';
+import { useEffect, useReducer } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { formatDate } from '@/lib/utils';
 import Pagination from '@/components/ui/Pagination';
-import { ROUTES } from '@/shared/constants';
-import { PaginationMeta } from '@/types';
-import { fetchApiData } from '@/lib/api/client';
+import { ROUTES } from '@/shared/constants/routes';
 import { extractUnknownErrorMessage } from '@/lib/api/error';
+import { fetchProfileHistoryViewModel } from '@/features/profile/api/profile-history-api';
+import type {
+  ProfileHistoryAttemptViewModel,
+  ProfileHistoryPaginationViewModel,
+} from '@/features/profile/types/profile-history-view-model';
 import {
   HiOutlineDocumentText,
   HiOutlineClock,
@@ -20,34 +22,22 @@ import {
   HiOutlineThumbUp,
   HiOutlineStar,
   HiOutlineAcademicCap,
-} from '@/components/icons';
-
-interface AttemptHistory {
-  _id: string;
-  score: number;
-  takenAt: string;
-  quiz: {
-    title: string;
-    slug: string;
-    description?: string;
-    totalQuestions: number;
-  };
-}
+} from 'react-icons/hi';
 
 interface ProfileHistoryState {
-  attempts: AttemptHistory[];
+  attempts: ProfileHistoryAttemptViewModel[];
   loading: boolean;
   error: string;
   currentPage: number;
-  pagination: PaginationMeta | null;
+  pagination: ProfileHistoryPaginationViewModel | null;
 }
 
 type ProfileHistoryAction =
   | { type: 'fetch:start' }
   | {
       type: 'fetch:success';
-      attempts: AttemptHistory[];
-      pagination: PaginationMeta;
+      attempts: ProfileHistoryAttemptViewModel[];
+      pagination: ProfileHistoryPaginationViewModel;
     }
   | { type: 'fetch:error'; error: string }
   | { type: 'page:set'; page: number };
@@ -86,13 +76,13 @@ function profileHistoryReducer(
   }
 }
 
-function AttemptTakenAt({ iso }: { iso: string }) {
-  const [label, setLabel] = useState('');
+function getScoreColor(score: number) {
+  if (score >= 80) return 'text-green-600 bg-green-50';
+  if (score >= 60) return 'text-yellow-600 bg-yellow-50';
+  return 'text-red-600 bg-red-50';
+}
 
-  useEffect(() => {
-    setLabel(formatDate(new Date(iso)));
-  }, [iso]);
-
+function AttemptTakenAt({ iso, label }: { iso: string; label: string }) {
   return (
     <time dateTime={iso} suppressHydrationWarning>
       {label}
@@ -116,9 +106,7 @@ export default function ProfileHistory() {
           limit: ITEMS_PER_PAGE.toString(),
         });
 
-        const data = await fetchApiData<{ attempts: AttemptHistory[]; pagination: PaginationMeta }>(
-          `/api/user/attempts?${params}`,
-        );
+        const data = await fetchProfileHistoryViewModel(params);
 
         if (!isActive) {
           return;
@@ -147,12 +135,6 @@ export default function ProfileHistory() {
       isActive = false;
     };
   }, [state.currentPage]);
-
-  const getScoreColor = (score: number) => {
-    if (score >= 80) return 'text-green-600 bg-green-50';
-    if (score >= 60) return 'text-yellow-600 bg-yellow-50';
-    return 'text-red-600 bg-red-50';
-  };
 
   const getPerformanceBadge = (score: number) => {
     if (score >= 90)
@@ -210,7 +192,7 @@ export default function ProfileHistory() {
             <Card>
               <CardContent className="text-center py-4">
                 <div className="text-xl font-bold text-brand-trust">
-                  {state.pagination?.totalItems || state.attempts.length}
+                  {state.pagination?.totalItems ?? state.attempts.length}
                 </div>
                 <div className="text-xs text-neutral-600">{t('totalAttempts')}</div>
               </CardContent>
@@ -237,7 +219,7 @@ export default function ProfileHistory() {
             {state.attempts.map((attempt) => {
               const badge = getPerformanceBadge(attempt.score);
               return (
-                <Card key={attempt._id} className="hover:shadow-md transition-shadow">
+                <Card key={attempt.id} className="hover:shadow-md transition-shadow">
                   <CardContent className="p-4 sm:p-6">
                     <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
                       <div className="flex-1">
@@ -255,11 +237,11 @@ export default function ProfileHistory() {
                         <div className="flex items-center gap-x-4 text-xs text-neutral-500 mt-2">
                           <span className="flex items-center gap-1">
                             <HiOutlineDocumentText className="size-3" />{' '}
-                            {tCommon('questionsCount', { count: attempt.quiz.totalQuestions })}
+                            {tCommon('questionsCount', { count: attempt.totalQuestions })}
                           </span>
                           <span className="flex items-center gap-1">
                             <HiOutlineClock className="size-3" />{' '}
-                            <AttemptTakenAt iso={attempt.takenAt} />
+                            <AttemptTakenAt iso={attempt.takenAt} label={attempt.takenAtLabel} />
                           </span>
                         </div>
                       </div>
@@ -274,7 +256,7 @@ export default function ProfileHistory() {
                         </div>
 
                         <div className="flex gap-2">
-                          <Link href={`/history/${attempt._id}`}>
+                          <Link href={ROUTES.HISTORY_DETAIL(attempt.id)}>
                             <Button
                               variant="outline"
                               size="sm"
@@ -283,13 +265,11 @@ export default function ProfileHistory() {
                               {t('details')}
                             </Button>
                           </Link>
-                          {attempt.quiz.slug ? (
-                            <Link href={`/quiz/${attempt.quiz.slug}`}>
-                              <Button variant="outline" size="sm">
-                                {t('redo')}
-                              </Button>
-                            </Link>
-                          ) : null}
+                          <Link href={ROUTES.QUIZ.VIEW(attempt.quiz.slug)}>
+                            <Button variant="outline" size="sm">
+                              {t('redo')}
+                            </Button>
+                          </Link>
                         </div>
                       </div>
                     </div>

@@ -6,9 +6,12 @@ import { NextRequest } from 'next/server';
 import { withAuth } from '@/lib/api/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
 import { apiErr, apiOk } from '@/lib/api/response';
-import { validateQuestionList } from '@/lib/validation/question';
+import { readAndValidateJson } from '@/lib/api/request';
+import { submitQuizDraftRequestSchema } from '@/dtos/quiz-draft';
+import { getQuestionListWarnings } from '@/lib/validation/question';
 import { fetchQuizDraftServer } from '@/lib/quiz/draftServer';
 import { logger } from '@/lib/logger';
+import { QuizCreationError, QuizDraftSynchronizationError } from '@/lib/quiz/errors';
 import {
   buildAdaptiveServiceHeaders,
   resolveAdaptiveApiUrl,
@@ -40,13 +43,13 @@ async function markDraftSubmitted(
       },
     );
     if (!response.ok) {
-      // The Quiz is already created; a failed mark is non-fatal (the draft will
-      // expire on its own). Log and continue so the user reaches their quiz.
-      logger.error(
-        { draftId, quizId, status: response.status },
-        'Failed to mark FastAPI draft submitted',
-      );
+      throw new QuizDraftSynchronizationError(draftId, quizId, response.status);
     }
+  } catch (error) {
+    if (error instanceof QuizDraftSynchronizationError) {
+      throw error;
+    }
+    throw new QuizDraftSynchronizationError(draftId, quizId);
   } finally {
     clearTimeout(timeout);
   }
@@ -56,53 +59,61 @@ export const POST = withAuth<{ id: string }>(
   async (request: NextRequest, { params, userId, session }) => {
     try {
       const { id } = params;
-      const body = await request.json();
-      const { title, folderId, description, questions: editedQuestions, isPrivate } = body;
-
-      const validation = validateQuestionList(editedQuestions);
-      if (!validation.isValid) {
-        return apiErr('validation_error', 'Validation failed', 400, {
-          details: validation.errors,
+      const input = await readAndValidateJson(request, submitQuizDraftRequestSchema);
+      if (!input.success) {
+        return apiErr('validation_error', input.error, 400, {
+          fields: input.fields,
         });
       }
+      const { title, folderId, description, questions, isPrivate } = input.data;
+      const warnings = getQuestionListWarnings(questions.length);
 
       // Idempotency guard: if the draft was already submitted (e.g. a retried
       // request after a flaky mark, or a double click), reuse the existing Quiz
       // instead of creating a duplicate. The draft is the source of truth for
       // which Quiz it produced.
       const existingDraft = await fetchQuizDraftServer(id, userId);
-      if (existingDraft?.status === 'submitted' && existingDraft.submitted_quiz_id) {
-        const existing = await quizService.getQuizById(existingDraft.submitted_quiz_id);
+      if (existingDraft?.status === 'submitted' && existingDraft.submittedQuizId) {
+        const existing = await quizService.getQuizById(existingDraft.submittedQuizId);
         if (existing.success && existing.data) {
           return apiOk({
-            quizId: existingDraft.submitted_quiz_id,
+            quizId: existingDraft.submittedQuizId,
             slug: existing.data.slug,
-            warnings: validation.warnings,
+            warnings,
           });
         }
+        return apiErr('conflict', 'Draft points to a submitted quiz that no longer exists', 409);
       }
 
-      const quiz = await quizService.createQuiz(userId, {
-        title: title || 'Untitled quiz',
-        description: description || '',
+      const quiz = await quizService.createQuizFromDraft(userId, id, {
+        title,
+        description,
         folderId: folderId ?? null,
-        questions: validation.questions,
-        isPrivate: Boolean(isPrivate),
+        questions,
+        isPrivate,
       });
 
-      const quizId = String(quiz._id);
+      const quizId = quiz.id;
       await markDraftSubmitted(id, quizId, userId, session.user.role);
 
       return apiOk({
         quizId,
         slug: quiz.slug,
-        warnings: validation.warnings,
+        warnings,
       });
     } catch (error) {
       logger.error({ error }, 'Submit draft error');
-      const message = error instanceof Error ? error.message : '';
-      if (message.includes('Premium subscription required to create private quizzes')) {
-        return apiErr('forbidden', message, 403);
+      if (error instanceof QuizCreationError) {
+        const status = error.code === 'premium_required' ? 403 : 400;
+        const code = error.code === 'premium_required' ? 'forbidden' : 'validation_error';
+        return apiErr(code, error.message, status);
+      }
+      if (error instanceof QuizDraftSynchronizationError) {
+        return apiErr('upstream_error', error.message, 502, {
+          draftId: error.draftId,
+          quizId: error.quizId,
+          upstreamStatus: error.upstreamStatus,
+        });
       }
       return apiErr('internal_error', 'Failed to submit draft', 500);
     }

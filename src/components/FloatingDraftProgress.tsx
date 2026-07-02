@@ -8,14 +8,14 @@ import Link from 'next/link';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
-import { fetchApiData } from '@/lib/api/client';
+import { deleteQuizDraft } from '@/lib/quiz/draftApi';
 import {
   HiOutlineDocumentText,
   HiOutlineCheckCircle,
   HiOutlineExclamationCircle,
   HiOutlineX,
   HiOutlineChevronUp,
-} from '@/components/icons';
+} from 'react-icons/hi';
 
 type DraftTranslationValues = Record<string, string | number | Date>;
 
@@ -50,7 +50,7 @@ export function FloatingDraftProgress() {
 
     // Notify server to delete the draft
     try {
-      await fetchApiData<null>(`/api/quiz-drafts/${id}`, { method: 'DELETE' });
+      await deleteQuizDraft(id);
     } catch (error) {
       console.error('Failed to delete draft on server:', error);
     }
@@ -187,7 +187,7 @@ function DraftItem({
   const progress = draft.chunksTotal > 0 ? (draft.chunksProcessed / draft.chunksTotal) * 100 : 0;
 
   const errorProgress =
-    draft.chunksTotal > 0 ? ((draft.chunksError || 0) / draft.chunksTotal) * 100 : 0;
+    draft.chunksTotal > 0 ? ((draft.chunksError ?? 0) / draft.chunksTotal) * 100 : 0;
 
   return (
     <div className="px-4 py-3 border-b border-neutral-50 last:border-0">
@@ -222,7 +222,7 @@ function DraftItem({
                     completed: draft.chunksProcessed,
                     total: draft.chunksTotal,
                   })}
-                  {(draft.chunksError || 0) > 0 && (
+                  {(draft.chunksError ?? 0) > 0 && (
                     <span className="text-red-500">
                       {' '}
                       • {t('errors', { count: draft.chunksError ?? 0 })}

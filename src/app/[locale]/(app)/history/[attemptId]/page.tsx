@@ -16,47 +16,26 @@ import {
   HiOutlineRefresh,
   HiOutlineX,
   HiOutlineXCircle,
-} from '@/components/icons';
-import { fetchApiData } from '@/lib/api/client';
+} from 'react-icons/hi';
+import { fetchAttemptDetailViewModel } from '@/features/profile/api/attempt-detail-api';
+import type {
+  AttemptDetailViewModel,
+  AttemptQuestionDetailViewModel,
+} from '@/features/profile/types/attempt-detail-view-model';
 import { extractUnknownErrorMessage } from '@/lib/api/error';
+import { getCorrectAnswerOptions } from '@/lib/quiz/answer-text';
 import { cn } from '@/lib/utils';
-import { routePathSegment } from '@/lib/routing/routeParams';
 import { useRequiredRouteParam } from '@/lib/routing/useRequiredRouteParam';
 
-type AttemptQuestion = {
-  question: string;
-  options: string[];
-  type: 'single' | 'multiple';
-  correctIndex?: number;
-  correctIndexes?: number[];
-  questionImage?: string;
-  optionImages?: (string | undefined)[];
-  userAnswer: number | number[];
-  isCorrect: boolean;
-};
-
-interface AttemptDetail {
-  _id: string;
-  score: number;
-  takenAt: string;
-  answers: (number | number[])[];
-  quiz: {
-    title: string;
-    slug: string;
-    description?: string;
-    questions: AttemptQuestion[];
-  };
-}
-
 interface AttemptDetailState {
-  attempt: AttemptDetail | null;
+  attempt: AttemptDetailViewModel | null;
   loading: boolean;
   error: string;
 }
 
 type AttemptDetailAction =
   | { type: 'fetch:start' }
-  | { type: 'fetch:success'; attempt: AttemptDetail }
+  | { type: 'fetch:success'; attempt: AttemptDetailViewModel }
   | { type: 'fetch:error'; error: string };
 
 const initialAttemptDetailState: AttemptDetailState = {
@@ -81,23 +60,13 @@ function attemptDetailReducer(
   }
 }
 
-function formatAttemptDate(dateString: string, locale: string) {
-  return new Date(dateString).toLocaleDateString(locale, {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
-
 function AttemptQuestionCard({
   index,
   question,
   t,
 }: {
   index: number;
-  question: AttemptQuestion;
+  question: AttemptQuestionDetailViewModel;
   t: (key: string, values?: Record<string, unknown>) => string;
 }) {
   const getOptionText = (optionIndex: number) => question.options[optionIndex] ?? '';
@@ -118,23 +87,8 @@ function AttemptQuestionCard({
     return t('notAnswered');
   };
 
-  const getCorrectAnswerText = () => {
-    if (question.type === 'single' && question.correctIndex !== undefined) {
-      return getOptionText(question.correctIndex);
-    }
-
-    if (question.type === 'multiple' && question.correctIndexes) {
-      return question.correctIndexes.flatMap((optionIndex) => {
-        const optionText = getOptionText(optionIndex);
-        return optionText ? [optionText] : [];
-      });
-    }
-
-    return [];
-  };
-
   const answerText = getAnswerText(question.userAnswer);
-  const correctAnswerText = getCorrectAnswerText();
+  const correctAnswerText = getCorrectAnswerOptions(question);
 
   return (
     <Card
@@ -283,7 +237,7 @@ function AttemptSummary({
   historyLink,
   t,
 }: {
-  attempt: AttemptDetail;
+  attempt: AttemptDetailViewModel;
   historyLink: string;
   t: (key: string) => string;
 }) {
@@ -328,7 +282,7 @@ function AttemptSummary({
 
       <div className="space-y-4 sm:space-y-6">
         {attempt.quiz.questions.map((question, index) => (
-          <AttemptQuestionCard key={question.question} index={index} question={question} t={t} />
+          <AttemptQuestionCard key={question.id} index={index} question={question} t={t} />
         ))}
       </div>
 
@@ -359,7 +313,6 @@ export default function AttemptDetailPage() {
   const tCommon = useTranslations('common');
   const locale = useLocale();
   const attemptId = useRequiredRouteParam('attemptId');
-  const encodedAttemptId = routePathSegment(attemptId);
 
   const [state, dispatch] = useReducer(attemptDetailReducer, initialAttemptDetailState);
   const historyLink = '/history';
@@ -371,7 +324,7 @@ export default function AttemptDetailPage() {
       dispatch({ type: 'fetch:start' });
 
       try {
-        const data = await fetchApiData<AttemptDetail>(`/api/attempts/${encodedAttemptId}`);
+        const data = await fetchAttemptDetailViewModel(attemptId, locale);
         if (isActive) {
           dispatch({ type: 'fetch:success', attempt: data });
         }
@@ -390,7 +343,7 @@ export default function AttemptDetailPage() {
     return () => {
       isActive = false;
     };
-  }, [encodedAttemptId, t]);
+  }, [attemptId, locale, t]);
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.10),transparent_34%),linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)]">
@@ -432,9 +385,7 @@ export default function AttemptDetailPage() {
                       </span>
                       <span className="inline-flex min-w-0 items-center gap-1.5 rounded-2xl bg-surface-warm px-3 py-2 text-ink">
                         <HiOutlineClock className="size-4 shrink-0" />
-                        <span className="truncate">
-                          {formatAttemptDate(state.attempt.takenAt, locale)}
-                        </span>
+                        <span className="truncate">{state.attempt.takenAtLabel}</span>
                       </span>
                     </div>
                   </div>

@@ -5,7 +5,7 @@ import {
   HiOutlineDocumentText,
   HiOutlineSearch,
   HiOutlineSparkles,
-} from '@/components/icons';
+} from 'react-icons/hi';
 
 interface DashboardEmptyStateProps {
   locale: string;

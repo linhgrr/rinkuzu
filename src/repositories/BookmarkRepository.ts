@@ -1,47 +1,40 @@
 import connectDB from '@/lib/mongoose';
 import Bookmark from '@/models/Bookmark';
-import { buildPaginationMeta } from '@/repositories/pagination';
-import { BaseRepository } from '@/repositories/base';
-import { IBookmark, IBookmarkRepository } from '@/interfaces/repositories/IBookmarkRepository';
+import { buildPaginationMeta } from '@/lib/pagination';
+import type { Bookmark as BookmarkEntity } from '@/entities/Bookmark';
+import {
+  IBookmarkRepository,
+  type CreateBookmarkData,
+} from '@/interfaces/repositories/IBookmarkRepository';
+import type {
+  PaginatedRepositoryResult,
+  RepositoryPaginationOptions,
+} from '@/interfaces/repositories/types';
+import { BookmarkPersistenceMapper } from '@/repositories/mappers/BookmarkPersistenceMapper';
+import type { BookmarkPersistenceRecord } from '@/repositories/types/BookmarkPersistence';
 
-export class BookmarkRepository extends BaseRepository<IBookmark> implements IBookmarkRepository {
-  constructor() {
-    super(Bookmark);
-  }
-
+export class BookmarkRepository implements IBookmarkRepository {
   async findByUserEmail(
     userEmail: string,
-    options?: {
-      page?: number;
-      limit?: number;
-    },
-  ): Promise<{
-    bookmarks: IBookmark[];
-    pagination: {
-      currentPage: number;
-      totalPages: number;
-      totalItems: number;
-      itemsPerPage: number;
-      hasNextPage: boolean;
-      hasPrevPage: boolean;
-    };
-  }> {
+    options?: RepositoryPaginationOptions,
+  ): Promise<PaginatedRepositoryResult<BookmarkEntity>> {
     await connectDB();
 
     const page = options?.page || 1;
     const limit = options?.limit || 10;
     const skip = (page - 1) * limit;
 
-    const bookmarks = (await Bookmark.find({ userEmail })
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
-      .lean()) as unknown as IBookmark[];
-
-    const totalItems = await Bookmark.countDocuments({ userEmail });
+    const [records, totalItems] = await Promise.all([
+      Bookmark.find({ userEmail })
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean<BookmarkPersistenceRecord[]>(),
+      Bookmark.countDocuments({ userEmail }),
+    ]);
 
     return {
-      bookmarks,
+      items: records.map(BookmarkPersistenceMapper.toEntity),
       pagination: buildPaginationMeta(page, limit, totalItems),
     };
   }
@@ -50,17 +43,21 @@ export class BookmarkRepository extends BaseRepository<IBookmark> implements IBo
     userEmail: string,
     quizSlug: string,
     questionIndex: number,
-  ): Promise<IBookmark | null> {
+  ): Promise<BookmarkEntity | null> {
     await connectDB();
-    return (await Bookmark.findOne({
+    const record = await Bookmark.findOne({
       userEmail,
       'quiz.slug': quizSlug,
       questionIndex,
-    }).lean()) as unknown as IBookmark | null;
+    }).lean<BookmarkPersistenceRecord>();
+    return record ? BookmarkPersistenceMapper.toEntity(record) : null;
   }
 
-  async deleteById(id: string): Promise<boolean> {
-    return this.delete(id);
+  async create(bookmarkData: CreateBookmarkData): Promise<BookmarkEntity> {
+    await connectDB();
+    const document = await Bookmark.create(bookmarkData);
+    const record: BookmarkPersistenceRecord = document.toObject();
+    return BookmarkPersistenceMapper.toEntity(record);
   }
 
   async deleteByIdAndUser(id: string, userEmail: string): Promise<boolean> {

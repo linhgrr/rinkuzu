@@ -6,7 +6,7 @@ import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { FullPageSpinner } from '@/components/ui/FullPageSpinner';
-import { fetchApiData } from '@/lib/api/client';
+import { verifySubscriptionPayment } from '@/features/payment/api/payment-verification-api';
 
 type PaymentStatus = 'loading' | 'success' | 'error';
 
@@ -50,13 +50,7 @@ function PaymentSuccessContent() {
 
     const verifyPayment = async (nextOrderCode: string) => {
       try {
-        await fetchApiData('/api/subscription/verify', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ orderCode: nextOrderCode }),
-        });
+        await verifySubscriptionPayment(nextOrderCode);
         dispatch({
           type: 'setView',
           value: { status: 'success', message: t('paymentSuccessMessage') },

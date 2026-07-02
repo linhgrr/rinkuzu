@@ -1,30 +1,36 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   AdaptiveApiError,
-  getExercise,
-  getNextConcept,
-  getTheory,
   isAdaptiveRequestAbortedError,
   isAdaptiveServiceUnavailableError,
   isSessionNotFoundError,
+} from '@/features/adaptive/lib/adaptive-api-error';
+import {
+  getExercise,
+  getNextConcept,
+  getTheory,
   submitAnswer,
-} from '@/features/adaptive/lib/api-client';
+} from '@/features/adaptive/lib/adaptive-api-methods';
+import {
+  createInitialExerciseAnswer,
+  hasCompleteExerciseAnswer,
+} from '@/features/adaptive/lib/exercise-answer';
 import { ADAPTIVE_ROUTES } from '@/features/adaptive/lib/routes';
 import { saveSessionExerciseOutcome } from '../lib/session-storage';
+import { toSubmitAnswerPayload } from '@/features/adaptive/mappers/exercise-answer.mapper';
+import type { ExerciseAnswerDraft } from '@/features/adaptive/types/exercise-answer';
 import type {
   Exercise,
   NextConcept,
-  SubmitAnswerPayload,
   TheoryData,
-} from '@/features/adaptive/types';
+  TranslateFn,
+} from '@/features/adaptive/types/learning';
 
 type RouterLike = {
   push: (href: string) => void;
   replace: (href: string) => void;
   prefetch: (href: string) => void;
 };
-
-type TranslateFn = (key: string, values?: Record<string, string | number | Date>) => string;
 
 type UseAdaptiveExerciseSessionParams = {
   sessionId: string;
@@ -37,7 +43,7 @@ function resolveExerciseFeedback(
   t: TranslateFn,
   intent: 'load' | 'submit',
 ): string {
-  const fallback =
+  const defaultMessage =
     intent === 'load' ? t('exercise.failedToLoadExercise') : t('exercise.failedToSubmitAnswer');
 
   if (error instanceof AdaptiveApiError) {
@@ -46,7 +52,7 @@ function resolveExerciseFeedback(
     }
   }
 
-  return fallback;
+  return defaultMessage;
 }
 
 export const useAdaptiveExerciseSession = ({
@@ -57,7 +63,7 @@ export const useAdaptiveExerciseSession = ({
   const [concept, setConcept] = useState<NextConcept | null>(null);
   const [theory, setTheory] = useState<TheoryData | null>(null);
   const [exercise, setExercise] = useState<Exercise | null>(null);
-  const [answerDraft, setAnswerDraft] = useState<SubmitAnswerPayload>({});
+  const [answerDraft, setAnswerDraft] = useState<ExerciseAnswerDraft | null>(null);
   const [loadingConcept, setLoadingConcept] = useState(true);
   const [loadingTheory, setLoadingTheory] = useState(false);
   const [loadingExercise, setLoadingExercise] = useState(false);
@@ -85,7 +91,7 @@ export const useAdaptiveExerciseSession = ({
 
     setLoadingConcept(true);
     setError(null);
-    setAnswerDraft({});
+    setAnswerDraft(null);
     setConcept(null);
     setTheory(null);
     setExercise(null);
@@ -124,18 +130,7 @@ export const useAdaptiveExerciseSession = ({
           .then((exerciseData) => {
             if (!isLatestActiveRequest()) return;
             setExercise(exerciseData);
-            if (exerciseData.exercise_type === 'ordering') {
-              setAnswerDraft({ ordering: exerciseData.items });
-            }
-            if (exerciseData.exercise_type === 'matching') {
-              const leftItems = exerciseData.pairs.map((p) => p.left);
-              const rightItems = exerciseData.right_items;
-              const matching: Record<string, string> = {};
-              leftItems.forEach((left, i) => {
-                matching[left] = rightItems[i];
-              });
-              setAnswerDraft({ matching });
-            }
+            setAnswerDraft(createInitialExerciseAnswer(exerciseData));
           })
           .catch((reason) => {
             if (!isLatestActiveRequest()) return;
@@ -153,18 +148,7 @@ export const useAdaptiveExerciseSession = ({
         const ex = await getExercise(sessionId);
         if (!isLatestActiveRequest()) return;
         setExercise(ex);
-        if (ex.exercise_type === 'ordering') {
-          setAnswerDraft({ ordering: ex.items });
-        }
-        if (ex.exercise_type === 'matching') {
-          const leftItems = ex.pairs.map((p) => p.left);
-          const rightItems = ex.right_items;
-          const matching: Record<string, string> = {};
-          leftItems.forEach((left, i) => {
-            matching[left] = rightItems[i];
-          });
-          setAnswerDraft({ matching });
-        }
+        setAnswerDraft(createInitialExerciseAnswer(ex));
         setLoadingExercise(false);
       }
     } catch (err) {
@@ -197,37 +181,12 @@ export const useAdaptiveExerciseSession = ({
   }, [router, sessionId]);
 
   const handleSubmit = useCallback(async () => {
-    if (!exercise) return;
-
-    const hasAnswer = (() => {
-      switch (exercise.exercise_type) {
-        case 'mcq':
-          return Boolean(answerDraft.choice);
-        case 'true_false':
-          return typeof answerDraft.boolean === 'boolean';
-        case 'fill_blank':
-          return Boolean(answerDraft.blanks?.some((value) => value.trim().length > 0));
-        case 'multi_correct':
-          return Boolean(answerDraft.choices && answerDraft.choices.length > 0);
-        case 'ordering':
-          return Boolean(
-            answerDraft.ordering && answerDraft.ordering.length === exercise.items.length,
-          );
-        case 'matching':
-          return Object.keys(answerDraft.matching || {}).length === exercise.pairs.length;
-        case 'short_answer':
-          return Boolean(answerDraft.text?.trim());
-        default:
-          return false;
-      }
-    })();
-
-    if (!hasAnswer) return;
+    if (!exercise || !answerDraft || !hasCompleteExerciseAnswer(exercise, answerDraft)) return;
 
     setSubmitting(true);
     try {
       router.prefetch(ADAPTIVE_ROUTES.result(sessionId));
-      const result = await submitAnswer(sessionId, answerDraft);
+      const result = await submitAnswer(sessionId, toSubmitAnswerPayload(answerDraft));
       if (!isMountedRef.current) return;
 
       saveSessionExerciseOutcome(sessionId, { result, exercise });
@@ -248,30 +207,36 @@ export const useAdaptiveExerciseSession = ({
   }, [answerDraft, exercise, router, sessionId, t]);
 
   const selectChoice = useCallback((choice: string) => {
-    setAnswerDraft({ choice });
+    setAnswerDraft({ type: 'mcq', selection: choice });
   }, []);
 
   const toggleChoice = useCallback((choice: string) => {
     setAnswerDraft((current) => {
-      const existing = new Set(current.choices || []);
+      if (current?.type !== 'multi_correct') {
+        throw new TypeError('Cannot toggle a choice outside a multi-correct exercise');
+      }
+      const existing = new Set(current.selections);
       if (existing.has(choice)) existing.delete(choice);
       else existing.add(choice);
 
-      return { choices: Array.from(existing).sort() };
+      return { type: current.type, selections: Array.from(existing).sort() };
     });
   }, []);
 
   const setBooleanAnswer = useCallback((value: boolean) => {
-    setAnswerDraft({ boolean: value });
+    setAnswerDraft({ type: 'true_false', value });
   }, []);
 
   const setBlankAnswer = useCallback((value: string) => {
-    setAnswerDraft({ blanks: [value] });
+    setAnswerDraft({ type: 'fill_blank', values: [value] });
   }, []);
 
   const moveOrderingItem = useCallback((fromIndex: number, toIndex: number) => {
     setAnswerDraft((current) => {
-      const ordering = [...(current.ordering || [])];
+      if (current?.type !== 'ordering') {
+        throw new TypeError('Cannot move an item outside an ordering exercise');
+      }
+      const ordering = [...current.items];
       if (
         fromIndex < 0 ||
         toIndex < 0 ||
@@ -281,36 +246,32 @@ export const useAdaptiveExerciseSession = ({
         return current;
 
       const [moved] = ordering.splice(fromIndex, 1);
+      if (moved === undefined) {
+        throw new TypeError(`No ordering item exists at index ${fromIndex}`);
+      }
       ordering.splice(toIndex, 0, moved);
-      return { ordering };
+      return { type: current.type, items: ordering };
     });
   }, []);
 
   const setTextAnswer = useCallback((value: string) => {
-    setAnswerDraft({ text: value });
-  }, []);
-
-  const setMatchingAnswer = useCallback((left: string, right: string) => {
-    setAnswerDraft((current) => ({
-      matching: {
-        ...(current.matching || {}),
-        [left]: right,
-      },
-    }));
+    setAnswerDraft({ type: 'short_answer', text: value });
   }, []);
 
   const setMatchingOrder = useCallback((leftItems: string[], rightItems: string[]) => {
-    setAnswerDraft((_current) => {
-      const matching: Record<string, string> = {};
-      leftItems.forEach((left, index) => {
-        matching[left] = rightItems[index];
-      });
-      return { matching };
+    if (leftItems.length !== rightItems.length) {
+      throw new TypeError(
+        `Cannot pair ${leftItems.length} left item(s) with ${rightItems.length} right item(s)`,
+      );
+    }
+    setAnswerDraft({
+      type: 'matching',
+      matches: Object.fromEntries(leftItems.map((left, index) => [left, rightItems[index]])),
     });
   }, []);
 
   const setOrderingAnswer = useCallback((ordering: string[]) => {
-    setAnswerDraft({ ordering });
+    setAnswerDraft({ type: 'ordering', items: ordering });
   }, []);
 
   return {
@@ -331,7 +292,6 @@ export const useAdaptiveExerciseSession = ({
     setBlankAnswer,
     moveOrderingItem,
     setTextAnswer,
-    setMatchingAnswer,
     setMatchingOrder,
     setOrderingAnswer,
     loadData,

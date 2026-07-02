@@ -4,10 +4,43 @@ import viMessages from '@/../messages/vi/adaptiveLearning.json';
 import {
   buildDashboardSubjectFromJob,
   toDashboardSubject,
-} from '@/features/adaptive/lib/dashboard-view-model';
-import type { PipelineJobHistoryItem, TranslateFn } from '@/features/adaptive/types';
+} from '@/features/adaptive/mappers/dashboard.mapper';
+import type { DashboardPipelineJobListItem } from '@/features/adaptive/types/dashboard-view-model';
+import type { TranslateFn } from '@/features/adaptive/types/learning';
+import type { PipelineJobHistoryItem } from '@/features/adaptive/types/pipeline';
 
-const t = ((k: string) => k) as never;
+const t: TranslateFn = (key) => key;
+
+function pipelineJob(
+  overrides: Partial<DashboardPipelineJobListItem> = {},
+): DashboardPipelineJobListItem {
+  return {
+    job_id: 'a',
+    filename: 'x.pdf',
+    subject_id: 'x',
+    status: 'queued',
+    current_step: '',
+    progress: 0,
+    page_batch_size: 10,
+    batch_count: 0,
+    failed_batch_count: 0,
+    partial_success: false,
+    concepts_extracted: 0,
+    concepts_after_merge: 0,
+    relations_verified: 0,
+    retryable: false,
+    retry_count: 0,
+    eta_seconds: null,
+    created_at: 0,
+    updated_at: 0,
+    heartbeat_at: 0,
+    completed_at: null,
+    is_terminal: false,
+    is_delayed: false,
+    retry_after_seconds: 3,
+    ...overrides,
+  };
+}
 
 /**
  * Build a translator scoped to `ns` that walks the real nested messages and
@@ -31,14 +64,11 @@ function makeT(ns: Record<string, unknown>): TranslateFn {
 describe('buildDashboardSubjectFromJob', () => {
   it('maps a processing job to a processing runtime', () => {
     const vm = buildDashboardSubjectFromJob(
-      {
-        job_id: 'a',
-        filename: 'x.pdf',
-        subject_id: 'x',
+      pipelineJob({
         status: 'extracting',
         progress: 0.3,
         eta_seconds: 120,
-      } as never,
+      }),
       t,
     );
     expect(vm.runtime.kind).toBe('processing');
@@ -50,15 +80,12 @@ describe('buildDashboardSubjectFromJob', () => {
 
   it('maps a failed job to a retryable runtime', () => {
     const vm = buildDashboardSubjectFromJob(
-      {
-        job_id: 'a',
-        filename: 'x.pdf',
-        subject_id: 'x',
+      pipelineJob({
         status: 'failed',
         progress: 0,
         retryable: true,
         user_message: 'boom',
-      } as never,
+      }),
       t,
     );
     expect(vm.runtime.kind).toBe('retryable');
@@ -67,13 +94,10 @@ describe('buildDashboardSubjectFromJob', () => {
 
   it('maps a completed job to a ready runtime', () => {
     const vm = buildDashboardSubjectFromJob(
-      {
-        job_id: 'a',
-        filename: 'x.pdf',
-        subject_id: 'x',
+      pipelineJob({
         status: 'completed',
         progress: 1,
-      } as never,
+      }),
       t,
     );
     expect(vm.runtime.kind).toBe('ready');
@@ -81,14 +105,14 @@ describe('buildDashboardSubjectFromJob', () => {
 
   it('uses job_id as displayTitle when subject_id and filename are empty', () => {
     const vm = buildDashboardSubjectFromJob(
-      {
+      pipelineJob({
         job_id: 'job-123',
         filename: '',
         subject_id: '',
         status: 'queued',
         progress: 0,
         eta_seconds: null,
-      } as never,
+      }),
       t,
     );
     expect(vm.displayTitle).toBe('job-123');
@@ -96,14 +120,14 @@ describe('buildDashboardSubjectFromJob', () => {
 
   it('strips file extension from filename for displayTitle', () => {
     const vm = buildDashboardSubjectFromJob(
-      {
+      pipelineJob({
         job_id: 'j',
         filename: 'lecture.pdf',
         subject_id: '',
         status: 'queued',
         progress: 0,
         eta_seconds: null,
-      } as never,
+      }),
       t,
     );
     expect(vm.displayTitle).toBe('lecture');
@@ -111,14 +135,14 @@ describe('buildDashboardSubjectFromJob', () => {
 
   it('prefers subject_id over filename for displayTitle', () => {
     const vm = buildDashboardSubjectFromJob(
-      {
+      pipelineJob({
         job_id: 'j',
         filename: 'lecture.pdf',
         subject_id: 'subj-1',
         status: 'queued',
         progress: 0,
         eta_seconds: null,
-      } as never,
+      }),
       t,
     );
     expect(vm.displayTitle).toBe('subj-1');
@@ -126,14 +150,11 @@ describe('buildDashboardSubjectFromJob', () => {
 
   it('maps a cancelled job to retryable runtime using fallback message when user_message is null', () => {
     const vm = buildDashboardSubjectFromJob(
-      {
-        job_id: 'a',
-        filename: 'x.pdf',
-        subject_id: 'x',
+      pipelineJob({
         status: 'cancelled',
         progress: 0,
         user_message: null,
-      } as never,
+      }),
       t,
     );
     expect(vm.runtime.kind).toBe('retryable');
@@ -144,13 +165,10 @@ describe('buildDashboardSubjectFromJob', () => {
 
   it('sets progressPercent 100 for completed jobs', () => {
     const vm = buildDashboardSubjectFromJob(
-      {
-        job_id: 'a',
-        filename: 'x.pdf',
-        subject_id: 'x',
+      pipelineJob({
         status: 'completed',
         progress: 1,
-      } as never,
+      }),
       t,
     );
     expect(vm.metrics.progressPercent).toBe(100);
@@ -158,14 +176,11 @@ describe('buildDashboardSubjectFromJob', () => {
 
   it('clamps progressPercent for in-flight jobs', () => {
     const vm = buildDashboardSubjectFromJob(
-      {
-        job_id: 'a',
-        filename: 'x.pdf',
-        subject_id: 'x',
+      pipelineJob({
         status: 'embedding',
         progress: 0.55,
         eta_seconds: null,
-      } as never,
+      }),
       t,
       t,
     );
@@ -194,14 +209,11 @@ describe('buildDashboardSubjectFromJob i18n key resolution', () => {
 
     it(`resolves processing-job stageLabel to a real string [${locale}]`, () => {
       const vm = buildDashboardSubjectFromJob(
-        {
-          job_id: 'a',
-          filename: 'x.pdf',
-          subject_id: 'x',
+        pipelineJob({
           status: 'extracting',
           progress: 0.3,
           eta_seconds: 120,
-        } as never,
+        }),
         tDashboard,
         tProcessing,
       );
@@ -216,14 +228,11 @@ describe('buildDashboardSubjectFromJob i18n key resolution', () => {
 
     it(`resolves failed-job message to a real string [${locale}]`, () => {
       const vm = buildDashboardSubjectFromJob(
-        {
-          job_id: 'a',
-          filename: 'x.pdf',
-          subject_id: 'x',
+        pipelineJob({
           status: 'failed',
           progress: 0,
           user_message: null,
-        } as never,
+        }),
         tDashboard,
         tProcessing,
       );
@@ -234,22 +243,33 @@ describe('buildDashboardSubjectFromJob i18n key resolution', () => {
       }
     });
 
-    it(`resolves unknown-status stageLabel without throwing [${locale}]`, () => {
+    it(`rejects status values outside the generated backend contract [${locale}]`, () => {
+      const invalidJob = pipelineJob({
+        progress: 0.1,
+        eta_seconds: null,
+        // @ts-expect-error Intentional contract-violation fixture: generated backend status rejects this.
+        status: 'some_future_status',
+      });
+
+      expect(() => buildDashboardSubjectFromJob(invalidJob, tDashboard, tProcessing)).toThrow(
+        'Unsupported adaptive pipeline status: some_future_status',
+      );
+    });
+
+    it(`resolves queued-job stageLabel from the generated backend contract [${locale}]`, () => {
       const vm = buildDashboardSubjectFromJob(
-        {
-          job_id: 'a',
-          filename: 'x.pdf',
-          subject_id: 'x',
-          status: 'some_future_status',
+        pipelineJob({
+          status: 'queued',
           progress: 0.1,
           eta_seconds: null,
-        } as never,
+        }),
         tDashboard,
         tProcessing,
       );
       expect(vm.runtime.kind).toBe('processing');
       if (vm.runtime.kind === 'processing') {
         expect(vm.runtime.stageLabel).not.toContain('processing.status.');
+        expect(vm.runtime.stageLabel.length).toBeGreaterThan(0);
       }
     });
   }
@@ -271,11 +291,34 @@ describe('toDashboardSubject', () => {
     mastered_concept: 4,
     all_concept: 8,
     progress_percent: 50,
-  } as unknown as PipelineJobHistoryItem;
+  };
 
   it('sets runtime to ready', () => {
     const vm = toDashboardSubject(baseJob, 'en', t);
     expect(vm.runtime).toEqual({ kind: 'ready' });
+  });
+
+  it('maps generated backend fields to a camelCase dashboard view-model', () => {
+    const vm = toDashboardSubject(baseJob, 'en', t);
+
+    expect(vm).toMatchObject({
+      jobId: 'j1',
+      subjectId: 'subj-intro',
+      conceptsExtracted: 10,
+      conceptsAfterMerge: 8,
+      relationsVerified: 5,
+      completedAt: 1_700_000_000,
+      masteredConcept: 4,
+      allConcept: 8,
+      progressPercent: 50,
+    });
+    expect(vm).not.toHaveProperty('job_id');
+    expect(vm).not.toHaveProperty('subject_id');
+    expect(vm).not.toHaveProperty('concepts_extracted');
+    expect(vm).not.toHaveProperty('concepts_after_merge');
+    expect(vm).not.toHaveProperty('relations_verified');
+    expect(vm).not.toHaveProperty('completed_at');
+    expect(vm).not.toHaveProperty('progress_percent');
   });
 
   it('derives displayTitle from subject_id', () => {

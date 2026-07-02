@@ -9,10 +9,14 @@ type WithAuthOptions = {
 
 type RouteParams = Record<string, string | string[]>;
 
+type AuthenticatedSession = Session & {
+  user: NonNullable<Session['user']>;
+};
+
 type AuthContext<TParams extends RouteParams = RouteParams> = {
   userId: string;
   email: string;
-  session: Session;
+  session: AuthenticatedSession;
   params: TParams;
 };
 
@@ -55,15 +59,20 @@ export function withAuth<TParams extends RouteParams = RouteParams>(
       return apiErr('unauthorized', 'Unauthorized', 401);
     }
 
-    const userId = session.user?.id;
-    const email = session.user?.email;
+    const authenticatedSession: AuthenticatedSession = {
+      ...session,
+      user: session.user,
+    };
+
+    const userId = authenticatedSession.user.id;
+    const email = authenticatedSession.user.email;
 
     if (!userId && !email) {
       return apiErr('unauthorized', 'Unauthorized', 401);
     }
 
     if (options?.role) {
-      const userRole = session.user?.role;
+      const userRole = authenticatedSession.user.role;
       if (userRole !== options.role) {
         const roleLabel = options.role === 'admin' ? 'Admin' : options.role;
         return apiErr('forbidden', `${roleLabel} access required`, 403);
@@ -73,9 +82,9 @@ export function withAuth<TParams extends RouteParams = RouteParams>(
     const params = await routeContext.params;
 
     return handler(request, {
-      userId: userId || '',
-      email: email || '',
-      session,
+      userId: userId ?? '',
+      email: email ?? '',
+      session: authenticatedSession,
       params,
     });
   };

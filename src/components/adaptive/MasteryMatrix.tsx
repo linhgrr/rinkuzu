@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { HiOutlineAcademicCap } from '@/components/icons';
+import { HiOutlineAcademicCap } from 'react-icons/hi';
 import { Spinner } from '@/components/ui/Spinner';
 import { useKnowledgeGraph, useMasteryMatrix } from '@/hooks/useAdaptive';
-import type { MasteryRow } from '@/features/adaptive/types';
+import type { MasteryRow } from '@/features/adaptive/types/graph';
 
 interface MasteryMatrixProps {
   sessionId: string;
@@ -71,18 +71,18 @@ export default function MasteryMatrix({ sessionId, filterActiveOnly = false }: M
   );
   const [sortBy, setSortBy] = useState<'name' | 'mastery'>('mastery');
 
-  const handleSortByMastery = useCallback(() => {
+  const handleSortByMastery = () => {
     setSortBy('mastery');
-  }, []);
+  };
 
-  const handleSortByName = useCallback(() => {
+  const handleSortByName = () => {
     setSortBy('name');
-  }, []);
+  };
 
   const data = matrixData;
   const loading = matrixLoading || (filterActiveOnly && graphLoading);
 
-  const activeConceptIds = useMemo(() => {
+  const activeConceptIds = (() => {
     if (!filterActiveOnly || !graphData) return null;
 
     const ids = new Set<string>();
@@ -93,9 +93,9 @@ export default function MasteryMatrix({ sessionId, filterActiveOnly = false }: M
     }
 
     return ids;
-  }, [filterActiveOnly, graphData]);
+  })();
 
-  const localizedBloomLabels = useMemo(() => {
+  const localizedBloomLabels = (() => {
     if (!data?.bloom_labels?.length) {
       return [];
     }
@@ -104,9 +104,9 @@ export default function MasteryMatrix({ sessionId, filterActiveOnly = false }: M
       const mappedKey = BLOOM_TRANSLATION_BY_LABEL[label];
       return mappedKey ? t(`bloom.${mappedKey}`) : label;
     });
-  }, [data?.bloom_labels, t]);
+  })();
 
-  const sortedMatrix = useMemo(() => {
+  const sortedMatrix = (() => {
     if (!data?.matrix?.length) {
       return [];
     }
@@ -128,9 +128,9 @@ export default function MasteryMatrix({ sessionId, filterActiveOnly = false }: M
       }
       return a.concept_name.localeCompare(b.concept_name);
     });
-  }, [activeConceptIds, data, sortBy]);
+  })();
 
-  const displayMatrix = useMemo(() => sortedMatrix.slice(0, 30), [sortedMatrix]);
+  const displayMatrix = sortedMatrix.slice(0, 30);
 
   if (loading) {
     return (
@@ -229,7 +229,7 @@ export default function MasteryMatrix({ sessionId, filterActiveOnly = false }: M
                   </td>
                   {row.bloom_levels.map((value, colIndex) => {
                     const localizedLabel =
-                      localizedBloomLabels[colIndex] || data.bloom_labels[colIndex] || '';
+                      localizedBloomLabels[colIndex] ?? data.bloom_labels[colIndex] ?? '';
                     return (
                       <td key={`${row.concept_id}-${localizedLabel}`} className="p-1 text-center">
                         <div

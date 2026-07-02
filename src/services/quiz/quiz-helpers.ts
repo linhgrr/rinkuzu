@@ -1,18 +1,15 @@
-import { IQuiz } from '@/interfaces/repositories/IQuizRepository';
+import type { Quiz } from '@/entities/Quiz';
 import { createSubscriptionService } from '@/lib/subscription-factory';
 import { ServiceResult } from '@/interfaces/services/types';
 
-export function getAuthorId(author: IQuiz['author'] | undefined): string | undefined {
+export function getAuthorId(author: Quiz['author'] | undefined): string | undefined {
   if (!author) return undefined;
   if (typeof author === 'string') return author;
-  if (typeof author === 'object' && '_id' in author && author._id) {
-    return author._id.toString();
-  }
-  return undefined;
+  return author.id;
 }
 
 export async function checkPrivateQuizAccess(
-  quiz: IQuiz,
+  quiz: Quiz,
   userId?: string,
   userRole?: string,
 ): Promise<ServiceResult<never> | null> {

@@ -1,5 +1,5 @@
 import React from 'react';
-import { HiOutlineExclamationCircle } from '@/components/icons';
+import { HiOutlineExclamationCircle } from 'react-icons/hi';
 import { cn } from '@/lib/utils';
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {

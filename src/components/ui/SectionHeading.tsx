@@ -1,5 +1,5 @@
 import { Link } from '@/i18n/navigation';
-import { HiOutlineChevronRight } from '@/components/icons';
+import { HiOutlineChevronRight } from 'react-icons/hi';
 
 type SectionHeadingProps = {
   title: string;

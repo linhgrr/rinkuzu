@@ -1,12 +1,18 @@
 'use client';
 
-import { useEffect, useReducer } from 'react';
+import { useEffect, useReducer, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { UserProfileLink } from '@/components/user/UserProfileLink';
-import { fetchApiData } from '@/lib/api/client';
+import { fetchStatsModalViewModel } from '@/features/admin/stats/api/admin-stats-api';
+import type {
+  StatsModalActivityItemViewModel,
+  StatsModalCreatorItemViewModel,
+  StatsModalItemViewModel,
+  StatsModalPaginationViewModel,
+} from '@/features/admin/stats/types/stats-modal-view-model';
 import Pagination from './Pagination';
 
 interface StatsModalProps {
@@ -18,32 +24,16 @@ interface StatsModalProps {
   children?: React.ReactNode;
 }
 
-interface PaginationData {
-  page: number;
-  limit: number;
-  total: number;
-  totalPages: number;
-  hasNext: boolean;
-  hasPrev: boolean;
-}
-
-interface StatsModalPayload {
-  pagination: PaginationData;
-  creators?: any[];
-  activities?: any[];
-  data?: any[];
-}
-
 interface SortOption {
   value: string;
   label: string;
 }
 
 interface StatsModalState {
-  data: any[];
+  data: StatsModalItemViewModel[];
   loading: boolean;
   error: string;
-  pagination: PaginationData;
+  pagination: StatsModalPaginationViewModel;
   searchTerm: string;
   sortBy: string;
   sortOrder: 'asc' | 'desc';
@@ -51,18 +41,23 @@ interface StatsModalState {
 
 type StatsModalAction =
   | { type: 'loadStart'; clearError: boolean }
-  | { type: 'loadSuccess'; data: any[]; pagination: PaginationData; append: boolean }
+  | {
+      type: 'loadSuccess';
+      data: StatsModalItemViewModel[];
+      pagination: StatsModalPaginationViewModel;
+      append: boolean;
+    }
   | { type: 'loadError'; error: string }
   | { type: 'setSearchTerm'; value: string }
   | { type: 'setSort'; sortBy: string; sortOrder: 'asc' | 'desc' };
 
-const initialPagination: PaginationData = {
-  page: 1,
-  limit: 20,
-  total: 0,
+const initialPagination: StatsModalPaginationViewModel = {
+  currentPage: 1,
   totalPages: 0,
-  hasNext: false,
-  hasPrev: false,
+  totalItems: 0,
+  itemsPerPage: 20,
+  hasNextPage: false,
+  hasPrevPage: false,
 };
 
 const initialStatsModalState: StatsModalState = {
@@ -113,15 +108,12 @@ function statsModalReducer(state: StatsModalState, action: StatsModalAction): St
   }
 }
 
-function getDataKey(type: StatsModalProps['type']) {
-  switch (type) {
-    case 'creators':
-      return 'creators';
-    case 'activity':
-      return 'activities';
-    default:
-      return 'data';
-  }
+function isCreatorStat(item: StatsModalItemViewModel): item is StatsModalCreatorItemViewModel {
+  return 'quizCount' in item && 'totalQuestions' in item && 'joinedAt' in item;
+}
+
+function isActivityItem(item: StatsModalItemViewModel): item is StatsModalActivityItemViewModel {
+  return 'type' in item && 'data' in item && 'date' in item;
 }
 
 function getSortOptions(type: StatsModalProps['type'], t: (key: string) => string): SortOption[] {
@@ -137,26 +129,16 @@ function getSortOptions(type: StatsModalProps['type'], t: (key: string) => strin
   }
 }
 
-function formatDateValue(dateString: string) {
-  return new Date(dateString).toLocaleDateString('vi-VN', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
-
 function CreatorItem({
   creator,
   index,
-  page,
+  currentPage,
   limit,
   t,
 }: {
-  creator: any;
+  creator: StatsModalCreatorItemViewModel;
   index: number;
-  page: number;
+  currentPage: number;
   limit: number;
   t: (key: string) => string;
 }) {
@@ -164,7 +146,7 @@ function CreatorItem({
     <div className="flex items-center justify-between p-4 bg-neutral-50 rounded-lg hover:bg-neutral-100 transition-colors">
       <div className="flex items-center gap-x-4">
         <span className="text-sm font-medium text-neutral-500">
-          #{index + 1 + (page - 1) * limit}
+          #{index + 1 + (currentPage - 1) * limit}
         </span>
         <div className="size-8 bg-gradient-to-br from-green-400 to-brand-trust rounded-full flex items-center justify-center">
           <span className="text-white text-sm font-medium">{creator.email[0].toUpperCase()}</span>
@@ -173,7 +155,7 @@ function CreatorItem({
           <h4 className="font-medium text-neutral-900">{creator.email}</h4>
           <div className="flex items-center gap-x-2 text-xs text-neutral-500">
             <span>
-              {t('joined')}: {formatDateValue(creator.joinedAt)}
+              {t('joined')}: {creator.joinedAtLabel}
             </span>
             {creator.role === 'admin' && (
               <span className="px-2 py-1 bg-orange-100 text-orange-800 rounded">Admin</span>
@@ -184,7 +166,7 @@ function CreatorItem({
       <div className="text-right">
         <div className="text-sm font-medium">{creator.quizCount} quiz</div>
         <div className="text-xs text-neutral-500">
-          {creator.totalQuestions} {t('questionsCount')} • {Math.round(creator.successRate || 0)}%{' '}
+          {creator.totalQuestions} {t('questionsCount')} • {Math.round(creator.successRate ?? 0)}%{' '}
           {t('successRate')}
         </div>
       </div>
@@ -192,13 +174,15 @@ function CreatorItem({
   );
 }
 
-function ActivityItem({ activity, t }: { activity: any; t: (key: string) => string }) {
-  const { type: activityType, data: activityData, date } = activity;
-  const activityKey =
-    activityData.email ||
-    activityData.title ||
-    activityData.quiz?.title ||
-    `${activityType}-${date}`;
+function ActivityItem({
+  activity,
+  t,
+}: {
+  activity: StatsModalActivityItemViewModel;
+  t: (key: string) => string;
+}) {
+  const { type: activityType } = activity;
+  const activityKey = activity.id;
 
   return (
     <div
@@ -246,53 +230,53 @@ function ActivityItem({ activity, t }: { activity: any; t: (key: string) => stri
         {activityType === 'user' && (
           <div>
             <h4 className="font-medium text-neutral-900">
-              {t('newUser')}: {activityData.email}
+              {t('newUser')}: {activity.data.email}
             </h4>
             <p className="text-sm text-neutral-600">{t('registered')}</p>
           </div>
         )}
         {activityType === 'quiz' && (
           <div>
-            <h4 className="font-medium text-neutral-900">{activityData.title}</h4>
+            <h4 className="font-medium text-neutral-900">{activity.data.title}</h4>
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-neutral-600">
               <span className="shrink-0">{t('by')}</span>
               <UserProfileLink
-                user={activityData.author || {}}
+                user={activity.data.author}
                 avatarSize={20}
                 className="max-w-[220px] text-sm text-neutral-600"
                 nameClassName="text-sm"
               />
               <span>•</span>
               <span>
-                {activityData.questionCount} {t('questionsCount')}
+                {activity.data.questionCount} {t('questionsCount')}
               </span>
             </div>
           </div>
         )}
         {activityType === 'attempt' && (
           <div>
-            <h4 className="font-medium text-neutral-900">{activityData.quiz?.title}</h4>
+            <h4 className="font-medium text-neutral-900">{activity.data.quiz.title}</h4>
             <p className="text-sm text-neutral-600">
-              {activityData.user?.email || t('anonymous')} • Score: {activityData.score}% •{' '}
-              {activityData.answeredQuestions} {t('answeredQuestions')}
+              {activity.data.actor.email} • Score: {activity.data.score}% •{' '}
+              {activity.data.answeredQuestions} {t('answeredQuestions')}
             </p>
           </div>
         )}
-        <p className="text-xs text-neutral-400">{formatDateValue(date)}</p>
+        <p className="text-xs text-neutral-400">{activity.dateLabel}</p>
       </div>
 
       {activityType === 'attempt' && (
         <div className="text-right">
           <div
             className={`text-sm font-medium ${
-              activityData.score >= 80
+              activity.data.score >= 80
                 ? 'text-green-600'
-                : activityData.score >= 60
+                : activity.data.score >= 60
                   ? 'text-yellow-600'
                   : 'text-red-600'
             }`}
           >
-            {activityData.score}%
+            {activity.data.score}%
           </div>
         </div>
       )}
@@ -305,16 +289,16 @@ function StatsModalContent({
   error,
   loading,
   onRetry,
-  page,
+  currentPage,
   limit,
   t,
   type,
 }: {
-  data: any[];
+  data: StatsModalItemViewModel[];
   error: string;
   loading: boolean;
   onRetry: () => void;
-  page: number;
+  currentPage: number;
   limit: number;
   t: (key: string) => string;
   type: StatsModalProps['type'];
@@ -351,18 +335,20 @@ function StatsModalContent({
       {data.map((item, index) => {
         switch (type) {
           case 'creators':
+            if (!isCreatorStat(item)) return null;
             return (
               <CreatorItem
-                key={item._id || index}
+                key={item.id}
                 creator={item}
                 index={index}
-                page={page}
+                currentPage={currentPage}
                 limit={limit}
                 t={t}
               />
             );
           case 'activity':
-            return <ActivityItem key={item._id || item.date || index} activity={item} t={t} />;
+            if (!isActivityItem(item)) return null;
+            return <ActivityItem key={item.id} activity={item} t={t} />;
           default:
             return null;
         }
@@ -423,7 +409,6 @@ interface StatsModalBodyProps {
     sortBy?: string,
     sortOrder?: 'asc' | 'desc',
   ) => Promise<void>;
-  requestSignature: string;
   state: StatsModalState;
   title: string;
   t: (key: string, values?: Record<string, string | number>) => string;
@@ -438,17 +423,12 @@ function StatsModalBody({
   loadData,
   onSearchTermChange,
   onSortChange,
-  requestSignature,
   sortOptions,
   state,
   t,
   title,
   type,
 }: StatsModalBodyProps) {
-  useEffect(() => {
-    void loadData(1);
-  }, [loadData, requestSignature]);
-
   const handleSearch = (event: React.FormEvent) => {
     event.preventDefault();
     void loadData(1, state.searchTerm);
@@ -459,8 +439,8 @@ function StatsModalBody({
   };
 
   const handleLoadMore = () => {
-    if (state.pagination.hasNext) {
-      void loadData(state.pagination.page + 1, state.searchTerm, true);
+    if (state.pagination.hasNextPage) {
+      void loadData(state.pagination.currentPage + 1, state.searchTerm, true);
     }
   };
 
@@ -469,7 +449,7 @@ function StatsModalBody({
       <div className="mb-6">
         <h2 className="text-2xl font-semibold text-neutral-900 mb-2">{title}</h2>
         <p className="text-neutral-600">
-          {t('showing', { count: state.data.length, total: state.pagination.total })}
+          {t('showing', { count: state.data.length, total: state.pagination.totalItems })}
         </p>
       </div>
 
@@ -507,8 +487,8 @@ function StatsModalBody({
           onRetry={() => {
             void loadData(1);
           }}
-          page={state.pagination.page}
-          limit={state.pagination.limit}
+          currentPage={state.pagination.currentPage}
+          limit={state.pagination.itemsPerPage}
           t={t}
           type={type}
         />
@@ -525,7 +505,7 @@ function StatsModalBody({
 
       <div className="mt-6 flex justify-between items-center">
         <div className="flex gap-x-2">
-          {type === 'activity' && state.pagination.hasNext && (
+          {type === 'activity' && state.pagination.hasNextPage && (
             <Button onClick={handleLoadMore} variant="outline" disabled={state.loading} size="sm">
               {t('loadMore')}
             </Button>
@@ -534,7 +514,7 @@ function StatsModalBody({
 
         {type !== 'activity' && state.pagination.totalPages > 1 && (
           <Pagination
-            currentPage={state.pagination.page}
+            currentPage={state.pagination.currentPage}
             totalPages={state.pagination.totalPages}
             onPageChange={handlePageChange}
           />
@@ -556,6 +536,17 @@ export default function StatsModal({
   const [state, dispatch] = useReducer(statsModalReducer, initialStatsModalState);
   const sortOptions = getSortOptions(type, t);
   const requestSignature = `${type}:${apiEndpoint}`;
+  const activeRequestRef = useRef(0);
+  const loadedSignatureRef = useRef<string | null>(null);
+  const latestLoadDataRef = useRef<
+    (
+      page?: number,
+      search?: string,
+      append?: boolean,
+      sortBy?: string,
+      sortOrder?: 'asc' | 'desc',
+    ) => Promise<void>
+  >(async () => {});
 
   const loadData = async (
     page = 1,
@@ -564,37 +555,55 @@ export default function StatsModal({
     sortBy?: string,
     sortOrder?: 'asc' | 'desc',
   ) => {
+    const requestId = activeRequestRef.current + 1;
+    activeRequestRef.current = requestId;
     const resolvedSearch = search ?? state.searchTerm;
     const resolvedSortBy = sortBy ?? state.sortBy;
     const resolvedSortOrder = sortOrder ?? state.sortOrder;
     dispatch({ type: 'loadStart', clearError: !append });
 
     try {
-      const params = new URLSearchParams({
-        page: page.toString(),
-        limit: state.pagination.limit.toString(),
-        ...(resolvedSearch && { search: resolvedSearch }),
-        ...(resolvedSortBy && { sortBy: resolvedSortBy }),
+      const result = await fetchStatsModalViewModel({
+        type,
+        apiEndpoint,
+        page,
+        limit: state.pagination.itemsPerPage,
+        search: resolvedSearch,
+        sortBy: resolvedSortBy,
         sortOrder: resolvedSortOrder,
       });
-      const result = await fetchApiData<StatsModalPayload>(
-        `${apiEndpoint}${apiEndpoint.includes('?') ? '&' : '?'}${params}`,
-      );
-      const nextData = result[getDataKey(type)] || result.activities || [];
+      if (activeRequestRef.current !== requestId) return;
 
       dispatch({
         type: 'loadSuccess',
-        data: nextData,
+        data: result.items,
         pagination: result.pagination,
         append,
       });
     } catch (error) {
+      if (activeRequestRef.current !== requestId) return;
+
       dispatch({
         type: 'loadError',
         error: error instanceof Error ? error.message : 'Failed to fetch data',
       });
     }
   };
+
+  useEffect(() => {
+    latestLoadDataRef.current = loadData;
+  });
+
+  useEffect(() => {
+    if (!isOpen) {
+      loadedSignatureRef.current = null;
+      return;
+    }
+
+    if (loadedSignatureRef.current === requestSignature) return;
+    loadedSignatureRef.current = requestSignature;
+    void latestLoadDataRef.current(1);
+  }, [isOpen, requestSignature]);
 
   const handleSortChange = (field: string) => {
     const nextSortBy = field;
@@ -611,7 +620,6 @@ export default function StatsModal({
         loadData={loadData}
         onSearchTermChange={(value) => dispatch({ type: 'setSearchTerm', value })}
         onSortChange={handleSortChange}
-        requestSignature={requestSignature}
         sortOptions={sortOptions}
         state={state}
         t={t}

@@ -52,12 +52,16 @@ describe('api client helpers', () => {
     });
   });
 
-  it('treats 204 responses as success with null data', async () => {
+  it('rejects 204 responses because they violate the standard envelope contract', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(null, { status: 204 }));
 
     await expect(
       fetchApiData<null>('/api/bookmarks/abc', { method: 'DELETE' }),
-    ).resolves.toBeNull();
+    ).rejects.toMatchObject({
+      name: 'ApiResponseError',
+      code: 'invalid_response_envelope',
+      status: 204,
+    });
   });
 
   it('throws ApiResponseError when the API returns an error envelope', async () => {

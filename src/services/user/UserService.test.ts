@@ -1,26 +1,102 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi, type Mocked } from 'vitest';
 import { assertOk, assertFail } from '@/interfaces/services/types';
+import type { IUserRepository } from '@/interfaces/repositories/IUserRepository';
+import type { IAttemptRepository } from '@/interfaces/repositories/IAttemptRepository';
+import type { IQuizRepository } from '@/interfaces/repositories/IQuizRepository';
+import type { User } from '@/entities/User';
+import type { Attempt } from '@/entities/Attempt';
+import type { QuizQuestion } from '@/entities/Quiz';
 import { UserService } from './UserService';
 
-function createService(overrides: Record<string, any> = {}) {
-  const userRepository = {
+interface ServiceOverrides {
+  userRepository?: Partial<Mocked<IUserRepository>>;
+  attemptRepository?: Partial<Mocked<IAttemptRepository>>;
+  quizRepository?: Partial<Mocked<IQuizRepository>>;
+}
+
+function userFixture(overrides: Partial<User> = {}): User {
+  return {
+    id: 'user-1',
+    email: 'user@test.com',
+    role: 'user',
+    createdAt: new Date('2025-01-01T00:00:00Z'),
+    ...overrides,
+  };
+}
+
+function questionFixture(id: string, correctIndex = 0): QuizQuestion {
+  return {
+    id,
+    question: `Question ${id}`,
+    options: ['A', 'B', 'C'],
+    type: 'single',
+    correctIndex,
+  };
+}
+
+function attemptFixture(overrides: Partial<Attempt> = {}): Attempt {
+  return {
+    id: 'attempt-1',
+    user: null,
+    quiz: {
+      id: 'quiz-1',
+      title: 'Quiz',
+      slug: 'quiz',
+    },
+    answers: [],
+    score: 0,
+    totalQuestions: 0,
+    takenAt: new Date('2025-01-01T00:00:00Z'),
+    ...overrides,
+  };
+}
+
+function createService(overrides: ServiceOverrides = {}) {
+  const userRepository: Mocked<IUserRepository> = {
     findByEmail: vi.fn(),
     findById: vi.fn(),
+    findPublicProfileById: vi.fn(),
+    updateRole: vi.fn(),
     findAll: vi.fn(),
+    delete: vi.fn(),
+    count: vi.fn(),
+    countByCreatedAtBuckets: vi.fn(),
+    countByRole: vi.fn(),
+    ...overrides.userRepository,
+  };
+  const attemptRepository: Mocked<IAttemptRepository> = {
+    findByUser: vi.fn(),
+    create: vi.fn(),
+    countByUser: vi.fn(),
+    countByQuiz: vi.fn(),
+    findRecentActivity: vi.fn(),
+    findByIdWithQuiz: vi.fn(),
+    count: vi.fn(),
+    countByTakenAtBuckets: vi.fn(),
+    ...overrides.attemptRepository,
+  };
+  const quizRepository: Mocked<IQuizRepository> = {
+    findById: vi.fn(),
+    findBySlug: vi.fn(),
+    findBySourceDraftId: vi.fn(),
+    create: vi.fn(),
     update: vi.fn(),
     delete: vi.fn(),
-    ...overrides['userRepository'],
-  };
-  const attemptRepository = {
-    findByUser: vi.fn(),
-    findByIdWithQuiz: vi.fn(),
-    ...overrides['attemptRepository'],
+    findAll: vi.fn(),
+    findForPlay: vi.fn(),
+    findUserQuizzes: vi.fn(),
+    findPublicByAuthor: vi.fn(),
+    count: vi.fn(),
+    countByCreatedAtBuckets: vi.fn(),
+    findTopCreators: vi.fn(),
+    ...overrides.quizRepository,
   };
 
   return {
     userRepository,
     attemptRepository,
-    service: new UserService(userRepository, attemptRepository),
+    quizRepository,
+    service: new UserService(userRepository, attemptRepository, quizRepository),
   };
 }
 
@@ -29,27 +105,99 @@ describe('UserService', () => {
     vi.clearAllMocks();
   });
 
+  describe('getPublicProfile', () => {
+    it('returns a public DTO without persistence identity fields', async () => {
+      const { service, userRepository, quizRepository } = createService();
+      userRepository.findPublicProfileById = vi.fn().mockResolvedValue({
+        id: '507f191e810c19729de860ea',
+        email: 'learner@example.com',
+        displayName: 'Learner',
+        bio: 'Public bio',
+        createdAt: new Date('2026-07-01T00:00:00Z'),
+      });
+      quizRepository.findPublicByAuthor.mockResolvedValue([
+        {
+          id: '507f191e810c19729de860eb',
+          title: 'Public quiz',
+          description: 'Description',
+          slug: 'public-quiz',
+          author: '507f191e810c19729de860ea',
+          questions: [
+            {
+              id: '507f191e810c19729de860ec',
+              question: 'Question',
+              options: ['A', 'B'],
+              correctIndex: 0,
+              type: 'single',
+            },
+          ],
+          isPrivate: false,
+          createdAt: new Date('2026-07-02T00:00:00Z'),
+          updatedAt: new Date('2026-07-02T00:00:00Z'),
+        },
+      ]);
+
+      const result = await service.getPublicProfile('507f191e810c19729de860ea');
+
+      assertOk(result);
+      expect(result.data).toEqual({
+        user: {
+          id: '507f191e810c19729de860ea',
+          email: 'learner@example.com',
+          name: undefined,
+          displayName: 'Learner',
+          bio: 'Public bio',
+          avatar: undefined,
+          createdAt: '2026-07-01T00:00:00.000Z',
+        },
+        quizzes: [
+          {
+            id: '507f191e810c19729de860eb',
+            title: 'Public quiz',
+            description: 'Description',
+            slug: 'public-quiz',
+            createdAt: '2026-07-02T00:00:00.000Z',
+            questionCount: 1,
+          },
+        ],
+      });
+      expect(result.data.user).not.toHaveProperty('_id');
+      expect(result.data.quizzes[0]).not.toHaveProperty('_id');
+    });
+
+    it('returns 404 when the public user does not exist', async () => {
+      const { service, userRepository, quizRepository } = createService();
+      userRepository.findPublicProfileById = vi.fn().mockResolvedValue(null);
+
+      const result = await service.getPublicProfile('missing');
+
+      assertFail(result);
+      expect(result.statusCode).toBe(404);
+      expect(quizRepository.findPublicByAuthor).not.toHaveBeenCalled();
+    });
+  });
+
   describe('getUserAttempts', () => {
     it('returns formatted attempts with pagination', async () => {
       const { service, userRepository, attemptRepository } = createService();
-      userRepository.findByEmail.mockResolvedValue({
-        _id: { toString: () => 'user-1' },
-        email: 'user@test.com',
-      });
+      userRepository.findByEmail.mockResolvedValue(userFixture());
       attemptRepository.findByUser.mockResolvedValue({
-        attempts: [
-          {
-            _id: 'attempt-1',
+        items: [
+          attemptFixture({
+            id: 'attempt-1',
             score: 80,
+            totalQuestions: 5,
             takenAt: new Date('2025-01-01'),
             quiz: {
-              _id: 'quiz-1',
+              id: 'quiz-1',
               title: 'Math Quiz',
               slug: 'math-quiz',
               description: 'A math quiz',
-              questions: [{}, {}, {}, {}, {}],
+              questions: Array.from({ length: 5 }, (_, index) =>
+                questionFixture(`question-${index}`),
+              ),
             },
-          },
+          }),
         ],
         pagination: {
           currentPage: 1,
@@ -61,17 +209,17 @@ describe('UserService', () => {
         },
       });
 
-      const result = await service.getUserAttempts('user@test.com');
+      const result = await service.getUserAttempts('user@test.com', { page: 1, limit: 10 });
 
       expect(result.attempts).toHaveLength(1);
       expect(result.attempts[0]).toMatchObject({
-        _id: 'attempt-1',
+        id: 'attempt-1',
         score: 80,
         quiz: {
           title: 'Math Quiz',
           slug: 'math-quiz',
-          totalQuestions: 5,
         },
+        totalQuestions: 5,
       });
     });
 
@@ -79,55 +227,24 @@ describe('UserService', () => {
       const { service, userRepository } = createService();
       userRepository.findByEmail.mockResolvedValue(null);
 
-      await expect(service.getUserAttempts('missing@test.com')).rejects.toThrow('User not found');
+      await expect(
+        service.getUserAttempts('missing@test.com', { page: 1, limit: 10 }),
+      ).rejects.toThrow('User not found');
       expect(userRepository.findByEmail).toHaveBeenCalledWith('missing@test.com');
     });
 
-    it('handles missing quiz fields gracefully', async () => {
+    it('fails fast when repository returns an attempt without populated quiz snapshot', async () => {
       const { service, userRepository, attemptRepository } = createService();
-      userRepository.findByEmail.mockResolvedValue({
-        _id: { toString: () => 'user-1' },
-      });
+      userRepository.findByEmail.mockResolvedValue(userFixture());
       attemptRepository.findByUser.mockResolvedValue({
-        attempts: [
-          {
-            _id: 'attempt-2',
-            score: 100,
-            takenAt: new Date(),
-            quiz: { _id: 'quiz-2' },
-          },
-        ],
-        pagination: {
-          currentPage: 1,
-          totalPages: 1,
-          totalItems: 1,
-          itemsPerPage: 10,
-          hasNextPage: false,
-          hasPrevPage: false,
-        },
-      });
-
-      const result = await service.getUserAttempts('user@test.com');
-
-      expect(result.attempts[0].quiz.title).toBe('');
-      expect(result.attempts[0].quiz.slug).toBe('');
-      expect(result.attempts[0].quiz.totalQuestions).toBe(0);
-    });
-
-    it('preserves an attempt when its quiz has been deleted', async () => {
-      const { service, userRepository, attemptRepository } = createService();
-      userRepository.findByEmail.mockResolvedValue({
-        _id: { toString: () => 'user-1' },
-      });
-      attemptRepository.findByUser.mockResolvedValue({
-        attempts: [
-          {
-            _id: 'attempt-orphaned',
+        items: [
+          attemptFixture({
+            id: 'attempt-orphaned',
             score: 75,
             takenAt: new Date(),
             totalQuestions: 12,
-            quiz: null,
-          },
+            quiz: 'quiz-orphaned',
+          }),
         ],
         pagination: {
           currentPage: 1,
@@ -139,23 +256,16 @@ describe('UserService', () => {
         },
       });
 
-      const result = await service.getUserAttempts('user@test.com');
-
-      expect(result.attempts[0].quiz).toEqual({
-        title: 'Deleted quiz',
-        slug: '',
-        description: '',
-        totalQuestions: 12,
-      });
+      await expect(
+        service.getUserAttempts('user@test.com', { page: 1, limit: 10 }),
+      ).rejects.toThrow('attempt.quiz is required');
     });
 
     it('passes pagination options to repository', async () => {
       const { service, userRepository, attemptRepository } = createService();
-      userRepository.findByEmail.mockResolvedValue({
-        _id: { toString: () => 'user-1' },
-      });
+      userRepository.findByEmail.mockResolvedValue(userFixture());
       attemptRepository.findByUser.mockResolvedValue({
-        attempts: [],
+        items: [],
         pagination: {
           currentPage: 2,
           totalPages: 5,
@@ -179,34 +289,38 @@ describe('UserService', () => {
   describe('getAttemptDetails', () => {
     it('returns formatted attempt details for authenticated user', async () => {
       const { service, userRepository, attemptRepository } = createService();
-      userRepository.findByEmail.mockResolvedValue({
-        _id: { toString: () => 'user-1' },
-      });
-      attemptRepository.findByIdWithQuiz.mockResolvedValue({
-        _id: 'attempt-1',
-        score: 80,
-        takenAt: new Date('2025-01-01'),
-        answers: [0, 1],
-        quiz: {
-          title: 'Math Quiz',
-          slug: 'math-quiz',
-          description: 'desc',
-          questions: [
-            {
-              question: 'Q1',
-              options: ['A', 'B', 'C'],
-              type: 'single',
-              correctIndex: 0,
-            },
-            {
-              question: 'Q2',
-              options: ['X', 'Y', 'Z'],
-              type: 'single',
-              correctIndex: 1,
-            },
-          ],
-        },
-      });
+      userRepository.findByEmail.mockResolvedValue(userFixture());
+      attemptRepository.findByIdWithQuiz.mockResolvedValue(
+        attemptFixture({
+          id: 'attempt-1',
+          score: 80,
+          takenAt: new Date('2025-01-01'),
+          totalQuestions: 2,
+          answers: [0, 1],
+          quiz: {
+            id: 'quiz-1',
+            title: 'Math Quiz',
+            slug: 'math-quiz',
+            description: 'desc',
+            questions: [
+              {
+                id: 'question-1',
+                question: 'Q1',
+                options: ['A', 'B', 'C'],
+                type: 'single',
+                correctIndex: 0,
+              },
+              {
+                id: 'question-2',
+                question: 'Q2',
+                options: ['X', 'Y', 'Z'],
+                type: 'single',
+                correctIndex: 1,
+              },
+            ],
+          },
+        }),
+      );
 
       const result = await service.getAttemptDetails('attempt-1', 'user@test.com');
 
@@ -219,37 +333,41 @@ describe('UserService', () => {
     it('handles anonymous users (no user record)', async () => {
       const { service, userRepository, attemptRepository } = createService();
       userRepository.findByEmail.mockResolvedValue(null);
-      attemptRepository.findByIdWithQuiz.mockResolvedValue({
-        _id: 'attempt-1',
-        score: 50,
-        takenAt: new Date(),
-        answers: [0],
-        quiz: {
-          title: 'Quiz',
-          slug: 'quiz',
-          questions: [
-            {
-              question: 'Q1',
-              options: ['A', 'B'],
-              type: 'single',
-              correctIndex: 0,
-            },
-          ],
-        },
-      });
+      attemptRepository.findByIdWithQuiz.mockResolvedValue(
+        attemptFixture({
+          id: 'attempt-1',
+          score: 50,
+          takenAt: new Date(),
+          totalQuestions: 1,
+          answers: [0],
+          quiz: {
+            id: 'quiz-1',
+            title: 'Quiz',
+            slug: 'quiz',
+            questions: [
+              {
+                id: 'question-1',
+                question: 'Q1',
+                options: ['A', 'B'],
+                type: 'single',
+                correctIndex: 0,
+              },
+            ],
+          },
+        }),
+      );
 
       const result = await service.getAttemptDetails('attempt-1', 'anon@test.com');
 
       assertOk(result);
-      // Anonymous: email is used as userId
-      expect(attemptRepository.findByIdWithQuiz).toHaveBeenCalledWith('attempt-1', 'anon@test.com');
+      expect(attemptRepository.findByIdWithQuiz).toHaveBeenCalledWith('attempt-1', {
+        guestEmail: 'anon@test.com',
+      });
     });
 
     it('returns 404 when attempt is not found', async () => {
       const { service, userRepository, attemptRepository } = createService();
-      userRepository.findByEmail.mockResolvedValue({
-        _id: { toString: () => 'user-1' },
-      });
+      userRepository.findByEmail.mockResolvedValue(userFixture());
       attemptRepository.findByIdWithQuiz.mockResolvedValue(null);
 
       const result = await service.getAttemptDetails('missing', 'user@test.com');
@@ -261,9 +379,7 @@ describe('UserService', () => {
 
     it('returns 500 on repository error', async () => {
       const { service, userRepository, attemptRepository } = createService();
-      userRepository.findByEmail.mockResolvedValue({
-        _id: { toString: () => 'user-1' },
-      });
+      userRepository.findByEmail.mockResolvedValue(userFixture());
       attemptRepository.findByIdWithQuiz.mockRejectedValue(new Error('db error'));
 
       const result = await service.getAttemptDetails('attempt-1', 'user@test.com');
@@ -271,84 +387,6 @@ describe('UserService', () => {
       assertFail(result);
       expect(result.error).toBe('Failed to get attempt details');
       expect(result.statusCode).toBe(500);
-    });
-  });
-
-  describe('getUserById', () => {
-    it('returns user by id', async () => {
-      const { service, userRepository } = createService();
-      userRepository.findById.mockResolvedValue({ _id: 'user-1', email: 'user@test.com' });
-
-      const result = await service.getUserById('user-1');
-
-      expect(result).toEqual({ _id: 'user-1', email: 'user@test.com' });
-      expect(userRepository.findById).toHaveBeenCalledWith('user-1');
-    });
-
-    it('returns null when not found', async () => {
-      const { service, userRepository } = createService();
-      userRepository.findById.mockResolvedValue(null);
-
-      const result = await service.getUserById('missing');
-
-      expect(result).toBeNull();
-    });
-  });
-
-  describe('getUserByEmail', () => {
-    it('returns user by email', async () => {
-      const { service, userRepository } = createService();
-      userRepository.findByEmail.mockResolvedValue({ _id: 'user-1', email: 'a@b.com' });
-
-      const result = await service.getUserByEmail('a@b.com');
-
-      expect(result).toEqual({ _id: 'user-1', email: 'a@b.com' });
-    });
-  });
-
-  describe('updateUser', () => {
-    it('updates and returns user', async () => {
-      const { service, userRepository } = createService();
-      userRepository.update.mockResolvedValue({ _id: 'user-1', name: 'Updated' });
-
-      const result = await service.updateUser('user-1', { name: 'Updated' });
-
-      expect(result).toEqual({ _id: 'user-1', name: 'Updated' });
-      expect(userRepository.update).toHaveBeenCalledWith('user-1', { name: 'Updated' });
-    });
-  });
-
-  describe('deleteUser', () => {
-    it('deletes user and returns true', async () => {
-      const { service, userRepository } = createService();
-      userRepository.delete.mockResolvedValue(true);
-
-      const result = await service.deleteUser('user-1');
-
-      expect(result).toBe(true);
-      expect(userRepository.delete).toHaveBeenCalledWith('user-1');
-    });
-  });
-
-  describe('getAllUsers', () => {
-    it('returns paginated users', async () => {
-      const { service, userRepository } = createService();
-      userRepository.findAll.mockResolvedValue({
-        users: [{ _id: 'user-1', email: 'a@b.com' }],
-        pagination: {
-          currentPage: 1,
-          totalPages: 1,
-          totalItems: 1,
-          itemsPerPage: 10,
-          hasNextPage: false,
-          hasPrevPage: false,
-        },
-      });
-
-      const result = await service.getAllUsers({ page: 1, limit: 10 });
-
-      expect(result.users).toHaveLength(1);
-      expect(userRepository.findAll).toHaveBeenCalledWith({ page: 1, limit: 10 });
     });
   });
 });

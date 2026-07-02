@@ -1,0 +1,37 @@
+import { describe, expect, it } from 'vitest';
+import { quizListQuerySchema } from '@/dtos/quiz';
+
+describe('quizListQuerySchema', () => {
+  it('parses strict list defaults at the controller boundary', () => {
+    expect(quizListQuerySchema.parse({})).toEqual({
+      page: 1,
+      limit: 10,
+      mine: false,
+      compact: false,
+    });
+  });
+
+  it('accepts the canonical unfiled target and explicit booleans', () => {
+    expect(
+      quizListQuerySchema.parse({
+        folder: 'unfiled',
+        mine: 'true',
+        compact: 'false',
+        visibility: 'private',
+      }),
+    ).toEqual({
+      folder: 'unfiled',
+      page: 1,
+      limit: 10,
+      mine: true,
+      compact: false,
+      visibility: 'private',
+    });
+  });
+
+  it('rejects former aliases and malformed pagination', () => {
+    expect(quizListQuerySchema.safeParse({ folder: 'default' }).success).toBe(false);
+    expect(quizListQuerySchema.safeParse({ folder: 'null' }).success).toBe(false);
+    expect(quizListQuerySchema.safeParse({ page: 'NaN' }).success).toBe(false);
+  });
+});

@@ -1,50 +1,121 @@
 import connectDB from '@/lib/mongoose';
 import Discussion from '@/models/Discussion';
-import { BaseRepository } from '@/repositories/base';
+import type { Discussion as DiscussionEntity } from '@/entities/Discussion';
 import {
-  IDiscussion,
   IDiscussionRepository,
+  type CreateDiscussionCommentData,
 } from '@/interfaces/repositories/IDiscussionRepository';
+import { Types } from 'mongoose';
+import { DiscussionPersistenceMapper } from '@/repositories/mappers/DiscussionPersistenceMapper';
+import type { DiscussionPersistenceRecord } from '@/repositories/types/DiscussionPersistence';
 
-export class DiscussionRepository
-  extends BaseRepository<IDiscussion>
-  implements IDiscussionRepository
-{
-  constructor() {
-    super(Discussion);
-  }
-
-  override async findById(id: string): Promise<IDiscussion | null> {
+export class DiscussionRepository implements IDiscussionRepository {
+  async findById(id: string): Promise<DiscussionEntity | null> {
     await connectDB();
-    return (await Discussion.findById(id)
+    const record = await Discussion.findById(id)
       .populate('comments.author', 'email name displayName avatar')
-      .lean()) as unknown as IDiscussion | null;
+      .lean<DiscussionPersistenceRecord>();
+    return record ? DiscussionPersistenceMapper.toEntity(record) : null;
   }
 
-  async findByQuiz(quizId: string): Promise<IDiscussion[]> {
+  async findByQuiz(quizId: string): Promise<DiscussionEntity[]> {
     await connectDB();
-    return (await Discussion.find({ quiz: quizId })
+    const records = await Discussion.find({ quiz: quizId })
       .populate('comments.author', 'email name displayName avatar')
       .sort({ questionIndex: 1, createdAt: 1 })
-      .lean()) as unknown as IDiscussion[];
+      .lean<DiscussionPersistenceRecord[]>();
+    return records.map(DiscussionPersistenceMapper.toEntity);
   }
 
-  override async create(discussionData: Partial<IDiscussion>): Promise<IDiscussion> {
+  async ensureForQuizQuestions(quizId: string, questionCount: number): Promise<DiscussionEntity[]> {
     await connectDB();
-    const discussion = new Discussion(discussionData);
-    const saved = await discussion.save();
-    return (await Discussion.findById(saved._id)
-      .populate('comments.author', 'email name displayName avatar')
-      .lean()) as unknown as IDiscussion;
+    const existingRecords = await Discussion.find({ quiz: quizId })
+      .select('questionIndex')
+      .lean<Array<{ questionIndex: number }>>();
+    const existingIndexes = new Set(existingRecords.map((record) => record.questionIndex));
+    const missingDiscussions = Array.from({ length: questionCount }, (_, questionIndex) =>
+      existingIndexes.has(questionIndex)
+        ? null
+        : {
+            quiz: new Types.ObjectId(quizId),
+            questionIndex,
+          },
+    ).filter((discussion): discussion is { quiz: Types.ObjectId; questionIndex: number } =>
+      Boolean(discussion),
+    );
+
+    if (missingDiscussions.length > 0) {
+      await Discussion.insertMany(missingDiscussions, { ordered: false });
+    }
+
+    const discussions = await this.findByQuiz(quizId);
+    const discussionByIndex = new Map(
+      discussions.map((discussion) => [discussion.questionIndex, discussion]),
+    );
+
+    return Array.from({ length: questionCount }, (_, questionIndex) => {
+      const discussion = discussionByIndex.get(questionIndex);
+      if (!discussion) {
+        throw new Error(`Missing discussion for question index ${questionIndex}`);
+      }
+      return discussion;
+    });
   }
 
-  override async update(
-    id: string,
-    discussionData: Partial<IDiscussion>,
-  ): Promise<IDiscussion | null> {
+  async ensureForQuizQuestion(quizId: string, questionIndex: number): Promise<DiscussionEntity> {
     await connectDB();
-    return (await Discussion.findByIdAndUpdate(id, discussionData, { new: true })
+    const record = await Discussion.findOneAndUpdate(
+      {
+        quiz: new Types.ObjectId(quizId),
+        questionIndex,
+      },
+      {
+        $setOnInsert: {
+          quiz: new Types.ObjectId(quizId),
+          questionIndex,
+        },
+      },
+      {
+        new: true,
+        upsert: true,
+        runValidators: true,
+        setDefaultsOnInsert: true,
+      },
+    )
       .populate('comments.author', 'email name displayName avatar')
-      .lean()) as unknown as IDiscussion | null;
+      .lean<DiscussionPersistenceRecord>();
+
+    if (!record) {
+      throw new Error(`Discussion could not be resolved for question index ${questionIndex}`);
+    }
+    return DiscussionPersistenceMapper.toEntity(record);
+  }
+
+  async addComment(
+    discussionId: string,
+    data: CreateDiscussionCommentData,
+  ): Promise<DiscussionEntity | null> {
+    await connectDB();
+    const now = new Date();
+    const record = await Discussion.findByIdAndUpdate(
+      discussionId,
+      {
+        $push: {
+          comments: {
+            _id: new Types.ObjectId(),
+            author: new Types.ObjectId(data.authorId),
+            authorEmail: data.authorEmail,
+            content: data.content,
+            isEdited: false,
+            createdAt: now,
+            updatedAt: now,
+          },
+        },
+      },
+      { new: true, runValidators: true },
+    )
+      .populate('comments.author', 'email name displayName avatar')
+      .lean<DiscussionPersistenceRecord>();
+    return record ? DiscussionPersistenceMapper.toEntity(record) : null;
   }
 }

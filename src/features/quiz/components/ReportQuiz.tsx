@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useSession } from 'next-auth/react';
@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Textarea } from '@/components/ui/Input';
-import { fetchApiData } from '@/lib/api/client';
+import { reportQuizViewModel } from '@/features/quiz/api/quiz-interaction-api';
 
 interface ReportQuizProps {
   quizSlug: string;
@@ -32,7 +32,7 @@ export default function ReportQuiz({ quizSlug, quizTitle }: ReportQuizProps) {
   const {
     register,
     handleSubmit,
-    watch,
+    control,
     reset,
     formState: { isSubmitting, isValid },
   } = useForm<ReportFormValues>({
@@ -41,17 +41,11 @@ export default function ReportQuiz({ quizSlug, quizTitle }: ReportQuizProps) {
     defaultValues: { content: '' },
   });
 
-  const contentLength = watch('content').length;
+  const contentLength = (useWatch({ control, name: 'content' }) ?? '').length;
 
   const onSubmit = handleSubmit(async ({ content }) => {
     try {
-      await fetchApiData<{ reportId: string }>(`/api/quiz/${quizSlug}/report`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ content }),
-      });
+      await reportQuizViewModel(quizSlug, content);
       setIsSubmitted(true);
       reset({ content: '' });
       setTimeout(() => {

@@ -1,17 +1,14 @@
 import type { components } from '@/generated/adaptive-api';
 
 type ApiSchemas = components['schemas'];
-type ConceptStatus = 'locked' | 'available' | 'in_progress' | 'mastered';
+export type ConceptStatus = 'locked' | 'available' | 'in_progress' | 'mastered';
 
 export type KnowledgeNode = Omit<ApiSchemas['KnowledgeNodeResponse'], 'status'> & {
   status: ConceptStatus;
 };
 
-type KnowledgeEdge = ApiSchemas['KnowledgeEdgeResponse'];
-
-export type KnowledgeGraphData = {
+export type KnowledgeGraphData = Omit<ApiSchemas['KnowledgeGraphResponse'], 'nodes'> & {
   nodes: KnowledgeNode[];
-  edges: KnowledgeEdge[];
 };
 
 export type MasteryRow = ApiSchemas['MasteryRow'];

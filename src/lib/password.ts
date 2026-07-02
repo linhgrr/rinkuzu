@@ -3,6 +3,20 @@ import argon2 from 'argon2';
 import * as bcrypt from 'bcryptjs';
 import { logger } from '@/lib/logger';
 
+export type PasswordHashAlgorithm = 'argon2id' | 'bcrypt' | 'unknown';
+
+export interface PasswordVerificationResult {
+  valid: boolean;
+  algorithm: PasswordHashAlgorithm;
+  needsRehash: boolean;
+}
+
+function detectPasswordHashAlgorithm(hash: string): PasswordHashAlgorithm {
+  if (hash.startsWith('$argon2')) return 'argon2id';
+  if (hash.startsWith('$2')) return 'bcrypt';
+  return 'unknown';
+}
+
 // Password hashing functions (SERVER-SIDE ONLY)
 export async function hashPassword(password: string): Promise<string> {
   try {
@@ -17,19 +31,41 @@ export async function hashPassword(password: string): Promise<string> {
   }
 }
 
-export async function verifyPassword(password: string, hash: string): Promise<boolean> {
+export async function verifyPassword(
+  password: string,
+  hash: string,
+): Promise<PasswordVerificationResult> {
   try {
-    if (hash.startsWith('$argon2')) {
-      return await argon2.verify(hash, password);
+    const algorithm = detectPasswordHashAlgorithm(hash);
+
+    if (algorithm === 'argon2id') {
+      return {
+        valid: await argon2.verify(hash, password),
+        algorithm,
+        needsRehash: false,
+      };
     }
 
-    if (hash.startsWith('$2')) {
-      return await bcrypt.compare(password, hash);
+    if (algorithm === 'bcrypt') {
+      const valid = await bcrypt.compare(password, hash);
+      return {
+        valid,
+        algorithm,
+        needsRehash: valid,
+      };
     }
 
-    return false;
+    return {
+      valid: false,
+      algorithm: 'unknown',
+      needsRehash: false,
+    };
   } catch (error) {
     logger.error({ error }, 'Password verification error (not a mismatch — unexpected failure)');
-    return false;
+    return {
+      valid: false,
+      algorithm: detectPasswordHashAlgorithm(hash),
+      needsRehash: false,
+    };
   }
 }

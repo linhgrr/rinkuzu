@@ -358,6 +358,10 @@ for (const filePath of sourceFiles) {
     }
   }
 
+  if (/setTimeout\s*\(\s*\(\)\s*=>\s*\w+\.abort\s*\(/.test(source)) {
+    errors.push(`native platform boundary: use AbortSignal.timeout in ${relativePath}`);
+  }
+
   const mixedSchemaMatches = source.match(/Schema\.Types\.Mixed/g) ?? [];
   const isAllowedAuditMetadata =
     relativePath === 'src/models/AuditLog.ts' &&

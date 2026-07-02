@@ -34,8 +34,6 @@ export class DashboardService implements IDashboardService {
 
   private async getAdaptiveSubjects(userId: string): Promise<PipelineJobHistoryItem[]> {
     const timeoutMs = Math.min(resolveAdaptiveProxyTimeoutMs(), HOME_ADAPTIVE_SUBJECT_TIMEOUT_MS);
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
     try {
       const data = await fetchApiData<ApiSchemas['SubjectHistoryListResponse']>(
@@ -43,15 +41,13 @@ export class DashboardService implements IDashboardService {
         {
           headers: buildAdaptiveServiceHeaders(userId),
           cache: 'no-store',
-          signal: controller.signal,
+          signal: AbortSignal.timeout(timeoutMs),
         },
       );
       return data.subjects.map(toPipelineJobHistoryItem).slice(0, HOME_ADAPTIVE_SUBJECT_LIMIT);
     } catch (error) {
       logger.warn({ error }, 'Failed fetching adaptive subjects for home dashboard');
       return [];
-    } finally {
-      clearTimeout(timeout);
     }
   }
 

@@ -26,8 +26,6 @@ async function markDraftSubmitted(
   userId: string,
   userRole: 'admin' | 'user' | null | undefined,
 ): Promise<void> {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), resolveAdaptiveProxyTimeoutMs());
   try {
     const response = await fetch(
       new URL(`/api/quiz/drafts/${draftId}/submit`, resolveAdaptiveApiUrl()).toString(),
@@ -39,7 +37,7 @@ async function markDraftSubmitted(
         },
         body: JSON.stringify({ quiz_id: quizId }),
         cache: 'no-store',
-        signal: controller.signal,
+        signal: AbortSignal.timeout(resolveAdaptiveProxyTimeoutMs()),
       },
     );
     if (!response.ok) {
@@ -50,8 +48,6 @@ async function markDraftSubmitted(
       throw error;
     }
     throw new QuizDraftSynchronizationError(draftId, quizId);
-  } finally {
-    clearTimeout(timeout);
   }
 }
 

@@ -45,7 +45,7 @@ export interface LibraryQuizDto {
   title: string;
   slug: string;
   description?: string;
-  author: string | LibraryQuizAuthorDto | null;
+  author: LibraryQuizAuthorDto | null;
   folder: string | null;
   questions: [];
   isPrivate: boolean;

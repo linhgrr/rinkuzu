@@ -23,7 +23,6 @@ import { fetchQuizEditViewModel, updateQuizEditViewModel } from '@/features/quiz
 import { deleteQuizById } from '@/features/quiz/api/quiz-api';
 import type {
   QuizEditViewModel,
-  QuizEditorAuthorViewModel,
   QuizEditorQuestionInputViewModel,
   QuizEditorQuestionViewModel,
 } from '@/features/quiz/types/quiz-editor-view-model';
@@ -34,9 +33,25 @@ type EditPageStatus = 'loading' | 'ready' | 'error';
 type EditableQuizQuestion = QuizEditorQuestionViewModel;
 type EditableQuizQuestionField = 'question' | 'options' | 'questionImage' | 'optionImages';
 
-function getQuizAuthorId(author: string | QuizEditorAuthorViewModel | null): string | null {
-  if (!author) return null;
-  return typeof author === 'string' ? author : (author.id ?? null);
+function getQuizAuthorId(quiz: QuizEditViewModel): string | null {
+  return quiz.author?.id ?? null;
+}
+
+function toQuizQuestionInput(question: EditableQuizQuestion): QuizEditorQuestionInputViewModel {
+  const base = {
+    question: question.question,
+    options: question.options,
+    ...(question.questionImage ? { questionImage: question.questionImage } : {}),
+    ...(question.optionImages && question.optionImages.some(Boolean)
+      ? { optionImages: question.optionImages }
+      : {}),
+  };
+
+  if (question.type === 'single') {
+    return { ...base, type: 'single', correctIndex: question.correctIndex };
+  }
+
+  return { ...base, type: 'multiple', correctIndexes: question.correctIndexes };
 }
 
 interface EditQuizState {
@@ -498,23 +513,7 @@ export default function EditQuizPage() {
     dispatch({ type: 'patch', value: { saving: true, error: '', success: '' } });
 
     try {
-      const formattedQuestions: QuizEditorQuestionInputViewModel[] = state.editableQuestions.map(
-        (question) => {
-          const base = {
-            question: question.question,
-            options: question.options,
-            type: question.type,
-            ...(question.questionImage ? { questionImage: question.questionImage } : {}),
-            ...(question.optionImages && question.optionImages.some(Boolean)
-              ? { optionImages: question.optionImages }
-              : {}),
-          };
-
-          return question.type === 'single'
-            ? { ...base, correctIndex: getCorrectAnswerIndexes(question)[0] ?? 0 }
-            : { ...base, correctIndexes: getCorrectAnswerIndexes(question) };
-        },
-      );
+      const formattedQuestions = state.editableQuestions.map(toQuizQuestionInput);
 
       const updatedQuiz = await updateQuizEditViewModel(quizId, {
         title: state.title.trim(),
@@ -597,7 +596,7 @@ export default function EditQuizPage() {
   }
 
   const isAdmin = session.user?.role === 'admin';
-  const isAuthor = getQuizAuthorId(state.quiz.author) === session.user.id;
+  const isAuthor = getQuizAuthorId(state.quiz) === session.user.id;
 
   if (!isAdmin && !isAuthor) {
     return (

@@ -1,5 +1,5 @@
 export interface QuizEditorAuthorViewModel {
-  id?: string;
+  id: string;
   email?: string;
   name?: string;
   displayName?: string;
@@ -13,7 +13,7 @@ export type QuizEditorQuestionViewModel =
       question: string;
       options: string[];
       type: 'single';
-      correctIndex?: number;
+      correctIndex: number;
       questionImage?: string;
       optionImages?: (string | undefined)[];
     }
@@ -28,14 +28,20 @@ export type QuizEditorQuestionViewModel =
       optionImages?: (string | undefined)[];
     };
 
-export type QuizEditorQuestionInputViewModel = Omit<QuizEditorQuestionViewModel, 'id' | 'editorId'>;
+type QuizEditorQuestionInput<T extends QuizEditorQuestionViewModel> = Omit<T, 'id' | 'editorId'>;
+
+export type QuizEditorQuestionInputViewModel = QuizEditorQuestionViewModel extends infer Question
+  ? Question extends QuizEditorQuestionViewModel
+    ? QuizEditorQuestionInput<Question>
+    : never
+  : never;
 
 export interface QuizEditViewModel {
   id: string;
   title: string;
   description?: string;
   slug: string;
-  author: string | QuizEditorAuthorViewModel | null;
+  author: QuizEditorAuthorViewModel | null;
   folder: string | null;
   isPrivate: boolean;
   questionCount: number;

@@ -88,7 +88,7 @@ export interface QuizListItemDto {
   title: string;
   description?: string;
   slug: string;
-  author: string | QuizListAuthorDto | null;
+  author: QuizListAuthorDto | null;
   folder: string | null;
   isPrivate: boolean;
   questionCount: number;

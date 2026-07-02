@@ -1,5 +1,5 @@
 export interface QuizPlayAuthorViewModel {
-  id?: string;
+  id: string;
   email?: string;
   name?: string;
   displayName?: string;
@@ -20,7 +20,7 @@ export interface QuizPlayViewModel {
   title: string;
   description?: string;
   slug: string;
-  author: string | QuizPlayAuthorViewModel | null;
+  author: QuizPlayAuthorViewModel | null;
   folder: string | null;
   isPrivate: boolean;
   questionCount: number;

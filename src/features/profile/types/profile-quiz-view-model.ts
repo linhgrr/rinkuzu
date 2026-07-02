@@ -5,7 +5,7 @@ export interface ProfileQuizViewModel {
   id: string;
   title: string;
   slug: string;
-  author: string | UserIdentity | null;
+  author: UserIdentity | null;
   isPrivate: boolean;
   questionCount: number;
   ownedByMe: boolean;

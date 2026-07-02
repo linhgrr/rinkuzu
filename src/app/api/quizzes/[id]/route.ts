@@ -2,10 +2,10 @@ import { NextRequest } from 'next/server';
 import { withAuth } from '@/lib/api/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
 import { apiErr, apiOk, apiServiceErr } from '@/lib/api/response';
-import type { IQuiz } from '@/interfaces/repositories/IQuizRepository';
 import { logger } from '@/lib/logger';
-import connectDB from '@/lib/mongoose';
-import Folder from '@/models/Folder';
+import { readAndValidateJson } from '@/lib/api/request';
+import { updateQuizRequestSchema } from '@/dtos/quiz';
+import { QuizDetailDtoMapper } from '@/mappers/quiz/QuizDetailDtoMapper';
 
 // GET /api/quizzes/[id] - Get specific quiz
 export const GET = withAuth<{ id: string }>(
@@ -20,10 +20,10 @@ export const GET = withAuth<{ id: string }>(
       const result = await quizService.getQuizById(id, email, session.user.role, userId);
 
       if (!result.success) {
-        return apiServiceErr(result, 400);
+        return apiServiceErr(result);
       }
 
-      const data: IQuiz | undefined = result.data;
+      const data = result.data;
 
       // Refresh signed URL if PDF exists
       if (data?.pdfUrl) {
@@ -43,7 +43,7 @@ export const GET = withAuth<{ id: string }>(
         }
       }
 
-      return apiOk(data);
+      return apiOk(data ? QuizDetailDtoMapper.toDetail(data) : undefined);
     } catch (error: unknown) {
       logger.error({ error }, 'Get quiz error');
       return apiErr('internal_error', 'Internal server error', 500);
@@ -56,21 +56,19 @@ export const PUT = withAuth<{ id: string }>(
   async (request: NextRequest, { params, userId, session }) => {
     try {
       const { id } = params;
-      const quizData = await request.json();
-      if (quizData.folder) {
-        await connectDB();
-        const ownsFolder = await Folder.exists({ _id: quizData.folder, owner: userId });
-        if (!ownsFolder) return apiErr('validation_error', 'Invalid folder selected', 400);
+      const input = await readAndValidateJson(request, updateQuizRequestSchema);
+      if (!input.success) {
+        return apiErr('validation_error', input.error, 400, input.fields);
       }
       const quizService = serviceFactory.getQuizService();
 
-      const result = await quizService.updateQuiz(id, quizData, userId, session.user.role);
+      const result = await quizService.updateQuiz(id, input.data, userId, session.user.role);
 
       if (!result.success) {
-        return apiServiceErr(result, 400);
+        return apiServiceErr(result);
       }
 
-      return apiOk(result.data);
+      return apiOk(result.data ? QuizDetailDtoMapper.toDetail(result.data) : undefined);
     } catch (error: unknown) {
       logger.error({ error }, 'Update quiz error');
       return apiErr('internal_error', 'Internal server error', 500);
@@ -86,7 +84,7 @@ export const DELETE = withAuth<{ id: string }>(async (_request, { params, userId
     const result = await quizService.deleteQuiz(id, userId, session.user.role);
 
     if (!result.success) {
-      return apiServiceErr(result, 400);
+      return apiServiceErr(result);
     }
 
     return apiOk(null, 200, { meta: { message: 'Quiz deleted successfully' } });

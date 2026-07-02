@@ -1,4 +1,4 @@
-import type { PipelineStatus } from '@/features/adaptive/types';
+import type { PipelineStatus } from '@/features/adaptive/types/pipeline';
 
 export const STATUS_LABEL_KEYS: Record<PipelineStatus, string> = {
   pending: 'waitingToStart',

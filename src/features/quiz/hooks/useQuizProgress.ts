@@ -1,28 +1,17 @@
 'use client';
 
 import { useCallback, useEffect, useRef } from 'react';
-import { fetchApiData } from '@/lib/api/client';
-import { routePathSegment } from '@/lib/routing/routeParams';
-
-type Answer = number | number[];
-
-export interface SavedQuizProgress {
-  questionOrder: number[];
-  optionOrders: number[][];
-  userAnswers: Answer[];
-  currentQuestionIndex: number;
-  answeredCount: number;
-  totalQuestions: number;
-}
+import {
+  deleteSavedQuizProgress,
+  loadSavedQuizProgress,
+  saveQuizProgress,
+} from '@/features/quiz/api/quiz-interaction-api';
+import type { SavedQuizProgress } from '@/features/quiz/types/quiz-interaction-view-model';
 
 interface UseQuizProgressOptions {
   slug: string;
   enabled: boolean;
   debounceMs?: number;
-}
-
-function buildProgressUrl(slug: string): string {
-  return `/api/quiz/${routePathSegment(slug)}/progress`;
 }
 
 export function useQuizProgress({ slug, enabled, debounceMs = 1500 }: UseQuizProgressOptions) {
@@ -40,10 +29,7 @@ export function useQuizProgress({ slug, enabled, debounceMs = 1500 }: UseQuizPro
     }
 
     try {
-      const data = await fetchApiData<{ progress: SavedQuizProgress | null }>(
-        buildProgressUrl(slug),
-      );
-      return data.progress ?? null;
+      return await loadSavedQuizProgress(slug);
     } catch {
       return null;
     }
@@ -62,12 +48,7 @@ export function useQuizProgress({ slug, enabled, debounceMs = 1500 }: UseQuizPro
     pendingRef.current = null;
 
     try {
-      await fetchApiData(buildProgressUrl(slug), {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-        keepalive: true,
-      });
+      await saveQuizProgress(slug, payload);
     } catch {
       // Best-effort; progress save failures are non-blocking.
     }
@@ -103,7 +84,7 @@ export function useQuizProgress({ slug, enabled, debounceMs = 1500 }: UseQuizPro
     }
 
     try {
-      await fetchApiData(buildProgressUrl(slug), { method: 'DELETE' });
+      await deleteSavedQuizProgress(slug);
     } catch {
       // Best-effort.
     }

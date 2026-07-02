@@ -7,12 +7,8 @@ import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
-import {
-  HiOutlineCheckCircle,
-  HiOutlineExclamationCircle,
-  HiOutlineMail,
-} from '@/components/icons';
-import { fetchApiResponse } from '@/lib/api/client';
+import { HiOutlineCheckCircle, HiOutlineExclamationCircle, HiOutlineMail } from 'react-icons/hi';
+import { verifyEmail } from '@/features/auth/api/auth-api';
 
 type Status = 'pending' | 'verifying' | 'success' | 'error';
 
@@ -65,15 +61,11 @@ function VerifyEmailContent() {
     }
 
     dispatch({ type: 'verifying' });
-    fetchApiResponse<unknown, { message?: string }>('/api/auth/verify-email', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token }),
-    })
-      .then((response) => {
+    verifyEmail(token)
+      .then((result) => {
         dispatch({
           type: 'success',
-          message: response.meta?.message ?? t('verifyEmailSuccess'),
+          message: result.message ?? t('verifyEmailSuccess'),
         });
       })
       .catch((error: unknown) => {

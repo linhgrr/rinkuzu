@@ -1,53 +1,13 @@
 import { IQuizRepository } from '@/interfaces/repositories/IQuizRepository';
 import { IUserRepository } from '@/interfaces/repositories/IUserRepository';
-import {
-  IDiscussionRepository,
-  type IDiscussion,
-} from '@/interfaces/repositories/IDiscussionRepository';
+import { IDiscussionRepository } from '@/interfaces/repositories/IDiscussionRepository';
 import { IReportRepository } from '@/interfaces/repositories/IReportRepository';
 import { ServiceResult } from '@/interfaces/services/types';
-import type { DiscussionCommentDTO, QuizDiscussionDTO } from '@/interfaces/services/IQuizService';
-import type { IUserPreview } from '@/types/index';
+import type { QuizDiscussionDto, ReportQuizResponseDto } from '@/dtos/quiz';
 import type { Session } from 'next-auth';
 import { logger } from '@/lib/logger';
-import { getAuthorId, checkPrivateQuizAccess } from './quiz-helpers';
-
-function isPopulatedAuthor(author: string | IUserPreview): author is IUserPreview {
-  return typeof author === 'object' && author !== null && '_id' in author;
-}
-
-function toCommentDTO(comment: NonNullable<IDiscussion['comments']>[number]): DiscussionCommentDTO {
-  if (isPopulatedAuthor(comment.author)) {
-    return {
-      authorId: String(comment.author._id),
-      authorEmail: comment.authorEmail,
-      authorName: comment.author.displayName ?? comment.author.name,
-      authorAvatar: comment.author.avatar,
-      content: comment.content,
-      isEdited: comment.isEdited,
-      createdAt: comment.createdAt,
-    };
-  }
-  return {
-    authorId: comment.author,
-    authorEmail: comment.authorEmail,
-    content: comment.content,
-    isEdited: comment.isEdited,
-    createdAt: comment.createdAt,
-  };
-}
-
-function toDiscussionDTO(discussion: IDiscussion): QuizDiscussionDTO {
-  return {
-    _id: String(discussion._id),
-    questionIndex: discussion.questionIndex,
-    content: discussion.content,
-    ownerId: discussion.user,
-    comments: (discussion.comments ?? []).map(toCommentDTO),
-    createdAt: discussion.createdAt,
-    updatedAt: discussion.updatedAt,
-  };
-}
+import { checkPrivateQuizAccess } from './quiz-helpers';
+import { QuizDiscussionDtoMapper } from '@/mappers/quiz/QuizDiscussionDtoMapper';
 
 export class QuizDiscussionService {
   constructor(
@@ -60,11 +20,11 @@ export class QuizDiscussionService {
   async getQuizDiscussions(
     slug: string,
     session?: Session | null,
-  ): Promise<ServiceResult<QuizDiscussionDTO[]>> {
+  ): Promise<ServiceResult<QuizDiscussionDto[]>> {
     try {
       const quiz = await this.quizRepository.findBySlug(slug);
 
-      if (!quiz || !quiz._id) {
+      if (!quiz) {
         return {
           success: false,
           error: 'Quiz not found',
@@ -72,49 +32,19 @@ export class QuizDiscussionService {
         };
       }
 
-      const authorId = getAuthorId(quiz.author);
       const userId = session?.user?.id;
       const userRole = session?.user?.role;
       const privateAccessError = await checkPrivateQuizAccess(quiz, userId, userRole);
       if (privateAccessError) return privateAccessError;
 
-      const existingDiscussions = await this.discussionRepository.findByQuiz(quiz._id.toString());
-      const discussionOwnerId = authorId;
-
-      if (!discussionOwnerId) {
-        return {
-          success: false,
-          error: 'Quiz author not found',
-          statusCode: 500,
-        };
-      }
-
-      const quizId = quiz._id.toString();
-
-      // Create discussions for all questions if they don't exist
-      const existingDiscussionByIndex = new Map(
-        existingDiscussions.map((discussion) => [discussion.questionIndex, discussion]),
-      );
-      const allDiscussions = await Promise.all(
-        quiz.questions.map((_, index) => {
-          const existingDiscussion = existingDiscussionByIndex.get(index);
-          if (existingDiscussion) {
-            return existingDiscussion;
-          }
-
-          return this.discussionRepository.create({
-            quiz: quizId,
-            user: discussionOwnerId,
-            questionIndex: index,
-            content: `Discussion for question ${index + 1}`,
-            comments: [],
-          });
-        }),
+      const allDiscussions = await this.discussionRepository.ensureForQuizQuestions(
+        quiz.id,
+        quiz.questions.length,
       );
 
       return {
         success: true,
-        data: allDiscussions.map(toDiscussionDTO),
+        data: allDiscussions.map(QuizDiscussionDtoMapper.toDto),
       };
     } catch (error) {
       logger.error({ error }, 'Get quiz discussions error');
@@ -132,11 +62,11 @@ export class QuizDiscussionService {
     content: string,
     userEmail: string,
     session?: Session | null,
-  ): Promise<ServiceResult<QuizDiscussionDTO>> {
+  ): Promise<ServiceResult<QuizDiscussionDto>> {
     try {
       const quiz = await this.quizRepository.findBySlug(slug);
 
-      if (!quiz || !quiz._id) {
+      if (!quiz) {
         return {
           success: false,
           error: 'Quiz not found',
@@ -144,7 +74,6 @@ export class QuizDiscussionService {
         };
       }
 
-      const authorId = getAuthorId(quiz.author);
       const userId = session?.user?.id;
       const userRole = session?.user?.role;
       const privateAccessError = await checkPrivateQuizAccess(quiz, userId, userRole);
@@ -158,15 +87,6 @@ export class QuizDiscussionService {
         };
       }
 
-      const discussionOwnerId = authorId;
-      if (!discussionOwnerId) {
-        return {
-          success: false,
-          error: 'Quiz author not found',
-          statusCode: 500,
-        };
-      }
-
       const user = await this.userRepository.findByEmail(userEmail);
       if (!user) {
         return {
@@ -176,22 +96,12 @@ export class QuizDiscussionService {
         };
       }
 
-      // Find or create discussion for this question
-      let discussions = await this.discussionRepository.findByQuiz(quiz._id.toString());
-      let existingDiscussion = discussions.find((d) => d.questionIndex === questionIndex);
+      const existingDiscussion = await this.discussionRepository.ensureForQuizQuestion(
+        quiz.id,
+        questionIndex,
+      );
 
-      if (!existingDiscussion) {
-        // Create new discussion for this question
-        existingDiscussion = await this.discussionRepository.create({
-          quiz: quiz._id.toString(),
-          user: discussionOwnerId,
-          questionIndex,
-          content: `Discussion for question ${questionIndex + 1}`,
-          comments: [],
-        });
-      }
-
-      if (!existingDiscussion || !existingDiscussion._id) {
+      if (!existingDiscussion?.id) {
         return {
           success: false,
           error: 'Failed to create or find discussion',
@@ -200,20 +110,11 @@ export class QuizDiscussionService {
       }
 
       // Add comment to existing discussion
-      const commentData = {
-        author: user._id,
+      const updatedDiscussion = await this.discussionRepository.addComment(existingDiscussion.id, {
+        authorId: user.id,
         authorEmail: user.email,
         content,
-        isEdited: false,
-        createdAt: new Date(),
-      };
-
-      const updatedDiscussion = await this.discussionRepository.update(
-        existingDiscussion._id.toString(),
-        {
-          comments: [...(existingDiscussion.comments || []), commentData],
-        },
-      );
+      });
 
       if (!updatedDiscussion) {
         return {
@@ -225,7 +126,7 @@ export class QuizDiscussionService {
 
       return {
         success: true,
-        data: toDiscussionDTO(updatedDiscussion),
+        data: QuizDiscussionDtoMapper.toDto(updatedDiscussion),
       };
     } catch (error) {
       logger.error({ error }, 'Add discussion comment error');
@@ -242,11 +143,11 @@ export class QuizDiscussionService {
     content: string,
     reporterEmail: string,
     reporterName: string,
-  ): Promise<ServiceResult<string>> {
+  ): Promise<ServiceResult<ReportQuizResponseDto>> {
     try {
       const quiz = await this.quizRepository.findBySlug(slug);
 
-      if (!quiz || !quiz._id) {
+      if (!quiz) {
         return {
           success: false,
           error: 'Quiz not found',
@@ -263,14 +164,16 @@ export class QuizDiscussionService {
       }
 
       const report = await this.reportRepository.create({
-        quiz: quiz._id.toString(),
-        reporter: reporterEmail,
-        reason: content.trim(),
-        description: reporterName,
+        quizId: quiz.id,
+        quizTitle: quiz.title,
+        quizSlug: quiz.slug,
+        reporterEmail,
+        reporterName,
+        content: content.trim(),
         status: 'pending',
       });
 
-      if (!report || !report._id) {
+      if (!report) {
         return {
           success: false,
           error: 'Report not created',
@@ -280,7 +183,7 @@ export class QuizDiscussionService {
 
       return {
         success: true,
-        data: report._id.toString(),
+        data: QuizDiscussionDtoMapper.toReportResponseDto(report.id),
       };
     } catch (error) {
       logger.error({ error }, 'Report quiz error');

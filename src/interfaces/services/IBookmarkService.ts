@@ -1,37 +1,14 @@
-import { IBookmark, IBookmarkQuestion } from '@/interfaces/repositories/IBookmarkRepository';
-
-export interface CreateBookmarkRequest {
-  quiz: {
-    _id: string;
-    slug: string;
-    title: string;
-  };
-  question: IBookmarkQuestion;
-  questionIndex: number;
-}
+import type {
+  BookmarkListDto,
+  BookmarkListQueryDto,
+  BookmarkDto,
+  CreateBookmarkRequestDto,
+} from '@/dtos/bookmark';
 
 export interface IBookmarkService {
-  getBookmarksByUser(
-    userEmail: string,
-    options?: {
-      page?: number;
-      limit?: number;
-    },
-  ): Promise<{
-    bookmarks: IBookmark[];
-    pagination: {
-      currentPage: number;
-      totalPages: number;
-      totalItems: number;
-      itemsPerPage: number;
-      hasNextPage: boolean;
-      hasPrevPage: boolean;
-    };
-  }>;
+  getBookmarksByUser(userEmail: string, options?: BookmarkListQueryDto): Promise<BookmarkListDto>;
 
-  createBookmark(userEmail: string, bookmarkData: CreateBookmarkRequest): Promise<IBookmark>;
-
-  deleteBookmark(bookmarkId: string): Promise<boolean>;
+  createBookmark(userEmail: string, bookmarkData: CreateBookmarkRequestDto): Promise<BookmarkDto>;
 
   deleteBookmarkByUser(bookmarkId: string, userEmail: string): Promise<boolean>;
 }

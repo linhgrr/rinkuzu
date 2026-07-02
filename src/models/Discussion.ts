@@ -1,6 +1,6 @@
 import mongoose, { Document, Schema, Types } from 'mongoose';
 
-interface IDiscussionComment {
+interface DiscussionCommentDocument {
   author: Types.ObjectId;
   authorEmail: string;
   content: string;
@@ -9,15 +9,15 @@ interface IDiscussionComment {
   isEdited: boolean;
 }
 
-interface IDiscussion extends Document {
+interface DiscussionDocument extends Document {
   quiz: Types.ObjectId;
   questionIndex: number; // Index of the question in the quiz
-  comments: IDiscussionComment[];
+  comments: DiscussionCommentDocument[];
   createdAt: Date;
   updatedAt: Date;
 }
 
-const DiscussionCommentSchema = new Schema<IDiscussionComment>(
+const DiscussionCommentSchema = new Schema<DiscussionCommentDocument>(
   {
     author: {
       type: Schema.Types.ObjectId,
@@ -45,7 +45,7 @@ const DiscussionCommentSchema = new Schema<IDiscussionComment>(
   },
 );
 
-const DiscussionSchema = new Schema<IDiscussion>(
+const DiscussionSchema = new Schema<DiscussionDocument>(
   {
     quiz: {
       type: Schema.Types.ObjectId,
@@ -67,11 +67,12 @@ const DiscussionSchema = new Schema<IDiscussion>(
   },
 );
 
-// Compound index for efficient queries
-DiscussionSchema.index({ quiz: 1, questionIndex: 1 });
+// One discussion thread per quiz question.
+DiscussionSchema.index({ quiz: 1, questionIndex: 1 }, { unique: true });
 
 // Prevent re-compilation in development
 const Discussion =
-  mongoose.models['Discussion'] || mongoose.model<IDiscussion>('Discussion', DiscussionSchema);
+  mongoose.models['Discussion'] ||
+  mongoose.model<DiscussionDocument>('Discussion', DiscussionSchema);
 
 export default Discussion;

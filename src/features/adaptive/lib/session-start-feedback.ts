@@ -1,12 +1,12 @@
 'use client';
 
-import type { TranslateFn } from '@/features/adaptive/types';
+import type { TranslateFn } from '@/features/adaptive/types/learning';
 import {
   AdaptiveApiError,
   isAdaptivePipelineNotReadyError,
   isAdaptiveRequestAbortedError,
   isAdaptiveServiceUnavailableError,
-} from '@/features/adaptive/lib/api-client';
+} from '@/features/adaptive/lib/adaptive-api-error';
 
 export function getSessionStartFeedback(
   t: TranslateFn,

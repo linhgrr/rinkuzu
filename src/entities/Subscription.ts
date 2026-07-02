@@ -1,0 +1,60 @@
+export type SubscriptionStatus = 'pending' | 'completed' | 'failed' | 'cancelled' | 'expired';
+export type AdminMutableSubscriptionStatus = Extract<
+  SubscriptionStatus,
+  'failed' | 'cancelled' | 'expired'
+>;
+
+export function isAdminSubscriptionStatusTransitionAllowed(
+  currentStatus: SubscriptionStatus,
+  nextStatus: AdminMutableSubscriptionStatus,
+): boolean {
+  if (currentStatus === 'pending') {
+    return nextStatus === 'failed' || nextStatus === 'cancelled';
+  }
+  if (currentStatus === 'completed') {
+    return nextStatus === 'cancelled' || nextStatus === 'expired';
+  }
+  return false;
+}
+
+interface SubscriptionRecordBase {
+  id: string;
+  userId: string;
+  userEmail: string;
+  type: string;
+  amount: number;
+  currency: string;
+  payosOrderId: string;
+  payosTransactionId?: string;
+  payosPaymentUrl?: string;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export type SubscriptionRecord =
+  | (SubscriptionRecordBase & {
+      status: 'completed';
+      startDate: Date;
+      endDate?: Date;
+    })
+  | (SubscriptionRecordBase & {
+      status: 'expired';
+      startDate: Date;
+      endDate: Date;
+    })
+  | (SubscriptionRecordBase & {
+      status: Exclude<SubscriptionStatus, 'completed' | 'expired'>;
+      startDate?: Date;
+      endDate?: Date;
+    });
+
+export interface UserSubscription {
+  type: string;
+  startDate?: Date;
+  endDate?: Date;
+  isActive: boolean;
+  payosOrderId?: string;
+  payosTransactionId?: string;
+  status?: SubscriptionStatus;
+}

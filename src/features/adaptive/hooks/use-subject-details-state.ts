@@ -7,13 +7,19 @@ import {
   createSessionFromPipeline,
   getSubjectHistoryDetail,
   getSessionStatus,
-  isSessionNotFoundError,
   prefetchStartLearningData,
-} from '@/features/adaptive/lib/api-client';
+} from '@/features/adaptive/lib/adaptive-api-methods';
+import { isSessionNotFoundError } from '@/features/adaptive/lib/adaptive-api-error';
 import { ADAPTIVE_ROUTES } from '@/features/adaptive/lib/routes';
-import { getJobIdForSession, saveSessionJobMapping } from '../lib/session-storage';
+import {
+  getJobIdForSession,
+  getSelectedPipelineTitle,
+  saveActiveSessionId,
+  saveSessionJobMapping,
+} from '../lib/session-storage';
 import { getSessionStartFeedback } from '../lib/session-start-feedback';
-import type { SessionStatus, SubjectHistoryDetail, TranslateFn } from '@/features/adaptive/types';
+import type { SubjectHistoryDetail } from '@/features/adaptive/types/history';
+import type { SessionStatus, TranslateFn } from '@/features/adaptive/types/learning';
 
 type SubjectTab = 'graph' | 'mastery' | 'history';
 
@@ -85,11 +91,9 @@ export const useSubjectDetailsState = (sessionId: string, t: TranslateFn) => {
     let mounted = true;
 
     const bootstrap = async () => {
-      const storedFilename = localStorage.getItem('al_pipeline_filename');
-      const storedSubjectName = localStorage.getItem('al_pipeline_subject_name');
       const mappedJobId = getJobIdForSession(sessionId);
       const nextState: Partial<SubjectDetailsState> = {
-        filename: storedSubjectName || storedFilename || t('defaultLearningPath'),
+        filename: getSelectedPipelineTitle(t('defaultLearningPath')),
         jobId: mappedJobId,
         loading: false,
       };
@@ -220,7 +224,7 @@ export const useSubjectDetailsState = (sessionId: string, t: TranslateFn) => {
     dispatch({ type: 'patch', value: { startingSession: true } });
     void createSessionFromPipeline(jobId, 50)
       .then((session) => {
-        localStorage.setItem('al_session_id', session.session_id);
+        saveActiveSessionId(session.session_id);
         saveSessionJobMapping(session.session_id, jobId);
         toast.success(t('processing.creatingSession'));
         router.push(ADAPTIVE_ROUTES.exercise(session.session_id));

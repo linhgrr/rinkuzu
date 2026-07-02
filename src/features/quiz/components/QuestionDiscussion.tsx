@@ -6,32 +6,12 @@ import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
 import { Textarea } from '@/components/ui/Input';
 import { UserProfileLink } from '@/components/user/UserProfileLink';
-import { fetchApiData } from '@/lib/api/client';
-
-interface Comment {
-  _id: string;
-  author: {
-    _id: string;
-    email: string;
-    name?: string;
-    displayName?: string;
-    avatar?: string;
-  };
-  authorEmail: string;
-  content: string;
-  createdAt: string;
-  updatedAt: string;
-  isEdited: boolean;
-}
-
-interface Discussion {
-  _id: string;
-  quiz: string;
-  questionIndex: number;
-  comments: Comment[];
-  createdAt: string;
-  updatedAt: string;
-}
+import {
+  addQuizDiscussionCommentViewModel,
+  fetchQuizDiscussionViewModels,
+} from '@/features/quiz/api/quiz-interaction-api';
+import type { QuizDiscussionCommentViewModel } from '@/features/quiz/types/quiz-interaction-view-model';
+import { formatDateTime } from '@/lib/formatters';
 
 interface QuestionDiscussionProps {
   quizSlug: string;
@@ -42,7 +22,7 @@ interface QuestionDiscussionProps {
 }
 
 interface QuestionDiscussionState {
-  comments: Comment[];
+  comments: QuizDiscussionCommentViewModel[];
   newComment: string;
   loading: boolean;
   submitting: boolean;
@@ -51,11 +31,11 @@ interface QuestionDiscussionState {
 
 type QuestionDiscussionAction =
   | { type: 'fetch:start' }
-  | { type: 'fetch:success'; comments: Comment[] }
+  | { type: 'fetch:success'; comments: QuizDiscussionCommentViewModel[] }
   | { type: 'fetch:error'; error: string }
   | { type: 'comment:setDraft'; value: string }
   | { type: 'submit:start' }
-  | { type: 'submit:success'; comments: Comment[] }
+  | { type: 'submit:success'; comments: QuizDiscussionCommentViewModel[] }
   | { type: 'submit:error'; error: string }
   | { type: 'error:set'; error: string };
 
@@ -118,7 +98,7 @@ export function QuestionDiscussion({
     const fetchComments = async () => {
       try {
         dispatch({ type: 'fetch:start' });
-        const discussions = await fetchApiData<Discussion[]>(`/api/quiz/${quizSlug}/discussions`);
+        const discussions = await fetchQuizDiscussionViewModels(quizSlug);
         const questionDiscussion = discussions.find((d) => d.questionIndex === questionIndex);
 
         if (!isActive) {
@@ -127,7 +107,7 @@ export function QuestionDiscussion({
 
         dispatch({
           type: 'fetch:success',
-          comments: questionDiscussion?.comments || [],
+          comments: questionDiscussion?.comments ?? [],
         });
       } catch (error: unknown) {
         if (!isActive) {
@@ -164,15 +144,10 @@ export function QuestionDiscussion({
     try {
       dispatch({ type: 'submit:start' });
 
-      const discussion = await fetchApiData<Discussion>(`/api/quiz/${quizSlug}/discussions`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          questionIndex,
-          content: state.newComment.trim(),
-        }),
+      const discussion = await addQuizDiscussionCommentViewModel({
+        slug: quizSlug,
+        questionIndex,
+        content: state.newComment.trim(),
       });
       dispatch({ type: 'submit:success', comments: discussion.comments });
     } catch (error: unknown) {
@@ -181,17 +156,6 @@ export function QuestionDiscussion({
         error: error instanceof Error ? error.message : t('failedToPost'),
       });
     }
-  };
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('vi-VN', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
   };
 
   const commentCount = state.comments.length;
@@ -317,23 +281,20 @@ export function QuestionDiscussion({
         ) : (
           state.comments.map((comment) => (
             <div
-              key={comment._id}
+              key={comment.id}
               className="bg-neutral-50 rounded-lg p-3 border border-neutral-100"
             >
               <div className="flex items-start gap-x-2 mb-2">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
                     <UserProfileLink
-                      user={{
-                        ...comment.author,
-                        email: comment.author?.email || comment.authorEmail,
-                      }}
+                      user={comment.author}
                       avatarSize={24}
                       className="max-w-[65%] text-xs font-medium text-neutral-900"
                       nameClassName="text-xs font-medium text-neutral-900"
                     />
                     <span className="text-xs text-neutral-500 flex-shrink-0">
-                      {formatDate(comment.createdAt)}
+                      {formatDateTime(comment.createdAt)}
                     </span>
                   </div>
                   <p className="text-xs text-neutral-700 leading-relaxed mt-1">{comment.content}</p>

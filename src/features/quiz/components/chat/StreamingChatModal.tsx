@@ -1,10 +1,11 @@
 'use client';
 
-import { ReactNode, useEffect, useRef, useState } from 'react';
+import { ReactNode, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { DynamicMarkdownRenderer as MarkdownRenderer } from '@/components/ui/DynamicMarkdownRenderer';
 import { ChatMessage } from '@/features/quiz/hooks/useStreamingChatSession';
+import { formatDateTime } from '@/lib/formatters';
 
 interface StreamingChatModalProps {
   isOpen: boolean;
@@ -33,15 +34,18 @@ interface StreamingChatModalProps {
 }
 
 function ChatTimestamp({ timestamp }: { timestamp: string }) {
-  const [label, setLabel] = useState('');
-
-  useEffect(() => {
-    setLabel(new Date(timestamp).toLocaleTimeString());
-  }, [timestamp]);
+  const label = formatDateTime(timestamp, {
+    emptyLabel: '\u00A0',
+    options: {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    },
+  });
 
   return (
-    <time className="text-xs text-neutral-500" dateTime={timestamp} suppressHydrationWarning>
-      {label || '\u00A0'}
+    <time className="text-xs text-neutral-500" dateTime={timestamp}>
+      {label}
     </time>
   );
 }
@@ -164,8 +168,8 @@ export function StreamingChatModal({
           )}
           {(inputHintLeft || inputHintRight) && (
             <div className="flex justify-between text-xs text-neutral-500 mt-1">
-              <span>{inputHintLeft || ''}</span>
-              <span>{inputHintRight || ''}</span>
+              <span>{inputHintLeft ?? ''}</span>
+              <span>{inputHintRight ?? ''}</span>
             </div>
           )}
         </div>

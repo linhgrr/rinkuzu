@@ -1,17 +1,17 @@
 'use client';
 
-import { FormEvent, useEffect, useState } from 'react';
-import { Button } from '@/components/ui/Button';
+import { FormEvent, useState } from 'react';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
-import { fetchApiData } from '@/lib/api/client';
+import { ModalActions } from '@/components/ui/ModalActions';
+import { createFolderViewModel } from '@/features/folders/api/folders-api';
 import { extractUnknownErrorMessage } from '@/lib/api/error';
-import type { FolderSummary } from '../types';
+import type { FolderSummaryViewModel } from '@/features/folders/types/folder-view-model';
 
 interface AddFolderModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onCreated: (folder: FolderSummary) => void;
+  onCreated: (folder: FolderSummaryViewModel) => void;
 }
 
 export function AddFolderModal({ isOpen, onClose, onCreated }: AddFolderModalProps) {
@@ -19,12 +19,16 @@ export function AddFolderModal({ isOpen, onClose, onCreated }: AddFolderModalPro
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    if (isOpen) {
-      setName('');
-      setError('');
-    }
-  }, [isOpen]);
+  function resetForm() {
+    setName('');
+    setError('');
+    setSubmitting(false);
+  }
+
+  function handleClose() {
+    resetForm();
+    onClose();
+  }
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -37,22 +41,17 @@ export function AddFolderModal({ isOpen, onClose, onCreated }: AddFolderModalPro
     setSubmitting(true);
     setError('');
     try {
-      const folder = await fetchApiData<FolderSummary>('/api/folders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: normalizedName }),
-      });
+      const folder = await createFolderViewModel(normalizedName);
       onCreated(folder);
-      onClose();
+      handleClose();
     } catch (requestError) {
       setError(extractUnknownErrorMessage(requestError, 'Failed to create folder'));
-    } finally {
       setSubmitting(false);
     }
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Add folder" size="small">
+    <Modal isOpen={isOpen} onClose={handleClose} title="Add folder" size="small">
       <form onSubmit={handleSubmit} className="space-y-4">
         <Input
           id="folder-name"
@@ -64,14 +63,14 @@ export function AddFolderModal({ isOpen, onClose, onCreated }: AddFolderModalPro
           disabled={submitting}
         />
         {error && <p className="text-sm text-red-600">{error}</p>}
-        <div className="flex justify-end gap-2">
-          <Button type="button" variant="outline" onClick={onClose} disabled={submitting}>
-            Cancel
-          </Button>
-          <Button type="submit" loading={submitting} disabled={!name.trim()}>
-            Create
-          </Button>
-        </div>
+        <ModalActions
+          cancelText="Cancel"
+          confirmText="Create"
+          confirmType="submit"
+          isDisabled={!name.trim()}
+          isLoading={submitting}
+          onCancel={handleClose}
+        />
       </form>
     </Modal>
   );

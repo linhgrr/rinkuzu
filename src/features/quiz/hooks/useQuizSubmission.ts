@@ -1,11 +1,10 @@
 'use client';
 
 import { useCallback, useState } from 'react';
-import { fetchApiData } from '@/lib/api/client';
+import { submitQuizAttemptViewModel } from '@/features/quiz/api/quiz-interaction-api';
+import type { QuizAnswer } from '@/features/quiz/types/quiz-interaction-view-model';
 
-type QuizAnswer = number | number[];
-
-interface UseQuizSubmissionParams<TQuiz, TQuestion = unknown> {
+interface UseQuizSubmissionParams<TQuestion, TQuiz extends { questions: TQuestion[] }> {
   slug: string;
   quiz: TQuiz | null;
   userAnswers: QuizAnswer[];
@@ -18,7 +17,7 @@ interface UseQuizSubmissionParams<TQuiz, TQuestion = unknown> {
   isQuestionAnswered: (question: TQuestion, answer: QuizAnswer) => boolean;
 }
 
-export function useQuizSubmission<TQuiz, TQuestion = unknown>({
+export function useQuizSubmission<TQuiz extends { questions: TQuestion[] }, TQuestion>({
   slug,
   quiz,
   userAnswers,
@@ -29,7 +28,7 @@ export function useQuizSubmission<TQuiz, TQuestion = unknown>({
   onSubmitError,
   mapAnswersToOriginalOrder,
   isQuestionAnswered,
-}: UseQuizSubmissionParams<TQuiz, TQuestion>) {
+}: UseQuizSubmissionParams<TQuestion, TQuiz>) {
   const [submitting, setSubmitting] = useState(false);
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
   const [unansweredCount, setUnansweredCount] = useState(0);
@@ -43,14 +42,11 @@ export function useQuizSubmission<TQuiz, TQuestion = unknown>({
         userEmail: sessionEmail || userEmail.trim(),
       };
 
-      const data = await fetchApiData<{ attemptId: string; score: number }>(
-        `/api/quiz/${slug}/attempt`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        },
-      );
+      const data = await submitQuizAttemptViewModel({
+        slug,
+        answers: payload.answers,
+        userEmail: payload.userEmail,
+      });
 
       onSubmitSuccess(data.attemptId, data.score);
     },
@@ -98,10 +94,11 @@ export function useQuizSubmission<TQuiz, TQuestion = unknown>({
   const submitQuiz = useCallback(async (): Promise<boolean> => {
     if (!quiz || submitting) return false;
 
-    const questions: TQuestion[] = ((quiz as { questions?: TQuestion[] }).questions ??
-      []) as TQuestion[];
     const unanswered = userAnswers.filter((answer, index) => {
-      const question = questions[index];
+      const question = quiz.questions[index];
+      if (!question) {
+        throw new Error(`Quiz answer at index ${index} has no matching question`);
+      }
       return !isQuestionAnswered(question, answer);
     }).length;
 

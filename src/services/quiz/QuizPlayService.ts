@@ -1,21 +1,46 @@
-import { IQuizRepository, IQuiz } from '@/interfaces/repositories/IQuizRepository';
+import { IQuizRepository } from '@/interfaces/repositories/IQuizRepository';
 import { IUserRepository } from '@/interfaces/repositories/IUserRepository';
 import { IAttemptRepository } from '@/interfaces/repositories/IAttemptRepository';
 import { IQuizProgressRepository } from '@/interfaces/repositories/IQuizProgressRepository';
+import type {
+  IQuizAttemptProgressRepository,
+  WrongQuizAttemptQuestion,
+} from '@/interfaces/repositories/IQuizAttemptProgressRepository';
 import { ServiceResult } from '@/interfaces/services/types';
-import type { FlashcardCardDTO, FlashcardQuizDTO } from '@/interfaces/services/IQuizService';
+import type {
+  DeleteQuizProgressResponseDto,
+  FlashcardQuestionDto,
+  FlashcardQuizDto,
+  QuizAttemptResultDto,
+  QuizPlayDetailDto,
+  QuizProgressResponseDto,
+  SavedQuizProgressDto,
+  SaveQuizProgressResponseDto,
+} from '@/dtos/quiz';
 import { createSubscriptionService } from '@/lib/subscription-factory';
-import connectDB from '@/lib/mongoose';
-import QuestionProgress from '@/models/QuestionProgress';
-import UserProgress from '@/models/UserProgress';
-import type { IQuestion } from '@/models/Quiz';
+import type { Quiz, QuizQuestion } from '@/entities/Quiz';
 import type { Session } from 'next-auth';
 import { getAuthorId, checkPrivateQuizAccess } from './quiz-helpers';
 import { logger } from '@/lib/logger';
+import { QuizDetailDtoMapper } from '@/mappers/quiz/QuizDetailDtoMapper';
+import { QuizProgressDtoMapper } from '@/mappers/quiz/QuizProgressDtoMapper';
 
 type Answer = number | number[];
 
-function isAuthorMatch(quiz: IQuiz, userId: string): boolean {
+function toFlashcardQuestionDto(question: QuizQuestion): FlashcardQuestionDto {
+  return {
+    id: question.id,
+    question: question.question,
+    options: question.options,
+    type: question.type,
+    correctIndex: question.correctIndex,
+    correctIndexes: question.correctIndexes,
+    questionImage: question.questionImage,
+    optionImages: question.optionImages,
+  };
+}
+
+function isAuthorMatch(quiz: Quiz, userId: string): boolean {
   return getAuthorId(quiz.author) === userId;
 }
 
@@ -24,14 +49,89 @@ export class QuizPlayService {
     private quizRepository: IQuizRepository,
     private userRepository: IUserRepository,
     private attemptRepository: IAttemptRepository,
-    private quizProgressRepository?: IQuizProgressRepository,
+    private quizProgressRepository: IQuizProgressRepository,
+    private quizAttemptProgressRepository?: IQuizAttemptProgressRepository,
   ) {}
+
+  private async resolveQuizId(slug: string): Promise<string | null> {
+    const quiz = await this.quizRepository.findBySlug(slug);
+    return quiz?.id ?? null;
+  }
+
+  async getSavedQuizProgress(
+    slug: string,
+    userId: string,
+  ): Promise<ServiceResult<QuizProgressResponseDto>> {
+    try {
+      const quizId = await this.resolveQuizId(slug);
+      if (!quizId) {
+        return { success: false, error: 'Quiz not found', statusCode: 404 };
+      }
+
+      const progress = await this.quizProgressRepository.findByUserAndQuiz(userId, quizId);
+      return {
+        success: true,
+        data: {
+          progress: progress
+            ? {
+                questionOrder: progress.questionOrder,
+                optionOrders: progress.optionOrders,
+                userAnswers: progress.userAnswers,
+                currentQuestionIndex: progress.currentQuestionIndex,
+                answeredCount: progress.answeredCount,
+                totalQuestions: progress.totalQuestions,
+              }
+            : null,
+        },
+      };
+    } catch (error) {
+      logger.error({ error, slug, userId }, 'Get quiz progress error');
+      return { success: false, error: 'Failed to get quiz progress', statusCode: 500 };
+    }
+  }
+
+  async saveQuizProgress(
+    slug: string,
+    userId: string,
+    progress: SavedQuizProgressDto,
+  ): Promise<ServiceResult<SaveQuizProgressResponseDto>> {
+    try {
+      const quizId = await this.resolveQuizId(slug);
+      if (!quizId) {
+        return { success: false, error: 'Quiz not found', statusCode: 404 };
+      }
+
+      await this.quizProgressRepository.upsert(userId, quizId, progress);
+      return { success: true, data: QuizProgressDtoMapper.toSaveResponse() };
+    } catch (error) {
+      logger.error({ error, slug, userId }, 'Save quiz progress error');
+      return { success: false, error: 'Failed to save quiz progress', statusCode: 500 };
+    }
+  }
+
+  async deleteSavedQuizProgress(
+    slug: string,
+    userId: string,
+  ): Promise<ServiceResult<DeleteQuizProgressResponseDto>> {
+    try {
+      const quizId = await this.resolveQuizId(slug);
+      if (!quizId) {
+        return { success: false, error: 'Quiz not found', statusCode: 404 };
+      }
+
+      await this.quizProgressRepository.deleteByUserAndQuiz(userId, quizId);
+      return { success: true, data: QuizProgressDtoMapper.toDeleteResponse() };
+    } catch (error) {
+      logger.error({ error, slug, userId }, 'Delete quiz progress error');
+      return { success: false, error: 'Failed to delete quiz progress', statusCode: 500 };
+    }
+  }
 
   async getQuizForPlay(
     slug: string,
     userRole?: string,
     userId?: string,
-  ): Promise<ServiceResult<IQuiz>> {
+  ): Promise<ServiceResult<QuizPlayDetailDto>> {
     try {
       const quiz = await this.quizRepository.findBySlug(slug);
 
@@ -54,49 +154,22 @@ export class QuizPlayService {
           };
         }
 
-        // Admin can access all private quizzes
-        if (userRole === 'admin') {
-          return { success: true, data: quiz };
-        }
+        const hasDirectAccess = userRole === 'admin' || authorId === userId;
+        if (!hasDirectAccess) {
+          const subscriptionService = createSubscriptionService();
+          const isPremium = await subscriptionService.isUserPremium(userId);
 
-        // Author can access their own private quizzes
-        if (authorId === userId) {
-          return { success: true, data: quiz };
-        }
-
-        // Check if user has premium subscription
-        const subscriptionService = createSubscriptionService();
-        const isPremium = await subscriptionService.isUserPremium(userId);
-
-        if (!isPremium) {
-          return {
-            success: false,
-            error: 'Premium subscription required to access private quizzes',
-            statusCode: 403,
-          };
+          if (!isPremium) {
+            return {
+              success: false,
+              error: 'Premium subscription required to access private quizzes',
+              statusCode: 403,
+            };
+          }
         }
       }
 
-      // Return quiz without correct answers for playing
-      const quizForPlay = {
-        _id: quiz._id,
-        title: quiz.title,
-        description: quiz.description,
-        author: quiz.author,
-        slug: quiz.slug,
-        isPrivate: quiz.isPrivate,
-        createdAt: quiz.createdAt,
-        updatedAt: quiz.updatedAt,
-        questions: quiz.questions.map((q: IQuestion) => ({
-          question: q.question,
-          options: q.options,
-          type: q.type,
-          questionImage: q.questionImage,
-          optionImages: q.optionImages,
-        })),
-      } as unknown as IQuiz;
-
-      return { success: true, data: quizForPlay };
+      return { success: true, data: QuizDetailDtoMapper.toPlayDetail(quiz) };
     } catch (error) {
       logger.error({ error }, 'Error in getQuizForPlay');
       return {
@@ -112,18 +185,11 @@ export class QuizPlayService {
     answers: Answer[],
     session: Session | null,
     userEmail?: string,
-  ): Promise<
-    ServiceResult<{
-      score: number;
-      correctAnswers: number;
-      totalQuestions: number;
-      attemptId: string;
-    }>
-  > {
+  ): Promise<ServiceResult<QuizAttemptResultDto>> {
     try {
       const quiz = await this.quizRepository.findBySlug(slug);
 
-      if (!quiz || !quiz._id) {
+      if (!quiz) {
         return {
           success: false,
           error: 'Quiz not found',
@@ -137,10 +203,9 @@ export class QuizPlayService {
       const privateAccessError = await checkPrivateQuizAccess(quiz, userIdFromSession, userRole);
       if (privateAccessError) return privateAccessError;
 
-      // Get or create user
-      let userId: string;
+      let authenticatedUserId: string | undefined;
+      let guestEmail: string | undefined;
       if (session?.user?.email) {
-        // Logged in user
         const user = await this.userRepository.findByEmail(session.user.email);
         if (!user) {
           return {
@@ -149,10 +214,9 @@ export class QuizPlayService {
             statusCode: 404,
           };
         }
-        userId = user._id.toString();
+        authenticatedUserId = user.id;
       } else if (userEmail) {
-        // Non-logged in user with email - use email as identifier
-        userId = userEmail;
+        guestEmail = userEmail;
       } else {
         return {
           success: false,
@@ -216,10 +280,18 @@ export class QuizPlayService {
 
       const score = Math.round((correctAnswers / totalQuestions) * 100);
 
-      // Save attempt
+      const attemptIdentity = authenticatedUserId
+        ? { userId: authenticatedUserId }
+        : guestEmail
+          ? { guestEmail }
+          : null;
+      if (!attemptIdentity) {
+        throw new TypeError('Attempt identity is required');
+      }
+
       const attempt = await this.attemptRepository.create({
-        user: userId,
-        quiz: quiz._id,
+        ...attemptIdentity,
+        quizId: quiz.id,
         answers: formattedAnswers,
         score,
         totalQuestions,
@@ -227,15 +299,8 @@ export class QuizPlayService {
       });
 
       // === Update gamification stats (logged-in users only) ===
-      if (session?.user?.email) {
-        await connectDB();
-
-        // 1. Create QuestionProgress for WRONG answers (add to review queue)
-        const wrongQuestions: Array<{
-          index: number;
-          question: IQuestion;
-          userAnswer: Answer;
-        }> = [];
+      if (authenticatedUserId) {
+        const wrongQuestions: WrongQuizAttemptQuestion[] = [];
 
         for (let i = 0; i < totalQuestions; i++) {
           const question = quiz.questions[i];
@@ -254,160 +319,23 @@ export class QuizPlayService {
           }
 
           if (!isCorrect) {
-            wrongQuestions.push({ index: i, question, userAnswer });
+            wrongQuestions.push({ index: i, questionId: question.id, question, userAnswer });
           }
         }
 
-        // Create QuestionProgress for each wrong answer
-        await Promise.all(
-          wrongQuestions.map(async (wrong) => {
-            const questionId =
-              (wrong.question as { _id?: { toString(): string } })._id?.toString() ||
-              `${slug}-q${wrong.index}`;
-
-            // Check if already exists
-            const existing = await QuestionProgress.findOne({
-              userId,
-              quizSlug: slug,
-              questionId,
-            });
-
-            if (existing) {
-              return;
-            }
-
-            // Create new QuestionProgress - due immediately for review
-            await QuestionProgress.create({
-              userId,
-              quizSlug: slug,
-              questionId,
-              questionRef: {
-                text: wrong.question.question || (wrong.question as { text?: string }).text || '',
-                options: wrong.question.options || [],
-                correctIndexes:
-                  wrong.question.type === 'single'
-                    ? [wrong.question.correctIndex]
-                    : wrong.question.correctIndexes || [],
-              },
-              srsLevel: 0,
-              interval: 0,
-              easeFactor: 2.5,
-              nextReviewDate: new Date(), // Due immediately
-              lastReviewDate: null,
-              correctStreak: 0,
-              totalReviews: 0,
-              totalCorrect: 0,
-              history: [],
-            });
-          }),
-        );
-
-        // 2. Update UserProgress
-        let uProgress = await UserProgress.findOne({ userId });
-
-        if (!uProgress) {
-          uProgress = new UserProgress({ userId });
-        }
-
-        // Award XP: 10 XP per correct answer
-        const xpGain = correctAnswers * 10;
-        uProgress.totalXp += xpGain;
-
-        // Increment totalQuizzesTaken
-        uProgress.totalQuizzesTaken += 1;
-
-        // Update streak logic
-        const now = new Date();
-        const lastActive = uProgress.lastActiveDate ? new Date(uProgress.lastActiveDate) : null;
-        const todayStr = now.toISOString().split('T')[0] ?? '';
-        const lastActiveStr = lastActive ? lastActive.toISOString().split('T')[0] : null;
-
-        if (todayStr !== lastActiveStr) {
-          if (lastActiveStr) {
-            const yesterday = new Date(now);
-            yesterday.setDate(yesterday.getDate() - 1);
-            const yesterdayStr = yesterday.toISOString().split('T')[0];
-
-            if (lastActiveStr === yesterdayStr) {
-              // Continue streak
-              uProgress.currentStreak += 1;
-            } else {
-              // Check for streak freeze
-              const twoDaysAgo = new Date(now);
-              twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
-              const twoDaysAgoStr = twoDaysAgo.toISOString().split('T')[0];
-
-              if (lastActiveStr === twoDaysAgoStr && uProgress.streakFreezeCount > 0) {
-                uProgress.streakFreezeCount -= 1;
-                uProgress.currentStreak += 1;
-              } else {
-                // Reset streak
-                uProgress.currentStreak = 1;
-              }
-            }
-          } else {
-            // First activity ever
-            uProgress.currentStreak = 1;
-          }
-
-          uProgress.lastActiveDate = now;
-
-          if (uProgress.currentStreak > uProgress.longestStreak) {
-            uProgress.longestStreak = uProgress.currentStreak;
-          }
-        }
-
-        // Update weekly activity
-        if (!uProgress.weeklyActivity) {
-          uProgress.weeklyActivity = new Map();
-        }
-
-        const activityKey = todayStr;
-        const currentActivity = uProgress.weeklyActivity.get(activityKey) || {
-          questionsReviewed: 0,
-          xpEarned: 0,
-          correctCount: 0,
-          totalCount: 0,
-        };
-
-        currentActivity.questionsReviewed += totalQuestions;
-        currentActivity.xpEarned += xpGain;
-        currentActivity.correctCount += correctAnswers;
-        currentActivity.totalCount += totalQuestions;
-
-        uProgress.weeklyActivity.set(activityKey, currentActivity);
-
-        // Update 7-day accuracy
-        const last7Days: string[] = [];
-        for (let i = 6; i >= 0; i--) {
-          const d = new Date(now);
-          d.setDate(d.getDate() - i);
-          const key = d.toISOString().split('T')[0];
-          if (key) last7Days.push(key);
-        }
-
-        let totalCorrectWeek = 0;
-        let totalQuestionsWeek = 0;
-        for (const dayKey of last7Days) {
-          const dayActivity = uProgress.weeklyActivity.get(dayKey);
-          if (dayActivity) {
-            totalCorrectWeek += dayActivity.correctCount || 0;
-            totalQuestionsWeek += dayActivity.totalCount || 0;
-          }
-        }
-
-        uProgress.averageAccuracy =
-          totalQuestionsWeek > 0 ? Math.round((totalCorrectWeek / totalQuestionsWeek) * 100) : 0;
-
-        await uProgress.save();
+        await this.quizAttemptProgressRepository?.recordSubmittedAttempt({
+          userId: authenticatedUserId,
+          quizSlug: slug,
+          totalQuestions,
+          correctAnswers,
+          wrongQuestions,
+        });
 
         // Clear any saved in-progress state now that the attempt is submitted.
-        if (this.quizProgressRepository && quiz._id) {
-          try {
-            await this.quizProgressRepository.deleteByUserAndQuiz(userId, String(quiz._id));
-          } catch (error) {
-            logger.warn({ error }, 'Failed to clear quiz progress after submit');
-          }
+        try {
+          await this.quizProgressRepository.deleteByUserAndQuiz(authenticatedUserId, quiz.id);
+        } catch (error) {
+          logger.warn({ error }, 'Failed to clear quiz progress after submit');
         }
       }
 
@@ -417,7 +345,7 @@ export class QuizPlayService {
           score,
           correctAnswers,
           totalQuestions,
-          attemptId: String(attempt._id),
+          attemptId: attempt.id,
         },
       };
     } catch (error) {
@@ -433,7 +361,7 @@ export class QuizPlayService {
   async getQuizFlashcards(
     slug: string,
     session?: Session | null,
-  ): Promise<ServiceResult<FlashcardQuizDTO>> {
+  ): Promise<ServiceResult<FlashcardQuizDto>> {
     try {
       const quiz = await this.quizRepository.findBySlug(slug);
 
@@ -465,23 +393,16 @@ export class QuizPlayService {
         }
       }
 
-      const cards: FlashcardCardDTO[] = quiz.questions.map((q: IQuestion) => ({
-        question: q.question,
-        answer:
-          q.type === 'single'
-            ? (q.options[q.correctIndex ?? -1] ?? '')
-            : (q.correctIndexes ?? []).map((idx) => q.options[idx] ?? '').join(', '),
-        questionImage: q.questionImage,
-        optionImages: q.optionImages,
-      }));
+      const questions = quiz.questions.map(toFlashcardQuestionDto);
 
       return {
         success: true,
         data: {
-          _id: String(quiz._id),
+          id: quiz.id,
           title: quiz.title,
+          slug: quiz.slug,
           description: quiz.description,
-          cards,
+          questions,
         },
       };
     } catch (error) {
@@ -497,7 +418,7 @@ export class QuizPlayService {
   async getQuizForFlashcards(
     slug: string,
     session: Session | null,
-  ): Promise<ServiceResult<FlashcardQuizDTO>> {
+  ): Promise<ServiceResult<FlashcardQuizDto>> {
     try {
       const quiz = await this.quizRepository.findBySlug(slug);
 
@@ -537,23 +458,16 @@ export class QuizPlayService {
         }
       }
 
-      const cards: FlashcardCardDTO[] = quiz.questions.map((q: IQuestion) => ({
-        question: q.question,
-        answer:
-          q.type === 'single'
-            ? (q.options[q.correctIndex ?? -1] ?? '')
-            : (q.correctIndexes ?? []).map((idx) => q.options[idx] ?? '').join(', '),
-        questionImage: q.questionImage,
-        optionImages: q.optionImages,
-      }));
+      const questions = quiz.questions.map(toFlashcardQuestionDto);
 
       return {
         success: true,
         data: {
-          _id: String(quiz._id),
+          id: quiz.id,
           title: quiz.title,
+          slug: quiz.slug,
           description: quiz.description,
-          cards,
+          questions,
         },
       };
     } catch (error) {

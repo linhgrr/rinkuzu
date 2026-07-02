@@ -11,9 +11,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
-import { HiOutlineMail, HiOutlineExclamationCircle } from '@/components/icons';
-import { ApiResponseError, fetchApiResponse } from '@/lib/api/client';
-import { extractApiErrorMeta } from '@/lib/api/error';
+import { HiOutlineMail, HiOutlineExclamationCircle } from 'react-icons/hi';
+import { AuthRateLimitError, resendVerificationEmail } from '@/features/auth/api/auth-api';
 import { resendVerificationSchema, type ForgotPasswordInput } from '@/lib/validation/auth';
 
 const DEFAULT_RESEND_COOLDOWN = 60;
@@ -22,7 +21,7 @@ function CheckEmailContent() {
   const t = useTranslations('auth');
   const searchParams = useSearchParams();
   const get = searchParams.get.bind(searchParams);
-  const initialEmail = (get('email') || '').trim().toLowerCase();
+  const initialEmail = (get('email') ?? '').trim().toLowerCase();
 
   const [serverError, setServerError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
@@ -48,23 +47,12 @@ function CheckEmailContent() {
     if (cooldown > 0) return;
     setServerError(null);
     try {
-      const response = await fetchApiResponse<unknown, { message?: string }>(
-        '/api/auth/resend-verification',
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: values.email }),
-        },
-      );
-      setInfo(response.meta?.message ?? t('checkEmailDescription'));
+      const result = await resendVerificationEmail(values.email, DEFAULT_RESEND_COOLDOWN);
+      setInfo(result.message ?? t('checkEmailDescription'));
       setCooldown(DEFAULT_RESEND_COOLDOWN);
     } catch (caught) {
-      if (caught instanceof ApiResponseError && caught.status === 429) {
-        const meta = extractApiErrorMeta<{ retryAfterSeconds?: number }>(caught.payload as never);
-        const retry =
-          typeof meta?.retryAfterSeconds === 'number'
-            ? meta.retryAfterSeconds
-            : DEFAULT_RESEND_COOLDOWN;
+      if (caught instanceof AuthRateLimitError) {
+        const retry = caught.retryAfterSeconds;
         setCooldown(retry);
         setServerError(t('rateLimited', { seconds: retry }));
       } else {

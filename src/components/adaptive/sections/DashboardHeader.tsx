@@ -1,8 +1,8 @@
 'use client';
 
 import { SparklesText } from '@/components/ui/sparkles-text';
-import { HiOutlineLightningBolt, HiOutlineClock } from '@/components/icons';
-import type { TranslateFn } from '@/features/adaptive/types';
+import { HiOutlineLightningBolt, HiOutlineClock } from 'react-icons/hi';
+import type { TranslateFn } from '@/features/adaptive/types/learning';
 
 type DashboardHeaderProps = {
   apiOnline: boolean | null;

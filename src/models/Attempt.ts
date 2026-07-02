@@ -1,19 +1,27 @@
-import mongoose, { Document, Schema, Types } from 'mongoose';
+import mongoose, { Schema, Types } from 'mongoose';
+import type { SelectedAnswerPersistenceRecord } from '@/repositories/types/AnswerPersistence';
+import { SelectedAnswerSchema } from '@/models/schemas/SelectedAnswerSchema';
 
-interface IAttempt extends Document {
-  user?: Types.ObjectId | string; // Optional for anonymous attempts, can be ObjectId or email string
+interface AttemptDocument {
+  user?: Types.ObjectId;
+  guestEmail?: string;
   quiz: Types.ObjectId;
   score: number;
   totalQuestions: number;
-  answers: (number | number[])[]; // Single choice: number, Multiple choice: number[]
+  answers: SelectedAnswerPersistenceRecord[];
   takenAt: Date;
 }
 
-const AttemptSchema = new Schema<IAttempt>({
+const AttemptSchema = new Schema<AttemptDocument>({
   user: {
-    type: Schema.Types.Mixed, // Can be ObjectId or String
+    type: Schema.Types.ObjectId,
     ref: 'User',
-    required: false, // Allow anonymous attempts
+  },
+  guestEmail: {
+    type: String,
+    trim: true,
+    lowercase: true,
+    match: [/^[^\s@]+@[^\s@]+\.[^\s@]+$/, 'Guest email is invalid'],
   },
   quiz: {
     type: Schema.Types.ObjectId,
@@ -29,25 +37,11 @@ const AttemptSchema = new Schema<IAttempt>({
   totalQuestions: {
     type: Number,
     required: [true, 'Total questions is required'],
+    min: [1, 'Total questions must be positive'],
   },
   answers: {
-    type: [Schema.Types.Mixed], // Can be number or array of numbers
+    type: [SelectedAnswerSchema],
     required: [true, 'Answers are required'],
-    validate: {
-      validator: function (answers: (number | number[])[]) {
-        return answers.every((answer) => {
-          if (Array.isArray(answer)) {
-            // Multiple choice answer: allow empty array (unanswered) or any valid indexes
-            return answer.length === 0 || answer.every((a) => typeof a === 'number' && a >= 0);
-          } else {
-            // Single choice answer: allow -1 (unanswered) or any valid indexes
-            return answer === -1 || (typeof answer === 'number' && answer >= 0);
-          }
-        });
-      },
-      message:
-        'Single choice answers must be -1 (unanswered) or >= 0, multiple choice answers must be empty array (unanswered) or array of >= 0',
-    },
   },
   takenAt: {
     type: Date,
@@ -55,12 +49,18 @@ const AttemptSchema = new Schema<IAttempt>({
   },
 });
 
-// Indexes for better performance
+AttemptSchema.pre('validate', function validateIdentity() {
+  if (Boolean(this.user) === Boolean(this.guestEmail)) {
+    this.invalidate('user', 'Exactly one attempt identity is required');
+  }
+});
+
 AttemptSchema.index({ user: 1, takenAt: -1 });
+AttemptSchema.index({ guestEmail: 1, takenAt: -1 });
 AttemptSchema.index({ quiz: 1, takenAt: -1 });
 AttemptSchema.index({ user: 1, quiz: 1 });
 
-// Prevent re-compilation in development
-const Attempt = mongoose.models['Attempt'] || mongoose.model<IAttempt>('Attempt', AttemptSchema);
+const Attempt =
+  mongoose.models['Attempt'] || mongoose.model<AttemptDocument>('Attempt', AttemptSchema);
 
 export default Attempt;

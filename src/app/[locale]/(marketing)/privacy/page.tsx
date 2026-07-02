@@ -21,7 +21,7 @@ type ContactAddress = {
 const informationWeCollectSections = [
   {
     title: '1.1 Account Information',
-    body: `When you register for RinKuzu, you provide: full name, email address, password (hashed using bcrypt), and optional profile information such as institution, role (student, teacher, or other), and profile photo. If you register via a third-party OAuth provider (e.g., Google), we receive your name and email from that provider.`,
+    body: `When you register for RinKuzu, you provide: full name, email address, password (hashed using Argon2id), and optional profile information such as institution, role (student, teacher, or other), and profile photo. If you register via a third-party OAuth provider (e.g., Google), we receive your name and email from that provider.`,
   },
   {
     title: '1.2 Uploaded Learning Materials',
@@ -356,7 +356,7 @@ function PrivacyPolicyContent() {
       <PolicySection title="11. Data Security">
         <p>
           We implement industry-standard security measures: TLS 1.3 encryption in transit, AES-256
-          encryption at rest, bcrypt password hashing, role-based access control (RBAC), regular
+          encryption at rest, Argon2id password hashing, role-based access control (RBAC), regular
           security audits, and intrusion detection systems. In the event of a data breach affecting
           your personal data, we will notify you and the relevant supervisory authority within 72
           hours as required by GDPR Article 33.

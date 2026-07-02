@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { openInNewTabSafely } from '@/lib/security/trusted-navigation';
 
@@ -17,14 +17,13 @@ export default function PDFViewer({
   pdfUrl,
   showHeader = true,
 }: PDFViewerProps) {
-  // Prefer inline source if provided, otherwise fallback to original URL.
-  const displayUrl = useMemo(() => {
-    const source = pdfDataUrl || pdfUrl || null;
-    if (!source) return null;
-    return source.includes('#')
-      ? source
-      : `${source}#toolbar=1&navpanes=1&scrollbar=1&view=FitH&zoom=page-width`;
-  }, [pdfDataUrl, pdfUrl]);
+  // Prefer inline source if provided; otherwise use the original PDF URL.
+  const source = pdfDataUrl || pdfUrl || null;
+  const displayUrl = source?.includes('#')
+    ? source
+    : source
+      ? `${source}#toolbar=1&navpanes=1&scrollbar=1&view=FitH&zoom=page-width`
+      : null;
 
   return (
     <div className="h-full flex flex-col">

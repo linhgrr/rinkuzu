@@ -1,5 +1,8 @@
 {
   "title": "Review",
+  "loading": "Loading review cards...",
+  "loadError": "Failed to load review cards",
+  "submitError": "Failed to submit review",
   "dueCards": "Cards due for review",
   "noCards": "No cards to review!",
   "allDone": "You've completed everything!",

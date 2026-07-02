@@ -14,7 +14,7 @@ import {
   createLibraryPoller,
   type LibraryPollerOptions,
 } from '@/features/adaptive/hooks/use-job-library';
-import type { PipelineJobListItem } from '@/features/adaptive/types';
+import type { PipelineJobListItem } from '@/features/adaptive/types/pipeline';
 
 // ---------------------------------------------------------------------------
 // Minimal job factory
@@ -60,18 +60,22 @@ function makeJob(
 // ---------------------------------------------------------------------------
 
 class FakeTimers {
-  private queue: Array<{ id: number; at: number; fn: () => void }> = [];
-  private counter = 0;
+  private queue: Array<{
+    id: ReturnType<typeof setTimeout>;
+    at: number;
+    fn: () => void;
+  }> = [];
   now = 0;
 
   schedule(fn: () => void, ms: number): ReturnType<typeof setTimeout> {
-    const id = ++this.counter;
+    const id = setTimeout(() => undefined, 0);
+    clearTimeout(id);
     this.queue.push({ id, at: this.now + ms, fn });
-    return id as unknown as ReturnType<typeof setTimeout>;
+    return id;
   }
 
   unschedule(id: ReturnType<typeof setTimeout>): void {
-    this.queue = this.queue.filter((t) => t.id !== (id as unknown as number));
+    this.queue = this.queue.filter((t) => t.id !== id);
   }
 
   /** Advance virtual time by `ms` and fire all timers that are due. */

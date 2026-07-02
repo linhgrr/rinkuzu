@@ -514,7 +514,6 @@
     "iconAlt": "AI chatbot",
     "errorInsufficientContext": "Insufficient context to ask AI.",
     "errorAIFailure": "Failed to get response from AI.",
-    "fallbackNoResponse": "I don't have a suitable response at this moment.",
     "errorConnection": "Error connecting to AI.",
     "errorInterrupted": "_The response was interrupted before completion. Ask again and Rin-chan can continue._"
   },

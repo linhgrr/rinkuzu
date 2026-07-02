@@ -1,7 +1,7 @@
 'use client';
 
 import { Button } from '@/components/ui/Button';
-import { HiChevronLeft, HiChevronRight } from '@/components/icons';
+import { HiChevronLeft, HiChevronRight } from 'react-icons/hi';
 
 interface PaginationProps {
   currentPage: number;

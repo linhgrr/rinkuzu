@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
-import { HiOutlineX, HiArrowUp } from '@/components/icons';
+import { HiOutlineX, HiArrowUp } from 'react-icons/hi';
 import Image from 'next/image';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -57,30 +57,22 @@ export default function AdaptiveLearningChatbot({
   onClose,
 }: ChatbotProps) {
   const t = useTranslations('adaptiveLearning');
-  const initialMessage = useMemo<Message>(
-    () => ({
-      id: '1',
-      role: 'assistant',
-      content: t('chatbot.initialGreeting'),
-    }),
-    [t],
-  );
+  const initialMessage: Message = {
+    id: '1',
+    role: 'assistant',
+    content: t('chatbot.initialGreeting'),
+  };
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  const visibleMessages = useMemo(
-    () => (messages.length > 0 ? messages : [initialMessage]),
-    [initialMessage, messages],
-  );
-
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [visibleMessages, isOpen]);
+  }, [messages, isOpen]);
 
   useEffect(
     () => () => {
@@ -95,7 +87,7 @@ export default function AdaptiveLearningChatbot({
     }
   }, [isOpen]);
 
-  const handleSend = useCallback(async () => {
+  const handleSend = async () => {
     const trimmedQuestion = input.trim();
     if (!trimmedQuestion || isTyping) return;
 
@@ -106,11 +98,18 @@ export default function AdaptiveLearningChatbot({
     setInput('');
     setIsTyping(true);
 
-    try {
-      if (!sessionId) {
-        throw new Error(t('chatbot.errorInsufficientContext'));
-      }
+    if (!sessionId) {
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === assistantId ? { ...msg, content: t('chatbot.errorInsufficientContext') } : msg,
+        ),
+      );
+      abortControllerRef.current = null;
+      setIsTyping(false);
+      return;
+    }
 
+    try {
       const abortController = new AbortController();
       abortControllerRef.current = abortController;
 
@@ -130,17 +129,17 @@ export default function AdaptiveLearningChatbot({
       );
 
       setMessages((prev) =>
-        prev.map((msg) =>
-          msg.id === assistantId
-            ? { ...msg, content: explanation || t('chatbot.fallbackNoResponse') }
-            : msg,
-        ),
+        prev.map((msg) => (msg.id === assistantId ? { ...msg, content: explanation } : msg)),
       );
+      abortControllerRef.current = null;
+      setIsTyping(false);
     } catch (error) {
       if (isAbortLikeError(error)) {
         setMessages((prev) =>
           prev.filter((msg) => msg.id !== assistantId || msg.content.trim().length > 0),
         );
+        abortControllerRef.current = null;
+        setIsTyping(false);
         return;
       }
 
@@ -157,11 +156,10 @@ export default function AdaptiveLearningChatbot({
             : msg,
         ),
       );
-    } finally {
       abortControllerRef.current = null;
       setIsTyping(false);
     }
-  }, [input, isTyping, sessionId, t]);
+  };
 
   if (!isOpen) return null;
 
@@ -203,7 +201,7 @@ export default function AdaptiveLearningChatbot({
             <strong>{t('chatbot.context')}:</strong> {context}
           </div>
         )}
-        {visibleMessages.map((msg) => (
+        {(messages.length > 0 ? messages : [initialMessage]).map((msg) => (
           <div
             key={msg.id}
             className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}

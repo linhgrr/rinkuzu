@@ -2,53 +2,17 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
-import { Types } from 'mongoose';
 import { UserAvatar } from '@/components/user/UserAvatar';
-import { type UserIdentity, getUserDisplayName } from '@/components/user/user-identity';
+import { getUserDisplayName } from '@/components/user/user-identity';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import connectDB from '@/lib/mongoose';
 import { buildLocalizedMetadata } from '@/lib/seo';
-import Quiz from '@/models/Quiz';
-import User from '@/models/User';
-import { ROUTES } from '@/shared/constants';
-
-const publicProfileLongDateFormatters = {
-  en: new Intl.DateTimeFormat('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  }),
-  vi: new Intl.DateTimeFormat('vi-VN', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  }),
-};
-
-const publicProfileShortDateFormatters = {
-  en: new Intl.DateTimeFormat('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  }),
-  vi: new Intl.DateTimeFormat('vi-VN', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  }),
-};
+import { serviceFactory } from '@/lib/serviceFactory';
+import { isValidMongoObjectId } from '@/lib/mongo-id';
+import { formatDate } from '@/lib/formatters';
+import { ROUTES } from '@/shared/constants/routes';
 
 export const dynamic = 'force-dynamic';
-
-interface PublicQuizRecord {
-  _id: string;
-  title: string;
-  description?: string;
-  slug: string;
-  createdAt: Date;
-  questions?: Array<unknown>;
-}
 
 export async function generateMetadata({
   params,
@@ -71,47 +35,39 @@ export default async function PublicUserProfilePage({
 }) {
   const { locale, userId } = await params;
 
-  if (!Types.ObjectId.isValid(userId)) {
+  if (!isValidMongoObjectId(userId)) {
     notFound();
   }
 
-  await connectDB();
-
-  const [user, rawQuizzes, t, tQuiz] = await Promise.all([
-    User.findById(userId).select('email name displayName bio avatar createdAt').lean(),
-    Quiz.find({
-      author: userId,
-      isPrivate: false,
-    })
-      .select('title description slug createdAt questions')
-      .sort({ createdAt: -1 })
-      .lean(),
+  const [profileResult, t, tQuiz] = await Promise.all([
+    serviceFactory.getUserService().getPublicProfile(userId),
     getTranslations({ locale, namespace: 'profile' }),
     getTranslations({ locale, namespace: 'quiz' }),
   ]);
 
-  if (!user) {
-    notFound();
+  if (!profileResult.success) {
+    if (profileResult.statusCode === 404) {
+      notFound();
+    }
+    throw new Error(profileResult.error);
   }
 
-  const localeKey = locale === 'vi' ? 'vi' : 'en';
-  const profileUser = user as unknown as UserIdentity & { bio?: string; createdAt?: Date | string };
+  const dateLocale = locale === 'vi' ? 'vi-VN' : 'en-US';
+  const { user: profileUser } = profileResult.data;
   const displayName = getUserDisplayName(profileUser);
-  const publicQuizRecords = rawQuizzes as unknown as PublicQuizRecord[];
-  const quizzes = publicQuizRecords.map((quiz) => ({
-    _id: String(quiz._id),
-    title: quiz.title,
-    description: quiz.description || '',
-    slug: quiz.slug,
-    createdAt: quiz.createdAt,
-    createdAtIso: new Date(quiz.createdAt).toISOString(),
-    createdAtLabel: publicProfileShortDateFormatters[localeKey].format(new Date(quiz.createdAt)),
-    questionCount: Array.isArray(quiz.questions) ? quiz.questions.length : 0,
+  const quizzes = profileResult.data.quizzes.map((quiz) => ({
+    ...quiz,
+    createdAtIso: quiz.createdAt,
+    createdAtLabel: formatDate(quiz.createdAt, {
+      locale: dateLocale,
+      options: { year: 'numeric', month: 'short', day: 'numeric' },
+    }),
   }));
 
-  const joinDate = publicProfileLongDateFormatters[localeKey].format(
-    new Date(profileUser.createdAt || new Date()),
-  );
+  const joinDate = formatDate(profileUser.createdAt, {
+    locale: dateLocale,
+    options: { year: 'numeric', month: 'long', day: 'numeric' },
+  });
 
   return (
     <div className="min-h-screen bg-surface-page">
@@ -174,7 +130,7 @@ export default async function PublicUserProfilePage({
                 <div className="grid gap-4 md:grid-cols-2">
                   {quizzes.map((quiz) => (
                     <Card
-                      key={quiz._id}
+                      key={quiz.id}
                       className="flex h-full flex-col justify-between border-line shadow-sm"
                     >
                       <CardHeader className="space-y-3">

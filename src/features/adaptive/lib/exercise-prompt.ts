@@ -1,4 +1,4 @@
-import type { Exercise } from '@/features/adaptive/types';
+import type { Exercise } from '@/features/adaptive/types/learning';
 import type { ExerciseHistoryFull } from '@/features/adaptive/types/history';
 
 /*
@@ -33,7 +33,7 @@ function normalizePromptText(value?: string | null): string | null {
 export function getExercisePromptSections(
   exercise: ExercisePromptLike | ExerciseHistoryFull,
 ): ExercisePromptSections {
-  const question = normalizePromptText(exercise.question) || '';
+  const question = normalizePromptText(exercise.question) ?? '';
   const statement = normalizePromptText(exercise.statement);
   const sentence = normalizePromptText(exercise.sentence);
 

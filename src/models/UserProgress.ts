@@ -16,9 +16,8 @@ interface IUserProgress extends Document {
   lastActiveDate: Date;
   streakFreezeCount: number;
 
-  // XP & Level (level is calculated, not stored)
+  // XP
   totalXp: number;
-  level: number; // Deprecated - calculated dynamically
 
   // Stats
   totalQuestionsLearned: number;
@@ -56,9 +55,8 @@ const UserProgressSchema = new Schema<IUserProgress>(
     lastActiveDate: { type: Date, default: Date.now },
     streakFreezeCount: { type: Number, default: 0 },
 
-    // XP & Level
+    // XP
     totalXp: { type: Number, default: 0 },
-    level: { type: Number, default: 1 }, // Deprecated
 
     // Stats
     totalQuestionsLearned: { type: Number, default: 0 },

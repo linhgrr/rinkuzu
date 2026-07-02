@@ -1,6 +1,6 @@
 export interface QuizDateGroupInput {
-  createdAt: Date;
-  displayDate?: string;
+  createdAt: Date | string;
+  displayDate?: Date | string | null;
 }
 
 export interface QuizWeekGroup<T> {
@@ -32,13 +32,20 @@ function startOfWeek(date: Date): Date {
   return start;
 }
 
+function toValidDate(value: Date | string): Date | null {
+  const date = new Date(value);
+  return Number.isFinite(date.getTime()) ? date : null;
+}
+
 export function groupQuizzesByMonthAndWeek<T extends QuizDateGroupInput>(
   quizzes: T[],
 ): QuizMonthGroup<T>[] {
   const months = new Map<string, { date: Date; weeks: Map<string, QuizWeekGroup<T>> }>();
 
   for (const quiz of quizzes) {
-    const date = new Date(quiz.displayDate ?? quiz.createdAt);
+    const date = toValidDate(quiz.displayDate ?? quiz.createdAt);
+    if (!date) continue;
+
     const monthDate = new Date(date.getFullYear(), date.getMonth(), 1);
     const monthKey = dateKey(monthDate);
     const weekStart = startOfWeek(date);

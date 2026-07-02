@@ -3,6 +3,7 @@ import { withAuth } from '@/lib/api/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
 import { apiErr, apiOk } from '@/lib/api/response';
 import { logger } from '@/lib/logger';
+import { userAttemptListQuerySchema } from '@/dtos/user';
 
 const userService = serviceFactory.getUserService();
 
@@ -14,12 +15,18 @@ export const GET = withAuth(async (request: NextRequest, { email }) => {
       return apiErr('unauthorized', 'Authentication required', 401);
     }
 
-    // Get pagination parameters from URL
     const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '10');
+    const query = userAttemptListQuerySchema.safeParse({
+      page: searchParams.get('page') ?? undefined,
+      limit: searchParams.get('limit') ?? undefined,
+    });
+    if (!query.success) {
+      return apiErr('validation_error', 'Invalid attempt query parameters', 400, {
+        issues: query.error.flatten().fieldErrors,
+      });
+    }
 
-    const result = await userService.getUserAttempts(email, { page, limit });
+    const result = await userService.getUserAttempts(email, query.data);
 
     return apiOk({
       attempts: result.attempts,

@@ -1,46 +1,25 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { fetchApiData } from '@/lib/api/client';
+import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
-import {
-  SubscriptionDurationType,
-  PREDEFINED_DURATIONS,
-  DurationUtils,
-} from '@/types/subscription';
+import { SubscriptionDurationType, PREDEFINED_DURATIONS } from '@/types/subscription';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { Modal } from '@/components/ui/Modal';
-import { HiOutlinePlus, HiOutlineCheck, HiOutlineX } from '@/components/icons';
-
-const vndCurrencyFormatter = new Intl.NumberFormat('vi-VN', {
-  style: 'currency',
-  currency: 'VND',
-});
-
-interface Plan {
-  _id: string;
-  name: string;
-  price: number;
-  duration: string;
-  features: string[];
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
-  durationInfo?: {
-    iso8601: string;
-    displayName: string;
-    months?: number;
-  };
-  isLifetime?: boolean;
-}
-
-interface DisplayPlan extends Plan {
-  createdAtLabel: string;
-  updatedAtLabel: string;
-}
+import { HiOutlinePlus, HiOutlineCheck, HiOutlineX } from 'react-icons/hi';
+import {
+  createAdminBillingPlan,
+  deleteAdminBillingPlan,
+  fetchAdminBillingPlanViewModels,
+  updateAdminBillingPlan,
+} from '@/features/admin/plans/api/admin-plans-api';
+import type {
+  AdminBillingPlanMutationInput,
+  AdminBillingPlanViewModel,
+} from '@/features/admin/plans/types/admin-plans-view-model';
 
 interface FeatureField {
   id: string;
@@ -62,12 +41,7 @@ interface PageStatus {
 }
 
 function createFeatureField(value = ''): FeatureField {
-  const id =
-    typeof globalThis.crypto?.randomUUID === 'function'
-      ? globalThis.crypto.randomUUID()
-      : `${Date.now()}-${Math.random()}`;
-
-  return { id, value };
+  return { id: crypto.randomUUID(), value };
 }
 
 function createPlanFormState(): PlanFormState {
@@ -80,7 +54,7 @@ function createPlanFormState(): PlanFormState {
   };
 }
 
-function createEditFormState(plan: DisplayPlan): PlanFormState {
+function createEditFormState(plan: AdminBillingPlanViewModel): PlanFormState {
   return {
     name: plan.name,
     price: plan.price,
@@ -102,38 +76,6 @@ function serializeFeatureFields(features: FeatureField[]) {
   }, []);
 }
 
-function formatPlanDate(value: string) {
-  return new Date(value).toLocaleDateString();
-}
-
-function toDisplayPlan(plan: Plan): DisplayPlan {
-  return {
-    ...plan,
-    createdAtLabel: formatPlanDate(plan.createdAt),
-    updatedAtLabel: formatPlanDate(plan.updatedAt),
-  };
-}
-
-function formatCurrency(amount: number) {
-  return vndCurrencyFormatter.format(amount);
-}
-
-function getDurationDisplay(duration: string) {
-  try {
-    if (DurationUtils.isValidISO8601Duration(duration)) {
-      const info = DurationUtils.getDurationInfo(duration);
-      return info.displayName;
-    }
-
-    if (duration === '0') return 'Lifetime';
-    if (duration === '6') return '6 Months';
-    if (duration === '12') return '1 Year';
-    return `${duration} Months`;
-  } catch {
-    return duration;
-  }
-}
-
 function CreatePlanModal({
   isOpen,
   onClose,
@@ -142,13 +84,7 @@ function CreatePlanModal({
 }: {
   isOpen: boolean;
   onClose: () => void;
-  onCreate: (payload: {
-    name: string;
-    price: number;
-    duration: string;
-    features: string[];
-    isActive: boolean;
-  }) => Promise<boolean>;
+  onCreate: (payload: AdminBillingPlanMutationInput) => Promise<boolean>;
   createLabel: string;
 }) {
   const t = useTranslations('admin');
@@ -396,17 +332,8 @@ function PlanCard({
   onSave,
   onDelete,
 }: {
-  plan: DisplayPlan;
-  onSave: (
-    planId: string,
-    payload: {
-      name: string;
-      price: number;
-      duration: string;
-      features: string[];
-      isActive: boolean;
-    },
-  ) => Promise<boolean>;
+  plan: AdminBillingPlanViewModel;
+  onSave: (planId: string, payload: AdminBillingPlanMutationInput) => Promise<boolean>;
   onDelete: (planId: string, planName: string) => Promise<boolean>;
 }) {
   const [isEditing, setIsEditing] = useState(false);
@@ -418,9 +345,9 @@ function PlanCard({
     isDeleting: false,
   });
 
-  const resetForm = useCallback(() => {
+  const resetForm = () => {
     setForm(createEditFormState(plan));
-  }, [plan]);
+  };
 
   const handleStartEdit = () => {
     resetForm();
@@ -467,7 +394,7 @@ function PlanCard({
   const handleSave = async () => {
     if (!form.name.trim() || !form.price || form.price <= 0) return;
 
-    const didSave = await onSave(plan._id, {
+    const didSave = await onSave(plan.id, {
       name: form.name.trim(),
       price: Number(form.price),
       duration: form.duration,
@@ -482,7 +409,7 @@ function PlanCard({
 
   const handleDelete = async () => {
     setUiState((prev) => ({ ...prev, isDeleting: true }));
-    const didDelete = await onDelete(plan._id, plan.name);
+    const didDelete = await onDelete(plan.id, plan.name);
     setUiState((prev) => ({
       ...prev,
       isDeleting: false,
@@ -505,9 +432,7 @@ function PlanCard({
               ) : (
                 <CardTitle className="text-xl">{plan.name}</CardTitle>
               )}
-              <CardDescription className="mt-2">
-                {getDurationDisplay(plan.duration)}
-              </CardDescription>
+              <CardDescription className="mt-2">{plan.durationLabel}</CardDescription>
             </div>
             <div className="flex items-center gap-x-2">
               <span
@@ -525,13 +450,13 @@ function PlanCard({
             {isEditing ? (
               <div className="space-y-2">
                 <label
-                  htmlFor={`edit-plan-price-${plan._id}`}
+                  htmlFor={`edit-plan-price-${plan.id}`}
                   className="block text-sm font-medium text-neutral-700"
                 >
                   Price (VND)
                 </label>
                 <Input
-                  id={`edit-plan-price-${plan._id}`}
+                  id={`edit-plan-price-${plan.id}`}
                   type="number"
                   value={form.price}
                   onChange={(e) =>
@@ -544,9 +469,7 @@ function PlanCard({
                 />
               </div>
             ) : (
-              <div className="text-3xl font-bold text-neutral-900">
-                {formatCurrency(plan.price)}
-              </div>
+              <div className="text-3xl font-bold text-neutral-900">{plan.priceLabel}</div>
             )}
           </div>
 
@@ -589,7 +512,7 @@ function PlanCard({
               <ul className="space-y-2">
                 {plan.features.map((feature) => (
                   <li
-                    key={`${plan._id}-${feature}`}
+                    key={`${plan.id}-${feature}`}
                     className="flex items-center text-sm text-neutral-600"
                   >
                     <HiOutlineCheck className="mr-2 size-4 text-green-500" />
@@ -696,7 +619,7 @@ function PlanCard({
 export default function AdminPlansPage() {
   const t = useTranslations('admin');
   const tCommon = useTranslations('common');
-  const [plans, setPlans] = useState<DisplayPlan[]>([]);
+  const [plans, setPlans] = useState<AdminBillingPlanViewModel[]>([]);
   const [status, setStatus] = useState<PageStatus>({
     loading: true,
     error: '',
@@ -704,121 +627,88 @@ export default function AdminPlansPage() {
   });
   const [showCreateForm, setShowCreateForm] = useState(false);
 
-  const pushSuccess = useCallback((message: string) => {
+  const pushSuccess = (message: string) => {
     setStatus((prev) => ({ ...prev, success: message, error: '' }));
     globalThis.setTimeout(() => {
       setStatus((prev) => (prev.success === message ? { ...prev, success: '' } : prev));
     }, 3000);
+  };
+
+  const refreshPlans = async () => {
+    setStatus((prev) => ({ ...prev, loading: true }));
+    try {
+      setPlans(await fetchAdminBillingPlanViewModels());
+      setStatus((prev) => ({ ...prev, loading: false, error: '' }));
+    } catch (error) {
+      setStatus((prev) => ({ ...prev, loading: false }));
+      throw error;
+    }
+  };
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    void fetchAdminBillingPlanViewModels(controller.signal)
+      .then((data) => {
+        setPlans(data);
+        setStatus((prev) => ({ ...prev, loading: false, error: '' }));
+      })
+      .catch((error: unknown) => {
+        if (controller.signal.aborted) return;
+        setStatus((prev) => ({
+          ...prev,
+          loading: false,
+          error: error instanceof Error ? error.message : 'Failed to fetch plans',
+        }));
+      });
+
+    return () => controller.abort();
   }, []);
 
-  const fetchPlans = useCallback(async () => {
+  const handleSavePlan = async (planId: string, payload: AdminBillingPlanMutationInput) => {
     try {
-      setStatus((prev) => ({ ...prev, loading: true }));
-      const data = await fetchApiData<Plan[]>('/api/admin/plans');
-      setPlans(data.map(toDisplayPlan));
-      setStatus((prev) => ({ ...prev, loading: false, error: '' }));
+      await updateAdminBillingPlan({ planId, payload });
+      await refreshPlans();
+      pushSuccess('Plan updated successfully');
+      return true;
     } catch (error) {
       setStatus((prev) => ({
         ...prev,
-        loading: false,
-        error: error instanceof Error ? error.message : 'Failed to fetch plans',
+        error: error instanceof Error ? error.message : 'Failed to update plan',
       }));
+      return false;
     }
-  }, []);
+  };
 
-  useEffect(() => {
-    fetchPlans();
-  }, [fetchPlans]);
+  const handleCreatePlan = async (payload: AdminBillingPlanMutationInput) => {
+    try {
+      await createAdminBillingPlan(payload);
+      await refreshPlans();
+      pushSuccess('Plan created successfully');
+      return true;
+    } catch (error) {
+      setStatus((prev) => ({
+        ...prev,
+        error: error instanceof Error ? error.message : 'Failed to create plan',
+      }));
+      return false;
+    }
+  };
 
-  const handleSavePlan = useCallback(
-    async (
-      planId: string,
-      payload: {
-        name: string;
-        price: number;
-        duration: string;
-        features: string[];
-        isActive: boolean;
-      },
-    ) => {
-      try {
-        await fetchApiData('/api/admin/plans', {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            id: planId,
-            ...payload,
-          }),
-        });
-        await fetchPlans();
-        pushSuccess('Plan updated successfully');
-        return true;
-      } catch (error) {
-        setStatus((prev) => ({
-          ...prev,
-          error: error instanceof Error ? error.message : 'Failed to update plan',
-        }));
-        return false;
-      }
-    },
-    [fetchPlans, pushSuccess],
-  );
-
-  const handleCreatePlan = useCallback(
-    async (payload: {
-      name: string;
-      price: number;
-      duration: string;
-      features: string[];
-      isActive: boolean;
-    }) => {
-      try {
-        await fetchApiData('/api/admin/plans', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(payload),
-        });
-        await fetchPlans();
-        pushSuccess('Plan created successfully');
-        return true;
-      } catch (error) {
-        setStatus((prev) => ({
-          ...prev,
-          error: error instanceof Error ? error.message : 'Failed to create plan',
-        }));
-        return false;
-      }
-    },
-    [fetchPlans, pushSuccess],
-  );
-
-  const handleDeletePlan = useCallback(
-    async (planId: string) => {
-      try {
-        await fetchApiData('/api/admin/plans', {
-          method: 'DELETE',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ id: planId }),
-        });
-        setPlans((prev) => prev.filter((plan) => plan._id !== planId));
-        pushSuccess('Plan deleted successfully');
-        return true;
-      } catch (error) {
-        setStatus((prev) => ({
-          ...prev,
-          error: error instanceof Error ? error.message : 'Failed to delete plan',
-        }));
-        return false;
-      }
-    },
-    [pushSuccess],
-  );
+  const handleDeletePlan = async (planId: string) => {
+    try {
+      await deleteAdminBillingPlan(planId);
+      setPlans((prev) => prev.filter((plan) => plan.id !== planId));
+      pushSuccess('Plan deleted successfully');
+      return true;
+    } catch (error) {
+      setStatus((prev) => ({
+        ...prev,
+        error: error instanceof Error ? error.message : 'Failed to delete plan',
+      }));
+      return false;
+    }
+  };
 
   return (
     <div className="min-h-screen bg-white">
@@ -832,21 +722,21 @@ export default function AdminPlansPage() {
           </div>
         ) : (
           <div className="mx-auto max-w-6xl">
-            <div className="mb-8 flex items-center justify-between">
-              <div>
-                <h1 className="text-3xl font-semibold text-neutral-900">{t('plans')}</h1>
-                <p className="mt-2 text-neutral-600">Manage subscription plans and pricing</p>
-              </div>
-              <Button
-                onClick={() => setShowCreateForm(true)}
-                variant="default"
-                className="flex min-h-[44px] items-center gap-2 rounded-full px-5 shadow-md"
-                title="Create New Plan"
-              >
-                <HiOutlinePlus className="size-5" />
-                Add Plan
-              </Button>
-            </div>
+            <AdminPageHeader
+              title={t('plans')}
+              description="Manage subscription plans and pricing"
+              actions={
+                <Button
+                  onClick={() => setShowCreateForm(true)}
+                  variant="default"
+                  className="flex min-h-[44px] items-center gap-2 rounded-full px-5 shadow-md"
+                  title="Create New Plan"
+                >
+                  <HiOutlinePlus className="size-5" />
+                  Add Plan
+                </Button>
+              }
+            />
 
             <CreatePlanModal
               isOpen={showCreateForm}
@@ -875,7 +765,7 @@ export default function AdminPlansPage() {
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {plans.map((plan) => (
                   <PlanCard
-                    key={plan._id}
+                    key={plan.id}
                     plan={plan}
                     onSave={handleSavePlan}
                     onDelete={(planId) => handleDeletePlan(planId)}

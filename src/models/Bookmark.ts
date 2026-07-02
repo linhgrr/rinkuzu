@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
-interface IBookmark extends Document {
+interface BookmarkDocument extends Document {
   userId: string;
   userEmail: string;
   quiz: {
@@ -19,10 +19,11 @@ interface IBookmark extends Document {
   };
   questionIndex: number;
   createdAt: Date;
+  updatedAt: Date;
   tags?: string[];
 }
 
-const BookmarkSchema = new Schema<IBookmark>(
+const BookmarkSchema = new Schema<BookmarkDocument>(
   {
     userId: {
       type: String,
@@ -70,10 +71,6 @@ const BookmarkSchema = new Schema<IBookmark>(
       type: Number,
       required: true,
     },
-    createdAt: {
-      type: Date,
-      default: Date.now,
-    },
     tags: [String],
   },
   {
@@ -84,4 +81,5 @@ const BookmarkSchema = new Schema<IBookmark>(
 // Compound index for user and quiz
 BookmarkSchema.index({ userId: 1, 'quiz.slug': 1, questionIndex: 1 }, { unique: true });
 
-export default mongoose.models['Bookmark'] || mongoose.model<IBookmark>('Bookmark', BookmarkSchema);
+export default mongoose.models['Bookmark'] ||
+  mongoose.model<BookmarkDocument>('Bookmark', BookmarkSchema);

@@ -3,6 +3,8 @@ import { withAuth } from '@/lib/api/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
 import { apiOk, apiErr, apiServiceErr } from '@/lib/api/response';
 import { logger } from '@/lib/logger';
+import { readAndValidateJson } from '@/lib/api/request';
+import { reportQuizRequestSchema } from '@/dtos/quiz';
 
 export const POST = withAuth<{ slug: string }>(
   async (request: NextRequest, { params, email, session }) => {
@@ -12,30 +14,25 @@ export const POST = withAuth<{ slug: string }>(
         return apiErr('validation_error', 'User email is required', 400);
       }
 
-      const { content } = await request.json();
-
-      if (!content || content.trim().length === 0) {
-        return apiErr('validation_error', 'Report content is required', 400);
-      }
-
-      if (content.length > 2000) {
-        return apiErr('validation_error', 'Report content too long (max 2000 characters)', 400);
+      const parsedBody = await readAndValidateJson(request, reportQuizRequestSchema);
+      if (!parsedBody.success) {
+        return apiErr('validation_error', parsedBody.error, 400, parsedBody.fields);
       }
 
       const quizService = serviceFactory.getQuizService();
 
       const result = await quizService.reportQuiz(
         slug,
-        content.trim(),
+        parsedBody.data.content,
         email,
         session.user.name || email,
       );
 
       if (!result.success) {
-        return apiServiceErr(result, 400);
+        return apiServiceErr(result);
       }
 
-      return apiOk({ reportId: result.data }, 200, {
+      return apiOk(result.data, 200, {
         meta: { message: 'Report submitted successfully' },
       });
     } catch (error) {

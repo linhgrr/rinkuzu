@@ -1,33 +1,22 @@
 'use client';
 
 import Image from 'next/image';
-import { useEffect, useMemo, useReducer } from 'react';
+import { useEffect, useReducer } from 'react';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Flashcard } from '@/features/quiz/components/Flashcard';
 import { PremiumRequiredModal } from '@/features/quiz/components/PremiumRequiredModal';
-import { fetchApiData } from '@/lib/api/client';
-import { routePathSegment } from '@/lib/routing/routeParams';
+import {
+  fetchFlashcardQuizViewModel,
+  submitFlashcardReview,
+} from '@/features/quiz/api/flashcards-api';
+import type {
+  FlashcardQuestionViewModel,
+  FlashcardQuizViewModel,
+} from '@/features/quiz/types/flashcard-view-model';
 import { useRequiredRouteParam } from '@/lib/routing/useRequiredRouteParam';
-
-interface Question {
-  _id: string;
-  question: string;
-  options: string[];
-  type: 'single' | 'multiple';
-  correctIndex: number;
-  correctIndexes?: number[];
-}
-
-interface Quiz {
-  _id: string;
-  title: string;
-  description?: string;
-  questions: Question[];
-  slug: string;
-}
 
 interface FlashcardProgress {
   knownIds: string[];
@@ -38,16 +27,16 @@ interface FlashcardProgress {
 type FlashcardStatus = 'loading' | 'ready' | 'error';
 
 interface FlashcardPageState {
-  quiz: Quiz | null;
+  quiz: FlashcardQuizViewModel | null;
   status: FlashcardStatus;
   error: string;
   progress: FlashcardProgress;
-  currentQuestions: Question[];
+  currentQuestions: FlashcardQuestionViewModel[];
   showPremiumModal: boolean;
 }
 
 type FlashcardPageAction =
-  | { type: 'loadQuizSuccess'; quiz: Quiz }
+  | { type: 'loadQuizSuccess'; quiz: FlashcardQuizViewModel }
   | { type: 'loadQuizError'; error: string }
   | { type: 'requirePremium' }
   | { type: 'registerSwipe'; direction: 'left' | 'right' }
@@ -112,11 +101,11 @@ function flashcardPageReducer(
           ...state.progress,
           knownIds:
             action.direction === 'right'
-              ? [...state.progress.knownIds, currentQuestion._id]
+              ? [...state.progress.knownIds, currentQuestion.id]
               : state.progress.knownIds,
           unknownIds:
             action.direction === 'left'
-              ? [...state.progress.unknownIds, currentQuestion._id]
+              ? [...state.progress.unknownIds, currentQuestion.id]
               : state.progress.unknownIds,
           currentIndex: state.progress.currentIndex + 1,
         },
@@ -134,7 +123,7 @@ function flashcardPageReducer(
       return {
         ...state,
         currentQuestions: state.currentQuestions.filter((question) =>
-          state.progress.unknownIds.includes(question._id),
+          state.progress.unknownIds.includes(question.id),
         ),
         progress: initialProgress,
       };
@@ -202,11 +191,11 @@ function FlashcardResultsView({
   masteryPercentage: number;
   onContinuePractice: () => void;
   onReset: () => void;
-  quiz: Quiz;
+  quiz: FlashcardQuizViewModel;
   t: (key: string) => string;
   tCommon: (key: string) => string;
   unknownCount: number;
-  unknownQuestions: Question[];
+  unknownQuestions: FlashcardQuestionViewModel[];
 }) {
   return (
     <div className="min-h-screen bg-neutral-50 overflow-hidden">
@@ -275,10 +264,7 @@ function FlashcardResultsView({
             <CardContent>
               <div className="space-y-2">
                 {unknownQuestions.map((question, index) => (
-                  <div
-                    key={question._id}
-                    className="p-3 bg-red-50 border border-red-200 rounded-lg"
-                  >
+                  <div key={question.id} className="p-3 bg-red-50 border border-red-200 rounded-lg">
                     <div className="font-medium text-neutral-900">
                       {t('question')} {index + 1}
                     </div>
@@ -330,11 +316,11 @@ function FlashcardDeckView({
   unknownCount,
 }: {
   currentIndex: number;
-  currentQuestion: Question | null;
+  currentQuestion: FlashcardQuestionViewModel | null;
   knownCount: number;
   onSwipe: (direction: 'left' | 'right') => void;
   progressPercentage: number;
-  quiz: Quiz;
+  quiz: FlashcardQuizViewModel;
   t: (key: string) => string;
   tCommon: (key: string) => string;
   totalQuestions: number;
@@ -405,7 +391,7 @@ function FlashcardDeckView({
         <div className="flex flex-col items-center justify-center min-h-[420px] w-full">
           {currentQuestion && (
             <Flashcard
-              key={`${currentIndex}-${currentQuestion._id}`}
+              key={`${currentIndex}-${currentQuestion.id}`}
               question={currentQuestion.question}
               options={currentQuestion.options}
               correctIndex={currentQuestion.correctIndex}
@@ -424,7 +410,7 @@ function FlashcardDeckView({
 export default function FlashcardPage() {
   const t = useTranslations('quiz');
   const tCommon = useTranslations('common');
-  const encodedSlug = routePathSegment(useRequiredRouteParam('slug'));
+  const slug = useRequiredRouteParam('slug');
   const [state, dispatch] = useReducer(flashcardPageReducer, initialFlashcardPageState);
 
   useEffect(() => {
@@ -432,7 +418,7 @@ export default function FlashcardPage() {
 
     const loadQuiz = async () => {
       try {
-        const data = await fetchApiData<Quiz>(`/api/quiz/${encodedSlug}/flashcards`);
+        const data = await fetchFlashcardQuizViewModel(slug);
 
         if (isActive) {
           dispatch({ type: 'loadQuizSuccess', quiz: data });
@@ -457,7 +443,7 @@ export default function FlashcardPage() {
     return () => {
       isActive = false;
     };
-  }, [encodedSlug]);
+  }, [slug]);
 
   const quiz = state.quiz;
   const currentQuestion = state.currentQuestions[state.progress.currentIndex] || null;
@@ -470,10 +456,8 @@ export default function FlashcardPage() {
     state.currentQuestions.length === 0
       ? 0
       : Math.round((state.progress.currentIndex / state.currentQuestions.length) * 100);
-  const unknownQuestions = useMemo(
-    () =>
-      state.currentQuestions.filter((question) => state.progress.unknownIds.includes(question._id)),
-    [state.currentQuestions, state.progress.unknownIds],
+  const unknownQuestions = state.currentQuestions.filter((question) =>
+    state.progress.unknownIds.includes(question.id),
   );
   const masteryPercentage =
     quiz && quiz.questions.length > 0 ? Math.round((knownCount / quiz.questions.length) * 100) : 0;
@@ -485,19 +469,10 @@ export default function FlashcardPage() {
 
     dispatch({ type: 'registerSwipe', direction });
 
-    void fetchApiData('/api/review/submit', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        questionId: currentQuestion._id,
-        quizSlug: quiz.slug,
-        rating: direction === 'right' ? 'good' : 'hard',
-        questionRef: {
-          text: currentQuestion.question,
-          options: currentQuestion.options,
-          correctIndexes: currentQuestion.correctIndexes || [currentQuestion.correctIndex],
-        },
-      }),
+    void submitFlashcardReview({
+      quizSlug: quiz.slug,
+      question: currentQuestion,
+      rating: direction === 'right' ? 'good' : 'hard',
     }).catch((error) => {
       console.error('Failed to submit SRS review from flashcard:', error);
     });

@@ -3,6 +3,8 @@ import { withAuth, withOptionalAuth } from '@/lib/api/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
 import { apiOk, apiErr, apiServiceErr } from '@/lib/api/response';
 import { logger } from '@/lib/logger';
+import { readAndValidateJson } from '@/lib/api/request';
+import { addDiscussionCommentRequestSchema } from '@/dtos/quiz';
 
 // GET /api/quiz/[slug]/discussions - Get all discussions for a quiz.
 // Public + authenticated dual path: read access is open; service layer
@@ -16,7 +18,7 @@ export const GET = withOptionalAuth<{ slug: string }>(
       const result = await quizService.getQuizDiscussions(slug, session);
 
       if (!result.success) {
-        return apiServiceErr(result, 400);
+        return apiServiceErr(result);
       }
 
       return apiOk(result.data);
@@ -36,24 +38,23 @@ export const POST = withAuth<{ slug: string }>(
         return apiErr('unauthorized', 'Authentication required', 401);
       }
 
-      const { questionIndex, content } = await request.json();
-
-      if (typeof questionIndex !== 'number' || !content?.trim()) {
-        return apiErr('validation_error', 'Question index and content are required', 400);
+      const parsedBody = await readAndValidateJson(request, addDiscussionCommentRequestSchema);
+      if (!parsedBody.success) {
+        return apiErr('validation_error', parsedBody.error, 400, parsedBody.fields);
       }
 
       const quizService = serviceFactory.getQuizService();
 
       const result = await quizService.addDiscussionComment(
         slug,
-        questionIndex,
-        content.trim(),
+        parsedBody.data.questionIndex,
+        parsedBody.data.content,
         email,
         session,
       );
 
       if (!result.success) {
-        return apiServiceErr(result, 400);
+        return apiServiceErr(result);
       }
 
       return apiOk(result.data);

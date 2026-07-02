@@ -3,9 +3,9 @@
 import Image from 'next/image';
 import { Button } from '@/components/ui/Button';
 import { Skeleton } from '@/components/ui/Skeleton';
-import { HiOutlineSparkles } from '@/components/icons';
-import type { DashboardSubject } from '@/features/adaptive/lib/dashboard-view-model';
-import type { TranslateFn } from '@/features/adaptive/types';
+import { HiOutlineSparkles } from 'react-icons/hi';
+import type { DashboardSubject } from '@/features/adaptive/types/dashboard-view-model';
+import type { TranslateFn } from '@/features/adaptive/types/learning';
 import { cn } from '@/lib/utils';
 
 type HeroProps = {
@@ -80,7 +80,7 @@ export const HeroSection = ({
   }
 
   const progress = subject?.metrics.progressPercent ?? 0;
-  const isOpening = subject ? loadingJobId === subject.job_id : false;
+  const isOpening = subject ? loadingJobId === subject.jobId : false;
 
   return (
     <section className="relative min-h-[340px] overflow-hidden rounded-2xl border border-accent bg-surface-warm px-4 py-4 sm:min-h-[320px] sm:px-5 sm:py-5 md:h-[308px] md:min-h-0 md:rounded-[20px] md:px-6">
@@ -129,7 +129,7 @@ export const HeroSection = ({
             </>
           ) : null}
           <Button
-            onClick={() => (subject ? onOpenSubject(subject.job_id) : onGoUpload())}
+            onClick={() => (subject ? onOpenSubject(subject.jobId) : onGoUpload())}
             disabled={isOpening}
             className={cn(
               'h-auto w-full rounded-full bg-accent px-5 py-3 font-home text-base font-semibold text-accent-text hover:bg-accent-hover sm:w-auto sm:text-lg',

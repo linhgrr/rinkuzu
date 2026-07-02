@@ -41,20 +41,6 @@ export const PREDEFINED_DURATIONS: Record<SubscriptionDurationType, Duration> = 
   },
 };
 
-// Legacy string mapping for backward compatibility
-const LEGACY_DURATION_MAP: Record<string, SubscriptionDurationType> = {
-  '1 tháng': SubscriptionDurationType.MONTHLY,
-  '3 tháng': SubscriptionDurationType.QUARTERLY,
-  '6 tháng': SubscriptionDurationType.SEMI_ANNUAL,
-  '12 tháng': SubscriptionDurationType.ANNUAL,
-  lifetime: SubscriptionDurationType.LIFETIME,
-  // English variants
-  '1 month': SubscriptionDurationType.MONTHLY,
-  '3 months': SubscriptionDurationType.QUARTERLY,
-  '6 months': SubscriptionDurationType.SEMI_ANNUAL,
-  '12 months': SubscriptionDurationType.ANNUAL,
-};
-
 export class DurationUtils {
   /**
    * Parse ISO 8601 duration string to get months
@@ -65,12 +51,12 @@ export class DurationUtils {
     if (iso8601Duration === 'PT0S') return undefined;
 
     // Match patterns like P1M, P3M, P1Y, etc.
-    const monthMatch = iso8601Duration.match(/P(\d+)M/);
+    const monthMatch = iso8601Duration.match(/^P(\d+)M$/);
     if (monthMatch) {
       return parseInt(monthMatch[1]);
     }
 
-    const yearMatch = iso8601Duration.match(/P(\d+)Y/);
+    const yearMatch = iso8601Duration.match(/^P(\d+)Y$/);
     if (yearMatch) {
       return parseInt(yearMatch[1]) * 12;
     }
@@ -112,22 +98,6 @@ export class DurationUtils {
       displayName: months ? `${months} Month${months > 1 ? 's' : ''}` : 'Custom Duration',
       months,
     };
-  }
-
-  /**
-   * Convert legacy string duration to ISO 8601
-   * @param legacyDuration Legacy string duration
-   * @returns ISO 8601 duration
-   */
-  static fromLegacyDuration(legacyDuration: string): string {
-    const normalized = legacyDuration.toLowerCase().trim();
-    const durationType = LEGACY_DURATION_MAP[normalized];
-
-    if (durationType) {
-      return PREDEFINED_DURATIONS[durationType].iso8601;
-    }
-
-    throw new Error(`Unknown legacy duration format: ${legacyDuration}`);
   }
 
   /**

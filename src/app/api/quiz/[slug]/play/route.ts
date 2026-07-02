@@ -15,7 +15,7 @@ export const GET = withOptionalAuth<{ slug: string }>(
       const result = await quizService.getQuizForPlay(slug, userRole, userId ?? undefined);
 
       if (!result.success) {
-        return apiServiceErr(result, 500);
+        return apiServiceErr(result);
       }
 
       return apiOk(result.data);

@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { UserAvatar } from './UserAvatar';
 import { type UserIdentity, getUserDisplayName } from './user-identity';
 import { cn } from '@/lib/utils';
-import { ROUTES } from '@/shared/constants';
+import { ROUTES } from '@/shared/constants/routes';
 
 interface UserProfileLinkProps {
   user: UserIdentity;
@@ -24,7 +24,7 @@ export function UserProfileLink({
     </>
   );
 
-  if (!user._id) {
+  if (!user.id) {
     return (
       <span className={cn('inline-flex min-w-0 items-center gap-2', className)}>{content}</span>
     );
@@ -32,7 +32,7 @@ export function UserProfileLink({
 
   return (
     <Link
-      href={ROUTES.USER.PROFILE(user._id)}
+      href={ROUTES.USER.PROFILE(user.id)}
       className={cn(
         'inline-flex min-w-0 items-center gap-2 rounded-full transition hover:text-brand-trust',
         className,

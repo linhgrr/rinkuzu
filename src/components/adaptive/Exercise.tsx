@@ -1,10 +1,10 @@
 'use client';
 
-import { useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { ADAPTIVE_ROUTES } from '@/features/adaptive/lib/routes';
-import type { BloomLevel } from '@/features/adaptive/types';
+import { hasCompleteExerciseAnswer } from '@/features/adaptive/lib/exercise-answer';
+import type { BloomLevel } from '@/features/adaptive/types/learning';
 import {
   ExerciseErrorState,
   ExerciseLoadingState,
@@ -17,7 +17,7 @@ interface ExerciseProps {
   sessionId: string;
 }
 
-const BLOOM_LEVEL_COLORS: Record<string, string> = {
+const BLOOM_LEVEL_COLORS: Record<BloomLevel, string> = {
   Remember: 'bg-neutral-500 text-white',
   Understand: 'bg-emerald-600 text-white',
   Apply: 'bg-teal-600 text-white',
@@ -67,55 +67,20 @@ export default function AdaptiveLearningExercise({ sessionId }: ExerciseProps) {
     t,
   });
 
-  const progressPercent = useMemo(() => {
-    const itemInfo = concept || exercise;
-    if (!itemInfo || itemInfo.max_steps <= 0) return 0;
-    return (itemInfo.step / itemInfo.max_steps) * 100;
-  }, [exercise, concept]);
+  const itemInfo = concept || exercise;
+  const progressPercent =
+    itemInfo && itemInfo.max_steps > 0 ? (itemInfo.step / itemInfo.max_steps) * 100 : 0;
+  const bloomColor = itemInfo
+    ? BLOOM_LEVEL_COLORS[itemInfo.bloom_label]
+    : 'bg-neutral-400 text-white';
+  const localizedBloomLabel = itemInfo
+    ? t(`bloom.${BLOOM_TRANSLATION_KEYS[itemInfo.bloom_label]}`)
+    : '';
+  const optionEntries = exercise ? (Object.entries(exercise.options) as [string, string][]) : [];
+  const canSubmit =
+    exercise && answerDraft ? hasCompleteExerciseAnswer(exercise, answerDraft) : false;
 
-  const bloomColor = useMemo(() => {
-    const itemInfo = concept || exercise;
-    if (!itemInfo) return 'bg-neutral-400 text-white';
-    return BLOOM_LEVEL_COLORS[itemInfo.bloom_label] || 'bg-neutral-400 text-white';
-  }, [exercise, concept]);
-
-  const localizedBloomLabel = useMemo(() => {
-    const itemInfo = concept || exercise;
-    if (!itemInfo) return '';
-    return t(`bloom.${BLOOM_TRANSLATION_KEYS[itemInfo.bloom_label]}`);
-  }, [exercise, concept, t]);
-
-  const optionEntries = useMemo(() => {
-    if (!exercise) return [];
-    return Object.entries(exercise.options) as [string, string][];
-  }, [exercise]);
-
-  const canSubmit = useMemo(() => {
-    if (!exercise) return false;
-
-    switch (exercise.exercise_type) {
-      case 'mcq':
-        return Boolean(answerDraft.choice);
-      case 'true_false':
-        return typeof answerDraft.boolean === 'boolean';
-      case 'fill_blank':
-        return Boolean(answerDraft.blanks?.some((value) => value.trim().length > 0));
-      case 'multi_correct':
-        return Boolean(answerDraft.choices?.length);
-      case 'ordering':
-        return Boolean(
-          answerDraft.ordering && answerDraft.ordering.length === exercise.items.length,
-        );
-      case 'matching':
-        return Object.keys(answerDraft.matching || {}).length === exercise.pairs.length;
-      case 'short_answer':
-        return Boolean(answerDraft.text?.trim());
-      default:
-        return false;
-    }
-  }, [answerDraft, exercise]);
-
-  if (loadingConcept) return <ExerciseLoadingState t={t as any} />;
+  if (loadingConcept) return <ExerciseLoadingState t={t} />;
 
   if (error || !concept) {
     return (
@@ -123,7 +88,7 @@ export default function AdaptiveLearningExercise({ sessionId }: ExerciseProps) {
         message={error || t('exercise.noExerciseAvailable')}
         onBack={() => push(ADAPTIVE_ROUTES.dashboard)}
         onRetry={() => void loadData()}
-        t={t as any}
+        t={t}
       />
     );
   }
@@ -136,7 +101,7 @@ export default function AdaptiveLearningExercise({ sessionId }: ExerciseProps) {
         loadingTheory={loadingTheory}
         loadingExercise={loadingExercise}
         onStartExercise={() => setShowTheory(false)}
-        t={t as any}
+        t={t}
       />
     );
   }
@@ -163,7 +128,7 @@ export default function AdaptiveLearningExercise({ sessionId }: ExerciseProps) {
       onSubmit={() => void handleSubmit()}
       canSubmit={canSubmit}
       submitting={submitting}
-      t={t as any}
+      t={t}
     />
   );
 }

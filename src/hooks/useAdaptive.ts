@@ -1,7 +1,7 @@
 'use client';
 
 import useSWR from 'swr';
-import { getKnowledgeGraph, getMasteryMatrix } from '@/features/adaptive/lib/api-client';
+import { getKnowledgeGraph, getMasteryMatrix } from '@/features/adaptive/lib/adaptive-api-methods';
 
 export function useKnowledgeGraph(sessionId: string | undefined) {
   return useSWR(

@@ -2,39 +2,10 @@ interface StreamTextOptions {
   onContent?: (chunk: string, fullContent: string) => void;
 }
 
-interface OpenAITextDeltaPart {
-  type?: string;
-  text?: string;
-}
-
-type OpenAIDeltaContent = string | Array<string | OpenAITextDeltaPart>;
-
-interface OpenAIChoice {
-  delta?: {
-    content?: OpenAIDeltaContent;
-  };
-  finish_reason?: unknown;
-}
-
-interface OpenAIResponseFailure {
-  error?: {
-    message?: string;
-  };
-  incomplete_details?: {
-    reason?: string;
-  };
-}
-
-interface OpenAISsePayload {
-  type?: string;
-  delta?: string;
-  choices?: OpenAIChoice[];
-  content?: string;
-  done?: boolean;
-  error?: unknown;
-  message?: string;
-  response?: OpenAIResponseFailure;
-}
+type ResponsesSsePayload =
+  | { type: 'response.output_text.delta'; delta: string }
+  | { type: 'response.completed' }
+  | { type: 'response.failed'; response: { error: { message: string } } };
 
 function createStreamError(message: string, status?: number): Error {
   const error = new Error(message);
@@ -46,49 +17,13 @@ function createStreamError(message: string, status?: number): Error {
   return error;
 }
 
-async function parseJsonResponse<T>(response: Response): Promise<T> {
-  let data: unknown;
+async function parseJsonResponse(response: Response): Promise<unknown> {
   try {
-    data = await response.json();
+    return await response.json();
   } catch {
     console.warn('parseJsonResponse: response body is not valid JSON');
-    data = {};
+    return null;
   }
-  return data as T;
-}
-
-function extractOpenAIDeltaContent(payload: OpenAISsePayload | null | undefined): string {
-  if (payload?.type === 'response.output_text.delta' && typeof payload.delta === 'string') {
-    return payload.delta;
-  }
-
-  const deltaContent = payload?.choices?.[0]?.delta?.content;
-
-  if (typeof deltaContent === 'string') {
-    return deltaContent;
-  }
-
-  if (Array.isArray(deltaContent)) {
-    return deltaContent
-      .map((part) => {
-        if (typeof part === 'string') {
-          return part;
-        }
-
-        if (part?.type === 'text' && typeof part.text === 'string') {
-          return part.text;
-        }
-
-        return '';
-      })
-      .join('');
-  }
-
-  if (typeof payload?.content === 'string') {
-    return payload.content;
-  }
-
-  return '';
 }
 
 function splitSseEvents(buffer: string): { events: string[]; remaining: string } {
@@ -108,21 +43,36 @@ function splitSseEvents(buffer: string): { events: string[]; remaining: string }
   };
 }
 
-function isTerminalOpenAIEvent(payload: OpenAISsePayload | null | undefined): boolean {
-  if (
-    payload?.type === 'response.completed' ||
-    payload?.type === 'response.failed' ||
-    payload?.type === 'error'
-  ) {
+function isResponsesSsePayload(payload: unknown): payload is ResponsesSsePayload {
+  if (!payload || typeof payload !== 'object' || !('type' in payload)) {
+    return false;
+  }
+
+  if (payload.type === 'response.completed') {
     return true;
   }
 
-  if (payload?.done === true) {
-    return true;
+  if (payload.type === 'response.output_text.delta') {
+    return 'delta' in payload && typeof payload.delta === 'string';
   }
 
-  const finishReason = payload?.choices?.[0]?.finish_reason;
-  return finishReason !== undefined && finishReason !== null;
+  if (payload.type !== 'response.failed' || !('response' in payload)) {
+    return false;
+  }
+
+  const response = payload.response;
+  if (!response || typeof response !== 'object' || !('error' in response)) {
+    return false;
+  }
+
+  const error = response.error;
+  return (
+    error !== null &&
+    error !== undefined &&
+    typeof error === 'object' &&
+    'message' in error &&
+    typeof error.message === 'string'
+  );
 }
 
 function parseSseEvent(event: string): {
@@ -143,70 +93,49 @@ function parseSseEvent(event: string): {
 
   const data = dataLines.join('\n');
 
-  if (data === '[DONE]') {
-    return { chunk: '', isTerminal: true };
-  }
-
-  let parsed: OpenAISsePayload;
+  let parsed: unknown;
 
   try {
-    parsed = JSON.parse(data) as OpenAISsePayload;
+    parsed = JSON.parse(data);
   } catch {
     throw createStreamError('Streaming response contained invalid SSE payload');
   }
 
-  if (parsed?.type === 'error') {
-    throw createStreamError(
-      typeof parsed.message === 'string' ? parsed.message : 'Streaming request failed',
-    );
+  if (!isResponsesSsePayload(parsed)) {
+    throw createStreamError('Streaming response contained an unsupported SSE event');
   }
 
-  if (parsed?.type === 'response.failed') {
-    throw createStreamError(
-      parsed?.response?.error?.message ||
-        parsed?.response?.incomplete_details?.reason ||
-        'Streaming request failed',
-    );
+  if (parsed.type === 'response.failed') {
+    throw createStreamError(parsed.response.error.message);
   }
 
-  if (parsed?.error) {
-    throw createStreamError(
-      typeof parsed.error === 'string' ? parsed.error : 'Streaming request failed',
-    );
+  if (parsed.type === 'response.completed') {
+    return { chunk: '', isTerminal: true };
   }
 
   return {
-    chunk: extractOpenAIDeltaContent(parsed),
-    isTerminal: isTerminalOpenAIEvent(parsed),
+    chunk: parsed.delta,
+    isTerminal: false,
   };
 }
 
-interface ConsumeOpenAISseOptions<TBody> extends StreamTextOptions {
-  extractErrorMessage: (body: TBody, status: number) => string;
-  extractFallbackContent: (body: TBody) => string | null | undefined;
+interface ConsumeOpenAISseOptions extends StreamTextOptions {
+  extractErrorMessage: (body: unknown, status: number) => string;
 }
 
-export async function consumeOpenAISseResponse<TBody>(
+export async function consumeOpenAISseResponse(
   response: Response,
-  options: ConsumeOpenAISseOptions<TBody>,
+  options: ConsumeOpenAISseOptions,
 ): Promise<string> {
-  const contentType = response.headers.get('Content-Type') || '';
+  const contentType = response.headers.get('Content-Type');
 
   if (!response.ok) {
-    const body = await parseJsonResponse<TBody>(response);
+    const body = await parseJsonResponse(response);
     throw createStreamError(options.extractErrorMessage(body, response.status), response.status);
   }
 
-  if (!contentType.includes('text/event-stream')) {
-    const body = await parseJsonResponse<TBody>(response);
-    const fallbackContent = options.extractFallbackContent(body);
-
-    if (!fallbackContent) {
-      throw createStreamError(options.extractErrorMessage(body, response.status), response.status);
-    }
-
-    options.onContent?.(fallbackContent, fallbackContent);
-    return fallbackContent;
+  if (!contentType?.includes('text/event-stream')) {
+    throw createStreamError('Streaming response has an invalid content type', response.status);
   }
 
   if (!response.body) {
@@ -285,6 +214,10 @@ export async function consumeOpenAISseResponse<TBody>(
 
     if (!sawTerminalEvent) {
       throw createStreamError('Streaming response ended before completion signal');
+    }
+
+    if (!fullContent.trim()) {
+      throw createStreamError('Streaming response completed without content');
     }
 
     return fullContent;

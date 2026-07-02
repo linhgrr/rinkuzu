@@ -1,29 +1,30 @@
 import mongoose, { Document, Schema, Types } from 'mongoose';
 
-export interface IQuestion {
+interface QuizQuestionDocument {
   question: string;
   options: string[];
-  correctIndex?: number; // For single choice
-  correctIndexes?: number[]; // For multiple choice
-  type: 'single' | 'multiple'; // Question type
-  questionImage?: string; // URL/path to question image
-  optionImages?: (string | undefined)[]; // Array of URLs/paths for option images (parallel to options array)
+  correctIndex?: number;
+  correctIndexes?: number[];
+  type: 'single' | 'multiple';
+  questionImage?: string;
+  optionImages?: (string | undefined)[];
 }
 
-interface IQuiz extends Document {
+interface QuizDocument extends Document {
   title: string;
   description?: string;
   folder?: Types.ObjectId | null;
   author: Types.ObjectId;
   slug: string;
-  questions: IQuestion[];
+  questions: QuizQuestionDocument[];
   isPrivate: boolean;
   pdfUrl?: string; // S3 URL for source PDF
+  sourceDraftId?: string;
   createdAt: Date;
   updatedAt: Date;
 }
 
-const QuestionSchema = new Schema<IQuestion>({
+const QuestionSchema = new Schema<QuizQuestionDocument>({
   question: {
     type: String,
     required: [true, 'Question text is required'],
@@ -48,7 +49,7 @@ const QuestionSchema = new Schema<IQuestion>({
   correctIndex: {
     type: Number,
     validate: {
-      validator: function (this: IQuestion, value: number) {
+      validator: function (this: QuizQuestionDocument, value: number) {
         if (this.type === 'single') {
           return value !== undefined && value >= 0 && value < this.options.length;
         }
@@ -60,7 +61,7 @@ const QuestionSchema = new Schema<IQuestion>({
   correctIndexes: {
     type: [Number],
     validate: {
-      validator: function (this: IQuestion, value: number[]) {
+      validator: function (this: QuizQuestionDocument, value: number[]) {
         if (this.type === 'multiple') {
           return value && value.length > 0 && value.every((i) => i >= 0 && i < this.options.length);
         }
@@ -77,7 +78,7 @@ const QuestionSchema = new Schema<IQuestion>({
   optionImages: {
     type: [String],
     validate: {
-      validator: function (this: IQuestion, optionImages: (string | undefined)[]) {
+      validator: function (this: QuizQuestionDocument, optionImages: (string | undefined)[]) {
         // If optionImages exists, it should have same length as options
         return (
           !optionImages || optionImages.length === 0 || optionImages.length === this.options.length
@@ -88,7 +89,7 @@ const QuestionSchema = new Schema<IQuestion>({
   },
 });
 
-const QuizSchema = new Schema<IQuiz>(
+const QuizSchema = new Schema<QuizDocument>(
   {
     title: {
       type: String,
@@ -121,7 +122,7 @@ const QuizSchema = new Schema<IQuiz>(
       type: [QuestionSchema],
       required: [true, 'Questions are required'],
       validate: {
-        validator: function (questions: IQuestion[]) {
+        validator: function (questions: QuizQuestionDocument[]) {
           return questions.length > 0;
         },
         message: 'At least one question is required',
@@ -135,6 +136,10 @@ const QuizSchema = new Schema<IQuiz>(
       type: String,
       trim: true,
     },
+    sourceDraftId: {
+      type: String,
+      trim: true,
+    },
   },
   {
     timestamps: true,
@@ -142,14 +147,18 @@ const QuizSchema = new Schema<IQuiz>(
 );
 
 // Indexes for better performance
-QuizSchema.index({ status: 1, createdAt: -1 });
-QuizSchema.index({ status: 1, isPrivate: 1, createdAt: -1 });
 QuizSchema.index({ author: 1, createdAt: -1 });
-QuizSchema.index({ author: 1, status: 1, createdAt: -1 });
 QuizSchema.index({ author: 1, folder: 1, createdAt: -1 });
+QuizSchema.index(
+  { sourceDraftId: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { sourceDraftId: { $type: 'string' } },
+  },
+);
 // slug index is already created via unique: true in schema
 
 // Prevent re-compilation in development
-const Quiz = mongoose.models['Quiz'] || mongoose.model<IQuiz>('Quiz', QuizSchema);
+const Quiz = mongoose.models['Quiz'] || mongoose.model<QuizDocument>('Quiz', QuizSchema);
 
 export default Quiz;

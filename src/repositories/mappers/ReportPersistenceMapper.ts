@@ -1,0 +1,23 @@
+import type { Report } from '@/entities/Report';
+import { serializeId } from '@/lib/mongo-id';
+import type { ReportPersistenceRecord } from '@/repositories/types/ReportPersistence';
+
+export class ReportPersistenceMapper {
+  static toEntity(record: ReportPersistenceRecord): Report {
+    return {
+      id: serializeId(record._id, 'report._id'),
+      quizId: record.quizId,
+      quizTitle: record.quizTitle,
+      quizSlug: record.quizSlug,
+      reporterEmail: record.reporterEmail,
+      reporterName: record.reporterName,
+      content: record.content,
+      status: record.status,
+      createdAt: record.createdAt,
+      updatedAt: record.updatedAt,
+      resolvedAt: record.resolvedAt,
+      resolvedBy: record.resolvedBy,
+      adminNotes: record.adminNotes,
+    };
+  }
+}

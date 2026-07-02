@@ -2,28 +2,35 @@
 
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
-import { HiOutlineDotsVertical, HiOutlineLockClosed } from '@/components/icons';
+import { HiOutlineDotsVertical, HiOutlineLockClosed } from 'react-icons/hi';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { UserAvatar } from '@/components/user/UserAvatar';
-import type { IQuiz, IUserPreview } from '@/types';
+import type { UserIdentity } from '@/components/user/user-identity';
 
-function getAuthor(quiz: IQuiz): IUserPreview {
-  if (typeof quiz.author === 'object') return quiz.author;
-  return { _id: quiz.author, displayName: 'RinKuzu learner' };
+export interface QuizCardQuiz {
+  title: string;
+  slug: string;
+  author: string | UserIdentity | null;
+  isPrivate: boolean;
+  questionCount: number;
 }
 
-function getQuestionCount(quiz: IQuiz): number {
-  return (quiz as IQuiz & { questionCount?: number }).questionCount ?? quiz.questions.length;
+function getAuthor(quiz: QuizCardQuiz): UserIdentity {
+  if (!quiz.author) return { displayName: 'RinKuzu learner' };
+  if (typeof quiz.author === 'object') return quiz.author;
+  return { id: quiz.author, displayName: 'RinKuzu learner' };
 }
 
 export function QuizCard({
   quiz,
+  quizId,
   locale,
   onDelete,
 }: {
-  quiz: IQuiz;
+  quiz: QuizCardQuiz;
+  quizId: string;
   locale: string;
-  onDelete?: (quiz: IQuiz) => void;
+  onDelete?: (quiz: QuizCardQuiz, quizId: string) => void;
 }) {
   const t = useTranslations('profile');
   const author = getAuthor(quiz);
@@ -31,7 +38,7 @@ export function QuizCard({
   return (
     <article className="group relative flex min-h-[146px] flex-col rounded-xl border border-[#e2ecfc] bg-surface-blue p-4 shadow-[1px_1px_4px_rgba(0,0,0,0.03)] transition-shadow duration-150 ease-out hover:shadow-[2px_2px_0_#718ebd] focus-within:shadow-[2px_2px_0_#718ebd] motion-reduce:transition-none">
       <div className="flex items-center justify-between text-sm text-ink/40">
-        <span>{t('questionCount', { count: getQuestionCount(quiz) })}</span>
+        <span>{t('questionCount', { count: quiz.questionCount })}</span>
         {onDelete ? (
           <details className="relative">
             <summary
@@ -41,12 +48,12 @@ export function QuizCard({
               <HiOutlineDotsVertical className="size-5" />
             </summary>
             <div className="absolute right-0 z-20 mt-1 w-36 overflow-hidden rounded-lg border border-line bg-white py-1 text-sm text-ink shadow-lg">
-              <Link href={`/edit/${quiz._id}`} className="block px-3 py-2 hover:bg-surface-warm">
+              <Link href={`/edit/${quizId}`} className="block px-3 py-2 hover:bg-surface-warm">
                 {t('edit')}
               </Link>
               <button
                 type="button"
-                onClick={() => onDelete(quiz)}
+                onClick={() => onDelete(quiz, quizId)}
                 className="block w-full px-3 py-2 text-left text-red-600 hover:bg-red-50"
               >
                 {t('deleteQuiz')}

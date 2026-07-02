@@ -687,6 +687,19 @@ export interface components {
       /** Detail */
       detail?: components['schemas']['ValidationError'][];
     };
+    /** InfoResponse */
+    InfoResponse: {
+      /** Models Enabled */
+      models_enabled: boolean;
+      /** Models Loaded */
+      models_loaded: boolean;
+      /** N Concepts */
+      n_concepts: number;
+      /** Mongo Available */
+      mongo_available: boolean;
+      /** Content Pipeline Available */
+      content_pipeline_available: boolean;
+    };
     /** KnowledgeEdgeResponse */
     KnowledgeEdgeResponse: {
       /** Source */
@@ -785,6 +798,144 @@ export interface components {
       jobs: components['schemas']['SubjectHistoryResponse'][];
       /** Count */
       count: number;
+    };
+    /** PipelineJobCancelResponse */
+    PipelineJobCancelResponse: {
+      /** Job Id */
+      job_id: string;
+      status: components['schemas']['PipelineStatus'] | 'cancelling';
+    };
+    /** PipelineJobListItemResponse */
+    PipelineJobListItemResponse: {
+      /** Job Id */
+      job_id: string;
+      /**
+       * Filename
+       * @default
+       */
+      filename: string;
+      /**
+       * Subject Id
+       * @default
+       */
+      subject_id: string;
+      status: components['schemas']['PipelineStatus'];
+      /**
+       * Current Step
+       * @default
+       */
+      current_step: string;
+      /**
+       * Progress
+       * @default 0
+       */
+      progress: number;
+      /**
+       * Page Batch Size
+       * @default 10
+       */
+      page_batch_size: number;
+      /**
+       * Batch Count
+       * @default 0
+       */
+      batch_count: number;
+      /**
+       * Failed Batch Count
+       * @default 0
+       */
+      failed_batch_count: number;
+      /**
+       * Partial Success
+       * @default false
+       */
+      partial_success: boolean;
+      /**
+       * Concepts Extracted
+       * @default 0
+       */
+      concepts_extracted: number;
+      /**
+       * Concepts After Merge
+       * @default 0
+       */
+      concepts_after_merge: number;
+      /**
+       * Relations Verified
+       * @default 0
+       */
+      relations_verified: number;
+      /** Error Code */
+      error_code?: string | null;
+      /** User Message */
+      user_message?: string | null;
+      /**
+       * Retryable
+       * @default false
+       */
+      retryable: boolean;
+      /**
+       * Retry Count
+       * @default 0
+       */
+      retry_count: number;
+      /** Eta Seconds */
+      eta_seconds?: number | null;
+      /**
+       * Created At
+       * @default 0
+       */
+      created_at: number;
+      /**
+       * Updated At
+       * @default 0
+       */
+      updated_at: number;
+      /**
+       * Heartbeat At
+       * @default 0
+       */
+      heartbeat_at: number;
+      /** Completed At */
+      completed_at?: number | null;
+      /**
+       * Is Terminal
+       * @default false
+       */
+      is_terminal: boolean;
+      /**
+       * Is Delayed
+       * @default false
+       */
+      is_delayed: boolean;
+      /**
+       * Retry After Seconds
+       * @default 3
+       */
+      retry_after_seconds: number;
+    };
+    /** PipelineJobListResponse */
+    PipelineJobListResponse: {
+      /** Jobs */
+      jobs?: components['schemas']['PipelineJobListItemResponse'][];
+      /**
+       * Count
+       * @default 0
+       */
+      count: number;
+    };
+    /** PipelineJobRetryResponse */
+    PipelineJobRetryResponse: {
+      /** Job Id */
+      job_id: string;
+      status: components['schemas']['PipelineStatus'];
+      /** Status Url */
+      status_url: string;
+      /**
+       * Retry Count
+       * @default 0
+       */
+      retry_count: number;
     };
     /** PipelineJobResultResponse */
     PipelineJobResultResponse: {
@@ -968,6 +1119,13 @@ export interface components {
        */
       retry_after_seconds: number;
     };
+    /** PipelineRuntimeStatusResponse */
+    PipelineRuntimeStatusResponse: {
+      /** Available */
+      available: boolean;
+      /** Service Initialized */
+      service_initialized: boolean;
+    };
     /** PipelineSessionCreateResponse */
     PipelineSessionCreateResponse: {
       /** Session Id */
@@ -1031,6 +1189,23 @@ export interface components {
       page_batch_size: number;
       /** Source S3 Key */
       source_s3_key?: string | null;
+    };
+    /** ReadinessResponse */
+    ReadinessResponse: {
+      /** Status */
+      status: string;
+      /** Ready */
+      ready: boolean;
+      /** Mongo Available */
+      mongo_available: boolean;
+      /** Models Enabled */
+      models_enabled: boolean;
+      /** Models Loaded */
+      models_loaded: boolean;
+      /** Content Pipeline Available */
+      content_pipeline_available: boolean;
+      /** Content Pipeline Service Ready */
+      content_pipeline_service_ready: boolean;
     };
     /** QuizDraftCreateRequest */
     QuizDraftCreateRequest: {
@@ -1096,6 +1271,83 @@ export interface components {
       correctIndex?: number | null;
       /** Correctindexes */
       correctIndexes?: number[];
+    };
+    /** QuizDraftPdfInfo */
+    QuizDraftPdfInfo: {
+      /** S3 Key */
+      s3_key: string | null;
+      /** File Name */
+      file_name: string | null;
+      /** File Size */
+      file_size: number | null;
+      /** Page Count */
+      page_count: number | null;
+    };
+    /** QuizDraftProgress */
+    QuizDraftProgress: {
+      /**
+       * Processed
+       * @default 0
+       */
+      processed: number;
+      /**
+       * Total
+       * @default 0
+       */
+      total: number;
+      /**
+       * Percent
+       * @default 0
+       */
+      percent: number;
+    };
+    /** QuizDraftResponseData */
+    QuizDraftResponseData: {
+      /** Draft Id */
+      draft_id: string;
+      /** Title */
+      title: string;
+      /** Description */
+      description: string;
+      /** Category Id */
+      category_id: string | null;
+      /** Prompt */
+      prompt: string | null;
+      pdf: components['schemas']['QuizDraftPdfInfo'];
+      /**
+       * Status
+       * @enum {string}
+       */
+      status:
+        | 'queued'
+        | 'processing'
+        | 'completed'
+        | 'failed'
+        | 'cancelled'
+        | 'submitted'
+        | 'expired';
+      progress: components['schemas']['QuizDraftProgress'];
+      /** Questions */
+      questions: components['schemas']['QuizDraftQuestion'][];
+      /** Error */
+      error: string | null;
+      /** Submitted Quiz Id */
+      submitted_quiz_id: string | null;
+      /** Created At */
+      created_at: string;
+      /** Updated At */
+      updated_at: string;
+      /** Expires At */
+      expires_at: string;
+    };
+    /** QuizDraftSingleResponse */
+    QuizDraftSingleResponse: {
+      draft: components['schemas']['QuizDraftResponseData'];
+    };
+    /** QuizDraftListResponse */
+    QuizDraftListResponse: {
+      /** Drafts */
+      drafts: components['schemas']['QuizDraftResponseData'][];
     };
     /** QuizDraftSubmitRequest */
     QuizDraftSubmitRequest: {
@@ -1286,6 +1538,19 @@ export interface components {
         [key: string]: unknown;
       } | null;
     };
+    /** StandardResponse[InfoResponse] */
+    StandardResponse_InfoResponse_: {
+      /**
+       * Success
+       * @default true
+       */
+      success: boolean;
+      data: components['schemas']['InfoResponse'];
+      /** Meta */
+      meta?: {
+        [key: string]: unknown;
+      } | null;
+    };
     /** StandardResponse[DeleteSubjectResponse] */
     StandardResponse_DeleteSubjectResponse_: {
       /**
@@ -1364,6 +1629,45 @@ export interface components {
         [key: string]: unknown;
       } | null;
     };
+    /** StandardResponse[PipelineJobCancelResponse] */
+    StandardResponse_PipelineJobCancelResponse_: {
+      /**
+       * Success
+       * @default true
+       */
+      success: boolean;
+      data: components['schemas']['PipelineJobCancelResponse'];
+      /** Meta */
+      meta?: {
+        [key: string]: unknown;
+      } | null;
+    };
+    /** StandardResponse[PipelineJobListResponse] */
+    StandardResponse_PipelineJobListResponse_: {
+      /**
+       * Success
+       * @default true
+       */
+      success: boolean;
+      data: components['schemas']['PipelineJobListResponse'];
+      /** Meta */
+      meta?: {
+        [key: string]: unknown;
+      } | null;
+    };
+    /** StandardResponse[PipelineJobRetryResponse] */
+    StandardResponse_PipelineJobRetryResponse_: {
+      /**
+       * Success
+       * @default true
+       */
+      success: boolean;
+      data: components['schemas']['PipelineJobRetryResponse'];
+      /** Meta */
+      meta?: {
+        [key: string]: unknown;
+      } | null;
+    };
     /** StandardResponse[PipelineJobStatusResponse] */
     StandardResponse_PipelineJobStatusResponse_: {
       /**
@@ -1390,6 +1694,19 @@ export interface components {
         [key: string]: unknown;
       } | null;
     };
+    /** StandardResponse[PipelineRuntimeStatusResponse] */
+    StandardResponse_PipelineRuntimeStatusResponse_: {
+      /**
+       * Success
+       * @default true
+       */
+      success: boolean;
+      data: components['schemas']['PipelineRuntimeStatusResponse'];
+      /** Meta */
+      meta?: {
+        [key: string]: unknown;
+      } | null;
+    };
     /** StandardResponse[PipelineSessionCreateResponse] */
     StandardResponse_PipelineSessionCreateResponse_: {
       /**
@@ -1403,6 +1720,32 @@ export interface components {
         [key: string]: unknown;
       } | null;
     };
+    /** StandardResponse[QuizDraftListResponse] */
+    StandardResponse_QuizDraftListResponse_: {
+      /**
+       * Success
+       * @default true
+       */
+      success: boolean;
+      data: components['schemas']['QuizDraftListResponse'];
+      /** Meta */
+      meta?: {
+        [key: string]: unknown;
+      } | null;
+    };
+    /** StandardResponse[QuizDraftSingleResponse] */
+    StandardResponse_QuizDraftSingleResponse_: {
+      /**
+       * Success
+       * @default true
+       */
+      success: boolean;
+      data: components['schemas']['QuizDraftSingleResponse'];
+      /** Meta */
+      meta?: {
+        [key: string]: unknown;
+      } | null;
+    };
     /** StandardResponse[QuizTutorResponseData] */
     StandardResponse_QuizTutorResponseData_: {
       /**
@@ -1411,6 +1754,19 @@ export interface components {
        */
       success: boolean;
       data: components['schemas']['QuizTutorResponseData'];
+      /** Meta */
+      meta?: {
+        [key: string]: unknown;
+      } | null;
+    };
+    /** StandardResponse[ReadinessResponse] */
+    StandardResponse_ReadinessResponse_: {
+      /**
+       * Success
+       * @default true
+       */
+      success: boolean;
+      data: components['schemas']['ReadinessResponse'];
       /** Meta */
       meta?: {
         [key: string]: unknown;
@@ -2215,7 +2571,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['StandardResponse_dict_'];
+          'application/json': components['schemas']['StandardResponse_PipelineRuntimeStatusResponse_'];
         };
       };
     };
@@ -2276,7 +2632,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['StandardResponse_dict_'];
+          'application/json': components['schemas']['StandardResponse_PipelineJobListResponse_'];
         };
       };
       /** @description Validation Error */
@@ -2383,7 +2739,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['StandardResponse_dict_'];
+          'application/json': components['schemas']['StandardResponse_PipelineJobCancelResponse_'];
         };
       };
       /** @description Validation Error */
@@ -2418,7 +2774,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['StandardResponse_dict_'];
+          'application/json': components['schemas']['StandardResponse_PipelineJobRetryResponse_'];
         };
       };
       /** @description Validation Error */
@@ -2661,7 +3017,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['StandardResponse_dict_'];
+          'application/json': components['schemas']['StandardResponse_QuizDraftListResponse_'];
         };
       };
       /** @description Validation Error */
@@ -2697,7 +3053,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['StandardResponse_dict_'];
+          'application/json': components['schemas']['StandardResponse_QuizDraftSingleResponse_'];
         };
       };
       /** @description Validation Error */
@@ -2732,7 +3088,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['StandardResponse_dict_'];
+          'application/json': components['schemas']['StandardResponse_QuizDraftSingleResponse_'];
         };
       };
       /** @description Validation Error */
@@ -2767,7 +3123,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['StandardResponse_dict_'];
+          'application/json': components['schemas']['StandardResponse_QuizDraftSingleResponse_'];
         };
       };
       /** @description Validation Error */
@@ -2806,7 +3162,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['StandardResponse_dict_'];
+          'application/json': components['schemas']['StandardResponse_QuizDraftSingleResponse_'];
         };
       };
       /** @description Validation Error */
@@ -2845,7 +3201,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['StandardResponse_dict_'];
+          'application/json': components['schemas']['StandardResponse_QuizDraftSingleResponse_'];
         };
       };
       /** @description Validation Error */
@@ -2910,7 +3266,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          'application/json': unknown;
+          'application/json': components['schemas']['StandardResponse_ReadinessResponse_'];
         };
       };
     };
@@ -2930,7 +3286,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          'application/json': unknown;
+          'application/json': components['schemas']['StandardResponse_ReadinessResponse_'];
         };
       };
     };
@@ -2950,7 +3306,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          'application/json': unknown;
+          'application/json': components['schemas']['StandardResponse_InfoResponse_'];
         };
       };
     };

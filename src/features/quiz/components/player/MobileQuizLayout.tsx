@@ -2,12 +2,12 @@
 
 import { MobileQuizPlayer } from '@/features/quiz/components/MobileQuizPlayer';
 import { mapMobileAnswersToOrderedAnswers } from '@/features/quiz/lib/mobileAnswerMapping';
-import { IQuiz } from '@/types';
+import type { QuizPlayViewModel } from '@/features/quiz/types/quiz-play-view-model';
 
 type QuizAnswer = number | number[];
 
 interface MobileQuizLayoutProps {
-  quiz: IQuiz;
+  quiz: Pick<QuizPlayViewModel, 'questions'>;
   userAnswers: QuizAnswer[];
   currentQuestionIndex: number;
   onAnswersChange: (answers: QuizAnswer[]) => void;
@@ -41,7 +41,7 @@ export function MobileQuizLayout({
   error,
 }: MobileQuizLayoutProps) {
   const questionsWithId = quiz.questions.map((question, index) => ({
-    _id: `q-${index}`,
+    id: `q-${index}`,
     question: question.question,
     options: question.options,
     type: question.type,

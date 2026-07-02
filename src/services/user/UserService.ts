@@ -1,68 +1,57 @@
 import { IUserService } from '@/interfaces/services/IUserService';
 import { IUserRepository } from '@/interfaces/repositories/IUserRepository';
 import { IAttemptRepository } from '@/interfaces/repositories/IAttemptRepository';
-import { IUser } from '@/types/index';
+import type { IQuizRepository } from '@/interfaces/repositories/IQuizRepository';
 import { ServiceResult } from '@/interfaces/services/types';
-import type { IQuestion } from '@/models/Quiz';
+import type {
+  AttemptDetailDto,
+  AttemptQuestionDetailDto,
+  PublicUserProfileDto,
+  UserAttemptListDto,
+  UserAttemptListQueryDto,
+  UserAttemptSummaryDto,
+} from '@/dtos/user';
 import { logger } from '@/lib/logger';
-
-export interface UserAttemptSummary {
-  _id: string;
-  score: number;
-  takenAt: Date;
-  quiz: {
-    title: string;
-    slug: string;
-    description: string;
-    totalQuestions: number;
-  };
-}
-
-export interface AttemptQuestionDetail {
-  question: string;
-  options: string[];
-  type: 'single' | 'multiple';
-  correctIndex?: number;
-  correctIndexes?: number[];
-  questionImage?: string;
-  optionImages?: (string | undefined)[];
-  userAnswer: number | number[];
-  isCorrect: boolean;
-}
-
-export interface AttemptDetails {
-  _id: string;
-  score: number;
-  takenAt: Date;
-  answers: (number | number[])[];
-  quiz: {
-    title: string;
-    slug: string;
-    description: string;
-    questions: AttemptQuestionDetail[];
-  };
-}
+import { PublicProfileDtoMapper } from '@/mappers/user/PublicProfileDtoMapper';
 
 export class UserService implements IUserService {
   constructor(
     private userRepository: IUserRepository,
     private attemptRepository: IAttemptRepository,
+    private quizRepository: IQuizRepository,
   ) {}
+
+  async getPublicProfile(userId: string): Promise<ServiceResult<PublicUserProfileDto>> {
+    try {
+      const user = await this.userRepository.findPublicProfileById(userId);
+      if (!user) {
+        return {
+          success: false,
+          error: 'User not found',
+          statusCode: 404,
+        };
+      }
+
+      const quizzes = await this.quizRepository.findPublicByAuthor(userId);
+
+      return {
+        success: true,
+        data: PublicProfileDtoMapper.toDto(user, quizzes),
+      };
+    } catch (error) {
+      logger.error({ error, userId }, 'Get public profile error');
+      return {
+        success: false,
+        error: 'Failed to get public profile',
+        statusCode: 500,
+      };
+    }
+  }
 
   async getUserAttempts(
     userEmail: string,
-    options?: { page?: number; limit?: number },
-  ): Promise<{
-    attempts: UserAttemptSummary[];
-    pagination: {
-      currentPage: number;
-      totalPages: number;
-      totalItems: number;
-      itemsPerPage: number;
-      hasNextPage: boolean;
-      hasPrevPage: boolean;
-    };
-  }> {
+    options: UserAttemptListQueryDto,
+  ): Promise<UserAttemptListDto> {
     try {
       // Find user first
       const user = await this.userRepository.findByEmail(userEmail);
@@ -71,29 +60,23 @@ export class UserService implements IUserService {
         throw new Error('User not found');
       }
 
-      const page = options?.page || 1;
-      const limit = options?.limit || 10;
-      const result = await this.attemptRepository.findByUser(user._id.toString(), { page, limit });
+      const result = await this.attemptRepository.findByUser(user.id, options);
 
-      // Deleted quizzes leave historical attempts with a null populated quiz.
-      // Preserve the attempt instead of failing the entire history endpoint.
-      const formattedAttempts: UserAttemptSummary[] = result.attempts.map((attempt) => {
-        const populatedQuiz = attempt.quiz as {
-          _id: string;
-          title?: string;
-          slug?: string;
-          description?: string;
-          questions?: unknown[];
-        } | null;
+      const formattedAttempts: UserAttemptSummaryDto[] = result.items.map((attempt) => {
+        const populatedQuiz =
+          typeof attempt.quiz === 'object' && attempt.quiz !== null ? attempt.quiz : null;
+        if (!populatedQuiz) {
+          throw new TypeError('attempt.quiz is required');
+        }
         return {
-          _id: String(attempt._id),
+          id: attempt.id,
           score: attempt.score,
-          takenAt: attempt.takenAt,
+          takenAt: attempt.takenAt.toISOString(),
+          totalQuestions: attempt.totalQuestions,
           quiz: {
-            title: populatedQuiz ? (populatedQuiz.title ?? '') : 'Deleted quiz',
-            slug: populatedQuiz?.slug ?? '',
-            description: populatedQuiz?.description ?? '',
-            totalQuestions: populatedQuiz?.questions?.length ?? attempt.totalQuestions ?? 0,
+            title: populatedQuiz.title,
+            slug: populatedQuiz.slug,
+            description: populatedQuiz.description,
           },
         };
       });
@@ -108,52 +91,17 @@ export class UserService implements IUserService {
     }
   }
 
-  async getUserById(id: string): Promise<IUser | null> {
-    return await this.userRepository.findById(id);
-  }
-
-  async getUserByEmail(email: string): Promise<IUser | null> {
-    return await this.userRepository.findByEmail(email);
-  }
-
-  async updateUser(id: string, userData: Partial<IUser>): Promise<IUser | null> {
-    return await this.userRepository.update(id, userData);
-  }
-
-  async deleteUser(id: string): Promise<boolean> {
-    return await this.userRepository.delete(id);
-  }
-
-  async getAllUsers(options?: {
-    page?: number;
-    limit?: number;
-    search?: string;
-    role?: string;
-  }): Promise<{
-    users: IUser[];
-    pagination: {
-      currentPage: number;
-      totalPages: number;
-      totalItems: number;
-      itemsPerPage: number;
-      hasNextPage: boolean;
-      hasPrevPage: boolean;
-    };
-  }> {
-    return await this.userRepository.findAll(options);
-  }
-
   async getAttemptDetails(
     attemptId: string,
     userEmail: string,
-  ): Promise<ServiceResult<AttemptDetails>> {
+  ): Promise<ServiceResult<AttemptDetailDto>> {
     try {
       // Find user
       const user = await this.userRepository.findByEmail(userEmail);
-      const userId = user ? user._id.toString() : userEmail;
+      const owner = user ? { userId: user.id } : { guestEmail: userEmail };
 
       // Get attempt with quiz details
-      const attempt = await this.attemptRepository.findByIdWithQuiz(attemptId, userId);
+      const attempt = await this.attemptRepository.findByIdWithQuiz(attemptId, owner);
 
       if (!attempt) {
         return {
@@ -163,15 +111,17 @@ export class UserService implements IUserService {
         };
       }
 
-      const populatedQuiz = attempt.quiz as {
-        title?: string;
-        slug?: string;
-        description?: string;
-        questions?: IQuestion[];
-      };
-      const answers = attempt.answers as (number | number[])[];
+      const populatedQuiz =
+        typeof attempt.quiz === 'object' && attempt.quiz !== null ? attempt.quiz : null;
+      if (!populatedQuiz) {
+        throw new TypeError('attempt.quiz is required');
+      }
+      if (!populatedQuiz.questions) {
+        throw new TypeError('attempt.quiz.questions is required');
+      }
+      const answers = attempt.answers;
 
-      const questions: AttemptQuestionDetail[] = (populatedQuiz.questions ?? []).map(
+      const questions: AttemptQuestionDetailDto[] = populatedQuiz.questions.map(
         (question, index) => {
           const userAnswer = answers[index] ?? -1;
           let isCorrect = false;
@@ -183,6 +133,7 @@ export class UserService implements IUserService {
               question.correctIndexes.every((idx) => userAnswer.includes(idx));
           }
           return {
+            id: question.id,
             question: question.question,
             options: question.options,
             type: question.type,
@@ -199,14 +150,14 @@ export class UserService implements IUserService {
       return {
         success: true,
         data: {
-          _id: String(attempt._id),
+          id: attempt.id,
           score: attempt.score,
-          takenAt: attempt.takenAt,
+          takenAt: attempt.takenAt.toISOString(),
           answers,
           quiz: {
-            title: populatedQuiz.title ?? '',
-            slug: populatedQuiz.slug ?? '',
-            description: populatedQuiz.description ?? '',
+            title: populatedQuiz.title,
+            slug: populatedQuiz.slug,
+            description: populatedQuiz.description,
             questions,
           },
         },

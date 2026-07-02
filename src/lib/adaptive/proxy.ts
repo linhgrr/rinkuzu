@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { apiErr, apiForward } from '@/lib/api/response';
-import { type ApiErrorPayload } from '@/lib/api/error';
+import { isStandardErrorEnvelope, isStandardSuccessEnvelope } from '@/lib/api/envelope';
 import { logger } from '@/lib/logger';
 import { isCacheSafeAdaptivePath } from './cache-policy';
 import {
@@ -62,11 +62,11 @@ function shouldAttachBody(method: string): boolean {
 }
 
 function isHtmlResponse(contentType: string | null): boolean {
-  return (contentType || '').toLowerCase().includes('text/html');
+  return (contentType ?? '').toLowerCase().includes('text/html');
 }
 
 function isJsonResponse(contentType: string | null): boolean {
-  const normalized = (contentType || '').toLowerCase();
+  const normalized = (contentType ?? '').toLowerCase();
   return normalized.includes('application/json') || normalized.includes('+json');
 }
 
@@ -86,27 +86,6 @@ function copyUpstreamResponseHeaders(response: Response): Headers {
 function applyResponseHeaders(target: Response, headers: Headers): Response {
   headers.forEach((value, key) => target.headers.set(key, value));
   return target;
-}
-
-function isStandardSuccessEnvelope(payload: unknown): payload is {
-  success: true;
-  data: unknown;
-} {
-  return (
-    !!payload &&
-    typeof payload === 'object' &&
-    (payload as { success?: unknown }).success === true &&
-    'data' in payload
-  );
-}
-
-function isStandardErrorEnvelope(payload: unknown): payload is ApiErrorPayload {
-  return (
-    !!payload &&
-    typeof payload === 'object' &&
-    (payload as { success?: unknown }).success === false &&
-    'error' in payload
-  );
 }
 
 export async function proxyAdaptiveRequest(
@@ -212,7 +191,7 @@ export async function proxyAdaptiveRequest(
         );
       }
 
-      const forwarded = apiForward(payload as Record<string, unknown>, response.status);
+      const forwarded = apiForward(payload, response.status);
       return applyResponseHeaders(forwarded, responseHeaders);
     }
 
@@ -252,7 +231,7 @@ export async function proxyAdaptiveRequest(
         );
       }
 
-      const normalized = apiForward(payload as Record<string, unknown>, response.status);
+      const normalized = apiForward(payload, response.status);
       return applyResponseHeaders(normalized, responseHeaders);
     }
 

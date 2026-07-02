@@ -39,12 +39,39 @@ async function checkExpiredSubscriptions() {
   await mongoose.connect(mongoUrl, { bufferCommands: false });
 
   const now = new Date();
-  const [expiredSubscriptions, usersOnlyResult] = await Promise.all([
-    Subscription.find({
-      isActive: true,
-      endDate: { $exists: true, $lte: now },
-      status: 'completed',
-    }).select('_id user'),
+  const expiredSubscriptionFilter = {
+    isActive: true,
+    endDate: { $exists: true, $lte: now },
+    status: 'completed',
+  };
+
+  const expiredSubscriptions =
+    await Subscription.find(expiredSubscriptionFilter).select('_id user');
+  const expiredSubscriptionIds = expiredSubscriptions.map((subscription) => subscription._id);
+  const expiredSubscriptionUserIds = [
+    ...new Map(
+      expiredSubscriptions.map((subscription) => [String(subscription.user), subscription.user]),
+    ).values(),
+  ];
+
+  const [subscriptionsResult, usersResult, usersOnlyResult] = await Promise.all([
+    expiredSubscriptionIds.length
+      ? Subscription.updateMany(
+          { _id: { $in: expiredSubscriptionIds } },
+          {
+            isActive: false,
+            status: 'expired',
+          },
+        )
+      : Promise.resolve({ modifiedCount: 0 }),
+    expiredSubscriptionUserIds.length
+      ? User.updateMany(
+          { _id: { $in: expiredSubscriptionUserIds } },
+          {
+            'subscription.isActive': false,
+          },
+        )
+      : Promise.resolve({ modifiedCount: 0 }),
     User.updateMany(
       {
         'subscription.isActive': true,
@@ -56,21 +83,9 @@ async function checkExpiredSubscriptions() {
     ),
   ]);
 
-  await Promise.all(
-    expiredSubscriptions.map(async (subscription) => {
-      await Promise.all([
-        Subscription.findByIdAndUpdate(subscription._id, {
-          isActive: false,
-          status: 'expired',
-        }),
-        User.findByIdAndUpdate(subscription.user, {
-          'subscription.isActive': false,
-        }),
-      ]);
-    }),
+  return (
+    subscriptionsResult.modifiedCount + usersResult.modifiedCount + usersOnlyResult.modifiedCount
   );
-
-  return expiredSubscriptions.length + usersOnlyResult.modifiedCount;
 }
 
 checkExpiredSubscriptions()

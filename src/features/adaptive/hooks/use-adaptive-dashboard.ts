@@ -7,21 +7,25 @@ import {
   deleteSubject,
   getSubjectProgressHistory,
   getSubjects,
-} from '@/features/adaptive/lib/api-client';
+} from '@/features/adaptive/lib/adaptive-api-methods';
 import { ADAPTIVE_ROUTES } from '@/features/adaptive/lib/routes';
-import { saveSessionJobMapping } from '../lib/session-storage';
+import {
+  clearSelectedPipelineJob,
+  saveActiveSessionId,
+  saveSessionJobMapping,
+} from '../lib/session-storage';
 import { getSessionStartFeedback } from '../lib/session-start-feedback';
 import { useJobLibrary } from './use-job-library';
 import {
   buildDashboardSubjectFromJob,
   toDashboardSubject,
-  type DashboardSubject,
-} from '@/features/adaptive/lib/dashboard-view-model';
-import type {
-  PipelineJobHistoryItem,
-  SessionHistoryItem,
-  TranslateFn,
-} from '@/features/adaptive/types';
+} from '@/features/adaptive/mappers/dashboard.mapper';
+import { toSessionHistoryViewModels } from '@/features/adaptive/mappers/session-history.mapper';
+import type { SessionHistoryItem } from '@/features/adaptive/types/history';
+import type { TranslateFn } from '@/features/adaptive/types/learning';
+import type { PipelineJobHistoryItem } from '@/features/adaptive/types/pipeline';
+import type { DashboardSubject } from '@/features/adaptive/types/dashboard-view-model';
+import type { SessionHistoryViewModel } from '@/features/adaptive/types/session-history-view-model';
 
 const DAILY_GOAL_TARGET = 3;
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
@@ -34,13 +38,13 @@ const getDayStart = (value: number): number => {
   return date.getTime();
 };
 
-const calculateLearningStreak = (sessions: SessionHistoryItem[]): number => {
+const calculateLearningStreak = (sessions: SessionHistoryViewModel[]): number => {
   if (sessions.length === 0) return 0;
 
   const uniqueDayStarts = new Set<number>();
   for (const session of sessions) {
-    if (session.total_answered > 0) {
-      uniqueDayStarts.add(getDayStart(toTimestampMs(session.updated_at || session.created_at)));
+    if (session.totalAnswered > 0) {
+      uniqueDayStarts.add(getDayStart(toTimestampMs(session.lastActivityAt)));
     }
   }
   const dayStarts = Array.from(uniqueDayStarts).sort((a, b) => b - a);
@@ -69,14 +73,6 @@ const calculateLearningStreak = (sessions: SessionHistoryItem[]): number => {
   return streak;
 };
 
-const clearSelectedPipelineJob = (jobId: string) => {
-  if (localStorage.getItem('al_pipeline_job_id') !== jobId) return;
-
-  localStorage.removeItem('al_pipeline_job_id');
-  localStorage.removeItem('al_pipeline_filename');
-  localStorage.removeItem('al_pipeline_subject_name');
-};
-
 type UseAdaptiveDashboardParams = {
   initialSubjects: PipelineJobHistoryItem[];
   initialSessionHistory: SessionHistoryItem[];
@@ -93,7 +89,7 @@ type AdaptiveDashboardState = {
   loading: boolean;
   error: string | null;
   apiOnline: boolean | null;
-  sessionHistory: SessionHistoryItem[];
+  sessionHistory: SessionHistoryViewModel[];
 };
 
 type AdaptiveDashboardAction =
@@ -130,7 +126,7 @@ export const useAdaptiveDashboard = ({
     loading: false,
     error: initialError,
     apiOnline: initialApiOnline,
-    sessionHistory: initialSessionHistory,
+    sessionHistory: toSessionHistoryViewModels(initialSessionHistory),
   });
 
   const jobLibrary = useJobLibrary({
@@ -139,7 +135,7 @@ export const useAdaptiveDashboard = ({
   });
   const [loadingJobId, setLoadingJobId] = useState<string | null>(null);
   const [deletingJobId, setDeletingJobId] = useState<string | null>(null);
-  const [itemToDelete, setItemToDelete] = useState<PipelineJobHistoryItem | null>(null);
+  const [itemToDelete, setItemToDelete] = useState<DashboardSubject | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const deferredSearchQuery = useDeferredValue(searchQuery);
 
@@ -163,7 +159,7 @@ export const useAdaptiveDashboard = ({
       setLoadingJobId(jobId);
       try {
         const session = await createSessionFromPipeline(jobId, 50);
-        localStorage.setItem('al_session_id', session.session_id);
+        saveActiveSessionId(session.session_id);
         saveSessionJobMapping(session.session_id, jobId);
         toast.success(t('creatingSession'));
         router.push(ADAPTIVE_ROUTES.subject(session.session_id));
@@ -177,18 +173,18 @@ export const useAdaptiveDashboard = ({
     [deletingJobId, loadingJobId, router, t, tAdaptive],
   );
 
-  const handleDeleteClick = useCallback((job: PipelineJobHistoryItem) => {
-    setItemToDelete(job);
+  const handleDeleteClick = useCallback((subject: DashboardSubject) => {
+    setItemToDelete(subject);
   }, []);
 
   const handleConfirmDelete = useCallback(async () => {
     if (!itemToDelete || loadingJobId || deletingJobId) return;
 
-    setDeletingJobId(itemToDelete.job_id);
+    setDeletingJobId(itemToDelete.jobId);
     try {
-      await deleteSubject(itemToDelete.job_id, true);
+      await deleteSubject(itemToDelete.jobId, true);
       await Promise.all([refreshSubjects(), jobLibrary.refresh()]);
-      clearSelectedPipelineJob(itemToDelete.job_id);
+      clearSelectedPipelineJob(itemToDelete.jobId);
       toast.success(t('deleteSuccess'));
     } catch (err) {
       console.error(`Error deleting subject: ${(err as Error).message}`);
@@ -250,8 +246,8 @@ export const useAdaptiveDashboard = ({
   const dailyGoalProgress = useMemo(() => {
     const todayStart = getDayStart(Date.now());
     const current = dashboardState.sessionHistory.filter((session) => {
-      if (session.total_answered <= 0) return false;
-      const dayStart = getDayStart(toTimestampMs(session.updated_at || session.created_at));
+      if (session.totalAnswered <= 0) return false;
+      const dayStart = getDayStart(toTimestampMs(session.lastActivityAt));
       return dayStart === todayStart;
     }).length;
 
@@ -262,7 +258,7 @@ export const useAdaptiveDashboard = ({
     };
   }, [dashboardState.sessionHistory]);
 
-  const upNextSubject = dashboardState.subjects.length > 0 ? dashboardState.subjects[0] : null;
+  const upNextSubject = mergedSubjects.length > 0 ? mergedSubjects[0] : null;
 
   useEffect(() => {
     router.prefetch(ADAPTIVE_ROUTES.upload);
@@ -310,7 +306,7 @@ export const useAdaptiveDashboard = ({
       }
 
       if (historyResult.status === 'fulfilled') {
-        nextState.sessionHistory = historyResult.value;
+        nextState.sessionHistory = toSessionHistoryViewModels(historyResult.value);
       } else {
         console.error('Failed to hydrate session history', historyResult.reason);
       }

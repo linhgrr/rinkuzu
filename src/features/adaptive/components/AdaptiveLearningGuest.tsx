@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { defaultLocale } from '@/i18n/config';
 import { JsonLd } from '@/components/seo/JsonLd';
-import type { TranslateFn } from '@/features/adaptive/types';
+import type { TranslateFn } from '@/features/adaptive/types/learning';
 import { buildFaqSchema, buildSoftwareApplicationSchema } from '@/lib/structured-data';
 
 type AdaptiveLearningGuestProps = {

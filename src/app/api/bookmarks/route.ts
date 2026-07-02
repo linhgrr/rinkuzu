@@ -3,6 +3,8 @@ import { withAuth } from '@/lib/api/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
 import { apiErr, apiOk } from '@/lib/api/response';
 import { logger } from '@/lib/logger';
+import { bookmarkListQuerySchema, createBookmarkRequestSchema } from '@/dtos/bookmark';
+import { readAndValidateJson } from '@/lib/api/request';
 
 const bookmarkService = serviceFactory.getBookmarkService();
 
@@ -14,10 +16,17 @@ export const GET = withAuth(async (request: NextRequest, { email }) => {
     }
 
     const url = new URL(request.url);
-    const page = parseInt(url.searchParams.get('page') || '1');
-    const limit = parseInt(url.searchParams.get('limit') || '10');
+    const query = bookmarkListQuerySchema.safeParse({
+      page: url.searchParams.get('page') ?? undefined,
+      limit: url.searchParams.get('limit') ?? undefined,
+    });
+    if (!query.success) {
+      return apiErr('validation_error', 'Invalid bookmark query parameters', 400, {
+        issues: query.error.flatten().fieldErrors,
+      });
+    }
 
-    const result = await bookmarkService.getBookmarksByUser(email, { page, limit });
+    const result = await bookmarkService.getBookmarksByUser(email, query.data);
 
     return apiOk({
       bookmarks: result.bookmarks,
@@ -36,14 +45,12 @@ export const POST = withAuth(async (request: NextRequest, { email }) => {
       return apiErr('unauthorized', 'Unauthorized', 401);
     }
 
-    const body = await request.json();
-    const { quiz, question, questionIndex } = body;
+    const input = await readAndValidateJson(request, createBookmarkRequestSchema);
+    if (!input.success) {
+      return apiErr('validation_error', input.error, 400, { fields: input.fields });
+    }
 
-    const bookmark = await bookmarkService.createBookmark(email, {
-      quiz,
-      question,
-      questionIndex,
-    });
+    const bookmark = await bookmarkService.createBookmark(email, input.data);
 
     return apiOk(bookmark);
   } catch (error: unknown) {

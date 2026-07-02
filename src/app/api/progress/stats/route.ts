@@ -1,5 +1,5 @@
 import { withAuth } from '@/lib/api/auth';
-import { getUserProgressStats } from '@/lib/dashboard';
+import { getDashboardStats } from '@/lib/dashboard-factory';
 import { apiErr, apiOk } from '@/lib/api/response';
 import { logger } from '@/lib/logger';
 
@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 
 export const GET = withAuth(async (_request, { userId }) => {
   try {
-    const stats = await getUserProgressStats(userId);
+    const stats = await getDashboardStats(userId);
     return apiOk(stats);
   } catch (error) {
     logger.error({ error }, 'Error fetching progress stats');

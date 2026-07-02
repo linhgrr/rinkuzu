@@ -4,17 +4,17 @@ import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { Card } from './ui/Card';
+import type {
+  ReviewQuestionReferenceViewModel,
+  ReviewRating,
+} from '@/features/review/types/review-session';
 
 interface ReviewCardProps {
-  question: {
-    text: string;
-    options: string[];
-    correctIndexes: number[];
-  };
-  onResult: (rating: 'fail' | 'hard' | 'good' | 'easy') => void;
+  question: ReviewQuestionReferenceViewModel;
+  onResult: (rating: ReviewRating) => void;
 }
 
-import { HiCheck } from '@/components/icons';
+import { HiCheck } from 'react-icons/hi';
 
 const CARD_FLIP_CONTAINER_STYLE = { perspective: '1000px' } as const;
 const CARD_FLIP_STYLE = { transformStyle: 'preserve-3d' } as const;

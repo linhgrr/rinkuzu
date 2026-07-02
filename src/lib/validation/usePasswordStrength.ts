@@ -5,9 +5,15 @@ import { useEffect, useState } from 'react';
 import type { PasswordStrength } from '@/lib/validation/auth';
 import { scorePassword } from '@/lib/validation/auth';
 
-let zxcvbnLoader: Promise<(p: string) => { score: number }> | null = null;
+interface PasswordScoreResult {
+  score: number;
+}
 
-async function loadZxcvbn(): Promise<(p: string) => { score: number }> {
+type PasswordScorer = (password: string) => PasswordScoreResult;
+
+let zxcvbnLoader: Promise<PasswordScorer> | null = null;
+
+async function loadZxcvbn(): Promise<PasswordScorer> {
   if (zxcvbnLoader) return zxcvbnLoader;
 
   zxcvbnLoader = Promise.all([
@@ -15,7 +21,7 @@ async function loadZxcvbn(): Promise<(p: string) => { score: number }> {
     import('@zxcvbn-ts/language-common'),
     import('@zxcvbn-ts/language-en'),
   ]).then(([core, common, en]) => {
-    core.zxcvbnOptions.setOptions({
+    const zxcvbn = new core.ZxcvbnFactory({
       translations: en.translations,
       graphs: common.adjacencyGraphs,
       dictionary: {
@@ -23,14 +29,14 @@ async function loadZxcvbn(): Promise<(p: string) => { score: number }> {
         ...en.dictionary,
       },
     });
-    return (password: string) => core.zxcvbn(password);
+    return (password: string) => zxcvbn.check(password);
   });
 
   return zxcvbnLoader;
 }
 
 /**
- * Score a password 0..4 using zxcvbn-ts. Returns the heuristic fallback score
+ * Score a password 0..4 using zxcvbn-ts. Returns the heuristic score
  * synchronously while the dictionary loads, then upgrades to the real score
  * once the bundle is ready.
  */
@@ -38,8 +44,8 @@ export function usePasswordStrength(password: string): PasswordStrength {
   const [score, setScore] = useState<PasswordStrength>(() => scorePassword(password));
 
   useEffect(() => {
-    const fallbackScore = scorePassword(password);
-    setScore(fallbackScore);
+    const heuristicScore = scorePassword(password);
+    setScore(heuristicScore);
 
     if (!password) {
       return;

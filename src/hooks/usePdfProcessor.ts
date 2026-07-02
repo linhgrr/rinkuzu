@@ -11,7 +11,9 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { extractUnknownErrorMessage } from '@/lib/api/error';
-import { getQuizDraft, mapDraftStatus, type QuizDraft } from '@/lib/quiz/draftApi';
+import { getQuizDraft } from '@/lib/quiz/draftApi';
+import type { QuizDraft } from '@/features/quiz/types/quiz-draft';
+import { mapDraftStatus } from '@/lib/quiz/draftStatus';
 import { useDraftStore } from '@/store/useDraftStore';
 
 const POLL_INTERVAL_MS = 3000;

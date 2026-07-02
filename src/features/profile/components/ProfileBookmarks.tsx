@@ -1,6 +1,6 @@
 'use client';
 
-import { useReducer, useSyncExternalStore } from 'react';
+import { useReducer } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
@@ -10,38 +10,21 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { EmptyState } from '@/components/ui/EmptyState';
 import Pagination from '@/components/ui/Pagination';
-import { HiOutlineTag, HiOutlineTrash } from '@/components/icons';
+import { HiOutlineTag, HiOutlineTrash } from 'react-icons/hi';
 import { StreamingChatModal } from '@/features/quiz/components/chat/StreamingChatModal';
 import { QuestionOptionsPreview } from '@/features/quiz/components/shared/QuestionOptionsPreview';
 import { useStreamingChatSession } from '@/features/quiz/hooks/useStreamingChatSession';
 import { extractUnknownErrorMessage } from '@/lib/api/error';
-import { fetchApiData } from '@/lib/api/client';
-import { ROUTES } from '@/shared/constants';
-import { PaginationMeta } from '@/types';
+import { formatCorrectAnswerText } from '@/lib/quiz/answer-text';
+import { ROUTES } from '@/shared/constants/routes';
+import {
+  deleteProfileBookmark,
+  fetchProfileBookmarkListViewModel,
+} from '@/features/profile/api/profile-bookmarks-api';
+import type { ProfileBookmarkViewModel } from '@/features/profile/types/profile-bookmark-view-model';
 
 const chatbotIcon =
   'https://i.ibb.co/ZRYgc1tN/Gemini-Generated-Image-yjm06yyjm06yyjm0-removebg-preview.png';
-
-interface Bookmark {
-  _id: string;
-  quiz: {
-    title: string;
-    slug: string;
-    description?: string;
-  };
-  question: {
-    text: string;
-    options: string[];
-    type: 'single' | 'multiple';
-    correctIndex?: number;
-    correctIndexes?: number[];
-    questionImage?: string;
-    optionImages?: (string | undefined)[];
-  };
-  questionIndex: number;
-  createdAt: string;
-  tags?: string[];
-}
 
 type TranslateFn = (key: string, values?: Record<string, string | number | Date>) => string;
 type BookmarkModal = 'ai' | 'remove' | null;
@@ -49,7 +32,7 @@ type BookmarkModal = 'ai' | 'remove' | null;
 interface ProfileBookmarksState {
   currentPage: number;
   localError: string;
-  currentBookmark: Bookmark | null;
+  currentBookmark: ProfileBookmarkViewModel | null;
   activeModal: BookmarkModal;
   removingBookmarkId: string | null;
 }
@@ -57,8 +40,8 @@ interface ProfileBookmarksState {
 type ProfileBookmarksAction =
   | { type: 'patch'; value: Partial<ProfileBookmarksState> }
   | { type: 'setPage'; value: number }
-  | { type: 'openAiModal'; bookmark: Bookmark }
-  | { type: 'openRemoveModal'; bookmark: Bookmark }
+  | { type: 'openAiModal'; bookmark: ProfileBookmarkViewModel }
+  | { type: 'openRemoveModal'; bookmark: ProfileBookmarkViewModel }
   | { type: 'closeModal' };
 
 const initialState: ProfileBookmarksState = {
@@ -89,16 +72,6 @@ function profileBookmarksReducer(
   }
 }
 
-function formatCorrectAnswer(question: Bookmark['question']) {
-  if (question.type === 'single') {
-    return typeof question.correctIndex === 'number'
-      ? question.options[question.correctIndex] || ''
-      : '';
-  }
-
-  return (question.correctIndexes || []).map((idx) => question.options[idx]).join(', ');
-}
-
 function BookmarkOptionImage({ src, alt }: { src: string; alt: string }) {
   return (
     <Image
@@ -113,16 +86,9 @@ function BookmarkOptionImage({ src, alt }: { src: string; alt: string }) {
   );
 }
 
-function HydratedDateText({ dateString }: { dateString: string }) {
-  const mounted = useSyncExternalStore(
-    () => () => {},
-    () => true,
-    () => false,
-  );
-  const label = mounted ? new Date(dateString).toLocaleDateString() : '';
-
+function HydratedDateText({ dateString, label }: { dateString: string; label: string }) {
   return (
-    <time dateTime={dateString} suppressHydrationWarning className="text-xs text-neutral-500">
+    <time dateTime={dateString} className="text-xs text-neutral-500">
       {label}
     </time>
   );
@@ -148,10 +114,10 @@ function BookmarkCard({
   t,
   tCommon,
 }: {
-  bookmark: Bookmark;
+  bookmark: ProfileBookmarkViewModel;
   aiHistoryCount: number;
-  onOpenAiModal: (bookmark: Bookmark) => void;
-  onOpenRemoveModal: (bookmark: Bookmark) => void;
+  onOpenAiModal: (bookmark: ProfileBookmarkViewModel) => void;
+  onOpenRemoveModal: (bookmark: ProfileBookmarkViewModel) => void;
   t: TranslateFn;
   tCommon: TranslateFn;
 }) {
@@ -179,7 +145,7 @@ function BookmarkCard({
               >
                 {bookmark.question.type === 'single' ? t('singleChoice') : t('multipleChoice')}
               </span>
-              <HydratedDateText dateString={bookmark.createdAt} />
+              <HydratedDateText dateString={bookmark.createdAt} label={bookmark.createdAtLabel} />
             </div>
           </div>
           <div className="flex w-full gap-2 sm:w-auto">
@@ -213,7 +179,7 @@ function BookmarkCard({
         <div className="space-y-3">
           <div className="text-sm">
             <span className="font-medium text-neutral-700">{t('correct')}: </span>
-            <span className="text-green-600">{formatCorrectAnswer(bookmark.question)}</span>
+            <span className="text-green-600">{formatCorrectAnswerText(bookmark.question)}</span>
           </div>
           <QuestionOptionsPreview
             options={bookmark.question.options}
@@ -235,10 +201,10 @@ function BookmarksList({
   t,
   tCommon,
 }: {
-  bookmarks: Bookmark[];
+  bookmarks: ProfileBookmarkViewModel[];
   historyForBookmark: (bookmarkId: string) => number;
-  onOpenAiModal: (bookmark: Bookmark) => void;
-  onOpenRemoveModal: (bookmark: Bookmark) => void;
+  onOpenAiModal: (bookmark: ProfileBookmarkViewModel) => void;
+  onOpenRemoveModal: (bookmark: ProfileBookmarkViewModel) => void;
   t: TranslateFn;
   tCommon: TranslateFn;
 }) {
@@ -246,9 +212,9 @@ function BookmarksList({
     <div className="space-y-6">
       {bookmarks.map((bookmark) => (
         <BookmarkCard
-          key={bookmark._id}
+          key={bookmark.id}
           bookmark={bookmark}
-          aiHistoryCount={historyForBookmark(bookmark._id)}
+          aiHistoryCount={historyForBookmark(bookmark.id)}
           onOpenAiModal={onOpenAiModal}
           onOpenRemoveModal={onOpenRemoveModal}
           t={t}
@@ -286,7 +252,7 @@ export default function ProfileBookmarks() {
 
   const { data, error, isLoading, mutate } = useSWR(
     `/api/bookmarks?page=${state.currentPage}&limit=${itemsPerPage}`,
-    fetchApiData<{ bookmarks: Bookmark[]; pagination: PaginationMeta }>,
+    fetchProfileBookmarkListViewModel,
   );
 
   const bookmarks = data?.bookmarks ?? [];
@@ -303,14 +269,14 @@ export default function ProfileBookmarks() {
     getHistory,
     sendMessage,
   } = useStreamingChatSession({
-    persistenceKey: 'bookmark-chat-histories',
+    persistence: { scope: 'bookmarks' },
   });
 
-  const openAIModal = (bookmark: Bookmark) => {
+  const openAIModal = (bookmark: ProfileBookmarkViewModel) => {
     dispatch({ type: 'openAiModal', bookmark });
     setUserQuestion('');
     setAIError('');
-    ensureHistory(bookmark._id);
+    ensureHistory(bookmark.id);
   };
 
   const closeAIModal = () => {
@@ -323,9 +289,7 @@ export default function ProfileBookmarks() {
     dispatch({ type: 'patch', value: { removingBookmarkId: bookmarkId } });
 
     try {
-      await fetchApiData<null>(`/api/bookmarks/${bookmarkId}`, {
-        method: 'DELETE',
-      });
+      await deleteProfileBookmark(bookmarkId);
       mutate();
       removeHistory(bookmarkId);
       dispatch({ type: 'patch', value: { localError: '' } });
@@ -345,7 +309,7 @@ export default function ProfileBookmarks() {
     if (!state.currentBookmark) return;
 
     await sendMessage({
-      historyKey: state.currentBookmark._id,
+      historyKey: state.currentBookmark.id,
       payload: {
         question: state.currentBookmark.question.text,
         options: state.currentBookmark.question.options,
@@ -366,7 +330,7 @@ export default function ProfileBookmarks() {
     }
   };
 
-  const displayError = error?.message || state.localError || '';
+  const displayError = error?.message ?? state.localError;
 
   if (isLoading && bookmarks.length === 0) {
     return (
@@ -422,7 +386,7 @@ export default function ProfileBookmarks() {
               optionImages={state.currentBookmark.question.optionImages}
             />
           }
-          messages={getHistory(state.currentBookmark._id)}
+          messages={getHistory(state.currentBookmark.id)}
           userLabel={t('you')}
           assistantLabel={t('rinChan')}
           userQuestion={userQuestion}
@@ -450,10 +414,10 @@ export default function ProfileBookmarks() {
         confirmText={tCommon('remove')}
         onCancel={() => dispatch({ type: 'closeModal' })}
         onConfirm={() =>
-          state.currentBookmark ? void removeBookmark(state.currentBookmark._id) : undefined
+          state.currentBookmark ? void removeBookmark(state.currentBookmark.id) : undefined
         }
         isLoading={
-          !!(state.currentBookmark && state.removingBookmarkId === state.currentBookmark._id)
+          !!(state.currentBookmark && state.removingBookmarkId === state.currentBookmark.id)
         }
       />
     </div>

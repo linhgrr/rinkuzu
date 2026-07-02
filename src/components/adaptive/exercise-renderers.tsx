@@ -12,17 +12,17 @@ import {
   HiChevronUp,
   HiLightBulb,
   HiOutlineX,
-} from '@/components/icons';
+} from 'react-icons/hi';
 import { DynamicMarkdownRenderer } from '@/components/ui/DynamicMarkdownRenderer';
 import { TextShimmer } from '@/components/ui/text-shimmer';
 import { getExercisePromptSections } from '@/features/adaptive/lib/exercise-prompt';
+import type { ExerciseAnswerDraft } from '@/features/adaptive/types/exercise-answer';
 import type {
   Exercise,
   NextConcept,
-  SubmitAnswerPayload,
+  RichTranslateFn,
   TheoryData,
-  TranslationValues,
-} from '@/features/adaptive/types';
+} from '@/features/adaptive/types/learning';
 
 const ExerciseInteraction = dynamic(
   () => import('./exercise-question-interaction').then((module) => module.ExerciseInteraction),
@@ -36,17 +36,8 @@ const ExerciseInteraction = dynamic(
   },
 );
 
-type RichTranslationValues = Record<
-  string,
-  string | number | Date | React.ReactNode | ((chunks: React.ReactNode) => React.ReactNode)
->;
-
-type TranslateFn = ((key: string, values?: TranslationValues) => string) & {
-  rich: (key: string, values: RichTranslationValues) => React.ReactNode;
-};
-
 type LoadingStateProps = {
-  t: TranslateFn;
+  t: RichTranslateFn;
 };
 
 export const ExerciseLoadingState = ({ t }: LoadingStateProps) => (
@@ -63,7 +54,7 @@ type ErrorStateProps = {
   message: string;
   onBack: () => void;
   onRetry: () => void;
-  t: TranslateFn;
+  t: RichTranslateFn;
 };
 
 export const ExerciseErrorState = ({ message, onBack, onRetry, t }: ErrorStateProps) => (
@@ -95,7 +86,7 @@ type TheoryViewProps = {
   loadingTheory: boolean;
   loadingExercise: boolean;
   onStartExercise: () => void;
-  t: TranslateFn;
+  t: RichTranslateFn;
 };
 
 function getExerciseHeaderContent(exercise: Exercise): string | null {
@@ -205,7 +196,7 @@ type ExerciseQuestionViewProps = {
   concept: NextConcept;
   exercise: Exercise | null;
   loadingExercise: boolean;
-  answerDraft: SubmitAnswerPayload;
+  answerDraft: ExerciseAnswerDraft | null;
   optionEntries: [string, string][];
   progressPercent: number;
   bloomColor: string;
@@ -222,13 +213,13 @@ type ExerciseQuestionViewProps = {
   onSubmit: () => void;
   canSubmit: boolean;
   submitting: boolean;
-  t: TranslateFn;
+  t: RichTranslateFn;
 };
 
 type ExerciseRationaleProps = {
   exercise: Exercise;
   localizedBloomLabel: string;
-  t: TranslateFn;
+  t: RichTranslateFn;
 };
 
 function formatPercent(mastery: number) {
@@ -397,7 +388,7 @@ export const ExerciseQuestionView = ({
                 <div className="h-14 w-full bg-neutral-100 animate-pulse rounded-xl delay-150" />
               </div>
             </div>
-          ) : exercise ? (
+          ) : exercise && answerDraft ? (
             <CardContent className="p-5 sm:p-6 md:p-10">
               <ExerciseRationale
                 exercise={exercise}

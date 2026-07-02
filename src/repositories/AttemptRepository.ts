@@ -1,121 +1,115 @@
 import connectDB from '@/lib/mongoose';
-import Attempt from '@/models/Attempt';
-import { buildPaginationMeta } from '@/repositories/pagination';
-import { BaseRepository } from '@/repositories/base';
-import { IAttempt, IAttemptRepository } from '@/interfaces/repositories/IAttemptRepository';
+import AttemptModel from '@/models/Attempt';
+import { buildPaginationMeta } from '@/lib/pagination';
+import type { Attempt } from '@/entities/Attempt';
+import type {
+  AttemptCountFilter,
+  AttemptOwnerIdentity,
+  CreateAttemptData,
+  IAttemptRepository,
+} from '@/interfaces/repositories/IAttemptRepository';
+import type {
+  CountBuckets,
+  CountBucketThresholds,
+  PaginatedRepositoryResult,
+  RepositoryPaginationOptions,
+} from '@/interfaces/repositories/types';
+import { AttemptPersistenceMapper } from '@/repositories/mappers/AttemptPersistenceMapper';
+import { AnswerPersistenceMapper } from '@/repositories/mappers/AnswerPersistenceMapper';
+import type { AttemptPersistenceRecord } from '@/repositories/types/AttemptPersistence';
+import {
+  buildCountBucketsPipeline,
+  resolveCountBuckets,
+  type CountBucketAggregateRecord,
+} from '@/lib/mongoose-count-buckets';
 
-export class AttemptRepository extends BaseRepository<IAttempt> implements IAttemptRepository {
-  constructor() {
-    super(Attempt);
-  }
+const populatedQuizFields = 'title slug description questions';
 
-  override async findById(id: string): Promise<IAttempt | null> {
-    await connectDB();
-    const attempt = await Attempt.findById(id)
-      .populate({
-        path: 'quiz',
-        select: 'title slug description questions',
-      })
-      .lean();
-    return attempt as unknown as IAttempt | null;
-  }
-
+export class AttemptRepository implements IAttemptRepository {
   async findByUser(
     userId: string,
-    options?: {
-      page?: number;
-      limit?: number;
-    },
-  ): Promise<{
-    attempts: IAttempt[];
-    pagination: {
-      currentPage: number;
-      totalPages: number;
-      totalItems: number;
-      itemsPerPage: number;
-      hasNextPage: boolean;
-      hasPrevPage: boolean;
-    };
-  }> {
+    options: RepositoryPaginationOptions = {},
+  ): Promise<PaginatedRepositoryResult<Attempt>> {
     await connectDB();
 
-    const page = options?.page || 1;
-    const limit = options?.limit || 10;
+    const page = options.page ?? 1;
+    const limit = options.limit ?? 10;
     const skip = (page - 1) * limit;
 
-    const attempts = (await Attempt.find({ user: userId })
-      .populate({
-        path: 'quiz',
-        select: 'title slug description questions',
-      })
-      .sort({ takenAt: -1 })
-      .skip(skip)
-      .limit(limit)
-      .lean()) as unknown as IAttempt[];
-
-    const totalItems = await Attempt.countDocuments({ user: userId });
+    const [records, totalItems] = await Promise.all([
+      AttemptModel.find({ user: userId })
+        .populate('quiz', populatedQuizFields)
+        .sort({ takenAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean<AttemptPersistenceRecord[]>(),
+      AttemptModel.countDocuments({ user: userId }),
+    ]);
 
     return {
-      attempts,
+      items: records.map(AttemptPersistenceMapper.toEntity),
       pagination: buildPaginationMeta(page, limit, totalItems),
     };
   }
 
-  async findByUserId(
-    userId: string,
-    page?: number,
-    limit?: number,
-  ): Promise<{ attempts: IAttempt[]; total: number }> {
+  async create(data: CreateAttemptData): Promise<Attempt> {
     await connectDB();
-
-    const pageNum = page || 1;
-    const limitNum = limit || 10;
-    const skip = (pageNum - 1) * limitNum;
-
-    const attempts = (await Attempt.find({ user: userId })
-      .populate({
-        path: 'quiz',
-        select: 'title slug description questions',
-      })
-      .sort({ takenAt: -1 })
-      .skip(skip)
-      .limit(limitNum)
-      .lean()) as unknown as IAttempt[];
-
-    const total = await Attempt.countDocuments({ user: userId });
-
-    return { attempts, total };
+    const identity = data.userId ? { user: data.userId } : { guestEmail: data.guestEmail };
+    const document = await AttemptModel.create({
+      ...identity,
+      quiz: data.quizId,
+      answers: data.answers.map(AnswerPersistenceMapper.toPersistence),
+      score: data.score,
+      totalQuestions: data.totalQuestions,
+      takenAt: data.takenAt,
+    });
+    const record: AttemptPersistenceRecord = document.toObject();
+    return AttemptPersistenceMapper.toEntity(record);
   }
 
   async countByUser(userId: string): Promise<number> {
     await connectDB();
-    return await Attempt.countDocuments({ user: userId });
+    return AttemptModel.countDocuments({ user: userId });
   }
 
   async countByQuiz(quizId: string): Promise<number> {
     await connectDB();
-    return await Attempt.countDocuments({ quiz: quizId });
+    return AttemptModel.countDocuments({ quiz: quizId });
   }
 
-  async findRecentActivity(limit: number = 10): Promise<IAttempt[]> {
+  async findRecentActivity(limit = 10): Promise<Attempt[]> {
     await connectDB();
-    return (await Attempt.find()
+    const records = await AttemptModel.find()
+      .populate('user', 'email')
       .populate('quiz', 'title slug')
       .sort({ takenAt: -1 })
       .limit(limit)
-      .lean()) as unknown as IAttempt[];
+      .lean<AttemptPersistenceRecord[]>();
+    return records.map(AttemptPersistenceMapper.toEntity);
   }
 
-  async findByIdWithQuiz(attemptId: string, userId: string): Promise<IAttempt | null> {
+  async findByIdWithQuiz(attemptId: string, owner: AttemptOwnerIdentity): Promise<Attempt | null> {
     await connectDB();
-    return (await Attempt.findOne({
+    const identityFilter = owner.userId ? { user: owner.userId } : { guestEmail: owner.guestEmail };
+    const record = await AttemptModel.findOne({
       _id: attemptId,
-      user: userId,
+      ...identityFilter,
     })
-      .populate({
-        path: 'quiz',
-        select: 'title slug description questions',
-      })
-      .lean()) as unknown as IAttempt | null;
+      .populate('quiz', populatedQuizFields)
+      .lean<AttemptPersistenceRecord>();
+    return record ? AttemptPersistenceMapper.toEntity(record) : null;
+  }
+
+  async count(filter: AttemptCountFilter = {}): Promise<number> {
+    await connectDB();
+    return AttemptModel.countDocuments(filter);
+  }
+
+  async countByTakenAtBuckets(thresholds: CountBucketThresholds): Promise<CountBuckets> {
+    await connectDB();
+    const records = await AttemptModel.aggregate<CountBucketAggregateRecord>(
+      buildCountBucketsPipeline('takenAt', thresholds),
+    );
+    return resolveCountBuckets(records);
   }
 }

@@ -2,7 +2,7 @@ import { getServerSession } from 'next-auth';
 import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
 import { defaultLocale } from '@/i18n/config';
-import { getDashboardBootstrapData } from '@/lib/dashboard';
+import { getDashboardBootstrapData } from '@/lib/dashboard-factory';
 import { DashboardPageShell } from '@/features/dashboard/components/DashboardPageShell';
 
 export const dynamic = 'force-dynamic';
@@ -17,10 +17,9 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
   }
 
   const userId = session.user.id;
-  const userRole = session.user.role;
-  const bootstrapData = await getDashboardBootstrapData(userId, userRole);
+  const bootstrapData = await getDashboardBootstrapData(userId);
 
-  const userEmail = session.user.email || '';
+  const userEmail = session.user.email ?? '';
 
   return (
     <DashboardPageShell
@@ -28,8 +27,6 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
       userEmail={userEmail}
       session={session}
       stats={bootstrapData.stats}
-      quizzes={bootstrapData.quizzes}
-      yourQuizzes={bootstrapData.yourQuizzes}
       adaptiveSubjects={bootstrapData.adaptiveSubjects}
       inProgressQuizzes={bootstrapData.inProgressQuizzes}
     />

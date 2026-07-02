@@ -6,23 +6,26 @@ import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import {
   AdaptiveApiError,
-  createSessionFromPipeline,
-  getSubjectProgressHistory,
   isAdaptiveRequestAbortedError,
   isAdaptiveServiceUnavailableError,
-} from '@/features/adaptive/lib/api-client';
-import { saveSessionJobMapping } from '../lib/session-storage';
-import type { SessionHistoryItem } from '@/features/adaptive/types';
+} from '@/features/adaptive/lib/adaptive-api-error';
+import {
+  createSessionFromPipeline,
+  getSubjectProgressHistory,
+} from '@/features/adaptive/lib/adaptive-api-methods';
+import { saveActiveSessionId, saveSessionJobMapping } from '../lib/session-storage';
+import { toSessionHistoryViewModels } from '@/features/adaptive/mappers/session-history.mapper';
+import type { SessionHistoryViewModel } from '@/features/adaptive/types/session-history-view-model';
 
 interface SessionHistoryState {
-  sessions: SessionHistoryItem[];
+  sessions: SessionHistoryViewModel[];
   loading: boolean;
   error: string | null;
 }
 
 type SessionHistoryAction =
   | { type: 'hydrateStart' }
-  | { type: 'hydrateSuccess'; sessions: SessionHistoryItem[] }
+  | { type: 'hydrateSuccess'; sessions: SessionHistoryViewModel[] }
   | { type: 'hydrateError'; error: string };
 
 function sessionHistoryReducer(
@@ -72,7 +75,7 @@ export const useSessionHistoryState = () => {
     getSubjectProgressHistory(30)
       .then((data) => {
         if (mounted) {
-          dispatch({ type: 'hydrateSuccess', sessions: data });
+          dispatch({ type: 'hydrateSuccess', sessions: toSessionHistoryViewModels(data) });
         }
       })
       .catch((err) => {
@@ -92,7 +95,7 @@ export const useSessionHistoryState = () => {
     async (jobId: string) => {
       try {
         const session = await createSessionFromPipeline(jobId, 50);
-        localStorage.setItem('al_session_id', session.session_id);
+        saveActiveSessionId(session.session_id);
         saveSessionJobMapping(session.session_id, jobId);
         toast.success(t('processing.creatingSession'));
         router.push(`/adaptive/subject/${session.session_id}`);

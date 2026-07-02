@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import type { StandardApiEnvelope } from '@/lib/api/envelope';
 import { buildStandardErrorBody } from './error';
 import { getApiErrorCodeFromStatus, getDefaultApiErrorMessage } from './error-codes';
 
@@ -41,14 +42,13 @@ function apiStatusErr(detail: string, status = 400, meta?: Record<string, unknow
   return apiErr(errorCodeFromStatus(status), detail, status, meta);
 }
 
-export function apiForward(payload: Record<string, unknown>, status: number): NextResponse {
+export function apiForward(payload: StandardApiEnvelope<unknown>, status: number): NextResponse {
   return NextResponse.json(payload, { status });
 }
 
 export function apiServiceErr(
   result: { success: false; error: string; statusCode: number },
-  fallbackStatus = 400,
   meta?: Record<string, unknown>,
 ): NextResponse {
-  return apiStatusErr(result.error, result.statusCode || fallbackStatus, meta);
+  return apiStatusErr(result.error, result.statusCode, meta);
 }

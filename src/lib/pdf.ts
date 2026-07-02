@@ -1,4 +1,5 @@
 import { fetchApiData } from '@/lib/api/client';
+import type { PresignedUploadUrlResponseDto } from '@/dtos/storage';
 
 /**
  * PDF utility functions shared across create pages.
@@ -21,7 +22,7 @@ export async function getPdfPageCount(file: File): Promise<number> {
  * Returns the S3 key for the uploaded file.
  */
 export async function uploadPdfViaPresignedUrl(file: File): Promise<{ s3Key: string }> {
-  const { uploadUrl, s3Key } = await fetchApiData<{ uploadUrl: string; s3Key: string }>(
+  const { uploadUrl, s3Key } = await fetchApiData<PresignedUploadUrlResponseDto>(
     '/api/storage/presigned-url',
     {
       method: 'POST',
@@ -49,4 +50,14 @@ export async function uploadPdfViaPresignedUrl(file: File): Promise<{ s3Key: str
   }
 
   return { s3Key };
+}
+
+export async function createPdfObjectUrlFromUrl(url: string): Promise<string> {
+  // EXTERNAL: object storage PDF fetch
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`PDF fetch failed with status ${response.status}`);
+  }
+  const blob = await response.blob();
+  return URL.createObjectURL(blob);
 }

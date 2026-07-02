@@ -1,8 +1,8 @@
 'use client';
 
-import { useCallback, useEffect, useReducer } from 'react';
+import { useEffect, useReducer } from 'react';
 import { useTranslations } from 'next-intl';
-import { fetchApiData } from '@/lib/api/client';
+import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { AdminPageShell } from '@/components/admin/AdminPageShell';
 import { Button } from '@/components/ui/Button';
 import {
@@ -19,55 +19,37 @@ import { Input } from '@/components/ui/Input';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { Modal } from '@/components/ui/Modal';
 import Pagination from '@/components/ui/Pagination';
-import { HiOutlineEye, HiOutlineSearch } from '@/components/icons';
+import { HiOutlineEye, HiOutlineSearch } from 'react-icons/hi';
+import {
+  fetchAdminSubscriptionsViewModel,
+  updateAdminSubscriptionStatus,
+} from '@/features/admin/subscriptions/api/admin-subscriptions-api';
+import type {
+  AdminMutableSubscriptionStatusViewModel,
+  AdminSubscriptionStatusViewModel,
+  AdminSubscriptionViewModel,
+  AdminSubscriptionsPaginationViewModel,
+} from '@/features/admin/subscriptions/types/admin-subscriptions-view-model';
 
-const vndCurrencyFormatter = new Intl.NumberFormat('vi-VN', {
-  style: 'currency',
-  currency: 'VND',
-});
-
-const dateTimeFormatter = new Intl.DateTimeFormat('en-US', {
-  year: 'numeric',
-  month: 'short',
-  day: 'numeric',
-  hour: '2-digit',
-  minute: '2-digit',
-});
-
-const STATUS_OPTIONS = ['pending', 'completed', 'cancelled', 'expired'] as const;
-
-interface Subscription {
-  _id: string;
-  userEmail: string;
-  user: string;
-  type: 'monthly' | 'yearly' | 'lifetime';
-  amount: number;
-  status: 'pending' | 'completed' | 'cancelled' | 'expired';
-  payosOrderId: string;
-  payosTransactionId?: string;
-  startDate: string;
-  endDate?: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface PaginationData {
-  page: number;
-  limit: number;
-  total: number;
-  totalPages: number;
-}
+const STATUS_OPTIONS: AdminSubscriptionStatusViewModel[] = [
+  'pending',
+  'completed',
+  'failed',
+  'cancelled',
+  'expired',
+];
 
 interface AdminSubscriptionsState {
   status: 'loading' | 'ready';
-  subscriptions: Subscription[];
+  subscriptions: AdminSubscriptionViewModel[];
   actionLoading: string | null;
   error: string;
   success: string;
+  searchInput: string;
   searchTerm: string;
-  statusFilter: '' | Subscription['status'];
-  pagination: PaginationData;
-  selectedSubscription: Subscription | null;
+  statusFilter: '' | AdminSubscriptionStatusViewModel;
+  pagination: AdminSubscriptionsPaginationViewModel;
+  selectedSubscription: AdminSubscriptionViewModel | null;
 }
 
 type AdminSubscriptionsAction =
@@ -75,13 +57,17 @@ type AdminSubscriptionsAction =
   | {
       type: 'loadSuccess';
       value: {
-        subscriptions: Subscription[];
-        pagination: PaginationData;
+        subscriptions: AdminSubscriptionViewModel[];
+        pagination: AdminSubscriptionsPaginationViewModel;
       };
     }
-  | { type: 'updateStatus'; subscriptionId: string; status: Subscription['status'] };
+  | {
+      type: 'updateStatus';
+      subscriptionId: string;
+      status: AdminMutableSubscriptionStatusViewModel;
+    };
 
-const initialPagination: PaginationData = {
+const initialPagination: AdminSubscriptionsPaginationViewModel = {
   page: 1,
   limit: 10,
   total: 0,
@@ -94,6 +80,7 @@ const initialState: AdminSubscriptionsState = {
   actionLoading: null,
   error: '',
   success: '',
+  searchInput: '',
   searchTerm: '',
   statusFilter: '',
   pagination: initialPagination,
@@ -117,13 +104,13 @@ function adminSubscriptionsReducer(
       };
     case 'updateStatus': {
       const subscriptions = state.subscriptions.map((subscription) =>
-        subscription._id === action.subscriptionId
-          ? { ...subscription, status: action.status }
+        subscription.id === action.subscriptionId
+          ? { ...subscription, status: action.status, isActive: false }
           : subscription,
       );
       const selectedSubscription =
-        state.selectedSubscription?._id === action.subscriptionId
-          ? { ...state.selectedSubscription, status: action.status }
+        state.selectedSubscription?.id === action.subscriptionId
+          ? { ...state.selectedSubscription, status: action.status, isActive: false }
           : state.selectedSubscription;
 
       return {
@@ -137,30 +124,21 @@ function adminSubscriptionsReducer(
   }
 }
 
-function formatDate(dateString: string) {
-  return dateTimeFormatter.format(new Date(dateString));
-}
-
-function formatCurrency(amount: number) {
-  return vndCurrencyFormatter.format(amount);
-}
-
-function getStatusBadge(status: Subscription['status']) {
+function getStatusBadge(status: AdminSubscriptionStatusViewModel) {
   switch (status) {
     case 'completed':
       return <Badge variant="success">{status}</Badge>;
     case 'pending':
       return <Badge variant="warning">{status}</Badge>;
     case 'cancelled':
+    case 'failed':
       return <Badge variant="danger">{status}</Badge>;
     case 'expired':
-      return <Badge variant="default">{status}</Badge>;
-    default:
       return <Badge variant="default">{status}</Badge>;
   }
 }
 
-function getTypeBadge(type: Subscription['type']) {
+function getTypeBadge(type: string) {
   switch (type) {
     case 'lifetime':
     case 'yearly':
@@ -172,13 +150,14 @@ function getTypeBadge(type: Subscription['type']) {
   }
 }
 
-function SubscriptionsHeader({ title, description }: { title: string; description: string }) {
-  return (
-    <div className="mb-8">
-      <h1 className="text-3xl font-semibold text-neutral-900">{title}</h1>
-      <p className="mt-2 text-neutral-600">{description}</p>
-    </div>
-  );
+function getAvailableStatusTransitions(
+  subscription: AdminSubscriptionViewModel,
+): AdminMutableSubscriptionStatusViewModel[] {
+  if (subscription.status === 'pending') return ['failed', 'cancelled'];
+  if (subscription.status === 'completed') {
+    return subscription.endDate ? ['cancelled', 'expired'] : ['cancelled'];
+  }
+  return [];
 }
 
 function SubscriptionSearchBar({
@@ -228,8 +207,8 @@ function SubscriptionStatusFilters({
   currentFilter,
   onChange,
 }: {
-  currentFilter: '' | Subscription['status'];
-  onChange: (value: '' | Subscription['status']) => void;
+  currentFilter: '' | AdminSubscriptionStatusViewModel;
+  onChange: (value: '' | AdminSubscriptionStatusViewModel) => void;
 }) {
   return (
     <div className="mb-6 flex flex-wrap gap-2">
@@ -269,11 +248,11 @@ function SubscriptionsTable({
   loadingLabel,
   onViewDetails,
 }: {
-  subscriptions: Subscription[];
-  pagination: PaginationData;
+  subscriptions: AdminSubscriptionViewModel[];
+  pagination: AdminSubscriptionsPaginationViewModel;
   noResultsLabel: string;
   loadingLabel: string;
-  onViewDetails: (subscription: Subscription) => void;
+  onViewDetails: (subscription: AdminSubscriptionViewModel) => void;
 }) {
   return (
     <Card>
@@ -324,19 +303,15 @@ function SubscriptionsTable({
               </thead>
               <tbody>
                 {subscriptions.map((subscription) => (
-                  <tr key={subscription._id} className="border-b bg-white hover:bg-neutral-50">
+                  <tr key={subscription.id} className="border-b bg-white hover:bg-neutral-50">
                     <td className="px-6 py-4 font-medium text-neutral-900">
                       {subscription.userEmail}
                     </td>
                     <td className="px-6 py-4">{getTypeBadge(subscription.type)}</td>
-                    <td className="px-6 py-4">{formatCurrency(subscription.amount)}</td>
+                    <td className="px-6 py-4">{subscription.amountLabel}</td>
                     <td className="px-6 py-4">{getStatusBadge(subscription.status)}</td>
-                    <td className="px-6 py-4 text-neutral-500">
-                      {formatDate(subscription.startDate)}
-                    </td>
-                    <td className="px-6 py-4 text-neutral-500">
-                      {subscription.endDate ? formatDate(subscription.endDate) : 'N/A'}
-                    </td>
+                    <td className="px-6 py-4 text-neutral-500">{subscription.startDateLabel}</td>
+                    <td className="px-6 py-4 text-neutral-500">{subscription.endDateLabel}</td>
                     <td className="px-6 py-4">
                       <Button
                         variant="outline"
@@ -367,11 +342,13 @@ function SubscriptionDetailModal({
   onClose,
   onUpdateStatus,
 }: {
-  subscription: Subscription | null;
+  subscription: AdminSubscriptionViewModel | null;
   actionLoadingId: string | null;
   onClose: () => void;
-  onUpdateStatus: (subscriptionId: string, status: Subscription['status']) => void;
+  onUpdateStatus: (subscriptionId: string, status: AdminMutableSubscriptionStatusViewModel) => void;
 }) {
+  const availableTransitions = subscription ? getAvailableStatusTransitions(subscription) : [];
+
   return (
     <Modal isOpen={!!subscription} onClose={onClose} title="Subscription Details">
       {subscription ? (
@@ -382,7 +359,7 @@ function SubscriptionDetailModal({
               label="Subscription Type"
               value={getTypeBadge(subscription.type)}
             />
-            <SubscriptionDetailField label="Amount" value={formatCurrency(subscription.amount)} />
+            <SubscriptionDetailField label="Amount" value={subscription.amountLabel} />
             <SubscriptionDetailField label="Status" value={getStatusBadge(subscription.status)} />
             <SubscriptionDetailField
               label="PayOS Order ID"
@@ -391,48 +368,34 @@ function SubscriptionDetailModal({
             <SubscriptionDetailField
               label="PayOS Transaction ID"
               value={
-                <span className="font-mono text-sm">
-                  {subscription.payosTransactionId || 'N/A'}
-                </span>
+                <span className="font-mono text-sm">{subscription.payosTransactionIdLabel}</span>
               }
             />
-            <SubscriptionDetailField
-              label="Start Date"
-              value={formatDate(subscription.startDate)}
-            />
-            <SubscriptionDetailField
-              label="End Date"
-              value={subscription.endDate ? formatDate(subscription.endDate) : 'Lifetime'}
-            />
-            <SubscriptionDetailField
-              label="Created At"
-              value={formatDate(subscription.createdAt)}
-            />
-            <SubscriptionDetailField
-              label="Updated At"
-              value={formatDate(subscription.updatedAt)}
-            />
+            <SubscriptionDetailField label="Start Date" value={subscription.startDateLabel} />
+            <SubscriptionDetailField label="End Date" value={subscription.endDateLabel} />
+            <SubscriptionDetailField label="Created At" value={subscription.createdAtLabel} />
+            <SubscriptionDetailField label="Updated At" value={subscription.updatedAtLabel} />
           </div>
 
-          <div className="border-t pt-4">
-            <p className="mb-3 block text-sm font-medium text-neutral-700">Update Status</p>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-              {(['completed', 'cancelled', 'expired'] as const).map((status) => (
-                <Button
-                  key={status}
-                  variant="outline"
-                  size="sm"
-                  disabled={subscription.status === status || actionLoadingId === subscription._id}
-                  onClick={() => onUpdateStatus(subscription._id, status)}
-                  className={`min-h-[40px] w-full justify-center px-3 text-sm font-medium capitalize ${
-                    subscription.status === status ? 'cursor-not-allowed opacity-50' : ''
-                  }`}
-                >
-                  {actionLoadingId === subscription._id ? 'Updating…' : `Mark as ${status}`}
-                </Button>
-              ))}
+          {availableTransitions.length > 0 ? (
+            <div className="border-t pt-4">
+              <p className="mb-3 block text-sm font-medium text-neutral-700">Update Status</p>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                {availableTransitions.map((status) => (
+                  <Button
+                    key={status}
+                    variant="outline"
+                    size="sm"
+                    disabled={actionLoadingId === subscription.id}
+                    onClick={() => onUpdateStatus(subscription.id, status)}
+                    className="min-h-[40px] w-full justify-center px-3 text-sm font-medium capitalize"
+                  >
+                    {actionLoadingId === subscription.id ? 'Updating…' : `Mark as ${status}`}
+                  </Button>
+                ))}
+              </div>
             </div>
-          </div>
+          ) : null}
         </div>
       ) : null}
     </Modal>
@@ -453,48 +416,20 @@ export default function AdminSubscriptionsPage() {
   const tCommon = useTranslations('common');
   const [state, dispatch] = useReducer(adminSubscriptionsReducer, initialState);
 
-  const loadSubscriptions = useCallback(
-    async (page: number, searchTerm: string, statusFilter: '' | Subscription['status']) => {
-      dispatch({ type: 'patch', value: { status: 'loading', success: '' } });
-      try {
-        const params = new URLSearchParams({
-          page: page.toString(),
-          limit: state.pagination.limit.toString(),
-        });
+  useEffect(() => {
+    const controller = new AbortController();
+    dispatch({ type: 'patch', value: { status: 'loading', success: '' } });
 
-        if (searchTerm.trim()) {
-          params.append('search', searchTerm.trim());
-        }
-
-        if (statusFilter) {
-          params.append('status', statusFilter);
-        }
-
-        const data = await fetchApiData<{
-          subscriptions: Subscription[];
-          pagination: {
-            currentPage: number;
-            itemsPerPage: number;
-            totalItems: number;
-            totalPages: number;
-          };
-        }>(`/api/admin/subscriptions?${params}`, {
-          cache: 'no-store',
-        });
-
-        dispatch({
-          type: 'loadSuccess',
-          value: {
-            subscriptions: data.subscriptions,
-            pagination: {
-              page: data.pagination.currentPage,
-              limit: data.pagination.itemsPerPage,
-              total: data.pagination.totalItems,
-              totalPages: data.pagination.totalPages,
-            },
-          },
-        });
-      } catch (error) {
+    void fetchAdminSubscriptionsViewModel({
+      page: state.pagination.page,
+      limit: state.pagination.limit,
+      searchTerm: state.searchTerm,
+      statusFilter: state.statusFilter,
+      signal: controller.signal,
+    })
+      .then((value) => dispatch({ type: 'loadSuccess', value }))
+      .catch((error: unknown) => {
+        if (controller.signal.aborted) return;
         dispatch({
           type: 'patch',
           value: {
@@ -502,26 +437,19 @@ export default function AdminSubscriptionsPage() {
             error: error instanceof Error ? error.message : 'Failed to fetch subscriptions',
           },
         });
-      }
-    },
-    [state.pagination.limit],
-  );
+      });
 
-  useEffect(() => {
-    void loadSubscriptions(state.pagination.page, state.searchTerm, state.statusFilter);
-  }, [loadSubscriptions, state.pagination.page, state.searchTerm, state.statusFilter]);
+    return () => controller.abort();
+  }, [state.pagination.limit, state.pagination.page, state.searchTerm, state.statusFilter]);
 
-  const setSearchTerm = (searchTerm: string) => {
+  const setSearchInput = (searchInput: string) => {
     dispatch({
       type: 'patch',
-      value: {
-        searchTerm,
-        pagination: { ...state.pagination, page: 1 },
-      },
+      value: { searchInput },
     });
   };
 
-  const setStatusFilter = (statusFilter: '' | Subscription['status']) => {
+  const setStatusFilter = (statusFilter: '' | AdminSubscriptionStatusViewModel) => {
     dispatch({
       type: 'patch',
       value: {
@@ -536,6 +464,7 @@ export default function AdminSubscriptionsPage() {
     dispatch({
       type: 'patch',
       value: {
+        searchTerm: state.searchInput.trim(),
         pagination: { ...state.pagination, page: 1 },
         success: '',
       },
@@ -556,6 +485,7 @@ export default function AdminSubscriptionsPage() {
     dispatch({
       type: 'patch',
       value: {
+        searchInput: '',
         searchTerm: '',
         statusFilter: '',
         success: '',
@@ -564,16 +494,13 @@ export default function AdminSubscriptionsPage() {
     });
   };
 
-  const handleUpdateStatus = async (subscriptionId: string, status: Subscription['status']) => {
+  const handleUpdateStatus = async (
+    subscriptionId: string,
+    status: AdminMutableSubscriptionStatusViewModel,
+  ) => {
     dispatch({ type: 'patch', value: { actionLoading: subscriptionId } });
     try {
-      await fetchApiData(`/api/admin/subscriptions/${subscriptionId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ status }),
-      });
+      await updateAdminSubscriptionStatus({ subscriptionId, status });
       dispatch({ type: 'updateStatus', subscriptionId, status });
       dispatch({
         type: 'patch',
@@ -589,26 +516,25 @@ export default function AdminSubscriptionsPage() {
           error: error instanceof Error ? error.message : 'Failed to update subscription',
         },
       });
-    } finally {
-      dispatch({ type: 'patch', value: { actionLoading: null } });
     }
+    dispatch({ type: 'patch', value: { actionLoading: null } });
   };
 
   return (
     <AdminPageShell>
       <div className="mx-auto max-w-6xl">
-        <SubscriptionsHeader
+        <AdminPageHeader
           title={t('subscriptions')}
           description="Manage user subscriptions and payment statuses"
         />
 
         <SubscriptionSearchBar
-          searchTerm={state.searchTerm}
+          searchTerm={state.searchInput}
           statusFilter={state.statusFilter}
           searchLabel={tCommon('search')}
           clearLabel={tCommon('clear')}
           searchPlaceholder={t('searchByEmailPlaceholder')}
-          onSearchTermChange={setSearchTerm}
+          onSearchTermChange={setSearchInput}
           onSubmit={handleSearch}
           onClear={handleClearFilters}
         />

@@ -5,8 +5,8 @@ import { Button } from '@/components/ui/Button';
 import { Spinner } from '@/components/ui/Spinner';
 import { Card, CardContent, CardHeader } from '@/components/ui/Card';
 import { DynamicMarkdownRenderer } from '@/components/ui/DynamicMarkdownRenderer';
-import { HiArrowRight, HiCheck, HiOutlineHome, HiOutlineX } from '@/components/icons';
-import type { SubmitResult, Exercise, TranslateFn } from '@/features/adaptive/types';
+import { HiArrowRight, HiCheck, HiOutlineHome, HiOutlineX } from 'react-icons/hi';
+import type { SubmitResult, Exercise, TranslateFn } from '@/features/adaptive/types/learning';
 
 function normalizeMathContent(content: string): string {
   if (!content) return content;

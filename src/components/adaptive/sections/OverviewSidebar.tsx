@@ -4,7 +4,8 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { SurfaceCard } from '@/components/ui/SurfaceCard';
 import { ADAPTIVE_ROUTES } from '@/features/adaptive/lib/routes';
-import type { SessionHistoryItem, TranslateFn } from '@/features/adaptive/types';
+import type { TranslateFn } from '@/features/adaptive/types/learning';
+import type { SessionHistoryViewModel } from '@/features/adaptive/types/session-history-view-model';
 
 const ASSET_BASE = '/images/home-redesign';
 
@@ -62,7 +63,7 @@ export function RecentActivity({
   sessions,
   t,
 }: {
-  sessions: SessionHistoryItem[];
+  sessions: SessionHistoryViewModel[];
   t: TranslateFn;
 }) {
   const activities = sessions.slice(0, 4);
@@ -73,17 +74,16 @@ export function RecentActivity({
       <div className="relative mt-5 flex flex-col gap-4 pl-7 before:absolute before:bottom-1 before:left-2 before:top-1 before:w-px before:bg-ink-muted/50 sm:mt-6 sm:gap-5 sm:pl-8">
         {activities.length > 0 ? (
           activities.map((session) => {
-            const title = session.subject_id || session.filename.replace(/\.[^.]+$/, '');
             return (
-              <div key={`${session.job_id}-${session.updated_at}`} className="relative">
+              <div key={`${session.jobId}-${session.updatedAt}`} className="relative">
                 <span className="absolute -left-[27px] top-0.5 size-4 rounded-full border-4 border-accent-soft bg-accent sm:-left-[31px]" />
                 <p className="line-clamp-2 font-home text-sm leading-[1.4] text-ink sm:text-base">
-                  {t('recentActivityCompleted', { title })}
+                  {t('recentActivityCompleted', { title: session.displayTitle })}
                 </p>
                 <p className="mt-1 font-home text-sm text-ink-muted">
                   {t('recentActivityMeta', {
-                    score: Math.round(session.accuracy),
-                    time: relativeTime(session.updated_at || session.created_at, t),
+                    score: session.accuracyPercent,
+                    time: relativeTime(session.lastActivityAt, t),
                   })}
                 </p>
               </div>

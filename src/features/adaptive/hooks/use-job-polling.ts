@@ -1,8 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { isRetryableAdaptiveError } from '@/features/adaptive/lib/api-client';
-import type { PipelineJobStatus, PipelineStatus } from '@/features/adaptive/types';
+import { isRetryableAdaptiveError } from '@/features/adaptive/lib/adaptive-api-error';
+import type { PipelineJobStatus, PipelineStatus } from '@/features/adaptive/types/pipeline';
 
 const BASE_DELAY_MS = 2_000;
 const MAX_DELAY_MS = 10_000;

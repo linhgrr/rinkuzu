@@ -1,7 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { MarkdownSkeleton } from '@/components/skeletons';
+import { MarkdownSkeleton } from '@/components/skeletons/MarkdownSkeleton';
 
 /**
  * Dynamic MarkdownRenderer - lazy loads react-markdown and remark-gfm

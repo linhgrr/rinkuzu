@@ -2,7 +2,7 @@
 
 import { Input, Textarea } from '@/components/ui/Input';
 import { FolderSelector } from '@/features/folders/components/FolderSelector';
-import { HiOutlineLockClosed, HiOutlineTag } from '@/components/icons';
+import { HiOutlineLockClosed, HiOutlineTag } from 'react-icons/hi';
 
 type QuizMetaLabels = {
   title: string;
@@ -86,12 +86,12 @@ export default function QuizMetaForm({
       {showPrompt && (
         <div>
           <Textarea
-            label={labels.promptLabel || ''}
+            label={labels.promptLabel ?? ''}
             id="aiPrompt"
             rows={3}
             value={aiPrompt}
             onChange={(e) => onAiPromptChange(e.target.value)}
-            placeholder={labels.promptPlaceholder || ''}
+            placeholder={labels.promptPlaceholder ?? ''}
             maxLength={aiPromptMaxLength}
             disabled={disabled}
           />

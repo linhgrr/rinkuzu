@@ -1,5 +1,8 @@
 {
   "title": "Ôn tập",
+  "loading": "Đang tải thẻ ôn tập...",
+  "loadError": "Không thể tải thẻ ôn tập",
+  "submitError": "Không thể gửi kết quả ôn tập",
   "dueCards": "Thẻ cần ôn tập",
   "noCards": "Không có thẻ nào cần ôn tập!",
   "allDone": "Bạn đã hoàn thành tất cả!",

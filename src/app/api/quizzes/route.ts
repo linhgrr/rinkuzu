@@ -3,6 +3,11 @@ import { withAuth, withOptionalAuth } from '@/lib/api/auth';
 import { serviceFactory } from '@/lib/serviceFactory';
 import { apiErr, apiOk } from '@/lib/api/response';
 import { logger } from '@/lib/logger';
+import { readAndValidateJson } from '@/lib/api/request';
+import { createQuizRequestSchema, quizListQuerySchema } from '@/dtos/quiz';
+import { QuizDetailDtoMapper } from '@/mappers/quiz/QuizDetailDtoMapper';
+import { QuizCreationError } from '@/lib/quiz/errors';
+import { UNFILED_FOLDER_TARGET } from '@/shared/constants/folder';
 
 const quizService = serviceFactory.getQuizService();
 
@@ -12,38 +17,46 @@ export const GET = withOptionalAuth(async (request: NextRequest, { session, user
   try {
     const isGuest = !session?.user;
     const url = new URL(request.url);
-    const search = url.searchParams.get('search') || undefined;
-    const folderParam = url.searchParams.get('folder');
-    const page = parseInt(url.searchParams.get('page') || '1');
-    const limit = parseInt(url.searchParams.get('limit') || '10');
-    const mine = url.searchParams.get('mine');
-    const compact = url.searchParams.get('compact') === 'true';
-    const visibility = url.searchParams.get('visibility');
-    const onlyMine = !isGuest && mine !== null && mine !== 'false';
+    const query = quizListQuerySchema.safeParse({
+      search: url.searchParams.get('search') ?? undefined,
+      folder: url.searchParams.get('folder') ?? undefined,
+      page: url.searchParams.get('page') ?? undefined,
+      limit: url.searchParams.get('limit') ?? undefined,
+      mine: url.searchParams.get('mine') ?? undefined,
+      compact: url.searchParams.get('compact') ?? undefined,
+      visibility: url.searchParams.get('visibility') ?? undefined,
+    });
+    if (!query.success) {
+      return apiErr('validation_error', 'Invalid quiz query parameters', 400, {
+        issues: query.error.flatten().fieldErrors,
+      });
+    }
+
+    const onlyMine = !isGuest && query.data.mine;
     const isAdmin = session?.user?.role === 'admin';
 
     const result = await quizService.getQuizzes({
-      search,
+      search: query.data.search,
       folder:
-        onlyMine && folderParam !== null
-          ? folderParam === 'null' || folderParam === 'default'
+        onlyMine && query.data.folder !== undefined
+          ? query.data.folder === UNFILED_FOLDER_TARGET
             ? null
-            : folderParam
+            : query.data.folder
           : undefined,
-      page,
-      limit,
+      page: query.data.page,
+      limit: query.data.limit,
       isPrivate:
         isGuest || (!onlyMine && !isAdmin)
           ? false
-          : visibility === 'private'
+          : query.data.visibility === 'private'
             ? true
-            : visibility === 'public'
+            : query.data.visibility === 'public'
               ? false
               : undefined,
       userRole: session?.user?.role,
       userId: userId ?? undefined,
       onlyMine,
-      compact,
+      compact: query.data.compact,
     });
 
     return apiOk({
@@ -59,32 +72,22 @@ export const GET = withOptionalAuth(async (request: NextRequest, { session, user
 // POST /api/quizzes - Create quiz from prepared data
 export const POST = withAuth(async (request: NextRequest, { userId }) => {
   try {
-    const { title, description, folderId, questions, isPrivate, pdfUrl } = await request.json();
+    const input = await readAndValidateJson(request, createQuizRequestSchema);
+    if (!input.success) {
+      return apiErr('validation_error', input.error, 400, input.fields);
+    }
 
-    const quiz = await quizService.createQuiz(userId, {
-      title,
-      description,
-      folderId,
-      questions,
-      isPrivate,
-      pdfUrl,
-    });
+    const quiz = await quizService.createQuiz(userId, input.data);
 
-    return apiOk(quiz, 201, {
+    return apiOk(QuizDetailDtoMapper.toDetail(quiz), 201, {
       meta: { message: 'Quiz created successfully' },
     });
   } catch (error: unknown) {
     logger.error({ error }, 'Create quiz error');
-    const message = error instanceof Error ? error.message : '';
-
-    if (
-      message.includes('Title and questions are required') ||
-      message.includes('Invalid folder selected') ||
-      message.includes('Premium subscription required to create private quizzes') ||
-      message.includes('Question') ||
-      message.includes('Type must be')
-    ) {
-      return apiErr('validation_error', message, 400);
+    if (error instanceof QuizCreationError) {
+      const status = error.code === 'premium_required' ? 403 : 400;
+      const code = error.code === 'premium_required' ? 'forbidden' : 'validation_error';
+      return apiErr(code, error.message, status);
     }
 
     return apiErr('internal_error', 'Internal server error', 500);

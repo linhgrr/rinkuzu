@@ -10,40 +10,29 @@ import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { QuizUploadDropzone } from '@/features/dashboard/components/QuizUploadDropzone';
 import { FoldersView } from '@/features/folders/components/FoldersView';
 import { QuizCard, QuizCardSkeleton } from '@/features/quiz/components/QuizCard';
-import { fetchApiData, fetchApiResponse } from '@/lib/api/client';
+import { deleteQuizById } from '@/features/quiz/api/quiz-api';
 import { extractUnknownErrorMessage } from '@/lib/api/error';
-import {
-  matchesLibraryStatus,
-  type QuizLibraryFilter,
-  type QuizLibraryStatus,
-} from '@/lib/quiz/library';
-import { IQuiz, PaginationMeta } from '@/types';
-import { HiOutlineDocumentText } from '@/components/icons';
-import { groupQuizzesByMonthAndWeek } from '@/features/profile/lib/quizDateGroups';
-
-type QuizFilter = QuizLibraryFilter;
-type LibraryQuiz = IQuiz & {
-  displayDate?: string;
-  lastAttemptAt?: string | null;
-  ownedByMe?: boolean;
-  libraryStatus?: QuizLibraryStatus;
-};
+import { matchesLibraryStatus, type QuizLibraryFilter } from '@/lib/quiz/library';
+import { HiOutlineDocumentText } from 'react-icons/hi';
+import { fetchProfileQuizLibraryViewModel } from '@/features/profile/api/profile-quizzes-api';
+import { toProfileQuizMonthGroupsViewModel } from '@/features/profile/mappers/profile-quiz.mapper';
+import type { ProfileQuizViewModel } from '@/features/profile/types/profile-quiz-view-model';
 
 interface State {
-  quizzes: LibraryQuiz[];
+  quizzes: ProfileQuizViewModel[];
   loading: boolean;
   error: string;
-  filter: QuizFilter;
-  quizToDelete: IQuiz | null;
+  filter: QuizLibraryFilter;
+  quizToDelete: ProfileQuizViewModel | null;
   deletingQuizId: string | null;
 }
 
 type Action =
   | { type: 'fetch:start' }
-  | { type: 'fetch:success'; quizzes: LibraryQuiz[] }
+  | { type: 'fetch:success'; quizzes: ProfileQuizViewModel[] }
   | { type: 'fetch:error'; error: string }
-  | { type: 'filter:set'; filter: QuizFilter }
-  | { type: 'delete:prompt'; quiz: IQuiz }
+  | { type: 'filter:set'; filter: QuizLibraryFilter }
+  | { type: 'delete:prompt'; quiz: ProfileQuizViewModel }
   | { type: 'delete:start'; quizId: string }
   | { type: 'delete:success'; quizId: string }
   | { type: 'delete:error'; error: string }
@@ -75,7 +64,7 @@ function reducer(state: State, action: Action): State {
     case 'delete:success':
       return {
         ...state,
-        quizzes: state.quizzes.filter((quiz) => quiz._id !== action.quizId),
+        quizzes: state.quizzes.filter((quiz) => quiz.id !== action.quizId),
         deletingQuizId: null,
         quizToDelete: null,
       };
@@ -86,19 +75,6 @@ function reducer(state: State, action: Action): State {
     default:
       return state;
   }
-}
-
-const MONTH_FORMATTERS = {
-  en: new Intl.DateTimeFormat('en', { month: 'long', year: 'numeric' }),
-  vi: new Intl.DateTimeFormat('vi', { month: 'long', year: 'numeric' }),
-} as const;
-
-function localeKey(locale: string): keyof typeof MONTH_FORMATTERS {
-  return locale === 'vi' ? 'vi' : 'en';
-}
-
-function formatMonth(date: Date, locale: string): string {
-  return MONTH_FORMATTERS[localeKey(locale)].format(date);
 }
 
 export default function ProfileQuizzes({ tab = 'quizzes' }: { tab?: 'quizzes' | 'folders' }) {
@@ -113,9 +89,7 @@ export default function ProfileQuizzes({ tab = 'quizzes' }: { tab?: 'quizzes' | 
     async function loadQuizzes() {
       dispatch({ type: 'fetch:start' });
       try {
-        const data = await fetchApiData<{ quizzes: LibraryQuiz[]; pagination: PaginationMeta }>(
-          '/api/library?limit=100',
-        );
+        const data = await fetchProfileQuizLibraryViewModel();
         if (active) dispatch({ type: 'fetch:success', quizzes: data.quizzes });
       } catch (error) {
         if (active) {
@@ -136,22 +110,17 @@ export default function ProfileQuizzes({ tab = 'quizzes' }: { tab?: 'quizzes' | 
   const visibleQuizzes = state.quizzes.filter((quiz) =>
     matchesLibraryStatus(quiz.libraryStatus, state.filter),
   );
-  const groupedQuizzes = groupQuizzesByMonthAndWeek(visibleQuizzes).map((month) => ({
-    ...month,
-    quizzes: month.weeks.flatMap((week) => week.quizzes),
-  }));
+  const groupedQuizzes = toProfileQuizMonthGroupsViewModel({
+    quizzes: visibleQuizzes,
+    locale,
+  });
 
   async function deleteQuiz(quizId: string) {
     dispatch({ type: 'delete:start', quizId });
     try {
-      const response = await fetchApiResponse<null, { message?: string }>(
-        `/api/quizzes/${quizId}`,
-        {
-          method: 'DELETE',
-        },
-      );
+      await deleteQuizById(quizId);
       dispatch({ type: 'delete:success', quizId });
-      toast.success(response.meta?.message || t('quizDeleted'));
+      toast.success(t('quizDeleted'));
     } catch (error) {
       dispatch({
         type: 'delete:error',
@@ -257,19 +226,19 @@ export default function ProfileQuizzes({ tab = 'quizzes' }: { tab?: 'quizzes' | 
                           id={`quiz-month-${month.key}`}
                           className="mb-5 text-lg font-semibold capitalize text-ink"
                         >
-                          {formatMonth(month.date, locale)}
+                          {month.label}
                         </h3>
 
                         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                           {month.quizzes.map((quiz) => (
                             <QuizCard
-                              key={quiz._id}
+                              key={quiz.id}
                               quiz={quiz}
+                              quizId={quiz.id}
                               locale={locale}
                               onDelete={
                                 quiz.ownedByMe
-                                  ? (selected) =>
-                                      dispatch({ type: 'delete:prompt', quiz: selected })
+                                  ? () => dispatch({ type: 'delete:prompt', quiz })
                                   : undefined
                               }
                             />
@@ -300,9 +269,9 @@ export default function ProfileQuizzes({ tab = 'quizzes' }: { tab?: 'quizzes' | 
           }
           confirmText={tCommon('delete')}
           confirmVariant="destructive"
-          isLoading={state.deletingQuizId === state.quizToDelete?._id}
+          isLoading={state.deletingQuizId === state.quizToDelete?.id}
           onCancel={() => dispatch({ type: 'delete:cancel' })}
-          onConfirm={() => state.quizToDelete && void deleteQuiz(state.quizToDelete._id)}
+          onConfirm={() => state.quizToDelete && void deleteQuiz(state.quizToDelete.id)}
         />
       </div>
     </div>

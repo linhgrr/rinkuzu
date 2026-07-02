@@ -3,44 +3,27 @@
 import { useEffect, useReducer } from 'react';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
-import { fetchApiData } from '@/lib/api/client';
 import { assertTrustedPayosCheckoutUrl } from '@/lib/security/trusted-navigation';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { FullPageSpinner } from '@/components/ui/FullPageSpinner';
-import { HiOutlineCheck, HiOutlineShieldCheck } from '@/components/icons';
-
-const vndCurrencyFormatter = new Intl.NumberFormat('vi-VN', {
-  style: 'currency',
-  currency: 'VND',
-});
-
-interface SubscriptionPlan {
-  id: string;
-  name: string;
-  price: number;
-  duration: string;
-  durationDisplay?: string;
-  features: string[];
-}
-
-interface SubscriptionStatus {
-  subscription?: {
-    type: string;
-    startDate?: string;
-    endDate?: string;
-    isActive: boolean;
-    status?: string;
-  };
-  isPremium: boolean;
-}
+import { HiOutlineCheck, HiOutlineShieldCheck } from 'react-icons/hi';
+import type {
+  SubscriptionPageViewModel,
+  SubscriptionPlanViewModel,
+} from '@/features/subscription/types/subscription-page-view-model';
+import {
+  createSubscriptionPaymentUrl,
+  fetchSubscriptionPageViewModel,
+} from '@/features/subscription/api/subscription-page-api';
 
 interface SubscriptionPageState {
   status: 'loading' | 'ready';
-  plans: SubscriptionPlan[];
-  subscriptionStatus: SubscriptionStatus | null;
-  selectedPlan: SubscriptionPlan | null;
+  plans: SubscriptionPlanViewModel[];
+  currentSubscription: SubscriptionPageViewModel['currentSubscription'];
+  isPremium: boolean;
+  selectedPlan: SubscriptionPlanViewModel | null;
   paymentLoading: boolean;
 }
 
@@ -48,16 +31,14 @@ type SubscriptionPageAction =
   | { type: 'patch'; value: Partial<SubscriptionPageState> }
   | {
       type: 'loadSuccess';
-      value: {
-        plans: SubscriptionPlan[];
-        subscriptionStatus: SubscriptionStatus;
-      };
+      value: SubscriptionPageViewModel;
     };
 
 const initialState: SubscriptionPageState = {
   status: 'loading',
   plans: [],
-  subscriptionStatus: null,
+  currentSubscription: null,
+  isPremium: false,
   selectedPlan: null,
   paymentLoading: false,
 };
@@ -74,7 +55,8 @@ function subscriptionPageReducer(
         ...state,
         status: 'ready',
         plans: action.value.plans,
-        subscriptionStatus: action.value.subscriptionStatus,
+        currentSubscription: action.value.currentSubscription,
+        isPremium: action.value.isPremium,
       };
     default:
       return state;
@@ -88,21 +70,8 @@ export default function SubscriptionPage() {
   useEffect(() => {
     const loadInitialData = async () => {
       try {
-        const [plansData, subscriptionStatus] = await Promise.all([
-          fetchApiData<{
-            plans: SubscriptionPlan[];
-            meta: { durationFormat: string; supportedDurations: string[] };
-          }>('/api/subscription/plans'),
-          fetchApiData<SubscriptionStatus>('/api/subscription/status'),
-        ]);
-
-        dispatch({
-          type: 'loadSuccess',
-          value: {
-            plans: plansData.plans,
-            subscriptionStatus,
-          },
-        });
+        const viewModel = await fetchSubscriptionPageViewModel();
+        dispatch({ type: 'loadSuccess', value: viewModel });
       } catch (error) {
         console.error('Error loading subscription data:', error);
         dispatch({ type: 'patch', value: { status: 'ready' } });
@@ -112,7 +81,7 @@ export default function SubscriptionPage() {
     void loadInitialData();
   }, []);
 
-  const handlePurchase = async (plan: SubscriptionPlan) => {
+  const handlePurchase = (plan: SubscriptionPlanViewModel): void => {
     dispatch({ type: 'patch', value: { selectedPlan: plan } });
   };
 
@@ -121,33 +90,17 @@ export default function SubscriptionPage() {
 
     dispatch({ type: 'patch', value: { paymentLoading: true } });
     try {
-      const data = await fetchApiData<{ paymentUrl: string }>('/api/subscription/create-payment', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ planId: state.selectedPlan.id }),
-      });
-      window.location.assign(assertTrustedPayosCheckoutUrl(data.paymentUrl));
+      const paymentUrl = await createSubscriptionPaymentUrl(state.selectedPlan.id);
+      window.location.assign(assertTrustedPayosCheckoutUrl(paymentUrl));
     } catch (error) {
       console.error('Error creating payment:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to create payment request');
-    } finally {
-      dispatch({ type: 'patch', value: { paymentLoading: false, selectedPlan: null } });
     }
+    dispatch({ type: 'patch', value: { paymentLoading: false, selectedPlan: null } });
   };
 
-  const formatPrice = (price: number) => {
-    return vndCurrencyFormatter.format(price);
-  };
-
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString('vi-VN');
-  };
-
-  const currentSubscription = state.subscriptionStatus?.subscription;
-  const hasActivePremium = Boolean(state.subscriptionStatus?.isPremium);
+  const currentSubscription = state.currentSubscription;
+  const hasActivePremium = state.isPremium;
 
   if (state.status === 'loading') {
     return <FullPageSpinner label={t('loading')} />;
@@ -186,7 +139,7 @@ export default function SubscriptionPage() {
                   <p
                     className={`font-medium ${hasActivePremium ? 'text-green-800' : 'text-amber-800'}`}
                   >
-                    {currentSubscription.endDate ? formatDate(currentSubscription.endDate) : '-'}
+                    {currentSubscription.endDateLabel}
                   </p>
                 </div>
               </div>
@@ -208,11 +161,9 @@ export default function SubscriptionPage() {
                 <div className="text-center mb-4 md:mb-6">
                   <h3 className="text-xl md:text-2xl font-semibold text-ink mb-2">{plan.name}</h3>
                   <div className="text-2xl md:text-4xl font-bold text-accent mb-2">
-                    {formatPrice(plan.price)}
+                    {plan.priceLabel}
                   </div>
-                  <p className="text-sm md:text-base text-ink-muted">
-                    {plan.durationDisplay || plan.duration}
-                  </p>
+                  <p className="text-sm md:text-base text-ink-muted">{plan.durationDisplay}</p>
                 </div>
 
                 <ul className="space-y-2 md:space-y-3 mb-6 md:mb-8">
@@ -226,11 +177,11 @@ export default function SubscriptionPage() {
 
                 <Button
                   onClick={() => handlePurchase(plan)}
-                  disabled={state.subscriptionStatus?.isPremium}
+                  disabled={state.isPremium}
                   className="w-full"
                   variant={index === 1 ? 'default' : 'outline'}
                 >
-                  {state.subscriptionStatus?.isPremium ? t('premiumPlan') : t('subscribe')}
+                  {state.isPremium ? t('premiumPlan') : t('subscribe')}
                 </Button>
               </Card>
             ))}
@@ -242,8 +193,7 @@ export default function SubscriptionPage() {
             message={
               <div className="space-y-4">
                 <p className="text-ink">
-                  {state.selectedPlan?.name} -{' '}
-                  {state.selectedPlan ? formatPrice(state.selectedPlan.price) : ''}
+                  {state.selectedPlan?.name} - {state.selectedPlan?.priceLabel ?? ''}
                 </p>
               </div>
             }

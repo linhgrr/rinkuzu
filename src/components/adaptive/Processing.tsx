@@ -2,7 +2,9 @@
 
 import { useTranslations } from 'next-intl';
 import { useProcessingState } from '@/features/adaptive/hooks/use-processing-state';
-import { ProcessingGraphCard, ProcessingStatusCard, ProcessingTipCard } from './ProcessingSections';
+import { ProcessingGraphCard } from './ProcessingGraphCard';
+import { ProcessingStatusCard } from './ProcessingSections';
+import { ProcessingTipCard } from './ProcessingTipCard';
 
 export default function AdaptiveLearningProcessing() {
   const t = useTranslations('adaptiveLearning');

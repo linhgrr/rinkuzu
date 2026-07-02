@@ -2,6 +2,8 @@ import crypto from 'crypto';
 import { createSubscriptionService } from '@/lib/subscription-factory';
 import { NextRequest } from 'next/server';
 import { apiErr, apiOk } from '@/lib/api/response';
+import { readAndValidateJson } from '@/lib/api/request';
+import { payosWebhookRequestSchema } from '@/dtos/subscription';
 import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
@@ -32,36 +34,36 @@ export async function POST(request: NextRequest) {
       return apiErr('configuration_error', 'Webhook is not configured', 500);
     }
 
-    const body = JSON.parse(await request.text()) as {
-      code?: string;
-      success?: boolean;
-      data?: Record<string, unknown>;
-      signature?: string;
-    };
-
-    if (!body.data || !body.signature) {
-      return apiErr('validation_error', 'Invalid webhook payload', 400);
+    const body = await readAndValidateJson(request, payosWebhookRequestSchema);
+    if (!body.success) {
+      return apiErr('validation_error', body.error, 400, { issues: body.fields });
     }
+    const { code, success, data, signature } = body.data;
 
-    if (!isValidSignature(body.data, body.signature, checksumKey)) {
+    if (!isValidSignature(data, signature, checksumKey)) {
       return apiErr('validation_error', 'Invalid signature', 400);
     }
 
-    if (body.success !== true || body.code !== '00') {
+    if (success !== true || code !== '00') {
       return apiOk(null, 200, { meta: { message: 'Webhook ignored' } });
     }
 
-    const orderCode = Number(body.data['orderCode']);
+    const rawOrderCode = data.orderCode;
+    const rawAmount = data.amount;
+    const orderCode = Number(rawOrderCode);
     if (!Number.isSafeInteger(orderCode) || orderCode <= 0) {
       return apiErr('validation_error', 'Invalid order code', 400);
+    }
+    if (rawOrderCode === undefined || rawAmount === undefined) {
+      return apiErr('validation_error', 'Invalid payment amount', 400);
     }
 
     const subscriptionService = createSubscriptionService();
     await subscriptionService.activateVerifiedSubscription(orderCode, {
-      orderCode: body.data['orderCode'] as string | number,
-      amount: body.data['amount'] as string | number,
-      reference: body.data['reference'] as string | undefined,
-      code: body.data['code'] as string | undefined,
+      orderCode: rawOrderCode,
+      amount: rawAmount,
+      reference: data.reference,
+      code: data.code,
     });
 
     return apiOk(null);

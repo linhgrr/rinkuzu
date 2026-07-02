@@ -1,47 +1,113 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi, type Mocked } from 'vitest';
 import { assertOk, assertFail } from '@/interfaces/services/types';
 
 import { QuizService } from '@/services/quiz/QuizService';
-import { createSubscriptionService } from '@/lib/subscription-factory';
+import type { Discussion } from '@/entities/Discussion';
+import type { Quiz } from '@/entities/Quiz';
+import type { IAttemptRepository } from '@/interfaces/repositories/IAttemptRepository';
+import type { IDiscussionRepository } from '@/interfaces/repositories/IDiscussionRepository';
+import type { IQuizProgressRepository } from '@/interfaces/repositories/IQuizProgressRepository';
+import type { IQuizRepository } from '@/interfaces/repositories/IQuizRepository';
+import type { IReportRepository } from '@/interfaces/repositories/IReportRepository';
+import type { IUserRepository } from '@/interfaces/repositories/IUserRepository';
 
-vi.mock('@/lib/subscription-factory', () => ({
-  createSubscriptionService: vi.fn(),
+const subscriptionMocks = vi.hoisted(() => ({
+  isUserPremium: vi.fn(),
 }));
 
-function createQuizService(quiz: any) {
-  const quizRepository = {
+vi.mock('@/lib/subscription-factory', () => ({
+  createSubscriptionService: () => ({
+    isUserPremium: subscriptionMocks.isUserPremium,
+  }),
+}));
+
+function createQuizService(quiz: Quiz) {
+  const quizRepository: Mocked<IQuizRepository> = {
+    findById: vi.fn(),
     findBySlug: vi.fn().mockResolvedValue(quiz),
-  };
-  const discussionRepository = {
-    findByQuiz: vi.fn().mockResolvedValue([]),
+    findBySourceDraftId: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
+    delete: vi.fn(),
+    findAll: vi.fn(),
+    findForPlay: vi.fn(),
+    findUserQuizzes: vi.fn(),
+    findPublicByAuthor: vi.fn(),
+    count: vi.fn(),
+    countByCreatedAtBuckets: vi.fn(),
+    findTopCreators: vi.fn(),
+  };
+  const userRepository: Mocked<IUserRepository> = {
+    findByEmail: vi.fn(),
+    findById: vi.fn(),
+    findPublicProfileById: vi.fn(),
+    updateRole: vi.fn(),
+    delete: vi.fn(),
+    findAll: vi.fn(),
+    count: vi.fn(),
+    countByCreatedAtBuckets: vi.fn(),
+    countByRole: vi.fn(),
+  };
+  const attemptRepository: Mocked<IAttemptRepository> = {
+    findByUser: vi.fn(),
+    create: vi.fn(),
+    countByUser: vi.fn(),
+    countByQuiz: vi.fn(),
+    findRecentActivity: vi.fn(),
+    findByIdWithQuiz: vi.fn(),
+    count: vi.fn(),
+    countByTakenAtBuckets: vi.fn(),
+  };
+  const discussionRepository: Mocked<IDiscussionRepository> = {
+    findById: vi.fn(),
+    findByQuiz: vi.fn().mockResolvedValue([]),
+    ensureForQuizQuestions: vi.fn(),
+    ensureForQuizQuestion: vi.fn(),
+    addComment: vi.fn(),
+  };
+  const reportRepository: Mocked<IReportRepository> = {
+    findById: vi.fn(),
+    findAll: vi.fn(),
+    create: vi.fn(),
+    update: vi.fn(),
+    delete: vi.fn(),
+  };
+  const progressRepository: Mocked<IQuizProgressRepository> = {
+    upsert: vi.fn(),
+    findByUserAndQuiz: vi.fn(),
+    deleteByUserAndQuiz: vi.fn(),
+    findInProgressByUser: vi.fn(),
   };
 
   const service = new QuizService(
-    quizRepository as any,
-    { findByEmail: vi.fn() } as any,
-    { create: vi.fn() } as any,
-    discussionRepository as any,
-    {} as any,
-    {} as any,
+    quizRepository,
+    userRepository,
+    attemptRepository,
+    discussionRepository,
+    reportRepository,
+    progressRepository,
   );
 
   return { service, quizRepository, discussionRepository };
 }
 
-const privateQuiz = {
-  _id: { toString: () => 'quiz-1' },
-  author: { _id: { toString: () => 'author-1' } },
+const privateQuiz: Quiz = {
+  id: 'quiz-1',
+  title: 'Private quiz',
+  slug: 'private-quiz',
+  author: { id: 'author-1' },
   isPrivate: true,
   questions: [
     {
+      id: 'question-1',
       type: 'single',
       question: 'Q1',
       options: ['A', 'B'],
       correctIndex: 0,
     },
   ],
+  createdAt: new Date('2026-07-01T00:00:00Z'),
+  updatedAt: new Date('2026-07-01T00:00:00Z'),
 };
 
 describe('QuizService subscription access gates', () => {
@@ -60,9 +126,7 @@ describe('QuizService subscription access gates', () => {
   });
 
   it('blocks discussion reads for non-premium users on private quizzes', async () => {
-    vi.mocked(createSubscriptionService).mockReturnValue({
-      isUserPremium: vi.fn().mockResolvedValue(false),
-    } as any);
+    subscriptionMocks.isUserPremium.mockResolvedValue(false);
     const { service, discussionRepository } = createQuizService(privateQuiz);
 
     const result = await service.getQuizDiscussions('private-quiz', {
@@ -77,11 +141,17 @@ describe('QuizService subscription access gates', () => {
   });
 
   it('allows discussion reads for premium users on private quizzes', async () => {
-    vi.mocked(createSubscriptionService).mockReturnValue({
-      isUserPremium: vi.fn().mockResolvedValue(true),
-    } as any);
+    subscriptionMocks.isUserPremium.mockResolvedValue(true);
     const { service, discussionRepository } = createQuizService(privateQuiz);
-    discussionRepository.create.mockResolvedValue({ questionIndex: 0 });
+    const createdDiscussion: Discussion = {
+      id: 'discussion-1',
+      quiz: 'quiz-1',
+      questionIndex: 0,
+      comments: [],
+      createdAt: new Date('2026-07-01T00:00:00Z'),
+      updatedAt: new Date('2026-07-01T00:00:00Z'),
+    };
+    discussionRepository.ensureForQuizQuestions.mockResolvedValue([createdDiscussion]);
 
     const result = await service.getQuizDiscussions('private-quiz', {
       user: { id: 'user-1', role: 'user' },
@@ -89,7 +159,7 @@ describe('QuizService subscription access gates', () => {
     });
 
     assertOk(result);
-    expect(discussionRepository.findByQuiz).toHaveBeenCalledWith('quiz-1');
-    expect(discussionRepository.create).toHaveBeenCalledOnce();
+    expect(discussionRepository.ensureForQuizQuestions).toHaveBeenCalledWith('quiz-1', 1);
+    expect(discussionRepository.ensureForQuizQuestion).not.toHaveBeenCalled();
   });
 });

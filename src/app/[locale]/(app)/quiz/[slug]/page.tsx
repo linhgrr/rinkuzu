@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useReducer } from 'react';
+import { useEffect, useReducer, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -16,33 +16,47 @@ import {
   HiOutlineDocumentText,
   HiOutlineLightningBolt,
   HiOutlineRefresh,
-} from '@/components/icons';
+} from 'react-icons/hi';
 import { PremiumRequiredModal } from '@/features/quiz/components/PremiumRequiredModal';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { DesktopQuizLayout } from '@/features/quiz/components/player/DesktopQuizLayout';
 import { MobileQuizLayout } from '@/features/quiz/components/player/MobileQuizLayout';
 import { useQuizAIExplain } from '@/features/quiz/hooks/useQuizAIExplain';
 import { useQuizSubmission } from '@/features/quiz/hooks/useQuizSubmission';
-import { useQuizProgress, type SavedQuizProgress } from '@/features/quiz/hooks/useQuizProgress';
+import { useQuizProgress } from '@/features/quiz/hooks/useQuizProgress';
 import { useQuizViewport } from '@/features/quiz/hooks/useQuizViewport';
-import { IQuiz } from '@/types';
-import { fetchApiData } from '@/lib/api/client';
+import { fetchQuizPlayViewModel } from '@/features/quiz/api/quiz-play-api';
+import type { SavedQuizProgress } from '@/features/quiz/types/quiz-interaction-view-model';
+import type {
+  QuizPlayAuthorViewModel,
+  QuizPlayViewModel,
+} from '@/features/quiz/types/quiz-play-view-model';
 import { routePathSegment } from '@/lib/routing/routeParams';
 import { useRequiredRouteParam } from '@/lib/routing/useRequiredRouteParam';
 import { QuizPageSchema } from '@/components/seo/QuizPageSchema';
-import { getUserDisplayName } from '@/components/user/user-identity';
+import { getUserDisplayName, type UserIdentity } from '@/components/user/user-identity';
 
-type ShuffledQuizQuestion = IQuiz['questions'][number] & {
+type ShuffledQuizQuestion = QuizPlayViewModel['questions'][number] & {
   optionIndexMap: number[];
   originalQuestionIndex: number;
 };
 
-type QuizPlayerQuiz = Omit<IQuiz, 'questions'> & {
+type QuizPlayerQuiz = Omit<QuizPlayViewModel, 'questions'> & {
   questions: ShuffledQuizQuestion[];
   questionIndexMap: number[];
 };
 
 type QuizAnswer = number | number[];
+
+function toAuthorIdentity(author: QuizPlayAuthorViewModel): UserIdentity {
+  return {
+    id: author.id ?? '',
+    email: author.email,
+    name: author.name,
+    displayName: author.displayName,
+    avatar: author.avatar,
+  };
+}
 
 function shuffleArray<T>(array: T[]): T[] {
   const shuffled = [...array];
@@ -55,7 +69,7 @@ function shuffleArray<T>(array: T[]): T[] {
   return shuffled;
 }
 
-function createQuizPlayerData(rawQuiz: IQuiz, log: (...args: unknown[]) => void) {
+function createQuizPlayerData(rawQuiz: QuizPlayViewModel, log: (...args: unknown[]) => void) {
   log('\n=== SHUFFLING QUIZ ===');
   log('Original questions count:', rawQuiz.questions.length);
 
@@ -149,7 +163,7 @@ function createQuizPlayerData(rawQuiz: IQuiz, log: (...args: unknown[]) => void)
 }
 
 function rebuildPlayerQuizFromLayout(
-  rawQuiz: IQuiz,
+  rawQuiz: QuizPlayViewModel,
   questionOrder: number[],
   optionOrders: number[][],
 ): QuizPlayerQuiz | null {
@@ -686,7 +700,7 @@ export default function QuizPlayerPage() {
 
     const loadQuiz = async () => {
       try {
-        const data = await fetchApiData<IQuiz>(`/api/quiz/${encodedSlug}/play`);
+        const data = await fetchQuizPlayViewModel(slug);
         const { quiz: nextQuiz, initialAnswers } = createQuizPlayerData(data, debugLog);
 
         let savedProgress: SavedQuizProgress | null = null;
@@ -760,15 +774,10 @@ export default function QuizPlayerPage() {
 
   const quiz = state.quiz;
   const currentQuestion = quiz?.questions[state.currentQuestionIndex] || null;
-  const answeredQuestions = useMemo(
-    () =>
-      quiz
-        ? state.userAnswers.filter((answer, index) =>
-            isQuestionAnswered(quiz.questions[index], answer),
-          ).length
-        : 0,
-    [quiz, state.userAnswers],
-  );
+  const answeredQuestions = quiz
+    ? state.userAnswers.filter((answer, index) => isQuestionAnswered(quiz.questions[index], answer))
+        .length
+    : 0;
   const progress = quiz
     ? Math.round(((state.currentQuestionIndex + 1) / quiz.questions.length) * 100)
     : 0;
@@ -801,6 +810,11 @@ export default function QuizPlayerPage() {
     void flushSave();
     push('/');
   };
+  const flushSaveRef = useRef(flushSave);
+
+  useEffect(() => {
+    flushSaveRef.current = flushSave;
+  }, [flushSave]);
 
   // Auto-save in-progress state (logged-in users only). The resume prompt is
   // still pending until the user answers it, so don't save during that window.
@@ -838,20 +852,24 @@ export default function QuizPlayerPage() {
       return;
     }
 
+    const handleBeforeUnload = () => {
+      void flushSaveRef.current();
+    };
+
     const handleVisibility = () => {
       if (document.visibilityState === 'hidden') {
-        void flushSave();
+        void flushSaveRef.current();
       }
     };
 
-    window.addEventListener('beforeunload', flushSave);
+    window.addEventListener('beforeunload', handleBeforeUnload);
     document.addEventListener('visibilitychange', handleVisibility);
 
     return () => {
-      window.removeEventListener('beforeunload', flushSave);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
       document.removeEventListener('visibilitychange', handleVisibility);
     };
-  }, [progressEnabled, flushSave]);
+  }, [progressEnabled]);
 
   const handleAcceptResume = () => {
     dispatch({ type: 'acceptResume' });
@@ -905,7 +923,9 @@ export default function QuizPlayerPage() {
   const authorName =
     typeof quiz.author === 'string'
       ? quiz.author
-      : getUserDisplayName(quiz.author as any) || 'RinKuzu Community';
+      : quiz.author
+        ? getUserDisplayName(toAuthorIdentity(quiz.author)) || 'RinKuzu Community'
+        : 'RinKuzu Community';
   return (
     <>
       <QuizPageSchema

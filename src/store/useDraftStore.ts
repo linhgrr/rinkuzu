@@ -1,11 +1,12 @@
 // /src/store/useDraftStore.ts
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import type { StoreDraftStatus } from '@/lib/quiz/draftStatus';
 
 export interface DraftProgress {
   id: string;
   title: string;
-  status: 'uploading' | 'processing' | 'completed' | 'error';
+  status: 'uploading' | StoreDraftStatus;
   chunksTotal: number;
   chunksProcessed: number;
   chunksError?: number;
@@ -15,8 +16,11 @@ export interface DraftProgress {
   expiresAt?: string;
 }
 
-const isDraftStatus = (value: string): value is DraftProgress['status'] =>
-  value === 'uploading' || value === 'processing' || value === 'completed' || value === 'error';
+export interface DraftServerSyncItem {
+  id: string;
+  status: StoreDraftStatus;
+  expiresAt: string;
+}
 
 interface DraftStore {
   activeDrafts: Record<string, DraftProgress>;
@@ -29,7 +33,7 @@ interface DraftStore {
   removeDraft: (id: string) => void;
   clearCompletedDrafts: () => void;
   cleanupExpiredDrafts: () => void;
-  syncWithServer: (serverDrafts: Array<{ _id: string; status: string; expiresAt: string }>) => void;
+  syncWithServer: (serverDrafts: DraftServerSyncItem[]) => void;
 
   // Computed helpers
   getActiveDrafts: () => DraftProgress[];
@@ -117,7 +121,7 @@ export const useDraftStore = create<DraftStore>()(
 
       syncWithServer: (serverDrafts) =>
         set((state) => {
-          const serverIds = new Set(serverDrafts.map((d) => d._id));
+          const serverIds = new Set(serverDrafts.map((draft) => draft.id));
 
           // Remove drafts that no longer exist on server
           const activeDrafts = Object.fromEntries(
@@ -127,12 +131,12 @@ export const useDraftStore = create<DraftStore>()(
           );
 
           // Update status from server for existing drafts
-          serverDrafts.forEach((sd) => {
-            if (activeDrafts[sd._id] && isDraftStatus(sd.status)) {
-              activeDrafts[sd._id] = {
-                ...activeDrafts[sd._id],
-                status: sd.status,
-                expiresAt: sd.expiresAt,
+          serverDrafts.forEach((serverDraft) => {
+            if (activeDrafts[serverDraft.id]) {
+              activeDrafts[serverDraft.id] = {
+                ...activeDrafts[serverDraft.id],
+                status: serverDraft.status,
+                expiresAt: serverDraft.expiresAt,
               };
             }
           });

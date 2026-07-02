@@ -514,7 +514,6 @@
     "iconAlt": "Trợ lý AI",
     "errorInsufficientContext": "Không có đủ ngữ cảnh câu hỏi để hỏi AI.",
     "errorAIFailure": "Không thể lấy phản hồi từ AI.",
-    "fallbackNoResponse": "Mình chưa có phản hồi phù hợp lúc này.",
     "errorConnection": "Có lỗi khi kết nối AI.",
     "errorInterrupted": "_Phản hồi bị gián đoạn trước khi hoàn tất. Bạn có thể hỏi lại để Rin-chan tiếp tục._"
   },

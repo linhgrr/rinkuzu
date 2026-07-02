@@ -5,19 +5,28 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import {
   AdaptiveApiError,
-  createSessionFromPipeline,
-  getPipelineJobStatus,
   isAdaptiveApiError,
   isAdaptivePipelineNotReadyError,
   isAdaptiveRequestAbortedError,
   isAdaptiveServiceUnavailableError,
   isRetryableAdaptiveError,
-} from '@/features/adaptive/lib/api-client';
+} from '@/features/adaptive/lib/adaptive-api-error';
+import {
+  createSessionFromPipeline,
+  getPipelineJobStatus,
+} from '@/features/adaptive/lib/adaptive-api-methods';
 import { ADAPTIVE_ROUTES } from '@/features/adaptive/lib/routes';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
-import { saveSessionJobMapping } from '../lib/session-storage';
+import {
+  clearSelectedPipelineJob,
+  getSelectedPipelineFilename,
+  getSelectedPipelineJobId,
+  saveActiveSessionId,
+  saveSessionJobMapping,
+} from '../lib/session-storage';
 import { STATUS_LABEL_KEYS } from '../lib/pipeline-status-labels';
-import type { PipelineJobStatus, PipelineStatus } from '@/features/adaptive/types';
+import type { TranslateFn } from '@/features/adaptive/types/learning';
+import type { PipelineJobStatus, PipelineStatus } from '@/features/adaptive/types/pipeline';
 
 const STATUS_TO_STEP: Record<PipelineStatus, number> = {
   pending: 0,
@@ -35,8 +44,6 @@ const STATUS_TO_STEP: Record<PipelineStatus, number> = {
   failed: -1,
   cancelled: -1,
 };
-
-type TranslateFn = (key: string, values?: Record<string, string | number | Date>) => string;
 
 export type ProcessingStats = {
   concepts_extracted: number;
@@ -62,9 +69,6 @@ export type ProcessingErrorState = {
   action: 'upload' | 'dashboard';
 };
 
-const getStoredFilename = (fallback: string) =>
-  localStorage.getItem('al_pipeline_filename') || fallback;
-
 export const useProcessingState = (t: TranslateFn) => {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(0);
@@ -75,7 +79,7 @@ export const useProcessingState = (t: TranslateFn) => {
   const [stats, setStats] = useState<ProcessingStats | null>(null);
   const [partialGraph, setPartialGraph] = useState<PipelineJobStatus['partial_graph']>(null);
   const [creatingSession, setCreatingSession] = useState(false);
-  const filename = useMemo(() => getStoredFilename(t('processing.defaultFilename')), [t]);
+  const filename = useMemo(() => getSelectedPipelineFilename(t('processing.defaultFilename')), [t]);
   // Reactive viewport flag — the shared hook seeds the initial value on mount
   // (the previous inline effect only updated on change, missing first paint).
   const showGraphPanel = useMediaQuery('(min-width: 1024px)');
@@ -284,36 +288,6 @@ export const useProcessingState = (t: TranslateFn) => {
     toast.error(message);
   }, []);
 
-  const runFallbackProgress = useCallback(() => {
-    const totalDuration = 5000;
-    const interval = 50;
-    const increment = 100 / (totalDuration / interval);
-    let currentProgress = 0;
-
-    clearPolling();
-    setStatusLabel(t('processing.status.processing'));
-    pollingRef.current = setInterval(() => {
-      currentProgress = Math.min(currentProgress + increment, 100);
-      setProgress(currentProgress);
-
-      const step = Math.min(Math.ceil((currentProgress / 100) * steps.length), steps.length);
-      setCurrentStep(step);
-
-      if (currentProgress < 100) return;
-
-      clearPolling();
-      const sessionId = localStorage.getItem('al_session_id');
-      navigationTimeoutRef.current = setTimeout(() => {
-        if (sessionId) {
-          router.push(ADAPTIVE_ROUTES.subject(sessionId));
-          return;
-        }
-
-        router.push(ADAPTIVE_ROUTES.upload);
-      }, 800);
-    }, interval);
-  }, [clearPolling, router, steps.length, t]);
-
   const updateStats = useCallback((job: PipelineJobStatus) => {
     if (job.concepts_extracted <= 0) return;
 
@@ -368,9 +342,9 @@ export const useProcessingState = (t: TranslateFn) => {
       try {
         const session = await createSessionFromPipeline(jobId, 50);
         clearPolling();
-        localStorage.setItem('al_session_id', session.session_id);
+        saveActiveSessionId(session.session_id);
         saveSessionJobMapping(session.session_id, jobId);
-        localStorage.removeItem('al_pipeline_job_id');
+        clearSelectedPipelineJob();
         toast.success(t('processing.status.completed'));
         navigationTimeoutRef.current = setTimeout(() => {
           router.push(ADAPTIVE_ROUTES.subject(session.session_id));
@@ -493,24 +467,35 @@ export const useProcessingState = (t: TranslateFn) => {
   }, [pollJob]);
 
   useEffect(() => {
-    const jobId = localStorage.getItem('al_pipeline_job_id');
+    const jobId = getSelectedPipelineJobId();
     if (!jobId) {
-      runFallbackProgress();
-      return () => clearPolling();
+      let active = true;
+      queueMicrotask(() => {
+        if (!active) return;
+        setError({
+          message: t('processing.errors.jobNotFound'),
+          retryable: false,
+          code: 'pipeline_job_missing',
+          action: 'upload',
+        });
+      });
+      return () => {
+        active = false;
+        clearPolling();
+      };
     }
 
     creatingSessionRef.current = false;
     void pollJob(jobId);
 
     return () => clearPolling();
-  }, [clearPolling, pollJob, runFallbackProgress]);
+  }, [clearPolling, pollJob, t]);
 
   const handleGoBack = useCallback(() => {
     clearPolling();
     creatingSessionRef.current = false;
     setNotice(null);
-    localStorage.removeItem('al_pipeline_job_id');
-    localStorage.removeItem('al_pipeline_filename');
+    clearSelectedPipelineJob();
     router.push(ADAPTIVE_ROUTES.upload);
   }, [clearPolling, router]);
 

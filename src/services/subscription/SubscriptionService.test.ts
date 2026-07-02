@@ -1,81 +1,151 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi, type Mocked } from 'vitest';
 
 import { SubscriptionService } from './SubscriptionService';
-import Plan from '@/models/Plan';
+import type { BillingPlan } from '@/entities/AdminBilling';
+import type { SubscriptionRecord } from '@/entities/Subscription';
+import type { User } from '@/entities/User';
+import type { ISubscriptionRepository } from '@/interfaces/repositories/ISubscriptionRepository';
+import type { ISubscriptionPlanRepository } from '@/interfaces/repositories/ISubscriptionPlanRepository';
+import type { IUserRepository } from '@/interfaces/repositories/IUserRepository';
+import type { IPayOSService, PayOSPaymentLinkData } from '@/interfaces/services/IPayOSService';
 
-vi.mock('@/lib/mongoose', () => ({
-  default: vi.fn().mockResolvedValue({}),
-}));
+interface ServiceOverrides {
+  subscriptionRepository?: Partial<Mocked<ISubscriptionRepository>>;
+  userRepository?: Partial<Mocked<IUserRepository>>;
+  payosService?: Partial<Mocked<IPayOSService>>;
+  planRepository?: Partial<Mocked<ISubscriptionPlanRepository>>;
+}
 
-vi.mock('@/models/Plan', () => ({
-  default: {
-    findById: vi.fn(),
-    find: vi.fn(),
-  },
-}));
-
-vi.mock('@/models/Subscription', () => ({
-  default: {
-    updateOne: vi.fn().mockResolvedValue({}),
-    findOne: vi.fn().mockReturnValue({
-      lean: vi.fn().mockResolvedValue(null),
-    }),
-  },
-}));
-
-vi.mock('@/models/User', () => ({
-  default: {
-    updateOne: vi.fn().mockResolvedValue({}),
-  },
-}));
-
-vi.mock('mongoose', async () => {
-  const actual = await vi.importActual<typeof import('mongoose')>('mongoose');
-  const startSession = vi.fn().mockResolvedValue({
-    withTransaction: vi.fn(async (fn: () => Promise<unknown>) => fn()),
-    endSession: vi.fn().mockResolvedValue(undefined),
-  });
+function billingPlan(overrides: Partial<BillingPlan> = {}): BillingPlan {
+  const now = new Date('2026-01-01T00:00:00Z');
   return {
-    ...actual,
-    default: {
-      ...actual.default,
-      startSession,
-    },
-    startSession,
+    id: 'premium',
+    name: 'Premium',
+    price: 99000,
+    duration: 'P1M',
+    features: [],
+    isActive: true,
+    createdAt: now,
+    updatedAt: now,
+    ...overrides,
   };
-});
+}
 
-function createService(overrides: Partial<any> = {}) {
-  const subscriptionRepository = {
+function userFixture(overrides: Partial<User> = {}): User {
+  return {
+    id: 'user-1',
+    email: 'user@example.com',
+    role: 'user',
+    createdAt: new Date('2026-01-01T00:00:00Z'),
+    ...overrides,
+  };
+}
+
+function subscriptionFixture(overrides: Partial<SubscriptionRecord> = {}): SubscriptionRecord {
+  const now = new Date('2026-01-01T00:00:00Z');
+  return {
+    id: 'sub-1',
+    userId: 'user-1',
+    userEmail: 'user@example.com',
+    type: 'premium',
+    amount: 99_000,
+    currency: 'VND',
+    status: 'completed',
+    payosOrderId: 'order-1',
+    startDate: now,
+    endDate: new Date('2026-02-01T00:00:00Z'),
+    isActive: true,
+    createdAt: now,
+    updatedAt: now,
+    ...overrides,
+  };
+}
+
+function payosPaymentLinkData(overrides: Partial<PayOSPaymentLinkData> = {}): PayOSPaymentLinkData {
+  return {
+    id: 'payment-link-id',
+    orderCode: 123,
+    amount: 99000,
+    amountPaid: 99000,
+    amountRemaining: 0,
+    status: 'PAID',
+    createdAt: '2026-07-02T04:00:00.000Z',
+    transactions: [
+      {
+        reference: 'payos-transaction-reference',
+        amount: 99000,
+        accountNumber: '113366668888',
+        description: 'ORDER 123',
+        transactionDateTime: '2026-07-02 11:00:00',
+        virtualAccountName: null,
+        virtualAccountNumber: null,
+        counterAccountBankId: null,
+        counterAccountBankName: null,
+        counterAccountName: null,
+        counterAccountNumber: null,
+      },
+    ],
+    cancellationReason: null,
+    canceledAt: null,
+    ...overrides,
+  };
+}
+
+function createService(overrides: ServiceOverrides = {}) {
+  const subscriptionRepository: Mocked<ISubscriptionRepository> = {
     create: vi.fn(),
     findById: vi.fn(),
     findByOrderId: vi.fn(),
     findByUser: vi.fn(),
-    findExpiredSubscriptions: vi.fn(),
+    findByTransactionReference: vi.fn().mockResolvedValue(null),
+    expireDue: vi.fn().mockResolvedValue(0),
+    updateAdminStatusById: vi.fn(),
+    expireCurrentForUser: vi.fn(),
+    cancelCurrentForUser: vi.fn(),
     updateById: vi.fn(),
     updateByOrderId: vi.fn(),
-    deleteByOrderId: vi.fn(),
-    ...overrides['subscriptionRepository'],
+    activateSubscription: vi.fn().mockResolvedValue(undefined),
+    deletePendingByOrderId: vi.fn(),
+    findWithPagination: vi.fn(),
+    ...overrides.subscriptionRepository,
   };
-  const userRepository = {
+  const userRepository: Mocked<IUserRepository> = {
+    findByEmail: vi.fn(),
     findById: vi.fn(),
-    findExpiredSubscriptionUsers: vi.fn().mockResolvedValue([]),
-    updateById: vi.fn(),
-    ...overrides['userRepository'],
+    findPublicProfileById: vi.fn(),
+    updateRole: vi.fn(),
+    delete: vi.fn(),
+    findAll: vi.fn(),
+    count: vi.fn(),
+    countByCreatedAtBuckets: vi.fn(),
+    countByRole: vi.fn(),
+    ...overrides.userRepository,
   };
-  const payosService = {
+  const payosService: Mocked<IPayOSService> = {
     createPayment: vi.fn(),
     verifyPayment: vi.fn(),
     getPaymentInfo: vi.fn(),
     testConnection: vi.fn(),
-    ...overrides['payosService'],
+    ...overrides.payosService,
+  };
+  const planRepository: Mocked<ISubscriptionPlanRepository> = {
+    findById: vi.fn().mockResolvedValue(billingPlan()),
+    findActiveById: vi.fn().mockResolvedValue(billingPlan()),
+    listActive: vi.fn().mockResolvedValue([]),
+    ...overrides.planRepository,
   };
 
   return {
     subscriptionRepository,
     userRepository,
     payosService,
-    service: new SubscriptionService(subscriptionRepository, userRepository, payosService),
+    planRepository,
+    service: new SubscriptionService(
+      subscriptionRepository,
+      userRepository,
+      payosService,
+      planRepository,
+    ),
   };
 }
 
@@ -88,7 +158,7 @@ describe('SubscriptionService billing hardening', () => {
     const { service, payosService } = createService({
       subscriptionRepository: {
         findByOrderId: vi.fn().mockResolvedValue({
-          user: { toString: () => 'owner-user' },
+          userId: 'owner-user',
           status: 'pending',
         }),
       },
@@ -103,10 +173,10 @@ describe('SubscriptionService billing hardening', () => {
   it('is idempotent for completed subscriptions without extending dates', async () => {
     const startDate = new Date('2099-01-01T00:00:00Z');
     const endDate = new Date('2099-02-01T00:00:00Z');
-    const { service, subscriptionRepository, payosService, userRepository } = createService({
+    const { service, subscriptionRepository, payosService } = createService({
       subscriptionRepository: {
         findByOrderId: vi.fn().mockResolvedValue({
-          user: { toString: () => 'user-1' },
+          userId: 'user-1',
           type: 'premium',
           status: 'completed',
           startDate,
@@ -122,18 +192,13 @@ describe('SubscriptionService billing hardening', () => {
     expect(result.subscription.endDate).toBe(endDate);
     expect(payosService.verifyPayment).not.toHaveBeenCalled();
     expect(subscriptionRepository.updateByOrderId).not.toHaveBeenCalled();
-    expect(userRepository.updateById).not.toHaveBeenCalled();
   });
 
   it('rejects PayOS amount mismatches before activation', async () => {
-    vi.mocked(Plan.findById).mockResolvedValue({
-      durationInfo: { iso8601: 'P1M' },
-    } as any);
-
-    const { service, subscriptionRepository, payosService, userRepository } = createService({
+    const { service, subscriptionRepository, payosService } = createService({
       subscriptionRepository: {
         findByOrderId: vi.fn().mockResolvedValue({
-          user: { toString: () => 'user-1' },
+          userId: 'user-1',
           type: 'premium',
           amount: 99000,
           status: 'pending',
@@ -142,11 +207,8 @@ describe('SubscriptionService billing hardening', () => {
       payosService: {
         verifyPayment: vi.fn().mockResolvedValue({
           code: '00',
-          data: {
-            status: 'PAID',
-            orderCode: '123',
-            amount: 1000,
-          },
+          desc: 'success',
+          data: payosPaymentLinkData({ amount: 1000 }),
         }),
       },
     });
@@ -155,15 +217,16 @@ describe('SubscriptionService billing hardening', () => {
       'Payment amount mismatch',
     );
     expect(subscriptionRepository.updateByOrderId).not.toHaveBeenCalled();
-    expect(userRepository.updateById).not.toHaveBeenCalled();
     expect(payosService.verifyPayment).toHaveBeenCalledWith(123);
   });
 
   it('does not create payments for inactive plans', async () => {
-    vi.mocked(Plan.findById).mockResolvedValue({ isActive: false } as any);
     const { service, subscriptionRepository } = createService({
       userRepository: {
         findById: vi.fn().mockResolvedValue({ email: 'user@example.com' }),
+      },
+      planRepository: {
+        findActiveById: vi.fn().mockResolvedValue(null),
       },
     });
 
@@ -174,13 +237,6 @@ describe('SubscriptionService billing hardening', () => {
   });
 
   it('creates payment requests and stores PayOS checkout URLs', async () => {
-    vi.mocked(Plan.findById).mockResolvedValue({
-      _id: 'premium',
-      name: 'Premium plan name that is longer than PayOS allows',
-      price: 99000,
-      isActive: true,
-    } as any);
-
     const { service, subscriptionRepository, payosService } = createService({
       userRepository: {
         findById: vi.fn().mockResolvedValue({
@@ -200,6 +256,13 @@ describe('SubscriptionService billing hardening', () => {
             qrCode: 'qr-code',
           },
         }),
+      },
+      planRepository: {
+        findActiveById: vi
+          .fn()
+          .mockResolvedValue(
+            billingPlan({ name: 'Premium plan name that is longer than PayOS allows' }),
+          ),
       },
     });
 
@@ -230,15 +293,6 @@ describe('SubscriptionService billing hardening', () => {
   });
 
   it('rejects untrusted PayOS checkout URLs and cleans up pending subscriptions', async () => {
-    vi.mocked(Plan.findById).mockResolvedValue({
-      _id: 'premium',
-      name: 'Premium',
-      price: 99000,
-      duration: 'P1M',
-      features: [],
-      isActive: true,
-    } as any);
-
     const { service, subscriptionRepository } = createService({
       userRepository: {
         findById: vi.fn().mockResolvedValue({
@@ -263,28 +317,40 @@ describe('SubscriptionService billing hardening', () => {
     await expect(service.createPaymentRequest('user-1', 'premium')).rejects.toThrow(
       'Received an invalid payment redirect URL',
     );
-    expect(subscriptionRepository.deleteByOrderId).toHaveBeenCalledWith(expect.any(String));
+    expect(subscriptionRepository.deletePendingByOrderId).toHaveBeenCalledWith(expect.any(String));
   });
 
   it('detects free, inactive, active, and lifetime premium states', async () => {
     const { service, userRepository } = createService();
 
-    userRepository.findById.mockResolvedValueOnce({});
+    userRepository.findById.mockResolvedValueOnce(userFixture());
     await expect(service.isUserPremium('user-1')).resolves.toBe(false);
 
-    userRepository.findById.mockResolvedValueOnce({
-      subscription: { isActive: false, endDate: new Date('2099-01-01T00:00:00Z') },
-    });
+    userRepository.findById.mockResolvedValueOnce(
+      userFixture({
+        subscription: {
+          type: 'premium',
+          isActive: false,
+          endDate: new Date('2099-01-01T00:00:00Z'),
+        },
+      }),
+    );
     await expect(service.isUserPremium('user-1')).resolves.toBe(false);
 
-    userRepository.findById.mockResolvedValueOnce({
-      subscription: { isActive: true, endDate: new Date('2099-01-01T00:00:00Z') },
-    });
+    userRepository.findById.mockResolvedValueOnce(
+      userFixture({
+        subscription: {
+          type: 'premium',
+          isActive: true,
+          endDate: new Date('2099-01-01T00:00:00Z'),
+        },
+      }),
+    );
     await expect(service.isUserPremium('user-1')).resolves.toBe(true);
 
-    userRepository.findById.mockResolvedValueOnce({
-      subscription: { isActive: true },
-    });
+    userRepository.findById.mockResolvedValueOnce(
+      userFixture({ subscription: { type: 'premium', isActive: true } }),
+    );
     await expect(service.isUserPremium('user-1')).resolves.toBe(true);
   });
 
@@ -309,11 +375,6 @@ describe('SubscriptionService billing hardening', () => {
       'User not found',
     );
 
-    vi.mocked(Plan.findById).mockResolvedValue({
-      name: 'Premium',
-      price: 99000,
-      isActive: true,
-    } as any);
     await expect(service.createPaymentRequest('user-1', 'premium')).rejects.toThrow(
       'User already has an active subscription',
     );
@@ -321,12 +382,6 @@ describe('SubscriptionService billing hardening', () => {
   });
 
   it('rejects PayOS responses without checkout URLs', async () => {
-    vi.mocked(Plan.findById).mockResolvedValue({
-      name: 'Premium',
-      price: 99000,
-      isActive: true,
-    } as any);
-
     const { service } = createService({
       userRepository: {
         findById: vi.fn().mockResolvedValue({
@@ -348,12 +403,6 @@ describe('SubscriptionService billing hardening', () => {
   });
 
   it('cleans up pending subscriptions when PayOS creation fails', async () => {
-    vi.mocked(Plan.findById).mockResolvedValue({
-      name: 'Premium',
-      price: 99000,
-      isActive: true,
-    } as any);
-
     const { service, subscriptionRepository } = createService({
       userRepository: {
         findById: vi.fn().mockResolvedValue({
@@ -374,18 +423,14 @@ describe('SubscriptionService billing hardening', () => {
 
     await expect(service.createPaymentRequest('user-1', 'premium')).rejects.toThrow('PayOS down');
     expect(subscriptionRepository.create).toHaveBeenCalledOnce();
-    expect(subscriptionRepository.deleteByOrderId).toHaveBeenCalledWith(expect.any(String));
+    expect(subscriptionRepository.deletePendingByOrderId).toHaveBeenCalledWith(expect.any(String));
   });
 
   it('activates webhook-verified payments with the stored plan duration', async () => {
-    vi.mocked(Plan.findById).mockResolvedValue({
-      durationInfo: { iso8601: 'P1M' },
-    } as any);
-
-    const { service } = createService({
+    const { service, subscriptionRepository } = createService({
       subscriptionRepository: {
         findByOrderId: vi.fn().mockResolvedValue({
-          user: { toString: () => 'user-1' },
+          userId: 'user-1',
           type: 'premium',
           amount: 99000,
           status: 'pending',
@@ -401,31 +446,15 @@ describe('SubscriptionService billing hardening', () => {
     });
 
     expect(result.success).toBe(true);
-    const Subscription = (await import('@/models/Subscription')).default;
-    const User = (await import('@/models/User')).default;
-    expect(Subscription.updateOne).toHaveBeenCalledWith(
-      { payosOrderId: '123' },
+    expect(subscriptionRepository.activateSubscription).toHaveBeenCalledWith(
       expect.objectContaining({
-        $set: expect.objectContaining({
-          status: 'completed',
-          payosTransactionId: 'payos-ref',
-          isActive: true,
-        }),
+        orderId: '123',
+        userId: 'user-1',
+        type: 'premium',
+        startDate: expect.any(Date),
+        endDate: expect.any(Date),
+        transactionReference: 'payos-ref',
       }),
-      expect.objectContaining({ session: expect.anything() }),
-    );
-    expect(User.updateOne).toHaveBeenCalledWith(
-      expect.objectContaining({ _id: expect.anything() }),
-      expect.objectContaining({
-        $set: expect.objectContaining({
-          subscription: expect.objectContaining({
-            payosOrderId: '123',
-            payosTransactionId: 'payos-ref',
-            isActive: true,
-          }),
-        }),
-      }),
-      expect.objectContaining({ session: expect.anything() }),
     );
   });
 
@@ -433,7 +462,7 @@ describe('SubscriptionService billing hardening', () => {
     const { service } = createService({
       subscriptionRepository: {
         findByOrderId: vi.fn().mockResolvedValue({
-          user: { toString: () => 'user-1' },
+          userId: 'user-1',
           status: 'completed',
           endDate: new Date('2025-01-01T00:00:00Z'),
         }),
@@ -449,7 +478,7 @@ describe('SubscriptionService billing hardening', () => {
     const { service, payosService } = createService({
       subscriptionRepository: {
         findByOrderId: vi.fn().mockResolvedValue({
-          user: { toString: () => 'user-1' },
+          userId: 'user-1',
           status: 'cancelled',
         }),
       },
@@ -465,7 +494,7 @@ describe('SubscriptionService billing hardening', () => {
     const { service } = createService({
       subscriptionRepository: {
         findByOrderId: vi.fn().mockResolvedValue({
-          user: { toString: () => 'user-1' },
+          userId: 'user-1',
           type: 'premium',
           amount: 99000,
           status: 'pending',
@@ -474,11 +503,13 @@ describe('SubscriptionService billing hardening', () => {
       payosService: {
         verifyPayment: vi.fn().mockResolvedValue({
           code: '00',
-          data: {
+          desc: 'success',
+          data: payosPaymentLinkData({
             status: 'PENDING',
-            orderCode: '123',
-            amount: 99000,
-          },
+            amountPaid: 0,
+            amountRemaining: 99000,
+            transactions: [],
+          }),
         }),
       },
     });
@@ -488,11 +519,59 @@ describe('SubscriptionService billing hardening', () => {
     );
   });
 
+  it('rejects successful PayOS envelopes without payment data', async () => {
+    const { service } = createService({
+      subscriptionRepository: {
+        findByOrderId: vi.fn().mockResolvedValue({
+          userId: 'user-1',
+          type: 'premium',
+          amount: 99000,
+          status: 'pending',
+        }),
+      },
+      payosService: {
+        verifyPayment: vi.fn().mockResolvedValue({
+          code: '00',
+          desc: 'success',
+          data: null,
+        }),
+      },
+    });
+
+    await expect(service.verifyAndActivateSubscription(123, 'user-1')).rejects.toThrow(
+      'PayOS response missing payment data',
+    );
+  });
+
+  it('rejects paid PayOS links without a transaction reference', async () => {
+    const { service } = createService({
+      subscriptionRepository: {
+        findByOrderId: vi.fn().mockResolvedValue({
+          userId: 'user-1',
+          type: 'premium',
+          amount: 99000,
+          status: 'pending',
+        }),
+      },
+      payosService: {
+        verifyPayment: vi.fn().mockResolvedValue({
+          code: '00',
+          desc: 'success',
+          data: payosPaymentLinkData({ transactions: [] }),
+        }),
+      },
+    });
+
+    await expect(service.verifyAndActivateSubscription(123, 'user-1')).rejects.toThrow(
+      'Paid PayOS response missing transaction reference',
+    );
+  });
+
   it('rejects PayOS verification failures and order mismatches', async () => {
     const { service, payosService } = createService({
       subscriptionRepository: {
         findByOrderId: vi.fn().mockResolvedValue({
-          user: { toString: () => 'user-1' },
+          userId: 'user-1',
           type: 'premium',
           amount: 99000,
           status: 'pending',
@@ -504,7 +583,8 @@ describe('SubscriptionService billing hardening', () => {
           .mockResolvedValueOnce({ code: '99', desc: 'bad payment' })
           .mockResolvedValueOnce({
             code: '00',
-            data: { status: 'PAID', orderCode: '999', amount: 99000 },
+            desc: 'success',
+            data: payosPaymentLinkData({ orderCode: 999 }),
           }),
       },
     });
@@ -564,15 +644,17 @@ describe('SubscriptionService billing hardening', () => {
   });
 
   it('rejects activation when the stored plan is missing', async () => {
-    vi.mocked(Plan.findById).mockResolvedValue(null);
     const { service } = createService({
       subscriptionRepository: {
         findByOrderId: vi.fn().mockResolvedValue({
-          user: { toString: () => 'user-1' },
+          userId: 'user-1',
           type: 'missing-plan',
           amount: 99000,
           status: 'pending',
         }),
+      },
+      planRepository: {
+        findById: vi.fn().mockResolvedValue(null),
       },
     });
 
@@ -581,80 +663,47 @@ describe('SubscriptionService billing hardening', () => {
     ).rejects.toThrow('Plan not found');
   });
 
-  it('uses legacy duration fallback for old monthly plans', async () => {
-    vi.mocked(Plan.findById).mockResolvedValue({
-      name: 'Legacy 6 Months',
-      durationInfo: { iso8601: 'legacy' },
-      duration: '6 months',
-    } as any);
-
+  it('rejects activation when a stored plan violates the ISO duration contract', async () => {
     const { service } = createService({
       subscriptionRepository: {
         findByOrderId: vi.fn().mockResolvedValue({
-          user: { toString: () => 'user-1' },
-          type: 'legacy-plan',
+          userId: 'user-1',
+          type: 'invalid-plan',
           amount: 99000,
           status: 'pending',
         }),
       },
+      planRepository: {
+        findById: vi
+          .fn()
+          .mockResolvedValue(billingPlan({ name: 'Invalid plan', duration: '6 months' })),
+      },
     });
 
-    const result = await service.activateVerifiedSubscription(123, {
-      orderCode: 123,
-      amount: 99000,
-      status: 'PAID',
-    });
-
-    expect(result.subscription.endDate).toBeInstanceOf(Date);
-    const Subscription = (await import('@/models/Subscription')).default;
-    const User = (await import('@/models/User')).default;
-    expect(Subscription.updateOne).toHaveBeenCalledWith(
-      { payosOrderId: '123' },
-      expect.objectContaining({
-        $set: expect.objectContaining({ endDate: expect.any(Date) }),
+    await expect(
+      service.activateVerifiedSubscription(123, {
+        orderCode: 123,
+        amount: 99000,
+        status: 'PAID',
       }),
-      expect.objectContaining({ session: expect.anything() }),
-    );
-    expect(User.updateOne).toHaveBeenCalledWith(
-      expect.objectContaining({ _id: expect.anything() }),
-      expect.objectContaining({
-        $set: expect.objectContaining({
-          subscription: expect.objectContaining({ endDate: expect.any(Date) }),
-        }),
-      }),
-      expect.objectContaining({ session: expect.anything() }),
-    );
+    ).rejects.toThrow('Unsupported ISO 8601 duration format');
   });
 
   it('cancels active time-limited subscriptions and deactivates active records', async () => {
-    const { service, subscriptionRepository, userRepository } = createService({
-      userRepository: {
-        findById: vi.fn().mockResolvedValue({
-          subscription: { endDate: new Date('2099-01-01T00:00:00Z') },
-        }),
-      },
+    const { service, subscriptionRepository } = createService({
       subscriptionRepository: {
-        findByUser: vi.fn().mockResolvedValue([
-          {
-            _id: { toString: () => 'sub-1' },
-            status: 'completed',
-            isActive: true,
-          },
-        ]),
+        cancelCurrentForUser: vi.fn().mockResolvedValue({ outcome: 'cancelled' }),
       },
     });
 
     await expect(service.cancelSubscription('user-1')).resolves.toEqual({ success: true });
-    expect(userRepository.updateById).toHaveBeenCalledWith('user-1', {
-      'subscription.isActive': false,
-    });
-    expect(subscriptionRepository.updateById).toHaveBeenCalledWith('sub-1', { isActive: false });
+    expect(subscriptionRepository.cancelCurrentForUser).toHaveBeenCalledWith('user-1');
   });
 
   it('rejects cancellation when there is no time-limited subscription', async () => {
     const { service } = createService({
-      userRepository: {
-        findById: vi.fn().mockResolvedValue({ subscription: { isActive: true } }),
+      subscriptionRepository: {
+        cancelCurrentForUser: vi.fn().mockResolvedValue({ outcome: 'not_time_limited' }),
       },
     });
 
@@ -665,27 +714,32 @@ describe('SubscriptionService billing hardening', () => {
 
   it('rejects cancellation for missing users', async () => {
     const { service } = createService({
-      userRepository: {
-        findById: vi.fn().mockResolvedValue(null),
+      subscriptionRepository: {
+        cancelCurrentForUser: vi.fn().mockResolvedValue({ outcome: 'user_not_found' }),
       },
     });
 
     await expect(service.cancelSubscription('missing-user')).rejects.toThrow('User not found');
   });
 
+  it('rejects cancellation when embedded and persisted subscriptions diverge', async () => {
+    const { service } = createService({
+      subscriptionRepository: {
+        cancelCurrentForUser: vi.fn().mockResolvedValue({ outcome: 'inconsistent_record' }),
+      },
+    });
+
+    await expect(service.cancelSubscription('user-1')).rejects.toThrow(
+      'Current subscription record is inconsistent',
+    );
+  });
+
   it('returns active plans and handles plan fetch failures', async () => {
-    vi.mocked(Plan.find).mockReturnValue({
-      lean: vi.fn().mockResolvedValue([
-        {
-          _id: { toString: () => 'premium' },
-          name: 'Premium',
-          price: 99000,
-          duration: 'P1M',
-          features: ['Feature'],
-        },
-      ]),
-    } as any);
-    const { service } = createService();
+    const { service, planRepository } = createService({
+      planRepository: {
+        listActive: vi.fn().mockResolvedValue([billingPlan({ features: ['Feature'] })]),
+      },
+    });
 
     await expect(service.getSubscriptionPlans()).resolves.toEqual([
       {
@@ -697,79 +751,59 @@ describe('SubscriptionService billing hardening', () => {
       },
     ]);
 
-    vi.mocked(Plan.find).mockImplementation(() => {
-      throw new Error('db down');
-    });
+    planRepository.listActive.mockRejectedValue(new Error('db down'));
     await expect(service.getSubscriptionPlans()).resolves.toEqual([]);
   });
 
-  it('sanitizes admin subscription updates', async () => {
-    const { service, subscriptionRepository, userRepository } = createService({
+  it('delegates valid admin status transitions to the transactional repository method', async () => {
+    const updated = subscriptionFixture({ status: 'cancelled', isActive: false });
+    const { service, subscriptionRepository } = createService({
       subscriptionRepository: {
-        updateById: vi.fn().mockResolvedValue({ _id: 'sub-1' }),
-        findById: vi.fn().mockResolvedValue({ user: { toString: () => 'user-1' } }),
+        updateAdminStatusById: vi.fn().mockResolvedValue({
+          outcome: 'updated',
+          subscription: updated,
+        }),
       },
     });
 
-    await expect(service.updateSubscriptionById('sub-1', { status: 'completed' })).resolves.toEqual(
+    await expect(service.updateSubscriptionById('sub-1', { status: 'cancelled' })).resolves.toEqual(
       {
         success: true,
-        data: { _id: 'sub-1' },
+        data: updated,
       },
     );
-    expect(subscriptionRepository.updateById).toHaveBeenCalledWith('sub-1', {
-      status: 'completed',
-      isActive: true,
-    });
-    expect(userRepository.updateById).toHaveBeenCalledWith('user-1', {
-      'subscription.isActive': true,
+    expect(subscriptionRepository.updateAdminStatusById).toHaveBeenCalledWith('sub-1', 'cancelled');
+  });
+
+  it('returns explicit errors for missing and invalid admin subscription transitions', async () => {
+    const { service, subscriptionRepository } = createService({
+      subscriptionRepository: {
+        updateAdminStatusById: vi
+          .fn()
+          .mockResolvedValueOnce({ outcome: 'not_found' })
+          .mockResolvedValueOnce({
+            outcome: 'invalid_transition',
+            currentStatus: 'cancelled',
+          }),
+      },
     });
 
     await expect(
-      service.updateSubscriptionById('sub-1', { status: 'bad' as never }),
+      service.updateSubscriptionById('missing', { status: 'cancelled' }),
     ).resolves.toEqual({
-      success: false,
-      error: 'Invalid subscription status',
-      statusCode: 400,
-    });
-    await expect(service.updateSubscriptionById('sub-1', { foo: 'bar' } as never)).resolves.toEqual(
-      {
-        success: false,
-        error: 'No valid subscription fields provided',
-        statusCode: 400,
-      },
-    );
-  });
-
-  it('returns safe errors for missing or failing admin subscription updates', async () => {
-    const { service, subscriptionRepository } = createService({
-      subscriptionRepository: {
-        updateById: vi
-          .fn()
-          .mockResolvedValueOnce(null)
-          .mockRejectedValueOnce(new Error('database unavailable')),
-      },
-    });
-
-    await expect(service.updateSubscriptionById('missing', { isActive: false })).resolves.toEqual({
       success: false,
       error: 'Subscription not found',
       statusCode: 404,
     });
-    await expect(service.updateSubscriptionById('sub-1', { isActive: false })).resolves.toEqual({
+    await expect(service.updateSubscriptionById('sub-1', { status: 'expired' })).resolves.toEqual({
       success: false,
-      error: 'database unavailable',
-      statusCode: 500,
+      error: 'Cannot change subscription status from cancelled to expired',
+      statusCode: 409,
     });
-    expect(subscriptionRepository.updateById).toHaveBeenCalledTimes(2);
+    expect(subscriptionRepository.updateAdminStatusById).toHaveBeenCalledTimes(2);
   });
 
   it('fails order-code generation after repeated collisions', async () => {
-    vi.mocked(Plan.findById).mockResolvedValue({
-      name: 'Premium',
-      price: 99000,
-      isActive: true,
-    } as any);
     const { service } = createService({
       userRepository: {
         findById: vi.fn().mockResolvedValue({
@@ -778,7 +812,7 @@ describe('SubscriptionService billing hardening', () => {
         }),
       },
       subscriptionRepository: {
-        findByOrderId: vi.fn().mockResolvedValue({ _id: 'existing-order' }),
+        findByOrderId: vi.fn().mockResolvedValue({ id: 'existing-order' }),
       },
     });
 
@@ -789,7 +823,7 @@ describe('SubscriptionService billing hardening', () => {
 
   it('marks expired user subscriptions inactive when reading status', async () => {
     const expiredEndDate = new Date('2025-12-28T00:00:00Z');
-    const { service, subscriptionRepository, userRepository } = createService({
+    const { service, subscriptionRepository } = createService({
       userRepository: {
         findById: vi.fn().mockResolvedValue({
           subscription: {
@@ -800,6 +834,9 @@ describe('SubscriptionService billing hardening', () => {
           },
         }),
       },
+      subscriptionRepository: {
+        expireCurrentForUser: vi.fn().mockResolvedValue(true),
+      },
     });
 
     const subscription = await service.getUserSubscription('user-1');
@@ -809,60 +846,23 @@ describe('SubscriptionService billing hardening', () => {
       isActive: false,
       status: 'expired',
     });
-    expect(userRepository.updateById).toHaveBeenCalledWith('user-1', {
-      'subscription.isActive': false,
-    });
-    expect(subscriptionRepository.updateByOrderId).toHaveBeenCalledWith('order-1', {
-      isActive: false,
-      status: 'expired',
-    });
+    expect(subscriptionRepository.expireCurrentForUser).toHaveBeenCalledWith('user-1', 'order-1');
   });
 
   it('expires both subscription records and stale embedded user subscriptions in cron checks', async () => {
-    const { service, subscriptionRepository, userRepository } = createService({
+    const { service, subscriptionRepository } = createService({
       subscriptionRepository: {
-        findExpiredSubscriptions: vi.fn().mockResolvedValue([
-          {
-            _id: { toString: () => 'sub-1' },
-            user: { toString: () => 'user-1' },
-          },
-        ]),
-      },
-      userRepository: {
-        findExpiredSubscriptionUsers: vi.fn().mockResolvedValue([
-          {
-            _id: { toString: () => 'user-2' },
-            subscription: { payosOrderId: 'order-2' },
-          },
-        ]),
+        expireDue: vi.fn().mockResolvedValue(2),
       },
     });
 
     const updatedCount = await service.checkAndUpdateExpiredSubscriptions();
 
     expect(updatedCount).toBe(2);
-    expect(subscriptionRepository.updateById).toHaveBeenCalledWith('sub-1', {
-      isActive: false,
-      status: 'expired',
-    });
-    expect(userRepository.updateById).toHaveBeenCalledWith('user-1', {
-      'subscription.isActive': false,
-    });
-    expect(userRepository.updateById).toHaveBeenCalledWith('user-2', {
-      'subscription.isActive': false,
-    });
-    expect(subscriptionRepository.updateByOrderId).toHaveBeenCalledWith('order-2', {
-      isActive: false,
-      status: 'expired',
-    });
+    expect(subscriptionRepository.expireDue).toHaveBeenCalledWith(expect.any(Date));
   });
 
   it('returns the stored snapshot when the PayOS transaction was already activated', async () => {
-    vi.mocked(Plan.findById).mockResolvedValue({
-      durationInfo: { iso8601: 'P1M' },
-    } as any);
-
-    const Subscription = (await import('@/models/Subscription')).default;
     const existingSnapshot = {
       type: 'premium',
       status: 'completed',
@@ -871,18 +871,16 @@ describe('SubscriptionService billing hardening', () => {
       isActive: true,
       createdAt: new Date('2099-01-01T00:00:00Z'),
     };
-    vi.mocked(Subscription.findOne).mockReturnValueOnce({
-      lean: vi.fn().mockResolvedValue(existingSnapshot),
-    } as any);
 
-    const { service } = createService({
+    const { service, subscriptionRepository } = createService({
       subscriptionRepository: {
         findByOrderId: vi.fn().mockResolvedValue({
-          user: { toString: () => 'user-1' },
+          userId: 'user-1',
           type: 'premium',
           amount: 99000,
           status: 'pending',
         }),
+        findByTransactionReference: vi.fn().mockResolvedValue(existingSnapshot),
       },
     });
 
@@ -903,15 +901,10 @@ describe('SubscriptionService billing hardening', () => {
         isActive: true,
       },
     });
-    expect(Subscription.updateOne).not.toHaveBeenCalled();
+    expect(subscriptionRepository.activateSubscription).not.toHaveBeenCalled();
   });
 
   it('recovers from concurrent activation duplicate-key errors', async () => {
-    vi.mocked(Plan.findById).mockResolvedValue({
-      durationInfo: { iso8601: 'P1M' },
-    } as any);
-
-    const Subscription = (await import('@/models/Subscription')).default;
     const settledSnapshot = {
       type: 'premium',
       status: 'completed',
@@ -921,25 +914,21 @@ describe('SubscriptionService billing hardening', () => {
       createdAt: new Date('2099-03-01T00:00:00Z'),
     };
 
-    vi.mocked(Subscription.findOne)
-      .mockReturnValueOnce({ lean: vi.fn().mockResolvedValue(null) } as any)
-      .mockReturnValueOnce({ lean: vi.fn().mockResolvedValue(settledSnapshot) } as any);
-
-    const mongooseModule = await import('mongoose');
     const dupError = Object.assign(new Error('E11000 duplicate key'), { code: 11000 });
-    vi.mocked(mongooseModule.startSession).mockResolvedValueOnce({
-      withTransaction: vi.fn().mockRejectedValue(dupError),
-      endSession: vi.fn().mockResolvedValue(undefined),
-    } as any);
 
     const { service } = createService({
       subscriptionRepository: {
         findByOrderId: vi.fn().mockResolvedValue({
-          user: { toString: () => 'user-1' },
+          userId: 'user-1',
           type: 'premium',
           amount: 99000,
           status: 'pending',
         }),
+        findByTransactionReference: vi
+          .fn()
+          .mockResolvedValueOnce(null)
+          .mockResolvedValueOnce(settledSnapshot),
+        activateSubscription: vi.fn().mockRejectedValue(dupError),
       },
     });
 
@@ -956,29 +945,16 @@ describe('SubscriptionService billing hardening', () => {
   });
 
   it('rethrows non-duplicate transaction failures during activation', async () => {
-    vi.mocked(Plan.findById).mockResolvedValue({
-      durationInfo: { iso8601: 'P1M' },
-    } as any);
-
-    const Subscription = (await import('@/models/Subscription')).default;
-    vi.mocked(Subscription.findOne).mockReturnValueOnce({
-      lean: vi.fn().mockResolvedValue(null),
-    } as any);
-
-    const mongooseModule = await import('mongoose');
-    vi.mocked(mongooseModule.startSession).mockResolvedValueOnce({
-      withTransaction: vi.fn().mockRejectedValue(new Error('mongo unreachable')),
-      endSession: vi.fn().mockResolvedValue(undefined),
-    } as any);
-
     const { service } = createService({
       subscriptionRepository: {
         findByOrderId: vi.fn().mockResolvedValue({
-          user: { toString: () => 'user-1' },
+          userId: 'user-1',
           type: 'premium',
           amount: 99000,
           status: 'pending',
         }),
+        findByTransactionReference: vi.fn().mockResolvedValue(null),
+        activateSubscription: vi.fn().mockRejectedValue(new Error('mongo unreachable')),
       },
     });
 

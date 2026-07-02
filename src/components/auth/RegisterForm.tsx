@@ -3,11 +3,11 @@
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 
-import { fetchApiResponse } from '@/lib/api/client';
+import { registerAccount } from '@/features/auth/api/auth-api';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
@@ -19,7 +19,7 @@ import {
   HiCheck,
   HiOutlineEye,
   HiOutlineEyeOff,
-} from '@/components/icons';
+} from 'react-icons/hi';
 import { GoogleAuthButton } from '@/components/auth/GoogleAuthButton';
 import { PasswordStrengthMeter } from '@/components/auth/PasswordStrengthMeter';
 import { emailSchema, passwordSchema } from '@/lib/validation/auth';
@@ -116,11 +116,10 @@ export function RegisterForm({ locale, googleEnabled = false, onSwitchMode }: Re
   const {
     register,
     handleSubmit,
-    watch,
     formState: { errors, isSubmitting, isValid },
   } = form;
 
-  const password = watch('password');
+  const password = useWatch({ control: form.control, name: 'password' }) ?? '';
   const passwordStrength = usePasswordStrength(password);
 
   const passwordCriteria = [
@@ -132,15 +131,8 @@ export function RegisterForm({ locale, googleEnabled = false, onSwitchMode }: Re
   const onSubmit = handleSubmit(async (values) => {
     setServerError(null);
     try {
-      const response = await fetchApiResponse<
-        { id?: string; email: string; role?: string },
-        { message?: string }
-      >('/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: values.email, password: values.password }),
-      });
-      setServerSuccess(response.meta?.message ?? t('accountCreatedSuccess'));
+      const result = await registerAccount({ email: values.email, password: values.password });
+      setServerSuccess(result.message ?? t('accountCreatedSuccess'));
     } catch (error) {
       setServerError(error instanceof Error ? error.message : t('registrationFailed'));
     }

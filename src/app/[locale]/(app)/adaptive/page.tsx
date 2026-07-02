@@ -3,7 +3,7 @@ import { Suspense } from 'react';
 import { getServerSession } from 'next-auth';
 import { getTranslations } from 'next-intl/server';
 import AdaptiveLearningGuest from '@/features/adaptive/components/AdaptiveLearningGuest';
-import { fetchAdaptiveDashboardData } from './_lib/fetch-initial-data';
+import { fetchAdaptiveDashboardData } from '@/features/adaptive/api/adaptive-dashboard-initial-api';
 import { AdaptiveDashboardRouteSkeleton } from './_components/AdaptiveDashboardRouteSkeleton';
 import AdaptiveLearningDashboard from '@/components/adaptive/Dashboard';
 import { authOptions } from '@/lib/auth';
@@ -58,12 +58,14 @@ async function AdaptiveDashboardLoader({ userId }: { userId: string }) {
   const { apiOnline, initialErrorKey, subjects, sessionHistory } =
     await fetchAdaptiveDashboardData(userId);
   return (
-    <AdaptiveLearningDashboard
-      initialSubjects={subjects}
-      initialSessionHistory={sessionHistory}
-      initialApiOnline={apiOnline}
-      initialErrorKey={initialErrorKey}
-      didHydrateFromServer
-    />
+    <Suspense fallback={<AdaptiveDashboardRouteSkeleton />}>
+      <AdaptiveLearningDashboard
+        initialSubjects={subjects}
+        initialSessionHistory={sessionHistory}
+        initialApiOnline={apiOnline}
+        initialErrorKey={initialErrorKey}
+        didHydrateFromServer
+      />
+    </Suspense>
   );
 }

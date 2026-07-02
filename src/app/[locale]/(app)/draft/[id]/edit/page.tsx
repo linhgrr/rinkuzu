@@ -21,26 +21,12 @@ export default async function DraftEditPage({ params }: Props) {
     notFound();
   }
 
-  const pdfUrl = await (draft.pdf?.s3_key
-    ? getSignedPDFUrl(draft.pdf.s3_key).catch((error) => {
+  const pdfUrl = await (draft.pdf?.s3Key
+    ? getSignedPDFUrl(draft.pdf.s3Key).catch((error) => {
         console.error('Failed to refresh signed URL:', error);
         return undefined;
       })
     : Promise.resolve(undefined));
 
-  const initialDraft = {
-    _id: draft.draft_id,
-    title: draft.title,
-    folderId: draft.folder_id ?? null,
-    questions: draft.questions,
-    status: draft.status,
-    createdAt: draft.created_at,
-    expiresAt: draft.expires_at,
-    pdfData: {
-      fileName: draft.pdf?.file_name ?? 'quiz-source.pdf',
-      pdfUrl,
-    },
-  };
-
-  return <DraftEditClient initialDraft={initialDraft} locale={locale} />;
+  return <DraftEditClient initialDraft={draft} locale={locale} pdfUrl={pdfUrl} />;
 }

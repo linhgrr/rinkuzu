@@ -1,6 +1,6 @@
 'use client';
 
-import { memo, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Reorder } from 'framer-motion';
 import {
@@ -8,12 +8,14 @@ import {
   HiChevronUp,
   HiOutlineDotsVertical,
   HiOutlineLightBulb,
-} from '@/components/icons';
+} from 'react-icons/hi';
 import { Button } from '@/components/ui/Button';
 import { Textarea } from '@/components/ui/Input';
 import { DynamicMarkdownRenderer } from '@/components/ui/DynamicMarkdownRenderer';
 import { getExercisePromptSections } from '@/features/adaptive/lib/exercise-prompt';
-import type { Exercise, SubmitAnswerPayload } from '@/features/adaptive/types';
+import { getMatchingInteractionItems } from '@/features/adaptive/lib/matching-answer';
+import type { ExerciseAnswerDraft } from '@/features/adaptive/types/exercise-answer';
+import type { Exercise } from '@/features/adaptive/types/learning';
 
 const REORDER_INITIAL = { opacity: 0, y: 10 };
 const REORDER_ANIMATE = { opacity: 1, y: 0 };
@@ -32,7 +34,7 @@ type OptionCardProps<T extends OptionCardSelectionValue> = {
   value: string;
 };
 
-const OptionCard = memo(function OptionCard<T extends OptionCardSelectionValue>({
+function OptionCard<T extends OptionCardSelectionValue>({
   active,
   ariaPressed,
   badge,
@@ -68,7 +70,7 @@ const OptionCard = memo(function OptionCard<T extends OptionCardSelectionValue>(
       </span>
     </button>
   );
-}) as <T extends OptionCardSelectionValue>(props: OptionCardProps<T>) => React.JSX.Element;
+}
 
 type MatchingInteractionProps = {
   leftItems: string[];
@@ -82,28 +84,42 @@ type MatchingRightEntry = {
   value: string;
 };
 
+type MatchingRightEntriesState = {
+  orderKey: string;
+  entries: MatchingRightEntry[];
+};
+
+function createMatchingOrderKey(items: string[]) {
+  return items.join('\u0001');
+}
+
+function createMatchingRightEntries(items: string[]): MatchingRightEntry[] {
+  return items.map((item, index) => ({ id: `right-${index}`, value: item }));
+}
+
 function MatchingInteraction({
   leftItems,
   rightItems,
   onSetMatchingOrder,
   t,
 }: MatchingInteractionProps) {
+  if (leftItems.length !== rightItems.length) {
+    throw new TypeError(
+      `Matching interaction received ${leftItems.length} left item(s) and ${rightItems.length} right item(s)`,
+    );
+  }
+
   const containerRef = useRef<HTMLDivElement>(null);
   const [cardMinHeight, setCardMinHeight] = useState<number | null>(null);
-  const normalizedRightItems = leftItems.map((_, index) => rightItems[index] ?? '');
-  const [rightEntries, setRightEntries] = useState<MatchingRightEntry[]>(() =>
-    normalizedRightItems.map((item, index) => ({ id: `right-${index}`, value: item })),
-  );
-  const normalizedOrderKey = normalizedRightItems.join('\u0001');
-  const renderedOrderKey = rightEntries.map((entry) => entry.value).join('\u0001');
-
-  useEffect(() => {
-    if (renderedOrderKey === normalizedOrderKey) return;
-
-    setRightEntries(
-      normalizedRightItems.map((item, index) => ({ id: `right-${index}`, value: item })),
-    );
-  }, [normalizedOrderKey, normalizedRightItems, renderedOrderKey]);
+  const normalizedOrderKey = createMatchingOrderKey(rightItems);
+  const [rightEntriesState, setRightEntriesState] = useState<MatchingRightEntriesState>(() => ({
+    orderKey: normalizedOrderKey,
+    entries: createMatchingRightEntries(rightItems),
+  }));
+  const rightEntries =
+    rightEntriesState.orderKey === normalizedOrderKey
+      ? rightEntriesState.entries
+      : createMatchingRightEntries(rightItems);
 
   useEffect(() => {
     const measureCards = () => {
@@ -171,11 +187,12 @@ function MatchingInteraction({
             axis="y"
             values={rightEntries}
             onReorder={(nextEntries) => {
-              setRightEntries(nextEntries);
-              onSetMatchingOrder(
-                leftItems,
-                nextEntries.map((entry) => entry.value),
-              );
+              const nextRightItems = nextEntries.map((entry) => entry.value);
+              setRightEntriesState({
+                orderKey: createMatchingOrderKey(nextRightItems),
+                entries: nextEntries,
+              });
+              onSetMatchingOrder(leftItems, nextRightItems);
             }}
             className="space-y-3"
           >
@@ -204,7 +221,7 @@ function MatchingInteraction({
 }
 
 type ExerciseInteractionProps = {
-  answerDraft: SubmitAnswerPayload;
+  answerDraft: ExerciseAnswerDraft;
   exercise: Exercise;
   onMoveOrderingItem: (fromIndex: number, toIndex: number) => void;
   onSetOrderingAnswer: (ordering: string[]) => void;
@@ -231,14 +248,18 @@ export function ExerciseInteraction({
   optionEntries,
 }: ExerciseInteractionProps) {
   const t = useTranslations('adaptiveLearning');
-  const [isHintOpen, setIsHintOpen] = useState(false);
+  const [hintState, setHintState] = useState({ exerciseKey: '', isOpen: false });
   const promptSections = getExercisePromptSections(exercise);
+  const exerciseHintKey = `${exercise.exercise_id}:${exercise.hint ?? ''}`;
+  const isHintOpen = hintState.exerciseKey === exerciseHintKey ? hintState.isOpen : false;
 
-  useEffect(() => {
-    setIsHintOpen(false);
-  }, [exercise.exercise_id, exercise.hint]);
+  if (exercise.exercise_type !== answerDraft.type) {
+    throw new TypeError(
+      `Exercise type ${exercise.exercise_type} does not match answer type ${answerDraft.type}`,
+    );
+  }
 
-  if (exercise.exercise_type === 'true_false') {
+  if (answerDraft.type === 'true_false') {
     return (
       <div className="grid gap-3 sm:gap-4">
         <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-5 text-base leading-relaxed text-neutral-800">
@@ -250,8 +271,8 @@ export function ExerciseInteraction({
         ].map((item) => (
           <OptionCard
             key={item.value}
-            active={answerDraft.boolean === item.bool}
-            ariaPressed={answerDraft.boolean === item.bool}
+            active={answerDraft.value === item.bool}
+            ariaPressed={answerDraft.value === item.bool}
             badge={item.label}
             onSelect={onSetBooleanAnswer}
             selectionValue={item.bool}
@@ -262,14 +283,14 @@ export function ExerciseInteraction({
     );
   }
 
-  if (exercise.exercise_type === 'fill_blank') {
+  if (answerDraft.type === 'fill_blank') {
     return (
       <div className="space-y-4">
         <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-5 text-base leading-relaxed text-neutral-800">
           <DynamicMarkdownRenderer content={promptSections.primary} />
         </div>
         <Textarea
-          value={answerDraft.blanks?.[0] || ''}
+          value={answerDraft.values[0]}
           onChange={(event) => onSetBlankAnswer(event.target.value)}
           rows={3}
           placeholder={t('exercise.interactions.fillBlankPlaceholder')}
@@ -281,7 +302,12 @@ export function ExerciseInteraction({
             <Button
               type="button"
               variant="ghost"
-              onClick={() => setIsHintOpen((open) => !open)}
+              onClick={() =>
+                setHintState({
+                  exerciseKey: exerciseHintKey,
+                  isOpen: !isHintOpen,
+                })
+              }
               aria-expanded={isHintOpen}
               className="flex w-full items-center justify-between rounded-none px-4 py-3 text-left text-sm font-medium text-amber-900 hover:bg-amber-100/80"
             >
@@ -314,8 +340,8 @@ export function ExerciseInteraction({
     );
   }
 
-  if (exercise.exercise_type === 'multi_correct') {
-    const selectedChoices = new Set(answerDraft.choices || []);
+  if (answerDraft.type === 'multi_correct') {
+    const selectedChoices = new Set(answerDraft.selections);
     return (
       <div className="space-y-3 sm:space-y-4">
         <div className="rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-600">
@@ -338,8 +364,8 @@ export function ExerciseInteraction({
     );
   }
 
-  if (exercise.exercise_type === 'ordering') {
-    const ordering = answerDraft.ordering || exercise.items;
+  if (answerDraft.type === 'ordering') {
+    const ordering = answerDraft.items;
     return (
       <div className="space-y-4">
         <div className="rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-600">
@@ -409,17 +435,8 @@ export function ExerciseInteraction({
     );
   }
 
-  if (exercise.exercise_type === 'matching') {
-    const matching = answerDraft.matching || {};
-    const fallbackLeftItems = exercise.pairs.map((pair) => pair.left);
-    const leftItems = Object.keys(matching).length > 0 ? Object.keys(matching) : fallbackLeftItems;
-    const fallbackRightItems =
-      exercise.right_items.length > 0
-        ? exercise.right_items
-        : exercise.pairs.map((pair) => pair.right);
-    const rightItems = leftItems.map(
-      (left, index) => matching[left] ?? fallbackRightItems[index] ?? '',
-    );
+  if (answerDraft.type === 'matching') {
+    const { leftItems, rightItems } = getMatchingInteractionItems(exercise, answerDraft.matches);
 
     return (
       <MatchingInteraction
@@ -431,11 +448,11 @@ export function ExerciseInteraction({
     );
   }
 
-  if (exercise.exercise_type === 'short_answer') {
+  if (answerDraft.type === 'short_answer') {
     return (
       <div className="space-y-4">
         <Textarea
-          value={answerDraft.text || ''}
+          value={answerDraft.text}
           onChange={(event) => onSetTextAnswer(event.target.value)}
           rows={8}
           placeholder={t('exercise.interactions.shortAnswerPlaceholder')}
@@ -451,8 +468,8 @@ export function ExerciseInteraction({
       {optionEntries.map(([key, value], idx) => (
         <OptionCard
           key={key}
-          active={answerDraft.choice === key}
-          ariaPressed={answerDraft.choice === key}
+          active={answerDraft.selection === key}
+          ariaPressed={answerDraft.selection === key}
           badge={String.fromCharCode(65 + idx)}
           onSelect={onSelectChoice}
           selectionValue={key}

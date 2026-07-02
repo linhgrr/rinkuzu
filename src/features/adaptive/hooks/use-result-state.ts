@@ -2,14 +2,13 @@
 
 import { useCallback, useEffect, useMemo, useReducer } from 'react';
 import { useRouter } from 'next/navigation';
-import { getSubjectHistoryDetailFresh } from '@/features/adaptive/lib/api-client';
+import { getSubjectHistoryDetailFresh } from '@/features/adaptive/lib/adaptive-api-methods';
 import { ADAPTIVE_ROUTES } from '@/features/adaptive/lib/routes';
 import { getJobIdForSession, getSessionExerciseOutcome } from '../lib/session-storage';
 import { buildExercisePromptText } from '@/features/adaptive/lib/exercise-prompt';
-import { BLOOM_LABELS } from '@/features/adaptive/types';
-import type { Exercise, SessionHistoryDetail, SubmitResult } from '@/features/adaptive/types';
-
-type TranslateFn = (key: string, values?: Record<string, string | number | Date>) => string;
+import { BLOOM_LABELS } from '@/features/adaptive/types/learning';
+import type { SessionHistoryDetail } from '@/features/adaptive/types/history';
+import type { Exercise, SubmitResult, TranslateFn } from '@/features/adaptive/types/learning';
 
 interface ResultState {
   result: SubmitResult | null;
@@ -48,11 +47,17 @@ function deriveOutcomeFromHistory(
   if (answered.length === 0) return null;
 
   const latest = answered.reduce((acc, item) => (item.timestamp > acc.timestamp ? item : acc));
-  const bloomLabel =
-    BLOOM_LABELS[Math.max(0, Math.min(BLOOM_LABELS.length - 1, latest.bloom_level - 1))] ||
-    'Remember';
+  const bloomLabel = BLOOM_LABELS[latest.bloom_level - 1];
+  if (!bloomLabel) {
+    throw new TypeError(`Unsupported Bloom level in exercise history: ${latest.bloom_level}`);
+  }
   const conceptMastery = detail.concept_mastery[latest.concept_idx];
-  const masteryAfter = typeof conceptMastery === 'number' ? conceptMastery : detail.avg_mastery;
+  if (conceptMastery === undefined) {
+    throw new TypeError(`Missing mastery for concept index ${latest.concept_idx}`);
+  }
+  if (latest.is_correct === null) {
+    throw new TypeError(`Answered exercise ${latest.exercise_id} has no correctness result`);
+  }
 
   return {
     exercise: {
@@ -62,27 +67,27 @@ function deriveOutcomeFromHistory(
       concept_idx: latest.concept_idx,
       bloom_level: latest.bloom_level,
       bloom_label: bloomLabel,
-      exercise_type: (latest.exercise_type as Exercise['exercise_type']) || 'mcq',
+      exercise_type: latest.exercise_type,
       question: latest.question,
       sentence: latest.sentence,
       options: latest.options,
       statement: latest.statement,
       hint: latest.hint,
-      items: latest.items || [],
-      pairs: latest.pairs || [],
-      right_items: latest.right_items || [],
-      rubric: latest.rubric || [],
+      items: latest.items,
+      pairs: latest.pairs,
+      right_items: latest.right_items,
+      rubric: latest.rubric,
       correct_answer: latest.correct_answer,
       step: answered.length,
       max_steps: detail.max_steps,
     },
     result: {
-      is_correct: Boolean(latest.is_correct),
+      is_correct: latest.is_correct,
       correct_option: latest.correct_option,
       explanation: latest.explanation,
       concept_name: latest.concept_name,
       bloom_level: latest.bloom_level,
-      mastery_after: masteryAfter,
+      mastery_after: conceptMastery,
       avg_mastery: detail.avg_mastery,
       step: answered.length,
       session_completed: detail.status === 'completed' || answered.length >= detail.max_steps,

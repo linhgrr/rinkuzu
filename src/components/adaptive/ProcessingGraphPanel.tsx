@@ -1,6 +1,6 @@
 'use client';
 
-import { memo, useEffect, useMemo } from 'react';
+import { useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { Spinner } from '@/components/ui/Spinner';
 import {
@@ -18,13 +18,13 @@ import {
 } from '@xyflow/react';
 
 import dagre from 'dagre';
-import type { PipelinePartialGraph } from '@/features/adaptive/types';
+import type { PipelinePartialGraph } from '@/features/adaptive/types/pipeline';
 
 interface ConceptNodeData extends Record<string, unknown> {
   label: string;
 }
 
-const ConceptNode = memo(function ConceptNode({ data }: NodeProps<Node<ConceptNodeData>>) {
+function ConceptNode({ data }: NodeProps<Node<ConceptNodeData>>) {
   return (
     <div className="min-w-[120px] rounded-md border border-neutral-300 bg-white px-3 py-2 transition-all duration-200">
       <Handle type="target" position={Position.Top} className="!h-1 !w-1 !bg-neutral-400" />
@@ -35,7 +35,7 @@ const ConceptNode = memo(function ConceptNode({ data }: NodeProps<Node<ConceptNo
       <Handle type="source" position={Position.Bottom} className="!h-1 !w-1 !bg-neutral-400" />
     </div>
   );
-});
+}
 
 const nodeTypes = {
   concept: ConceptNode,
@@ -76,7 +76,7 @@ function PartialGraphFlow({ partialGraph }: { partialGraph?: PipelinePartialGrap
   const { fitView } = useReactFlow();
   const t = useTranslations('adaptiveLearning');
 
-  const initialNodes: Node<ConceptNodeData>[] = useMemo(() => {
+  const initialNodes: Node<ConceptNodeData>[] = (() => {
     if (!partialGraph?.nodes) return [];
     return partialGraph.nodes.map((n) => ({
       id: n.id,
@@ -84,9 +84,9 @@ function PartialGraphFlow({ partialGraph }: { partialGraph?: PipelinePartialGrap
       position: { x: 0, y: 0 },
       data: { label: n.name },
     }));
-  }, [partialGraph]);
+  })();
 
-  const initialEdges: Edge[] = useMemo(() => {
+  const initialEdges: Edge[] = (() => {
     if (!partialGraph?.edges) return [];
     return partialGraph.edges.map((e, index) => ({
       id: `${e.source}-${e.target}-${index}`,
@@ -97,20 +97,21 @@ function PartialGraphFlow({ partialGraph }: { partialGraph?: PipelinePartialGrap
       style: { stroke: 'var(--neutral-400)', strokeWidth: 2 },
       markerEnd: { type: MarkerType.ArrowClosed, color: 'var(--neutral-400)' },
     }));
-  }, [partialGraph]);
+  })();
 
-  const { nodes, edges } = useMemo(() => {
+  const { nodes, edges } = (() => {
     if (initialNodes.length === 0) return { nodes: [], edges: [] };
     return getLayoutedElements(initialNodes, initialEdges);
-  }, [initialNodes, initialEdges]);
+  })();
+  const nodeCount = nodes.length;
 
   useEffect(() => {
-    if (nodes.length > 0) {
+    if (nodeCount > 0) {
       window.setTimeout(() => fitView({ padding: 0.3, duration: 800 }), 50);
     }
-  }, [nodes, fitView]);
+  }, [partialGraph, nodeCount, fitView]);
 
-  if (!partialGraph || nodes.length === 0) {
+  if (!partialGraph || nodeCount === 0) {
     return (
       <div className="flex h-full w-full items-center justify-center text-sm text-neutral-400">
         <div className="flex flex-col items-center gap-3">

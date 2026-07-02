@@ -1,103 +1,42 @@
 import { ServiceResult } from '@/interfaces/services/types';
-import type { PaginationMeta } from '@/types';
-
-export interface SearchParams {
-  search?: string;
-  page?: number;
-  limit?: number;
-}
-
-export interface AdminUserDTO {
-  _id: string;
-  email: string;
-  displayName?: string;
-  role: 'admin' | 'user';
-  createdAt?: Date;
-}
-
-export interface AdminPaginatedUsers {
-  users: AdminUserDTO[];
-  pagination: PaginationMeta;
-}
-
-export interface AdminMessageResult {
-  message: string;
-}
-
-export interface AdminReportItem {
-  _id: string;
-  status?: string;
-  reason?: string;
-  createdAt?: Date;
-}
-
-export interface AdminPaginatedReports {
-  reports: AdminReportItem[];
-  pagination?: PaginationMeta;
-}
-
-export interface AdminStats {
-  totalQuizzes: number;
-  totalUsers: number;
-  totalAdmins: number;
-  totalAttempts: number;
-}
-
-export interface AdminTimeBucket {
-  newUsers: number;
-  newQuizzes: number;
-  attempts: number;
-}
-
-export interface AdminRecentUser {
-  email: string;
-  createdAt?: Date;
-}
-
-export interface AdminRecentAttempt {
-  id: string;
-  score: number;
-  takenAt: Date;
-  user: { email: string } | null;
-  quiz: { title: string } | null;
-}
-
-export interface AdminActivityStats {
-  timeBasedStats: {
-    today: AdminTimeBucket;
-    thisWeek: AdminTimeBucket;
-    thisMonth: AdminTimeBucket;
-  };
-  recentActivity: {
-    users: AdminRecentUser[];
-    quizzes: unknown[];
-    attempts: AdminRecentAttempt[];
-  };
-}
-
-export interface AdminCreatorStat {
-  _id: string;
-  email: string;
-  quizCount: number;
-}
+import type {
+  AdminMessageDto,
+  AdminUserListDto,
+  AdminUserListQueryDto,
+  UpdateAdminUserRoleRequestDto,
+} from '@/dtos/admin-user';
+import type {
+  AdminReportListDto,
+  AdminReportListQueryDto,
+  UpdateAdminReportRequestDto,
+} from '@/dtos/admin-report';
+import type {
+  AdminActivityStatsDto,
+  AdminCreatorStatDto,
+  AdminOverviewStatsDto,
+} from '@/dtos/admin-stats';
 
 export interface IAdminService {
   // User management
-  getUsers(searchParams: SearchParams): Promise<ServiceResult<AdminPaginatedUsers>>;
+  getUsers(searchParams: AdminUserListQueryDto): Promise<ServiceResult<AdminUserListDto>>;
   updateUserRole(
     userId: string,
-    role: string,
+    role: UpdateAdminUserRoleRequestDto['role'],
     adminEmail: string,
-  ): Promise<ServiceResult<AdminMessageResult>>;
+  ): Promise<ServiceResult<AdminMessageDto>>;
   deleteUser(userId: string, adminEmail: string): Promise<ServiceResult<boolean>>;
 
   // Reports management
-  getReports(searchParams: SearchParams): Promise<ServiceResult<AdminReportItem[]>>;
-  updateReportStatus(reportId: string, status: string): Promise<ServiceResult<AdminMessageResult>>;
+  getReports(searchParams: AdminReportListQueryDto): Promise<ServiceResult<AdminReportListDto>>;
+  updateReportStatus(
+    reportId: string,
+    input: UpdateAdminReportRequestDto,
+    adminEmail: string,
+  ): Promise<ServiceResult<AdminMessageDto>>;
   deleteReport(reportId: string): Promise<ServiceResult<boolean>>;
 
   // Statistics
-  getStats(): Promise<ServiceResult<AdminStats>>;
-  getActivityStats(): Promise<ServiceResult<AdminActivityStats>>;
-  getCreatorStats(): Promise<ServiceResult<AdminCreatorStat[]>>;
+  getStats(): Promise<ServiceResult<AdminOverviewStatsDto>>;
+  getActivityStats(): Promise<ServiceResult<AdminActivityStatsDto>>;
+  getCreatorStats(limit?: number): Promise<ServiceResult<AdminCreatorStatDto[]>>;
 }

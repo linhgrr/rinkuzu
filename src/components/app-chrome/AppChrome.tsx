@@ -6,7 +6,7 @@ import { Icon } from '@iconify/react';
 import { useSession, signOut } from 'next-auth/react';
 import { useTranslations, useLocale } from 'next-intl';
 import { Link, usePathname, useRouter } from '@/i18n/navigation';
-import { ROUTES } from '@/shared/constants';
+import { ROUTES } from '@/shared/constants/routes';
 import { useDropdownOutside } from '@/components/ui/hooks/use-dropdown-outside';
 
 const ICON = {
@@ -389,13 +389,13 @@ function LanguageDropdown({
 
 function UserMenuDropdown({
   avatar,
-  fallbackInitial,
+  avatarInitial,
   displayName,
   email,
   t,
 }: {
   avatar?: string | null;
-  fallbackInitial: string;
+  avatarInitial: string;
   displayName?: string | null;
   email?: string | null;
   t: (key: string) => string;
@@ -425,7 +425,7 @@ function UserMenuDropdown({
           />
         ) : (
           <span className="flex size-11 items-center justify-center rounded-full bg-accent-warm font-home text-base font-semibold text-ink">
-            {fallbackInitial}
+            {avatarInitial}
           </span>
         )}
       </button>
@@ -481,7 +481,7 @@ function AppTopbar({
   currentLocale,
   onSelectLocale,
   avatar,
-  fallbackInitial,
+  avatarInitial,
   displayName,
   email,
   t,
@@ -493,7 +493,7 @@ function AppTopbar({
   currentLocale: string;
   onSelectLocale: (locale: 'en' | 'vi') => void;
   avatar?: string | null;
-  fallbackInitial: string;
+  avatarInitial: string;
   displayName?: string | null;
   email?: string | null;
   t: (key: string) => string;
@@ -660,7 +660,7 @@ function AppTopbar({
 
             <UserMenuDropdown
               avatar={avatar}
-              fallbackInitial={fallbackInitial}
+              avatarInitial={avatarInitial}
               displayName={displayName}
               email={email}
               t={t}
@@ -815,8 +815,9 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   const [collapsed, setCollapsed] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileMenuState, setMobileMenuState] = useState({ pathname, open: false });
   const [expandedGroups, setExpandedGroups] = useState<string[]>(['quiz', 'adaptive', 'account']);
+  const mobileMenuOpen = mobileMenuState.pathname === pathname ? mobileMenuState.open : false;
 
   const userRole = (session?.user as { role?: string } | undefined)?.role;
 
@@ -831,13 +832,9 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
   const selectLocale = (locale: 'en' | 'vi') => router.replace(pathname, { locale });
 
   const avatar = session?.user?.avatar;
-  const fallbackInitial = (session?.user?.displayName || session?.user?.email || 'U')
+  const avatarInitial = (session?.user?.displayName || session?.user?.email || 'U')
     .charAt(0)
     .toUpperCase();
-
-  useEffect(() => {
-    setMobileMenuOpen(false);
-  }, [pathname]);
 
   useEffect(() => {
     document.body.style.overflow = mobileMenuOpen ? 'hidden' : '';
@@ -852,11 +849,16 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
         collapsed={collapsed}
         onToggleSidebar={() => setCollapsed((prev) => !prev)}
         mobileMenuOpen={mobileMenuOpen}
-        onToggleMobileMenu={() => setMobileMenuOpen((prev) => !prev)}
+        onToggleMobileMenu={() =>
+          setMobileMenuState((prev) => ({
+            pathname,
+            open: prev.pathname === pathname ? !prev.open : true,
+          }))
+        }
         currentLocale={currentLocale}
         onSelectLocale={selectLocale}
         avatar={avatar}
-        fallbackInitial={fallbackInitial}
+        avatarInitial={avatarInitial}
         displayName={session?.user?.displayName}
         email={session?.user?.email}
         t={t}
@@ -866,7 +868,7 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
         pathname={pathname}
         visibleNav={visibleNav}
         t={t}
-        onClose={() => setMobileMenuOpen(false)}
+        onClose={() => setMobileMenuState({ pathname, open: false })}
       />
       <AppSidebar
         collapsed={collapsed}

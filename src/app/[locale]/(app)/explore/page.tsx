@@ -7,17 +7,9 @@ import useSWR from 'swr';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import Pagination from '@/components/ui/Pagination';
+import { fetchQuizListViewModel } from '@/features/quiz/api/quiz-list-api';
 import { QuizCard, QuizCardSkeleton } from '@/features/quiz/components/QuizCard';
-import { fetchApiData } from '@/lib/api/client';
-import { HiOutlineSearch } from '@/components/icons';
-import type { IQuiz } from '@/types';
-
-interface PaginationData {
-  page: number;
-  limit: number;
-  total: number;
-  totalPages: number;
-}
+import { HiOutlineSearch } from 'react-icons/hi';
 
 interface ExploreState {
   page: number;
@@ -79,9 +71,9 @@ function ExploreContent() {
   const { replace } = useRouter();
   const searchParams = useSearchParams();
   const get = searchParams.get.bind(searchParams);
-  const initialSearch = get('q') || '';
+  const initialSearch = get('q') ?? '';
   const [state, dispatch] = useReducer(exploreReducer, {
-    page: parseInt(get('page') || '1', 10),
+    page: parseInt(get('page') ?? '1', 10),
     search: initialSearch,
     committedSearch: initialSearch,
   });
@@ -105,13 +97,17 @@ function ExploreContent() {
   });
   if (state.committedSearch) swrParams.append('search', state.committedSearch);
 
-  const { data, isLoading } = useSWR(
-    `/api/quizzes?${swrParams}`,
-    fetchApiData<{ quizzes: IQuiz[]; pagination: PaginationData }>,
-  );
+  const { data, isLoading } = useSWR(`/api/quizzes?${swrParams}`, fetchQuizListViewModel);
 
   const quizzes = data?.quizzes ?? [];
-  const pagination = data?.pagination ?? { page: state.page, limit, total: 0, totalPages: 0 };
+  const pagination = data?.pagination ?? {
+    currentPage: state.page,
+    totalPages: 0,
+    totalItems: 0,
+    itemsPerPage: limit,
+    hasNextPage: false,
+    hasPrevPage: false,
+  };
 
   // Debounce search — update committedSearch after 500ms, resetting page to 1
   useEffect(() => {
@@ -168,7 +164,7 @@ function ExploreContent() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {quizzes.map((quiz) => (
-                <QuizCard key={quiz._id} quiz={quiz} locale={locale} />
+                <QuizCard key={quiz.id} quiz={quiz} quizId={quiz.id} locale={locale} />
               ))}
             </div>
           )}
@@ -177,7 +173,7 @@ function ExploreContent() {
           {pagination.totalPages > 1 && (
             <div className="mt-12 flex justify-center">
               <Pagination
-                currentPage={pagination.page}
+                currentPage={pagination.currentPage}
                 totalPages={pagination.totalPages}
                 onPageChange={handlePageChange}
               />

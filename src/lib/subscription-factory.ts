@@ -1,6 +1,7 @@
 import { SubscriptionService } from '@/services/subscription/SubscriptionService';
 import { SubscriptionRepository } from '@/repositories/SubscriptionRepository';
 import { UserRepository } from '@/repositories/UserRepository';
+import { SubscriptionPlanRepository } from '@/repositories/SubscriptionPlanRepository';
 import { PayOSService } from '@/services/payment/PayOSService';
 
 /**
@@ -13,7 +14,13 @@ import { PayOSService } from '@/services/payment/PayOSService';
 export function createSubscriptionService(): SubscriptionService {
   const subscriptionRepository = new SubscriptionRepository();
   const userRepository = new UserRepository();
+  const planRepository = new SubscriptionPlanRepository();
   const payosService = new PayOSService();
 
-  return new SubscriptionService(subscriptionRepository, userRepository, payosService);
+  return new SubscriptionService(
+    subscriptionRepository,
+    userRepository,
+    payosService,
+    planRepository,
+  );
 }

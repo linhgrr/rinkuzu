@@ -1,0 +1,37 @@
+import type { Quiz, QuizAuthorPreview } from '@/entities/Quiz';
+import type { QuizListAuthorDto, QuizListItemDto } from '@/dtos/quiz';
+import { serializeDate } from '@/lib/date-serialization';
+
+function isAuthorPreview(author: Quiz['author']): author is QuizAuthorPreview {
+  return typeof author === 'object' && author !== null;
+}
+
+function toAuthorDto(author: Quiz['author']): string | QuizListAuthorDto | null {
+  if (!author) return null;
+  if (!isAuthorPreview(author)) return author;
+
+  return {
+    id: author.id,
+    email: author.email,
+    name: author.name,
+    displayName: author.displayName,
+    avatar: author.avatar,
+  };
+}
+
+export class QuizListDtoMapper {
+  static toListItem(quiz: Quiz): QuizListItemDto {
+    return {
+      id: quiz.id,
+      title: quiz.title,
+      description: quiz.description,
+      slug: quiz.slug,
+      author: toAuthorDto(quiz.author),
+      folder: quiz.folder ?? null,
+      isPrivate: quiz.isPrivate,
+      questionCount: quiz.questionCount ?? quiz.questions.length,
+      createdAt: serializeDate(quiz.createdAt, 'quiz.createdAt'),
+      updatedAt: serializeDate(quiz.updatedAt, 'quiz.updatedAt'),
+    };
+  }
+}

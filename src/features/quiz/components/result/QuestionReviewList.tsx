@@ -8,6 +8,7 @@ import type { ChatMessage } from '@/features/quiz/hooks/useStreamingChatSession'
 type TranslateParams = Record<string, string | number | Date>;
 
 interface QuestionData {
+  id: string;
   question: string;
   options: string[];
   type: 'single' | 'multiple';
@@ -76,7 +77,7 @@ export function QuestionReviewList({
 
             return (
               <div
-                key={`${index + 1}-${questionResult.question}`}
+                key={questionResult.id}
                 className={`border rounded-lg p-4 ${
                   questionResult.isCorrect
                     ? 'border-green-200 bg-green-50'

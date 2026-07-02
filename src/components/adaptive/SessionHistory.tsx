@@ -28,5 +28,3 @@ export default function SessionHistory() {
 
   return <SessionHistoryList sessions={sessions} onOpen={handleOpenSession} />;
 }
-
-export { ExerciseHistoryTable } from './ExerciseHistoryTable';

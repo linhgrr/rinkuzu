@@ -1,9 +1,9 @@
-import type { IQuiz } from '@/types';
+import type { QuizQuestionInputViewModel } from '@/features/quiz/types/quiz-question';
 
 type QuizAnswer = number | number[];
 
 export function mapMobileAnswersToOrderedAnswers(
-  quiz: Pick<IQuiz, 'questions'>,
+  quiz: { questions: Pick<QuizQuestionInputViewModel, 'type'>[] },
   answers: Record<string, number | number[]>,
 ): QuizAnswer[] {
   return quiz.questions.map((question, index) => {

@@ -4,35 +4,32 @@ import { useEffect, useReducer } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
-import { ROUTES } from '@/shared/constants';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { ErrorState } from '@/components/ui/ErrorState';
+import { LoadingState } from '@/components/ui/LoadingState';
+import { ROUTES } from '@/shared/constants/routes';
 import ReviewCard from '@/components/ReviewCard';
 import { Card } from '@/components/ui/Card';
-import { fetchApiData } from '@/lib/api/client';
+import { extractUnknownErrorMessage } from '@/lib/api/error';
+import {
+  fetchDueReviewQuestionViewModels,
+  submitReviewAnswer,
+} from '@/features/review/api/review-session-api';
+import type { ReviewQuestionViewModel, ReviewRating } from '@/features/review/types/review-session';
 import {
   HiOutlineEmojiHappy,
   HiOutlineCheckCircle,
   HiOutlineHome,
   HiOutlineRefresh,
-} from '@/components/icons';
+} from 'react-icons/hi';
 
-interface Question {
-  _id: string; // QuestionProgress ID if needed, or we use questionId
-  questionId: string;
-  quizSlug: string;
-  questionRef: {
-    text: string;
-    options: string[];
-    correctIndexes: number[];
-  };
-  srsLevel: number;
-}
-
-type ReviewPhase = 'loading' | 'ready' | 'completed';
+type ReviewPhase = 'loading' | 'ready' | 'completed' | 'error';
 
 interface ReviewState {
-  questions: Question[];
+  questions: ReviewQuestionViewModel[];
   currentIndex: number;
   phase: ReviewPhase;
+  error: string;
   stats: {
     xpGained: number;
     reviewedCount: number;
@@ -41,27 +38,35 @@ interface ReviewState {
 
 type ReviewAction =
   | { type: 'setPhase'; value: ReviewPhase }
-  | { type: 'loadQuestions'; questions: Question[] }
+  | { type: 'loadQuestions'; questions: ReviewQuestionViewModel[] }
+  | { type: 'loadError'; error: string }
+  | { type: 'submitError'; error: string }
   | { type: 'recordReview'; xpGained: number; hasNext: boolean };
 
 const initialState: ReviewState = {
   questions: [],
   currentIndex: 0,
   phase: 'loading',
+  error: '',
   stats: { xpGained: 0, reviewedCount: 0 },
 };
 
 function reviewReducer(state: ReviewState, action: ReviewAction): ReviewState {
   switch (action.type) {
     case 'setPhase':
-      return { ...state, phase: action.value };
+      return { ...state, phase: action.value, error: '' };
     case 'loadQuestions':
       return {
         ...state,
         questions: action.questions,
         currentIndex: 0,
         phase: 'ready',
+        error: '',
       };
+    case 'loadError':
+      return { ...state, phase: 'error', error: action.error, questions: [] };
+    case 'submitError':
+      return { ...state, error: action.error };
     case 'recordReview':
       return {
         ...state,
@@ -71,6 +76,7 @@ function reviewReducer(state: ReviewState, action: ReviewAction): ReviewState {
           xpGained: state.stats.xpGained + action.xpGained,
           reviewedCount: state.stats.reviewedCount + 1,
         },
+        error: '',
       };
     default:
       return state;
@@ -88,52 +94,58 @@ export default function ReviewPage() {
       dispatch({ type: 'setPhase', value: 'loading' });
 
       try {
-        const data = await fetchApiData<{ questions: Question[]; count: number }>(
-          '/api/review/due',
-        );
-        dispatch({ type: 'loadQuestions', questions: data.questions });
+        dispatch({
+          type: 'loadQuestions',
+          questions: await fetchDueReviewQuestionViewModels(),
+        });
       } catch (error) {
         console.error('Failed to fetch reviews', error);
-        dispatch({ type: 'loadQuestions', questions: [] });
+        dispatch({
+          type: 'loadError',
+          error: extractUnknownErrorMessage(error, t('loadError')),
+        });
       }
     };
 
     void fetchDueReviews();
-  }, []);
+  }, [t]);
 
-  const handleReviewSubmit = async (rating: 'fail' | 'hard' | 'good' | 'easy') => {
+  const handleReviewSubmit = async (rating: ReviewRating) => {
     const currentQuestion = questions[currentIndex];
+    if (!currentQuestion) return;
 
     try {
-      const data = await fetchApiData<{
-        questionProgress: unknown;
-        userProgress?: { xpGained?: number };
-      }>('/api/review/submit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          questionId: currentQuestion.questionId,
-          quizSlug: currentQuestion.quizSlug,
-          rating,
-          questionRef: currentQuestion.questionRef,
-        }),
+      const result = await submitReviewAnswer({
+        question: currentQuestion,
+        rating,
       });
       dispatch({
         type: 'recordReview',
-        xpGained: data.userProgress?.xpGained || 0,
+        xpGained: result.xpGained,
         hasNext: currentIndex < questions.length - 1,
       });
     } catch (error) {
       console.error('Error submitting review', error);
+      dispatch({
+        type: 'submitError',
+        error: extractUnknownErrorMessage(error, t('submitError')),
+      });
     }
   };
 
   if (phase === 'loading') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-surface-page">
-        <div className="animate-pulse flex flex-col items-center">
-          <div className="size-12 bg-surface-warm rounded-xl mb-4"></div>
-          <div className="h-4 bg-surface-warm w-32 rounded"></div>
+        <LoadingState text={t('loading')} />
+      </div>
+    );
+  }
+
+  if (phase === 'error') {
+    return (
+      <div className="min-h-screen bg-surface-page">
+        <div className="mx-auto max-w-2xl px-4 py-8">
+          <ErrorState message={state.error} />
         </div>
       </div>
     );
@@ -178,14 +190,17 @@ export default function ReviewPage() {
   if (questions.length === 0) {
     return (
       <div className="min-h-screen bg-surface-page">
-        <div className="max-w-2xl mx-auto px-4 py-8 text-center">
+        <div className="max-w-2xl mx-auto px-4 py-8">
           <Card className="p-6">
-            <div className="size-16 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-4">
-              <HiOutlineCheckCircle className="size-8 text-accent" />
-            </div>
-            <h2 className="text-2xl font-semibold mb-2">{t('noCards')}</h2>
-            <p className="text-ink-muted mb-6">{t('comeBack')}</p>
-            <Button onClick={() => push(ROUTES.DASHBOARD)}>{t('backToDashboard')}</Button>
+            <EmptyState
+              icon={<HiOutlineCheckCircle className="size-8 text-accent" />}
+              title={t('noCards')}
+              description={t('comeBack')}
+              action={
+                <Button onClick={() => push(ROUTES.DASHBOARD)}>{t('backToDashboard')}</Button>
+              }
+              className="py-0"
+            />
           </Card>
         </div>
       </div>
@@ -205,10 +220,13 @@ export default function ReviewPage() {
         </div>
 
         <ReviewCard
-          key={currentQuestion._id}
+          key={currentQuestion.id}
           question={currentQuestion.questionRef}
           onResult={handleReviewSubmit}
         />
+        {state.error ? (
+          <ErrorState message={state.error} className="mt-4 w-full max-w-2xl" />
+        ) : null}
       </div>
     </div>
   );

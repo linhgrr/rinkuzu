@@ -2,60 +2,18 @@
 
 import { useEffect, useReducer } from 'react';
 import { useTranslations } from 'next-intl';
-import { fetchApiData } from '@/lib/api/client';
+import { fetchAdminStatsViewModel } from '@/features/admin/stats/api/admin-stats-api';
+import type { AdminStatsViewModel } from '@/features/admin/stats/types/admin-stats-view-model';
+import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import StatsModal from '@/components/ui/StatsModal';
-
-interface AdminStats {
-  overview: {
-    totalUsers: number;
-    totalAdmins: number;
-    totalQuizzes: number;
-    totalAttempts: number;
-  };
-  timeBasedStats: {
-    today: { newUsers: number; newQuizzes: number; attempts: number };
-    thisWeek: { newUsers: number; newQuizzes: number; attempts: number };
-    thisMonth: { newUsers: number; newQuizzes: number; attempts: number };
-  };
-  topCreators: Array<{
-    email: string;
-    quizCount: number;
-    totalQuestions: number;
-  }>;
-  recentActivity: {
-    users: Array<{ email: string; createdAt: string }>;
-    quizzes: Array<{
-      title: string;
-      createdAt: string;
-      author: { email: string };
-    }>;
-    attempts: Array<{
-      id: string;
-      score: number;
-      takenAt: string;
-      user: { email: string } | null;
-      quiz: { title: string } | null;
-    }>;
-  };
-  scoreStats: {
-    averageScore: number;
-    highestScore: number;
-    lowestScore: number;
-  };
-  growthTrends: {
-    users: Array<{ _id: { year: number; month: number }; count: number }>;
-    quizzes: Array<{ _id: { year: number; month: number }; count: number }>;
-    attempts: Array<{ _id: { year: number; month: number }; count: number }>;
-  };
-}
 
 type TranslateFn = (key: string, values?: Record<string, string | number | Date>) => string;
 type StatsModalType = 'creators' | 'activity' | null;
 
 interface AdminStatsState {
-  stats: AdminStats | null;
+  stats: AdminStatsViewModel | null;
   loading: boolean;
   error: string;
   activeModal: StatsModalType;
@@ -63,7 +21,7 @@ interface AdminStatsState {
 
 type AdminStatsAction =
   | { type: 'startFetch' }
-  | { type: 'fetchSuccess'; stats: AdminStats }
+  | { type: 'fetchSuccess'; stats: AdminStatsViewModel }
   | { type: 'fetchError'; message: string }
   | { type: 'openModal'; modal: Exclude<StatsModalType, null> }
   | { type: 'closeModal' };
@@ -92,16 +50,6 @@ function adminStatsReducer(state: AdminStatsState, action: AdminStatsAction): Ad
   }
 }
 
-function formatDate(dateString: string) {
-  return new Date(dateString).toLocaleDateString('vi-VN', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
-
 function AdminStatsLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-white">
@@ -123,15 +71,6 @@ function AdminStatsLoadingState({ t }: { t: TranslateFn }) {
   );
 }
 
-function AdminStatsHeader({ t }: { t: TranslateFn }) {
-  return (
-    <div className="mb-8">
-      <h1 className="text-3xl font-semibold text-neutral-900">{t('statistics')}</h1>
-      <p className="mt-2 text-neutral-600">{t('systemStatistics')}</p>
-    </div>
-  );
-}
-
 function AdminStatsErrorBanner({ error }: { error: string }) {
   if (!error) {
     return null;
@@ -144,7 +83,7 @@ function AdminStatsErrorBanner({ error }: { error: string }) {
   );
 }
 
-function OverviewCards({ stats, t }: { stats: AdminStats; t: TranslateFn }) {
+function OverviewCards({ stats, t }: { stats: AdminStatsViewModel; t: TranslateFn }) {
   return (
     <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
       <Card>
@@ -235,7 +174,7 @@ function TimePeriodCard({
   );
 }
 
-function TimeBasedStatsCard({ stats, t }: { stats: AdminStats; t: TranslateFn }) {
+function TimeBasedStatsCard({ stats, t }: { stats: AdminStatsViewModel; t: TranslateFn }) {
   return (
     <Card>
       <CardHeader>
@@ -313,7 +252,7 @@ function TopCreatorsSection({
   t,
   onOpenModal,
 }: {
-  stats: AdminStats;
+  stats: AdminStatsViewModel;
   t: TranslateFn;
   onOpenModal: () => void;
 }) {
@@ -369,7 +308,7 @@ function RecentActivityCard({
   t,
   onOpenModal,
 }: {
-  stats: AdminStats;
+  stats: AdminStatsViewModel;
   t: TranslateFn;
   onOpenModal: () => void;
 }) {
@@ -390,7 +329,7 @@ function RecentActivityCard({
             {stats.recentActivity.users.slice(0, 5).map((user) => (
               <div key={user.email} className="rounded bg-green-50 p-2 text-sm">
                 <div className="font-medium">{user.email}</div>
-                <div className="text-neutral-500">{formatDate(user.createdAt)}</div>
+                <div className="text-neutral-500">{user.createdAtLabel}</div>
               </div>
             ))}
           </ActivityColumn>
@@ -399,7 +338,7 @@ function RecentActivityCard({
             {stats.recentActivity.quizzes.slice(0, 5).map((quiz) => (
               <div key={quiz.title} className="rounded bg-green-50 p-2 text-sm">
                 <div className="truncate font-medium">{quiz.title}</div>
-                <div className="text-xs text-neutral-500">{formatDate(quiz.createdAt)}</div>
+                <div className="text-xs text-neutral-500">{quiz.createdAtLabel}</div>
               </div>
             ))}
           </ActivityColumn>
@@ -407,14 +346,12 @@ function RecentActivityCard({
           <ActivityColumn title={t('recentAttempts')} titleClassName="text-brand-trust">
             {stats.recentActivity.attempts.slice(0, 5).map((attempt) => (
               <div key={attempt.id} className="rounded bg-green-50 p-2 text-sm">
-                <div className="truncate font-medium">
-                  {attempt.quiz?.title || t('deletedQuiz')}
-                </div>
+                <div className="truncate font-medium">{attempt.quiz.title}</div>
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-neutral-500">{attempt.user?.email || t('anonymous')}</span>
+                  <span className="text-neutral-500">{attempt.actor.email}</span>
                   <span className="font-medium">{attempt.score}%</span>
                 </div>
-                <div className="text-xs text-neutral-500">{formatDate(attempt.takenAt)}</div>
+                <div className="text-xs text-neutral-500">{attempt.takenAtLabel}</div>
               </div>
             ))}
           </ActivityColumn>
@@ -431,7 +368,7 @@ function AdminStatsContent({
   onOpenCreators,
   onOpenActivity,
 }: {
-  stats: AdminStats;
+  stats: AdminStatsViewModel;
   error: string;
   t: TranslateFn;
   onOpenCreators: () => void;
@@ -439,7 +376,7 @@ function AdminStatsContent({
 }) {
   return (
     <>
-      <AdminStatsHeader t={t} />
+      <AdminPageHeader title={t('statistics')} description={t('systemStatistics')} />
       <AdminStatsErrorBanner error={error} />
       <div className="space-y-8">
         <OverviewCards stats={stats} t={t} />
@@ -489,7 +426,7 @@ export default function AdminStatsPage() {
       dispatch({ type: 'startFetch' });
 
       try {
-        const data = await fetchApiData<AdminStats>('/api/admin/stats');
+        const data = await fetchAdminStatsViewModel();
         dispatch({ type: 'fetchSuccess', stats: data });
       } catch (error) {
         dispatch({
@@ -518,7 +455,7 @@ export default function AdminStatsPage() {
         />
       ) : (
         <>
-          <AdminStatsHeader t={t} />
+          <AdminPageHeader title={t('statistics')} description={t('systemStatistics')} />
           <AdminStatsErrorBanner error={state.error} />
         </>
       )}

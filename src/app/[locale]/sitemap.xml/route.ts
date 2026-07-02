@@ -13,6 +13,7 @@ import { locales, type Locale } from '@/i18n/config';
 import { canonicalFor } from '@/lib/seo';
 import { INDEXABLE_STATIC_PUBLIC_ROUTES } from '@/lib/seo.routes';
 import { logger } from '@/lib/logger';
+import { toUtcDateKey } from '@/lib/date-serialization';
 
 function toEntry(
   locale: Locale | string,
@@ -23,6 +24,14 @@ function toEntry(
     url: canonicalFor(locale, path),
     lastModified,
   };
+}
+
+function getRequiredLastModifiedDate(entry: MetadataRoute.Sitemap[number]): Date {
+  if (!entry.lastModified) {
+    throw new TypeError('sitemap.lastModified must be present');
+  }
+
+  return entry.lastModified instanceof Date ? entry.lastModified : new Date(entry.lastModified);
 }
 
 export async function GET(): Promise<Response> {
@@ -50,11 +59,11 @@ export async function GET(): Promise<Response> {
       page: 1,
       limit: 5000,
       compact: true,
+      onlyMine: false,
     });
-    for (const quiz of quizResult.quizzes || []) {
-      if (!quiz?.slug) continue;
+    for (const quiz of quizResult.quizzes) {
       const path = `/quiz/${quiz.slug}`;
-      const quizDate = new Date(quiz.updatedAt || quiz.createdAt || Date.now());
+      const quizDate = new Date(quiz.updatedAt ?? quiz.createdAt);
       for (const locale of [...locales]) {
         pushEntry(toEntry(locale, path, quizDate));
       }
@@ -73,7 +82,7 @@ ${entries
   .map(
     (e) => `  <url>
     <loc>${e.url}</loc>
-    <lastmod>${new Date(e.lastModified || Date.now()).toISOString().split('T')[0]}</lastmod>
+    <lastmod>${toUtcDateKey(getRequiredLastModifiedDate(e), 'sitemap.lastModified')}</lastmod>
   </url>`,
   )
   .join('\n')}

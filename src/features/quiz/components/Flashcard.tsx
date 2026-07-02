@@ -1,10 +1,11 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useReducer } from 'react';
+import { useEffect, useReducer } from 'react';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { useTranslations } from 'next-intl';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { formatCorrectAnswerLetters, formatCorrectAnswerText } from '@/lib/quiz/answer-text';
 
 type SwipeDirection = 'left' | 'right';
 type QuestionType = 'single' | 'multiple';
@@ -109,51 +110,6 @@ function flashcardReducer(state: FlashcardState, action: FlashcardAction): Flash
     default:
       return state;
   }
-}
-
-function getCorrectAnswers({
-  correctIndex,
-  correctIndexes,
-  options,
-  type,
-}: Pick<FlashcardProps, 'correctIndex' | 'correctIndexes' | 'options' | 'type'>) {
-  if (type === 'single' && typeof correctIndex === 'number') {
-    return [options[correctIndex]];
-  }
-
-  if (type === 'multiple' && correctIndexes) {
-    return correctIndexes.map((index) => options[index]);
-  }
-
-  return [];
-}
-
-function getCorrectAnswerText(
-  correctAnswers: string[],
-  type: QuestionType,
-  noCorrectAnswerLabel: string,
-) {
-  if (type === 'single') {
-    return correctAnswers[0] || noCorrectAnswerLabel;
-  }
-
-  return correctAnswers.length > 0 ? correctAnswers.join(', ') : noCorrectAnswerLabel;
-}
-
-function getCorrectAnswerLetters({
-  correctIndex,
-  correctIndexes,
-  type,
-}: Pick<FlashcardProps, 'correctIndex' | 'correctIndexes' | 'type'>) {
-  if (type === 'single' && typeof correctIndex === 'number') {
-    return String.fromCharCode(65 + correctIndex);
-  }
-
-  if (type === 'multiple' && correctIndexes) {
-    return correctIndexes.map((index) => String.fromCharCode(65 + index)).join(', ');
-  }
-
-  return 'N/A';
 }
 
 function isCorrectOption({
@@ -332,34 +288,27 @@ export function Flashcard({
 }: FlashcardProps) {
   const t = useTranslations('flashcard');
   const [state, dispatch] = useReducer(flashcardReducer, initialFlashcardState);
-  const correctAnswers = useMemo(
-    () => getCorrectAnswers({ correctIndex, correctIndexes, options, type }),
-    [correctIndex, correctIndexes, options, type],
+  const correctAnswerText = formatCorrectAnswerText(
+    { correctIndex, correctIndexes, options, type },
+    t('noCorrectAnswer'),
   );
-  const correctAnswerText = useMemo(
-    () => getCorrectAnswerText(correctAnswers, type, t('noCorrectAnswer')),
-    [correctAnswers, t, type],
+  const correctAnswerLetters = formatCorrectAnswerLetters(
+    { correctIndex, correctIndexes, type },
+    'N/A',
   );
-  const correctAnswerLetters = useMemo(
-    () => getCorrectAnswerLetters({ correctIndex, correctIndexes, type }),
-    [correctIndex, correctIndexes, type],
-  );
-  const animatedCardStyle = useMemo(() => getAnimatedCardStyle(state), [state]);
+  const animatedCardStyle = getAnimatedCardStyle(state);
 
-  const triggerSwipe = useCallback(
-    (direction: SwipeDirection) => {
-      if (state.isTransitioning) {
-        return;
-      }
+  const triggerSwipe = (direction: SwipeDirection) => {
+    if (state.isTransitioning) {
+      return;
+    }
 
-      dispatch({ type: 'swipeStart', direction });
-      onSwipe(direction);
-      window.setTimeout(() => {
-        dispatch({ type: 'swipeFinish' });
-      }, 300);
-    },
-    [onSwipe, state.isTransitioning],
-  );
+    dispatch({ type: 'swipeStart', direction });
+    onSwipe(direction);
+    window.setTimeout(() => {
+      dispatch({ type: 'swipeFinish' });
+    }, 300);
+  };
 
   useHotkeys(
     'space',

@@ -2,7 +2,8 @@
 
 import dynamic from 'next/dynamic';
 import { Spinner } from '@/components/ui/Spinner';
-import type { PipelinePartialGraph, TranslateFn } from '@/features/adaptive/types';
+import type { TranslateFn } from '@/features/adaptive/types/learning';
+import type { PipelinePartialGraph } from '@/features/adaptive/types/pipeline';
 
 const ProcessingGraphPanel = dynamic(() => import('./ProcessingGraphPanel'), {
   loading: () => (

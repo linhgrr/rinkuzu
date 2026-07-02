@@ -10,7 +10,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import PDFViewer from '@/features/quiz/components/PDFViewer';
 import { QuestionEditor } from '@/features/quiz/components/editor/QuestionEditor';
-import type { Question } from '@/features/quiz/components/editor/QuestionEditor';
 import { QuizMetaFormEditor } from '@/features/quiz/components/editor/QuizMetaForm';
 import {
   HiOutlineClipboardCopy,
@@ -19,17 +18,30 @@ import {
   HiOutlineInformationCircle,
   HiOutlineSave,
   HiOutlineTrash,
-} from '@/components/icons';
-import { fetchApiData } from '@/lib/api/client';
-import { routePathSegment } from '@/lib/routing/routeParams';
+} from 'react-icons/hi';
+import { fetchQuizEditViewModel, updateQuizEditViewModel } from '@/features/quiz/api/quiz-edit-api';
+import { deleteQuizById } from '@/features/quiz/api/quiz-api';
+import type {
+  QuizEditViewModel,
+  QuizEditorAuthorViewModel,
+  QuizEditorQuestionInputViewModel,
+  QuizEditorQuestionViewModel,
+} from '@/features/quiz/types/quiz-editor-view-model';
+import { getCorrectAnswerIndexes } from '@/lib/quiz/answer-text';
 import { useRequiredRouteParam } from '@/lib/routing/useRequiredRouteParam';
-import { IQuiz } from '@/types';
 
 type EditPageStatus = 'loading' | 'ready' | 'error';
+type EditableQuizQuestion = QuizEditorQuestionViewModel;
+type EditableQuizQuestionField = 'question' | 'options' | 'questionImage' | 'optionImages';
+
+function getQuizAuthorId(author: string | QuizEditorAuthorViewModel | null): string | null {
+  if (!author) return null;
+  return typeof author === 'string' ? author : (author.id ?? null);
+}
 
 interface EditQuizState {
   status: EditPageStatus;
-  quiz: IQuiz | null;
+  quiz: QuizEditViewModel | null;
   saving: boolean;
   deleting: boolean;
   showDeleteConfirm: boolean;
@@ -39,7 +51,7 @@ interface EditQuizState {
   title: string;
   description: string;
   selectedFolderId: string | null;
-  editableQuestions: Question[];
+  editableQuestions: EditableQuizQuestion[];
   isPrivate: boolean;
   pdfUrl: string | null;
   showPDFViewer: boolean;
@@ -48,7 +60,7 @@ interface EditQuizState {
 type EditQuizAction =
   | { type: 'patch'; value: Partial<EditQuizState> }
   | { type: 'startLoading' }
-  | { type: 'loadSuccess'; quiz: IQuiz }
+  | { type: 'loadSuccess'; quiz: QuizEditViewModel }
   | { type: 'loadError'; message: string }
   | { type: 'togglePdfViewer' }
   | { type: 'setTitle'; value: string }
@@ -56,11 +68,16 @@ type EditQuizAction =
   | { type: 'setFolder'; value: string | null }
   | { type: 'setPrivate'; value: boolean }
   | { type: 'setQuestionToRemove'; value: number | null }
-  | { type: 'updateQuestionField'; index: number; field: keyof Question; value: unknown }
+  | {
+      type: 'updateQuestionField';
+      index: number;
+      field: EditableQuizQuestionField;
+      value: EditableQuizQuestion[EditableQuizQuestionField];
+    }
   | { type: 'updateOption'; questionIndex: number; optionIndex: number; value: string }
   | { type: 'updateQuestionImage'; questionIndex: number; value?: string }
   | { type: 'updateOptionImage'; questionIndex: number; optionIndex: number; value?: string }
-  | { type: 'addQuestion' }
+  | { type: 'addQuestion'; question: EditableQuizQuestion }
   | { type: 'removeQuestion'; index: number }
   | { type: 'toggleQuestionType'; index: number; value: 'single' | 'multiple' }
   | { type: 'setSingleCorrect'; questionIndex: number; optionIndex: number }
@@ -84,10 +101,6 @@ const initialState: EditQuizState = {
   showPDFViewer: true,
 };
 
-function toQuestionArray(questions: unknown[]): Question[] {
-  return questions as Question[];
-}
-
 function editQuizReducer(state: EditQuizState, action: EditQuizAction): EditQuizState {
   switch (action.type) {
     case 'patch':
@@ -96,17 +109,17 @@ function editQuizReducer(state: EditQuizState, action: EditQuizAction): EditQuiz
       return { ...state, status: 'loading', error: '' };
     case 'loadSuccess': {
       const loadedQuiz = action.quiz;
-      const loadedPdfUrl = (loadedQuiz as IQuiz & { pdfUrl?: string }).pdfUrl || null;
+      const loadedPdfUrl = loadedQuiz.pdfUrl ?? null;
 
       return {
         ...state,
         status: 'ready',
         quiz: loadedQuiz,
         title: loadedQuiz.title,
-        description: loadedQuiz.description || '',
+        description: loadedQuiz.description ?? '',
         selectedFolderId: loadedQuiz.folder ?? null,
-        editableQuestions: toQuestionArray(loadedQuiz.questions),
-        isPrivate: loadedQuiz.isPrivate || false,
+        editableQuestions: loadedQuiz.questions,
+        isPrivate: loadedQuiz.isPrivate ?? false,
         pdfUrl: loadedPdfUrl,
         showPDFViewer: !!loadedPdfUrl,
         error: '',
@@ -171,16 +184,7 @@ function editQuizReducer(state: EditQuizState, action: EditQuizAction): EditQuiz
     case 'addQuestion':
       return {
         ...state,
-        editableQuestions: [
-          ...state.editableQuestions,
-          {
-            question: '',
-            options: ['', '', '', ''],
-            type: 'single',
-            correctIndex: 0,
-            correctIndexes: [],
-          },
-        ],
+        editableQuestions: [...state.editableQuestions, action.question],
       };
     case 'removeQuestion':
       return {
@@ -190,26 +194,45 @@ function editQuizReducer(state: EditQuizState, action: EditQuizAction): EditQuiz
     case 'toggleQuestionType':
       return {
         ...state,
-        editableQuestions: state.editableQuestions.map((question, index) =>
-          index === action.index
-            ? {
-                ...question,
-                type: action.value,
-                correctIndex: action.value === 'single' ? (question.correctIndex ?? 0) : undefined,
-                correctIndexes:
-                  action.value === 'multiple' ? question.correctIndexes || [] : undefined,
-              }
-            : question,
-        ),
+        editableQuestions: state.editableQuestions.map((question, index) => {
+          if (index !== action.index) {
+            return question;
+          }
+
+          const correctAnswerIndexes = getCorrectAnswerIndexes(question);
+          const base = {
+            id: question.id,
+            editorId: question.editorId,
+            question: question.question,
+            options: question.options,
+            questionImage: question.questionImage,
+            optionImages: question.optionImages,
+          };
+
+          return action.value === 'single'
+            ? { ...base, type: 'single', correctIndex: correctAnswerIndexes[0] ?? 0 }
+            : { ...base, type: 'multiple', correctIndexes: correctAnswerIndexes };
+        }),
       };
     case 'setSingleCorrect':
       return {
         ...state,
-        editableQuestions: state.editableQuestions.map((question, index) =>
-          index === action.questionIndex
-            ? { ...question, correctIndex: action.optionIndex }
-            : question,
-        ),
+        editableQuestions: state.editableQuestions.map((question, index) => {
+          if (index !== action.questionIndex) {
+            return question;
+          }
+
+          const base = {
+            id: question.id,
+            editorId: question.editorId,
+            question: question.question,
+            options: question.options,
+            questionImage: question.questionImage,
+            optionImages: question.optionImages,
+          };
+
+          return { ...base, type: 'single', correctIndex: action.optionIndex };
+        }),
       };
     case 'toggleMultipleCorrect':
       return {
@@ -219,11 +242,19 @@ function editQuizReducer(state: EditQuizState, action: EditQuizAction): EditQuiz
             return question;
           }
 
-          const current = question.correctIndexes || [];
+          const current = question.type === 'multiple' ? question.correctIndexes : [];
           const correctIndexes = action.checked
             ? [...current, action.optionIndex].sort()
             : current.filter((value) => value !== action.optionIndex);
-          return { ...question, correctIndexes };
+          const base = {
+            id: question.id,
+            editorId: question.editorId,
+            question: question.question,
+            options: question.options,
+            questionImage: question.questionImage,
+            optionImages: question.optionImages,
+          };
+          return { ...base, type: 'multiple', correctIndexes };
         }),
       };
     default:
@@ -423,19 +454,6 @@ function PdfReferencePanel({ pdfUrl, onClose }: { pdfUrl: string; onClose: () =>
     <div className="hidden lg:block lg:w-1/2 lg:pl-4">
       <div className="sticky top-24 h-[calc(100vh-6rem)]">
         <Card className="flex h-full flex-col border-2 border-green-200 bg-white shadow-2xl">
-          <CardHeader className="flex-shrink-0 pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg">PDF Reference</CardTitle>
-              <Button
-                onClick={onClose}
-                variant="ghost"
-                size="sm"
-                className="text-neutral-500 hover:text-neutral-700"
-              >
-                {'✕'}
-              </Button>
-            </div>
-          </CardHeader>
           <CardContent className="flex min-h-0 flex-1 flex-col p-4">
             <PDFViewer pdfDataUrl={null} pdfUrl={pdfUrl} onClose={onClose} />
           </CardContent>
@@ -448,7 +466,7 @@ function PdfReferencePanel({ pdfUrl, onClose }: { pdfUrl: string; onClose: () =>
 export default function EditQuizPage() {
   const { data: session } = useSession();
   const { push } = useRouter();
-  const encodedQuizId = routePathSegment(useRequiredRouteParam('id'));
+  const quizId = useRequiredRouteParam('id');
   const [state, dispatch] = useReducer(editQuizReducer, initialState);
 
   useEffect(() => {
@@ -456,7 +474,7 @@ export default function EditQuizPage() {
       dispatch({ type: 'startLoading' });
 
       try {
-        const data = await fetchApiData<IQuiz>(`/api/quizzes/${encodedQuizId}`);
+        const data = await fetchQuizEditViewModel(quizId);
         dispatch({ type: 'loadSuccess', quiz: data });
       } catch (error) {
         dispatch({
@@ -467,7 +485,7 @@ export default function EditQuizPage() {
     };
 
     void fetchQuiz();
-  }, [encodedQuizId]);
+  }, [quizId]);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -480,34 +498,30 @@ export default function EditQuizPage() {
     dispatch({ type: 'patch', value: { saving: true, error: '', success: '' } });
 
     try {
-      const formattedQuestions = state.editableQuestions.map((question) => {
-        const base = {
-          question: question.question,
-          options: question.options,
-          type: question.type,
-          ...(question.questionImage ? { questionImage: question.questionImage } : {}),
-          ...(question.optionImages && question.optionImages.some(Boolean)
-            ? { optionImages: question.optionImages }
-            : {}),
-        };
+      const formattedQuestions: QuizEditorQuestionInputViewModel[] = state.editableQuestions.map(
+        (question) => {
+          const base = {
+            question: question.question,
+            options: question.options,
+            type: question.type,
+            ...(question.questionImage ? { questionImage: question.questionImage } : {}),
+            ...(question.optionImages && question.optionImages.some(Boolean)
+              ? { optionImages: question.optionImages }
+              : {}),
+          };
 
-        return question.type === 'single'
-          ? { ...base, correctIndex: question.correctIndex ?? 0 }
-          : { ...base, correctIndexes: question.correctIndexes || [] };
-      });
-
-      const updatedQuiz = await fetchApiData<IQuiz>(`/api/quizzes/${encodedQuizId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
+          return question.type === 'single'
+            ? { ...base, correctIndex: getCorrectAnswerIndexes(question)[0] ?? 0 }
+            : { ...base, correctIndexes: getCorrectAnswerIndexes(question) };
         },
-        body: JSON.stringify({
-          title: state.title.trim(),
-          description: state.description.trim(),
-          folder: state.selectedFolderId,
-          questions: formattedQuestions,
-          isPrivate: state.isPrivate,
-        }),
+      );
+
+      const updatedQuiz = await updateQuizEditViewModel(quizId, {
+        title: state.title.trim(),
+        description: state.description.trim(),
+        folder: state.selectedFolderId,
+        questions: formattedQuestions,
+        isPrivate: state.isPrivate,
       });
 
       dispatch({
@@ -537,9 +551,7 @@ export default function EditQuizPage() {
     dispatch({ type: 'patch', value: { deleting: true, error: '' } });
 
     try {
-      await fetchApiData<null>(`/api/quizzes/${encodedQuizId}`, {
-        method: 'DELETE',
-      });
+      await deleteQuizById(quizId);
       push('/my-quizzes');
     } catch (error) {
       dispatch({
@@ -551,6 +563,19 @@ export default function EditQuizPage() {
         },
       });
     }
+  };
+
+  const addQuestion = () => {
+    dispatch({
+      type: 'addQuestion',
+      question: {
+        editorId: crypto.randomUUID(),
+        question: '',
+        options: ['', '', '', ''],
+        type: 'single',
+        correctIndex: 0,
+      },
+    });
   };
 
   if (state.status === 'loading') {
@@ -567,15 +592,12 @@ export default function EditQuizPage() {
     );
   }
 
-  if (!state.quiz || !session) {
+  if (!state.quiz || !session?.user) {
     return null;
   }
 
   const isAdmin = session.user?.role === 'admin';
-  const isAuthor =
-    typeof state.quiz.author === 'string'
-      ? state.quiz.author === session.user.id
-      : (state.quiz.author as { _id?: string })?._id === session.user.id;
+  const isAuthor = getQuizAuthorId(state.quiz.author) === session.user.id;
 
   if (!isAdmin && !isAuthor) {
     return (
@@ -648,7 +670,7 @@ export default function EditQuizPage() {
                       value: undefined,
                     })
                   }
-                  onAddQuestion={() => dispatch({ type: 'addQuestion' })}
+                  onAddQuestion={addQuestion}
                   onRemoveQuestion={(index) => dispatch({ type: 'removeQuestion', index })}
                   onToggleType={(index, type) =>
                     dispatch({ type: 'toggleQuestionType', index, value: type })

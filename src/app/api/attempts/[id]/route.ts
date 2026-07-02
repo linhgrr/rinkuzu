@@ -28,7 +28,7 @@ export const GET = withOptionalAuth<{ id: string }>(
       const result = await userService.getAttemptDetails(id, resolvedEmail);
 
       if (!result.success) {
-        return apiServiceErr(result, 400);
+        return apiServiceErr(result);
       }
 
       return apiOk(result.data);

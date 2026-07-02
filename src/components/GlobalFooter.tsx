@@ -2,7 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 import { shouldHideGlobalFooter } from '@/lib/routing/pathname';
-import { FooterSection } from '@/features/landing/components/new-landing';
+import { Footer as FooterSection } from '@/features/landing/components/new-landing/Footer';
 
 export function GlobalFooter() {
   const pathname = usePathname();

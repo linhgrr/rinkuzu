@@ -1,6 +1,6 @@
 'use client';
 
-import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, type MutableRefObject } from 'react';
 import { useTranslations } from 'next-intl';
 import {
   ReactFlow,
@@ -19,13 +19,22 @@ import {
 import dagre from 'dagre';
 import { Lock } from 'lucide-react';
 import { Spinner } from '@/components/ui/Spinner';
-import { getConceptDetail } from '@/features/adaptive/lib/api-client';
+import { getConceptDetail } from '@/features/adaptive/lib/adaptive-api-methods';
 import { useKnowledgeGraph } from '@/hooks/useAdaptive';
-import type { ConceptDetail, KnowledgeGraphData, KnowledgeNode } from '@/features/adaptive/types';
+import type {
+  ConceptDetail,
+  KnowledgeGraphData,
+  KnowledgeNode,
+} from '@/features/adaptive/types/graph';
 import ConceptDetailPanel from './ConceptDetail';
 
 interface KnowledgeGraphProps {
   sessionId?: string;
+}
+
+interface SelectedConceptState {
+  sessionId: string;
+  detail: ConceptDetail;
 }
 
 function getNodeColor(status: KnowledgeNode['status']) {
@@ -80,7 +89,7 @@ interface ConceptNodeData extends Record<string, unknown> {
   mastery: number;
 }
 
-const ConceptNode = memo(function ConceptNode({ data }: NodeProps<Node<ConceptNodeData>>) {
+function ConceptNode({ data }: NodeProps<Node<ConceptNodeData>>) {
   const color = getNodeColor(data.status);
   const opacity = getMasteryOpacity(data.mastery);
   const isLocked = data.status === 'locked';
@@ -126,11 +135,23 @@ const ConceptNode = memo(function ConceptNode({ data }: NodeProps<Node<ConceptNo
       <Handle type="source" position={Position.Bottom} className="!h-1.5 !w-1.5 !bg-neutral-400" />
     </div>
   );
-});
+}
 
 const nodeTypes = {
   concept: ConceptNode,
 };
+
+function getConceptDetailCache(ref: MutableRefObject<Map<string, ConceptDetail> | null>) {
+  if (ref.current === null) {
+    ref.current = new Map<string, ConceptDetail>();
+  }
+
+  return ref.current;
+}
+
+function getConceptDetailCacheKey(sessionId: string, nodeId: string) {
+  return `${sessionId}:${nodeId}`;
+}
 
 const getLayoutedElements = (nodes: Node<ConceptNodeData>[], edges: Edge[], direction = 'TB') => {
   const dagreGraph = new dagre.graphlib.Graph();
@@ -172,7 +193,7 @@ function GraphFlow({
 }) {
   const { fitView } = useReactFlow();
 
-  const initialNodes: Node<ConceptNodeData>[] = useMemo(() => {
+  const initialNodes: Node<ConceptNodeData>[] = (() => {
     if (!graphData) return [];
     return graphData.nodes.map((n) => ({
       id: n.id,
@@ -184,9 +205,9 @@ function GraphFlow({
         mastery: n.mastery,
       },
     }));
-  }, [graphData]);
+  })();
 
-  const initialEdges: Edge[] = useMemo(() => {
+  const initialEdges: Edge[] = (() => {
     if (!graphData) return [];
     const statusById = new Map(initialNodes.map((n) => [n.id, n.data.status] as const));
     return graphData.edges.map((e, index) => {
@@ -213,26 +234,24 @@ function GraphFlow({
         interactionWidth: 10,
       };
     });
-  }, [graphData, initialNodes]);
+  })();
 
-  const { nodes, edges } = useMemo(() => {
+  const { nodes, edges } = (() => {
     if (initialNodes.length === 0) return { nodes: [], edges: [] };
     return getLayoutedElements(initialNodes, initialEdges);
-  }, [initialNodes, initialEdges]);
+  })();
+  const nodeCount = nodes.length;
 
   // Fit view when nodes change
   useEffect(() => {
-    if (nodes.length > 0) {
+    if (nodeCount > 0) {
       window.setTimeout(() => fitView({ padding: 0.2, duration: 800 }), 100);
     }
-  }, [nodes, fitView]);
+  }, [graphData, nodeCount, fitView]);
 
-  const handleNodeClick = useCallback(
-    (_: React.MouseEvent, node: Node) => {
-      onNodeClick(node.id);
-    },
-    [onNodeClick],
-  );
+  const handleNodeClick = (_: React.MouseEvent, node: Node) => {
+    onNodeClick(node.id);
+  };
 
   return (
     <ReactFlow
@@ -262,51 +281,46 @@ export default function KnowledgeGraph({ sessionId }: KnowledgeGraphProps) {
     isLoading: loading,
     error: graphFetchError,
   } = useKnowledgeGraph(sessionId);
-  const [selectedConcept, setSelectedConcept] = useState<ConceptDetail | null>(null);
+  const [selectedConceptState, setSelectedConceptState] = useState<SelectedConceptState | null>(
+    null,
+  );
   const [graphError, setGraphError] = useState<string | null>(null);
-  const conceptDetailCacheRef = useRef<Map<string, ConceptDetail>>(new Map());
+  const conceptDetailCacheRef = useRef<Map<string, ConceptDetail> | null>(null);
+  const selectedConcept =
+    selectedConceptState && selectedConceptState.sessionId === sessionId
+      ? selectedConceptState.detail
+      : null;
 
-  useEffect(() => {
+  const handleNodeSelect = async (nodeId: string) => {
     if (!sessionId) {
-      setSelectedConcept(null);
-      conceptDetailCacheRef.current.clear();
+      return;
     }
-  }, [sessionId]);
 
-  const handleNodeSelect = useCallback(
-    async (nodeId: string) => {
-      if (!sessionId) {
-        return;
-      }
+    const cache = getConceptDetailCache(conceptDetailCacheRef);
+    const cacheKey = getConceptDetailCacheKey(sessionId, nodeId);
+    const cachedDetail = cache.get(cacheKey);
+    if (cachedDetail) {
+      setGraphError(null);
+      setSelectedConceptState({ sessionId, detail: cachedDetail });
+      return;
+    }
 
-      const cachedDetail = conceptDetailCacheRef.current.get(nodeId);
-      if (cachedDetail) {
-        setGraphError(null);
-        setSelectedConcept(cachedDetail);
-        return;
-      }
+    try {
+      const detail = await getConceptDetail(sessionId, nodeId);
+      cache.set(cacheKey, detail);
+      setGraphError(null);
+      setSelectedConceptState({ sessionId, detail });
+    } catch {
+      setGraphError(t('processing.errors.generic'));
+    }
+  };
 
-      try {
-        const detail = await getConceptDetail(sessionId, nodeId);
-        conceptDetailCacheRef.current.set(nodeId, detail);
-        setGraphError(null);
-        setSelectedConcept(detail);
-      } catch {
-        setGraphError(t('processing.errors.generic'));
-      }
-    },
-    [sessionId, t],
-  );
-
-  const legendItems = useMemo(
-    () => [
-      { color: 'bg-brand-trust', label: t('knowledgeGraph.legend.mastered') },
-      { color: 'bg-brand-action', label: t('knowledgeGraph.legend.inProgress') },
-      { color: 'bg-white border border-neutral-300', label: t('knowledgeGraph.legend.available') },
-      { color: 'bg-neutral-200', label: t('knowledgeGraph.legend.locked') },
-    ],
-    [t],
-  );
+  const legendItems = [
+    { color: 'bg-brand-trust', label: t('knowledgeGraph.legend.mastered') },
+    { color: 'bg-brand-action', label: t('knowledgeGraph.legend.inProgress') },
+    { color: 'bg-white border border-neutral-300', label: t('knowledgeGraph.legend.available') },
+    { color: 'bg-neutral-200', label: t('knowledgeGraph.legend.locked') },
+  ];
 
   if (!sessionId) {
     return (
@@ -377,7 +391,10 @@ export default function KnowledgeGraph({ sessionId }: KnowledgeGraphProps) {
       </div>
 
       {selectedConcept ? (
-        <ConceptDetailPanel concept={selectedConcept} onClose={() => setSelectedConcept(null)} />
+        <ConceptDetailPanel
+          concept={selectedConcept}
+          onClose={() => setSelectedConceptState(null)}
+        />
       ) : null}
     </>
   );

@@ -1,32 +1,19 @@
-import { IUserPreview } from '@/types/index';
+import type { Discussion } from '@/entities/Discussion';
 
-export interface IDiscussion {
-  _id?: string;
-  quiz: string;
-  user: string;
-  questionIndex: number;
+export interface CreateDiscussionCommentData {
+  authorId: string;
+  authorEmail: string;
   content: string;
-  comments?: Array<{
-    author: string | IUserPreview;
-    authorEmail: string;
-    content: string;
-    isEdited: boolean;
-    createdAt: Date;
-  }>;
-  createdAt?: Date;
-  updatedAt?: Date;
 }
 
 export interface IDiscussionRepository {
-  findById(id: string): Promise<IDiscussion | null>;
+  findById(id: string): Promise<Discussion | null>;
 
-  findByQuiz(quizId: string): Promise<IDiscussion[]>;
+  findByQuiz(quizId: string): Promise<Discussion[]>;
 
-  create(discussionData: Partial<IDiscussion>): Promise<IDiscussion>;
+  ensureForQuizQuestions(quizId: string, questionCount: number): Promise<Discussion[]>;
 
-  update(id: string, discussionData: Partial<IDiscussion>): Promise<IDiscussion | null>;
+  ensureForQuizQuestion(quizId: string, questionIndex: number): Promise<Discussion>;
 
-  delete(id: string): Promise<boolean>;
-
-  count(filter?: Record<string, unknown>): Promise<number>;
+  addComment(discussionId: string, data: CreateDiscussionCommentData): Promise<Discussion | null>;
 }

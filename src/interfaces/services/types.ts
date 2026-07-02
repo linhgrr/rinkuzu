@@ -12,17 +12,24 @@
  *     result.statusCode; // number
  *   }
  */
-export type ServiceResult<T> =
-  | { success: true; data: T }
-  | { success: false; error: string; statusCode: number };
+export interface ServiceSuccess<T> {
+  success: true;
+  data: T;
+}
+
+export interface ServiceFailure {
+  success: false;
+  error: string;
+  statusCode: number;
+}
+
+export type ServiceResult<T> = ServiceSuccess<T> | ServiceFailure;
 
 /**
  * Test helper: assert success and narrow. Throws if the result is a failure.
  * Allows callers to access `result.data` safely after the call.
  */
-export function assertOk<T>(
-  result: ServiceResult<T>,
-): asserts result is { success: true; data: T } {
+export function assertOk<T>(result: ServiceResult<T>): asserts result is ServiceSuccess<T> {
   if (!result.success) {
     throw new Error(`Expected ServiceResult.success=true, got error="${result.error}"`);
   }
@@ -31,9 +38,7 @@ export function assertOk<T>(
 /**
  * Test helper: assert failure and narrow.
  */
-export function assertFail<T>(
-  result: ServiceResult<T>,
-): asserts result is { success: false; error: string; statusCode: number } {
+export function assertFail<T>(result: ServiceResult<T>): asserts result is ServiceFailure {
   if (result.success) {
     throw new Error(
       `Expected ServiceResult.success=false, got data=${JSON.stringify(result.data)}`,

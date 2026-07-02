@@ -10,7 +10,7 @@ type Props = {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale, slug } = await params;
 
-  const fallback = buildLocalizedMetadata({
+  const defaultMetadata = buildLocalizedMetadata({
     locale,
     path: `/quiz/${slug}`,
     title: 'Practice Quiz | RinKuzu',
@@ -23,7 +23,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const quiz = await quizService.getQuizBySlug(slug);
     if (!quiz) {
       return {
-        ...fallback,
+        ...defaultMetadata,
         robots: {
           index: false,
           follow: false,
@@ -46,7 +46,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     });
   } catch (error) {
     console.error('quiz metadata generation failed', error);
-    return fallback;
+    return defaultMetadata;
   }
 }
 

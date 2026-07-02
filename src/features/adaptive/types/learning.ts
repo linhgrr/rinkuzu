@@ -1,4 +1,5 @@
 import type { components } from '@/generated/adaptive-api';
+import type { ReactNode } from 'react';
 
 type ApiSchemas = components['schemas'];
 
@@ -6,6 +7,13 @@ export type BloomLevel = 'Remember' | 'Understand' | 'Apply' | 'Analyze' | 'Eval
 
 export type TranslationValues = Record<string, string | number | Date>;
 export type TranslateFn = (key: string, values?: TranslationValues) => string;
+export type RichTranslationValues = Record<
+  string,
+  string | number | Date | ((chunks: ReactNode) => ReactNode)
+>;
+export type RichTranslateFn = TranslateFn & {
+  rich: (key: string, values: RichTranslationValues) => ReactNode;
+};
 
 export const BLOOM_LABELS: BloomLevel[] = [
   'Remember',
@@ -21,6 +29,7 @@ export type NextConcept = Omit<ApiSchemas['NextConceptResponse'], 'bloom_label'>
 };
 
 export type TheoryData = ApiSchemas['TheoryResponse'];
+export type ExerciseType = ApiSchemas['ExerciseType'];
 
 interface MatchingPair {
   left: string;
@@ -41,6 +50,7 @@ export type Exercise = Omit<
   'bloom_label' | 'options' | 'items' | 'pairs' | 'right_items' | 'theory' | 'recommendation_reason'
 > & {
   id: string;
+  exercise_type: ExerciseType;
   bloom_label: BloomLevel;
   options: Record<string, string>;
   items: string[];
@@ -48,7 +58,7 @@ export type Exercise = Omit<
   right_items: string[];
   rubric?: string[];
   correct_answer?: string | string[] | boolean | Record<string, string> | null;
-  theory?: TheoryData;
+  theory?: TheoryData | null;
   recommendation_reason?: RecommendationReason | null;
 };
 
@@ -60,13 +70,4 @@ export type SubmitResult = Omit<ApiSchemas['SubmitAnswerResponse'], 'stats'> & {
   };
 };
 
-interface ExerciseHistoryItem {
-  exercise_id: string;
-  concept_name: string;
-  bloom_level: number;
-  is_correct: boolean | null;
-}
-
-export type SessionStatus = Omit<ApiSchemas['SessionStatusResponse'], 'exercises'> & {
-  exercises: ExerciseHistoryItem[];
-};
+export type SessionStatus = ApiSchemas['SessionStatusResponse'];

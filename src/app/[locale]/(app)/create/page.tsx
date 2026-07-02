@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useReducer } from 'react';
+import { useEffect, useReducer } from 'react';
 import { useRouter } from 'next/navigation';
 import { useDropzone } from 'react-dropzone';
 import { useTranslations } from 'next-intl';
@@ -15,7 +15,7 @@ import { useDraftStore } from '@/store/useDraftStore';
 import { usePendingQuizUploadStore } from '@/store/usePendingQuizUploadStore';
 import { toast } from 'sonner';
 import { extractUnknownErrorMessage } from '@/lib/api/error';
-import { fetchApiData } from '@/lib/api/client';
+import { fetchSubscriptionStatusViewModel } from '@/features/subscription/api/subscription-page-api';
 import { getPdfPageCount, uploadPdfViaPresignedUrl } from '@/lib/pdf';
 import { createQuizDraft } from '@/lib/quiz/draftApi';
 import { MAX_QUIZ_PDF_BYTES, MAX_QUIZ_PDF_MB } from '@/lib/quiz/constants';
@@ -31,7 +31,7 @@ import {
   HiOutlineRefresh,
   HiOutlineUpload,
   HiOutlineX,
-} from '@/components/icons';
+} from 'react-icons/hi';
 
 interface CreateQuizState {
   title: string;
@@ -126,12 +126,8 @@ function PreviewPlaceholder({ message }: { message: string }) {
 function PDFViewerComponent({ file, onClose }: { file: File; onClose: () => void }) {
   const t = useTranslations('create');
   const tCommon = useTranslations('common');
-  const previewKey = useMemo(
-    () => ['create-pdf-preview', `${file.name}:${file.size}:${file.lastModified}`],
-    [file],
-  );
   const { data, error, isLoading } = useSWR<PdfPreviewData>(
-    previewKey,
+    ['create-pdf-preview', `${file.name}:${file.size}:${file.lastModified}`],
     async () => ({
       pdfUrl: URL.createObjectURL(file),
       fileInfo: `${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`,
@@ -331,56 +327,57 @@ function UploadSection({
 }
 
 interface FormCardProps {
-  canCreatePrivateQuiz: boolean;
-  extracting: boolean;
   error: string;
   getInputProps: ReturnType<typeof useDropzone>['getInputProps'];
   getRootProps: ReturnType<typeof useDropzone>['getRootProps'];
-  isDragActive: boolean;
+  interaction: {
+    extracting: boolean;
+    isDragActive: boolean;
+    showPDFViewer: boolean;
+  };
   onAiPromptChange: (value: string) => void;
   onFolderChange: (value: string | null) => void;
   onDescriptionChange: (value: string) => void;
-  onPrivateChange: (value: boolean) => void;
+  privacyControl?: {
+    isPrivate: boolean;
+    onPrivateChange: (value: boolean) => void;
+  };
   onRemoveFile: () => void;
   onSubmit: (event: React.FormEvent) => void;
   onTitleChange: (value: string) => void;
   onTogglePreview: () => void;
   pdfFile: File | null;
   selectedFolderId: string | null;
-  showPDFViewer: boolean;
   title: string;
   description: string;
   aiPrompt: string;
-  isPrivate: boolean;
   t: Translator;
   tCommon: Translator;
 }
 
 function CreateQuizFormCard({
   aiPrompt,
-  canCreatePrivateQuiz,
   description,
   error,
-  extracting,
   getInputProps,
   getRootProps,
-  isDragActive,
-  isPrivate,
+  interaction,
   onAiPromptChange,
   onFolderChange,
   onDescriptionChange,
-  onPrivateChange,
   onRemoveFile,
   onSubmit,
   onTitleChange,
   onTogglePreview,
   pdfFile,
+  privacyControl,
   selectedFolderId,
-  showPDFViewer,
   t,
   tCommon,
   title,
 }: FormCardProps) {
+  const { extracting, isDragActive, showPDFViewer } = interaction;
+
   return (
     <>
       <StatusAlert message={error} />
@@ -417,8 +414,8 @@ function CreateQuizFormCard({
                 promptPlaceholder: t('aiPromptPlaceholder'),
                 promptHelper: t('aiPromptHelper'),
               }}
-              isPrivate={canCreatePrivateQuiz ? isPrivate : undefined}
-              onPrivateChange={canCreatePrivateQuiz ? onPrivateChange : undefined}
+              isPrivate={privacyControl?.isPrivate}
+              onPrivateChange={privacyControl?.onPrivateChange}
               privateCheckboxId="isPrivateUpload"
               aiPrompt={aiPrompt}
               onAiPromptChange={onAiPromptChange}
@@ -537,8 +534,8 @@ export default function CreateQuizPage() {
   const [state, dispatch] = useReducer(createQuizReducer, initialCreateQuizState);
   const isRedirecting = useCreateResponsiveRedirect('desktop');
   const { data: subscriptionStatus } = useSWR(
-    session?.user?.role === 'admin' ? null : '/api/subscription/status',
-    (url: string) => fetchApiData<{ isPremium: boolean }>(url),
+    session?.user?.role === 'admin' ? null : 'subscription-status',
+    fetchSubscriptionStatusViewModel,
   );
   const canCreatePrivateQuiz =
     session?.user?.role === 'admin' || subscriptionStatus?.isPremium === true;
@@ -604,7 +601,7 @@ export default function CreateQuizPage() {
       });
 
       addDraft({
-        id: draft.draft_id,
+        id: draft.id,
         title: trimmedTitle,
         status: 'processing',
         chunksTotal: 1,
@@ -612,7 +609,7 @@ export default function CreateQuizPage() {
         chunksError: 0,
         questionsCount: 0,
         createdAt: new Date().toISOString(),
-        expiresAt: draft.expires_at,
+        expiresAt: draft.expiresAt,
       });
 
       toast.success(t('processingStarted'));
@@ -622,10 +619,11 @@ export default function CreateQuizPage() {
       console.error('Error starting background processing:', error);
       dispatch({
         type: 'patch',
-        value: { error: extractUnknownErrorMessage(error, t('failedToStartProcessing')) },
+        value: {
+          error: extractUnknownErrorMessage(error, t('failedToStartProcessing')),
+          extracting: false,
+        },
       });
-    } finally {
-      dispatch({ type: 'patch', value: { extracting: false } });
     }
   };
 
@@ -646,14 +644,15 @@ export default function CreateQuizPage() {
           >
             <CreateQuizFormCard
               aiPrompt={state.aiPrompt}
-              canCreatePrivateQuiz={canCreatePrivateQuiz}
               description={state.description}
               error={state.error}
-              extracting={state.extracting}
               getInputProps={getInputProps}
               getRootProps={getRootProps}
-              isDragActive={isDragActive}
-              isPrivate={state.isPrivate}
+              interaction={{
+                extracting: state.extracting,
+                isDragActive,
+                showPDFViewer: state.showPDFViewer,
+              }}
               onAiPromptChange={(value) => dispatch({ type: 'patch', value: { aiPrompt: value } })}
               onFolderChange={(value) =>
                 dispatch({ type: 'patch', value: { selectedFolderId: value } })
@@ -661,7 +660,6 @@ export default function CreateQuizPage() {
               onDescriptionChange={(value) =>
                 dispatch({ type: 'patch', value: { description: value } })
               }
-              onPrivateChange={(value) => dispatch({ type: 'patch', value: { isPrivate: value } })}
               onRemoveFile={() => dispatch({ type: 'setPdfFile', file: null })}
               onSubmit={(event) => {
                 void handleBackgroundExtract(event);
@@ -671,8 +669,16 @@ export default function CreateQuizPage() {
                 dispatch({ type: 'patch', value: { showPDFViewer: !state.showPDFViewer } })
               }
               pdfFile={state.pdfFile}
+              privacyControl={
+                canCreatePrivateQuiz
+                  ? {
+                      isPrivate: state.isPrivate,
+                      onPrivateChange: (value) =>
+                        dispatch({ type: 'patch', value: { isPrivate: value } }),
+                    }
+                  : undefined
+              }
               selectedFolderId={state.selectedFolderId}
-              showPDFViewer={state.showPDFViewer}
               t={t}
               tCommon={tCommon}
               title={state.title}

@@ -1,0 +1,91 @@
+import { describe, expect, it } from 'vitest';
+import type { Quiz } from '@/entities/Quiz';
+import { QuizDetailDtoMapper } from '@/mappers/quiz/QuizDetailDtoMapper';
+
+const quiz: Quiz = {
+  id: '507f191e810c19729de860ea',
+  title: 'Algebra Basics',
+  description: 'Linear equations',
+  slug: 'algebra-basics',
+  author: {
+    id: '507f191e810c19729de860eb',
+    email: 'teacher@example.com',
+    name: 'Teacher',
+    displayName: 'Math Teacher',
+    avatar: 'https://example.com/avatar.png',
+  },
+  folder: '507f191e810c19729de860ec',
+  questions: [
+    {
+      id: '507f191e810c19729de860ed',
+      question: '2 + 2 = ?',
+      options: ['3', '4'],
+      correctIndex: 1,
+      type: 'single',
+    },
+  ],
+  isPrivate: false,
+  pdfUrl: 'https://example.com/source.pdf',
+  tags: ['math'],
+  createdAt: new Date('2026-07-01T00:00:00Z'),
+  updatedAt: new Date('2026-07-01T01:00:00Z'),
+};
+
+describe('QuizDetailDtoMapper', () => {
+  it('maps quiz detail to a DTO with public identity and ISO dates', () => {
+    expect(QuizDetailDtoMapper.toDetail(quiz)).toEqual({
+      id: '507f191e810c19729de860ea',
+      title: 'Algebra Basics',
+      description: 'Linear equations',
+      slug: 'algebra-basics',
+      author: {
+        id: '507f191e810c19729de860eb',
+        email: 'teacher@example.com',
+        name: 'Teacher',
+        displayName: 'Math Teacher',
+        avatar: 'https://example.com/avatar.png',
+      },
+      folder: '507f191e810c19729de860ec',
+      isPrivate: false,
+      questions: [
+        {
+          id: '507f191e810c19729de860ed',
+          question: '2 + 2 = ?',
+          options: ['3', '4'],
+          correctIndex: 1,
+          type: 'single',
+          questionImage: undefined,
+          optionImages: undefined,
+        },
+      ],
+      questionCount: 1,
+      pdfUrl: 'https://example.com/source.pdf',
+      tags: ['math'],
+      createdAt: '2026-07-01T00:00:00.000Z',
+      updatedAt: '2026-07-01T01:00:00.000Z',
+    });
+    expect(QuizDetailDtoMapper.toDetail(quiz).questions[0]).not.toHaveProperty('correctIndexes');
+  });
+
+  it('does not expose persistence identity keys in the DTO shape', () => {
+    const dto = QuizDetailDtoMapper.toDetail(quiz);
+
+    expect(dto).not.toHaveProperty('_id');
+    expect(typeof dto.author === 'object' ? dto.author : null).not.toHaveProperty('_id');
+  });
+
+  it('removes correct answers from the play DTO', () => {
+    const dto = QuizDetailDtoMapper.toPlayDetail(quiz);
+
+    expect(dto.questions[0]).toEqual({
+      id: '507f191e810c19729de860ed',
+      question: '2 + 2 = ?',
+      options: ['3', '4'],
+      type: 'single',
+      questionImage: undefined,
+      optionImages: undefined,
+    });
+    expect(dto.questions[0]).not.toHaveProperty('correctIndex');
+    expect(dto.questions[0]).not.toHaveProperty('correctIndexes');
+  });
+});

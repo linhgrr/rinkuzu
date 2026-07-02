@@ -2,7 +2,7 @@
 
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
-import { HiOutlineShare } from '@/components/icons';
+import { HiOutlineShare } from 'react-icons/hi';
 
 interface DashboardShareButtonProps {
   title: string;

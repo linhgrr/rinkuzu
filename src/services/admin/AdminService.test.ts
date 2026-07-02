@@ -1,41 +1,243 @@
-import { describe, expect, it } from 'vitest';
-import { normalizeAdminRecentAttempt } from './adminActivity';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { AdminService } from '@/services/admin/AdminService';
+import type { IUserRepository } from '@/interfaces/repositories/IUserRepository';
+import type { IReportRepository } from '@/interfaces/repositories/IReportRepository';
+import type { IQuizRepository } from '@/interfaces/repositories/IQuizRepository';
+import type { IAttemptRepository } from '@/interfaces/repositories/IAttemptRepository';
 
-describe('normalizeAdminRecentAttempt', () => {
-  it('keeps populated quiz and user details', () => {
-    const takenAt = new Date('2026-06-28T00:00:00.000Z');
+const pagination = {
+  currentPage: 1,
+  totalPages: 1,
+  totalItems: 1,
+  itemsPerPage: 20,
+  hasNextPage: false,
+  hasPrevPage: false,
+};
 
-    expect(
-      normalizeAdminRecentAttempt({
-        _id: 'attempt-1',
-        score: 80,
-        takenAt,
-        user: { email: 'learner@example.com' },
-        quiz: { title: 'Algebra' },
+function createUserRepository(): IUserRepository {
+  return {
+    findByEmail: vi.fn(),
+    findById: vi.fn(),
+    findPublicProfileById: vi.fn(),
+    updateRole: vi.fn(),
+    delete: vi.fn(),
+    findAll: vi.fn().mockResolvedValue({ items: [], pagination }),
+    count: vi.fn().mockResolvedValue(0),
+    countByCreatedAtBuckets: vi.fn().mockResolvedValue({ today: 0, thisWeek: 0, thisMonth: 0 }),
+    countByRole: vi.fn().mockResolvedValue([]),
+  };
+}
+
+function createReportRepository(overrides: Partial<IReportRepository> = {}): IReportRepository {
+  return {
+    findById: vi.fn(),
+    findAll: vi.fn(),
+    create: vi.fn(),
+    update: vi.fn(),
+    delete: vi.fn(),
+    ...overrides,
+  };
+}
+
+function createQuizRepository(overrides: Partial<IQuizRepository> = {}): IQuizRepository {
+  return {
+    findById: vi.fn(),
+    findBySlug: vi.fn(),
+    findBySourceDraftId: vi.fn(),
+    create: vi.fn(),
+    update: vi.fn(),
+    delete: vi.fn(),
+    findAll: vi.fn().mockResolvedValue({ items: [], pagination }),
+    findForPlay: vi.fn(),
+    findUserQuizzes: vi.fn(),
+    findPublicByAuthor: vi.fn(),
+    count: vi.fn().mockResolvedValue(0),
+    countByCreatedAtBuckets: vi.fn().mockResolvedValue({ today: 0, thisWeek: 0, thisMonth: 0 }),
+    findTopCreators: vi.fn().mockResolvedValue([]),
+    ...overrides,
+  };
+}
+
+function createAttemptRepository(): IAttemptRepository {
+  return {
+    findByUser: vi.fn(),
+    create: vi.fn(),
+    countByUser: vi.fn(),
+    countByQuiz: vi.fn(),
+    findRecentActivity: vi.fn().mockResolvedValue([]),
+    findByIdWithQuiz: vi.fn(),
+    count: vi.fn().mockResolvedValue(0),
+    countByTakenAtBuckets: vi.fn().mockResolvedValue({ today: 0, thisWeek: 0, thisMonth: 0 }),
+  };
+}
+
+describe('AdminService report and stats contracts', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('lists report DTOs through the report repository', async () => {
+    const reportRepository = createReportRepository({
+      findAll: vi.fn().mockResolvedValue({
+        items: [
+          {
+            id: '507f191e810c19729de860ea',
+            quizId: '507f191e810c19729de860eb',
+            quizTitle: 'Algebra',
+            quizSlug: 'algebra',
+            reporterEmail: 'learner@example.com',
+            reporterName: 'Learner',
+            content: 'Wrong answer',
+            status: 'pending',
+            createdAt: new Date('2026-07-01T00:00:00Z'),
+            updatedAt: new Date('2026-07-01T00:00:00Z'),
+          },
+        ],
+        pagination,
       }),
-    ).toEqual({
-      id: 'attempt-1',
-      score: 80,
-      takenAt,
-      user: { email: 'learner@example.com' },
-      quiz: { title: 'Algebra' },
+    });
+    const service = new AdminService(
+      createUserRepository(),
+      reportRepository,
+      createQuizRepository(),
+      createAttemptRepository(),
+    );
+
+    const result = await service.getReports({ page: 1, limit: 20, status: 'pending' });
+
+    expect(reportRepository.findAll).toHaveBeenCalledWith({
+      page: 1,
+      limit: 20,
+      status: 'pending',
+    });
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+    expect(result.data.reports[0]).toMatchObject({
+      id: '507f191e810c19729de860ea',
+      quizId: '507f191e810c19729de860eb',
+      createdAt: '2026-07-01T00:00:00.000Z',
     });
   });
 
-  it('normalizes orphaned quiz references to null', () => {
-    expect(
-      normalizeAdminRecentAttempt({
-        _id: 'attempt-2',
-        score: 60,
-        takenAt: new Date('2026-06-27T00:00:00.000Z'),
-        user: null,
-        quiz: null,
+  it('updates report status with admin audit fields', async () => {
+    const reportRepository = createReportRepository({
+      findById: vi.fn().mockResolvedValue({
+        id: '507f191e810c19729de860ea',
+        quizId: '507f191e810c19729de860eb',
+        quizTitle: 'Algebra',
+        quizSlug: 'algebra',
+        reporterEmail: 'learner@example.com',
+        reporterName: 'Learner',
+        content: 'Wrong answer',
+        status: 'pending',
+        createdAt: new Date('2026-07-01T00:00:00Z'),
+        updatedAt: new Date('2026-07-01T00:00:00Z'),
       }),
-    ).toMatchObject({
-      id: 'attempt-2',
-      score: 60,
-      user: null,
-      quiz: null,
+      update: vi.fn().mockResolvedValue({
+        id: '507f191e810c19729de860ea',
+        status: 'resolved',
+      }),
     });
+    const service = new AdminService(
+      createUserRepository(),
+      reportRepository,
+      createQuizRepository(),
+      createAttemptRepository(),
+    );
+
+    const result = await service.updateReportStatus(
+      '507f191e810c19729de860ea',
+      { status: 'resolved', adminNotes: 'fixed' },
+      'admin@example.com',
+    );
+
+    expect(result).toEqual({ success: true, data: { message: 'Report marked as resolved' } });
+    expect(reportRepository.update).toHaveBeenCalledWith(
+      '507f191e810c19729de860ea',
+      expect.objectContaining({
+        status: 'resolved',
+        adminNotes: 'fixed',
+        resolvedBy: 'admin@example.com',
+      }),
+    );
+  });
+
+  it('maps top creator aggregate records to creator DTOs', async () => {
+    const quizRepository = createQuizRepository({
+      findTopCreators: vi.fn().mockResolvedValue([
+        {
+          id: '507f191e810c19729de860eb',
+          email: 'teacher@example.com',
+          role: 'user',
+          joinedAt: new Date('2026-06-01T00:00:00Z'),
+          quizCount: 3,
+          totalQuestions: 30,
+        },
+      ]),
+    });
+    const service = new AdminService(
+      createUserRepository(),
+      createReportRepository(),
+      quizRepository,
+      createAttemptRepository(),
+    );
+
+    const result = await service.getCreatorStats(5);
+
+    expect(quizRepository.findTopCreators).toHaveBeenCalledWith(5);
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+    expect(result.data).toEqual([
+      {
+        id: '507f191e810c19729de860eb',
+        email: 'teacher@example.com',
+        quizCount: 3,
+        totalQuestions: 30,
+        joinedAt: '2026-06-01T00:00:00.000Z',
+        role: 'user',
+        successRate: 0,
+      },
+    ]);
+  });
+
+  it('loads activity stats from repository bucket counts', async () => {
+    const userRepository = createUserRepository();
+    const quizRepository = createQuizRepository();
+    const attemptRepository = createAttemptRepository();
+    vi.mocked(userRepository.countByCreatedAtBuckets).mockResolvedValue({
+      today: 1,
+      thisWeek: 2,
+      thisMonth: 3,
+    });
+    vi.mocked(quizRepository.countByCreatedAtBuckets).mockResolvedValue({
+      today: 4,
+      thisWeek: 5,
+      thisMonth: 6,
+    });
+    vi.mocked(attemptRepository.countByTakenAtBuckets).mockResolvedValue({
+      today: 7,
+      thisWeek: 8,
+      thisMonth: 9,
+    });
+
+    const service = new AdminService(
+      userRepository,
+      createReportRepository(),
+      quizRepository,
+      attemptRepository,
+    );
+
+    const result = await service.getActivityStats();
+
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+    expect(result.data.timeBasedStats).toEqual({
+      today: { newUsers: 1, newQuizzes: 4, attempts: 7 },
+      thisWeek: { newUsers: 2, newQuizzes: 5, attempts: 8 },
+      thisMonth: { newUsers: 3, newQuizzes: 6, attempts: 9 },
+    });
+    expect(userRepository.count).not.toHaveBeenCalled();
+    expect(quizRepository.count).not.toHaveBeenCalled();
+    expect(attemptRepository.count).not.toHaveBeenCalled();
   });
 });

@@ -91,7 +91,7 @@ export function usePdfProcessor() {
           const mapped = mapDraftStatus(snapshot.status);
 
           if (mapped === 'completed') {
-            const totalQuestions = snapshot.questions?.length ?? 0;
+            const totalQuestions = snapshot.questions.length;
             completeDraft(draftId, totalQuestions);
             toast.success(`"${title}" đã sẵn sàng!`, {
               description: `${totalQuestions} câu hỏi được trích xuất`,
@@ -116,7 +116,7 @@ export function usePdfProcessor() {
           updateDraftProgress(draftId, {
             chunksProcessed: 0,
             chunksTotal: 1,
-            questionsCount: snapshot.questions?.length ?? 0,
+            questionsCount: snapshot.questions.length,
             status: 'processing',
           });
 
@@ -156,7 +156,7 @@ export function usePdfProcessor() {
         // Only (re)start polling while the draft is still in flight.
         if (mapDraftStatus(draft.status) !== 'processing') return;
 
-        await startProcessing(draftId, draft.title ?? '');
+        await startProcessing(draftId, draft.title);
       } catch (error) {
         console.error('Resume processing error:', error);
       }

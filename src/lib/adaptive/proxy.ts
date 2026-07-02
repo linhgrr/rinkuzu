@@ -28,11 +28,11 @@ type ProxyOptions = {
 };
 
 /**
- * Authenticated context required to call the adaptive service.
+ * User context forwarded to the adaptive service.
  * Callers obtain this from `withAuth` / `withOptionalAuth` in @/lib/api/auth.
  */
 export type ProxyAuthContext = {
-  userId: string;
+  userId?: string;
   userRole?: AdaptiveUserRole | null;
 };
 
@@ -103,7 +103,9 @@ export async function proxyAdaptiveRequest(
 
     const llmAction = classifyAdaptiveLlmAction(targetPath, method);
     const llmRateLimit =
-      llmAction && userRole !== 'admin' ? await checkLlmRateLimit(userId, llmAction) : null;
+      llmAction && userId && userRole !== 'admin'
+        ? await checkLlmRateLimit(userId, llmAction)
+        : null;
     if (llmRateLimit && !llmRateLimit.allowed) {
       return buildLlmRateLimitResponse(llmRateLimit);
     }

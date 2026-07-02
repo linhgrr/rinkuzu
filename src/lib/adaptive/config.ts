@@ -12,11 +12,11 @@ export function resolveAdaptiveProxyTimeoutMs(): number {
 }
 
 export function buildAdaptiveServiceHeaders(
-  userId: string,
+  userId?: string,
   userRole?: AdaptiveUserRole | null,
 ): Record<string, string> {
   return {
-    'x-user-id': userId,
+    ...(userId ? { 'x-user-id': userId } : {}),
     ...(userRole ? { 'x-user-role': userRole } : {}),
     'x-service-token': env.INTERNAL_SERVICE_TOKEN,
   };

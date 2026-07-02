@@ -4,6 +4,7 @@ import type {
   FlashcardQuizDto,
   QuizAttemptResultDto,
   QuizDiscussionDto,
+  QuizDetailDto,
   QuizListDto,
   QuizListOptionsDto,
   QuizPlayDetailDto,
@@ -68,7 +69,7 @@ export class QuizService implements IQuizService {
     return this.adminService.getQuizzes(options);
   }
 
-  async createQuiz(userId: string, quizData: CreateQuizRequestDto): Promise<Quiz> {
+  async createQuiz(userId: string, quizData: CreateQuizRequestDto): Promise<QuizDetailDto> {
     return this.crudService.createQuiz(userId, quizData);
   }
 
@@ -76,7 +77,7 @@ export class QuizService implements IQuizService {
     userId: string,
     sourceDraftId: string,
     quizData: CreateQuizRequestDto,
-  ): Promise<Quiz> {
+  ): Promise<QuizDetailDto> {
     return this.crudService.createQuizFromDraft(userId, sourceDraftId, quizData);
   }
 
@@ -85,7 +86,7 @@ export class QuizService implements IQuizService {
     userEmail?: string,
     userRole?: string,
     userId?: string,
-  ): Promise<ServiceResult<Quiz>> {
+  ): Promise<ServiceResult<QuizDetailDto>> {
     return this.crudService.getQuizById(id, userEmail, userRole, userId);
   }
 
@@ -128,7 +129,7 @@ export class QuizService implements IQuizService {
     quizData: UpdateQuizRequestDto,
     userId: string,
     userRole?: string,
-  ): Promise<ServiceResult<Quiz>> {
+  ): Promise<ServiceResult<QuizDetailDto>> {
     return this.crudService.updateQuiz(id, quizData, userId, userRole);
   }
 

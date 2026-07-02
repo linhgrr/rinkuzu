@@ -1,5 +1,8 @@
 import { z } from 'zod';
 import type { PaginationMeta } from '@/dtos/common';
+import { objectIdRouteParamSchema } from '@/lib/validation/common';
+
+export const bookmarkIdRouteParamsSchema = z.object({ id: objectIdRouteParamSchema }).strict();
 
 export const bookmarkListQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),

@@ -1,5 +1,8 @@
 import type { PaginationMeta } from '@/dtos/common';
 import { z } from 'zod';
+import { objectIdRouteParamSchema } from '@/lib/validation/common';
+
+export const attemptIdRouteParamsSchema = z.object({ id: objectIdRouteParamSchema }).strict();
 
 export const userAttemptListQuerySchema = z
   .object({

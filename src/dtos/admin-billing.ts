@@ -1,7 +1,11 @@
 import { z } from 'zod';
 import { DurationUtils } from '@/types/subscription';
-import { objectIdSchema } from '@/lib/validation/common';
+import { objectIdRouteParamSchema, objectIdSchema } from '@/lib/validation/common';
 import type { PaginationMeta } from '@/dtos/common';
+
+export const adminSubscriptionIdRouteParamsSchema = z
+  .object({ id: objectIdRouteParamSchema })
+  .strict();
 
 export const planIdSchema = z.string().trim().min(1, 'Plan ID is required').max(120);
 

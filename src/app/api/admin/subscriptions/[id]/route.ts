@@ -2,17 +2,21 @@ import { NextRequest } from 'next/server';
 import { createSubscriptionService } from '@/lib/subscription-factory';
 import { withAdmin } from '@/lib/api/auth';
 import { apiErr, apiOk, apiServiceErr } from '@/lib/api/response';
-import { readAndValidateJson } from '@/lib/api/request';
-import { updateSubscriptionRequestSchema } from '@/dtos/admin-billing';
-import { objectIdSchema } from '@/lib/validation/common';
+import { readAndValidateJson, readAndValidateRouteParams } from '@/lib/api/request';
+import {
+  adminSubscriptionIdRouteParamsSchema,
+  updateSubscriptionRequestSchema,
+} from '@/dtos/admin-billing';
 
 export const dynamic = 'force-dynamic';
 
 export const PATCH = withAdmin(async (request: NextRequest, context) => {
-  const rawId = context.params['id'];
-  const parsedId = objectIdSchema.safeParse(Array.isArray(rawId) ? rawId[0] : rawId);
-  if (!parsedId.success) {
-    return apiErr('validation_error', 'Invalid subscription id', 400);
+  const parsedParams = readAndValidateRouteParams(
+    context.params,
+    adminSubscriptionIdRouteParamsSchema,
+  );
+  if (!parsedParams.success) {
+    return apiErr('validation_error', parsedParams.error, 400, { fields: parsedParams.fields });
   }
 
   const input = await readAndValidateJson(request, updateSubscriptionRequestSchema);
@@ -21,6 +25,6 @@ export const PATCH = withAdmin(async (request: NextRequest, context) => {
   }
 
   const subscriptionService = createSubscriptionService();
-  const result = await subscriptionService.updateSubscriptionById(parsedId.data, input.data);
+  const result = await subscriptionService.updateSubscriptionById(parsedParams.data.id, input.data);
   return result.success ? apiOk(null) : apiServiceErr(result);
 });

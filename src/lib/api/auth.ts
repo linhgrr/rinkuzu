@@ -67,7 +67,7 @@ export function withAuth<TParams extends RouteParams = RouteParams>(
     const userId = authenticatedSession.user.id;
     const email = authenticatedSession.user.email;
 
-    if (!userId && !email) {
+    if (!userId || !email) {
       return apiErr('unauthorized', 'Unauthorized', 401);
     }
 
@@ -82,8 +82,8 @@ export function withAuth<TParams extends RouteParams = RouteParams>(
     const params = await routeContext.params;
 
     return handler(request, {
-      userId: userId ?? '',
-      email: email ?? '',
+      userId,
+      email,
       session: authenticatedSession,
       params,
     });

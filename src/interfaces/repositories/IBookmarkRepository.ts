@@ -1,13 +1,13 @@
 import type { Bookmark, BookmarkQuestion, BookmarkQuizSummary } from '@/entities/Bookmark';
 import type {
   PaginatedRepositoryResult,
-  RepositoryPaginationOptions,
+  RequiredRepositoryPaginationOptions,
 } from '@/interfaces/repositories/types';
 
 export interface IBookmarkRepository {
   findByUserEmail(
     userEmail: string,
-    options?: RepositoryPaginationOptions,
+    options: RequiredRepositoryPaginationOptions,
   ): Promise<PaginatedRepositoryResult<Bookmark>>;
 
   findByUserAndQuiz(

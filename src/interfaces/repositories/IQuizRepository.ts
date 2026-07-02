@@ -4,10 +4,10 @@ import type {
   CountBucketThresholds,
   CreatedAtCountFilter,
   PaginatedRepositoryResult,
-  RepositoryPaginationOptions,
+  RequiredRepositoryPaginationOptions,
 } from '@/interfaces/repositories/types';
 
-export interface QuizFindOptions extends RepositoryPaginationOptions {
+export interface QuizFindOptions extends RequiredRepositoryPaginationOptions {
   sort?: Record<string, 1 | -1>;
   populate?: string[];
   compact?: boolean;
@@ -65,15 +65,15 @@ export interface IQuizRepository {
   delete(id: string): Promise<boolean>;
 
   findAll(
-    filter?: QuizFindFilter,
-    options?: QuizFindOptions,
+    filter: QuizFindFilter,
+    options: QuizFindOptions,
   ): Promise<PaginatedRepositoryResult<Quiz>>;
 
   findForPlay(slug: string): Promise<Quiz | null>;
 
   findUserQuizzes(
     userId: string,
-    options?: RepositoryPaginationOptions,
+    options: RequiredRepositoryPaginationOptions,
   ): Promise<PaginatedRepositoryResult<Quiz>>;
 
   findPublicByAuthor(userId: string): Promise<Quiz[]>;

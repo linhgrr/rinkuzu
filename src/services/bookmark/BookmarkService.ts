@@ -13,7 +13,7 @@ export class BookmarkService implements IBookmarkService {
 
   async getBookmarksByUser(
     userEmail: string,
-    options?: BookmarkListQueryDto,
+    options: BookmarkListQueryDto,
   ): Promise<BookmarkListDto> {
     const result = await this.bookmarkRepository.findByUserEmail(userEmail, options);
     return {

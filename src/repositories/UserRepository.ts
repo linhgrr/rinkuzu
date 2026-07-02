@@ -59,19 +59,18 @@ export class UserRepository implements IUserRepository {
     return record ? UserPersistenceMapper.toPublicProfile(record) : null;
   }
 
-  async findAll(options?: UserFindOptions): Promise<PaginatedRepositoryResult<UserEntity>> {
+  async findAll(options: UserFindOptions): Promise<PaginatedRepositoryResult<UserEntity>> {
     await connectDB();
 
-    const page = options?.page || 1;
-    const limit = options?.limit || 10;
+    const { page, limit } = options;
     const skip = (page - 1) * limit;
 
     // Build query
     const query: FilterQuery<UserPersistenceRecord> = {};
-    if (options?.search) {
+    if (options.search) {
       query.email = { $regex: options.search, $options: 'i' };
     }
-    if (options?.role) {
+    if (options.role) {
       query.role = options.role;
     }
 

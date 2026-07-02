@@ -8,7 +8,7 @@ import {
 } from '@/interfaces/repositories/IBookmarkRepository';
 import type {
   PaginatedRepositoryResult,
-  RepositoryPaginationOptions,
+  RequiredRepositoryPaginationOptions,
 } from '@/interfaces/repositories/types';
 import { BookmarkPersistenceMapper } from '@/repositories/mappers/BookmarkPersistenceMapper';
 import type { BookmarkPersistenceRecord } from '@/repositories/types/BookmarkPersistence';
@@ -16,12 +16,11 @@ import type { BookmarkPersistenceRecord } from '@/repositories/types/BookmarkPer
 export class BookmarkRepository implements IBookmarkRepository {
   async findByUserEmail(
     userEmail: string,
-    options?: RepositoryPaginationOptions,
+    options: RequiredRepositoryPaginationOptions,
   ): Promise<PaginatedRepositoryResult<BookmarkEntity>> {
     await connectDB();
 
-    const page = options?.page || 1;
-    const limit = options?.limit || 10;
+    const { page, limit } = options;
     const skip = (page - 1) * limit;
 
     const [records, totalItems] = await Promise.all([

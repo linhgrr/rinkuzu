@@ -4,7 +4,7 @@ import { serviceFactory } from '@/lib/serviceFactory';
 import { apiErr, apiOk } from '@/lib/api/response';
 import { logger } from '@/lib/logger';
 import { bookmarkListQuerySchema, createBookmarkRequestSchema } from '@/dtos/bookmark';
-import { readAndValidateJson } from '@/lib/api/request';
+import { readAndValidateJson, readAndValidateSearchParams } from '@/lib/api/request';
 
 const bookmarkService = serviceFactory.getBookmarkService();
 
@@ -15,15 +15,9 @@ export const GET = withAuth(async (request: NextRequest, { email }) => {
       return apiErr('unauthorized', 'Unauthorized', 401);
     }
 
-    const url = new URL(request.url);
-    const query = bookmarkListQuerySchema.safeParse({
-      page: url.searchParams.get('page') ?? undefined,
-      limit: url.searchParams.get('limit') ?? undefined,
-    });
+    const query = readAndValidateSearchParams(request, bookmarkListQuerySchema);
     if (!query.success) {
-      return apiErr('validation_error', 'Invalid bookmark query parameters', 400, {
-        issues: query.error.flatten().fieldErrors,
-      });
+      return apiErr('validation_error', query.error, 400, { fields: query.fields });
     }
 
     const result = await bookmarkService.getBookmarksByUser(email, query.data);

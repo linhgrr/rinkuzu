@@ -8,6 +8,12 @@ export const userAttemptListQuerySchema = z
   })
   .strict();
 
+export const attemptDetailQuerySchema = z
+  .object({
+    userEmail: z.string().trim().email().optional(),
+  })
+  .strict();
+
 export interface PublicProfileUserDto {
   id: string;
   email?: string;

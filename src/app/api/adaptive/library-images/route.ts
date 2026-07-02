@@ -5,20 +5,16 @@ import {
   type AdaptiveLibraryImagesDto,
 } from '@/dtos/adaptive-library';
 import { NekosApiContractError, parseNekosApiImageUrls } from '@/lib/integrations/nekos-api';
+import { readAndValidateSearchParams } from '@/lib/api/request';
 
 export const dynamic = 'force-dynamic';
 
 const RANDOM_IMAGES_ENDPOINT = 'https://api.nekosapi.com/v4/images/random';
 export async function GET(req: Request) {
   try {
-    const { searchParams } = new URL(req.url);
-    const query = adaptiveLibraryImagesQuerySchema.safeParse({
-      limit: searchParams.get('limit') ?? undefined,
-    });
+    const query = readAndValidateSearchParams(req, adaptiveLibraryImagesQuerySchema);
     if (!query.success) {
-      return apiErr('validation_error', 'Invalid library image query parameters', 400, {
-        issues: query.error.flatten().fieldErrors,
-      });
+      return apiErr('validation_error', query.error, 400, { fields: query.fields });
     }
     const targetUrl = `${RANDOM_IMAGES_ENDPOINT}?rating=safe&limit=${query.data.limit}`;
 

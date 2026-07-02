@@ -14,6 +14,7 @@ import type {
   SaveQuizProgressResponseDto,
   UpdateQuizRequestDto,
 } from '@/dtos/quiz';
+import type { DeleteResultDto } from '@/dtos/common';
 import { IQuizService } from '@/interfaces/services/IQuizService';
 import { IQuizRepository } from '@/interfaces/repositories/IQuizRepository';
 import { IUserRepository } from '@/interfaces/repositories/IUserRepository';
@@ -133,7 +134,11 @@ export class QuizService implements IQuizService {
     return this.crudService.updateQuiz(id, quizData, userId, userRole);
   }
 
-  async deleteQuiz(id: string, userId: string, userRole?: string): Promise<ServiceResult<boolean>> {
+  async deleteQuiz(
+    id: string,
+    userId: string,
+    userRole?: string,
+  ): Promise<ServiceResult<DeleteResultDto>> {
     return this.crudService.deleteQuiz(id, userId, userRole);
   }
 

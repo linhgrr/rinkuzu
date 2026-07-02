@@ -15,6 +15,7 @@ import type {
   UpdateQuizRequestDto,
 } from '@/dtos/quiz';
 import type { Quiz } from '@/entities/Quiz';
+import type { DeleteResultDto } from '@/dtos/common';
 import { ServiceResult } from '@/interfaces/services/types';
 import type { Session } from 'next-auth';
 
@@ -67,7 +68,11 @@ export interface IQuizService {
     userRole?: string,
   ): Promise<ServiceResult<QuizDetailDto>>;
 
-  deleteQuiz(id: string, userId: string, userRole?: string): Promise<ServiceResult<boolean>>;
+  deleteQuiz(
+    id: string,
+    userId: string,
+    userRole?: string,
+  ): Promise<ServiceResult<DeleteResultDto>>;
 
   submitQuizAttempt(
     slug: string,

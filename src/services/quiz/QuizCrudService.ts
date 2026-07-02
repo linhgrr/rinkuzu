@@ -4,6 +4,7 @@ import { createSubscriptionService } from '@/lib/subscription-factory';
 import { IUserRepository } from '@/interfaces/repositories/IUserRepository';
 import type { IFolderRepository } from '@/interfaces/repositories/IFolderRepository';
 import type { CreateQuizRequestDto, QuizDetailDto, UpdateQuizRequestDto } from '@/dtos/quiz';
+import type { DeleteResultDto } from '@/dtos/common';
 import { ServiceResult } from '@/interfaces/services/types';
 import { generateSlug } from '@/lib/utils';
 import { getAuthorId } from './quiz-helpers';
@@ -11,6 +12,7 @@ import { logger } from '@/lib/logger';
 import { QuizCreationError } from '@/lib/quiz/errors';
 import { isMongoDuplicateKeyError, isMongoDuplicateKeyErrorForField } from '@/lib/mongoose-errors';
 import { QuizDetailDtoMapper } from '@/mappers/quiz/QuizDetailDtoMapper';
+import { DeleteResultDtoMapper } from '@/mappers/common/DeleteResultDtoMapper';
 
 const MAX_SLUG_CREATE_ATTEMPTS = 20;
 
@@ -259,7 +261,11 @@ export class QuizCrudService {
     }
   }
 
-  async deleteQuiz(id: string, userId: string, userRole?: string): Promise<ServiceResult<boolean>> {
+  async deleteQuiz(
+    id: string,
+    userId: string,
+    userRole?: string,
+  ): Promise<ServiceResult<DeleteResultDto>> {
     try {
       const quiz = await this.quizRepository.findById(id);
 
@@ -284,10 +290,17 @@ export class QuizCrudService {
       }
 
       const result = await this.quizRepository.delete(id);
+      if (!result) {
+        return {
+          success: false,
+          error: 'Quiz not found',
+          statusCode: 404,
+        };
+      }
 
       return {
         success: true,
-        data: result,
+        data: DeleteResultDtoMapper.toDto(id),
       };
     } catch (error) {
       logger.error({ error }, 'Delete quiz error');

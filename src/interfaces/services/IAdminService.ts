@@ -1,4 +1,5 @@
 import { ServiceResult } from '@/interfaces/services/types';
+import type { DeleteResultDto } from '@/dtos/common';
 import type {
   AdminMessageDto,
   AdminUserListDto,
@@ -24,7 +25,7 @@ export interface IAdminService {
     role: UpdateAdminUserRoleRequestDto['role'],
     adminEmail: string,
   ): Promise<ServiceResult<AdminMessageDto>>;
-  deleteUser(userId: string, adminEmail: string): Promise<ServiceResult<boolean>>;
+  deleteUser(userId: string, adminEmail: string): Promise<ServiceResult<DeleteResultDto>>;
 
   // Reports management
   getReports(searchParams: AdminReportListQueryDto): Promise<ServiceResult<AdminReportListDto>>;
@@ -33,7 +34,7 @@ export interface IAdminService {
     input: UpdateAdminReportRequestDto,
     adminEmail: string,
   ): Promise<ServiceResult<AdminMessageDto>>;
-  deleteReport(reportId: string): Promise<ServiceResult<boolean>>;
+  deleteReport(reportId: string): Promise<ServiceResult<DeleteResultDto>>;
 
   // Statistics
   getStats(): Promise<ServiceResult<AdminOverviewStatsDto>>;

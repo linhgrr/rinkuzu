@@ -20,7 +20,7 @@ export type DashboardSubject = {
   conceptsExtracted: number;
   conceptsAfterMerge: number;
   relationsVerified: number;
-  completedAt: number;
+  completedAt: number | null;
   masteredConcept: number;
   allConcept: number;
   progressPercent: number;

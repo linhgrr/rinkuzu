@@ -5,6 +5,14 @@ function filenameStem(filename: string): string {
   return filename.replace(/\.[^.]+$/, '');
 }
 
+function firstNonEmptyString(...values: string[]): string {
+  const value = values.find((candidate) => candidate.trim().length > 0);
+  if (!value) {
+    throw new TypeError('Adaptive session history title fields are empty');
+  }
+  return value;
+}
+
 function clampPercent(value: number): number {
   if (!Number.isFinite(value)) return 0;
   return Math.min(100, Math.max(0, Math.round(value)));
@@ -15,9 +23,12 @@ function toPercent(value: number): number {
 }
 
 export function toSessionHistoryViewModel(item: SessionHistoryItem): SessionHistoryViewModel {
-  const displayTitle =
-    item.subject_id || filenameStem(item.filename) || item.job_id.substring(0, 8);
-  const lastActivityAt = item.updated_at || item.created_at;
+  const displayTitle = firstNonEmptyString(
+    item.subject_id,
+    filenameStem(item.filename),
+    item.job_id.substring(0, 8),
+  );
+  const lastActivityAt = Math.max(item.updated_at, item.created_at);
 
   return {
     jobId: item.job_id,

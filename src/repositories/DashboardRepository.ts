@@ -8,20 +8,11 @@ import type {
   DashboardUserProgressRecord,
   IDashboardRepository,
 } from '@/interfaces/repositories/IDashboardRepository';
-import { serializeId } from '@/lib/mongo-id';
 import type {
   DashboardProgressPersistenceRecord,
   DashboardUserProgressPersistenceRecord,
 } from '@/repositories/types/DashboardPersistence';
-
-function toWeeklyActivityRecord(
-  activity: DashboardUserProgressPersistenceRecord['weeklyActivity'],
-): DashboardUserProgressRecord['weeklyActivity'] {
-  if (activity instanceof Map) {
-    return Object.fromEntries(activity);
-  }
-  return activity;
-}
+import { DashboardPersistenceMapper } from '@/repositories/mappers/DashboardPersistenceMapper';
 
 export class DashboardRepository implements IDashboardRepository {
   async findUserProgress(userId: string): Promise<DashboardUserProgressRecord | null> {
@@ -32,18 +23,7 @@ export class DashboardRepository implements IDashboardRepository {
       .select(projection)
       .lean<DashboardUserProgressPersistenceRecord>()
       .exec();
-    if (!progress) return null;
-
-    return {
-      currentStreak: progress.currentStreak,
-      longestStreak: progress.longestStreak,
-      streakFreezeCount: progress.streakFreezeCount,
-      totalXp: progress.totalXp,
-      weeklyActivity: toWeeklyActivityRecord(progress.weeklyActivity),
-      totalQuestionsLearned: progress.totalQuestionsLearned,
-      totalReviewSessions: progress.totalReviewSessions,
-      averageAccuracy: progress.averageAccuracy,
-    };
+    return progress ? DashboardPersistenceMapper.toUserProgress(progress) : null;
   }
 
   async countDueQuestions(userId: string, now: Date): Promise<number> {
@@ -69,17 +49,8 @@ export class DashboardRepository implements IDashboardRepository {
       .lean<DashboardProgressPersistenceRecord[]>();
 
     return records.flatMap((record) => {
-      if (!record.quiz) return [];
-      return [
-        {
-          quizId: serializeId(record.quiz._id, 'quiz._id'),
-          title: record.quiz.title,
-          slug: record.quiz.slug,
-          answeredCount: record.answeredCount,
-          totalQuestions: record.totalQuestions,
-          updatedAt: record.updatedAt,
-        },
-      ];
+      const mapped = DashboardPersistenceMapper.toInProgressQuiz(record);
+      return mapped ? [mapped] : [];
     });
   }
 }

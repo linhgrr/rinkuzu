@@ -14,10 +14,7 @@ export class FolderService implements IFolderService {
       const result = await this.folderRepository.listOverviewByOwner(ownerId);
       return {
         success: true,
-        data: {
-          folders: result.folders.map((folder) => FolderDtoMapper.toSummary(folder)),
-          unfiledCount: result.unfiledCount,
-        },
+        data: FolderDtoMapper.toList(result.folders, result.unfiledCount),
       };
     } catch (error) {
       logger.error({ error, ownerId }, 'List folders error');

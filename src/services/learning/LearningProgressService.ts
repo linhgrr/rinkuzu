@@ -86,12 +86,10 @@ export class LearningProgressService implements ILearningProgressService {
       const start = (options.page - 1) * options.limit;
       return {
         success: true,
-        data: {
-          quizzes: library
-            .slice(start, start + options.limit)
-            .map((quiz) => LearningProgressDtoMapper.toLibraryQuizDto(quiz)),
-          pagination: buildPaginationMeta(options.page, options.limit, library.length),
-        },
+        data: LearningProgressDtoMapper.toLibraryListDto(
+          library.slice(start, start + options.limit),
+          buildPaginationMeta(options.page, options.limit, library.length),
+        ),
       };
     } catch (error) {
       logger.error({ error, userId }, 'Get quiz library error');
@@ -112,12 +110,7 @@ export class LearningProgressService implements ILearningProgressService {
       );
       return {
         success: true,
-        data: {
-          questions: questions.map((question) =>
-            LearningProgressDtoMapper.toDueQuestionDto(question),
-          ),
-          count: questions.length,
-        },
+        data: LearningProgressDtoMapper.toDueReviewListDto(questions),
       };
     } catch (error) {
       logger.error({ error, userId }, 'Error fetching due reviews');

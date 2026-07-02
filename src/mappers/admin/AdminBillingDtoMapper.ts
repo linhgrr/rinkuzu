@@ -4,13 +4,25 @@ import type {
   BillingPlan,
 } from '@/entities/AdminBilling';
 import type {
+  AdminSubscriptionListDto,
   AdminSubscriptionDto,
   AdminUserSubscriptionGrantDto,
   BillingPlanDto,
 } from '@/dtos/admin-billing';
+import type { PaginationMeta } from '@/dtos/common';
 import { serializeDate, serializeOptionalDate } from '@/lib/date-serialization';
 
 export class AdminBillingDtoMapper {
+  static toSubscriptionListDto(
+    subscriptions: AdminSubscriptionRecord[],
+    pagination: PaginationMeta,
+  ): AdminSubscriptionListDto {
+    return {
+      subscriptions: subscriptions.map(AdminBillingDtoMapper.toSubscriptionDto),
+      pagination,
+    };
+  }
+
   static toPlanDto(plan: BillingPlan): BillingPlanDto {
     return {
       id: plan.id,

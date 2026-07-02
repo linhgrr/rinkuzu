@@ -1,9 +1,11 @@
 import type {
   AdminQuizAuthorDto,
   AdminQuizDetailDto,
+  AdminQuizListDto,
   AdminQuizListItemDto,
   AdminQuizQuestionDto,
 } from '@/dtos/admin-quiz';
+import type { PaginationMeta } from '@/dtos/common';
 import type { Quiz, QuizAuthorPreview, QuizQuestion } from '@/entities/Quiz';
 import { serializeDate, serializeOptionalDate } from '@/lib/date-serialization';
 
@@ -40,6 +42,13 @@ function toQuestionDto(question: QuizQuestion): AdminQuizQuestionDto {
 }
 
 export class AdminQuizDtoMapper {
+  static toListDto(quizzes: Quiz[], pagination: PaginationMeta): AdminQuizListDto {
+    return {
+      quizzes: quizzes.map(AdminQuizDtoMapper.toListItem),
+      pagination,
+    };
+  }
+
   static toListItem(quiz: Quiz): AdminQuizListItemDto {
     return {
       id: quiz.id,

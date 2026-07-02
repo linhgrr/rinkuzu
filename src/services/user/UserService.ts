@@ -5,14 +5,13 @@ import type { IQuizRepository } from '@/interfaces/repositories/IQuizRepository'
 import { ServiceResult } from '@/interfaces/services/types';
 import type {
   AttemptDetailDto,
-  AttemptQuestionDetailDto,
   PublicUserProfileDto,
   UserAttemptListDto,
   UserAttemptListQueryDto,
-  UserAttemptSummaryDto,
 } from '@/dtos/user';
 import { logger } from '@/lib/logger';
 import { PublicProfileDtoMapper } from '@/mappers/user/PublicProfileDtoMapper';
+import { UserAttemptDtoMapper } from '@/mappers/user/UserAttemptDtoMapper';
 
 export class UserService implements IUserService {
   constructor(
@@ -61,30 +60,7 @@ export class UserService implements IUserService {
       }
 
       const result = await this.attemptRepository.findByUser(user.id, options);
-
-      const formattedAttempts: UserAttemptSummaryDto[] = result.items.map((attempt) => {
-        const populatedQuiz =
-          typeof attempt.quiz === 'object' && attempt.quiz !== null ? attempt.quiz : null;
-        if (!populatedQuiz) {
-          throw new TypeError('attempt.quiz is required');
-        }
-        return {
-          id: attempt.id,
-          score: attempt.score,
-          takenAt: attempt.takenAt.toISOString(),
-          totalQuestions: attempt.totalQuestions,
-          quiz: {
-            title: populatedQuiz.title,
-            slug: populatedQuiz.slug,
-            description: populatedQuiz.description,
-          },
-        };
-      });
-
-      return {
-        attempts: formattedAttempts,
-        pagination: result.pagination,
-      };
+      return UserAttemptDtoMapper.toListDto(result.items, result.pagination);
     } catch (error) {
       logger.error({ error }, 'Get user attempts error');
       throw error;
@@ -111,56 +87,9 @@ export class UserService implements IUserService {
         };
       }
 
-      const populatedQuiz =
-        typeof attempt.quiz === 'object' && attempt.quiz !== null ? attempt.quiz : null;
-      if (!populatedQuiz) {
-        throw new TypeError('attempt.quiz is required');
-      }
-      if (!populatedQuiz.questions) {
-        throw new TypeError('attempt.quiz.questions is required');
-      }
-      const answers = attempt.answers;
-
-      const questions: AttemptQuestionDetailDto[] = populatedQuiz.questions.map(
-        (question, index) => {
-          const userAnswer = answers[index] ?? -1;
-          let isCorrect = false;
-          if (question.type === 'single') {
-            isCorrect = userAnswer === question.correctIndex;
-          } else if (Array.isArray(userAnswer) && Array.isArray(question.correctIndexes)) {
-            isCorrect =
-              question.correctIndexes.length === userAnswer.length &&
-              question.correctIndexes.every((idx) => userAnswer.includes(idx));
-          }
-          return {
-            id: question.id,
-            question: question.question,
-            options: question.options,
-            type: question.type,
-            correctIndex: question.correctIndex,
-            correctIndexes: question.correctIndexes,
-            questionImage: question.questionImage,
-            optionImages: question.optionImages,
-            userAnswer,
-            isCorrect,
-          };
-        },
-      );
-
       return {
         success: true,
-        data: {
-          id: attempt.id,
-          score: attempt.score,
-          takenAt: attempt.takenAt.toISOString(),
-          answers,
-          quiz: {
-            title: populatedQuiz.title,
-            slug: populatedQuiz.slug,
-            description: populatedQuiz.description,
-            questions,
-          },
-        },
+        data: UserAttemptDtoMapper.toDetailDto(attempt),
       };
     } catch (error) {
       logger.error({ error }, 'Get attempt details error');

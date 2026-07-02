@@ -43,10 +43,7 @@ export class QuizAdminService {
 
       return {
         success: true,
-        data: {
-          quizzes: result.items.map(AdminQuizDtoMapper.toListItem),
-          pagination: result.pagination,
-        },
+        data: AdminQuizDtoMapper.toListDto(result.items, result.pagination),
       };
     } catch (error) {
       logger.error({ error }, 'List admin quizzes error');

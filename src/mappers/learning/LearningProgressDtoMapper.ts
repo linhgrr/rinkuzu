@@ -6,10 +6,13 @@ import type {
 } from '@/entities/LearningProgress';
 import type {
   BuyStreakFreezeResponseDto,
+  DueReviewListDto,
   DueReviewQuestionDto,
+  LibraryListDto,
   LibraryQuizDto,
   SubmitReviewResponseDto,
 } from '@/dtos/review';
+import type { PaginationMeta } from '@/dtos/common';
 import { serializeDate, serializeOptionalDate } from '@/lib/date-serialization';
 
 function optionalDateOrNull(date: Date | null | undefined, fieldName: string): string | null {
@@ -17,6 +20,20 @@ function optionalDateOrNull(date: Date | null | undefined, fieldName: string): s
 }
 
 export class LearningProgressDtoMapper {
+  static toLibraryListDto(quizzes: LibraryQuiz[], pagination: PaginationMeta): LibraryListDto {
+    return {
+      quizzes: quizzes.map(LearningProgressDtoMapper.toLibraryQuizDto),
+      pagination,
+    };
+  }
+
+  static toDueReviewListDto(questions: QuestionReviewProgress[]): DueReviewListDto {
+    return {
+      questions: questions.map(LearningProgressDtoMapper.toDueQuestionDto),
+      count: questions.length,
+    };
+  }
+
   static toLibraryQuizDto(quiz: LibraryQuiz): LibraryQuizDto {
     return {
       id: quiz.id,

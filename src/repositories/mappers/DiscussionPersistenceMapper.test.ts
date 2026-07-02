@@ -12,8 +12,11 @@ describe('DiscussionPersistenceMapper', () => {
       comments: [
         {
           _id: new Types.ObjectId('507f191e810c19729de860ec'),
-          author: new Types.ObjectId('507f191e810c19729de860ed'),
-          authorEmail: 'learner@example.com',
+          author: {
+            _id: new Types.ObjectId('507f191e810c19729de860ed'),
+            email: 'learner@example.com',
+            displayName: 'Learner',
+          },
           content: 'Why is B correct?',
           isEdited: false,
           createdAt: new Date('2026-07-01T01:00:00Z'),
@@ -31,8 +34,13 @@ describe('DiscussionPersistenceMapper', () => {
       comments: [
         {
           id: '507f191e810c19729de860ec',
-          author: '507f191e810c19729de860ed',
-          authorEmail: 'learner@example.com',
+          author: {
+            id: '507f191e810c19729de860ed',
+            email: 'learner@example.com',
+            name: undefined,
+            displayName: 'Learner',
+            avatar: undefined,
+          },
           content: 'Why is B correct?',
           isEdited: false,
           createdAt: new Date('2026-07-01T01:00:00Z'),

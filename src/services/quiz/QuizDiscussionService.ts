@@ -112,7 +112,6 @@ export class QuizDiscussionService {
       // Add comment to existing discussion
       const updatedDiscussion = await this.discussionRepository.addComment(existingDiscussion.id, {
         authorId: user.id,
-        authorEmail: user.email,
         content,
       });
 

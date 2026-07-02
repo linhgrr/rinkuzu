@@ -104,7 +104,6 @@ export class DiscussionRepository implements IDiscussionRepository {
           comments: {
             _id: new Types.ObjectId(),
             author: new Types.ObjectId(data.authorId),
-            authorEmail: data.authorEmail,
             content: data.content,
             isEdited: false,
             createdAt: now,

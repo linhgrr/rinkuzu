@@ -2,7 +2,6 @@ import mongoose, { Document, Schema, Types } from 'mongoose';
 
 interface DiscussionCommentDocument {
   author: Types.ObjectId;
-  authorEmail: string;
   content: string;
   createdAt: Date;
   updatedAt: Date;
@@ -23,11 +22,6 @@ const DiscussionCommentSchema = new Schema<DiscussionCommentDocument>(
       type: Schema.Types.ObjectId,
       ref: 'User',
       required: [true, 'Author is required'],
-    },
-    authorEmail: {
-      type: String,
-      required: [true, 'Author email is required'],
-      trim: true,
     },
     content: {
       type: String,

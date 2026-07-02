@@ -89,6 +89,29 @@ for (const filePath of walk(appDir).filter((file) => file.endsWith('/page.tsx'))
   }
 }
 
+for (const filePath of walk(appDir).filter((file) => file.endsWith('/route.ts'))) {
+  const repoPath = toRepoPath(filePath);
+  const source = readFileSync(filePath, 'utf8');
+
+  if (/\bwith(?:Optional)?Auth\s*</.test(source)) {
+    failures.push(
+      `${repoPath}: do not type-assert route params through withAuth<T>; validate params with readAndValidateRouteParams().`,
+    );
+  }
+
+  const rawParamsPatterns = [
+    /\bparams\.(?:id|slug|jobId|path)\b/,
+    /\bconst\s+\{\s*(?:id|slug|jobId|path)\s*\}\s*=\s*params\b/,
+    /\bcontext\.params\s*\[/,
+  ];
+
+  if (rawParamsPatterns.some((pattern) => pattern.test(source))) {
+    failures.push(
+      `${repoPath}: validate dynamic API route params with readAndValidateRouteParams() before use.`,
+    );
+  }
+}
+
 if (failures.length > 0) {
   console.error('Route param safety check failed:');
   for (const failure of failures) {

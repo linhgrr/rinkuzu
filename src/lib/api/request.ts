@@ -1,5 +1,8 @@
 import type { ZodIssue, ZodType } from 'zod';
 
+export type RouteParamValue = string | string[] | undefined;
+export type RouteParams = Record<string, RouteParamValue>;
+
 export type JsonBodyResult =
   | { success: true; data: unknown }
   | { success: false; error: 'Request body must be valid JSON' };
@@ -54,5 +57,13 @@ export function readAndValidateSearchParams<T>(
   schema: ZodType<T>,
 ): ValidationResult<T> {
   const parsed = schema.safeParse(Object.fromEntries(new URL(request.url).searchParams));
+  return parsed.success ? parsed : toValidationFailure(parsed.error.issues);
+}
+
+export function readAndValidateRouteParams<T>(
+  params: RouteParams,
+  schema: ZodType<T>,
+): ValidationResult<T> {
+  const parsed = schema.safeParse(params);
   return parsed.success ? parsed : toValidationFailure(parsed.error.issues);
 }

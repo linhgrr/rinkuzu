@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
-import { readAndValidateJson, readAndValidateSearchParams, readJsonBody } from '@/lib/api/request';
+import {
+  readAndValidateJson,
+  readAndValidateRouteParams,
+  readAndValidateSearchParams,
+  readJsonBody,
+} from '@/lib/api/request';
 
 describe('readJsonBody', () => {
   it('returns parsed JSON without prescribing a DTO', async () => {
@@ -85,5 +90,24 @@ describe('readJsonBody', () => {
         fields: { page: 'Page must be positive' },
       },
     );
+  });
+
+  it('validates dynamic route params without accepting array fallbacks', () => {
+    const schema = z.object({ id: z.string().uuid('Invalid id') });
+
+    expect(
+      readAndValidateRouteParams({ id: '6c8de438-4b58-42bb-8131-769c7c803d6f' }, schema),
+    ).toEqual({
+      success: true,
+      data: { id: '6c8de438-4b58-42bb-8131-769c7c803d6f' },
+    });
+
+    expect(
+      readAndValidateRouteParams({ id: ['6c8de438-4b58-42bb-8131-769c7c803d6f'] }, schema),
+    ).toEqual({
+      success: false,
+      error: 'Invalid input: expected string, received array',
+      fields: { id: 'Invalid input: expected string, received array' },
+    });
   });
 });

@@ -1,10 +1,19 @@
 import type { PaginationMeta } from '@/dtos/common';
 import { z } from 'zod';
 import { questionListSchema } from '@/lib/validation/question';
-import { objectIdSchema } from '@/lib/validation/common';
+import {
+  objectIdSchema,
+  objectIdRouteParamSchema,
+  routePathSegmentSchema,
+  slugRouteParamSchema,
+} from '@/lib/validation/common';
 import { UNFILED_FOLDER_TARGET } from '@/shared/constants/folder';
 
 const queryBooleanSchema = z.enum(['true', 'false']).transform((value) => value === 'true');
+
+export const quizIdRouteParamsSchema = z.object({ id: objectIdRouteParamSchema }).strict();
+export const quizSlugRouteParamsSchema = z.object({ slug: slugRouteParamSchema }).strict();
+export const quizDraftIdRouteParamsSchema = z.object({ id: routePathSegmentSchema }).strict();
 
 export const quizListQuerySchema = z
   .object({

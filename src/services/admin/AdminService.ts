@@ -15,6 +15,7 @@ import type {
   AdminCreatorStatDto,
   AdminOverviewStatsDto,
 } from '@/dtos/admin-stats';
+import type { DeleteResultDto } from '@/dtos/common';
 import { IUserRepository } from '@/interfaces/repositories/IUserRepository';
 import { IReportRepository } from '@/interfaces/repositories/IReportRepository';
 import { IQuizRepository } from '@/interfaces/repositories/IQuizRepository';
@@ -25,6 +26,7 @@ import { AdminUserDtoMapper } from '@/mappers/admin/AdminUserDtoMapper';
 import { AdminReportDtoMapper } from '@/mappers/admin/AdminReportDtoMapper';
 import { AdminMessageDtoMapper } from '@/mappers/admin/AdminMessageDtoMapper';
 import { AdminStatsDtoMapper } from '@/mappers/admin/AdminStatsDtoMapper';
+import { DeleteResultDtoMapper } from '@/mappers/common/DeleteResultDtoMapper';
 import { extractUnknownErrorMessage } from '@/lib/api/error';
 
 export class AdminService implements IAdminService {
@@ -106,7 +108,7 @@ export class AdminService implements IAdminService {
     }
   }
 
-  async deleteUser(userId: string, adminEmail: string): Promise<ServiceResult<boolean>> {
+  async deleteUser(userId: string, adminEmail: string): Promise<ServiceResult<DeleteResultDto>> {
     try {
       const user = await this.userRepository.findById(userId);
       if (!user) {
@@ -126,10 +128,13 @@ export class AdminService implements IAdminService {
       }
 
       const deleted = await this.userRepository.delete(userId);
+      if (!deleted) {
+        return { success: false, error: 'User not found', statusCode: 404 };
+      }
 
       return {
         success: true,
-        data: deleted,
+        data: DeleteResultDtoMapper.toDto(userId),
       };
     } catch (error) {
       logger.error({ error }, 'Delete user error');
@@ -295,13 +300,13 @@ export class AdminService implements IAdminService {
     }
   }
 
-  async deleteReport(reportId: string): Promise<ServiceResult<boolean>> {
+  async deleteReport(reportId: string): Promise<ServiceResult<DeleteResultDto>> {
     try {
       const deleted = await this.reportRepository.delete(reportId);
       if (!deleted) {
         return { success: false, error: 'Report not found', statusCode: 404 };
       }
-      return { success: true, data: true };
+      return { success: true, data: DeleteResultDtoMapper.toDto(reportId) };
     } catch (error) {
       return {
         success: false,

@@ -5,9 +5,11 @@ import type {
   AdminQuizListDto,
   AdminQuizListQueryDto,
 } from '@/dtos/admin-quiz';
+import type { DeleteResultDto } from '@/dtos/common';
 import type { QuizListDto, QuizListOptionsDto } from '@/dtos/quiz';
 import { logger } from '@/lib/logger';
 import { AdminQuizDtoMapper } from '@/mappers/quiz/AdminQuizDtoMapper';
+import { DeleteResultDtoMapper } from '@/mappers/common/DeleteResultDtoMapper';
 import { QuizListDtoMapper } from '@/mappers/quiz/QuizListDtoMapper';
 
 function escapeRegexLiteral(value: string): string {
@@ -77,7 +79,7 @@ export class QuizAdminService {
     }
   }
 
-  async deleteAdminQuiz(id: string): Promise<ServiceResult<boolean>> {
+  async deleteAdminQuiz(id: string): Promise<ServiceResult<DeleteResultDto>> {
     try {
       const quiz = await this.quizRepository.findById(id);
       if (!quiz) {
@@ -89,7 +91,15 @@ export class QuizAdminService {
       }
 
       const deleted = await this.quizRepository.delete(id);
-      return { success: true, data: deleted };
+      if (!deleted) {
+        return {
+          success: false,
+          error: 'Quiz not found',
+          statusCode: 404,
+        };
+      }
+
+      return { success: true, data: DeleteResultDtoMapper.toDto(id) };
     } catch (error) {
       logger.error({ error }, 'Delete admin quiz error');
       return {

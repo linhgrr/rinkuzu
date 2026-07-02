@@ -7,3 +7,9 @@ export interface PaginationMeta {
   hasNextPage: boolean;
   hasPrevPage: boolean;
 }
+
+/** Standard payload returned by delete operations. */
+export interface DeleteResultDto {
+  id: string;
+  deleted: true;
+}

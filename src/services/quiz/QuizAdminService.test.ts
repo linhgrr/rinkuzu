@@ -128,7 +128,10 @@ describe('QuizAdminService', () => {
 
     const result = await service.deleteAdminQuiz('507f191e810c19729de860ea');
 
-    expect(result).toEqual({ success: true, data: true });
+    expect(result).toEqual({
+      success: true,
+      data: { id: '507f191e810c19729de860ea', deleted: true },
+    });
     expect(repository.delete).toHaveBeenCalledWith('507f191e810c19729de860ea');
   });
 });

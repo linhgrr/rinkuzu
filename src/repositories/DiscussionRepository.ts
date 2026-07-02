@@ -29,23 +29,27 @@ export class DiscussionRepository implements IDiscussionRepository {
 
   async ensureForQuizQuestions(quizId: string, questionCount: number): Promise<DiscussionEntity[]> {
     await connectDB();
-    const existingRecords = await Discussion.find({ quiz: quizId })
-      .select('questionIndex')
-      .lean<Array<{ questionIndex: number }>>();
-    const existingIndexes = new Set(existingRecords.map((record) => record.questionIndex));
-    const missingDiscussions = Array.from({ length: questionCount }, (_, questionIndex) =>
-      existingIndexes.has(questionIndex)
-        ? null
-        : {
-            quiz: new Types.ObjectId(quizId),
-            questionIndex,
-          },
-    ).filter((discussion): discussion is { quiz: Types.ObjectId; questionIndex: number } =>
-      Boolean(discussion),
-    );
+    const quizObjectId = new Types.ObjectId(quizId);
 
-    if (missingDiscussions.length > 0) {
-      await Discussion.insertMany(missingDiscussions, { ordered: false });
+    if (questionCount > 0) {
+      await Discussion.bulkWrite(
+        Array.from({ length: questionCount }, (_, questionIndex) => ({
+          updateOne: {
+            filter: {
+              quiz: quizObjectId,
+              questionIndex,
+            },
+            update: {
+              $setOnInsert: {
+                quiz: quizObjectId,
+                questionIndex,
+              },
+            },
+            upsert: true,
+          },
+        })),
+        { ordered: false },
+      );
     }
 
     const discussions = await this.findByQuiz(quizId);

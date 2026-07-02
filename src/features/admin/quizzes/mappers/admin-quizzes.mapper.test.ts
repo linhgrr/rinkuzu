@@ -16,6 +16,7 @@ describe('admin quizzes mapper', () => {
           isPrivate: true,
           questionCount: 3,
           createdAt: '2026-07-02T00:00:00.000Z',
+          updatedAt: '2026-07-02T01:00:00.000Z',
         },
       ],
       pagination: {
@@ -51,6 +52,7 @@ describe('admin quizzes mapper', () => {
       isPrivate: false,
       questionCount: 1,
       createdAt: '2026-07-02T00:00:00.000Z',
+      updatedAt: '2026-07-02T01:00:00.000Z',
       questions: [
         {
           id: 'question-1',

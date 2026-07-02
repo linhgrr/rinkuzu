@@ -21,7 +21,7 @@ export interface AdminQuizListItemViewModel {
   visibilityLabelKey: 'private' | 'public';
   questionCount: number;
   createdAt: string;
-  updatedAt?: string;
+  updatedAt: string;
 }
 
 export interface AdminQuizDetailViewModel extends AdminQuizListItemViewModel {

@@ -36,7 +36,7 @@ export interface AdminQuizListItemDto {
   isPrivate: boolean;
   questionCount: number;
   createdAt: string;
-  updatedAt?: string;
+  updatedAt: string;
 }
 
 export interface AdminQuizDetailDto extends AdminQuizListItemDto {

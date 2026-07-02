@@ -368,6 +368,12 @@ for (const filePath of sourceFiles) {
   }
 
   if (relativePath.startsWith('src/services/')) {
+    if (/\bdata\s*:\s*\{/.test(source)) {
+      errors.push(
+        `service dto boundary: map object response data through src/mappers in ${relativePath}`,
+      );
+    }
+
     const forbiddenServiceValidationSentinels = [
       ['VALID_QUESTION_TYPES', 'question type DTO validation'],
       ['Missing or invalid question text', 'question text DTO validation'],

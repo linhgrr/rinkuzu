@@ -1,7 +1,14 @@
 import type { Folder, FolderOverview } from '@/entities/Folder';
-import type { FolderSummaryDto } from '@/dtos/folder';
+import type { FolderListDto, FolderSummaryDto } from '@/dtos/folder';
 
 export class FolderDtoMapper {
+  static toList(folders: FolderOverview[], unfiledCount: number): FolderListDto {
+    return {
+      folders: folders.map((folder) => FolderDtoMapper.toSummary(folder)),
+      unfiledCount,
+    };
+  }
+
   static toSummary(folder: Folder | FolderOverview, quizCount = 0): FolderSummaryDto {
     return {
       id: folder.id,

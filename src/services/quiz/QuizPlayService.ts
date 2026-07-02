@@ -9,7 +9,6 @@ import type {
 import { ServiceResult } from '@/interfaces/services/types';
 import type {
   DeleteQuizProgressResponseDto,
-  FlashcardQuestionDto,
   FlashcardQuizDto,
   QuizAttemptResultDto,
   QuizPlayDetailDto,
@@ -18,27 +17,16 @@ import type {
   SaveQuizProgressResponseDto,
 } from '@/dtos/quiz';
 import { createSubscriptionService } from '@/lib/subscription-factory';
-import type { Quiz, QuizQuestion } from '@/entities/Quiz';
+import type { Quiz } from '@/entities/Quiz';
 import type { Session } from 'next-auth';
 import { getAuthorId, checkPrivateQuizAccess } from './quiz-helpers';
 import { logger } from '@/lib/logger';
 import { QuizDetailDtoMapper } from '@/mappers/quiz/QuizDetailDtoMapper';
 import { QuizProgressDtoMapper } from '@/mappers/quiz/QuizProgressDtoMapper';
+import { QuizAttemptDtoMapper } from '@/mappers/quiz/QuizAttemptDtoMapper';
+import { QuizFlashcardDtoMapper } from '@/mappers/quiz/QuizFlashcardDtoMapper';
 
 type Answer = number | number[];
-
-function toFlashcardQuestionDto(question: QuizQuestion): FlashcardQuestionDto {
-  return {
-    id: question.id,
-    question: question.question,
-    options: question.options,
-    type: question.type,
-    correctIndex: question.correctIndex,
-    correctIndexes: question.correctIndexes,
-    questionImage: question.questionImage,
-    optionImages: question.optionImages,
-  };
-}
 
 function isAuthorMatch(quiz: Quiz, userId: string): boolean {
   return getAuthorId(quiz.author) === userId;
@@ -71,18 +59,7 @@ export class QuizPlayService {
       const progress = await this.quizProgressRepository.findByUserAndQuiz(userId, quizId);
       return {
         success: true,
-        data: {
-          progress: progress
-            ? {
-                questionOrder: progress.questionOrder,
-                optionOrders: progress.optionOrders,
-                userAnswers: progress.userAnswers,
-                currentQuestionIndex: progress.currentQuestionIndex,
-                answeredCount: progress.answeredCount,
-                totalQuestions: progress.totalQuestions,
-              }
-            : null,
-        },
+        data: QuizProgressDtoMapper.toGetResponse(progress),
       };
     } catch (error) {
       logger.error({ error, slug, userId }, 'Get quiz progress error');
@@ -341,12 +318,7 @@ export class QuizPlayService {
 
       return {
         success: true,
-        data: {
-          score,
-          correctAnswers,
-          totalQuestions,
-          attemptId: attempt.id,
-        },
+        data: QuizAttemptDtoMapper.toResultDto(attempt.id, score, correctAnswers, totalQuestions),
       };
     } catch (error) {
       logger.error({ error }, 'Submit quiz attempt error');
@@ -393,17 +365,9 @@ export class QuizPlayService {
         }
       }
 
-      const questions = quiz.questions.map(toFlashcardQuestionDto);
-
       return {
         success: true,
-        data: {
-          id: quiz.id,
-          title: quiz.title,
-          slug: quiz.slug,
-          description: quiz.description,
-          questions,
-        },
+        data: QuizFlashcardDtoMapper.toDto(quiz),
       };
     } catch (error) {
       logger.error({ error }, 'Get quiz flashcards error');
@@ -458,17 +422,9 @@ export class QuizPlayService {
         }
       }
 
-      const questions = quiz.questions.map(toFlashcardQuestionDto);
-
       return {
         success: true,
-        data: {
-          id: quiz.id,
-          title: quiz.title,
-          slug: quiz.slug,
-          description: quiz.description,
-          questions,
-        },
+        data: QuizFlashcardDtoMapper.toDto(quiz),
       };
     } catch (error) {
       logger.error({ error }, 'Get quiz for flashcards error');

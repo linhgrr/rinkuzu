@@ -95,12 +95,7 @@ export class AdminBillingService implements IAdminBillingService {
       const result = await this.repository.listSubscriptions(options);
       return {
         success: true,
-        data: {
-          subscriptions: result.items.map((subscription) =>
-            AdminBillingDtoMapper.toSubscriptionDto(subscription),
-          ),
-          pagination: result.pagination,
-        },
+        data: AdminBillingDtoMapper.toSubscriptionListDto(result.items, result.pagination),
       };
     } catch (error) {
       logger.error({ error }, 'Admin subscriptions list error');

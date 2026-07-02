@@ -166,8 +166,7 @@ function CreatorItem({
       <div className="text-right">
         <div className="text-sm font-medium">{creator.quizCount} quiz</div>
         <div className="text-xs text-neutral-500">
-          {creator.totalQuestions} {t('questionsCount')} • {Math.round(creator.successRate ?? 0)}%{' '}
-          {t('successRate')}
+          {creator.totalQuestions} {t('questionsCount')}
         </div>
       </div>
     </div>

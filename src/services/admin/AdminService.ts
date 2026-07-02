@@ -21,12 +21,10 @@ import { IQuizRepository } from '@/interfaces/repositories/IQuizRepository';
 import { IAttemptRepository } from '@/interfaces/repositories/IAttemptRepository';
 import { ServiceResult } from '@/interfaces/services/types';
 import { logger } from '@/lib/logger';
-import { AdminActivityDtoMapper } from '@/mappers/admin/AdminActivityDtoMapper';
 import { AdminUserDtoMapper } from '@/mappers/admin/AdminUserDtoMapper';
 import { AdminReportDtoMapper } from '@/mappers/admin/AdminReportDtoMapper';
 import { AdminMessageDtoMapper } from '@/mappers/admin/AdminMessageDtoMapper';
-import { serializeDate } from '@/lib/date-serialization';
-import { AdminQuizDtoMapper } from '@/mappers/quiz/AdminQuizDtoMapper';
+import { AdminStatsDtoMapper } from '@/mappers/admin/AdminStatsDtoMapper';
 import { extractUnknownErrorMessage } from '@/lib/api/error';
 
 export class AdminService implements IAdminService {
@@ -49,10 +47,7 @@ export class AdminService implements IAdminService {
 
       return {
         success: true,
-        data: {
-          users: result.items.map(AdminUserDtoMapper.toDto),
-          pagination: result.pagination,
-        },
+        data: AdminUserDtoMapper.toListDto(result.items, result.pagination),
       };
     } catch (error) {
       logger.error({ error }, 'Get users error');
@@ -158,10 +153,7 @@ export class AdminService implements IAdminService {
 
       return {
         success: true,
-        data: {
-          reports: result.items.map(AdminReportDtoMapper.toDto),
-          pagination: result.pagination,
-        },
+        data: AdminReportDtoMapper.toListDto(result.items, result.pagination),
       };
     } catch (error) {
       logger.error({ error }, 'Get reports error');
@@ -230,12 +222,12 @@ export class AdminService implements IAdminService {
 
       return {
         success: true,
-        data: {
+        data: AdminStatsDtoMapper.toOverviewDto(
           totalUsers,
           totalAdmins,
           totalQuizzes,
           totalAttempts,
-        },
+        ),
       };
     } catch (error) {
       logger.error({ error }, 'getStats error');
@@ -266,38 +258,14 @@ export class AdminService implements IAdminService {
 
       return {
         success: true,
-        data: {
-          timeBasedStats: {
-            today: {
-              newUsers: userBuckets.today,
-              newQuizzes: quizBuckets.today,
-              attempts: attemptBuckets.today,
-            },
-            thisWeek: {
-              newUsers: userBuckets.thisWeek,
-              newQuizzes: quizBuckets.thisWeek,
-              attempts: attemptBuckets.thisWeek,
-            },
-            thisMonth: {
-              newUsers: userBuckets.thisMonth,
-              newQuizzes: quizBuckets.thisMonth,
-              attempts: attemptBuckets.thisMonth,
-            },
-          },
-          recentActivity: {
-            users: recentUsers.items.map((u) => {
-              if (!u.createdAt) {
-                throw new TypeError('recentUser.createdAt is required');
-              }
-              return {
-                email: u.email,
-                createdAt: serializeDate(u.createdAt, 'recentUser.createdAt'),
-              };
-            }),
-            quizzes: recentQuizzes.items.map(AdminQuizDtoMapper.toListItem),
-            attempts: recentAttempts.map(AdminActivityDtoMapper.toRecentAttempt),
-          },
-        },
+        data: AdminStatsDtoMapper.toActivityDto(
+          userBuckets,
+          quizBuckets,
+          attemptBuckets,
+          recentUsers.items,
+          recentQuizzes.items,
+          recentAttempts,
+        ),
       };
     } catch (error) {
       logger.error({ error }, 'getActivityStats error');
@@ -315,15 +283,7 @@ export class AdminService implements IAdminService {
 
       return {
         success: true,
-        data: creators.map((creator) => ({
-          id: creator.id,
-          email: creator.email,
-          quizCount: creator.quizCount,
-          totalQuestions: creator.totalQuestions,
-          joinedAt: serializeDate(creator.joinedAt, 'creator.joinedAt'),
-          role: creator.role,
-          successRate: 0,
-        })),
+        data: creators.map(AdminStatsDtoMapper.toCreatorDto),
       };
     } catch (error) {
       logger.error({ error }, 'Get creator stats error');

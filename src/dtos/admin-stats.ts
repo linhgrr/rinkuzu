@@ -69,7 +69,6 @@ export interface AdminCreatorStatDto {
   totalQuestions: number;
   joinedAt: string;
   role: 'admin' | 'user';
-  successRate: number;
 }
 
 export interface AdminStatsDto extends AdminOverviewStatsDto, AdminActivityStatsDto {

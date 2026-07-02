@@ -58,7 +58,6 @@ export function toAdminStatsViewModel(dto: AdminStatsDto): AdminStatsViewModel {
       totalQuestions: creator.totalQuestions,
       joinedAt: creator.joinedAt,
       role: creator.role,
-      successRate: creator.successRate,
     })),
     scoreStats: {
       averageScore: dto.scoreStats.averageScore,

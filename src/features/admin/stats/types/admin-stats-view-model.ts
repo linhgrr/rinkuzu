@@ -46,7 +46,6 @@ export interface AdminCreatorStatsViewModel {
   totalQuestions: number;
   joinedAt: string;
   role: 'admin' | 'user';
-  successRate: number;
 }
 
 export interface AdminStatsViewModel {

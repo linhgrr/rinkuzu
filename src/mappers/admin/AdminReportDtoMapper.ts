@@ -1,8 +1,16 @@
-import type { AdminReportDto } from '@/dtos/admin-report';
+import type { AdminReportDto, AdminReportListDto } from '@/dtos/admin-report';
+import type { PaginationMeta } from '@/dtos/common';
 import type { Report } from '@/entities/Report';
 import { serializeDate, serializeOptionalDate } from '@/lib/date-serialization';
 
 export class AdminReportDtoMapper {
+  static toListDto(reports: Report[], pagination: PaginationMeta): AdminReportListDto {
+    return {
+      reports: reports.map(AdminReportDtoMapper.toDto),
+      pagination,
+    };
+  }
+
   static toDto(report: Report): AdminReportDto {
     return {
       id: report.id,

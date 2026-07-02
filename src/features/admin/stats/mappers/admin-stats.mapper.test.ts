@@ -49,7 +49,6 @@ describe('toAdminStatsViewModel', () => {
             totalQuestions: 10,
             joinedAt: '2026-07-01T00:00:00.000Z',
             role: 'user',
-            successRate: 80,
           },
         ],
         scoreStats: {
@@ -111,7 +110,6 @@ describe('toAdminStatsViewModel', () => {
           totalQuestions: 10,
           joinedAt: '2026-07-01T00:00:00.000Z',
           role: 'user',
-          successRate: 80,
         },
       ],
       scoreStats: {

@@ -195,7 +195,6 @@ describe('AdminService report and stats contracts', () => {
         totalQuestions: 30,
         joinedAt: '2026-06-01T00:00:00.000Z',
         role: 'user',
-        successRate: 0,
       },
     ]);
   });

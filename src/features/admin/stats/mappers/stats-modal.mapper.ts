@@ -19,7 +19,6 @@ function toCreatorItem(
     joinedAt: creator.joinedAt,
     joinedAtLabel: formatDateTime(creator.joinedAt),
     role: creator.role,
-    successRate: creator.successRate,
   };
 }
 

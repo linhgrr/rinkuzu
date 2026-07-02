@@ -7,6 +7,7 @@ import type { PipelineJobHistoryItem } from '@/features/adaptive/types/pipeline'
 import { ADAPTIVE_ROUTES } from '@/features/adaptive/lib/routes';
 import { ROUTES } from '@/shared/constants/routes';
 import { formatDate } from '@/lib/formatters';
+import { requireFirstNonEmptyString } from '@/lib/non-empty-string';
 import type { DashboardViewModel } from '@/features/dashboard/types/dashboard-view-model';
 
 export interface DashboardViewModelCopy {
@@ -67,19 +68,24 @@ function clampProgress(value: number): number {
 }
 
 function getAdaptiveSubjectTitle(subject: PipelineJobHistoryItem): string {
-  const filenameTitle = subject.filename?.replace(/\.[^.]+$/, '');
-  return subject.subject_id || filenameTitle || subject.job_id;
+  const filenameTitle = subject.filename.replace(/\.[^.]+$/, '');
+  return requireFirstNonEmptyString(
+    'dashboard adaptive subject title',
+    subject.subject_id,
+    filenameTitle,
+    subject.job_id,
+  );
 }
 
 function getAdaptiveSubjectProgress(subject: PipelineJobHistoryItem): number {
-  const allConcepts = Math.max(0, subject.all_concept ?? subject.concepts_after_merge ?? 0);
-  const masteredConcepts = Math.max(0, subject.mastered_concept ?? 0);
+  const allConcepts = Math.max(0, subject.all_concept);
+  const masteredConcepts = Math.max(0, subject.mastered_concept);
 
   if (allConcepts > 0) {
     return clampProgress((Math.min(masteredConcepts, allConcepts) / allConcepts) * 100);
   }
 
-  return clampProgress(subject.progress_percent ?? 0);
+  return clampProgress(subject.progress_percent);
 }
 
 function buildAdaptiveLearningCards({
@@ -117,7 +123,7 @@ function buildInProgressLearningCards({
     .slice(0, CONTINUE_LEARNING_CARD_LIMIT)
     .map((quiz) => ({
       id: `in-progress-${quiz.quizId}`,
-      title: quiz.title || copy.quizBuilderTitle,
+      title: quiz.title,
       category: copy.inProgress,
       progress: clampProgress((quiz.answeredCount / quiz.totalQuestions) * 100),
       href: ROUTES.QUIZ.VIEW(quiz.slug),

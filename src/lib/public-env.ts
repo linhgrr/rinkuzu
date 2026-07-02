@@ -19,10 +19,8 @@ function loadPublicEnv(): PublicEnv {
 
   // Direct property access so Next.js inlines the value at build time.
   // Bracket access (`process.env['NEXT_PUBLIC_*']`) is NOT inlined.
-  // @ts-expect-error noPropertyAccessFromIndexSignature — required for Next inlining
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL as string | undefined;
-  // @ts-expect-error noPropertyAccessFromIndexSignature — required for Next inlining
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL as string | undefined;
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
   const parsed = publicEnvSchema.safeParse({
     NEXT_PUBLIC_SITE_URL: siteUrl,

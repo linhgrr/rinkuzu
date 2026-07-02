@@ -16,5 +16,5 @@ export interface IQuizProgressRepository {
 
   deleteByUserAndQuiz(userId: string, quizId: string): Promise<boolean>;
 
-  findInProgressByUser(userId: string, limit?: number): Promise<QuizProgress[]>;
+  findInProgressByUser(userId: string, limit: number): Promise<QuizProgress[]>;
 }

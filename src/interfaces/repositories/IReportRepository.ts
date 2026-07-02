@@ -1,10 +1,10 @@
 import type { Report, ReportStatus } from '@/entities/Report';
 import type {
   PaginatedRepositoryResult,
-  RequiredRepositoryPaginationOptions,
+  RepositoryPaginationOptions,
 } from '@/interfaces/repositories/types';
 
-export interface ReportFindOptions extends RequiredRepositoryPaginationOptions {
+export interface ReportFindOptions extends RepositoryPaginationOptions {
   status?: ReportStatus;
 }
 

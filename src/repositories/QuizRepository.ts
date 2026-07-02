@@ -21,7 +21,7 @@ import type {
   CountBucketThresholds,
   CreatedAtCountFilter,
   PaginatedRepositoryResult,
-  RequiredRepositoryPaginationOptions,
+  RepositoryPaginationOptions,
 } from '@/interfaces/repositories/types';
 import { buildPaginationMeta } from '@/lib/pagination';
 import mongoose, { Types, type FilterQuery } from 'mongoose';
@@ -211,7 +211,7 @@ export class QuizRepository implements IQuizRepository {
 
   async findUserQuizzes(
     userId: string,
-    options: RequiredRepositoryPaginationOptions,
+    options: RepositoryPaginationOptions,
   ): Promise<PaginatedRepositoryResult<Quiz>> {
     await connectDB();
 
@@ -256,7 +256,7 @@ export class QuizRepository implements IQuizRepository {
     return resolveCountBuckets(records);
   }
 
-  async findTopCreators(limit: number = 20): Promise<QuizCreatorStatRecord[]> {
+  async findTopCreators(limit: number): Promise<QuizCreatorStatRecord[]> {
     await connectDB();
 
     const records = await QuizModel.aggregate<{

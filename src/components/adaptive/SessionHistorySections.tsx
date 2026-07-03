@@ -1,7 +1,7 @@
 'use client';
 
 import { useLocale, useTranslations } from 'next-intl';
-import { Spinner } from '@/components/ui/Spinner';
+import { Skeleton } from '@/components/ui/Skeleton';
 import { HiArrowRight, HiOutlineAcademicCap } from 'react-icons/hi';
 import { formatSessionHistoryDate } from '@/features/adaptive/lib/session-history-utils';
 import type { SessionHistoryViewModel } from '@/features/adaptive/types/session-history-view-model';
@@ -94,9 +94,18 @@ function SessionRow({ item, onOpen }: SessionRowProps) {
 }
 
 export const SessionHistoryLoadingState = ({ message }: { message: string }) => (
-  <div className="flex items-center justify-center gap-3 py-12 text-neutral-500">
-    <Spinner />
-    <span className="text-sm">{message}</span>
+  <div className="space-y-3 py-2" aria-busy="true" aria-label={message}>
+    {Array.from({ length: 4 }, (_, index) => (
+      <div key={`session-history-skeleton-${index}`} className="rounded-lg border p-4">
+        <div className="flex items-center justify-between gap-4">
+          <div className="min-w-0 flex-1 space-y-2">
+            <Skeleton className="h-5 w-3/5 rounded-md" />
+            <Skeleton className="h-4 w-2/5 rounded-md" />
+          </div>
+          <Skeleton className="h-8 w-20 shrink-0 rounded-full" />
+        </div>
+      </div>
+    ))}
   </div>
 );
 

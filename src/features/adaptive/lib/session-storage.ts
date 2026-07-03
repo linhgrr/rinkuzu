@@ -198,16 +198,19 @@ export function clearSelectedPipelineJob(expectedJobId?: string): void {
   localStorage.removeItem(PIPELINE_SUBJECT_NAME_KEY);
 }
 
+interface SessionExerciseOutcome {
+  result: SubmitResult;
+  exercise: Exercise;
+}
+
 export function saveSessionExerciseOutcome(
   sessionId: string,
-  payload: { result: SubmitResult; exercise: Exercise },
+  payload: SessionExerciseOutcome,
 ): void {
   localStorage.setItem(getOutcomeKey(sessionId), JSON.stringify({ version: 1, ...payload }));
 }
 
-export function getSessionExerciseOutcome(
-  sessionId: string,
-): { result: SubmitResult; exercise: Exercise } | null {
+export function getSessionExerciseOutcome(sessionId: string): SessionExerciseOutcome | null {
   const key = getOutcomeKey(sessionId);
   const value = localStorage.getItem(key);
   if (value === null) return null;

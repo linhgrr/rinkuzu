@@ -7,6 +7,11 @@ import type {
 import { formatDate } from '@/lib/formatters';
 import { groupQuizzesByMonthAndWeek } from '@/features/profile/lib/quizDateGroups';
 
+interface ProfileQuizMonthGroupsInput {
+  quizzes: ProfileQuizViewModel[];
+  locale: string;
+}
+
 export function toProfileQuizViewModel(quiz: LibraryQuizDto): ProfileQuizViewModel {
   return {
     id: quiz.id,
@@ -32,10 +37,7 @@ export function toProfileQuizLibraryViewModel(dto: LibraryListDto): ProfileQuizL
 export function toProfileQuizMonthGroupsViewModel({
   quizzes,
   locale,
-}: {
-  quizzes: ProfileQuizViewModel[];
-  locale: string;
-}): ProfileQuizMonthGroupViewModel[] {
+}: ProfileQuizMonthGroupsInput): ProfileQuizMonthGroupViewModel[] {
   return groupQuizzesByMonthAndWeek(quizzes).map((month) => ({
     key: month.key,
     label: formatDate(month.date, {

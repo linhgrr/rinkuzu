@@ -14,6 +14,13 @@ type ApiFetchOptions = RequestInit & {
   cacheTtlMs?: number;
 };
 
+interface NormalizeAdaptiveErrorInput {
+  status: number;
+  code?: string | null;
+  message?: string | null;
+  detail?: string | null;
+}
+
 const inFlightGetRequests = new Map<string, Promise<unknown>>();
 const responseCache = new Map<string, { expiresAt: number; data: unknown }>();
 
@@ -61,12 +68,7 @@ function normalizeAdaptiveError({
   code,
   message,
   detail,
-}: {
-  status: number;
-  code?: string | null;
-  message?: string | null;
-  detail?: string | null;
-}): AdaptiveApiError {
+}: NormalizeAdaptiveErrorInput): AdaptiveApiError {
   const trimmedDetail = detail?.trim() ?? '';
   const trimmedMessage = message?.trim() ?? '';
   const normalizedCode = code?.trim() ?? '';

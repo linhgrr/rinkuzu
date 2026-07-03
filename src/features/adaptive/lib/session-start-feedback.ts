@@ -8,11 +8,16 @@ import {
   isAdaptiveServiceUnavailableError,
 } from '@/features/adaptive/lib/adaptive-api-error';
 
+export interface SessionStartFeedback {
+  message: string;
+  retryable: boolean;
+}
+
 export function getSessionStartFeedback(
   t: TranslateFn,
   prefix: 'dashboard' | 'subjectDetails',
   error: unknown,
-): { message: string; retryable: boolean } {
+): SessionStartFeedback {
   if (error instanceof AdaptiveApiError) {
     if (isAdaptivePipelineNotReadyError(error)) {
       return {

@@ -7,6 +7,7 @@ import type {
   GrantUserSubscriptionRequestDto,
   UpdatePlanRequestDto,
 } from '@/dtos/admin-billing';
+import type { DeleteResultDto } from '@/dtos/common';
 import type { ServiceResult } from '@/interfaces/services/types';
 
 export interface IAdminBillingService {
@@ -16,7 +17,7 @@ export interface IAdminBillingService {
 
   updatePlan(input: UpdatePlanRequestDto): Promise<ServiceResult<BillingPlanDto>>;
 
-  deletePlan(planId: string): Promise<ServiceResult<null>>;
+  deletePlan(planId: string): Promise<ServiceResult<DeleteResultDto>>;
 
   listSubscriptions(
     options: AdminSubscriptionListQueryDto,

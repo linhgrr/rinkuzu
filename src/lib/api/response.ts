@@ -3,18 +3,22 @@ import type { StandardApiEnvelope } from '@/lib/api/envelope';
 import { buildStandardErrorBody } from './error';
 import { getApiErrorCodeFromStatus, getDefaultApiErrorMessage } from './error-codes';
 
+export interface ApiOkExtras {
+  meta?: Record<string, unknown>;
+  headers?: HeadersInit;
+}
+
+export interface ServiceErrorResult {
+  success: false;
+  error: string;
+  statusCode: number;
+}
+
 function errorCodeFromStatus(status: number): string {
   return getApiErrorCodeFromStatus(status);
 }
 
-export function apiOk<T>(
-  data: T,
-  status = 200,
-  extras?: {
-    meta?: Record<string, unknown>;
-    headers?: HeadersInit;
-  },
-): NextResponse {
+export function apiOk<T>(data: T, status = 200, extras?: ApiOkExtras): NextResponse {
   return NextResponse.json(
     {
       success: true as const,
@@ -47,7 +51,7 @@ export function apiForward(payload: StandardApiEnvelope<unknown>, status: number
 }
 
 export function apiServiceErr(
-  result: { success: false; error: string; statusCode: number },
+  result: ServiceErrorResult,
   meta?: Record<string, unknown>,
 ): NextResponse {
   return apiStatusErr(result.error, result.statusCode, meta);

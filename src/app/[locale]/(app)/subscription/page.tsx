@@ -7,7 +7,7 @@ import { assertTrustedPayosCheckoutUrl } from '@/lib/security/trusted-navigation
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
-import { FullPageSpinner } from '@/components/ui/FullPageSpinner';
+import { SubscriptionPageSkeleton } from '@/components/ui/PageLoadingSkeletons';
 import { HiOutlineCheck, HiOutlineShieldCheck } from 'react-icons/hi';
 import type {
   SubscriptionPageViewModel,
@@ -103,7 +103,7 @@ export default function SubscriptionPage() {
   const hasActivePremium = state.isPremium;
 
   if (state.status === 'loading') {
-    return <FullPageSpinner label={t('loading')} />;
+    return <SubscriptionPageSkeleton label={t('loading')} />;
   }
 
   return (

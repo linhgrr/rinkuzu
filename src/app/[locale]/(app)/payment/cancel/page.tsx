@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { FullPageSpinner } from '@/components/ui/FullPageSpinner';
+import { PaymentStatusPageSkeleton } from '@/components/ui/PageLoadingSkeletons';
 
 function PaymentCancelContent() {
   const t = useTranslations('subscription');
@@ -66,7 +66,7 @@ function PaymentCancelContent() {
 
 function PaymentCancelLoading() {
   const t = useTranslations('common');
-  return <FullPageSpinner label={t('loading')} />;
+  return <PaymentStatusPageSkeleton label={t('loading')} />;
 }
 
 export default function PaymentCancelPage() {

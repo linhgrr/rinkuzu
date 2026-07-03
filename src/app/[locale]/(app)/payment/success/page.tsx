@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-import { FullPageSpinner } from '@/components/ui/FullPageSpinner';
+import { PaymentStatusPageSkeleton } from '@/components/ui/PageLoadingSkeletons';
 import { verifySubscriptionPayment } from '@/features/payment/api/payment-verification-api';
 
 type PaymentStatus = 'loading' | 'success' | 'error';
@@ -79,7 +79,7 @@ function PaymentSuccessContent() {
   };
 
   if (viewState.status === 'loading') {
-    return <FullPageSpinner label={t('verifyingPayment')} />;
+    return <PaymentStatusPageSkeleton label={t('verifyingPayment')} />;
   }
 
   return (
@@ -151,7 +151,7 @@ function PaymentSuccessContent() {
 
 function PaymentSuccessLoading() {
   const t = useTranslations('common');
-  return <FullPageSpinner label={t('loading')} />;
+  return <PaymentStatusPageSkeleton label={t('loading')} />;
 }
 
 export default function PaymentSuccessPage() {

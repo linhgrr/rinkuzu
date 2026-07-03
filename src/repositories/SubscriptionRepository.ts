@@ -83,23 +83,21 @@ export class SubscriptionRepository implements ISubscriptionRepository {
 
     try {
       await session.withTransaction(async () => {
-        const [subscriptions, users] = await Promise.all([
-          Subscription.find({
-            isActive: true,
-            endDate: { $exists: true, $lte: now },
-            status: 'completed',
-          })
-            .select('_id user payosOrderId')
-            .session(session)
-            .lean<ExpiredSubscriptionCandidatePersistenceRecord[]>(),
-          User.find({
-            'subscription.isActive': true,
-            'subscription.endDate': { $exists: true, $lte: now },
-          })
-            .select('_id subscription')
-            .session(session)
-            .lean<CurrentUserSubscriptionPersistenceRecord[]>(),
-        ]);
+        const subscriptions = await Subscription.find({
+          isActive: true,
+          endDate: { $exists: true, $lte: now },
+          status: 'completed',
+        })
+          .select('_id user payosOrderId')
+          .session(session)
+          .lean<ExpiredSubscriptionCandidatePersistenceRecord[]>();
+        const users = await User.find({
+          'subscription.isActive': true,
+          'subscription.endDate': { $exists: true, $lte: now },
+        })
+          .select('_id subscription')
+          .session(session)
+          .lean<CurrentUserSubscriptionPersistenceRecord[]>();
 
         const subscriptionIds = subscriptions.map((subscription) => subscription._id);
         const orderIds = users
@@ -112,23 +110,21 @@ export class SubscriptionRepository implements ISubscriptionRepository {
           ].map((userId) => [String(userId), userId]),
         );
 
-        await Promise.all([
-          Subscription.updateMany(
-            {
-              $or: [{ _id: { $in: subscriptionIds } }, { payosOrderId: { $in: orderIds } }],
-              status: 'completed',
-              isActive: true,
-            },
-            { $set: { status: 'expired', isActive: false } },
-          ).session(session),
-          User.updateMany(
-            {
-              _id: { $in: [...userIds.values()] },
-              'subscription.isActive': true,
-            },
-            { $set: { 'subscription.isActive': false } },
-          ).session(session),
-        ]);
+        await Subscription.updateMany(
+          {
+            $or: [{ _id: { $in: subscriptionIds } }, { payosOrderId: { $in: orderIds } }],
+            status: 'completed',
+            isActive: true,
+          },
+          { $set: { status: 'expired', isActive: false } },
+        ).session(session);
+        await User.updateMany(
+          {
+            _id: { $in: [...userIds.values()] },
+            'subscription.isActive': true,
+          },
+          { $set: { 'subscription.isActive': false } },
+        ).session(session);
 
         expiredUserCount = userIds.size;
       });

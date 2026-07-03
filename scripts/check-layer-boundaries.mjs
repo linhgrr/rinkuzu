@@ -146,6 +146,56 @@ function checkNamedBoundarySignatures(filePath, errors) {
   visit(sourceFile);
 }
 
+function checkTransactionParallelism(filePath, errors) {
+  const sourceFile = ts.createSourceFile(
+    filePath,
+    fs.readFileSync(filePath, 'utf8'),
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS,
+  );
+
+  function containsPromiseAll(node) {
+    if (
+      ts.isCallExpression(node) &&
+      ts.isPropertyAccessExpression(node.expression) &&
+      node.expression.expression.getText(sourceFile) === 'Promise' &&
+      node.expression.name.text === 'all'
+    ) {
+      return true;
+    }
+
+    let found = false;
+    ts.forEachChild(node, (child) => {
+      if (!found && containsPromiseAll(child)) found = true;
+    });
+    return found;
+  }
+
+  function visit(node) {
+    const isTransactionCall =
+      ts.isCallExpression(node) &&
+      ts.isPropertyAccessExpression(node.expression) &&
+      node.expression.name.text === 'withTransaction';
+
+    if (isTransactionCall) {
+      const callback = node.arguments[0];
+      if (callback && containsPromiseAll(callback)) {
+        const location = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile));
+        errors.push(
+          `transaction safety: Promise.all is not supported inside withTransaction in ${relative(
+            filePath,
+          )}:${location.line + 1}`,
+        );
+      }
+    }
+
+    ts.forEachChild(node, visit);
+  }
+
+  visit(sourceFile);
+}
+
 const presentationFiles = walk(path.join(root, 'src/app'));
 const localePresentationFiles = walk(path.join(root, 'src/app/[locale]'));
 const componentPresentationFiles = walk(path.join(root, 'src/components'));
@@ -305,6 +355,8 @@ for (const filePath of sourceAndTestFiles) {
 }
 
 for (const filePath of sourceFiles) {
+  checkTransactionParallelism(filePath, errors);
+
   if (isReexportOnlyFile(filePath)) {
     errors.push(`re-export-only file: remove ${relative(filePath)} and import targets directly`);
   }

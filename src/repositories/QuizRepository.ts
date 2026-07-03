@@ -87,15 +87,13 @@ export class QuizRepository implements IQuizRepository {
           .lean<{ _id: Types.ObjectId; slug: string } | null>();
         if (!quiz) return;
 
-        await Promise.all([
-          Attempt.deleteMany({ quiz: quiz._id }).session(session),
-          Discussion.deleteMany({ quiz: quiz._id }).session(session),
-          Report.deleteMany({ quizId: String(quiz._id) }).session(session),
-          Bookmark.deleteMany({ 'quiz.slug': quiz.slug }).session(session),
-          QuestionProgress.deleteMany({ quizSlug: quiz.slug }).session(session),
-          FolderQuiz.deleteMany({ quiz: quiz._id }).session(session),
-          QuizProgress.deleteMany({ quiz: quiz._id }).session(session),
-        ]);
+        await Attempt.deleteMany({ quiz: quiz._id }).session(session);
+        await Discussion.deleteMany({ quiz: quiz._id }).session(session);
+        await Report.deleteMany({ quizId: String(quiz._id) }).session(session);
+        await Bookmark.deleteMany({ 'quiz.slug': quiz.slug }).session(session);
+        await QuestionProgress.deleteMany({ quizSlug: quiz.slug }).session(session);
+        await FolderQuiz.deleteMany({ quiz: quiz._id }).session(session);
+        await QuizProgress.deleteMany({ quiz: quiz._id }).session(session);
 
         const result = await QuizModel.deleteOne({ _id: quiz._id }).session(session);
         deleted = result.deletedCount === 1;

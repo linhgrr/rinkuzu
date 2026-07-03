@@ -93,6 +93,7 @@ const UserSchema = new Schema<UserDocument>({
 });
 
 UserSchema.index({ role: 1, createdAt: -1 });
+UserSchema.index({ createdAt: -1 });
 UserSchema.index(
   { passwordResetTokenHash: 1 },
   { sparse: true, partialFilterExpression: { passwordResetTokenHash: { $type: 'string' } } },

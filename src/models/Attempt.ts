@@ -59,6 +59,7 @@ AttemptSchema.index({ user: 1, takenAt: -1 });
 AttemptSchema.index({ guestEmail: 1, takenAt: -1 });
 AttemptSchema.index({ quiz: 1, takenAt: -1 });
 AttemptSchema.index({ user: 1, quiz: 1 });
+AttemptSchema.index({ takenAt: -1 });
 
 const Attempt =
   mongoose.models['Attempt'] || mongoose.model<AttemptDocument>('Attempt', AttemptSchema);

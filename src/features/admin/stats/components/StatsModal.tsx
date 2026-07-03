@@ -14,7 +14,7 @@ import type {
   StatsModalItemViewModel,
   StatsModalPaginationViewModel,
 } from '@/features/admin/stats/types/stats-modal-view-model';
-import Pagination from './Pagination';
+import Pagination from '@/components/ui/Pagination';
 
 interface StatsModalProps {
   isOpen: boolean;

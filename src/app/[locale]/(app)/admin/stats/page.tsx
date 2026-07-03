@@ -8,7 +8,7 @@ import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { AdminStatsPageSkeleton } from '@/components/admin/AdminLoadingSkeletons';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
-import StatsModal from '@/components/ui/StatsModal';
+import StatsModal from '@/features/admin/stats/components/StatsModal';
 
 type TranslateFn = (key: string, values?: Record<string, string | number | Date>) => string;
 type StatsModalType = 'creators' | 'activity' | null;

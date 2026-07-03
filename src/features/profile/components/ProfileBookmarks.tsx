@@ -29,6 +29,47 @@ const chatbotIcon =
 type TranslateFn = (key: string, values?: Record<string, string | number | Date>) => string;
 type BookmarkModal = 'ai' | 'remove' | null;
 
+interface BookmarkOptionImageProps {
+  src: string;
+  alt: string;
+}
+
+interface HydratedDateTextProps {
+  dateString: string;
+  label: string;
+}
+
+interface BookmarksHeaderProps {
+  t: TranslateFn;
+}
+
+interface BookmarksErrorBannerProps {
+  message: string;
+}
+
+interface BookmarkCardProps {
+  bookmark: ProfileBookmarkViewModel;
+  aiHistoryCount: number;
+  onOpenAiModal: (bookmark: ProfileBookmarkViewModel) => void;
+  onOpenRemoveModal: (bookmark: ProfileBookmarkViewModel) => void;
+  t: TranslateFn;
+  tCommon: TranslateFn;
+}
+
+interface BookmarksListProps {
+  bookmarks: ProfileBookmarkViewModel[];
+  historyForBookmark: (bookmarkId: string) => number;
+  onOpenAiModal: (bookmark: ProfileBookmarkViewModel) => void;
+  onOpenRemoveModal: (bookmark: ProfileBookmarkViewModel) => void;
+  t: TranslateFn;
+  tCommon: TranslateFn;
+}
+
+interface EmptyBookmarksStateProps {
+  t: TranslateFn;
+  tCommon: TranslateFn;
+}
+
 interface ProfileBookmarksState {
   currentPage: number;
   localError: string;
@@ -72,7 +113,7 @@ function profileBookmarksReducer(
   }
 }
 
-function BookmarkOptionImage({ src, alt }: { src: string; alt: string }) {
+function BookmarkOptionImage({ src, alt }: BookmarkOptionImageProps) {
   return (
     <Image
       src={src}
@@ -86,7 +127,7 @@ function BookmarkOptionImage({ src, alt }: { src: string; alt: string }) {
   );
 }
 
-function HydratedDateText({ dateString, label }: { dateString: string; label: string }) {
+function HydratedDateText({ dateString, label }: HydratedDateTextProps) {
   return (
     <time dateTime={dateString} className="text-xs text-neutral-500">
       {label}
@@ -94,11 +135,11 @@ function HydratedDateText({ dateString, label }: { dateString: string; label: st
   );
 }
 
-function BookmarksHeader({ t }: { t: TranslateFn }) {
+function BookmarksHeader({ t }: BookmarksHeaderProps) {
   return <h2 className="text-2xl font-semibold text-neutral-900">{t('bookmarkedQuestions')}</h2>;
 }
 
-function BookmarksErrorBanner({ message }: { message: string }) {
+function BookmarksErrorBanner({ message }: BookmarksErrorBannerProps) {
   if (!message) {
     return null;
   }
@@ -113,14 +154,7 @@ function BookmarkCard({
   onOpenRemoveModal,
   t,
   tCommon,
-}: {
-  bookmark: ProfileBookmarkViewModel;
-  aiHistoryCount: number;
-  onOpenAiModal: (bookmark: ProfileBookmarkViewModel) => void;
-  onOpenRemoveModal: (bookmark: ProfileBookmarkViewModel) => void;
-  t: TranslateFn;
-  tCommon: TranslateFn;
-}) {
+}: BookmarkCardProps) {
   return (
     <Card className="transition-shadow hover:shadow-md">
       <CardHeader className="p-4 sm:p-6">
@@ -200,14 +234,7 @@ function BookmarksList({
   onOpenRemoveModal,
   t,
   tCommon,
-}: {
-  bookmarks: ProfileBookmarkViewModel[];
-  historyForBookmark: (bookmarkId: string) => number;
-  onOpenAiModal: (bookmark: ProfileBookmarkViewModel) => void;
-  onOpenRemoveModal: (bookmark: ProfileBookmarkViewModel) => void;
-  t: TranslateFn;
-  tCommon: TranslateFn;
-}) {
+}: BookmarksListProps) {
   return (
     <div className="space-y-6">
       {bookmarks.map((bookmark) => (
@@ -225,7 +252,7 @@ function BookmarksList({
   );
 }
 
-function EmptyBookmarksState({ t, tCommon }: { t: TranslateFn; tCommon: TranslateFn }) {
+function EmptyBookmarksState({ t, tCommon }: EmptyBookmarksStateProps) {
   return (
     <Card>
       <CardContent className="py-12 text-center">

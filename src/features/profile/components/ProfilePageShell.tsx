@@ -3,6 +3,10 @@
 import { Suspense, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 
+interface ProfilePageShellProps {
+  children: ReactNode;
+}
+
 export function ProfilePageFallback() {
   const tCommon = useTranslations('common');
 
@@ -21,7 +25,7 @@ export function ProfilePageFallback() {
  * Bookmarks). Wraps the feature panel in the standard surface card and a
  * Suspense fallback so the three routes stay visually in sync.
  */
-export function ProfilePageShell({ children }: { children: ReactNode }) {
+export function ProfilePageShell({ children }: ProfilePageShellProps) {
   return (
     <Suspense fallback={<ProfilePageFallback />}>
       <div className="min-h-screen bg-surface-page pb-24 md:pb-8">

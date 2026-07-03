@@ -6,6 +6,7 @@ import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { UserProfileLink } from '@/components/user/UserProfileLink';
+import { Skeleton } from '@/components/ui/Skeleton';
 import { fetchStatsModalViewModel } from '@/features/admin/stats/api/admin-stats-api';
 import type {
   StatsModalActivityItemViewModel,
@@ -304,8 +305,18 @@ function StatsModalContent({
 }) {
   if (loading && data.length === 0) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="size-8 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
+      <div className="space-y-3 py-2" aria-busy="true" aria-label={t('loading')}>
+        {Array.from({ length: 6 }, (_, index) => (
+          <div key={`stats-modal-row-skeleton-${index}`} className="rounded-lg border p-4">
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0 flex-1 space-y-2">
+                <Skeleton className="h-5 w-3/5 rounded-md" />
+                <Skeleton className="h-4 w-2/5 rounded-md" />
+              </div>
+              <Skeleton className="h-8 w-20 rounded-full" />
+            </div>
+          </div>
+        ))}
       </div>
     );
   }
@@ -494,11 +505,9 @@ function StatsModalBody({
       </div>
 
       {state.loading && state.data.length > 0 && (
-        <div className="text-center py-4">
-          <div className="inline-flex items-center text-sm text-neutral-600">
-            <div className="size-4 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust mr-2" />
-            {t('loadingMore')}
-          </div>
+        <div className="space-y-2 py-4" aria-busy="true" aria-label={t('loadingMore')}>
+          <Skeleton className="mx-auto h-4 w-32 rounded-md" />
+          <Skeleton className="h-16 w-full rounded-lg border" />
         </div>
       )}
 

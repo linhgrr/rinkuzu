@@ -30,6 +30,14 @@ interface SortOption {
   label: string;
 }
 
+type StatsModalTranslate = (key: string) => string;
+type StatsModalTranslateWithValues = (
+  key: string,
+  values?: Record<string, string | number>,
+) => string;
+type StatsSortOrder = 'asc' | 'desc';
+type StatsModalType = StatsModalProps['type'];
+
 interface StatsModalState {
   data: StatsModalItemViewModel[];
   loading: boolean;
@@ -37,7 +45,7 @@ interface StatsModalState {
   pagination: StatsModalPaginationViewModel;
   searchTerm: string;
   sortBy: string;
-  sortOrder: 'asc' | 'desc';
+  sortOrder: StatsSortOrder;
 }
 
 type StatsModalAction =
@@ -50,7 +58,47 @@ type StatsModalAction =
     }
   | { type: 'loadError'; error: string }
   | { type: 'setSearchTerm'; value: string }
-  | { type: 'setSort'; sortBy: string; sortOrder: 'asc' | 'desc' };
+  | { type: 'setSort'; sortBy: string; sortOrder: StatsSortOrder };
+
+interface CreatorItemProps {
+  creator: StatsModalCreatorItemViewModel;
+  index: number;
+  currentPage: number;
+  limit: number;
+  t: StatsModalTranslate;
+}
+
+interface ActivityItemProps {
+  activity: StatsModalActivityItemViewModel;
+  t: StatsModalTranslate;
+}
+
+interface StatsModalContentProps {
+  data: StatsModalItemViewModel[];
+  error: string;
+  loading: boolean;
+  onRetry: () => void;
+  currentPage: number;
+  limit: number;
+  t: StatsModalTranslate;
+  type: StatsModalType;
+}
+
+interface SortControlsProps {
+  options: SortOption[];
+  onSortChange: (field: string) => void;
+  sortBy: string;
+  sortOrder: StatsSortOrder;
+  t: StatsModalTranslate;
+}
+
+type LoadStatsModalData = (
+  page?: number,
+  search?: string,
+  append?: boolean,
+  sortBy?: string,
+  sortOrder?: StatsSortOrder,
+) => Promise<void>;
 
 const initialPagination: StatsModalPaginationViewModel = {
   currentPage: 1,
@@ -117,7 +165,7 @@ function isActivityItem(item: StatsModalItemViewModel): item is StatsModalActivi
   return 'type' in item && 'data' in item && 'date' in item;
 }
 
-function getSortOptions(type: StatsModalProps['type'], t: (key: string) => string): SortOption[] {
+function getSortOptions(type: StatsModalType, t: StatsModalTranslate): SortOption[] {
   switch (type) {
     case 'creators':
       return [
@@ -130,19 +178,7 @@ function getSortOptions(type: StatsModalProps['type'], t: (key: string) => strin
   }
 }
 
-function CreatorItem({
-  creator,
-  index,
-  currentPage,
-  limit,
-  t,
-}: {
-  creator: StatsModalCreatorItemViewModel;
-  index: number;
-  currentPage: number;
-  limit: number;
-  t: (key: string) => string;
-}) {
+function CreatorItem({ creator, index, currentPage, limit, t }: CreatorItemProps) {
   return (
     <div className="flex items-center justify-between p-4 bg-neutral-50 rounded-lg hover:bg-neutral-100 transition-colors">
       <div className="flex items-center gap-x-4">
@@ -174,13 +210,7 @@ function CreatorItem({
   );
 }
 
-function ActivityItem({
-  activity,
-  t,
-}: {
-  activity: StatsModalActivityItemViewModel;
-  t: (key: string) => string;
-}) {
+function ActivityItem({ activity, t }: ActivityItemProps) {
   const { type: activityType } = activity;
   const activityKey = activity.id;
 
@@ -293,16 +323,7 @@ function StatsModalContent({
   limit,
   t,
   type,
-}: {
-  data: StatsModalItemViewModel[];
-  error: string;
-  loading: boolean;
-  onRetry: () => void;
-  currentPage: number;
-  limit: number;
-  t: (key: string) => string;
-  type: StatsModalProps['type'];
-}) {
+}: StatsModalContentProps) {
   if (loading && data.length === 0) {
     return (
       <div className="space-y-3 py-2" aria-busy="true" aria-label={t('loading')}>
@@ -367,19 +388,7 @@ function StatsModalContent({
   );
 }
 
-function SortControls({
-  options,
-  onSortChange,
-  sortBy,
-  sortOrder,
-  t,
-}: {
-  options: SortOption[];
-  onSortChange: (field: string) => void;
-  sortBy: string;
-  sortOrder: 'asc' | 'desc';
-  t: (key: string) => string;
-}) {
+function SortControls({ options, onSortChange, sortBy, sortOrder, t }: SortControlsProps) {
   if (options.length === 0) {
     return null;
   }
@@ -412,17 +421,11 @@ function SortControls({
 
 interface StatsModalBodyProps {
   children?: React.ReactNode;
-  loadData: (
-    page?: number,
-    search?: string,
-    append?: boolean,
-    sortBy?: string,
-    sortOrder?: 'asc' | 'desc',
-  ) => Promise<void>;
+  loadData: LoadStatsModalData;
   state: StatsModalState;
   title: string;
-  t: (key: string, values?: Record<string, string | number>) => string;
-  type: StatsModalProps['type'];
+  t: StatsModalTranslateWithValues;
+  type: StatsModalType;
   onSortChange: (field: string) => void;
   sortOptions: SortOption[];
   onSearchTermChange: (value: string) => void;
@@ -546,22 +549,14 @@ export default function StatsModal({
   const requestSignature = `${type}:${apiEndpoint}`;
   const activeRequestRef = useRef(0);
   const loadedSignatureRef = useRef<string | null>(null);
-  const latestLoadDataRef = useRef<
-    (
-      page?: number,
-      search?: string,
-      append?: boolean,
-      sortBy?: string,
-      sortOrder?: 'asc' | 'desc',
-    ) => Promise<void>
-  >(async () => {});
+  const latestLoadDataRef = useRef<LoadStatsModalData>(async () => {});
 
   const loadData = async (
     page = 1,
     search?: string,
     append = false,
     sortBy?: string,
-    sortOrder?: 'asc' | 'desc',
+    sortOrder?: StatsSortOrder,
   ) => {
     const requestId = activeRequestRef.current + 1;
     activeRequestRef.current = requestId;

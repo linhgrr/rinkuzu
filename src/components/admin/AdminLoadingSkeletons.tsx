@@ -1,6 +1,27 @@
 import { Skeleton } from '@/components/ui/Skeleton';
 
-function AdminHeaderSkeleton({ withAction = false }: { withAction?: boolean }) {
+interface AdminHeaderSkeletonProps {
+  withAction?: boolean;
+}
+
+interface AdminFilterSkeletonProps {
+  fields?: number;
+}
+
+interface AdminStatsCardsSkeletonProps {
+  count?: number;
+}
+
+interface AdminTableSkeletonProps {
+  columns?: number;
+  rows?: number;
+}
+
+interface AdminListSkeletonProps {
+  rows?: number;
+}
+
+function AdminHeaderSkeleton({ withAction = false }: AdminHeaderSkeletonProps) {
   return (
     <div className="mb-8 flex items-center justify-between gap-4">
       <div className="space-y-2">
@@ -12,7 +33,7 @@ function AdminHeaderSkeleton({ withAction = false }: { withAction?: boolean }) {
   );
 }
 
-function AdminFilterSkeleton({ fields = 3 }: { fields?: number }) {
+function AdminFilterSkeleton({ fields = 3 }: AdminFilterSkeletonProps) {
   return (
     <div className="mb-6 flex flex-col gap-4 rounded-xl border border-line bg-white p-4 sm:flex-row sm:items-center">
       {Array.from({ length: fields }, (_, index) => (
@@ -25,7 +46,7 @@ function AdminFilterSkeleton({ fields = 3 }: { fields?: number }) {
   );
 }
 
-function AdminStatsCardsSkeleton({ count = 4 }: { count?: number }) {
+function AdminStatsCardsSkeleton({ count = 4 }: AdminStatsCardsSkeletonProps) {
   return (
     <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
       {Array.from({ length: count }, (_, index) => (
@@ -41,7 +62,7 @@ function AdminStatsCardsSkeleton({ count = 4 }: { count?: number }) {
   );
 }
 
-function AdminTableSkeleton({ columns = 5, rows = 6 }: { columns?: number; rows?: number }) {
+function AdminTableSkeleton({ columns = 5, rows = 6 }: AdminTableSkeletonProps) {
   return (
     <div className="overflow-hidden rounded-2xl border border-line-blue/30 bg-white">
       <div className="border-b border-line-blue/25 p-6">
@@ -80,7 +101,7 @@ function AdminTableSkeleton({ columns = 5, rows = 6 }: { columns?: number; rows?
   );
 }
 
-function AdminListSkeleton({ rows = 6 }: { rows?: number }) {
+function AdminListSkeleton({ rows = 6 }: AdminListSkeletonProps) {
   return (
     <div className="overflow-hidden rounded-2xl border border-line-blue/30 bg-white">
       <div className="divide-y divide-line-blue/25">

@@ -10,7 +10,11 @@ import BottomCta from './BottomCta';
 import Footer from './Footer';
 import TextureBackground from './TextureBackground';
 
-export default function LandingPage({ isAuthenticated = false }: { isAuthenticated?: boolean }) {
+interface LandingPageProps {
+  isAuthenticated?: boolean;
+}
+
+export default function LandingPage({ isAuthenticated = false }: LandingPageProps) {
   return (
     <div className="relative w-full overflow-clip bg-[#06090e] min-h-screen text-white font-unbounded">
       <TextureBackground />

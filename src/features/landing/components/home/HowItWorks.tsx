@@ -1,7 +1,8 @@
 'use client';
 
+import Image from 'next/image';
 import { useRef, useState, useEffect } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { LazyMotion, domAnimation, m, useReducedMotion } from 'framer-motion';
 import { imgGroup8 } from './constants';
 import { Reveal } from './motion-primitives';
 
@@ -31,6 +32,13 @@ const cards = [
     pb: 216,
   },
 ];
+
+interface HowItWorksCardProps {
+  num: string;
+  title: string;
+  desc: string;
+  pb: number;
+}
 
 export default function HowItWorks() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -93,22 +101,30 @@ export default function HowItWorks() {
                 className="absolute"
                 style={{ top: '-3.18%', right: '-1.23%', bottom: '-0.26%', left: '-1.23%' }}
               >
-                <img alt="" className="block max-w-none w-full h-full" src={imgGroup8} />
+                <Image
+                  alt=""
+                  className="block max-w-none object-fill"
+                  fill
+                  sizes="1728px"
+                  src={imgGroup8}
+                />
               </div>
             </div>
 
             <div className="flex gap-[96px] items-start shrink-0">
-              {cards.map((c, i) => (
-                <motion.div
-                  key={c.num}
-                  initial={reduce ? false : { opacity: 0, y: 40 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, amount: 0.4 }}
-                  transition={{ duration: 0.6, delay: i * 0.2, ease: EASE_OUT }}
-                >
-                  <Card {...c} />
-                </motion.div>
-              ))}
+              <LazyMotion features={domAnimation}>
+                {cards.map((c, i) => (
+                  <m.div
+                    key={c.num}
+                    initial={reduce ? false : { opacity: 0, y: 40 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, amount: 0.4 }}
+                    transition={{ duration: 0.6, delay: i * 0.2, ease: EASE_OUT }}
+                  >
+                    <Card {...c} />
+                  </m.div>
+                ))}
+              </LazyMotion>
             </div>
           </div>
         </div>
@@ -117,7 +133,7 @@ export default function HowItWorks() {
   );
 }
 
-function Card({ num, title, desc, pb }: { num: string; title: string; desc: string; pb: number }) {
+function Card({ num, title, desc, pb }: HowItWorksCardProps) {
   return (
     <div
       className="content-stretch flex flex-col gap-[22px] items-start px-[32px] relative rounded-bl-[24px] rounded-br-[24px] rounded-tr-[24px] shadow-[0px_16px_28px_0px_rgba(0,0,0,0.05)] shrink-0 w-[461px]"

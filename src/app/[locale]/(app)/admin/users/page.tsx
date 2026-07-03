@@ -1,6 +1,7 @@
 'use client';
 
 import { useReducer } from 'react';
+import type { FormEvent } from 'react';
 import { useSession } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
 import useSWR from 'swr';
@@ -42,6 +43,84 @@ import { extractUnknownErrorMessage } from '@/lib/api/error';
 
 type TranslateFn = (key: string, values?: Record<string, string | number | Date>) => string;
 type AdminUsersModal = 'delete' | 'role' | 'subscription' | null;
+
+interface AdminUsersTranslationProps {
+  t: TranslateFn;
+}
+
+interface UsersSearchBarProps extends AdminUsersTranslationProps {
+  searchTerm: string;
+  onSearchTermChange: (value: string) => void;
+  onSubmit: (event: FormEvent) => void;
+  onClear: () => void;
+  tCommon: TranslateFn;
+}
+
+interface UsersStatsCardsProps extends AdminUsersTranslationProps {
+  users: AdminUserViewModel[];
+  pagination: AdminUsersPaginationViewModel;
+}
+
+interface UsersResultsInfoProps extends UsersStatsCardsProps {
+  searchTerm: string;
+}
+
+interface UserActionCallbacks {
+  onOpenSubscriptionModal: (user: AdminUserViewModel) => void;
+  onOpenRoleModal: (user: AdminUserViewModel) => void;
+  onOpenDeleteModal: (user: AdminUserViewModel) => void;
+}
+
+interface UserRowProps extends AdminUsersTranslationProps, UserActionCallbacks {
+  user: AdminUserViewModel;
+  sessionEmail?: string | null;
+  actionLoading: string | null;
+}
+
+interface UsersTableProps extends AdminUsersTranslationProps, UserActionCallbacks {
+  users: AdminUserViewModel[];
+  sessionEmail?: string | null;
+  actionLoading: string | null;
+  searchTerm: string;
+}
+
+interface RoleModalProps extends AdminUsersTranslationProps {
+  isOpen: boolean;
+  selectedUser: AdminUserViewModel | null;
+  newRole: AdminUserRoleViewModel;
+  actionLoading: string | null;
+  onClose: () => void;
+  onConfirm: () => void;
+}
+
+interface DeleteUserModalProps extends AdminUsersTranslationProps {
+  isOpen: boolean;
+  selectedUser: AdminUserViewModel | null;
+  actionLoading: string | null;
+  onClose: () => void;
+  onConfirm: () => void;
+}
+
+interface SubscriptionPlanButtonProps {
+  plan: AdminBillingPlanViewModel;
+  selectedPlanId: string;
+  onSelect: (plan: AdminBillingPlanViewModel) => void;
+}
+
+interface SelectedPlanDetailsProps extends AdminUsersTranslationProps {
+  plan: AdminBillingPlanViewModel;
+}
+
+interface SubscriptionModalProps extends AdminUsersTranslationProps {
+  isOpen: boolean;
+  selectedUser: AdminUserViewModel | null;
+  plans: AdminBillingPlanViewModel[];
+  selectedPlanId: string;
+  actionLoading: string | null;
+  onClose: () => void;
+  onConfirm: () => void;
+  onSelectPlan: (plan: AdminBillingPlanViewModel) => void;
+}
 
 interface AdminUsersState {
   actionLoading: string | null;
@@ -151,14 +230,7 @@ function UsersSearchBar({
   onClear,
   t,
   tCommon,
-}: {
-  searchTerm: string;
-  onSearchTermChange: (value: string) => void;
-  onSubmit: (event: React.FormEvent) => void;
-  onClear: () => void;
-  t: TranslateFn;
-  tCommon: TranslateFn;
-}) {
+}: UsersSearchBarProps) {
   return (
     <div className="mb-6">
       <form onSubmit={onSubmit} className="flex gap-4">
@@ -185,15 +257,7 @@ function UsersSearchBar({
   );
 }
 
-function UsersStatsCards({
-  users,
-  pagination,
-  t,
-}: {
-  users: AdminUserViewModel[];
-  pagination: AdminUsersPaginationViewModel;
-  t: TranslateFn;
-}) {
+function UsersStatsCards({ users, pagination, t }: UsersStatsCardsProps) {
   return (
     <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-3">
       <Card>
@@ -224,17 +288,7 @@ function UsersStatsCards({
   );
 }
 
-function UsersResultsInfo({
-  users,
-  pagination,
-  searchTerm,
-  t,
-}: {
-  users: AdminUserViewModel[];
-  pagination: AdminUsersPaginationViewModel;
-  searchTerm: string;
-  t: TranslateFn;
-}) {
+function UsersResultsInfo({ users, pagination, searchTerm, t }: UsersResultsInfoProps) {
   return (
     <div className="mb-6 flex items-center justify-between">
       <p className="text-neutral-600">
@@ -256,15 +310,7 @@ function UserRow({
   onOpenSubscriptionModal,
   onOpenRoleModal,
   onOpenDeleteModal,
-}: {
-  user: AdminUserViewModel;
-  sessionEmail?: string | null;
-  actionLoading: string | null;
-  t: TranslateFn;
-  onOpenSubscriptionModal: (user: AdminUserViewModel) => void;
-  onOpenRoleModal: (user: AdminUserViewModel) => void;
-  onOpenDeleteModal: (user: AdminUserViewModel) => void;
-}) {
+}: UserRowProps) {
   return (
     <tr className="hover:bg-neutral-50">
       <td className="whitespace-nowrap px-6 py-4">
@@ -341,16 +387,7 @@ function UsersTable({
   onOpenSubscriptionModal,
   onOpenRoleModal,
   onOpenDeleteModal,
-}: {
-  users: AdminUserViewModel[];
-  sessionEmail?: string | null;
-  actionLoading: string | null;
-  searchTerm: string;
-  t: TranslateFn;
-  onOpenSubscriptionModal: (user: AdminUserViewModel) => void;
-  onOpenRoleModal: (user: AdminUserViewModel) => void;
-  onOpenDeleteModal: (user: AdminUserViewModel) => void;
-}) {
+}: UsersTableProps) {
   return (
     <Card>
       <CardHeader>
@@ -415,15 +452,7 @@ function RoleModal({
   onClose,
   onConfirm,
   t,
-}: {
-  isOpen: boolean;
-  selectedUser: AdminUserViewModel | null;
-  newRole: AdminUserRoleViewModel;
-  actionLoading: string | null;
-  onClose: () => void;
-  onConfirm: () => void;
-  t: TranslateFn;
-}) {
+}: RoleModalProps) {
   if (!selectedUser) return null;
 
   return (
@@ -447,14 +476,7 @@ function DeleteUserModal({
   onClose,
   onConfirm,
   t,
-}: {
-  isOpen: boolean;
-  selectedUser: AdminUserViewModel | null;
-  actionLoading: string | null;
-  onClose: () => void;
-  onConfirm: () => void;
-  t: TranslateFn;
-}) {
+}: DeleteUserModalProps) {
   if (!selectedUser) return null;
 
   return (
@@ -472,15 +494,7 @@ function DeleteUserModal({
   );
 }
 
-function SubscriptionPlanButton({
-  plan,
-  selectedPlanId,
-  onSelect,
-}: {
-  plan: AdminBillingPlanViewModel;
-  selectedPlanId: string;
-  onSelect: (plan: AdminBillingPlanViewModel) => void;
-}) {
+function SubscriptionPlanButton({ plan, selectedPlanId, onSelect }: SubscriptionPlanButtonProps) {
   return (
     <Button
       type="button"
@@ -508,7 +522,7 @@ function SubscriptionPlanButton({
   );
 }
 
-function SelectedPlanDetails({ plan, t }: { plan: AdminBillingPlanViewModel; t: TranslateFn }) {
+function SelectedPlanDetails({ plan, t }: SelectedPlanDetailsProps) {
   return (
     <div className="rounded-lg bg-neutral-50 p-4">
       <h4 className="mb-2 font-medium text-neutral-900">{t('selectedPlanDetails')}</h4>
@@ -545,17 +559,7 @@ function SubscriptionModal({
   onConfirm,
   onSelectPlan,
   t,
-}: {
-  isOpen: boolean;
-  selectedUser: AdminUserViewModel | null;
-  plans: AdminBillingPlanViewModel[];
-  selectedPlanId: string;
-  actionLoading: string | null;
-  onClose: () => void;
-  onConfirm: () => void;
-  onSelectPlan: (plan: AdminBillingPlanViewModel) => void;
-  t: TranslateFn;
-}) {
+}: SubscriptionModalProps) {
   if (!selectedUser) return null;
 
   const selectedPlan = plans.find((plan) => plan.id === selectedPlanId);

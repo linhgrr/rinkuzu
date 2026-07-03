@@ -38,7 +38,12 @@ interface QuestionReviewListProps {
   tProfile: (key: string) => string;
 }
 
-const OptionImage = ({ src, alt }: { src: string; alt: string }) => (
+interface OptionImageProps {
+  src: string;
+  alt: string;
+}
+
+const OptionImage = ({ src, alt }: OptionImageProps) => (
   <Image
     src={src}
     alt={alt}

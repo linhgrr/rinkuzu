@@ -35,6 +35,31 @@ interface FlashcardState {
   isNewCard: boolean;
 }
 
+interface CorrectOptionInput extends Pick<
+  FlashcardProps,
+  'correctIndex' | 'correctIndexes' | 'type'
+> {
+  index: number;
+}
+
+type FlashcardFrontProps = Pick<FlashcardProps, 'options' | 'question'>;
+
+interface FlashcardBackProps extends Pick<
+  FlashcardProps,
+  'correctIndex' | 'correctIndexes' | 'options' | 'type'
+> {
+  correctAnswerLetters: string;
+  correctAnswerText: string;
+  t: ReturnType<typeof useTranslations>;
+}
+
+interface FlashcardActionsProps {
+  canSwipe: boolean;
+  onSwipeLeft: () => void;
+  onSwipeRight: () => void;
+  t: ReturnType<typeof useTranslations>;
+}
+
 type FlashcardAction =
   | { type: 'toggleFlipped' }
   | { type: 'setFlipped'; value: boolean }
@@ -112,12 +137,7 @@ function flashcardReducer(state: FlashcardState, action: FlashcardAction): Flash
   }
 }
 
-function isCorrectOption({
-  correctIndex,
-  correctIndexes,
-  index,
-  type,
-}: Pick<FlashcardProps, 'correctIndex' | 'correctIndexes' | 'type'> & { index: number }) {
+function isCorrectOption({ correctIndex, correctIndexes, index, type }: CorrectOptionInput) {
   return type === 'single'
     ? typeof correctIndex === 'number' && index === correctIndex
     : Boolean(correctIndexes?.includes(index));
@@ -155,7 +175,7 @@ function getAnimatedCardStyle(state: FlashcardState) {
   };
 }
 
-function FlashcardFront({ options, question }: Pick<FlashcardProps, 'options' | 'question'>) {
+function FlashcardFront({ options, question }: FlashcardFrontProps) {
   return (
     <Card className="absolute w-full h-full flex flex-col justify-between items-center bg-white shadow-2xl rounded-2xl border-2 border-neutral-100 [backface-visibility:hidden] [-webkit-backface-visibility:hidden]">
       <CardContent className="flex flex-col h-full py-10 px-14 justify-between">
@@ -190,11 +210,7 @@ function FlashcardBack({
   options,
   t,
   type,
-}: Pick<FlashcardProps, 'correctIndex' | 'correctIndexes' | 'options' | 'type'> & {
-  correctAnswerLetters: string;
-  correctAnswerText: string;
-  t: ReturnType<typeof useTranslations>;
-}) {
+}: FlashcardBackProps) {
   return (
     <Card className="absolute w-full h-full flex flex-col justify-between items-center bg-white shadow-2xl rounded-2xl border-2 border-green-200 [backface-visibility:hidden] [-webkit-backface-visibility:hidden] [transform:rotateX(180deg)]">
       <CardContent className="flex flex-col h-full py-10 px-14 justify-between">
@@ -243,17 +259,7 @@ function FlashcardBack({
   );
 }
 
-function FlashcardActions({
-  canSwipe,
-  onSwipeLeft,
-  onSwipeRight,
-  t,
-}: {
-  canSwipe: boolean;
-  onSwipeLeft: () => void;
-  onSwipeRight: () => void;
-  t: ReturnType<typeof useTranslations>;
-}) {
+function FlashcardActions({ canSwipe, onSwipeLeft, onSwipeRight, t }: FlashcardActionsProps) {
   return (
     <div className="flex justify-center gap-8 mt-8 mb-2 w-full h-12">
       {canSwipe && (

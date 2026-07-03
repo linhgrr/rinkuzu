@@ -33,7 +33,11 @@ interface StreamingChatModalProps {
   showTimestamps?: boolean;
 }
 
-function ChatTimestamp({ timestamp }: { timestamp: string }) {
+interface ChatTimestampProps {
+  timestamp: string;
+}
+
+function ChatTimestamp({ timestamp }: ChatTimestampProps) {
   const label = formatDateTime(timestamp, {
     emptyLabel: '\u00A0',
     options: {

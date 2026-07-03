@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/Button';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { Input, Textarea } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
+import { ProfileSettingsPageSkeleton } from '@/components/ui/PageLoadingSkeletons';
 import { Separator } from '@/components/ui/Separator';
 import { extractUnknownErrorMessage } from '@/lib/api/error';
 import { AVATAR_ALLOWED_MEDIA_TYPES, AVATAR_MAX_FILE_SIZE } from '@/shared/constants/avatar';
@@ -588,14 +589,7 @@ export default function ProfileSettings() {
   };
 
   if (state.loading) {
-    return (
-      <div className="flex justify-center py-12">
-        <div className="flex flex-col items-center gap-3">
-          <div className="size-8 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
-          <div className="text-sm text-neutral-500">{tCommon('loading')}</div>
-        </div>
-      </div>
-    );
+    return <ProfileSettingsPageSkeleton label={tCommon('loading')} />;
   }
 
   if (!state.profile) {

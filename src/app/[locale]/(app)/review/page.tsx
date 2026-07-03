@@ -6,7 +6,7 @@ import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
-import { LoadingState } from '@/components/ui/LoadingState';
+import { CenteredCardPageSkeleton } from '@/components/ui/PageLoadingSkeletons';
 import { ROUTES } from '@/shared/constants/routes';
 import ReviewCard from '@/components/ReviewCard';
 import { Card } from '@/components/ui/Card';
@@ -134,11 +134,7 @@ export default function ReviewPage() {
   };
 
   if (phase === 'loading') {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-surface-page">
-        <LoadingState text={t('loading')} />
-      </div>
-    );
+    return <CenteredCardPageSkeleton label={t('loading')} />;
   }
 
   if (phase === 'error') {

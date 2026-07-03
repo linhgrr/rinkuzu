@@ -6,6 +6,7 @@ import type {
   QuizDiscussionDto,
   QuizDetailDto,
   QuizListDto,
+  QuizListItemDto,
   QuizListOptionsDto,
   QuizPlayDetailDto,
   QuizProgressResponseDto,
@@ -25,7 +26,6 @@ import { IQuizProgressRepository } from '@/interfaces/repositories/IQuizProgress
 import type { IFolderRepository } from '@/interfaces/repositories/IFolderRepository';
 import type { IQuizAttemptProgressRepository } from '@/interfaces/repositories/IQuizAttemptProgressRepository';
 import { ServiceResult } from '@/interfaces/services/types';
-import type { Quiz } from '@/entities/Quiz';
 import type { Session } from 'next-auth';
 
 import { QuizCrudService } from './QuizCrudService';
@@ -91,8 +91,8 @@ export class QuizService implements IQuizService {
     return this.crudService.getQuizById(id, userEmail, userRole, userId);
   }
 
-  async getQuizBySlug(slug: string): Promise<Quiz | null> {
-    return this.crudService.getQuizBySlug(slug);
+  async getQuizMetadataBySlug(slug: string): Promise<QuizListItemDto | null> {
+    return this.crudService.getQuizMetadataBySlug(slug);
   }
 
   async getQuizForPlay(

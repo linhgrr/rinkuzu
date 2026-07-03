@@ -6,6 +6,7 @@ import type {
   QuizDiscussionDto,
   QuizDetailDto,
   QuizListDto,
+  QuizListItemDto,
   QuizListOptionsDto,
   QuizPlayDetailDto,
   QuizProgressResponseDto,
@@ -14,7 +15,6 @@ import type {
   SaveQuizProgressResponseDto,
   UpdateQuizRequestDto,
 } from '@/dtos/quiz';
-import type { Quiz } from '@/entities/Quiz';
 import type { DeleteResultDto } from '@/dtos/common';
 import { ServiceResult } from '@/interfaces/services/types';
 import type { Session } from 'next-auth';
@@ -37,7 +37,7 @@ export interface IQuizService {
     userId?: string,
   ): Promise<ServiceResult<QuizDetailDto>>;
 
-  getQuizBySlug(slug: string): Promise<Quiz | null>;
+  getQuizMetadataBySlug(slug: string): Promise<QuizListItemDto | null>;
 
   getQuizForPlay(
     slug: string,

@@ -5,6 +5,10 @@ import type { PresignedUploadUrlResponseDto } from '@/dtos/storage';
  * PDF utility functions shared across create pages.
  */
 
+export type PresignedPdfUploadResult = {
+  s3Key: string;
+};
+
 /** Get the page count of a PDF file using pdf-lib. */
 export async function getPdfPageCount(file: File): Promise<number> {
   try {
@@ -21,7 +25,7 @@ export async function getPdfPageCount(file: File): Promise<number> {
  * Upload a PDF file to S3 via a presigned URL.
  * Returns the S3 key for the uploaded file.
  */
-export async function uploadPdfViaPresignedUrl(file: File): Promise<{ s3Key: string }> {
+export async function uploadPdfViaPresignedUrl(file: File): Promise<PresignedPdfUploadResult> {
   const { uploadUrl, s3Key } = await fetchApiData<PresignedUploadUrlResponseDto>(
     '/api/storage/presigned-url',
     {

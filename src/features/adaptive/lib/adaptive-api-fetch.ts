@@ -162,7 +162,12 @@ function parseJsonText(rawText: string): unknown | null {
   }
 }
 
-async function parseResponseBody(res: Response): Promise<{ payload: unknown; rawText: string }> {
+type ParsedResponseBody = {
+  payload: unknown;
+  rawText: string;
+};
+
+async function parseResponseBody(res: Response): Promise<ParsedResponseBody> {
   const rawText = await res.text().catch(() => '');
   return {
     payload: parseJsonText(rawText),

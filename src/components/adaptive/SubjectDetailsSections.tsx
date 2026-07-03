@@ -47,13 +47,44 @@ const TAB_CONFIG = [
 
 type SubjectTab = (typeof TAB_CONFIG)[number]['key'];
 
-export const SubjectDetailsBackButton = ({
-  onClick,
-  t,
-}: {
+interface SubjectDetailsBackButtonProps {
   onClick: () => void;
   t: TranslateFn;
-}) => (
+}
+
+interface SubjectDetailsHeroProps {
+  filename: string;
+  loading: boolean;
+  onPrefetchStartLearning: () => void;
+  onStartLearning: () => void;
+  sessionNotice: string | null;
+  startingSession: boolean;
+  status: SessionStatus | null;
+  summary: string;
+  t: TranslateFn;
+}
+
+interface SubjectStatCardProps {
+  icon: typeof HiOutlineCollection;
+  label: string;
+  value: number | string;
+}
+
+interface SubjectDetailsTabsProps {
+  activeTab: SubjectTab;
+  onChange: (tab: SubjectTab) => void;
+  t: TranslateFn;
+}
+
+interface SubjectDetailsTabContentProps {
+  activeTab: SubjectTab;
+  historyDetail: SessionHistoryDetail | null;
+  historyLoading: boolean;
+  sessionId: string;
+  t: TranslateFn;
+}
+
+export const SubjectDetailsBackButton = ({ onClick, t }: SubjectDetailsBackButtonProps) => (
   <div>
     <Button
       variant="ghost"
@@ -76,17 +107,7 @@ export const SubjectDetailsHero = ({
   status,
   summary,
   t,
-}: {
-  filename: string;
-  loading: boolean;
-  onPrefetchStartLearning: () => void;
-  onStartLearning: () => void;
-  sessionNotice: string | null;
-  startingSession: boolean;
-  status: SessionStatus | null;
-  summary: string;
-  t: TranslateFn;
-}) => (
+}: SubjectDetailsHeroProps) => (
   <div className="relative overflow-hidden rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-8 md:p-10">
     <div className="relative flex flex-col justify-between gap-6 md:flex-row md:items-center">
       <div className="flex items-start gap-4">
@@ -171,15 +192,7 @@ export const SubjectDetailsHero = ({
   </div>
 );
 
-const SubjectStatCard = ({
-  icon: Icon,
-  label,
-  value,
-}: {
-  icon: typeof HiOutlineCollection;
-  label: string;
-  value: number | string;
-}) => (
+const SubjectStatCard = ({ icon: Icon, label, value }: SubjectStatCardProps) => (
   <div className="rounded-xl border border-neutral-100 bg-neutral-50 px-5 py-4">
     <div className="mb-1 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-neutral-500">
       <Icon className="size-3.5" />
@@ -189,15 +202,7 @@ const SubjectStatCard = ({
   </div>
 );
 
-export const SubjectDetailsTabs = ({
-  activeTab,
-  onChange,
-  t,
-}: {
-  activeTab: SubjectTab;
-  onChange: (tab: SubjectTab) => void;
-  t: TranslateFn;
-}) => {
+export const SubjectDetailsTabs = ({ activeTab, onChange, t }: SubjectDetailsTabsProps) => {
   const handleKeyDown = (e: React.KeyboardEvent, currentIndex: number) => {
     const tabs = TAB_CONFIG;
     let nextIndex: number;
@@ -245,13 +250,7 @@ export const SubjectDetailsTabContent = ({
   historyLoading,
   sessionId,
   t,
-}: {
-  activeTab: SubjectTab;
-  historyDetail: SessionHistoryDetail | null;
-  historyLoading: boolean;
-  sessionId: string;
-  t: TranslateFn;
-}) => (
+}: SubjectDetailsTabContentProps) => (
   <div
     className="space-y-8"
     role="tabpanel"

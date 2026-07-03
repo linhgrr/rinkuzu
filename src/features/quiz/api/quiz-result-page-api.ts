@@ -2,6 +2,7 @@ import type { BookmarkDto, BookmarkListDto } from '@/dtos/bookmark';
 import { fetchAttemptDetailViewModel } from '@/features/profile/api/attempt-detail-api';
 import type {
   QuizResultBookmarkLookup,
+  QuizResultBookmarkMutationViewModel,
   QuizResultPageDataViewModel,
   QuizResultQuestionViewModel,
   QuizResultViewModel,
@@ -44,7 +45,7 @@ export async function createQuizResultBookmark(input: {
   result: QuizResultViewModel;
   questionIndex: number;
   question: QuizResultQuestionViewModel;
-}): Promise<{ id: string }> {
+}): Promise<QuizResultBookmarkMutationViewModel> {
   const created = await fetchApiData<BookmarkDto>('/api/bookmarks', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

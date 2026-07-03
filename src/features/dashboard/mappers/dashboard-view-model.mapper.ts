@@ -30,6 +30,21 @@ export interface ToDashboardViewModelInput {
   copy: DashboardViewModelCopy;
 }
 
+interface BuildAdaptiveLearningCardsInput {
+  adaptiveSubjects: PipelineJobHistoryItem[];
+  locale: string;
+  copy: DashboardViewModelCopy;
+}
+
+interface BuildInProgressLearningCardsInput {
+  inProgressQuizzes: DashboardInProgressQuizDto[];
+  locale: string;
+  copy: DashboardViewModelCopy;
+}
+
+interface BuildContinueLearningInput
+  extends BuildAdaptiveLearningCardsInput, BuildInProgressLearningCardsInput {}
+
 const CONTINUE_LEARNING_CARD_LIMIT = 8;
 const QUIZ_BUILDER_LIBRARY_HREF = '/my-quizzes';
 
@@ -92,11 +107,7 @@ function buildAdaptiveLearningCards({
   adaptiveSubjects,
   locale,
   copy,
-}: {
-  adaptiveSubjects: PipelineJobHistoryItem[];
-  locale: string;
-  copy: DashboardViewModelCopy;
-}): DashboardViewModel['continueLearning']['items'] {
+}: BuildAdaptiveLearningCardsInput): DashboardViewModel['continueLearning']['items'] {
   return adaptiveSubjects.slice(0, CONTINUE_LEARNING_CARD_LIMIT).map((subject) => ({
     id: `adaptive-${subject.job_id}`,
     title: getAdaptiveSubjectTitle(subject),
@@ -113,11 +124,7 @@ function buildInProgressLearningCards({
   inProgressQuizzes,
   locale,
   copy,
-}: {
-  inProgressQuizzes: DashboardInProgressQuizDto[];
-  locale: string;
-  copy: DashboardViewModelCopy;
-}): DashboardViewModel['continueLearning']['items'] {
+}: BuildInProgressLearningCardsInput): DashboardViewModel['continueLearning']['items'] {
   return inProgressQuizzes
     .filter((quiz) => quiz.slug && quiz.totalQuestions > 0)
     .slice(0, CONTINUE_LEARNING_CARD_LIMIT)
@@ -138,12 +145,7 @@ function buildContinueLearning({
   inProgressQuizzes,
   locale,
   copy,
-}: {
-  adaptiveSubjects: PipelineJobHistoryItem[];
-  inProgressQuizzes: DashboardInProgressQuizDto[];
-  locale: string;
-  copy: DashboardViewModelCopy;
-}): DashboardViewModel['continueLearning'] {
+}: BuildContinueLearningInput): DashboardViewModel['continueLearning'] {
   const inProgressCards = buildInProgressLearningCards({ inProgressQuizzes, locale, copy });
   const adaptiveCards = buildAdaptiveLearningCards({ adaptiveSubjects, locale, copy });
   const items = [...inProgressCards, ...adaptiveCards].slice(0, CONTINUE_LEARNING_CARD_LIMIT);

@@ -27,6 +27,10 @@ interface State {
   deletingQuizId: string | null;
 }
 
+interface ProfileQuizzesProps {
+  tab?: 'quizzes' | 'folders';
+}
+
 type Action =
   | { type: 'fetch:start' }
   | { type: 'fetch:success'; quizzes: ProfileQuizViewModel[] }
@@ -77,7 +81,7 @@ function reducer(state: State, action: Action): State {
   }
 }
 
-export default function ProfileQuizzes({ tab = 'quizzes' }: { tab?: 'quizzes' | 'folders' }) {
+export default function ProfileQuizzes({ tab = 'quizzes' }: ProfileQuizzesProps) {
   const t = useTranslations('profile');
   const tCommon = useTranslations('common');
   const locale = useLocale();

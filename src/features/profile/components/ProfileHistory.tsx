@@ -32,6 +32,11 @@ interface ProfileHistoryState {
   pagination: ProfileHistoryPaginationViewModel | null;
 }
 
+interface AttemptTakenAtProps {
+  iso: string;
+  label: string;
+}
+
 type ProfileHistoryAction =
   | { type: 'fetch:start' }
   | {
@@ -82,7 +87,7 @@ function getScoreColor(score: number) {
   return 'text-red-600 bg-red-50';
 }
 
-function AttemptTakenAt({ iso, label }: { iso: string; label: string }) {
+function AttemptTakenAt({ iso, label }: AttemptTakenAtProps) {
   return (
     <time dateTime={iso} suppressHydrationWarning>
       {label}

@@ -15,7 +15,12 @@ type SitemapEntry = MetadataRoute.Sitemap[number] & {
   links?: HreflangLink[];
 };
 
-function localeVariants(path: string): { locale: string; path: string }[] {
+type LocaleRouteVariant = {
+  locale: string;
+  path: string;
+};
+
+function localeVariants(path: string): LocaleRouteVariant[] {
   return locales.map((locale) => ({ locale, path }));
 }
 

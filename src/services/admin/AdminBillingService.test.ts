@@ -152,7 +152,7 @@ describe('AdminBillingService', () => {
     });
     await expect(service.deletePlan('premium-p1m')).resolves.toEqual({
       success: true,
-      data: null,
+      data: { id: 'premium-p1m', deleted: true },
     });
   });
 

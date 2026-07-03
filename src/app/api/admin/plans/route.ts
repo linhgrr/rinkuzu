@@ -47,6 +47,6 @@ export const DELETE = withAdmin(async (request: NextRequest) => {
 
   const result = await adminBillingService.deletePlan(input.data.id);
   return result.success
-    ? apiOk(null, 200, { meta: { message: 'Plan deleted successfully' } })
+    ? apiOk(result.data, 200, { meta: { message: 'Plan deleted successfully' } })
     : apiServiceErr(result);
 });

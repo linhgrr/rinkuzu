@@ -8,6 +8,7 @@ import type {
   GrantUserSubscriptionRequestDto,
   UpdatePlanRequestDto,
 } from '@/dtos/admin-billing';
+import type { DeleteResultDto } from '@/dtos/common';
 import {
   AdminBillingUserNotFoundError,
   BillingPlanConflictError,
@@ -19,6 +20,7 @@ import type { IAdminBillingRepository } from '@/interfaces/repositories/IAdminBi
 import type { IAdminBillingService } from '@/interfaces/services/IAdminBillingService';
 import type { ServiceResult } from '@/interfaces/services/types';
 import { logger } from '@/lib/logger';
+import { DeleteResultDtoMapper } from '@/mappers/common/DeleteResultDtoMapper';
 import { AdminBillingDtoMapper } from '@/mappers/admin/AdminBillingDtoMapper';
 import { DurationUtils } from '@/types/subscription';
 
@@ -74,11 +76,11 @@ export class AdminBillingService implements IAdminBillingService {
     }
   }
 
-  async deletePlan(planId: string): Promise<ServiceResult<null>> {
+  async deletePlan(planId: string): Promise<ServiceResult<DeleteResultDto>> {
     try {
       const deleted = await this.repository.deletePlan(planId);
       if (!deleted) return { success: false, error: 'Plan not found', statusCode: 404 };
-      return { success: true, data: null };
+      return { success: true, data: DeleteResultDtoMapper.toDto(planId) };
     } catch (error) {
       if (error instanceof BillingPlanInUseError) {
         return { success: false, error: error.message, statusCode: 409 };

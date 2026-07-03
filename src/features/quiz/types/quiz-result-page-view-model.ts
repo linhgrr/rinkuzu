@@ -16,3 +16,7 @@ export interface QuizResultPageDataViewModel {
   result: QuizResultViewModel;
   bookmarks: QuizResultBookmarkLookup;
 }
+
+export interface QuizResultBookmarkMutationViewModel {
+  id: string;
+}

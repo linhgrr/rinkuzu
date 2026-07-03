@@ -24,6 +24,7 @@ vi.mock('@/lib/subscription-factory', () => ({
 function createQuizService(quiz: Quiz) {
   const quizRepository: Mocked<IQuizRepository> = {
     findById: vi.fn(),
+    findAccessById: vi.fn(),
     findBySlug: vi.fn().mockResolvedValue(quiz),
     findSummaryBySlug: vi.fn().mockResolvedValue({
       ...quiz,

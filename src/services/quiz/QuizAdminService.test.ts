@@ -30,6 +30,7 @@ const quiz: Quiz = {
 function createRepository(overrides: Partial<IQuizRepository> = {}): IQuizRepository {
   return {
     findById: vi.fn(),
+    findAccessById: vi.fn(),
     findBySlug: vi.fn(),
     findSummaryBySlug: vi.fn(),
     findIdBySlug: vi.fn(),
@@ -162,7 +163,11 @@ describe('QuizAdminService', () => {
 
   it('deletes existing quizzes through the repository cascade delete', async () => {
     const repository = createRepository({
-      findById: vi.fn().mockResolvedValue(quiz),
+      findAccessById: vi.fn().mockResolvedValue({
+        id: quiz.id,
+        author: quiz.author,
+        isPrivate: quiz.isPrivate,
+      }),
       delete: vi.fn().mockResolvedValue(true),
     });
     const service = new QuizAdminService(repository);
@@ -173,6 +178,8 @@ describe('QuizAdminService', () => {
       success: true,
       data: { id: '507f191e810c19729de860ea', deleted: true },
     });
+    expect(repository.findAccessById).toHaveBeenCalledWith('507f191e810c19729de860ea');
+    expect(repository.findById).not.toHaveBeenCalled();
     expect(repository.delete).toHaveBeenCalledWith('507f191e810c19729de860ea');
   });
 });

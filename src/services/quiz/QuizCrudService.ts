@@ -198,7 +198,7 @@ export class QuizCrudService {
     userRole?: string,
   ): Promise<ServiceResult<QuizDetailDto>> {
     try {
-      const quiz = await this.quizRepository.findById(id);
+      const quiz = await this.quizRepository.findAccessById(id);
 
       if (!quiz) {
         return {
@@ -274,7 +274,7 @@ export class QuizCrudService {
     userRole?: string,
   ): Promise<ServiceResult<DeleteResultDto>> {
     try {
-      const quiz = await this.quizRepository.findById(id);
+      const quiz = await this.quizRepository.findAccessById(id);
 
       if (!quiz) {
         return {

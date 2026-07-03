@@ -18,6 +18,7 @@ vi.mock('@/lib/subscription-factory', () => ({
 describe('QuizCrudService quiz publication policy', () => {
   const quizRepository: Mocked<IQuizRepository> = {
     findById: vi.fn(),
+    findAccessById: vi.fn(),
     findBySlug: vi.fn(),
     findSummaryBySlug: vi.fn(),
     findIdBySlug: vi.fn(),
@@ -216,5 +217,49 @@ describe('QuizCrudService quiz publication policy', () => {
         questionCount: concurrentlyCreated.questions.length,
       }),
     );
+  });
+
+  it('uses the access projection before updating a quiz', async () => {
+    vi.mocked(quizRepository.findAccessById).mockResolvedValue({
+      id: 'quiz-1',
+      author: 'user-1',
+      isPrivate: false,
+    });
+    vi.mocked(quizRepository.update).mockResolvedValue({
+      id: 'quiz-1',
+      title: 'Updated title',
+      slug: 'published-immediately',
+      author: 'user-1',
+      questions: [],
+      isPrivate: false,
+      createdAt: new Date('2026-07-01T00:00:00Z'),
+      updatedAt: new Date('2026-07-02T00:00:00Z'),
+    });
+    const service = new QuizCrudService(quizRepository, userRepository);
+
+    const result = await service.updateQuiz('quiz-1', { title: 'Updated title' }, 'user-1');
+
+    expect(result.success).toBe(true);
+    expect(quizRepository.findAccessById).toHaveBeenCalledWith('quiz-1');
+    expect(quizRepository.findById).not.toHaveBeenCalled();
+  });
+
+  it('uses the access projection before deleting a quiz', async () => {
+    vi.mocked(quizRepository.findAccessById).mockResolvedValue({
+      id: 'quiz-1',
+      author: 'user-1',
+      isPrivate: false,
+    });
+    vi.mocked(quizRepository.delete).mockResolvedValue(true);
+    const service = new QuizCrudService(quizRepository, userRepository);
+
+    const result = await service.deleteQuiz('quiz-1', 'user-1');
+
+    expect(result).toEqual({
+      success: true,
+      data: { id: 'quiz-1', deleted: true },
+    });
+    expect(quizRepository.findAccessById).toHaveBeenCalledWith('quiz-1');
+    expect(quizRepository.findById).not.toHaveBeenCalled();
   });
 });

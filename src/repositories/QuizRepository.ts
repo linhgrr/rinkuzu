@@ -20,6 +20,7 @@ import { buildPaginationMeta } from '@/lib/pagination';
 import mongoose, { Types, type FilterQuery } from 'mongoose';
 import { QuizPersistenceMapper } from '@/repositories/mappers/QuizPersistenceMapper';
 import type { QuizPersistenceRecord } from '@/repositories/types/QuizPersistence';
+import { serializeId } from '@/lib/mongo-id';
 import {
   buildCountBucketsPipeline,
   resolveCountBuckets,
@@ -34,6 +35,21 @@ export class QuizRepository implements IQuizRepository {
       .populate('author', 'email name displayName avatar')
       .lean<QuizPersistenceRecord>();
     return record ? QuizPersistenceMapper.toEntity(record) : null;
+  }
+
+  async findAccessById(id: string): Promise<Pick<Quiz, 'id' | 'author' | 'isPrivate'> | null> {
+    await connectDB();
+    const record = await QuizModel.findById(id)
+      .select('_id author isPrivate')
+      .lean<Pick<QuizPersistenceRecord, '_id' | 'author' | 'isPrivate'>>();
+
+    return record
+      ? {
+          id: serializeId(record._id, 'quiz._id'),
+          author: serializeId(record.author, 'quiz.author'),
+          isPrivate: record.isPrivate,
+        }
+      : null;
   }
 
   async findBySlug(slug: string): Promise<Quiz | null> {

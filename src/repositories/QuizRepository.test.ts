@@ -4,6 +4,9 @@ import { Types } from 'mongoose';
 const quizModelMocks = vi.hoisted(() => ({
   aggregate: vi.fn(),
   countDocuments: vi.fn(),
+  findById: vi.fn(),
+  select: vi.fn(),
+  lean: vi.fn(),
 }));
 
 vi.mock('@/lib/mongoose', () => ({
@@ -14,6 +17,7 @@ vi.mock('@/models/Quiz', () => ({
   default: {
     aggregate: quizModelMocks.aggregate,
     countDocuments: quizModelMocks.countDocuments,
+    findById: quizModelMocks.findById,
   },
 }));
 
@@ -22,6 +26,8 @@ import { QuizRepository } from '@/repositories/QuizRepository';
 describe('QuizRepository.findUserQuizzes', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    quizModelMocks.findById.mockReturnValue({ select: quizModelMocks.select });
+    quizModelMocks.select.mockReturnValue({ lean: quizModelMocks.lean });
     quizModelMocks.aggregate.mockResolvedValue([
       {
         _id: new Types.ObjectId('507f191e810c19729de860ea'),
@@ -38,6 +44,24 @@ describe('QuizRepository.findUserQuizzes', () => {
       },
     ]);
     quizModelMocks.countDocuments.mockResolvedValue(1);
+  });
+
+  it('projects only fields required for quiz access checks', async () => {
+    quizModelMocks.lean.mockResolvedValue({
+      _id: new Types.ObjectId('507f191e810c19729de860ea'),
+      author: new Types.ObjectId('507f191e810c19729de860eb'),
+      isPrivate: true,
+    });
+    const repository = new QuizRepository();
+
+    await expect(repository.findAccessById('507f191e810c19729de860ea')).resolves.toEqual({
+      id: '507f191e810c19729de860ea',
+      author: '507f191e810c19729de860eb',
+      isPrivate: true,
+    });
+    expect(quizModelMocks.findById).toHaveBeenCalledWith('507f191e810c19729de860ea');
+    expect(quizModelMocks.select).toHaveBeenCalledWith('_id author isPrivate');
+    expect(quizModelMocks.lean).toHaveBeenCalledOnce();
   });
 
   it('projects user quiz list rows without loading question payloads', async () => {

@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle, Badge } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
+import { CenteredCardPageSkeleton } from '@/components/ui/PageLoadingSkeletons';
 import {
   HiOutlineLightBulb,
   HiOutlineArrowLeft,
@@ -490,19 +491,7 @@ function QuizGateHeader({ title, subtitle }: { title: string; subtitle?: string 
 }
 
 function QuizLoadingState({ t }: { t: (key: string) => string }) {
-  return (
-    <div className="min-h-screen">
-      <div className="flex items-center justify-center min-h-[70vh]">
-        <div className="text-center">
-          <div className="inline-flex items-center justify-center p-4 bg-gradient-to-br from-green-500/10 to-accent/10 rounded-2xl mb-6">
-            <div className="size-8 animate-spin rounded-full border-2 border-line border-t-accent" />
-          </div>
-          <h2 className="text-xl font-semibold text-ink mb-2">{t('loadingQuiz')}</h2>
-          <p className="text-ink-muted">{t('preparingQuiz')}</p>
-        </div>
-      </div>
-    </div>
-  );
+  return <CenteredCardPageSkeleton label={t('loadingQuiz')} />;
 }
 
 function QuizErrorState({ error, t }: { error: string; t: (key: string) => string }) {

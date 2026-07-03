@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { ProfileListPageSkeleton } from '@/components/ui/PageLoadingSkeletons';
 import Pagination from '@/components/ui/Pagination';
 import { HiOutlineTag, HiOutlineTrash } from 'react-icons/hi';
 import { StreamingChatModal } from '@/features/quiz/components/chat/StreamingChatModal';
@@ -333,14 +334,7 @@ export default function ProfileBookmarks() {
   const displayError = error?.message ?? state.localError;
 
   if (isLoading && bookmarks.length === 0) {
-    return (
-      <div className="flex justify-center py-12">
-        <div className="flex flex-col items-center gap-3">
-          <div className="size-8 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
-          <div className="text-sm text-neutral-500">{tCommon('loadingBookmarks')}</div>
-        </div>
-      </div>
-    );
+    return <ProfileListPageSkeleton label={tCommon('loadingBookmarks')} />;
   }
 
   return (

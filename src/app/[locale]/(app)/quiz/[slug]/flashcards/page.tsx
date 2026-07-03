@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { FlashcardPageSkeleton } from '@/components/ui/PageLoadingSkeletons';
 import { Flashcard } from '@/features/quiz/components/Flashcard';
 import { PremiumRequiredModal } from '@/features/quiz/components/PremiumRequiredModal';
 import {
@@ -138,14 +139,7 @@ function flashcardPageReducer(
 }
 
 function FlashcardLoadingState({ message }: { message: string }) {
-  return (
-    <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
-      <div className="text-center">
-        <div className="size-12 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust mx-auto" />
-        <p className="mt-4 text-neutral-600">{message}</p>
-      </div>
-    </div>
-  );
+  return <FlashcardPageSkeleton label={message} />;
 }
 
 function FlashcardFallbackState({

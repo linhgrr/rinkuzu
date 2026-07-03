@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
+import { QuizWorkspacePageSkeleton } from '@/components/ui/PageLoadingSkeletons';
 import PDFViewer from '@/features/quiz/components/PDFViewer';
 import { QuestionEditor } from '@/features/quiz/components/editor/QuestionEditor';
 import { QuizMetaFormEditor } from '@/features/quiz/components/editor/QuizMetaForm';
@@ -278,14 +279,7 @@ function editQuizReducer(state: EditQuizState, action: EditQuizAction): EditQuiz
 }
 
 function EditQuizLoadingState() {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-neutral-50">
-      <div className="text-center">
-        <div className="mx-auto size-12 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
-        <p className="mt-4 text-neutral-600">Loading quiz…</p>
-      </div>
-    </div>
-  );
+  return <QuizWorkspacePageSkeleton label="Loading quiz…" />;
 }
 
 function EditQuizMessageState({

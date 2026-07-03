@@ -9,6 +9,12 @@ export function formatVndCurrency(amount: number): string {
 
 type DateInput = Date | string | number | null | undefined;
 
+export interface DateFormatOptions {
+  locale?: string;
+  emptyLabel?: string;
+  options?: Intl.DateTimeFormatOptions;
+}
+
 const dateFormatterCache = new Map<string, Intl.DateTimeFormat>();
 
 function getDateFormatter(
@@ -33,15 +39,7 @@ function toValidDate(value: DateInput): Date | null {
 
 export function formatDate(
   value: DateInput,
-  {
-    locale = 'en-US',
-    emptyLabel = 'N/A',
-    options,
-  }: {
-    locale?: string;
-    emptyLabel?: string;
-    options?: Intl.DateTimeFormatOptions;
-  } = {},
+  { locale = 'en-US', emptyLabel = 'N/A', options }: DateFormatOptions = {},
 ): string {
   const date = toValidDate(value);
   if (!date) return emptyLabel;
@@ -58,15 +56,7 @@ export function formatDate(
 
 export function formatDateTime(
   value: DateInput,
-  {
-    locale = 'vi-VN',
-    emptyLabel = 'N/A',
-    options,
-  }: {
-    locale?: string;
-    emptyLabel?: string;
-    options?: Intl.DateTimeFormatOptions;
-  } = {},
+  { locale = 'vi-VN', emptyLabel = 'N/A', options }: DateFormatOptions = {},
 ): string {
   const date = toValidDate(value);
   if (!date) return emptyLabel;

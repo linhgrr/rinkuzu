@@ -19,6 +19,13 @@ type StandardErrorBody = {
   };
 };
 
+export interface StandardErrorBodyInput {
+  code: string;
+  message: string;
+  detail?: string;
+  meta?: Record<string, unknown> | Array<Record<string, unknown>>;
+}
+
 function readErrorObject(payload: unknown): ApiErrorObject | null {
   if (!isRecord(payload)) return null;
   const error = payload['error'];
@@ -72,12 +79,7 @@ export function buildStandardErrorBody({
   message,
   detail,
   meta,
-}: {
-  code: string;
-  message: string;
-  detail?: string;
-  meta?: Record<string, unknown> | Array<Record<string, unknown>>;
-}): StandardErrorBody {
+}: StandardErrorBodyInput): StandardErrorBody {
   return {
     success: false,
     error: {

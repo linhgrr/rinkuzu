@@ -15,6 +15,11 @@ type AuditInput = {
   metadata?: Record<string, unknown> | null;
 };
 
+export interface RequestAuditContext {
+  ip: string | null;
+  userAgent: string | null;
+}
+
 /**
  * Best-effort audit log writer. Never throws — failures are logged and swallowed
  * so they cannot break the calling auth flow.
@@ -35,10 +40,9 @@ export async function recordAuthEvent(input: AuditInput): Promise<void> {
   }
 }
 
-export function extractRequestContext(request: Request | { headers: Headers }): {
-  ip: string | null;
-  userAgent: string | null;
-} {
+export function extractRequestContext(
+  request: Request | { headers: Headers },
+): RequestAuditContext {
   const headers = request.headers;
   const forwarded = headers.get('x-forwarded-for');
   const realIp = headers.get('x-real-ip');

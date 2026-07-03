@@ -75,10 +75,12 @@ export const changePasswordSchema = z
 export type LoginInput = z.infer<typeof loginSchema>;
 export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
 
-export function flattenZodError(err: z.ZodError): {
+export interface FlattenedZodError {
   detail: string;
   fields: Record<string, string>;
-} {
+}
+
+export function flattenZodError(err: z.ZodError): FlattenedZodError {
   const fields: Record<string, string> = {};
   for (const issue of err.issues) {
     const path = issue.path.join('.') || '_';

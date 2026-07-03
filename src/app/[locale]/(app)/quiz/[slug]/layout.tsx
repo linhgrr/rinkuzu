@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   try {
     const quizService = serviceFactory.getQuizService();
-    const quiz = await quizService.getQuizBySlug(slug);
+    const quiz = await quizService.getQuizMetadataBySlug(slug);
     if (!quiz) {
       return {
         ...defaultMetadata,

@@ -3,7 +3,12 @@ import type { Quiz } from '@/entities/Quiz';
 import { createSubscriptionService } from '@/lib/subscription-factory';
 import { IUserRepository } from '@/interfaces/repositories/IUserRepository';
 import type { IFolderRepository } from '@/interfaces/repositories/IFolderRepository';
-import type { CreateQuizRequestDto, QuizDetailDto, UpdateQuizRequestDto } from '@/dtos/quiz';
+import type {
+  CreateQuizRequestDto,
+  QuizDetailDto,
+  QuizListItemDto,
+  UpdateQuizRequestDto,
+} from '@/dtos/quiz';
 import type { DeleteResultDto } from '@/dtos/common';
 import { ServiceResult } from '@/interfaces/services/types';
 import { generateSlug } from '@/lib/utils';
@@ -13,6 +18,7 @@ import { QuizCreationError } from '@/lib/quiz/errors';
 import { isMongoDuplicateKeyError, isMongoDuplicateKeyErrorForField } from '@/lib/mongoose-errors';
 import { QuizDetailDtoMapper } from '@/mappers/quiz/QuizDetailDtoMapper';
 import { DeleteResultDtoMapper } from '@/mappers/common/DeleteResultDtoMapper';
+import { QuizListDtoMapper } from '@/mappers/quiz/QuizListDtoMapper';
 
 const MAX_SLUG_CREATE_ATTEMPTS = 20;
 
@@ -111,8 +117,9 @@ export class QuizCrudService {
     throw new QuizCreationError('slug_conflict', 'Could not generate a unique quiz slug');
   }
 
-  async getQuizBySlug(slug: string): Promise<Quiz | null> {
-    return await this.quizRepository.findBySlug(slug);
+  async getQuizMetadataBySlug(slug: string): Promise<QuizListItemDto | null> {
+    const quiz = await this.quizRepository.findBySlug(slug);
+    return quiz ? QuizListDtoMapper.toListItem(quiz) : null;
   }
 
   async getQuizById(

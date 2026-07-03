@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useReducer } from 'react';
+import type { ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import { fetchAdminStatsViewModel } from '@/features/admin/stats/api/admin-stats-api';
 import type { AdminStatsViewModel } from '@/features/admin/stats/types/admin-stats-view-model';
@@ -12,6 +13,63 @@ import StatsModal from '@/features/admin/stats/components/StatsModal';
 
 type TranslateFn = (key: string, values?: Record<string, string | number | Date>) => string;
 type StatsModalType = 'creators' | 'activity' | null;
+
+interface AdminStatsLayoutProps {
+  children: ReactNode;
+}
+
+interface AdminStatsErrorBannerProps {
+  error: string;
+}
+
+interface AdminStatsDataProps {
+  stats: AdminStatsViewModel;
+  t: TranslateFn;
+}
+
+interface TimePeriodCardProps {
+  title: string;
+  users: number;
+  quizzes: number;
+  attempts: number;
+  titleClassName: string;
+  itemClassName: string;
+  t: TranslateFn;
+}
+
+interface RankingListCardProps {
+  title: string;
+  description: string;
+  buttonLabel: string;
+  onViewAll: () => void;
+  children: ReactNode;
+}
+
+interface TopCreatorsSectionProps extends AdminStatsDataProps {
+  onOpenModal: () => void;
+}
+
+interface ActivityColumnProps {
+  title: string;
+  titleClassName: string;
+  children: ReactNode;
+}
+
+interface RecentActivityCardProps extends AdminStatsDataProps {
+  onOpenModal: () => void;
+}
+
+interface AdminStatsContentProps extends AdminStatsDataProps {
+  error: string;
+  onOpenCreators: () => void;
+  onOpenActivity: () => void;
+}
+
+interface AdminStatsModalsProps {
+  activeModal: StatsModalType;
+  onClose: () => void;
+  t: TranslateFn;
+}
 
 interface AdminStatsState {
   stats: AdminStatsViewModel | null;
@@ -51,7 +109,7 @@ function adminStatsReducer(state: AdminStatsState, action: AdminStatsAction): Ad
   }
 }
 
-function AdminStatsLayout({ children }: { children: React.ReactNode }) {
+function AdminStatsLayout({ children }: AdminStatsLayoutProps) {
   return (
     <div className="min-h-screen bg-white">
       <div className="p-8">{children}</div>
@@ -59,7 +117,7 @@ function AdminStatsLayout({ children }: { children: React.ReactNode }) {
   );
 }
 
-function AdminStatsErrorBanner({ error }: { error: string }) {
+function AdminStatsErrorBanner({ error }: AdminStatsErrorBannerProps) {
   if (!error) {
     return null;
   }
@@ -71,7 +129,7 @@ function AdminStatsErrorBanner({ error }: { error: string }) {
   );
 }
 
-function OverviewCards({ stats, t }: { stats: AdminStatsViewModel; t: TranslateFn }) {
+function OverviewCards({ stats, t }: AdminStatsDataProps) {
   return (
     <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
       <Card>
@@ -141,15 +199,7 @@ function TimePeriodCard({
   titleClassName,
   itemClassName,
   t,
-}: {
-  title: string;
-  users: number;
-  quizzes: number;
-  attempts: number;
-  titleClassName: string;
-  itemClassName: string;
-  t: TranslateFn;
-}) {
+}: TimePeriodCardProps) {
   return (
     <div className="rounded-lg bg-green-50 p-4 text-center">
       <h3 className={`mb-2 font-medium ${titleClassName}`}>{title}</h3>
@@ -162,7 +212,7 @@ function TimePeriodCard({
   );
 }
 
-function TimeBasedStatsCard({ stats, t }: { stats: AdminStatsViewModel; t: TranslateFn }) {
+function TimeBasedStatsCard({ stats, t }: AdminStatsDataProps) {
   return (
     <Card>
       <CardHeader>
@@ -210,13 +260,7 @@ function RankingListCard({
   buttonLabel,
   onViewAll,
   children,
-}: {
-  title: string;
-  description: string;
-  buttonLabel: string;
-  onViewAll: () => void;
-  children: React.ReactNode;
-}) {
+}: RankingListCardProps) {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
@@ -235,15 +279,7 @@ function RankingListCard({
   );
 }
 
-function TopCreatorsSection({
-  stats,
-  t,
-  onOpenModal,
-}: {
-  stats: AdminStatsViewModel;
-  t: TranslateFn;
-  onOpenModal: () => void;
-}) {
+function TopCreatorsSection({ stats, t, onOpenModal }: TopCreatorsSectionProps) {
   return (
     <RankingListCard
       title={t('topCreators')}
@@ -274,15 +310,7 @@ function TopCreatorsSection({
   );
 }
 
-function ActivityColumn({
-  title,
-  titleClassName,
-  children,
-}: {
-  title: string;
-  titleClassName: string;
-  children: React.ReactNode;
-}) {
+function ActivityColumn({ title, titleClassName, children }: ActivityColumnProps) {
   return (
     <div>
       <h4 className={`mb-3 font-medium ${titleClassName}`}>{title}</h4>
@@ -291,15 +319,7 @@ function ActivityColumn({
   );
 }
 
-function RecentActivityCard({
-  stats,
-  t,
-  onOpenModal,
-}: {
-  stats: AdminStatsViewModel;
-  t: TranslateFn;
-  onOpenModal: () => void;
-}) {
+function RecentActivityCard({ stats, t, onOpenModal }: RecentActivityCardProps) {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
@@ -355,13 +375,7 @@ function AdminStatsContent({
   t,
   onOpenCreators,
   onOpenActivity,
-}: {
-  stats: AdminStatsViewModel;
-  error: string;
-  t: TranslateFn;
-  onOpenCreators: () => void;
-  onOpenActivity: () => void;
-}) {
+}: AdminStatsContentProps) {
   return (
     <>
       <AdminPageHeader title={t('statistics')} description={t('systemStatistics')} />
@@ -376,15 +390,7 @@ function AdminStatsContent({
   );
 }
 
-function AdminStatsModals({
-  activeModal,
-  onClose,
-  t,
-}: {
-  activeModal: StatsModalType;
-  onClose: () => void;
-  t: TranslateFn;
-}) {
+function AdminStatsModals({ activeModal, onClose, t }: AdminStatsModalsProps) {
   return (
     <>
       <StatsModal

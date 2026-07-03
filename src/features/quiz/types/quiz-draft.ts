@@ -1,32 +1,34 @@
 import type { QuizQuestionInputViewModel } from '@/features/quiz/types/quiz-question';
-import type { QuizDraftStatus } from '@/lib/quiz/draftStatus';
+import type { components } from '@/generated/adaptive-api';
+
+type QuizDraftTransportContract = components['schemas']['QuizDraftResponseData'];
 
 export interface QuizDraftPdf {
-  s3Key: string | null;
-  fileName: string | null;
-  fileSize: number | null;
-  pageCount: number | null;
+  s3Key: QuizDraftTransportContract['pdf']['s3_key'];
+  fileName: QuizDraftTransportContract['pdf']['file_name'];
+  fileSize: QuizDraftTransportContract['pdf']['file_size'];
+  pageCount: QuizDraftTransportContract['pdf']['page_count'];
 }
 
 export interface QuizDraftProgress {
-  processed: number;
-  total: number;
-  percent: number;
+  processed: QuizDraftTransportContract['progress']['processed'];
+  total: QuizDraftTransportContract['progress']['total'];
+  percent: QuizDraftTransportContract['progress']['percent'];
 }
 
 export interface QuizDraft {
-  id: string;
-  title: string;
-  description: string;
-  folderId: string | null;
-  prompt: string | null;
+  id: QuizDraftTransportContract['draft_id'];
+  title: QuizDraftTransportContract['title'];
+  description: QuizDraftTransportContract['description'];
+  folderId: QuizDraftTransportContract['category_id'];
+  prompt: QuizDraftTransportContract['prompt'];
   pdf: QuizDraftPdf;
-  status: QuizDraftStatus;
+  status: QuizDraftTransportContract['status'];
   progress: QuizDraftProgress;
   questions: QuizQuestionInputViewModel[];
-  error: string | null;
-  submittedQuizId: string | null;
-  createdAt: string;
-  updatedAt: string;
-  expiresAt: string;
+  error: QuizDraftTransportContract['error'];
+  submittedQuizId: QuizDraftTransportContract['submitted_quiz_id'];
+  createdAt: QuizDraftTransportContract['created_at'];
+  updatedAt: QuizDraftTransportContract['updated_at'];
+  expiresAt: QuizDraftTransportContract['expires_at'];
 }

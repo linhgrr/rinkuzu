@@ -4,10 +4,9 @@
 import { fetchApiData } from '@/lib/api/client';
 import type {
   CreateQuizDraftInputDto,
-  PatchQuizDraftInputDto,
   QuizDraftListResponseDto,
   QuizDraftSingleResponseDto,
-  SubmitQuizDraftInputDto,
+  SubmitQuizDraftRequestDto,
   SubmitQuizDraftResultDto,
 } from '@/dtos/quiz-draft';
 import type { QuizDraft } from '@/features/quiz/types/quiz-draft';
@@ -46,30 +45,13 @@ export async function listQuizDrafts(init?: { signal?: AbortSignal }): Promise<Q
   return drafts.map(QuizDraftMapper.toViewModel);
 }
 
-export async function patchQuizDraft(
-  draftId: string,
-  input: PatchQuizDraftInputDto,
-): Promise<QuizDraft> {
-  const { draft } = await fetchApiData<QuizDraftSingleResponseDto>(`/api/quiz-drafts/${draftId}`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      title: input.title,
-      description: input.description,
-      category_id: input.folderId,
-      questions: input.questions,
-    }),
-  });
-  return QuizDraftMapper.toViewModel(draft);
-}
-
 export async function deleteQuizDraft(draftId: string): Promise<void> {
   await fetchApiData(`/api/quiz-drafts/${draftId}`, { method: 'DELETE' });
 }
 
 export async function submitQuizDraft(
   draftId: string,
-  input: SubmitQuizDraftInputDto,
+  input: SubmitQuizDraftRequestDto,
 ): Promise<SubmitQuizDraftResultDto> {
   return fetchApiData<SubmitQuizDraftResultDto>(`/api/quiz-drafts/${draftId}/submit`, {
     method: 'POST',

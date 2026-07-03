@@ -9,8 +9,8 @@ import { Card, Badge } from '@/components/ui/Card';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { Modal } from '@/components/ui/Modal';
 import { Textarea } from '@/components/ui/Input';
-import { LoadingState } from '@/components/ui/LoadingState';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { AdminReportsPageSkeleton } from '@/components/admin/AdminLoadingSkeletons';
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { AdminPageShell } from '@/components/admin/AdminPageShell';
 import { ROUTES } from '@/shared/constants/routes';
@@ -285,7 +285,6 @@ function ReportReviewModal({
 }
 
 export default function AdminReportsPage() {
-  const tCommon = useTranslations('common');
   const [state, dispatch] = useReducer(adminReportsReducer, initialState);
 
   useEffect(() => {
@@ -373,7 +372,7 @@ export default function AdminReportsPage() {
     <AdminPageShell contentClassName="bg-neutral-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {state.status === 'loading' ? (
-          <LoadingState text={tCommon('loading')} />
+          <AdminReportsPageSkeleton />
         ) : (
           <>
             <AdminPageHeader

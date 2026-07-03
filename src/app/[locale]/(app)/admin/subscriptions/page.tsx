@@ -2,6 +2,7 @@
 
 import { useEffect, useReducer } from 'react';
 import { useTranslations } from 'next-intl';
+import { AdminSubscriptionsPageSkeleton } from '@/components/admin/AdminLoadingSkeletons';
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { AdminPageShell } from '@/components/admin/AdminPageShell';
 import { Button } from '@/components/ui/Button';
@@ -16,7 +17,6 @@ import {
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { Input } from '@/components/ui/Input';
-import { LoadingState } from '@/components/ui/LoadingState';
 import { Modal } from '@/components/ui/Modal';
 import Pagination from '@/components/ui/Pagination';
 import { HiOutlineEye, HiOutlineSearch } from 'react-icons/hi';
@@ -549,7 +549,7 @@ export default function AdminSubscriptionsPage() {
         ) : null}
 
         {state.status === 'loading' ? (
-          <LoadingState text={tCommon('loading')} />
+          <AdminSubscriptionsPageSkeleton />
         ) : (
           <>
             <SubscriptionsTable

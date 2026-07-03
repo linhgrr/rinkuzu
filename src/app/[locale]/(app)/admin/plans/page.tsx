@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
+import { AdminPlansPageSkeleton } from '@/components/admin/AdminLoadingSkeletons';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
@@ -714,12 +715,7 @@ export default function AdminPlansPage() {
     <div className="min-h-screen bg-white">
       <main className="max-w-none px-4 py-8 sm:px-6 lg:px-8">
         {status.loading ? (
-          <div className="flex justify-center py-12">
-            <div className="flex flex-col items-center gap-3">
-              <div className="size-12 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
-              <div className="text-sm text-neutral-500">{tCommon('loading')}</div>
-            </div>
-          </div>
+          <AdminPlansPageSkeleton />
         ) : (
           <div className="mx-auto max-w-6xl">
             <AdminPageHeader

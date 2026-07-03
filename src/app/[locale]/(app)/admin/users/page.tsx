@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
 import useSWR from 'swr';
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
+import { AdminUsersPageSkeleton } from '@/components/admin/AdminLoadingSkeletons';
 import { AdminPageShell } from '@/components/admin/AdminPageShell';
 import { Button } from '@/components/ui/Button';
 import {
@@ -18,7 +19,6 @@ import {
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { Input } from '@/components/ui/Input';
-import { LoadingState } from '@/components/ui/LoadingState';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { Modal } from '@/components/ui/Modal';
 import { ModalActions } from '@/components/ui/ModalActions';
@@ -703,7 +703,9 @@ export default function AdminUsersPage() {
   if (usersLoading) {
     return (
       <AdminPageShell>
-        <LoadingState text={tCommon('loading')} />
+        <div className="mx-auto max-w-6xl">
+          <AdminUsersPageSkeleton />
+        </div>
       </AdminPageShell>
     );
   }

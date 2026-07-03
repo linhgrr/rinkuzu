@@ -4,6 +4,7 @@ import { useEffect, useReducer } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import Pagination from '@/components/ui/Pagination';
+import { AdminQuizzesListSkeleton } from '@/components/admin/AdminLoadingSkeletons';
 import { Button } from '@/components/ui/Button';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { QuizPreviewModal } from '@/features/quiz/components/QuizPreviewModal';
@@ -275,11 +276,7 @@ export default function AdminQuizManagementPage() {
 
       <section className="mt-6 overflow-hidden rounded-2xl border border-line-blue/30 bg-white">
         {state.loading ? (
-          <div className="space-y-3 p-5">
-            {Array.from({ length: 6 }).map((_, index) => (
-              <div key={index} className="h-16 animate-pulse rounded-xl bg-surface-blue" />
-            ))}
-          </div>
+          <AdminQuizzesListSkeleton />
         ) : state.quizzes.length === 0 ? (
           <div className="flex min-h-[320px] flex-col items-center justify-center text-center">
             <HiOutlineDocumentText className="size-12 text-ink/25" />

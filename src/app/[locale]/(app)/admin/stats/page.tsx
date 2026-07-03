@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { fetchAdminStatsViewModel } from '@/features/admin/stats/api/admin-stats-api';
 import type { AdminStatsViewModel } from '@/features/admin/stats/types/admin-stats-view-model';
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
+import { AdminStatsPageSkeleton } from '@/components/admin/AdminLoadingSkeletons';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import StatsModal from '@/components/ui/StatsModal';
@@ -55,19 +56,6 @@ function AdminStatsLayout({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-white">
       <div className="p-8">{children}</div>
     </div>
-  );
-}
-
-function AdminStatsLoadingState({ t }: { t: TranslateFn }) {
-  return (
-    <AdminStatsLayout>
-      <div className="flex min-h-[400px] items-center justify-center">
-        <div className="text-center">
-          <div className="mx-auto size-12 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
-          <p className="mt-4 text-neutral-600">{t('loadingStatistics')}</p>
-        </div>
-      </div>
-    </AdminStatsLayout>
   );
 }
 
@@ -440,7 +428,11 @@ export default function AdminStatsPage() {
   }, []);
 
   if (state.loading) {
-    return <AdminStatsLoadingState t={t} />;
+    return (
+      <AdminStatsLayout>
+        <AdminStatsPageSkeleton />
+      </AdminStatsLayout>
+    );
   }
 
   return (

@@ -159,7 +159,10 @@ describe('AccountService', () => {
 
     await expect(
       service.changePassword('user@example.com', 'old-password', 'new-password'),
-    ).resolves.toEqual({ success: true, data: null });
+    ).resolves.toEqual({
+      success: true,
+      data: { email: 'user@example.com', passwordChanged: true },
+    });
     expect(verifyPassword).toHaveBeenCalledWith('old-password', 'old-hash');
     expect(repository.updatePasswordHash).toHaveBeenCalledWith('user@example.com', 'new-hash');
   });
@@ -242,11 +245,11 @@ describe('AccountService', () => {
 
     await expect(service.deleteAvatar('user@example.com')).resolves.toEqual({
       success: true,
-      data: null,
+      data: { email: 'user@example.com', avatar: null, deleted: true },
     });
     await expect(service.deleteAvatar('user@example.com')).resolves.toEqual({
       success: true,
-      data: null,
+      data: { email: 'user@example.com', avatar: null, deleted: true },
     });
     expect(repository.clearAvatar).toHaveBeenCalledTimes(1);
   });

@@ -1,7 +1,9 @@
 import type {
   AccountProfileDto,
+  AvatarDeleteResultDto,
   AvatarResponseDto,
   AvatarUploadDto,
+  PasswordChangeResultDto,
   UpdateAccountProfileDto,
 } from '@/dtos/account';
 import type { IAccountRepository } from '@/interfaces/repositories/IAccountRepository';
@@ -53,7 +55,7 @@ export class AccountService implements IAccountService {
     email: string,
     currentPassword: string,
     newPassword: string,
-  ): Promise<ServiceResult<null>> {
+  ): Promise<ServiceResult<PasswordChangeResultDto>> {
     try {
       const credentials = await this.accountRepository.findCredentialsByEmail(email);
       if (!credentials) {
@@ -74,7 +76,7 @@ export class AccountService implements IAccountService {
       const passwordHash = await hashPassword(newPassword);
       const updated = await this.accountRepository.updatePasswordHash(email, passwordHash);
       return updated
-        ? { success: true, data: null }
+        ? { success: true, data: AccountDtoMapper.toPasswordChangeResult(email) }
         : { success: false, error: 'User not found', statusCode: 404 };
     } catch (error) {
       logger.error({ error, email }, 'Change password error');
@@ -112,7 +114,7 @@ export class AccountService implements IAccountService {
     }
   }
 
-  async deleteAvatar(email: string): Promise<ServiceResult<null>> {
+  async deleteAvatar(email: string): Promise<ServiceResult<AvatarDeleteResultDto>> {
     try {
       const profile = await this.accountRepository.findProfileByEmail(email);
       if (!profile) {
@@ -121,7 +123,7 @@ export class AccountService implements IAccountService {
       if (profile.avatar) {
         await this.accountRepository.clearAvatar(email);
       }
-      return { success: true, data: null };
+      return { success: true, data: AccountDtoMapper.toAvatarDeleteResult(email) };
     } catch (error) {
       logger.error({ error, email }, 'Delete avatar error');
       return { success: false, error: 'Internal server error', statusCode: 500 };

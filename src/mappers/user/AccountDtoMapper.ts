@@ -1,5 +1,11 @@
 import type { AccountProfile } from '@/entities/Account';
-import type { AccountProfileDto, AccountSubscriptionDto, AvatarResponseDto } from '@/dtos/account';
+import type {
+  AccountProfileDto,
+  AccountSubscriptionDto,
+  AvatarDeleteResultDto,
+  AvatarResponseDto,
+  PasswordChangeResultDto,
+} from '@/dtos/account';
 import { serializeDate, serializeOptionalDate } from '@/lib/date-serialization';
 
 function toSubscriptionDto(profile: AccountProfile): AccountSubscriptionDto | undefined {
@@ -32,5 +38,13 @@ export class AccountDtoMapper {
 
   static toAvatarResponse(avatar: string): AvatarResponseDto {
     return { avatar };
+  }
+
+  static toPasswordChangeResult(email: string): PasswordChangeResultDto {
+    return { email, passwordChanged: true };
+  }
+
+  static toAvatarDeleteResult(email: string): AvatarDeleteResultDto {
+    return { email, avatar: null, deleted: true };
   }
 }

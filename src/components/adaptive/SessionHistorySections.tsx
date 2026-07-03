@@ -11,6 +11,24 @@ interface SessionRowProps {
   onOpen: (id: string) => void;
 }
 
+interface SessionHistoryLoadingStateProps {
+  message: string;
+}
+
+interface SessionHistoryErrorStateProps {
+  message: string;
+}
+
+interface SessionHistoryEmptyStateProps {
+  hint: string;
+  message: string;
+}
+
+interface SessionHistoryListProps {
+  onOpen: (id: string) => void;
+  sessions: SessionHistoryViewModel[];
+}
+
 function SessionRow({ item, onOpen }: SessionRowProps) {
   const t = useTranslations('adaptiveLearning');
   const locale = useLocale();
@@ -93,7 +111,7 @@ function SessionRow({ item, onOpen }: SessionRowProps) {
   );
 }
 
-export const SessionHistoryLoadingState = ({ message }: { message: string }) => (
+export const SessionHistoryLoadingState = ({ message }: SessionHistoryLoadingStateProps) => (
   <div className="space-y-3 py-2" aria-busy="true" aria-label={message}>
     {Array.from({ length: 4 }, (_, index) => (
       <div key={`session-history-skeleton-${index}`} className="rounded-lg border p-4">
@@ -109,13 +127,13 @@ export const SessionHistoryLoadingState = ({ message }: { message: string }) => 
   </div>
 );
 
-export const SessionHistoryErrorState = ({ message }: { message: string }) => (
+export const SessionHistoryErrorState = ({ message }: SessionHistoryErrorStateProps) => (
   <div className="rounded-xl border border-red-100 bg-red-50 p-4 text-sm text-red-600">
     {message}
   </div>
 );
 
-export const SessionHistoryEmptyState = ({ hint, message }: { hint: string; message: string }) => (
+export const SessionHistoryEmptyState = ({ hint, message }: SessionHistoryEmptyStateProps) => (
   <div className="flex flex-col items-center gap-2 py-12 text-center text-neutral-400">
     <HiOutlineAcademicCap className="size-10 opacity-40" />
     <p className="text-sm">{message}</p>
@@ -123,13 +141,7 @@ export const SessionHistoryEmptyState = ({ hint, message }: { hint: string; mess
   </div>
 );
 
-export const SessionHistoryList = ({
-  onOpen,
-  sessions,
-}: {
-  onOpen: (id: string) => void;
-  sessions: SessionHistoryViewModel[];
-}) => (
+export const SessionHistoryList = ({ onOpen, sessions }: SessionHistoryListProps) => (
   <div className="space-y-2">
     {sessions.map((item) => (
       <SessionRow key={item.jobId} item={item} onOpen={onOpen} />

@@ -22,6 +22,11 @@ type ResultStateAction =
   | { type: 'hydrateComplete'; result: SubmitResult | null; exercise: Exercise | null }
   | { type: 'setChatOpen'; value: boolean };
 
+type DerivedResultOutcome = {
+  exercise: Exercise;
+  result: SubmitResult;
+};
+
 function resultStateReducer(state: ResultState, action: ResultStateAction): ResultState {
   switch (action.type) {
     case 'hydrateStart':
@@ -40,9 +45,7 @@ function resultStateReducer(state: ResultState, action: ResultStateAction): Resu
   }
 }
 
-function deriveOutcomeFromHistory(
-  detail: SessionHistoryDetail,
-): { exercise: Exercise; result: SubmitResult } | null {
+function deriveOutcomeFromHistory(detail: SessionHistoryDetail): DerivedResultOutcome | null {
   const answered = detail.exercise_history.filter((item) => item.user_answer !== null);
   if (answered.length === 0) return null;
 

@@ -200,7 +200,7 @@ function readOptionalPairs(
   record: Record<string, unknown>,
   key: string,
   context: string,
-): Array<{ left: string; right: string }> | undefined {
+): ExercisePair[] | undefined {
   if (!(key in record)) return undefined;
   const value = record[key];
   if (
@@ -211,7 +211,7 @@ function readOptionalPairs(
     )
   ) {
     return value.map((item) => {
-      const pair = item as { left: string; right: string };
+      const pair = item as ExercisePair;
       return { left: pair.left, right: pair.right };
     });
   }

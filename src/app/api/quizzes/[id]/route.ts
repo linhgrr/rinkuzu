@@ -102,7 +102,7 @@ export const DELETE = withAuth(async (_request, { params, userId, session }) => 
       return apiServiceErr(result);
     }
 
-    return apiOk(null, 200, { meta: { message: 'Quiz deleted successfully' } });
+    return apiOk(result.data, 200, { meta: { message: 'Quiz deleted successfully' } });
   } catch (error: unknown) {
     logger.error({ error }, 'Delete quiz error');
     return apiErr('internal_error', 'Internal server error', 500);

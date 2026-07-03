@@ -107,7 +107,11 @@ function reducer(state: State, action: Action): State {
   }
 }
 
-function AdminQuizAuthorLink({ author }: { author: AdminQuizAuthorViewModel }) {
+interface AdminQuizAuthorLinkProps {
+  author: AdminQuizAuthorViewModel;
+}
+
+function AdminQuizAuthorLink({ author }: AdminQuizAuthorLinkProps) {
   const content = (
     <>
       <UserAvatar user={author} size={24} />

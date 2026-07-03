@@ -56,6 +56,8 @@ export interface IQuizRepository {
 
   findBySlug(slug: string): Promise<Quiz | null>;
 
+  findIdBySlug(slug: string): Promise<string | null>;
+
   findBySourceDraftId(sourceDraftId: string): Promise<Quiz | null>;
 
   create(quizData: CreateQuizData): Promise<Quiz>;

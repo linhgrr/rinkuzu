@@ -98,6 +98,45 @@ describe('QuizAdminService', () => {
     });
   });
 
+  it('uses compact repository reads for quiz list DTOs', async () => {
+    const repository = createRepository({
+      findAll: vi.fn().mockResolvedValue({
+        items: [{ ...quiz, questionCount: 1, questions: [] }],
+        pagination: {
+          currentPage: 1,
+          totalPages: 1,
+          totalItems: 1,
+          itemsPerPage: 10,
+          hasNextPage: false,
+          hasPrevPage: false,
+        },
+      }),
+    });
+    const service = new QuizAdminService(repository);
+
+    const result = await service.getQuizzes({
+      page: 1,
+      limit: 10,
+      onlyMine: false,
+      compact: false,
+    });
+
+    expect(result.quizzes[0]).toMatchObject({
+      id: quiz.id,
+      questionCount: 1,
+    });
+    expect(repository.findAll).toHaveBeenCalledWith(
+      {},
+      {
+        page: 1,
+        limit: 10,
+        sort: { createdAt: -1 },
+        populate: ['author'],
+        compact: true,
+      },
+    );
+  });
+
   it('returns admin quiz detail DTOs', async () => {
     const repository = createRepository({
       findById: vi.fn().mockResolvedValue(quiz),

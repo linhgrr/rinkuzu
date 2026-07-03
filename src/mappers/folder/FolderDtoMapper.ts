@@ -1,5 +1,5 @@
 import type { Folder, FolderOverview } from '@/entities/Folder';
-import type { FolderListDto, FolderSummaryDto } from '@/dtos/folder';
+import type { FolderAssignmentResultDto, FolderListDto, FolderSummaryDto } from '@/dtos/folder';
 import { serializeDate } from '@/lib/date-serialization';
 
 export class FolderDtoMapper {
@@ -17,6 +17,14 @@ export class FolderDtoMapper {
       quizCount: 'quizCount' in folder ? folder.quizCount : quizCount,
       createdAt: serializeDate(folder.createdAt, 'folder.createdAt'),
       updatedAt: serializeDate(folder.updatedAt, 'folder.updatedAt'),
+    };
+  }
+
+  static toAssignmentResult(quizId: string, folderId: string | null): FolderAssignmentResultDto {
+    return {
+      quizId,
+      folderId,
+      assigned: true,
     };
   }
 }

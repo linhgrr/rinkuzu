@@ -1,4 +1,5 @@
-import type { FolderListDto, FolderSummaryDto } from '@/dtos/folder';
+import type { DeleteResultDto } from '@/dtos/common';
+import type { FolderAssignmentResultDto, FolderListDto, FolderSummaryDto } from '@/dtos/folder';
 import type { ServiceResult } from '@/interfaces/services/types';
 
 export interface IFolderService {
@@ -12,7 +13,11 @@ export interface IFolderService {
     name: string,
   ): Promise<ServiceResult<FolderSummaryDto>>;
 
-  deleteFolder(folderId: string, ownerId: string): Promise<ServiceResult<null>>;
+  deleteFolder(folderId: string, ownerId: string): Promise<ServiceResult<DeleteResultDto>>;
 
-  assignQuiz(folderId: string | null, quizId: string, userId: string): Promise<ServiceResult<null>>;
+  assignQuiz(
+    folderId: string | null,
+    quizId: string,
+    userId: string,
+  ): Promise<ServiceResult<FolderAssignmentResultDto>>;
 }

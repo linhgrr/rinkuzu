@@ -1,8 +1,10 @@
 import type { IFolderRepository } from '@/interfaces/repositories/IFolderRepository';
 import type { IFolderService } from '@/interfaces/services/IFolderService';
 import type { ServiceResult } from '@/interfaces/services/types';
-import type { FolderListDto, FolderSummaryDto } from '@/dtos/folder';
+import type { DeleteResultDto } from '@/dtos/common';
+import type { FolderAssignmentResultDto, FolderListDto, FolderSummaryDto } from '@/dtos/folder';
 import { FolderNameConflictError } from '@/entities/Folder';
+import { DeleteResultDtoMapper } from '@/mappers/common/DeleteResultDtoMapper';
 import { FolderDtoMapper } from '@/mappers/folder/FolderDtoMapper';
 import { logger } from '@/lib/logger';
 
@@ -85,7 +87,7 @@ export class FolderService implements IFolderService {
     }
   }
 
-  async deleteFolder(folderId: string, ownerId: string): Promise<ServiceResult<null>> {
+  async deleteFolder(folderId: string, ownerId: string): Promise<ServiceResult<DeleteResultDto>> {
     try {
       const deleted = await this.folderRepository.deleteOwned(folderId, ownerId);
       if (!deleted) {
@@ -95,7 +97,7 @@ export class FolderService implements IFolderService {
           statusCode: 404,
         };
       }
-      return { success: true, data: null };
+      return { success: true, data: DeleteResultDtoMapper.toDto(folderId) };
     } catch (error) {
       logger.error({ error, folderId, ownerId }, 'Delete folder error');
       return {
@@ -110,7 +112,7 @@ export class FolderService implements IFolderService {
     folderId: string | null,
     quizId: string,
     userId: string,
-  ): Promise<ServiceResult<null>> {
+  ): Promise<ServiceResult<FolderAssignmentResultDto>> {
     try {
       const [quizAccess, folder] = await Promise.all([
         this.folderRepository.findQuizAccess(userId, quizId),
@@ -147,7 +149,7 @@ export class FolderService implements IFolderService {
         quizAccess.quizOwnerId,
         folderId,
       );
-      return { success: true, data: null };
+      return { success: true, data: FolderDtoMapper.toAssignmentResult(quizId, folderId) };
     } catch (error) {
       logger.error({ error, folderId, quizId, userId }, 'Assign quiz to folder error');
       return {

@@ -157,7 +157,10 @@ describe('FolderService', () => {
 
     await expect(
       service.deleteFolder('507f1f77bcf86cd799439011', '507f191e810c19729de860ea'),
-    ).resolves.toEqual({ success: true, data: null });
+    ).resolves.toEqual({
+      success: true,
+      data: { id: '507f1f77bcf86cd799439011', deleted: true },
+    });
     await expect(
       service.deleteFolder('507f1f77bcf86cd799439011', '507f191e810c19729de860ea'),
     ).resolves.toEqual({
@@ -235,7 +238,14 @@ describe('FolderService', () => {
       '507f191e810c19729de860ea',
     );
 
-    expect(result).toEqual({ success: true, data: null });
+    expect(result).toEqual({
+      success: true,
+      data: {
+        quizId: '507f1f77bcf86cd799439012',
+        folderId: '507f1f77bcf86cd799439011',
+        assigned: true,
+      },
+    });
     expect(repository.saveQuizPlacement).toHaveBeenCalledWith(
       '507f191e810c19729de860ea',
       '507f1f77bcf86cd799439012',
@@ -255,7 +265,14 @@ describe('FolderService', () => {
 
     await expect(
       service.assignQuiz(null, '507f1f77bcf86cd799439012', '507f191e810c19729de860ea'),
-    ).resolves.toEqual({ success: true, data: null });
+    ).resolves.toEqual({
+      success: true,
+      data: {
+        quizId: '507f1f77bcf86cd799439012',
+        folderId: null,
+        assigned: true,
+      },
+    });
     expect(repository.findOwnedById).not.toHaveBeenCalled();
     expect(repository.saveQuizPlacement).toHaveBeenCalledWith(
       '507f191e810c19729de860ea',

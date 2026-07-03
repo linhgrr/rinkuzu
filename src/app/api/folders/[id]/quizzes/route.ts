@@ -20,6 +20,6 @@ export const POST = withAuth(async (request: NextRequest, { params, userId }) =>
 
   const result = await folderService.assignQuiz(parsedParams.data.id, body.data.quizId, userId);
   return result.success
-    ? apiOk(null, 200, { meta: { message: 'Quiz added to folder' } })
+    ? apiOk(result.data, 200, { meta: { message: 'Quiz added to folder' } })
     : apiServiceErr(result);
 });

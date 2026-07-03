@@ -1,9 +1,14 @@
+import Image from 'next/image';
 import { Link } from '@/i18n/navigation';
 import { imgCharacterImg, imgGroup } from './constants';
 import { AnimatedText } from './AnimatedText';
 import { Magnetic } from './motion-primitives';
 
-export default function Hero({ isAuthenticated = false }: { isAuthenticated?: boolean }) {
+interface HeroProps {
+  isAuthenticated?: boolean;
+}
+
+export default function Hero({ isAuthenticated = false }: HeroProps) {
   const uploadHref = isAuthenticated ? '/adaptive/upload' : '/register?next=/adaptive/upload';
   const demoHref = isAuthenticated ? '/adaptive' : '/register?next=/adaptive';
 
@@ -47,10 +52,12 @@ export default function Hero({ isAuthenticated = false }: { isAuthenticated?: bo
                 className="bg-[#ff541b] flex gap-[10px] h-[56px] items-center justify-center px-[32px] rounded-[100px] hover:bg-[#fd761a] transition-[colors,transform] active:scale-[0.97] w-full sm:w-auto shadow-lg shadow-[#ff541b]/20"
               >
                 <span className="size-[28px] relative flex items-center justify-center overflow-hidden">
-                  <img
+                  <Image
                     alt="Upload"
                     className="absolute inset-[12.5%_20.83%_12.5%_20.84%] max-w-none w-[66.6%] h-[66.6%]"
+                    height={28}
                     src={imgGroup}
+                    width={28}
                   />
                 </span>
                 <span className="font-unbounded font-medium text-[18px] text-white whitespace-nowrap">
@@ -66,9 +73,11 @@ export default function Hero({ isAuthenticated = false }: { isAuthenticated?: bo
       <div className="flex-none w-full xl:w-[527px] flex items-center justify-center xl:absolute xl:-right-[20px] xl:top-[80px] mt-12 xl:mt-0 z-10 pointer-events-none">
         <div className="relative w-full max-w-[527px] xl:w-[527px] aspect-[1/2] xl:aspect-auto xl:h-[1084px] scale-x-[-1]">
           <div className="absolute inset-0 will-change-transform motion-safe:animate-float-bob motion-reduce:animate-none">
-            <img
+            <Image
               alt="AI Character"
               className="absolute inset-0 w-full h-full object-cover drop-shadow-2xl"
+              fill
+              sizes="(min-width: 1280px) 527px, 100vw"
               src={imgCharacterImg}
             />
           </div>

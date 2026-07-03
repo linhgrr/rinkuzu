@@ -10,7 +10,11 @@ const NAV_LINKS = [
   { label: 'Upload PDF', href: '/adaptive/upload' },
 ];
 
-export default function Header({ isAuthenticated = false }: { isAuthenticated?: boolean }) {
+interface HeaderProps {
+  isAuthenticated?: boolean;
+}
+
+export default function Header({ isAuthenticated = false }: HeaderProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (

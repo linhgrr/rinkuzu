@@ -1,11 +1,4 @@
-export type SRSRating = 'fail' | 'hard' | 'good' | 'easy';
-
-interface SRSResult {
-  interval: number; // Days until next review
-  easeFactor: number; // New ease factor
-  nextReviewDate: Date;
-  srsLevel: number; // Approximate level for UI (0-5)
-}
+import type { SRSRating, SRSReviewResult } from '@/entities/SpacedRepetition';
 
 /**
  * SuperMemo-2 Algorithm Implementation
@@ -15,7 +8,7 @@ export const calculateNextReview = (
   currentInterval: number,
   currentEaseFactor: number,
   rating: SRSRating,
-): SRSResult => {
+): SRSReviewResult => {
   let newInterval: number;
   let newEaseFactor = currentEaseFactor;
   let srsLevel = 0; // Derived level for UX

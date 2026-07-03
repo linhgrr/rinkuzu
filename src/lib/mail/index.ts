@@ -19,6 +19,11 @@ type MailMessage = {
   idempotencyKey?: string;
 };
 
+type RenderedMail = {
+  html: string;
+  text: string;
+};
+
 let cachedResend: Resend | null = null;
 
 function getResendClient(): Resend {
@@ -57,7 +62,7 @@ function siteUrl(): string {
   return publicEnv.NEXT_PUBLIC_SITE_URL.replace(/\/$/, '');
 }
 
-async function renderMail(element: React.ReactElement): Promise<{ html: string; text: string }> {
+async function renderMail(element: React.ReactElement): Promise<RenderedMail> {
   const [html, text] = await Promise.all([render(element), render(element, { plainText: true })]);
   return { html, text };
 }

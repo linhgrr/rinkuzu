@@ -8,6 +8,7 @@ export function formatVndCurrency(amount: number): string {
 }
 
 type DateInput = Date | string | number | null | undefined;
+const DEFAULT_DATE_TIME_ZONE = 'Asia/Ho_Chi_Minh';
 
 export interface DateFormatOptions {
   locale?: string;
@@ -69,6 +70,7 @@ export function formatDateTime(
       year: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
+      timeZone: DEFAULT_DATE_TIME_ZONE,
     },
   ).format(date);
 }

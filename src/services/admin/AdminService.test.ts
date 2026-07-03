@@ -43,6 +43,7 @@ function createQuizRepository(overrides: Partial<IQuizRepository> = {}): IQuizRe
   return {
     findById: vi.fn(),
     findBySlug: vi.fn(),
+    findIdBySlug: vi.fn(),
     findBySourceDraftId: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),

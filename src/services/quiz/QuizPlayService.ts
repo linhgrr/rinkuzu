@@ -42,8 +42,7 @@ export class QuizPlayService {
   ) {}
 
   private async resolveQuizId(slug: string): Promise<string | null> {
-    const quiz = await this.quizRepository.findBySlug(slug);
-    return quiz?.id ?? null;
+    return this.quizRepository.findIdBySlug(slug);
   }
 
   async getSavedQuizProgress(

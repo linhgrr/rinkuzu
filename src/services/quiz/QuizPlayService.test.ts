@@ -33,6 +33,7 @@ function createService() {
       createdAt: new Date('2026-07-01T00:00:00Z'),
       updatedAt: new Date('2026-07-01T00:00:00Z'),
     }),
+    findIdBySlug: vi.fn().mockResolvedValue(quizId),
     findBySourceDraftId: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
@@ -131,12 +132,13 @@ describe('QuizPlayService progress operations', () => {
 
   it('returns 404 without touching progress storage when the quiz is missing', async () => {
     const { service, quizRepository, progressRepository } = createService();
-    vi.mocked(quizRepository.findBySlug).mockResolvedValue(null);
+    vi.mocked(quizRepository.findIdBySlug).mockResolvedValue(null);
 
     const result = await service.getSavedQuizProgress('missing', userId);
 
     assertFail(result);
     expect(result.statusCode).toBe(404);
+    expect(quizRepository.findBySlug).not.toHaveBeenCalled();
     expect(progressRepository.findByUserAndQuiz).not.toHaveBeenCalled();
   });
 

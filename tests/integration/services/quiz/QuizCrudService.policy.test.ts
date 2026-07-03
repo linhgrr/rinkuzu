@@ -19,6 +19,7 @@ describe('QuizCrudService quiz publication policy', () => {
   const quizRepository: Mocked<IQuizRepository> = {
     findById: vi.fn(),
     findBySlug: vi.fn(),
+    findIdBySlug: vi.fn(),
     findBySourceDraftId: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),

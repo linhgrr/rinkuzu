@@ -44,6 +44,12 @@ export class QuizRepository implements IQuizRepository {
     return record ? QuizPersistenceMapper.toEntity(record) : null;
   }
 
+  async findIdBySlug(slug: string): Promise<string | null> {
+    await connectDB();
+    const record = await QuizModel.findOne({ slug }).select('_id').lean<{ _id: Types.ObjectId }>();
+    return record ? String(record._id) : null;
+  }
+
   async findBySourceDraftId(sourceDraftId: string): Promise<Quiz | null> {
     await connectDB();
     const record = await QuizModel.findOne({ sourceDraftId })

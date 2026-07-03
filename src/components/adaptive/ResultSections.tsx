@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import { Button } from '@/components/ui/Button';
-import { Spinner } from '@/components/ui/Spinner';
+import { Skeleton } from '@/components/ui/Skeleton';
 import { Card, CardContent, CardHeader } from '@/components/ui/Card';
 import { DynamicMarkdownRenderer } from '@/components/ui/DynamicMarkdownRenderer';
 import { HiArrowRight, HiCheck, HiOutlineHome, HiOutlineX } from 'react-icons/hi';
@@ -98,10 +98,20 @@ function ResultCorrectAnswer({
 }
 
 export const ResultLoadingState = ({ t }: { t: TranslateFn }) => (
-  <div className="mx-auto flex min-h-[80vh] max-w-4xl items-center justify-center">
-    <div className="space-y-3 text-center">
-      <Spinner size="xl" className="mx-auto" />
-      <p className="text-sm font-medium text-neutral-500">{t('exercise.loadingTitle')}</p>
+  <div
+    className="mx-auto flex min-h-[80vh] max-w-4xl flex-col justify-center"
+    aria-busy="true"
+    aria-label={t('exercise.loadingTitle')}
+  >
+    <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
+      <Skeleton className="h-8 w-56 rounded-md" />
+      <Skeleton className="mt-3 h-5 w-80 max-w-full rounded-md" />
+      <div className="mt-8 grid gap-4 sm:grid-cols-3">
+        {Array.from({ length: 3 }, (_, index) => (
+          <Skeleton key={`result-stat-skeleton-${index}`} className="h-24 rounded-xl" />
+        ))}
+      </div>
+      <Skeleton className="mt-8 h-36 rounded-xl" />
     </div>
   </div>
 );

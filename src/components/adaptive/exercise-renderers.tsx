@@ -3,8 +3,8 @@
 import React from 'react';
 import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/Button';
-import { Spinner } from '@/components/ui/Spinner';
 import { Card, CardContent } from '@/components/ui/Card';
+import { Skeleton } from '@/components/ui/Skeleton';
 import {
   HiArrowRight,
   HiBookOpen,
@@ -41,11 +41,24 @@ type LoadingStateProps = {
 };
 
 export const ExerciseLoadingState = ({ t }: LoadingStateProps) => (
-  <div className="mx-auto flex min-h-[80vh] max-w-5xl items-center justify-center">
-    <div className="text-center">
-      <Spinner size="2xl" className="mx-auto mb-4" />
-      <p className="text-base font-medium text-neutral-900">{t('exercise.loadingTitle')}</p>
-      <p className="mt-1 text-sm text-neutral-500">{t('exercise.loadingSubtitle')}</p>
+  <div
+    className="mx-auto flex min-h-[80vh] max-w-5xl flex-col justify-center"
+    aria-busy="true"
+    aria-label={t('exercise.loadingTitle')}
+  >
+    <div className="mb-8 space-y-2 text-center">
+      <Skeleton className="mx-auto h-8 w-72 max-w-full rounded-md" />
+      <Skeleton className="mx-auto h-5 w-96 max-w-full rounded-md" />
+    </div>
+    <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm sm:p-8">
+      <Skeleton className="h-6 w-44 rounded-md" />
+      <Skeleton className="mt-4 h-5 w-full rounded-md" />
+      <Skeleton className="mt-2 h-5 w-4/5 rounded-md" />
+      <div className="mt-8 grid gap-3">
+        {Array.from({ length: 4 }, (_, index) => (
+          <Skeleton key={`exercise-option-skeleton-${index}`} className="h-14 rounded-xl" />
+        ))}
+      </div>
     </div>
   </div>
 );

@@ -4,9 +4,11 @@ import type {
   BookmarkListQueryDto,
   CreateBookmarkRequestDto,
 } from '@/dtos/bookmark';
+import type { DeleteResultDto } from '@/dtos/common';
 import { IBookmarkRepository } from '@/interfaces/repositories/IBookmarkRepository';
 import { IBookmarkService } from '@/interfaces/services/IBookmarkService';
 import { BookmarkDtoMapper } from '@/mappers/bookmark/BookmarkDtoMapper';
+import { DeleteResultDtoMapper } from '@/mappers/common/DeleteResultDtoMapper';
 
 export class BookmarkService implements IBookmarkService {
   constructor(private bookmarkRepository: IBookmarkRepository) {}
@@ -49,11 +51,11 @@ export class BookmarkService implements IBookmarkService {
     return BookmarkDtoMapper.toDto(bookmark);
   }
 
-  async deleteBookmarkByUser(bookmarkId: string, userEmail: string): Promise<boolean> {
+  async deleteBookmarkByUser(bookmarkId: string, userEmail: string): Promise<DeleteResultDto> {
     const result = await this.bookmarkRepository.deleteByIdAndUser(bookmarkId, userEmail);
     if (!result) {
       throw new Error('Bookmark not found or unauthorized');
     }
-    return result;
+    return DeleteResultDtoMapper.toDto(bookmarkId);
   }
 }

@@ -20,9 +20,9 @@ export const DELETE = withAuth(async (_request: NextRequest, { params, email }) 
       return apiErr('unauthorized', 'Unauthorized', 401);
     }
 
-    await bookmarkService.deleteBookmarkByUser(parsedParams.data.id, email);
+    const result = await bookmarkService.deleteBookmarkByUser(parsedParams.data.id, email);
 
-    return apiOk(null, 200, { meta: { message: 'Bookmark removed' } });
+    return apiOk(result, 200, { meta: { message: 'Bookmark removed' } });
   } catch (error: unknown) {
     logger.error({ error }, 'Error removing bookmark');
 

@@ -4,11 +4,12 @@ import type {
   BookmarkDto,
   CreateBookmarkRequestDto,
 } from '@/dtos/bookmark';
+import type { DeleteResultDto } from '@/dtos/common';
 
 export interface IBookmarkService {
   getBookmarksByUser(userEmail: string, options?: BookmarkListQueryDto): Promise<BookmarkListDto>;
 
   createBookmark(userEmail: string, bookmarkData: CreateBookmarkRequestDto): Promise<BookmarkDto>;
 
-  deleteBookmarkByUser(bookmarkId: string, userEmail: string): Promise<boolean>;
+  deleteBookmarkByUser(bookmarkId: string, userEmail: string): Promise<DeleteResultDto>;
 }

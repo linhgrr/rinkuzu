@@ -23,6 +23,6 @@ export const DELETE = withAdmin<{ id: string }>(async (_request, { params }) => 
 
   const result = await adminQuizService.deleteAdminQuiz(input.data.id);
   return result.success
-    ? apiOk(null, 200, { meta: { message: 'Quiz deleted successfully' } })
+    ? apiOk(result.data, 200, { meta: { message: 'Quiz deleted successfully' } })
     : apiServiceErr(result);
 });

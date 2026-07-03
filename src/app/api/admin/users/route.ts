@@ -75,7 +75,7 @@ export const DELETE = withAdmin(async (request: NextRequest, context) => {
       return apiServiceErr(result);
     }
 
-    return apiOk(null, 200, { meta: { message: 'User deleted successfully' } });
+    return apiOk(result.data, 200, { meta: { message: 'User deleted successfully' } });
   } catch (error: unknown) {
     logger.error({ error }, 'Delete user error');
     return apiErr('internal_error', 'Internal server error', 500);

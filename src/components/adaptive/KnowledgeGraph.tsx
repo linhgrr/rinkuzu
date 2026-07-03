@@ -18,7 +18,7 @@ import {
 
 import dagre from 'dagre';
 import { Lock } from 'lucide-react';
-import { Spinner } from '@/components/ui/Spinner';
+import { PanelBlockSkeleton } from '@/components/ui/PageLoadingSkeletons';
 import { getConceptDetail } from '@/features/adaptive/lib/adaptive-api-methods';
 import { useKnowledgeGraph } from '@/hooks/useAdaptive';
 import type {
@@ -331,11 +331,7 @@ export default function KnowledgeGraph({ sessionId }: KnowledgeGraphProps) {
   }
 
   if (loading) {
-    return (
-      <div className="flex h-[400px] w-full items-center justify-center rounded-xl border border-neutral-200 bg-white">
-        <Spinner />
-      </div>
-    );
+    return <PanelBlockSkeleton label={t('knowledgeGraph.title')} />;
   }
 
   if (graphFetchError) {

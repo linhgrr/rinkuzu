@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
+import { PdfPanelSkeleton } from '@/components/ui/PageLoadingSkeletons';
 import { openInNewTabSafely } from '@/lib/security/trusted-navigation';
 
 interface PDFViewerProps {
@@ -49,10 +50,7 @@ export default function PDFViewer({
         {displayUrl ? (
           <PDFViewerFrame key={displayUrl} displayUrl={displayUrl} />
         ) : (
-          <div className="flex flex-col items-center gap-2 text-neutral-400">
-            <div className="animate-spin rounded-full size-8 border-b-2 border-current"></div>
-            <span>Loading PDF…</span>
-          </div>
+          <PdfPanelSkeleton label="Loading PDF" />
         )}
       </div>
     </div>
@@ -65,9 +63,8 @@ function PDFViewerFrame({ displayUrl }: { displayUrl: string }) {
   return (
     <>
       {isLoading ? (
-        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-neutral-100 text-neutral-400">
-          <div className="size-8 animate-spin rounded-full border-b-2 border-current" />
-          <span>Loading PDF…</span>
+        <div className="absolute inset-0 z-10 bg-neutral-100">
+          <PdfPanelSkeleton label="Loading PDF" />
         </div>
       ) : null}
       <iframe

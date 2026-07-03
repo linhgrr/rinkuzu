@@ -2,7 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/Button';
-import { Spinner } from '@/components/ui/Spinner';
+import { PanelBlockSkeleton } from '@/components/ui/PageLoadingSkeletons';
 import {
   HiArrowRight,
   HiOutlineAcademicCap,
@@ -19,11 +19,7 @@ import type { SessionHistoryDetail } from '@/features/adaptive/types/history';
 import type { SessionStatus, TranslateFn } from '@/features/adaptive/types/learning';
 
 function SectionSkeleton() {
-  return (
-    <div className="flex h-[400px] w-full items-center justify-center rounded-xl border border-neutral-200 bg-white shadow-sm">
-      <Spinner size="lg" />
-    </div>
-  );
+  return <PanelBlockSkeleton label="Loading section" />;
 }
 
 const KnowledgeGraph = dynamic(() => import('./KnowledgeGraph'), {
@@ -38,11 +34,7 @@ const ExerciseHistoryTable = dynamic(
   () =>
     import('./ExerciseHistoryTable').then((module) => ({ default: module.ExerciseHistoryTable })),
   {
-    loading: () => (
-      <div className="flex items-center justify-center gap-2 py-10 text-neutral-500">
-        <Spinner />
-      </div>
-    ),
+    loading: () => <PanelBlockSkeleton label="Loading exercise history" />,
     ssr: false,
   },
 );
@@ -270,10 +262,7 @@ export const SubjectDetailsTabContent = ({
     {activeTab === 'mastery' && <MasteryMatrix sessionId={sessionId} filterActiveOnly />}
     {activeTab === 'history' &&
       (historyLoading ? (
-        <div className="flex items-center justify-center gap-2 py-10 text-neutral-500">
-          <Spinner />
-          <span className="text-sm">{t('history.loadingFromMongoDB')}</span>
-        </div>
+        <PanelBlockSkeleton label={t('history.loadingFromMongoDB')} />
       ) : historyDetail ? (
         <ExerciseHistoryTable exercises={historyDetail.exercise_history} />
       ) : (

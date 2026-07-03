@@ -9,6 +9,7 @@ import { useSession } from 'next-auth/react';
 import useSWR from 'swr';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
+import { PdfPanelSkeleton, RedirectPageSkeleton } from '@/components/ui/PageLoadingSkeletons';
 import QuizMetaForm from '@/features/quiz/components/QuizMetaForm';
 import PDFViewer from '@/features/quiz/components/PDFViewer';
 import { useDraftStore } from '@/store/useDraftStore';
@@ -147,15 +148,7 @@ function PDFViewerComponent({ file, onClose }: { file: File; onClose: () => void
   }, [data?.pdfUrl]);
 
   if (isLoading) {
-    return (
-      <div className="w-full h-full flex items-center justify-center bg-neutral-50">
-        <div className="text-center">
-          <div className="size-8 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust mx-auto mb-2" />
-          <p className="text-sm text-neutral-600">{t('loadingPDF')}</p>
-          <p className="text-xs text-neutral-500 mt-1">{t('thisWillTakeMoment')}</p>
-        </div>
-      </div>
-    );
+    return <PdfPanelSkeleton label={`${t('loadingPDF')} ${t('thisWillTakeMoment')}`} />;
   }
 
   if (error) {
@@ -628,11 +621,7 @@ export default function CreateQuizPage() {
   };
 
   if (isRedirecting) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-neutral-50">
-        <div className="size-10 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
-      </div>
-    );
+    return <RedirectPageSkeleton label={t('processingStarted')} />;
   }
 
   return (

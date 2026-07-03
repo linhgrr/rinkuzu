@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { HiOutlineAcademicCap } from 'react-icons/hi';
-import { Spinner } from '@/components/ui/Spinner';
+import { PanelBlockSkeleton } from '@/components/ui/PageLoadingSkeletons';
 import { useKnowledgeGraph, useMasteryMatrix } from '@/hooks/useAdaptive';
 import type { MasteryRow } from '@/features/adaptive/types/graph';
 
@@ -133,14 +133,7 @@ export default function MasteryMatrix({ sessionId, filterActiveOnly = false }: M
   const displayMatrix = sortedMatrix.slice(0, 30);
 
   if (loading) {
-    return (
-      <div className="rounded-md border border-neutral-200 bg-white p-8">
-        <div className="mb-4 flex items-center gap-3">
-          <Spinner />
-          <span className="text-neutral-500 font-medium">{t('masteryMatrix.loading')}</span>
-        </div>
-      </div>
-    );
+    return <PanelBlockSkeleton label={t('masteryMatrix.loading')} />;
   }
 
   if (!data || data.matrix.length === 0 || displayMatrix.length === 0) {

@@ -1,18 +1,12 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { Spinner } from '@/components/ui/Spinner';
+import { PanelBlockSkeleton } from '@/components/ui/PageLoadingSkeletons';
 import type { TranslateFn } from '@/features/adaptive/types/learning';
 import type { PipelinePartialGraph } from '@/features/adaptive/types/pipeline';
 
 const ProcessingGraphPanel = dynamic(() => import('./ProcessingGraphPanel'), {
-  loading: () => (
-    <div className="flex h-full w-full items-center justify-center text-sm text-neutral-400">
-      <div className="flex flex-col items-center gap-3">
-        <Spinner size="lg" />
-      </div>
-    </div>
-  ),
+  loading: () => <PanelBlockSkeleton label="Loading processing graph" />,
   ssr: false,
 });
 

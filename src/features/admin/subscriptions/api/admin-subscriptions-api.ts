@@ -1,8 +1,12 @@
-import type { AdminSubscriptionListDto } from '@/dtos/admin-billing';
+import type { AdminSubscriptionDto, AdminSubscriptionListDto } from '@/dtos/admin-billing';
 import { fetchApiData } from '@/lib/api/client';
-import { toAdminSubscriptionsListViewModel } from '@/features/admin/subscriptions/mappers/admin-subscriptions.mapper';
+import {
+  toAdminSubscriptionsListViewModel,
+  toAdminSubscriptionViewModel,
+} from '@/features/admin/subscriptions/mappers/admin-subscriptions.mapper';
 import type {
   AdminMutableSubscriptionStatusViewModel,
+  AdminSubscriptionViewModel,
   AdminSubscriptionStatusViewModel,
   AdminSubscriptionsListViewModel,
 } from '@/features/admin/subscriptions/types/admin-subscriptions-view-model';
@@ -42,12 +46,16 @@ export async function updateAdminSubscriptionStatus({
 }: {
   subscriptionId: string;
   status: AdminMutableSubscriptionStatusViewModel;
-}): Promise<void> {
-  await fetchApiData<null>(`/api/admin/subscriptions/${subscriptionId}`, {
-    method: 'PATCH',
-    headers: {
-      'Content-Type': 'application/json',
+}): Promise<AdminSubscriptionViewModel> {
+  const data = await fetchApiData<AdminSubscriptionDto>(
+    `/api/admin/subscriptions/${subscriptionId}`,
+    {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ status }),
     },
-    body: JSON.stringify({ status }),
-  });
+  );
+  return toAdminSubscriptionViewModel(data);
 }

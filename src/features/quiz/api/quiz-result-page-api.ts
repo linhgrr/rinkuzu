@@ -1,4 +1,5 @@
 import type { BookmarkDto, BookmarkListDto } from '@/dtos/bookmark';
+import type { DeleteResultDto } from '@/dtos/common';
 import { fetchAttemptDetailViewModel } from '@/features/profile/api/attempt-detail-api';
 import type {
   QuizResultBookmarkLookup,
@@ -37,8 +38,8 @@ export async function fetchQuizResultPageData(
   return { result, bookmarks };
 }
 
-export async function deleteQuizResultBookmark(bookmarkId: string): Promise<void> {
-  await fetchApiData<null>(`/api/bookmarks/${bookmarkId}`, { method: 'DELETE' });
+export async function deleteQuizResultBookmark(bookmarkId: string): Promise<DeleteResultDto> {
+  return fetchApiData<DeleteResultDto>(`/api/bookmarks/${bookmarkId}`, { method: 'DELETE' });
 }
 
 export async function createQuizResultBookmark(input: {

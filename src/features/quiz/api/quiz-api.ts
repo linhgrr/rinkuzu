@@ -1,7 +1,8 @@
+import type { DeleteResultDto } from '@/dtos/common';
 import { fetchApiData } from '@/lib/api/client';
 import { routePathSegment } from '@/lib/routing/routeParams';
 
-export async function deleteQuizById(quizId: string): Promise<void> {
+export async function deleteQuizById(quizId: string): Promise<DeleteResultDto> {
   const encodedQuizId = routePathSegment(quizId);
-  await fetchApiData<null>(`/api/quizzes/${encodedQuizId}`, { method: 'DELETE' });
+  return fetchApiData<DeleteResultDto>(`/api/quizzes/${encodedQuizId}`, { method: 'DELETE' });
 }

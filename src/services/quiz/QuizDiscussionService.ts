@@ -22,7 +22,7 @@ export class QuizDiscussionService {
     session?: Session | null,
   ): Promise<ServiceResult<QuizDiscussionDto[]>> {
     try {
-      const quiz = await this.quizRepository.findBySlug(slug);
+      const quiz = await this.quizRepository.findSummaryBySlug(slug);
 
       if (!quiz) {
         return {
@@ -39,7 +39,7 @@ export class QuizDiscussionService {
 
       const allDiscussions = await this.discussionRepository.ensureForQuizQuestions(
         quiz.id,
-        quiz.questions.length,
+        quiz.questionCount ?? 0,
       );
 
       return {
@@ -64,7 +64,7 @@ export class QuizDiscussionService {
     session?: Session | null,
   ): Promise<ServiceResult<QuizDiscussionDto>> {
     try {
-      const quiz = await this.quizRepository.findBySlug(slug);
+      const quiz = await this.quizRepository.findSummaryBySlug(slug);
 
       if (!quiz) {
         return {
@@ -79,7 +79,7 @@ export class QuizDiscussionService {
       const privateAccessError = await checkPrivateQuizAccess(quiz, userId, userRole);
       if (privateAccessError) return privateAccessError;
 
-      if (questionIndex < 0 || questionIndex >= quiz.questions.length) {
+      if (questionIndex < 0 || questionIndex >= (quiz.questionCount ?? 0)) {
         return {
           success: false,
           error: 'Invalid question index',
@@ -144,7 +144,7 @@ export class QuizDiscussionService {
     reporterName: string,
   ): Promise<ServiceResult<ReportQuizResponseDto>> {
     try {
-      const quiz = await this.quizRepository.findBySlug(slug);
+      const quiz = await this.quizRepository.findSummaryBySlug(slug);
 
       if (!quiz) {
         return {

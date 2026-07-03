@@ -102,6 +102,14 @@ UserSchema.index(
   { sparse: true, partialFilterExpression: { emailVerificationTokenHash: { $type: 'string' } } },
 );
 UserSchema.index({ lockedUntil: 1 }, { sparse: true });
+UserSchema.index(
+  { 'subscription.isActive': 1, 'subscription.endDate': 1 },
+  { partialFilterExpression: { 'subscription.isActive': true } },
+);
+UserSchema.index(
+  { 'subscription.payosOrderId': 1 },
+  { sparse: true, partialFilterExpression: { 'subscription.payosOrderId': { $type: 'string' } } },
+);
 
 UserSchema.pre('save', function (next) {
   if (this.isModified('password') && this.password) {

@@ -17,7 +17,8 @@ export interface LibraryQuizPersistenceRecord {
   description?: string;
   author: MongoIdLike | LibraryQuizAuthorPersistenceRecord | null;
   folder?: MongoIdLike | null;
-  questions: QuizQuestionPersistenceRecord[];
+  questions?: QuizQuestionPersistenceRecord[];
+  questionCount?: number;
   isPrivate: boolean;
   pdfUrl?: string;
   createdAt: Date;

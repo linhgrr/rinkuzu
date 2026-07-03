@@ -7,9 +7,20 @@ import type {
   StreakFreezePurchaseResult,
   UserLearningProgress,
 } from '@/entities/LearningProgress';
+import type {
+  PaginatedRepositoryResult,
+  RepositoryPaginationOptions,
+} from '@/interfaces/repositories/types';
+
+export interface LibraryQuizListOptions extends RepositoryPaginationOptions {
+  folder?: string | null;
+}
 
 export interface ILearningProgressRepository {
-  listLibraryQuizzes(userId: string): Promise<LibraryQuiz[]>;
+  listLibraryQuizzes(
+    userId: string,
+    options: LibraryQuizListOptions,
+  ): Promise<PaginatedRepositoryResult<LibraryQuiz>>;
 
   listDueQuestions(userId: string, now: Date, limit: number): Promise<QuestionReviewProgress[]>;
 

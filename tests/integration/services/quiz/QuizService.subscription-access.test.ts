@@ -25,6 +25,11 @@ function createQuizService(quiz: Quiz) {
   const quizRepository: Mocked<IQuizRepository> = {
     findById: vi.fn(),
     findBySlug: vi.fn().mockResolvedValue(quiz),
+    findSummaryBySlug: vi.fn().mockResolvedValue({
+      ...quiz,
+      questions: [],
+      questionCount: quiz.questionCount ?? quiz.questions.length,
+    }),
     findIdBySlug: vi.fn().mockResolvedValue(quiz.id),
     findBySourceDraftId: vi.fn(),
     create: vi.fn(),

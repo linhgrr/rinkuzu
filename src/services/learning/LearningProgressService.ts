@@ -15,8 +15,6 @@ import type {
 import type { ILearningProgressRepository } from '@/interfaces/repositories/ILearningProgressRepository';
 import type { ILearningProgressService } from '@/interfaces/services/ILearningProgressService';
 import type { ServiceResult } from '@/interfaces/services/types';
-import { buildPaginationMeta } from '@/lib/pagination';
-import { matchesLibraryFolder } from '@/lib/quiz/library';
 import { logger } from '@/lib/logger';
 import type { SRSRating } from '@/entities/SpacedRepetition';
 import { calculateNextReview } from '@/services/srs.service';
@@ -77,20 +75,11 @@ export class LearningProgressService implements ILearningProgressService {
     options: LibraryListQueryDto,
   ): Promise<ServiceResult<LibraryListDto>> {
     try {
-      const library = (await this.repository.listLibraryQuizzes(userId))
-        .filter((quiz) => matchesLibraryFolder(quiz.folder, options.folder))
-        .toSorted(
-          (left, right) =>
-            new Date(right.displayDate).getTime() - new Date(left.displayDate).getTime(),
-        );
+      const library = await this.repository.listLibraryQuizzes(userId, options);
 
-      const start = (options.page - 1) * options.limit;
       return {
         success: true,
-        data: LearningProgressDtoMapper.toLibraryListDto(
-          library.slice(start, start + options.limit),
-          buildPaginationMeta(options.page, options.limit, library.length),
-        ),
+        data: LearningProgressDtoMapper.toLibraryListDto(library.items, library.pagination),
       };
     } catch (error) {
       logger.error({ error, userId }, 'Get quiz library error');

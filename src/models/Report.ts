@@ -64,6 +64,7 @@ const reportSchema = new mongoose.Schema<ReportDocument>(
 
 // Index for efficient queries
 reportSchema.index({ status: 1, createdAt: -1 });
+reportSchema.index({ createdAt: -1 });
 reportSchema.index({ quizId: 1 });
 
 const Report = mongoose.models['Report'] || mongoose.model<ReportDocument>('Report', reportSchema);

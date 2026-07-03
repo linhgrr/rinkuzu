@@ -1,4 +1,11 @@
-import type { RegisterAccountDto, RegisterAccountResponseDto, EmailResponseDto } from '@/dtos/auth';
+import type {
+  EmailResponseDto,
+  PasswordResetRequestResultDto,
+  PasswordResetResultDto,
+  RegisterAccountDto,
+  RegisterAccountResponseDto,
+  VerificationResendResultDto,
+} from '@/dtos/auth';
 import type { AuthRequestContext } from '@/entities/AuthAccount';
 import type { ServiceResult } from '@/interfaces/services/types';
 
@@ -13,13 +20,19 @@ export interface IAuthAccountService {
     context: AuthRequestContext,
   ): Promise<ServiceResult<EmailResponseDto>>;
 
-  requestPasswordReset(email: string, context: AuthRequestContext): Promise<ServiceResult<null>>;
+  requestPasswordReset(
+    email: string,
+    context: AuthRequestContext,
+  ): Promise<ServiceResult<PasswordResetRequestResultDto>>;
 
-  resendVerification(email: string, context: AuthRequestContext): Promise<ServiceResult<null>>;
+  resendVerification(
+    email: string,
+    context: AuthRequestContext,
+  ): Promise<ServiceResult<VerificationResendResultDto>>;
 
   resetPassword(
     rawToken: string,
     password: string,
     context: AuthRequestContext,
-  ): Promise<ServiceResult<null>>;
+  ): Promise<ServiceResult<PasswordResetResultDto>>;
 }

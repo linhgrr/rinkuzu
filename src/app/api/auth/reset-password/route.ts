@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
     context,
   );
   return result.success
-    ? apiOk(null, 200, {
+    ? apiOk(result.data, 200, {
         meta: { message: 'Password updated. Please sign in with your new password.' },
       })
     : apiServiceErr(result);

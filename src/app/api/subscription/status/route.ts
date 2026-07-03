@@ -9,21 +9,13 @@ export const dynamic = 'force-dynamic';
 export const GET = withAuth(async (_request: NextRequest, { userId }) => {
   try {
     const subscriptionService = createSubscriptionService();
-    const subscription = await subscriptionService.getUserSubscription(userId);
-    const isPremium = await subscriptionService.isUserPremium(userId);
+    const status = await subscriptionService.getSubscriptionStatus(userId);
 
-    return apiOk(
-      {
-        subscription: isPremium ? subscription : null,
-        isPremium,
+    return apiOk(status, 200, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate',
       },
-      200,
-      {
-        headers: {
-          'Cache-Control': 'no-store, no-cache, must-revalidate',
-        },
-      },
-    );
+    });
   } catch (error) {
     logger.error({ error }, 'Error fetching subscription status');
     return apiErr('internal_error', 'Failed to fetch subscription status', 500);

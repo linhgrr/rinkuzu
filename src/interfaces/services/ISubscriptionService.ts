@@ -1,19 +1,17 @@
-import type {
-  AdminMutableSubscriptionStatus,
-  SubscriptionRecord,
-  UserSubscription,
-} from '@/entities/Subscription';
+import type { AdminSubscriptionDto, UpdateSubscriptionRequestDto } from '@/dtos/admin-billing';
 import type {
   PaymentRequestDto,
   SubscriptionActivationDto,
   SubscriptionCancellationDto,
+  SubscriptionHistoryItemDto,
   SubscriptionPlanDto,
+  SubscriptionStatusResponseDto,
   VerifiedPaymentDto,
 } from '@/dtos/subscription';
 import type { ServiceResult } from '@/interfaces/services/types';
 
 export interface ISubscriptionService {
-  getUserSubscription(userId: string): Promise<UserSubscription | null>;
+  getSubscriptionStatus(userId: string): Promise<SubscriptionStatusResponseDto>;
   isUserPremium(userId: string): Promise<boolean>;
   createPaymentRequest(userId: string, planId: string): Promise<PaymentRequestDto>;
   verifyAndActivateSubscription(
@@ -24,16 +22,16 @@ export interface ISubscriptionService {
     orderCode: number,
     paymentData: VerifiedPaymentDto,
   ): Promise<SubscriptionActivationDto>;
-  getSubscriptionHistory(userId: string): Promise<SubscriptionRecord[]>;
+  getSubscriptionHistory(userId: string): Promise<SubscriptionHistoryItemDto[]>;
   cancelSubscription(userId: string): Promise<SubscriptionCancellationDto>;
   getSubscriptionPlans(): Promise<SubscriptionPlanDto[]>;
   checkAndUpdateExpiredSubscriptions(): Promise<number>;
   updateSubscriptionById(
     id: string,
     update: UpdateSubscriptionStatusInput,
-  ): Promise<ServiceResult<SubscriptionRecord>>;
+  ): Promise<ServiceResult<AdminSubscriptionDto>>;
 }
 
 export interface UpdateSubscriptionStatusInput {
-  status: AdminMutableSubscriptionStatus;
+  status: UpdateSubscriptionRequestDto['status'];
 }

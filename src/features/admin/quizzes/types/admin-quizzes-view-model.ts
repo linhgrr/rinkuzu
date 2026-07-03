@@ -43,3 +43,11 @@ export interface AdminQuizListViewModel {
   quizzes: AdminQuizListItemViewModel[];
   pagination: AdminQuizzesPaginationViewModel;
 }
+
+export interface AdminQuizListQueryInput {
+  page: number;
+  limit: number;
+  search: string;
+  visibility: AdminQuizVisibilityViewModel;
+  signal: AbortSignal;
+}

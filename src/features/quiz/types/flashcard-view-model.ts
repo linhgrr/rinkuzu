@@ -16,3 +16,9 @@ export interface FlashcardQuizViewModel {
   description?: string;
   questions: FlashcardQuestionViewModel[];
 }
+
+export interface FlashcardReviewInput {
+  quizSlug: string;
+  question: FlashcardQuestionViewModel;
+  rating: 'good' | 'hard';
+}

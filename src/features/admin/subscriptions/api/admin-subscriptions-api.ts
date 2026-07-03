@@ -5,9 +5,9 @@ import {
   toAdminSubscriptionViewModel,
 } from '@/features/admin/subscriptions/mappers/admin-subscriptions.mapper';
 import type {
-  AdminMutableSubscriptionStatusViewModel,
+  AdminSubscriptionsQueryInput,
   AdminSubscriptionViewModel,
-  AdminSubscriptionStatusViewModel,
+  AdminSubscriptionStatusUpdateInput,
   AdminSubscriptionsListViewModel,
 } from '@/features/admin/subscriptions/types/admin-subscriptions-view-model';
 
@@ -17,13 +17,7 @@ export async function fetchAdminSubscriptionsViewModel({
   searchTerm,
   statusFilter,
   signal,
-}: {
-  page: number;
-  limit: number;
-  searchTerm: string;
-  statusFilter: '' | AdminSubscriptionStatusViewModel;
-  signal: AbortSignal;
-}): Promise<AdminSubscriptionsListViewModel> {
+}: AdminSubscriptionsQueryInput): Promise<AdminSubscriptionsListViewModel> {
   const params = new URLSearchParams({
     page: page.toString(),
     limit: limit.toString(),
@@ -43,10 +37,7 @@ export async function fetchAdminSubscriptionsViewModel({
 export async function updateAdminSubscriptionStatus({
   subscriptionId,
   status,
-}: {
-  subscriptionId: string;
-  status: AdminMutableSubscriptionStatusViewModel;
-}): Promise<AdminSubscriptionViewModel> {
+}: AdminSubscriptionStatusUpdateInput): Promise<AdminSubscriptionViewModel> {
   const data = await fetchApiData<AdminSubscriptionDto>(
     `/api/admin/subscriptions/${subscriptionId}`,
     {

@@ -34,3 +34,15 @@ export interface QuizDiscussionViewModel {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface SubmitQuizAttemptInput {
+  slug: string;
+  answers: QuizAnswer[];
+  userEmail: string;
+}
+
+export interface AddQuizDiscussionCommentInput {
+  slug: string;
+  questionIndex: number;
+  content: string;
+}

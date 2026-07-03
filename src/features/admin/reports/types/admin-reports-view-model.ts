@@ -20,3 +20,9 @@ export interface AdminReportViewModel {
   adminNotes?: string;
   adminNotesInput: string;
 }
+
+export interface AdminReportStatusUpdateInput {
+  reportId: string;
+  status: AdminReportStatusViewModel;
+  adminNotes: string;
+}

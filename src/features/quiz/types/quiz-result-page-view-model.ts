@@ -20,3 +20,9 @@ export interface QuizResultPageDataViewModel {
 export interface QuizResultBookmarkMutationViewModel {
   id: string;
 }
+
+export interface CreateQuizResultBookmarkInput {
+  result: QuizResultViewModel;
+  questionIndex: number;
+  question: QuizResultQuestionViewModel;
+}

@@ -1,11 +1,12 @@
 import { ApiResponseError, fetchApiResponse } from '@/lib/api/client';
 import { extractApiErrorMeta } from '@/lib/api/error';
+import type {
+  AuthActionResult,
+  RegisterAccountInput,
+  ResetPasswordInput,
+} from '@/features/auth/types/auth-api';
 
 type AuthSuccessMeta = {
-  message?: string;
-};
-
-export type AuthActionResult = {
   message?: string;
 };
 
@@ -19,7 +20,7 @@ export class AuthRateLimitError extends Error {
   }
 }
 
-async function postAuthAction<TBody extends Record<string, unknown>>(
+async function postAuthAction<TBody extends object>(
   path: string,
   body: TBody,
 ): Promise<AuthActionResult> {
@@ -35,10 +36,7 @@ export async function requestPasswordReset(email: string): Promise<AuthActionRes
   return postAuthAction('/api/auth/forgot-password', { email });
 }
 
-export async function resetPassword(input: {
-  token: string;
-  password: string;
-}): Promise<AuthActionResult> {
+export async function resetPassword(input: ResetPasswordInput): Promise<AuthActionResult> {
   return postAuthAction('/api/auth/reset-password', input);
 }
 
@@ -68,9 +66,6 @@ export async function resendVerificationEmail(
   }
 }
 
-export async function registerAccount(input: {
-  email: string;
-  password: string;
-}): Promise<AuthActionResult> {
+export async function registerAccount(input: RegisterAccountInput): Promise<AuthActionResult> {
   return postAuthAction('/api/auth/register', input);
 }

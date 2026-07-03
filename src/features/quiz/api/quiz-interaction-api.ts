@@ -12,10 +12,11 @@ import {
   toSavedQuizProgressViewModel,
 } from '@/features/quiz/mappers/quiz-interaction.mapper';
 import type {
-  QuizAnswer,
+  AddQuizDiscussionCommentInput,
   QuizAttemptResultViewModel,
   QuizDiscussionViewModel,
   SavedQuizProgress,
+  SubmitQuizAttemptInput,
 } from '@/features/quiz/types/quiz-interaction-view-model';
 import { fetchApiData } from '@/lib/api/client';
 import { routePathSegment } from '@/lib/routing/routeParams';
@@ -28,11 +29,7 @@ export async function submitQuizAttemptViewModel({
   slug,
   answers,
   userEmail,
-}: {
-  slug: string;
-  answers: QuizAnswer[];
-  userEmail: string;
-}): Promise<QuizAttemptResultViewModel> {
+}: SubmitQuizAttemptInput): Promise<QuizAttemptResultViewModel> {
   const encodedSlug = routePathSegment(slug);
   const dto = await fetchApiData<QuizAttemptResultDto>(`/api/quiz/${encodedSlug}/attempt`, {
     method: 'POST',
@@ -47,8 +44,11 @@ export async function loadSavedQuizProgress(slug: string): Promise<SavedQuizProg
   return dto.progress ? toSavedQuizProgressViewModel(dto.progress) : null;
 }
 
-export async function saveQuizProgress(slug: string, progress: SavedQuizProgress): Promise<void> {
-  await fetchApiData<SaveQuizProgressResponseDto>(quizProgressUrl(slug), {
+export async function saveQuizProgress(
+  slug: string,
+  progress: SavedQuizProgress,
+): Promise<SaveQuizProgressResponseDto> {
+  return fetchApiData<SaveQuizProgressResponseDto>(quizProgressUrl(slug), {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(progress),
@@ -56,8 +56,10 @@ export async function saveQuizProgress(slug: string, progress: SavedQuizProgress
   });
 }
 
-export async function deleteSavedQuizProgress(slug: string): Promise<void> {
-  await fetchApiData<DeleteQuizProgressResponseDto>(quizProgressUrl(slug), {
+export async function deleteSavedQuizProgress(
+  slug: string,
+): Promise<DeleteQuizProgressResponseDto> {
+  return fetchApiData<DeleteQuizProgressResponseDto>(quizProgressUrl(slug), {
     method: 'DELETE',
   });
 }
@@ -74,11 +76,7 @@ export async function addQuizDiscussionCommentViewModel({
   slug,
   questionIndex,
   content,
-}: {
-  slug: string;
-  questionIndex: number;
-  content: string;
-}): Promise<QuizDiscussionViewModel> {
+}: AddQuizDiscussionCommentInput): Promise<QuizDiscussionViewModel> {
   const encodedSlug = routePathSegment(slug);
   const dto = await fetchApiData<QuizDiscussionDto>(`/api/quiz/${encodedSlug}/discussions`, {
     method: 'POST',
@@ -88,9 +86,12 @@ export async function addQuizDiscussionCommentViewModel({
   return toQuizDiscussionViewModel(dto);
 }
 
-export async function reportQuizViewModel(slug: string, content: string): Promise<void> {
+export async function reportQuizViewModel(
+  slug: string,
+  content: string,
+): Promise<ReportQuizResponseDto> {
   const encodedSlug = routePathSegment(slug);
-  await fetchApiData<ReportQuizResponseDto>(`/api/quiz/${encodedSlug}/report`, {
+  return fetchApiData<ReportQuizResponseDto>(`/api/quiz/${encodedSlug}/report`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ content }),

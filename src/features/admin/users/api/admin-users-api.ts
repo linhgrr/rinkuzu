@@ -5,7 +5,8 @@ import { fetchApiData } from '@/lib/api/client';
 import { toAdminUserListViewModel } from '@/features/admin/users/mappers/admin-users.mapper';
 import type {
   AdminUserListViewModel,
-  AdminUserRoleViewModel,
+  AdminUserRoleUpdateInput,
+  AdminUserSubscriptionGrantInput,
 } from '@/features/admin/users/types/admin-users-view-model';
 
 export async function fetchAdminUserListViewModel(url: string): Promise<AdminUserListViewModel> {
@@ -16,10 +17,7 @@ export async function fetchAdminUserListViewModel(url: string): Promise<AdminUse
 export async function updateAdminUserRole({
   userId,
   role,
-}: {
-  userId: string;
-  role: AdminUserRoleViewModel;
-}): Promise<AdminMessageDto> {
+}: AdminUserRoleUpdateInput): Promise<AdminMessageDto> {
   return fetchApiData<AdminMessageDto>('/api/admin/users', {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
@@ -36,10 +34,7 @@ export async function deleteAdminUser(userId: string): Promise<DeleteResultDto> 
 export async function grantAdminUserSubscription({
   userId,
   planId,
-}: {
-  userId: string;
-  planId: string;
-}): Promise<AdminUserSubscriptionGrantDto> {
+}: AdminUserSubscriptionGrantInput): Promise<AdminUserSubscriptionGrantDto> {
   return fetchApiData<AdminUserSubscriptionGrantDto>('/api/admin/users', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

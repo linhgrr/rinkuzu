@@ -94,10 +94,10 @@ export class AdminBillingRepository implements IAdminBillingRepository {
           .lean<{ _id: string }>();
         if (!plan) return;
 
-        const [subscriptionExists, assignedUserExists] = await Promise.all([
-          Subscription.exists({ type: planId }).session(session),
-          User.exists({ 'subscription.type': planId }).session(session),
-        ]);
+        const subscriptionExists = await Subscription.exists({ type: planId }).session(session);
+        const assignedUserExists = await User.exists({ 'subscription.type': planId }).session(
+          session,
+        );
         if (subscriptionExists || assignedUserExists) {
           throw new BillingPlanInUseError();
         }

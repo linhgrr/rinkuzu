@@ -173,13 +173,13 @@ export class FolderRepository implements IFolderRepository {
           .lean<{ _id: Types.ObjectId }>();
         if (!folder) return;
 
-        await Promise.all([
-          Quiz.updateMany(
-            { author: ownerObjectId, folder: folderObjectId },
-            { $set: { folder: null } },
-          ).session(session),
-          FolderQuiz.deleteMany({ owner: ownerObjectId, folder: folderObjectId }).session(session),
-        ]);
+        await Quiz.updateMany(
+          { author: ownerObjectId, folder: folderObjectId },
+          { $set: { folder: null } },
+        ).session(session);
+        await FolderQuiz.deleteMany({ owner: ownerObjectId, folder: folderObjectId }).session(
+          session,
+        );
         const result = await FolderModel.deleteOne({
           _id: folderObjectId,
           owner: ownerObjectId,

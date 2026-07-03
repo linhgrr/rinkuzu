@@ -69,8 +69,7 @@ function createQuizService(quiz: Quiz) {
     findById: vi.fn(),
     findByQuiz: vi.fn().mockResolvedValue([]),
     ensureForQuizQuestions: vi.fn(),
-    ensureForQuizQuestion: vi.fn(),
-    addComment: vi.fn(),
+    addCommentForQuizQuestion: vi.fn(),
   };
   const reportRepository: Mocked<IReportRepository> = {
     findById: vi.fn(),
@@ -167,6 +166,6 @@ describe('QuizService subscription access gates', () => {
 
     assertOk(result);
     expect(discussionRepository.ensureForQuizQuestions).toHaveBeenCalledWith('quiz-1', 1);
-    expect(discussionRepository.ensureForQuizQuestion).not.toHaveBeenCalled();
+    expect(discussionRepository.addCommentForQuizQuestion).not.toHaveBeenCalled();
   });
 });

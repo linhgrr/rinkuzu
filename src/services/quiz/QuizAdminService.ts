@@ -81,7 +81,7 @@ export class QuizAdminService {
 
   async deleteAdminQuiz(id: string): Promise<ServiceResult<DeleteResultDto>> {
     try {
-      const quiz = await this.quizRepository.findById(id);
+      const quiz = await this.quizRepository.findAccessById(id);
       if (!quiz) {
         return {
           success: false,

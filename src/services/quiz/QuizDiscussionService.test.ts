@@ -42,6 +42,7 @@ function discussion(overrides: Partial<Discussion> = {}): Discussion {
 function createService() {
   const quizRepository: Mocked<IQuizRepository> = {
     findById: vi.fn(),
+    findAccessById: vi.fn(),
     findBySlug: vi.fn(),
     findSummaryBySlug: vi.fn().mockResolvedValue(quizSummary()),
     findIdBySlug: vi.fn(),

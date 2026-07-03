@@ -42,6 +42,7 @@ function createReportRepository(overrides: Partial<IReportRepository> = {}): IRe
 function createQuizRepository(overrides: Partial<IQuizRepository> = {}): IQuizRepository {
   return {
     findById: vi.fn(),
+    findAccessById: vi.fn(),
     findBySlug: vi.fn(),
     findSummaryBySlug: vi.fn(),
     findIdBySlug: vi.fn(),

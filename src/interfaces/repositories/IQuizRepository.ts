@@ -31,6 +31,8 @@ export interface QuizCreatorStatRecord {
   totalQuestions: number;
 }
 
+export type QuizAccessRecord = Pick<Quiz, 'id' | 'author' | 'isPrivate'>;
+
 export interface CreateQuizData {
   title: string;
   description?: string;
@@ -53,6 +55,8 @@ export type UpdateQuizData = Partial<
 
 export interface IQuizRepository {
   findById(id: string): Promise<Quiz | null>;
+
+  findAccessById(id: string): Promise<QuizAccessRecord | null>;
 
   findBySlug(slug: string): Promise<Quiz | null>;
 

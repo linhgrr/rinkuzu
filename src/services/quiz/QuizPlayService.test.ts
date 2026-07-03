@@ -23,6 +23,7 @@ const savedProgress = {
 function createService() {
   const quizRepository: Mocked<IQuizRepository> = {
     findById: vi.fn(),
+    findAccessById: vi.fn(),
     findBySlug: vi.fn().mockResolvedValue({
       id: quizId,
       title: 'Quiz',

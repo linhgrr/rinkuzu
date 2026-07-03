@@ -77,6 +77,7 @@ function createService(overrides: ServiceOverrides = {}) {
   };
   const quizRepository: Mocked<IQuizRepository> = {
     findById: vi.fn(),
+    findAccessById: vi.fn(),
     findBySlug: vi.fn(),
     findSummaryBySlug: vi.fn(),
     findIdBySlug: vi.fn(),

@@ -1,5 +1,6 @@
 import type { Folder, FolderOverview } from '@/entities/Folder';
 import type { FolderListDto, FolderSummaryDto } from '@/dtos/folder';
+import { serializeDate } from '@/lib/date-serialization';
 
 export class FolderDtoMapper {
   static toList(folders: FolderOverview[], unfiledCount: number): FolderListDto {
@@ -14,8 +15,8 @@ export class FolderDtoMapper {
       id: folder.id,
       name: folder.name,
       quizCount: 'quizCount' in folder ? folder.quizCount : quizCount,
-      createdAt: folder.createdAt.toISOString(),
-      updatedAt: folder.updatedAt.toISOString(),
+      createdAt: serializeDate(folder.createdAt, 'folder.createdAt'),
+      updatedAt: serializeDate(folder.updatedAt, 'folder.updatedAt'),
     };
   }
 }

@@ -1,12 +1,16 @@
 import type { AccountProfile } from '@/entities/Account';
 import type { AccountProfileDto, AccountSubscriptionDto, AvatarResponseDto } from '@/dtos/account';
+import { serializeDate, serializeOptionalDate } from '@/lib/date-serialization';
 
 function toSubscriptionDto(profile: AccountProfile): AccountSubscriptionDto | undefined {
   if (!profile.subscription) return undefined;
   return {
     type: profile.subscription.type,
-    startDate: profile.subscription.startDate?.toISOString(),
-    endDate: profile.subscription.endDate?.toISOString(),
+    startDate: serializeOptionalDate(
+      profile.subscription.startDate,
+      'profile.subscription.startDate',
+    ),
+    endDate: serializeOptionalDate(profile.subscription.endDate, 'profile.subscription.endDate'),
     isActive: profile.subscription.isActive,
     payosOrderId: profile.subscription.payosOrderId,
     payosTransactionId: profile.subscription.payosTransactionId,
@@ -21,7 +25,7 @@ export class AccountDtoMapper {
       bio: profile.bio,
       avatar: profile.avatar,
       role: profile.role,
-      createdAt: profile.createdAt.toISOString(),
+      createdAt: serializeDate(profile.createdAt, 'profile.createdAt'),
       subscription: toSubscriptionDto(profile),
     };
   }

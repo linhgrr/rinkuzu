@@ -1,4 +1,5 @@
 import type { QuizLibraryStatus } from '@/shared/types/quiz-library';
+import { serializeDate } from '@/lib/date-serialization';
 export type QuizLibraryFilter = 'all' | 'in_progress' | 'complete';
 
 export function resolveQuizLibraryActivity(
@@ -10,12 +11,18 @@ export function resolveQuizLibraryActivity(
   displayDate: string;
 } {
   if (lastProgressAt) {
-    return { libraryStatus: 'in_progress', displayDate: lastProgressAt.toISOString() };
+    return {
+      libraryStatus: 'in_progress',
+      displayDate: serializeDate(lastProgressAt, 'quiz.lastProgressAt'),
+    };
   }
   if (lastAttemptAt) {
-    return { libraryStatus: 'complete', displayDate: lastAttemptAt.toISOString() };
+    return {
+      libraryStatus: 'complete',
+      displayDate: serializeDate(lastAttemptAt, 'quiz.lastAttemptAt'),
+    };
   }
-  return { libraryStatus: 'not_started', displayDate: createdAt.toISOString() };
+  return { libraryStatus: 'not_started', displayDate: serializeDate(createdAt, 'quiz.createdAt') };
 }
 
 export function matchesLibraryFolder(

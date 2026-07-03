@@ -53,6 +53,7 @@ import {
 } from '@/features/adaptive/mappers/pipeline.mapper';
 
 type ApiSchemas = components['schemas'];
+type ExercisePair = { left: string; right: string };
 
 const EXERCISE_TYPES: ReadonlySet<string> = new Set<ExerciseType>([
   'mcq',
@@ -260,10 +261,10 @@ function normalizeExerciseItems(
 }
 
 function normalizeExercisePairs(
-  pairs: Array<{ left: string; right: string }> | undefined,
+  pairs: ExercisePair[] | undefined,
   exerciseType: ExerciseType,
   context: string,
-): Array<{ left: string; right: string }> {
+): ExercisePair[] {
   if (pairs) return pairs;
   if (exerciseType === 'matching') {
     throw invalidAdaptiveEnvelope('Missing pairs for matching exercise', context);

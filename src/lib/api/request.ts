@@ -11,9 +11,9 @@ export type ValidationResult<T> =
   | { success: true; data: T }
   | { success: false; error: string; fields: Record<string, string> };
 
-function toValidationFailure(
-  issues: ZodIssue[],
-): Extract<ValidationResult<never>, { success: false }> {
+export type ValidationFailure = Extract<ValidationResult<never>, { success: false }>;
+
+function toValidationFailure(issues: ZodIssue[]): ValidationFailure {
   const fields: Record<string, string> = {};
   for (const issue of issues) {
     const key = issue.path.join('.') || '_';

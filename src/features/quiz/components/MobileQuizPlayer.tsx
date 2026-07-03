@@ -7,16 +7,53 @@ import { HiOutlineChevronLeft, HiOutlineChevronRight, HiOutlineCheck } from 'rea
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import type { QuizPlayQuestionViewModel } from '@/features/quiz/types/quiz-play-view-model';
 
+type MobileQuizAnswerMap = Record<string, number | number[]>;
+type MobileQuizTranslate = (key: string, values?: Record<string, string | number>) => string;
+type MobileTouchHandler = (event: TouchEvent<HTMLDivElement>) => void;
+
 interface MobileQuizPlayerProps {
   questions: QuizPlayQuestionViewModel[];
-  answers: Record<string, number | number[]>;
+  answers: MobileQuizAnswerMap;
   currentIndex: number;
-  onAnswersChange: (answers: Record<string, number | number[]>) => void;
+  onAnswersChange: (answers: MobileQuizAnswerMap) => void;
   onIndexChange: (index: number) => void;
-  onComplete: (answers: Record<string, number | number[]>) => boolean | Promise<boolean>;
+  onComplete: (answers: MobileQuizAnswerMap) => boolean | Promise<boolean>;
   onExit?: () => void;
   submitting?: boolean;
   submissionError?: string;
+}
+
+interface MobileQuizHeaderProps {
+  answers: MobileQuizAnswerMap;
+  currentIndex: number;
+  goNext: () => void;
+  goPrev: () => void;
+  isFirst: boolean;
+  isLast: boolean;
+  isSubmitting: boolean;
+  questions: QuizPlayQuestionViewModel[];
+  t: MobileQuizTranslate;
+}
+
+interface MobileQuestionCardProps {
+  currentIndex: number;
+  currentQuestion: QuizPlayQuestionViewModel;
+  handleOptionSelect: (optionIndex: number) => void;
+  handleTouchEnd: () => void;
+  handleTouchMove: MobileTouchHandler;
+  handleTouchStart: MobileTouchHandler;
+  isOptionSelected: (optionIndex: number) => boolean;
+  isSubmitting: boolean;
+  t: MobileQuizTranslate;
+}
+
+interface MobileQuizFooterProps {
+  answeredCount: number;
+  handleComplete: () => void;
+  isSubmitting: boolean;
+  questionsLength: number;
+  submissionError?: string;
+  t: (key: string) => string;
 }
 
 function MobileQuizHeader({
@@ -29,17 +66,7 @@ function MobileQuizHeader({
   isSubmitting,
   questions,
   t,
-}: {
-  answers: Record<string, number | number[]>;
-  currentIndex: number;
-  goNext: () => void;
-  goPrev: () => void;
-  isFirst: boolean;
-  isLast: boolean;
-  isSubmitting: boolean;
-  questions: QuizPlayQuestionViewModel[];
-  t: (key: string, values?: Record<string, string | number>) => string;
-}) {
+}: MobileQuizHeaderProps) {
   return (
     <div className="flex-shrink-0 border-b border-neutral-100 bg-white px-4 py-3 safe-area-top">
       <div className="flex items-center justify-between">
@@ -103,17 +130,7 @@ function MobileQuestionCard({
   isOptionSelected,
   isSubmitting,
   t,
-}: {
-  currentIndex: number;
-  currentQuestion: QuizPlayQuestionViewModel;
-  handleOptionSelect: (optionIndex: number) => void;
-  handleTouchEnd: () => void;
-  handleTouchMove: (event: TouchEvent<HTMLDivElement>) => void;
-  handleTouchStart: (event: TouchEvent<HTMLDivElement>) => void;
-  isOptionSelected: (optionIndex: number) => boolean;
-  isSubmitting: boolean;
-  t: (key: string, values?: Record<string, string | number>) => string;
-}) {
+}: MobileQuestionCardProps) {
   return (
     <div className="flex-1 overflow-hidden p-4">
       <div
@@ -192,14 +209,7 @@ function MobileQuizFooter({
   questionsLength,
   submissionError,
   t,
-}: {
-  answeredCount: number;
-  handleComplete: () => void;
-  isSubmitting: boolean;
-  questionsLength: number;
-  submissionError?: string;
-  t: (key: string) => string;
-}) {
+}: MobileQuizFooterProps) {
   return (
     <div className="flex-shrink-0 border-t border-neutral-100 bg-white p-4 safe-area-bottom">
       <p className="mb-3 text-center text-xs text-neutral-400">

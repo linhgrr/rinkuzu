@@ -16,6 +16,12 @@ import type { QuizPlayQuestionViewModel } from '@/features/quiz/types/quiz-play-
 
 type TranslateFn = (key: string, values?: Record<string, string | number | Date>) => string;
 
+interface OptionPreviewProps {
+  src?: string;
+  alt: string;
+  className?: string;
+}
+
 interface DesktopQuizDiscussionControls {
   collapsed: boolean;
   setCollapsed: (collapsed: boolean) => void;
@@ -74,6 +80,73 @@ interface DesktopQuizLayoutProps {
   t: TranslateFn;
 }
 
+interface DesktopQuizHeaderProps {
+  slug: string;
+  quizTitle: string;
+  sessionEmail?: string | null;
+  userEmail: string;
+  currentQuestionIndex: number;
+  questionCount: number;
+  answeredQuestions: number;
+  progress: number;
+  onExit: () => void;
+  t: TranslateFn;
+}
+
+interface DesktopQuestionCardProps {
+  currentQuestion: QuizPlayQuestionViewModel;
+  currentQuestionIndex: number;
+  currentAnswer: QuizAnswer | undefined;
+  questionCount: number;
+  onOpenAI: () => void;
+  onToggleDiscussion: () => void;
+  onSelectAnswer: (index: number) => void;
+  onPrevious: () => void;
+  onNext: () => void;
+  onSubmit: () => Promise<boolean>;
+  submitting: boolean;
+  error: string;
+  t: TranslateFn;
+}
+
+interface DesktopQuestionOverviewProps {
+  questions: QuizPlayQuestionViewModel[];
+  userAnswers: QuizAnswer[];
+  currentQuestionIndex: number;
+  onJumpToQuestion: (index: number) => void;
+  t: TranslateFn;
+}
+
+interface DesktopDiscussionModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  slug: string;
+  questionIndex: number;
+  t: TranslateFn;
+}
+
+interface DesktopExitModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirmExit: () => void;
+  answeredQuestions: number;
+  questionCount: number;
+  t: TranslateFn;
+}
+
+interface DesktopAIModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  currentQuestion: QuizPlayQuestionViewModel;
+  userQuestion: string;
+  onUserQuestionChange: (value: string) => void;
+  onAskAI: () => Promise<void>;
+  loading: boolean;
+  error: string;
+  explanation: string;
+  t: TranslateFn;
+}
+
 function isQuestionAnswered(question: QuizPlayQuestionViewModel, answer: QuizAnswer | undefined) {
   return question.type === 'single' ? answer !== -1 : Array.isArray(answer) && answer.length > 0;
 }
@@ -88,7 +161,7 @@ function isSelectedOption(
     : Array.isArray(answer) && answer.includes(optionIndex);
 }
 
-function OptionPreview({ src, alt, className }: { src?: string; alt: string; className?: string }) {
+function OptionPreview({ src, alt, className }: OptionPreviewProps) {
   if (!src) {
     return null;
   }
@@ -107,18 +180,7 @@ function DesktopQuizHeader({
   progress,
   onExit,
   t,
-}: {
-  slug: string;
-  quizTitle: string;
-  sessionEmail?: string | null;
-  userEmail: string;
-  currentQuestionIndex: number;
-  questionCount: number;
-  answeredQuestions: number;
-  progress: number;
-  onExit: () => void;
-  t: TranslateFn;
-}) {
+}: DesktopQuizHeaderProps) {
   return (
     <div className="border-b border-neutral-200/50 bg-white/80 sticky top-0 z-40 backdrop-blur-sm">
       <div className="mx-auto max-w-4xl p-4 sm:px-6 lg:px-8">
@@ -196,21 +258,7 @@ function DesktopQuestionCard({
   submitting,
   error,
   t,
-}: {
-  currentQuestion: QuizPlayQuestionViewModel;
-  currentQuestionIndex: number;
-  currentAnswer: QuizAnswer | undefined;
-  questionCount: number;
-  onOpenAI: () => void;
-  onToggleDiscussion: () => void;
-  onSelectAnswer: (index: number) => void;
-  onPrevious: () => void;
-  onNext: () => void;
-  onSubmit: () => Promise<boolean>;
-  submitting: boolean;
-  error: string;
-  t: TranslateFn;
-}) {
+}: DesktopQuestionCardProps) {
   return (
     <Card>
       <CardHeader>
@@ -346,13 +394,7 @@ function DesktopQuestionOverview({
   currentQuestionIndex,
   onJumpToQuestion,
   t,
-}: {
-  questions: QuizPlayQuestionViewModel[];
-  userAnswers: QuizAnswer[];
-  currentQuestionIndex: number;
-  onJumpToQuestion: (index: number) => void;
-  t: TranslateFn;
-}) {
+}: DesktopQuestionOverviewProps) {
   return (
     <Card className="mt-6">
       <CardHeader>
@@ -406,13 +448,7 @@ function DesktopDiscussionModal({
   slug,
   questionIndex,
   t,
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-  slug: string;
-  questionIndex: number;
-  t: TranslateFn;
-}) {
+}: DesktopDiscussionModalProps) {
   return (
     <Modal
       isOpen={isOpen}
@@ -441,14 +477,7 @@ function DesktopExitModal({
   answeredQuestions,
   questionCount,
   t,
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-  onConfirmExit: () => void;
-  answeredQuestions: number;
-  questionCount: number;
-  t: TranslateFn;
-}) {
+}: DesktopExitModalProps) {
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={t('exitQuiz')} size="small">
       <div className="space-y-4">
@@ -502,18 +531,7 @@ function DesktopAIModal({
   error,
   explanation,
   t,
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-  currentQuestion: QuizPlayQuestionViewModel;
-  userQuestion: string;
-  onUserQuestionChange: (value: string) => void;
-  onAskAI: () => Promise<void>;
-  loading: boolean;
-  error: string;
-  explanation: string;
-  t: TranslateFn;
-}) {
+}: DesktopAIModalProps) {
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={t('askRinChan')} size="wide">
       <div className="space-y-4">

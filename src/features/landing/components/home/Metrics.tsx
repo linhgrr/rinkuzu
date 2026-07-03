@@ -1,7 +1,9 @@
 'use client';
 
+import Image from 'next/image';
 import { imgVector14 } from './constants';
-import { CountUp, Reveal } from './motion-primitives';
+import { CountUp } from './CountUp';
+import { Reveal } from './Reveal';
 
 export default function Metrics() {
   return (
@@ -24,7 +26,13 @@ export default function Metrics() {
 
       <div className="hidden md:block h-[128px] relative shrink-0 w-0">
         <div className="absolute inset-[-0.78%_-1px]">
-          <img alt="" className="block max-w-none size-full" src={imgVector14} />
+          <Image
+            alt=""
+            className="block max-w-none object-fill"
+            fill
+            sizes="2px"
+            src={imgVector14}
+          />
         </div>
       </div>
 
@@ -45,7 +53,13 @@ export default function Metrics() {
 
       <div className="hidden md:block h-[128px] relative shrink-0 w-0">
         <div className="absolute inset-[-0.78%_-1px]">
-          <img alt="" className="block max-w-none size-full" src={imgVector14} />
+          <Image
+            alt=""
+            className="block max-w-none object-fill"
+            fill
+            sizes="2px"
+            src={imgVector14}
+          />
         </div>
       </div>
 

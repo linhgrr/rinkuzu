@@ -2,7 +2,7 @@ import Image from 'next/image';
 import { Link } from '@/i18n/navigation';
 import { imgCharacterImg, imgGroup } from './constants';
 import { AnimatedText } from './AnimatedText';
-import { Magnetic } from './motion-primitives';
+import { Magnetic } from './Magnetic';
 
 interface HeroProps {
   isAuthenticated?: boolean;

@@ -4,7 +4,7 @@ import Image from 'next/image';
 import { useRef, useState, useEffect } from 'react';
 import { LazyMotion, domAnimation, m, useReducedMotion } from 'framer-motion';
 import { imgGroup8 } from './constants';
-import { Reveal } from './motion-primitives';
+import { Reveal } from './Reveal';
 
 const EASE_OUT: [number, number, number, number] = [0.16, 1, 0.3, 1];
 

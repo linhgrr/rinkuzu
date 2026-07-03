@@ -1,7 +1,7 @@
 import Image from 'next/image';
 import { Link } from '@/i18n/navigation';
 import { imgGroup11 } from './constants';
-import { Magnetic } from './motion-primitives';
+import { Magnetic } from './Magnetic';
 
 interface BottomCtaProps {
   isAuthenticated?: boolean;

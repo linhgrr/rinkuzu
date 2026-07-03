@@ -30,7 +30,33 @@ interface ExerciseHistoryTableProps {
   exercises: ExerciseHistoryFull[];
 }
 
-function ExercisePromptView({ exercise }: { exercise: ExerciseHistoryFull }) {
+type AdaptiveLearningTranslate = ReturnType<typeof useTranslations<'adaptiveLearning'>>;
+
+interface ExercisePromptViewProps {
+  exercise: ExerciseHistoryFull;
+}
+
+interface AnswerTextViewProps {
+  value: string | null | undefined;
+  t: AdaptiveLearningTranslate;
+}
+
+interface CorrectAnswerViewProps {
+  exercise: ExerciseHistoryFull;
+  t: AdaptiveLearningTranslate;
+}
+
+interface SelectedChoicesSummaryProps {
+  exercise: ExerciseHistoryFull;
+  t: AdaptiveLearningTranslate;
+}
+
+interface SelectedOptionsListProps {
+  exercise: ExerciseHistoryFull;
+  t: AdaptiveLearningTranslate;
+}
+
+function ExercisePromptView({ exercise }: ExercisePromptViewProps) {
   const promptSections = getExercisePromptSections(exercise);
   return (
     <div className="space-y-3">
@@ -46,13 +72,7 @@ function ExercisePromptView({ exercise }: { exercise: ExerciseHistoryFull }) {
   );
 }
 
-function AnswerTextView({
-  value,
-  t,
-}: {
-  value: string | null | undefined;
-  t: ReturnType<typeof useTranslations<'adaptiveLearning'>>;
-}) {
+function AnswerTextView({ value, t }: AnswerTextViewProps) {
   const normalizedValue = value?.trim();
   if (!normalizedValue) {
     return <span>{t('history.table.noAnswer')}</span>;
@@ -78,13 +98,7 @@ function getSelectedChoiceKeys(userAnswer: string | null | undefined) {
   );
 }
 
-function CorrectAnswerView({
-  exercise,
-  t,
-}: {
-  exercise: ExerciseHistoryFull;
-  t: ReturnType<typeof useTranslations<'adaptiveLearning'>>;
-}) {
+function CorrectAnswerView({ exercise, t }: CorrectAnswerViewProps) {
   if (exercise.exercise_type === 'matching' && exercise.pairs?.length) {
     return (
       <div className="space-y-2">
@@ -147,13 +161,7 @@ function CorrectAnswerView({
   return <DynamicMarkdownRenderer content={exercise.correct_option} />;
 }
 
-function SelectedChoicesSummary({
-  exercise,
-  t,
-}: {
-  exercise: ExerciseHistoryFull;
-  t: ReturnType<typeof useTranslations<'adaptiveLearning'>>;
-}) {
+function SelectedChoicesSummary({ exercise, t }: SelectedChoicesSummaryProps) {
   const selectedChoices = Array.from(getSelectedChoiceKeys(exercise.user_answer));
 
   if (!selectedChoices.length) {
@@ -178,13 +186,7 @@ function SelectedChoicesSummary({
   );
 }
 
-function SelectedOptionsList({
-  exercise,
-  t,
-}: {
-  exercise: ExerciseHistoryFull;
-  t: ReturnType<typeof useTranslations<'adaptiveLearning'>>;
-}) {
+function SelectedOptionsList({ exercise, t }: SelectedOptionsListProps) {
   const selectedChoices = getSelectedChoiceKeys(exercise.user_answer);
 
   return (

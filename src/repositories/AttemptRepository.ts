@@ -23,7 +23,8 @@ import {
   type CountBucketAggregateRecord,
 } from '@/lib/mongoose-count-buckets';
 
-const populatedQuizFields = 'title slug description questions';
+const attemptListQuizFields = 'title slug description';
+const attemptDetailQuizFields = 'title slug description questions';
 
 export class AttemptRepository implements IAttemptRepository {
   async findByUser(
@@ -37,7 +38,7 @@ export class AttemptRepository implements IAttemptRepository {
 
     const [records, totalItems] = await Promise.all([
       AttemptModel.find({ user: userId })
-        .populate('quiz', populatedQuizFields)
+        .populate('quiz', attemptListQuizFields)
         .sort({ takenAt: -1 })
         .skip(skip)
         .limit(limit)
@@ -94,7 +95,7 @@ export class AttemptRepository implements IAttemptRepository {
       _id: attemptId,
       ...identityFilter,
     })
-      .populate('quiz', populatedQuizFields)
+      .populate('quiz', attemptDetailQuizFields)
       .lean<AttemptPersistenceRecord>();
     return record ? AttemptPersistenceMapper.toEntity(record) : null;
   }

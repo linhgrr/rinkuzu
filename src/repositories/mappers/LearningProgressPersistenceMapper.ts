@@ -72,7 +72,7 @@ export class LearningProgressPersistenceMapper {
       folder,
       isPrivate: record.isPrivate,
       pdfUrl: record.pdfUrl,
-      questionCount: record.questions.length,
+      questionCount: record.questionCount ?? record.questions?.length ?? 0,
       ownedByMe,
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,

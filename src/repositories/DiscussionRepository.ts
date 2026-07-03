@@ -30,10 +30,17 @@ export class DiscussionRepository implements IDiscussionRepository {
   async ensureForQuizQuestions(quizId: string, questionCount: number): Promise<DiscussionEntity[]> {
     await connectDB();
     const quizObjectId = new Types.ObjectId(quizId);
+    const existingDiscussions = await this.findByQuiz(quizId);
+    const discussionByIndex = new Map(
+      existingDiscussions.map((discussion) => [discussion.questionIndex, discussion]),
+    );
+    const missingQuestionIndexes = Array.from({ length: questionCount }, (_, questionIndex) =>
+      discussionByIndex.has(questionIndex) ? null : questionIndex,
+    ).filter((questionIndex): questionIndex is number => questionIndex !== null);
 
-    if (questionCount > 0) {
+    if (missingQuestionIndexes.length > 0) {
       await Discussion.bulkWrite(
-        Array.from({ length: questionCount }, (_, questionIndex) => ({
+        missingQuestionIndexes.map((questionIndex) => ({
           updateOne: {
             filter: {
               quiz: quizObjectId,
@@ -52,13 +59,18 @@ export class DiscussionRepository implements IDiscussionRepository {
       );
     }
 
-    const discussions = await this.findByQuiz(quizId);
-    const discussionByIndex = new Map(
-      discussions.map((discussion) => [discussion.questionIndex, discussion]),
-    );
+    const resolvedDiscussionByIndex =
+      missingQuestionIndexes.length === 0
+        ? discussionByIndex
+        : new Map(
+            (await this.findByQuiz(quizId)).map((discussion) => [
+              discussion.questionIndex,
+              discussion,
+            ]),
+          );
 
     return Array.from({ length: questionCount }, (_, questionIndex) => {
-      const discussion = discussionByIndex.get(questionIndex);
+      const discussion = resolvedDiscussionByIndex.get(questionIndex);
       if (!discussion) {
         throw new Error(`Missing discussion for question index ${questionIndex}`);
       }

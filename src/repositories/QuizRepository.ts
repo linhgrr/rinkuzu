@@ -44,6 +44,47 @@ export class QuizRepository implements IQuizRepository {
     return record ? QuizPersistenceMapper.toEntity(record) : null;
   }
 
+  async findSummaryBySlug(slug: string): Promise<Quiz | null> {
+    await connectDB();
+    const [record] = await QuizModel.aggregate<QuizPersistenceRecord>([
+      { $match: { slug } },
+      { $limit: 1 },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'author',
+          foreignField: '_id',
+          as: 'authorDoc',
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          title: 1,
+          description: 1,
+          slug: 1,
+          author: {
+            _id: { $ifNull: [{ $first: '$authorDoc._id' }, '$author'] },
+            email: { $first: '$authorDoc.email' },
+            name: { $first: '$authorDoc.name' },
+            displayName: { $first: '$authorDoc.displayName' },
+            avatar: { $first: '$authorDoc.avatar' },
+          },
+          folder: 1,
+          questions: { $literal: [] },
+          questionCount: { $size: { $ifNull: ['$questions', []] } },
+          isPrivate: 1,
+          pdfUrl: 1,
+          tags: 1,
+          sourceDraftId: 1,
+          createdAt: 1,
+          updatedAt: 1,
+        },
+      },
+    ]);
+    return record ? QuizPersistenceMapper.toEntity(record) : null;
+  }
+
   async findIdBySlug(slug: string): Promise<string | null> {
     await connectDB();
     const record = await QuizModel.findOne({ slug }).select('_id').lean<{ _id: Types.ObjectId }>();
@@ -228,10 +269,24 @@ export class QuizRepository implements IQuizRepository {
 
   async findPublicByAuthor(userId: string): Promise<Quiz[]> {
     await connectDB();
-    const records = await QuizModel.find({ author: userId, isPrivate: false })
-      .select('title description slug author questions isPrivate createdAt updatedAt')
-      .sort({ createdAt: -1 })
-      .lean<QuizPersistenceRecord[]>();
+    const records = await QuizModel.aggregate<QuizPersistenceRecord>([
+      { $match: { author: new Types.ObjectId(userId), isPrivate: false } },
+      { $sort: { createdAt: -1 } },
+      {
+        $project: {
+          _id: 1,
+          title: 1,
+          description: 1,
+          slug: 1,
+          author: 1,
+          questions: { $literal: [] },
+          questionCount: { $size: { $ifNull: ['$questions', []] } },
+          isPrivate: 1,
+          createdAt: 1,
+          updatedAt: 1,
+        },
+      },
+    ]);
     return records.map(QuizPersistenceMapper.toEntity);
   }
 

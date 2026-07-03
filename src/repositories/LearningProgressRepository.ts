@@ -1,12 +1,15 @@
 import { Types } from 'mongoose';
 import connectDB from '@/lib/mongoose';
 import Attempt from '@/models/Attempt';
-import FolderQuiz from '@/models/FolderQuiz';
 import QuestionProgress from '@/models/QuestionProgress';
 import Quiz from '@/models/Quiz';
 import QuizProgress from '@/models/QuizProgress';
 import UserProgress from '@/models/UserProgress';
-import type { ILearningProgressRepository } from '@/interfaces/repositories/ILearningProgressRepository';
+import type {
+  ILearningProgressRepository,
+  LibraryQuizListOptions,
+} from '@/interfaces/repositories/ILearningProgressRepository';
+import type { PaginatedRepositoryResult } from '@/interfaces/repositories/types';
 import type {
   LibraryQuiz,
   QuestionReviewProgress,
@@ -21,14 +24,37 @@ import type {
   QuestionProgressPersistenceRecord,
   UserProgressPersistenceRecord,
 } from '@/repositories/types/LearningProgressPersistence';
+import { buildPaginationMeta } from '@/lib/pagination';
 
 type AttemptSummary = { _id: Types.ObjectId; lastAttemptAt: Date };
 type ProgressSummary = { _id: Types.ObjectId; lastProgressAt: Date };
+type LibraryQuizAggregateRecord = LibraryQuizPersistenceRecord & {
+  lastAttemptAt?: Date;
+  lastProgressAt?: Date;
+};
+type LibraryQuizFacetMeta = {
+  totalItems: number;
+};
+type LibraryQuizFacetResult = {
+  items: LibraryQuizAggregateRecord[];
+  meta: LibraryQuizFacetMeta[];
+};
 
 export class LearningProgressRepository implements ILearningProgressRepository {
-  async listLibraryQuizzes(userId: string): Promise<LibraryQuiz[]> {
+  async listLibraryQuizzes(
+    userId: string,
+    options: LibraryQuizListOptions,
+  ): Promise<PaginatedRepositoryResult<LibraryQuiz>> {
     await connectDB();
+    if (!Types.ObjectId.isValid(userId)) {
+      return {
+        items: [],
+        pagination: buildPaginationMeta(options.page, options.limit, 0),
+      };
+    }
+
     const userObjectId = new Types.ObjectId(userId);
+    const skip = (options.page - 1) * options.limit;
 
     const [attempts, progressRecords] = await Promise.all([
       Attempt.aggregate<AttemptSummary>([
@@ -43,38 +69,163 @@ export class LearningProgressRepository implements ILearningProgressRepository {
 
     const attemptedIds = attempts.map((attempt) => attempt._id);
     const inProgressIds = progressRecords.map((progress) => progress._id);
-    const [quizDocuments, folderLinks] = await Promise.all([
-      Quiz.find({
-        $or: [{ author: userObjectId }, { _id: { $in: [...attemptedIds, ...inProgressIds] } }],
-      })
-        .populate('author', 'email name displayName avatar')
-        .lean<LibraryQuizPersistenceRecord[]>(),
-      FolderQuiz.find({ owner: userObjectId }).lean<
-        Array<{
-          quiz: Types.ObjectId;
-          folder: Types.ObjectId;
-        }>
-      >(),
+    const activityQuizIds = [
+      ...new Map(
+        [...attemptedIds, ...inProgressIds].map((quizId) => [String(quizId), quizId]),
+      ).values(),
+    ];
+
+    const folderMatch =
+      options.folder === undefined
+        ? []
+        : [
+            {
+              $match: {
+                effectiveFolder: options.folder ? new Types.ObjectId(options.folder) : null,
+              },
+            },
+          ];
+
+    const [result] = await Quiz.aggregate<LibraryQuizFacetResult>([
+      {
+        $match: {
+          $or: [{ author: userObjectId }, { _id: { $in: activityQuizIds } }],
+        },
+      },
+      {
+        $lookup: {
+          from: 'attempts',
+          let: { quizId: '$_id' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [{ $eq: ['$quiz', '$$quizId'] }, { $eq: ['$user', userObjectId] }],
+                },
+              },
+            },
+            { $group: { _id: '$quiz', lastAttemptAt: { $max: '$takenAt' } } },
+          ],
+          as: 'attemptStats',
+        },
+      },
+      {
+        $lookup: {
+          from: 'quizprogresses',
+          let: { quizId: '$_id' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [{ $eq: ['$quiz', '$$quizId'] }, { $eq: ['$userId', userObjectId] }],
+                },
+              },
+            },
+            { $group: { _id: '$quiz', lastProgressAt: { $max: '$updatedAt' } } },
+          ],
+          as: 'progressStats',
+        },
+      },
+      {
+        $lookup: {
+          from: 'folderquizzes',
+          let: { quizId: '$_id' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [{ $eq: ['$quiz', '$$quizId'] }, { $eq: ['$owner', userObjectId] }],
+                },
+              },
+            },
+            { $project: { _id: 0, folder: 1 } },
+            { $limit: 1 },
+          ],
+          as: 'folderLinks',
+        },
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'author',
+          foreignField: '_id',
+          as: 'authorDoc',
+        },
+      },
+      {
+        $addFields: {
+          authorDoc: { $first: '$authorDoc' },
+          lastAttemptAt: { $first: '$attemptStats.lastAttemptAt' },
+          lastProgressAt: { $first: '$progressStats.lastProgressAt' },
+          ownedByMe: { $eq: ['$author', userObjectId] },
+          externalFolder: { $first: '$folderLinks.folder' },
+          questionCount: { $size: { $ifNull: ['$questions', []] } },
+        },
+      },
+      {
+        $addFields: {
+          effectiveFolder: {
+            $cond: [
+              '$ownedByMe',
+              { $ifNull: ['$folder', null] },
+              { $ifNull: ['$externalFolder', null] },
+            ],
+          },
+          displayDateSort: {
+            $ifNull: ['$lastProgressAt', { $ifNull: ['$lastAttemptAt', '$createdAt'] }],
+          },
+        },
+      },
+      ...folderMatch,
+      { $sort: { displayDateSort: -1, _id: -1 } },
+      {
+        $facet: {
+          items: [
+            { $skip: skip },
+            { $limit: options.limit },
+            {
+              $project: {
+                _id: 1,
+                title: 1,
+                slug: 1,
+                description: 1,
+                author: {
+                  _id: { $ifNull: ['$authorDoc._id', '$author'] },
+                  email: '$authorDoc.email',
+                  name: '$authorDoc.name',
+                  displayName: '$authorDoc.displayName',
+                  avatar: '$authorDoc.avatar',
+                },
+                folder: '$effectiveFolder',
+                isPrivate: 1,
+                pdfUrl: 1,
+                questionCount: 1,
+                createdAt: 1,
+                updatedAt: 1,
+                lastAttemptAt: 1,
+                lastProgressAt: 1,
+              },
+            },
+          ],
+          meta: [{ $count: 'totalItems' }],
+        },
+      },
     ]);
 
-    const lastAttemptByQuiz = new Map(
-      attempts.map((attempt) => [String(attempt._id), attempt.lastAttemptAt]),
-    );
-    const lastProgressByQuiz = new Map(
-      progressRecords.map((progress) => [String(progress._id), progress.lastProgressAt]),
-    );
-    const linkedFolderByQuiz = new Map(
-      folderLinks.map((link) => [String(link.quiz), String(link.folder)]),
-    );
+    const items = result?.items ?? [];
+    const totalItems = result?.meta[0]?.totalItems ?? 0;
 
-    return quizDocuments.map((quiz) =>
-      LearningProgressPersistenceMapper.toLibraryQuiz(quiz, {
-        userId,
-        linkedFolderId: linkedFolderByQuiz.get(String(quiz._id)) ?? null,
-        lastAttemptAt: lastAttemptByQuiz.get(String(quiz._id)) ?? null,
-        lastProgressAt: lastProgressByQuiz.get(String(quiz._id)) ?? null,
-      }),
-    );
+    return {
+      items: items.map((quiz) =>
+        LearningProgressPersistenceMapper.toLibraryQuiz(quiz, {
+          userId,
+          linkedFolderId: quiz.folder ? String(quiz.folder) : null,
+          lastAttemptAt: quiz.lastAttemptAt ?? null,
+          lastProgressAt: quiz.lastProgressAt ?? null,
+        }),
+      ),
+      pagination: buildPaginationMeta(options.page, options.limit, totalItems),
+    };
   }
 
   async listDueQuestions(

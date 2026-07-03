@@ -19,6 +19,7 @@ describe('QuizCrudService quiz publication policy', () => {
   const quizRepository: Mocked<IQuizRepository> = {
     findById: vi.fn(),
     findBySlug: vi.fn(),
+    findSummaryBySlug: vi.fn(),
     findIdBySlug: vi.fn(),
     findBySourceDraftId: vi.fn(),
     create: vi.fn(),
@@ -174,7 +175,14 @@ describe('QuizCrudService quiz publication policy', () => {
     vi.mocked(quizRepository.create).mockClear();
     const service = new QuizCrudService(quizRepository, userRepository);
 
-    await expect(service.createQuizFromDraft('user-1', 'draft-1', request)).resolves.toBe(existing);
+    await expect(service.createQuizFromDraft('user-1', 'draft-1', request)).resolves.toEqual(
+      expect.objectContaining({
+        id: existing.id,
+        title: existing.title,
+        slug: existing.slug,
+        questionCount: existing.questions.length,
+      }),
+    );
     expect(quizRepository.create).not.toHaveBeenCalled();
   });
 
@@ -200,8 +208,13 @@ describe('QuizCrudService quiz publication policy', () => {
     vi.mocked(quizRepository.create).mockRejectedValue({ code: 11000 });
     const service = new QuizCrudService(quizRepository, userRepository);
 
-    await expect(service.createQuizFromDraft('user-1', 'draft-1', request)).resolves.toBe(
-      concurrentlyCreated,
+    await expect(service.createQuizFromDraft('user-1', 'draft-1', request)).resolves.toEqual(
+      expect.objectContaining({
+        id: concurrentlyCreated.id,
+        title: concurrentlyCreated.title,
+        slug: concurrentlyCreated.slug,
+        questionCount: concurrentlyCreated.questions.length,
+      }),
     );
   });
 });

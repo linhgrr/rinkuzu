@@ -87,7 +87,22 @@ function userProgress(overrides: Partial<UserLearningProgress> = {}): UserLearni
 }
 
 class LearningProgressRepositoryStub implements ILearningProgressRepository {
-  listLibraryQuizzes = vi.fn<(userId: string) => Promise<LibraryQuiz[]>>();
+  listLibraryQuizzes = vi.fn<
+    (
+      userId: string,
+      options: { folder?: string | null; page: number; limit: number },
+    ) => Promise<{
+      items: LibraryQuiz[];
+      pagination: {
+        currentPage: number;
+        totalPages: number;
+        totalItems: number;
+        itemsPerPage: number;
+        hasNextPage: boolean;
+        hasPrevPage: boolean;
+      };
+    }>
+  >();
   listDueQuestions =
     vi.fn<(userId: string, now: Date, limit: number) => Promise<QuestionReviewProgress[]>>();
   findQuestionProgress =
@@ -136,28 +151,33 @@ describe('LearningProgressService', () => {
   });
 
   it('filters, sorts, paginates and maps library quizzes without leaking questions', async () => {
-    repository.listLibraryQuizzes.mockResolvedValue([
-      libraryQuiz({
-        id: 'old',
-        folder: 'folder-a',
-        displayDate: '2026-06-28T10:00:00.000Z',
-      }),
-      libraryQuiz({
-        id: 'new',
-        folder: 'folder-a',
-        displayDate: '2026-06-30T10:00:00.000Z',
-        lastProgressAt: now,
-        libraryStatus: 'in_progress',
-      }),
-      libraryQuiz({
-        id: 'other-folder',
-        folder: 'folder-b',
-        displayDate: '2026-06-30T11:00:00.000Z',
-      }),
-    ]);
+    repository.listLibraryQuizzes.mockResolvedValue({
+      items: [
+        libraryQuiz({
+          id: 'new',
+          folder: 'folder-a',
+          displayDate: '2026-06-30T10:00:00.000Z',
+          lastProgressAt: now,
+          libraryStatus: 'in_progress',
+        }),
+      ],
+      pagination: {
+        currentPage: 1,
+        totalPages: 2,
+        totalItems: 2,
+        itemsPerPage: 1,
+        hasNextPage: true,
+        hasPrevPage: false,
+      },
+    });
 
     const result = await service.listLibrary(userId, { folder: 'folder-a', page: 1, limit: 1 });
 
+    expect(repository.listLibraryQuizzes).toHaveBeenCalledWith(userId, {
+      folder: 'folder-a',
+      page: 1,
+      limit: 1,
+    });
     expect(result.success).toBe(true);
     if (!result.success) throw new Error(result.error);
     expect(result.data.quizzes).toEqual([

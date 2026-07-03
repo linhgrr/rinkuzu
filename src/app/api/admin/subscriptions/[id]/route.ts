@@ -26,5 +26,5 @@ export const PATCH = withAdmin(async (request: NextRequest, context) => {
 
   const subscriptionService = createSubscriptionService();
   const result = await subscriptionService.updateSubscriptionById(parsedParams.data.id, input.data);
-  return result.success ? apiOk(null) : apiServiceErr(result);
+  return result.success ? apiOk(result.data) : apiServiceErr(result);
 });

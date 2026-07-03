@@ -3,18 +3,22 @@ import type {
   PaymentRequestDto,
   SubscriptionActivationDto,
   SubscriptionCancellationDto,
+  SubscriptionHistoryItemDto,
   SubscriptionPlanDto,
+  SubscriptionStatusResponseDto,
   VerifiedPaymentDto,
 } from '@/dtos/subscription';
+import type { AdminSubscriptionDto } from '@/dtos/admin-billing';
 import { IPayOSService } from '@/interfaces/services/IPayOSService';
 import { ISubscriptionRepository } from '@/interfaces/repositories/ISubscriptionRepository';
 import { IUserRepository } from '@/interfaces/repositories/IUserRepository';
 import type { ISubscriptionPlanRepository } from '@/interfaces/repositories/ISubscriptionPlanRepository';
-import type { SubscriptionRecord, UserSubscription } from '@/entities/Subscription';
+import type { UserSubscription } from '@/entities/Subscription';
 import type { UpdateSubscriptionStatusInput } from '@/interfaces/services/ISubscriptionService';
 import type { ServiceResult } from '@/interfaces/services/types';
 import { logger } from '@/lib/logger';
 import { isSubscriptionExpired, type SubscriptionExpiryInput } from '@/lib/subscription-date';
+import { SubscriptionDtoMapper } from '@/mappers/subscription/SubscriptionDtoMapper';
 
 import { SubscriptionPaymentService } from './SubscriptionPaymentService';
 import { SubscriptionActivationService } from './SubscriptionActivationService';
@@ -47,7 +51,15 @@ export class SubscriptionService implements ISubscriptionService {
     );
   }
 
-  async getUserSubscription(userId: string): Promise<UserSubscription | null> {
+  async getSubscriptionStatus(userId: string): Promise<SubscriptionStatusResponseDto> {
+    const subscription = await this.getUserSubscriptionSnapshot(userId);
+    return SubscriptionDtoMapper.toStatusResponse(
+      subscription,
+      this.isSubscriptionSnapshotPremium(subscription),
+    );
+  }
+
+  private async getUserSubscriptionSnapshot(userId: string): Promise<UserSubscription | null> {
     const user = await this.userRepository.findById(userId);
     const subscription = user?.subscription;
     if (!subscription) return null;
@@ -65,19 +77,7 @@ export class SubscriptionService implements ISubscriptionService {
   }
 
   async isUserPremium(userId: string): Promise<boolean> {
-    const subscription = await this.getUserSubscription(userId);
-    if (!subscription) return false;
-
-    // Check if subscription is active
-    if (!subscription.isActive) return false;
-
-    // Check if subscription has end date
-    if (subscription.endDate) {
-      return !isSubscriptionExpired(subscription);
-    }
-
-    // If no end date, assume it's a lifetime subscription
-    return true;
+    return this.isSubscriptionSnapshotPremium(await this.getUserSubscriptionSnapshot(userId));
   }
 
   async createPaymentRequest(userId: string, planId: string): Promise<PaymentRequestDto> {
@@ -98,8 +98,9 @@ export class SubscriptionService implements ISubscriptionService {
     return this.activationService.activateVerifiedSubscription(orderCode, paymentData);
   }
 
-  async getSubscriptionHistory(userId: string): Promise<SubscriptionRecord[]> {
-    return this.subscriptionRepository.findByUser(userId);
+  async getSubscriptionHistory(userId: string): Promise<SubscriptionHistoryItemDto[]> {
+    const subscriptions = await this.subscriptionRepository.findByUser(userId);
+    return subscriptions.map(SubscriptionDtoMapper.toHistoryItem);
   }
 
   async cancelSubscription(userId: string): Promise<SubscriptionCancellationDto> {
@@ -130,7 +131,7 @@ export class SubscriptionService implements ISubscriptionService {
   async updateSubscriptionById(
     id: string,
     update: UpdateSubscriptionStatusInput,
-  ): Promise<ServiceResult<SubscriptionRecord>> {
+  ): Promise<ServiceResult<AdminSubscriptionDto>> {
     try {
       const result = await this.subscriptionRepository.updateAdminStatusById(id, update.status);
       if (result.outcome === 'not_found') {
@@ -143,11 +144,20 @@ export class SubscriptionService implements ISubscriptionService {
           statusCode: 409,
         };
       }
-      return { success: true, data: result.subscription };
+      return {
+        success: true,
+        data: SubscriptionDtoMapper.toAdminSubscriptionDto(result.subscription),
+      };
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to update subscription';
       return { success: false, error: message, statusCode: 500 };
     }
+  }
+
+  private isSubscriptionSnapshotPremium(subscription: UserSubscription | null): boolean {
+    if (!subscription) return false;
+    if (!subscription.isActive) return false;
+    return subscription.endDate ? !isSubscriptionExpired(subscription) : true;
   }
 
   private async markUserSubscriptionExpired(

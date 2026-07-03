@@ -94,5 +94,20 @@ export interface SubscriptionStatusResponseDto {
   isPremium: boolean;
 }
 
+export interface SubscriptionHistoryItemDto {
+  id: string;
+  type: string;
+  amount: number;
+  currency: string;
+  status: string;
+  payosOrderId: string;
+  payosTransactionId?: string;
+  startDate?: string;
+  endDate?: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export type VerifySubscriptionRequestDto = z.infer<typeof verifySubscriptionRequestSchema>;
 export type PayOSWebhookRequestDto = z.infer<typeof payosWebhookRequestSchema>;

@@ -769,7 +769,23 @@ describe('SubscriptionService billing hardening', () => {
     await expect(service.updateSubscriptionById('sub-1', { status: 'cancelled' })).resolves.toEqual(
       {
         success: true,
-        data: updated,
+        data: {
+          id: updated.id,
+          user: updated.userId,
+          userEmail: updated.userEmail,
+          type: updated.type,
+          amount: updated.amount,
+          currency: updated.currency,
+          status: updated.status,
+          payosOrderId: updated.payosOrderId,
+          payosTransactionId: updated.payosTransactionId,
+          payosPaymentUrl: updated.payosPaymentUrl,
+          startDate: updated.startDate?.toISOString(),
+          endDate: updated.endDate?.toISOString(),
+          isActive: updated.isActive,
+          createdAt: updated.createdAt.toISOString(),
+          updatedAt: updated.updatedAt.toISOString(),
+        },
       },
     );
     expect(subscriptionRepository.updateAdminStatusById).toHaveBeenCalledWith('sub-1', 'cancelled');
@@ -839,12 +855,11 @@ describe('SubscriptionService billing hardening', () => {
       },
     });
 
-    const subscription = await service.getUserSubscription('user-1');
+    const subscription = await service.getSubscriptionStatus('user-1');
 
-    expect(subscription).toMatchObject({
-      type: 'premium_6months',
-      isActive: false,
-      status: 'expired',
+    expect(subscription).toEqual({
+      subscription: null,
+      isPremium: false,
     });
     expect(subscriptionRepository.expireCurrentForUser).toHaveBeenCalledWith('user-1', 'order-1');
   });

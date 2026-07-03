@@ -27,7 +27,10 @@ import { useQuizSubmission } from '@/features/quiz/hooks/useQuizSubmission';
 import { useQuizProgress } from '@/features/quiz/hooks/useQuizProgress';
 import { useQuizViewport } from '@/features/quiz/hooks/useQuizViewport';
 import { fetchQuizPlayViewModel } from '@/features/quiz/api/quiz-play-api';
-import type { SavedQuizProgress } from '@/features/quiz/types/quiz-interaction-view-model';
+import type {
+  QuizAnswer,
+  SavedQuizProgress,
+} from '@/features/quiz/types/quiz-interaction-view-model';
 import type {
   QuizPlayAuthorViewModel,
   QuizPlayViewModel,
@@ -46,8 +49,6 @@ type QuizPlayerQuiz = Omit<QuizPlayViewModel, 'questions'> & {
   questions: ShuffledQuizQuestion[];
   questionIndexMap: number[];
 };
-
-type QuizAnswer = number | number[];
 
 function toAuthorIdentity(author: QuizPlayAuthorViewModel): UserIdentity {
   return {

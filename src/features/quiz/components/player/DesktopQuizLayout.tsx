@@ -11,18 +11,10 @@ import { ModalActions } from '@/components/ui/ModalActions';
 import { HiOutlineArrowLeft, HiOutlineMail, HiOutlineUser } from 'react-icons/hi';
 import { QuestionDiscussion } from '@/features/quiz/components/QuestionDiscussion';
 import ReportQuiz from '@/features/quiz/components/ReportQuiz';
+import type { QuizAnswer } from '@/features/quiz/types/quiz-interaction-view-model';
+import type { QuizPlayQuestionViewModel } from '@/features/quiz/types/quiz-play-view-model';
 
-type QuizAnswer = number | number[];
 type TranslateFn = (key: string, values?: Record<string, string | number | Date>) => string;
-
-interface QuizQuestion {
-  id?: string;
-  question: string;
-  options: string[];
-  type: 'single' | 'multiple';
-  questionImage?: string;
-  optionImages?: (string | undefined)[];
-}
 
 interface DesktopQuizDiscussionControls {
   collapsed: boolean;
@@ -60,14 +52,14 @@ interface DesktopQuizSubmitControls {
 interface DesktopQuizLayoutProps {
   slug: string;
   quizTitle: string;
-  questions: QuizQuestion[];
+  questions: QuizPlayQuestionViewModel[];
   sessionEmail?: string | null;
   userEmail: string;
   currentQuestionIndex: number;
   setCurrentQuestionIndex: (index: number) => void;
   answeredQuestions: number;
   progress: number;
-  currentQuestion: QuizQuestion;
+  currentQuestion: QuizPlayQuestionViewModel;
   userAnswers: QuizAnswer[];
   discussion: DesktopQuizDiscussionControls;
   exit: DesktopQuizExitControls;
@@ -82,12 +74,12 @@ interface DesktopQuizLayoutProps {
   t: TranslateFn;
 }
 
-function isQuestionAnswered(question: QuizQuestion, answer: QuizAnswer | undefined) {
+function isQuestionAnswered(question: QuizPlayQuestionViewModel, answer: QuizAnswer | undefined) {
   return question.type === 'single' ? answer !== -1 : Array.isArray(answer) && answer.length > 0;
 }
 
 function isSelectedOption(
-  question: QuizQuestion,
+  question: QuizPlayQuestionViewModel,
   answer: QuizAnswer | undefined,
   optionIndex: number,
 ) {
@@ -205,7 +197,7 @@ function DesktopQuestionCard({
   error,
   t,
 }: {
-  currentQuestion: QuizQuestion;
+  currentQuestion: QuizPlayQuestionViewModel;
   currentQuestionIndex: number;
   currentAnswer: QuizAnswer | undefined;
   questionCount: number;
@@ -355,7 +347,7 @@ function DesktopQuestionOverview({
   onJumpToQuestion,
   t,
 }: {
-  questions: QuizQuestion[];
+  questions: QuizPlayQuestionViewModel[];
   userAnswers: QuizAnswer[];
   currentQuestionIndex: number;
   onJumpToQuestion: (index: number) => void;
@@ -513,7 +505,7 @@ function DesktopAIModal({
 }: {
   isOpen: boolean;
   onClose: () => void;
-  currentQuestion: QuizQuestion;
+  currentQuestion: QuizPlayQuestionViewModel;
   userQuestion: string;
   onUserQuestionChange: (value: string) => void;
   onAskAI: () => Promise<void>;

@@ -1,6 +1,5 @@
 import type { QuizQuestionInputViewModel } from '@/features/quiz/types/quiz-question';
-
-type QuizAnswer = number | number[];
+import type { QuizAnswer } from '@/features/quiz/types/quiz-interaction-view-model';
 
 export function mapMobileAnswersToOrderedAnswers(
   quiz: { questions: Pick<QuizQuestionInputViewModel, 'type'>[] },

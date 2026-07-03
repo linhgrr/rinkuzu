@@ -2,9 +2,8 @@
 
 import { MobileQuizPlayer } from '@/features/quiz/components/MobileQuizPlayer';
 import { mapMobileAnswersToOrderedAnswers } from '@/features/quiz/lib/mobileAnswerMapping';
+import type { QuizAnswer } from '@/features/quiz/types/quiz-interaction-view-model';
 import type { QuizPlayViewModel } from '@/features/quiz/types/quiz-play-view-model';
-
-type QuizAnswer = number | number[];
 
 interface MobileQuizLayoutProps {
   quiz: Pick<QuizPlayViewModel, 'questions'>;

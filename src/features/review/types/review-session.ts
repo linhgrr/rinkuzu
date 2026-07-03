@@ -16,3 +16,8 @@ export interface ReviewQuestionViewModel {
 export interface ReviewSubmitResultViewModel {
   xpGained: number;
 }
+
+export interface SubmitReviewAnswerInput {
+  question: ReviewQuestionViewModel;
+  rating: ReviewRating;
+}

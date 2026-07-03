@@ -1,8 +1,9 @@
 import type { FlashcardQuizDto } from '@/dtos/quiz';
+import type { SubmitReviewResponseDto } from '@/dtos/review';
 import { toFlashcardQuizViewModel } from '@/features/quiz/mappers/flashcard.mapper';
 import type {
-  FlashcardQuestionViewModel,
   FlashcardQuizViewModel,
+  FlashcardReviewInput,
 } from '@/features/quiz/types/flashcard-view-model';
 import { fetchApiData } from '@/lib/api/client';
 import { getCorrectAnswerIndexes } from '@/lib/quiz/answer-text';
@@ -14,12 +15,10 @@ export async function fetchFlashcardQuizViewModel(slug: string): Promise<Flashca
   return toFlashcardQuizViewModel(dto);
 }
 
-export async function submitFlashcardReview(input: {
-  quizSlug: string;
-  question: FlashcardQuestionViewModel;
-  rating: 'good' | 'hard';
-}): Promise<void> {
-  await fetchApiData('/api/review/submit', {
+export async function submitFlashcardReview(
+  input: FlashcardReviewInput,
+): Promise<SubmitReviewResponseDto> {
+  return fetchApiData<SubmitReviewResponseDto>('/api/review/submit', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({

@@ -1,4 +1,5 @@
-import type { FolderListDto, FolderSummaryDto } from '@/dtos/folder';
+import type { DeleteResultDto } from '@/dtos/common';
+import type { FolderAssignmentResultDto, FolderListDto, FolderSummaryDto } from '@/dtos/folder';
 import type { LibraryListDto } from '@/dtos/review';
 import {
   toFolderLibraryQuizViewModels,
@@ -28,18 +29,25 @@ export async function createFolderViewModel(name: string): Promise<FolderSummary
   return toFolderSummaryViewModel(dto);
 }
 
-export async function renameFolderViewModel(folderId: string, name: string): Promise<void> {
+export async function renameFolderViewModel(
+  folderId: string,
+  name: string,
+): Promise<FolderSummaryViewModel> {
   const encodedFolderId = routePathSegment(folderId);
-  await fetchApiResponse(`/api/folders/${encodedFolderId}`, {
+  const response = await fetchApiResponse<FolderSummaryDto>(`/api/folders/${encodedFolderId}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ name }),
   });
+  return toFolderSummaryViewModel(response.data);
 }
 
-export async function deleteFolderViewModel(folderId: string): Promise<void> {
+export async function deleteFolderViewModel(folderId: string): Promise<DeleteResultDto> {
   const encodedFolderId = routePathSegment(folderId);
-  await fetchApiResponse(`/api/folders/${encodedFolderId}`, { method: 'DELETE' });
+  const response = await fetchApiResponse<DeleteResultDto>(`/api/folders/${encodedFolderId}`, {
+    method: 'DELETE',
+  });
+  return response.data;
 }
 
 export async function fetchFolderLibraryQuizViewModels(
@@ -60,11 +68,18 @@ export async function fetchFolderDetailQuizViewModels(
   return fetchFolderLibraryQuizViewModels(isUnfiled ? UNFILED_FOLDER_TARGET : folderId);
 }
 
-export async function addQuizToFolderViewModel(folderId: string, quizId: string): Promise<void> {
+export async function addQuizToFolderViewModel(
+  folderId: string,
+  quizId: string,
+): Promise<FolderAssignmentResultDto> {
   const encodedFolderId = routePathSegment(folderId);
-  await fetchApiResponse(`/api/folders/${encodedFolderId}/quizzes`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ quizId }),
-  });
+  const response = await fetchApiResponse<FolderAssignmentResultDto>(
+    `/api/folders/${encodedFolderId}/quizzes`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ quizId }),
+    },
+  );
+  return response.data;
 }

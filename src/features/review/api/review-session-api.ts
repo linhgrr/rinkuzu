@@ -7,7 +7,7 @@ import {
 } from '@/features/review/mappers/review-session.mapper';
 import type {
   ReviewQuestionViewModel,
-  ReviewRating,
+  SubmitReviewAnswerInput,
   ReviewSubmitResultViewModel,
 } from '@/features/review/types/review-session';
 
@@ -19,10 +19,7 @@ export async function fetchDueReviewQuestionViewModels(): Promise<ReviewQuestion
 export async function submitReviewAnswer({
   question,
   rating,
-}: {
-  question: ReviewQuestionViewModel;
-  rating: ReviewRating;
-}): Promise<ReviewSubmitResultViewModel> {
+}: SubmitReviewAnswerInput): Promise<ReviewSubmitResultViewModel> {
   const data = await fetchApiData<SubmitReviewResponseDto>('/api/review/submit', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

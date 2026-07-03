@@ -44,3 +44,16 @@ export interface AdminSubscriptionsListViewModel {
   subscriptions: AdminSubscriptionViewModel[];
   pagination: AdminSubscriptionsPaginationViewModel;
 }
+
+export interface AdminSubscriptionsQueryInput {
+  page: number;
+  limit: number;
+  searchTerm: string;
+  statusFilter: '' | AdminSubscriptionStatusViewModel;
+  signal: AbortSignal;
+}
+
+export interface AdminSubscriptionStatusUpdateInput {
+  subscriptionId: string;
+  status: AdminMutableSubscriptionStatusViewModel;
+}

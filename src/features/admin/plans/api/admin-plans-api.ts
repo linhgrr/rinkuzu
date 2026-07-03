@@ -7,6 +7,7 @@ import {
 } from '@/features/admin/plans/mappers/admin-plans.mapper';
 import type {
   AdminBillingPlanMutationInput,
+  AdminBillingPlanUpdateInput,
   AdminBillingPlanViewModel,
 } from '@/features/admin/plans/types/admin-plans-view-model';
 
@@ -33,10 +34,7 @@ export async function createAdminBillingPlan(
 export async function updateAdminBillingPlan({
   planId,
   payload,
-}: {
-  planId: string;
-  payload: AdminBillingPlanMutationInput;
-}): Promise<AdminBillingPlanViewModel> {
+}: AdminBillingPlanUpdateInput): Promise<AdminBillingPlanViewModel> {
   const plan = await fetchApiData<BillingPlanDto>('/api/admin/plans', {
     method: 'PATCH',
     headers: {

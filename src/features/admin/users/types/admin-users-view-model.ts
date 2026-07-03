@@ -32,3 +32,13 @@ export interface AdminUserListViewModel {
   users: AdminUserViewModel[];
   pagination: AdminUsersPaginationViewModel;
 }
+
+export interface AdminUserRoleUpdateInput {
+  userId: string;
+  role: AdminUserRoleViewModel;
+}
+
+export interface AdminUserSubscriptionGrantInput {
+  userId: string;
+  planId: string;
+}

@@ -20,3 +20,8 @@ export interface AdminBillingPlanMutationInput {
   features: string[];
   isActive: boolean;
 }
+
+export interface AdminBillingPlanUpdateInput {
+  planId: string;
+  payload: AdminBillingPlanMutationInput;
+}

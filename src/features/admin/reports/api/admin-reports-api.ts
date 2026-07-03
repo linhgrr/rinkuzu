@@ -5,7 +5,7 @@ import { fetchApiData } from '@/lib/api/client';
 import { toAdminReportViewModels } from '@/features/admin/reports/mappers/admin-reports.mapper';
 import type {
   AdminReportFilterViewModel,
-  AdminReportStatusViewModel,
+  AdminReportStatusUpdateInput,
   AdminReportViewModel,
 } from '@/features/admin/reports/types/admin-reports-view-model';
 
@@ -26,11 +26,7 @@ export async function updateAdminReportStatus({
   reportId,
   status,
   adminNotes,
-}: {
-  reportId: string;
-  status: AdminReportStatusViewModel;
-  adminNotes: string;
-}): Promise<AdminMessageDto> {
+}: AdminReportStatusUpdateInput): Promise<AdminMessageDto> {
   return fetchApiData<AdminMessageDto>(`/api/admin/reports/${reportId}`, {
     method: 'PATCH',
     headers: {

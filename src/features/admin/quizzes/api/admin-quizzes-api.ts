@@ -7,8 +7,8 @@ import {
 } from '@/features/admin/quizzes/mappers/admin-quizzes.mapper';
 import type {
   AdminQuizDetailViewModel,
+  AdminQuizListQueryInput,
   AdminQuizListViewModel,
-  AdminQuizVisibilityViewModel,
 } from '@/features/admin/quizzes/types/admin-quizzes-view-model';
 
 export async function fetchAdminQuizListViewModel({
@@ -17,13 +17,7 @@ export async function fetchAdminQuizListViewModel({
   search,
   visibility,
   signal,
-}: {
-  page: number;
-  limit: number;
-  search: string;
-  visibility: AdminQuizVisibilityViewModel;
-  signal: AbortSignal;
-}): Promise<AdminQuizListViewModel> {
+}: AdminQuizListQueryInput): Promise<AdminQuizListViewModel> {
   const params = new URLSearchParams({
     page: String(page),
     limit: String(limit),

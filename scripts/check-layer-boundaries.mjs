@@ -203,6 +203,9 @@ const clientPresentationFiles = [...localePresentationFiles, ...componentPresent
 const featureClientFiles = walk(path.join(root, 'src/features')).filter(
   (filePath) => /\/(?:components|hooks)\//.test(relative(filePath)) && !isTestFile(filePath),
 );
+const featureApiFiles = walk(path.join(root, 'src/features')).filter(
+  (filePath) => /\/api\//.test(relative(filePath)) && !isTestFile(filePath),
+);
 const approvedFeatureTransportBoundaries = new Set([
   'src/features/adaptive/lib/adaptive-api-fetch.ts',
   'src/features/adaptive/lib/adaptive-api-methods.ts',
@@ -462,6 +465,7 @@ for (const filePath of [
   ...serviceContractFiles,
   ...repositoryFiles,
   ...repositoryContractFiles,
+  ...featureApiFiles,
 ]) {
   checkNamedBoundarySignatures(filePath, errors);
 }

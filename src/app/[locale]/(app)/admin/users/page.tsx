@@ -43,6 +43,7 @@ import { extractUnknownErrorMessage } from '@/lib/api/error';
 
 type TranslateFn = (key: string, values?: Record<string, string | number | Date>) => string;
 type AdminUsersModal = 'delete' | 'role' | 'subscription' | null;
+type AdminUserActionRequest = () => Promise<unknown>;
 
 interface AdminUsersTranslationProps {
   t: TranslateFn;
@@ -635,7 +636,7 @@ export default function AdminUsersPage() {
 
   const runUserAction = async (
     userId: string,
-    request: () => Promise<unknown>,
+    request: AdminUserActionRequest,
     successMessage: string,
   ) => {
     dispatch({ type: 'patch', value: { actionLoading: userId, localError: '', success: '' } });

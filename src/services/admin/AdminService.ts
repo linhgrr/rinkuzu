@@ -257,7 +257,10 @@ export class AdminService implements IAdminService {
           this.quizRepository.countByCreatedAtBuckets({ today, thisWeek, thisMonth }),
           this.attemptRepository.countByTakenAtBuckets({ today, thisWeek, thisMonth }),
           this.userRepository.findAll({ page: 1, limit: 5 }),
-          this.quizRepository.findAll({}, { page: 1, limit: 5, populate: ['author'] }),
+          this.quizRepository.findAll(
+            {},
+            { page: 1, limit: 5, populate: ['author'], compact: true },
+          ),
           this.attemptRepository.findRecentActivity(5),
         ]);
 

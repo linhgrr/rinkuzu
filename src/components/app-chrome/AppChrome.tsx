@@ -46,6 +46,97 @@ interface NavEntry {
   requiredRole?: 'admin';
 }
 
+type NavTranslate = (key: string) => string;
+type AppLocale = 'en' | 'vi';
+
+interface ShellIconProps {
+  name: string;
+}
+
+interface SidebarSubItemProps {
+  href: string;
+  label: string;
+  active: boolean;
+}
+
+interface SidebarItemProps {
+  href?: string;
+  icon: string;
+  label: string;
+  active: boolean;
+  trailing?: boolean;
+  collapsed: boolean;
+  expanded?: boolean;
+  onToggle?: () => void;
+}
+
+interface NavSectionProps {
+  entry: NavEntry;
+  collapsed: boolean;
+  pathname: string;
+  t: NavTranslate;
+  expandedGroups: string[];
+  toggleGroup: (id: string) => void;
+}
+
+interface AppSidebarProps {
+  collapsed: boolean;
+  pathname: string;
+  visibleNav: NavEntry[];
+  t: NavTranslate;
+  expandedGroups: string[];
+  toggleGroup: (id: string) => void;
+}
+
+interface LanguageDropdownProps {
+  currentLocale: string;
+  onSelect: (locale: AppLocale) => void;
+}
+
+interface UserMenuDropdownProps {
+  avatar?: string | null;
+  avatarInitial: string;
+  displayName?: string | null;
+  email?: string | null;
+  t: NavTranslate;
+}
+
+interface AppTopbarProps extends UserMenuDropdownProps {
+  collapsed: boolean;
+  onToggleSidebar: () => void;
+  mobileMenuOpen: boolean;
+  onToggleMobileMenu: () => void;
+  currentLocale: string;
+  onSelectLocale: (locale: AppLocale) => void;
+}
+
+interface MobileMenuItemProps {
+  href: string;
+  icon?: string;
+  label: string;
+  active: boolean;
+  onNavigate: () => void;
+}
+
+interface MobileMenuGroupProps {
+  entry: NavEntry;
+  pathname: string;
+  t: NavTranslate;
+  onNavigate: () => void;
+}
+
+interface MobileAppMenuProps {
+  open: boolean;
+  pathname: string;
+  visibleNav: NavEntry[];
+  t: NavTranslate;
+  onClose: () => void;
+}
+
+interface AppChromeProps {
+  children: React.ReactNode;
+}
+
 const PRIMARY_NAV: NavEntry[] = [
   { id: 'home', labelKey: 'home', icon: ICON.home, href: ROUTES.DASHBOARD },
   {
@@ -113,7 +204,7 @@ function entryHasActiveChild(pathname: string, entry: NavEntry) {
   return (entry.items ?? []).some((item) => isHrefActive(pathname, item.href, item.matchPrefix));
 }
 
-function ShellIcon({ name }: { name: string }) {
+function ShellIcon({ name }: ShellIconProps) {
   return (
     <span className="flex size-6 shrink-0 items-center justify-center">
       <Icon icon={name} className="size-6" aria-hidden="true" />
@@ -121,7 +212,7 @@ function ShellIcon({ name }: { name: string }) {
   );
 }
 
-function SidebarSubItem({ href, label, active }: { href: string; label: string; active: boolean }) {
+function SidebarSubItem({ href, label, active }: SidebarSubItemProps) {
   return (
     <Link
       href={href}
@@ -144,16 +235,7 @@ function SidebarItem({
   collapsed,
   expanded,
   onToggle,
-}: {
-  href?: string;
-  icon: string;
-  label: string;
-  active: boolean;
-  trailing?: boolean;
-  collapsed: boolean;
-  expanded?: boolean;
-  onToggle?: () => void;
-}) {
+}: SidebarItemProps) {
   const base = `flex h-12 w-full items-center rounded-[10px] font-home text-base font-semibold leading-[1.4] transition-colors ${
     collapsed ? 'justify-center px-0' : 'px-3'
   } ${active ? 'bg-accent-soft text-accent' : 'text-ink hover:bg-accent-soft/60'}`;
@@ -196,14 +278,7 @@ function NavSection({
   t,
   expandedGroups,
   toggleGroup,
-}: {
-  entry: NavEntry;
-  collapsed: boolean;
-  pathname: string;
-  t: (key: string) => string;
-  expandedGroups: string[];
-  toggleGroup: (id: string) => void;
-}) {
+}: NavSectionProps) {
   const hasChildren = !!entry.items?.length;
   const childActive = entryHasActiveChild(pathname, entry);
   const selfActive = isHrefActive(pathname, entry.href, entry.matchPrefix);
@@ -272,14 +347,7 @@ function AppSidebar({
   t,
   expandedGroups,
   toggleGroup,
-}: {
-  collapsed: boolean;
-  pathname: string;
-  visibleNav: NavEntry[];
-  t: (key: string) => string;
-  expandedGroups: string[];
-  toggleGroup: (id: string) => void;
-}) {
+}: AppSidebarProps) {
   return (
     <aside
       className={`fixed left-0 top-[72px] z-40 hidden h-[calc(100vh-72px)] flex-col justify-between overflow-y-auto border-r border-line bg-surface py-6 transition-[width] duration-300 ease-out [scrollbar-width:none] lg:flex [&::-webkit-scrollbar]:hidden ${
@@ -318,18 +386,12 @@ function AppSidebar({
   );
 }
 
-const LANG_OPTIONS: Array<{ value: 'en' | 'vi'; label: string }> = [
+const LANG_OPTIONS: Array<{ value: AppLocale; label: string }> = [
   { value: 'en', label: 'English' },
   { value: 'vi', label: 'Tiếng Việt' },
 ];
 
-function LanguageDropdown({
-  currentLocale,
-  onSelect,
-}: {
-  currentLocale: string;
-  onSelect: (locale: 'en' | 'vi') => void;
-}) {
+function LanguageDropdown({ currentLocale, onSelect }: LanguageDropdownProps) {
   const [open, setOpen] = useState(false);
   const currentLabel = currentLocale === 'vi' ? 'Tiếng Việt' : 'English';
 
@@ -387,19 +449,7 @@ function LanguageDropdown({
   );
 }
 
-function UserMenuDropdown({
-  avatar,
-  avatarInitial,
-  displayName,
-  email,
-  t,
-}: {
-  avatar?: string | null;
-  avatarInitial: string;
-  displayName?: string | null;
-  email?: string | null;
-  t: (key: string) => string;
-}) {
+function UserMenuDropdown({ avatar, avatarInitial, displayName, email, t }: UserMenuDropdownProps) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   useDropdownOutside(containerRef, open, () => setOpen(false));
@@ -485,19 +535,7 @@ function AppTopbar({
   displayName,
   email,
   t,
-}: {
-  collapsed: boolean;
-  onToggleSidebar: () => void;
-  mobileMenuOpen: boolean;
-  onToggleMobileMenu: () => void;
-  currentLocale: string;
-  onSelectLocale: (locale: 'en' | 'vi') => void;
-  avatar?: string | null;
-  avatarInitial: string;
-  displayName?: string | null;
-  email?: string | null;
-  t: (key: string) => string;
-}) {
+}: AppTopbarProps) {
   return (
     <header className="fixed inset-x-0 top-0 z-50 flex h-16 border-b border-line bg-surface lg:h-[72px]">
       <div
@@ -672,19 +710,7 @@ function AppTopbar({
   );
 }
 
-function MobileMenuItem({
-  href,
-  icon,
-  label,
-  active,
-  onNavigate,
-}: {
-  href: string;
-  icon?: string;
-  label: string;
-  active: boolean;
-  onNavigate: () => void;
-}) {
+function MobileMenuItem({ href, icon, label, active, onNavigate }: MobileMenuItemProps) {
   return (
     <Link
       href={href}
@@ -699,17 +725,7 @@ function MobileMenuItem({
   );
 }
 
-function MobileMenuGroup({
-  entry,
-  pathname,
-  t,
-  onNavigate,
-}: {
-  entry: NavEntry;
-  pathname: string;
-  t: (key: string) => string;
-  onNavigate: () => void;
-}) {
+function MobileMenuGroup({ entry, pathname, t, onNavigate }: MobileMenuGroupProps) {
   const childActive = entryHasActiveChild(pathname, entry);
   const selfActive = isHrefActive(pathname, entry.href, entry.matchPrefix);
   const active = selfActive || childActive;
@@ -752,19 +768,7 @@ function MobileMenuGroup({
   );
 }
 
-function MobileAppMenu({
-  open,
-  pathname,
-  visibleNav,
-  t,
-  onClose,
-}: {
-  open: boolean;
-  pathname: string;
-  visibleNav: NavEntry[];
-  t: (key: string) => string;
-  onClose: () => void;
-}) {
+function MobileAppMenu({ open, pathname, visibleNav, t, onClose }: MobileAppMenuProps) {
   if (!open) return null;
 
   return (
@@ -808,7 +812,7 @@ function MobileAppMenu({
   );
 }
 
-export function AppChrome({ children }: { children: React.ReactNode }) {
+export function AppChrome({ children }: AppChromeProps) {
   const { data: session } = useSession();
   const t = useTranslations('nav');
   const pathname = usePathname();
@@ -829,7 +833,7 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
     setExpandedGroups((prev) => (prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]));
 
   const currentLocale = useLocale();
-  const selectLocale = (locale: 'en' | 'vi') => router.replace(pathname, { locale });
+  const selectLocale = (locale: AppLocale) => router.replace(pathname, { locale });
 
   const avatar = session?.user?.avatar;
   const avatarInitial = (session?.user?.displayName || session?.user?.email || 'U')

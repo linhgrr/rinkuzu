@@ -240,5 +240,9 @@ describe('AdminService report and stats contracts', () => {
     expect(userRepository.count).not.toHaveBeenCalled();
     expect(quizRepository.count).not.toHaveBeenCalled();
     expect(attemptRepository.count).not.toHaveBeenCalled();
+    expect(quizRepository.findAll).toHaveBeenCalledWith(
+      {},
+      { page: 1, limit: 5, populate: ['author'], compact: true },
+    );
   });
 });

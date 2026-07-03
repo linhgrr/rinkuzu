@@ -45,6 +45,8 @@
     "migrate:quiz-progress-user-ids:apply": "node scripts/normalize-quiz-progress-user-ids.mjs --apply",
     "migrate:quiz-progress-answer-contracts": "node scripts/normalize-quiz-progress-answer-contracts.mjs",
     "migrate:quiz-progress-answer-contracts:apply": "node scripts/normalize-quiz-progress-answer-contracts.mjs --apply",
+    "migrate:performance-indexes": "node scripts/sync-performance-indexes.mjs",
+    "migrate:performance-indexes:apply": "node scripts/sync-performance-indexes.mjs --apply",
     "seed:plans": "node src/scripts/seedPlansWithISO8601.js seed",
     "validate:plans": "node src/scripts/seedPlansWithISO8601.js validate",
     "check:subscriptions": "node src/scripts/checkExpiredSubscriptions.js",

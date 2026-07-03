@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import Attempt from '@/models/Attempt';
+import Discussion from '@/models/Discussion';
 import Quiz from '@/models/Quiz';
+import Report from '@/models/Report';
+import Subscription from '@/models/Subscription';
 import User from '@/models/User';
 
 function hasIndex(
@@ -29,5 +32,23 @@ describe('query performance indexes', () => {
 
   it('indexes global recent user and user bucket reads', () => {
     expect(hasIndex(User, { createdAt: -1 })).toBe(true);
+  });
+
+  it('indexes unfiltered report and subscription admin lists by recency', () => {
+    expect(hasIndex(Report, { createdAt: -1 })).toBe(true);
+    expect(hasIndex(Subscription, { createdAt: -1 })).toBe(true);
+  });
+
+  it('enforces one discussion per quiz question', () => {
+    expect(
+      Discussion.schema
+        .indexes()
+        .find(
+          ([indexSpec]) =>
+            indexSpec['quiz'] === 1 &&
+            indexSpec['questionIndex'] === 1 &&
+            Object.keys(indexSpec).length === 2,
+        )?.[1],
+    ).toMatchObject({ unique: true });
   });
 });

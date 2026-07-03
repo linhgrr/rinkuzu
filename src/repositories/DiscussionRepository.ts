@@ -78,44 +78,24 @@ export class DiscussionRepository implements IDiscussionRepository {
     });
   }
 
-  async ensureForQuizQuestion(quizId: string, questionIndex: number): Promise<DiscussionEntity> {
+  async addCommentForQuizQuestion(
+    quizId: string,
+    questionIndex: number,
+    data: CreateDiscussionCommentData,
+  ): Promise<DiscussionEntity | null> {
     await connectDB();
+    const quizObjectId = new Types.ObjectId(quizId);
+    const now = new Date();
     const record = await Discussion.findOneAndUpdate(
       {
-        quiz: new Types.ObjectId(quizId),
+        quiz: quizObjectId,
         questionIndex,
       },
       {
         $setOnInsert: {
-          quiz: new Types.ObjectId(quizId),
+          quiz: quizObjectId,
           questionIndex,
         },
-      },
-      {
-        new: true,
-        upsert: true,
-        runValidators: true,
-        setDefaultsOnInsert: true,
-      },
-    )
-      .populate('comments.author', 'email name displayName avatar')
-      .lean<DiscussionPersistenceRecord>();
-
-    if (!record) {
-      throw new Error(`Discussion could not be resolved for question index ${questionIndex}`);
-    }
-    return DiscussionPersistenceMapper.toEntity(record);
-  }
-
-  async addComment(
-    discussionId: string,
-    data: CreateDiscussionCommentData,
-  ): Promise<DiscussionEntity | null> {
-    await connectDB();
-    const now = new Date();
-    const record = await Discussion.findByIdAndUpdate(
-      discussionId,
-      {
         $push: {
           comments: {
             _id: new Types.ObjectId(),
@@ -127,7 +107,12 @@ export class DiscussionRepository implements IDiscussionRepository {
           },
         },
       },
-      { new: true, runValidators: true },
+      {
+        new: true,
+        upsert: true,
+        runValidators: true,
+        setDefaultsOnInsert: true,
+      },
     )
       .populate('comments.author', 'email name displayName avatar')
       .lean<DiscussionPersistenceRecord>();

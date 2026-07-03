@@ -80,8 +80,7 @@ function createService() {
     findById: vi.fn(),
     findByQuiz: vi.fn(),
     ensureForQuizQuestions: vi.fn().mockResolvedValue([discussion()]),
-    ensureForQuizQuestion: vi.fn().mockResolvedValue(discussion()),
-    addComment: vi.fn().mockResolvedValue(discussion()),
+    addCommentForQuizQuestion: vi.fn().mockResolvedValue(discussion()),
   };
   const reportRepository: Mocked<IReportRepository> = {
     findById: vi.fn(),
@@ -147,7 +146,33 @@ describe('QuizDiscussionService', () => {
       error: 'Invalid question index',
       statusCode: 400,
     });
-    expect(discussionRepository.ensureForQuizQuestion).not.toHaveBeenCalled();
+    expect(discussionRepository.addCommentForQuizQuestion).not.toHaveBeenCalled();
+  });
+
+  it('uses the authenticated user id and one atomic repository write when adding comments', async () => {
+    const { service, userRepository, discussionRepository } = createService();
+
+    const result = await service.addDiscussionComment(
+      'algorithms',
+      0,
+      'Needs explanation',
+      'learner@example.com',
+      {
+        user: {
+          id: userId,
+          email: 'learner@example.com',
+          role: 'user',
+        },
+        expires: '2026-07-04T00:00:00.000Z',
+      },
+    );
+
+    expect(result.success).toBe(true);
+    expect(userRepository.findByEmail).not.toHaveBeenCalled();
+    expect(discussionRepository.addCommentForQuizQuestion).toHaveBeenCalledWith(quizId, 0, {
+      authorId: userId,
+      content: 'Needs explanation',
+    });
   });
 
   it('creates reports from quiz metadata without loading questions', async () => {

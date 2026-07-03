@@ -1,8 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { Types } from 'mongoose';
 import type { Discussion } from '@/entities/Discussion';
 
 const discussionModelMocks = vi.hoisted(() => ({
   bulkWrite: vi.fn(),
+  findOneAndUpdate: vi.fn(),
+  populate: vi.fn(),
+  lean: vi.fn(),
 }));
 
 vi.mock('@/lib/mongoose', () => ({
@@ -12,6 +16,7 @@ vi.mock('@/lib/mongoose', () => ({
 vi.mock('@/models/Discussion', () => ({
   default: {
     bulkWrite: discussionModelMocks.bulkWrite,
+    findOneAndUpdate: discussionModelMocks.findOneAndUpdate,
   },
 }));
 
@@ -35,6 +40,10 @@ describe('DiscussionRepository.ensureForQuizQuestions', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     discussionModelMocks.bulkWrite.mockResolvedValue(undefined);
+    discussionModelMocks.findOneAndUpdate.mockReturnValue({
+      populate: discussionModelMocks.populate,
+    });
+    discussionModelMocks.populate.mockReturnValue({ lean: discussionModelMocks.lean });
   });
 
   it('does not write when all quiz question discussions already exist', async () => {
@@ -45,6 +54,84 @@ describe('DiscussionRepository.ensureForQuizQuestions', () => {
 
     expect(result.map((item) => item.questionIndex)).toEqual([0, 1]);
     expect(discussionModelMocks.bulkWrite).not.toHaveBeenCalled();
+  });
+
+  it('atomically creates the discussion and adds its first comment', async () => {
+    const discussionId = new Types.ObjectId('507f191e810c19729de860eb');
+    const authorId = new Types.ObjectId('507f191e810c19729de860ec');
+    discussionModelMocks.lean.mockResolvedValue({
+      _id: discussionId,
+      quiz: new Types.ObjectId(quizId),
+      questionIndex: 2,
+      comments: [
+        {
+          _id: new Types.ObjectId('507f191e810c19729de860ed'),
+          author: {
+            _id: authorId,
+            email: 'learner@example.com',
+          },
+          content: 'Needs explanation',
+          isEdited: false,
+          createdAt: now,
+          updatedAt: now,
+        },
+      ],
+      createdAt: now,
+      updatedAt: now,
+    });
+    const repository = new DiscussionRepository();
+
+    await expect(
+      repository.addCommentForQuizQuestion(quizId, 2, {
+        authorId: authorId.toString(),
+        content: 'Needs explanation',
+      }),
+    ).resolves.toMatchObject({
+      id: discussionId.toString(),
+      questionIndex: 2,
+      comments: [
+        {
+          author: {
+            id: authorId.toString(),
+            email: 'learner@example.com',
+          },
+          content: 'Needs explanation',
+        },
+      ],
+    });
+    expect(discussionModelMocks.findOneAndUpdate).toHaveBeenCalledWith(
+      {
+        quiz: new Types.ObjectId(quizId),
+        questionIndex: 2,
+      },
+      {
+        $setOnInsert: {
+          quiz: new Types.ObjectId(quizId),
+          questionIndex: 2,
+        },
+        $push: {
+          comments: {
+            _id: expect.any(Types.ObjectId),
+            author: authorId,
+            content: 'Needs explanation',
+            isEdited: false,
+            createdAt: expect.any(Date),
+            updatedAt: expect.any(Date),
+          },
+        },
+      },
+      {
+        new: true,
+        upsert: true,
+        runValidators: true,
+        setDefaultsOnInsert: true,
+      },
+    );
+    expect(discussionModelMocks.populate).toHaveBeenCalledWith(
+      'comments.author',
+      'email name displayName avatar',
+    );
+    expect(discussionModelMocks.lean).toHaveBeenCalledOnce();
   });
 
   it('upserts only missing discussion indexes and refetches the resolved set', async () => {

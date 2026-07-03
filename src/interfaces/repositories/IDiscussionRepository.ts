@@ -12,7 +12,9 @@ export interface IDiscussionRepository {
 
   ensureForQuizQuestions(quizId: string, questionCount: number): Promise<Discussion[]>;
 
-  ensureForQuizQuestion(quizId: string, questionIndex: number): Promise<Discussion>;
-
-  addComment(discussionId: string, data: CreateDiscussionCommentData): Promise<Discussion | null>;
+  addCommentForQuizQuestion(
+    quizId: string,
+    questionIndex: number,
+    data: CreateDiscussionCommentData,
+  ): Promise<Discussion | null>;
 }

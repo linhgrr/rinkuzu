@@ -87,33 +87,27 @@ export class QuizDiscussionService {
         };
       }
 
-      const user = await this.userRepository.findByEmail(userEmail);
-      if (!user) {
-        return {
-          success: false,
-          error: 'User not found',
-          statusCode: 404,
-        };
+      let authorId = session?.user?.id;
+      if (!authorId) {
+        const user = await this.userRepository.findByEmail(userEmail);
+        if (!user) {
+          return {
+            success: false,
+            error: 'User not found',
+            statusCode: 404,
+          };
+        }
+        authorId = user.id;
       }
 
-      const existingDiscussion = await this.discussionRepository.ensureForQuizQuestion(
+      const updatedDiscussion = await this.discussionRepository.addCommentForQuizQuestion(
         quiz.id,
         questionIndex,
+        {
+          authorId,
+          content,
+        },
       );
-
-      if (!existingDiscussion?.id) {
-        return {
-          success: false,
-          error: 'Failed to create or find discussion',
-          statusCode: 500,
-        };
-      }
-
-      // Add comment to existing discussion
-      const updatedDiscussion = await this.discussionRepository.addComment(existingDiscussion.id, {
-        authorId: user.id,
-        content,
-      });
 
       if (!updatedDiscussion) {
         return {

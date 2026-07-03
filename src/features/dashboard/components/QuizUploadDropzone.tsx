@@ -12,7 +12,11 @@ import { cn } from '@/lib/utils';
 
 const ASSET_BASE = '/images/home-redesign';
 
-export function QuizUploadDropzone({ className }: { className?: string }) {
+interface QuizUploadDropzoneProps {
+  className?: string;
+}
+
+export function QuizUploadDropzone({ className }: QuizUploadDropzoneProps) {
   const router = useRouter();
   const t = useTranslations('dashboard.home');
   const setPendingFile = usePendingQuizUploadStore((s) => s.setFile);

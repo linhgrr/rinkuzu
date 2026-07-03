@@ -27,6 +27,54 @@ interface HomeDashboardProps {
 const ASSET_BASE = '/images/home-redesign';
 const QUIZ_BUILDER_LIBRARY_HREF = '/my-quizzes';
 
+interface HomeHeroProps {
+  title: string;
+  description: string;
+  ctaLabel: string;
+}
+
+interface QuizBuilderCardProps {
+  title: string;
+  subtitle: string;
+}
+
+type ProgressIconKind = 'fire' | 'target' | 'chart';
+type ProgressIconVariant = 'metric' | 'day';
+
+interface ProgressIconProps {
+  kind: ProgressIconKind;
+  variant?: ProgressIconVariant;
+}
+
+interface MetricItemProps {
+  icon: ProgressIconKind;
+  label: string;
+  value: string;
+}
+
+interface LearningProgressCardBodyProps {
+  progress: DashboardProgressViewModel;
+  title: string;
+  subtitle: string;
+  viewAllLabel: string;
+  streakLabel: string;
+  accuracyLabel: string;
+  studyTimeLabel: string;
+}
+
+interface LearningCardProps {
+  item: DashboardLearningCardViewModel;
+}
+
+interface ContinueLearningProps {
+  items: DashboardLearningCardViewModel[];
+  viewAllHref: string;
+  title: string;
+  subtitle: string;
+  viewAllLabel: string;
+  emptyActionLabel: string;
+}
+
 function HeroArtwork() {
   return (
     <div
@@ -97,15 +145,7 @@ function HeroArtwork() {
   );
 }
 
-function HomeHero({
-  title,
-  description,
-  ctaLabel,
-}: {
-  title: string;
-  description: string;
-  ctaLabel: string;
-}) {
+function HomeHero({ title, description, ctaLabel }: HomeHeroProps) {
   return (
     <section className="relative min-h-[280px] rounded-[20px] border border-accent bg-hero px-5 py-6 sm:min-h-[295px] sm:px-6 sm:py-7">
       <div
@@ -138,7 +178,7 @@ function HomeHero({
   );
 }
 
-function QuizBuilderCard({ title, subtitle }: { title: string; subtitle: string }) {
+function QuizBuilderCard({ title, subtitle }: QuizBuilderCardProps) {
   return (
     <SurfaceCard className="flex min-h-[280px] flex-col gap-6 p-4 sm:min-h-[295px] sm:p-5">
       <SectionHeading title={title} subtitle={subtitle} />
@@ -147,15 +187,7 @@ function QuizBuilderCard({ title, subtitle }: { title: string; subtitle: string 
   );
 }
 
-type ProgressIconKind = 'fire' | 'target' | 'chart';
-
-function ProgressIcon({
-  kind,
-  variant = 'metric',
-}: {
-  kind: ProgressIconKind;
-  variant?: 'metric' | 'day';
-}) {
+function ProgressIcon({ kind, variant = 'metric' }: ProgressIconProps) {
   if (kind === 'fire') {
     if (variant === 'day') {
       return (
@@ -217,15 +249,7 @@ function ProgressIcon({
   );
 }
 
-function MetricItem({
-  icon,
-  label,
-  value,
-}: {
-  icon: ProgressIconKind;
-  label: string;
-  value: string;
-}) {
+function MetricItem({ icon, label, value }: MetricItemProps) {
   return (
     <div className="flex min-w-0 flex-1 flex-col items-center gap-2.5 text-center sm:w-[100px] sm:flex-none">
       <ProgressIcon kind={icon} />
@@ -249,15 +273,7 @@ function LearningProgressCardBody({
   streakLabel,
   accuracyLabel,
   studyTimeLabel,
-}: {
-  progress: DashboardProgressViewModel;
-  title: string;
-  subtitle: string;
-  viewAllLabel: string;
-  streakLabel: string;
-  accuracyLabel: string;
-  studyTimeLabel: string;
-}) {
+}: LearningProgressCardBodyProps) {
   return (
     <SurfaceCard className="flex min-h-[357px] flex-col gap-6 p-4 sm:gap-7 sm:p-5">
       <SectionHeading
@@ -314,7 +330,7 @@ const LEARNING_CARD_TONES = {
   },
 } as const;
 
-function LearningCard({ item }: { item: DashboardLearningCardViewModel }) {
+function LearningCard({ item }: LearningCardProps) {
   const tone = LEARNING_CARD_TONES[item.tone];
 
   return (
@@ -364,14 +380,7 @@ function ContinueLearning({
   subtitle,
   viewAllLabel,
   emptyActionLabel,
-}: {
-  items: DashboardLearningCardViewModel[];
-  viewAllHref: string;
-  title: string;
-  subtitle: string;
-  viewAllLabel: string;
-  emptyActionLabel: string;
-}) {
+}: ContinueLearningProps) {
   return (
     <SurfaceCard className="flex flex-col gap-6 p-4 sm:p-5">
       <SectionHeading

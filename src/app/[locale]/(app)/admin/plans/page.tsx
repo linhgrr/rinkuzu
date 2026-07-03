@@ -41,6 +41,19 @@ interface PageStatus {
   success: string;
 }
 
+interface CreatePlanModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onCreate: (payload: AdminBillingPlanMutationInput) => Promise<boolean>;
+  createLabel: string;
+}
+
+interface PlanCardProps {
+  plan: AdminBillingPlanViewModel;
+  onSave: (planId: string, payload: AdminBillingPlanMutationInput) => Promise<boolean>;
+  onDelete: (planId: string, planName: string) => Promise<boolean>;
+}
+
 function createFeatureField(value = ''): FeatureField {
   return { id: crypto.randomUUID(), value };
 }
@@ -77,17 +90,7 @@ function serializeFeatureFields(features: FeatureField[]) {
   }, []);
 }
 
-function CreatePlanModal({
-  isOpen,
-  onClose,
-  onCreate,
-  createLabel,
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-  onCreate: (payload: AdminBillingPlanMutationInput) => Promise<boolean>;
-  createLabel: string;
-}) {
+function CreatePlanModal({ isOpen, onClose, onCreate, createLabel }: CreatePlanModalProps) {
   const t = useTranslations('admin');
   const [form, setForm] = useState<PlanFormState>(createPlanFormState);
   const [uiState, setUiState] = useState({
@@ -328,15 +331,7 @@ function CreatePlanModal({
   );
 }
 
-function PlanCard({
-  plan,
-  onSave,
-  onDelete,
-}: {
-  plan: AdminBillingPlanViewModel;
-  onSave: (planId: string, payload: AdminBillingPlanMutationInput) => Promise<boolean>;
-  onDelete: (planId: string, planName: string) => Promise<boolean>;
-}) {
+function PlanCard({ plan, onSave, onDelete }: PlanCardProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [form, setForm] = useState<PlanFormState>(() => createEditFormState(plan));
   const tPlanCard = useTranslations('admin');

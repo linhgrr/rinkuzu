@@ -24,6 +24,10 @@ type RenderedMail = {
   text: string;
 };
 
+interface MailIdempotencyOptions {
+  idempotencyKey?: string;
+}
+
 let cachedResend: Resend | null = null;
 
 function getResendClient(): Resend {
@@ -74,7 +78,7 @@ function truncateIdempotency(key: string): string {
 export async function buildVerifyEmailMessage(
   to: string,
   rawToken: string,
-  options: { idempotencyKey?: string } = {},
+  options: MailIdempotencyOptions = {},
 ): Promise<MailMessage> {
   const url = `${siteUrl()}/verify-email?token=${encodeURIComponent(rawToken)}`;
   const { html, text } = await renderMail(VerifyEmail({ url }));
@@ -92,7 +96,7 @@ export async function buildVerifyEmailMessage(
 export async function buildPasswordResetMessage(
   to: string,
   rawToken: string,
-  options: { idempotencyKey?: string } = {},
+  options: MailIdempotencyOptions = {},
 ): Promise<MailMessage> {
   const url = `${siteUrl()}/reset-password?token=${encodeURIComponent(rawToken)}`;
   const { html, text } = await renderMail(ResetPassword({ url }));
@@ -109,7 +113,7 @@ export async function buildPasswordResetMessage(
 
 export async function buildPasswordChangedMessage(
   to: string,
-  options: { idempotencyKey?: string } = {},
+  options: MailIdempotencyOptions = {},
 ): Promise<MailMessage> {
   const resetUrl = `${siteUrl()}/forgot-password`;
   const { html, text } = await renderMail(PasswordChanged({ resetUrl }));

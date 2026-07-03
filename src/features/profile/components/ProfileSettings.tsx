@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useReducer, useRef } from 'react';
+import { useEffect, useReducer, useRef, type ChangeEvent, type RefObject } from 'react';
 import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
@@ -48,6 +48,47 @@ interface ProfileSettingsState {
   savingPassword: boolean;
   uploadingAvatar: boolean;
   showRemoveAvatarConfirm: boolean;
+}
+
+type ProfileSettingsTranslate = (key: string) => string;
+
+interface JoinDateLabelProps {
+  value: string;
+}
+
+interface PersonalInfoSectionProps {
+  bio: string;
+  displayName: string;
+  fileInputRef: RefObject<HTMLInputElement | null>;
+  initials: string;
+  onBioChange: (value: string) => void;
+  onChangeAvatar: (event: ChangeEvent<HTMLInputElement>) => void;
+  onDisplayNameChange: (value: string) => void;
+  onRequestRemoveAvatar: () => void;
+  onSaveProfile: () => void;
+  profile: ProfileSettingsViewModel;
+  savingProfile: boolean;
+  t: ProfileSettingsTranslate;
+  uploadingAvatar: boolean;
+}
+
+interface PasswordSectionProps {
+  confirmPassword: string;
+  currentPassword: string;
+  newPassword: string;
+  onConfirmPasswordChange: (value: string) => void;
+  onCurrentPasswordChange: (value: string) => void;
+  onNewPasswordChange: (value: string) => void;
+  onSavePassword: () => void;
+  onTogglePasswordVisibility: () => void;
+  savingPassword: boolean;
+  showNewPassword: boolean;
+  t: ProfileSettingsTranslate;
+}
+
+interface AccountSectionProps {
+  profile: ProfileSettingsViewModel;
+  t: ProfileSettingsTranslate;
 }
 
 type ProfileSettingsAction =
@@ -155,7 +196,7 @@ function profileSettingsReducer(
   }
 }
 
-function JoinDateLabel({ value }: { value: string }) {
+function JoinDateLabel({ value }: JoinDateLabelProps) {
   return <span>{value}</span>;
 }
 
@@ -173,21 +214,7 @@ function PersonalInfoSection({
   savingProfile,
   t,
   uploadingAvatar,
-}: {
-  bio: string;
-  displayName: string;
-  fileInputRef: React.RefObject<HTMLInputElement | null>;
-  initials: string;
-  onBioChange: (value: string) => void;
-  onChangeAvatar: (event: React.ChangeEvent<HTMLInputElement>) => void;
-  onDisplayNameChange: (value: string) => void;
-  onRequestRemoveAvatar: () => void;
-  onSaveProfile: () => void;
-  profile: ProfileSettingsViewModel;
-  savingProfile: boolean;
-  t: (key: string) => string;
-  uploadingAvatar: boolean;
-}) {
+}: PersonalInfoSectionProps) {
   return (
     <Card className="overflow-hidden">
       <div className="border-b border-neutral-100 px-6 py-5">
@@ -318,19 +345,7 @@ function PasswordSection({
   savingPassword,
   showNewPassword,
   t,
-}: {
-  confirmPassword: string;
-  currentPassword: string;
-  newPassword: string;
-  onConfirmPasswordChange: (value: string) => void;
-  onCurrentPasswordChange: (value: string) => void;
-  onNewPasswordChange: (value: string) => void;
-  onSavePassword: () => void;
-  onTogglePasswordVisibility: () => void;
-  savingPassword: boolean;
-  showNewPassword: boolean;
-  t: (key: string) => string;
-}) {
+}: PasswordSectionProps) {
   return (
     <Card className="overflow-hidden">
       <div className="border-b border-neutral-100 px-6 py-5">
@@ -405,13 +420,7 @@ function PasswordSection({
   );
 }
 
-function AccountSection({
-  profile,
-  t,
-}: {
-  profile: ProfileSettingsViewModel;
-  t: (key: string) => string;
-}) {
+function AccountSection({ profile, t }: AccountSectionProps) {
   return (
     <Card className="overflow-hidden">
       <div className="border-b border-neutral-100 px-6 py-5">

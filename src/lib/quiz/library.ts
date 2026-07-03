@@ -2,14 +2,16 @@ import type { QuizLibraryStatus } from '@/shared/types/quiz-library';
 import { serializeDate } from '@/lib/date-serialization';
 export type QuizLibraryFilter = 'all' | 'in_progress' | 'complete';
 
+export interface QuizLibraryActivity {
+  libraryStatus: QuizLibraryStatus;
+  displayDate: string;
+}
+
 export function resolveQuizLibraryActivity(
   createdAt: Date,
   lastAttemptAt?: Date,
   lastProgressAt?: Date,
-): {
-  libraryStatus: QuizLibraryStatus;
-  displayDate: string;
-} {
+): QuizLibraryActivity {
   if (lastProgressAt) {
     return {
       libraryStatus: 'in_progress',

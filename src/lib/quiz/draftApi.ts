@@ -12,6 +12,10 @@ import type {
 import type { QuizDraft } from '@/features/quiz/types/quiz-draft';
 import { QuizDraftMapper } from '@/mappers/quiz/QuizDraftMapper';
 
+interface QuizDraftRequestInit {
+  signal?: AbortSignal;
+}
+
 export async function createQuizDraft(input: CreateQuizDraftInputDto): Promise<QuizDraft> {
   const { draft } = await fetchApiData<QuizDraftSingleResponseDto>('/api/quiz-drafts', {
     method: 'POST',
@@ -31,7 +35,7 @@ export async function createQuizDraft(input: CreateQuizDraftInputDto): Promise<Q
 
 export async function getQuizDraft(
   draftId: string,
-  init?: { signal?: AbortSignal },
+  init?: QuizDraftRequestInit,
 ): Promise<QuizDraft> {
   const { draft } = await fetchApiData<QuizDraftSingleResponseDto>(
     `/api/quiz-drafts/${draftId}`,
@@ -40,7 +44,7 @@ export async function getQuizDraft(
   return QuizDraftMapper.toViewModel(draft);
 }
 
-export async function listQuizDrafts(init?: { signal?: AbortSignal }): Promise<QuizDraft[]> {
+export async function listQuizDrafts(init?: QuizDraftRequestInit): Promise<QuizDraft[]> {
   const { drafts } = await fetchApiData<QuizDraftListResponseDto>('/api/quiz-drafts', init);
   return drafts.map(QuizDraftMapper.toViewModel);
 }

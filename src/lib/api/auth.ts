@@ -25,6 +25,10 @@ type RouteHandler<TParams extends RouteParams = RouteParams> = (
   context: AuthContext<TParams>,
 ) => Promise<Response>;
 
+interface RouteContextParams<TParams extends RouteParams = RouteParams> {
+  params: Promise<TParams>;
+}
+
 let authOptionsPromise: Promise<Awaited<ReturnType<typeof loadAuthOptions>>> | null = null;
 
 async function loadAuthOptions() {
@@ -51,7 +55,7 @@ export function withAuth<TParams extends RouteParams = RouteParams>(
 ) {
   return async (
     request: NextRequest,
-    routeContext: { params: Promise<TParams> },
+    routeContext: RouteContextParams<TParams>,
   ): Promise<Response> => {
     const session = await getServerSession(await getAuthOptions());
 
@@ -124,7 +128,7 @@ export function withOptionalAuth<TParams extends RouteParams = RouteParams>(
 ) {
   return async (
     request: NextRequest,
-    routeContext: { params: Promise<TParams> },
+    routeContext: RouteContextParams<TParams>,
   ): Promise<Response> => {
     const [session, params] = await Promise.all([
       getServerSession(await getAuthOptions()),

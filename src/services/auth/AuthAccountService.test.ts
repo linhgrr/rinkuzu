@@ -177,7 +177,7 @@ describe('AuthAccountService', () => {
 
     await expect(service.requestPasswordReset(identity.email, context)).resolves.toEqual({
       success: true,
-      data: null,
+      data: { email: identity.email, requested: true },
     });
 
     await scheduler.runAll();
@@ -195,7 +195,7 @@ describe('AuthAccountService', () => {
 
     await expect(service.requestPasswordReset(identity.email, context)).resolves.toEqual({
       success: true,
-      data: null,
+      data: { email: identity.email, requested: true },
     });
     expect(repository.issuePasswordResetToken).toHaveBeenCalledWith(
       identity.email,
@@ -218,7 +218,7 @@ describe('AuthAccountService', () => {
 
     await expect(service.resendVerification(identity.email, context)).resolves.toEqual({
       success: true,
-      data: null,
+      data: { email: identity.email, requested: true },
     });
     expect(createSecureToken).not.toHaveBeenCalled();
     expect(repository.issueVerificationToken).not.toHaveBeenCalled();
@@ -230,7 +230,7 @@ describe('AuthAccountService', () => {
 
     await expect(service.resendVerification(identity.email, context)).resolves.toEqual({
       success: true,
-      data: null,
+      data: { email: identity.email, requested: true },
     });
 
     await scheduler.runAll();
@@ -249,7 +249,7 @@ describe('AuthAccountService', () => {
 
     await expect(service.resetPassword('raw-reset', 'new-password', context)).resolves.toEqual({
       success: true,
-      data: null,
+      data: { email: identity.email, passwordReset: true },
     });
     expect(repository.resetPassword).toHaveBeenCalledWith(
       identity.id,

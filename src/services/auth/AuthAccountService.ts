@@ -1,4 +1,11 @@
-import type { EmailResponseDto, RegisterAccountDto, RegisterAccountResponseDto } from '@/dtos/auth';
+import type {
+  EmailResponseDto,
+  PasswordResetRequestResultDto,
+  PasswordResetResultDto,
+  RegisterAccountDto,
+  RegisterAccountResponseDto,
+  VerificationResendResultDto,
+} from '@/dtos/auth';
 import type { AuthRequestContext } from '@/entities/AuthAccount';
 import type { IAuthAccountRepository } from '@/interfaces/repositories/IAuthAccountRepository';
 import type { IAuthAccountService } from '@/interfaces/services/IAuthAccountService';
@@ -109,7 +116,7 @@ export class AuthAccountService implements IAuthAccountService {
   async requestPasswordReset(
     email: string,
     context: AuthRequestContext,
-  ): Promise<ServiceResult<null>> {
+  ): Promise<ServiceResult<PasswordResetRequestResultDto>> {
     try {
       const account = await this.repository.findByEmail(email);
       if (!account || !account.passwordHash) {
@@ -117,13 +124,16 @@ export class AuthAccountService implements IAuthAccountService {
           email,
           metadata: { reason: 'unknown_user_or_oauth' },
         });
-        return { success: true, data: null };
+        return { success: true, data: AuthAccountDtoMapper.toPasswordResetRequestResult(email) };
       }
       if (
         account.passwordResetTokenHash &&
         wasIssuedRecently(account.passwordResetExpires, RESET_TOKEN_TTL_MS, RESET_MIN_INTERVAL_MS)
       ) {
-        return { success: true, data: null };
+        return {
+          success: true,
+          data: AuthAccountDtoMapper.toPasswordResetRequestResult(account.email),
+        };
       }
 
       const token = createSecureToken();
@@ -145,17 +155,20 @@ export class AuthAccountService implements IAuthAccountService {
           ]);
         });
       }
-      return { success: true, data: null };
+      return {
+        success: true,
+        data: AuthAccountDtoMapper.toPasswordResetRequestResult(account.email),
+      };
     } catch (error) {
       logger.error({ error }, 'Forgot-password error');
-      return { success: true, data: null };
+      return { success: true, data: AuthAccountDtoMapper.toPasswordResetRequestResult(email) };
     }
   }
 
   async resendVerification(
     email: string,
     context: AuthRequestContext,
-  ): Promise<ServiceResult<null>> {
+  ): Promise<ServiceResult<VerificationResendResultDto>> {
     try {
       const account = await this.repository.findByEmail(email);
       if (!account || account.emailVerified || !account.passwordHash) {
@@ -163,7 +176,7 @@ export class AuthAccountService implements IAuthAccountService {
           email,
           metadata: { reason: account ? 'already_verified_or_oauth' : 'unknown_user' },
         });
-        return { success: true, data: null };
+        return { success: true, data: AuthAccountDtoMapper.toVerificationResendResult(email) };
       }
       if (
         account.emailVerificationTokenHash &&
@@ -173,7 +186,10 @@ export class AuthAccountService implements IAuthAccountService {
           VERIFICATION_MIN_INTERVAL_MS,
         )
       ) {
-        return { success: true, data: null };
+        return {
+          success: true,
+          data: AuthAccountDtoMapper.toVerificationResendResult(account.email),
+        };
       }
 
       const token = createSecureToken();
@@ -195,10 +211,13 @@ export class AuthAccountService implements IAuthAccountService {
           ]);
         });
       }
-      return { success: true, data: null };
+      return {
+        success: true,
+        data: AuthAccountDtoMapper.toVerificationResendResult(account.email),
+      };
     } catch (error) {
       logger.error({ error }, 'Resend-verification error');
-      return { success: true, data: null };
+      return { success: true, data: AuthAccountDtoMapper.toVerificationResendResult(email) };
     }
   }
 
@@ -206,7 +225,7 @@ export class AuthAccountService implements IAuthAccountService {
     rawToken: string,
     password: string,
     context: AuthRequestContext,
-  ): Promise<ServiceResult<null>> {
+  ): Promise<ServiceResult<PasswordResetResultDto>> {
     try {
       const tokenHash = hashToken(rawToken);
       const candidate = await this.repository.findValidPasswordResetAccount(tokenHash, new Date());
@@ -242,7 +261,7 @@ export class AuthAccountService implements IAuthAccountService {
           }),
         ]);
       });
-      return { success: true, data: null };
+      return { success: true, data: AuthAccountDtoMapper.toPasswordResetResult(account.email) };
     } catch (error) {
       logger.error({ error }, 'Reset-password error');
       return { success: false, error: 'Failed to reset password', statusCode: 500 };

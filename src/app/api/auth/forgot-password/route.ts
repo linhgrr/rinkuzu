@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { apiOk, apiErr } from '@/lib/api/response';
+import { apiOk, apiErr, apiServiceErr } from '@/lib/api/response';
 import { readAndValidateJson } from '@/lib/api/request';
 import { forgotPasswordSchema } from '@/lib/validation/auth';
 import { extractRequestContext } from '@/lib/audit';
@@ -20,6 +20,8 @@ export async function POST(request: NextRequest) {
   const rate = await checkAuthRateLimit('forgot_password_email', input.data.email);
   if (!rate.allowed) return rateLimitResponse(rate);
 
-  await authAccountService.requestPasswordReset(input.data.email, context);
-  return apiOk(null, 200, { meta: { message: neutralMessage } });
+  const result = await authAccountService.requestPasswordReset(input.data.email, context);
+  return result.success
+    ? apiOk(result.data, 200, { meta: { message: neutralMessage } })
+    : apiServiceErr(result);
 }

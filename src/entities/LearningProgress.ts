@@ -1,5 +1,5 @@
 import type { QuizLibraryStatus } from '@/shared/types/quiz-library';
-import type { SRSRating } from '@/services/srs.service';
+import type { SRSRating } from '@/entities/SpacedRepetition';
 
 export interface LibraryQuizAuthor {
   id: string;

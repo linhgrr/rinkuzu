@@ -18,7 +18,8 @@ import type { ServiceResult } from '@/interfaces/services/types';
 import { buildPaginationMeta } from '@/lib/pagination';
 import { matchesLibraryFolder } from '@/lib/quiz/library';
 import { logger } from '@/lib/logger';
-import { calculateNextReview, type SRSRating } from '@/services/srs.service';
+import type { SRSRating } from '@/entities/SpacedRepetition';
+import { calculateNextReview } from '@/services/srs.service';
 import { LearningProgressDtoMapper } from '@/mappers/learning/LearningProgressDtoMapper';
 import { toUtcDateKey } from '@/lib/date-serialization';
 

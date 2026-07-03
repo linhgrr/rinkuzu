@@ -9,6 +9,13 @@ const DashboardMascot3D = dynamic(() => import('./DashboardMascot3D'), {
   loading: () => <MascotPlaceholder />,
 });
 
+type IdleCallback = () => void;
+
+interface IdleApi {
+  requestIdleCallback?: (callback: IdleCallback) => number;
+  cancelIdleCallback?: (id: number) => void;
+}
+
 function MascotPlaceholder() {
   return (
     <div
@@ -27,10 +34,7 @@ export function DashboardHeroMascot() {
 
     let timeoutId: number | null = null;
     let idleId: number | null = null;
-    const idleApi = window as Window & {
-      requestIdleCallback?: (cb: () => void) => number;
-      cancelIdleCallback?: (id: number) => void;
-    };
+    const idleApi = window as Window & IdleApi;
 
     if (idleApi.requestIdleCallback) {
       idleId = idleApi.requestIdleCallback(() => setShouldLoadMascot(true));

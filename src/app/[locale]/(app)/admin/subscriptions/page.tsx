@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useReducer } from 'react';
+import type { FormEvent, ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import { AdminSubscriptionsPageSkeleton } from '@/components/admin/AdminLoadingSkeletons';
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
@@ -87,6 +88,42 @@ const initialState: AdminSubscriptionsState = {
   selectedSubscription: null,
 };
 
+interface SubscriptionSearchBarProps {
+  searchTerm: string;
+  statusFilter: string;
+  searchLabel: string;
+  clearLabel: string;
+  searchPlaceholder: string;
+  onSearchTermChange: (value: string) => void;
+  onSubmit: (event: FormEvent) => void;
+  onClear: () => void;
+}
+
+interface SubscriptionStatusFiltersProps {
+  currentFilter: '' | AdminSubscriptionStatusViewModel;
+  onChange: (value: '' | AdminSubscriptionStatusViewModel) => void;
+}
+
+interface SubscriptionsTableProps {
+  subscriptions: AdminSubscriptionViewModel[];
+  pagination: AdminSubscriptionsPaginationViewModel;
+  noResultsLabel: string;
+  loadingLabel: string;
+  onViewDetails: (subscription: AdminSubscriptionViewModel) => void;
+}
+
+interface SubscriptionDetailModalProps {
+  subscription: AdminSubscriptionViewModel | null;
+  actionLoadingId: string | null;
+  onClose: () => void;
+  onUpdateStatus: (subscriptionId: string, status: AdminMutableSubscriptionStatusViewModel) => void;
+}
+
+interface SubscriptionDetailFieldProps {
+  label: string;
+  value: ReactNode;
+}
+
 function adminSubscriptionsReducer(
   state: AdminSubscriptionsState,
   action: AdminSubscriptionsAction,
@@ -169,16 +206,7 @@ function SubscriptionSearchBar({
   onSearchTermChange,
   onSubmit,
   onClear,
-}: {
-  searchTerm: string;
-  statusFilter: string;
-  searchLabel: string;
-  clearLabel: string;
-  searchPlaceholder: string;
-  onSearchTermChange: (value: string) => void;
-  onSubmit: (event: React.FormEvent) => void;
-  onClear: () => void;
-}) {
+}: SubscriptionSearchBarProps) {
   return (
     <form onSubmit={onSubmit} className="mb-4 flex gap-4">
       <div className="max-w-md flex-1">
@@ -203,13 +231,7 @@ function SubscriptionSearchBar({
   );
 }
 
-function SubscriptionStatusFilters({
-  currentFilter,
-  onChange,
-}: {
-  currentFilter: '' | AdminSubscriptionStatusViewModel;
-  onChange: (value: '' | AdminSubscriptionStatusViewModel) => void;
-}) {
+function SubscriptionStatusFilters({ currentFilter, onChange }: SubscriptionStatusFiltersProps) {
   return (
     <div className="mb-6 flex flex-wrap gap-2">
       <Button
@@ -247,13 +269,7 @@ function SubscriptionsTable({
   noResultsLabel,
   loadingLabel,
   onViewDetails,
-}: {
-  subscriptions: AdminSubscriptionViewModel[];
-  pagination: AdminSubscriptionsPaginationViewModel;
-  noResultsLabel: string;
-  loadingLabel: string;
-  onViewDetails: (subscription: AdminSubscriptionViewModel) => void;
-}) {
+}: SubscriptionsTableProps) {
   return (
     <Card>
       <CardHeader>
@@ -341,12 +357,7 @@ function SubscriptionDetailModal({
   actionLoadingId,
   onClose,
   onUpdateStatus,
-}: {
-  subscription: AdminSubscriptionViewModel | null;
-  actionLoadingId: string | null;
-  onClose: () => void;
-  onUpdateStatus: (subscriptionId: string, status: AdminMutableSubscriptionStatusViewModel) => void;
-}) {
+}: SubscriptionDetailModalProps) {
   const availableTransitions = subscription ? getAvailableStatusTransitions(subscription) : [];
 
   return (
@@ -402,7 +413,7 @@ function SubscriptionDetailModal({
   );
 }
 
-function SubscriptionDetailField({ label, value }: { label: string; value: React.ReactNode }) {
+function SubscriptionDetailField({ label, value }: SubscriptionDetailFieldProps) {
   return (
     <div>
       <p className="mb-1 block text-sm font-medium text-neutral-700">{label}</p>
@@ -459,7 +470,7 @@ export default function AdminSubscriptionsPage() {
     });
   };
 
-  const handleSearch = (event: React.FormEvent) => {
+  const handleSearch = (event: FormEvent) => {
     event.preventDefault();
     dispatch({
       type: 'patch',

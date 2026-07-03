@@ -1,12 +1,5 @@
 import connectDB from '@/lib/mongoose';
 import QuizModel from '@/models/Quiz';
-import Attempt from '@/models/Attempt';
-import Bookmark from '@/models/Bookmark';
-import Discussion from '@/models/Discussion';
-import QuestionProgress from '@/models/QuestionProgress';
-import Report from '@/models/Report';
-import FolderQuiz from '@/models/FolderQuiz';
-import QuizProgress from '@/models/QuizProgress';
 import type { Quiz } from '@/entities/Quiz';
 import {
   IQuizRepository,
@@ -32,6 +25,7 @@ import {
   resolveCountBuckets,
   type CountBucketAggregateRecord,
 } from '@/lib/mongoose-count-buckets';
+import { deleteQuizDependents } from '@/repositories/helpers/deleteQuizDependents';
 
 export class QuizRepository implements IQuizRepository {
   async findById(id: string): Promise<Quiz | null> {
@@ -87,13 +81,7 @@ export class QuizRepository implements IQuizRepository {
           .lean<{ _id: Types.ObjectId; slug: string } | null>();
         if (!quiz) return;
 
-        await Attempt.deleteMany({ quiz: quiz._id }).session(session);
-        await Discussion.deleteMany({ quiz: quiz._id }).session(session);
-        await Report.deleteMany({ quizId: String(quiz._id) }).session(session);
-        await Bookmark.deleteMany({ 'quiz.slug': quiz.slug }).session(session);
-        await QuestionProgress.deleteMany({ quizSlug: quiz.slug }).session(session);
-        await FolderQuiz.deleteMany({ quiz: quiz._id }).session(session);
-        await QuizProgress.deleteMany({ quiz: quiz._id }).session(session);
+        await deleteQuizDependents([{ id: quiz._id, slug: quiz.slug }], session);
 
         const result = await QuizModel.deleteOne({ _id: quiz._id }).session(session);
         deleted = result.deletedCount === 1;

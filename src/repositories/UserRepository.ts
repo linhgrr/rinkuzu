@@ -37,6 +37,7 @@ import {
   resolveCountBuckets,
   type CountBucketAggregateRecord,
 } from '@/lib/mongoose-count-buckets';
+import { deleteQuizDependents } from '@/repositories/helpers/deleteQuizDependents';
 
 export class UserRepository implements IUserRepository {
   async findById(id: string): Promise<UserEntity | null> {
@@ -150,59 +151,29 @@ export class UserRepository implements IUserRepository {
           .session(session)
           .lean<Array<{ _id: Types.ObjectId; slug: string }>>();
         const authoredQuizIds = authoredQuizzes.map((quiz) => quiz._id);
-        const authoredQuizSlugs = authoredQuizzes.map((quiz) => quiz.slug);
-        const authoredQuizIdStrings = authoredQuizIds.map(String);
         const normalizedEmail = user.email.toLowerCase();
 
-        await Attempt.deleteMany(
-          buildMongoOrFilter([
-            { user: userObjectId },
-            authoredQuizIds.length > 0 ? { quiz: { $in: authoredQuizIds } } : null,
-          ]),
-        ).session(session);
+        await Attempt.deleteMany({ user: userObjectId }).session(session);
         await Subscription.deleteMany(
           buildMongoOrFilter([{ user: userObjectId }, { userEmail: normalizedEmail }]),
         ).session(session);
         await Bookmark.deleteMany(
-          buildMongoOrFilter([
-            { userId: id },
-            { userEmail: normalizedEmail },
-            authoredQuizSlugs.length > 0 ? { 'quiz.slug': { $in: authoredQuizSlugs } } : null,
-          ]),
+          buildMongoOrFilter([{ userId: id }, { userEmail: normalizedEmail }]),
         ).session(session);
-        await QuestionProgress.deleteMany(
-          buildMongoOrFilter([
-            { userId: id },
-            authoredQuizSlugs.length > 0 ? { quizSlug: { $in: authoredQuizSlugs } } : null,
-          ]),
-        ).session(session);
+        await QuestionProgress.deleteMany({ userId: id }).session(session);
         await UserProgress.deleteMany({ userId: id }).session(session);
-        await QuizProgress.deleteMany(
-          buildMongoOrFilter([
-            { userId: userObjectId },
-            authoredQuizIds.length > 0 ? { quiz: { $in: authoredQuizIds } } : null,
-          ]),
-        ).session(session);
-        await FolderQuiz.deleteMany(
-          buildMongoOrFilter([
-            { owner: userObjectId },
-            authoredQuizIds.length > 0 ? { quiz: { $in: authoredQuizIds } } : null,
-          ]),
-        ).session(session);
+        await QuizProgress.deleteMany({ userId: userObjectId }).session(session);
+        await FolderQuiz.deleteMany({ owner: userObjectId }).session(session);
         await Folder.deleteMany({ owner: userObjectId }).session(session);
         await Discussion.updateMany(
           { 'comments.author': userObjectId },
           { $pull: { comments: { author: userObjectId } } },
         ).session(session);
-        if (authoredQuizIds.length > 0) {
-          await Discussion.deleteMany({ quiz: { $in: authoredQuizIds } }).session(session);
-        }
-        await Report.deleteMany(
-          buildMongoOrFilter([
-            { reporterEmail: normalizedEmail },
-            authoredQuizIdStrings.length > 0 ? { quizId: { $in: authoredQuizIdStrings } } : null,
-          ]),
-        ).session(session);
+        await Report.deleteMany({ reporterEmail: normalizedEmail }).session(session);
+        await deleteQuizDependents(
+          authoredQuizzes.map((quiz) => ({ id: quiz._id, slug: quiz.slug })),
+          session,
+        );
         if (authoredQuizIds.length > 0) {
           await Quiz.deleteMany({ _id: { $in: authoredQuizIds } }).session(session);
         }

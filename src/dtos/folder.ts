@@ -31,3 +31,9 @@ export interface FolderListDto {
   folders: FolderSummaryDto[];
   unfiledCount: number;
 }
+
+export interface FolderAssignmentResultDto {
+  quizId: string;
+  folderId: string | null;
+  assigned: true;
+}

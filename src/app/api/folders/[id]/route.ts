@@ -35,6 +35,6 @@ export const DELETE = withAuth(async (_request: NextRequest, { params, userId })
 
   const result = await folderService.deleteFolder(parsedParams.data.id, userId);
   return result.success
-    ? apiOk(null, 200, { meta: { message: 'Folder deleted' } })
+    ? apiOk(result.data, 200, { meta: { message: 'Folder deleted' } })
     : apiServiceErr(result);
 });

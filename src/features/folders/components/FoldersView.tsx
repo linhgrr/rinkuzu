@@ -8,6 +8,7 @@ import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
+import { FolderGridSkeleton } from '@/components/ui/PageLoadingSkeletons';
 import { HiOutlineDotsVertical, HiOutlineFolder, HiOutlinePlus } from 'react-icons/hi';
 import { extractUnknownErrorMessage } from '@/lib/api/error';
 import { deleteFolderViewModel, renameFolderViewModel } from '@/features/folders/api/folders-api';
@@ -165,11 +166,7 @@ export function FoldersView() {
         </Button>
       </div>
       {isLoading ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: 3 }, (_, index) => (
-            <div key={index} className="h-36 animate-pulse rounded-xl bg-surface-blue" />
-          ))}
-        </div>
+        <FolderGridSkeleton label="Loading folders" />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <FolderCard

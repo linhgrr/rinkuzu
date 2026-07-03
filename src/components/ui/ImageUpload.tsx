@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useRef, useState } from 'react';
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
@@ -6,6 +6,7 @@ import { uploadImageToImgBB } from '@/services/imageUploadService';
 import { extractUnknownErrorMessage } from '@/lib/api/error';
 import { Button } from '@/components/ui/Button';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
+import { Skeleton } from '@/components/ui/Skeleton';
 
 interface ImageUploadProps {
   currentImage?: string;
@@ -15,6 +16,48 @@ interface ImageUploadProps {
   maxWidth?: number;
   maxHeight?: number;
   className?: string;
+}
+
+type UploadTranslator = ReturnType<typeof useTranslations>;
+
+interface UploadImageOptions {
+  file: File;
+  onImageUploaded: (imageUrl: string) => void;
+  setIsUploading: (isUploading: boolean) => void;
+  t: UploadTranslator;
+}
+
+const MAX_IMAGE_UPLOAD_BYTES = 10 * 1024 * 1024;
+
+async function uploadValidatedImage({
+  file,
+  onImageUploaded,
+  setIsUploading,
+  t,
+}: UploadImageOptions) {
+  if (!file.type.startsWith('image/')) {
+    toast.error(t('pleaseSelectImage'));
+    return;
+  }
+
+  if (file.size > MAX_IMAGE_UPLOAD_BYTES) {
+    toast.error(t('imageTooLarge'));
+    return;
+  }
+
+  setIsUploading(true);
+
+  try {
+    const result = await uploadImageToImgBB(file, file.name);
+    onImageUploaded(result.displayUrl);
+  } catch (error: unknown) {
+    console.error('Failed to upload image:', error);
+    toast.error(
+      `${t('failedToUpload')}: ${extractUnknownErrorMessage(error, 'Unknown upload error')}`,
+    );
+  }
+
+  setIsUploading(false);
 }
 
 function ImageUpload({
@@ -31,142 +74,62 @@ function ImageUpload({
   const [dragActive, setDragActive] = useState(false);
   const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const isHoveredRef = useRef(false);
 
-  const handleImageUpload = useCallback(
-    async (file: File) => {
-      if (!file.type.startsWith('image/')) {
-        toast.error(t('pleaseSelectImage'));
-        return;
-      }
+  function handleImageUpload(file: File) {
+    return uploadValidatedImage({ file, onImageUploaded, setIsUploading, t });
+  }
 
-      if (file.size > 10 * 1024 * 1024) {
-        toast.error(t('imageTooLarge'));
-        return;
-      }
+  function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file) {
+      void handleImageUpload(file);
+    }
+  }
 
-      setIsUploading(true);
-      try {
-        const result = await uploadImageToImgBB(file, file.name);
-        onImageUploaded(result.displayUrl);
-      } catch (error: unknown) {
-        console.error('Failed to upload image:', error);
-        toast.error(
-          `${t('failedToUpload')}: ${extractUnknownErrorMessage(error, 'Unknown upload error')}`,
-        );
-      } finally {
-        setIsUploading(false);
-      }
-    },
-    [onImageUploaded, t],
-  );
-
-  const handleFileSelect = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (file) {
-        handleImageUpload(file);
-      }
-    },
-    [handleImageUpload],
-  );
-
-  const handleDrop = useCallback(
-    (e: React.DragEvent) => {
-      e.preventDefault();
-      setDragActive(false);
-
-      const file = e.dataTransfer.files?.[0];
-      if (file) {
-        handleImageUpload(file);
-      }
-    },
-    [handleImageUpload],
-  );
-
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setDragActive(true);
-  }, []);
-
-  const handleDragLeave = useCallback((e: React.DragEvent) => {
+  function handleDrop(e: React.DragEvent) {
     e.preventDefault();
     setDragActive(false);
-  }, []);
 
-  const handlePaste = useCallback(
-    (e: React.ClipboardEvent) => {
-      const items = e.clipboardData?.items;
-      if (!items) return;
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      void handleImageUpload(file);
+    }
+  }
 
-      for (let i = 0; i < items.length; i++) {
-        const item = items[i];
-        if (item.type.startsWith('image/')) {
-          const file = item.getAsFile();
-          if (file) {
-            handleImageUpload(file);
-            break;
-          }
+  function handleDragOver(e: React.DragEvent) {
+    e.preventDefault();
+    setDragActive(true);
+  }
+
+  function handleDragLeave(e: React.DragEvent) {
+    e.preventDefault();
+    setDragActive(false);
+  }
+
+  function handlePaste(e: React.ClipboardEvent) {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      if (item.type.startsWith('image/')) {
+        const file = item.getAsFile();
+        if (file) {
+          void handleImageUpload(file);
+          break;
         }
       }
-    },
-    [handleImageUpload],
-  );
+    }
+  }
 
-  const handleImageUploadRef = useRef(handleImageUpload);
-
-  useEffect(() => {
-    handleImageUploadRef.current = handleImageUpload;
-  }, [handleImageUpload]);
-
-  // Global paste handler for hover-based pasting
-  useEffect(() => {
-    const onWindowPaste = (event: ClipboardEvent) => {
-      if (!isHoveredRef.current) return;
-
-      const items = event.clipboardData?.items;
-      if (!items) return;
-
-      for (let i = 0; i < items.length; i++) {
-        const item = items[i];
-        if (item.type.startsWith('image/')) {
-          const file = item.getAsFile();
-          if (file) {
-            void handleImageUploadRef.current(file);
-            event.preventDefault();
-            break;
-          }
-        }
-      }
-    };
-
-    window.addEventListener('paste', onWindowPaste);
-
-    return () => {
-      window.removeEventListener('paste', onWindowPaste);
-    };
-  }, []);
-
-  const handleMouseEnter = () => {
-    isHoveredRef.current = true;
-  };
-
-  const handleMouseLeave = () => {
-    isHoveredRef.current = false;
-  };
-
-  const triggerFilePicker = useCallback(() => {
+  function triggerFilePicker() {
     fileInputRef.current?.click();
-  }, []);
+  }
 
   if (currentImage) {
     return (
       <>
-        <div
-          className={`relative group ${className}`}
-          onMouseEnter={handleMouseEnter}
-          onMouseLeave={handleMouseLeave}
-        >
+        <div className={`relative group ${className}`}>
           <Image
             src={currentImage}
             alt="Uploaded image"
@@ -226,8 +189,6 @@ function ImageUpload({
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onPaste={handlePaste}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
         className={`
           relative rounded-xl border-2 border-dashed p-6 text-center
           transition-colors duration-200 focus-visible:outline focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring-soft)]
@@ -241,9 +202,13 @@ function ImageUpload({
         style={{ minHeight: '120px' }}
       >
         {isUploading ? (
-          <div className="flex flex-col items-center justify-center gap-y-2">
-            <div className="size-8 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
-            <span className="text-sm text-neutral-600">{t('uploadingImage')}</span>
+          <div
+            className="flex flex-col items-center justify-center gap-y-3"
+            aria-busy="true"
+            aria-label={t('uploadingImage')}
+          >
+            <Skeleton className="size-12 rounded-xl" />
+            <Skeleton className="h-4 w-32 rounded-md" />
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center gap-y-2">

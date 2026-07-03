@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useTranslations } from 'next-intl';
-import { Spinner } from '@/components/ui/Spinner';
+import { PanelBlockSkeleton } from '@/components/ui/PageLoadingSkeletons';
 import {
   Background,
   Controls,
@@ -112,14 +112,7 @@ function PartialGraphFlow({ partialGraph }: { partialGraph?: PipelinePartialGrap
   }, [partialGraph, nodeCount, fitView]);
 
   if (!partialGraph || nodeCount === 0) {
-    return (
-      <div className="flex h-full w-full items-center justify-center text-sm text-neutral-400">
-        <div className="flex flex-col items-center gap-3">
-          <Spinner size="lg" />
-          {t('processing.waitingForConcepts')}
-        </div>
-      </div>
-    );
+    return <PanelBlockSkeleton label={t('processing.waitingForConcepts')} />;
   }
 
   return (

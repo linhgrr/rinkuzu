@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { HiOutlineFolder, HiOutlinePlus } from 'react-icons/hi';
+import { DropdownListSkeleton } from '@/components/ui/PageLoadingSkeletons';
 import { cn } from '@/lib/utils';
 import { AddFolderModal } from './AddFolderModal';
 import { useFolders } from '../hooks/useFolders';
@@ -75,7 +76,7 @@ export function FolderSelector({ value, onChange, disabled = false }: FolderSele
             >
               My folder
             </button>
-            {isLoading && <p className="px-3 py-2 text-sm text-neutral-500">Loading folders…</p>}
+            {isLoading ? <DropdownListSkeleton label="Loading folders" rows={2} /> : null}
             {folders.map((folder) => (
               <button
                 key={folder.id}

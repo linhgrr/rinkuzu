@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
+import { Skeleton } from '@/components/ui/Skeleton';
 
 interface ImageDisplayProps {
   src?: string;
@@ -59,12 +60,10 @@ function ImageDisplayContent({
   return (
     <div className={`relative inline-block ${className}`}>
       {status === 'loading' && (
-        <div
-          className="absolute inset-0 flex items-center justify-center bg-neutral-100 rounded-lg"
+        <Skeleton
+          className="absolute inset-0 rounded-lg"
           style={{ width: maxWidth, height: maxHeight }}
-        >
-          <div className="size-8 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
-        </div>
+        />
       )}
       <Image
         src={src}

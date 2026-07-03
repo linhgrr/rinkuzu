@@ -235,3 +235,74 @@ export function ModalListSkeleton({ label }: PageSkeletonProps) {
     </div>
   );
 }
+
+export function RedirectPageSkeleton({ label }: PageSkeletonProps) {
+  return (
+    <div className="min-h-screen bg-neutral-50 px-4 py-8" aria-busy="true" aria-label={label}>
+      <div className="mx-auto flex min-h-[70vh] max-w-2xl items-center">
+        <div className="w-full rounded-2xl border border-line-blue/30 bg-white p-8 shadow-sm">
+          <Skeleton className="mx-auto size-14 rounded-2xl" />
+          <Skeleton className="mx-auto mt-6 h-7 w-56 max-w-full rounded-md" />
+          <Skeleton className="mx-auto mt-3 h-5 w-80 max-w-full rounded-md" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function PdfPanelSkeleton({ label }: PageSkeletonProps) {
+  return (
+    <div
+      className="flex h-full min-h-[400px] w-full items-center justify-center bg-neutral-50 p-6"
+      aria-busy="true"
+      aria-label={label}
+    >
+      <div className="w-full max-w-lg rounded-2xl border border-line-blue/30 bg-white p-6 shadow-sm">
+        <Skeleton className="h-5 w-32 rounded-md" />
+        <Skeleton className="mt-4 h-72 rounded-xl" />
+        <div className="mt-4 space-y-2">
+          <Skeleton className="h-4 w-3/4 rounded-md" />
+          <Skeleton className="h-4 w-1/2 rounded-md" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function FolderGridSkeleton({ label }: PageSkeletonProps) {
+  return (
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-busy="true" aria-label={label}>
+      {Array.from({ length: 3 }, (_, index) => (
+        <Skeleton key={`folder-card-skeleton-${index}`} className="h-36 rounded-xl" />
+      ))}
+    </div>
+  );
+}
+
+export function DropdownListSkeleton({ label, rows = 3 }: PageSkeletonProps & { rows?: number }) {
+  return (
+    <div className="space-y-1 px-2 py-2" aria-busy="true" aria-label={label}>
+      {Array.from({ length: rows }, (_, index) => (
+        <Skeleton key={`dropdown-list-skeleton-${index}`} className="h-9 rounded-lg" />
+      ))}
+    </div>
+  );
+}
+
+export function PanelBlockSkeleton({ label }: PageSkeletonProps) {
+  return (
+    <div
+      className="rounded-xl border border-line-blue/30 bg-white p-5 shadow-sm"
+      aria-busy="true"
+      aria-label={label}
+    >
+      <Skeleton className="h-6 w-48 rounded-md" />
+      <Skeleton className="mt-3 h-4 w-72 max-w-full rounded-md" />
+      <div className="mt-6 space-y-3">
+        {Array.from({ length: 4 }, (_, index) => (
+          <Skeleton key={`panel-block-row-skeleton-${index}`} className="h-12 rounded-xl" />
+        ))}
+      </div>
+    </div>
+  );
+}

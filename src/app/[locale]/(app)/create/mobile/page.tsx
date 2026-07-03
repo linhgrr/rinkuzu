@@ -16,6 +16,7 @@ import { toast } from 'sonner';
 import { FolderSelector } from '@/features/folders/components/FolderSelector';
 import { Input, Textarea } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
+import { RedirectPageSkeleton } from '@/components/ui/PageLoadingSkeletons';
 import { extractUnknownErrorMessage } from '@/lib/api/error';
 import { uploadPdfViaPresignedUrl } from '@/lib/pdf';
 import { createQuizDraft } from '@/lib/quiz/draftApi';
@@ -138,11 +139,7 @@ export default function MobileCreatePage() {
   };
 
   if (isRedirecting) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-neutral-50">
-        <div className="size-10 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-trust" />
-      </div>
-    );
+    return <RedirectPageSkeleton label={t('creatingDraft')} />;
   }
 
   return (

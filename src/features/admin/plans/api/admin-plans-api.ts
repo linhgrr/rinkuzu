@@ -1,6 +1,10 @@
 import type { BillingPlanDto } from '@/dtos/admin-billing';
+import type { DeleteResultDto } from '@/dtos/common';
 import { fetchApiData } from '@/lib/api/client';
-import { toAdminBillingPlanViewModels } from '@/features/admin/plans/mappers/admin-plans.mapper';
+import {
+  toAdminBillingPlanViewModel,
+  toAdminBillingPlanViewModels,
+} from '@/features/admin/plans/mappers/admin-plans.mapper';
 import type {
   AdminBillingPlanMutationInput,
   AdminBillingPlanViewModel,
@@ -15,14 +19,15 @@ export async function fetchAdminBillingPlanViewModels(
 
 export async function createAdminBillingPlan(
   payload: AdminBillingPlanMutationInput,
-): Promise<void> {
-  await fetchApiData<BillingPlanDto>('/api/admin/plans', {
+): Promise<AdminBillingPlanViewModel> {
+  const plan = await fetchApiData<BillingPlanDto>('/api/admin/plans', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(payload),
   });
+  return toAdminBillingPlanViewModel(plan);
 }
 
 export async function updateAdminBillingPlan({
@@ -31,8 +36,8 @@ export async function updateAdminBillingPlan({
 }: {
   planId: string;
   payload: AdminBillingPlanMutationInput;
-}): Promise<void> {
-  await fetchApiData<BillingPlanDto>('/api/admin/plans', {
+}): Promise<AdminBillingPlanViewModel> {
+  const plan = await fetchApiData<BillingPlanDto>('/api/admin/plans', {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
@@ -42,10 +47,11 @@ export async function updateAdminBillingPlan({
       ...payload,
     }),
   });
+  return toAdminBillingPlanViewModel(plan);
 }
 
-export async function deleteAdminBillingPlan(planId: string): Promise<void> {
-  await fetchApiData<null>('/api/admin/plans', {
+export async function deleteAdminBillingPlan(planId: string): Promise<DeleteResultDto> {
+  return fetchApiData<DeleteResultDto>('/api/admin/plans', {
     method: 'DELETE',
     headers: {
       'Content-Type': 'application/json',

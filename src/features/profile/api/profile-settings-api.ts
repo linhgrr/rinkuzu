@@ -1,4 +1,9 @@
-import type { AccountProfileDto, AvatarResponseDto } from '@/dtos/account';
+import type {
+  AccountProfileDto,
+  AvatarDeleteResultDto,
+  AvatarResponseDto,
+  PasswordChangeResultDto,
+} from '@/dtos/account';
 import { fetchApiData } from '@/lib/api/client';
 import { toProfileSettingsViewModel } from '@/features/profile/mappers/profile-settings.mapper';
 import type {
@@ -23,8 +28,10 @@ export async function updateProfileSettingsViewModel(
   return toProfileSettingsViewModel(data);
 }
 
-export async function changeProfilePassword(input: ChangeProfilePasswordInput): Promise<void> {
-  await fetchApiData<null>('/api/user/password', {
+export async function changeProfilePassword(
+  input: ChangeProfilePasswordInput,
+): Promise<PasswordChangeResultDto> {
+  return fetchApiData<PasswordChangeResultDto>('/api/user/password', {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(input),
@@ -41,6 +48,6 @@ export async function uploadProfileAvatar(file: File): Promise<string> {
   return data.avatar;
 }
 
-export async function removeProfileAvatar(): Promise<void> {
-  await fetchApiData<null>('/api/user/avatar', { method: 'DELETE' });
+export async function removeProfileAvatar(): Promise<AvatarDeleteResultDto> {
+  return fetchApiData<AvatarDeleteResultDto>('/api/user/avatar', { method: 'DELETE' });
 }

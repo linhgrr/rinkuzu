@@ -1,4 +1,5 @@
 import type { AdminQuizDetailDto, AdminQuizListDto } from '@/dtos/admin-quiz';
+import type { DeleteResultDto } from '@/dtos/common';
 import { fetchApiData } from '@/lib/api/client';
 import {
   toAdminQuizDetailViewModel,
@@ -42,6 +43,6 @@ export async function fetchAdminQuizDetailViewModel(
   return toAdminQuizDetailViewModel(data);
 }
 
-export async function deleteAdminQuiz(quizId: string): Promise<void> {
-  await fetchApiData<null>(`/api/admin/quizzes/${quizId}`, { method: 'DELETE' });
+export async function deleteAdminQuiz(quizId: string): Promise<DeleteResultDto> {
+  return fetchApiData<DeleteResultDto>(`/api/admin/quizzes/${quizId}`, { method: 'DELETE' });
 }

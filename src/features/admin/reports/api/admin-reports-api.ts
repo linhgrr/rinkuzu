@@ -1,4 +1,6 @@
 import type { AdminReportListDto, AdminReportStatusDto } from '@/dtos/admin-report';
+import type { AdminMessageDto } from '@/dtos/admin-user';
+import type { DeleteResultDto } from '@/dtos/common';
 import { fetchApiData } from '@/lib/api/client';
 import { toAdminReportViewModels } from '@/features/admin/reports/mappers/admin-reports.mapper';
 import type {
@@ -28,8 +30,8 @@ export async function updateAdminReportStatus({
   reportId: string;
   status: AdminReportStatusViewModel;
   adminNotes: string;
-}): Promise<void> {
-  await fetchApiData<null>(`/api/admin/reports/${reportId}`, {
+}): Promise<AdminMessageDto> {
+  return fetchApiData<AdminMessageDto>(`/api/admin/reports/${reportId}`, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
@@ -41,8 +43,8 @@ export async function updateAdminReportStatus({
   });
 }
 
-export async function deleteAdminReport(reportId: string): Promise<void> {
-  await fetchApiData<null>(`/api/admin/reports/${reportId}`, {
+export async function deleteAdminReport(reportId: string): Promise<DeleteResultDto> {
+  return fetchApiData<DeleteResultDto>(`/api/admin/reports/${reportId}`, {
     method: 'DELETE',
   });
 }

@@ -12,6 +12,10 @@ interface PDFViewerProps {
   showHeader?: boolean;
 }
 
+interface PDFViewerFrameProps {
+  displayUrl: string;
+}
+
 export default function PDFViewer({
   pdfDataUrl,
   onClose,
@@ -57,7 +61,7 @@ export default function PDFViewer({
   );
 }
 
-function PDFViewerFrame({ displayUrl }: { displayUrl: string }) {
+function PDFViewerFrame({ displayUrl }: PDFViewerFrameProps) {
   const [isLoading, setIsLoading] = useState(true);
 
   return (

@@ -15,22 +15,19 @@ export interface QuizCardQuiz {
   questionCount: number;
 }
 
+interface QuizCardProps {
+  quiz: QuizCardQuiz;
+  quizId: string;
+  locale: string;
+  onDelete?: (quiz: QuizCardQuiz, quizId: string) => void;
+}
+
 function getAuthor(quiz: QuizCardQuiz): UserIdentity {
   if (!quiz.author) return { displayName: 'RinKuzu learner' };
   return quiz.author;
 }
 
-export function QuizCard({
-  quiz,
-  quizId,
-  locale,
-  onDelete,
-}: {
-  quiz: QuizCardQuiz;
-  quizId: string;
-  locale: string;
-  onDelete?: (quiz: QuizCardQuiz, quizId: string) => void;
-}) {
+export function QuizCard({ quiz, quizId, locale, onDelete }: QuizCardProps) {
   const t = useTranslations('profile');
   const author = getAuthor(quiz);
 

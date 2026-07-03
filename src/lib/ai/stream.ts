@@ -7,6 +7,16 @@ type ResponsesSsePayload =
   | { type: 'response.completed' }
   | { type: 'response.failed'; response: { error: { message: string } } };
 
+interface SplitSseEventsResult {
+  events: string[];
+  remaining: string;
+}
+
+interface ParsedSseEvent {
+  chunk: string;
+  isTerminal: boolean;
+}
+
 function createStreamError(message: string, status?: number): Error {
   const error = new Error(message);
 
@@ -26,7 +36,7 @@ async function parseJsonResponse(response: Response): Promise<unknown> {
   }
 }
 
-function splitSseEvents(buffer: string): { events: string[]; remaining: string } {
+function splitSseEvents(buffer: string): SplitSseEventsResult {
   const events: string[] = [];
   const delimiter = /\r?\n\r?\n/g;
   let lastIndex = 0;
@@ -75,10 +85,7 @@ function isResponsesSsePayload(payload: unknown): payload is ResponsesSsePayload
   );
 }
 
-function parseSseEvent(event: string): {
-  chunk: string;
-  isTerminal: boolean;
-} {
+function parseSseEvent(event: string): ParsedSseEvent {
   const dataLines: string[] = [];
 
   for (const line of event.split(/\r?\n/)) {

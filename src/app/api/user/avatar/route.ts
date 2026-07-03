@@ -39,6 +39,6 @@ export const DELETE = withAuth(async (_request, { email }) => {
   if (!email) return apiErr('unauthorized', 'Authentication required', 401);
   const result = await accountService.deleteAvatar(email);
   return result.success
-    ? apiOk(null, 200, { meta: { message: 'Avatar removed' } })
+    ? apiOk(result.data, 200, { meta: { message: 'Avatar removed' } })
     : apiServiceErr(result);
 });

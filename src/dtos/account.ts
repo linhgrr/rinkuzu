@@ -38,3 +38,14 @@ export interface AvatarUploadDto {
 export interface AvatarResponseDto {
   avatar: string;
 }
+
+export interface PasswordChangeResultDto {
+  email: string;
+  passwordChanged: true;
+}
+
+export interface AvatarDeleteResultDto {
+  email: string;
+  avatar: null;
+  deleted: true;
+}

@@ -20,6 +20,6 @@ export const PUT = withAuth(async (request: NextRequest, { email }) => {
     input.data.newPassword,
   );
   return result.success
-    ? apiOk(null, 200, { meta: { message: 'Password updated successfully' } })
+    ? apiOk(result.data, 200, { meta: { message: 'Password updated successfully' } })
     : apiServiceErr(result);
 });

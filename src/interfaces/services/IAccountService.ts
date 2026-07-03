@@ -1,7 +1,9 @@
 import type {
   AccountProfileDto,
+  AvatarDeleteResultDto,
   AvatarResponseDto,
   AvatarUploadDto,
+  PasswordChangeResultDto,
   UpdateAccountProfileDto,
 } from '@/dtos/account';
 import type { ServiceResult } from '@/interfaces/services/types';
@@ -18,9 +20,9 @@ export interface IAccountService {
     email: string,
     currentPassword: string,
     newPassword: string,
-  ): Promise<ServiceResult<null>>;
+  ): Promise<ServiceResult<PasswordChangeResultDto>>;
 
   uploadAvatar(email: string, avatar: AvatarUploadDto): Promise<ServiceResult<AvatarResponseDto>>;
 
-  deleteAvatar(email: string): Promise<ServiceResult<null>>;
+  deleteAvatar(email: string): Promise<ServiceResult<AvatarDeleteResultDto>>;
 }

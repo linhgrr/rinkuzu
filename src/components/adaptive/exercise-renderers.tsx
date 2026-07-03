@@ -36,11 +36,11 @@ const ExerciseInteraction = dynamic(
   },
 );
 
-type LoadingStateProps = {
+type ExerciseLoadingStateProps = {
   t: RichTranslateFn;
 };
 
-export const ExerciseLoadingState = ({ t }: LoadingStateProps) => (
+export const ExerciseLoadingState = ({ t }: ExerciseLoadingStateProps) => (
   <div
     className="mx-auto flex min-h-[80vh] max-w-5xl flex-col justify-center"
     aria-busy="true"

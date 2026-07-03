@@ -6,7 +6,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { FullPageSpinner } from '@/components/ui/FullPageSpinner';
+import { QuizResultPageSkeleton } from '@/components/ui/PageLoadingSkeletons';
 import {
   useStreamingChatSession,
   type ChatMessage,
@@ -723,7 +723,7 @@ function QuizResultPageClient() {
   const result = state.result;
 
   if (state.status === 'loading') {
-    return <FullPageSpinner label={`${t('loadingQuiz')}...`} />;
+    return <QuizResultPageSkeleton label={`${t('loadingQuiz')}...`} />;
   }
 
   if (state.error || !result) {
@@ -785,7 +785,7 @@ function QuizResultPageClient() {
 
 export default function QuizResultPage() {
   return (
-    <Suspense fallback={<FullPageSpinner label="Loading results..." />}>
+    <Suspense fallback={<QuizResultPageSkeleton label="Loading results..." />}>
       <QuizResultPageClient />
     </Suspense>
   );

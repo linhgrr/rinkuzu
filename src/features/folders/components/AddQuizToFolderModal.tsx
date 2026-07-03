@@ -4,7 +4,7 @@ import { useEffect, useReducer } from 'react';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
-import { LoadingState } from '@/components/ui/LoadingState';
+import { ModalListSkeleton } from '@/components/ui/PageLoadingSkeletons';
 import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
 import { extractUnknownErrorMessage } from '@/lib/api/error';
@@ -143,7 +143,7 @@ export function AddQuizToFolderModal({
         />
         {state.error ? <ErrorState message={state.error} /> : null}
         <div className="max-h-[55vh] space-y-2 overflow-y-auto">
-          {state.loading ? <LoadingState text="Loading quizzes…" className="py-8" /> : null}
+          {state.loading ? <ModalListSkeleton label="Loading quizzes…" /> : null}
           {!state.loading && visibleQuizzes.length === 0 ? (
             <EmptyState title="No quizzes found." className="py-8" />
           ) : null}

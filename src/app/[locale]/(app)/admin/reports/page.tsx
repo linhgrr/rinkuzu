@@ -60,6 +60,27 @@ const initialState: AdminReportsState = {
   deleting: false,
 };
 
+interface ReportFilterBarProps {
+  statusFilter: AdminReportFilterViewModel;
+  onChange: (status: AdminReportFilterViewModel) => void;
+}
+
+interface ReportCardItemProps {
+  report: AdminReportViewModel;
+  onReview: (report: AdminReportViewModel) => void;
+  onDelete: (report: AdminReportViewModel) => void;
+}
+
+interface ReportReviewModalProps {
+  report: AdminReportViewModel | null;
+  adminNotes: string;
+  updating: boolean;
+  onClose: () => void;
+  onAdminNotesChange: (value: string) => void;
+  onResolve: () => void;
+  onDismiss: () => void;
+}
+
 function adminReportsReducer(
   state: AdminReportsState,
   action: AdminReportsAction,
@@ -85,13 +106,7 @@ function getStatusBadge(status: AdminReportStatusViewModel) {
   }
 }
 
-function ReportFilterBar({
-  statusFilter,
-  onChange,
-}: {
-  statusFilter: AdminReportFilterViewModel;
-  onChange: (status: AdminReportFilterViewModel) => void;
-}) {
+function ReportFilterBar({ statusFilter, onChange }: ReportFilterBarProps) {
   return (
     <div className="mb-6 flex flex-wrap gap-2">
       {REPORT_FILTERS.map((status) => (
@@ -108,15 +123,7 @@ function ReportFilterBar({
   );
 }
 
-function ReportCardItem({
-  report,
-  onReview,
-  onDelete,
-}: {
-  report: AdminReportViewModel;
-  onReview: (report: AdminReportViewModel) => void;
-  onDelete: (report: AdminReportViewModel) => void;
-}) {
+function ReportCardItem({ report, onReview, onDelete }: ReportCardItemProps) {
   return (
     <Card className="transition-shadow hover:shadow-md">
       <div className="p-6">
@@ -193,15 +200,7 @@ function ReportReviewModal({
   onAdminNotesChange,
   onResolve,
   onDismiss,
-}: {
-  report: AdminReportViewModel | null;
-  adminNotes: string;
-  updating: boolean;
-  onClose: () => void;
-  onAdminNotesChange: (value: string) => void;
-  onResolve: () => void;
-  onDismiss: () => void;
-}) {
+}: ReportReviewModalProps) {
   const tAdmin = useTranslations('admin');
   return (
     <Modal isOpen={!!report} onClose={onClose} title="Review Report">

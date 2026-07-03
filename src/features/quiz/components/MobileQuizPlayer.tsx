@@ -1,4 +1,3 @@
-// /src/components/quiz/MobileQuizPlayer.tsx
 'use client';
 
 import Image from 'next/image';
@@ -6,17 +5,10 @@ import { useState, useRef, type TouchEvent } from 'react';
 import { useTranslations } from 'next-intl';
 import { HiOutlineChevronLeft, HiOutlineChevronRight, HiOutlineCheck } from 'react-icons/hi';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
-
-interface Question {
-  id: string;
-  question: string;
-  options: string[];
-  type: 'single' | 'multiple';
-  questionImage?: string;
-}
+import type { QuizPlayQuestionViewModel } from '@/features/quiz/types/quiz-play-view-model';
 
 interface MobileQuizPlayerProps {
-  questions: Question[];
+  questions: QuizPlayQuestionViewModel[];
   answers: Record<string, number | number[]>;
   currentIndex: number;
   onAnswersChange: (answers: Record<string, number | number[]>) => void;
@@ -45,7 +37,7 @@ function MobileQuizHeader({
   isFirst: boolean;
   isLast: boolean;
   isSubmitting: boolean;
-  questions: Question[];
+  questions: QuizPlayQuestionViewModel[];
   t: (key: string, values?: Record<string, string | number>) => string;
 }) {
   return (
@@ -113,7 +105,7 @@ function MobileQuestionCard({
   t,
 }: {
   currentIndex: number;
-  currentQuestion: Question;
+  currentQuestion: QuizPlayQuestionViewModel;
   handleOptionSelect: (optionIndex: number) => void;
   handleTouchEnd: () => void;
   handleTouchMove: (event: TouchEvent<HTMLDivElement>) => void;

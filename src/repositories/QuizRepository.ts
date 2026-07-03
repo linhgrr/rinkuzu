@@ -251,13 +251,34 @@ export class QuizRepository implements IQuizRepository {
     const { page, limit } = options;
     const skip = (page - 1) * limit;
 
-    const filter: FilterQuery<QuizPersistenceRecord> = { author: userId };
+    const filter: FilterQuery<QuizPersistenceRecord> = {
+      author: Types.ObjectId.isValid(userId) ? new Types.ObjectId(userId) : userId,
+    };
     const [records, total] = await Promise.all([
-      QuizModel.find(filter)
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit)
-        .lean<QuizPersistenceRecord[]>(),
+      QuizModel.aggregate<QuizPersistenceRecord>([
+        { $match: filter },
+        { $sort: { createdAt: -1 } },
+        { $skip: skip },
+        { $limit: limit },
+        {
+          $project: {
+            _id: 1,
+            title: 1,
+            description: 1,
+            slug: 1,
+            author: 1,
+            folder: 1,
+            questions: { $literal: [] },
+            questionCount: { $size: { $ifNull: ['$questions', []] } },
+            isPrivate: 1,
+            pdfUrl: 1,
+            tags: 1,
+            sourceDraftId: 1,
+            createdAt: 1,
+            updatedAt: 1,
+          },
+        },
+      ]),
       QuizModel.countDocuments(filter),
     ]);
 

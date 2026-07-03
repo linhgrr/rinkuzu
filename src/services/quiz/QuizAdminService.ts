@@ -120,7 +120,6 @@ export class QuizAdminService {
       userRole: _userRole,
       userId,
       onlyMine,
-      compact,
     } = options;
 
     const filter: QuizFindFilter = {};
@@ -147,7 +146,7 @@ export class QuizAdminService {
       limit,
       sort: { createdAt: -1 },
       populate: ['author'],
-      compact,
+      compact: true,
     });
     return {
       quizzes: result.items.map(QuizListDtoMapper.toListItem),

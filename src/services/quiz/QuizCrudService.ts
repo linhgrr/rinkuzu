@@ -118,7 +118,7 @@ export class QuizCrudService {
   }
 
   async getQuizMetadataBySlug(slug: string): Promise<QuizListItemDto | null> {
-    const quiz = await this.quizRepository.findBySlug(slug);
+    const quiz = await this.quizRepository.findSummaryBySlug(slug);
     return quiz ? QuizListDtoMapper.toListItem(quiz) : null;
   }
 

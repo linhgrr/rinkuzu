@@ -79,6 +79,8 @@ function createService() {
 
   return {
     quizRepository,
+    userRepository,
+    attemptRepository,
     progressRepository,
     service: new QuizPlayService(
       quizRepository,
@@ -171,5 +173,64 @@ describe('QuizPlayService progress operations', () => {
     assertOk(result);
     expect(result.data.questions[0]).not.toHaveProperty('correctIndex');
     expect(result.data.questions[0]).not.toHaveProperty('correctIndexes');
+  });
+
+  it('uses the authenticated session id when submitting attempts', async () => {
+    const { service, quizRepository, userRepository, attemptRepository, progressRepository } =
+      createService();
+    vi.mocked(quizRepository.findBySlug).mockResolvedValue({
+      id: quizId,
+      title: 'Quiz',
+      slug: 'quiz',
+      author: userId,
+      isPrivate: false,
+      questions: [
+        {
+          id: 'question-1',
+          question: '2 + 2 = ?',
+          options: ['3', '4'],
+          correctIndex: 1,
+          type: 'single',
+        },
+      ],
+      createdAt: new Date('2026-07-01T00:00:00Z'),
+      updatedAt: new Date('2026-07-01T00:00:00Z'),
+    });
+    vi.mocked(attemptRepository.create).mockResolvedValue({
+      id: 'attempt-1',
+      user: userId,
+      quiz: quizId,
+      answers: [1],
+      score: 100,
+      totalQuestions: 1,
+      takenAt: new Date('2026-07-02T00:00:00Z'),
+    });
+
+    const result = await service.submitQuizAttempt(
+      'quiz',
+      [1],
+      {
+        user: {
+          id: userId,
+          email: 'learner@example.com',
+          role: 'user',
+        },
+        expires: '2026-08-01T00:00:00.000Z',
+      },
+      undefined,
+    );
+
+    assertOk(result);
+    expect(userRepository.findByEmail).not.toHaveBeenCalled();
+    expect(attemptRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId,
+        quizId,
+        answers: [1],
+        score: 100,
+        totalQuestions: 1,
+      }),
+    );
+    expect(progressRepository.deleteByUserAndQuiz).toHaveBeenCalledWith(userId, quizId);
   });
 });

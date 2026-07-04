@@ -1264,6 +1264,29 @@ export interface components {
        * @default 0
        */
       n_concepts: number;
+      /** Concepts Data */
+      concepts_data?: {
+        [key: string]: {
+          [key: string]: unknown;
+        };
+      };
+      /** Concept Map */
+      concept_map?: {
+        [key: string]: number;
+      };
+      /**
+       * Concept Embedding Count
+       * @default 0
+       */
+      concept_embedding_count: number;
+      /** Prereq Edges */
+      prereq_edges?: {
+        [key: string]: unknown;
+      }[];
+      /** Failed Batches */
+      failed_batches?: unknown[];
+      /** Warnings */
+      warnings?: string[];
     };
     /** PipelineJobRetryResponse */
     PipelineJobRetryResponse: {

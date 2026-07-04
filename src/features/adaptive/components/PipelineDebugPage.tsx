@@ -53,7 +53,7 @@ type DebugGraphStats = NonNullable<PipelineJobStatus['graph_stats']> & {
 type DebugPipelineResult = NonNullable<PipelineJobStatus['result']> & {
   concepts_data?: Record<string, JsonValue>;
   concept_map?: Record<string, number>;
-  concept_embeddings?: number[][];
+  concept_embedding_count?: number;
   prereq_edges?: JsonValue[];
   failed_batches?: JsonValue[];
   warnings?: string[];
@@ -205,8 +205,11 @@ function buildDebugStages(job: DebugPipelineJobStatus): DebugStage[] {
     }));
   }
 
-  const stats = job.graph_stats ?? {};
   const result = job.result ?? null;
+  const stats = {
+    ...(result?.stats ?? {}),
+    ...(job.graph_stats ?? {}),
+  };
   const qualityReport =
     job.quality_report ?? result?.quality_report ?? stats.quality_report ?? null;
   const partialGraph = job.partial_graph ?? null;
@@ -277,9 +280,7 @@ function buildDebugStages(job: DebugPipelineJobStatus): DebugStage[] {
       output: {
         concepts_after_merge: job.concepts_after_merge,
         concept_map: result?.concept_map ?? null,
-        concept_embedding_count: Array.isArray(result?.concept_embeddings)
-          ? result.concept_embeddings.length
-          : null,
+        concept_embedding_count: result?.concept_embedding_count ?? null,
       },
       artifacts: [],
     },

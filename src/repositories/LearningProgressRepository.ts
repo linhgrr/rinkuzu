@@ -132,6 +132,16 @@ export class LearningProgressRepository implements ILearningProgressRepository {
         },
       },
       {
+        $addFields: {
+          questionCount: { $size: { $ifNull: ['$questions', []] } },
+        },
+      },
+      {
+        $project: {
+          questions: 0,
+        },
+      },
+      {
         $lookup: {
           from: 'folderquizzes',
           let: { quizId: '$_id' },
@@ -162,7 +172,6 @@ export class LearningProgressRepository implements ILearningProgressRepository {
           authorDoc: { $first: '$authorDoc' },
           ownedByMe: { $eq: ['$author', userObjectId] },
           externalFolder: { $first: '$folderLinks.folder' },
-          questionCount: { $size: { $ifNull: ['$questions', []] } },
         },
       },
       {

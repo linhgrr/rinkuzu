@@ -63,5 +63,15 @@ describe('LearningProgressRepository.listLibraryQuizzes', () => {
         meta: [{ $count: 'totalItems' }],
       }),
     });
+
+    const replaceRootIndex = pipeline.findIndex((stage) => '$replaceRoot' in stage);
+    const folderLookupIndex = pipeline.findIndex(
+      (stage) => (stage['$lookup'] as { from?: string } | undefined)?.from === 'folderquizzes',
+    );
+
+    expect(pipeline.slice(replaceRootIndex + 1, folderLookupIndex)).toEqual([
+      { $addFields: { questionCount: { $size: { $ifNull: ['$questions', []] } } } },
+      { $project: { questions: 0 } },
+    ]);
   });
 });

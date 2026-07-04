@@ -24,6 +24,15 @@ const recentListIndexes = [
   },
 ];
 const discussionKey = { quiz: 1, questionIndex: 1 };
+const obsoleteQuizIndexes = [
+  { status: 1, createdAt: -1 },
+  { status: 1, isPublic: 1, category: 1 },
+  { createdBy: 1, status: 1 },
+  { category: 1, status: 1, isPrivate: 1, createdAt: -1 },
+  { category: 1, status: 1, createdAt: -1 },
+  { author: 1, status: 1, createdAt: -1 },
+  { status: 1, isPrivate: 1, createdAt: -1 },
+];
 
 function hasKey(index, key) {
   const expected = Object.entries(key);
@@ -53,6 +62,29 @@ try {
 
     if (shouldApply && !existing) {
       await collection.createIndex(desired.key, { name: desired.name });
+    }
+  }
+
+  const quizzes = db.collection('quizzes');
+  const quizIndexes = await quizzes.indexes();
+  for (const obsoleteKey of obsoleteQuizIndexes) {
+    const existing = quizIndexes.find((index) => hasKey(index, obsoleteKey));
+    if (!existing) {
+      actions.push({
+        collection: 'quizzes',
+        index: JSON.stringify(obsoleteKey),
+        action: 'absent',
+      });
+      continue;
+    }
+
+    actions.push({
+      collection: 'quizzes',
+      index: existing.name,
+      action: shouldApply ? 'dropped' : 'drop',
+    });
+    if (shouldApply) {
+      await quizzes.dropIndex(existing.name);
     }
   }
 
@@ -158,6 +190,9 @@ try {
         ),
         discussionsUnique: (await discussions.indexes()).some(
           (index) => hasKey(index, discussionKey) && index.unique === true,
+        ),
+        obsoleteQuizIndexesRemoved: !(await quizzes.indexes()).some((index) =>
+          obsoleteQuizIndexes.some((key) => hasKey(index, key)),
         ),
       }
     : undefined;

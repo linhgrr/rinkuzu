@@ -1948,10 +1948,30 @@ export interface components {
        */
       total_concepts: number;
       /**
+       * Unlocked Concepts
+       * @description Concepts whose prerequisites are currently satisfied.
+       */
+      unlocked_concepts: number;
+      /**
+       * Locked Concepts
+       * @description Concepts still locked by prerequisite mastery.
+       */
+      locked_concepts: number;
+      /**
+       * Mastered Concepts
+       * @description Unlocked concepts at or above the mastery threshold.
+       */
+      mastered_concepts: number;
+      /**
        * Avg Mastery
-       * @description Average BKT mastery across all concepts.
+       * @description Average BKT mastery across unlocked concepts.
        */
       avg_mastery: number;
+      /**
+       * Progress Percent
+       * @description Percentage of unlocked concepts mastered; locked concepts are excluded.
+       */
+      progress_percent: number;
       /**
        * Coverage
        * @description Fraction of concepts that have been visited at least once.
@@ -2413,6 +2433,14 @@ export interface components {
       max_steps: number;
       /** Avg Mastery */
       avg_mastery: number;
+      /** Unlocked Concepts */
+      unlocked_concepts: number;
+      /** Locked Concepts */
+      locked_concepts: number;
+      /** Mastered Concepts */
+      mastered_concepts: number;
+      /** Progress Percent */
+      progress_percent: number;
       /** Concept Names */
       concept_names: {
         [key: string]: string;
@@ -2462,6 +2490,10 @@ export interface components {
       mastered_concept: number;
       /** All Concept */
       all_concept: number;
+      /** Unlocked Concept */
+      unlocked_concept: number;
+      /** Locked Concept */
+      locked_concept: number;
       /** Progress Percent */
       progress_percent: number;
     };
@@ -2499,6 +2531,14 @@ export interface components {
       accuracy: number;
       /** Avg Mastery */
       avg_mastery: number;
+      /** Unlocked Concepts */
+      unlocked_concepts: number;
+      /** Locked Concepts */
+      locked_concepts: number;
+      /** Mastered Concepts */
+      mastered_concepts: number;
+      /** Progress Percent */
+      progress_percent: number;
       /** Step */
       step: number;
       /** Max Steps */

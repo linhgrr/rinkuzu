@@ -25,14 +25,15 @@ const clampPercent = (value: number): number => {
 const getSubjectMetrics = (job: PipelineJobHistoryItem): DashboardSubjectMetrics => {
   const masteredConcepts = Math.max(0, job.mastered_concept);
   const allConcepts = Math.max(0, job.all_concept);
+  const unlockedConcepts = Math.max(0, job.unlocked_concept);
 
-  if (allConcepts > 0) {
-    const boundedMastered = Math.min(masteredConcepts, allConcepts);
+  if (unlockedConcepts > 0) {
+    const boundedMastered = Math.min(masteredConcepts, unlockedConcepts);
     return {
       masteredConcepts: boundedMastered,
       allConcepts,
-      progressPercent: clampPercent((boundedMastered / allConcepts) * 100),
-      remainingConcepts: Math.max(allConcepts - boundedMastered, 0),
+      progressPercent: clampPercent(job.progress_percent),
+      remainingConcepts: Math.max(unlockedConcepts - boundedMastered, 0),
     };
   }
 

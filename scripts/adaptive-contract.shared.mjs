@@ -18,6 +18,8 @@ const OPENAPI_TYPESCRIPT_BIN = resolve(
   FRONTEND_ROOT,
   `node_modules/.bin/openapi-typescript${BIN_EXT}`,
 );
+const PRETTIER_BIN = resolve(FRONTEND_ROOT, `node_modules/.bin/prettier${BIN_EXT}`);
+const PRETTIER_CONFIG = resolve(FRONTEND_ROOT, '.prettierrc');
 const BACKEND_VENV_PYTHON = resolve(BACKEND_ROOT, '.venv/bin/python');
 const UV_BIN = process.env.UV_BIN ?? 'uv';
 
@@ -104,6 +106,13 @@ export function generateTypes(schemaPath, outputPath) {
   run(OPENAPI_TYPESCRIPT_BIN, [schemaPath, '-o', outputPath], {
     cwd: FRONTEND_ROOT,
   });
+  run(
+    PRETTIER_BIN,
+    ['--write', '--config', PRETTIER_CONFIG, '--ignore-path', '/dev/null', outputPath],
+    {
+      cwd: FRONTEND_ROOT,
+    },
+  );
 }
 
 export function readText(path) {

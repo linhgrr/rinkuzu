@@ -27,7 +27,14 @@ export class UserService implements IUserService {
     options: PublicProfileQueryDto,
   ): Promise<ServiceResult<PublicUserProfileDto>> {
     try {
-      const user = await this.userRepository.findPublicProfileById(userId);
+      const [user, quizzes] = await Promise.all([
+        this.userRepository.findPublicProfileById(userId),
+        this.quizRepository.findPublicByAuthor(userId, {
+          page: options.page,
+          limit: 12,
+        }),
+      ]);
+
       if (!user) {
         return {
           success: false,
@@ -35,11 +42,6 @@ export class UserService implements IUserService {
           statusCode: 404,
         };
       }
-
-      const quizzes = await this.quizRepository.findPublicByAuthor(userId, {
-        page: options.page,
-        limit: 12,
-      });
 
       return {
         success: true,

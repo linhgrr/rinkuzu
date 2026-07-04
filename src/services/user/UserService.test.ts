@@ -180,15 +180,73 @@ describe('UserService', () => {
       expect(result.data.quizzes[0]).not.toHaveProperty('_id');
     });
 
+    it('loads profile and public quizzes concurrently', async () => {
+      const { service, userRepository, quizRepository } = createService();
+      let quizStartedBeforeProfileResolved = false;
+      let resolveProfile: (
+        value: Awaited<ReturnType<IUserRepository['findPublicProfileById']>>,
+      ) => void = () => undefined;
+      const profilePromise = new Promise<
+        Awaited<ReturnType<IUserRepository['findPublicProfileById']>>
+      >((resolve) => {
+        resolveProfile = resolve;
+      });
+
+      userRepository.findPublicProfileById = vi.fn(() => profilePromise);
+      quizRepository.findPublicByAuthor.mockImplementation(async () => {
+        quizStartedBeforeProfileResolved = true;
+        resolveProfile({
+          id: '507f191e810c19729de860ea',
+          email: 'learner@example.com',
+          displayName: 'Learner',
+          createdAt: new Date('2026-07-01T00:00:00Z'),
+        });
+        return {
+          items: [],
+          pagination: {
+            currentPage: 1,
+            totalPages: 0,
+            totalItems: 0,
+            itemsPerPage: 12,
+            hasNextPage: false,
+            hasPrevPage: false,
+          },
+        };
+      });
+
+      const result = await service.getPublicProfile('507f191e810c19729de860ea', { page: 1 });
+
+      assertOk(result);
+      expect(quizStartedBeforeProfileResolved).toBe(true);
+      expect(quizRepository.findPublicByAuthor).toHaveBeenCalledWith('507f191e810c19729de860ea', {
+        page: 1,
+        limit: 12,
+      });
+    });
+
     it('returns 404 when the public user does not exist', async () => {
       const { service, userRepository, quizRepository } = createService();
       userRepository.findPublicProfileById = vi.fn().mockResolvedValue(null);
+      quizRepository.findPublicByAuthor.mockResolvedValue({
+        items: [],
+        pagination: {
+          currentPage: 1,
+          totalPages: 0,
+          totalItems: 0,
+          itemsPerPage: 12,
+          hasNextPage: false,
+          hasPrevPage: false,
+        },
+      });
 
-      const result = await service.getPublicProfile('missing', { page: 1 });
+      const result = await service.getPublicProfile('507f191e810c19729de860ef', { page: 1 });
 
       assertFail(result);
       expect(result.statusCode).toBe(404);
-      expect(quizRepository.findPublicByAuthor).not.toHaveBeenCalled();
+      expect(quizRepository.findPublicByAuthor).toHaveBeenCalledWith('507f191e810c19729de860ef', {
+        page: 1,
+        limit: 12,
+      });
     });
   });
 

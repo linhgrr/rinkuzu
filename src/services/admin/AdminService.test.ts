@@ -18,6 +18,7 @@ function createUserRepository(): IUserRepository {
   return {
     findByEmail: vi.fn(),
     findById: vi.fn(),
+    findSubscriptionById: vi.fn(),
     findPublicProfileById: vi.fn(),
     updateRole: vi.fn(),
     delete: vi.fn(),

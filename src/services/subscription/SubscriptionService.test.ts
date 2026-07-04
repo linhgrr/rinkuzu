@@ -3,7 +3,6 @@ import { beforeEach, describe, expect, it, vi, type Mocked } from 'vitest';
 import { SubscriptionService } from './SubscriptionService';
 import type { BillingPlan } from '@/entities/AdminBilling';
 import type { SubscriptionRecord } from '@/entities/Subscription';
-import type { User } from '@/entities/User';
 import type { ISubscriptionRepository } from '@/interfaces/repositories/ISubscriptionRepository';
 import type { ISubscriptionPlanRepository } from '@/interfaces/repositories/ISubscriptionPlanRepository';
 import type { IUserRepository } from '@/interfaces/repositories/IUserRepository';
@@ -27,16 +26,6 @@ function billingPlan(overrides: Partial<BillingPlan> = {}): BillingPlan {
     isActive: true,
     createdAt: now,
     updatedAt: now,
-    ...overrides,
-  };
-}
-
-function userFixture(overrides: Partial<User> = {}): User {
-  return {
-    id: 'user-1',
-    email: 'user@example.com',
-    role: 'user',
-    createdAt: new Date('2026-01-01T00:00:00Z'),
     ...overrides,
   };
 }
@@ -112,6 +101,7 @@ function createService(overrides: ServiceOverrides = {}) {
   const userRepository: Mocked<IUserRepository> = {
     findByEmail: vi.fn(),
     findById: vi.fn(),
+    findSubscriptionById: vi.fn(),
     findPublicProfileById: vi.fn(),
     updateRole: vi.fn(),
     delete: vi.fn(),
@@ -323,35 +313,31 @@ describe('SubscriptionService billing hardening', () => {
   it('detects free, inactive, active, and lifetime premium states', async () => {
     const { service, userRepository } = createService();
 
-    userRepository.findById.mockResolvedValueOnce(userFixture());
+    userRepository.findSubscriptionById.mockResolvedValueOnce(null);
     await expect(service.isUserPremium('user-1')).resolves.toBe(false);
 
-    userRepository.findById.mockResolvedValueOnce(
-      userFixture({
-        subscription: {
-          type: 'premium',
-          isActive: false,
-          endDate: new Date('2099-01-01T00:00:00Z'),
-        },
-      }),
-    );
+    userRepository.findSubscriptionById.mockResolvedValueOnce({
+      type: 'premium',
+      isActive: false,
+      endDate: new Date('2099-01-01T00:00:00Z'),
+    });
     await expect(service.isUserPremium('user-1')).resolves.toBe(false);
 
-    userRepository.findById.mockResolvedValueOnce(
-      userFixture({
-        subscription: {
-          type: 'premium',
-          isActive: true,
-          endDate: new Date('2099-01-01T00:00:00Z'),
-        },
-      }),
-    );
+    userRepository.findSubscriptionById.mockResolvedValueOnce({
+      type: 'premium',
+      isActive: true,
+      endDate: new Date('2099-01-01T00:00:00Z'),
+    });
     await expect(service.isUserPremium('user-1')).resolves.toBe(true);
 
-    userRepository.findById.mockResolvedValueOnce(
-      userFixture({ subscription: { type: 'premium', isActive: true } }),
-    );
+    userRepository.findSubscriptionById.mockResolvedValueOnce({
+      type: 'premium',
+      isActive: true,
+    });
     await expect(service.isUserPremium('user-1')).resolves.toBe(true);
+
+    expect(userRepository.findSubscriptionById).toHaveBeenCalledTimes(4);
+    expect(userRepository.findById).not.toHaveBeenCalled();
   });
 
   it('rejects payment creation for missing users and existing premium users', async () => {
@@ -839,15 +825,13 @@ describe('SubscriptionService billing hardening', () => {
 
   it('marks expired user subscriptions inactive when reading status', async () => {
     const expiredEndDate = new Date('2025-12-28T00:00:00Z');
-    const { service, subscriptionRepository } = createService({
+    const { service, subscriptionRepository, userRepository } = createService({
       userRepository: {
-        findById: vi.fn().mockResolvedValue({
-          subscription: {
-            type: 'premium_6months',
-            isActive: true,
-            endDate: expiredEndDate,
-            payosOrderId: 'order-1',
-          },
+        findSubscriptionById: vi.fn().mockResolvedValue({
+          type: 'premium_6months',
+          isActive: true,
+          endDate: expiredEndDate,
+          payosOrderId: 'order-1',
         }),
       },
       subscriptionRepository: {
@@ -861,6 +845,7 @@ describe('SubscriptionService billing hardening', () => {
       subscription: null,
       isPremium: false,
     });
+    expect(userRepository.findById).not.toHaveBeenCalled();
     expect(subscriptionRepository.expireCurrentForUser).toHaveBeenCalledWith('user-1', 'order-1');
   });
 

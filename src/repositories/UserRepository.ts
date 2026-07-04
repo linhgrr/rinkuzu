@@ -12,7 +12,11 @@ import Report from '@/models/Report';
 import Subscription from '@/models/Subscription';
 import User from '@/models/User';
 import UserProgress from '@/models/UserProgress';
-import type { PublicProfileUser, User as UserEntity } from '@/entities/User';
+import type {
+  PublicProfileUser,
+  User as UserEntity,
+  UserSubscriptionSnapshot,
+} from '@/entities/User';
 import { buildPaginationMeta } from '@/lib/pagination';
 import {
   IUserRepository,
@@ -27,10 +31,14 @@ import type {
 } from '@/interfaces/repositories/types';
 import mongoose, { Types, type FilterQuery } from 'mongoose';
 import { buildMongoOrFilter } from '@/lib/mongoose-query';
-import { UserPersistenceMapper } from '@/repositories/mappers/UserPersistenceMapper';
+import {
+  toUserSubscription,
+  UserPersistenceMapper,
+} from '@/repositories/mappers/UserPersistenceMapper';
 import type {
   PublicProfileUserPersistenceRecord,
   UserPersistenceRecord,
+  UserSubscriptionProjection,
 } from '@/repositories/types/UserPersistence';
 import {
   buildCountBucketsPipeline,
@@ -50,6 +58,14 @@ export class UserRepository implements IUserRepository {
     await connectDB();
     const record = await User.findOne({ email }).lean<UserPersistenceRecord>();
     return record ? UserPersistenceMapper.toEntity(record) : null;
+  }
+
+  async findSubscriptionById(id: string): Promise<UserSubscriptionSnapshot | null> {
+    await connectDB();
+    const record = await User.findById(id)
+      .select('subscription')
+      .lean<UserSubscriptionProjection>();
+    return record?.subscription ? toUserSubscription(record.subscription) : null;
   }
 
   async findPublicProfileById(id: string): Promise<PublicProfileUser | null> {

@@ -6,7 +6,9 @@ import type {
   UserSubscriptionPersistenceRecord,
 } from '@/repositories/types/UserPersistence';
 
-function toSubscription(record: UserSubscriptionPersistenceRecord): UserSubscriptionSnapshot {
+export function toUserSubscription(
+  record: UserSubscriptionPersistenceRecord,
+): UserSubscriptionSnapshot {
   return {
     type: record.type,
     startDate: record.startDate,
@@ -27,7 +29,7 @@ export class UserPersistenceMapper {
       bio: record.bio,
       avatar: record.avatar,
       role: record.role,
-      subscription: record.subscription ? toSubscription(record.subscription) : undefined,
+      subscription: record.subscription ? toUserSubscription(record.subscription) : undefined,
       createdAt: record.createdAt,
     };
   }

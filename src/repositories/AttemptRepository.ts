@@ -22,10 +22,14 @@ import {
   resolveCountBuckets,
   type CountBucketAggregateRecord,
 } from '@/lib/mongoose-count-buckets';
+import { Types } from 'mongoose';
 
 const attemptListQuizFields = 'title slug description';
 const attemptListFields = 'user guestEmail quiz score totalQuestions takenAt';
-const attemptDetailQuizFields = 'title slug description questions';
+
+function toObjectIdIfValid(value: string): string | Types.ObjectId {
+  return Types.ObjectId.isValid(value) ? new Types.ObjectId(value) : value;
+}
 
 export class AttemptRepository implements IAttemptRepository {
   async findByUser(
@@ -92,13 +96,49 @@ export class AttemptRepository implements IAttemptRepository {
 
   async findByIdWithQuiz(attemptId: string, owner: AttemptOwnerIdentity): Promise<Attempt | null> {
     await connectDB();
-    const identityFilter = owner.userId ? { user: owner.userId } : { guestEmail: owner.guestEmail };
-    const record = await AttemptModel.findOne({
-      _id: attemptId,
-      ...identityFilter,
-    })
-      .populate('quiz', attemptDetailQuizFields)
-      .lean<AttemptPersistenceRecord>();
+    const identityFilter = owner.userId
+      ? { user: toObjectIdIfValid(owner.userId) }
+      : { guestEmail: owner.guestEmail };
+    const [record] = await AttemptModel.aggregate<AttemptPersistenceRecord>([
+      {
+        $match: {
+          _id: toObjectIdIfValid(attemptId),
+          ...identityFilter,
+        },
+      },
+      { $limit: 1 },
+      {
+        $lookup: {
+          from: 'quizzes',
+          localField: 'quiz',
+          foreignField: '_id',
+          as: 'quizDoc',
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          user: 1,
+          guestEmail: 1,
+          score: 1,
+          totalQuestions: 1,
+          answers: 1,
+          takenAt: 1,
+          quiz: {
+            $let: {
+              vars: { quiz: { $first: '$quizDoc' } },
+              in: {
+                _id: '$$quiz._id',
+                title: '$$quiz.title',
+                slug: '$$quiz.slug',
+                description: '$$quiz.description',
+                questions: '$$quiz.questions',
+              },
+            },
+          },
+        },
+      },
+    ]);
     return record ? AttemptPersistenceMapper.toEntity(record) : null;
   }
 

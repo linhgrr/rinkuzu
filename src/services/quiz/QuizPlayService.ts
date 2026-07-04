@@ -163,7 +163,7 @@ export class QuizPlayService {
     userEmail?: string,
   ): Promise<ServiceResult<QuizAttemptResultDto>> {
     try {
-      const quiz = await this.quizRepository.findBySlug(slug);
+      const quiz = await this.quizRepository.findForPlay(slug);
 
       if (!quiz) {
         return {

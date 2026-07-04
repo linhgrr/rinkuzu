@@ -6,9 +6,16 @@ import type {
   UserAttemptListQueryDto,
 } from '@/dtos/user';
 
+export type AttemptOwner =
+  | { userId: string; guestEmail?: never }
+  | { userId?: never; guestEmail: string };
+
 export interface IUserService {
-  getUserAttempts(userEmail: string, options: UserAttemptListQueryDto): Promise<UserAttemptListDto>;
-  getAttemptDetails(attemptId: string, userEmail: string): Promise<ServiceResult<AttemptDetailDto>>;
+  getUserAttempts(userId: string, options: UserAttemptListQueryDto): Promise<UserAttemptListDto>;
+  getAttemptDetails(
+    attemptId: string,
+    owner: AttemptOwner,
+  ): Promise<ServiceResult<AttemptDetailDto>>;
 
   getPublicProfile(userId: string): Promise<ServiceResult<PublicUserProfileDto>>;
 }

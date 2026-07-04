@@ -2,8 +2,8 @@ import mongoose from 'mongoose';
 import { createSubscriptionService } from '@/lib/subscription-factory';
 import { RateLimiterMongo } from 'rate-limiter-flexible';
 import connectDB from '@/lib/mongoose';
-import type { AdaptiveUserRole } from '@/lib/adaptive/config';
 import { apiErr } from '@/lib/api/response';
+import type { UserRole } from '@/types/next-auth';
 
 type LlmRateLimitAction =
   | 'quiz_ask_ai'
@@ -44,7 +44,7 @@ type RateLimiterResult = {
   msBeforeNext: number;
 };
 
-export function isAdminRole(role: unknown): role is AdaptiveUserRole {
+export function isAdminRole(role: unknown): role is UserRole {
   return role === 'admin';
 }
 

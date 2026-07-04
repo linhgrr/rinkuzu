@@ -168,6 +168,7 @@ export default function AdaptiveLearningUpload() {
               type="text"
               placeholder={t('uploadPage.subjectNamePlaceholder')}
               value={subjectName}
+              maxLength={120}
               onChange={(e) => setSubjectName(e.target.value)}
               className="w-full bg-neutral-50 text-sm font-medium hover:bg-white"
               disabled={isUploading}

@@ -1,11 +1,11 @@
-import type { PipelineStatus } from '@/features/adaptive/types/pipeline';
+import type { SubjectProgressStatus } from '@/features/adaptive/types/history';
 
 export interface SessionHistoryViewModel {
   jobId: string;
   filename: string;
   subjectId: string;
   displayTitle: string;
-  status: PipelineStatus;
+  status: SubjectProgressStatus;
   step: number;
   maxSteps: number;
   createdAt: number;

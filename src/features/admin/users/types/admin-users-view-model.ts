@@ -1,4 +1,4 @@
-export type AdminUserRoleViewModel = 'admin' | 'user';
+import type { UserRole } from '@/types/next-auth';
 
 export interface AdminUserSubscriptionViewModel {
   type: string;
@@ -15,7 +15,7 @@ export interface AdminUserViewModel {
   id: string;
   email: string;
   displayName?: string;
-  role: AdminUserRoleViewModel;
+  role: UserRole;
   createdAt: string;
   createdAtLabel: string;
   subscription?: AdminUserSubscriptionViewModel;
@@ -35,7 +35,7 @@ export interface AdminUserListViewModel {
 
 export interface AdminUserRoleUpdateInput {
   userId: string;
-  role: AdminUserRoleViewModel;
+  role: UserRole;
 }
 
 export interface AdminUserSubscriptionGrantInput {

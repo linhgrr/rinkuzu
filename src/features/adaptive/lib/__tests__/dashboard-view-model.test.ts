@@ -163,7 +163,7 @@ describe('buildDashboardSubjectFromJob', () => {
     }
   });
 
-  it('sets progressPercent 100 for completed jobs', () => {
+  it('does not infer mastery progress for completed jobs without enriched history', () => {
     const vm = buildDashboardSubjectFromJob(
       pipelineJob({
         status: 'completed',
@@ -171,7 +171,8 @@ describe('buildDashboardSubjectFromJob', () => {
       }),
       t,
     );
-    expect(vm.metrics.progressPercent).toBe(100);
+    expect(vm.metrics.progressPercent).toBe(0);
+    expect(vm.ctaLabel).toBe('startLearning');
   });
 
   it('clamps progressPercent for in-flight jobs', () => {

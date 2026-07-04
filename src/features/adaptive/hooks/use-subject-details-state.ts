@@ -136,42 +136,6 @@ export const useSubjectDetailsState = (sessionId: string, t: TranslateFn) => {
   }, [jobId]);
 
   useEffect(() => {
-    if (historyDetail || !jobId) return;
-
-    let mounted = true;
-    const windowWithIdle = window as Window & {
-      requestIdleCallback?: (cb: () => void, opts?: { timeout?: number }) => number;
-      cancelIdleCallback?: (id: number) => void;
-    };
-
-    const hydrateHistory = () => {
-      void fetchHistoryDetail()
-        .then((detail) => {
-          if (mounted && detail) {
-            dispatch({ type: 'patch', value: { historyDetail: detail } });
-          }
-        })
-        .catch(() => {
-          // Ignore warm-up failures; explicit tab loading handles retry UX.
-        });
-    };
-
-    let idleId: number | undefined;
-    let timeoutId: number | undefined;
-
-    if (windowWithIdle.requestIdleCallback)
-      idleId = windowWithIdle.requestIdleCallback(hydrateHistory, { timeout: 1200 });
-    else timeoutId = window.setTimeout(hydrateHistory, 300);
-
-    return () => {
-      mounted = false;
-      if (idleId !== undefined && windowWithIdle.cancelIdleCallback)
-        windowWithIdle.cancelIdleCallback(idleId);
-      if (timeoutId !== undefined) window.clearTimeout(timeoutId);
-    };
-  }, [fetchHistoryDetail, historyDetail, jobId]);
-
-  useEffect(() => {
     if (activeTab !== 'history' || historyDetail || !jobId) return;
 
     let mounted = true;

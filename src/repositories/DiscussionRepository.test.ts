@@ -3,6 +3,7 @@ import { Types } from 'mongoose';
 import type { Discussion } from '@/entities/Discussion';
 
 const discussionModelMocks = vi.hoisted(() => ({
+  aggregate: vi.fn(),
   bulkWrite: vi.fn(),
   find: vi.fn(),
   findPopulate: vi.fn(),
@@ -19,6 +20,7 @@ vi.mock('@/lib/mongoose', () => ({
 
 vi.mock('@/models/Discussion', () => ({
   default: {
+    aggregate: discussionModelMocks.aggregate,
     bulkWrite: discussionModelMocks.bulkWrite,
     find: discussionModelMocks.find,
     findOneAndUpdate: discussionModelMocks.findOneAndUpdate,
@@ -53,6 +55,35 @@ describe('DiscussionRepository.ensureForQuizQuestions', () => {
     discussionModelMocks.findPopulate.mockReturnValue({ sort: discussionModelMocks.sort });
     discussionModelMocks.sort.mockReturnValue({ lean: discussionModelMocks.findLean });
     discussionModelMocks.findLean.mockResolvedValue([]);
+    discussionModelMocks.aggregate.mockResolvedValue([]);
+  });
+
+  it('loads quiz discussions and comment authors in one aggregation', async () => {
+    const repository = new DiscussionRepository();
+
+    await expect(repository.findByQuiz(quizId)).resolves.toEqual([]);
+
+    expect(discussionModelMocks.aggregate).toHaveBeenCalledWith([
+      { $match: { quiz: new Types.ObjectId(quizId) } },
+      { $sort: { questionIndex: 1, createdAt: 1 } },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'comments.author',
+          foreignField: '_id',
+          as: 'authorDocs',
+        },
+      },
+      expect.objectContaining({
+        $project: expect.objectContaining({
+          comments: expect.objectContaining({
+            $map: expect.objectContaining({
+              input: '$comments',
+            }),
+          }),
+        }),
+      }),
+    ]);
   });
 
   it('does not write when all quiz question discussions already exist', async () => {

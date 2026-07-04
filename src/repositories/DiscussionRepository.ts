@@ -9,6 +9,14 @@ import { Types } from 'mongoose';
 import { DiscussionPersistenceMapper } from '@/repositories/mappers/DiscussionPersistenceMapper';
 import type { DiscussionPersistenceRecord } from '@/repositories/types/DiscussionPersistence';
 
+const discussionAuthorProjection = {
+  _id: '$$author._id',
+  email: '$$author.email',
+  name: '$$author.name',
+  displayName: '$$author.displayName',
+  avatar: '$$author.avatar',
+};
+
 export class DiscussionRepository implements IDiscussionRepository {
   async findById(id: string): Promise<DiscussionEntity | null> {
     await connectDB();
@@ -20,10 +28,56 @@ export class DiscussionRepository implements IDiscussionRepository {
 
   async findByQuiz(quizId: string): Promise<DiscussionEntity[]> {
     await connectDB();
-    const records = await Discussion.find({ quiz: quizId })
-      .populate('comments.author', 'email name displayName avatar')
-      .sort({ questionIndex: 1, createdAt: 1 })
-      .lean<DiscussionPersistenceRecord[]>();
+    const quizObjectId = new Types.ObjectId(quizId);
+    const records = await Discussion.aggregate<DiscussionPersistenceRecord>([
+      { $match: { quiz: quizObjectId } },
+      { $sort: { questionIndex: 1, createdAt: 1 } },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'comments.author',
+          foreignField: '_id',
+          as: 'authorDocs',
+        },
+      },
+      {
+        $project: {
+          quiz: 1,
+          questionIndex: 1,
+          createdAt: 1,
+          updatedAt: 1,
+          comments: {
+            $map: {
+              input: '$comments',
+              as: 'comment',
+              in: {
+                _id: '$$comment._id',
+                content: '$$comment.content',
+                isEdited: '$$comment.isEdited',
+                createdAt: '$$comment.createdAt',
+                updatedAt: '$$comment.updatedAt',
+                author: {
+                  $let: {
+                    vars: {
+                      author: {
+                        $first: {
+                          $filter: {
+                            input: '$authorDocs',
+                            as: 'author',
+                            cond: { $eq: ['$$author._id', '$$comment.author'] },
+                          },
+                        },
+                      },
+                    },
+                    in: discussionAuthorProjection,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    ]);
     return records.map(DiscussionPersistenceMapper.toEntity);
   }
 

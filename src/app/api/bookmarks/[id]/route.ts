@@ -9,18 +9,14 @@ import { bookmarkIdRouteParamsSchema } from '@/dtos/bookmark';
 const bookmarkService = serviceFactory.getBookmarkService();
 
 // DELETE - Remove bookmark
-export const DELETE = withAuth(async (_request: NextRequest, { params, email }) => {
+export const DELETE = withAuth(async (_request: NextRequest, { params, userId }) => {
   try {
     const parsedParams = readAndValidateRouteParams(params, bookmarkIdRouteParamsSchema);
     if (!parsedParams.success) {
       return apiErr('validation_error', parsedParams.error, 400, { fields: parsedParams.fields });
     }
 
-    if (!email) {
-      return apiErr('unauthorized', 'Unauthorized', 401);
-    }
-
-    const result = await bookmarkService.deleteBookmarkByUser(parsedParams.data.id, email);
+    const result = await bookmarkService.deleteBookmarkByUser(parsedParams.data.id, userId);
 
     return apiOk(result, 200, { meta: { message: 'Bookmark removed' } });
   } catch (error: unknown) {

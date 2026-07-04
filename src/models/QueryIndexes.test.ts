@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import Attempt from '@/models/Attempt';
+import Bookmark from '@/models/Bookmark';
 import Discussion from '@/models/Discussion';
 import Quiz from '@/models/Quiz';
 import Report from '@/models/Report';
@@ -32,6 +33,10 @@ describe('query performance indexes', () => {
 
   it('indexes global recent user and user bucket reads', () => {
     expect(hasIndex(User, { createdAt: -1 })).toBe(true);
+  });
+
+  it('indexes bookmark lists by stable user identity and recency', () => {
+    expect(hasIndex(Bookmark, { userId: 1, createdAt: -1 })).toBe(true);
   });
 
   it('indexes unfiltered report and subscription admin lists by recency', () => {

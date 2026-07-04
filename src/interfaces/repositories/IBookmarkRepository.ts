@@ -5,20 +5,14 @@ import type {
 } from '@/interfaces/repositories/types';
 
 export interface IBookmarkRepository {
-  findByUserEmail(
-    userEmail: string,
+  findByUserId(
+    userId: string,
     options: RepositoryPaginationOptions,
   ): Promise<PaginatedRepositoryResult<Bookmark>>;
 
-  findByUserAndQuiz(
-    userEmail: string,
-    quizSlug: string,
-    questionIndex: number,
-  ): Promise<Bookmark | null>;
-
   create(bookmarkData: CreateBookmarkData): Promise<Bookmark>;
 
-  deleteByIdAndUser(id: string, userEmail: string): Promise<boolean>;
+  deleteByIdAndUser(id: string, userId: string): Promise<boolean>;
 }
 
 export interface CreateBookmarkData {

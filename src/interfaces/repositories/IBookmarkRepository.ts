@@ -4,10 +4,14 @@ import type {
   RepositoryPaginationOptions,
 } from '@/interfaces/repositories/types';
 
+export type BookmarkListOptions = RepositoryPaginationOptions & {
+  quizSlug?: string;
+};
+
 export interface IBookmarkRepository {
   findByUserId(
     userId: string,
-    options: RepositoryPaginationOptions,
+    options: BookmarkListOptions,
   ): Promise<PaginatedRepositoryResult<Bookmark>>;
 
   create(bookmarkData: CreateBookmarkData): Promise<Bookmark>;

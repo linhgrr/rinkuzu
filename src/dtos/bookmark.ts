@@ -7,6 +7,7 @@ export const bookmarkIdRouteParamsSchema = z.object({ id: objectIdRouteParamSche
 export const bookmarkListQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(10),
+  quizSlug: z.string().trim().min(1).optional(),
 });
 
 const bookmarkQuestionSchema = z

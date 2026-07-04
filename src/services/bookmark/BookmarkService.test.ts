@@ -69,6 +69,34 @@ describe('BookmarkService', () => {
     });
   });
 
+  it('passes quiz slug filters through for result page bookmark lookups', async () => {
+    const repository = createRepository();
+    repository.findByUserId.mockResolvedValue({
+      items: [bookmark()],
+      pagination: {
+        currentPage: 1,
+        totalPages: 1,
+        totalItems: 1,
+        itemsPerPage: 20,
+        hasNextPage: false,
+        hasPrevPage: false,
+      },
+    });
+    const service = new BookmarkService(repository);
+
+    await service.getBookmarksByUser(owner.userId, {
+      page: 1,
+      limit: 20,
+      quizSlug: 'algorithms',
+    });
+
+    expect(repository.findByUserId).toHaveBeenCalledWith(owner.userId, {
+      page: 1,
+      limit: 20,
+      quizSlug: 'algorithms',
+    });
+  });
+
   it('creates once with stable user identity and no preflight read', async () => {
     const repository = createRepository();
     repository.create.mockResolvedValue(bookmark());

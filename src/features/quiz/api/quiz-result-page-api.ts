@@ -11,16 +11,19 @@ import type {
 import { fetchApiData } from '@/lib/api/client';
 
 async function fetchBookmarkLookup(result: QuizResultViewModel): Promise<QuizResultBookmarkLookup> {
-  const data = await fetchApiData<BookmarkListDto>('/api/bookmarks');
+  const lookupLimit = Math.min(Math.max(result.quiz.questions.length, 1), 100);
+  const params = new URLSearchParams({
+    quizSlug: result.quiz.slug,
+    limit: String(lookupLimit),
+  });
+  const data = await fetchApiData<BookmarkListDto>(`/api/bookmarks?${params.toString()}`);
 
   const bookmarkedQuestions = new Set<number>();
   const bookmarkIdsByQuestion: Record<number, string> = {};
 
   data.bookmarks.forEach((bookmark) => {
-    if (bookmark.quiz.slug === result.quiz.slug) {
-      bookmarkedQuestions.add(bookmark.questionIndex);
-      bookmarkIdsByQuestion[bookmark.questionIndex] = bookmark.id;
-    }
+    bookmarkedQuestions.add(bookmark.questionIndex);
+    bookmarkIdsByQuestion[bookmark.questionIndex] = bookmark.id;
   });
 
   return {

@@ -40,6 +40,10 @@ describe('query performance indexes', () => {
     expect(hasIndex(Bookmark, { userId: 1, createdAt: -1 })).toBe(true);
   });
 
+  it('indexes quiz result bookmark lookups by user, quiz slug, and recency', () => {
+    expect(hasIndex(Bookmark, { userId: 1, 'quiz.slug': 1, createdAt: -1 })).toBe(true);
+  });
+
   it('indexes unfiltered report and subscription admin lists by recency', () => {
     expect(hasIndex(Report, { createdAt: -1 })).toBe(true);
     expect(hasIndex(Subscription, { createdAt: -1 })).toBe(true);

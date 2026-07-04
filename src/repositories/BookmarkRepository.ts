@@ -3,33 +3,32 @@ import Bookmark from '@/models/Bookmark';
 import { buildPaginationMeta } from '@/lib/pagination';
 import type { Bookmark as BookmarkEntity } from '@/entities/Bookmark';
 import {
+  type BookmarkListOptions,
   IBookmarkRepository,
   type CreateBookmarkData,
 } from '@/interfaces/repositories/IBookmarkRepository';
-import type {
-  PaginatedRepositoryResult,
-  RepositoryPaginationOptions,
-} from '@/interfaces/repositories/types';
+import type { PaginatedRepositoryResult } from '@/interfaces/repositories/types';
 import { BookmarkPersistenceMapper } from '@/repositories/mappers/BookmarkPersistenceMapper';
 import type { BookmarkPersistenceRecord } from '@/repositories/types/BookmarkPersistence';
 
 export class BookmarkRepository implements IBookmarkRepository {
   async findByUserId(
     userId: string,
-    options: RepositoryPaginationOptions,
+    options: BookmarkListOptions,
   ): Promise<PaginatedRepositoryResult<BookmarkEntity>> {
     await connectDB();
 
     const { page, limit } = options;
     const skip = (page - 1) * limit;
+    const filter = options.quizSlug ? { userId, 'quiz.slug': options.quizSlug } : { userId };
 
     const [records, totalItems] = await Promise.all([
-      Bookmark.find({ userId })
+      Bookmark.find(filter)
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
         .lean<BookmarkPersistenceRecord[]>(),
-      Bookmark.countDocuments({ userId }),
+      Bookmark.countDocuments(filter),
     ]);
 
     return {

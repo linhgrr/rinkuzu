@@ -25,6 +25,7 @@ const recentListIndexes = [
 ];
 const discussionKey = { quiz: 1, questionIndex: 1 };
 const questionProgressLearnedCountKey = { userId: 1, srsLevel: 1 };
+const bookmarkQuizLookupKey = { userId: 1, 'quiz.slug': 1, createdAt: -1 };
 const obsoleteQuizIndexes = [
   { status: 1, createdAt: -1 },
   { status: 1, isPublic: 1, category: 1 },
@@ -198,6 +199,23 @@ try {
     });
   }
 
+  const bookmarks = db.collection('bookmarks');
+  const bookmarkIndexes = await bookmarks.indexes();
+  const bookmarkQuizLookupIndex = bookmarkIndexes.find((index) =>
+    hasKey(index, bookmarkQuizLookupKey),
+  );
+  actions.push({
+    collection: 'bookmarks',
+    index: 'userId_1_quiz.slug_1_createdAt_-1',
+    action: bookmarkQuizLookupIndex ? 'unchanged' : shouldApply ? 'created' : 'create',
+  });
+
+  if (shouldApply && !bookmarkQuizLookupIndex) {
+    await bookmarks.createIndex(bookmarkQuizLookupKey, {
+      name: 'userId_1_quiz.slug_1_createdAt_-1',
+    });
+  }
+
   const verified = shouldApply
     ? {
         reportsCreatedAt: (await db.collection('reports').indexes()).some((index) =>
@@ -211,6 +229,9 @@ try {
         ),
         questionProgressLearnedCount: (await questionProgresses.indexes()).some((index) =>
           hasKey(index, questionProgressLearnedCountKey),
+        ),
+        bookmarkQuizLookup: (await bookmarks.indexes()).some((index) =>
+          hasKey(index, bookmarkQuizLookupKey),
         ),
         obsoleteQuizIndexesRemoved: !(await quizzes.indexes()).some((index) =>
           obsoleteQuizIndexes.some((key) => hasKey(index, key)),

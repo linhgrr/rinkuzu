@@ -79,6 +79,7 @@ const BookmarkSchema = new Schema<BookmarkDocument>(
 // Compound index for user and quiz
 BookmarkSchema.index({ userId: 1, 'quiz.slug': 1, questionIndex: 1 }, { unique: true });
 BookmarkSchema.index({ userId: 1, createdAt: -1 });
+BookmarkSchema.index({ userId: 1, 'quiz.slug': 1, createdAt: -1 });
 
 export default mongoose.models['Bookmark'] ||
   mongoose.model<BookmarkDocument>('Bookmark', BookmarkSchema);

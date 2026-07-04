@@ -94,6 +94,62 @@ describe('QuizRepository.findUserQuizzes', () => {
     expect(quizModelMocks.lean).toHaveBeenCalledOnce();
   });
 
+  it('loads quiz details by slug and author in one aggregation', async () => {
+    const quizId = new Types.ObjectId('507f191e810c19729de860ea');
+    const authorId = new Types.ObjectId('507f191e810c19729de860eb');
+    quizModelMocks.aggregate.mockResolvedValueOnce([
+      {
+        _id: quizId,
+        title: 'Algebra Basics',
+        description: 'Linear equations',
+        slug: 'algebra-basics',
+        author: {
+          _id: authorId,
+          email: 'learner@example.com',
+          displayName: 'Learner',
+        },
+        folder: null,
+        questions: [],
+        isPrivate: false,
+        createdAt: new Date('2026-07-01T00:00:00.000Z'),
+        updatedAt: new Date('2026-07-01T01:00:00.000Z'),
+      },
+    ]);
+    const repository = new QuizRepository();
+
+    await expect(repository.findBySlug('algebra-basics')).resolves.toMatchObject({
+      id: String(quizId),
+      author: {
+        id: String(authorId),
+        email: 'learner@example.com',
+        displayName: 'Learner',
+      },
+      questions: [],
+    });
+    expect(quizModelMocks.aggregate).toHaveBeenCalledWith([
+      { $match: { slug: 'algebra-basics' } },
+      { $limit: 1 },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'author',
+          foreignField: '_id',
+          as: 'authorDoc',
+        },
+      },
+      {
+        $project: expect.objectContaining({
+          author: expect.objectContaining({
+            _id: { $ifNull: [{ $first: '$authorDoc._id' }, '$author'] },
+            email: { $first: '$authorDoc.email' },
+          }),
+          questions: 1,
+        }),
+      },
+    ]);
+    expect(quizModelMocks.findOne).not.toHaveBeenCalled();
+  });
+
   it('projects user quiz list rows without loading question payloads', async () => {
     const repository = new QuizRepository();
     const userId = '507f191e810c19729de860eb';

@@ -54,9 +54,41 @@ export class QuizRepository implements IQuizRepository {
 
   async findBySlug(slug: string): Promise<Quiz | null> {
     await connectDB();
-    const record = await QuizModel.findOne({ slug })
-      .populate('author', 'email name displayName avatar')
-      .lean<QuizPersistenceRecord>();
+    const [record] = await QuizModel.aggregate<QuizPersistenceRecord>([
+      { $match: { slug } },
+      { $limit: 1 },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'author',
+          foreignField: '_id',
+          as: 'authorDoc',
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          title: 1,
+          description: 1,
+          slug: 1,
+          author: {
+            _id: { $ifNull: [{ $first: '$authorDoc._id' }, '$author'] },
+            email: { $first: '$authorDoc.email' },
+            name: { $first: '$authorDoc.name' },
+            displayName: { $first: '$authorDoc.displayName' },
+            avatar: { $first: '$authorDoc.avatar' },
+          },
+          folder: 1,
+          questions: 1,
+          isPrivate: 1,
+          pdfUrl: 1,
+          tags: 1,
+          sourceDraftId: 1,
+          createdAt: 1,
+          updatedAt: 1,
+        },
+      },
+    ]);
     return record ? QuizPersistenceMapper.toEntity(record) : null;
   }
 

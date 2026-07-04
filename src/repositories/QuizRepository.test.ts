@@ -97,4 +97,38 @@ describe('QuizRepository.findUserQuizzes', () => {
       author: new Types.ObjectId(userId),
     });
   });
+
+  it('paginates public profile quizzes and counts the full result set', async () => {
+    const repository = new QuizRepository();
+    const userId = '507f191e810c19729de860eb';
+
+    const result = await repository.findPublicByAuthor(userId, { page: 2, limit: 12 });
+
+    expect(result.pagination).toMatchObject({
+      currentPage: 2,
+      totalItems: 1,
+      itemsPerPage: 12,
+    });
+    expect(quizModelMocks.aggregate).toHaveBeenCalledWith([
+      {
+        $match: {
+          author: new Types.ObjectId(userId),
+          isPrivate: false,
+        },
+      },
+      { $sort: { createdAt: -1 } },
+      { $skip: 12 },
+      { $limit: 12 },
+      {
+        $project: expect.objectContaining({
+          questions: { $literal: [] },
+          questionCount: { $size: { $ifNull: ['$questions', []] } },
+        }),
+      },
+    ]);
+    expect(quizModelMocks.countDocuments).toHaveBeenCalledWith({
+      author: new Types.ObjectId(userId),
+      isPrivate: false,
+    });
+  });
 });

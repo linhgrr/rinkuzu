@@ -84,7 +84,10 @@ export interface IQuizRepository {
     options: RepositoryPaginationOptions,
   ): Promise<PaginatedRepositoryResult<Quiz>>;
 
-  findPublicByAuthor(userId: string): Promise<Quiz[]>;
+  findPublicByAuthor(
+    userId: string,
+    options: RepositoryPaginationOptions,
+  ): Promise<PaginatedRepositoryResult<Quiz>>;
 
   count(filter?: CreatedAtCountFilter): Promise<number>;
 

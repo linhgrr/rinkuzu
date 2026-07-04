@@ -108,29 +108,39 @@ describe('UserService', () => {
         bio: 'Public bio',
         createdAt: new Date('2026-07-01T00:00:00Z'),
       });
-      quizRepository.findPublicByAuthor.mockResolvedValue([
-        {
-          id: '507f191e810c19729de860eb',
-          title: 'Public quiz',
-          description: 'Description',
-          slug: 'public-quiz',
-          author: '507f191e810c19729de860ea',
-          questions: [
-            {
-              id: '507f191e810c19729de860ec',
-              question: 'Question',
-              options: ['A', 'B'],
-              correctIndex: 0,
-              type: 'single',
-            },
-          ],
-          isPrivate: false,
-          createdAt: new Date('2026-07-02T00:00:00Z'),
-          updatedAt: new Date('2026-07-02T00:00:00Z'),
+      quizRepository.findPublicByAuthor.mockResolvedValue({
+        items: [
+          {
+            id: '507f191e810c19729de860eb',
+            title: 'Public quiz',
+            description: 'Description',
+            slug: 'public-quiz',
+            author: '507f191e810c19729de860ea',
+            questions: [
+              {
+                id: '507f191e810c19729de860ec',
+                question: 'Question',
+                options: ['A', 'B'],
+                correctIndex: 0,
+                type: 'single',
+              },
+            ],
+            isPrivate: false,
+            createdAt: new Date('2026-07-02T00:00:00Z'),
+            updatedAt: new Date('2026-07-02T00:00:00Z'),
+          },
+        ],
+        pagination: {
+          currentPage: 2,
+          totalPages: 3,
+          totalItems: 25,
+          itemsPerPage: 12,
+          hasNextPage: true,
+          hasPrevPage: true,
         },
-      ]);
+      });
 
-      const result = await service.getPublicProfile('507f191e810c19729de860ea');
+      const result = await service.getPublicProfile('507f191e810c19729de860ea', { page: 2 });
 
       assertOk(result);
       expect(result.data).toEqual({
@@ -153,6 +163,18 @@ describe('UserService', () => {
             questionCount: 1,
           },
         ],
+        pagination: {
+          currentPage: 2,
+          totalPages: 3,
+          totalItems: 25,
+          itemsPerPage: 12,
+          hasNextPage: true,
+          hasPrevPage: true,
+        },
+      });
+      expect(quizRepository.findPublicByAuthor).toHaveBeenCalledWith('507f191e810c19729de860ea', {
+        page: 2,
+        limit: 12,
       });
       expect(result.data.user).not.toHaveProperty('_id');
       expect(result.data.quizzes[0]).not.toHaveProperty('_id');
@@ -162,7 +184,7 @@ describe('UserService', () => {
       const { service, userRepository, quizRepository } = createService();
       userRepository.findPublicProfileById = vi.fn().mockResolvedValue(null);
 
-      const result = await service.getPublicProfile('missing');
+      const result = await service.getPublicProfile('missing', { page: 1 });
 
       assertFail(result);
       expect(result.statusCode).toBe(404);

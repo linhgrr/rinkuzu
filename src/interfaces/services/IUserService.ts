@@ -1,6 +1,7 @@
 import { ServiceResult } from '@/interfaces/services/types';
 import type {
   AttemptDetailDto,
+  PublicProfileQueryDto,
   PublicUserProfileDto,
   UserAttemptListDto,
   UserAttemptListQueryDto,
@@ -17,5 +18,8 @@ export interface IUserService {
     owner: AttemptOwner,
   ): Promise<ServiceResult<AttemptDetailDto>>;
 
-  getPublicProfile(userId: string): Promise<ServiceResult<PublicUserProfileDto>>;
+  getPublicProfile(
+    userId: string,
+    options: PublicProfileQueryDto,
+  ): Promise<ServiceResult<PublicUserProfileDto>>;
 }

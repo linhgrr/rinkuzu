@@ -23,7 +23,19 @@ const quiz: Quiz = {
 
 describe('PublicProfileDtoMapper', () => {
   it('maps stable identity and date fields', () => {
-    expect(PublicProfileDtoMapper.toDto(user, []).user.id).toBe(user.id);
-    expect(PublicProfileDtoMapper.toDto(user, [quiz]).quizzes[0]?.id).toBe(quiz.id);
+    const pagination = {
+      currentPage: 1,
+      totalPages: 1,
+      totalItems: 1,
+      itemsPerPage: 12,
+      hasNextPage: false,
+      hasPrevPage: false,
+    };
+
+    expect(PublicProfileDtoMapper.toDto(user, [], pagination).user.id).toBe(user.id);
+    expect(PublicProfileDtoMapper.toDto(user, [quiz], pagination)).toMatchObject({
+      quizzes: [{ id: quiz.id }],
+      pagination,
+    });
   });
 });

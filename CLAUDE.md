@@ -47,3 +47,9 @@ This project is indexed by GitNexus as **rinkuzu** (6968 symbols, 16760 relation
 # Git policy
 
 - NEVER pass `--no-verify` to `git commit`, `git push`, or any other git command. Pre-commit / pre-push hooks are mandatory. If a hook fails, fix the underlying issue — do not bypass.
+
+# Database performance
+
+- Treat Mongoose schema indexes as the desired runtime contract, but use `npm run migrate:performance-indexes` to detect Atlas index drift.
+- Run the dry-run first, then `npm run migrate:performance-indexes:apply`; the migration must remain idempotent and verify its postconditions.
+- Validate changed read paths with `explain("executionStats")`; compare keys examined, documents examined, returned rows, and payload projection.

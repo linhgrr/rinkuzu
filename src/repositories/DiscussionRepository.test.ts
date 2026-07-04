@@ -4,9 +4,13 @@ import type { Discussion } from '@/entities/Discussion';
 
 const discussionModelMocks = vi.hoisted(() => ({
   bulkWrite: vi.fn(),
+  find: vi.fn(),
+  findPopulate: vi.fn(),
   findOneAndUpdate: vi.fn(),
   populate: vi.fn(),
+  sort: vi.fn(),
   lean: vi.fn(),
+  findLean: vi.fn(),
 }));
 
 vi.mock('@/lib/mongoose', () => ({
@@ -16,6 +20,7 @@ vi.mock('@/lib/mongoose', () => ({
 vi.mock('@/models/Discussion', () => ({
   default: {
     bulkWrite: discussionModelMocks.bulkWrite,
+    find: discussionModelMocks.find,
     findOneAndUpdate: discussionModelMocks.findOneAndUpdate,
   },
 }));
@@ -44,6 +49,10 @@ describe('DiscussionRepository.ensureForQuizQuestions', () => {
       populate: discussionModelMocks.populate,
     });
     discussionModelMocks.populate.mockReturnValue({ lean: discussionModelMocks.lean });
+    discussionModelMocks.find.mockReturnValue({ populate: discussionModelMocks.findPopulate });
+    discussionModelMocks.findPopulate.mockReturnValue({ sort: discussionModelMocks.sort });
+    discussionModelMocks.sort.mockReturnValue({ lean: discussionModelMocks.findLean });
+    discussionModelMocks.findLean.mockResolvedValue([]);
   });
 
   it('does not write when all quiz question discussions already exist', async () => {
@@ -134,15 +143,32 @@ describe('DiscussionRepository.ensureForQuizQuestions', () => {
     expect(discussionModelMocks.lean).toHaveBeenCalledOnce();
   });
 
-  it('upserts only missing discussion indexes and refetches the resolved set', async () => {
+  it('upserts missing discussion indexes and fetches only those rows', async () => {
     const repository = new DiscussionRepository();
-    vi.spyOn(repository, 'findByQuiz')
-      .mockResolvedValueOnce([discussion(0)])
-      .mockResolvedValueOnce([discussion(0), discussion(1), discussion(2)]);
+    const findByQuiz = vi.spyOn(repository, 'findByQuiz').mockResolvedValueOnce([discussion(0)]);
+    discussionModelMocks.findLean.mockResolvedValueOnce([
+      {
+        _id: new Types.ObjectId('507f191e810c19729de860e1'),
+        quiz: new Types.ObjectId(quizId),
+        questionIndex: 1,
+        comments: [],
+        createdAt: now,
+        updatedAt: now,
+      },
+      {
+        _id: new Types.ObjectId('507f191e810c19729de860e2'),
+        quiz: new Types.ObjectId(quizId),
+        questionIndex: 2,
+        comments: [],
+        createdAt: now,
+        updatedAt: now,
+      },
+    ]);
 
     const result = await repository.ensureForQuizQuestions(quizId, 3);
 
     expect(result.map((item) => item.questionIndex)).toEqual([0, 1, 2]);
+    expect(findByQuiz).toHaveBeenCalledOnce();
     expect(discussionModelMocks.bulkWrite).toHaveBeenCalledTimes(1);
     expect(discussionModelMocks.bulkWrite).toHaveBeenCalledWith(
       [
@@ -158,6 +184,14 @@ describe('DiscussionRepository.ensureForQuizQuestions', () => {
         }),
       ],
       { ordered: false },
+    );
+    expect(discussionModelMocks.find).toHaveBeenCalledWith({
+      quiz: new Types.ObjectId(quizId),
+      questionIndex: { $in: [1, 2] },
+    });
+    expect(discussionModelMocks.findPopulate).toHaveBeenCalledWith(
+      'comments.author',
+      'email name displayName avatar',
     );
   });
 });

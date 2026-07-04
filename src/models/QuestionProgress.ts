@@ -81,5 +81,8 @@ QuestionProgressSchema.index({ userId: 1, quizSlug: 1, questionId: 1 }, { unique
 // Index for finding due items efficiently
 QuestionProgressSchema.index({ userId: 1, nextReviewDate: 1 });
 
+// Index for learned question count refresh after review submissions
+QuestionProgressSchema.index({ userId: 1, srsLevel: 1 });
+
 export default mongoose.models['QuestionProgress'] ||
   mongoose.model<IQuestionProgress>('QuestionProgress', QuestionProgressSchema);

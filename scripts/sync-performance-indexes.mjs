@@ -24,6 +24,7 @@ const recentListIndexes = [
   },
 ];
 const discussionKey = { quiz: 1, questionIndex: 1 };
+const questionProgressLearnedCountKey = { userId: 1, srsLevel: 1 };
 const obsoleteQuizIndexes = [
   { status: 1, createdAt: -1 },
   { status: 1, isPublic: 1, category: 1 },
@@ -180,6 +181,23 @@ try {
     });
   }
 
+  const questionProgresses = db.collection('questionprogresses');
+  const questionProgressIndexes = await questionProgresses.indexes();
+  const learnedCountIndex = questionProgressIndexes.find((index) =>
+    hasKey(index, questionProgressLearnedCountKey),
+  );
+  actions.push({
+    collection: 'questionprogresses',
+    index: 'userId_1_srsLevel_1',
+    action: learnedCountIndex ? 'unchanged' : shouldApply ? 'created' : 'create',
+  });
+
+  if (shouldApply && !learnedCountIndex) {
+    await questionProgresses.createIndex(questionProgressLearnedCountKey, {
+      name: 'userId_1_srsLevel_1',
+    });
+  }
+
   const verified = shouldApply
     ? {
         reportsCreatedAt: (await db.collection('reports').indexes()).some((index) =>
@@ -190,6 +208,9 @@ try {
         ),
         discussionsUnique: (await discussions.indexes()).some(
           (index) => hasKey(index, discussionKey) && index.unique === true,
+        ),
+        questionProgressLearnedCount: (await questionProgresses.indexes()).some((index) =>
+          hasKey(index, questionProgressLearnedCountKey),
         ),
         obsoleteQuizIndexesRemoved: !(await quizzes.indexes()).some((index) =>
           obsoleteQuizIndexes.some((key) => hasKey(index, key)),

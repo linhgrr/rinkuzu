@@ -181,7 +181,9 @@ export class QuizPlayService {
 
       let authenticatedUserId: string | undefined;
       let guestEmail: string | undefined;
-      if (session?.user?.email) {
+      if (session?.user?.id) {
+        authenticatedUserId = session.user.id;
+      } else if (session?.user?.email) {
         const user = await this.userRepository.findByEmail(session.user.email);
         if (!user) {
           return {

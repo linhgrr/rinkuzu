@@ -6,6 +6,7 @@ import type { IQuizRepository } from '@/interfaces/repositories/IQuizRepository'
 import { ServiceResult } from '@/interfaces/services/types';
 import type {
   AttemptDetailDto,
+  PublicProfileQueryDto,
   PublicUserProfileDto,
   UserAttemptListDto,
   UserAttemptListQueryDto,
@@ -21,7 +22,10 @@ export class UserService implements IUserService {
     private quizRepository: IQuizRepository,
   ) {}
 
-  async getPublicProfile(userId: string): Promise<ServiceResult<PublicUserProfileDto>> {
+  async getPublicProfile(
+    userId: string,
+    options: PublicProfileQueryDto,
+  ): Promise<ServiceResult<PublicUserProfileDto>> {
     try {
       const user = await this.userRepository.findPublicProfileById(userId);
       if (!user) {
@@ -32,11 +36,14 @@ export class UserService implements IUserService {
         };
       }
 
-      const quizzes = await this.quizRepository.findPublicByAuthor(userId);
+      const quizzes = await this.quizRepository.findPublicByAuthor(userId, {
+        page: options.page,
+        limit: 12,
+      });
 
       return {
         success: true,
-        data: PublicProfileDtoMapper.toDto(user, quizzes),
+        data: PublicProfileDtoMapper.toDto(user, quizzes.items, quizzes.pagination),
       };
     } catch (error) {
       logger.error({ error, userId }, 'Get public profile error');

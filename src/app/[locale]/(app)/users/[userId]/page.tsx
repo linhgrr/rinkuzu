@@ -11,6 +11,8 @@ import { serviceFactory } from '@/lib/serviceFactory';
 import { isValidMongoObjectId } from '@/lib/mongo-id';
 import { formatDate } from '@/lib/formatters';
 import { ROUTES } from '@/shared/constants/routes';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { positivePageSchema } from '@/lib/validation/common';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,17 +32,25 @@ export async function generateMetadata({
 
 export default async function PublicUserProfilePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ locale: string; userId: string }>;
+  searchParams: Promise<{ page?: string | string[] }>;
 }) {
   const { locale, userId } = await params;
+  const rawSearchParams = await searchParams;
+  const pageValue = Array.isArray(rawSearchParams.page)
+    ? rawSearchParams.page[0]
+    : rawSearchParams.page;
+  const parsedPage = positivePageSchema.safeParse(pageValue);
+  const page = parsedPage.success ? parsedPage.data : 1;
 
   if (!isValidMongoObjectId(userId)) {
     notFound();
   }
 
   const [profileResult, t, tQuiz] = await Promise.all([
-    serviceFactory.getUserService().getPublicProfile(userId),
+    serviceFactory.getUserService().getPublicProfile(userId, { page }),
     getTranslations({ locale, namespace: 'profile' }),
     getTranslations({ locale, namespace: 'quiz' }),
   ]);
@@ -53,7 +63,7 @@ export default async function PublicUserProfilePage({
   }
 
   const dateLocale = locale === 'vi' ? 'vi-VN' : 'en-US';
-  const { user: profileUser } = profileResult.data;
+  const { user: profileUser, pagination } = profileResult.data;
   const displayName = getUserDisplayName(profileUser);
   const quizzes = profileResult.data.quizzes.map((quiz) => ({
     ...quiz,
@@ -92,7 +102,7 @@ export default async function PublicUserProfilePage({
                     {t('publicQuizzes')}
                   </p>
                   <p className="mt-1 font-medium text-ink">
-                    {t('publicQuizzesCount', { count: quizzes.length })}
+                    {t('publicQuizzesCount', { count: pagination.totalItems })}
                   </p>
                 </div>
               </div>
@@ -160,6 +170,37 @@ export default async function PublicUserProfilePage({
                   ))}
                 </div>
               )}
+              {pagination.totalPages > 1 ? (
+                <nav
+                  aria-label={t('publicQuizPagination')}
+                  className="flex items-center justify-center gap-3 pt-2"
+                >
+                  {pagination.hasPrevPage ? (
+                    <Link
+                      href={`?page=${pagination.currentPage - 1}`}
+                      className="btn btn-secondary"
+                    >
+                      <ChevronLeft className="size-4" aria-hidden="true" />
+                      {t('previousPage')}
+                    </Link>
+                  ) : null}
+                  <span className="text-sm text-ink-muted">
+                    {t('pageOf', {
+                      page: pagination.currentPage,
+                      totalPages: pagination.totalPages,
+                    })}
+                  </span>
+                  {pagination.hasNextPage ? (
+                    <Link
+                      href={`?page=${pagination.currentPage + 1}`}
+                      className="btn btn-secondary"
+                    >
+                      {t('nextPage')}
+                      <ChevronRight className="size-4" aria-hidden="true" />
+                    </Link>
+                  ) : null}
+                </nav>
+              ) : null}
             </section>
           </div>
         </div>

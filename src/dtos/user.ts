@@ -1,6 +1,6 @@
 import type { PaginationMeta } from '@/dtos/common';
 import { z } from 'zod';
-import { objectIdRouteParamSchema } from '@/lib/validation/common';
+import { objectIdRouteParamSchema, positivePageSchema } from '@/lib/validation/common';
 
 export const attemptIdRouteParamsSchema = z.object({ id: objectIdRouteParamSchema }).strict();
 
@@ -8,6 +8,12 @@ export const userAttemptListQuerySchema = z
   .object({
     page: z.coerce.number().int().min(1).default(1),
     limit: z.coerce.number().int().min(1).max(100).default(10),
+  })
+  .strict();
+
+export const publicProfileQuerySchema = z
+  .object({
+    page: positivePageSchema.default(1),
   })
   .strict();
 
@@ -39,8 +45,10 @@ export interface PublicProfileQuizDto {
 export interface PublicUserProfileDto {
   user: PublicProfileUserDto;
   quizzes: PublicProfileQuizDto[];
+  pagination: PaginationMeta;
 }
 
+export type PublicProfileQueryDto = z.infer<typeof publicProfileQuerySchema>;
 export type UserAttemptListQueryDto = z.infer<typeof userAttemptListQuerySchema>;
 
 export interface UserAttemptSummaryDto {

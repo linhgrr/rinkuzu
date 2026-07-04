@@ -336,7 +336,7 @@ export class QuizPlayService {
     session?: Session | null,
   ): Promise<ServiceResult<FlashcardQuizDto>> {
     try {
-      const quiz = await this.quizRepository.findBySlug(slug);
+      const quiz = await this.quizRepository.findForPlay(slug);
 
       if (!quiz) {
         return {
@@ -385,7 +385,7 @@ export class QuizPlayService {
     session: Session | null,
   ): Promise<ServiceResult<FlashcardQuizDto>> {
     try {
-      const quiz = await this.quizRepository.findBySlug(slug);
+      const quiz = await this.quizRepository.findForPlay(slug);
 
       if (!quiz) {
         return {

@@ -235,4 +235,33 @@ describe('QuizPlayService progress operations', () => {
     );
     expect(progressRepository.deleteByUserAndQuiz).toHaveBeenCalledWith(userId, quizId);
   });
+
+  it('loads flashcards through the projected quiz read path', async () => {
+    const { service, quizRepository } = createService();
+    vi.mocked(quizRepository.findForPlay).mockResolvedValue({
+      id: quizId,
+      title: 'Quiz',
+      slug: 'quiz',
+      author: userId,
+      isPrivate: false,
+      questions: [
+        {
+          id: 'question-1',
+          question: '2 + 2 = ?',
+          options: ['3', '4'],
+          correctIndex: 1,
+          type: 'single',
+        },
+      ],
+      createdAt: new Date('2026-07-01T00:00:00Z'),
+      updatedAt: new Date('2026-07-01T00:00:00Z'),
+    });
+
+    const result = await service.getQuizForFlashcards('quiz', null);
+
+    assertOk(result);
+    expect(result.data.questions[0]).toMatchObject({ correctIndex: 1 });
+    expect(quizRepository.findForPlay).toHaveBeenCalledWith('quiz');
+    expect(quizRepository.findBySlug).not.toHaveBeenCalled();
+  });
 });

@@ -24,8 +24,14 @@ import {
 } from '@/lib/mongoose-count-buckets';
 import { Types } from 'mongoose';
 
-const attemptListQuizFields = 'title slug description';
-const attemptListFields = 'user guestEmail quiz score totalQuestions takenAt';
+type AttemptListFacetMeta = {
+  totalItems: number;
+};
+
+type AttemptListFacetResult = {
+  items: AttemptPersistenceRecord[];
+  meta: AttemptListFacetMeta[];
+};
 
 function toObjectIdIfValid(value: string): string | Types.ObjectId {
   return Types.ObjectId.isValid(value) ? new Types.ObjectId(value) : value;
@@ -41,19 +47,54 @@ export class AttemptRepository implements IAttemptRepository {
     const { page, limit } = options;
     const skip = (page - 1) * limit;
 
-    const [records, totalItems] = await Promise.all([
-      AttemptModel.find({ user: userId })
-        .select(attemptListFields)
-        .populate('quiz', attemptListQuizFields)
-        .sort({ takenAt: -1 })
-        .skip(skip)
-        .limit(limit)
-        .lean<AttemptPersistenceRecord[]>(),
-      AttemptModel.countDocuments({ user: userId }),
+    const [result] = await AttemptModel.aggregate<AttemptListFacetResult>([
+      { $match: { user: toObjectIdIfValid(userId) } },
+      { $sort: { takenAt: -1 } },
+      {
+        $facet: {
+          items: [
+            { $skip: skip },
+            { $limit: limit },
+            {
+              $lookup: {
+                from: 'quizzes',
+                localField: 'quiz',
+                foreignField: '_id',
+                as: 'quizDoc',
+              },
+            },
+            {
+              $project: {
+                _id: 1,
+                user: 1,
+                guestEmail: 1,
+                score: 1,
+                totalQuestions: 1,
+                takenAt: 1,
+                answers: { $literal: [] },
+                quiz: {
+                  $let: {
+                    vars: { quiz: { $first: '$quizDoc' } },
+                    in: {
+                      _id: '$$quiz._id',
+                      title: '$$quiz.title',
+                      slug: '$$quiz.slug',
+                      description: '$$quiz.description',
+                    },
+                  },
+                },
+              },
+            },
+          ],
+          meta: [{ $count: 'totalItems' }],
+        },
+      },
     ]);
+    const records = result?.items ?? [];
+    const totalItems = result?.meta[0]?.totalItems ?? 0;
 
     return {
-      items: records.map((record) => AttemptPersistenceMapper.toEntity({ ...record, answers: [] })),
+      items: records.map(AttemptPersistenceMapper.toEntity),
       pagination: buildPaginationMeta(page, limit, totalItems),
     };
   }

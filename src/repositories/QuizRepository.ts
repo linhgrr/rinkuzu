@@ -253,7 +253,9 @@ export class QuizRepository implements IQuizRepository {
   async findForPlay(slug: string): Promise<Quiz | null> {
     await connectDB();
     const record = await QuizModel.findOne({ slug })
-      .populate('author', 'email name displayName avatar')
+      .select(
+        '_id title description slug author folder questions isPrivate pdfUrl tags sourceDraftId createdAt updatedAt',
+      )
       .lean<QuizPersistenceRecord>();
     return record ? QuizPersistenceMapper.toEntity(record) : null;
   }

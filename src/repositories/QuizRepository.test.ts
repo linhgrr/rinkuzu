@@ -5,6 +5,7 @@ const quizModelMocks = vi.hoisted(() => ({
   aggregate: vi.fn(),
   countDocuments: vi.fn(),
   findById: vi.fn(),
+  findOne: vi.fn(),
   select: vi.fn(),
   lean: vi.fn(),
 }));
@@ -18,6 +19,7 @@ vi.mock('@/models/Quiz', () => ({
     aggregate: quizModelMocks.aggregate,
     countDocuments: quizModelMocks.countDocuments,
     findById: quizModelMocks.findById,
+    findOne: quizModelMocks.findOne,
   },
 }));
 
@@ -27,6 +29,7 @@ describe('QuizRepository.findUserQuizzes', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     quizModelMocks.findById.mockReturnValue({ select: quizModelMocks.select });
+    quizModelMocks.findOne.mockReturnValue({ select: quizModelMocks.select });
     quizModelMocks.select.mockReturnValue({ lean: quizModelMocks.lean });
     quizModelMocks.aggregate.mockResolvedValue([
       {
@@ -49,7 +52,7 @@ describe('QuizRepository.findUserQuizzes', () => {
   it('projects only fields required for quiz access checks', async () => {
     quizModelMocks.lean.mockResolvedValue({
       _id: new Types.ObjectId('507f191e810c19729de860ea'),
-      author: new Types.ObjectId('507f191e810c19729de860eb'),
+      author: '507f191e810c19729de860eb',
       isPrivate: true,
     });
     const repository = new QuizRepository();
@@ -61,6 +64,33 @@ describe('QuizRepository.findUserQuizzes', () => {
     });
     expect(quizModelMocks.findById).toHaveBeenCalledWith('507f191e810c19729de860ea');
     expect(quizModelMocks.select).toHaveBeenCalledWith('_id author isPrivate');
+    expect(quizModelMocks.lean).toHaveBeenCalledOnce();
+  });
+
+  it('projects only fields needed to play or submit a quiz', async () => {
+    quizModelMocks.lean.mockResolvedValue({
+      _id: new Types.ObjectId('507f191e810c19729de860ea'),
+      title: 'Algebra Basics',
+      description: 'Linear equations',
+      slug: 'algebra-basics',
+      author: '507f191e810c19729de860eb',
+      folder: null,
+      questions: [],
+      isPrivate: false,
+      createdAt: new Date('2026-07-01T00:00:00.000Z'),
+      updatedAt: new Date('2026-07-01T01:00:00.000Z'),
+    });
+    const repository = new QuizRepository();
+
+    await expect(repository.findForPlay('algebra-basics')).resolves.toMatchObject({
+      id: '507f191e810c19729de860ea',
+      author: '507f191e810c19729de860eb',
+      questions: [],
+    });
+    expect(quizModelMocks.findOne).toHaveBeenCalledWith({ slug: 'algebra-basics' });
+    expect(quizModelMocks.select).toHaveBeenCalledWith(
+      '_id title description slug author folder questions isPrivate pdfUrl tags sourceDraftId createdAt updatedAt',
+    );
     expect(quizModelMocks.lean).toHaveBeenCalledOnce();
   });
 

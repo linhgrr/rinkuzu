@@ -178,7 +178,7 @@ describe('QuizPlayService progress operations', () => {
   it('uses the authenticated session id when submitting attempts', async () => {
     const { service, quizRepository, userRepository, attemptRepository, progressRepository } =
       createService();
-    vi.mocked(quizRepository.findBySlug).mockResolvedValue({
+    vi.mocked(quizRepository.findForPlay).mockResolvedValue({
       id: quizId,
       title: 'Quiz',
       slug: 'quiz',
@@ -221,6 +221,8 @@ describe('QuizPlayService progress operations', () => {
     );
 
     assertOk(result);
+    expect(quizRepository.findForPlay).toHaveBeenCalledWith('quiz');
+    expect(quizRepository.findBySlug).not.toHaveBeenCalled();
     expect(userRepository.findByEmail).not.toHaveBeenCalled();
     expect(attemptRepository.create).toHaveBeenCalledWith(
       expect.objectContaining({

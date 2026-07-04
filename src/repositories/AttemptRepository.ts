@@ -24,6 +24,7 @@ import {
 } from '@/lib/mongoose-count-buckets';
 
 const attemptListQuizFields = 'title slug description';
+const attemptListFields = 'user guestEmail quiz score totalQuestions takenAt';
 const attemptDetailQuizFields = 'title slug description questions';
 
 export class AttemptRepository implements IAttemptRepository {
@@ -38,6 +39,7 @@ export class AttemptRepository implements IAttemptRepository {
 
     const [records, totalItems] = await Promise.all([
       AttemptModel.find({ user: userId })
+        .select(attemptListFields)
         .populate('quiz', attemptListQuizFields)
         .sort({ takenAt: -1 })
         .skip(skip)
@@ -47,7 +49,7 @@ export class AttemptRepository implements IAttemptRepository {
     ]);
 
     return {
-      items: records.map(AttemptPersistenceMapper.toEntity),
+      items: records.map((record) => AttemptPersistenceMapper.toEntity({ ...record, answers: [] })),
       pagination: buildPaginationMeta(page, limit, totalItems),
     };
   }

@@ -3,7 +3,6 @@ import { assertOk, assertFail } from '@/interfaces/services/types';
 import type { IUserRepository } from '@/interfaces/repositories/IUserRepository';
 import type { IAttemptRepository } from '@/interfaces/repositories/IAttemptRepository';
 import type { IQuizRepository } from '@/interfaces/repositories/IQuizRepository';
-import type { User } from '@/entities/User';
 import type { Attempt } from '@/entities/Attempt';
 import type { QuizQuestion } from '@/entities/Quiz';
 import { UserService } from './UserService';
@@ -12,16 +11,6 @@ interface ServiceOverrides {
   userRepository?: Partial<Mocked<IUserRepository>>;
   attemptRepository?: Partial<Mocked<IAttemptRepository>>;
   quizRepository?: Partial<Mocked<IQuizRepository>>;
-}
-
-function userFixture(overrides: Partial<User> = {}): User {
-  return {
-    id: 'user-1',
-    email: 'user@test.com',
-    role: 'user',
-    createdAt: new Date('2025-01-01T00:00:00Z'),
-    ...overrides,
-  };
 }
 
 function questionFixture(id: string, correctIndex = 0): QuizQuestion {
@@ -183,7 +172,6 @@ describe('UserService', () => {
   describe('getUserAttempts', () => {
     it('returns formatted attempts with pagination', async () => {
       const { service, userRepository, attemptRepository } = createService();
-      userRepository.findByEmail.mockResolvedValue(userFixture());
       attemptRepository.findByUser.mockResolvedValue({
         items: [
           attemptFixture({
@@ -212,9 +200,10 @@ describe('UserService', () => {
         },
       });
 
-      const result = await service.getUserAttempts('user@test.com', { page: 1, limit: 10 });
+      const result = await service.getUserAttempts('user-1', { page: 1, limit: 10 });
 
       expect(result.attempts).toHaveLength(1);
+      expect(userRepository.findByEmail).not.toHaveBeenCalled();
       expect(result.attempts[0]).toMatchObject({
         id: 'attempt-1',
         score: 80,
@@ -226,19 +215,8 @@ describe('UserService', () => {
       });
     });
 
-    it('throws when user is not found', async () => {
-      const { service, userRepository } = createService();
-      userRepository.findByEmail.mockResolvedValue(null);
-
-      await expect(
-        service.getUserAttempts('missing@test.com', { page: 1, limit: 10 }),
-      ).rejects.toThrow('User not found');
-      expect(userRepository.findByEmail).toHaveBeenCalledWith('missing@test.com');
-    });
-
     it('fails fast when repository returns an attempt without populated quiz snapshot', async () => {
-      const { service, userRepository, attemptRepository } = createService();
-      userRepository.findByEmail.mockResolvedValue(userFixture());
+      const { service, attemptRepository } = createService();
       attemptRepository.findByUser.mockResolvedValue({
         items: [
           attemptFixture({
@@ -259,14 +237,13 @@ describe('UserService', () => {
         },
       });
 
-      await expect(
-        service.getUserAttempts('user@test.com', { page: 1, limit: 10 }),
-      ).rejects.toThrow('attempt.quiz is required');
+      await expect(service.getUserAttempts('user-1', { page: 1, limit: 10 })).rejects.toThrow(
+        'attempt.quiz is required',
+      );
     });
 
     it('passes pagination options to repository', async () => {
-      const { service, userRepository, attemptRepository } = createService();
-      userRepository.findByEmail.mockResolvedValue(userFixture());
+      const { service, attemptRepository } = createService();
       attemptRepository.findByUser.mockResolvedValue({
         items: [],
         pagination: {
@@ -279,7 +256,7 @@ describe('UserService', () => {
         },
       });
 
-      const result = await service.getUserAttempts('user@test.com', { page: 2, limit: 10 });
+      const result = await service.getUserAttempts('user-1', { page: 2, limit: 10 });
 
       expect(attemptRepository.findByUser).toHaveBeenCalledWith('user-1', {
         page: 2,
@@ -292,7 +269,6 @@ describe('UserService', () => {
   describe('getAttemptDetails', () => {
     it('returns formatted attempt details for authenticated user', async () => {
       const { service, userRepository, attemptRepository } = createService();
-      userRepository.findByEmail.mockResolvedValue(userFixture());
       attemptRepository.findByIdWithQuiz.mockResolvedValue(
         attemptFixture({
           id: 'attempt-1',
@@ -325,17 +301,20 @@ describe('UserService', () => {
         }),
       );
 
-      const result = await service.getAttemptDetails('attempt-1', 'user@test.com');
+      const result = await service.getAttemptDetails('attempt-1', { userId: 'user-1' });
 
       assertOk(result);
+      expect(userRepository.findByEmail).not.toHaveBeenCalled();
+      expect(attemptRepository.findByIdWithQuiz).toHaveBeenCalledWith('attempt-1', {
+        userId: 'user-1',
+      });
       expect(result.data.quiz.questions).toHaveLength(2);
       expect(result.data.quiz.questions[0]?.isCorrect).toBe(true);
       expect(result.data.quiz.questions[1]?.isCorrect).toBe(true);
     });
 
     it('handles anonymous users (no user record)', async () => {
-      const { service, userRepository, attemptRepository } = createService();
-      userRepository.findByEmail.mockResolvedValue(null);
+      const { service, attemptRepository } = createService();
       attemptRepository.findByIdWithQuiz.mockResolvedValue(
         attemptFixture({
           id: 'attempt-1',
@@ -360,7 +339,9 @@ describe('UserService', () => {
         }),
       );
 
-      const result = await service.getAttemptDetails('attempt-1', 'anon@test.com');
+      const result = await service.getAttemptDetails('attempt-1', {
+        guestEmail: 'anon@test.com',
+      });
 
       assertOk(result);
       expect(attemptRepository.findByIdWithQuiz).toHaveBeenCalledWith('attempt-1', {
@@ -369,11 +350,10 @@ describe('UserService', () => {
     });
 
     it('returns 404 when attempt is not found', async () => {
-      const { service, userRepository, attemptRepository } = createService();
-      userRepository.findByEmail.mockResolvedValue(userFixture());
+      const { service, attemptRepository } = createService();
       attemptRepository.findByIdWithQuiz.mockResolvedValue(null);
 
-      const result = await service.getAttemptDetails('missing', 'user@test.com');
+      const result = await service.getAttemptDetails('missing', { userId: 'user-1' });
 
       assertFail(result);
       expect(result.error).toBe('Attempt not found');
@@ -381,11 +361,10 @@ describe('UserService', () => {
     });
 
     it('returns 500 on repository error', async () => {
-      const { service, userRepository, attemptRepository } = createService();
-      userRepository.findByEmail.mockResolvedValue(userFixture());
+      const { service, attemptRepository } = createService();
       attemptRepository.findByIdWithQuiz.mockRejectedValue(new Error('db error'));
 
-      const result = await service.getAttemptDetails('attempt-1', 'user@test.com');
+      const result = await service.getAttemptDetails('attempt-1', { userId: 'user-1' });
 
       assertFail(result);
       expect(result.error).toBe('Failed to get attempt details');

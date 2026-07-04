@@ -10,18 +10,14 @@ const userService = serviceFactory.getUserService();
 
 export const dynamic = 'force-dynamic';
 
-export const GET = withAuth(async (request: NextRequest, { email }) => {
+export const GET = withAuth(async (request: NextRequest, { userId }) => {
   try {
-    if (!email) {
-      return apiErr('unauthorized', 'Authentication required', 401);
-    }
-
     const query = readAndValidateSearchParams(request, userAttemptListQuerySchema);
     if (!query.success) {
       return apiErr('validation_error', query.error, 400, { fields: query.fields });
     }
 
-    const result = await userService.getUserAttempts(email, query.data);
+    const result = await userService.getUserAttempts(userId, query.data);
 
     return apiOk({
       attempts: result.attempts,

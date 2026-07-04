@@ -1,6 +1,7 @@
 import { IUserService } from '@/interfaces/services/IUserService';
 import { IUserRepository } from '@/interfaces/repositories/IUserRepository';
 import { IAttemptRepository } from '@/interfaces/repositories/IAttemptRepository';
+import type { AttemptOwner } from '@/interfaces/services/IUserService';
 import type { IQuizRepository } from '@/interfaces/repositories/IQuizRepository';
 import { ServiceResult } from '@/interfaces/services/types';
 import type {
@@ -48,18 +49,11 @@ export class UserService implements IUserService {
   }
 
   async getUserAttempts(
-    userEmail: string,
+    userId: string,
     options: UserAttemptListQueryDto,
   ): Promise<UserAttemptListDto> {
     try {
-      // Find user first
-      const user = await this.userRepository.findByEmail(userEmail);
-
-      if (!user) {
-        throw new Error('User not found');
-      }
-
-      const result = await this.attemptRepository.findByUser(user.id, options);
+      const result = await this.attemptRepository.findByUser(userId, options);
       return UserAttemptDtoMapper.toListDto(result.items, result.pagination);
     } catch (error) {
       logger.error({ error }, 'Get user attempts error');
@@ -69,14 +63,9 @@ export class UserService implements IUserService {
 
   async getAttemptDetails(
     attemptId: string,
-    userEmail: string,
+    owner: AttemptOwner,
   ): Promise<ServiceResult<AttemptDetailDto>> {
     try {
-      // Find user
-      const user = await this.userRepository.findByEmail(userEmail);
-      const owner = user ? { userId: user.id } : { guestEmail: userEmail };
-
-      // Get attempt with quiz details
       const attempt = await this.attemptRepository.findByIdWithQuiz(attemptId, owner);
 
       if (!attempt) {

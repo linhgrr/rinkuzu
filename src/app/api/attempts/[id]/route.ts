@@ -8,7 +8,7 @@ import { readAndValidateRouteParams, readAndValidateSearchParams } from '@/lib/a
 
 // This route accepts BOTH authenticated users (via session) and anonymous
 // users that pass `userEmail` as a query param to inspect their own attempt.
-export const GET = withOptionalAuth(async (request: NextRequest, { params, email }) => {
+export const GET = withOptionalAuth(async (request: NextRequest, { params, userId }) => {
   try {
     const parsedParams = readAndValidateRouteParams(params, attemptIdRouteParamsSchema);
     if (!parsedParams.success) {
@@ -21,19 +21,13 @@ export const GET = withOptionalAuth(async (request: NextRequest, { params, email
     }
     const userEmailParam = query.data.userEmail;
 
-    // Check if user is authenticated or has userEmail
-    if (!email && !userEmailParam) {
+    const owner = userId ? { userId } : userEmailParam ? { guestEmail: userEmailParam } : null;
+    if (!owner) {
       return apiErr('unauthorized', 'Authentication required or userEmail parameter', 401);
     }
 
     const userService = serviceFactory.getUserService();
-
-    // Use session email if available, otherwise use userEmail from params
-    const resolvedEmail = email ?? userEmailParam;
-    if (!resolvedEmail) {
-      return apiErr('unauthorized', 'Authentication required or userEmail parameter', 401);
-    }
-    const result = await userService.getAttemptDetails(parsedParams.data.id, resolvedEmail);
+    const result = await userService.getAttemptDetails(parsedParams.data.id, owner);
 
     if (!result.success) {
       return apiServiceErr(result);

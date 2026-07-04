@@ -12,6 +12,7 @@ import type {
 import type {
   BloomLevel,
   Exercise,
+  ExerciseApiResponse,
   ExerciseType,
   SubmitAnswerPayload,
   SubmitResult,
@@ -48,13 +49,10 @@ import { AdaptiveApiError } from './adaptive-api-error';
 import { BLOOM_LABELS } from '@/features/adaptive/types/learning';
 import {
   toPipelineJobHistoryItem,
-  toPipelineStatus,
   toSubjectProgressItem,
 } from '@/features/adaptive/mappers/pipeline.mapper';
 
 type ApiSchemas = components['schemas'];
-type ExercisePair = { left: string; right: string };
-
 const EXERCISE_TYPES: ReadonlySet<string> = new Set<ExerciseType>([
   'mcq',
   'true_false',
@@ -63,12 +61,6 @@ const EXERCISE_TYPES: ReadonlySet<string> = new Set<ExerciseType>([
   'ordering',
   'matching',
   'short_answer',
-]);
-
-const OPTION_EXERCISE_TYPES: ReadonlySet<ExerciseType> = new Set<ExerciseType>([
-  'mcq',
-  'true_false',
-  'multi_correct',
 ]);
 
 const BLOOM_LEVELS: ReadonlySet<string> = new Set<BloomLevel>(BLOOM_LABELS);
@@ -108,21 +100,6 @@ function normalizeConceptStatus(status: string, context: string): ConceptStatus 
   throw invalidAdaptiveEnvelope(`Unsupported adaptive concept status: ${status}`, context);
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
-function readString(record: Record<string, unknown>, key: string, context: string): string {
-  const value = record[key];
-  if (typeof value === 'string') return value;
-  throw new AdaptiveApiError({
-    message: `Invalid adaptive response field: ${key}`,
-    code: 'upstream_invalid_envelope',
-    detail: context,
-    retryable: true,
-  });
-}
-
 function readNumber(record: Record<string, unknown>, key: string, context: string): number {
   const value = record[key];
   if (typeof value === 'number' && Number.isFinite(value)) return value;
@@ -134,147 +111,48 @@ function readNumber(record: Record<string, unknown>, key: string, context: strin
   });
 }
 
-function readNullableBoolean(
-  record: Record<string, unknown>,
-  key: string,
-  context: string,
-): boolean | null {
-  const value = record[key];
-  if (typeof value === 'boolean' || value === null) return value;
-  throw new AdaptiveApiError({
-    message: `Invalid adaptive response field: ${key}`,
-    code: 'upstream_invalid_envelope',
-    detail: context,
-    retryable: true,
-  });
-}
-
-function readNullableString(
-  record: Record<string, unknown>,
-  key: string,
-  context: string,
-): string | null {
-  const value = record[key];
-  if (typeof value === 'string' || value === null) return value;
-  throw new AdaptiveApiError({
-    message: `Invalid adaptive response field: ${key}`,
-    code: 'upstream_invalid_envelope',
-    detail: context,
-    retryable: true,
-  });
-}
-
-function readOptionalNullableString(
-  record: Record<string, unknown>,
-  key: string,
-  context: string,
-): string | null | undefined {
-  return key in record ? readNullableString(record, key, context) : undefined;
-}
-
-function readOptionalStringArray(
-  record: Record<string, unknown>,
-  key: string,
-  context: string,
-): string[] | undefined {
-  if (!(key in record)) return undefined;
-  const value = record[key];
+function requireStringArray(value: string[] | undefined, field: string, context: string): string[] {
   if (Array.isArray(value) && value.every((item) => typeof item === 'string')) return value;
-  throw invalidAdaptiveEnvelope(`Invalid adaptive response field: ${key}`, context);
+  throw invalidAdaptiveEnvelope(`Missing ${field}`, context);
 }
 
-function readOptionalStringRecord(
-  record: Record<string, unknown>,
-  key: string,
-  context: string,
-): Record<string, string> | undefined {
-  if (!(key in record)) return undefined;
-  const value = record[key];
-  if (isRecord(value) && Object.values(value).every((item) => typeof item === 'string')) {
-    return value as Record<string, string>;
-  }
-  throw invalidAdaptiveEnvelope(`Invalid adaptive response field: ${key}`, context);
+function requireString(value: string | undefined, field: string, context: string): string {
+  if (typeof value === 'string') return value;
+  throw invalidAdaptiveEnvelope(`Missing ${field}`, context);
 }
 
-function readOptionalPairs(
-  record: Record<string, unknown>,
-  key: string,
-  context: string,
-): ExercisePair[] | undefined {
-  if (!(key in record)) return undefined;
-  const value = record[key];
-  if (
-    Array.isArray(value) &&
-    value.every(
-      (item) =>
-        isRecord(item) && typeof item['left'] === 'string' && typeof item['right'] === 'string',
-    )
-  ) {
-    return value.map((item) => {
-      const pair = item as ExercisePair;
-      return { left: pair.left, right: pair.right };
-    });
-  }
-  throw invalidAdaptiveEnvelope(`Invalid adaptive response field: ${key}`, context);
-}
-
-function readOptionalCorrectAnswer(
-  record: Record<string, unknown>,
-  context: string,
-): ExerciseHistoryFull['correct_answer'] {
-  const value = record['correct_answer'];
-  if (
-    value === undefined ||
-    value === null ||
-    typeof value === 'string' ||
-    typeof value === 'boolean' ||
-    (Array.isArray(value) && value.every((item) => typeof item === 'string')) ||
-    (isRecord(value) && Object.values(value).every((item) => typeof item === 'string'))
-  ) {
-    return value as ExerciseHistoryFull['correct_answer'];
-  }
-  throw invalidAdaptiveEnvelope('Invalid adaptive response field: correct_answer', context);
-}
-
-function normalizeExerciseOptions(
-  options: Record<string, string> | undefined,
-  exerciseType: ExerciseType,
+function requireStringRecord(
+  value: Record<string, string> | undefined,
+  field: string,
   context: string,
 ): Record<string, string> {
-  if (options) return options;
-  if (OPTION_EXERCISE_TYPES.has(exerciseType)) {
-    throw invalidAdaptiveEnvelope(`Missing options for ${exerciseType} exercise`, context);
+  if (
+    value &&
+    typeof value === 'object' &&
+    !Array.isArray(value) &&
+    Object.values(value).every((item) => typeof item === 'string')
+  ) {
+    return value;
   }
-  return {};
+  throw invalidAdaptiveEnvelope(`Missing ${field}`, context);
 }
 
-function normalizeExerciseItems(
-  items: string[] | undefined,
-  exerciseType: ExerciseType,
+function requireExercisePairs(
+  value: ApiSchemas['MatchingPairPayload'][] | undefined,
+  field: string,
   context: string,
-): string[] {
-  if (items) return items;
-  if (exerciseType === 'ordering') {
-    throw invalidAdaptiveEnvelope('Missing items for ordering exercise', context);
+): ApiSchemas['MatchingPairPayload'][] {
+  if (
+    Array.isArray(value) &&
+    value.every((item) => typeof item.left === 'string' && typeof item.right === 'string')
+  ) {
+    return value;
   }
-  return [];
+  throw invalidAdaptiveEnvelope(`Missing ${field}`, context);
 }
 
-function normalizeExercisePairs(
-  pairs: ExercisePair[] | undefined,
-  exerciseType: ExerciseType,
-  context: string,
-): ExercisePair[] {
-  if (pairs) return pairs;
-  if (exerciseType === 'matching') {
-    throw invalidAdaptiveEnvelope('Missing pairs for matching exercise', context);
-  }
-  return [];
-}
-
-function normalizeExerciseResponse(response: ApiSchemas['ExerciseResponse']): Exercise {
+function normalizeExerciseResponse(response: ExerciseApiResponse): Exercise {
   const context = `exercise ${response.exercise_id}`;
-  const raw = response as ApiSchemas['ExerciseResponse'] & Record<string, unknown>;
   const exerciseType = normalizeExerciseType(response.exercise_type, context);
   const recommendationReason = response.recommendation_reason
     ? {
@@ -287,26 +165,62 @@ function normalizeExerciseResponse(response: ApiSchemas['ExerciseResponse']): Ex
       }
     : response.recommendation_reason;
 
-  return {
+  const common = {
     ...response,
     id: response.exercise_id,
     bloom_level: normalizeBloomLevel(response.bloom_level, context),
     bloom_label: normalizeBloomLabel(response.bloom_label, context),
     exercise_type: exerciseType,
-    options: normalizeExerciseOptions(
-      readOptionalStringRecord(raw, 'options', context),
-      exerciseType,
-      context,
-    ),
-    items: normalizeExerciseItems(
-      readOptionalStringArray(raw, 'items', context),
-      exerciseType,
-      context,
-    ),
-    pairs: normalizeExercisePairs(readOptionalPairs(raw, 'pairs', context), exerciseType, context),
-    right_items: readOptionalStringArray(raw, 'right_items', context) ?? [],
+    options: {},
+    items: [],
+    pairs: [],
+    right_items: [],
     recommendation_reason: recommendationReason,
   };
+
+  switch (response.exercise_type) {
+    case 'mcq':
+    case 'multi_correct':
+      return {
+        ...common,
+        options: requireStringRecord(
+          response.options,
+          `options for ${response.exercise_type} exercise`,
+          context,
+        ),
+      };
+    case 'true_false':
+      return {
+        ...common,
+        statement: requireString(response.statement, 'statement for true_false exercise', context),
+      };
+    case 'fill_blank':
+      return {
+        ...common,
+        sentence: requireString(response.sentence, 'sentence for fill_blank exercise', context),
+        hint: requireString(response.hint, 'hint for fill_blank exercise', context),
+      };
+    case 'ordering':
+      return {
+        ...common,
+        items: requireStringArray(response.items, 'items for ordering exercise', context),
+      };
+    case 'matching':
+      return {
+        ...common,
+        pairs: requireExercisePairs(response.pairs, 'pairs for matching exercise', context),
+        right_items: requireStringArray(
+          response.right_items,
+          'right_items for matching exercise',
+          context,
+        ),
+      };
+    case 'short_answer':
+      return {
+        ...common,
+        rubric: requireStringArray(response.rubric, 'rubric for short_answer exercise', context),
+      };
+  }
 }
 
 function normalizeSubmitResult(response: ApiSchemas['SubmitAnswerResponse']): SubmitResult {
@@ -346,58 +260,94 @@ function normalizeConceptDetail(response: ApiSchemas['ConceptDetailResponse']): 
 }
 
 function normalizeExerciseHistoryItem(
-  item: Record<string, unknown>,
+  item: ApiSchemas['ExerciseHistoryResponse'],
   index: number,
 ): ExerciseHistoryFull {
   const context = `subject exercise_history[${index}]`;
-  const exerciseType = normalizeExerciseType(readString(item, 'exercise_type', context), context);
-
-  return {
-    exercise_id: readString(item, 'exercise_id', context),
-    concept_idx: readNumber(item, 'concept_idx', context),
-    concept_name: readString(item, 'concept_name', context),
-    bloom_level: normalizeBloomLevel(readNumber(item, 'bloom_level', context), context),
-    question: readString(item, 'question', context),
-    sentence: readOptionalNullableString(item, 'sentence', context),
-    exercise_type: exerciseType,
-    options: normalizeExerciseOptions(
-      readOptionalStringRecord(item, 'options', context),
-      exerciseType,
-      context,
-    ),
-    statement: readOptionalNullableString(item, 'statement', context),
-    hint: readOptionalNullableString(item, 'hint', context),
-    items: normalizeExerciseItems(
-      readOptionalStringArray(item, 'items', context),
-      exerciseType,
-      context,
-    ),
-    pairs: normalizeExercisePairs(readOptionalPairs(item, 'pairs', context), exerciseType, context),
-    right_items: readOptionalStringArray(item, 'right_items', context) ?? [],
-    rubric: readOptionalStringArray(item, 'rubric', context),
-    correct_answer: readOptionalCorrectAnswer(item, context),
-    correct_option: readString(item, 'correct_option', context),
-    explanation: readString(item, 'explanation', context),
-    user_answer: readNullableString(item, 'user_answer', context),
-    is_correct: readNullableBoolean(item, 'is_correct', context),
-    timestamp: readNumber(item, 'timestamp', context),
+  const { payload, ...history } = item;
+  const common = {
+    ...history,
+    bloom_level: normalizeBloomLevel(item.bloom_level, context),
+    sentence: null,
+    options: {},
+    statement: null,
+    hint: null,
+    items: [],
+    pairs: [],
+    right_items: [],
+    correct_answer: null,
+    correct_option: '',
   };
+
+  switch (payload.exercise_type) {
+    case 'mcq':
+      return {
+        ...common,
+        exercise_type: payload.exercise_type,
+        options: payload.options,
+        correct_option: payload.correct_option,
+      };
+    case 'true_false':
+      return {
+        ...common,
+        exercise_type: payload.exercise_type,
+        statement: payload.statement,
+        correct_answer: payload.correct_answer,
+        correct_option: String(payload.correct_answer),
+      };
+    case 'fill_blank':
+      return {
+        ...common,
+        exercise_type: payload.exercise_type,
+        sentence: payload.sentence,
+        hint: payload.hint,
+        correct_answer: payload.blank_answers,
+        correct_option: payload.blank_answers.join(', '),
+      };
+    case 'multi_correct':
+      return {
+        ...common,
+        exercise_type: payload.exercise_type,
+        options: payload.options,
+        correct_answer: payload.correct_options,
+        correct_option: payload.correct_options.join(', '),
+      };
+    case 'ordering':
+      return {
+        ...common,
+        exercise_type: payload.exercise_type,
+        items: payload.correct_order,
+        correct_answer: payload.correct_order,
+        correct_option: payload.correct_order.join('\n'),
+      };
+    case 'matching': {
+      const correctAnswer = Object.fromEntries(
+        payload.pairs.map((pair) => [pair.left, pair.right]),
+      );
+      return {
+        ...common,
+        exercise_type: payload.exercise_type,
+        pairs: payload.pairs,
+        right_items: payload.pairs.map((pair) => pair.right),
+        correct_answer: correctAnswer,
+        correct_option: payload.pairs.map((pair) => `${pair.left} → ${pair.right}`).join('\n'),
+      };
+    }
+    case 'short_answer':
+      return {
+        ...common,
+        exercise_type: payload.exercise_type,
+        rubric: payload.rubric,
+        correct_answer: payload.sample_answer,
+        correct_option: payload.sample_answer,
+      };
+  }
 }
 
 function normalizeExerciseHistory(
   exerciseHistory: ApiSchemas['SubjectHistoryDetailResponse']['exercise_history'],
 ): ExerciseHistoryFull[] {
-  return exerciseHistory.map((item, index) => {
-    if (!isRecord(item)) {
-      throw new AdaptiveApiError({
-        message: 'Invalid adaptive history item',
-        code: 'upstream_invalid_envelope',
-        detail: `subject exercise_history[${index}]`,
-        retryable: true,
-      });
-    }
-    return normalizeExerciseHistoryItem(item, index);
-  });
+  return exerciseHistory.map(normalizeExerciseHistoryItem);
 }
 
 function normalizeSubjectHistoryDetail(
@@ -405,7 +355,6 @@ function normalizeSubjectHistoryDetail(
 ): SubjectHistoryDetail {
   return {
     ...detail,
-    status: toPipelineStatus(detail.status, `subject history detail ${detail.job_id}`),
     exercise_history: normalizeExerciseHistory(detail.exercise_history),
   };
 }
@@ -432,7 +381,7 @@ export async function getTheory(sessionId: string): Promise<TheoryData> {
 }
 
 export async function getExercise(sessionId: string): Promise<Exercise> {
-  const response = await apiFetch<ApiSchemas['ExerciseResponse']>(
+  const response = await apiFetch<ExerciseApiResponse>(
     `/api/adaptive/session/${sessionId}/exercise`,
     {
       method: 'POST',
@@ -522,7 +471,7 @@ export async function uploadPdf(
         fileName: file.name,
         contentType: file.type || 'application/pdf',
         fileSize: file.size,
-        purpose: 'quiz',
+        purpose: 'adaptive',
       }),
       timeoutMs: PRESIGNED_URL_TIMEOUT_MS,
     },
@@ -619,10 +568,21 @@ export async function prefetchStartLearningData(sessionId: string): Promise<void
  * Used by the Dashboard to show the "My Subjects" grid.
  */
 export async function getSubjects(): Promise<PipelineJobHistoryItem[]> {
-  const res = await apiFetch<ApiSchemas['SubjectHistoryResponse'][]>('/api/adaptive/subjects', {
+  const res = await apiFetch<ApiSchemas['SubjectHistoryListResponse']>('/api/adaptive/subjects', {
     cacheTtlMs: 10_000,
   });
-  return res.map(toPipelineJobHistoryItem);
+  return res.subjects.map(toPipelineJobHistoryItem);
+}
+
+export async function getSubjectsFresh(): Promise<PipelineJobHistoryItem[]> {
+  const res = await executeRequest<ApiSchemas['SubjectHistoryListResponse']>(
+    '/api/adaptive/subjects',
+    'GET',
+    {
+      cache: 'no-store',
+    },
+  );
+  return res.subjects.map(toPipelineJobHistoryItem);
 }
 
 export async function deleteSubject(

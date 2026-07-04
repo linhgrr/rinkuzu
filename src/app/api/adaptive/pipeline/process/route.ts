@@ -8,8 +8,10 @@ import { withAuth } from '@/lib/api/auth';
 import { readAndValidateJson } from '@/lib/api/request';
 import { adaptivePipelineProcessRequestSchema } from '@/dtos/adaptive-pipeline';
 import { logger } from '@/lib/logger';
+import type { components } from '@/generated/adaptive-api';
 
 export const dynamic = 'force-dynamic';
+type ApiSchemas = components['schemas'];
 
 export const POST = withAuth(async (req, { userId, session }) => {
   try {
@@ -32,8 +34,10 @@ export const POST = withAuth(async (req, { userId, session }) => {
       filename,
       source_s3_key: s3Key,
       ...(subject_id ? { subject_id } : {}),
-      ...(typeof page_batch_size === 'number' ? { page_batch_size } : {}),
-    };
+      page_batch_size,
+      min_confidence: 0.6,
+      apply_reduction: true,
+    } satisfies ApiSchemas['ProcessDocumentRequest'];
 
     const response = await proxyAdaptiveRequest(
       req,

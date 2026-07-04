@@ -1,7 +1,6 @@
 import { env } from '@/lib/env';
 import { publicEnv } from '@/lib/public-env';
-
-export type AdaptiveUserRole = 'admin' | 'user';
+import type { UserRole } from '@/types/next-auth';
 
 export function resolveAdaptiveApiUrl(): string {
   return publicEnv.NEXT_PUBLIC_API_URL;
@@ -13,7 +12,7 @@ export function resolveAdaptiveProxyTimeoutMs(): number {
 
 export function buildAdaptiveServiceHeaders(
   userId?: string,
-  userRole?: AdaptiveUserRole | null,
+  userRole?: UserRole | null,
 ): Record<string, string> {
   return {
     ...(userId ? { 'x-user-id': userId } : {}),

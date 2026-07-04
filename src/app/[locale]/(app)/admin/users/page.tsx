@@ -33,13 +33,13 @@ import {
 } from '@/features/admin/users/api/admin-users-api';
 import type {
   AdminUserListViewModel,
-  AdminUserRoleViewModel,
   AdminUsersPaginationViewModel,
   AdminUserViewModel,
 } from '@/features/admin/users/types/admin-users-view-model';
 import { fetchAdminBillingPlanViewModels } from '@/features/admin/plans/api/admin-plans-api';
 import type { AdminBillingPlanViewModel } from '@/features/admin/plans/types/admin-plans-view-model';
 import { extractUnknownErrorMessage } from '@/lib/api/error';
+import type { UserRole } from '@/types/next-auth';
 
 type TranslateFn = (key: string, values?: Record<string, string | number | Date>) => string;
 type AdminUsersModal = 'delete' | 'role' | 'subscription' | null;
@@ -88,7 +88,7 @@ interface UsersTableProps extends AdminUsersTranslationProps, UserActionCallback
 interface RoleModalProps extends AdminUsersTranslationProps {
   isOpen: boolean;
   selectedUser: AdminUserViewModel | null;
-  newRole: AdminUserRoleViewModel;
+  newRole: UserRole;
   actionLoading: string | null;
   onClose: () => void;
   onConfirm: () => void;
@@ -132,7 +132,7 @@ interface AdminUsersState {
   page: number;
   activeModal: AdminUsersModal;
   selectedUser: AdminUserViewModel | null;
-  newRole: AdminUserRoleViewModel;
+  newRole: UserRole;
   selectedPlanId: string;
 }
 

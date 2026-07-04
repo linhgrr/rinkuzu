@@ -6,9 +6,7 @@ export type PipelineStatus = ApiSchemas['PipelineStatus'];
 export type PipelineUploadResponse = ApiSchemas['PipelineProcessResponse'];
 export type PipelineJobStatus = ApiSchemas['PipelineJobStatusResponse'];
 export type PipelineSessionResponse = ApiSchemas['PipelineSessionCreateResponse'];
-export type PipelineJobHistoryItem = Omit<ApiSchemas['SubjectHistoryResponse'], 'status'> & {
-  status: PipelineStatus;
-};
+export type PipelineJobHistoryItem = ApiSchemas['SubjectHistoryResponse'];
 export type PipelineJobListItem = ApiSchemas['PipelineJobListItemResponse'];
 export type PipelineJobRetryResponse = ApiSchemas['PipelineJobRetryResponse'];
 export type PipelineJobCancelResponse = ApiSchemas['PipelineJobCancelResponse'];

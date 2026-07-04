@@ -586,6 +586,11 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    /**
+     * BloomLabel
+     * @enum {string}
+     */
+    BloomLabel: 'Remember' | 'Understand' | 'Apply' | 'Analyze' | 'Evaluate' | 'Create';
     /** ConceptDetailResponse */
     ConceptDetailResponse: {
       /** Id */
@@ -596,8 +601,7 @@ export interface components {
       definition: string;
       /** Mastery */
       mastery: number;
-      /** Status */
-      status: string;
+      status: components['schemas']['ConceptStatus'];
       /** Bloom Mastery */
       bloom_mastery: number[];
       /** Prerequisites */
@@ -618,6 +622,11 @@ export interface components {
       /** Mastery */
       mastery: number;
     };
+    /**
+     * ConceptStatus
+     * @enum {string}
+     */
+    ConceptStatus: 'locked' | 'available' | 'in_progress' | 'mastered';
     /** DeleteSubjectResponse */
     DeleteSubjectResponse: {
       /** Job Id */
@@ -626,11 +635,49 @@ export interface components {
       deleted_job: number;
       /** Deleted Sessions */
       deleted_sessions: number;
-      /** Status */
-      status: string;
+      /**
+       * Status
+       * @constant
+       */
+      status: 'deleted';
     };
-    /** ExerciseResponse */
-    ExerciseResponse: {
+    /** ExerciseHistoryResponse */
+    ExerciseHistoryResponse: {
+      /** Exercise Id */
+      exercise_id: string;
+      /** Concept Idx */
+      concept_idx: number;
+      /** Concept Name */
+      concept_name: string;
+      /** Bloom Level */
+      bloom_level: number;
+      /** Question */
+      question: string;
+      /** Explanation */
+      explanation: string;
+      /** Payload */
+      payload:
+        | components['schemas']['MCQPayload']
+        | components['schemas']['TrueFalsePayload']
+        | components['schemas']['FillBlankPayload']
+        | components['schemas']['MultiCorrectPayload']
+        | components['schemas']['OrderingPayload']
+        | components['schemas']['MatchingPayload']
+        | components['schemas']['ShortAnswerPayload'];
+      /** Explanation Correct */
+      explanation_correct: string;
+      /** Explanation Incorrect */
+      explanation_incorrect: string;
+      theory: components['schemas']['TheoryResponse'] | null;
+      /** User Answer */
+      user_answer: string | null;
+      /** Is Correct */
+      is_correct: boolean | null;
+      /** Timestamp */
+      timestamp: number;
+    };
+    /** FillBlankExerciseResponse */
+    FillBlankExerciseResponse: {
       /** Exercise Id */
       exercise_id: string;
       /** Concept Name */
@@ -639,49 +686,39 @@ export interface components {
       concept_idx: number;
       /** Bloom Level */
       bloom_level: number;
-      /** Bloom Label */
-      bloom_label: string;
-      /** @default mcq */
-      exercise_type: components['schemas']['ExerciseType'];
+      bloom_label: components['schemas']['BloomLabel'];
       /** Question */
       question: string;
-      /** Sentence */
-      sentence?: string | null;
-      /** Options */
-      options?: {
-        [key: string]: string;
-      };
-      /** Statement */
-      statement?: string | null;
-      /** Hint */
-      hint?: string | null;
-      /** Items */
-      items?: string[];
-      /** Pairs */
-      pairs?: {
-        [key: string]: string;
-      }[];
-      /** Right Items */
-      right_items?: string[];
       /** Step */
       step: number;
       /** Max Steps */
       max_steps: number;
       theory?: components['schemas']['TheoryResponse'] | null;
       recommendation_reason?: components['schemas']['RecommendationReason'] | null;
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      exercise_type: 'fill_blank';
+      /** Sentence */
+      sentence: string;
+      /** Hint */
+      hint: string;
     };
-    /**
-     * ExerciseType
-     * @enum {string}
-     */
-    ExerciseType:
-      | 'mcq'
-      | 'true_false'
-      | 'fill_blank'
-      | 'multi_correct'
-      | 'ordering'
-      | 'matching'
-      | 'short_answer';
+    /** FillBlankPayload */
+    FillBlankPayload: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      exercise_type: 'fill_blank';
+      /** Sentence */
+      sentence: string;
+      /** Hint */
+      hint: string;
+      /** Blank Answers */
+      blank_answers: string[];
+    };
     /** HTTPValidationError */
     HTTPValidationError: {
       /** Detail */
@@ -724,10 +761,57 @@ export interface components {
       name: string;
       /** Mastery */
       mastery: number;
-      /** Status */
-      status: string;
+      status: components['schemas']['ConceptStatus'];
       /** Visited */
       visited: boolean;
+    };
+    /**
+     * LearningSessionStatus
+     * @enum {string}
+     */
+    LearningSessionStatus: 'active' | 'completed';
+    /** MCQExerciseResponse */
+    MCQExerciseResponse: {
+      /** Exercise Id */
+      exercise_id: string;
+      /** Concept Name */
+      concept_name: string;
+      /** Concept Idx */
+      concept_idx: number;
+      /** Bloom Level */
+      bloom_level: number;
+      bloom_label: components['schemas']['BloomLabel'];
+      /** Question */
+      question: string;
+      /** Step */
+      step: number;
+      /** Max Steps */
+      max_steps: number;
+      theory?: components['schemas']['TheoryResponse'] | null;
+      recommendation_reason?: components['schemas']['RecommendationReason'] | null;
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      exercise_type: 'mcq';
+      /** Options */
+      options: {
+        [key: string]: string;
+      };
+    };
+    /** MCQPayload */
+    MCQPayload: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      exercise_type: 'mcq';
+      /** Options */
+      options: {
+        [key: string]: string;
+      };
+      /** Correct Option */
+      correct_option: string;
     };
     /** MasteryMatrixResponse */
     MasteryMatrixResponse: {
@@ -745,6 +829,95 @@ export interface components {
       /** Bloom Levels */
       bloom_levels: number[];
     };
+    /** MatchingExerciseResponse */
+    MatchingExerciseResponse: {
+      /** Exercise Id */
+      exercise_id: string;
+      /** Concept Name */
+      concept_name: string;
+      /** Concept Idx */
+      concept_idx: number;
+      /** Bloom Level */
+      bloom_level: number;
+      bloom_label: components['schemas']['BloomLabel'];
+      /** Question */
+      question: string;
+      /** Step */
+      step: number;
+      /** Max Steps */
+      max_steps: number;
+      theory?: components['schemas']['TheoryResponse'] | null;
+      recommendation_reason?: components['schemas']['RecommendationReason'] | null;
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      exercise_type: 'matching';
+      /** Pairs */
+      pairs: components['schemas']['MatchingPairPayload'][];
+      /** Right Items */
+      right_items: string[];
+    };
+    /** MatchingPairPayload */
+    MatchingPairPayload: {
+      /** Left */
+      left: string;
+      /** Right */
+      right: string;
+    };
+    /** MatchingPayload */
+    MatchingPayload: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      exercise_type: 'matching';
+      /** Pairs */
+      pairs: components['schemas']['MatchingPairPayload'][];
+    };
+    /** MultiCorrectExerciseResponse */
+    MultiCorrectExerciseResponse: {
+      /** Exercise Id */
+      exercise_id: string;
+      /** Concept Name */
+      concept_name: string;
+      /** Concept Idx */
+      concept_idx: number;
+      /** Bloom Level */
+      bloom_level: number;
+      bloom_label: components['schemas']['BloomLabel'];
+      /** Question */
+      question: string;
+      /** Step */
+      step: number;
+      /** Max Steps */
+      max_steps: number;
+      theory?: components['schemas']['TheoryResponse'] | null;
+      recommendation_reason?: components['schemas']['RecommendationReason'] | null;
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      exercise_type: 'multi_correct';
+      /** Options */
+      options: {
+        [key: string]: string;
+      };
+    };
+    /** MultiCorrectPayload */
+    MultiCorrectPayload: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      exercise_type: 'multi_correct';
+      /** Options */
+      options: {
+        [key: string]: string;
+      };
+      /** Correct Options */
+      correct_options: string[];
+    };
     /** NextConceptResponse */
     NextConceptResponse: {
       /** Concept Name */
@@ -753,12 +926,53 @@ export interface components {
       concept_idx: number;
       /** Bloom Level */
       bloom_level: number;
-      /** Bloom Label */
-      bloom_label: string;
+      bloom_label: components['schemas']['BloomLabel'];
       /** Step */
       step: number;
       /** Max Steps */
       max_steps: number;
+    };
+    /** OrderingExerciseResponse */
+    OrderingExerciseResponse: {
+      /** Exercise Id */
+      exercise_id: string;
+      /** Concept Name */
+      concept_name: string;
+      /** Concept Idx */
+      concept_idx: number;
+      /** Bloom Level */
+      bloom_level: number;
+      bloom_label: components['schemas']['BloomLabel'];
+      /** Question */
+      question: string;
+      /** Step */
+      step: number;
+      /** Max Steps */
+      max_steps: number;
+      theory?: components['schemas']['TheoryResponse'] | null;
+      recommendation_reason?: components['schemas']['RecommendationReason'] | null;
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      exercise_type: 'ordering';
+      /** Items */
+      items: string[];
+    };
+    /** OrderingPayload */
+    OrderingPayload: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      exercise_type: 'ordering';
+      /** Correct Order */
+      correct_order: string[];
+    };
+    /** PipelineCycleStatsResponse */
+    PipelineCycleStatsResponse: {
+      /** Removed Cycles */
+      removed_cycles?: number | null;
     };
     /** PipelineFailedBatchResponse */
     PipelineFailedBatchResponse: {
@@ -792,18 +1006,37 @@ export interface components {
       /** Edges */
       edges?: components['schemas']['PipelinePartialGraphEdgeResponse'][];
     };
-    /** PipelineJobHistoryListResponse */
-    PipelineJobHistoryListResponse: {
-      /** Jobs */
-      jobs: components['schemas']['SubjectHistoryResponse'][];
-      /** Count */
-      count: number;
+    /** PipelineGraphStatsResponse */
+    PipelineGraphStatsResponse: {
+      /** Num Nodes */
+      num_nodes?: number | null;
+      /** Num Edges */
+      num_edges?: number | null;
+      /** Is Dag */
+      is_dag?: boolean | null;
+      /** Relations From Extraction */
+      relations_from_extraction?: number | null;
+      /** Relations From Verification */
+      relations_from_verification?: number | null;
+      /** Relations Verified */
+      relations_verified?: number | null;
+      /** Builder Subject Id */
+      builder_subject_id?: string | null;
+      cycle_stats?: components['schemas']['PipelineCycleStatsResponse'] | null;
     };
     /** PipelineJobCancelResponse */
     PipelineJobCancelResponse: {
       /** Job Id */
       job_id: string;
+      /** Status */
       status: components['schemas']['PipelineStatus'] | 'cancelling';
+    };
+    /** PipelineJobHistoryListResponse */
+    PipelineJobHistoryListResponse: {
+      /** Jobs */
+      jobs: components['schemas']['PipelineJobListItemResponse'][];
+      /** Count */
+      count: number;
     };
     /** PipelineJobListItemResponse */
     PipelineJobListItemResponse: {
@@ -924,6 +1157,16 @@ export interface components {
        */
       count: number;
     };
+    /** PipelineJobResultResponse */
+    PipelineJobResultResponse: {
+      graph?: components['schemas']['PipelineGraphResponse'];
+      stats?: components['schemas']['PipelineGraphStatsResponse'];
+      /**
+       * N Concepts
+       * @default 0
+       */
+      n_concepts: number;
+    };
     /** PipelineJobRetryResponse */
     PipelineJobRetryResponse: {
       /** Job Id */
@@ -936,19 +1179,6 @@ export interface components {
        * @default 0
        */
       retry_count: number;
-    };
-    /** PipelineJobResultResponse */
-    PipelineJobResultResponse: {
-      graph?: components['schemas']['PipelineGraphResponse'];
-      /** Stats */
-      stats?: {
-        [key: string]: unknown;
-      };
-      /**
-       * N Concepts
-       * @default 0
-       */
-      n_concepts: number;
     };
     /** PipelineJobStatusResponse */
     PipelineJobStatusResponse: {
@@ -1015,10 +1245,7 @@ export interface components {
        * @default 0
        */
       relations_verified: number;
-      /** Graph Stats */
-      graph_stats?: {
-        [key: string]: unknown;
-      };
+      graph_stats?: components['schemas']['PipelineGraphStatsResponse'];
       /** Error Message */
       error_message?: string | null;
       /** Error Code */
@@ -1132,8 +1359,7 @@ export interface components {
       session_id: string;
       /** N Concepts */
       n_concepts: number;
-      /** Source */
-      source: string;
+      source: components['schemas']['PipelineSessionSource'];
       /** Job Id */
       job_id: string;
       /**
@@ -1142,6 +1368,11 @@ export interface components {
        */
       status: 'active';
     };
+    /**
+     * PipelineSessionSource
+     * @enum {string}
+     */
+    PipelineSessionSource: 'new_session' | 'existing_session';
     /**
      * PipelineStatus
      * @description Authoritative lifecycle states for content pipeline jobs.
@@ -1190,23 +1421,6 @@ export interface components {
       /** Source S3 Key */
       source_s3_key?: string | null;
     };
-    /** ReadinessResponse */
-    ReadinessResponse: {
-      /** Status */
-      status: string;
-      /** Ready */
-      ready: boolean;
-      /** Mongo Available */
-      mongo_available: boolean;
-      /** Models Enabled */
-      models_enabled: boolean;
-      /** Models Loaded */
-      models_loaded: boolean;
-      /** Content Pipeline Available */
-      content_pipeline_available: boolean;
-      /** Content Pipeline Service Ready */
-      content_pipeline_service_ready: boolean;
-    };
     /** QuizDraftCreateRequest */
     QuizDraftCreateRequest: {
       /**
@@ -1245,6 +1459,11 @@ export interface components {
        */
       prompt?: string | null;
     };
+    /** QuizDraftListResponse */
+    QuizDraftListResponse: {
+      /** Drafts */
+      drafts: components['schemas']['QuizDraftResponseData'][];
+    };
     /** QuizDraftPatchRequest */
     QuizDraftPatchRequest: {
       /** Title */
@@ -1255,22 +1474,6 @@ export interface components {
       category_id?: string | null;
       /** Questions */
       questions?: components['schemas']['QuizDraftQuestion'][] | null;
-    };
-    /** QuizDraftQuestion */
-    QuizDraftQuestion: {
-      /** Question */
-      question: string;
-      /**
-       * Type
-       * @enum {string}
-       */
-      type: 'single' | 'multiple';
-      /** Options */
-      options: string[];
-      /** Correctindex */
-      correctIndex?: number | null;
-      /** Correctindexes */
-      correctIndexes?: number[];
     };
     /** QuizDraftPdfInfo */
     QuizDraftPdfInfo: {
@@ -1300,6 +1503,22 @@ export interface components {
        * @default 0
        */
       percent: number;
+    };
+    /** QuizDraftQuestion */
+    QuizDraftQuestion: {
+      /** Question */
+      question: string;
+      /**
+       * Type
+       * @enum {string}
+       */
+      type: 'single' | 'multiple';
+      /** Options */
+      options: string[];
+      /** Correctindex */
+      correctIndex?: number | null;
+      /** Correctindexes */
+      correctIndexes?: number[];
     };
     /** QuizDraftResponseData */
     QuizDraftResponseData: {
@@ -1333,21 +1552,25 @@ export interface components {
       error: string | null;
       /** Submitted Quiz Id */
       submitted_quiz_id: string | null;
-      /** Created At */
+      /**
+       * Created At
+       * Format: date-time
+       */
       created_at: string;
-      /** Updated At */
+      /**
+       * Updated At
+       * Format: date-time
+       */
       updated_at: string;
-      /** Expires At */
+      /**
+       * Expires At
+       * Format: date-time
+       */
       expires_at: string;
     };
     /** QuizDraftSingleResponse */
     QuizDraftSingleResponse: {
       draft: components['schemas']['QuizDraftResponseData'];
-    };
-    /** QuizDraftListResponse */
-    QuizDraftListResponse: {
-      /** Drafts */
-      drafts: components['schemas']['QuizDraftResponseData'][];
     };
     /** QuizDraftSubmitRequest */
     QuizDraftSubmitRequest: {
@@ -1397,6 +1620,27 @@ export interface components {
       /** Turn Count */
       turn_count: number;
     };
+    /** ReadinessResponse */
+    ReadinessResponse: {
+      status: components['schemas']['ReadinessStatus'];
+      /** Ready */
+      ready: boolean;
+      /** Mongo Available */
+      mongo_available: boolean;
+      /** Models Enabled */
+      models_enabled: boolean;
+      /** Models Loaded */
+      models_loaded: boolean;
+      /** Content Pipeline Available */
+      content_pipeline_available: boolean;
+      /** Content Pipeline Service Ready */
+      content_pipeline_service_ready: boolean;
+    };
+    /**
+     * ReadinessStatus
+     * @enum {string}
+     */
+    ReadinessStatus: 'ok' | 'degraded';
     /** RecommendationPrerequisite */
     RecommendationPrerequisite: {
       /** Name */
@@ -1410,14 +1654,22 @@ export interface components {
       concept_name: string;
       /** Bloom Level */
       bloom_level: number;
-      /** Bloom Label */
-      bloom_label: string;
+      bloom_label: components['schemas']['BloomLabel'];
       /** Satisfied Prereqs */
       satisfied_prereqs?: components['schemas']['RecommendationPrerequisite'][];
       /** Current Mastery */
       current_mastery: number;
       /** Next Milestone */
       next_milestone: number;
+    };
+    /** SessionConceptSummary */
+    SessionConceptSummary: {
+      /** Id */
+      id: string;
+      /** Name */
+      name: string;
+      /** Index */
+      index: number;
     };
     /** SessionCreateRequest */
     SessionCreateRequest: {
@@ -1450,15 +1702,23 @@ export interface components {
        * Concepts
        * @description Ordered list of concept summaries.
        */
-      concepts: {
-        [key: string]: unknown;
-      }[];
+      concepts: components['schemas']['SessionConceptSummary'][];
       /**
-       * Status
-       * @description Session state: active, completed, or cancelled.
+       * @description Current learning session state.
        * @default active
        */
-      status: string;
+      status: components['schemas']['LearningSessionStatus'];
+    };
+    /** SessionExerciseSummary */
+    SessionExerciseSummary: {
+      /** Exercise Id */
+      exercise_id: string;
+      /** Concept Name */
+      concept_name: string;
+      /** Bloom Level */
+      bloom_level: number;
+      /** Is Correct */
+      is_correct?: boolean | null;
     };
     /** SessionStatusResponse */
     SessionStatusResponse: {
@@ -1467,11 +1727,8 @@ export interface components {
        * @description Session identifier.
        */
       session_id: string;
-      /**
-       * Status
-       * @description Current session status.
-       */
-      status: string;
+      /** @description Current learning session status. */
+      status: components['schemas']['LearningSessionStatus'];
       /**
        * Step
        * @description Number of exercises answered so far.
@@ -1521,9 +1778,67 @@ export interface components {
        * Exercises
        * @description Recent exercise history entries.
        */
-      exercises: {
+      exercises: components['schemas']['SessionExerciseSummary'][];
+    };
+    /** ShortAnswerExerciseResponse */
+    ShortAnswerExerciseResponse: {
+      /** Exercise Id */
+      exercise_id: string;
+      /** Concept Name */
+      concept_name: string;
+      /** Concept Idx */
+      concept_idx: number;
+      /** Bloom Level */
+      bloom_level: number;
+      bloom_label: components['schemas']['BloomLabel'];
+      /** Question */
+      question: string;
+      /** Step */
+      step: number;
+      /** Max Steps */
+      max_steps: number;
+      theory?: components['schemas']['TheoryResponse'] | null;
+      recommendation_reason?: components['schemas']['RecommendationReason'] | null;
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      exercise_type: 'short_answer';
+      /** Rubric */
+      rubric: string[];
+    };
+    /** ShortAnswerPayload */
+    ShortAnswerPayload: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      exercise_type: 'short_answer';
+      /** Rubric */
+      rubric: string[];
+      /** Sample Answer */
+      sample_answer: string;
+    };
+    /** StandardResponse[Annotated[Union[MCQExerciseResponse, TrueFalseExerciseResponse, FillBlankExerciseResponse, MultiCorrectExerciseResponse, OrderingExerciseResponse, MatchingExerciseResponse, ShortAnswerExerciseResponse], FieldInfo(annotation=NoneType, required=True, discriminator='exercise_type')]] */
+    StandardResponse_Annotated_Union_MCQExerciseResponse__TrueFalseExerciseResponse__FillBlankExerciseResponse__MultiCorrectExerciseResponse__OrderingExerciseResponse__MatchingExerciseResponse__ShortAnswerExerciseResponse___FieldInfo_annotation_NoneType__required_True__discriminator__exercise_type____: {
+      /**
+       * Success
+       * @default true
+       */
+      success: boolean;
+      /** Data */
+      data:
+        | components['schemas']['MCQExerciseResponse']
+        | components['schemas']['TrueFalseExerciseResponse']
+        | components['schemas']['FillBlankExerciseResponse']
+        | components['schemas']['MultiCorrectExerciseResponse']
+        | components['schemas']['OrderingExerciseResponse']
+        | components['schemas']['MatchingExerciseResponse']
+        | components['schemas']['ShortAnswerExerciseResponse'];
+      /** Meta */
+      meta?: {
         [key: string]: unknown;
-      }[];
+      } | null;
     };
     /** StandardResponse[ConceptDetailResponse] */
     StandardResponse_ConceptDetailResponse_: {
@@ -1533,19 +1848,6 @@ export interface components {
        */
       success: boolean;
       data: components['schemas']['ConceptDetailResponse'];
-      /** Meta */
-      meta?: {
-        [key: string]: unknown;
-      } | null;
-    };
-    /** StandardResponse[InfoResponse] */
-    StandardResponse_InfoResponse_: {
-      /**
-       * Success
-       * @default true
-       */
-      success: boolean;
-      data: components['schemas']['InfoResponse'];
       /** Meta */
       meta?: {
         [key: string]: unknown;
@@ -1564,14 +1866,14 @@ export interface components {
         [key: string]: unknown;
       } | null;
     };
-    /** StandardResponse[ExerciseResponse] */
-    StandardResponse_ExerciseResponse_: {
+    /** StandardResponse[InfoResponse] */
+    StandardResponse_InfoResponse_: {
       /**
        * Success
        * @default true
        */
       success: boolean;
-      data: components['schemas']['ExerciseResponse'];
+      data: components['schemas']['InfoResponse'];
       /** Meta */
       meta?: {
         [key: string]: unknown;
@@ -1616,19 +1918,6 @@ export interface components {
         [key: string]: unknown;
       } | null;
     };
-    /** StandardResponse[PipelineJobHistoryListResponse] */
-    StandardResponse_PipelineJobHistoryListResponse_: {
-      /**
-       * Success
-       * @default true
-       */
-      success: boolean;
-      data: components['schemas']['PipelineJobHistoryListResponse'];
-      /** Meta */
-      meta?: {
-        [key: string]: unknown;
-      } | null;
-    };
     /** StandardResponse[PipelineJobCancelResponse] */
     StandardResponse_PipelineJobCancelResponse_: {
       /**
@@ -1637,6 +1926,19 @@ export interface components {
        */
       success: boolean;
       data: components['schemas']['PipelineJobCancelResponse'];
+      /** Meta */
+      meta?: {
+        [key: string]: unknown;
+      } | null;
+    };
+    /** StandardResponse[PipelineJobHistoryListResponse] */
+    StandardResponse_PipelineJobHistoryListResponse_: {
+      /**
+       * Success
+       * @default true
+       */
+      success: boolean;
+      data: components['schemas']['PipelineJobHistoryListResponse'];
       /** Meta */
       meta?: {
         [key: string]: unknown;
@@ -1896,84 +2198,39 @@ export interface components {
     SubjectHistoryDetailResponse: {
       /** Job Id */
       job_id: string;
-      /**
-       * Filename
-       * @default
-       */
+      /** Filename */
       filename: string;
-      /**
-       * Subject Id
-       * @default
-       */
+      /** Subject Id */
       subject_id: string;
-      /** Status */
-      status: string;
-      /**
-       * Total Correct
-       * @default 0
-       */
+      status: components['schemas']['SubjectHistoryStatus'];
+      /** Total Correct */
       total_correct: number;
-      /**
-       * Total Answered
-       * @default 0
-       */
+      /** Total Answered */
       total_answered: number;
-      /**
-       * Accuracy
-       * @default 0
-       */
+      /** Accuracy */
       accuracy: number;
-      /**
-       * Step
-       * @default 0
-       */
+      /** Step */
       step: number;
-      /**
-       * Max Steps
-       * @default 0
-       */
+      /** Max Steps */
       max_steps: number;
-      /**
-       * Avg Mastery
-       * @default 0
-       */
+      /** Avg Mastery */
       avg_mastery: number;
-      /**
-       * Concept Names
-       * @default {}
-       */
+      /** Concept Names */
       concept_names: {
         [key: string]: string;
       };
-      /**
-       * Concept Mastery
-       * @default []
-       */
+      /** Concept Mastery */
       concept_mastery: number[];
-      /**
-       * Bloom Mastery
-       * @default []
-       */
+      /** Bloom Mastery */
       bloom_mastery: number[][];
-      /**
-       * Exercise History
-       * @default []
-       */
-      exercise_history: {
-        [key: string]: unknown;
-      }[];
-      /**
-       * Created At
-       * @default 0
-       */
+      /** Exercise History */
+      exercise_history: components['schemas']['ExerciseHistoryResponse'][];
+      /** Created At */
       created_at: number;
-      /**
-       * Updated At
-       * @default 0
-       */
+      /** Updated At */
       updated_at: number;
       /** Last Session Id */
-      last_session_id?: string | null;
+      last_session_id: string | null;
     };
     /** SubjectHistoryListResponse */
     SubjectHistoryListResponse: {
@@ -1990,41 +2247,31 @@ export interface components {
       filename: string;
       /** Subject Id */
       subject_id: string;
-      /** Status */
-      status: string;
       /**
-       * Concepts Extracted
-       * @default 0
+       * Status
+       * @constant
        */
+      status: 'completed';
+      /** Concepts Extracted */
       concepts_extracted: number;
-      /**
-       * Concepts After Merge
-       * @default 0
-       */
+      /** Concepts After Merge */
       concepts_after_merge: number;
-      /**
-       * Relations Verified
-       * @default 0
-       */
+      /** Relations Verified */
       relations_verified: number;
       /** Completed At */
       completed_at: number;
-      /**
-       * Mastered Concept
-       * @default 0
-       */
+      /** Mastered Concept */
       mastered_concept: number;
-      /**
-       * All Concept
-       * @default 0
-       */
+      /** All Concept */
       all_concept: number;
-      /**
-       * Progress Percent
-       * @default 0
-       */
+      /** Progress Percent */
       progress_percent: number;
     };
+    /**
+     * SubjectHistoryStatus
+     * @enum {string}
+     */
+    SubjectHistoryStatus: 'not_started' | 'active' | 'completed';
     /** SubjectProgressListResponse */
     SubjectProgressListResponse: {
       /** Subjects */
@@ -2032,64 +2279,38 @@ export interface components {
       /** Count */
       count: number;
     };
+    /**
+     * SubjectProgressStatus
+     * @enum {string}
+     */
+    SubjectProgressStatus: 'active' | 'completed';
     /** SubjectProgressSummaryResponse */
     SubjectProgressSummaryResponse: {
       /** Job Id */
       job_id: string;
-      /**
-       * Filename
-       * @default
-       */
+      /** Filename */
       filename: string;
-      /**
-       * Subject Id
-       * @default
-       */
+      /** Subject Id */
       subject_id: string;
-      /** Status */
-      status: string;
-      /**
-       * Total Correct
-       * @default 0
-       */
+      status: components['schemas']['SubjectProgressStatus'];
+      /** Total Correct */
       total_correct: number;
-      /**
-       * Total Answered
-       * @default 0
-       */
+      /** Total Answered */
       total_answered: number;
-      /**
-       * Accuracy
-       * @default 0
-       */
+      /** Accuracy */
       accuracy: number;
-      /**
-       * Avg Mastery
-       * @default 0
-       */
+      /** Avg Mastery */
       avg_mastery: number;
-      /**
-       * Step
-       * @default 0
-       */
+      /** Step */
       step: number;
-      /**
-       * Max Steps
-       * @default 0
-       */
+      /** Max Steps */
       max_steps: number;
-      /**
-       * Created At
-       * @default 0
-       */
+      /** Created At */
       created_at: number;
-      /**
-       * Updated At
-       * @default 0
-       */
+      /** Updated At */
       updated_at: number;
       /** Last Session Id */
-      last_session_id?: string | null;
+      last_session_id: string | null;
     };
     /** SubmitAnswerPayload */
     SubmitAnswerPayload: {
@@ -2134,10 +2355,16 @@ export interface components {
       step: number;
       /** Session Completed */
       session_completed: boolean;
-      /** Stats */
-      stats: {
-        [key: string]: number;
-      };
+      stats: components['schemas']['SubmitAnswerStats'];
+    };
+    /** SubmitAnswerStats */
+    SubmitAnswerStats: {
+      /** Total Correct */
+      total_correct: number;
+      /** Total Answered */
+      total_answered: number;
+      /** Accuracy */
+      accuracy: number;
     };
     /** TheoryResponse */
     TheoryResponse: {
@@ -2145,6 +2372,45 @@ export interface components {
       content: string;
       /** Examples */
       examples: string[];
+    };
+    /** TrueFalseExerciseResponse */
+    TrueFalseExerciseResponse: {
+      /** Exercise Id */
+      exercise_id: string;
+      /** Concept Name */
+      concept_name: string;
+      /** Concept Idx */
+      concept_idx: number;
+      /** Bloom Level */
+      bloom_level: number;
+      bloom_label: components['schemas']['BloomLabel'];
+      /** Question */
+      question: string;
+      /** Step */
+      step: number;
+      /** Max Steps */
+      max_steps: number;
+      theory?: components['schemas']['TheoryResponse'] | null;
+      recommendation_reason?: components['schemas']['RecommendationReason'] | null;
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      exercise_type: 'true_false';
+      /** Statement */
+      statement: string;
+    };
+    /** TrueFalsePayload */
+    TrueFalsePayload: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      exercise_type: 'true_false';
+      /** Statement */
+      statement: string;
+      /** Correct Answer */
+      correct_answer: boolean;
     };
     /** TutorChatMessage */
     TutorChatMessage: {
@@ -2322,7 +2588,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['StandardResponse_ExerciseResponse_'];
+          'application/json': components['schemas']['StandardResponse_Annotated_Union_MCQExerciseResponse__TrueFalseExerciseResponse__FillBlankExerciseResponse__MultiCorrectExerciseResponse__OrderingExerciseResponse__MatchingExerciseResponse__ShortAnswerExerciseResponse___FieldInfo_annotation_NoneType__required_True__discriminator__exercise_type____'];
         };
       };
       /** @description Validation Error */

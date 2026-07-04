@@ -4,6 +4,7 @@ import {
   retryPipelineJob,
   cancelPipelineJob,
   getSubjects,
+  getSubjectsFresh,
   getSubjectProgressHistory,
   getSubjectHistoryDetail,
   getExercise,
@@ -11,6 +12,7 @@ import {
   getKnowledgeGraph,
   getConceptDetail,
   submitAnswer,
+  uploadPdf,
 } from '@/features/adaptive/lib/adaptive-api-methods';
 
 function okJson(data: unknown): Response {
@@ -67,25 +69,50 @@ describe('pipeline lifecycle methods', () => {
     );
   });
 
+  it('uploadPdf requests adaptive storage prefix before processing', async () => {
+    const spy = vi
+      .fn()
+      .mockResolvedValueOnce(okJson({ uploadUrl: 'https://storage.test/upload', s3Key: 'k1' }))
+      .mockResolvedValueOnce(new Response(null, { status: 200 }))
+      .mockResolvedValueOnce(
+        okJson({
+          job_id: 'job-1',
+          status: 'queued',
+          status_url: '/api/adaptive/pipeline/jobs/job-1',
+          message: 'queued',
+        }),
+      );
+    vi.stubGlobal('fetch', spy);
+
+    await uploadPdf(new File(['%PDF-1.7'], 'subject.pdf', { type: 'application/pdf' }), 'Math');
+
+    const presignedRequest = JSON.parse(String(spy.mock.calls[0]?.[1]?.body));
+    expect(spy.mock.calls[0]?.[0]).toBe('/api/storage/presigned-url');
+    expect(presignedRequest.purpose).toBe('adaptive');
+  });
+
   it('getSubjects normalizes raw subject status to the pipeline status contract', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue(
-        okJson([
-          {
-            job_id: 'job-1',
-            filename: 'subject.pdf',
-            subject_id: 'subject-1',
-            status: 'completed',
-            concepts_extracted: 3,
-            concepts_after_merge: 2,
-            relations_verified: 1,
-            completed_at: 1_783_000_000,
-            mastered_concept: 1,
-            all_concept: 2,
-            progress_percent: 50,
-          },
-        ]),
+        okJson({
+          subjects: [
+            {
+              job_id: 'job-1',
+              filename: 'subject.pdf',
+              subject_id: 'subject-1',
+              status: 'completed',
+              concepts_extracted: 3,
+              concepts_after_merge: 2,
+              relations_verified: 1,
+              completed_at: 1_783_000_000,
+              mastered_concept: 1,
+              all_concept: 2,
+              progress_percent: 50,
+            },
+          ],
+          count: 1,
+        }),
       ),
     );
 
@@ -94,7 +121,48 @@ describe('pipeline lifecycle methods', () => {
     ]);
   });
 
-  it('getSubjectProgressHistory rejects raw statuses outside the generated pipeline enum', async () => {
+  it('getSubjectsFresh bypasses the cached subject list', async () => {
+    const spy = vi.fn().mockResolvedValue(okJson({ subjects: [], count: 0 }));
+    vi.stubGlobal('fetch', spy);
+
+    await expect(getSubjectsFresh()).resolves.toEqual([]);
+
+    expect(spy.mock.calls[0]?.[1]).toMatchObject({ cache: 'no-store' });
+  });
+
+  it('getSubjectProgressHistory accepts active subject progress', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        okJson({
+          subjects: [
+            {
+              job_id: 'job-1',
+              filename: 'subject.pdf',
+              subject_id: 'subject-1',
+              status: 'active',
+              total_correct: 0,
+              total_answered: 0,
+              accuracy: 0,
+              avg_mastery: 0,
+              step: 0,
+              max_steps: 50,
+              created_at: 1_783_000_000,
+              updated_at: 1_783_000_000,
+              last_session_id: 'session-1',
+            },
+          ],
+          count: 1,
+        }),
+      ),
+    );
+
+    await expect(getSubjectProgressHistory()).resolves.toEqual([
+      expect.objectContaining({ job_id: 'job-1', status: 'active' }),
+    ]);
+  });
+
+  it('getSubjectProgressHistory rejects unknown progress statuses', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue(
@@ -117,8 +185,8 @@ describe('pipeline lifecycle methods', () => {
       ),
     );
 
-    await expect(getSubjectProgressHistory()).rejects.toThrow(
-      'Unsupported adaptive pipeline status: surprise',
+    await expect(getSubjectProgressHistory(49)).rejects.toThrow(
+      'Unsupported adaptive subject progress status: surprise',
     );
   });
 
@@ -147,10 +215,15 @@ describe('pipeline lifecycle methods', () => {
               concept_name: 'Concept 1',
               bloom_level: 1,
               question: 'Question?',
-              exercise_type: 'mcq',
-              options: { A: 'A1' },
-              correct_option: 'A',
               explanation: 'Because',
+              explanation_correct: 'Correct',
+              explanation_incorrect: 'Incorrect',
+              payload: {
+                exercise_type: 'mcq',
+                options: { A: 'A1' },
+                correct_option: 'A',
+              },
+              theory: null,
               user_answer: 'A',
               is_correct: true,
               timestamp: 1_783_000_000,

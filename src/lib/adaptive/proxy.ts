@@ -7,8 +7,8 @@ import {
   buildAdaptiveServiceHeaders,
   resolveAdaptiveApiUrl,
   resolveAdaptiveProxyTimeoutMs,
-  type AdaptiveUserRole,
 } from './config';
+import type { UserRole } from '@/types/next-auth';
 import {
   buildLlmRateLimitHeaders,
   buildLlmRateLimitResponse,
@@ -16,8 +16,10 @@ import {
   classifyAdaptiveLlmAction,
 } from '@/lib/llm/rate-limit';
 
+type AdaptiveProxyMethod = 'GET' | 'POST' | 'PATCH' | 'DELETE';
+
 type ProxyOptions = {
-  method?: string;
+  method?: AdaptiveProxyMethod;
   body?: BodyInit | null;
   contentType?: string | null;
   timeoutMs?: number;
@@ -33,7 +35,7 @@ type ProxyOptions = {
  */
 export type ProxyAuthContext = {
   userId?: string;
-  userRole?: AdaptiveUserRole | null;
+  userRole?: UserRole | null;
 };
 
 const UPSTREAM_RESPONSE_HEADERS = [

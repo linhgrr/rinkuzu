@@ -1,4 +1,12 @@
-import { useCallback, useDeferredValue, useEffect, useMemo, useReducer, useState } from 'react';
+import {
+  useCallback,
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useReducer,
+  useRef,
+  useState,
+} from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import {
@@ -7,6 +15,7 @@ import {
   deleteSubject,
   getSubjectProgressHistory,
   getSubjects,
+  getSubjectsFresh,
 } from '@/features/adaptive/lib/adaptive-api-methods';
 import { ADAPTIVE_ROUTES } from '@/features/adaptive/lib/routes';
 import {
@@ -137,6 +146,7 @@ export const useAdaptiveDashboard = ({
   const [deletingJobId, setDeletingJobId] = useState<string | null>(null);
   const [itemToDelete, setItemToDelete] = useState<DashboardSubject | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const refreshedCompletionKeysRef = useRef(new Set<string>());
   const deferredSearchQuery = useDeferredValue(searchQuery);
 
   const refreshSubjects = useCallback(async () => {
@@ -209,6 +219,36 @@ export const useAdaptiveDashboard = ({
     return map;
   }, [dashboardState.subjects]);
 
+  const completedJobsNeedingEnrichmentKey = useMemo(
+    () =>
+      jobLibrary.jobs
+        .filter((job) => job.status === 'completed' && !enrichedByJobId.has(job.job_id))
+        .map((job) => job.job_id)
+        .sort()
+        .join(','),
+    [enrichedByJobId, jobLibrary.jobs],
+  );
+
+  useEffect(() => {
+    if (
+      dashboardState.apiOnline !== true ||
+      !completedJobsNeedingEnrichmentKey ||
+      refreshedCompletionKeysRef.current.has(completedJobsNeedingEnrichmentKey)
+    ) {
+      return;
+    }
+
+    refreshedCompletionKeysRef.current.add(completedJobsNeedingEnrichmentKey);
+    void getSubjectsFresh()
+      .then((subjects) => {
+        dispatch({ type: 'patch', value: { subjects } });
+      })
+      .catch((error) => {
+        refreshedCompletionKeysRef.current.delete(completedJobsNeedingEnrichmentKey);
+        console.error('Failed to enrich completed subjects', error);
+      });
+  }, [completedJobsNeedingEnrichmentKey, dashboardState.apiOnline]);
+
   // Merge all-status jobs (live polling) with completed mastery enrichment.
   const mergedSubjects = useMemo<DashboardSubject[]>(() => {
     return jobLibrary.jobs.map((job) => {
@@ -273,12 +313,23 @@ export const useAdaptiveDashboard = ({
       if (didHydrateFromServer) {
         if (!isActive) return;
         const healthResult = await checkApiHealth().catch(() => false);
+        const [subjectsResult, historyResult] = healthResult
+          ? await Promise.all([
+              getSubjects().catch(() => null),
+              getSubjectProgressHistory(5).catch(() => null),
+            ])
+          : [null, null];
+        const didRecover = healthResult && subjectsResult !== null && historyResult !== null;
         if (isActive) {
           dispatch({
             type: 'hydrate',
             value: {
               apiOnline: healthResult,
-              error: healthResult ? initialError : (initialError ?? t('connectionLimited')),
+              error: didRecover ? null : (initialError ?? t('connectionLimited')),
+              ...(subjectsResult ? { subjects: subjectsResult } : {}),
+              ...(historyResult
+                ? { sessionHistory: toSessionHistoryViewModels(historyResult) }
+                : {}),
             },
           });
         }

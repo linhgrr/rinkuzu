@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 
 type ApiSchemas = components['schemas'];
 
-export type BloomLevel = 'Remember' | 'Understand' | 'Apply' | 'Analyze' | 'Evaluate' | 'Create';
+export type BloomLevel = ApiSchemas['BloomLabel'];
 
 export type TranslationValues = Record<string, string | number | Date>;
 export type TranslateFn = (key: string, values?: TranslationValues) => string;
@@ -24,37 +24,52 @@ export const BLOOM_LABELS: BloomLevel[] = [
   'Create',
 ];
 
-export type NextConcept = Omit<ApiSchemas['NextConceptResponse'], 'bloom_label'> & {
-  bloom_label: BloomLevel;
-};
+export type NextConcept = ApiSchemas['NextConceptResponse'];
 
 export type TheoryData = ApiSchemas['TheoryResponse'];
-export type ExerciseType = ApiSchemas['ExerciseType'];
 
-interface MatchingPair {
-  left: string;
-  right: string;
-}
+export type ExerciseApiResponse =
+  | ApiSchemas['MCQExerciseResponse']
+  | ApiSchemas['TrueFalseExerciseResponse']
+  | ApiSchemas['FillBlankExerciseResponse']
+  | ApiSchemas['MultiCorrectExerciseResponse']
+  | ApiSchemas['OrderingExerciseResponse']
+  | ApiSchemas['MatchingExerciseResponse']
+  | ApiSchemas['ShortAnswerExerciseResponse'];
+
+export type ExerciseType = ExerciseApiResponse['exercise_type'];
 
 type RecommendationPrerequisite = ApiSchemas['RecommendationPrerequisite'];
 
-type RecommendationReason = Omit<ApiSchemas['RecommendationReason'], 'bloom_label'> & {
-  bloom_label: BloomLevel;
+type RecommendationReason = ApiSchemas['RecommendationReason'] & {
   satisfied_prereqs: RecommendationPrerequisite[];
 };
 
 export type SubmitAnswerPayload = ApiSchemas['SubmitAnswerPayload'];
 
-export type Exercise = Omit<
-  ApiSchemas['ExerciseResponse'],
-  'bloom_label' | 'options' | 'items' | 'pairs' | 'right_items' | 'theory' | 'recommendation_reason'
-> & {
+type ExerciseCommon = Pick<
+  ExerciseApiResponse,
+  | 'exercise_id'
+  | 'concept_name'
+  | 'concept_idx'
+  | 'bloom_level'
+  | 'question'
+  | 'step'
+  | 'max_steps'
+  | 'theory'
+  | 'recommendation_reason'
+>;
+
+export type Exercise = ExerciseCommon & {
   id: string;
   exercise_type: ExerciseType;
   bloom_label: BloomLevel;
+  sentence?: string | null;
+  statement?: string | null;
+  hint?: string | null;
   options: Record<string, string>;
   items: string[];
-  pairs: MatchingPair[];
+  pairs: ApiSchemas['MatchingPairPayload'][];
   right_items: string[];
   rubric?: string[];
   correct_answer?: string | string[] | boolean | Record<string, string> | null;
@@ -62,12 +77,6 @@ export type Exercise = Omit<
   recommendation_reason?: RecommendationReason | null;
 };
 
-export type SubmitResult = Omit<ApiSchemas['SubmitAnswerResponse'], 'stats'> & {
-  stats: {
-    total_correct: number;
-    total_answered: number;
-    accuracy: number;
-  };
-};
+export type SubmitResult = ApiSchemas['SubmitAnswerResponse'];
 
 export type SessionStatus = ApiSchemas['SessionStatusResponse'];

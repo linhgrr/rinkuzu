@@ -135,7 +135,7 @@ const getJobDisplayTitle = (job: DashboardPipelineJobListItem): string => {
 };
 
 const getJobProgressPercent = (job: DashboardPipelineJobListItem): number => {
-  return job.status === 'completed' ? 100 : clampPercent(job.progress * 100);
+  return clampPercent(job.progress * 100);
 };
 
 export const buildDashboardSubjectFromJob = (
@@ -165,7 +165,7 @@ export const buildDashboardSubjectFromJob = (
     throw new TypeError(`Unsupported adaptive pipeline status: ${job.status}`);
   }
 
-  const progressPercent = getJobProgressPercent(job);
+  const progressPercent = job.status === 'completed' ? 0 : getJobProgressPercent(job);
 
   const metrics: DashboardSubjectMetrics = {
     masteredConcepts: 0,

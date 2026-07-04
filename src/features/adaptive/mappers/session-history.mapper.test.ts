@@ -15,6 +15,7 @@ const baseSession: SessionHistoryItem = {
   avg_mastery: 0.72,
   updated_at: 1_783_000_000,
   created_at: 1_782_900_000,
+  last_session_id: 'session-1',
 };
 
 describe('session-history.mapper', () => {

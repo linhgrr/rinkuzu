@@ -22,71 +22,84 @@ export class FolderRepository implements IFolderRepository {
   async listOverviewByOwner(ownerId: string): Promise<FolderOverviewResult> {
     await connectDB();
     const ownerObjectId = new Types.ObjectId(ownerId);
-    const [folders, ownedUnfiledCount, linkedCounts, attempts, progressRecords] = await Promise.all(
-      [
-        FolderModel.aggregate<FolderOverviewPersistenceRecord>([
-          { $match: { owner: ownerObjectId } },
-          {
-            $lookup: {
-              from: 'quizzes',
-              let: { folderId: '$_id', ownerId: '$owner' },
-              pipeline: [
-                {
-                  $match: {
-                    $expr: {
-                      $and: [{ $eq: ['$folder', '$$folderId'] }, { $eq: ['$author', '$$ownerId'] }],
-                    },
+    const [folders, ownedUnfiledCount, linkedCounts, externalUnfiledCounts] = await Promise.all([
+      FolderModel.aggregate<FolderOverviewPersistenceRecord>([
+        { $match: { owner: ownerObjectId } },
+        {
+          $lookup: {
+            from: 'quizzes',
+            let: { folderId: '$_id', ownerId: '$owner' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [{ $eq: ['$folder', '$$folderId'] }, { $eq: ['$author', '$$ownerId'] }],
                   },
                 },
-                { $count: 'count' },
-              ],
-              as: 'quizStats',
-            },
+              },
+              { $count: 'count' },
+            ],
+            as: 'quizStats',
           },
-          {
-            $project: {
-              name: 1,
-              owner: 1,
-              createdAt: 1,
-              updatedAt: 1,
-              quizCount: { $ifNull: [{ $first: '$quizStats.count' }, 0] },
-            },
+        },
+        {
+          $project: {
+            name: 1,
+            owner: 1,
+            createdAt: 1,
+            updatedAt: 1,
+            quizCount: { $ifNull: [{ $first: '$quizStats.count' }, 0] },
           },
-          { $sort: { name: 1 } },
-        ]),
-        Quiz.countDocuments({ author: ownerObjectId, folder: null }),
-        FolderQuiz.aggregate<{ _id: Types.ObjectId; count: number }>([
-          { $match: { owner: ownerObjectId } },
-          { $group: { _id: '$folder', count: { $sum: 1 } } },
-        ]),
-        Attempt.aggregate<{ _id: Types.ObjectId }>([
-          { $match: { user: ownerObjectId } },
-          { $group: { _id: '$quiz' } },
-        ]),
-        QuizProgress.aggregate<{ _id: Types.ObjectId }>([
-          { $match: { userId: ownerObjectId } },
-          { $group: { _id: '$quiz' } },
-        ]),
-      ],
-    );
-
-    const libraryQuizIds = [
-      ...new Map(
-        [...attempts, ...progressRecords].map((record) => [String(record._id), record._id]),
-      ).values(),
-    ];
-    const [attemptedQuizzes, linkedQuizRecords] = await Promise.all([
-      Quiz.find({ _id: { $in: libraryQuizIds }, author: { $ne: ownerObjectId } })
-        .select('_id')
-        .lean<{ _id: Types.ObjectId }[]>(),
-      FolderQuiz.find({ owner: ownerObjectId })
-        .select('quiz')
-        .lean<Array<{ quiz: Types.ObjectId }>>(),
+        },
+        { $sort: { name: 1 } },
+      ]),
+      Quiz.countDocuments({ author: ownerObjectId, folder: null }),
+      FolderQuiz.aggregate<{ _id: Types.ObjectId; count: number }>([
+        { $match: { owner: ownerObjectId } },
+        { $group: { _id: '$folder', count: { $sum: 1 } } },
+      ]),
+      Attempt.aggregate<{ count: number }>([
+        { $match: { user: ownerObjectId } },
+        { $group: { _id: '$quiz' } },
+        {
+          $unionWith: {
+            coll: 'quizprogresses',
+            pipeline: [{ $match: { userId: ownerObjectId } }, { $group: { _id: '$quiz' } }],
+          },
+        },
+        { $group: { _id: '$_id' } },
+        {
+          $lookup: {
+            from: 'quizzes',
+            localField: '_id',
+            foreignField: '_id',
+            as: 'quiz',
+          },
+        },
+        { $unwind: '$quiz' },
+        { $match: { 'quiz.author': { $ne: ownerObjectId } } },
+        {
+          $lookup: {
+            from: 'folderquizzes',
+            let: { quizId: '$_id' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [{ $eq: ['$quiz', '$$quizId'] }, { $eq: ['$owner', ownerObjectId] }],
+                  },
+                },
+              },
+              { $limit: 1 },
+            ],
+            as: 'folderLinks',
+          },
+        },
+        { $match: { folderLinks: { $eq: [] } } },
+        { $count: 'count' },
+      ]),
     ]);
-    const linkedQuizSet = new Set(linkedQuizRecords.map((record) => String(record.quiz)));
-    const externalUnfiledCount = attemptedQuizzes.filter(
-      (quiz) => !linkedQuizSet.has(String(quiz._id)),
-    ).length;
+    const externalUnfiledCount = externalUnfiledCounts[0]?.count ?? 0;
     const linkedCountByFolder = new Map(linkedCounts.map((item) => [String(item._id), item.count]));
 
     return {

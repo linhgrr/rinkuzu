@@ -1,9 +1,7 @@
 import { Types } from 'mongoose';
 import connectDB from '@/lib/mongoose';
-import Attempt from '@/models/Attempt';
 import QuestionProgress from '@/models/QuestionProgress';
 import Quiz from '@/models/Quiz';
-import QuizProgress from '@/models/QuizProgress';
 import UserProgress from '@/models/UserProgress';
 import type {
   ILearningProgressRepository,
@@ -26,8 +24,6 @@ import type {
 } from '@/repositories/types/LearningProgressPersistence';
 import { buildPaginationMeta } from '@/lib/pagination';
 
-type AttemptSummary = { _id: Types.ObjectId; lastAttemptAt: Date };
-type ProgressSummary = { _id: Types.ObjectId; lastProgressAt: Date };
 type LibraryQuizAggregateRecord = LibraryQuizPersistenceRecord & {
   lastAttemptAt?: Date;
   lastProgressAt?: Date;
@@ -56,25 +52,6 @@ export class LearningProgressRepository implements ILearningProgressRepository {
     const userObjectId = new Types.ObjectId(userId);
     const skip = (options.page - 1) * options.limit;
 
-    const [attempts, progressRecords] = await Promise.all([
-      Attempt.aggregate<AttemptSummary>([
-        { $match: { user: userObjectId } },
-        { $group: { _id: '$quiz', lastAttemptAt: { $max: '$takenAt' } } },
-      ]),
-      QuizProgress.aggregate<ProgressSummary>([
-        { $match: { userId: userObjectId } },
-        { $group: { _id: '$quiz', lastProgressAt: { $max: '$updatedAt' } } },
-      ]),
-    ]);
-
-    const attemptedIds = attempts.map((attempt) => attempt._id);
-    const inProgressIds = progressRecords.map((progress) => progress._id);
-    const activityQuizIds = [
-      ...new Map(
-        [...attemptedIds, ...inProgressIds].map((quizId) => [String(quizId), quizId]),
-      ).values(),
-    ];
-
     const folderMatch =
       options.folder === undefined
         ? []
@@ -87,43 +64,71 @@ export class LearningProgressRepository implements ILearningProgressRepository {
           ];
 
     const [result] = await Quiz.aggregate<LibraryQuizFacetResult>([
+      { $match: { author: userObjectId } },
       {
-        $match: {
-          $or: [{ author: userObjectId }, { _id: { $in: activityQuizIds } }],
+        $project: {
+          _id: 1,
+          lastAttemptAt: { $literal: null },
+          lastProgressAt: { $literal: null },
         },
       },
       {
-        $lookup: {
-          from: 'attempts',
-          let: { quizId: '$_id' },
+        $unionWith: {
+          coll: 'attempts',
           pipeline: [
-            {
-              $match: {
-                $expr: {
-                  $and: [{ $eq: ['$quiz', '$$quizId'] }, { $eq: ['$user', userObjectId] }],
-                },
-              },
-            },
+            { $match: { user: userObjectId } },
             { $group: { _id: '$quiz', lastAttemptAt: { $max: '$takenAt' } } },
+            {
+              $project: {
+                lastAttemptAt: 1,
+                lastProgressAt: { $literal: null },
+              },
+            },
           ],
-          as: 'attemptStats',
+        },
+      },
+      {
+        $unionWith: {
+          coll: 'quizprogresses',
+          pipeline: [
+            { $match: { userId: userObjectId } },
+            { $group: { _id: '$quiz', lastProgressAt: { $max: '$updatedAt' } } },
+            {
+              $project: {
+                lastAttemptAt: { $literal: null },
+                lastProgressAt: 1,
+              },
+            },
+          ],
+        },
+      },
+      {
+        $group: {
+          _id: '$_id',
+          lastAttemptAt: { $max: '$lastAttemptAt' },
+          lastProgressAt: { $max: '$lastProgressAt' },
         },
       },
       {
         $lookup: {
-          from: 'quizprogresses',
-          let: { quizId: '$_id' },
-          pipeline: [
-            {
-              $match: {
-                $expr: {
-                  $and: [{ $eq: ['$quiz', '$$quizId'] }, { $eq: ['$userId', userObjectId] }],
-                },
+          from: 'quizzes',
+          localField: '_id',
+          foreignField: '_id',
+          as: 'quiz',
+        },
+      },
+      { $unwind: '$quiz' },
+      {
+        $replaceRoot: {
+          newRoot: {
+            $mergeObjects: [
+              '$quiz',
+              {
+                lastAttemptAt: '$lastAttemptAt',
+                lastProgressAt: '$lastProgressAt',
               },
-            },
-            { $group: { _id: '$quiz', lastProgressAt: { $max: '$updatedAt' } } },
-          ],
-          as: 'progressStats',
+            ],
+          },
         },
       },
       {
@@ -155,8 +160,6 @@ export class LearningProgressRepository implements ILearningProgressRepository {
       {
         $addFields: {
           authorDoc: { $first: '$authorDoc' },
-          lastAttemptAt: { $first: '$attemptStats.lastAttemptAt' },
-          lastProgressAt: { $first: '$progressStats.lastProgressAt' },
           ownedByMe: { $eq: ['$author', userObjectId] },
           externalFolder: { $first: '$folderLinks.folder' },
           questionCount: { $size: { $ifNull: ['$questions', []] } },

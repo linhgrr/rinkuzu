@@ -42,12 +42,32 @@ export class DashboardRepository implements IDashboardRepository {
     if (!Types.ObjectId.isValid(userId)) {
       return [];
     }
-    const records = await QuizProgress.find({ userId: new Types.ObjectId(userId) })
-      .select('quiz answeredCount totalQuestions updatedAt')
-      .sort({ updatedAt: -1 })
-      .limit(limit)
-      .populate({ path: 'quiz', select: 'title slug' })
-      .lean<DashboardProgressPersistenceRecord[]>();
+    const records = await QuizProgress.aggregate<DashboardProgressPersistenceRecord>([
+      { $match: { userId: new Types.ObjectId(userId) } },
+      { $sort: { updatedAt: -1 } },
+      { $limit: limit },
+      {
+        $lookup: {
+          from: 'quizzes',
+          localField: 'quiz',
+          foreignField: '_id',
+          as: 'quizDoc',
+        },
+      },
+      { $unwind: '$quizDoc' },
+      {
+        $project: {
+          answeredCount: 1,
+          totalQuestions: 1,
+          updatedAt: 1,
+          quiz: {
+            _id: '$quizDoc._id',
+            title: '$quizDoc.title',
+            slug: '$quizDoc.slug',
+          },
+        },
+      },
+    ]);
 
     return records.flatMap((record) => {
       const mapped = DashboardPersistenceMapper.toInProgressQuiz(record);

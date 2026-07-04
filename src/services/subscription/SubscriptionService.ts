@@ -60,8 +60,7 @@ export class SubscriptionService implements ISubscriptionService {
   }
 
   private async getUserSubscriptionSnapshot(userId: string): Promise<UserSubscription | null> {
-    const user = await this.userRepository.findById(userId);
-    const subscription = user?.subscription;
+    const subscription = await this.userRepository.findSubscriptionById(userId);
     if (!subscription) return null;
 
     if (isSubscriptionExpired(subscription)) {

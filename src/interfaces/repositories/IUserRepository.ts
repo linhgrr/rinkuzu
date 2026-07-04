@@ -1,4 +1,4 @@
-import type { PublicProfileUser, User } from '@/entities/User';
+import type { PublicProfileUser, User, UserSubscriptionSnapshot } from '@/entities/User';
 import type {
   CountBuckets,
   CountBucketThresholds,
@@ -20,6 +20,7 @@ export interface UserRoleCount {
 export interface IUserRepository {
   findByEmail(email: string): Promise<User | null>;
   findById(id: string): Promise<User | null>;
+  findSubscriptionById(id: string): Promise<UserSubscriptionSnapshot | null>;
   findPublicProfileById(id: string): Promise<PublicProfileUser | null>;
   updateRole(id: string, role: User['role']): Promise<User | null>;
   delete(id: string): Promise<boolean>;

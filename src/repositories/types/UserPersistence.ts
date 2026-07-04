@@ -30,3 +30,7 @@ export interface PublicProfileUserPersistenceRecord {
   avatar?: string;
   createdAt: Date;
 }
+
+export interface UserSubscriptionProjection {
+  subscription?: UserSubscriptionPersistenceRecord;
+}

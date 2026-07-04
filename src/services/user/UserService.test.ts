@@ -44,6 +44,7 @@ function createService(overrides: ServiceOverrides = {}) {
   const userRepository: Mocked<IUserRepository> = {
     findByEmail: vi.fn(),
     findById: vi.fn(),
+    findSubscriptionById: vi.fn(),
     findPublicProfileById: vi.fn(),
     updateRole: vi.fn(),
     findAll: vi.fn(),

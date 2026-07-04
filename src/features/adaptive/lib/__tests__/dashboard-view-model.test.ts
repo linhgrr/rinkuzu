@@ -291,6 +291,8 @@ describe('toDashboardSubject', () => {
     completed_at: 1_700_000_000,
     mastered_concept: 4,
     all_concept: 8,
+    unlocked_concept: 8,
+    locked_concept: 0,
     progress_percent: 50,
   };
 
@@ -332,9 +334,25 @@ describe('toDashboardSubject', () => {
     expect(vm.displayTitle).toBe('intro');
   });
 
-  it('computes progressPercent from mastery when all_concept > 0', () => {
+  it('uses backend progressPercent computed from unlocked concepts', () => {
+    const vm = toDashboardSubject(
+      {
+        ...baseJob,
+        mastered_concept: 2,
+        all_concept: 8,
+        unlocked_concept: 4,
+        progress_percent: 50,
+      },
+      'en',
+      t,
+    );
+    expect(vm.metrics.progressPercent).toBe(50);
+    expect(vm.metrics.remainingConcepts).toBe(2);
+  });
+
+  it('keeps total concept count separate from unlocked progress denominator', () => {
     const vm = toDashboardSubject(baseJob, 'en', t);
-    expect(vm.metrics.progressPercent).toBe(50); // 4/8 * 100
+    expect(vm.metrics.allConcepts).toBe(8);
   });
 
   it('uses continueLearning cta when progress > 0', () => {
@@ -344,7 +362,14 @@ describe('toDashboardSubject', () => {
 
   it('uses startLearning cta when progress is 0', () => {
     const vm = toDashboardSubject(
-      { ...baseJob, mastered_concept: 0, all_concept: 0, progress_percent: 0 },
+      {
+        ...baseJob,
+        mastered_concept: 0,
+        all_concept: 0,
+        unlocked_concept: 0,
+        locked_concept: 0,
+        progress_percent: 0,
+      },
       'en',
       t,
     );

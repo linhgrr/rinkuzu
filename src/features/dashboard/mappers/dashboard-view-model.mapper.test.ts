@@ -74,6 +74,8 @@ describe('toDashboardViewModel', () => {
           relations_verified: 0,
           progress_percent: 20,
           all_concept: 4,
+          unlocked_concept: 4,
+          locked_concept: 0,
           mastered_concept: 3,
           completed_at: 1782972000,
         },

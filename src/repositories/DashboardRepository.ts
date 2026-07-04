@@ -43,6 +43,7 @@ export class DashboardRepository implements IDashboardRepository {
       return [];
     }
     const records = await QuizProgress.find({ userId: new Types.ObjectId(userId) })
+      .select('quiz answeredCount totalQuestions updatedAt')
       .sort({ updatedAt: -1 })
       .limit(limit)
       .populate({ path: 'quiz', select: 'title slug' })

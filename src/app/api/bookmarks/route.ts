@@ -9,18 +9,14 @@ import { readAndValidateJson, readAndValidateSearchParams } from '@/lib/api/requ
 const bookmarkService = serviceFactory.getBookmarkService();
 
 // GET - Get all bookmarks for current user
-export const GET = withAuth(async (request: NextRequest, { email }) => {
+export const GET = withAuth(async (request: NextRequest, { userId }) => {
   try {
-    if (!email) {
-      return apiErr('unauthorized', 'Unauthorized', 401);
-    }
-
     const query = readAndValidateSearchParams(request, bookmarkListQuerySchema);
     if (!query.success) {
       return apiErr('validation_error', query.error, 400, { fields: query.fields });
     }
 
-    const result = await bookmarkService.getBookmarksByUser(email, query.data);
+    const result = await bookmarkService.getBookmarksByUser(userId, query.data);
 
     return apiOk({
       bookmarks: result.bookmarks,
@@ -33,18 +29,14 @@ export const GET = withAuth(async (request: NextRequest, { email }) => {
 });
 
 // POST - Create new bookmark
-export const POST = withAuth(async (request: NextRequest, { email }) => {
+export const POST = withAuth(async (request: NextRequest, { userId, email }) => {
   try {
-    if (!email) {
-      return apiErr('unauthorized', 'Unauthorized', 401);
-    }
-
     const input = await readAndValidateJson(request, createBookmarkRequestSchema);
     if (!input.success) {
       return apiErr('validation_error', input.error, 400, { fields: input.fields });
     }
 
-    const bookmark = await bookmarkService.createBookmark(email, input.data);
+    const bookmark = await bookmarkService.createBookmark({ userId, userEmail: email }, input.data);
 
     return apiOk(bookmark);
   } catch (error: unknown) {

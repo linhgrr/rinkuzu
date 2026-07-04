@@ -14,8 +14,8 @@ import { BookmarkPersistenceMapper } from '@/repositories/mappers/BookmarkPersis
 import type { BookmarkPersistenceRecord } from '@/repositories/types/BookmarkPersistence';
 
 export class BookmarkRepository implements IBookmarkRepository {
-  async findByUserEmail(
-    userEmail: string,
+  async findByUserId(
+    userId: string,
     options: RepositoryPaginationOptions,
   ): Promise<PaginatedRepositoryResult<BookmarkEntity>> {
     await connectDB();
@@ -24,32 +24,18 @@ export class BookmarkRepository implements IBookmarkRepository {
     const skip = (page - 1) * limit;
 
     const [records, totalItems] = await Promise.all([
-      Bookmark.find({ userEmail })
+      Bookmark.find({ userId })
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
         .lean<BookmarkPersistenceRecord[]>(),
-      Bookmark.countDocuments({ userEmail }),
+      Bookmark.countDocuments({ userId }),
     ]);
 
     return {
       items: records.map(BookmarkPersistenceMapper.toEntity),
       pagination: buildPaginationMeta(page, limit, totalItems),
     };
-  }
-
-  async findByUserAndQuiz(
-    userEmail: string,
-    quizSlug: string,
-    questionIndex: number,
-  ): Promise<BookmarkEntity | null> {
-    await connectDB();
-    const record = await Bookmark.findOne({
-      userEmail,
-      'quiz.slug': quizSlug,
-      questionIndex,
-    }).lean<BookmarkPersistenceRecord>();
-    return record ? BookmarkPersistenceMapper.toEntity(record) : null;
   }
 
   async create(bookmarkData: CreateBookmarkData): Promise<BookmarkEntity> {
@@ -59,11 +45,11 @@ export class BookmarkRepository implements IBookmarkRepository {
     return BookmarkPersistenceMapper.toEntity(record);
   }
 
-  async deleteByIdAndUser(id: string, userEmail: string): Promise<boolean> {
+  async deleteByIdAndUser(id: string, userId: string): Promise<boolean> {
     await connectDB();
     const result = await Bookmark.findOneAndDelete({
       _id: id,
-      userEmail,
+      userId,
     });
     return !!result;
   }

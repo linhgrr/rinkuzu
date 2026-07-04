@@ -6,10 +6,18 @@ import type {
 } from '@/dtos/bookmark';
 import type { DeleteResultDto } from '@/dtos/common';
 
+export interface BookmarkOwner {
+  userId: string;
+  userEmail: string;
+}
+
 export interface IBookmarkService {
-  getBookmarksByUser(userEmail: string, options?: BookmarkListQueryDto): Promise<BookmarkListDto>;
+  getBookmarksByUser(userId: string, options?: BookmarkListQueryDto): Promise<BookmarkListDto>;
 
-  createBookmark(userEmail: string, bookmarkData: CreateBookmarkRequestDto): Promise<BookmarkDto>;
+  createBookmark(
+    owner: BookmarkOwner,
+    bookmarkData: CreateBookmarkRequestDto,
+  ): Promise<BookmarkDto>;
 
-  deleteBookmarkByUser(bookmarkId: string, userEmail: string): Promise<DeleteResultDto>;
+  deleteBookmarkByUser(bookmarkId: string, userId: string): Promise<DeleteResultDto>;
 }

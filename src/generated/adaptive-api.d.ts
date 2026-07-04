@@ -974,6 +974,95 @@ export interface components {
       /** Removed Cycles */
       removed_cycles?: number | null;
     };
+    /** PipelineDebugArtifactResponse */
+    PipelineDebugArtifactResponse: {
+      /**
+       * Artifact Id
+       * @default
+       */
+      artifact_id: string;
+      /**
+       * Kind
+       * @default
+       */
+      kind: string;
+      /**
+       * Label
+       * @default
+       */
+      label: string;
+      /**
+       * Index
+       * @default 0
+       */
+      index: number;
+      /** Page Start */
+      page_start?: number | null;
+      /** Page End */
+      page_end?: number | null;
+      /** Input */
+      input?: {
+        [key: string]: unknown;
+      };
+      /** Output */
+      output?: {
+        [key: string]: unknown;
+      };
+      /**
+       * Content Type
+       * @default text/plain
+       */
+      content_type: string;
+      /**
+       * Content
+       * @default
+       */
+      content: string;
+      /**
+       * Truncated
+       * @default false
+       */
+      truncated: boolean;
+    };
+    /** PipelineDebugTraceEntryResponse */
+    PipelineDebugTraceEntryResponse: {
+      /**
+       * Step Id
+       * @default
+       */
+      step_id: string;
+      /**
+       * Label
+       * @default
+       */
+      label: string;
+      /**
+       * Status
+       * @default
+       */
+      status: string;
+      /**
+       * Started At
+       * @default 0
+       */
+      started_at: number;
+      /** Completed At */
+      completed_at?: number | null;
+      /** Duration Ms */
+      duration_ms?: number | null;
+      /** Input */
+      input?: {
+        [key: string]: unknown;
+      };
+      /** Output */
+      output?: {
+        [key: string]: unknown;
+      } | null;
+      /** Error */
+      error?: string | null;
+      /** Artifacts */
+      artifacts?: components['schemas']['PipelineDebugArtifactResponse'][];
+    };
     /** PipelineFailedBatchResponse */
     PipelineFailedBatchResponse: {
       /** Batch Index */
@@ -1014,12 +1103,19 @@ export interface components {
       num_edges?: number | null;
       /** Is Dag */
       is_dag?: boolean | null;
-      /** Relations From Extraction */
-      relations_from_extraction?: number | null;
-      /** Relations From Verification */
-      relations_from_verification?: number | null;
+      /** Relation Candidates */
+      relation_candidates?: number | null;
+      /** Relation Candidates From Extraction */
+      relation_candidates_from_extraction?: number | null;
+      /** Relation Candidates From Mlp */
+      relation_candidates_from_mlp?: number | null;
+      /** Relations Inserted After Verification */
+      relations_inserted_after_verification?: number | null;
+      /** Relations Extraction Candidates Dropped */
+      relations_extraction_candidates_dropped?: number | null;
       /** Relations Verified */
       relations_verified?: number | null;
+      quality_report?: components['schemas']['PipelineQualityReportResponse'] | null;
       /** Builder Subject Id */
       builder_subject_id?: string | null;
       cycle_stats?: components['schemas']['PipelineCycleStatsResponse'] | null;
@@ -1098,6 +1194,7 @@ export interface components {
        * @default 0
        */
       relations_verified: number;
+      quality_report?: components['schemas']['PipelineQualityReportResponse'] | null;
       /** Error Code */
       error_code?: string | null;
       /** User Message */
@@ -1161,6 +1258,7 @@ export interface components {
     PipelineJobResultResponse: {
       graph?: components['schemas']['PipelineGraphResponse'];
       stats?: components['schemas']['PipelineGraphStatsResponse'];
+      quality_report?: components['schemas']['PipelineQualityReportResponse'] | null;
       /**
        * N Concepts
        * @default 0
@@ -1246,6 +1344,9 @@ export interface components {
        */
       relations_verified: number;
       graph_stats?: components['schemas']['PipelineGraphStatsResponse'];
+      quality_report?: components['schemas']['PipelineQualityReportResponse'] | null;
+      /** Debug Trace */
+      debug_trace?: components['schemas']['PipelineDebugTraceEntryResponse'][];
       /** Error Message */
       error_message?: string | null;
       /** Error Code */
@@ -1307,6 +1408,18 @@ export interface components {
       source: string;
       /** Target */
       target: string;
+      /** Confidence */
+      confidence?: number | null;
+      /** Evidence */
+      evidence?: string[] | null;
+      /** Reasoning */
+      reasoning?: string | null;
+      /** Sources */
+      sources?: string[] | null;
+      /** Ranker Score */
+      ranker_score?: number | null;
+      /** Extraction Confidence */
+      extraction_confidence?: number | null;
     };
     /** PipelinePartialGraphNodeResponse */
     PipelinePartialGraphNodeResponse: {
@@ -1345,6 +1458,68 @@ export interface components {
        * @default 3
        */
       retry_after_seconds: number;
+    };
+    /** PipelineQualityChecksResponse */
+    PipelineQualityChecksResponse: {
+      /**
+       * Has Concepts
+       * @default false
+       */
+      has_concepts: boolean;
+      /**
+       * Edges Reference Known Concepts
+       * @default false
+       */
+      edges_reference_known_concepts: boolean;
+      /**
+       * Is Dag
+       * @default false
+       */
+      is_dag: boolean;
+      /**
+       * Extraction Failure Ratio Ok
+       * @default false
+       */
+      extraction_failure_ratio_ok: boolean;
+      /**
+       * Has Verified Relation When Multi Concept
+       * @default false
+       */
+      has_verified_relation_when_multi_concept: boolean;
+    };
+    /** PipelineQualityReportResponse */
+    PipelineQualityReportResponse: {
+      /**
+       * Passed
+       * @default false
+       */
+      passed: boolean;
+      checks?: components['schemas']['PipelineQualityChecksResponse'];
+      /**
+       * Concept Count
+       * @default 0
+       */
+      concept_count: number;
+      /**
+       * Candidate Relation Count
+       * @default 0
+       */
+      candidate_relation_count: number;
+      /**
+       * Verified Relation Count
+       * @default 0
+       */
+      verified_relation_count: number;
+      /**
+       * Extraction Failure Ratio
+       * @default 0
+       */
+      extraction_failure_ratio: number;
+      /**
+       * Invalid Edge Count
+       * @default 0
+       */
+      invalid_edge_count: number;
     };
     /** PipelineRuntimeStatusResponse */
     PipelineRuntimeStatusResponse: {

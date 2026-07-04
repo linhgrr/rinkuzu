@@ -15,6 +15,7 @@
     "pipeline_unavailable": "Content pipeline unavailable",
     "pipeline_timeout": "Pipeline timed out",
     "pipeline_failed": "Pipeline failed",
+    "pipeline_quality_gate_failed": "Pipeline quality checks failed",
     "pipeline_cancelled": "Pipeline cancelled",
     "pipeline_stalled": "Processing stalled and was stopped. You can retry.",
     "upstream_timeout": "Service unavailable",

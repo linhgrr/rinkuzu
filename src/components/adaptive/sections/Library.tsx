@@ -24,8 +24,8 @@ type LibraryProps = {
 function getCardState(subject: DashboardSubject, t: TranslateFn) {
   if (subject.runtime.kind === 'processing') {
     return {
-      label: t('statusInProgress'),
-      badge: 'bg-badge-cool text-blue-600',
+      label: t('statusProcessing'),
+      badge: 'bg-orange-50 text-orange-700',
       progress: subject.runtime.progressPercent,
     };
   }
@@ -138,7 +138,9 @@ function SubjectCard({
           </button>
         ) : null}
         <div className="mb-2 flex items-center justify-between text-sm">
-          <span>{t('progressLabel')}</span>
+          <span>
+            {subject.runtime.kind === 'processing' ? t('processingProgress') : t('progressLabel')}
+          </span>
           <span>{state.progress}%</span>
         </div>
         <div className="h-2 overflow-hidden rounded-full bg-progress-track">
@@ -147,7 +149,11 @@ function SubjectCard({
             style={{ width: `${state.progress}%` }}
           />
         </div>
-        <p className="mt-4 text-sm text-ink-muted">{subject.lastOpenedLabel}</p>
+        <p className="mt-4 line-clamp-2 min-h-10 text-sm text-ink-muted">
+          {subject.runtime.kind === 'processing'
+            ? subject.runtime.stageLabel
+            : subject.lastOpenedLabel}
+        </p>
       </div>
     </article>
   );

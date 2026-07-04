@@ -14,6 +14,8 @@ type HeroProps = {
   loadingJobId: string | null;
   onGoUpload: () => void;
   onOpenSubject: (jobId: string) => void;
+  onCancel?: (jobId: string) => void;
+  busyJobId?: string | null;
   t: TranslateFn;
 };
 
@@ -71,6 +73,8 @@ export const HeroSection = ({
   loadingJobId,
   onGoUpload,
   onOpenSubject,
+  onCancel,
+  busyJobId,
   t,
 }: HeroProps) => {
   if (loading && !subject) {
@@ -81,6 +85,17 @@ export const HeroSection = ({
 
   const progress = subject?.metrics.progressPercent ?? 0;
   const isOpening = subject ? loadingJobId === subject.jobId : false;
+  const processingRuntime = subject?.runtime.kind === 'processing' ? subject.runtime : null;
+  const isProcessing = processingRuntime !== null;
+  const isBusy = subject ? busyJobId === subject.jobId : false;
+  const displayProgress = processingRuntime?.progressPercent ?? progress;
+  const progressTitle = isProcessing ? t('processingProgress') : t('yourProgress');
+  const progressValue = isProcessing
+    ? t('processingPercent', { percent: displayProgress })
+    : t('masterPercent', { percent: displayProgress });
+  const helperText = processingRuntime
+    ? processingRuntime.stageLabel
+    : (subject?.lastOpenedLabel ?? t('uploadMaterialHint'));
 
   return (
     <section className="relative min-h-[340px] overflow-hidden rounded-2xl border border-accent bg-surface-warm px-4 py-4 sm:min-h-[320px] sm:px-5 sm:py-5 md:h-[308px] md:min-h-0 md:rounded-[20px] md:px-6">
@@ -108,38 +123,53 @@ export const HeroSection = ({
           {subject?.displayTitle ?? t('uploadMaterialTitle')}
         </h2>
         <p className="mt-1 line-clamp-2 max-w-[44ch] font-home text-sm leading-[1.45] text-ink-muted sm:text-base">
-          {subject?.lastOpenedLabel ?? t('uploadMaterialHint')}
+          {helperText}
         </p>
 
         <div className="mt-auto w-full max-w-[470px]">
           {subject ? (
             <>
               <div className="mb-2 flex items-center justify-between gap-3 font-home text-sm font-semibold sm:text-base">
-                <span>{t('yourProgress')}</span>
-                <span className="shrink-0 tabular-nums">
-                  {t('masterPercent', { percent: progress })}
-                </span>
+                <span>{progressTitle}</span>
+                <span className="shrink-0 tabular-nums">{progressValue}</span>
               </div>
               <div className="h-2.5 overflow-hidden rounded-full bg-progress-track sm:h-3">
                 <div
                   className="h-full rounded-full bg-gradient-to-r from-primary to-primary-3 transition-[width] duration-500"
-                  style={{ width: `${progress}%` }}
+                  style={{ width: `${displayProgress}%` }}
                 />
               </div>
             </>
           ) : null}
           <Button
-            onClick={() => (subject ? onOpenSubject(subject.jobId) : onGoUpload())}
-            disabled={isOpening}
+            onClick={() => {
+              if (!subject) {
+                onGoUpload();
+                return;
+              }
+              if (subject.runtime.kind === 'processing') {
+                onCancel?.(subject.jobId);
+                return;
+              }
+              if (subject.runtime.kind === 'ready') {
+                onOpenSubject(subject.jobId);
+              }
+            }}
+            disabled={isOpening || isBusy || subject?.runtime.kind === 'retryable'}
             className={cn(
               'h-auto w-full rounded-full bg-accent px-5 py-3 font-home text-base font-semibold text-accent-text hover:bg-accent-hover sm:w-auto sm:text-lg',
               subject ? 'mt-5 sm:mt-6' : '',
+              isProcessing && 'bg-red-600 hover:bg-red-700',
             )}
           >
             {subject
-              ? isOpening
-                ? t('creatingSession')
-                : t('continueLearning')
+              ? isProcessing
+                ? isBusy
+                  ? t('cancelProcessing')
+                  : t('cancelProcessing')
+                : isOpening
+                  ? t('creatingSession')
+                  : t('continueLearning')
               : t('uploadDocument')}
           </Button>
         </div>

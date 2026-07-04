@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import Attempt from '@/models/Attempt';
 import Bookmark from '@/models/Bookmark';
 import Discussion from '@/models/Discussion';
+import QuestionProgress from '@/models/QuestionProgress';
 import Quiz from '@/models/Quiz';
 import Report from '@/models/Report';
 import Subscription from '@/models/Subscription';
@@ -55,5 +56,9 @@ describe('query performance indexes', () => {
             Object.keys(indexSpec).length === 2,
         )?.[1],
     ).toMatchObject({ unique: true });
+  });
+
+  it('indexes learned question counts by user and SRS level', () => {
+    expect(hasIndex(QuestionProgress, { userId: 1, srsLevel: 1 })).toBe(true);
   });
 });

@@ -59,15 +59,21 @@ export class DiscussionRepository implements IDiscussionRepository {
       );
     }
 
-    const resolvedDiscussionByIndex =
-      missingQuestionIndexes.length === 0
-        ? discussionByIndex
-        : new Map(
-            (await this.findByQuiz(quizId)).map((discussion) => [
-              discussion.questionIndex,
-              discussion,
-            ]),
-          );
+    const resolvedDiscussionByIndex = new Map(discussionByIndex);
+
+    if (missingQuestionIndexes.length > 0) {
+      const insertedRecords = await Discussion.find({
+        quiz: quizObjectId,
+        questionIndex: { $in: missingQuestionIndexes },
+      })
+        .populate('comments.author', 'email name displayName avatar')
+        .sort({ questionIndex: 1, createdAt: 1 })
+        .lean<DiscussionPersistenceRecord[]>();
+
+      for (const discussion of insertedRecords.map(DiscussionPersistenceMapper.toEntity)) {
+        resolvedDiscussionByIndex.set(discussion.questionIndex, discussion);
+      }
+    }
 
     return Array.from({ length: questionCount }, (_, questionIndex) => {
       const discussion = resolvedDiscussionByIndex.get(questionIndex);

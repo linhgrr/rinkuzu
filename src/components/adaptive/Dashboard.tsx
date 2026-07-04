@@ -91,6 +91,8 @@ export default function AdaptiveLearningDashboard({
             loadingJobId={loadingJobId}
             onGoUpload={handleGoUpload}
             onOpenSubject={handleOpenSubject}
+            onCancel={cancel}
+            busyJobId={busyJobId}
             t={tDashboard}
           />
         </div>

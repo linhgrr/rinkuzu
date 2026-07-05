@@ -28,6 +28,33 @@ import {
 } from '@/lib/mongoose-count-buckets';
 import { deleteQuizDependents } from '@/repositories/helpers/deleteQuizDependents';
 
+function toPersistenceFilter(filter: QuizFindFilter): FilterQuery<QuizPersistenceRecord> {
+  const { excludeAuthor, ...rest } = filter;
+  const normalizedFilter: FilterQuery<QuizPersistenceRecord> = { ...rest };
+
+  if (
+    typeof normalizedFilter.folder === 'string' &&
+    Types.ObjectId.isValid(normalizedFilter.folder)
+  ) {
+    normalizedFilter.folder = new Types.ObjectId(normalizedFilter.folder);
+  }
+  if (
+    typeof normalizedFilter.author === 'string' &&
+    Types.ObjectId.isValid(normalizedFilter.author)
+  ) {
+    normalizedFilter.author = new Types.ObjectId(normalizedFilter.author);
+  }
+  if (excludeAuthor) {
+    normalizedFilter.author = {
+      $ne: Types.ObjectId.isValid(excludeAuthor)
+        ? new Types.ObjectId(excludeAuthor)
+        : excludeAuthor,
+    };
+  }
+
+  return normalizedFilter;
+}
+
 export class QuizRepository implements IQuizRepository {
   async findById(id: string): Promise<Quiz | null> {
     await connectDB();
@@ -197,23 +224,9 @@ export class QuizRepository implements IQuizRepository {
     const { page, limit } = options;
     const skip = (page - 1) * limit;
     const sort = options.sort || { createdAt: -1 };
+    const normalizedFilter = toPersistenceFilter(filter);
 
     if (options.compact) {
-      const normalizedFilter: FilterQuery<QuizPersistenceRecord> = { ...filter };
-
-      if (
-        typeof normalizedFilter.folder === 'string' &&
-        Types.ObjectId.isValid(normalizedFilter.folder)
-      ) {
-        normalizedFilter.folder = new Types.ObjectId(normalizedFilter.folder);
-      }
-      if (
-        typeof normalizedFilter.author === 'string' &&
-        Types.ObjectId.isValid(normalizedFilter.author)
-      ) {
-        normalizedFilter.author = new Types.ObjectId(normalizedFilter.author);
-      }
-
       const [records, total] = await Promise.all([
         QuizModel.aggregate<QuizPersistenceRecord>([
           { $match: normalizedFilter },
@@ -265,15 +278,14 @@ export class QuizRepository implements IQuizRepository {
       };
     }
 
-    const persistenceFilter: FilterQuery<QuizPersistenceRecord> = filter;
-    let query = QuizModel.find(persistenceFilter);
+    let query = QuizModel.find(normalizedFilter);
 
     if (options.populate?.includes('author')) {
       query = query.populate('author', 'email name displayName avatar');
     }
     const [records, total] = await Promise.all([
       query.sort(sort).skip(skip).limit(limit).lean<QuizPersistenceRecord[]>(),
-      QuizModel.countDocuments(persistenceFilter),
+      QuizModel.countDocuments(normalizedFilter),
     ]);
 
     return {

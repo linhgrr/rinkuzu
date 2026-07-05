@@ -18,6 +18,7 @@ type QuizTextSearchCondition = { title: RegExp } | { description: RegExp };
 export interface QuizFindFilter {
   isPrivate?: boolean;
   author?: string;
+  excludeAuthor?: string;
   folder?: string | null;
   $or?: QuizTextSearchCondition[];
 }

@@ -11,20 +11,15 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import {
   checkApiHealth,
-  createSessionFromPipeline,
   deleteSubject,
   getSubjectProgressHistory,
   getSubjects,
   getSubjectsFresh,
 } from '@/features/adaptive/lib/adaptive-api-methods';
 import { ADAPTIVE_ROUTES } from '@/features/adaptive/lib/routes';
-import {
-  clearSelectedPipelineJob,
-  saveActiveSessionId,
-  saveSessionJobMapping,
-} from '../lib/session-storage';
-import { getSessionStartFeedback } from '../lib/session-start-feedback';
+import { clearSelectedPipelineJob } from '../lib/session-storage';
 import { useJobLibrary } from './use-job-library';
+import { useStartAdaptiveSubject } from './use-start-adaptive-subject';
 import {
   buildDashboardSubjectFromJob,
   toDashboardSubject,
@@ -142,7 +137,7 @@ export const useAdaptiveDashboard = ({
     enabled: dashboardState.apiOnline === true,
     initialJobs: [],
   });
-  const [loadingJobId, setLoadingJobId] = useState<string | null>(null);
+  const { loadingJobId, startSubject } = useStartAdaptiveSubject({ t, tAdaptive });
   const [deletingJobId, setDeletingJobId] = useState<string | null>(null);
   const [itemToDelete, setItemToDelete] = useState<DashboardSubject | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -163,24 +158,10 @@ export const useAdaptiveDashboard = ({
   }, [router]);
 
   const handleOpenSubject = useCallback(
-    async (jobId: string) => {
-      if (loadingJobId || deletingJobId) return;
-
-      setLoadingJobId(jobId);
-      try {
-        const session = await createSessionFromPipeline(jobId, 50);
-        saveActiveSessionId(session.session_id);
-        saveSessionJobMapping(session.session_id, jobId);
-        toast.success(t('creatingSession'));
-        router.push(ADAPTIVE_ROUTES.subject(session.session_id));
-      } catch (err) {
-        console.error(`Error creating session: ${(err as Error).message}`);
-        const feedback = getSessionStartFeedback(tAdaptive, 'dashboard', err);
-        toast.error(feedback.message);
-        setLoadingJobId(null);
-      }
+    (jobId: string) => {
+      if (!deletingJobId) void startSubject(jobId);
     },
-    [deletingJobId, loadingJobId, router, t, tAdaptive],
+    [deletingJobId, startSubject],
   );
 
   const handleDeleteClick = useCallback((subject: DashboardSubject) => {

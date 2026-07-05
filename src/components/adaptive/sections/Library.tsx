@@ -45,7 +45,7 @@ function getCardState(subject: DashboardSubject, t: TranslateFn) {
   return { label: t('statusNotStarted'), badge: 'bg-neutral-100 text-neutral-500', progress: 0 };
 }
 
-function SubjectCard({
+export function SubjectCard({
   subject,
   loading,
   deleting,
@@ -61,7 +61,7 @@ function SubjectCard({
   deleting: boolean;
   busy: boolean;
   onOpenSubject: (jobId: string) => void;
-  onDelete: (subject: DashboardSubject) => void;
+  onDelete?: (subject: DashboardSubject) => void;
   onRetry?: (jobId: string) => void;
   onCancel?: (jobId: string) => void;
   t: TranslateFn;
@@ -89,18 +89,20 @@ function SubjectCard({
         <span className={cn('rounded-[6px] px-2 py-1 text-sm font-semibold', state.badge)}>
           {state.label}
         </span>
-        <button
-          type="button"
-          onClick={(event) => {
-            event.stopPropagation();
-            onDelete(subject);
-          }}
-          disabled={deleting}
-          className="pointer-events-auto relative rounded-md p-1 text-ink-muted opacity-100 transition-opacity hover:bg-red-50 hover:text-red-600 focus:opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
-          aria-label={t('deleteMaterial')}
-        >
-          <HiOutlineTrash className="size-4" />
-        </button>
+        {onDelete ? (
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              onDelete(subject);
+            }}
+            disabled={deleting}
+            className="pointer-events-auto relative rounded-md p-1 text-ink-muted opacity-100 transition-opacity hover:bg-red-50 hover:text-red-600 focus:opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+            aria-label={t('deleteMaterial')}
+          >
+            <HiOutlineTrash className="size-4" />
+          </button>
+        ) : null}
       </div>
 
       <h3
@@ -159,7 +161,7 @@ function SubjectCard({
   );
 }
 
-function LibraryCardSkeleton() {
+export function LibraryCardSkeleton() {
   return (
     <Skeleton className="flex min-h-[196px] flex-col rounded-xl border border-accent-warm/30 p-4 sm:min-h-[212px]">
       <div className="flex items-start justify-between gap-3">

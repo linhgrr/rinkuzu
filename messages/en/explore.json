@@ -1,9 +1,39 @@
 {
-  "title": "Explore Quizzes",
-  "subtitle": "Discover new subjects and challenge yourself",
-  "searchPlaceholder": "Search quizzes...",
+  "title": "Search and explore",
+  "subtitle": "Search your quizzes, AI lessons, and the community library",
+  "searchPlaceholder": "Search quizzes or lessons...",
+  "filterLabel": "Filter result type",
+  "viewAll": "View all",
+  "retry": "Try again",
+  "partialError": "This content group could not be loaded. Other results are still available.",
+  "noResults": "No results found",
+  "nothingToExplore": "There is no content to show yet",
+  "nothingToExploreDescription": "Create a quiz, upload a document, or return later to discover new content.",
   "noQuizzes": "No quizzes found",
   "tryAdjusting": "Try adjusting your search or filter",
   "clearFilters": "Clear all filters",
-  "categoryFilterActive": "Category Filter Active (Click to Clear)"
+  "categoryFilterActive": "Category Filter Active (Click to Clear)",
+  "tabs": {
+    "all": "All",
+    "mine": "My quizzes",
+    "adaptive": "AI lessons",
+    "public": "Public quizzes"
+  },
+  "sections": {
+    "mine": {
+      "title": "Your quizzes",
+      "subtitle": "Quizzes you created, including public and private content",
+      "empty": "You do not have any matching quizzes."
+    },
+    "adaptive": {
+      "title": "AI lessons",
+      "subtitle": "Documents processed into personalized learning paths",
+      "empty": "No AI lessons match your search."
+    },
+    "public": {
+      "title": "Public quizzes",
+      "subtitle": "New learning content from the RinKuzu community",
+      "empty": "No public quizzes match your search."
+    }
+  }
 }

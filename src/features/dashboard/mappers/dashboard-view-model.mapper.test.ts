@@ -44,6 +44,8 @@ describe('toDashboardViewModel', () => {
       stats: baseStats,
       adaptiveSubjects: [],
       inProgressQuizzes: [],
+      recentOwnedQuizzes: [],
+      recentPublicQuizzes: [],
       locale: 'en',
       copy,
     });
@@ -52,6 +54,7 @@ describe('toDashboardViewModel', () => {
       streak: 0,
       accuracyPercent: 0,
       studyHours: 0,
+      dueCount: 0,
     });
   });
 
@@ -98,6 +101,8 @@ describe('toDashboardViewModel', () => {
           updatedAt: '2026-07-01T12:00:00.000Z',
         },
       ],
+      recentOwnedQuizzes: [],
+      recentPublicQuizzes: [],
       locale: 'en',
       copy,
     });
@@ -122,6 +127,38 @@ describe('toDashboardViewModel', () => {
         progress: 75,
         tone: 'warm',
       }),
+    ]);
+  });
+
+  it('maps recent quiz sections through the shared quiz view model', () => {
+    const quiz = {
+      id: 'quiz-1',
+      title: 'Algebra',
+      slug: 'algebra',
+      author: null,
+      folder: null,
+      isPrivate: false,
+      questionCount: 4,
+      createdAt: '2026-07-01T00:00:00.000Z',
+      updatedAt: '2026-07-01T00:00:00.000Z',
+    };
+    const viewModel = toDashboardViewModel({
+      userName: 'Learner',
+      stats: { ...baseStats, dueCount: 3 },
+      adaptiveSubjects: [],
+      inProgressQuizzes: [],
+      recentOwnedQuizzes: [quiz],
+      recentPublicQuizzes: [{ ...quiz, id: 'quiz-2', slug: 'geometry', title: 'Geometry' }],
+      locale: 'en',
+      copy,
+    });
+
+    expect(viewModel.progress.dueCount).toBe(3);
+    expect(viewModel.recentOwnedQuizzes).toEqual([
+      expect.objectContaining({ id: 'quiz-1', folderId: null }),
+    ]);
+    expect(viewModel.recentPublicQuizzes).toEqual([
+      expect.objectContaining({ id: 'quiz-2', title: 'Geometry' }),
     ]);
   });
 });

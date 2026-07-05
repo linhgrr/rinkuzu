@@ -1,4 +1,5 @@
 import type { PipelineJobHistoryItem } from '@/features/adaptive/types/pipeline';
+import type { QuizListItemDto } from '@/dtos/quiz';
 
 export interface DashboardWeeklyActivityDto {
   questionsReviewed: number;
@@ -35,4 +36,6 @@ export interface DashboardBootstrapDto {
   stats: DashboardStatsDto;
   adaptiveSubjects: PipelineJobHistoryItem[];
   inProgressQuizzes: DashboardInProgressQuizDto[];
+  recentOwnedQuizzes: QuizListItemDto[];
+  recentPublicQuizzes: QuizListItemDto[];
 }

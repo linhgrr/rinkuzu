@@ -9,6 +9,7 @@ import { ROUTES } from '@/shared/constants/routes';
 import { formatDate } from '@/lib/formatters';
 import { requireFirstNonEmptyString } from '@/lib/non-empty-string';
 import type { DashboardViewModel } from '@/features/dashboard/types/dashboard-view-model';
+import { toQuizListItemViewModel } from '@/features/quiz/mappers/quiz-list.mapper';
 
 export interface DashboardViewModelCopy {
   aiLearning: string;
@@ -26,6 +27,8 @@ export interface ToDashboardViewModelInput {
   stats: DashboardBootstrapDto['stats'];
   adaptiveSubjects: DashboardBootstrapDto['adaptiveSubjects'];
   inProgressQuizzes: DashboardBootstrapDto['inProgressQuizzes'];
+  recentOwnedQuizzes: DashboardBootstrapDto['recentOwnedQuizzes'];
+  recentPublicQuizzes: DashboardBootstrapDto['recentPublicQuizzes'];
   locale: string;
   copy: DashboardViewModelCopy;
 }
@@ -183,15 +186,19 @@ export function toDashboardViewModel({
   stats,
   adaptiveSubjects,
   inProgressQuizzes,
+  recentOwnedQuizzes,
+  recentPublicQuizzes,
   locale,
   copy,
 }: ToDashboardViewModelInput): DashboardViewModel {
   return {
     userName,
+    locale,
     progress: {
       streak: stats.streak,
       accuracyPercent: clampProgress(stats.averageAccuracy),
       studyHours: Math.ceil(stats.totalReviewSessions * 0.4),
+      dueCount: stats.dueCount,
       weekDays: buildWeekDays(stats.weeklyActivity, copy.weekdayLabels),
     },
     continueLearning: buildContinueLearning({
@@ -200,5 +207,7 @@ export function toDashboardViewModel({
       locale,
       copy,
     }),
+    recentOwnedQuizzes: recentOwnedQuizzes.map(toQuizListItemViewModel),
+    recentPublicQuizzes: recentPublicQuizzes.map(toQuizListItemViewModel),
   };
 }

@@ -1,0 +1,45 @@
+'use client';
+
+import { useCallback, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
+import { createSessionFromPipeline } from '@/features/adaptive/lib/adaptive-api-methods';
+import { ADAPTIVE_ROUTES } from '@/features/adaptive/lib/routes';
+import {
+  saveActiveSessionId,
+  saveSessionJobMapping,
+} from '@/features/adaptive/lib/session-storage';
+import { getSessionStartFeedback } from '@/features/adaptive/lib/session-start-feedback';
+import type { TranslateFn } from '@/features/adaptive/types/learning';
+
+interface UseStartAdaptiveSubjectOptions {
+  t: TranslateFn;
+  tAdaptive: TranslateFn;
+}
+
+export function useStartAdaptiveSubject({ t, tAdaptive }: UseStartAdaptiveSubjectOptions) {
+  const router = useRouter();
+  const [loadingJobId, setLoadingJobId] = useState<string | null>(null);
+
+  const startSubject = useCallback(
+    async (jobId: string) => {
+      if (loadingJobId) return;
+
+      setLoadingJobId(jobId);
+      try {
+        const session = await createSessionFromPipeline(jobId, 50);
+        saveActiveSessionId(session.session_id);
+        saveSessionJobMapping(session.session_id, jobId);
+        toast.success(t('creatingSession'));
+        router.push(ADAPTIVE_ROUTES.subject(session.session_id));
+      } catch (error) {
+        const feedback = getSessionStartFeedback(tAdaptive, 'dashboard', error);
+        toast.error(feedback.message);
+        setLoadingJobId(null);
+      }
+    },
+    [loadingJobId, router, t, tAdaptive],
+  );
+
+  return { loadingJobId, startSubject };
+}

@@ -14,6 +14,8 @@ interface DashboardPageShellProps {
   stats: ToDashboardViewModelInput['stats'];
   adaptiveSubjects: ToDashboardViewModelInput['adaptiveSubjects'];
   inProgressQuizzes: ToDashboardViewModelInput['inProgressQuizzes'];
+  recentOwnedQuizzes: ToDashboardViewModelInput['recentOwnedQuizzes'];
+  recentPublicQuizzes: ToDashboardViewModelInput['recentPublicQuizzes'];
 }
 
 export async function DashboardPageShell({
@@ -23,6 +25,8 @@ export async function DashboardPageShell({
   stats,
   adaptiveSubjects,
   inProgressQuizzes,
+  recentOwnedQuizzes,
+  recentPublicQuizzes,
 }: DashboardPageShellProps) {
   const t = await getTranslations('dashboard.home');
   const userName = session.user?.displayName ?? userEmail?.split('@')[0] ?? 'User';
@@ -31,6 +35,8 @@ export async function DashboardPageShell({
     stats,
     adaptiveSubjects,
     inProgressQuizzes,
+    recentOwnedQuizzes,
+    recentPublicQuizzes,
     locale,
     copy: {
       aiLearning: t('learningCard.aiLearning'),
@@ -68,6 +74,23 @@ export async function DashboardPageShell({
       title: t('continueLearning.title'),
       subtitle: t('continueLearning.subtitle'),
       emptyAction: t('continueLearning.emptyAction'),
+    },
+    reviewToday: {
+      title: t('reviewToday.title'),
+      due: t('reviewToday.due', { count: viewModel.progress.dueCount }),
+      caughtUp: t('reviewToday.caughtUp'),
+      reviewAction: t('reviewToday.reviewAction'),
+      exploreAction: t('reviewToday.exploreAction'),
+    },
+    recentOwnedQuizzes: {
+      title: t('recentOwnedQuizzes.title'),
+      subtitle: t('recentOwnedQuizzes.subtitle'),
+      emptyAction: t('recentOwnedQuizzes.emptyAction'),
+    },
+    recentPublicQuizzes: {
+      title: t('recentPublicQuizzes.title'),
+      subtitle: t('recentPublicQuizzes.subtitle'),
+      emptyAction: t('recentPublicQuizzes.emptyAction'),
     },
     learningProgress: {
       title: t('learningProgress.title'),

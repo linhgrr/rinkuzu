@@ -217,4 +217,29 @@ describe('QuizRepository.findUserQuizzes', () => {
       isPrivate: false,
     });
   });
+
+  it('normalizes excludeAuthor for compact public quiz queries', async () => {
+    const repository = new QuizRepository();
+    const userId = '507f191e810c19729de860eb';
+
+    await repository.findAll(
+      { isPrivate: false, excludeAuthor: userId },
+      { page: 1, limit: 4, compact: true, sort: { createdAt: -1 } },
+    );
+
+    const expectedFilter = {
+      isPrivate: false,
+      author: { $ne: new Types.ObjectId(userId) },
+    };
+    expect(quizModelMocks.aggregate).toHaveBeenCalledWith([
+      { $match: expectedFilter },
+      { $sort: { createdAt: -1 } },
+      { $skip: 0 },
+      { $limit: 4 },
+      expect.objectContaining({ $lookup: expect.any(Object) }),
+      expect.objectContaining({ $unwind: expect.any(Object) }),
+      expect.objectContaining({ $project: expect.any(Object) }),
+    ]);
+    expect(quizModelMocks.countDocuments).toHaveBeenCalledWith(expectedFilter);
+  });
 });

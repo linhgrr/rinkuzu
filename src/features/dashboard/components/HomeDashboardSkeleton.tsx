@@ -1,4 +1,5 @@
 import { Skeleton } from '@/components/ui/Skeleton';
+import { QuizCardSkeleton } from '@/features/quiz/components/QuizCard';
 
 function SectionHeadingSkeleton() {
   return (
@@ -56,9 +57,34 @@ export function HomeDashboardSkeleton() {
                 ))}
               </div>
             </section>
+
+            <section className="flex flex-col gap-4 rounded-[20px] border border-line bg-surface-blue p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+              <div className="flex items-center gap-3">
+                <Skeleton className="size-11 rounded-xl" />
+                <div className="space-y-2">
+                  <Skeleton className="h-6 w-40 rounded-md" />
+                  <Skeleton className="h-5 w-72 max-w-full rounded-md" />
+                </div>
+              </div>
+              <Skeleton className="h-11 w-36 rounded-full" />
+            </section>
+
+            {Array.from({ length: 2 }, (_, sectionIndex) => (
+              <section
+                key={`home-quiz-section-skeleton-${sectionIndex}`}
+                className="flex flex-col gap-6 rounded-[20px] border border-line bg-surface p-4 sm:p-5"
+              >
+                <SectionHeadingSkeleton />
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 min-[1180px]:grid-cols-4">
+                  {Array.from({ length: 4 }, (_, cardIndex) => (
+                    <QuizCardSkeleton key={`home-quiz-section-${sectionIndex}-card-${cardIndex}`} />
+                  ))}
+                </div>
+              </section>
+            ))}
           </div>
 
-          <div className="grid min-w-0 grid-cols-1 gap-6 md:grid-cols-2 min-[1684px]:flex min-[1684px]:flex-col">
+          <div className="grid min-w-0 grid-cols-1 gap-6 md:grid-cols-2 min-[1684px]:sticky min-[1684px]:top-24 min-[1684px]:flex min-[1684px]:self-start min-[1684px]:flex-col">
             <section className="flex min-h-[280px] flex-col gap-6 rounded-[20px] border border-line bg-surface p-4 sm:min-h-[295px] sm:p-5">
               <SectionHeadingSkeleton />
               <Skeleton className="min-h-[170px] flex-1 rounded-[10px]" />

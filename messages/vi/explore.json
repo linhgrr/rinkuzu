@@ -1,9 +1,39 @@
 {
-  "title": "Khám phá Quiz",
-  "subtitle": "Khám phá chủ đề mới và thử thách bản thân",
-  "searchPlaceholder": "Tìm kiếm quiz...",
+  "title": "Tìm kiếm và khám phá",
+  "subtitle": "Tìm trong quiz của bạn, bài học AI và thư viện cộng đồng",
+  "searchPlaceholder": "Tìm quiz hoặc bài học...",
+  "filterLabel": "Lọc loại kết quả",
+  "viewAll": "Xem tất cả",
+  "retry": "Thử lại",
+  "partialError": "Không thể tải nhóm nội dung này. Các kết quả khác vẫn có thể sử dụng.",
+  "noResults": "Không tìm thấy kết quả",
+  "nothingToExplore": "Chưa có nội dung để hiển thị",
+  "nothingToExploreDescription": "Hãy tạo quiz, tải tài liệu hoặc quay lại sau để khám phá nội dung mới.",
   "noQuizzes": "Không tìm thấy quiz",
   "tryAdjusting": "Thử điều chỉnh tìm kiếm hoặc bộ lọc",
   "clearFilters": "Xóa bộ lọc",
-  "categoryFilterActive": "Đang lọc theo danh mục (Nhấn để xóa)"
+  "categoryFilterActive": "Đang lọc theo danh mục (Nhấn để xóa)",
+  "tabs": {
+    "all": "Tất cả",
+    "mine": "Quiz của tôi",
+    "adaptive": "Bài học AI",
+    "public": "Quiz công khai"
+  },
+  "sections": {
+    "mine": {
+      "title": "Quiz của bạn",
+      "subtitle": "Quiz bạn đã tạo, gồm cả công khai và riêng tư",
+      "empty": "Bạn chưa có quiz phù hợp."
+    },
+    "adaptive": {
+      "title": "Bài học AI",
+      "subtitle": "Tài liệu đã được xử lý thành lộ trình học cá nhân hóa",
+      "empty": "Không có bài học AI phù hợp."
+    },
+    "public": {
+      "title": "Quiz công khai",
+      "subtitle": "Nội dung mới từ cộng đồng RinKuzu",
+      "empty": "Không có quiz công khai phù hợp."
+    }
+  }
 }

@@ -96,6 +96,23 @@
       "subtitle": "Tiếp tục các quiz hoặc lộ trình học AI từ nơi bạn đã dừng lại",
       "emptyAction": "Bắt đầu học"
     },
+    "reviewToday": {
+      "title": "Ôn tập hôm nay",
+      "due": "Bạn có {count} câu hỏi cần ôn để duy trì tiến độ",
+      "caughtUp": "Bạn đã hoàn thành toàn bộ nội dung cần ôn hôm nay",
+      "reviewAction": "Bắt đầu ôn tập",
+      "exploreAction": "Khám phá quiz"
+    },
+    "recentOwnedQuizzes": {
+      "title": "Quiz gần đây của bạn",
+      "subtitle": "Mở lại quiz bạn vừa tạo hoặc cập nhật",
+      "emptyAction": "Tạo quiz đầu tiên"
+    },
+    "recentPublicQuizzes": {
+      "title": "Khám phá quiz mới",
+      "subtitle": "Học thêm từ những quiz công khai mới nhất",
+      "emptyAction": "Khám phá quiz"
+    },
     "learningCard": {
       "aiLearning": "Học với AI",
       "inProgress": "Đang làm dở"

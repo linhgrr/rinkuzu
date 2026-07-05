@@ -11,15 +11,21 @@ import type {
   DashboardProgressViewModel,
 } from '@/features/dashboard/types/dashboard-view-model';
 import { QuizUploadDropzone } from './QuizUploadDropzone';
+import { QuizCard } from '@/features/quiz/components/QuizCard';
+import type { QuizListItemViewModel } from '@/features/quiz/types/quiz-list-view-model';
+import { HiOutlineArrowRight, HiOutlineInbox } from 'react-icons/hi';
 
 interface HomeDashboardProps {
   viewModel: {
     userName: string;
+    locale: string;
     progress: DashboardProgressViewModel;
     continueLearning: {
       items: DashboardLearningCardViewModel[];
       viewAllHref: string;
     };
+    recentOwnedQuizzes: QuizListItemViewModel[];
+    recentPublicQuizzes: QuizListItemViewModel[];
   };
   copy: DashboardHomeCopy;
 }
@@ -71,6 +77,21 @@ interface ContinueLearningProps {
   viewAllHref: string;
   title: string;
   subtitle: string;
+  viewAllLabel: string;
+  emptyActionLabel: string;
+}
+
+interface ReviewTodayProps {
+  dueCount: number;
+  copy: DashboardHomeCopy['reviewToday'];
+}
+
+interface QuizSectionProps {
+  quizzes: QuizListItemViewModel[];
+  locale: string;
+  title: string;
+  subtitle: string;
+  viewAllHref: string;
   viewAllLabel: string;
   emptyActionLabel: string;
 }
@@ -407,6 +428,68 @@ function ContinueLearning({
   );
 }
 
+function ReviewToday({ dueCount, copy }: ReviewTodayProps) {
+  const hasDueReviews = dueCount > 0;
+
+  return (
+    <SurfaceCard className="flex flex-col gap-4 bg-surface-blue p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+      <div className="flex min-w-0 items-start gap-3">
+        <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-badge-cool text-accent">
+          <HiOutlineInbox className="size-6" aria-hidden="true" />
+        </span>
+        <div>
+          <h2 className="font-home text-lg font-semibold leading-[1.4] text-ink">{copy.title}</h2>
+          <p className="mt-1 font-home text-base leading-[1.4] text-ink-muted">
+            {hasDueReviews ? copy.due : copy.caughtUp}
+          </p>
+        </div>
+      </div>
+      <Link
+        href={hasDueReviews ? '/review' : ROUTES.EXPLORE}
+        className="inline-flex min-h-11 w-fit shrink-0 items-center gap-2 rounded-full bg-accent px-5 py-2.5 font-home text-sm font-semibold text-accent-text transition-colors hover:bg-accent-hover"
+      >
+        {hasDueReviews ? copy.reviewAction : copy.exploreAction}
+        <HiOutlineArrowRight className="size-4" aria-hidden="true" />
+      </Link>
+    </SurfaceCard>
+  );
+}
+
+function QuizSection({
+  quizzes,
+  locale,
+  title,
+  subtitle,
+  viewAllHref,
+  viewAllLabel,
+  emptyActionLabel,
+}: QuizSectionProps) {
+  return (
+    <SurfaceCard className="flex min-w-0 flex-col gap-6 p-4 sm:p-5">
+      <SectionHeading
+        title={title}
+        subtitle={subtitle}
+        href={viewAllHref}
+        viewAllLabel={viewAllLabel}
+      />
+      {quizzes.length > 0 ? (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 min-[1180px]:grid-cols-4">
+          {quizzes.map((quiz) => (
+            <QuizCard key={quiz.id} quiz={quiz} quizId={quiz.id} locale={locale} />
+          ))}
+        </div>
+      ) : (
+        <Link
+          href={viewAllHref}
+          className="inline-flex min-h-10 w-fit items-center rounded-lg bg-primary px-4 py-2 font-home text-sm font-semibold text-white transition-colors hover:bg-primary/90"
+        >
+          {emptyActionLabel}
+        </Link>
+      )}
+    </SurfaceCard>
+  );
+}
+
 export function HomeDashboard({ viewModel, copy }: HomeDashboardProps) {
   return (
     <div className="px-4 pb-20 pt-5 font-home text-ink selection:bg-accent-soft sm:px-6 sm:pt-6 lg:px-8">
@@ -435,8 +518,27 @@ export function HomeDashboard({ viewModel, copy }: HomeDashboardProps) {
               viewAllLabel={copy.viewAll}
               emptyActionLabel={copy.continueLearning.emptyAction}
             />
+            <ReviewToday dueCount={viewModel.progress.dueCount} copy={copy.reviewToday} />
+            <QuizSection
+              quizzes={viewModel.recentOwnedQuizzes}
+              locale={viewModel.locale}
+              title={copy.recentOwnedQuizzes.title}
+              subtitle={copy.recentOwnedQuizzes.subtitle}
+              viewAllHref="/my-quizzes"
+              viewAllLabel={copy.viewAll}
+              emptyActionLabel={copy.recentOwnedQuizzes.emptyAction}
+            />
+            <QuizSection
+              quizzes={viewModel.recentPublicQuizzes}
+              locale={viewModel.locale}
+              title={copy.recentPublicQuizzes.title}
+              subtitle={copy.recentPublicQuizzes.subtitle}
+              viewAllHref={ROUTES.EXPLORE}
+              viewAllLabel={copy.viewAll}
+              emptyActionLabel={copy.recentPublicQuizzes.emptyAction}
+            />
           </div>
-          <div className="grid min-w-0 grid-cols-1 gap-6 md:grid-cols-2 min-[1684px]:flex min-[1684px]:flex-col">
+          <div className="grid min-w-0 grid-cols-1 gap-6 md:grid-cols-2 min-[1684px]:sticky min-[1684px]:top-24 min-[1684px]:flex min-[1684px]:self-start min-[1684px]:flex-col">
             <QuizBuilderCard title={copy.quizBuilder.title} subtitle={copy.quizBuilder.subtitle} />
             <LearningProgressCardBody
               progress={viewModel.progress}

@@ -8,6 +8,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { Link, usePathname, useRouter } from '@/i18n/navigation';
 import { ROUTES } from '@/shared/constants/routes';
 import { useDropdownOutside } from '@/components/ui/hooks/use-dropdown-outside';
+import { defaultLocale } from '@/i18n/config';
 
 const ICON = {
   home: 'material-symbols:home-outline-rounded',
@@ -665,7 +666,7 @@ function AppTopbar({
         <div className="mx-auto flex w-full max-w-[1404px] items-center justify-between gap-6 px-8">
           <form
             className="w-full max-w-[486px]"
-            action={`/${currentLocale}/adaptive`}
+            action={currentLocale === defaultLocale ? '/explore' : `/${currentLocale}/explore`}
             method="get"
             role="search"
           >
@@ -678,7 +679,7 @@ function AppTopbar({
               />
               <input
                 type="search"
-                name="search"
+                name="q"
                 placeholder={t('lessonSearch')}
                 className="h-11 w-full rounded-[12px] border border-line bg-surface-warm pl-[52px] pr-4 font-home text-base text-ink outline-none placeholder:text-ink-muted focus:border-accent"
               />

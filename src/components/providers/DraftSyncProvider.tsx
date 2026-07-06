@@ -47,7 +47,19 @@ export function DraftSyncProvider({ children }: { children: React.ReactNode }) {
       draftList.flatMap((draft) => {
         const status = mapDraftStatus(draft.status);
         if (!status) return [];
-        return [{ id: draft.id, status, expiresAt: draft.expiresAt }];
+        return [
+          {
+            id: draft.id,
+            title: draft.title,
+            status,
+            chunksTotal: draft.progress.total,
+            chunksProcessed: draft.progress.processed,
+            questionsCount: draft.questions.length,
+            error: draft.error ?? undefined,
+            createdAt: draft.createdAt,
+            expiresAt: draft.expiresAt,
+          },
+        ];
       }),
     );
   }, [draftList, cleanupExpiredDrafts, syncWithServer]);

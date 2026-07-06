@@ -18,8 +18,47 @@ export interface DraftProgress {
 
 export interface DraftServerSyncItem {
   id: string;
+  title: string;
   status: StoreDraftStatus;
+  chunksTotal: number;
+  chunksProcessed: number;
+  chunksError?: number;
+  questionsCount: number;
+  error?: string;
+  createdAt: string;
   expiresAt: string;
+}
+
+const OPTIMISTIC_DRAFT_GRACE_MS = 60_000;
+
+export function reconcileDraftsWithServer(
+  localDrafts: Record<string, DraftProgress>,
+  serverDrafts: DraftServerSyncItem[],
+  nowMs = Date.now(),
+): Record<string, DraftProgress> {
+  const serverIds = new Set(serverDrafts.map((draft) => draft.id));
+  const activeDrafts = Object.fromEntries(
+    Object.entries(localDrafts).filter(([id, draft]) => {
+      if (serverIds.has(id)) return true;
+
+      const createdAtMs = new Date(draft.createdAt).getTime();
+      const isRecentOptimisticDraft =
+        (draft.status === 'uploading' || draft.status === 'processing') &&
+        Number.isFinite(createdAtMs) &&
+        nowMs - createdAtMs < OPTIMISTIC_DRAFT_GRACE_MS;
+
+      return isRecentOptimisticDraft;
+    }),
+  );
+
+  for (const serverDraft of serverDrafts) {
+    activeDrafts[serverDraft.id] = {
+      ...activeDrafts[serverDraft.id],
+      ...serverDraft,
+    };
+  }
+
+  return activeDrafts;
 }
 
 interface DraftStore {
@@ -121,27 +160,9 @@ export const useDraftStore = create<DraftStore>()(
 
       syncWithServer: (serverDrafts) =>
         set((state) => {
-          const serverIds = new Set(serverDrafts.map((draft) => draft.id));
-
-          // Remove drafts that no longer exist on server
-          const activeDrafts = Object.fromEntries(
-            Object.entries(state.activeDrafts).filter(([id, _]) => {
-              return serverIds.has(id);
-            }),
-          );
-
-          // Update status from server for existing drafts
-          serverDrafts.forEach((serverDraft) => {
-            if (activeDrafts[serverDraft.id]) {
-              activeDrafts[serverDraft.id] = {
-                ...activeDrafts[serverDraft.id],
-                status: serverDraft.status,
-                expiresAt: serverDraft.expiresAt,
-              };
-            }
-          });
-
-          return { activeDrafts };
+          return {
+            activeDrafts: reconcileDraftsWithServer(state.activeDrafts, serverDrafts),
+          };
         }),
 
       getActiveDrafts: () => Object.values(get().activeDrafts),

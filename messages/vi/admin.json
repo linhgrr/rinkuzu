@@ -145,5 +145,18 @@
   "enterFeature": "Nhập tính năng",
   "featureDescription": "Mô tả tính năng",
   "searchByEmailPlaceholder": "Tìm theo email người dùng...",
-  "internalNotesPlaceholder": "Thêm ghi chú nội bộ về báo cáo này..."
+  "internalNotesPlaceholder": "Thêm ghi chú nội bộ về báo cáo này...",
+  "llmUsageTitle": "Sử dụng & Chi phí LLM ({days} ngày)",
+  "llmUsageTotalCost": "Tổng chi phí",
+  "llmUsageTotalTokens": "Tổng token",
+  "llmUsageCalls": "Số lượt gọi",
+  "llmUsageByAction": "Theo tính năng",
+  "llmUsageByModel": "Theo model",
+  "llmUsageColKey": "Mục",
+  "llmUsageColCalls": "Lượt",
+  "llmUsageColTokens": "Token",
+  "llmUsageColCost": "Chi phí (USD)",
+  "llmUsageLoading": "Đang tải dữ liệu LLM…",
+  "llmUsageError": "Không tải được dữ liệu sử dụng LLM.",
+  "llmUsageEmpty": "—"
 }

@@ -48,12 +48,16 @@ export const POST = withAuth(async (req, { params, userId, session }) => {
     body = JSON.stringify(parsedBody.data);
   }
 
+  const llmAction =
+    parsedParams.data.action === 'chat' ? 'adaptive_tutor_chat' : 'adaptive_generation';
+
   return proxyAdaptiveRequest(
     req,
     `/api/session/${parsedParams.data.sessionId}/${parsedParams.data.action}`,
     { userId, userRole: session.user.role },
     {
       method: 'POST',
+      llmAction,
       ...(body ? { body, contentType: 'application/json' } : {}),
     },
   );

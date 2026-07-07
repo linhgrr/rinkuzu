@@ -12,6 +12,7 @@ export interface ServiceErrorResult {
   success: false;
   error: string;
   statusCode: number;
+  code?: string;
 }
 
 function errorCodeFromStatus(status: number): string {
@@ -54,5 +55,8 @@ export function apiServiceErr(
   result: ServiceErrorResult,
   meta?: Record<string, unknown>,
 ): NextResponse {
+  if (result.code) {
+    return apiErr(result.code, result.error, result.statusCode, meta);
+  }
   return apiStatusErr(result.error, result.statusCode, meta);
 }

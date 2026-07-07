@@ -1,5 +1,6 @@
 import type { AdminSubscriptionDto, AdminSubscriptionListDto } from '@/dtos/admin-billing';
 import { formatDateTime, formatVndCurrency } from '@/lib/formatters';
+import { isLifetimeEndDate } from '@/lib/subscription-date';
 import type {
   AdminSubscriptionViewModel,
   AdminSubscriptionsListViewModel,
@@ -7,6 +8,13 @@ import type {
 
 const EMPTY_FIELD_LABEL = '—';
 const LIFETIME_END_DATE_LABEL = 'Lifetime';
+
+function formatEndDateLabel(value: string | undefined): string {
+  // Lifetime plans carry a far-future sentinel endDate — show "Lifetime", not
+  // the raw 9999 date. A missing endDate is an anomaly → em dash.
+  if (isLifetimeEndDate(value)) return LIFETIME_END_DATE_LABEL;
+  return value ? formatDateTime(value, { emptyLabel: EMPTY_FIELD_LABEL }) : EMPTY_FIELD_LABEL;
+}
 
 function formatOptionalDateLabel(value: string | undefined, emptyLabel: string): string {
   return value
@@ -35,7 +43,7 @@ export function toAdminSubscriptionViewModel(
     startDate: subscription.startDate,
     startDateLabel: formatOptionalDateLabel(subscription.startDate, EMPTY_FIELD_LABEL),
     endDate: subscription.endDate,
-    endDateLabel: formatOptionalDateLabel(subscription.endDate, LIFETIME_END_DATE_LABEL),
+    endDateLabel: formatEndDateLabel(subscription.endDate),
     isActive: subscription.isActive,
     createdAt: subscription.createdAt,
     createdAtLabel: formatDateTime(subscription.createdAt, { emptyLabel: EMPTY_FIELD_LABEL }),

@@ -3,7 +3,9 @@ import type {
   AdminCreatorStatDto,
   AdminOverviewStatsDto,
   AdminRecentUserDto,
+  AdminScoreStatsDto,
 } from '@/dtos/admin-stats';
+import type { AttemptScoreStats } from '@/interfaces/repositories/IAttemptRepository';
 import type { Attempt } from '@/entities/Attempt';
 import type { Quiz } from '@/entities/Quiz';
 import type { User } from '@/entities/User';
@@ -59,6 +61,14 @@ export class AdminStatsDtoMapper {
         quizzes: recentQuizzes.map(AdminQuizDtoMapper.toListItem),
         attempts: recentAttempts.map(AdminActivityDtoMapper.toRecentAttempt),
       },
+    };
+  }
+
+  static toScoreStatsDto(stats: AttemptScoreStats): AdminScoreStatsDto {
+    return {
+      averageScore: Math.round(stats.averageScore),
+      highestScore: stats.highestScore,
+      lowestScore: stats.lowestScore,
     };
   }
 

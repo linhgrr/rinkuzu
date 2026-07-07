@@ -8,5 +8,10 @@
   "benefitDetailedStats": "Thống kê chi tiết",
   "benefitPrioritySupport": "Hỗ trợ ưu tiên",
   "upgradeToPremium": "Nâng cấp lên Premium",
-  "goToHome": "Về trang chủ"
+  "goToHome": "Về trang chủ",
+  "limitReachedTitle": "Bạn đã đạt giới hạn của gói miễn phí",
+  "rateLimitMessage": "Bạn đã dùng hết lượt trong ngày cho tính năng này ở gói miễn phí.",
+  "upgradeCta": "Nâng cấp",
+  "dontShowAgain": "Đừng hiện lại (lần sau chỉ hiện thông báo nhỏ)",
+  "dismiss": "Để sau"
 }

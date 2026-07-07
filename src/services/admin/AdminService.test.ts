@@ -72,6 +72,7 @@ function createAttemptRepository(): IAttemptRepository {
     findByIdWithQuiz: vi.fn(),
     count: vi.fn().mockResolvedValue(0),
     countByTakenAtBuckets: vi.fn().mockResolvedValue({ today: 0, thisWeek: 0, thisMonth: 0 }),
+    scoreStats: vi.fn().mockResolvedValue({ averageScore: 0, highestScore: 0, lowestScore: 0 }),
   };
 }
 

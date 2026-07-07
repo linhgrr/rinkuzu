@@ -8,5 +8,10 @@
   "benefitDetailedStats": "Detailed statistics",
   "benefitPrioritySupport": "Priority support",
   "upgradeToPremium": "Upgrade to Premium",
-  "goToHome": "Go to Home"
+  "goToHome": "Go to Home",
+  "limitReachedTitle": "You've reached your free plan limit",
+  "rateLimitMessage": "You've hit your daily limit for this feature on the free plan.",
+  "upgradeCta": "Upgrade",
+  "dontShowAgain": "Don't show this again (only a small toast next time)",
+  "dismiss": "Not now"
 }

@@ -226,12 +226,7 @@ function ExploreContent() {
   return (
     <main className="min-h-[calc(100dvh-5rem)] bg-surface-page px-4 pb-24 pt-6 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-[1340px]">
-        <div className="max-w-3xl">
-          <h1 className="font-home text-2xl font-semibold leading-[1.4] text-ink">{t('title')}</h1>
-          <p className="mt-1 font-home text-base text-ink-muted">{t('subtitle')}</p>
-        </div>
-
-        <div className="mt-6 lg:hidden">
+        <div className="lg:hidden">
           <ExploreSearchInput
             key={query}
             initialQuery={query}

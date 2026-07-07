@@ -41,6 +41,7 @@ describe('session-history.mapper', () => {
       totalAnswered: 5,
       accuracyPercent: 80,
       averageMasteryPercent: 72,
+      progressPercent: 75,
     });
     expect(viewModel).not.toHaveProperty('job_id');
     expect(viewModel).not.toHaveProperty('subject_id');

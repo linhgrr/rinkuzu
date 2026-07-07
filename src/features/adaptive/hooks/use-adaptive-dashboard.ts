@@ -28,7 +28,10 @@ import { toSessionHistoryViewModels } from '@/features/adaptive/mappers/session-
 import type { SessionHistoryItem } from '@/features/adaptive/types/history';
 import type { TranslateFn } from '@/features/adaptive/types/learning';
 import type { PipelineJobHistoryItem } from '@/features/adaptive/types/pipeline';
-import type { DashboardSubject } from '@/features/adaptive/types/dashboard-view-model';
+import type {
+  DashboardSubject,
+  DashboardSubjectExercise,
+} from '@/features/adaptive/types/dashboard-view-model';
 import type { SessionHistoryViewModel } from '@/features/adaptive/types/session-history-view-model';
 
 const DAILY_GOAL_TARGET = 3;
@@ -230,15 +233,29 @@ export const useAdaptiveDashboard = ({
       });
   }, [completedJobsNeedingEnrichmentKey, dashboardState.apiOnline]);
 
+  // Exercise-history by job_id: drives the card status pill so a subject the
+  // learner has practised shows "In progress"/"Completed" instead of mastery-only.
+  const exerciseByJobId = useMemo(() => {
+    const map = new Map<string, DashboardSubjectExercise>();
+    for (const session of dashboardState.sessionHistory) {
+      map.set(session.jobId, {
+        status: session.status,
+        totalAnswered: session.totalAnswered,
+        progressPercent: session.progressPercent,
+      });
+    }
+    return map;
+  }, [dashboardState.sessionHistory]);
+
   // Merge all-status jobs (live polling) with completed mastery enrichment.
   const mergedSubjects = useMemo<DashboardSubject[]>(() => {
     return jobLibrary.jobs.map((job) => {
       const enriched = job.status === 'completed' ? enrichedByJobId.get(job.job_id) : undefined;
       return enriched
-        ? toDashboardSubject(enriched, locale, t)
+        ? toDashboardSubject(enriched, locale, t, exerciseByJobId.get(job.job_id) ?? null)
         : buildDashboardSubjectFromJob(job, t, tAdaptive);
     });
-  }, [enrichedByJobId, jobLibrary.jobs, locale, t, tAdaptive]);
+  }, [enrichedByJobId, exerciseByJobId, jobLibrary.jobs, locale, t, tAdaptive]);
 
   const normalizedSubjects = useMemo(() => {
     return mergedSubjects.map((subject) => ({
@@ -297,7 +314,7 @@ export const useAdaptiveDashboard = ({
         const [subjectsResult, historyResult] = healthResult
           ? await Promise.all([
               getSubjects().catch(() => null),
-              getSubjectProgressHistory(5).catch(() => null),
+              getSubjectProgressHistory(50).catch(() => null),
             ])
           : [null, null];
         const didRecover = healthResult && subjectsResult !== null && historyResult !== null;
@@ -321,7 +338,7 @@ export const useAdaptiveDashboard = ({
       const [healthResult, subjectsResult, historyResult] = await Promise.allSettled([
         checkApiHealth(),
         getSubjects(),
-        getSubjectProgressHistory(5),
+        getSubjectProgressHistory(50),
       ]);
       const nextState: Partial<AdaptiveDashboardState> = {
         loading: false,

@@ -4,6 +4,7 @@ import type { PipelineJobHistoryItem, PipelineStatus } from '@/features/adaptive
 import type {
   DashboardPipelineJobListItem,
   DashboardSubject,
+  DashboardSubjectExercise,
   DashboardSubjectMetrics,
   SubjectRuntime,
 } from '@/features/adaptive/types/dashboard-view-model';
@@ -83,6 +84,7 @@ export const toDashboardSubject = (
   job: PipelineJobHistoryItem,
   locale: string,
   t: TranslateFn,
+  exercise: DashboardSubjectExercise | null = null,
 ): DashboardSubject => {
   const metrics = getSubjectMetrics(job);
 
@@ -104,6 +106,7 @@ export const toDashboardSubject = (
     ctaLabel: metrics.progressPercent > 0 ? t('continueLearning') : t('startLearning'),
     metrics,
     runtime: { kind: 'ready' },
+    exercise,
   };
 };
 
@@ -198,5 +201,6 @@ export const buildDashboardSubjectFromJob = (
         : tProcessing('processing.status.processing'),
     metrics,
     runtime,
+    exercise: null,
   };
 };

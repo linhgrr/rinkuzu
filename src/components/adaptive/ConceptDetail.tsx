@@ -3,6 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { HiCheck } from 'react-icons/hi';
 import { Modal } from '@/components/ui/Modal';
+import { DynamicMarkdownRenderer } from '@/components/ui/DynamicMarkdownRenderer';
 import type { ConceptDetail } from '@/features/adaptive/types/graph';
 
 interface ConceptDetailPanelProps {
@@ -41,8 +42,6 @@ export default function ConceptDetailPanel({ concept, onClose }: ConceptDetailPa
               className: 'bg-neutral-100 text-neutral-600',
             };
 
-  const masteryBarClass = concept.status === 'locked' ? 'bg-neutral-400' : 'bg-brand-trust';
-
   return (
     <Modal isOpen onClose={onClose} title={concept.name} size="medium" className="max-w-lg">
       <div className="space-y-6">
@@ -64,50 +63,58 @@ export default function ConceptDetailPanel({ concept, onClose }: ConceptDetailPa
             <h3 className="mb-2 text-sm font-semibold uppercase tracking-wider text-neutral-500">
               {t('conceptDetail.definition')}
             </h3>
-            <p className="text-sm leading-relaxed text-neutral-700">{concept.definition}</p>
+            <DynamicMarkdownRenderer
+              content={concept.definition}
+              className="text-sm leading-relaxed text-neutral-700"
+            />
           </div>
         ) : null}
 
-        <div>
-          <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-neutral-500">
-            {t('conceptDetail.overallMastery')}
-          </h3>
-          <div className="flex items-center gap-3">
-            <div className="h-4 flex-1 overflow-hidden rounded-full bg-neutral-100">
-              <div
-                className={`h-full rounded-full transition-[width] ${masteryBarClass}`}
-                style={{ width: `${concept.mastery * 100}%` }}
-              />
-            </div>
-            <span className="text-lg font-bold text-neutral-900">
-              {Math.round(concept.mastery * 100)}%
-            </span>
-          </div>
-        </div>
-
-        <div>
-          <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-neutral-500">
-            {t('conceptDetail.bloomBreakdown')}
-          </h3>
-          <div className="space-y-2">
-            {concept.bloom_mastery.map((value, index) => (
-              <div key={BLOOM_KEYS[index]} className="flex items-center gap-3">
-                <span className="w-20 truncate text-xs font-medium text-neutral-600">
-                  {t(`bloom.${BLOOM_KEYS[index]}`)}
-                </span>
-                <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-neutral-100">
+        {/* A locked concept has no meaningful mastery yet — hide mastery/bloom. */}
+        {concept.status !== 'locked' ? (
+          <>
+            <div>
+              <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-neutral-500">
+                {t('conceptDetail.overallMastery')}
+              </h3>
+              <div className="flex items-center gap-3">
+                <div className="h-4 flex-1 overflow-hidden rounded-full bg-neutral-100">
                   <div
-                    className={`h-full rounded-full transition-[width] ${BLOOM_COLORS[index] || 'bg-neutral-400'}`}
-                    style={{ width: `${value * 100}%` }}
+                    className="h-full rounded-full bg-brand-trust transition-[width]"
+                    style={{ width: `${concept.mastery * 100}%` }}
                   />
                 </div>
-                <span className="w-10 text-right text-xs font-bold text-neutral-600">
-                  {Math.round(value * 100)}%
+                <span className="text-lg font-bold text-neutral-900">
+                  {Math.round(concept.mastery * 100)}%
                 </span>
               </div>
-            ))}
-          </div>
-        </div>
+            </div>
+
+            <div>
+              <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-neutral-500">
+                {t('conceptDetail.bloomBreakdown')}
+              </h3>
+              <div className="space-y-2">
+                {concept.bloom_mastery.map((value, index) => (
+                  <div key={BLOOM_KEYS[index]} className="flex items-center gap-3">
+                    <span className="w-20 truncate text-xs font-medium text-neutral-600">
+                      {t(`bloom.${BLOOM_KEYS[index]}`)}
+                    </span>
+                    <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-neutral-100">
+                      <div
+                        className={`h-full rounded-full transition-[width] ${BLOOM_COLORS[index] || 'bg-neutral-400'}`}
+                        style={{ width: `${value * 100}%` }}
+                      />
+                    </div>
+                    <span className="w-10 text-right text-xs font-bold text-neutral-600">
+                      {Math.round(value * 100)}%
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
+        ) : null}
 
         {concept.prerequisites.length > 0 ? (
           <div>

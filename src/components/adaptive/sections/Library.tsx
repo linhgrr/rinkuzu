@@ -32,6 +32,22 @@ function getCardState(subject: DashboardSubject, t: TranslateFn) {
   if (subject.runtime.kind === 'retryable') {
     return { label: t('statusNotStarted'), badge: 'bg-neutral-100 text-neutral-500', progress: 0 };
   }
+
+  // Exercise history is the source of truth for the pill: a subject the learner
+  // has practised is In progress/Completed even when mastery hasn't moved yet.
+  const { exercise } = subject;
+  if (exercise) {
+    if (exercise.status === 'completed' || exercise.progressPercent >= 100) {
+      return { label: t('statusCompleted'), badge: 'bg-green-50 text-green-600', progress: 100 };
+    }
+    return {
+      label: t('statusInProgress'),
+      badge: 'bg-badge-cool text-blue-600',
+      progress: exercise.progressPercent,
+    };
+  }
+
+  // No exercise history joined (e.g. explore page) — fall back to mastery.
   if (subject.metrics.progressPercent >= 100) {
     return { label: t('statusCompleted'), badge: 'bg-green-50 text-green-600', progress: 100 };
   }

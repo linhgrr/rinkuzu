@@ -36,6 +36,12 @@ export interface AttemptCountFilter {
   takenAt?: AttemptTakenAtFilter;
 }
 
+export interface AttemptScoreStats {
+  averageScore: number;
+  highestScore: number;
+  lowestScore: number;
+}
+
 export interface IAttemptRepository {
   findByUser(
     userId: string,
@@ -55,4 +61,6 @@ export interface IAttemptRepository {
   count(filter?: AttemptCountFilter): Promise<number>;
 
   countByTakenAtBuckets(thresholds: CountBucketThresholds): Promise<CountBuckets>;
+
+  scoreStats(): Promise<AttemptScoreStats>;
 }

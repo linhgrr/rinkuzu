@@ -1,28 +1,23 @@
 import mongoose from 'mongoose';
-import { createSubscriptionService } from '@/lib/subscription-factory';
 import { RateLimiterMongo } from 'rate-limiter-flexible';
 import connectDB from '@/lib/mongoose';
 import { apiErr } from '@/lib/api/response';
 import type { UserRole } from '@/types/next-auth';
+import {
+  getLimit,
+  resolveEntitlements,
+  type Entitlements,
+  type MeteredCapability,
+  type RateWindow,
+  type Tier,
+} from '@/lib/entitlements';
 
-type LlmRateLimitAction =
-  | 'quiz_ask_ai'
-  | 'quiz_extract'
-  | 'adaptive_pipeline'
-  | 'adaptive_tutor_chat'
-  | 'adaptive_generation';
-
-type Tier = 'free' | 'premium';
-
-type TierLimit = {
-  minute: number;
-  day: number;
-};
-
-type RateLimitConfig = Record<LlmRateLimitAction, Record<Tier, TierLimit>>;
+// Re-export so route handlers can type their declared action without reaching
+// into the entitlements module directly.
+export type LlmRateLimitAction = MeteredCapability;
 
 type WindowResult = {
-  window: 'minute' | 'day';
+  window: RateWindow;
   limit: number;
   remaining: number;
   resetAt: Date;
@@ -48,47 +43,14 @@ export function isAdminRole(role: unknown): role is UserRole {
   return role === 'admin';
 }
 
-const DEFAULT_LIMITS: RateLimitConfig = {
-  quiz_ask_ai: {
-    free: { minute: 5, day: 20 },
-    premium: { minute: 20, day: 200 },
-  },
-  quiz_extract: {
-    free: { minute: 1, day: 3 },
-    premium: { minute: 5, day: 30 },
-  },
-  adaptive_pipeline: {
-    free: { minute: 1, day: 2 },
-    premium: { minute: 3, day: 20 },
-  },
-  adaptive_tutor_chat: {
-    free: { minute: 6, day: 30 },
-    premium: { minute: 20, day: 300 },
-  },
-  adaptive_generation: {
-    free: { minute: 6, day: 50 },
-    premium: { minute: 20, day: 500 },
-  },
-};
-
 const LIMITER_COLLECTION = 'llm_rate_limits';
 const limiterCache = new Map<string, RateLimiterMongo>();
-
-function readLimitEnv(action: LlmRateLimitAction, tier: Tier, window: 'minute' | 'day') {
-  const key = `LLM_RATE_${action}_${tier}_${window}`.toUpperCase();
-  const raw = Number(process.env[key]);
-  return Number.isFinite(raw) && raw > 0 ? Math.floor(raw) : undefined;
-}
-
-function getLimit(action: LlmRateLimitAction, tier: Tier, window: 'minute' | 'day') {
-  return readLimitEnv(action, tier, window) ?? DEFAULT_LIMITS[action][tier][window];
-}
 
 function retryAfterSeconds(resetAt: Date) {
   return Math.max(1, Math.ceil((resetAt.getTime() - Date.now()) / 1000));
 }
 
-function getWindowDurationSeconds(window: 'minute' | 'day') {
+function getWindowDurationSeconds(window: RateWindow) {
   return window === 'minute' ? 60 : 24 * 60 * 60;
 }
 
@@ -119,7 +81,12 @@ function toWindowResult(
   };
 }
 
-function getMongoLimiter(action: LlmRateLimitAction, tier: Tier, window: 'minute' | 'day') {
+function getMongoLimiter(
+  action: LlmRateLimitAction,
+  tier: Tier,
+  window: RateWindow,
+  limit: number,
+) {
   const cacheKey = `${action}:${tier}:${window}`;
   const cached = limiterCache.get(cacheKey);
   if (cached) {
@@ -135,7 +102,7 @@ function getMongoLimiter(action: LlmRateLimitAction, tier: Tier, window: 'minute
     storeClient: db,
     tableName: LIMITER_COLLECTION,
     keyPrefix: `llm:${cacheKey}`,
-    points: getLimit(action, tier, window),
+    points: limit,
     duration: getWindowDurationSeconds(window),
   });
   limiterCache.set(cacheKey, limiter);
@@ -145,11 +112,11 @@ function getMongoLimiter(action: LlmRateLimitAction, tier: Tier, window: 'minute
 async function incrementWindow(
   userId: string,
   action: LlmRateLimitAction,
-  tier: Tier,
-  window: 'minute' | 'day',
+  entitlements: Entitlements,
+  window: RateWindow,
 ): Promise<WindowResult> {
-  const limit = getLimit(action, tier, window);
-  const limiter = getMongoLimiter(action, tier, window);
+  const limit = getLimit(entitlements, action, window);
+  const limiter = getMongoLimiter(action, entitlements.tier, window, limit);
 
   try {
     const result = await limiter.consume(userId);
@@ -162,39 +129,17 @@ async function incrementWindow(
   }
 }
 
-export function classifyAdaptiveLlmAction(
-  targetPath: string,
-  method: string,
-): LlmRateLimitAction | null {
-  const normalizedMethod = method.toUpperCase();
-  if (normalizedMethod !== 'POST') return null;
-
-  if (targetPath === '/api/pipeline/process') return 'adaptive_pipeline';
-  if (/^\/api\/session\/[^/]+\/chat$/.test(targetPath)) return 'adaptive_tutor_chat';
-
-  if (
-    targetPath === '/api/session/start' ||
-    /^\/api\/session\/[^/]+\/(theory|exercise|submit|next-concept)$/.test(targetPath) ||
-    /^\/api\/pipeline\/jobs\/[^/]+\/create-session$/.test(targetPath)
-  ) {
-    return 'adaptive_generation';
-  }
-
-  return null;
-}
-
 export async function checkLlmRateLimit(
   userId: string,
   action: LlmRateLimitAction,
 ): Promise<LlmRateLimitResult> {
   await connectDB();
 
-  const subscriptionService = createSubscriptionService();
-  const tier: Tier = (await subscriptionService.isUserPremium(userId)) ? 'premium' : 'free';
+  const entitlements = await resolveEntitlements(userId);
 
   const [minute, day] = await Promise.all([
-    incrementWindow(userId, action, tier, 'minute'),
-    incrementWindow(userId, action, tier, 'day'),
+    incrementWindow(userId, action, entitlements, 'minute'),
+    incrementWindow(userId, action, entitlements, 'day'),
   ]);
 
   const exceeded = [minute, day].filter((item) => item.count > item.limit);
@@ -207,7 +152,7 @@ export async function checkLlmRateLimit(
 
   return {
     allowed: exceeded.length === 0,
-    tier,
+    tier: entitlements.tier,
     action,
     minute,
     day,

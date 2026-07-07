@@ -69,6 +69,7 @@ function createService() {
     findByIdWithQuiz: vi.fn(),
     count: vi.fn(),
     countByTakenAtBuckets: vi.fn(),
+    scoreStats: vi.fn().mockResolvedValue({ averageScore: 0, highestScore: 0, lowestScore: 0 }),
   };
   const progressRepository: Mocked<IQuizProgressRepository> = {
     findByUserAndQuiz: vi.fn(),

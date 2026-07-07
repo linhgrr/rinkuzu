@@ -145,5 +145,18 @@
   "enterFeature": "Enter feature",
   "featureDescription": "Feature description",
   "searchByEmailPlaceholder": "Search by user email...",
-  "internalNotesPlaceholder": "Add internal notes about this report..."
+  "internalNotesPlaceholder": "Add internal notes about this report...",
+  "llmUsageTitle": "LLM Usage & Cost ({days} days)",
+  "llmUsageTotalCost": "Total cost",
+  "llmUsageTotalTokens": "Total tokens",
+  "llmUsageCalls": "Total calls",
+  "llmUsageByAction": "By feature",
+  "llmUsageByModel": "By model",
+  "llmUsageColKey": "Key",
+  "llmUsageColCalls": "Calls",
+  "llmUsageColTokens": "Tokens",
+  "llmUsageColCost": "Cost (USD)",
+  "llmUsageLoading": "Loading LLM usage…",
+  "llmUsageError": "Could not load LLM usage data.",
+  "llmUsageEmpty": "—"
 }

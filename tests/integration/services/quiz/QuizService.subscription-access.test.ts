@@ -37,7 +37,7 @@ function createQuizService(quiz: Quiz) {
     update: vi.fn(),
     delete: vi.fn(),
     findAll: vi.fn(),
-    findForPlay: vi.fn(),
+    findForPlay: vi.fn().mockResolvedValue(quiz),
     findUserQuizzes: vi.fn(),
     findPublicByAuthor: vi.fn(),
     count: vi.fn(),
@@ -65,6 +65,7 @@ function createQuizService(quiz: Quiz) {
     findByIdWithQuiz: vi.fn(),
     count: vi.fn(),
     countByTakenAtBuckets: vi.fn(),
+    scoreStats: vi.fn().mockResolvedValue({ averageScore: 0, highestScore: 0, lowestScore: 0 }),
   };
   const discussionRepository: Mocked<IDiscussionRepository> = {
     findById: vi.fn(),

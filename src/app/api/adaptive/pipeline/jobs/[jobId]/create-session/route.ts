@@ -26,6 +26,7 @@ export const POST = withAuth(async (req, { params, userId, session }) => {
     { userId, userRole: session.user.role },
     {
       method: 'POST',
+      llmAction: 'adaptive_generation',
       timeoutMs: 30_000,
     },
   );

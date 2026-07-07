@@ -10,6 +10,7 @@ import { AdminStatsPageSkeleton } from '@/components/admin/AdminLoadingSkeletons
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import StatsModal from '@/features/admin/stats/components/StatsModal';
+import { LlmUsageSection } from '@/features/admin/stats/components/LlmUsageSection';
 
 type TranslateFn = (key: string, values?: Record<string, string | number | Date>) => string;
 type StatsModalType = 'creators' | 'activity' | null;
@@ -385,6 +386,7 @@ function AdminStatsContent({
         <TimeBasedStatsCard stats={stats} t={t} />
         <TopCreatorsSection stats={stats} t={t} onOpenModal={onOpenCreators} />
         <RecentActivityCard stats={stats} t={t} onOpenModal={onOpenActivity} />
+        <LlmUsageSection />
       </div>
     </>
   );

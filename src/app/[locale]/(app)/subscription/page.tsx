@@ -139,7 +139,9 @@ export default function SubscriptionPage() {
                   <p
                     className={`font-medium ${hasActivePremium ? 'text-green-800' : 'text-amber-800'}`}
                   >
-                    {currentSubscription.endDateLabel}
+                    {currentSubscription.isLifetime
+                      ? t('lifetime')
+                      : currentSubscription.endDateLabel}
                   </p>
                 </div>
               </div>

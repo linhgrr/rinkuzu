@@ -1,0 +1,52 @@
+{
+  "meta": {
+    "title": "Pricing | RinKuzu",
+    "description": "RinKuzu pricing: a generous free plan for PDF quiz generation and adaptive practice, plus affordable premium plans that unlock private quizzes, higher limits, and advanced stats."
+  },
+  "hero": {
+    "title": "Simple, Transparent Pricing",
+    "subtitle": "Start free. Upgrade when you're ready for full adaptive learning."
+  },
+  "free": {
+    "name": "Free",
+    "tagline": "For students and individuals",
+    "cta": "Get Started Free",
+    "features": [
+      "PDF-to-quiz generation (daily limit)",
+      "Adaptive practice sessions",
+      "Knowledge graph visualization",
+      "Bloom's Taxonomy mastery levels",
+      "Progress tracking dashboard",
+      "Community quiz browsing"
+    ]
+  },
+  "premium": {
+    "popular": "Popular",
+    "everythingInFree": "Everything in Free, and:",
+    "cta": "Upgrade"
+  },
+  "faqHeading": "Pricing Questions",
+  "faqs": [
+    {
+      "q": "What is included in the free plan?",
+      "a": "The free plan includes PDF-to-quiz generation, adaptive practice sessions, mastery tracking, Bloom's Taxonomy level practice, community quiz browsing, and a personal dashboard — with daily usage limits. Everything you need to get started with AI-powered learning."
+    },
+    {
+      "q": "How does Premium work?",
+      "a": "Premium unlocks private quizzes, higher daily limits for AI features, and advanced statistics. You pay once for the plan duration (monthly, 6-month, yearly, or lifetime) — no auto-renewal surprises."
+    },
+    {
+      "q": "Can I switch plans at any time?",
+      "a": "Yes. You can purchase a premium plan whenever you are ready. Your current access remains until it ends."
+    },
+    {
+      "q": "Is there a student or educator discount?",
+      "a": "Contact us at support@rinkuzu.app for education pricing. We believe AI-powered learning should be accessible to everyone."
+    }
+  ],
+  "cta": {
+    "title": "Not sure which plan is right for you?",
+    "subtitle": "Start with the free plan, no credit card required. Upgrade anytime.",
+    "button": "Get Started Free"
+  }
+}

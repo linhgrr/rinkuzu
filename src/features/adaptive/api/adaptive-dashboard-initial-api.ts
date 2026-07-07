@@ -72,7 +72,7 @@ export async function fetchAdaptiveDashboardData(
       ),
       fetchAdaptiveJson<ApiSchemas['SubjectProgressListResponse']>(
         baseUrl,
-        '/api/history/subjects/progress?limit=5',
+        '/api/history/subjects/progress?limit=50',
         headers,
         timeoutMs,
       ),

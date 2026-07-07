@@ -1,4 +1,13 @@
 import type { PipelineJobListItem, PipelineStatus } from '@/features/adaptive/types/pipeline';
+import type { SubjectProgressStatus } from '@/features/adaptive/types/history';
+
+// Exercise-history signal joined onto a subject from the progress endpoint.
+// Absent when the learner has never practised the subject (= not started).
+export type DashboardSubjectExercise = {
+  status: SubjectProgressStatus;
+  totalAnswered: number;
+  progressPercent: number;
+};
 
 export type SubjectRuntime =
   | { kind: 'ready' }
@@ -30,6 +39,7 @@ export type DashboardSubject = {
   ctaLabel: string;
   metrics: DashboardSubjectMetrics;
   runtime: SubjectRuntime;
+  exercise: DashboardSubjectExercise | null;
 };
 
 export type DashboardPipelineJobListItem = PipelineJobListItem;

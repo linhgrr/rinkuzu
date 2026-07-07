@@ -39,6 +39,8 @@ export function toSessionHistoryViewModel(item: SessionHistoryItem): SessionHist
     totalAnswered: item.total_answered,
     accuracyPercent: toPercent(item.accuracy),
     averageMasteryPercent: toPercent(item.avg_mastery),
+    // progress_percent is already 0-100 from the backend (unlike accuracy/mastery).
+    progressPercent: clampPercent(item.progress_percent),
   };
 }
 

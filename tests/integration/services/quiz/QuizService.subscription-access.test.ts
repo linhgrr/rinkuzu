@@ -37,7 +37,7 @@ function createQuizService(quiz: Quiz) {
     update: vi.fn(),
     delete: vi.fn(),
     findAll: vi.fn(),
-    findForPlay: vi.fn(),
+    findForPlay: vi.fn().mockResolvedValue(quiz),
     findUserQuizzes: vi.fn(),
     findPublicByAuthor: vi.fn(),
     count: vi.fn(),

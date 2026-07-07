@@ -15,4 +15,5 @@ export interface SessionHistoryViewModel {
   totalAnswered: number;
   accuracyPercent: number;
   averageMasteryPercent: number;
+  progressPercent: number;
 }

@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { extractUnknownErrorMessage } from '@/lib/api/error';
 import { streamQuizAI } from '@/lib/quiz/ask-ai';
+import { useUpgradePrompt } from '@/features/subscription/components/UpgradePromptProvider';
+import { isPremiumLimitError } from '@/features/subscription/lib/limit-error';
 
 interface ExplainableQuestion {
   question: string;
@@ -17,6 +19,7 @@ export function useQuizAIExplain() {
   const [userQuestion, setUserQuestion] = useState('');
   const [loadingAI, setLoadingAI] = useState(false);
   const [aiError, setAIError] = useState('');
+  const { promptUpgrade } = useUpgradePrompt();
 
   const askAI = async (currentQuestion: ExplainableQuestion) => {
     setLoadingAI(true);
@@ -41,6 +44,9 @@ export function useQuizAIExplain() {
 
       setAIExplanation(explanation);
     } catch (error: unknown) {
+      if (isPremiumLimitError(error)) {
+        promptUpgrade('rate_limit');
+      }
       setAIError(extractUnknownErrorMessage(error, 'Failed to connect to AI service'));
     } finally {
       setLoadingAI(false);

@@ -45,6 +45,7 @@ export const POST = withAuth(async (req, { userId, session }) => {
       { userId, userRole: session.user.role },
       {
         method: 'POST',
+        llmAction: 'adaptive_pipeline',
         body: JSON.stringify(proxiedBody),
         contentType: 'application/json',
         timeoutMs: 180_000,

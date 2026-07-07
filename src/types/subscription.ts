@@ -1,3 +1,5 @@
+import { LIFETIME_END_DATE } from '@/lib/subscription-date';
+
 // ISO 8601 Duration format support
 export enum SubscriptionDurationType {
   MONTHLY = 'P1M',
@@ -70,9 +72,10 @@ export class DurationUtils {
    * @param iso8601Duration ISO 8601 duration
    * @returns End date or undefined for lifetime
    */
-  static calculateEndDate(startDate: Date, iso8601Duration: string): Date | undefined {
+  static calculateEndDate(startDate: Date, iso8601Duration: string): Date {
     const months = this.parseToMonths(iso8601Duration);
-    if (months === undefined) return undefined;
+    // Lifetime (PT0S) → far-future sentinel so every expiry check stays uniform.
+    if (months === undefined) return new Date(LIFETIME_END_DATE);
 
     const endDate = new Date(startDate);
     endDate.setMonth(endDate.getMonth() + months);

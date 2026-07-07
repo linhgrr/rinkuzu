@@ -63,16 +63,21 @@ export class SubscriptionService implements ISubscriptionService {
     const subscription = await this.userRepository.findSubscriptionById(userId);
     if (!subscription) return null;
 
-    if (isSubscriptionExpired(subscription)) {
-      await this.markUserSubscriptionExpired(userId, subscription);
-      return {
-        ...subscription,
-        isActive: false,
-        status: 'expired',
-      };
+    if (!isSubscriptionExpired(subscription)) {
+      return subscription;
     }
 
-    return subscription;
+    // Expired. Persist the transition only if the record still says active; an
+    // already-inactive record is terminal, so re-expiring it is a no-op (and
+    // expireCurrentForUser would otherwise find no active row and throw).
+    if (subscription.isActive) {
+      await this.markUserSubscriptionExpired(userId, subscription);
+    }
+    return {
+      ...subscription,
+      isActive: false,
+      status: 'expired',
+    };
   }
 
   async isUserPremium(userId: string): Promise<boolean> {
@@ -156,7 +161,19 @@ export class SubscriptionService implements ISubscriptionService {
   private isSubscriptionSnapshotPremium(subscription: UserSubscription | null): boolean {
     if (!subscription) return false;
     if (!subscription.isActive) return false;
-    return subscription.endDate ? !isSubscriptionExpired(subscription) : true;
+
+    // A missing endDate is now always anomalous: lifetime plans carry a
+    // far-future sentinel endDate (see DurationUtils.calculateEndDate). Fail
+    // closed so a record that lost its endDate never grants permanent premium.
+    if (!subscription.endDate) {
+      logger.warn(
+        { subscriptionType: subscription.type, payosOrderId: subscription.payosOrderId },
+        'Active subscription missing endDate — denying premium (data anomaly)',
+      );
+      return false;
+    }
+
+    return !isSubscriptionExpired(subscription);
   }
 
   private async markUserSubscriptionExpired(

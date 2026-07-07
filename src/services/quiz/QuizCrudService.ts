@@ -1,6 +1,6 @@
 import { IQuizRepository } from '@/interfaces/repositories/IQuizRepository';
 import type { Quiz } from '@/entities/Quiz';
-import { createSubscriptionService } from '@/lib/subscription-factory';
+import { can, resolveEntitlements } from '@/lib/entitlements';
 import { IUserRepository } from '@/interfaces/repositories/IUserRepository';
 import type { IFolderRepository } from '@/interfaces/repositories/IFolderRepository';
 import type {
@@ -12,7 +12,7 @@ import type {
 import type { DeleteResultDto } from '@/dtos/common';
 import { ServiceResult } from '@/interfaces/services/types';
 import { generateSlug } from '@/lib/utils';
-import { getAuthorId } from './quiz-helpers';
+import { getAuthorId, checkPrivateQuizAccess, PREMIUM_REQUIRED_CODE } from './quiz-helpers';
 import { logger } from '@/lib/logger';
 import { QuizCreationError } from '@/lib/quiz/errors';
 import { isMongoDuplicateKeyError, isMongoDuplicateKeyErrorForField } from '@/lib/mongoose-errors';
@@ -80,7 +80,7 @@ export class QuizCrudService {
     if (isPrivate) {
       const user = await this.userRepository.findById(userId);
       const canCreatePrivateQuiz =
-        user?.role === 'admin' || (await createSubscriptionService().isUserPremium(userId));
+        user?.role === 'admin' || can(await resolveEntitlements(userId), 'private_quiz');
 
       if (!canCreatePrivateQuiz) {
         throw new QuizCreationError(
@@ -139,46 +139,8 @@ export class QuizCrudService {
         };
       }
 
-      // Check permissions for private quizzes
-      if (quiz.isPrivate) {
-        if (!userEmail) {
-          return {
-            success: false,
-            error: 'Authentication required to access private quiz',
-            statusCode: 401,
-          };
-        }
-
-        // Admin can access all private quizzes
-        if (userRole === 'admin') {
-          return { success: true, data: QuizDetailDtoMapper.toDetail(quiz) };
-        }
-
-        // Author can access their own private quizzes
-        if (getAuthorId(quiz.author) === userId) {
-          return { success: true, data: QuizDetailDtoMapper.toDetail(quiz) };
-        }
-
-        // Check if user has premium subscription
-        if (userId) {
-          const subscriptionService = createSubscriptionService();
-          const isPremium = await subscriptionService.isUserPremium(userId);
-
-          if (!isPremium) {
-            return {
-              success: false,
-              error: 'Premium subscription required to access private quizzes',
-              statusCode: 403,
-            };
-          }
-        } else {
-          return {
-            success: false,
-            error: 'Premium subscription required to access private quizzes',
-            statusCode: 403,
-          };
-        }
-      }
+      const privateAccessError = await checkPrivateQuizAccess(quiz, userId, userRole);
+      if (privateAccessError) return privateAccessError;
 
       return { success: true, data: QuizDetailDtoMapper.toDetail(quiz) };
     } catch (error) {
@@ -221,14 +183,12 @@ export class QuizCrudService {
       }
 
       if (quizData.isPrivate && !quiz.isPrivate && !isAdmin) {
-        const user = await this.userRepository.findById(userId);
-        const isPremium = user ? await createSubscriptionService().isUserPremium(userId) : false;
-
-        if (!isPremium) {
+        if (!can(await resolveEntitlements(userId), 'private_quiz')) {
           return {
             success: false,
             error: 'Premium subscription required to create private quizzes',
             statusCode: 403,
+            code: PREMIUM_REQUIRED_CODE,
           };
         }
       }

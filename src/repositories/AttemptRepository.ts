@@ -5,6 +5,7 @@ import type { Attempt } from '@/entities/Attempt';
 import type {
   AttemptCountFilter,
   AttemptOwnerIdentity,
+  AttemptScoreStats,
   CreateAttemptData,
   IAttemptRepository,
 } from '@/interfaces/repositories/IAttemptRepository';
@@ -194,5 +195,21 @@ export class AttemptRepository implements IAttemptRepository {
       buildCountBucketsPipeline('takenAt', thresholds),
     );
     return resolveCountBuckets(records);
+  }
+
+  async scoreStats(): Promise<AttemptScoreStats> {
+    await connectDB();
+    const [record] = await AttemptModel.aggregate<AttemptScoreStats>([
+      {
+        $group: {
+          _id: null,
+          averageScore: { $avg: '$score' },
+          highestScore: { $max: '$score' },
+          lowestScore: { $min: '$score' },
+        },
+      },
+      { $project: { _id: 0, averageScore: 1, highestScore: 1, lowestScore: 1 } },
+    ]);
+    return record ?? { averageScore: 0, highestScore: 0, lowestScore: 0 };
   }
 }

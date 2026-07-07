@@ -14,6 +14,7 @@ import type {
   AdminActivityStatsDto,
   AdminCreatorStatDto,
   AdminOverviewStatsDto,
+  AdminScoreStatsDto,
 } from '@/dtos/admin-stats';
 import type { DeleteResultDto } from '@/dtos/common';
 import { IUserRepository } from '@/interfaces/repositories/IUserRepository';
@@ -300,6 +301,16 @@ export class AdminService implements IAdminService {
         error: 'Failed to get creator stats',
         statusCode: 500,
       };
+    }
+  }
+
+  async getScoreStats(): Promise<ServiceResult<AdminScoreStatsDto>> {
+    try {
+      const stats = await this.attemptRepository.scoreStats();
+      return { success: true, data: AdminStatsDtoMapper.toScoreStatsDto(stats) };
+    } catch (error) {
+      logger.error({ error }, 'Get score stats error');
+      return { success: false, error: 'Failed to get score stats', statusCode: 500 };
     }
   }
 

@@ -13,6 +13,12 @@ export interface AdminOverviewStatsDto {
   totalAttempts: number;
 }
 
+export interface AdminScoreStatsDto {
+  averageScore: number;
+  highestScore: number;
+  lowestScore: number;
+}
+
 export interface AdminTimeBucketDto {
   newUsers: number;
   newQuizzes: number;

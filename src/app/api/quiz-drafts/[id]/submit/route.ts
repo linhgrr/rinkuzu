@@ -106,7 +106,7 @@ export const POST = withAuth(async (request: NextRequest, { params, userId, sess
     logger.error({ error }, 'Submit draft error');
     if (error instanceof QuizCreationError) {
       const status = error.code === 'premium_required' ? 403 : 400;
-      const code = error.code === 'premium_required' ? 'forbidden' : 'validation_error';
+      const code = error.code === 'premium_required' ? 'premium_required' : 'validation_error';
       return apiErr(code, error.message, status);
     }
     if (error instanceof QuizDraftSynchronizationError) {

@@ -27,6 +27,7 @@ import { useQuizSubmission } from '@/features/quiz/hooks/useQuizSubmission';
 import { useQuizProgress } from '@/features/quiz/hooks/useQuizProgress';
 import { useQuizViewport } from '@/features/quiz/hooks/useQuizViewport';
 import { fetchQuizPlayViewModel } from '@/features/quiz/api/quiz-play-api';
+import { ApiResponseError } from '@/lib/api/client';
 import type {
   QuizAnswer,
   SavedQuizProgress,
@@ -737,7 +738,8 @@ export default function QuizPlayerPage() {
         }
 
         const message = error instanceof Error ? error.message : '';
-        if (message === 'Premium subscription required to access private quizzes') {
+        const code = error instanceof ApiResponseError ? error.code : null;
+        if (code === 'premium_required') {
           dispatch({ type: 'requirePremium' });
         } else {
           dispatch({ type: 'loadQuizError', error: message || 'Quiz not found' });

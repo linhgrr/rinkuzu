@@ -47,6 +47,7 @@ describe('toSubscriptionPageViewModel', () => {
       currentSubscription: {
         type: 'premium',
         endDate: '2026-08-02T00:00:00.000Z',
+        isLifetime: false,
         endDateLabel: '02/08/2026',
         isActive: true,
         status: 'completed',

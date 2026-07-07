@@ -13,10 +13,13 @@ describe('DurationUtils', () => {
   it('calculates end dates and lifetime subscriptions', () => {
     const start = new Date('2026-01-15T00:00:00Z');
 
-    expect(DurationUtils.calculateEndDate(start, 'P1M')?.toISOString()).toBe(
+    expect(DurationUtils.calculateEndDate(start, 'P1M').toISOString()).toBe(
       '2026-02-15T00:00:00.000Z',
     );
-    expect(DurationUtils.calculateEndDate(start, 'PT0S')).toBeUndefined();
+    // Lifetime → far-future sentinel (not undefined) so expiry checks stay uniform.
+    expect(DurationUtils.calculateEndDate(start, 'PT0S').toISOString()).toBe(
+      '9999-12-31T23:59:59.999Z',
+    );
   });
 
   it('returns predefined and custom duration metadata', () => {

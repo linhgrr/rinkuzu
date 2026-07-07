@@ -1,6 +1,8 @@
 import type { Quiz } from '@/entities/Quiz';
-import { createSubscriptionService } from '@/lib/subscription-factory';
+import { can, resolveEntitlements } from '@/lib/entitlements';
 import { ServiceResult } from '@/interfaces/services/types';
+
+export const PREMIUM_REQUIRED_CODE = 'premium_required';
 
 export function getAuthorId(author: Quiz['author'] | undefined): string | undefined {
   if (!author) return undefined;
@@ -26,14 +28,13 @@ export async function checkPrivateQuizAccess(
   const authorId = getAuthorId(quiz.author);
   if (userRole === 'admin' || authorId === userId) return null;
 
-  const subscriptionService = createSubscriptionService();
-  const isPremium = await subscriptionService.isUserPremium(userId);
-
-  if (isPremium) return null;
+  const entitlements = await resolveEntitlements(userId);
+  if (can(entitlements, 'private_quiz')) return null;
 
   return {
     success: false,
     error: 'Premium subscription required to access private quizzes',
     statusCode: 403,
+    code: PREMIUM_REQUIRED_CODE,
   };
 }

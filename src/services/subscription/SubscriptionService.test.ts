@@ -310,12 +310,14 @@ describe('SubscriptionService billing hardening', () => {
     expect(subscriptionRepository.deletePendingByOrderId).toHaveBeenCalledWith(expect.any(String));
   });
 
-  it('detects free, inactive, active, and lifetime premium states', async () => {
+  it('detects free, inactive, active, lifetime, and anomalous premium states', async () => {
     const { service, userRepository } = createService();
 
+    // No subscription → free
     userRepository.findSubscriptionById.mockResolvedValueOnce(null);
     await expect(service.isUserPremium('user-1')).resolves.toBe(false);
 
+    // Inactive with future endDate → not premium
     userRepository.findSubscriptionById.mockResolvedValueOnce({
       type: 'premium',
       isActive: false,
@@ -323,6 +325,7 @@ describe('SubscriptionService billing hardening', () => {
     });
     await expect(service.isUserPremium('user-1')).resolves.toBe(false);
 
+    // Active, unexpired endDate → premium
     userRepository.findSubscriptionById.mockResolvedValueOnce({
       type: 'premium',
       isActive: true,
@@ -330,14 +333,22 @@ describe('SubscriptionService billing hardening', () => {
     });
     await expect(service.isUserPremium('user-1')).resolves.toBe(true);
 
+    // Active, lifetime sentinel endDate → premium
+    userRepository.findSubscriptionById.mockResolvedValueOnce({
+      type: 'lifetime',
+      isActive: true,
+      endDate: new Date('9999-12-31T23:59:59.999Z'),
+    });
+    await expect(service.isUserPremium('user-1')).resolves.toBe(true);
+
+    // Active but missing endDate (anomalous) → fail closed
     userRepository.findSubscriptionById.mockResolvedValueOnce({
       type: 'premium',
       isActive: true,
     });
-    await expect(service.isUserPremium('user-1')).resolves.toBe(true);
+    await expect(service.isUserPremium('user-1')).resolves.toBe(false);
 
-    expect(userRepository.findSubscriptionById).toHaveBeenCalledTimes(4);
-    expect(userRepository.findById).not.toHaveBeenCalled();
+    expect(userRepository.findSubscriptionById).toHaveBeenCalledTimes(5);
   });
 
   it('rejects payment creation for missing users and existing premium users', async () => {
@@ -847,6 +858,30 @@ describe('SubscriptionService billing hardening', () => {
     });
     expect(userRepository.findById).not.toHaveBeenCalled();
     expect(subscriptionRepository.expireCurrentForUser).toHaveBeenCalledWith('user-1', 'order-1');
+  });
+
+  it('reads an already-inactive expired subscription without re-expiring it', async () => {
+    // Regression: an embedded subscription that is already isActive:false has no
+    // active row to expire; the read must be a no-op, not throw "inconsistent".
+    const { service, subscriptionRepository } = createService({
+      userRepository: {
+        findSubscriptionById: vi.fn().mockResolvedValue({
+          type: 'premium_6months',
+          isActive: false,
+          endDate: new Date('2025-12-28T00:00:00Z'),
+          payosOrderId: 'order-1',
+        }),
+      },
+      subscriptionRepository: {
+        expireCurrentForUser: vi.fn(),
+      },
+    });
+
+    await expect(service.getSubscriptionStatus('user-1')).resolves.toEqual({
+      subscription: null,
+      isPremium: false,
+    });
+    expect(subscriptionRepository.expireCurrentForUser).not.toHaveBeenCalled();
   });
 
   it('expires both subscription records and stale embedded user subscriptions in cron checks', async () => {

@@ -8,6 +8,7 @@
     "request_aborted": "Request aborted",
     "rate_limit_exceeded": "Rate limit exceeded",
     "llm_rate_limit_exceeded": "Rate limit exceeded",
+    "premium_required": "Premium subscription required",
     "configuration_error": "Configuration error",
     "service_unavailable": "Service unavailable",
     "pipeline_not_found": "Pipeline job not found",

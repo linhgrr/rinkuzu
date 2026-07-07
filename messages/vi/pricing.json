@@ -1,0 +1,52 @@
+{
+  "meta": {
+    "title": "Bảng giá | RinKuzu",
+    "description": "Bảng giá RinKuzu: gói miễn phí hào phóng để tạo quiz từ PDF và luyện tập thích ứng, cùng các gói premium giá tốt mở khóa quiz riêng tư, giới hạn cao hơn và thống kê nâng cao."
+  },
+  "hero": {
+    "title": "Giá đơn giản, minh bạch",
+    "subtitle": "Bắt đầu miễn phí. Nâng cấp khi bạn sẵn sàng cho trải nghiệm học thích ứng đầy đủ."
+  },
+  "free": {
+    "name": "Miễn phí",
+    "tagline": "Dành cho học sinh, sinh viên và cá nhân",
+    "cta": "Bắt đầu miễn phí",
+    "features": [
+      "Tạo quiz từ PDF (giới hạn hằng ngày)",
+      "Phiên luyện tập thích ứng",
+      "Trực quan hóa sơ đồ tri thức",
+      "Cấp độ thành thạo theo Thang Bloom",
+      "Bảng theo dõi tiến độ",
+      "Duyệt quiz cộng đồng"
+    ]
+  },
+  "premium": {
+    "popular": "Phổ biến",
+    "everythingInFree": "Mọi thứ trong gói Miễn phí, và thêm:",
+    "cta": "Nâng cấp"
+  },
+  "faqHeading": "Câu hỏi về giá",
+  "faqs": [
+    {
+      "q": "Gói miễn phí bao gồm những gì?",
+      "a": "Gói miễn phí bao gồm tạo quiz từ PDF, phiên luyện tập thích ứng, theo dõi mức độ thành thạo, luyện tập theo cấp độ Thang Bloom, duyệt quiz cộng đồng và bảng điều khiển cá nhân — với giới hạn sử dụng hằng ngày. Đủ mọi thứ để bắt đầu học cùng AI."
+    },
+    {
+      "q": "Gói Premium hoạt động thế nào?",
+      "a": "Premium mở khóa quiz riêng tư, giới hạn hằng ngày cao hơn cho các tính năng AI và thống kê nâng cao. Bạn trả một lần cho thời hạn gói (theo tháng, 6 tháng, năm hoặc trọn đời) — không tự động gia hạn bất ngờ."
+    },
+    {
+      "q": "Tôi có thể đổi gói bất cứ lúc nào không?",
+      "a": "Có. Bạn có thể mua gói premium bất cứ khi nào sẵn sàng. Quyền truy cập hiện tại của bạn vẫn giữ nguyên cho đến khi hết hạn."
+    },
+    {
+      "q": "Có ưu đãi cho học sinh, sinh viên hoặc giáo viên không?",
+      "a": "Liên hệ support@rinkuzu.app để biết giá dành cho giáo dục. Chúng tôi tin rằng học tập cùng AI nên dễ tiếp cận với mọi người."
+    }
+  ],
+  "cta": {
+    "title": "Chưa chắc gói nào phù hợp với bạn?",
+    "subtitle": "Bắt đầu với gói miễn phí, không cần thẻ tín dụng. Nâng cấp bất cứ lúc nào.",
+    "button": "Bắt đầu miễn phí"
+  }
+}

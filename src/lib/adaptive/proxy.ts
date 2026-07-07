@@ -13,7 +13,7 @@ import {
   buildLlmRateLimitHeaders,
   buildLlmRateLimitResponse,
   checkLlmRateLimit,
-  classifyAdaptiveLlmAction,
+  type LlmRateLimitAction,
 } from '@/lib/llm/rate-limit';
 
 type AdaptiveProxyMethod = 'GET' | 'POST' | 'PATCH' | 'DELETE';
@@ -23,6 +23,9 @@ type ProxyOptions = {
   body?: BodyInit | null;
   contentType?: string | null;
   timeoutMs?: number;
+  // LLM-backed routes declare their metered action explicitly. Enforced here
+  // before forwarding upstream. Non-LLM routes leave this undefined.
+  llmAction?: LlmRateLimitAction;
   cache?: {
     revalidateSeconds: number;
     tags: string[];
@@ -103,7 +106,7 @@ export async function proxyAdaptiveRequest(
     const headers: Record<string, string> = buildAdaptiveServiceHeaders(userId, userRole);
     const method = options?.method || req.method;
 
-    const llmAction = classifyAdaptiveLlmAction(targetPath, method);
+    const llmAction = options?.llmAction;
     const llmRateLimit =
       llmAction && userId && userRole !== 'admin'
         ? await checkLlmRateLimit(userId, llmAction)

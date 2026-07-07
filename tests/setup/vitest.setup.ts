@@ -1,4 +1,5 @@
 import { afterEach, vi } from 'vitest';
+import { resetEntitlementsCache } from '@/lib/entitlements/cache';
 
 // Allow tests to import modules guarded by `import 'server-only'`. Next.js
 // ships a stub that throws when imported from a client bundle; in node-env
@@ -42,4 +43,5 @@ for (const [key, value] of Object.entries(testEnvDefaults)) {
 afterEach(() => {
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
+  resetEntitlementsCache();
 });

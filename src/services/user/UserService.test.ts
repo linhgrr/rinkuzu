@@ -63,6 +63,7 @@ function createService(overrides: ServiceOverrides = {}) {
     findByIdWithQuiz: vi.fn(),
     count: vi.fn(),
     countByTakenAtBuckets: vi.fn(),
+    scoreStats: vi.fn().mockResolvedValue({ averageScore: 0, highestScore: 0, lowestScore: 0 }),
     ...overrides.attemptRepository,
   };
   const quizRepository: Mocked<IQuizRepository> = {

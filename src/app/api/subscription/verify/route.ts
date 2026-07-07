@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import { createSubscriptionService } from '@/lib/subscription-factory';
+import { invalidateEntitlements } from '@/lib/entitlements';
 import { withAuth } from '@/lib/api/auth';
 import { apiOk, apiErr } from '@/lib/api/response';
 import { extractUnknownErrorMessage } from '@/lib/api/error';
@@ -24,6 +25,9 @@ export const POST = withAuth(async (request: NextRequest, { userId }) => {
       numericOrderCode,
       userId,
     );
+
+    // Drop the cached free-tier entitlement so premium takes effect immediately.
+    invalidateEntitlements(userId);
 
     return apiOk(result);
   } catch (error: unknown) {

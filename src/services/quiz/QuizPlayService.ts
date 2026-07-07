@@ -16,10 +16,8 @@ import type {
   SavedQuizProgressDto,
   SaveQuizProgressResponseDto,
 } from '@/dtos/quiz';
-import { createSubscriptionService } from '@/lib/subscription-factory';
-import type { Quiz } from '@/entities/Quiz';
 import type { Session } from 'next-auth';
-import { getAuthorId, checkPrivateQuizAccess } from './quiz-helpers';
+import { checkPrivateQuizAccess } from './quiz-helpers';
 import { logger } from '@/lib/logger';
 import { QuizDetailDtoMapper } from '@/mappers/quiz/QuizDetailDtoMapper';
 import { QuizProgressDtoMapper } from '@/mappers/quiz/QuizProgressDtoMapper';
@@ -27,10 +25,6 @@ import { QuizAttemptDtoMapper } from '@/mappers/quiz/QuizAttemptDtoMapper';
 import { QuizFlashcardDtoMapper } from '@/mappers/quiz/QuizFlashcardDtoMapper';
 
 type Answer = number | number[];
-
-function isAuthorMatch(quiz: Quiz, userId: string): boolean {
-  return getAuthorId(quiz.author) === userId;
-}
 
 export class QuizPlayService {
   constructor(
@@ -119,31 +113,8 @@ export class QuizPlayService {
         };
       }
 
-      const authorId = getAuthorId(quiz.author);
-      // Check permissions for private quizzes
-      if (quiz.isPrivate) {
-        if (!userId) {
-          return {
-            success: false,
-            error: 'Authentication required to access private quiz',
-            statusCode: 401,
-          };
-        }
-
-        const hasDirectAccess = userRole === 'admin' || authorId === userId;
-        if (!hasDirectAccess) {
-          const subscriptionService = createSubscriptionService();
-          const isPremium = await subscriptionService.isUserPremium(userId);
-
-          if (!isPremium) {
-            return {
-              success: false,
-              error: 'Premium subscription required to access private quizzes',
-              statusCode: 403,
-            };
-          }
-        }
-      }
+      const privateAccessError = await checkPrivateQuizAccess(quiz, userId, userRole);
+      if (privateAccessError) return privateAccessError;
 
       return { success: true, data: QuizDetailDtoMapper.toPlayDetail(quiz) };
     } catch (error) {
@@ -346,25 +317,12 @@ export class QuizPlayService {
         };
       }
 
-      const isAdmin = session?.user?.role === 'admin';
-      const isAuthor = !!session?.user?.id && isAuthorMatch(quiz, session.user.id);
-
-      // Check if quiz is private and user has access
-      if (quiz.isPrivate && session?.user) {
-        if (!isAdmin && !isAuthor) {
-          // Check if user has premium subscription
-          const subscriptionService = createSubscriptionService();
-          const isPremium = await subscriptionService.isUserPremium(session.user.id);
-
-          if (!isPremium) {
-            return {
-              success: false,
-              error: 'Premium subscription required to access private quizzes',
-              statusCode: 403,
-            };
-          }
-        }
-      }
+      const privateAccessError = await checkPrivateQuizAccess(
+        quiz,
+        session?.user?.id,
+        session?.user?.role,
+      );
+      if (privateAccessError) return privateAccessError;
 
       return {
         success: true,
@@ -395,33 +353,12 @@ export class QuizPlayService {
         };
       }
 
-      const isAdmin = session?.user?.role === 'admin';
-      const isAuthor = !!session?.user?.id && isAuthorMatch(quiz, session.user.id);
-
-      // Check if quiz is private and user has access
-      if (quiz.isPrivate) {
-        if (!session?.user) {
-          return {
-            success: false,
-            error: 'Access denied. This quiz is private.',
-            statusCode: 403,
-          };
-        }
-
-        if (!isAdmin && !isAuthor) {
-          // Check if user has premium subscription
-          const subscriptionService = createSubscriptionService();
-          const isPremium = await subscriptionService.isUserPremium(session.user.id);
-
-          if (!isPremium) {
-            return {
-              success: false,
-              error: 'Premium subscription required to access private quizzes',
-              statusCode: 403,
-            };
-          }
-        }
-      }
+      const privateAccessError = await checkPrivateQuizAccess(
+        quiz,
+        session?.user?.id,
+        session?.user?.role,
+      );
+      if (privateAccessError) return privateAccessError;
 
       return {
         success: true,

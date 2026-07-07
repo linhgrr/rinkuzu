@@ -136,14 +136,10 @@ export default function ProfileQuizzes({ tab = 'quizzes' }: ProfileQuizzesProps)
   return (
     <div className="px-4 pb-20 pt-5 font-home text-ink selection:bg-accent-soft sm:px-6 sm:pt-6 lg:px-8">
       <div className="mx-auto max-w-[1340px]">
-        <header className="mb-5 flex flex-col gap-1 sm:mb-6">
-          <h1 className="text-2xl font-semibold leading-[1.4] text-ink">
-            {t('myQuizzesAndFolder')}
-          </h1>
-          <p className="text-base text-ink">{t('browseManageQuizzes')}</p>
-        </header>
-
-        <nav className="mb-5 flex gap-6 border-b border-line" aria-label="My quizzes views">
+        <nav
+          className="mb-5 mt-1 flex gap-6 border-b border-line sm:mt-2"
+          aria-label="My quizzes views"
+        >
           <Link
             href="/my-quizzes"
             className={`border-b-2 px-1 pb-3 text-sm font-semibold ${tab === 'quizzes' ? 'border-brand-trust text-brand-trust' : 'border-transparent text-ink/55'}`}

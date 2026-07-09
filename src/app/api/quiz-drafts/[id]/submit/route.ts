@@ -15,7 +15,7 @@ import { logger } from '@/lib/logger';
 import { QuizCreationError, QuizDraftSynchronizationError } from '@/lib/quiz/errors';
 import {
   buildAdaptiveServiceHeaders,
-  resolveAdaptiveApiUrl,
+  buildAdaptiveUrl,
   resolveAdaptiveProxyTimeoutMs,
 } from '@/lib/adaptive/config';
 
@@ -28,19 +28,16 @@ async function markDraftSubmitted(
   userRole: 'admin' | 'user' | null | undefined,
 ): Promise<void> {
   try {
-    const response = await fetch(
-      new URL(`/api/quiz/drafts/${draftId}/submit`, resolveAdaptiveApiUrl()).toString(),
-      {
-        method: 'POST',
-        headers: {
-          ...buildAdaptiveServiceHeaders(userId, userRole),
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ quiz_id: quizId }),
-        cache: 'no-store',
-        signal: AbortSignal.timeout(resolveAdaptiveProxyTimeoutMs()),
+    const response = await fetch(buildAdaptiveUrl(`/quiz/drafts/${draftId}/submit`), {
+      method: 'POST',
+      headers: {
+        ...buildAdaptiveServiceHeaders(userId, userRole),
+        'Content-Type': 'application/json',
       },
-    );
+      body: JSON.stringify({ quiz_id: quizId }),
+      cache: 'no-store',
+      signal: AbortSignal.timeout(resolveAdaptiveProxyTimeoutMs()),
+    });
     if (!response.ok) {
       throw new QuizDraftSynchronizationError(draftId, quizId, response.status);
     }

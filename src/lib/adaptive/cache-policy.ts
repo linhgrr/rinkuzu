@@ -1,7 +1,9 @@
 import { revalidateTag } from 'next/cache';
 import { ADAPTIVE_CACHE_TAGS } from './cache';
 
-const CACHE_SAFE_PATHS = new Set<string>(['/api/health', '/api/pipeline/status']);
+// Version-relative paths (as passed to proxyAdaptiveRequest, without the
+// /api/v1 prefix that buildAdaptiveUrl adds).
+const CACHE_SAFE_PATHS = new Set<string>(['/health', '/pipeline/status']);
 
 export function isCacheSafeAdaptivePath(targetPath: string): boolean {
   return CACHE_SAFE_PATHS.has(targetPath);

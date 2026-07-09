@@ -17,7 +17,7 @@ export const POST = withOptionalAuth(async (req, { userId, session }) => {
 
   return proxyAdaptiveRequest(
     req,
-    '/api/quiz/ask-ai',
+    '/quiz/ask-ai',
     { userId: userId ?? undefined, userRole },
     {
       method: 'POST',

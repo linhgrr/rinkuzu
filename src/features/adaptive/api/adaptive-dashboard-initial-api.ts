@@ -9,7 +9,7 @@ import { fetchApiData } from '@/lib/api/client';
 import { logger } from '@/lib/logger';
 import {
   buildAdaptiveServiceHeaders,
-  resolveAdaptiveApiUrl,
+  buildAdaptiveUrl,
   resolveAdaptiveProxyTimeoutMs,
 } from '@/lib/adaptive/config';
 
@@ -34,13 +34,12 @@ type AdaptiveFetchResult<T> =
 const INITIAL_DASHBOARD_TIMEOUT_MS = 6_000;
 
 const fetchAdaptiveJson = async <T>(
-  baseUrl: string,
-  path: string,
+  url: string,
   headers: Record<string, string>,
   timeoutMs: number,
 ): Promise<AdaptiveFetchResult<T>> => {
   try {
-    const data = await fetchApiData<T>(`${baseUrl}${path}`, {
+    const data = await fetchApiData<T>(url, {
       headers,
       cache: 'no-store',
       signal: AbortSignal.timeout(timeoutMs),
@@ -48,7 +47,7 @@ const fetchAdaptiveJson = async <T>(
     return { ok: true, data };
   } catch (error) {
     console.warn(
-      `fetchAdaptiveJson: failed to load ${path}`,
+      `fetchAdaptiveJson: failed to load ${url}`,
       error instanceof Error ? error.message : error,
     );
     return { ok: false };
@@ -59,20 +58,17 @@ export async function fetchAdaptiveDashboardData(
   userId: string,
 ): Promise<AdaptiveDashboardPayload> {
   try {
-    const baseUrl = resolveAdaptiveApiUrl();
     const timeoutMs = Math.min(resolveAdaptiveProxyTimeoutMs(), INITIAL_DASHBOARD_TIMEOUT_MS);
     const headers = buildAdaptiveServiceHeaders(userId);
 
     const [subjectsResult, historyResult] = await Promise.allSettled([
       fetchAdaptiveJson<ApiSchemas['SubjectHistoryListResponse']>(
-        baseUrl,
-        '/api/history/subjects',
+        buildAdaptiveUrl('/history/subjects'),
         headers,
         timeoutMs,
       ),
       fetchAdaptiveJson<ApiSchemas['SubjectProgressListResponse']>(
-        baseUrl,
-        '/api/history/subjects/progress?limit=50',
+        buildAdaptiveUrl('/history/subjects/progress?limit=50'),
         headers,
         timeoutMs,
       ),

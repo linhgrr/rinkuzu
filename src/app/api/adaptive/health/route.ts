@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 export const GET = withAuth(async (req, { userId, session }) =>
   proxyAdaptiveRequest(
     req,
-    '/api/health',
+    '/health',
     { userId, userRole: session.user.role },
     {
       cache: {

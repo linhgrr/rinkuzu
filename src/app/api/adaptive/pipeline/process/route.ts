@@ -41,7 +41,7 @@ export const POST = withAuth(async (req, { userId, session }) => {
 
     const response = await proxyAdaptiveRequest(
       req,
-      '/api/pipeline/process',
+      '/pipeline/process',
       { userId, userRole: session.user.role },
       {
         method: 'POST',

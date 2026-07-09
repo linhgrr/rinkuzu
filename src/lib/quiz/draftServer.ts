@@ -2,7 +2,7 @@ import 'server-only';
 import { fetchApiData, ApiResponseError } from '@/lib/api/client';
 import {
   buildAdaptiveServiceHeaders,
-  resolveAdaptiveApiUrl,
+  buildAdaptiveUrl,
   resolveAdaptiveProxyTimeoutMs,
 } from '@/lib/adaptive/config';
 import type { QuizDraftSingleResponseDto } from '@/dtos/quiz-draft';
@@ -15,12 +15,11 @@ export async function fetchQuizDraftServer(
   draftId: string,
   userId: string,
 ): Promise<QuizDraft | null> {
-  const baseUrl = resolveAdaptiveApiUrl();
   const headers = buildAdaptiveServiceHeaders(userId);
 
   try {
     const { draft } = await fetchApiData<QuizDraftSingleResponseDto>(
-      `${baseUrl}/api/quiz/drafts/${draftId}`,
+      buildAdaptiveUrl(`/quiz/drafts/${draftId}`),
       {
         headers,
         cache: 'no-store',

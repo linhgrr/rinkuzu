@@ -22,7 +22,7 @@ export const POST = withAuth(async (req, { params, userId, session }) => {
 
   const response = await proxyAdaptiveRequest(
     req,
-    `/api/pipeline/jobs/${parsedParams.data.jobId}/create-session?max_steps=${query.data.max_steps}`,
+    `/pipeline/jobs/${parsedParams.data.jobId}/create-session?max_steps=${query.data.max_steps}`,
     { userId, userRole: session.user.role },
     {
       method: 'POST',

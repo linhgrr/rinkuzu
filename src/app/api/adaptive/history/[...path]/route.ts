@@ -23,7 +23,7 @@ export const GET = withAuth(async (req, { params, userId, session }) => {
     if (!query.success) {
       return apiErr('validation_error', query.error, 400, { fields: query.fields });
     }
-    return proxyAdaptiveRequest(req, `/api/history/subjects/progress?limit=${query.data.limit}`, {
+    return proxyAdaptiveRequest(req, `/history/subjects/progress?limit=${query.data.limit}`, {
       userId,
       userRole: session.user.role,
     });
@@ -33,7 +33,7 @@ export const GET = withAuth(async (req, { params, userId, session }) => {
   if (!query.success) {
     return apiErr('validation_error', query.error, 400, { fields: query.fields });
   }
-  return proxyAdaptiveRequest(req, `/api/history/subjects/${parsedParams.data.jobId}`, {
+  return proxyAdaptiveRequest(req, `/history/subjects/${parsedParams.data.jobId}`, {
     userId,
     userRole: session.user.role,
   });
@@ -51,7 +51,7 @@ export const DELETE = withAuth(async (req, { params, userId, session }) => {
 
   return proxyAdaptiveRequest(
     req,
-    `/api/history/subjects/${parsedParams.data.jobId}?delete_sessions=${String(
+    `/history/subjects/${parsedParams.data.jobId}?delete_sessions=${String(
       query.data.delete_sessions,
     )}`,
     { userId, userRole: session.user.role },

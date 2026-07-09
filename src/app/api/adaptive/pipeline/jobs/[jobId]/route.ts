@@ -14,7 +14,7 @@ export const GET = withAuth(async (req, { params, userId, session }) => {
 
   return proxyAdaptiveRequest(
     req,
-    `/api/pipeline/jobs/${parsedParams.data.jobId}`,
+    `/pipeline/jobs/${parsedParams.data.jobId}`,
     { userId, userRole: session.user.role },
     { timeoutMs: 25_000 },
   );

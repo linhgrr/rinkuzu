@@ -21,7 +21,7 @@ export const GET = withAuth(async (req, { params, userId, session }) => {
     parsedParams.data.action === 'concept'
       ? `concept/${parsedParams.data.conceptId}`
       : parsedParams.data.action;
-  return proxyAdaptiveRequest(req, `/api/session/${parsedParams.data.sessionId}/${suffix}`, {
+  return proxyAdaptiveRequest(req, `/session/${parsedParams.data.sessionId}/${suffix}`, {
     userId,
     userRole: session.user.role,
   });
@@ -53,7 +53,7 @@ export const POST = withAuth(async (req, { params, userId, session }) => {
 
   return proxyAdaptiveRequest(
     req,
-    `/api/session/${parsedParams.data.sessionId}/${parsedParams.data.action}`,
+    `/session/${parsedParams.data.sessionId}/${parsedParams.data.action}`,
     { userId, userRole: session.user.role },
     {
       method: 'POST',

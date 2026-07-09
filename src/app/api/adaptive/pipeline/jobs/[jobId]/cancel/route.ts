@@ -15,7 +15,7 @@ export const POST = withAuth(async (req, { params, userId, session }) => {
 
   const res = await proxyAdaptiveRequest(
     req,
-    `/api/pipeline/jobs/${parsedParams.data.jobId}/cancel`,
+    `/pipeline/jobs/${parsedParams.data.jobId}/cancel`,
     { userId, userRole: session.user.role },
     { method: 'POST', timeoutMs: 25_000 },
   );

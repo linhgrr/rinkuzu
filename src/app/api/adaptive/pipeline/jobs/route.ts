@@ -13,7 +13,7 @@ export const GET = withAuth(async (req, { userId, session }) => {
   }
   return proxyAdaptiveRequest(
     req,
-    `/api/pipeline/jobs?limit=${query.data.limit}`,
+    `/pipeline/jobs?limit=${query.data.limit}`,
     { userId, userRole: session.user.role },
     { timeoutMs: 25_000 },
   );

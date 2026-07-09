@@ -13,7 +13,7 @@ import type { IQuizRepository } from '@/interfaces/repositories/IQuizRepository'
 import type { IDashboardService } from '@/interfaces/services/IDashboardService';
 import {
   buildAdaptiveServiceHeaders,
-  resolveAdaptiveApiUrl,
+  buildAdaptiveUrl,
   resolveAdaptiveProxyTimeoutMs,
 } from '@/lib/adaptive/config';
 import { fetchApiData } from '@/lib/api/client';
@@ -59,7 +59,7 @@ export class DashboardService implements IDashboardService {
 
     try {
       const data = await fetchApiData<ApiSchemas['SubjectHistoryListResponse']>(
-        `${resolveAdaptiveApiUrl()}/api/history/subjects`,
+        buildAdaptiveUrl('/history/subjects'),
         {
           headers: buildAdaptiveServiceHeaders(userId),
           cache: 'no-store',

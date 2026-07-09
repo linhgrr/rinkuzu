@@ -5,7 +5,7 @@ import { logger } from '@/lib/logger';
 import { isCacheSafeAdaptivePath } from './cache-policy';
 import {
   buildAdaptiveServiceHeaders,
-  resolveAdaptiveApiUrl,
+  buildAdaptiveUrl,
   resolveAdaptiveProxyTimeoutMs,
 } from './config';
 import type { UserRole } from '@/types/next-auth';
@@ -52,7 +52,7 @@ const UPSTREAM_RESPONSE_HEADERS = [
 ] as const;
 
 function buildTargetUrl(req: Request, targetPath: string): URL {
-  const targetUrl = new URL(targetPath, resolveAdaptiveApiUrl());
+  const targetUrl = new URL(buildAdaptiveUrl(targetPath));
   const incomingUrl = new URL(req.url);
 
   incomingUrl.searchParams.forEach((value, key) => {

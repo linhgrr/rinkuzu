@@ -1,14 +1,387 @@
 [
   {
-    "name": ".next/static/**/*.js",
-    "sizeBytes": 4550113,
+    "name": "/[locale]/adaptive/upload",
+    "metric": "route-first-load-js-gzip",
+    "sizeBytes": 329983,
     "limitBytes": 358400,
-    "ok": false
+    "ok": true
   },
   {
-    "name": ".next/static/css/**/*.css",
-    "sizeBytes": 165901,
-    "limitBytes": 51200,
-    "ok": false
+    "name": "/[locale]/login",
+    "metric": "route-first-load-js-gzip",
+    "sizeBytes": 332725,
+    "limitBytes": 358400,
+    "ok": true
+  },
+  {
+    "name": "/[locale]/register",
+    "metric": "route-first-load-js-gzip",
+    "sizeBytes": 332725,
+    "limitBytes": 358400,
+    "ok": true
+  },
+  {
+    "name": "/[locale]/quiz/[slug]/result",
+    "metric": "route-first-load-js-gzip",
+    "sizeBytes": 325600,
+    "limitBytes": 358400,
+    "ok": true
+  },
+  {
+    "name": "/[locale]/adaptive",
+    "metric": "route-first-load-js-gzip",
+    "sizeBytes": 323224,
+    "limitBytes": 358400,
+    "ok": true
+  },
+  {
+    "name": "/[locale]/quiz/[slug]",
+    "metric": "route-first-load-js-gzip",
+    "sizeBytes": 321171,
+    "limitBytes": 358400,
+    "ok": true
+  },
+  {
+    "name": "/[locale]/explore",
+    "metric": "route-first-load-js-gzip",
+    "sizeBytes": 322607,
+    "limitBytes": 358400,
+    "ok": true
+  },
+  {
+    "name": "/[locale]/adaptive/exercise/[id]",
+    "metric": "route-first-load-js-gzip",
+    "sizeBytes": 319871,
+    "limitBytes": 358400,
+    "ok": true
+  },
+  {
+    "name": "/[locale]/adaptive/processing",
+    "metric": "route-first-load-js-gzip",
+    "sizeBytes": 317564,
+    "limitBytes": 358400,
+    "ok": true
+  },
+  {
+    "name": "/[locale]/adaptive/subject/[id]",
+    "metric": "route-first-load-js-gzip",
+    "sizeBytes": 317235,
+    "limitBytes": 358400,
+    "ok": true
+  },
+  {
+    "name": "/[locale]/adaptive/result/[id]",
+    "metric": "route-first-load-js-gzip",
+    "sizeBytes": 318598,
+    "limitBytes": 358400,
+    "ok": true
+  },
+  {
+    "name": "/[locale]/bookmarks",
+    "metric": "route-first-load-js-gzip",
+    "sizeBytes": 318954,
+    "limitBytes": 358400,
+    "ok": true
+  },
+  {
+    "name": "/[locale]/reset-password",
+    "metric": "route-first-load-js-gzip",
+    "sizeBytes": 269518,
+    "limitBytes": 358400,
+    "ok": true
+  },
+  {
+    "name": "/[locale]/check-email",
+    "metric": "route-first-load-js-gzip",
+    "sizeBytes": 268385,
+    "limitBytes": 358400,
+    "ok": true
+  },
+  {
+    "name": "/[locale]/forgot-password",
+    "metric": "route-first-load-js-gzip",
+    "sizeBytes": 268168,
+    "limitBytes": 358400,
+    "ok": true
+  },
+  {
+    "name": "/[locale]/create",
+    "metric": "route-first-load-js-gzip",
+    "sizeBytes": 273446,
+    "limitBytes": 358400,
+    "ok": true
+  },
+  {
+    "name": "/[locale]/create/mobile",
+    "metric": "route-first-load-js-gzip",
+    "sizeBytes": 265770,
+    "limitBytes": 358400,
+    "ok": true
+  },
+  {
+    "name": "/[locale]/edit/[id]",
+    "metric": "route-first-load-js-gzip",
+    "sizeBytes": 259884,
+    "limitBytes": 358400,
+    "ok": true
+  },
+  {
+    "name": "/[locale]/admin/stats",
+    "metric": "route-first-load-js-gzip",
+    "sizeBytes": 260088,
+    "limitBytes": 358400,
+    "ok": true
+  },
+  {
+    "name": "/[locale]/quiz/[slug]/flashcards",
+    "metric": "route-first-load-js-gzip",
+    "sizeBytes": 255705,
+    "limitBytes": 358400,
+    "ok": true
+  },
+  {
+    "name": "/[locale]/draft/[id]/edit",
+    "metric": "route-first-load-js-gzip",
+    "sizeBytes": 254899,
+    "limitBytes": 358400,
+    "ok": true
+  },
+  {
+    "name": "/[locale]/admin/users",
+    "metric": "route-first-load-js-gzip",
+    "sizeBytes": 255219,
+    "limitBytes": 358400,
+    "ok": true
+  },
+  {
+    "name": "/[locale]/profile",
+    "metric": "route-first-load-js-gzip",
+    "sizeBytes": 253413,
+    "limitBytes": 358400,
+    "ok": true
+  },
+  {
+    "name": "/[locale]/my-quizzes",
+    "metric": "route-first-load-js-gzip",
+    "sizeBytes": 253804,
+    "limitBytes": 358400,
+    "ok": true
+  },
+  {
+    "name": "/[locale]/adaptive/pipeline-debug",
+    "metric": "route-first-load-js-gzip",
+    "sizeBytes": 254131,
+    "limitBytes": 358400,
+    "ok": true
+  },
+  {
+    "name": "/[locale]/admin/quizzes",
+    "metric": "route-first-load-js-gzip",
+    "sizeBytes": 252374,
+    "limitBytes": 358400,
+    "ok": true
+  },
+  {
+    "name": "/[locale]/admin/plans",
+    "metric": "route-first-load-js-gzip",
+    "sizeBytes": 251226,
+    "limitBytes": 358400,
+    "ok": true
+  },
+  {
+    "name": "/[locale]/review",
+    "metric": "route-first-load-js-gzip",
+    "sizeBytes": 249989,
+    "limitBytes": 358400,
+    "ok": true
+  },
+  {
+    "name": "/[locale]/admin/subscriptions",
+    "metric": "route-first-load-js-gzip",
+    "sizeBytes": 250509,
+    "limitBytes": 358400,
+    "ok": true
+  },
+  {
+    "name": "/[locale]/my-quizzes/folder/[id]",
+    "metric": "route-first-load-js-gzip",
+    "sizeBytes": 249542,
+    "limitBytes": 358400,
+    "ok": true
+  },
+  {
+    "name": "/[locale]/history/[attemptId]",
+    "metric": "route-first-load-js-gzip",
+    "sizeBytes": 249394,
+    "limitBytes": 358400,
+    "ok": true
+  },
+  {
+    "name": "/[locale]/admin/reports",
+    "metric": "route-first-load-js-gzip",
+    "sizeBytes": 248566,
+    "limitBytes": 358400,
+    "ok": true
+  },
+  {
+    "name": "/[locale]/subscription",
+    "metric": "route-first-load-js-gzip",
+    "sizeBytes": 246428,
+    "limitBytes": 358400,
+    "ok": true
+  },
+  {
+    "name": "/[locale]/payment/success",
+    "metric": "route-first-load-js-gzip",
+    "sizeBytes": 244735,
+    "limitBytes": 358400,
+    "ok": true
+  },
+  {
+    "name": "/[locale]/payment/cancel",
+    "metric": "route-first-load-js-gzip",
+    "sizeBytes": 244591,
+    "limitBytes": 358400,
+    "ok": true
+  },
+  {
+    "name": "/[locale]/test-image-upload",
+    "metric": "route-first-load-js-gzip",
+    "sizeBytes": 246960,
+    "limitBytes": 358400,
+    "ok": true
+  },
+  {
+    "name": "/[locale]",
+    "metric": "route-first-load-js-gzip",
+    "sizeBytes": 250268,
+    "limitBytes": 358400,
+    "ok": true
+  },
+  {
+    "name": "/[locale]/admin/ocr-keys",
+    "metric": "route-first-load-js-gzip",
+    "sizeBytes": 244827,
+    "limitBytes": 358400,
+    "ok": true
+  },
+  {
+    "name": "/[locale]/history",
+    "metric": "route-first-load-js-gzip",
+    "sizeBytes": 245436,
+    "limitBytes": 358400,
+    "ok": true
+  },
+  {
+    "name": "/[locale]/dashboard",
+    "metric": "route-first-load-js-gzip",
+    "sizeBytes": 246058,
+    "limitBytes": 358400,
+    "ok": true
+  },
+  {
+    "name": "/[locale]/users/[userId]",
+    "metric": "route-first-load-js-gzip",
+    "sizeBytes": 239836,
+    "limitBytes": 358400,
+    "ok": true
+  },
+  {
+    "name": "/[locale]/blog/ai-powered-quiz-generation-guide",
+    "metric": "route-first-load-js-gzip",
+    "sizeBytes": 201699,
+    "limitBytes": 358400,
+    "ok": true
+  },
+  {
+    "name": "/[locale]/blog/knowledge-graphs-adaptive-learning-pdfs",
+    "metric": "route-first-load-js-gzip",
+    "sizeBytes": 201699,
+    "limitBytes": 358400,
+    "ok": true
+  },
+  {
+    "name": "/[locale]/verify-email",
+    "metric": "route-first-load-js-gzip",
+    "sizeBytes": 193990,
+    "limitBytes": 358400,
+    "ok": true
+  },
+  {
+    "name": "/[locale]/about",
+    "metric": "route-first-load-js-gzip",
+    "sizeBytes": 189578,
+    "limitBytes": 358400,
+    "ok": true
+  },
+  {
+    "name": "/[locale]/blog",
+    "metric": "route-first-load-js-gzip",
+    "sizeBytes": 189578,
+    "limitBytes": 358400,
+    "ok": true
+  },
+  {
+    "name": "/[locale]/blog/authors",
+    "metric": "route-first-load-js-gzip",
+    "sizeBytes": 189578,
+    "limitBytes": 358400,
+    "ok": true
+  },
+  {
+    "name": "/[locale]/blog/authors/[slug]",
+    "metric": "route-first-load-js-gzip",
+    "sizeBytes": 189578,
+    "limitBytes": 358400,
+    "ok": true
+  },
+  {
+    "name": "/[locale]/contact",
+    "metric": "route-first-load-js-gzip",
+    "sizeBytes": 189578,
+    "limitBytes": 358400,
+    "ok": true
+  },
+  {
+    "name": "/[locale]/cookies",
+    "metric": "route-first-load-js-gzip",
+    "sizeBytes": 189578,
+    "limitBytes": 358400,
+    "ok": true
+  },
+  {
+    "name": "/[locale]/faq",
+    "metric": "route-first-load-js-gzip",
+    "sizeBytes": 189578,
+    "limitBytes": 358400,
+    "ok": true
+  },
+  {
+    "name": "/[locale]/pricing",
+    "metric": "route-first-load-js-gzip",
+    "sizeBytes": 189578,
+    "limitBytes": 358400,
+    "ok": true
+  },
+  {
+    "name": "/[locale]/privacy",
+    "metric": "route-first-load-js-gzip",
+    "sizeBytes": 189578,
+    "limitBytes": 358400,
+    "ok": true
+  },
+  {
+    "name": "/[locale]/terms",
+    "metric": "route-first-load-js-gzip",
+    "sizeBytes": 189578,
+    "limitBytes": 358400,
+    "ok": true
+  },
+  {
+    "name": "/_not-found",
+    "metric": "route-first-load-js-gzip",
+    "sizeBytes": 147015,
+    "limitBytes": 358400,
+    "ok": true
   }
 ]

@@ -1,9 +1,12 @@
+const port = process.env.LIGHTHOUSE_PORT || '3000';
+const baseUrl = `http://127.0.0.1:${port}`;
+
 module.exports = {
   ci: {
     collect: {
-      url: ['http://127.0.0.1:3000/'],
-      numberOfRuns: 1,
-      startServerCommand: 'npm run dev -- --hostname 127.0.0.1 --port 3000',
+      url: [`${baseUrl}/en`, `${baseUrl}/en/login`],
+      numberOfRuns: 3,
+      startServerCommand: `npm run start -- --hostname 127.0.0.1 --port ${port}`,
       startServerReadyPattern: 'Ready in',
       startServerReadyTimeout: 120000,
       settings: {
@@ -18,7 +21,8 @@ module.exports = {
       },
     },
     upload: {
-      target: 'temporary-public-storage',
+      target: 'filesystem',
+      outputDir: './perf/lighthouse',
     },
   },
 };

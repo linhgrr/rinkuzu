@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { adaptiveLibraryImagesQuerySchema } from '@/dtos/adaptive-library';
 import {
+  adaptivePipelineJobQuerySchema,
   adaptivePipelineJobsQuerySchema,
   adaptivePipelineProcessRequestSchema,
 } from '@/dtos/adaptive-pipeline';
@@ -9,6 +10,14 @@ describe('adaptive query DTOs', () => {
   it('applies route defaults', () => {
     expect(adaptiveLibraryImagesQuerySchema.parse({})).toEqual({ limit: 12 });
     expect(adaptivePipelineJobsQuerySchema.parse({})).toEqual({ limit: 50 });
+    expect(adaptivePipelineJobQuerySchema.parse({})).toEqual({ include_debug: false });
+  });
+
+  it('accepts only explicit boolean strings for pipeline debug payloads', () => {
+    expect(adaptivePipelineJobQuerySchema.parse({ include_debug: 'true' })).toEqual({
+      include_debug: true,
+    });
+    expect(adaptivePipelineJobQuerySchema.safeParse({ include_debug: '1' }).success).toBe(false);
   });
 
   it('rejects invalid limits instead of clamping or forwarding them', () => {

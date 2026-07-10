@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { extractUnknownErrorMessage } from '@/lib/api/error';
-import { streamQuizAI } from '@/lib/quiz/ask-ai';
 import { useUpgradePrompt } from '@/features/subscription/components/UpgradePromptProvider';
 import { isPremiumLimitError } from '@/features/subscription/lib/limit-error';
 
@@ -44,6 +43,7 @@ export function useQuizAIExplain() {
       abortController = new AbortController();
       abortControllerRef.current = abortController;
 
+      const { streamQuizAI } = await import('@/lib/quiz/ask-ai');
       const explanation = await streamQuizAI(
         {
           question: currentQuestion.question,

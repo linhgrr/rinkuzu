@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import zlib from 'node:zlib';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -12,7 +13,6 @@ const sizeLimitConfigPath = path.join(rootDir, '.size-limit.json');
 const enforceBudgets = process.env.PERF_BUDGET_ENFORCE === '1';
 
 const readJson = (targetPath) => JSON.parse(fs.readFileSync(targetPath, 'utf8'));
-const readText = (targetPath) => fs.readFileSync(targetPath, 'utf8');
 
 const walkFiles = (targetPath) => {
   if (!fs.existsSync(targetPath)) {
@@ -57,44 +57,35 @@ const parseHumanBytes = (value) => {
   return null;
 };
 
-const parseSizeEntry = (entry) => {
-  const sizeBytes =
-    entry.sizeBytes ??
-    parseHumanBytes(entry.size) ??
-    parseHumanBytes(entry.gzip) ??
-    entry.size ??
-    null;
-  const limitBytes = entry.limitBytes ?? parseHumanBytes(entry.limit) ?? entry.limit ?? null;
-  const name = entry.name ?? entry.path ?? 'unknown';
-  const ok =
-    typeof entry.passed === 'boolean'
-      ? entry.passed
-      : typeof sizeBytes === 'number' && typeof limitBytes === 'number'
-        ? sizeBytes <= limitBytes
-        : null;
+const gzipSize = (filePath) => zlib.gzipSync(fs.readFileSync(filePath), { level: 9 }).length;
 
-  return {
-    name,
-    sizeBytes,
-    limitBytes,
-    ok,
-  };
-};
-
-const collectWildcardSize = (pattern) => {
-  if (pattern === '.next/static/**/*.js') {
-    return walkFiles(path.join(rootDir, '.next', 'static'))
-      .filter((filePath) => filePath.endsWith('.js'))
-      .reduce((total, filePath) => total + fs.statSync(filePath).size, 0);
+const buildRouteBundleEntries = (entry) => {
+  const statsPath = path.resolve(rootDir, entry.source);
+  if (!fs.existsSync(statsPath)) {
+    return [];
   }
 
-  if (pattern === '.next/static/css/**/*.css') {
-    return walkFiles(path.join(rootDir, '.next', 'static', 'css'))
-      .filter((filePath) => filePath.endsWith('.css'))
-      .reduce((total, filePath) => total + fs.statSync(filePath).size, 0);
+  const limitBytes = parseHumanBytes(entry.limit);
+  const rows = readJson(statsPath);
+  if (!Array.isArray(rows)) {
+    return [];
   }
 
-  return 0;
+  return rows.map((row) => {
+    const chunkPaths = Array.isArray(row.firstLoadChunkPaths) ? row.firstLoadChunkPaths : [];
+    const sizeBytes = chunkPaths.reduce((total, chunkPath) => {
+      const absolutePath = path.resolve(rootDir, chunkPath);
+      return fs.existsSync(absolutePath) ? total + gzipSize(absolutePath) : total;
+    }, 0);
+
+    return {
+      name: row.route,
+      metric: entry.type,
+      sizeBytes,
+      limitBytes,
+      ok: typeof limitBytes === 'number' ? sizeBytes <= limitBytes : null,
+    };
+  });
 };
 
 const buildSizeEntriesFromConfig = () => {
@@ -107,16 +98,9 @@ const buildSizeEntriesFromConfig = () => {
     return [];
   }
 
-  return config.map((entry) => {
-    const sizeBytes = collectWildcardSize(entry.path);
-    const limitBytes = parseHumanBytes(entry.limit);
-    return {
-      name: entry.path,
-      sizeBytes,
-      limitBytes,
-      ok: typeof limitBytes === 'number' ? sizeBytes <= limitBytes : null,
-    };
-  });
+  return config.flatMap((entry) =>
+    entry.type === 'route-first-load-js-gzip' ? buildRouteBundleEntries(entry) : [],
+  );
 };
 
 const report = {
@@ -140,29 +124,8 @@ const report = {
   violations: [],
 };
 
-const sizeReportPath = path.join(perfDir, 'fe-size.json');
-let sizeEntries = [];
-
-if (fs.existsSync(sizeReportPath)) {
-  try {
-    const rawContent = readText(sizeReportPath).trim();
-    if (rawContent) {
-      const rawSizeReport = JSON.parse(rawContent);
-      sizeEntries = Array.isArray(rawSizeReport)
-        ? rawSizeReport.map(parseSizeEntry)
-        : Array.isArray(rawSizeReport.results)
-          ? rawSizeReport.results.map(parseSizeEntry)
-          : [];
-    }
-  } catch (_error) {
-    sizeEntries = [];
-  }
-}
-
-if (sizeEntries.length === 0) {
-  sizeEntries = buildSizeEntriesFromConfig();
-  fs.writeFileSync(path.join(perfDir, 'fe-size.json'), JSON.stringify(sizeEntries, null, 2));
-}
+const sizeEntries = buildSizeEntriesFromConfig();
+fs.writeFileSync(path.join(perfDir, 'fe-size.json'), JSON.stringify(sizeEntries, null, 2));
 
 if (sizeEntries.length > 0) {
   report.sizeLimit = {
@@ -183,12 +146,16 @@ if (sizeEntries.length > 0) {
 }
 
 const lighthouseManifestPath = path.join(lighthouseDir, 'manifest.json');
-const loadLighthouseSummary = () => {
+const loadLighthouseReports = () => {
   if (fs.existsSync(lighthouseManifestPath)) {
     const manifest = readJson(lighthouseManifestPath);
-    const representativeRun = manifest.find((entry) => entry.isRepresentativeRun) ?? manifest[0];
-    if (representativeRun?.jsonPath) {
-      return readJson(path.resolve(lighthouseDir, representativeRun.jsonPath));
+    const representativeRuns = manifest.filter((entry) => entry.isRepresentativeRun);
+    const selectedRuns = representativeRuns.length > 0 ? representativeRuns : manifest.slice(0, 1);
+    const reports = selectedRuns
+      .filter((entry) => entry.jsonPath)
+      .map((entry) => readJson(path.resolve(lighthouseDir, entry.jsonPath)));
+    if (reports.length > 0) {
+      return reports;
     }
   }
 
@@ -197,69 +164,50 @@ const loadLighthouseSummary = () => {
     .sort();
 
   if (fallbackJsonFiles.length > 0) {
-    return readJson(fallbackJsonFiles.at(-1));
+    return fallbackJsonFiles.map(readJson);
   }
 
-  return null;
+  return [];
 };
 
-const lhr = loadLighthouseSummary();
-if (lhr) {
-  const summary = {
-    url: lhr.finalUrl,
-    performanceScore: lhr.categories?.performance?.score ?? null,
-    lcpMs: lhr.audits?.['largest-contentful-paint']?.numericValue ?? null,
-    interactiveMs: lhr.audits?.interactive?.numericValue ?? null,
-    cls: lhr.audits?.['cumulative-layout-shift']?.numericValue ?? null,
+const lighthouseReports = loadLighthouseReports();
+if (lighthouseReports.length > 0) {
+  const median = (values) => {
+    const sorted = values.filter(Number.isFinite).sort((left, right) => left - right);
+    return sorted.length > 0 ? sorted[Math.floor(sorted.length / 2)] : null;
   };
+  const reportsByUrl = Map.groupBy(lighthouseReports, (lhr) => lhr.finalUrl);
+  const summaries = Array.from(reportsByUrl, ([url, reports]) => ({
+    url,
+    runs: reports.length,
+    performanceScore: median(reports.map((lhr) => lhr.categories?.performance?.score)),
+    lcpMs: median(reports.map((lhr) => lhr.audits?.['largest-contentful-paint']?.numericValue)),
+    interactiveMs: median(reports.map((lhr) => lhr.audits?.interactive?.numericValue)),
+    cls: median(reports.map((lhr) => lhr.audits?.['cumulative-layout-shift']?.numericValue)),
+  }));
 
   report.lighthouse = {
     status: 'ok',
-    ...summary,
+    entries: summaries,
   };
 
-  fs.writeFileSync(path.join(perfDir, 'fe-lighthouse.json'), JSON.stringify(summary, null, 2));
+  fs.writeFileSync(path.join(perfDir, 'fe-lighthouse.json'), JSON.stringify(summaries, null, 2));
 
-  if (
-    typeof summary.performanceScore === 'number' &&
-    summary.performanceScore < report.budgets.performanceScoreMin
-  ) {
-    report.violations.push({
-      type: 'lighthouse',
-      metric: 'performanceScore',
-      actual: summary.performanceScore,
-      limit: report.budgets.performanceScoreMin,
-    });
-  }
-
-  if (typeof summary.lcpMs === 'number' && summary.lcpMs > report.budgets.lcpMsMax) {
-    report.violations.push({
-      type: 'lighthouse',
-      metric: 'largest-contentful-paint',
-      actual: summary.lcpMs,
-      limit: report.budgets.lcpMsMax,
-    });
-  }
-
-  if (
-    typeof summary.interactiveMs === 'number' &&
-    summary.interactiveMs > report.budgets.interactiveMsMax
-  ) {
-    report.violations.push({
-      type: 'lighthouse',
-      metric: 'interactive',
-      actual: summary.interactiveMs,
-      limit: report.budgets.interactiveMsMax,
-    });
-  }
-
-  if (typeof summary.cls === 'number' && summary.cls > report.budgets.clsMax) {
-    report.violations.push({
-      type: 'lighthouse',
-      metric: 'cumulative-layout-shift',
-      actual: summary.cls,
-      limit: report.budgets.clsMax,
-    });
+  for (const summary of summaries) {
+    const checks = [
+      ['performanceScore', summary.performanceScore, report.budgets.performanceScoreMin, 'min'],
+      ['largest-contentful-paint', summary.lcpMs, report.budgets.lcpMsMax, 'max'],
+      ['interactive', summary.interactiveMs, report.budgets.interactiveMsMax, 'max'],
+      ['cumulative-layout-shift', summary.cls, report.budgets.clsMax, 'max'],
+    ];
+    for (const [metric, actual, limit, direction] of checks) {
+      if (
+        typeof actual === 'number' &&
+        ((direction === 'min' && actual < limit) || (direction === 'max' && actual > limit))
+      ) {
+        report.violations.push({ type: 'lighthouse', url: summary.url, metric, actual, limit });
+      }
+    }
   }
 }
 

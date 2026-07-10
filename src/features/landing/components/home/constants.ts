@@ -1,5 +1,5 @@
-export const imgImage2 = '/assets/imgImage2.png';
-export const imgCharacterImg = '/assets/imgCharacterImg.png';
+export const imgImage2 = '/assets/imgImage2.webp';
+export const imgCharacterImg = '/assets/imgCharacterImg.webp';
 export const imgChatGptImageApr22026At121506Am1 = '/assets/imgChatGptImageApr22026At121506Am1.png';
 export const imgBackground = '/assets/imgBackground.png';
 export const imgGroup3 = '/assets/imgGroup3.svg';

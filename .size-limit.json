@@ -1,10 +1,7 @@
 [
   {
-    "path": ".next/static/**/*.js",
+    "type": "route-first-load-js-gzip",
+    "source": ".next/diagnostics/route-bundle-stats.json",
     "limit": "350 kB"
-  },
-  {
-    "path": ".next/static/css/**/*.css",
-    "limit": "50 kB"
   }
 ]

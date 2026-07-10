@@ -70,23 +70,37 @@ export function usePdfProcessor() {
       processingRef.current[draftId] = true;
       const abortController = new AbortController();
       abortControllersRef.current[draftId] = abortController;
+      const cleanupProcessing = () => {
+        delete processingRef.current[draftId];
+        delete abortControllersRef.current[draftId];
+      };
 
       try {
         for (let attempt = 0; attempt < MAX_POLLS; attempt++) {
-          if (abortController.signal.aborted) return;
+          if (abortController.signal.aborted) {
+            cleanupProcessing();
+            return;
+          }
 
           let snapshot: QuizDraft | null;
           try {
             snapshot = await pollOnce(draftId, abortController.signal);
           } catch (error) {
-            if (error instanceof Error && error.name === 'AbortError') return;
+            if (error instanceof Error && error.name === 'AbortError') {
+              cleanupProcessing();
+              return;
+            }
             const message = extractUnknownErrorMessage(error, 'Failed to fetch draft status');
             setDraftError(draftId, message);
             toast.error(`Lỗi xử lý "${title}"`, { description: message });
+            cleanupProcessing();
             return;
           }
 
-          if (!snapshot) return;
+          if (!snapshot) {
+            cleanupProcessing();
+            return;
+          }
 
           const mapped = mapDraftStatus(snapshot.status);
 
@@ -100,6 +114,7 @@ export function usePdfProcessor() {
                 onClick: () => (window.location.href = `/draft/${draftId}/edit`),
               },
             });
+            cleanupProcessing();
             return;
           }
 
@@ -108,9 +123,13 @@ export function usePdfProcessor() {
           if (mapped === 'error') {
             setDraftError(draftId, 'Trích xuất thất bại hoặc bản nháp đã hết hạn');
             toast.error(`Lỗi xử lý "${title}"`, { description: 'Vui lòng thử lại sau' });
+            cleanupProcessing();
             return;
           }
-          if (mapped === null) return;
+          if (mapped === null) {
+            cleanupProcessing();
+            return;
+          }
 
           // Still in flight — surface flat progress.
           updateDraftProgress(draftId, {
@@ -123,6 +142,7 @@ export function usePdfProcessor() {
           try {
             await sleep(POLL_INTERVAL_MS, abortController.signal);
           } catch {
+            cleanupProcessing();
             return;
           }
         }
@@ -132,9 +152,10 @@ export function usePdfProcessor() {
         toast.error(`Quá lâu để xử lý "${title}"`, {
           description: 'Vui lòng thử lại sau',
         });
-      } finally {
-        delete processingRef.current[draftId];
-        delete abortControllersRef.current[draftId];
+        cleanupProcessing();
+      } catch (error) {
+        cleanupProcessing();
+        throw error;
       }
     },
     [completeDraft, pollOnce, setDraftError, updateDraftProgress],

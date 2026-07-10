@@ -37,10 +37,11 @@ export function useQuizAIExplain() {
     setLoadingAI(true);
     setAIError('');
     setAIExplanation('');
+    let abortController: AbortController | null = null;
 
     try {
       abortControllerRef.current?.abort();
-      const abortController = new AbortController();
+      abortController = new AbortController();
       abortControllerRef.current = abortController;
 
       const explanation = await streamQuizAI(
@@ -63,17 +64,23 @@ export function useQuizAIExplain() {
       if (abortControllerRef.current === abortController) {
         abortControllerRef.current = null;
       }
+      setLoadingAI(false);
     } catch (error: unknown) {
       if (isAbortLikeError(error)) {
         setAIError('');
+        if (abortControllerRef.current === abortController) {
+          abortControllerRef.current = null;
+        }
+        setLoadingAI(false);
         return;
       }
       if (isPremiumLimitError(error)) {
         promptUpgrade('rate_limit');
       }
       setAIError(extractUnknownErrorMessage(error, 'Failed to connect to AI service'));
-    } finally {
-      abortControllerRef.current = null;
+      if (abortControllerRef.current === abortController) {
+        abortControllerRef.current = null;
+      }
       setLoadingAI(false);
     }
   };

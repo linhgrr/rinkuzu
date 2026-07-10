@@ -61,13 +61,13 @@ export function useQuizSubmission<TQuiz extends { questions: TQuestion[] }, TQue
       setSubmitting(true);
       try {
         await submitQuizAnswers(answers);
+        setSubmitting(false);
         return true;
       } catch (error) {
         console.error('Quiz submission error:', error);
         onSubmitError(error instanceof Error ? error.message : 'Failed to submit quiz');
-        return false;
-      } finally {
         setSubmitting(false);
+        return false;
       }
     },
     [onSubmitError, onSubmitStart, quiz, submitQuizAnswers, submitting],
@@ -81,13 +81,13 @@ export function useQuizSubmission<TQuiz extends { questions: TQuestion[] }, TQue
     try {
       await submitQuizAnswers(userAnswers);
       setShowSubmitConfirm(false);
+      setSubmitting(false);
       return true;
     } catch (error) {
       console.error('Quiz submission error:', error);
       onSubmitError(error instanceof Error ? error.message : 'Failed to submit quiz');
-      return false;
-    } finally {
       setSubmitting(false);
+      return false;
     }
   }, [onSubmitError, onSubmitStart, quiz, submitQuizAnswers, submitting, userAnswers]);
 

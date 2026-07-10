@@ -403,6 +403,9 @@ export const useProcessingState = (t: TranslateFn) => {
       if (pollInFlightRef.current || creatingSessionRef.current) return;
 
       pollInFlightRef.current = true;
+      const releasePollLock = () => {
+        pollInFlightRef.current = false;
+      };
 
       try {
         const job = await getPipelineJobStatus(jobId);
@@ -418,7 +421,10 @@ export const useProcessingState = (t: TranslateFn) => {
 
         if (job.status === 'completed' && !creatingSessionRef.current) {
           const outcome = await handleCompletedJob(jobId);
-          if (outcome === 'retrying') return;
+          if (outcome === 'retrying') {
+            releasePollLock();
+            return;
+          }
         } else if (job.status === 'failed' || job.status === 'cancelled') {
           clearPolling();
           setNotice(job.retryable ? t('processing.notices.retryAfterFailure') : null);
@@ -429,11 +435,13 @@ export const useProcessingState = (t: TranslateFn) => {
           createSessionRetryCountRef.current = 0;
           scheduleNextPoll(jobId, Math.max(1, job.retry_after_seconds ?? 2) * 1000);
         }
+        releasePollLock();
       } catch (err) {
         if (isRetryableAdaptiveError(err)) {
           setNotice(getRetryNotice(err, 'polling'));
           pollRetryDelayRef.current = Math.min(pollRetryDelayRef.current * 2, MAX_POLL_DELAY_MS);
           scheduleNextPoll(jobId, pollRetryDelayRef.current);
+          releasePollLock();
           return;
         }
 
@@ -441,8 +449,7 @@ export const useProcessingState = (t: TranslateFn) => {
         const friendlyError = getFriendlyProcessingError(err);
         setError(friendlyError);
         pushThrottledToast(friendlyError.message);
-      } finally {
-        pollInFlightRef.current = false;
+        releasePollLock();
       }
     },
     [
@@ -486,7 +493,7 @@ export const useProcessingState = (t: TranslateFn) => {
     }
 
     creatingSessionRef.current = false;
-    void pollJob(jobId);
+    queueMicrotask(() => void pollJob(jobId));
 
     return () => clearPolling();
   }, [clearPolling, pollJob, t]);

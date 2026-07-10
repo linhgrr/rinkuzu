@@ -22,6 +22,7 @@ type PwaInstallerState = {
   isInstallable: boolean;
   isOffline: boolean;
   showInstallBanner: boolean;
+  canShowInstallBanner: boolean;
 };
 
 type PwaInstallerAction = {
@@ -34,6 +35,7 @@ const initialState: PwaInstallerState = {
   isInstallable: false,
   isOffline: false,
   showInstallBanner: false,
+  canShowInstallBanner: false,
 };
 
 function pwaInstallerReducer(
@@ -53,6 +55,13 @@ export default function PWAInstaller() {
   const [state, dispatch] = useReducer(pwaInstallerReducer, initialState);
 
   useEffect(() => {
+    const dismissed = localStorage.getItem('dismissedInstallBanner');
+    const dismissedTime = dismissed ? Number.parseInt(dismissed, 10) : 0;
+    const oneWeek = 7 * 24 * 60 * 60 * 1000;
+    const canShowInstallBanner =
+      !dismissed || Number.isNaN(dismissedTime) || Date.now() - dismissedTime > oneWeek;
+    dispatch({ type: 'patch', value: { canShowInstallBanner } });
+
     const isStandalone = matchesMedia('(display-mode: standalone)');
     const isInWebAppiOS = (window.navigator as IOSNavigator).standalone === true;
     const isAppInstalled = isStandalone || isInWebAppiOS;
@@ -127,17 +136,12 @@ export default function PWAInstaller() {
   };
 
   const dismissInstallBanner = () => {
-    dispatch({ type: 'patch', value: { showInstallBanner: false } });
+    dispatch({ type: 'patch', value: { showInstallBanner: false, canShowInstallBanner: false } });
     localStorage.setItem('dismissedInstallBanner', Date.now().toString());
   };
 
   const shouldShowBanner = () => {
-    const dismissed = localStorage.getItem('dismissedInstallBanner');
-    if (!dismissed) return state.showInstallBanner;
-
-    const dismissedTime = Number.parseInt(dismissed, 10);
-    const oneWeek = 7 * 24 * 60 * 60 * 1000;
-    return state.showInstallBanner && Date.now() - dismissedTime > oneWeek;
+    return state.showInstallBanner && state.canShowInstallBanner;
   };
 
   return (

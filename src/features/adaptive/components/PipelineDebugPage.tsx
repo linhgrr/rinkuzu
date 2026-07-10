@@ -568,20 +568,32 @@ export default function PipelineDebugPage() {
       setJob(nextJob);
       setSelectedJobId(nextJob.job_id);
       setJobIdInput(nextJob.job_id);
+      setLoading(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Không tải được pipeline job');
-    } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    void loadJobs();
+    let active = true;
+    queueMicrotask(() => {
+      if (active) void loadJobs();
+    });
+    return () => {
+      active = false;
+    };
   }, [loadJobs]);
 
   useEffect(() => {
     if (!selectedJobId) return;
-    void loadJob(selectedJobId);
+    let active = true;
+    queueMicrotask(() => {
+      if (active) void loadJob(selectedJobId);
+    });
+    return () => {
+      active = false;
+    };
   }, [loadJob, selectedJobId]);
 
   useEffect(() => {

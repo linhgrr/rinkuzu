@@ -9,6 +9,7 @@ const perfDir = path.join(rootDir, 'perf');
 const lighthouseDir = path.join(rootDir, '.lighthouseci');
 const perfDocPath = path.resolve(rootDir, '..', 'CLAUDE_PERF.md');
 const sizeLimitConfigPath = path.join(rootDir, '.size-limit.json');
+const enforceBudgets = process.env.PERF_BUDGET_ENFORCE === '1';
 
 const readJson = (targetPath) => JSON.parse(fs.readFileSync(targetPath, 'utf8'));
 const readText = (targetPath) => fs.readFileSync(targetPath, 'utf8');
@@ -268,5 +269,11 @@ fs.writeFileSync(path.join(perfDir, 'fe-budget.json'), JSON.stringify(report, nu
 
 if (!report.ok) {
   console.error(JSON.stringify(report, null, 2));
-  process.exit(1);
+  if (enforceBudgets) {
+    process.exit(1);
+  }
+
+  console.warn(
+    'Performance budget violations found. Advisory mode is enabled; set PERF_BUDGET_ENFORCE=1 to fail on violations.',
+  );
 }

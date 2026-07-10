@@ -84,6 +84,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/session/{session_id}/step': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Learning Step
+     * @description Return the current learning step, creating and persisting one when needed.
+     */
+    post: operations['learning_step_api_v1_session__session_id__step_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/session/{session_id}/submit': {
     parameters: {
       query?: never;
@@ -525,7 +545,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/admin/llm-usage/summary': {
+  '/api/v1/admin/llm-usage/summary': {
     parameters: {
       query?: never;
       header?: never;
@@ -536,7 +556,7 @@ export interface paths {
      * Get Llm Usage Summary
      * @description Aggregate LLM usage/cost over a time window, broken down by action + model.
      */
-    get: operations['get_llm_usage_summary_admin_llm_usage_summary_get'];
+    get: operations['get_llm_usage_summary_api_v1_admin_llm_usage_summary_get'];
     put?: never;
     post?: never;
     delete?: never;
@@ -790,6 +810,157 @@ export interface components {
      * @enum {string}
      */
     LearningSessionStatus: 'active' | 'completed';
+    /** LearningStepResponse */
+    LearningStepResponse: {
+      concept: components['schemas']['NextConceptResponse'];
+      theory?: components['schemas']['TheoryResponse'] | null;
+      /** Exercise */
+      exercise:
+        | components['schemas']['MCQExerciseResponse']
+        | components['schemas']['TrueFalseExerciseResponse']
+        | components['schemas']['FillBlankExerciseResponse']
+        | components['schemas']['MultiCorrectExerciseResponse']
+        | components['schemas']['OrderingExerciseResponse']
+        | components['schemas']['MatchingExerciseResponse']
+        | components['schemas']['ShortAnswerExerciseResponse'];
+      /**
+       * Cache Status
+       * @enum {string}
+       */
+      cache_status: 'served' | 'created';
+    };
+    /** LlmUsageAnalysisResponse */
+    LlmUsageAnalysisResponse: {
+      /**
+       * Active Users
+       * @default 0
+       */
+      active_users: number;
+      /**
+       * Average Tokens Per Call
+       * @default 0
+       */
+      average_tokens_per_call: number;
+      /**
+       * Average Cost Usd Per Call
+       * @default 0
+       */
+      average_cost_usd_per_call: number;
+      /** Top User Id */
+      top_user_id?: string | null;
+      /**
+       * Top User Cost Usd
+       * @default 0
+       */
+      top_user_cost_usd: number;
+      /** Top Action */
+      top_action?: string | null;
+      /**
+       * Top Action Cost Share
+       * @default 0
+       */
+      top_action_cost_share: number;
+      /** Top Model */
+      top_model?: string | null;
+      /**
+       * Top Model Cost Share
+       * @default 0
+       */
+      top_model_cost_share: number;
+    };
+    /** LlmUsageBreakdownRow */
+    LlmUsageBreakdownRow: {
+      /** Key */
+      key?: string | null;
+      /**
+       * Total Tokens
+       * @default 0
+       */
+      total_tokens: number;
+      /**
+       * Input Tokens
+       * @default 0
+       */
+      input_tokens: number;
+      /**
+       * Output Tokens
+       * @default 0
+       */
+      output_tokens: number;
+      /**
+       * Cost Usd
+       * @default 0
+       */
+      cost_usd: number;
+      /**
+       * Calls
+       * @default 0
+       */
+      calls: number;
+    };
+    /** LlmUsageDailyRow */
+    LlmUsageDailyRow: {
+      /** Date */
+      date: string;
+      /**
+       * Total Tokens
+       * @default 0
+       */
+      total_tokens: number;
+      /**
+       * Cost Usd
+       * @default 0
+       */
+      cost_usd: number;
+      /**
+       * Calls
+       * @default 0
+       */
+      calls: number;
+    };
+    /** LlmUsageSummaryResponse */
+    LlmUsageSummaryResponse: {
+      /** Window Days */
+      window_days: number;
+      totals: components['schemas']['LlmUsageTotalsResponse'];
+      /** By Action */
+      by_action: components['schemas']['LlmUsageBreakdownRow'][];
+      /** By Model */
+      by_model: components['schemas']['LlmUsageBreakdownRow'][];
+      /** By User */
+      by_user: components['schemas']['LlmUsageBreakdownRow'][];
+      analysis: components['schemas']['LlmUsageAnalysisResponse'];
+      /** Daily */
+      daily: components['schemas']['LlmUsageDailyRow'][];
+    };
+    /** LlmUsageTotalsResponse */
+    LlmUsageTotalsResponse: {
+      /**
+       * Total Tokens
+       * @default 0
+       */
+      total_tokens: number;
+      /**
+       * Input Tokens
+       * @default 0
+       */
+      input_tokens: number;
+      /**
+       * Output Tokens
+       * @default 0
+       */
+      output_tokens: number;
+      /**
+       * Cost Usd
+       * @default 0
+       */
+      cost_usd: number;
+      /**
+       * Calls
+       * @default 0
+       */
+      calls: number;
+    };
     /** MCQExerciseResponse */
     MCQExerciseResponse: {
       /** Exercise Id */
@@ -1813,9 +1984,15 @@ export interface components {
       options: string[];
       /** Userquestion */
       userQuestion?: string | null;
-      /** Questionimage */
+      /**
+       * Questionimage
+       * @description Optional image URL/data URL. Accepted only when the configured tutor LLM model supports vision.
+       */
       questionImage?: string | null;
-      /** Optionimages */
+      /**
+       * Optionimages
+       * @description Optional option image URLs/data URLs. Accepted only when the configured tutor LLM model supports vision.
+       */
       optionImages?: (string | null)[];
       /** Chathistory */
       chatHistory?: components['schemas']['QuizTutorChatMessage'][];
@@ -2125,6 +2302,32 @@ export interface components {
        */
       success: boolean;
       data: components['schemas']['KnowledgeGraphResponse'];
+      /** Meta */
+      meta?: {
+        [key: string]: unknown;
+      } | null;
+    };
+    /** StandardResponse[LearningStepResponse] */
+    StandardResponse_LearningStepResponse_: {
+      /**
+       * Success
+       * @default true
+       */
+      success: boolean;
+      data: components['schemas']['LearningStepResponse'];
+      /** Meta */
+      meta?: {
+        [key: string]: unknown;
+      } | null;
+    };
+    /** StandardResponse[LlmUsageSummaryResponse] */
+    StandardResponse_LlmUsageSummaryResponse_: {
+      /**
+       * Success
+       * @default true
+       */
+      success: boolean;
+      data: components['schemas']['LlmUsageSummaryResponse'];
       /** Meta */
       meta?: {
         [key: string]: unknown;
@@ -2591,6 +2794,10 @@ export interface components {
     };
     /** SubmitAnswerRequest */
     SubmitAnswerRequest: {
+      /** Exercise Id */
+      exercise_id: string;
+      /** Idempotency Key */
+      idempotency_key: string;
       answer: components['schemas']['SubmitAnswerPayload'];
     };
     /** SubmitAnswerResponse */
@@ -2684,7 +2891,10 @@ export interface components {
     TutorChatRequest: {
       /** Userquestion */
       userQuestion: string;
-      /** Chathistory */
+      /**
+       * Chathistory
+       * @description Deprecated for adaptive tutor chat. Adaptive chat history is owned by the server session and this field is ignored.
+       */
       chatHistory?: components['schemas']['TutorChatMessage'][];
       /**
        * Stream
@@ -2847,6 +3057,41 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['StandardResponse_Annotated_Union_MCQExerciseResponse__TrueFalseExerciseResponse__FillBlankExerciseResponse__MultiCorrectExerciseResponse__OrderingExerciseResponse__MatchingExerciseResponse__ShortAnswerExerciseResponse___FieldInfo_annotation_NoneType__required_True__discriminator__exercise_type____'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  learning_step_api_v1_session__session_id__step_post: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-user-id'?: string | null;
+        'x-service-token'?: string | null;
+      };
+      path: {
+        /** @description Resource identifier (alphanumeric, hyphens, underscores) */
+        session_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['StandardResponse_LearningStepResponse_'];
         };
       };
       /** @description Validation Error */
@@ -3775,7 +4020,7 @@ export interface operations {
       };
     };
   };
-  get_llm_usage_summary_admin_llm_usage_summary_get: {
+  get_llm_usage_summary_api_v1_admin_llm_usage_summary_get: {
     parameters: {
       query?: {
         window?: string;
@@ -3795,7 +4040,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          'application/json': unknown;
+          'application/json': components['schemas']['StandardResponse_LlmUsageSummaryResponse_'];
         };
       };
       /** @description Validation Error */

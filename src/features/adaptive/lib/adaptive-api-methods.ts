@@ -14,7 +14,9 @@ import type {
   Exercise,
   ExerciseApiResponse,
   ExerciseType,
+  LearningStepApiResponse,
   SubmitAnswerPayload,
+  SubmitAnswerRequest,
   SubmitResult,
   SessionStatus,
   NextConcept,
@@ -390,15 +392,46 @@ export async function getExercise(sessionId: string): Promise<Exercise> {
   return normalizeExerciseResponse(response);
 }
 
+export async function getLearningStep(sessionId: string): Promise<{
+  concept: NextConcept;
+  theory: TheoryData | null;
+  exercise: Exercise;
+  cache_status: LearningStepApiResponse['cache_status'];
+}> {
+  const response = await apiFetch<LearningStepApiResponse>(
+    `/api/adaptive/session/${sessionId}/step`,
+    {
+      method: 'POST',
+    },
+  );
+  const context = `learning step for session ${sessionId}`;
+  return {
+    concept: {
+      ...response.concept,
+      bloom_level: normalizeBloomLevel(response.concept.bloom_level, context),
+      bloom_label: normalizeBloomLabel(response.concept.bloom_label, context),
+    },
+    theory: response.theory ?? null,
+    exercise: normalizeExerciseResponse(response.exercise),
+    cache_status: response.cache_status,
+  };
+}
+
 export async function submitAnswer(
   sessionId: string,
-  answer: SubmitAnswerPayload,
+  request: SubmitAnswerRequest | SubmitAnswerPayload,
 ): Promise<SubmitResult> {
+  const body =
+    'answer' in request
+      ? request
+      : {
+          answer: request,
+        };
   const response = await apiFetch<ApiSchemas['SubmitAnswerResponse']>(
     `/api/adaptive/session/${sessionId}/submit`,
     {
       method: 'POST',
-      body: JSON.stringify({ answer }),
+      body: JSON.stringify(body),
     },
   );
   return normalizeSubmitResult(response);
@@ -560,7 +593,7 @@ export async function getSubjectHistoryDetailFresh(jobId: string): Promise<Subje
 }
 
 export async function prefetchStartLearningData(sessionId: string): Promise<void> {
-  await Promise.allSettled([getSessionStatus(sessionId)]);
+  await Promise.allSettled([getSessionStatus(sessionId), getLearningStep(sessionId)]);
 }
 
 /**

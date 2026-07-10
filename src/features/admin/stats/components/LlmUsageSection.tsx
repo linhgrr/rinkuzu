@@ -12,6 +12,58 @@ import type {
 
 type TranslateFn = (key: string, values?: Record<string, string | number>) => string;
 
+function formatPercent(value: number): string {
+  return `${Math.round(value * 100)}%`;
+}
+
+function UsageAnalysisCard({ data, t }: { data: LlmUsageViewModel; t: TranslateFn }) {
+  const analysis = data.analysis;
+  const rows = [
+    {
+      label: t('llmUsageActiveUsers'),
+      value: analysis.activeUsers.toLocaleString(),
+    },
+    {
+      label: t('llmUsageAvgTokensPerCall'),
+      value: Math.round(analysis.averageTokensPerCall).toLocaleString(),
+    },
+    {
+      label: t('llmUsageAvgCostPerCall'),
+      value: `$${analysis.averageCostUsdPerCall.toFixed(4)}`,
+    },
+    {
+      label: t('llmUsageTopUser'),
+      value: `${analysis.topUserId} · $${analysis.topUserCostUsd.toFixed(4)}`,
+    },
+    {
+      label: t('llmUsageTopAction'),
+      value: `${analysis.topAction} · ${formatPercent(analysis.topActionCostShare)}`,
+    },
+    {
+      label: t('llmUsageTopModel'),
+      value: `${analysis.topModel} · ${formatPercent(analysis.topModelCostShare)}`,
+    },
+  ];
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{t('llmUsageAnalysisTitle')}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <dl className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
+          {rows.map((row) => (
+            <div key={row.label}>
+              <dt className="text-neutral-500">{row.label}</dt>
+              <dd className="mt-1 font-medium text-neutral-900">{row.value}</dd>
+            </div>
+          ))}
+        </dl>
+      </CardContent>
+    </Card>
+  );
+}
+
 function BreakdownTable({
   title,
   rows,
@@ -127,9 +179,11 @@ export function LlmUsageSection() {
           </CardContent>
         </Card>
       </div>
+      <UsageAnalysisCard data={data} t={t} />
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <BreakdownTable title={t('llmUsageByAction')} rows={data.byAction} t={t} />
         <BreakdownTable title={t('llmUsageByModel')} rows={data.byModel} t={t} />
+        <BreakdownTable title={t('llmUsageByUser')} rows={data.byUser} t={t} />
       </div>
     </section>
   );

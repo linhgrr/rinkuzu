@@ -34,9 +34,15 @@ describe('adaptive Next API contracts', () => {
   it('validates session request bodies against FastAPI request shapes', () => {
     expect(
       adaptiveSubmitAnswerRequestSchema.parse({
+        exercise_id: 'exercise-1',
+        idempotency_key: 'submit-1',
         answer: { choices: ['A', 'B'] },
       }),
-    ).toEqual({ answer: { choices: ['A', 'B'] } });
+    ).toEqual({
+      exercise_id: 'exercise-1',
+      idempotency_key: 'submit-1',
+      answer: { choices: ['A', 'B'] },
+    });
     expect(
       adaptiveTutorChatRequestSchema.safeParse({
         userQuestion: '',

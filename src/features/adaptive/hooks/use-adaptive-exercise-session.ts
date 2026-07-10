@@ -5,18 +5,18 @@ import {
   isAdaptiveServiceUnavailableError,
   isSessionNotFoundError,
 } from '@/features/adaptive/lib/adaptive-api-error';
-import {
-  getExercise,
-  getNextConcept,
-  getTheory,
-  submitAnswer,
-} from '@/features/adaptive/lib/adaptive-api-methods';
+import { getLearningStep, submitAnswer } from '@/features/adaptive/lib/adaptive-api-methods';
 import {
   createInitialExerciseAnswer,
   hasCompleteExerciseAnswer,
 } from '@/features/adaptive/lib/exercise-answer';
 import { ADAPTIVE_ROUTES } from '@/features/adaptive/lib/routes';
-import { saveSessionExerciseOutcome } from '../lib/session-storage';
+import {
+  clearSessionExerciseDraft,
+  getSessionExerciseDraft,
+  saveSessionExerciseDraft,
+  saveSessionExerciseOutcome,
+} from '../lib/session-storage';
 import { toSubmitAnswerPayload } from '@/features/adaptive/mappers/exercise-answer.mapper';
 import type { ExerciseAnswerDraft } from '@/features/adaptive/types/exercise-answer';
 import type {
@@ -74,6 +74,7 @@ export const useAdaptiveExerciseSession = ({
   const loadingRef = useRef(false);
   const isMountedRef = useRef(true);
   const activeRequestIdRef = useRef(0);
+  const submitIdempotencyRef = useRef<{ exerciseId: string; key: string } | null>(null);
 
   useEffect(() => {
     isMountedRef.current = true;
@@ -90,6 +91,8 @@ export const useAdaptiveExerciseSession = ({
     activeRequestIdRef.current = requestId;
 
     setLoadingConcept(true);
+    setLoadingTheory(false);
+    setLoadingExercise(true);
     setError(null);
     setAnswerDraft(null);
     setConcept(null);
@@ -101,56 +104,20 @@ export const useAdaptiveExerciseSession = ({
       isMountedRef.current && activeRequestIdRef.current === requestId;
 
     try {
-      const nextConcept = await getNextConcept(sessionId);
+      const step = await getLearningStep(sessionId);
       if (!isLatestActiveRequest()) return;
 
-      setConcept(nextConcept);
+      setConcept(step.concept);
       setLoadingConcept(false);
-
-      if (nextConcept.bloom_level <= 2) {
-        setShowTheory(true);
-        setLoadingTheory(true);
-        setLoadingExercise(true);
-
-        const theoryPromise = getTheory(sessionId)
-          .then((theoryData) => {
-            if (!isLatestActiveRequest()) return;
-            setTheory(theoryData);
-          })
-          .catch((reason) => {
-            if (!isLatestActiveRequest()) return;
-            console.error('Failed to load theory:', reason);
-          })
-          .finally(() => {
-            if (!isLatestActiveRequest()) return;
-            setLoadingTheory(false);
-          });
-
-        const exercisePromise = getExercise(sessionId)
-          .then((exerciseData) => {
-            if (!isLatestActiveRequest()) return;
-            setExercise(exerciseData);
-            setAnswerDraft(createInitialExerciseAnswer(exerciseData));
-          })
-          .catch((reason) => {
-            if (!isLatestActiveRequest()) return;
-            console.error('Failed to load exercise:', reason);
-            setError(resolveExerciseFeedback(reason, t, 'load'));
-          })
-          .finally(() => {
-            if (!isLatestActiveRequest()) return;
-            setLoadingExercise(false);
-          });
-
-        await Promise.allSettled([theoryPromise, exercisePromise]);
-      } else {
-        setLoadingExercise(true);
-        const ex = await getExercise(sessionId);
-        if (!isLatestActiveRequest()) return;
-        setExercise(ex);
-        setAnswerDraft(createInitialExerciseAnswer(ex));
-        setLoadingExercise(false);
-      }
+      setTheory(step.theory);
+      setShowTheory(Boolean(step.theory));
+      setExercise(step.exercise);
+      setAnswerDraft(
+        getSessionExerciseDraft(sessionId, step.exercise.exercise_id) ??
+          createInitialExerciseAnswer(step.exercise),
+      );
+      setLoadingTheory(false);
+      setLoadingExercise(false);
     } catch (err) {
       if (!isLatestActiveRequest()) return;
 
@@ -171,6 +138,16 @@ export const useAdaptiveExerciseSession = ({
     }
   }, [sessionId, t]);
 
+  const setAndSaveAnswerDraft = useCallback(
+    (draft: ExerciseAnswerDraft) => {
+      setAnswerDraft(draft);
+      if (exercise) {
+        saveSessionExerciseDraft(sessionId, exercise.exercise_id, draft);
+      }
+    },
+    [exercise, sessionId],
+  );
+
   useEffect(() => {
     void loadData();
   }, [loadData]);
@@ -186,10 +163,25 @@ export const useAdaptiveExerciseSession = ({
     setSubmitting(true);
     try {
       router.prefetch(ADAPTIVE_ROUTES.result(sessionId));
-      const result = await submitAnswer(sessionId, toSubmitAnswerPayload(answerDraft));
+      if (submitIdempotencyRef.current?.exerciseId !== exercise.exercise_id) {
+        submitIdempotencyRef.current = {
+          exerciseId: exercise.exercise_id,
+          key:
+            typeof crypto !== 'undefined' && 'randomUUID' in crypto
+              ? crypto.randomUUID()
+              : `${exercise.exercise_id}-${Date.now()}`,
+        };
+      }
+      const result = await submitAnswer(sessionId, {
+        exercise_id: exercise.exercise_id,
+        idempotency_key: submitIdempotencyRef.current.key,
+        answer: toSubmitAnswerPayload(answerDraft),
+      });
       if (!isMountedRef.current) return;
 
       saveSessionExerciseOutcome(sessionId, { result, exercise });
+      clearSessionExerciseDraft(sessionId, exercise.exercise_id);
+      submitIdempotencyRef.current = null;
       router.push(ADAPTIVE_ROUTES.result(sessionId));
     } catch (err) {
       if (!isMountedRef.current) return;
@@ -206,73 +198,105 @@ export const useAdaptiveExerciseSession = ({
     }
   }, [answerDraft, exercise, router, sessionId, t]);
 
-  const selectChoice = useCallback((choice: string) => {
-    setAnswerDraft({ type: 'mcq', selection: choice });
-  }, []);
+  const selectChoice = useCallback(
+    (choice: string) => {
+      setAndSaveAnswerDraft({ type: 'mcq', selection: choice });
+    },
+    [setAndSaveAnswerDraft],
+  );
 
-  const toggleChoice = useCallback((choice: string) => {
-    setAnswerDraft((current) => {
-      if (current?.type !== 'multi_correct') {
-        throw new TypeError('Cannot toggle a choice outside a multi-correct exercise');
+  const toggleChoice = useCallback(
+    (choice: string) => {
+      setAnswerDraft((current) => {
+        if (current?.type !== 'multi_correct') {
+          throw new TypeError('Cannot toggle a choice outside a multi-correct exercise');
+        }
+        const existing = new Set(current.selections);
+        if (existing.has(choice)) existing.delete(choice);
+        else existing.add(choice);
+
+        const nextDraft = { type: current.type, selections: Array.from(existing).sort() };
+        if (exercise) {
+          saveSessionExerciseDraft(sessionId, exercise.exercise_id, nextDraft);
+        }
+        return nextDraft;
+      });
+    },
+    [exercise, sessionId],
+  );
+
+  const setBooleanAnswer = useCallback(
+    (value: boolean) => {
+      setAndSaveAnswerDraft({ type: 'true_false', value });
+    },
+    [setAndSaveAnswerDraft],
+  );
+
+  const setBlankAnswer = useCallback(
+    (value: string) => {
+      setAndSaveAnswerDraft({ type: 'fill_blank', values: [value] });
+    },
+    [setAndSaveAnswerDraft],
+  );
+
+  const moveOrderingItem = useCallback(
+    (fromIndex: number, toIndex: number) => {
+      setAnswerDraft((current) => {
+        if (current?.type !== 'ordering') {
+          throw new TypeError('Cannot move an item outside an ordering exercise');
+        }
+        const ordering = [...current.items];
+        if (
+          fromIndex < 0 ||
+          toIndex < 0 ||
+          fromIndex >= ordering.length ||
+          toIndex >= ordering.length
+        )
+          return current;
+
+        const [moved] = ordering.splice(fromIndex, 1);
+        if (moved === undefined) {
+          throw new TypeError(`No ordering item exists at index ${fromIndex}`);
+        }
+        ordering.splice(toIndex, 0, moved);
+        const nextDraft = { type: current.type, items: ordering };
+        if (exercise) {
+          saveSessionExerciseDraft(sessionId, exercise.exercise_id, nextDraft);
+        }
+        return nextDraft;
+      });
+    },
+    [exercise, sessionId],
+  );
+
+  const setTextAnswer = useCallback(
+    (value: string) => {
+      setAndSaveAnswerDraft({ type: 'short_answer', text: value });
+    },
+    [setAndSaveAnswerDraft],
+  );
+
+  const setMatchingOrder = useCallback(
+    (leftItems: string[], rightItems: string[]) => {
+      if (leftItems.length !== rightItems.length) {
+        throw new TypeError(
+          `Cannot pair ${leftItems.length} left item(s) with ${rightItems.length} right item(s)`,
+        );
       }
-      const existing = new Set(current.selections);
-      if (existing.has(choice)) existing.delete(choice);
-      else existing.add(choice);
+      setAndSaveAnswerDraft({
+        type: 'matching',
+        matches: Object.fromEntries(leftItems.map((left, index) => [left, rightItems[index]])),
+      });
+    },
+    [setAndSaveAnswerDraft],
+  );
 
-      return { type: current.type, selections: Array.from(existing).sort() };
-    });
-  }, []);
-
-  const setBooleanAnswer = useCallback((value: boolean) => {
-    setAnswerDraft({ type: 'true_false', value });
-  }, []);
-
-  const setBlankAnswer = useCallback((value: string) => {
-    setAnswerDraft({ type: 'fill_blank', values: [value] });
-  }, []);
-
-  const moveOrderingItem = useCallback((fromIndex: number, toIndex: number) => {
-    setAnswerDraft((current) => {
-      if (current?.type !== 'ordering') {
-        throw new TypeError('Cannot move an item outside an ordering exercise');
-      }
-      const ordering = [...current.items];
-      if (
-        fromIndex < 0 ||
-        toIndex < 0 ||
-        fromIndex >= ordering.length ||
-        toIndex >= ordering.length
-      )
-        return current;
-
-      const [moved] = ordering.splice(fromIndex, 1);
-      if (moved === undefined) {
-        throw new TypeError(`No ordering item exists at index ${fromIndex}`);
-      }
-      ordering.splice(toIndex, 0, moved);
-      return { type: current.type, items: ordering };
-    });
-  }, []);
-
-  const setTextAnswer = useCallback((value: string) => {
-    setAnswerDraft({ type: 'short_answer', text: value });
-  }, []);
-
-  const setMatchingOrder = useCallback((leftItems: string[], rightItems: string[]) => {
-    if (leftItems.length !== rightItems.length) {
-      throw new TypeError(
-        `Cannot pair ${leftItems.length} left item(s) with ${rightItems.length} right item(s)`,
-      );
-    }
-    setAnswerDraft({
-      type: 'matching',
-      matches: Object.fromEntries(leftItems.map((left, index) => [left, rightItems[index]])),
-    });
-  }, []);
-
-  const setOrderingAnswer = useCallback((ordering: string[]) => {
-    setAnswerDraft({ type: 'ordering', items: ordering });
-  }, []);
+  const setOrderingAnswer = useCallback(
+    (ordering: string[]) => {
+      setAndSaveAnswerDraft({ type: 'ordering', items: ordering });
+    },
+    [setAndSaveAnswerDraft],
+  );
 
   return {
     concept,

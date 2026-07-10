@@ -5,6 +5,18 @@ export interface LlmUsageBreakdownRow {
   calls: number;
 }
 
+export interface LlmUsageAnalysis {
+  activeUsers: number;
+  averageTokensPerCall: number;
+  averageCostUsdPerCall: number;
+  topUserId: string;
+  topUserCostUsd: number;
+  topAction: string;
+  topActionCostShare: number;
+  topModel: string;
+  topModelCostShare: number;
+}
+
 export interface LlmUsageViewModel {
   windowDays: number;
   totalTokens: number;
@@ -13,4 +25,6 @@ export interface LlmUsageViewModel {
   calls: number;
   byAction: LlmUsageBreakdownRow[];
   byModel: LlmUsageBreakdownRow[];
+  byUser: LlmUsageBreakdownRow[];
+  analysis: LlmUsageAnalysis;
 }

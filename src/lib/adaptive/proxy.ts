@@ -4,6 +4,7 @@ import { isStandardErrorEnvelope, isStandardSuccessEnvelope } from '@/lib/api/en
 import { logger } from '@/lib/logger';
 import { isCacheSafeAdaptivePath } from './cache-policy';
 import {
+  buildAdaptiveInfraUrl,
   buildAdaptiveServiceHeaders,
   buildAdaptiveUrl,
   resolveAdaptiveProxyTimeoutMs,
@@ -30,6 +31,9 @@ type ProxyOptions = {
     revalidateSeconds: number;
     tags: string[];
   };
+  // Target an unversioned infra endpoint (/api/<path>) instead of the
+  // versioned /api/v1 surface. Used for health/ready/live/info.
+  infra?: boolean;
 };
 
 /**
@@ -51,8 +55,10 @@ const UPSTREAM_RESPONSE_HEADERS = [
   'x-accel-buffering',
 ] as const;
 
-function buildTargetUrl(req: Request, targetPath: string): URL {
-  const targetUrl = new URL(buildAdaptiveUrl(targetPath));
+function buildTargetUrl(req: Request, targetPath: string, infra: boolean): URL {
+  const targetUrl = new URL(
+    infra ? buildAdaptiveInfraUrl(targetPath) : buildAdaptiveUrl(targetPath),
+  );
   const incomingUrl = new URL(req.url);
 
   incomingUrl.searchParams.forEach((value, key) => {
@@ -102,7 +108,7 @@ export async function proxyAdaptiveRequest(
   try {
     const { userId, userRole } = auth;
 
-    const targetUrl = buildTargetUrl(req, targetPath);
+    const targetUrl = buildTargetUrl(req, targetPath, options?.infra ?? false);
     const headers: Record<string, string> = buildAdaptiveServiceHeaders(userId, userRole);
     const method = options?.method || req.method;
 

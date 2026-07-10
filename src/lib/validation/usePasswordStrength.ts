@@ -45,7 +45,7 @@ export function usePasswordStrength(password: string): PasswordStrength {
 
   useEffect(() => {
     const heuristicScore = scorePassword(password);
-    setScore(heuristicScore);
+    queueMicrotask(() => setScore(heuristicScore));
 
     if (!password) {
       return;

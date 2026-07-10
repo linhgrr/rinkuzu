@@ -158,7 +158,8 @@ const Sparkle: React.FC<Sparkle> = ({ id, x, y, color, delay, scale }) => {
     <m.svg
       key={id}
       className="pointer-events-none absolute z-20"
-      initial={{ opacity: 0, left: x, top: y }}
+      style={{ transform: `translate(${x}px, ${y}px)` }}
+      initial={{ opacity: 0 }}
       animate={{
         opacity: [0, 1, 0],
         scale: [0, scale, 0],

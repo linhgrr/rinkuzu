@@ -144,6 +144,7 @@ export const useAdaptiveDashboard = ({
   const [deletingJobId, setDeletingJobId] = useState<string | null>(null);
   const [itemToDelete, setItemToDelete] = useState<DashboardSubject | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [todayStart, setTodayStart] = useState<number | null>(null);
   const refreshedCompletionKeysRef = useRef(new Set<string>());
   const deferredSearchQuery = useDeferredValue(searchQuery);
 
@@ -180,10 +181,11 @@ export const useAdaptiveDashboard = ({
       await Promise.all([refreshSubjects(), jobLibrary.refresh()]);
       clearSelectedPipelineJob(itemToDelete.jobId);
       toast.success(t('deleteSuccess'));
+      setDeletingJobId(null);
+      setItemToDelete(null);
     } catch (err) {
       console.error(`Error deleting subject: ${(err as Error).message}`);
       toast.error(t('deleteFailed'));
-    } finally {
       setDeletingJobId(null);
       setItemToDelete(null);
     }
@@ -282,7 +284,14 @@ export const useAdaptiveDashboard = ({
   );
 
   const dailyGoalProgress = useMemo(() => {
-    const todayStart = getDayStart(Date.now());
+    if (todayStart === null) {
+      return {
+        current: 0,
+        total: DAILY_GOAL_TARGET,
+        percent: 0,
+      };
+    }
+
     const current = dashboardState.sessionHistory.filter((session) => {
       if (session.totalAnswered <= 0) return false;
       const dayStart = getDayStart(toTimestampMs(session.lastActivityAt));
@@ -294,13 +303,17 @@ export const useAdaptiveDashboard = ({
       total: DAILY_GOAL_TARGET,
       percent: Math.min(100, Math.round((current / DAILY_GOAL_TARGET) * 100)),
     };
-  }, [dashboardState.sessionHistory]);
+  }, [dashboardState.sessionHistory, todayStart]);
 
   const upNextSubject = mergedSubjects.length > 0 ? mergedSubjects[0] : null;
 
   useEffect(() => {
     router.prefetch(ADAPTIVE_ROUTES.upload);
   }, [router]);
+
+  useEffect(() => {
+    queueMicrotask(() => setTodayStart(getDayStart(Date.now())));
+  }, []);
 
   useEffect(() => {
     let isActive = true;

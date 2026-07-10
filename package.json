@@ -61,7 +61,7 @@
     "check:architecture": "node scripts/check-layer-boundaries.mjs",
     "generate:adaptive-contract": "node scripts/generate-adaptive-contract.mjs",
     "check:adaptive-contract": "node scripts/check-adaptive-contract.mjs",
-    "check:react-doctor": "npx -y react-doctor@latest . --yes --fail-on warning",
+    "check:react-doctor": "npx -y react-doctor@latest . --yes --blocking error",
     "perf:fe": "bash scripts/perf-fe.sh",
     "perf:lighthouse": "node scripts/run-lighthouse.mjs",
     "check:perf-budget": "node scripts/check-perf-budget.mjs"

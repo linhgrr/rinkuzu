@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import {
   listPipelineJobs,
@@ -179,24 +179,16 @@ export function useJobLibrary({
   const [hasLoaded, setHasLoaded] = useState(initialJobs.length > 0);
   const [busyJobId, setBusyJobId] = useState<string | null>(null);
 
-  // Keep a stable ref to the poller instance across renders.
-  // Initialised lazily on the first render; never null after that.
-  const pollerRef = useRef<LibraryPoller | null>(null);
-
-  /* v8 ignore next 10 */
-  if (pollerRef.current === null) {
-    pollerRef.current = createLibraryPoller({
+  const [poller] = useState<LibraryPoller>(() =>
+    createLibraryPoller({
       listJobs: listPipelineJobs,
       retryJob: retryPipelineJob,
       cancelJob: cancelPipelineJob,
       onJobs: setJobs,
       onBusy: setBusyJobId,
       onTickSettled: () => setHasLoaded(true),
-    });
-  }
-
-  // pollerRef.current is guaranteed non-null here (initialised above).
-  const poller = pollerRef.current as LibraryPoller;
+    }),
+  );
 
   /* v8 ignore next 5 */
   useEffect(() => {

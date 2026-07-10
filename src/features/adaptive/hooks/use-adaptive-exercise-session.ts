@@ -102,10 +102,16 @@ export const useAdaptiveExerciseSession = ({
 
     const isLatestActiveRequest = () =>
       isMountedRef.current && activeRequestIdRef.current === requestId;
+    const releaseLoadingLock = () => {
+      loadingRef.current = false;
+    };
 
     try {
       const step = await getLearningStep(sessionId);
-      if (!isLatestActiveRequest()) return;
+      if (!isLatestActiveRequest()) {
+        releaseLoadingLock();
+        return;
+      }
 
       setConcept(step.concept);
       setLoadingConcept(false);
@@ -118,14 +124,19 @@ export const useAdaptiveExerciseSession = ({
       );
       setLoadingTheory(false);
       setLoadingExercise(false);
+      releaseLoadingLock();
     } catch (err) {
-      if (!isLatestActiveRequest()) return;
+      if (!isLatestActiveRequest()) {
+        releaseLoadingLock();
+        return;
+      }
 
       if (isSessionNotFoundError(err)) {
         setError(t('exercise.failedToLoadExercise'));
         setLoadingConcept(false);
         setLoadingTheory(false);
         setLoadingExercise(false);
+        releaseLoadingLock();
         return;
       }
 
@@ -133,8 +144,7 @@ export const useAdaptiveExerciseSession = ({
       setLoadingConcept(false);
       setLoadingTheory(false);
       setLoadingExercise(false);
-    } finally {
-      loadingRef.current = false;
+      releaseLoadingLock();
     }
   }, [sessionId, t]);
 
@@ -149,7 +159,13 @@ export const useAdaptiveExerciseSession = ({
   );
 
   useEffect(() => {
-    void loadData();
+    let active = true;
+    queueMicrotask(() => {
+      if (active) void loadData();
+    });
+    return () => {
+      active = false;
+    };
   }, [loadData]);
 
   useEffect(() => {
@@ -182,18 +198,20 @@ export const useAdaptiveExerciseSession = ({
       saveSessionExerciseOutcome(sessionId, { result, exercise });
       clearSessionExerciseDraft(sessionId, exercise.exercise_id);
       submitIdempotencyRef.current = null;
+      setSubmitting(false);
       router.push(ADAPTIVE_ROUTES.result(sessionId));
     } catch (err) {
-      if (!isMountedRef.current) return;
+      if (!isMountedRef.current) {
+        return;
+      }
 
       if (isSessionNotFoundError(err)) {
         setError(t('exercise.failedToSubmitAnswer'));
+        setSubmitting(false);
         return;
       }
 
       setError(resolveExerciseFeedback(err, t, 'submit'));
-    } finally {
-      if (!isMountedRef.current) return;
       setSubmitting(false);
     }
   }, [answerDraft, exercise, router, sessionId, t]);

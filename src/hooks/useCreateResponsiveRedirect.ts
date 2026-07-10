@@ -20,7 +20,7 @@ export function useCreateResponsiveRedirect(currentVariant: Variant): boolean {
 
   useEffect(() => {
     if (typeof window === 'undefined') {
-      setIsRedirecting(false);
+      queueMicrotask(() => setIsRedirecting(false));
       return;
     }
 
@@ -28,7 +28,7 @@ export function useCreateResponsiveRedirect(currentVariant: Variant): boolean {
     const target: Variant = isMobileViewport ? 'mobile' : 'desktop';
 
     if (target === currentVariant) {
-      setIsRedirecting(false);
+      queueMicrotask(() => setIsRedirecting(false));
       return;
     }
 

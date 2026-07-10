@@ -176,6 +176,7 @@ const PRIMARY_NAV: NavEntry[] = [
       { href: '/admin/plans', labelKey: 'pricingPlans' },
       { href: '/admin/stats', labelKey: 'statistics' },
       { href: '/admin/reports', labelKey: 'quizReports' },
+      { href: '/admin/ocr-keys', labelKey: 'ocrKeys' },
     ],
   },
   { id: 'explore', labelKey: 'explore', icon: ICON.explore, href: ROUTES.EXPLORE },

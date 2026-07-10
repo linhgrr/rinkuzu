@@ -545,6 +545,59 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/admin/ocr-keys': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List Admin Ocr Keys */
+    get: operations['list_admin_ocr_keys_api_v1_admin_ocr_keys_get'];
+    put?: never;
+    /** Create Admin Ocr Key */
+    post: operations['create_admin_ocr_key_api_v1_admin_ocr_keys_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/admin/ocr-keys/{key_id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /** Delete Admin Ocr Key */
+    delete: operations['delete_admin_ocr_key_api_v1_admin_ocr_keys__key_id__delete'];
+    options?: never;
+    head?: never;
+    /** Update Admin Ocr Key */
+    patch: operations['update_admin_ocr_key_api_v1_admin_ocr_keys__key_id__patch'];
+    trace?: never;
+  };
+  '/api/v1/admin/ocr-keys/{key_id}/test': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Run Admin Ocr Key Test */
+    post: operations['run_admin_ocr_key_test_api_v1_admin_ocr_keys__key_id__test_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/admin/llm-usage/summary': {
     parameters: {
       query?: never;
@@ -1122,6 +1175,101 @@ export interface components {
       step: number;
       /** Max Steps */
       max_steps: number;
+    };
+    /** OcrProviderKeyCreateRequest */
+    OcrProviderKeyCreateRequest: {
+      /** Label */
+      label: string;
+      /** Api Key */
+      api_key: string;
+      /**
+       * Priority
+       * @default 100
+       */
+      priority: number;
+    };
+    /** OcrProviderKeyDeleteResponse */
+    OcrProviderKeyDeleteResponse: {
+      /** Deleted */
+      deleted: boolean;
+      /** Key Id */
+      key_id: string;
+    };
+    /** OcrProviderKeyListResponse */
+    OcrProviderKeyListResponse: {
+      /** Keys */
+      keys: components['schemas']['OcrProviderKeyResponse'][];
+      /** Fallback Env Configured */
+      fallback_env_configured: boolean;
+    };
+    /** OcrProviderKeyPatchRequest */
+    OcrProviderKeyPatchRequest: {
+      /** Label */
+      label?: string | null;
+      /** Api Key */
+      api_key?: string | null;
+      /** Priority */
+      priority?: number | null;
+      /** Enabled */
+      enabled?: boolean | null;
+    };
+    /** OcrProviderKeyResponse */
+    OcrProviderKeyResponse: {
+      /** Key Id */
+      key_id: string;
+      /** Provider */
+      provider: string;
+      /** Label */
+      label: string;
+      /** Masked Key */
+      masked_key: string;
+      /** Enabled */
+      enabled: boolean;
+      /**
+       * Health Status
+       * @enum {string}
+       */
+      health_status: 'untested' | 'healthy' | 'failed' | 'disabled';
+      /** Priority */
+      priority: number;
+      /** Success Count */
+      success_count: number;
+      /** Failure Count */
+      failure_count: number;
+      /** Last Used At */
+      last_used_at?: string | null;
+      /** Last Success At */
+      last_success_at?: string | null;
+      /** Last Error At */
+      last_error_at?: string | null;
+      /** Last Error Code */
+      last_error_code?: string | null;
+      /** Last Error Message */
+      last_error_message?: string | null;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Updated At
+       * Format: date-time
+       */
+      updated_at: string;
+    };
+    /** OcrProviderKeySingleResponse */
+    OcrProviderKeySingleResponse: {
+      key: components['schemas']['OcrProviderKeyResponse'];
+    };
+    /** OcrProviderKeyTestResponse */
+    OcrProviderKeyTestResponse: {
+      key: components['schemas']['OcrProviderKeyResponse'];
+      /** Ok */
+      ok: boolean;
+      /** Error Code */
+      error_code?: string | null;
+      /** Error Message */
+      error_message?: string | null;
     };
     /** OrderingExerciseResponse */
     OrderingExerciseResponse: {
@@ -2354,6 +2502,58 @@ export interface components {
        */
       success: boolean;
       data: components['schemas']['NextConceptResponse'];
+      /** Meta */
+      meta?: {
+        [key: string]: unknown;
+      } | null;
+    };
+    /** StandardResponse[OcrProviderKeyDeleteResponse] */
+    StandardResponse_OcrProviderKeyDeleteResponse_: {
+      /**
+       * Success
+       * @default true
+       */
+      success: boolean;
+      data: components['schemas']['OcrProviderKeyDeleteResponse'];
+      /** Meta */
+      meta?: {
+        [key: string]: unknown;
+      } | null;
+    };
+    /** StandardResponse[OcrProviderKeyListResponse] */
+    StandardResponse_OcrProviderKeyListResponse_: {
+      /**
+       * Success
+       * @default true
+       */
+      success: boolean;
+      data: components['schemas']['OcrProviderKeyListResponse'];
+      /** Meta */
+      meta?: {
+        [key: string]: unknown;
+      } | null;
+    };
+    /** StandardResponse[OcrProviderKeySingleResponse] */
+    StandardResponse_OcrProviderKeySingleResponse_: {
+      /**
+       * Success
+       * @default true
+       */
+      success: boolean;
+      data: components['schemas']['OcrProviderKeySingleResponse'];
+      /** Meta */
+      meta?: {
+        [key: string]: unknown;
+      } | null;
+    };
+    /** StandardResponse[OcrProviderKeyTestResponse] */
+    StandardResponse_OcrProviderKeyTestResponse_: {
+      /**
+       * Success
+       * @default true
+       */
+      success: boolean;
+      data: components['schemas']['OcrProviderKeyTestResponse'];
       /** Meta */
       meta?: {
         [key: string]: unknown;
@@ -4007,6 +4207,185 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['StandardResponse_QuizTutorResponseData_'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  list_admin_ocr_keys_api_v1_admin_ocr_keys_get: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-user-id'?: string | null;
+        'x-user-role'?: string | null;
+        'x-service-token'?: string | null;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['StandardResponse_OcrProviderKeyListResponse_'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  create_admin_ocr_key_api_v1_admin_ocr_keys_post: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-user-id'?: string | null;
+        'x-user-role'?: string | null;
+        'x-service-token'?: string | null;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['OcrProviderKeyCreateRequest'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['StandardResponse_OcrProviderKeySingleResponse_'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  delete_admin_ocr_key_api_v1_admin_ocr_keys__key_id__delete: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-user-id'?: string | null;
+        'x-user-role'?: string | null;
+        'x-service-token'?: string | null;
+      };
+      path: {
+        key_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['StandardResponse_OcrProviderKeyDeleteResponse_'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  update_admin_ocr_key_api_v1_admin_ocr_keys__key_id__patch: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-user-id'?: string | null;
+        'x-user-role'?: string | null;
+        'x-service-token'?: string | null;
+      };
+      path: {
+        key_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['OcrProviderKeyPatchRequest'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['StandardResponse_OcrProviderKeySingleResponse_'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  run_admin_ocr_key_test_api_v1_admin_ocr_keys__key_id__test_post: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-user-id'?: string | null;
+        'x-user-role'?: string | null;
+        'x-service-token'?: string | null;
+      };
+      path: {
+        key_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['StandardResponse_OcrProviderKeyTestResponse_'];
         };
       };
       /** @description Validation Error */

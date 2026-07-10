@@ -1,5 +1,7 @@
 'use client';
 
+import { useState } from 'react';
+import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/Button';
 import { Badge, Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
@@ -9,10 +11,24 @@ import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { ModalActions } from '@/components/ui/ModalActions';
 import { HiOutlineArrowLeft, HiOutlineMail, HiOutlineUser } from 'react-icons/hi';
-import { QuestionDiscussion } from '@/features/quiz/components/QuestionDiscussion';
 import ReportQuiz from '@/features/quiz/components/ReportQuiz';
 import type { QuizAnswer } from '@/features/quiz/types/quiz-interaction-view-model';
 import type { QuizPlayQuestionViewModel } from '@/features/quiz/types/quiz-play-view-model';
+
+const QuestionDiscussion = dynamic(
+  () =>
+    import('@/features/quiz/components/QuestionDiscussion').then(
+      (module) => module.QuestionDiscussion,
+    ),
+  {
+    loading: () => (
+      <div
+        aria-busy="true"
+        className="h-full min-h-64 w-full animate-pulse bg-neutral-50 md:sticky md:top-0 md:h-screen md:w-80 md:border-l md:border-neutral-200"
+      />
+    ),
+  },
+);
 
 type TranslateFn = (key: string, values?: Record<string, string | number | Date>) => string;
 
@@ -627,6 +643,17 @@ export function DesktopQuizLayout({
   submit,
   t,
 }: DesktopQuizLayoutProps) {
+  const [discussionLoaded, setDiscussionLoaded] = useState(
+    !discussion.collapsed || discussion.mobileOpen,
+  );
+
+  const setDiscussionCollapsed = (collapsed: boolean) => {
+    if (!collapsed) {
+      setDiscussionLoaded(true);
+    }
+    discussion.setCollapsed(collapsed);
+  };
+
   return (
     <div className="min-h-screen">
       <DesktopQuizHeader
@@ -653,7 +680,7 @@ export function DesktopQuizLayout({
               currentAnswer={userAnswers[currentQuestionIndex]}
               questionCount={questions.length}
               onOpenAI={ai.open}
-              onToggleDiscussion={() => discussion.setCollapsed(!discussion.collapsed)}
+              onToggleDiscussion={() => setDiscussionCollapsed(!discussion.collapsed)}
               onSelectAnswer={selectAnswer}
               onPrevious={previousQuestion}
               onNext={nextQuestion}
@@ -672,21 +699,25 @@ export function DesktopQuizLayout({
             />
           </div>
 
-          <QuestionDiscussion
-            quizSlug={slug}
-            questionIndex={currentQuestionIndex}
-            isCollapsed={discussion.collapsed}
-            onToggleCollapse={() => discussion.setCollapsed(!discussion.collapsed)}
-          />
+          {discussionLoaded ? (
+            <QuestionDiscussion
+              quizSlug={slug}
+              questionIndex={currentQuestionIndex}
+              isCollapsed={discussion.collapsed}
+              onToggleCollapse={() => setDiscussionCollapsed(!discussion.collapsed)}
+            />
+          ) : null}
         </div>
 
-        <DesktopDiscussionModal
-          isOpen={discussion.mobileOpen}
-          onClose={() => discussion.setMobileOpen(false)}
-          slug={slug}
-          questionIndex={currentQuestionIndex}
-          t={t}
-        />
+        {discussion.mobileOpen ? (
+          <DesktopDiscussionModal
+            isOpen
+            onClose={() => discussion.setMobileOpen(false)}
+            slug={slug}
+            questionIndex={currentQuestionIndex}
+            t={t}
+          />
+        ) : null}
 
         <DesktopExitModal
           isOpen={exit.isOpen}

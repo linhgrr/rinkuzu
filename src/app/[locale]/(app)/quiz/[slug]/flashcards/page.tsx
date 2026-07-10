@@ -121,14 +121,14 @@ function flashcardPageReducer(
             currentQuestions: state.quiz.questions,
           }
         : state;
-    case 'continuePractice':
+    case 'continuePractice': {
+      const unknownIds = new Set(state.progress.unknownIds);
       return {
         ...state,
-        currentQuestions: state.currentQuestions.filter((question) =>
-          state.progress.unknownIds.includes(question.id),
-        ),
+        currentQuestions: state.currentQuestions.filter((question) => unknownIds.has(question.id)),
         progress: initialProgress,
       };
+    }
     case 'dismissPremium':
       return {
         ...state,
@@ -201,7 +201,7 @@ function FlashcardResultsView({
               <Link href="/explore" className="flex items-center">
                 <div className="h-10 flex items-center justify-center">
                   <Image
-                    src="/images/auth_logo.png"
+                    src="/images/auth_logo.webp"
                     alt="RinKuzu Logo"
                     width={96}
                     height={40}
@@ -357,7 +357,7 @@ function FlashcardDeckView({
               <Link href="/explore" className="flex items-center">
                 <div className="h-10 flex items-center justify-center">
                   <Image
-                    src="/images/auth_logo.png"
+                    src="/images/auth_logo.webp"
                     alt="RinKuzu Logo"
                     width={96}
                     height={40}
@@ -445,6 +445,7 @@ export default function FlashcardPage() {
   const currentQuestion = state.currentQuestions[state.progress.currentIndex] || null;
   const knownCount = state.progress.knownIds.length;
   const unknownCount = state.progress.unknownIds.length;
+  const unknownIds = new Set(state.progress.unknownIds);
   const showResults =
     state.currentQuestions.length > 0 &&
     state.progress.currentIndex >= state.currentQuestions.length;
@@ -452,9 +453,7 @@ export default function FlashcardPage() {
     state.currentQuestions.length === 0
       ? 0
       : Math.round((state.progress.currentIndex / state.currentQuestions.length) * 100);
-  const unknownQuestions = state.currentQuestions.filter((question) =>
-    state.progress.unknownIds.includes(question.id),
-  );
+  const unknownQuestions = state.currentQuestions.filter((question) => unknownIds.has(question.id));
   const masteryPercentage =
     quiz && quiz.questions.length > 0 ? Math.round((knownCount / quiz.questions.length) * 100) : 0;
 

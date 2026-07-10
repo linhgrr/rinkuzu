@@ -7,6 +7,7 @@ import {
   getSubjectsFresh,
   getSubjectProgressHistory,
   getSubjectHistoryDetail,
+  getPipelineJobStatus,
   getExercise,
   getNextConcept,
   getKnowledgeGraph,
@@ -38,6 +39,17 @@ describe('pipeline lifecycle methods', () => {
     );
 
     expect(await listPipelineJobs()).toEqual([{ job_id: 'a' }]);
+  });
+
+  it('getPipelineJobStatus requests compact and debug payloads explicitly', async () => {
+    const spy = vi.fn().mockImplementation(() => okJson({ job_id: 'a', status: 'pending' }));
+    vi.stubGlobal('fetch', spy);
+
+    await getPipelineJobStatus('a');
+    await getPipelineJobStatus('a', { includeDebug: true });
+
+    expect(spy.mock.calls[0]?.[0]).toBe('/api/adaptive/pipeline/jobs/a');
+    expect(spy.mock.calls[1]?.[0]).toBe('/api/adaptive/pipeline/jobs/a?include_debug=true');
   });
 
   it('retryPipelineJob POSTs the retry path', async () => {

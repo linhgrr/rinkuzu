@@ -3617,7 +3617,9 @@ export interface operations {
   };
   get_job_status_api_v1_pipeline_jobs__job_id__get: {
     parameters: {
-      query?: never;
+      query?: {
+        include_debug?: boolean;
+      };
       header?: {
         'x-user-id'?: string | null;
         'x-service-token'?: string | null;

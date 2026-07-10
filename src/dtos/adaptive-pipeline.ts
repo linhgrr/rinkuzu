@@ -27,6 +27,15 @@ export const adaptivePipelineJobsQuerySchema = z
   })
   .strict();
 
+export const adaptivePipelineJobQuerySchema = z
+  .object({
+    include_debug: z
+      .enum(['true', 'false'])
+      .optional()
+      .transform((value) => value === 'true'),
+  })
+  .strict();
+
 export const adaptivePipelineSessionCreateQuerySchema = z
   .object({
     max_steps: z.coerce.number().int().min(5).max(10_000).default(9999),

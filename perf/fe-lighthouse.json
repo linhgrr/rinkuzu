@@ -1,7 +1,18 @@
-{
-  "url": "http://127.0.0.1:3000/en",
-  "performanceScore": 0.75,
-  "lcpMs": 3109.99085,
-  "interactiveMs": 7933.49085,
-  "cls": 0
-}
+[
+  {
+    "url": "http://127.0.0.1:3100/en",
+    "runs": 3,
+    "performanceScore": 0.79,
+    "lcpMs": 5656.0125,
+    "interactiveMs": 5981.978750000002,
+    "cls": 0
+  },
+  {
+    "url": "http://127.0.0.1:3100/en/login",
+    "runs": 3,
+    "performanceScore": 0.91,
+    "lcpMs": 3397.4763000000003,
+    "interactiveMs": 5139.211,
+    "cls": 0
+  }
+]

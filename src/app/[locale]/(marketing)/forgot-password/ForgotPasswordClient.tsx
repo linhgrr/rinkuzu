@@ -49,7 +49,7 @@ export function ForgotPasswordClient() {
             <Link href="/" prefetch={false} className="group inline-flex items-center">
               <div className="flex h-16 items-center justify-center transition-transform group-hover:scale-105 sm:h-20">
                 <Image
-                  src="/images/auth_logo.png"
+                  src="/images/auth_logo.webp"
                   alt="RinKuzu Logo"
                   width={80}
                   height={80}

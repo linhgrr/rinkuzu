@@ -34,7 +34,6 @@ export NEXT_IMAGE_UNOPTIMIZED="${NEXT_IMAGE_UNOPTIMIZED:-true}"
 export PERF_BUDGET_ENFORCE="${PERF_BUDGET_ENFORCE:-0}"
 
 npm run build
-npm run build:analyze
 
 madge_status=0
 npx madge --circular --json src > "$PERF_DIR/fe-circular.json" || madge_status=$?

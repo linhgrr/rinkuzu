@@ -38,7 +38,7 @@ function LoginFormContent({ locale, googleEnabled, onSwitchMode }: LoginFormProp
   const [showPassword, setShowPassword] = useState(false);
   const [serverError, setServerError] = useState<ErrorState | null>(null);
   const [retrySeconds, setRetrySeconds] = useState(0);
-  const { prefetch, refresh, replace } = useRouter();
+  const { replace } = useRouter();
   const searchParams = useSearchParams();
   const get = searchParams.get.bind(searchParams);
 
@@ -81,10 +81,6 @@ function LoginFormContent({ locale, googleEnabled, onSwitchMode }: LoginFormProp
     return blockedCallbacks.has(normalizedPath) ? defaultRedirect : raw;
   })();
 
-  useEffect(() => {
-    prefetch(callbackUrl);
-  }, [callbackUrl, prefetch]);
-
   const startRetryCountdown = (seconds: number) => {
     setRetrySeconds(seconds);
   };
@@ -126,7 +122,6 @@ function LoginFormContent({ locale, googleEnabled, onSwitchMode }: LoginFormProp
       }
       if (result?.ok) {
         replace(callbackUrl);
-        refresh();
         return;
       }
       setServerError({ code: 'unknown', message: t('loginFailed') });

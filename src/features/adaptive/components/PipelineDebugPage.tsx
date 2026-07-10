@@ -134,6 +134,13 @@ const STAGE_ORDER: PipelineStatus[] = [
 ];
 
 const TERMINAL: ReadonlySet<PipelineStatus> = new Set(['completed', 'failed', 'cancelled']);
+const PIPELINE_TIME_FORMATTER = new Intl.DateTimeFormat('vi-VN', {
+  hour: '2-digit',
+  minute: '2-digit',
+  second: '2-digit',
+  day: '2-digit',
+  month: '2-digit',
+});
 
 function statusIndex(status: PipelineStatus): number {
   const index = STAGE_ORDER.indexOf(status);
@@ -348,13 +355,7 @@ function buildDebugStages(job: DebugPipelineJobStatus): DebugStage[] {
 
 function formatTime(epochSeconds?: number | null): string {
   if (!epochSeconds) return 'n/a';
-  return new Intl.DateTimeFormat('vi-VN', {
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    day: '2-digit',
-    month: '2-digit',
-  }).format(new Date(epochSeconds * 1000));
+  return PIPELINE_TIME_FORMATTER.format(new Date(epochSeconds * 1000));
 }
 
 function stageTone(status: DebugStage['status']): string {
@@ -564,7 +565,9 @@ export default function PipelineDebugPage() {
     setLoading(true);
     setError(null);
     try {
-      const nextJob = (await getPipelineJobStatus(jobId.trim())) as DebugPipelineJobStatus;
+      const nextJob = (await getPipelineJobStatus(jobId.trim(), {
+        includeDebug: true,
+      })) as DebugPipelineJobStatus;
       setJob(nextJob);
       setSelectedJobId(nextJob.job_id);
       setJobIdInput(nextJob.job_id);

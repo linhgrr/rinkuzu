@@ -13,18 +13,14 @@ export default function TextureBackground() {
     <div className="absolute top-0 left-[calc(50%-960px)] w-[1920px] h-[6295px] pointer-events-none overflow-hidden">
       <div className="relative w-full h-full">
         {/* Riso back texture overlay - Spans the entire page height */}
-        <div className="absolute top-0 left-0 flex h-[6295px] items-center justify-center w-[1920px] mix-blend-soft-light">
-          <div className="flex-none rotate-90">
-            <div
-              className="opacity-20 w-[6295px] h-[1920px]"
-              style={{
-                backgroundImage: `url('/assets/imgRisoBackTexture.jpg')`,
-                backgroundSize: '336.89px 449.19px',
-                backgroundPosition: 'top left',
-              }}
-            />
-          </div>
-        </div>
+        <div
+          className="absolute inset-0 opacity-20 mix-blend-soft-light"
+          style={{
+            backgroundImage: `url('/assets/imgRisoBackTexture.webp')`,
+            backgroundRepeat: 'repeat',
+            backgroundSize: '337px 449px',
+          }}
+        />
 
         {/* Earth background for Hero section */}
         <div className="absolute top-0 left-0 w-[1920px] h-[1807px] overflow-hidden">

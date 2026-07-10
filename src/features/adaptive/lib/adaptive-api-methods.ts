@@ -545,8 +545,12 @@ export async function uploadPdf(
   });
 }
 
-export async function getPipelineJobStatus(jobId: string): Promise<PipelineJobStatus> {
-  return apiFetch<PipelineJobStatus>(`/api/adaptive/pipeline/jobs/${jobId}`, {
+export async function getPipelineJobStatus(
+  jobId: string,
+  { includeDebug = false }: { includeDebug?: boolean } = {},
+): Promise<PipelineJobStatus> {
+  const query = includeDebug ? '?include_debug=true' : '';
+  return apiFetch<PipelineJobStatus>(`/api/adaptive/pipeline/jobs/${jobId}${query}`, {
     timeoutMs: PIPELINE_STATUS_TIMEOUT_MS,
   });
 }

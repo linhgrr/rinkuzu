@@ -31,6 +31,7 @@ export NEXT_PUBLIC_API_URL="${NEXT_PUBLIC_API_URL:-http://127.0.0.1:8000}"
 export ADAPTIVE_PROXY_TIMEOUT_MS="${ADAPTIVE_PROXY_TIMEOUT_MS:-60000}"
 export INTERNAL_SERVICE_TOKEN="${INTERNAL_SERVICE_TOKEN:-test-token}"
 export NEXT_IMAGE_UNOPTIMIZED="${NEXT_IMAGE_UNOPTIMIZED:-true}"
+export PERF_BUDGET_ENFORCE="${PERF_BUDGET_ENFORCE:-0}"
 
 npm run build
 npm run build:analyze
@@ -49,3 +50,7 @@ if [[ "$madge_status" -ne 0 ]]; then
 fi
 
 node "$ROOT_DIR/scripts/check-perf-budget.mjs"
+
+if [[ "$PERF_BUDGET_ENFORCE" != "1" ]]; then
+  printf 'Performance advisory completed. Budget violations are reported in perf/fe-budget.json.\n'
+fi

@@ -18,6 +18,31 @@ permissions:
 jobs:
   quality:
     runs-on: ubuntu-latest
+    env:
+      MONGODB_URI: mongodb://localhost:27017/test
+      NEXTAUTH_SECRET: test-nextauth-secret-at-least-32-characters
+      NEXTAUTH_URL: http://localhost:3000
+      NEXT_PUBLIC_SITE_URL: http://localhost:3000
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+      SESSION_MAX_AGE_SECONDS: '28800'
+      SESSION_UPDATE_AGE_SECONDS: '3600'
+      AUTH_LOCKOUT_MAX_ATTEMPTS: '5'
+      AUTH_LOCKOUT_WINDOW_MINUTES: '15'
+      AUTH_LOCKOUT_DURATION_MINUTES: '15'
+      ADAPTIVE_PROXY_TIMEOUT_MS: '60000'
+      INTERNAL_SERVICE_TOKEN: test-token
+      OBJECT_STORAGE_ENDPOINT_EXTERNAL: https://localhost
+      OBJECT_STORAGE_REGION: auto
+      OBJECT_STORAGE_ADDRESSING_STYLE: path
+      OBJECT_STORAGE_ACCESS_KEY: test
+      OBJECT_STORAGE_SECRET_KEY: test
+      OBJECT_STORAGE_BUCKET: test
+      MAIL_FROM: noreply@example.com
+      RESEND_API_KEY: re_test_key
+      PAYOS_CLIENT_ID: test-payos-client-id
+      PAYOS_API_KEY: test-payos-api-key
+      PAYOS_CHECKSUM_KEY: test-payos-checksum-key
+      NEXT_IMAGE_UNOPTIMIZED: 'true'
     services:
       mongodb:
         image: mongo:7
@@ -66,32 +91,9 @@ jobs:
 
       - name: Integration tests
         run: npm run test:integration
-        env:
-          MONGODB_URI: mongodb://localhost:27017/test
-          NEXTAUTH_SECRET: test-nextauth-secret-at-least-32-characters
-          NEXTAUTH_URL: http://localhost:3000
-          JWT_SECRET: test-jwt-secret
-          JWT_EXPIRES_IN: 30m
-          SESSION_MAX_AGE: '180000'
 
       - name: Build
         run: npm run build
-        env:
-          MONGODB_URI: mongodb://localhost:27017/test
-          NEXTAUTH_SECRET: test-nextauth-secret-at-least-32-characters
-          NEXTAUTH_URL: http://localhost:3000
-          NEXT_PUBLIC_SITE_URL: http://localhost:3000
-          JWT_SECRET: test-jwt-secret
-          JWT_EXPIRES_IN: 30m
-          SESSION_MAX_AGE: '180000'
-          OBJECT_STORAGE_ENDPOINT_EXTERNAL: https://localhost
-          OBJECT_STORAGE_ACCESS_KEY: test
-          OBJECT_STORAGE_SECRET_KEY: test
-          OBJECT_STORAGE_BUCKET: test
-          NEXT_PUBLIC_API_URL: http://localhost:8000
-          ADAPTIVE_PROXY_TIMEOUT_MS: '60000'
-          INTERNAL_SERVICE_TOKEN: test-token
-          NEXT_IMAGE_UNOPTIMIZED: 'true'
 
       - name: Install Playwright browsers
         run: npm run test:e2e:install

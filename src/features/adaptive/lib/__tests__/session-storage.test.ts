@@ -1,12 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   clearSelectedPipelineJob,
+  clearSessionExerciseDraft,
   getJobIdForSession,
   getSelectedPipelineFilename,
   getSelectedPipelineJobId,
   getSelectedPipelineTitle,
+  getSessionExerciseDraft,
   getSessionExerciseOutcome,
   saveActiveSessionId,
+  saveSessionExerciseDraft,
   saveSessionExerciseOutcome,
   saveSessionJobMapping,
   saveSelectedPipelineJob,
@@ -51,6 +54,7 @@ const result: SubmitResult = {
 describe('adaptive session storage', () => {
   beforeEach(() => {
     vi.stubGlobal('localStorage', createMemoryStorage());
+    vi.stubGlobal('sessionStorage', createMemoryStorage());
   });
 
   it('round-trips a versioned validated exercise outcome', () => {
@@ -66,6 +70,28 @@ describe('adaptive session storage', () => {
 
     expect(getSessionExerciseOutcome('session-1')).toBeNull();
     expect(localStorage.getItem('al_session_outcome:v1:session-1')).toBeNull();
+  });
+
+  it('round-trips a versioned session exercise draft in session storage', () => {
+    saveSessionExerciseDraft('session-1', 'exercise-1', { type: 'mcq', selection: 'A' });
+
+    expect(getSessionExerciseDraft('session-1', 'exercise-1')).toEqual({
+      type: 'mcq',
+      selection: 'A',
+    });
+
+    clearSessionExerciseDraft('session-1', 'exercise-1');
+    expect(getSessionExerciseDraft('session-1', 'exercise-1')).toBeNull();
+  });
+
+  it('removes corrupt versioned exercise draft caches', () => {
+    sessionStorage.setItem(
+      'al_exercise_draft:v1:session-1:exercise-1',
+      JSON.stringify({ version: 1, draft: { type: 'mcq', selection: 1 } }),
+    );
+
+    expect(getSessionExerciseDraft('session-1', 'exercise-1')).toBeNull();
+    expect(sessionStorage.getItem('al_exercise_draft:v1:session-1:exercise-1')).toBeNull();
   });
 
   it('stores only validated versioned session-to-job mappings', () => {

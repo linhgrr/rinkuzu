@@ -1,32 +1,18 @@
 import { fetchApiData } from '@/lib/api/client';
+import type { components } from '@/generated/adaptive-api';
 import type {
   LlmUsageBreakdownRow,
   LlmUsageViewModel,
 } from '@/features/admin/stats/types/llm-usage-view-model';
 
+type ApiSchemas = components['schemas'];
+
 // USD→VND display rate. Kept here (not in the pricing config) because it only
 // affects how admin cost is shown, not billing. Override via env if needed.
 const USD_TO_VND = Number(process.env['NEXT_PUBLIC_USD_TO_VND']) || 25_000;
 
-interface UsageBreakdownDto {
-  key: string | null;
-  total_tokens?: number;
-  cost_usd?: number;
-  calls?: number;
-}
-
-interface UsageTotalsDto {
-  total_tokens: number;
-  cost_usd: number;
-  calls: number;
-}
-
-interface LlmUsageSummaryDto {
-  window_days: number;
-  totals: UsageTotalsDto;
-  by_action: UsageBreakdownDto[];
-  by_model: UsageBreakdownDto[];
-}
+type LlmUsageSummaryDto = ApiSchemas['LlmUsageSummaryResponse'];
+type UsageBreakdownDto = ApiSchemas['LlmUsageBreakdownRow'];
 
 function toRow(dto: UsageBreakdownDto): LlmUsageBreakdownRow {
   return {
@@ -47,5 +33,17 @@ export async function fetchLlmUsageViewModel(window = '30d'): Promise<LlmUsageVi
     calls: dto.totals.calls,
     byAction: dto.by_action.map(toRow),
     byModel: dto.by_model.map(toRow),
+    byUser: dto.by_user.map(toRow),
+    analysis: {
+      activeUsers: dto.analysis.active_users,
+      averageTokensPerCall: dto.analysis.average_tokens_per_call,
+      averageCostUsdPerCall: dto.analysis.average_cost_usd_per_call,
+      topUserId: dto.analysis.top_user_id ?? '(unknown)',
+      topUserCostUsd: dto.analysis.top_user_cost_usd,
+      topAction: dto.analysis.top_action ?? '(unknown)',
+      topActionCostShare: dto.analysis.top_action_cost_share,
+      topModel: dto.analysis.top_model ?? '(unknown)',
+      topModelCostShare: dto.analysis.top_model_cost_share,
+    },
   };
 }

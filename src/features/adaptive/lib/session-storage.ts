@@ -1,7 +1,9 @@
 import { z } from 'zod';
+import type { ExerciseAnswerDraft } from '@/features/adaptive/types/exercise-answer';
 import type { Exercise, SubmitResult } from '@/features/adaptive/types/learning';
 
 const OUTCOME_KEY_PREFIX = 'al_session_outcome:v1';
+const EXERCISE_DRAFT_KEY_PREFIX = 'al_exercise_draft:v1';
 const SESSION_JOB_MAP_KEY = 'al_session_job_map:v1';
 const ACTIVE_SESSION_ID_KEY = 'al_session_id';
 const PIPELINE_JOB_ID_KEY = 'al_pipeline_job_id';
@@ -104,6 +106,23 @@ const sessionOutcomeSchema = z
   })
   .strict();
 
+const exerciseAnswerDraftSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('mcq'), selection: z.string().nullable() }).strict(),
+  z.object({ type: z.literal('true_false'), value: z.boolean().nullable() }).strict(),
+  z.object({ type: z.literal('fill_blank'), values: z.tuple([z.string()]) }).strict(),
+  z.object({ type: z.literal('multi_correct'), selections: z.array(z.string()) }).strict(),
+  z.object({ type: z.literal('ordering'), items: z.array(z.string()) }).strict(),
+  z.object({ type: z.literal('matching'), matches: z.record(z.string(), z.string()) }).strict(),
+  z.object({ type: z.literal('short_answer'), text: z.string() }).strict(),
+]);
+
+const sessionExerciseDraftSchema = z
+  .object({
+    version: z.literal(1),
+    draft: exerciseAnswerDraftSchema,
+  })
+  .strict();
+
 const sessionJobMapSchema = z.record(
   z.string().min(1),
   z
@@ -124,6 +143,10 @@ export type SelectedPipelineJob = {
 
 function getOutcomeKey(sessionId: string): string {
   return `${OUTCOME_KEY_PREFIX}:${sessionId}`;
+}
+
+function getExerciseDraftKey(sessionId: string, exerciseId: string): string {
+  return `${EXERCISE_DRAFT_KEY_PREFIX}:${sessionId}:${exerciseId}`;
 }
 
 function readSessionJobMap(): SessionJobMap {
@@ -229,4 +252,38 @@ export function getSessionExerciseOutcome(sessionId: string): SessionExerciseOut
 
   localStorage.removeItem(key);
   return null;
+}
+
+export function saveSessionExerciseDraft(
+  sessionId: string,
+  exerciseId: string,
+  draft: ExerciseAnswerDraft,
+): void {
+  sessionStorage.setItem(
+    getExerciseDraftKey(sessionId, exerciseId),
+    JSON.stringify({ version: 1, draft }),
+  );
+}
+
+export function getSessionExerciseDraft(
+  sessionId: string,
+  exerciseId: string,
+): ExerciseAnswerDraft | null {
+  const key = getExerciseDraftKey(sessionId, exerciseId);
+  const value = sessionStorage.getItem(key);
+  if (value === null) return null;
+
+  try {
+    const parsed = sessionExerciseDraftSchema.safeParse(JSON.parse(value));
+    if (parsed.success) return parsed.data.draft;
+  } catch {
+    // Invalid JSON is handled by removing the corrupt cache below.
+  }
+
+  sessionStorage.removeItem(key);
+  return null;
+}
+
+export function clearSessionExerciseDraft(sessionId: string, exerciseId: string): void {
+  sessionStorage.removeItem(getExerciseDraftKey(sessionId, exerciseId));
 }

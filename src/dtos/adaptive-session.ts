@@ -5,7 +5,13 @@ import { routePathSegmentSchema } from '@/lib/validation/common';
 type ApiSchemas = components['schemas'];
 
 const adaptiveSessionGetActionSchema = z.enum(['theory', 'status', 'graph', 'mastery-matrix']);
-const adaptiveSessionPostActionSchema = z.enum(['next-concept', 'exercise', 'submit', 'chat']);
+const adaptiveSessionPostActionSchema = z.enum([
+  'next-concept',
+  'exercise',
+  'step',
+  'submit',
+  'chat',
+]);
 
 export const adaptiveSessionGetPathParamsSchema = z
   .object({
@@ -45,6 +51,8 @@ const submitAnswerPayloadSchema = z
 
 export const adaptiveSubmitAnswerRequestSchema: z.ZodType<ApiSchemas['SubmitAnswerRequest']> = z
   .object({
+    exercise_id: z.string().min(1),
+    idempotency_key: z.string().min(1).max(128),
     answer: submitAnswerPayloadSchema,
   })
   .strict();

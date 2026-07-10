@@ -2199,7 +2199,7 @@ export default function DraftEditPage() {
             onClick={handleSubmit}
             disabled={isSubmitting || !categoryId || questions.length === 0}
           >
-            {isSubmitting ? 'Đang gửi...' : 'Gửi để duyệt'}
+            {isSubmitting ? 'Đang tạo...' : 'Tạo quizz'}
           </Button>
         </div>
       </div>

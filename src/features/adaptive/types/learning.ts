@@ -28,6 +28,8 @@ export type NextConcept = ApiSchemas['NextConceptResponse'];
 
 export type TheoryData = ApiSchemas['TheoryResponse'];
 
+export type LearningStepApiResponse = ApiSchemas['LearningStepResponse'];
+
 export type ExerciseApiResponse =
   | ApiSchemas['MCQExerciseResponse']
   | ApiSchemas['TrueFalseExerciseResponse']
@@ -46,6 +48,7 @@ type RecommendationReason = ApiSchemas['RecommendationReason'] & {
 };
 
 export type SubmitAnswerPayload = ApiSchemas['SubmitAnswerPayload'];
+export type SubmitAnswerRequest = ApiSchemas['SubmitAnswerRequest'];
 
 type ExerciseCommon = Pick<
   ExerciseApiResponse,

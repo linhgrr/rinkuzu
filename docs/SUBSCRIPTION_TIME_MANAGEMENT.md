@@ -49,13 +49,16 @@ async isUserPremium(userId: string): Promise<boolean> {
   // Check if subscription is active
   if (!subscription.isActive) return false;
 
-  // Check if subscription has end date
+  // Time-limited subscription: valid until endDate
   if (subscription.endDate) {
     return new Date() < subscription.endDate;
   }
 
-  // If no end date, assume it's a lifetime subscription
-  return true;
+  // No endDate is ONLY valid for a genuine lifetime plan (duration PT0S),
+  // confirmed from the plan record. A record that lost its endDate through a
+  // bug/misconfiguration is anomalous and fails closed (no premium) with a
+  // warning log — we never infer "lifetime" from a missing endDate alone.
+  return this.isLifetimePlan(subscription.type);
 }
 ```
 

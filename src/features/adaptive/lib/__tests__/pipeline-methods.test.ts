@@ -427,9 +427,13 @@ describe('pipeline lifecycle methods', () => {
       ),
     );
 
-    await expect(submitAnswer('session-1', { choice: 'A' })).rejects.toThrow(
-      'Invalid adaptive response field: accuracy',
-    );
+    await expect(
+      submitAnswer('session-1', {
+        exercise_id: 'exercise-1',
+        idempotency_key: 'submit-1',
+        answer: { choice: 'A' },
+      }),
+    ).rejects.toThrow('Invalid adaptive response field: accuracy');
   });
 
   it('listPipelineJobs rejects a contradictory optional jobs envelope', async () => {

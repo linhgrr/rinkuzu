@@ -10,6 +10,7 @@ export const GET = withAuth(async (req, { userId, session }) =>
     '/health',
     { userId, userRole: session.user.role },
     {
+      infra: true,
       cache: {
         revalidateSeconds: ADAPTIVE_CACHE_TTL_SECONDS.health,
         tags: [ADAPTIVE_CACHE_TAGS.health],

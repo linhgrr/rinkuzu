@@ -486,6 +486,7 @@ function useQuizResultPageChat(
     ensureHistory,
     clearHistory,
     getHistory,
+    cancelActiveStream,
     sendMessage,
     totalTurns,
   } = useStreamingChatSession({
@@ -500,6 +501,7 @@ function useQuizResultPageChat(
   };
 
   const closeAIModal = () => {
+    cancelActiveStream();
     setUserQuestion('');
     setAIError('');
     dispatch({ type: 'closeAIModal' });

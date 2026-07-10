@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { streamQuizAI } from '@/lib/quiz/ask-ai';
 import { extractUnknownErrorMessage } from '@/lib/api/error';
 import {
@@ -18,6 +18,9 @@ export interface ChatMessage {
 type ChatHistories = Record<string, ChatMessage[]>;
 
 const EMPTY_CHAT_MESSAGES: ChatMessage[] = [];
+function isAbortLikeError(error: unknown): boolean {
+  return error instanceof Error && error.name === 'AbortError';
+}
 
 interface StreamQuestionPayload {
   question: string;
@@ -60,6 +63,7 @@ export function useStreamingChatSession(options: UseStreamingChatSessionOptions 
   const [hydratedPersistenceIdentity, setHydratedPersistenceIdentity] = useState<string | null>(
     null,
   );
+  const abortControllerRef = useRef<AbortController | null>(null);
   const [state, setState] = useState<ChatSessionState>({
     chatHistories: {},
     userQuestion: '',
@@ -80,6 +84,13 @@ export function useStreamingChatSession(options: UseStreamingChatSessionOptions 
   }, [persistenceIdentity, stablePersistence]);
 
   const { aiError, chatHistories, loadingAI, userQuestion } = state;
+
+  useEffect(
+    () => () => {
+      abortControllerRef.current?.abort();
+    },
+    [],
+  );
 
   const setUserQuestion = (value: string) => {
     setState((prev) => ({ ...prev, userQuestion: value }));
@@ -139,6 +150,12 @@ export function useStreamingChatSession(options: UseStreamingChatSessionOptions 
     return chatHistories[key] ?? EMPTY_CHAT_MESSAGES;
   };
 
+  const cancelActiveStream = () => {
+    abortControllerRef.current?.abort();
+    abortControllerRef.current = null;
+    setState((prev) => ({ ...prev, loadingAI: false }));
+  };
+
   const sendMessage = async ({
     historyKey,
     payload,
@@ -162,7 +179,6 @@ export function useStreamingChatSession(options: UseStreamingChatSessionOptions 
     };
 
     const currentHistory = getHistory(key);
-    const nextHistory = [...currentHistory, userMessage];
     const assistantPlaceholder: ChatMessage = {
       role: 'assistant',
       content: '',
@@ -182,6 +198,10 @@ export function useStreamingChatSession(options: UseStreamingChatSessionOptions 
     }));
 
     try {
+      abortControllerRef.current?.abort();
+      const abortController = new AbortController();
+      abortControllerRef.current = abortController;
+
       const explanation = await streamQuizAI(
         {
           question: payload.question,
@@ -189,9 +209,10 @@ export function useStreamingChatSession(options: UseStreamingChatSessionOptions 
           userQuestion: trimmedQuestion,
           questionImage: payload.questionImage,
           optionImages: payload.optionImages,
-          chatHistory: nextHistory,
+          chatHistory: currentHistory,
         },
         {
+          signal: abortController.signal,
           onContent: (_, fullContent) => {
             setState((prev) => {
               const history = [...(prev.chatHistories[key] ?? EMPTY_CHAT_MESSAGES)];
@@ -224,6 +245,9 @@ export function useStreamingChatSession(options: UseStreamingChatSessionOptions 
           userQuestion: '',
         };
       });
+      if (abortControllerRef.current === abortController) {
+        abortControllerRef.current = null;
+      }
       return true;
     } catch (error: unknown) {
       setState((prev) => {
@@ -231,6 +255,13 @@ export function useStreamingChatSession(options: UseStreamingChatSessionOptions 
         const lastMessage = history[history.length - 1];
         if (lastMessage?.role === 'assistant' && !lastMessage.content.trim()) {
           history.pop();
+        }
+        if (isAbortLikeError(error)) {
+          return {
+            ...prev,
+            aiError: '',
+            chatHistories: { ...prev.chatHistories, [key]: history },
+          };
         }
         return {
           ...prev,
@@ -243,6 +274,7 @@ export function useStreamingChatSession(options: UseStreamingChatSessionOptions 
       });
       return false;
     } finally {
+      abortControllerRef.current = null;
       setState((prev) => ({ ...prev, loadingAI: false }));
     }
   };
@@ -267,6 +299,7 @@ export function useStreamingChatSession(options: UseStreamingChatSessionOptions 
     clearHistory,
     removeHistory,
     getHistory,
+    cancelActiveStream,
     sendMessage,
     totalTurns,
   };

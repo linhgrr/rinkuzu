@@ -294,6 +294,7 @@ export default function ProfileBookmarks() {
     ensureHistory,
     removeHistory,
     getHistory,
+    cancelActiveStream,
     sendMessage,
   } = useStreamingChatSession({
     persistence: { scope: 'bookmarks' },
@@ -307,6 +308,7 @@ export default function ProfileBookmarks() {
   };
 
   const closeAIModal = () => {
+    cancelActiveStream();
     dispatch({ type: 'closeModal' });
     setUserQuestion('');
     setAIError('');

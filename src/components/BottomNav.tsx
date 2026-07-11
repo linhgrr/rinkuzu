@@ -23,21 +23,7 @@ import {
   matchesPrefix,
   stripLocaleFromPath,
 } from '@/lib/routing/pathname';
-
-const AUTH_REQUIRED_PREFIXES = [
-  '/dashboard',
-  '/create',
-  '/profile',
-  '/review',
-  '/subscription',
-  '/history',
-  '/my-quizzes',
-  '/bookmarks',
-  '/draft',
-  '/edit',
-  '/admin',
-  '/adaptive',
-];
+import { AUTH_REQUIRED_PATH_PREFIXES, MOBILE_TABS_BY_SCOPE } from '@/shared/constants/nav';
 
 type IconRender = (isActive: boolean) => React.ReactNode;
 
@@ -61,7 +47,7 @@ export default function BottomNav() {
   const { data: session, status } = useSession();
   const t = useTranslations('nav');
   const pathWithoutLocale = stripLocaleFromPath(pathname || '/');
-  const isProtectedRoute = AUTH_REQUIRED_PREFIXES.some((prefix) =>
+  const isProtectedRoute = AUTH_REQUIRED_PATH_PREFIXES.some((prefix) =>
     matchesPrefix(pathWithoutLocale, prefix),
   );
   const isQuizPlayRoute = matchesPrefix(pathWithoutLocale, '/quiz');
@@ -207,16 +193,23 @@ export default function BottomNav() {
   };
 
   const scope = getProductScope(pathname || '/');
-  let tabs: NavTab[];
-  if (scope === 'adaptive') {
-    tabs = [homeTab, adaptiveLibraryTab, adaptiveUploadTab, adaptiveProgressTab, profileTab];
-  } else if (scope === 'quiz') {
-    tabs = [homeTab, reviewTab, createTab, exploreTab, profileTab];
-  } else {
-    // Hub (e.g. /dashboard, /subscription) — same default as Quiz scope so the
-    // primary "+" CTA stays prominent for the most common create action.
-    tabs = [homeTab, reviewTab, createTab, exploreTab, profileTab];
-  }
+  const iconById: Record<string, NavTab['icon']> = {
+    home: homeTab.icon,
+    explore: exploreTab.icon,
+    review: reviewTab.icon,
+    create: createTab.icon,
+    profile: profileTab.icon,
+    adaptiveLibrary: adaptiveLibraryTab.icon,
+    adaptiveUpload: adaptiveUploadTab.icon,
+    adaptiveProgress: adaptiveProgressTab.icon,
+  };
+  const tabs: NavTab[] = MOBILE_TABS_BY_SCOPE[scope].map((def) => ({
+    href: def.href,
+    labelKey: def.labelKey,
+    matchPrefix: def.matchPrefix,
+    isCenter: def.isCenter,
+    icon: iconById[def.id],
+  }));
 
   return (
     <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-t border-neutral-200/60 shadow-[0_-4px_20px_rgb(0,0,0,0.04)] px-2 pt-2 z-50 safe-area-bottom">

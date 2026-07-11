@@ -17,10 +17,13 @@ permissions:
 
 env:
   MONGODB_URI: mongodb://localhost:27017/test
-  NEXTAUTH_SECRET: test-nextauth-secret-at-least-32-characters
-  NEXTAUTH_URL: http://localhost:3000
-  NEXT_PUBLIC_SITE_URL: http://localhost:3000
-  NEXT_PUBLIC_API_URL: http://localhost:8000
+  # Keep AUTH_URL / SITE_URL / Playwright base URL on the same origin+host.
+  AUTH_SECRET: test-auth-secret-at-least-32-characters
+  AUTH_URL: http://127.0.0.1:3000
+  AUTH_TRUST_HOST: 'true'
+  NEXT_PUBLIC_SITE_URL: http://127.0.0.1:3000
+  NEXT_PUBLIC_API_URL: http://127.0.0.1:8000
+  PLAYWRIGHT_BASE_URL: http://127.0.0.1:3000
   SESSION_MAX_AGE_SECONDS: '28800'
   SESSION_UPDATE_AGE_SECONDS: '3600'
   AUTH_LOCKOUT_MAX_ATTEMPTS: '5'
@@ -96,13 +99,29 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Seed E2E auth user
+        run: npm run seed:e2e-auth
+        env:
+          NODE_ENV: test
+          E2E_USER_EMAIL: auth-e2e@example.test
+          E2E_USER_PASSWORD: Auth-e2e-password-2026
+
       - name: Install Playwright browsers
         run: npm run test:e2e:install
 
       - name: E2E smoke tests
         run: npm run test:e2e
         env:
-          PLAYWRIGHT_BASE_URL: http://127.0.0.1:3000
+          # Inherit AUTH_URL / PLAYWRIGHT_BASE_URL from job env (must match).
+          E2E_USER_EMAIL: auth-e2e@example.test
+          E2E_USER_PASSWORD: Auth-e2e-password-2026
+
+      - name: Auth performance smoke
+        run: npm run test:perf:auth
+        env:
+          E2E_USER_EMAIL: auth-e2e@example.test
+          E2E_USER_PASSWORD: Auth-e2e-password-2026
+          AUTH_PERF_P95_MS: '4000'
 
   react-doctor:
     needs: quality

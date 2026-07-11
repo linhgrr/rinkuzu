@@ -1,7 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useRef, useState } from 'react';
-import { signIn } from 'next-auth/react';
+import { Suspense, startTransition, useActionState, useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -19,6 +18,11 @@ import {
   HiOutlineEyeOff,
 } from 'react-icons/hi';
 import { GoogleAuthButton } from '@/components/auth/GoogleAuthButton';
+import { authenticateCredentials } from '@/features/auth/actions';
+import {
+  INITIAL_LOGIN_ACTION_STATE,
+  type LoginActionErrorCode,
+} from '@/features/auth/types/auth-actions';
 import { loginSchema, type LoginInput } from '@/lib/validation/auth';
 import { resolveSafeAuthRedirect } from '@/lib/routing/auth-redirect';
 
@@ -28,18 +32,14 @@ interface LoginFormProps {
   onSwitchMode?: () => void;
 }
 
-type ErrorState = {
-  message: string;
-  code?: string;
-};
-
 function LoginFormContent({ locale, googleEnabled, onSwitchMode }: LoginFormProps) {
   const t = useTranslations('auth');
   const [showPassword, setShowPassword] = useState(false);
-  const [serverError, setServerError] = useState<ErrorState | null>(null);
   const [retrySeconds, setRetrySeconds] = useState(0);
-  const [navigationPending, setNavigationPending] = useState(false);
-  const submissionInFlight = useRef(false);
+  const [actionState, credentialsAction, actionPending] = useActionState(
+    authenticateCredentials,
+    INITIAL_LOGIN_ACTION_STATE,
+  );
   const searchParams = useSearchParams();
   const get = searchParams.get.bind(searchParams);
 
@@ -54,11 +54,13 @@ function LoginFormContent({ locale, googleEnabled, onSwitchMode }: LoginFormProp
     formState: { errors, isSubmitting },
   } = form;
 
-  const callbackUrl = resolveSafeAuthRedirect(get('callbackUrl'), locale);
+  const redirectTo = resolveSafeAuthRedirect(get('callbackUrl'), locale);
 
-  const startRetryCountdown = (seconds: number) => {
-    setRetrySeconds(seconds);
-  };
+  useEffect(() => {
+    if (actionState.status === 'error') {
+      setRetrySeconds(actionState.retryAfterSeconds ?? 0);
+    }
+  }, [actionState]);
 
   useEffect(() => {
     if (retrySeconds <= 0) return;
@@ -69,49 +71,18 @@ function LoginFormContent({ locale, googleEnabled, onSwitchMode }: LoginFormProp
     return () => clearInterval(intervalId);
   }, [retrySeconds]);
 
-  const onSubmit = handleSubmit(async (values) => {
-    if (retrySeconds > 0 || submissionInFlight.current) return;
-    submissionInFlight.current = true;
-    setServerError(null);
+  const onSubmit = handleSubmit((values) => {
+    if (retrySeconds > 0 || actionPending) return;
 
-    try {
-      const result = await signIn('credentials', {
-        email: values.email,
-        password: values.password,
-        redirect: false,
-        callbackUrl,
-      });
-
-      if (result?.error) {
-        submissionInFlight.current = false;
-        const code = result.error;
-        if (code === 'account_locked') {
-          startRetryCountdown(15 * 60);
-          setServerError({ code, message: t('accountLocked') });
-        } else if (code === 'email_not_verified') {
-          setServerError({ code, message: t('emailNotVerified') });
-        } else if (code === 'invalid_credentials' || code === 'CredentialsSignin') {
-          setServerError({ code: 'invalid_credentials', message: t('invalidEmailPassword') });
-        } else {
-          setServerError({ code, message: t('loginFailed') });
-        }
-        return;
-      }
-      if (result?.ok && result.url) {
-        setNavigationPending(true);
-        window.location.replace(result.url);
-        return;
-      }
-      submissionInFlight.current = false;
-      setServerError({ code: 'unknown', message: t('loginFailed') });
-    } catch (caught) {
-      submissionInFlight.current = false;
-      console.error('Login exception:', caught);
-      setServerError({ code: 'network', message: t('loginError') });
-    }
+    const formData = new FormData();
+    formData.set('email', values.email);
+    formData.set('password', values.password);
+    formData.set('redirectTo', redirectTo);
+    formData.set('locale', locale);
+    startTransition(() => credentialsAction(formData));
   });
 
-  const submitPending = isSubmitting || navigationPending;
+  const submitPending = isSubmitting || actionPending;
   const submitDisabled = submitPending || retrySeconds > 0;
   const lockoutCountdownLabel =
     retrySeconds > 0
@@ -120,11 +91,27 @@ function LoginFormContent({ locale, googleEnabled, onSwitchMode }: LoginFormProp
           .padStart(2, '0')}:${(retrySeconds % 60).toString().padStart(2, '0')}`
       : '';
   const emailValue = useWatch({ control: form.control, name: 'email' }) ?? '';
+  const errorCode = actionState.status === 'error' ? actionState.code : null;
+  const errorMessage = (() => {
+    if (actionPending || !errorCode) return null;
+    const messages: Record<Exclude<LoginActionErrorCode, 'rate_limit_exceeded'>, string> = {
+      invalid_credentials: t('invalidEmailPassword'),
+      email_not_verified: t('emailNotVerified'),
+      account_locked: t('accountLocked'),
+      login_failed: t('loginFailed'),
+    };
+    return errorCode === 'rate_limit_exceeded'
+      ? t('rateLimited', { seconds: retrySeconds })
+      : messages[errorCode];
+  })();
+  const serverError = errorCode && errorMessage ? { code: errorCode, message: errorMessage } : null;
 
   return (
     <div>
-      {googleEnabled && <GoogleAuthButton callbackUrl={callbackUrl} disabled={submitPending} />}
-      <form className="space-y-6" onSubmit={onSubmit} noValidate>
+      {googleEnabled && (
+        <GoogleAuthButton redirectTo={redirectTo} locale={locale} disabled={submitPending} />
+      )}
+      <form method="post" className="space-y-6" onSubmit={onSubmit} noValidate>
         {serverError && (
           <Card
             variant="bordered"

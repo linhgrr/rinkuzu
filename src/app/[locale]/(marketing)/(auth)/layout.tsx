@@ -1,9 +1,9 @@
 import type { Metadata } from 'next';
-import { getServerSession } from 'next-auth';
 import { redirect } from 'next/navigation';
 import { AuthShell } from '@/components/auth/AuthShell';
 import { defaultLocale } from '@/i18n/config';
-import { authOptions, isGoogleLoginEnabled } from '@/lib/auth';
+import { getCurrentSession } from '@/lib/auth/session';
+import { env } from '@/lib/env';
 
 export const metadata: Metadata = {
   robots: {
@@ -19,7 +19,7 @@ export default async function AuthLayout({
   children: React.ReactNode;
   params: Promise<{ locale: string }>;
 }) {
-  const [{ locale }, session] = await Promise.all([params, getServerSession(authOptions)]);
+  const [{ locale }, session] = await Promise.all([params, getCurrentSession()]);
 
   if (session?.user) {
     const dashboardPath = locale === defaultLocale ? '/dashboard' : `/${locale}/dashboard`;
@@ -28,7 +28,10 @@ export default async function AuthLayout({
 
   return (
     <>
-      <AuthShell locale={locale} googleEnabled={isGoogleLoginEnabled} />
+      <AuthShell
+        locale={locale}
+        googleEnabled={Boolean(env.AUTH_GOOGLE_ID && env.AUTH_GOOGLE_SECRET)}
+      />
       {children}
     </>
   );

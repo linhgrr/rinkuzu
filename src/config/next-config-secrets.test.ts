@@ -2,7 +2,12 @@ import { createRequire } from 'node:module';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 const requireFromTest = createRequire(import.meta.url);
-const forbiddenServerEnv = ['MONGODB_URI', 'NEXTAUTH_SECRET', 'JWT_EXPIRES_IN'] as const;
+const forbiddenServerEnv = [
+  'MONGODB_URI',
+  'AUTH_SECRET',
+  'NEXTAUTH_SECRET',
+  'JWT_EXPIRES_IN',
+] as const;
 
 describe('Next.js configuration', () => {
   beforeAll(() => {

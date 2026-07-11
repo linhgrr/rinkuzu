@@ -12,8 +12,9 @@ vi.mock('server-only', () => ({}));
 const testEnvDefaults: Record<string, string> = {
   NODE_ENV: 'test',
   MONGODB_URI: 'mongodb://127.0.0.1:27017/rinkuzu-test',
-  NEXTAUTH_SECRET: 'test-nextauth-secret-at-least-32-characters',
-  NEXTAUTH_URL: 'http://localhost:3000',
+  AUTH_SECRET: 'test-auth-secret-at-least-32-characters-long',
+  AUTH_URL: 'http://localhost:3000',
+  AUTH_TRUST_HOST: 'true',
   NEXT_PUBLIC_SITE_URL: 'http://localhost:3000',
   NEXT_PUBLIC_API_URL: 'http://127.0.0.1:8000',
   SESSION_MAX_AGE_SECONDS: '28800',

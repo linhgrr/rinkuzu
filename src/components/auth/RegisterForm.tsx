@@ -145,7 +145,11 @@ export function RegisterForm({ locale, googleEnabled = false, onSwitchMode }: Re
   return (
     <div>
       {googleEnabled && (
-        <GoogleAuthButton callbackUrl={dashboardPath(locale)} disabled={isSubmitting} />
+        <GoogleAuthButton
+          redirectTo={dashboardPath(locale)}
+          locale={locale}
+          disabled={isSubmitting}
+        />
       )}
       <form className="space-y-6" onSubmit={onSubmit} noValidate>
         {serverError && (

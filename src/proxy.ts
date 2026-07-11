@@ -1,45 +1,27 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextFetchEvent, NextRequest, NextResponse } from 'next/server';
 import createMiddleware from 'next-intl/middleware';
-import { getToken } from 'next-auth/jwt';
+import NextAuth from 'next-auth';
+import type { NextAuthRequest } from 'next-auth';
 import { randomUUID } from 'node:crypto';
+
+import authConfig from './auth.config';
 import { routing } from './i18n/routing';
 import { defaultLocale } from './i18n/config';
-import { getLocaleFromPath, matchesPrefix } from './lib/routing/pathname';
+import { getLocaleFromPath } from './lib/routing/pathname';
+import { getAuthRoutePolicy } from './lib/routing/auth-route-policy';
 
 const intlMiddleware = createMiddleware(routing);
-
-const AUTH_REQUIRED_PREFIXES = [
-  '/dashboard',
-  '/adaptive/upload',
-  '/adaptive/processing',
-  '/adaptive/exercise',
-  '/adaptive/subject',
-  '/adaptive/result',
-  '/create',
-  '/profile',
-  '/review',
-  '/subscription',
-  '/history',
-  '/bookmarks',
-  '/my-quizzes',
-  '/draft',
-  '/edit',
-];
-
-const ADMIN_PREFIX = '/admin';
 
 const STATE_CHANGING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
 /**
  * API paths that legitimately accept cross-origin or server-to-server traffic
- * and therefore must NOT be CSRF-checked. Keep this list small and document
- * each entry — every exemption is a surface that must be hardened separately.
+ * and therefore must NOT be CSRF-checked.
  */
 const CSRF_EXEMPT_API_PREFIXES = [
-  // NextAuth handles its own CSRF token for credentials flow.
+  // Auth.js owns CSRF for its own endpoints.
   '/api/auth/',
-  // PayOS calls this endpoint server-to-server with HMAC-signed body; CSRF
-  // does not apply because there is no browser session.
+  // PayOS server-to-server webhook (HMAC body).
   '/api/subscription/webhook',
 ];
 
@@ -49,17 +31,6 @@ function isStateChangingApiRequest(pathname: string, method: string): boolean {
   return !CSRF_EXEMPT_API_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 }
 
-/**
- * Same-origin / CSRF guard.
- *
- * Treat a state-changing API request as legitimate when ANY of:
- *   - browser tells us the request is same-origin via `Sec-Fetch-Site`,
- *   - the `Origin` header equals the request host,
- *   - or the `Referer` host equals the request host (older clients).
- *
- * Reject everything else with 403 — this stops classic CSRF where an
- * attacker site auto-submits a form to our API with the user's cookies.
- */
 function isSameOrigin(request: NextRequest): boolean {
   const host = request.headers.get('host');
 
@@ -86,16 +57,11 @@ function isSameOrigin(request: NextRequest): boolean {
     }
   }
 
-  // No browser metadata at all (e.g. server-to-server tools without Origin)
-  // — be strict for state-changing API calls.
-  return !origin && !referer && !fetchSite ? false : false;
+  return false;
 }
 
 function localizePath(pathname: string, locale: string): string {
-  if (locale === defaultLocale) {
-    return pathname;
-  }
-  return `/${locale}${pathname}`;
+  return locale === defaultLocale ? pathname : `/${locale}${pathname}`;
 }
 
 function applySecurityHeaders<T extends Response>(response: T, requestId: string): T {
@@ -111,11 +77,39 @@ function applySecurityHeaders<T extends Response>(response: T, requestId: string
   return response;
 }
 
-export default async function middleware(request: NextRequest) {
-  const requestId = request.headers.get('x-request-id') || randomUUID();
+const { auth: withEdgeAuth } = NextAuth(authConfig);
 
-  // Same-origin / CSRF guard for state-changing API requests.
-  if (isStateChangingApiRequest(request.nextUrl.pathname, request.method)) {
+/**
+ * Coarse JWT gate for protected/admin routes only.
+ * Two-arg signature selects the NextAuth middleware overload (not App Route).
+ */
+const guardedProxy = withEdgeAuth((request: NextAuthRequest, _event: NextFetchEvent) => {
+  const requestId = request.headers.get('x-request-id') || randomUUID();
+  const { locale, pathWithoutLocale } = getLocaleFromPath(request.nextUrl.pathname);
+  const policy = getAuthRoutePolicy(pathWithoutLocale);
+
+  if (!request.auth?.user) {
+    const loginUrl = new URL(localizePath('/login', locale), request.url);
+    loginUrl.searchParams.set(
+      'callbackUrl',
+      `${request.nextUrl.pathname}${request.nextUrl.search}`,
+    );
+    return applySecurityHeaders(NextResponse.redirect(loginUrl), requestId);
+  }
+
+  if (policy === 'admin' && request.auth.user.role !== 'admin') {
+    const homeUrl = new URL(localizePath('/', locale), request.url);
+    return applySecurityHeaders(NextResponse.redirect(homeUrl), requestId);
+  }
+
+  return applySecurityHeaders(intlMiddleware(request), requestId);
+});
+
+export default async function proxy(request: NextRequest, event: NextFetchEvent) {
+  const pathname = request.nextUrl.pathname;
+
+  if (isStateChangingApiRequest(pathname, request.method)) {
+    const requestId = request.headers.get('x-request-id') || randomUUID();
     if (!isSameOrigin(request)) {
       return applySecurityHeaders(
         NextResponse.json(
@@ -131,51 +125,23 @@ export default async function middleware(request: NextRequest) {
         requestId,
       );
     }
-    // For API routes, propagate the request id and skip the i18n middleware.
     return applySecurityHeaders(NextResponse.next(), requestId);
   }
 
-  // Read-only API requests still need a request id but no CSRF check.
-  if (request.nextUrl.pathname.startsWith('/api/')) {
+  if (pathname.startsWith('/api/')) {
+    const requestId = request.headers.get('x-request-id') || randomUUID();
     return applySecurityHeaders(NextResponse.next(), requestId);
   }
 
-  const { locale, pathWithoutLocale } = getLocaleFromPath(request.nextUrl.pathname);
-  const isAdminRoute = matchesPrefix(pathWithoutLocale, ADMIN_PREFIX);
-  const isAuthRequiredRoute = AUTH_REQUIRED_PREFIXES.some((prefix) =>
-    matchesPrefix(pathWithoutLocale, prefix),
-  );
-
-  if (isAdminRoute || isAuthRequiredRoute) {
-    const token = await getToken({
-      req: request,
-      secret: process.env['NEXTAUTH_SECRET'],
-    });
-
-    if ((isAdminRoute || isAuthRequiredRoute) && !token) {
-      const loginPath = localizePath('/login', locale);
-      const loginUrl = new URL(loginPath, request.url);
-      loginUrl.searchParams.set(
-        'callbackUrl',
-        `${request.nextUrl.pathname}${request.nextUrl.search}`,
-      );
-      return applySecurityHeaders(NextResponse.redirect(loginUrl), requestId);
-    }
-
-    if (isAdminRoute && token?.role !== 'admin') {
-      const homeUrl = new URL(localizePath('/', locale), request.url);
-      return applySecurityHeaders(NextResponse.redirect(homeUrl), requestId);
-    }
+  const { pathWithoutLocale } = getLocaleFromPath(pathname);
+  if (getAuthRoutePolicy(pathWithoutLocale) !== 'public') {
+    return guardedProxy(request, event);
   }
 
+  const requestId = request.headers.get('x-request-id') || randomUUID();
   return applySecurityHeaders(intlMiddleware(request), requestId);
 }
 
 export const config = {
-  // Match all pathnames except for
-  // - Static files (images, etc.)
-  // - Next.js internals
-  // API routes are now matched so the CSRF / same-origin guard applies; the
-  // guard early-returns for read-only and exempt API paths.
   matcher: ['/', '/(vi|en)/:path*', '/((?!_next|_vercel|.*\\..*).*)'],
 };

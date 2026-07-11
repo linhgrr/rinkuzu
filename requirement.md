@@ -25,7 +25,7 @@ Environment variables (.env.local)
 ```
 
 MONGO\_URL=mongodb+srv://nhatquangpx:[8sotamnhe@gymmanagement.8jghrjf.mongodb.net](mailto:8sotamnhe@gymmanagement.8jghrjf.mongodb.net)/?retryWrites=true\&w=majority\&appName=GymManagement
-NEXTAUTH\_SECRET=supersecret
+AUTH\_SECRET=supersecret
 GEMINI\_KEYS=key1,key2,key3
 JWT\_EXPIRES\_IN=30m
 

@@ -8,11 +8,12 @@ const envSchema = z
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
     MONGODB_URI: z.string().min(1, 'MONGODB_URI is required'),
 
-    NEXTAUTH_SECRET: z
+    AUTH_SECRET: z
       .string()
-      .min(32, 'NEXTAUTH_SECRET must be at least 32 chars')
-      .refine((v) => v !== 'replace-me', 'NEXTAUTH_SECRET must be changed from the default'),
-    NEXTAUTH_URL: z.string().url('NEXTAUTH_URL must be a valid URL'),
+      .min(32, 'AUTH_SECRET must be at least 32 chars')
+      .refine((v) => v !== 'replace-me', 'AUTH_SECRET must be changed from the default'),
+    AUTH_URL: z.string().url('AUTH_URL must be a valid URL'),
+    AUTH_TRUST_HOST: z.enum(['true', 'false']).default('true'),
     NEXT_PUBLIC_SITE_URL: z.string().url('NEXT_PUBLIC_SITE_URL must be a valid URL'),
     NEXT_PUBLIC_API_URL: z.string().url('NEXT_PUBLIC_API_URL must be a valid URL'),
 
@@ -46,8 +47,8 @@ const envSchema = z
     PAYOS_API_KEY: z.string().min(1, 'PAYOS_API_KEY is required'),
     PAYOS_CHECKSUM_KEY: z.string().min(1, 'PAYOS_CHECKSUM_KEY is required'),
 
-    GOOGLE_CLIENT_ID: z.string().optional(),
-    GOOGLE_CLIENT_SECRET: z.string().optional(),
+    AUTH_GOOGLE_ID: z.string().optional(),
+    AUTH_GOOGLE_SECRET: z.string().optional(),
     SUBSCRIPTION_CRON_SECRET: z.string().optional(),
     IMGBB_API_KEY: z.string().optional(),
     NEXT_PUBLIC_GA_ID: z.string().optional(),
@@ -55,13 +56,13 @@ const envSchema = z
   })
   .superRefine((data, ctx) => {
     if (
-      (data.GOOGLE_CLIENT_ID && !data.GOOGLE_CLIENT_SECRET) ||
-      (!data.GOOGLE_CLIENT_ID && data.GOOGLE_CLIENT_SECRET)
+      (data.AUTH_GOOGLE_ID && !data.AUTH_GOOGLE_SECRET) ||
+      (!data.AUTH_GOOGLE_ID && data.AUTH_GOOGLE_SECRET)
     ) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        path: ['GOOGLE_CLIENT_ID'],
-        message: 'GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET must both be set, or both omitted',
+        path: ['AUTH_GOOGLE_ID'],
+        message: 'AUTH_GOOGLE_ID and AUTH_GOOGLE_SECRET must both be set, or both omitted',
       });
     }
   });

@@ -72,7 +72,7 @@
     },
     {
       "files": ["src/app/api/**/route.ts", "src/lib/adaptive-learning/proxy.ts"],
-      "excludedFiles": ["src/lib/auth.ts", "src/lib/api/auth.ts", "src/app/api/auth/**/route.ts"],
+      "excludedFiles": ["src/auth.ts", "src/lib/api/auth.ts", "src/app/api/auth/**/route.ts"],
       "rules": {
         "no-restricted-imports": [
           "error",
@@ -80,8 +80,8 @@
             "paths": [
               {
                 "name": "next-auth",
-                "importNames": ["getServerSession"],
-                "message": "Do not call getServerSession directly. Use withAuth/withAdmin/withOptionalAuth from '@/lib/api/auth' so role/permission checks stay centralized."
+                "importNames": ["getServerSession", "getToken"],
+                "message": "Do not call getServerSession/getToken. Use auth()/getCurrentSession or withAuth/withAdmin/withOptionalAuth from '@/lib/api/auth'."
               }
             ]
           }

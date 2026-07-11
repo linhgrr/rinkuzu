@@ -1,4 +1,3 @@
-import { getServerSession } from 'next-auth';
 import { NextIntlClientProvider } from 'next-intl';
 import Providers from '@/app/providers';
 import { getScopedMessages } from '@/i18n/messages';
@@ -7,7 +6,7 @@ import BottomNav from '@/components/BottomNav';
 import { MainLayoutWrapper } from '@/components/MainLayoutWrapper';
 import { ClientOnlyAppAddons } from '@/components/ClientOnlyAppAddons';
 import { AppChrome } from '@/components/app-chrome/AppChrome';
-import { authOptions } from '@/lib/auth';
+import { getCurrentSession } from '@/lib/auth/session';
 
 export default async function AppLayout({
   children,
@@ -19,7 +18,7 @@ export default async function AppLayout({
   const { locale } = await params;
   const [messages, session] = await Promise.all([
     getScopedMessages(locale, APP_MESSAGE_NAMESPACES),
-    getServerSession(authOptions),
+    getCurrentSession(),
   ]);
 
   return (

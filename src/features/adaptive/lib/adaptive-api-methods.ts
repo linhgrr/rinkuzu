@@ -376,12 +376,6 @@ export async function getNextConcept(sessionId: string): Promise<NextConcept> {
   };
 }
 
-export async function getTheory(sessionId: string): Promise<TheoryData> {
-  return apiFetch<ApiSchemas['TheoryResponse']>(`/api/adaptive/session/${sessionId}/theory`, {
-    method: 'GET',
-  });
-}
-
 export async function getExercise(sessionId: string): Promise<Exercise> {
   const response = await apiFetch<ExerciseApiResponse>(
     `/api/adaptive/session/${sessionId}/exercise`,

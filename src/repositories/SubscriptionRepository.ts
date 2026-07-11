@@ -83,6 +83,7 @@ export class SubscriptionRepository implements ISubscriptionRepository {
 
     try {
       await session.withTransaction(async () => {
+        // Sequential on purpose: withTransaction forbids Promise.all (architecture check).
         const subscriptions = await Subscription.find({
           isActive: true,
           endDate: { $exists: true, $lte: now },

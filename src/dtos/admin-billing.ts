@@ -3,9 +3,9 @@ import { DurationUtils } from '@/types/subscription';
 import { objectIdRouteParamSchema, objectIdSchema } from '@/lib/validation/common';
 import type { PaginationMeta } from '@/dtos/common';
 
-export const adminSubscriptionIdRouteParamsSchema = z
-  .object({ id: objectIdRouteParamSchema })
-  .strict();
+export const adminSubscriptionIdRouteParamsSchema = z.strictObject({
+  id: objectIdRouteParamSchema,
+});
 
 export const planIdSchema = z.string().trim().min(1, 'Plan ID is required').max(120);
 
@@ -14,11 +14,14 @@ const durationSchema = z
   .trim()
   .refine((value) => DurationUtils.isValidISO8601Duration(value), 'Invalid duration format');
 
-const featuresSchema = z
-  .array(z.string())
-  .transform((features) =>
-    features.map((feature) => feature.trim()).filter((feature) => feature.length > 0),
-  );
+const featuresSchema = z.array(z.string()).transform((features) => {
+  const cleaned: string[] = [];
+  for (const feature of features) {
+    const trimmed = feature.trim();
+    if (trimmed.length > 0) cleaned.push(trimmed);
+  }
+  return cleaned;
+});
 
 export const createPaymentRequestSchema = z.object({
   planId: planIdSchema,
@@ -72,11 +75,9 @@ export const adminSubscriptionListQuerySchema = z.object({
   search: z.string().trim().max(200).optional(),
 });
 
-export const updateSubscriptionRequestSchema = z
-  .object({
-    status: z.enum(['failed', 'cancelled', 'expired']),
-  })
-  .strict();
+export const updateSubscriptionRequestSchema = z.strictObject({
+  status: z.enum(['failed', 'cancelled', 'expired']),
+});
 
 export interface BillingPlanDto {
   id: string;

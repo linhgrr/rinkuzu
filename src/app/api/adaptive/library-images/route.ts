@@ -19,16 +19,17 @@ export async function GET(req: Request) {
     const targetUrl = `${RANDOM_IMAGES_ENDPOINT}?rating=safe&limit=${query.data.limit}`;
 
     const response = await fetch(targetUrl, {
-      // EXTERNAL: image proxy
+      // EXTERNAL: fixed nekosapi host + validated limit only (no caller URL).
       headers: { accept: 'application/json' },
       cache: 'no-store',
+      redirect: 'manual',
     });
 
-    if (!response.ok) {
+    if (!response.ok || response.status >= 300) {
       return apiErr(
         'upstream_error',
         'Failed to fetch library images from upstream service',
-        response.status,
+        response.status >= 300 && response.status < 400 ? 502 : response.status,
       );
     }
 

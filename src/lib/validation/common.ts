@@ -12,11 +12,6 @@ export const routePathSegmentSchema = z
   .refine((value) => !value.includes('/'), 'Route parameter must be a single path segment')
   .regex(/^[A-Za-z0-9._~-]+$/, 'Route parameter contains unsafe characters');
 
-export const routePathSchema = z
-  .array(routePathSegmentSchema)
-  .min(1, 'Route path is required')
-  .transform((segments) => segments.join('/'));
-
 export const slugRouteParamSchema = routePathSegmentSchema.regex(
   /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
   'Invalid slug',

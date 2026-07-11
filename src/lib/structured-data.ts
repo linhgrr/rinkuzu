@@ -6,11 +6,6 @@ type FaqItem = {
   a: string;
 };
 
-type BreadcrumbItem = {
-  name: string;
-  path: string;
-};
-
 export function buildOrganizationSchema() {
   return {
     '@context': 'https://schema.org',
@@ -85,19 +80,6 @@ export function buildFaqSchema(items: FaqItem[]) {
         '@type': 'Answer',
         text: item.a,
       },
-    })),
-  };
-}
-
-export function buildBreadcrumbSchema(locale: Locale | string, items: BreadcrumbItem[]) {
-  return {
-    '@context': 'https://schema.org',
-    '@type': 'BreadcrumbList',
-    itemListElement: items.map((item, index) => ({
-      '@type': 'ListItem',
-      position: index + 1,
-      name: item.name,
-      item: canonicalFor(locale, item.path),
     })),
   };
 }

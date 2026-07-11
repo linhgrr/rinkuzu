@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from '@/i18n/navigation';
-import { useCallback, useEffect, useMemo, useReducer } from 'react';
+import { useEffect, useReducer } from 'react';
 import { getSubjectHistoryDetailFresh } from '@/features/adaptive/lib/adaptive-api-methods';
 import { ADAPTIVE_ROUTES } from '@/features/adaptive/lib/routes';
 import { getJobIdForSession, getSessionExerciseOutcome } from '../lib/session-storage';
@@ -162,32 +162,29 @@ export const useResultState = (sessionId: string, t: TranslateFn) => {
   const { exercise, hydrating, isChatOpen, result } = state;
   const isCorrect = result?.is_correct ?? false;
 
-  const masteryPercent = useMemo(() => Math.round((result?.mastery_after ?? 0) * 100), [result]);
+  const masteryPercent = Math.round((result?.mastery_after ?? 0) * 100);
 
-  const averageMasteryPercent = useMemo(
-    () => Math.round((result?.avg_mastery ?? 0) * 100),
-    [result],
-  );
+  const averageMasteryPercent = Math.round((result?.avg_mastery ?? 0) * 100);
 
-  const questionOptions = useMemo(() => {
+  const questionOptions = (() => {
     if (!exercise) return [];
 
     return Object.entries(exercise.options)
       .sort(([left], [right]) => left.localeCompare(right))
       .map(([, value]) => value);
-  }, [exercise]);
+  })();
 
-  const chatContext = useMemo(() => {
+  const chatContext = (() => {
     if (!exercise || !result) return '';
 
     return `${t('chatbot.contextConcept')}: ${result.concept_name}\n${t('chatbot.contextQuestion')}: ${buildExercisePromptText(exercise)}`;
-  }, [exercise, result, t]);
+  })();
 
-  const handleGoDashboard = useCallback(() => {
+  const handleGoDashboard = () => {
     router.push(ADAPTIVE_ROUTES.dashboard);
-  }, [router]);
+  };
 
-  const handleNext = useCallback(() => {
+  const handleNext = () => {
     if (!result) return;
 
     if (result.session_completed) {
@@ -196,15 +193,15 @@ export const useResultState = (sessionId: string, t: TranslateFn) => {
     }
 
     router.push(ADAPTIVE_ROUTES.exercise(sessionId));
-  }, [result, router, sessionId]);
+  };
 
-  const openChat = useCallback(() => {
+  const openChat = () => {
     dispatch({ type: 'setChatOpen', value: true });
-  }, []);
+  };
 
-  const closeChat = useCallback(() => {
+  const closeChat = () => {
     dispatch({ type: 'setChatOpen', value: false });
-  }, []);
+  };
 
   return {
     averageMasteryPercent,

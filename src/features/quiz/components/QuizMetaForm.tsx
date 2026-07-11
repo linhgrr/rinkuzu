@@ -102,8 +102,18 @@ export default function QuizMetaForm({
       )}
 
       <div>
-        <label className="block text-sm font-semibold text-neutral-700 mb-3">{labels.folder}</label>
-        <FolderSelector value={selectedFolderId} onChange={onFolderChange} disabled={disabled} />
+        <label
+          htmlFor="quiz-meta-folder"
+          className="mb-3 block text-sm font-semibold text-neutral-700"
+        >
+          {labels.folder}
+        </label>
+        <FolderSelector
+          id="quiz-meta-folder"
+          value={selectedFolderId}
+          onChange={onFolderChange}
+          disabled={disabled}
+        />
       </div>
 
       {showPrivate && (

@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from '@/i18n/navigation';
-import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react';
+import { useEffect, useReducer, useRef } from 'react';
 import { toast } from 'sonner';
 import {
   createSessionFromPipeline,
@@ -124,17 +124,6 @@ export const useSubjectDetailsState = (sessionId: string, t: TranslateFn) => {
     router.prefetch(ADAPTIVE_ROUTES.exercise(sessionId));
   }, [router, sessionId]);
 
-  const fetchHistoryDetail = useCallback(async () => {
-    if (!jobId) return null;
-    if (!historyDetailPromiseRef.current) {
-      historyDetailPromiseRef.current = getSubjectHistoryDetail(jobId).finally(() => {
-        historyDetailPromiseRef.current = null;
-      });
-    }
-
-    return historyDetailPromiseRef.current;
-  }, [jobId]);
-
   useEffect(() => {
     if (activeTab !== 'history' || historyDetail || !jobId) return;
 
@@ -146,7 +135,12 @@ export const useSubjectDetailsState = (sessionId: string, t: TranslateFn) => {
       };
 
       try {
-        const detail = await fetchHistoryDetail();
+        if (!historyDetailPromiseRef.current) {
+          historyDetailPromiseRef.current = getSubjectHistoryDetail(jobId).finally(() => {
+            historyDetailPromiseRef.current = null;
+          });
+        }
+        const detail = await historyDetailPromiseRef.current;
         if (detail) {
           nextState.historyDetail = detail;
         }
@@ -162,22 +156,20 @@ export const useSubjectDetailsState = (sessionId: string, t: TranslateFn) => {
     return () => {
       mounted = false;
     };
-  }, [activeTab, fetchHistoryDetail, historyDetail, jobId]);
+  }, [activeTab, historyDetail, jobId]);
 
-  const summary = useMemo(() => {
-    if (!status) return t('subjectDetails.summaryFallback');
+  const summary = !status
+    ? t('subjectDetails.summaryFallback')
+    : t('subjectDetails.summary', {
+        concepts: status.total_concepts,
+        accuracy: Math.round(status.accuracy * 100),
+      });
 
-    return t('subjectDetails.summary', {
-      concepts: status.total_concepts,
-      accuracy: Math.round(status.accuracy * 100),
-    });
-  }, [status, t]);
-
-  const handleBackToDashboard = useCallback(() => {
+  const handleBackToDashboard = () => {
     router.push(ADAPTIVE_ROUTES.dashboard);
-  }, [router]);
+  };
 
-  const handleStartLearning = useCallback(() => {
+  const handleStartLearning = () => {
     dispatch({ type: 'patch', value: { sessionNotice: null } });
 
     if (status || !jobId) {
@@ -202,14 +194,14 @@ export const useSubjectDetailsState = (sessionId: string, t: TranslateFn) => {
       .finally(() => {
         dispatch({ type: 'patch', value: { startingSession: false } });
       });
-  }, [jobId, router, sessionId, status, t]);
+  };
 
-  const handlePrefetchStartLearning = useCallback(() => {
+  const handlePrefetchStartLearning = () => {
     if (didPrefetchStartLearning) return;
 
     dispatch({ type: 'patch', value: { didPrefetchStartLearning: true } });
     void prefetchStartLearningData(sessionId);
-  }, [didPrefetchStartLearning, sessionId]);
+  };
 
   return {
     activeTab,

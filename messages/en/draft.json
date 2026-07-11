@@ -14,6 +14,8 @@
   "clickToEdit": "{count} questions – Click to edit",
   "processingError": "Processing error",
   "remove": "Remove",
+  "collapse": "Collapse draft progress",
+  "dismiss": "Dismiss completed draft",
   "cancelConfirmTitle": "Cancel processing?",
   "cancelConfirmMessage": "Cancel processing \"{title}\" and delete its draft from the server?",
   "removeReadyDraftTitle": "Remove ready draft?",

@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from '@/i18n/navigation';
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
 import { toast } from 'sonner';
 import { createSessionFromPipeline } from '@/features/adaptive/lib/adaptive-api-methods';
 import { ADAPTIVE_ROUTES } from '@/features/adaptive/lib/routes';
@@ -21,25 +21,22 @@ export function useStartAdaptiveSubject({ t, tAdaptive }: UseStartAdaptiveSubjec
   const router = useRouter();
   const [loadingJobId, setLoadingJobId] = useState<string | null>(null);
 
-  const startSubject = useCallback(
-    async (jobId: string) => {
-      if (loadingJobId) return;
+  const startSubject = async (jobId: string) => {
+    if (loadingJobId) return;
 
-      setLoadingJobId(jobId);
-      try {
-        const session = await createSessionFromPipeline(jobId, 50);
-        saveActiveSessionId(session.session_id);
-        saveSessionJobMapping(session.session_id, jobId);
-        toast.success(t('creatingSession'));
-        router.push(ADAPTIVE_ROUTES.subject(session.session_id));
-      } catch (error) {
-        const feedback = getSessionStartFeedback(tAdaptive, 'dashboard', error);
-        toast.error(feedback.message);
-        setLoadingJobId(null);
-      }
-    },
-    [loadingJobId, router, t, tAdaptive],
-  );
+    setLoadingJobId(jobId);
+    try {
+      const session = await createSessionFromPipeline(jobId, 50);
+      saveActiveSessionId(session.session_id);
+      saveSessionJobMapping(session.session_id, jobId);
+      toast.success(t('creatingSession'));
+      router.push(ADAPTIVE_ROUTES.subject(session.session_id));
+    } catch (error) {
+      const feedback = getSessionStartFeedback(tAdaptive, 'dashboard', error);
+      toast.error(feedback.message);
+      setLoadingJobId(null);
+    }
+  };
 
   return { loadingJobId, startSubject };
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from '@/i18n/navigation';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import {
   AdaptiveApiError,
@@ -58,6 +58,15 @@ const POLL_JITTER_RATIO = 0.15;
 const CREATE_SESSION_MAX_RETRIES = 5;
 const TOAST_THROTTLE_WINDOW_MS = 4_000;
 
+function getBackoffDelay(attempt: number) {
+  return Math.min(BASE_POLL_DELAY_MS * 2 ** Math.max(0, attempt - 1), MAX_POLL_DELAY_MS);
+}
+
+function getJitteredDelay(delayMs: number) {
+  const jitter = 1 + (Math.random() * 2 - 1) * POLL_JITTER_RATIO;
+  return Math.max(500, Math.round(delayMs * jitter));
+}
+
 export type ProcessingStep = {
   id: number;
   label: string;
@@ -80,216 +89,185 @@ export const useProcessingState = (t: TranslateFn) => {
   const [stats, setStats] = useState<ProcessingStats | null>(null);
   const [partialGraph, setPartialGraph] = useState<PipelineJobStatus['partial_graph']>(null);
   const [creatingSession, setCreatingSession] = useState(false);
-  const filename = useMemo(() => getSelectedPipelineFilename(t('processing.defaultFilename')), [t]);
+  const filename = getSelectedPipelineFilename(t('processing.defaultFilename'));
   // Reactive viewport flag — the shared hook seeds the initial value on mount
   // (the previous inline effect only updated on change, missing first paint).
   const showGraphPanel = useMediaQuery(MEDIA_MIN_LG);
 
   const pollingRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pollWaitResolveRef = useRef<(() => void) | null>(null);
   const navigationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pollInFlightRef = useRef(false);
   const creatingSessionRef = useRef(false);
   const pollRetryDelayRef = useRef(BASE_POLL_DELAY_MS);
   const createSessionRetryCountRef = useRef(0);
-  const pollJobRef = useRef<(jobId: string) => void>(() => {});
   const lastToastRef = useRef<{ message: string; at: number } | null>(null);
 
-  const steps = useMemo<ProcessingStep[]>(
-    () => [
-      { id: 1, label: t('processing.steps.readingPdf') },
-      { id: 2, label: t('processing.steps.extractingConcepts') },
-      { id: 3, label: t('processing.steps.computingEmbeddings') },
-      { id: 4, label: t('processing.steps.mergingAndRanking') },
-      { id: 5, label: t('processing.steps.verifyingAndBuildingGraph') },
-      { id: 6, label: t('processing.steps.finalizingSession') },
-    ],
-    [t],
-  );
+  const steps: ProcessingStep[] = [
+    { id: 1, label: t('processing.steps.readingPdf') },
+    { id: 2, label: t('processing.steps.extractingConcepts') },
+    { id: 3, label: t('processing.steps.computingEmbeddings') },
+    { id: 4, label: t('processing.steps.mergingAndRanking') },
+    { id: 5, label: t('processing.steps.verifyingAndBuildingGraph') },
+    { id: 6, label: t('processing.steps.finalizingSession') },
+  ];
 
-  const getStatusLabel = useCallback(
-    (status: PipelineStatus) => t(`processing.status.${STATUS_LABEL_KEYS[status]}`),
-    [t],
-  );
+  const getStatusLabel = (status: PipelineStatus) =>
+    t(`processing.status.${STATUS_LABEL_KEYS[status]}`);
 
-  const getFriendlyProcessingError = useCallback(
-    (err: unknown) => {
-      if (err instanceof AdaptiveApiError) {
-        if (err.code === 'unauthorized')
-          return {
-            message: t('processing.errors.unauthorized'),
-            retryable: false,
-            code: err.code,
-            action: 'upload' as const,
-          };
-        if (err.code === 'not_found')
-          return {
-            message: t('processing.errors.jobNotFound'),
-            retryable: false,
-            code: err.code,
-            action: 'upload' as const,
-          };
-        if (err.code === 'conflict')
-          return {
-            message: t('processing.errors.conflict'),
-            retryable: false,
-            code: err.code,
-            action: 'upload' as const,
-          };
-        if (isAdaptiveServiceUnavailableError(err))
-          return {
-            message: t('processing.errors.serviceUnavailable'),
-            retryable: true,
-            code: err.code,
-            action: 'upload' as const,
-          };
-        if (isAdaptiveRequestAbortedError(err))
-          return {
-            message: t('processing.errors.connectionInterrupted'),
-            retryable: true,
-            code: err.code,
-            action: 'upload' as const,
-          };
-        if (isAdaptivePipelineNotReadyError(err))
-          return {
-            message: t('processing.errors.sessionNotReady'),
-            retryable: true,
-            code: err.code,
-            action: 'dashboard' as const,
-          };
-      }
-
-      return {
-        message: err instanceof Error ? err.message : t('processing.errors.generic'),
-        retryable: false,
-        code: null,
-        action: 'upload' as const,
-      };
-    },
-    [t],
-  );
-
-  const getTerminalProcessingError = useCallback(
-    (job: PipelineJobStatus): ProcessingErrorState => {
-      const code = job.error_code ?? null;
-
-      if (code === 'pipeline_timeout') {
+  const getFriendlyProcessingError = (err: unknown) => {
+    if (err instanceof AdaptiveApiError) {
+      if (err.code === 'unauthorized')
         return {
-          message: t('processing.errors.pipelineTimeout'),
-          retryable: Boolean(job.retryable),
-          code,
-          action: 'upload',
+          message: t('processing.errors.unauthorized'),
+          retryable: false,
+          code: err.code,
+          action: 'upload' as const,
         };
-      }
-
-      if (code === 'pipeline_cancelled' || job.status === 'cancelled') {
+      if (err.code === 'not_found')
         return {
-          message: t('processing.errors.pipelineCancelled'),
+          message: t('processing.errors.jobNotFound'),
+          retryable: false,
+          code: err.code,
+          action: 'upload' as const,
+        };
+      if (err.code === 'conflict')
+        return {
+          message: t('processing.errors.conflict'),
+          retryable: false,
+          code: err.code,
+          action: 'upload' as const,
+        };
+      if (isAdaptiveServiceUnavailableError(err))
+        return {
+          message: t('processing.errors.serviceUnavailable'),
           retryable: true,
-          code: code ?? 'pipeline_cancelled',
-          action: 'upload',
+          code: err.code,
+          action: 'upload' as const,
         };
-      }
-
-      if (code === 'pipeline_unavailable') {
+      if (isAdaptiveRequestAbortedError(err))
         return {
-          message: t('processing.errors.pipelineUnavailable'),
+          message: t('processing.errors.connectionInterrupted'),
           retryable: true,
-          code,
-          action: 'upload',
+          code: err.code,
+          action: 'upload' as const,
         };
-      }
-
-      if (job.user_message?.trim()) {
+      if (isAdaptivePipelineNotReadyError(err))
         return {
-          message: job.user_message,
-          retryable: Boolean(job.retryable),
-          code,
-          action: 'upload',
+          message: t('processing.errors.sessionNotReady'),
+          retryable: true,
+          code: err.code,
+          action: 'dashboard' as const,
         };
-      }
+    }
 
+    return {
+      message: err instanceof Error ? err.message : t('processing.errors.generic'),
+      retryable: false,
+      code: null,
+      action: 'upload' as const,
+    };
+  };
+
+  const getTerminalProcessingError = (job: PipelineJobStatus): ProcessingErrorState => {
+    const code = job.error_code ?? null;
+
+    if (code === 'pipeline_timeout') {
       return {
-        message: t('processing.errors.pipelineFailed'),
+        message: t('processing.errors.pipelineTimeout'),
         retryable: Boolean(job.retryable),
         code,
         action: 'upload',
       };
-    },
-    [t],
-  );
+    }
 
-  const getRetryNotice = useCallback(
-    (err: unknown, phase: 'polling' | 'createSession') => {
-      if (phase === 'createSession')
-        return isAdaptivePipelineNotReadyError(err)
-          ? t('processing.notices.retryingCreateSession')
-          : t('processing.notices.sessionSetupUnconfirmed');
+    if (code === 'pipeline_cancelled' || job.status === 'cancelled') {
+      return {
+        message: t('processing.errors.pipelineCancelled'),
+        retryable: true,
+        code: code ?? 'pipeline_cancelled',
+        action: 'upload',
+      };
+    }
 
-      if (isAdaptiveApiError(err)) {
-        if (isAdaptiveRequestAbortedError(err))
-          return t('processing.notices.connectionInterrupted');
-        if (isAdaptiveServiceUnavailableError(err))
-          return t('processing.notices.backendSlowRetrying');
-      }
+    if (code === 'pipeline_unavailable') {
+      return {
+        message: t('processing.errors.pipelineUnavailable'),
+        retryable: true,
+        code,
+        action: 'upload',
+      };
+    }
 
-      return t('processing.notices.connectionInterrupted');
-    },
-    [t],
-  );
+    if (job.user_message?.trim()) {
+      return {
+        message: job.user_message,
+        retryable: Boolean(job.retryable),
+        code,
+        action: 'upload',
+      };
+    }
 
-  const clearPollingTimer = useCallback(() => {
+    return {
+      message: t('processing.errors.pipelineFailed'),
+      retryable: Boolean(job.retryable),
+      code,
+      action: 'upload',
+    };
+  };
+
+  const getRetryNotice = (err: unknown, phase: 'polling' | 'createSession') => {
+    if (phase === 'createSession')
+      return isAdaptivePipelineNotReadyError(err)
+        ? t('processing.notices.retryingCreateSession')
+        : t('processing.notices.sessionSetupUnconfirmed');
+
+    if (isAdaptiveApiError(err)) {
+      if (isAdaptiveRequestAbortedError(err)) return t('processing.notices.connectionInterrupted');
+      if (isAdaptiveServiceUnavailableError(err))
+        return t('processing.notices.backendSlowRetrying');
+    }
+
+    return t('processing.notices.connectionInterrupted');
+  };
+
+  const clearPollingTimer = () => {
     if (pollingRef.current) {
       clearTimeout(pollingRef.current);
       pollingRef.current = null;
     }
-  }, []);
+    // Unblock the Effect schedule loop if it is mid-delay.
+    if (pollWaitResolveRef.current) {
+      const resolve = pollWaitResolveRef.current;
+      pollWaitResolveRef.current = null;
+      resolve();
+    }
+  };
 
-  const clearNavigationTimeout = useCallback(() => {
+  const clearNavigationTimeout = () => {
     if (navigationTimeoutRef.current) {
       clearTimeout(navigationTimeoutRef.current);
       navigationTimeoutRef.current = null;
     }
-  }, []);
+  };
 
-  const clearPolling = useCallback(() => {
+  const clearPolling = () => {
     clearPollingTimer();
     clearNavigationTimeout();
     pollInFlightRef.current = false;
     pollRetryDelayRef.current = BASE_POLL_DELAY_MS;
     createSessionRetryCountRef.current = 0;
-  }, [clearNavigationTimeout, clearPollingTimer]);
+  };
 
-  const getBackoffDelay = useCallback(
-    (attempt: number) =>
-      Math.min(BASE_POLL_DELAY_MS * 2 ** Math.max(0, attempt - 1), MAX_POLL_DELAY_MS),
-    [],
-  );
-
-  const getJitteredDelay = useCallback((delayMs: number) => {
-    const jitter = 1 + (Math.random() * 2 - 1) * POLL_JITTER_RATIO;
-    return Math.max(500, Math.round(delayMs * jitter));
-  }, []);
-
-  const scheduleNextPoll = useCallback(
-    (jobId: string, delayMs = BASE_POLL_DELAY_MS) => {
-      clearPollingTimer();
-
-      pollingRef.current = setTimeout(() => {
-        pollJobRef.current(jobId);
-      }, getJitteredDelay(delayMs));
-    },
-    [clearPollingTimer, getJitteredDelay],
-  );
-
-  const pushThrottledToast = useCallback((message: string) => {
+  const pushThrottledToast = (message: string) => {
     const now = Date.now();
     const last = lastToastRef.current;
     if (last && last.message === message && now - last.at < TOAST_THROTTLE_WINDOW_MS) return;
     lastToastRef.current = { message, at: now };
     toast.error(message);
-  }, []);
+  };
 
-  const updateStats = useCallback((job: PipelineJobStatus) => {
+  const updateStats = (job: PipelineJobStatus) => {
     if (job.concepts_extracted <= 0) return;
 
     setStats((prev) => {
@@ -307,36 +285,37 @@ export const useProcessingState = (t: TranslateFn) => {
         relations_verified: job.relations_verified,
       };
     });
-  }, []);
+  };
 
-  const updatePipelineNotice = useCallback(
-    (job: PipelineJobStatus) => {
-      const batchCount = job.batch_count;
-      const failedBatchCount = job.failed_batch_count;
-      const partialSuccess = Boolean(job.partial_success);
+  const updatePipelineNotice = (job: PipelineJobStatus) => {
+    const batchCount = job.batch_count;
+    const failedBatchCount = job.failed_batch_count;
+    const partialSuccess = Boolean(job.partial_success);
 
-      if (partialSuccess && failedBatchCount > 0) {
-        setNotice(
-          t('processing.notices.partialSuccess', {
-            failed: failedBatchCount,
-            total: Math.max(batchCount, failedBatchCount),
-          }),
-        );
-        return;
-      }
+    if (partialSuccess && failedBatchCount > 0) {
+      setNotice(
+        t('processing.notices.partialSuccess', {
+          failed: failedBatchCount,
+          total: Math.max(batchCount, failedBatchCount),
+        }),
+      );
+      return;
+    }
 
-      if (job.is_delayed) {
-        setNotice(t('processing.notices.processingTakingLonger'));
-        return;
-      }
+    if (job.is_delayed) {
+      setNotice(t('processing.notices.processingTakingLonger'));
+      return;
+    }
 
-      setNotice(null);
-    },
-    [t],
-  );
+    setNotice(null);
+  };
 
-  const handleCompletedJob = useCallback(
-    async (jobId: string) => {
+  /**
+   * One poll tick. Returns delay (ms) before the next tick, or null to stop.
+   * Scheduling lives in the Effect (React docs timer pattern) — not a ref bridge.
+   */
+  const onPollJob = useEffectEvent(async (jobId: string): Promise<number | null> => {
+    const handleCompletedJob = async (): Promise<'created' | 'failed' | 'retrying'> => {
       creatingSessionRef.current = true;
       setCreatingSession(true);
 
@@ -373,7 +352,6 @@ export const useProcessingState = (t: TranslateFn) => {
             return 'failed';
           }
 
-          scheduleNextPoll(jobId, getBackoffDelay(nextAttempt));
           return 'retrying';
         }
 
@@ -386,94 +364,68 @@ export const useProcessingState = (t: TranslateFn) => {
         clearPolling();
         return 'failed';
       }
-    },
-    [
-      clearPolling,
-      getBackoffDelay,
-      getFriendlyProcessingError,
-      getRetryNotice,
-      pushThrottledToast,
-      router,
-      scheduleNextPoll,
-      t,
-    ],
-  );
-
-  const pollJob = useCallback(
-    async (jobId: string) => {
-      if (pollInFlightRef.current || creatingSessionRef.current) return;
-
-      pollInFlightRef.current = true;
-      const releasePollLock = () => {
-        pollInFlightRef.current = false;
-      };
-
-      try {
-        const job = await getPipelineJobStatus(jobId);
-        pollRetryDelayRef.current = BASE_POLL_DELAY_MS;
-        setCurrentStep(STATUS_TO_STEP[job.status]);
-        setProgress(job.progress * 100);
-        setStatusLabel(job.current_step || getStatusLabel(job.status));
-
-        if (job.partial_graph) setPartialGraph(job.partial_graph);
-
-        updateStats(job);
-        updatePipelineNotice(job);
-
-        if (job.status === 'completed' && !creatingSessionRef.current) {
-          const outcome = await handleCompletedJob(jobId);
-          if (outcome === 'retrying') {
-            releasePollLock();
-            return;
-          }
-        } else if (job.status === 'failed' || job.status === 'cancelled') {
-          clearPolling();
-          setNotice(job.retryable ? t('processing.notices.retryAfterFailure') : null);
-          const terminalError = getTerminalProcessingError(job);
-          setError(terminalError);
-          pushThrottledToast(terminalError.message);
-        } else {
-          createSessionRetryCountRef.current = 0;
-          scheduleNextPoll(jobId, Math.max(1, job.retry_after_seconds ?? 2) * 1000);
-        }
-        releasePollLock();
-      } catch (err) {
-        if (isRetryableAdaptiveError(err)) {
-          setNotice(getRetryNotice(err, 'polling'));
-          pollRetryDelayRef.current = Math.min(pollRetryDelayRef.current * 2, MAX_POLL_DELAY_MS);
-          scheduleNextPoll(jobId, pollRetryDelayRef.current);
-          releasePollLock();
-          return;
-        }
-
-        clearPolling();
-        const friendlyError = getFriendlyProcessingError(err);
-        setError(friendlyError);
-        pushThrottledToast(friendlyError.message);
-        releasePollLock();
-      }
-    },
-    [
-      clearPolling,
-      getFriendlyProcessingError,
-      getRetryNotice,
-      getStatusLabel,
-      getTerminalProcessingError,
-      handleCompletedJob,
-      scheduleNextPoll,
-      pushThrottledToast,
-      t,
-      updatePipelineNotice,
-      updateStats,
-    ],
-  );
-
-  useEffect(() => {
-    pollJobRef.current = (jobId: string) => {
-      void pollJob(jobId);
     };
-  }, [pollJob]);
 
+    if (pollInFlightRef.current || creatingSessionRef.current) return null;
+
+    pollInFlightRef.current = true;
+    const releasePollLock = () => {
+      pollInFlightRef.current = false;
+    };
+
+    try {
+      const job = await getPipelineJobStatus(jobId);
+      pollRetryDelayRef.current = BASE_POLL_DELAY_MS;
+      setCurrentStep(STATUS_TO_STEP[job.status]);
+      setProgress(job.progress * 100);
+      setStatusLabel(job.current_step || getStatusLabel(job.status));
+
+      if (job.partial_graph) setPartialGraph(job.partial_graph);
+
+      updateStats(job);
+      updatePipelineNotice(job);
+
+      if (job.status === 'completed' && !creatingSessionRef.current) {
+        const outcome = await handleCompletedJob();
+        if (outcome === 'retrying') {
+          releasePollLock();
+          return getJitteredDelay(getBackoffDelay(createSessionRetryCountRef.current));
+        }
+        releasePollLock();
+        return null;
+      }
+
+      if (job.status === 'failed' || job.status === 'cancelled') {
+        clearPolling();
+        setNotice(job.retryable ? t('processing.notices.retryAfterFailure') : null);
+        const terminalError = getTerminalProcessingError(job);
+        setError(terminalError);
+        pushThrottledToast(terminalError.message);
+        releasePollLock();
+        return null;
+      }
+
+      createSessionRetryCountRef.current = 0;
+      releasePollLock();
+      return getJitteredDelay(Math.max(1, job.retry_after_seconds ?? 2) * 1000);
+    } catch (err) {
+      if (isRetryableAdaptiveError(err)) {
+        setNotice(getRetryNotice(err, 'polling'));
+        pollRetryDelayRef.current = Math.min(pollRetryDelayRef.current * 2, MAX_POLL_DELAY_MS);
+        releasePollLock();
+        return getJitteredDelay(pollRetryDelayRef.current);
+      }
+
+      clearPolling();
+      const friendlyError = getFriendlyProcessingError(err);
+      setError(friendlyError);
+      pushThrottledToast(friendlyError.message);
+      releasePollLock();
+      return null;
+    }
+  });
+
+  // Reactive Effect owns the schedule loop; onPollJob (Effect Event) reads latest state.
   useEffect(() => {
     const jobId = getSelectedPipelineJobId();
     if (!jobId) {
@@ -489,25 +441,46 @@ export const useProcessingState = (t: TranslateFn) => {
       });
       return () => {
         active = false;
-        clearPolling();
       };
     }
 
+    let cancelled = false;
     creatingSessionRef.current = false;
-    queueMicrotask(() => void pollJob(jobId));
 
-    return () => clearPolling();
-  }, [clearPolling, pollJob, t]);
+    const runLoop = async () => {
+      while (!cancelled) {
+        const nextDelayMs = await onPollJob(jobId);
+        if (cancelled || nextDelayMs == null) break;
+        await new Promise<void>((resolve) => {
+          pollWaitResolveRef.current = resolve;
+          pollingRef.current = setTimeout(() => {
+            pollingRef.current = null;
+            pollWaitResolveRef.current = null;
+            resolve();
+          }, nextDelayMs);
+        });
+      }
+    };
 
-  const handleGoBack = useCallback(() => {
+    void runLoop();
+
+    return () => {
+      cancelled = true;
+      clearPolling();
+    };
+    // onPollJob is useEffectEvent — must not appear in deps (react.dev).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [t]);
+
+  const handleGoBack = () => {
     clearPolling();
     creatingSessionRef.current = false;
     setNotice(null);
     clearSelectedPipelineJob();
     router.push(ADAPTIVE_ROUTES.upload);
-  }, [clearPolling, router]);
+  };
 
-  const handleErrorAction = useCallback(() => {
+  const handleErrorAction = () => {
     if (error?.action === 'dashboard') {
       clearPolling();
       router.push(ADAPTIVE_ROUTES.dashboard);
@@ -515,7 +488,7 @@ export const useProcessingState = (t: TranslateFn) => {
     }
 
     handleGoBack();
-  }, [clearPolling, error?.action, handleGoBack, router]);
+  };
 
   return {
     creatingSession,

@@ -188,6 +188,10 @@ function SelectedChoicesSummary({ exercise, t }: SelectedChoicesSummaryProps) {
 
 function SelectedOptionsList({ exercise, t }: SelectedOptionsListProps) {
   const selectedChoices = getSelectedChoiceKeys(exercise.user_answer);
+  const correctAnswerSet =
+    exercise.exercise_type === 'multi_correct' && Array.isArray(exercise.correct_answer)
+      ? new Set(exercise.correct_answer)
+      : null;
 
   return (
     <div className="space-y-2.5">
@@ -195,7 +199,7 @@ function SelectedOptionsList({ exercise, t }: SelectedOptionsListProps) {
         const isUserAnswer = selectedChoices.has(key);
         const isCorrect =
           exercise.exercise_type === 'multi_correct'
-            ? Array.isArray(exercise.correct_answer) && exercise.correct_answer.includes(key)
+            ? Boolean(correctAnswerSet?.has(key))
             : key === exercise.correct_option;
 
         const optionClass = isCorrect

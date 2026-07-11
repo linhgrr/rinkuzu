@@ -1,7 +1,7 @@
 'use client';
 
 import { copyToClipboard } from '@/lib/clipboard';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import {
   HiCheck,
   HiOutlineArrowPath,
@@ -165,7 +165,11 @@ function stageState(job: DebugPipelineJobStatus, first: PipelineStatus, last?: P
 
 function compactJson(value: unknown): JsonValue {
   if (value === undefined) return null;
-  return JSON.parse(JSON.stringify(value)) as JsonValue;
+  try {
+    return structuredClone(value) as JsonValue;
+  } catch {
+    return null;
+  }
 }
 
 function compactJsonRecord(value: unknown): Record<string, JsonValue> {
@@ -447,77 +451,80 @@ function ArtifactModal({
   artifact: PipelineDebugArtifact;
   onClose: () => void;
 }) {
+  const dialogRef = useRef<HTMLDialogElement>(null);
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    if (!dialog.open) dialog.showModal();
+    return () => {
+      if (dialog.open) dialog.close();
+    };
+  }, []);
+
   const copyContent = () => {
     void copyToClipboard(artifact.content || JSON.stringify(artifact.output));
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      role="dialog"
-      aria-modal="true"
+    <dialog
+      ref={dialogRef}
+      className="z-50 m-auto flex max-h-[88vh] w-[min(100%,72rem)] max-w-6xl flex-col rounded-xl border border-neutral-200 bg-white p-0 shadow-lg backdrop:bg-neutral-950/55"
       aria-label={artifact.label || 'Pipeline artifact'}
+      onClose={onClose}
     >
-      <button
-        type="button"
-        className="absolute inset-0 bg-neutral-950/55"
-        aria-label="Close artifact"
-        onClick={onClose}
-      />
-      <div className="relative flex max-h-[88vh] w-full max-w-6xl flex-col rounded-xl border border-neutral-200 bg-white shadow-lg">
-        <div className="flex items-start justify-between gap-4 border-b border-neutral-200 p-4">
-          <div className="min-w-0">
-            <div className="text-xs font-semibold uppercase tracking-normal text-neutral-500">
-              {artifact.kind}
-            </div>
-            <h2 className="mt-1 truncate text-lg font-semibold text-neutral-950">
-              {artifact.label || artifact.artifact_id}
-            </h2>
-            <p className="mt-1 font-mono text-xs text-neutral-500">{artifact.artifact_id}</p>
+      <div className="flex items-start justify-between gap-4 border-b border-neutral-200 p-4">
+        <div className="min-w-0">
+          <div className="text-xs font-semibold uppercase tracking-normal text-neutral-500">
+            {artifact.kind}
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={copyContent}>
-              Copy content
-            </Button>
-            <Button variant="outline" size="sm" aria-label="Close artifact" onClick={onClose}>
-              <HiOutlineXMark className="size-4" />
-            </Button>
-          </div>
+          <h2 className="mt-1 truncate text-lg font-semibold text-neutral-950">
+            {artifact.label || artifact.artifact_id}
+          </h2>
+          <p className="mt-1 font-mono text-xs text-neutral-500">{artifact.artifact_id}</p>
         </div>
-
-        <div className="grid min-h-0 flex-1 gap-4 overflow-auto p-4 lg:grid-cols-[360px_minmax(0,1fr)]">
-          <div className="space-y-4">
-            <div>
-              <div className="mb-2 text-xs font-semibold uppercase tracking-normal text-neutral-500">
-                Input
-              </div>
-              <JsonBlock value={compactJson(artifact.input)} />
-            </div>
-            <div>
-              <div className="mb-2 text-xs font-semibold uppercase tracking-normal text-neutral-500">
-                Output
-              </div>
-              <JsonBlock value={compactJson(artifact.output)} />
-            </div>
-          </div>
-          <div className="min-w-0">
-            <div className="mb-2 flex items-center justify-between gap-3">
-              <div className="text-xs font-semibold uppercase tracking-normal text-neutral-500">
-                Content
-              </div>
-              {artifact.truncated ? (
-                <span className="rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-xs text-amber-800">
-                  Truncated by backend limit
-                </span>
-              ) : null}
-            </div>
-            <pre className="max-h-[68vh] min-h-[420px] overflow-auto rounded-md border border-neutral-200 bg-neutral-950 p-4 text-xs leading-5 text-neutral-100">
-              {artifact.content || JSON.stringify(artifact.output, null, 2)}
-            </pre>
-          </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={copyContent}>
+            Copy content
+          </Button>
+          <Button variant="outline" size="sm" aria-label="Close artifact" onClick={onClose}>
+            <HiOutlineXMark className="size-4" />
+          </Button>
         </div>
       </div>
-    </div>
+
+      <div className="grid min-h-0 flex-1 gap-4 overflow-auto p-4 lg:grid-cols-[360px_minmax(0,1fr)]">
+        <div className="space-y-4">
+          <div>
+            <div className="mb-2 text-xs font-semibold uppercase tracking-normal text-neutral-500">
+              Input
+            </div>
+            <JsonBlock value={compactJson(artifact.input)} />
+          </div>
+          <div>
+            <div className="mb-2 text-xs font-semibold uppercase tracking-normal text-neutral-500">
+              Output
+            </div>
+            <JsonBlock value={compactJson(artifact.output)} />
+          </div>
+        </div>
+        <div className="min-w-0">
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <div className="text-xs font-semibold uppercase tracking-normal text-neutral-500">
+              Content
+            </div>
+            {artifact.truncated ? (
+              <span className="rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-xs text-amber-800">
+                Truncated by backend limit
+              </span>
+            ) : null}
+          </div>
+          <pre className="max-h-[68vh] min-h-[420px] overflow-auto rounded-md border border-neutral-200 bg-neutral-950 p-4 text-xs leading-5 text-neutral-100">
+            {artifact.content || JSON.stringify(artifact.output, null, 2)}
+          </pre>
+        </div>
+      </div>
+    </dialog>
   );
 }
 
@@ -549,19 +556,19 @@ export default function PipelineDebugPage() {
   const [selectedArtifact, setSelectedArtifact] = useState<PipelineDebugArtifact | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const stages = useMemo(() => (job ? buildDebugStages(job) : []), [job]);
+  const stages = job ? buildDebugStages(job) : [];
   const isTerminal = job ? TERMINAL.has(job.status) : false;
 
-  const loadJobs = useCallback(async () => {
+  const loadJobs = async () => {
     const recentJobs = await listPipelineJobs(20);
     setJobs(recentJobs);
     if (!selectedJobId && recentJobs[0]) {
       setSelectedJobId(recentJobs[0].job_id);
       setJobIdInput(recentJobs[0].job_id);
     }
-  }, [selectedJobId]);
+  };
 
-  const loadJob = useCallback(async (jobId: string) => {
+  const loadJob = async (jobId: string) => {
     if (!jobId.trim()) return;
     setLoading(true);
     setError(null);
@@ -577,49 +584,52 @@ export default function PipelineDebugPage() {
       setError(err instanceof Error ? err.message : 'Không tải được pipeline job');
       setLoading(false);
     }
-  }, []);
+  };
+
+  const onLoadJobs = useEffectEvent(() => {
+    void loadJobs();
+  });
+
+  const onLoadJob = useEffectEvent((jobId: string) => {
+    void loadJob(jobId);
+  });
 
   useEffect(() => {
     let active = true;
     queueMicrotask(() => {
-      if (active) void loadJobs();
+      if (active) onLoadJobs();
     });
     return () => {
       active = false;
     };
-  }, [loadJobs]);
+    // Effect Events must not be listed as dependencies.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- onLoadJobs is useEffectEvent
+  }, []);
 
   useEffect(() => {
     if (!selectedJobId) return;
     let active = true;
     queueMicrotask(() => {
-      if (active) void loadJob(selectedJobId);
+      if (active) onLoadJob(selectedJobId);
     });
     return () => {
       active = false;
     };
-  }, [loadJob, selectedJobId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- onLoadJob is useEffectEvent
+  }, [selectedJobId]);
 
   useEffect(() => {
     if (!autoRefresh || !job || isTerminal) return;
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     timeoutRef.current = setTimeout(
-      () => void loadJob(job.job_id),
+      () => onLoadJob(job.job_id),
       Math.max(1, job.retry_after_seconds ?? 3) * 1000,
     );
     return () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
-  }, [autoRefresh, isTerminal, job, loadJob]);
-
-  useEffect(() => {
-    if (!selectedArtifact) return;
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setSelectedArtifact(null);
-    };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [selectedArtifact]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- onLoadJob is useEffectEvent
+  }, [autoRefresh, isTerminal, job]);
 
   const activeStage = stages.find((stage) => stage.status === 'active');
 

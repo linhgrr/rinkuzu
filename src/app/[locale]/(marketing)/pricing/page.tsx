@@ -170,15 +170,18 @@ export default async function PricingPage({ params }: Props) {
 async function loadPremiumPlans(): Promise<PremiumPlanView[]> {
   try {
     const plans = await createSubscriptionService().getSubscriptionPlans();
-    return plans
-      .filter((plan) => plan.price > 0)
-      .map((plan) => ({
+    const premiumPlans: PremiumPlanView[] = [];
+    for (const plan of plans) {
+      if (plan.price <= 0) continue;
+      premiumPlans.push({
         id: plan.id,
         name: plan.name,
         price: plan.price,
         durationDisplay: DurationUtils.getDurationInfo(plan.duration).displayName,
         features: plan.features,
-      }));
+      });
+    }
+    return premiumPlans;
   } catch {
     // Marketing page must render even if the plans service is unavailable.
     return [];

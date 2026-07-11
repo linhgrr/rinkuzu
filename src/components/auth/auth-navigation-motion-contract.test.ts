@@ -13,7 +13,10 @@ describe('auth navigation and motion contracts', () => {
 
   it('preserves the deployed login/register transition', () => {
     expect(authShellSource).toContain('const duration = reduceMotion ? 0 : 0.35;');
-    expect(authShellSource).toContain('<motion.div\n        layout');
+    // LazyMotion + m.* (domAnimation) — smaller bundle than full motion.*
+    expect(authShellSource).toContain('LazyMotion');
+    expect(authShellSource).toContain('domAnimation');
+    expect(authShellSource).toMatch(/<m\.div[\s\S]*?layout/);
     expect(authShellSource).toContain('initial="initial"');
     expect(authShellSource).toContain('<AnimatePresence mode="wait" initial={false}>');
   });

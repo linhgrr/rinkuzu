@@ -21,16 +21,14 @@ export const submitReviewRequestSchema = z.object({
   questionRef: questionReferenceSchema.optional(),
 });
 
-export const libraryListQuerySchema = z
-  .object({
-    folder: z
-      .union([z.literal(UNFILED_FOLDER_TARGET), objectIdSchema])
-      .optional()
-      .transform((target) => (target === UNFILED_FOLDER_TARGET ? null : target)),
-    page: z.coerce.number().int().min(1).default(1),
-    limit: z.coerce.number().int().min(1).max(100).default(100),
-  })
-  .strict();
+export const libraryListQuerySchema = z.strictObject({
+  folder: z
+    .union([z.literal(UNFILED_FOLDER_TARGET), objectIdSchema])
+    .optional()
+    .transform((target) => (target === UNFILED_FOLDER_TARGET ? null : target)),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(100),
+});
 
 export interface LibraryQuizAuthorDto {
   id: string;

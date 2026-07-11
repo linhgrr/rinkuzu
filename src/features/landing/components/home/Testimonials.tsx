@@ -1,6 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
+import Image from 'next/image';
 import useEmblaCarousel from 'embla-carousel-react';
 import AutoScroll from 'embla-carousel-auto-scroll';
 import { imgBackground, imgFrame33 } from './constants';
@@ -54,33 +55,33 @@ export default function Testimonials() {
   const slideRefs = useRef<(HTMLDivElement | null)[]>([]);
   const rafRef = useRef(0);
 
-  const recalc = useCallback(() => {
-    if (!emblaApi) return;
-    const scrollProgress = emblaApi.scrollProgress();
-    const snaps = emblaApi.scrollSnapList();
-
-    for (let i = 0; i < COUNT; i++) {
-      const el = slideRefs.current[i];
-      if (!el) continue;
-
-      const snap = snaps[i];
-      if (snap === undefined) continue;
-      let diff = snap - scrollProgress;
-      if (diff > 0.5) diff -= 1;
-      if (diff < -0.5) diff += 1;
-      const dist = Math.abs(diff) * COUNT;
-
-      const w = wave(dist);
-      const s = SCALE_MIN + (SCALE_MAX - SCALE_MIN) * w;
-      const o = OPACITY_MIN + (OPACITY_MAX - OPACITY_MIN) * w;
-
-      el.style.transform = `scale(${s})`;
-      el.style.opacity = `${o}`;
-    }
-  }, [emblaApi]);
-
   useEffect(() => {
     if (!emblaApi) return;
+
+    const recalc = () => {
+      const scrollProgress = emblaApi.scrollProgress();
+      const snaps = emblaApi.scrollSnapList();
+
+      for (let i = 0; i < COUNT; i++) {
+        const el = slideRefs.current[i];
+        if (!el) continue;
+
+        const snap = snaps[i];
+        if (snap === undefined) continue;
+        let diff = snap - scrollProgress;
+        if (diff > 0.5) diff -= 1;
+        if (diff < -0.5) diff += 1;
+        const dist = Math.abs(diff) * COUNT;
+
+        const w = wave(dist);
+        const s = SCALE_MIN + (SCALE_MAX - SCALE_MIN) * w;
+        const o = OPACITY_MIN + (OPACITY_MAX - OPACITY_MIN) * w;
+
+        el.style.transform = `scale(${s})`;
+        el.style.opacity = `${o}`;
+      }
+    };
+
     const onScroll = () => {
       cancelAnimationFrame(rafRef.current);
       rafRef.current = requestAnimationFrame(recalc);
@@ -91,7 +92,7 @@ export default function Testimonials() {
     return () => {
       cancelAnimationFrame(rafRef.current);
     };
-  }, [emblaApi, recalc]);
+  }, [emblaApi]);
 
   return (
     <div className="relative w-full flex flex-col gap-12 md:gap-[112px] items-center z-10">
@@ -135,29 +136,36 @@ export default function Testimonials() {
                   />
                   <div className="absolute inset-0 pointer-events-none rounded-[inherit] shadow-[inset_-4px_-4px_13px_0px_rgba(253,118,26,0.6)]" />
 
-                  <div className="flex gap-[16px] items-center relative shrink-0 w-full z-10">
-                    <div className="relative rounded-full shrink-0 size-[60px] overflow-hidden">
-                      <img
+                  <div className="relative z-10 flex w-full shrink-0 items-center gap-[16px]">
+                    <div className="relative size-[60px] shrink-0 overflow-hidden rounded-full">
+                      <Image
                         alt={item.name}
-                        className="absolute inset-0 max-w-none object-cover pointer-events-none rounded-full size-full"
+                        fill
+                        sizes="60px"
+                        className="pointer-events-none rounded-full object-cover"
                         src={imgBackground}
+                        unoptimized
                       />
                     </div>
-                    <div className="flex flex-col gap-[4px] items-start flex-1 min-w-0">
-                      <p className="font-unbounded font-bold text-[22px] text-white leading-[1.4]">
+                    <div className="flex min-w-0 flex-1 flex-col items-start gap-[4px]">
+                      <p className="font-unbounded text-[22px] leading-[1.4] font-bold text-white">
                         {item.name}
                       </p>
-                      <p className="font-unbounded font-light text-[18px] text-[#ededed] leading-[1.5]">
+                      <p className="font-unbounded text-[18px] leading-[1.5] font-light text-[#ededed]">
                         {item.role}
                       </p>
                     </div>
                   </div>
 
-                  <div className="h-[28px] w-[204px] relative shrink-0 z-10">
-                    <img
-                      alt="Rating"
-                      className="absolute block inset-0 max-w-none size-full"
+                  <div className="relative z-10 h-[28px] w-[204px] shrink-0">
+                    <Image
+                      alt=""
+                      fill
+                      sizes="204px"
+                      className="object-contain"
                       src={imgFrame33}
+                      unoptimized
+                      aria-hidden="true"
                     />
                   </div>
 

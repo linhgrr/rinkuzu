@@ -1,11 +1,7 @@
-import mongoose, { Types } from 'mongoose';
+import { Types } from 'mongoose';
 
 export function isValidMongoObjectId(value: string): boolean {
   return Types.ObjectId.isValid(value);
-}
-
-export function toMongoObjectIdOrString(value: string): Types.ObjectId | string {
-  return isValidMongoObjectId(value) ? new mongoose.Types.ObjectId(value) : value;
 }
 
 export function serializeId(value: unknown, fieldName: string): string {

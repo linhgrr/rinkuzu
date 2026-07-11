@@ -1,13 +1,11 @@
 import { z } from 'zod';
 
-export const verifySubscriptionRequestSchema = z
-  .object({
-    orderCode: z.union([
-      z.number().int().positive().safe(),
-      z.string().trim().regex(/^\d+$/, 'Order code must be a positive integer'),
-    ]),
-  })
-  .strict();
+export const verifySubscriptionRequestSchema = z.strictObject({
+  orderCode: z.union([
+    z.number().int().positive().safe(),
+    z.string().trim().regex(/^\d+$/, 'Order code must be a positive integer'),
+  ]),
+});
 
 const payosWebhookScalarSchema = z.union([z.string(), z.number()]);
 
@@ -20,14 +18,12 @@ export const payosWebhookDataSchema = z
   })
   .catchall(z.unknown());
 
-export const payosWebhookRequestSchema = z
-  .object({
-    code: z.string().optional(),
-    success: z.boolean().optional(),
-    data: payosWebhookDataSchema,
-    signature: z.string().min(1),
-  })
-  .strict();
+export const payosWebhookRequestSchema = z.strictObject({
+  code: z.string().optional(),
+  success: z.boolean().optional(),
+  data: payosWebhookDataSchema,
+  signature: z.string().min(1),
+});
 
 export interface SubscriptionPlanDto {
   id: string;

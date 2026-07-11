@@ -9,12 +9,13 @@ import { useFolders } from '../hooks/useFolders';
 import type { FolderSummaryViewModel } from '@/features/folders/types/folder-view-model';
 
 interface FolderSelectorProps {
+  id?: string;
   value: string | null;
   onChange: (folderId: string | null) => void;
   disabled?: boolean;
 }
 
-export function FolderSelector({ value, onChange, disabled = false }: FolderSelectorProps) {
+export function FolderSelector({ id, value, onChange, disabled = false }: FolderSelectorProps) {
   const { folders, isLoading, mutate } = useFolders();
   const [open, setOpen] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
@@ -44,6 +45,7 @@ export function FolderSelector({ value, onChange, disabled = false }: FolderSele
       <div ref={containerRef} className="relative">
         <button
           type="button"
+          id={id}
           disabled={disabled}
           onClick={() => setOpen((current) => !current)}
           aria-expanded={open}

@@ -1,11 +1,9 @@
 import { z } from 'zod';
 
 const nekosApiImageListSchema = z.array(
-  z
-    .object({
-      url: z.string().url(),
-    })
-    .passthrough(),
+  z.looseObject({
+    url: z.url(),
+  }),
 );
 
 export class NekosApiContractError extends Error {

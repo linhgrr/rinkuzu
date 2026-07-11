@@ -11,12 +11,10 @@ export const adminUserListQuerySchema = z.object({
   role: userRoleSchema.optional(),
 });
 
-export const updateAdminUserRoleRequestSchema = z
-  .object({
-    userId: objectIdSchema,
-    role: userRoleSchema,
-  })
-  .strict();
+export const updateAdminUserRoleRequestSchema = z.strictObject({
+  userId: objectIdSchema,
+  role: userRoleSchema,
+});
 
 export const deleteAdminUserQuerySchema = z.object({
   userId: objectIdSchema,

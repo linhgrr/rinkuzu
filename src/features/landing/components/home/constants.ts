@@ -8,7 +8,6 @@ export const imgGroup4 = '/assets/imgGroup4.svg';
 export const imgGroup5 = '/assets/imgGroup5.svg';
 export const imgGroup6 = '/assets/imgGroup6.svg';
 export const imgGroup7 = '/assets/imgGroup7.svg';
-export const imgImage1 = '/assets/imgImage1.svg';
 export const imgVector14 = '/assets/imgVector14.svg';
 export const imgGroup = '/assets/imgGroup.svg';
 export const imgGroup1 = '/assets/imgGroup1.svg';

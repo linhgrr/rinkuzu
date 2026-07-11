@@ -17,12 +17,10 @@ export const adminReportIdParamsSchema = z.object({
   id: objectIdSchema,
 });
 
-export const updateAdminReportRequestSchema = z
-  .object({
-    status: adminReportStatusSchema,
-    adminNotes: z.string().trim().max(1000).optional(),
-  })
-  .strict();
+export const updateAdminReportRequestSchema = z.strictObject({
+  status: adminReportStatusSchema,
+  adminNotes: z.string().trim().max(1000).optional(),
+});
 
 export interface AdminReportDto {
   id: string;

@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useRef, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
@@ -39,7 +39,6 @@ function LoginFormContent({ locale, googleEnabled, onSwitchMode }: LoginFormProp
   const [serverError, setServerError] = useState<ErrorState | null>(null);
   const [retrySeconds, setRetrySeconds] = useState(0);
   const [navigationPending, setNavigationPending] = useState(false);
-  const submissionInFlight = useRef(false);
   const searchParams = useSearchParams();
   const get = searchParams.get.bind(searchParams);
 
@@ -71,8 +70,8 @@ function LoginFormContent({ locale, googleEnabled, onSwitchMode }: LoginFormProp
   }, [retrySeconds]);
 
   const onSubmit = handleSubmit(async (values) => {
-    if (retrySeconds > 0 || submissionInFlight.current) return;
-    submissionInFlight.current = true;
+    // isSubmitting / navigationPending already gate the button; no render-time ref lock.
+    if (retrySeconds > 0 || navigationPending) return;
     setServerError(null);
 
     try {
@@ -84,7 +83,6 @@ function LoginFormContent({ locale, googleEnabled, onSwitchMode }: LoginFormProp
       });
 
       if (result?.error) {
-        submissionInFlight.current = false;
         const code = result.error;
         if (code === 'account_locked') {
           startRetryCountdown(15 * 60);
@@ -104,10 +102,8 @@ function LoginFormContent({ locale, googleEnabled, onSwitchMode }: LoginFormProp
         window.location.replace(result.url);
         return;
       }
-      submissionInFlight.current = false;
       setServerError({ code: 'unknown', message: t('loginFailed') });
     } catch (caught) {
-      submissionInFlight.current = false;
       console.error('Login exception:', caught);
       setServerError({ code: 'network', message: t('loginError') });
     }

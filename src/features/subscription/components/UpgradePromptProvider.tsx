@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useContext, useState, type ReactNode } from 'react';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
@@ -45,35 +45,35 @@ export function UpgradePromptProvider({ children }: { children: ReactNode }) {
   const [modalOpen, setModalOpen] = useState(false);
   const [dontShowAgain, setDontShowAgain] = useState(false);
 
-  const goToBilling = useCallback(() => {
+  const goToBilling = () => {
     setModalOpen(false);
     push('/subscription');
-  }, [push]);
+  };
 
-  const showToast = useCallback(() => {
+  const showToast = () => {
     toast.info(t('limitReachedTitle'), {
       description: t('rateLimitMessage'),
       action: { label: t('upgradeCta'), onClick: goToBilling },
     });
-  }, [t, goToBilling]);
+  };
 
-  const promptUpgrade = useCallback(() => {
+  const promptUpgrade = () => {
     // First hit → blocking modal; afterwards (or once dismissed) → toast only.
     if (isDismissed()) {
       showToast();
       return;
     }
     setModalOpen(true);
-  }, [showToast]);
+  };
 
-  const closeModal = useCallback(() => {
+  const closeModal = () => {
     if (dontShowAgain && typeof window !== 'undefined') {
       window.localStorage.setItem(DISMISS_KEY, '1');
     }
     setModalOpen(false);
-  }, [dontShowAgain]);
+  };
 
-  const value = useMemo(() => ({ promptUpgrade }), [promptUpgrade]);
+  const value = { promptUpgrade };
 
   return (
     <UpgradePromptContext.Provider value={value}>

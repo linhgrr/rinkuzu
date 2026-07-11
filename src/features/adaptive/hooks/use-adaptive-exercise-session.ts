@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import {
   AdaptiveApiError,
   isAdaptiveRequestAbortedError,
@@ -83,7 +83,7 @@ export const useAdaptiveExerciseSession = ({
     };
   }, []);
 
-  const loadData = useCallback(async () => {
+  const loadData = async () => {
     if (!isMountedRef.current || loadingRef.current) return;
 
     loadingRef.current = true;
@@ -146,34 +146,36 @@ export const useAdaptiveExerciseSession = ({
       setLoadingExercise(false);
       releaseLoadingLock();
     }
-  }, [sessionId, t]);
+  };
 
-  const setAndSaveAnswerDraft = useCallback(
-    (draft: ExerciseAnswerDraft) => {
-      setAnswerDraft(draft);
-      if (exercise) {
-        saveSessionExerciseDraft(sessionId, exercise.exercise_id, draft);
-      }
-    },
-    [exercise, sessionId],
-  );
+  const setAndSaveAnswerDraft = (draft: ExerciseAnswerDraft) => {
+    setAnswerDraft(draft);
+    if (exercise) {
+      saveSessionExerciseDraft(sessionId, exercise.exercise_id, draft);
+    }
+  };
+
+  const onLoadData = useEffectEvent(() => {
+    void loadData();
+  });
 
   useEffect(() => {
     let active = true;
     queueMicrotask(() => {
-      if (active) void loadData();
+      if (active) onLoadData();
     });
     return () => {
       active = false;
     };
-  }, [loadData]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- onLoadData is useEffectEvent
+  }, [sessionId]);
 
   useEffect(() => {
     router.prefetch(ADAPTIVE_ROUTES.dashboard);
     router.prefetch(ADAPTIVE_ROUTES.result(sessionId));
   }, [router, sessionId]);
 
-  const handleSubmit = useCallback(async () => {
+  const handleSubmit = async () => {
     if (!exercise || !answerDraft || !hasCompleteExerciseAnswer(exercise, answerDraft)) return;
 
     setSubmitting(true);
@@ -214,107 +216,83 @@ export const useAdaptiveExerciseSession = ({
       setError(resolveExerciseFeedback(err, t, 'submit'));
       setSubmitting(false);
     }
-  }, [answerDraft, exercise, router, sessionId, t]);
+  };
 
-  const selectChoice = useCallback(
-    (choice: string) => {
-      setAndSaveAnswerDraft({ type: 'mcq', selection: choice });
-    },
-    [setAndSaveAnswerDraft],
-  );
+  const selectChoice = (choice: string) => {
+    setAndSaveAnswerDraft({ type: 'mcq', selection: choice });
+  };
 
-  const toggleChoice = useCallback(
-    (choice: string) => {
-      setAnswerDraft((current) => {
-        if (current?.type !== 'multi_correct') {
-          throw new TypeError('Cannot toggle a choice outside a multi-correct exercise');
-        }
-        const existing = new Set(current.selections);
-        if (existing.has(choice)) existing.delete(choice);
-        else existing.add(choice);
-
-        const nextDraft = { type: current.type, selections: Array.from(existing).sort() };
-        if (exercise) {
-          saveSessionExerciseDraft(sessionId, exercise.exercise_id, nextDraft);
-        }
-        return nextDraft;
-      });
-    },
-    [exercise, sessionId],
-  );
-
-  const setBooleanAnswer = useCallback(
-    (value: boolean) => {
-      setAndSaveAnswerDraft({ type: 'true_false', value });
-    },
-    [setAndSaveAnswerDraft],
-  );
-
-  const setBlankAnswer = useCallback(
-    (value: string) => {
-      setAndSaveAnswerDraft({ type: 'fill_blank', values: [value] });
-    },
-    [setAndSaveAnswerDraft],
-  );
-
-  const moveOrderingItem = useCallback(
-    (fromIndex: number, toIndex: number) => {
-      setAnswerDraft((current) => {
-        if (current?.type !== 'ordering') {
-          throw new TypeError('Cannot move an item outside an ordering exercise');
-        }
-        const ordering = [...current.items];
-        if (
-          fromIndex < 0 ||
-          toIndex < 0 ||
-          fromIndex >= ordering.length ||
-          toIndex >= ordering.length
-        )
-          return current;
-
-        const [moved] = ordering.splice(fromIndex, 1);
-        if (moved === undefined) {
-          throw new TypeError(`No ordering item exists at index ${fromIndex}`);
-        }
-        ordering.splice(toIndex, 0, moved);
-        const nextDraft = { type: current.type, items: ordering };
-        if (exercise) {
-          saveSessionExerciseDraft(sessionId, exercise.exercise_id, nextDraft);
-        }
-        return nextDraft;
-      });
-    },
-    [exercise, sessionId],
-  );
-
-  const setTextAnswer = useCallback(
-    (value: string) => {
-      setAndSaveAnswerDraft({ type: 'short_answer', text: value });
-    },
-    [setAndSaveAnswerDraft],
-  );
-
-  const setMatchingOrder = useCallback(
-    (leftItems: string[], rightItems: string[]) => {
-      if (leftItems.length !== rightItems.length) {
-        throw new TypeError(
-          `Cannot pair ${leftItems.length} left item(s) with ${rightItems.length} right item(s)`,
-        );
+  const toggleChoice = (choice: string) => {
+    setAnswerDraft((current) => {
+      if (current?.type !== 'multi_correct') {
+        throw new TypeError('Cannot toggle a choice outside a multi-correct exercise');
       }
-      setAndSaveAnswerDraft({
-        type: 'matching',
-        matches: Object.fromEntries(leftItems.map((left, index) => [left, rightItems[index]])),
-      });
-    },
-    [setAndSaveAnswerDraft],
-  );
+      const existing = new Set(current.selections);
+      if (existing.has(choice)) existing.delete(choice);
+      else existing.add(choice);
 
-  const setOrderingAnswer = useCallback(
-    (ordering: string[]) => {
-      setAndSaveAnswerDraft({ type: 'ordering', items: ordering });
-    },
-    [setAndSaveAnswerDraft],
-  );
+      const nextDraft = { type: current.type, selections: Array.from(existing).sort() };
+      if (exercise) {
+        saveSessionExerciseDraft(sessionId, exercise.exercise_id, nextDraft);
+      }
+      return nextDraft;
+    });
+  };
+
+  const setBooleanAnswer = (value: boolean) => {
+    setAndSaveAnswerDraft({ type: 'true_false', value });
+  };
+
+  const setBlankAnswer = (value: string) => {
+    setAndSaveAnswerDraft({ type: 'fill_blank', values: [value] });
+  };
+
+  const moveOrderingItem = (fromIndex: number, toIndex: number) => {
+    setAnswerDraft((current) => {
+      if (current?.type !== 'ordering') {
+        throw new TypeError('Cannot move an item outside an ordering exercise');
+      }
+      const ordering = [...current.items];
+      if (
+        fromIndex < 0 ||
+        toIndex < 0 ||
+        fromIndex >= ordering.length ||
+        toIndex >= ordering.length
+      )
+        return current;
+
+      const [moved] = ordering.splice(fromIndex, 1);
+      if (moved === undefined) {
+        throw new TypeError(`No ordering item exists at index ${fromIndex}`);
+      }
+      ordering.splice(toIndex, 0, moved);
+      const nextDraft = { type: current.type, items: ordering };
+      if (exercise) {
+        saveSessionExerciseDraft(sessionId, exercise.exercise_id, nextDraft);
+      }
+      return nextDraft;
+    });
+  };
+
+  const setTextAnswer = (value: string) => {
+    setAndSaveAnswerDraft({ type: 'short_answer', text: value });
+  };
+
+  const setMatchingOrder = (leftItems: string[], rightItems: string[]) => {
+    if (leftItems.length !== rightItems.length) {
+      throw new TypeError(
+        `Cannot pair ${leftItems.length} left item(s) with ${rightItems.length} right item(s)`,
+      );
+    }
+    setAndSaveAnswerDraft({
+      type: 'matching',
+      matches: Object.fromEntries(leftItems.map((left, index) => [left, rightItems[index]])),
+    });
+  };
+
+  const setOrderingAnswer = (ordering: string[]) => {
+    setAndSaveAnswerDraft({ type: 'ordering', items: ordering });
+  };
 
   return {
     concept,

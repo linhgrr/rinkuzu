@@ -186,18 +186,25 @@ export function DraftEditPage({ initialDraft, pdfUrl }: DraftEditPageProps) {
 
             <div className="mt-6">
               <DraftEditActions
-                hasPdf={Boolean(pdfUrl)}
-                showPdfViewer={state.showPDFViewer}
+                pdfToggle={
+                  pdfUrl
+                    ? {
+                        visible: state.showPDFViewer,
+                        onToggle: () => dispatch({ type: 'togglePdfViewer' }),
+                        labels: {
+                          hide: t('hidePDFReference'),
+                          show: t('showPDFReference'),
+                        },
+                      }
+                    : undefined
+                }
                 isSubmitting={state.isSubmitting}
                 canSubmit={state.questions.length > 0}
-                onTogglePdf={() => dispatch({ type: 'togglePdfViewer' })}
                 onCancel={() => push(ROUTES.DASHBOARD)}
                 onSubmit={() => {
                   void handlePublish();
                 }}
                 labels={{
-                  hidePdf: t('hidePDFReference'),
-                  showPdf: t('showPDFReference'),
                   cancel: tCommon('cancel'),
                   submit: t('publishQuiz'),
                   submitting: t('publishingQuiz'),

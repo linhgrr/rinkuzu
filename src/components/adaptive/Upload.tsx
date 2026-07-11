@@ -1,12 +1,12 @@
 'use client';
 
+import { useRouter } from '@/i18n/navigation';
 import React, { useState } from 'react';
 import { useDropzone, type FileRejection } from 'react-dropzone';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { HiOutlineCloudUpload, HiOutlineDocumentText, HiOutlineArrowLeft } from 'react-icons/hi';
-import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import {
   AdaptiveApiError,

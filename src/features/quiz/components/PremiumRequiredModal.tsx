@@ -1,8 +1,8 @@
 'use client';
 
+import { useRouter } from '@/i18n/navigation';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
-import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 
 interface PremiumRequiredModalProps {

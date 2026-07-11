@@ -18,7 +18,6 @@ import { HiOutlineArrowRight, HiOutlineInbox } from 'react-icons/hi';
 interface HomeDashboardProps {
   viewModel: {
     userName: string;
-    locale: string;
     progress: DashboardProgressViewModel;
     continueLearning: {
       items: DashboardLearningCardViewModel[];
@@ -88,7 +87,6 @@ interface ReviewTodayProps {
 
 interface QuizSectionProps {
   quizzes: QuizListItemViewModel[];
-  locale: string;
   title: string;
   subtitle: string;
   viewAllHref: string;
@@ -457,7 +455,6 @@ function ReviewToday({ dueCount, copy }: ReviewTodayProps) {
 
 function QuizSection({
   quizzes,
-  locale,
   title,
   subtitle,
   viewAllHref,
@@ -475,7 +472,7 @@ function QuizSection({
       {quizzes.length > 0 ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 min-[1180px]:grid-cols-4">
           {quizzes.map((quiz) => (
-            <QuizCard key={quiz.id} quiz={quiz} quizId={quiz.id} locale={locale} />
+            <QuizCard key={quiz.id} quiz={quiz} quizId={quiz.id} />
           ))}
         </div>
       ) : (
@@ -521,7 +518,6 @@ export function HomeDashboard({ viewModel, copy }: HomeDashboardProps) {
             <ReviewToday dueCount={viewModel.progress.dueCount} copy={copy.reviewToday} />
             <QuizSection
               quizzes={viewModel.recentOwnedQuizzes}
-              locale={viewModel.locale}
               title={copy.recentOwnedQuizzes.title}
               subtitle={copy.recentOwnedQuizzes.subtitle}
               viewAllHref="/my-quizzes"
@@ -530,7 +526,6 @@ export function HomeDashboard({ viewModel, copy }: HomeDashboardProps) {
             />
             <QuizSection
               quizzes={viewModel.recentPublicQuizzes}
-              locale={viewModel.locale}
               title={copy.recentPublicQuizzes.title}
               subtitle={copy.recentPublicQuizzes.subtitle}
               viewAllHref={ROUTES.EXPLORE}

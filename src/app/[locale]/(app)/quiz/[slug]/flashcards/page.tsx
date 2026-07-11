@@ -1,9 +1,9 @@
 'use client';
 
+import { Link } from '@/i18n/navigation';
 import Image from 'next/image';
 import { useEffect, useReducer } from 'react';
 import { useTranslations } from 'next-intl';
-import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { FlashcardPageSkeleton } from '@/components/ui/PageLoadingSkeletons';

@@ -4,7 +4,7 @@ import { Suspense, useEffect, useRef, useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
-import Link from 'next/link';
+import { Link } from '@/i18n/navigation';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 
@@ -20,7 +20,7 @@ import {
 } from 'react-icons/hi';
 import { GoogleAuthButton } from '@/components/auth/GoogleAuthButton';
 import { loginSchema, type LoginInput } from '@/lib/validation/auth';
-import { resolveSafeAuthRedirect } from '@/lib/routing/auth-redirect';
+import { resolveAuthCallback } from '@/lib/routing/auth-callback';
 
 interface LoginFormProps {
   locale: string;
@@ -54,7 +54,8 @@ function LoginFormContent({ locale, googleEnabled, onSwitchMode }: LoginFormProp
     formState: { errors, isSubmitting },
   } = form;
 
-  const callbackUrl = resolveSafeAuthRedirect(get('callbackUrl'), locale);
+  // Browser URL for NextAuth full-document redirects (locale-prefixed with always).
+  const { browserUrl: callbackUrl } = resolveAuthCallback(get('callbackUrl'), locale);
 
   const startRetryCountdown = (seconds: number) => {
     setRetrySeconds(seconds);
@@ -97,6 +98,7 @@ function LoginFormContent({ locale, googleEnabled, onSwitchMode }: LoginFormProp
         }
         return;
       }
+      // Full page replace — deterministic, avoids SPA race with next-intl router.
       if (result?.ok && result.url) {
         setNavigationPending(true);
         window.location.replace(result.url);

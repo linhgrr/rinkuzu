@@ -1,6 +1,7 @@
 'use client';
 
 import { toast } from 'sonner';
+import { copyToClipboard } from '@/lib/clipboard';
 import { Button } from '@/components/ui/Button';
 import { HiOutlineShare } from 'react-icons/hi';
 
@@ -29,8 +30,8 @@ export function DashboardShareButton({
       }
     }
 
-    await navigator.clipboard.writeText(shareText);
-    toast.success(successMessage);
+    const ok = await copyToClipboard(shareText);
+    if (ok) toast.success(successMessage);
   };
 
   return (

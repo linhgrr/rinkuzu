@@ -1,8 +1,7 @@
 'use client';
 
-import Link from 'next/link';
+import { Link } from '@/i18n/navigation';
 import { useEffect, useReducer } from 'react';
-import { useLocale } from 'next-intl';
 import { toast } from 'sonner';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -70,7 +69,6 @@ function reducer(state: State, action: Action): State {
 }
 
 export function FolderDetail({ folderId }: { folderId: string }) {
-  const locale = useLocale();
   const { folders, isLoading: foldersLoading } = useFolders();
   const [state, dispatch] = useReducer(reducer, initialState);
   const isUnfiled = folderId === UNFILED_FOLDER_TARGET;
@@ -165,7 +163,6 @@ export function FolderDetail({ folderId }: { folderId: string }) {
               key={quiz.id}
               quiz={quiz}
               quizId={quiz.id}
-              locale={locale}
               onDelete={
                 quiz.ownedByMe ? () => dispatch({ type: 'delete:prompt', quiz }) : undefined
               }

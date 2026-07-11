@@ -1,5 +1,6 @@
+import { Link } from '@/i18n/navigation';
+import { ROUTES } from '@/shared/constants/routes';
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 import { buildLocalizedMetadata } from '@/lib/seo';
 import { JsonLd } from '@/components/seo/JsonLd';
@@ -66,7 +67,7 @@ export default async function FAQPage({ params }: Props) {
   const faqSupportLine = isVi
     ? 'Nếu chưa thấy câu trả lời phù hợp, hãy email support@rinkuzu.app. Đội ngũ của chúng tôi sẽ phản hồi trong vòng 24-48 giờ.'
     : "If you can't find what you're looking for, email support@rinkuzu.app and our team will respond within 24-48 hours.";
-  const registerHref = isVi ? '/register' : `/${locale}/register`;
+  const registerHref = ROUTES.REGISTER;
 
   const plainFaqs = faqs.map((f) => ({
     q: f.q,

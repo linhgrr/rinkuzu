@@ -1,4 +1,3 @@
-// /src/hooks/usePdfProcessor.ts
 //
 // The FastAPI service owns quiz drafts and runs OCR + a single LLM extraction
 // call in a background task. This hook polls /api/quiz-drafts/{id} (a thin Next
@@ -9,17 +8,20 @@
 // FloatingDraftProgress) keep working without changes.
 
 import { useCallback, useEffect, useRef } from 'react';
+import { useLocale } from 'next-intl';
 import { toast } from 'sonner';
 import { extractUnknownErrorMessage } from '@/lib/api/error';
 import { getQuizDraft } from '@/lib/quiz/draftApi';
 import type { QuizDraft } from '@/features/quiz/types/quiz-draft';
 import { mapDraftStatus } from '@/lib/quiz/draftStatus';
+import { toBrowserPath } from '@/lib/routing/pathname';
 import { useDraftStore } from '@/store/useDraftStore';
 
 const POLL_INTERVAL_MS = 3000;
 const MAX_POLLS = 200; // ~10 minutes hard cap
 
 export function usePdfProcessor() {
+  const locale = useLocale();
   const { updateDraftProgress, completeDraft, setDraftError } = useDraftStore();
   const processingRef = useRef<Record<string, boolean>>({});
   const abortControllersRef = useRef<Record<string, AbortController>>({});
@@ -111,7 +113,9 @@ export function usePdfProcessor() {
               description: `${totalQuestions} câu hỏi được trích xuất`,
               action: {
                 label: 'Xem',
-                onClick: () => (window.location.href = `/draft/${draftId}/edit`),
+                onClick: () => {
+                  window.location.href = toBrowserPath(`/draft/${draftId}/edit`, locale);
+                },
               },
             });
             cleanupProcessing();
@@ -158,7 +162,7 @@ export function usePdfProcessor() {
         throw error;
       }
     },
-    [completeDraft, pollOnce, setDraftError, updateDraftProgress],
+    [completeDraft, locale, pollOnce, setDraftError, updateDraftProgress],
   );
 
   const stopProcessing = useCallback((draftId: string) => {

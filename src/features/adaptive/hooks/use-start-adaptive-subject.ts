@@ -1,7 +1,7 @@
 'use client';
 
+import { useRouter } from '@/i18n/navigation';
 import { useCallback, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { createSessionFromPipeline } from '@/features/adaptive/lib/adaptive-api-methods';
 import { ADAPTIVE_ROUTES } from '@/features/adaptive/lib/routes';

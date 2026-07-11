@@ -1,10 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from '@/i18n/navigation';
 import { matchesMedia } from '@/hooks/useMediaQuery';
-
-const MOBILE_BREAKPOINT_PX = 768;
+import { MEDIA_MAX_MD } from '@/shared/constants/breakpoints';
 
 type Variant = 'desktop' | 'mobile';
 
@@ -16,6 +15,7 @@ type Variant = 'desktop' | 'mobile';
  */
 export function useCreateResponsiveRedirect(currentVariant: Variant): boolean {
   const { replace } = useRouter();
+  const pathname = usePathname();
   const [isRedirecting, setIsRedirecting] = useState(true);
 
   useEffect(() => {
@@ -24,7 +24,7 @@ export function useCreateResponsiveRedirect(currentVariant: Variant): boolean {
       return;
     }
 
-    const isMobileViewport = matchesMedia(`(max-width: ${MOBILE_BREAKPOINT_PX - 1}px)`);
+    const isMobileViewport = matchesMedia(MEDIA_MAX_MD);
     const target: Variant = isMobileViewport ? 'mobile' : 'desktop';
 
     if (target === currentVariant) {
@@ -32,16 +32,16 @@ export function useCreateResponsiveRedirect(currentVariant: Variant): boolean {
       return;
     }
 
-    const path = window.location.pathname;
+    // usePathname is locale-stripped; next-intl router re-applies the prefix.
     const nextPath =
       target === 'mobile'
-        ? path.endsWith('/create')
-          ? `${path}/mobile`
-          : path.replace(/\/create$/, '/create/mobile')
-        : path.replace(/\/create\/mobile$/, '/create');
+        ? pathname.endsWith('/create')
+          ? `${pathname}/mobile`
+          : pathname.replace(/\/create$/, '/create/mobile')
+        : pathname.replace(/\/create\/mobile$/, '/create');
 
     replace(nextPath + window.location.search);
-  }, [currentVariant, replace]);
+  }, [currentVariant, pathname, replace]);
 
   return isRedirecting;
 }

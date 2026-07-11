@@ -1,7 +1,7 @@
 'use client';
 
+import { Link } from '@/i18n/navigation';
 import { useEffect, useReducer } from 'react';
-import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';

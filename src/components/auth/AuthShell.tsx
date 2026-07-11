@@ -1,14 +1,13 @@
 'use client';
 
+import { Link, usePathname, useRouter } from '@/i18n/navigation';
 import Image from 'next/image';
-import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 
 import { LoginForm } from '@/components/auth/LoginForm';
 import { RegisterForm } from '@/components/auth/RegisterForm';
-import { defaultLocale } from '@/i18n/config';
+import { ROUTES } from '@/shared/constants/routes';
 
 type AuthMode = 'login' | 'signup';
 
@@ -33,9 +32,8 @@ export function AuthShell({ locale, googleEnabled }: AuthShellProps) {
   const mode: AuthMode = pathname.includes('/register') ? 'signup' : 'login';
 
   const switchTo = (next: AuthMode) => {
-    const segment = next === 'login' ? '/login' : '/register';
-    const url = locale === defaultLocale ? segment : `/${locale}${segment}`;
-    router.push(url);
+    // next-intl router applies the active locale — do not prefix manually.
+    router.push(next === 'login' ? ROUTES.LOGIN : ROUTES.REGISTER);
   };
 
   const isLogin = mode === 'login';

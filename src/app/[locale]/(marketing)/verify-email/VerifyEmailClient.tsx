@@ -1,9 +1,9 @@
 'use client';
 
-import { Suspense, useEffect, useReducer, useRef } from 'react';
-import Link from 'next/link';
-import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
+import { Link } from '@/i18n/navigation';
+import { Suspense, useEffect, useReducer, useRef } from 'react';
+import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';

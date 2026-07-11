@@ -1,8 +1,9 @@
 'use client';
 
-import Link from 'next/link';
+import { Link, useRouter } from '@/i18n/navigation';
+import { matchesMedia } from '@/hooks/useMediaQuery';
+import { MEDIA_MAX_MD } from '@/shared/constants/breakpoints';
 import { useEffect, useReducer } from 'react';
-import { useRouter } from 'next/navigation';
 import { useDropzone } from 'react-dropzone';
 import { useTranslations } from 'next-intl';
 import { useSession } from 'next-auth/react';
@@ -534,7 +535,7 @@ export default function CreateQuizPage() {
     session?.user?.role === 'admin' || subscriptionStatus?.isPremium === true;
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+    if (matchesMedia(MEDIA_MAX_MD)) {
       replace('/create/mobile');
     }
   }, [replace]);

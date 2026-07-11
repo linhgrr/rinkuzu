@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { DashboardDeleteModal } from './sections/DashboardDeleteModal';
 import { HeroSection } from './sections/HeroSection';

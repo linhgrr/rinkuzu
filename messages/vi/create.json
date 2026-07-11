@@ -74,5 +74,15 @@
   "processingStarted": "Bắt đầu xử lý",
   "failedToStartProcessing": "Không thể bắt đầu xử lý",
   "confirmRemoveQuestionTitle": "Xóa câu hỏi?",
-  "confirmRemoveQuestionMessage": "Bạn có chắc muốn xóa câu hỏi số {number} không?"
+  "confirmRemoveQuestionMessage": "Bạn có chắc muốn xóa câu hỏi số {number} không?",
+  "editDraftTitle": "Chỉnh sửa quiz nháp",
+  "questionsExtracted": "{count} câu hỏi được trích xuất",
+  "desktopOnlyTitle": "Mở trên máy tính",
+  "desktopOnlyDescription": "Để chỉnh sửa chi tiết câu hỏi, vui lòng sử dụng máy tính.",
+  "backHome": "Về trang chủ",
+  "publishQuiz": "Xuất bản quiz",
+  "publishingQuiz": "Đang xuất bản…",
+  "publishSuccess": "Quiz đã được xuất bản!",
+  "publishFailed": "Không thể xuất bản quiz",
+  "folderLabel": "Thư mục"
 }

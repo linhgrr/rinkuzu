@@ -1,8 +1,9 @@
 'use client';
 
+import { useSearchParams } from 'next/navigation';
+import { useRouter } from '@/i18n/navigation';
 import { Suspense } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { useRouter, useSearchParams } from 'next/navigation';
 import useSWR from 'swr';
 import { HiOutlineSearch } from 'react-icons/hi';
 import { Button } from '@/components/ui/Button';
@@ -83,11 +84,11 @@ function SectionError({ onRetry }: { onRetry: () => void }) {
   );
 }
 
-function QuizResults({ quizzes, locale }: { quizzes: QuizListItemViewModel[]; locale: string }) {
+function QuizResults({ quizzes }: { quizzes: QuizListItemViewModel[] }) {
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
       {quizzes.map((quiz) => (
-        <QuizCard key={quiz.id} quiz={quiz} quizId={quiz.id} locale={locale} />
+        <QuizCard key={quiz.id} quiz={quiz} quizId={quiz.id} />
       ))}
     </div>
   );
@@ -268,7 +269,7 @@ function ExploreContent() {
                 ) : ownedError ? (
                   <SectionError onRetry={() => void retryOwned()} />
                 ) : ownedQuizzes.length > 0 ? (
-                  <QuizResults quizzes={ownedQuizzes} locale={locale} />
+                  <QuizResults quizzes={ownedQuizzes} />
                 ) : (
                   <p className="font-home text-sm text-ink-muted">{t('sections.mine.empty')}</p>
                 )}
@@ -308,7 +309,7 @@ function ExploreContent() {
                 ) : publicError ? (
                   <SectionError onRetry={() => void retryPublic()} />
                 ) : publicQuizzes.length > 0 ? (
-                  <QuizResults quizzes={publicQuizzes} locale={locale} />
+                  <QuizResults quizzes={publicQuizzes} />
                 ) : (
                   <p className="font-home text-sm text-ink-muted">{t('sections.public.empty')}</p>
                 )}
@@ -326,7 +327,7 @@ function ExploreContent() {
                 ) : ownedError ? (
                   <SectionError onRetry={() => void retryOwned()} />
                 ) : ownedQuizzes.length > 0 ? (
-                  <QuizResults quizzes={ownedQuizzes} locale={locale} />
+                  <QuizResults quizzes={ownedQuizzes} />
                 ) : (
                   <EmptyState hasQuery={Boolean(query)} />
                 )
@@ -336,7 +337,7 @@ function ExploreContent() {
                 ) : publicError ? (
                   <SectionError onRetry={() => void retryPublic()} />
                 ) : publicQuizzes.length > 0 ? (
-                  <QuizResults quizzes={publicQuizzes} locale={locale} />
+                  <QuizResults quizzes={publicQuizzes} />
                 ) : (
                   <EmptyState hasQuery={Boolean(query)} />
                 )

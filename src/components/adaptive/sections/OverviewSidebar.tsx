@@ -1,7 +1,7 @@
 'use client';
 
+import { useRouter } from '@/i18n/navigation';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
 import { SurfaceCard } from '@/components/ui/SurfaceCard';
 import { ADAPTIVE_ROUTES } from '@/features/adaptive/lib/routes';
 import type { TranslateFn } from '@/features/adaptive/types/learning';

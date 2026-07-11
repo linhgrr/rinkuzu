@@ -1,10 +1,9 @@
-// /src/components/FloatingDraftProgress.tsx
 'use client';
 
+import { Link } from '@/i18n/navigation';
 import { useState, useSyncExternalStore } from 'react';
 import { useDraftStore, DraftProgress } from '@/store/useDraftStore';
 import { usePdfProcessor } from '@/hooks/usePdfProcessor';
-import Link from 'next/link';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';

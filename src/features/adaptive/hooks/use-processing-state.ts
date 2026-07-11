@@ -1,7 +1,7 @@
 'use client';
 
+import { useRouter } from '@/i18n/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import {
   AdaptiveApiError,
@@ -17,6 +17,7 @@ import {
 } from '@/features/adaptive/lib/adaptive-api-methods';
 import { ADAPTIVE_ROUTES } from '@/features/adaptive/lib/routes';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
+import { MEDIA_MIN_LG } from '@/shared/constants/breakpoints';
 import {
   clearSelectedPipelineJob,
   getSelectedPipelineFilename,
@@ -82,7 +83,7 @@ export const useProcessingState = (t: TranslateFn) => {
   const filename = useMemo(() => getSelectedPipelineFilename(t('processing.defaultFilename')), [t]);
   // Reactive viewport flag — the shared hook seeds the initial value on mount
   // (the previous inline effect only updated on change, missing first paint).
-  const showGraphPanel = useMediaQuery('(min-width: 1024px)');
+  const showGraphPanel = useMediaQuery(MEDIA_MIN_LG);
 
   const pollingRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const navigationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);

@@ -1,19 +1,19 @@
-// /src/app/[locale]/(app)/draft/[id]/edit/page.tsx
-import { notFound, redirect } from 'next/navigation';
+import { notFound } from 'next/navigation';
+import { redirect } from '@/i18n/navigation';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import DraftEditClient from './DraftEditClient';
+import { DraftEditPage } from '@/features/quiz/components/draft/DraftEditPage';
 import { getSignedPDFUrl } from '@/lib/s3';
 import { fetchQuizDraftServer } from '@/lib/quiz/draftServer';
-import { AsyncRouteParams } from '@/types/next-route';
+import type { AsyncRouteParams } from '@/types/next-route';
 
 type Props = AsyncRouteParams<{ id: string; locale: string }>;
 
-export default async function DraftEditPage({ params }: Props) {
+export default async function DraftEditRoutePage({ params }: Props) {
   const [{ id, locale }, session] = await Promise.all([params, getServerSession(authOptions)]);
-  const userId = (session?.user as { id?: string } | undefined)?.id;
+  const userId = session?.user?.id;
   if (!userId) {
-    redirect(`/${locale}/login`);
+    return redirect({ href: '/login', locale });
   }
 
   const draft = await fetchQuizDraftServer(id, userId);
@@ -21,12 +21,12 @@ export default async function DraftEditPage({ params }: Props) {
     notFound();
   }
 
-  const pdfUrl = await (draft.pdf?.s3Key
-    ? getSignedPDFUrl(draft.pdf.s3Key).catch((error) => {
+  const pdfUrl = draft.pdf?.s3Key
+    ? await getSignedPDFUrl(draft.pdf.s3Key).catch((error) => {
         console.error('Failed to refresh signed URL:', error);
         return undefined;
       })
-    : Promise.resolve(undefined));
+    : undefined;
 
-  return <DraftEditClient initialDraft={draft} locale={locale} pdfUrl={pdfUrl} />;
+  return <DraftEditPage initialDraft={draft} pdfUrl={pdfUrl} />;
 }

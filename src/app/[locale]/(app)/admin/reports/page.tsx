@@ -1,9 +1,9 @@
 'use client';
 
+import { Link } from '@/i18n/navigation';
 import { useEffect, useReducer } from 'react';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
-import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Card, Badge } from '@/components/ui/Card';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';

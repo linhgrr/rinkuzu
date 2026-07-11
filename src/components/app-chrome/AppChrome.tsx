@@ -6,9 +6,9 @@ import { Icon } from '@iconify/react';
 import { useSession, signOut } from 'next-auth/react';
 import { useTranslations, useLocale } from 'next-intl';
 import { Link, usePathname, useRouter } from '@/i18n/navigation';
+import { toBrowserPath } from '@/lib/routing/pathname';
 import { ROUTES } from '@/shared/constants/routes';
 import { useDropdownOutside } from '@/components/ui/hooks/use-dropdown-outside';
-import { defaultLocale } from '@/i18n/config';
 
 const ICON = {
   home: 'material-symbols:home-outline-rounded',
@@ -452,6 +452,7 @@ function LanguageDropdown({ currentLocale, onSelect }: LanguageDropdownProps) {
 }
 
 function UserMenuDropdown({ avatar, avatarInitial, displayName, email, t }: UserMenuDropdownProps) {
+  const locale = useLocale();
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   useDropdownOutside(containerRef, open, () => setOpen(false));
@@ -512,7 +513,7 @@ function UserMenuDropdown({ avatar, avatarInitial, displayName, email, t }: User
             type="button"
             onClick={() => {
               setOpen(false);
-              void signOut({ callbackUrl: '/' });
+              void signOut({ callbackUrl: toBrowserPath(ROUTES.HOME, locale) });
             }}
             className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left font-home text-base leading-[1.4] text-ink transition-colors hover:bg-accent-soft/60"
           >
@@ -667,7 +668,7 @@ function AppTopbar({
         <div className="mx-auto flex w-full max-w-[1404px] items-center justify-between gap-6 px-8">
           <form
             className="w-full max-w-[486px]"
-            action={currentLocale === defaultLocale ? '/explore' : `/${currentLocale}/explore`}
+            action={toBrowserPath(ROUTES.EXPLORE, currentLocale)}
             method="get"
             role="search"
           >

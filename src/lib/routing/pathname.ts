@@ -39,6 +39,45 @@ export function stripLocaleFromPath(pathname: string): string {
   return normalized;
 }
 
+/**
+ * Normalize any internal/app href to the form next-intl expects:
+ * locale-unprefixed pathname (+ optional query/hash).
+ *
+ * Use before `router.push` / `replace` / `Link` when the value may already
+ * include `/en` or `/vi` (legacy callbackUrls, browser location, etc.).
+ */
+export function toIntlHref(href: string): string {
+  if (!href.startsWith('/') || href.startsWith('//')) {
+    return href;
+  }
+
+  const queryIndex = href.indexOf('?');
+  const hashIndex = href.indexOf('#');
+  let pathEnd = href.length;
+  if (queryIndex >= 0) pathEnd = Math.min(pathEnd, queryIndex);
+  if (hashIndex >= 0) pathEnd = Math.min(pathEnd, hashIndex);
+
+  const path = href.slice(0, pathEnd);
+  const suffix = href.slice(pathEnd);
+  return `${stripLocaleFromPath(path)}${suffix}`;
+}
+
+/**
+ * Final browser pathname for a given locale (`localePrefix: 'always'`).
+ * Prefer this over string-concatenating `/${locale}/...`.
+ *
+ * Same contract as next-intl `getPathname({ locale, href })`, but pure so it is
+ * safe in middleware/edge and unit tests (no `next/navigation` client graph).
+ * @see https://next-intl.dev/docs/routing/navigation#getpathname
+ */
+export function toBrowserPath(pathWithoutLocale: string, locale: string): string {
+  const path = normalizePath(
+    pathWithoutLocale.startsWith('/') ? pathWithoutLocale : `/${pathWithoutLocale}`,
+  );
+
+  return path === '/' ? `/${locale}` : `/${locale}${path}`;
+}
+
 export function getLocaleFromPath(pathname: string): LocalePathInfo {
   const normalized = normalizePath(pathname);
   const segments = normalized.split('/');

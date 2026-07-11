@@ -1,7 +1,7 @@
 'use client';
 
+import { Link } from '@/i18n/navigation';
 import { useState } from 'react';
-import Link from 'next/link';
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { useForm } from 'react-hook-form';

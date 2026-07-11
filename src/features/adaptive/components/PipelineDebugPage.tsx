@@ -1,5 +1,6 @@
 'use client';
 
+import { copyToClipboard } from '@/lib/clipboard';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   HiCheck,
@@ -447,7 +448,7 @@ function ArtifactModal({
   onClose: () => void;
 }) {
   const copyContent = () => {
-    void navigator.clipboard?.writeText(artifact.content || JSON.stringify(artifact.output));
+    void copyToClipboard(artifact.content || JSON.stringify(artifact.output));
   };
 
   return (

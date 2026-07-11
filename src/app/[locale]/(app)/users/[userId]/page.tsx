@@ -1,6 +1,6 @@
-import type { Metadata } from 'next';
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { Link } from '@/i18n/navigation';
+import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import { UserAvatar } from '@/components/user/UserAvatar';
 import { getUserDisplayName } from '@/components/user/user-identity';

@@ -1,8 +1,8 @@
 'use client';
 
+import { Link } from '@/i18n/navigation';
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import Link from 'next/link';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -24,7 +24,8 @@ import { GoogleAuthButton } from '@/components/auth/GoogleAuthButton';
 import { PasswordStrengthMeter } from '@/components/auth/PasswordStrengthMeter';
 import { emailSchema, passwordSchema } from '@/lib/validation/auth';
 import { usePasswordStrength } from '@/lib/validation/usePasswordStrength';
-import { defaultLocale } from '@/i18n/config';
+import { toBrowserPath } from '@/lib/routing/pathname';
+import { ROUTES } from '@/shared/constants/routes';
 
 interface RegisterFormProps {
   locale: string;
@@ -52,9 +53,6 @@ const FIELD_ERROR_KEY: Record<keyof FormValues, string> = {
   confirmPassword: 'passwordsDoNotMatch',
   agreeTerms: 'mustAgreeTerms',
 };
-
-const dashboardPath = (locale: string) =>
-  locale === defaultLocale ? '/dashboard' : `/${locale}/dashboard`;
 
 type PasswordCriterion = {
   id: string;
@@ -145,7 +143,10 @@ export function RegisterForm({ locale, googleEnabled = false, onSwitchMode }: Re
   return (
     <div>
       {googleEnabled && (
-        <GoogleAuthButton callbackUrl={dashboardPath(locale)} disabled={isSubmitting} />
+        <GoogleAuthButton
+          callbackUrl={toBrowserPath(ROUTES.DASHBOARD, locale)}
+          disabled={isSubmitting}
+        />
       )}
       <form className="space-y-6" onSubmit={onSubmit} noValidate>
         {serverError && (

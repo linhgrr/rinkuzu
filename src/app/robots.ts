@@ -1,13 +1,11 @@
 import type { MetadataRoute } from 'next';
-import { defaultLocale, locales } from '@/i18n/config';
+import { locales } from '@/i18n/config';
 import { siteUrl } from '@/lib/seo';
 import { PRIVATE_ROUTE_PREFIXES } from '@/lib/seo.routes';
 
 function localizedDisallow(path: string): string[] {
   const normalized = path.startsWith('/') ? path : `/${path}`;
-  return locales.map((locale) =>
-    locale === defaultLocale ? normalized : `/${locale}${normalized}`,
-  );
+  return locales.map((locale) => (normalized === '/' ? `/${locale}` : `/${locale}${normalized}`));
 }
 
 export default function robots(): MetadataRoute.Robots {

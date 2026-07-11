@@ -1,8 +1,8 @@
-import Link from 'next/link';
-import { defaultLocale } from '@/i18n/config';
+import { Link } from '@/i18n/navigation';
 import { JsonLd } from '@/components/seo/JsonLd';
 import type { TranslateFn } from '@/features/adaptive/types/learning';
 import { buildFaqSchema, buildSoftwareApplicationSchema } from '@/lib/structured-data';
+import { ROUTES } from '@/shared/constants/routes';
 
 type AdaptiveLearningGuestProps = {
   locale: string;
@@ -11,14 +11,12 @@ type AdaptiveLearningGuestProps = {
 
 const FAQ_KEYS = ['howItWorks', 'forBeginners', 'multipleSubjects'] as const;
 
-const getLocalizedPath = (locale: string, path: string) =>
-  locale === defaultLocale ? path : `/${locale}${path}`;
-
 export default function AdaptiveLearningGuest({ locale, t }: AdaptiveLearningGuestProps) {
-  const loginPath = getLocalizedPath(locale, '/login');
-  const registerPath = getLocalizedPath(locale, '/register');
-  const uploadPath = getLocalizedPath(locale, '/adaptive/upload');
-  const callbackPath = getLocalizedPath(locale, '/adaptive');
+  // next-intl Link hrefs must be locale-unprefixed.
+  const loginPath = ROUTES.LOGIN;
+  const registerPath = ROUTES.REGISTER;
+  const uploadPath = '/adaptive/upload';
+  const callbackPath = '/adaptive';
 
   const faqItems = FAQ_KEYS.map((key) => ({
     question: t(`guest.faq.${key}.question`),

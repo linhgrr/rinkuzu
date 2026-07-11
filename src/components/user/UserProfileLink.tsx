@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import { Link } from '@/i18n/navigation';
 import { UserAvatar } from './UserAvatar';
 import { type UserIdentity, getUserDisplayName } from './user-identity';
 import { cn } from '@/lib/utils';

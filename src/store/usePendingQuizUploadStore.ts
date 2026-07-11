@@ -1,4 +1,3 @@
-// /src/store/usePendingQuizUploadStore.ts
 //
 // Holds a single PDF File picked on the dashboard drop zone so the /create
 // page can pick it up after navigation. Not persisted: a File object cannot

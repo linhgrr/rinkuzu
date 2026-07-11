@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { Twitter, Linkedin, Facebook, Link as LinkIcon, Check } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { toast } from 'sonner';
+import { copyToClipboard } from '@/lib/clipboard';
 
 interface ShareButtonsProps {
   url: string;
@@ -34,13 +35,13 @@ export const ShareButtons = ({ url, title }: ShareButtonsProps) => {
     },
   ];
 
-  const copyToClipboard = async () => {
-    try {
-      await navigator.clipboard.writeText(url);
+  const handleCopy = async () => {
+    const ok = await copyToClipboard(url);
+    if (ok) {
       setCopied(true);
       toast.success('Link copied to clipboard');
       setTimeout(() => setCopied(false), 2000);
-    } catch (_err) {
+    } else {
       toast.error('Failed to copy link');
     }
   };
@@ -65,7 +66,7 @@ export const ShareButtons = ({ url, title }: ShareButtonsProps) => {
           variant="outline"
           size="icon"
           className="size-9 rounded-full hover:bg-neutral-100 transition-colors duration-200 border-neutral-200"
-          onClick={copyToClipboard}
+          onClick={handleCopy}
           title="Copy link"
         >
           {copied ? <Check className="size-4 text-green-500" /> : <LinkIcon className="size-4" />}

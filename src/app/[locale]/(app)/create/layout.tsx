@@ -1,13 +1,9 @@
 import type { Metadata } from 'next';
+import type { ReactNode } from 'react';
+import { noIndexMetadata } from '@/lib/seo/no-index-metadata';
 
-export const metadata: Metadata = {
-  robots: {
-    index: false,
-    follow: false,
-    nocache: true,
-  },
-};
+export const metadata: Metadata = noIndexMetadata;
 
-export default function CreateLayout({ children }: { children: React.ReactNode }) {
+export default function Layout({ children }: { children: ReactNode }) {
   return children;
 }
